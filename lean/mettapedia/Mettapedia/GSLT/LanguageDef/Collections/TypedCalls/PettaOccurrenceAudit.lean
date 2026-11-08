@@ -1,0 +1,53 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceSourceLink
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlayControls
+
+/-! Kernel audit of the typed occurrence overlay and its source publication link.
+Executable whole-program controls remain `#guard` checks in the controls file;
+they are deliberately not counted as proof theorems. -/
+
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.liftSource_published
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.enterRows_ne_publish
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.nextArgument_ne_publish
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.consumeArgument_ne_publish
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.consumeBody_ne_publish
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.delegate_published_is_source
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.published_is_source
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.published_source_model
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.row_type_roundtrip
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.normalizeRows_repeated
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.normalizeRows_single
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.normalizeRows_types
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.install_world
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.install_residual
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.protect_bindings
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.guarded_argument_refuses_only_current
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.missing_argument_guard_retains_everything
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.argument_guard_exact
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.argument_guard_multiplicity
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.unchecked_argument_keeps_store
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.result_guard_exact
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.unchecked_result_keeps_entry_store
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.guarded_result_refuses_only_current
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.source_owned_delegates
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.argument_continuations_length
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.argument_continuations_records
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.resumed_caller_keeps_reached_bindings
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.resumed_caller_restores_only_continuation
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.operand_support_contains
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.saved_name_is_protected
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.fresh_slot_avoids_saved_caller
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.saved_argument_read_transport
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.terminal_argument_step
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.terminal_body_step
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.Controls.sat_two_symbols
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.Controls.literal_number_guard
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.Controls.string_number_guard
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.Controls.tautologicalStore_sat
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.Controls.numberGuard_exact
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.Controls.batched_effect_order_is_different
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.Controls.boundT_class_consistency
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.Controls.boundT_rejects_string
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.Controls.boundT_accepts_number
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.Controls.shared_type_variable_rejects_body
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceOverlay.Controls.failed_guard_does_not_start_saved_print
+

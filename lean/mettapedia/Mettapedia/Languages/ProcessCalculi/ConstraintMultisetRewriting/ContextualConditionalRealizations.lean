@@ -112,10 +112,10 @@ theorem realizes_map_iff {Γ : Ctx S} {sort : S.Srt} (change : Assignment captur
     rw [ContextualStoredRows.asTemplate_map, ← Assignment.instantiate_compose, valuation_capture_map]
     exact same
 
-theorem realizes_live_iff {Γ : Ctx S} {sort : S.Srt} (candidate : Assignment captures next)
+theorem realizes_shared_iff {Γ : Ctx S} {sort : S.Srt} (candidate : Assignment captures next)
     (filler : Assignment locals next) (value : Term (signature S captures) Γ sort)
     (pattern : Term (signature S next) Γ sort) :
-    Realizes locals captures candidate pattern (ofStored locals captures (.live value)) ↔
+    Realizes locals captures candidate pattern (ofStored locals captures (.shared value)) ↔
       instantiate candidate value = pattern := by
   constructor
   · rintro ⟨images, _, same⟩
@@ -165,7 +165,7 @@ theorem realizes_extendPrivate_iff {Γ : Ctx S} {sort : S.Srt}
       exact same
 
 def AnswerRealizes {V : Type} {declaration : V → MetaArity S} {Γ : Ctx S} {sort : S.Srt}
-    (answer : ContextualResidualAnswers.Answer declaration Γ sort) (next : Next → MetaArity S)
+    (answer : ContextualConditionalAnswers.Answer declaration Γ sort) (next : Next → MetaArity S)
     (pattern : Term (signature S next) Γ sort) : Prop :=
   ∃ images : Assignment declaration next,
     ContextualResidual.Models images answer.obligations ∧ instantiate images answer.value = pattern
@@ -181,7 +181,7 @@ theorem valuation_newPrivate
 
 private theorem ordinary_value {Γ : Ctx S} {sort : S.Srt}
     (images : Assignment (ContextualPublication.privateFamily locals added) next) (candidate : Assignment captures next)
-    (answer : ContextualResidualAnswers.Answer added Γ sort) :
+    (answer : ContextualConditionalAnswers.Answer added Γ sort) :
     instantiate (valuation (ContextualPublication.privateFamily locals added) captures images candidate)
       (ContextualStoredRows.asTemplate _ _ (ContextualConditionalPublication.ordinary locals added captures answer).value) =
       instantiate (fun name => images (.inr name)) answer.value := by
@@ -194,7 +194,7 @@ private theorem ordinary_value {Γ : Ctx S} {sort : S.Srt}
 
 theorem realizes_ordinary_iff {Γ : Ctx S} {sort : S.Srt}
     (candidate : Assignment captures next) (filler : Assignment locals next)
-    (answer : ContextualResidualAnswers.Answer added Γ sort) (pattern : Term (signature S next) Γ sort) :
+    (answer : ContextualConditionalAnswers.Answer added Γ sort) (pattern : Term (signature S next) Γ sort) :
     Realizes (ContextualPublication.privateFamily locals added) captures candidate pattern
       (ContextualConditionalPublication.ordinary locals added captures answer) ↔ AnswerRealizes answer next pattern := by
   constructor
@@ -217,7 +217,7 @@ theorem answer_ofUpdate_iff {V : Type} {declaration : V → MetaArity S}
     {problem : ContextualResidual.Problem declaration} (update : ContextualFrameUpdate.Update problem)
     {Γ : Ctx S} {sort : S.Srt} (value : Term (signature S declaration) Γ sort)
     (next : Next → MetaArity S) (pattern : Term (signature S next) Γ sort) :
-    AnswerRealizes (ContextualResidualAnswers.ofUpdate update value) next pattern ↔
+    AnswerRealizes (ContextualConditionalAnswers.ofUpdate update value) next pattern ↔
       AnswerRealizes ⟨problem, value⟩ next pattern := by
   constructor
   · rintro ⟨images, model, same⟩

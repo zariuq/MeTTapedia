@@ -28,14 +28,30 @@ what `Dialect` records:
   A `quote` holds its term as written, without the values of its free variables; the
   controls hold closed terms.
 
-`Ready` collects what the full rule system needs.  The rules' soundness lemmas take only
-the conditions each rule uses, so they also give the sound subsystem of a dialect that is
-not ready.
+`Ready` collects what the full rule system needs; for `min` it is `MinProtocol`: on two
+evaluated arguments `min` answers as `(if (<= $x $y) $x $y)` does.  CeTTa's PeTTa lane has
+it on integers, and on operands that are not numbers, raising its type error on the first
+one, as `<=` does.  On doubles and the numeric constants it selects an operand by the exact
+order (`MinMaxSelection`, DIFF-17).  The test agrees at a mixed tie (`(min 1 1.0)` is `1`)
+and not at signed zeros, a NaN first operand, or an integer and a double equal only as
+doubles: `(min 0.0 -0.0)` is `-0.0`, `(min nan 1)` is `nan`, `(min 9007199254740993
+9007199254740992.0)` is the double (`MinMaxSelection.Controls.le_test_differs`).  No single
+test spells the selection (`MinMaxSelection.Controls.no_single_test`), so on doubles the
+rule is not the dialect's `min`; CeTTa's C has no such rewrite and runs `min` as an
+intrinsic.
+The rules' soundness lemmas take only the conditions each rule uses, so they also give the
+sound subsystem of a dialect that is not ready.
+
+**Shifting** (`eval_shift`): a term lifted by `shift c` reads the environment with a value
+inserted at `c` as the term reads the original, on a dialect whose non-Boolean `if` does
+not quote its own spelling; this is what lets `min`'s second argument move under the
+binder of the first.
 
 This file proves the root lemmas (`if2_sound`, `letStar_sound`, `case1_sound`,
-`id_sound`, `sup1_sound`, `callable_sound`, `size_sound`, `min_sound`, `sizeVar_sound`,
-`letEta_sound`, `wrap_sound`), and `step_sound`: on a ready dialect a step at any
-position keeps the trace, in every environment that respects the facts.  The
+`id_sound`, `sup1_sound`, `callable_sound`, `size_sound`, `min_sound` for every pair of
+operands, `sizeVar_sound`, `letEta_sound`, `wrap_sound`), and `step_sound`: on a ready
+dialect a step at any position keeps the trace, in every environment that respects the
+facts.  The
 consequences for the normalizer, `N_sound` and `conv_sound`, follow.
 -/
 
@@ -310,6 +326,12 @@ theorem eval_intAtom {Γ : Facts} {ρ : List Val} (hρ : Sat Γ ρ) (D : Dialect
 
 /-! ## What the full system needs of a dialect -/
 
+/-- `min`'s protocol: on its two evaluated arguments, the first unless it is not `<=` the
+second, as the test of `minIf` answers it. -/
+def MinProtocol (D : Dialect) : Prop :=
+  ∀ x y : Val, D.fn .min [x, y] = bindT (D.fn .le [x, y]) fun c =>
+    branch3 c (ret x) (ret y) (if D.elseOnNonBool then ret y else D.nonBool minIf c)
+
 /-- A dialect on which every rule is sound. -/
 structure Ready (D : Dialect) : Prop where
   meter : D.meter = []
@@ -318,8 +340,7 @@ structure Ready (D : Dialect) : Prop where
   nonBool : ∀ t t' v, D.nonBool t v = D.nonBool t' v
   caseEmpty : D.caseEmpty ≠ .matching
   id : ∀ v, D.fn .id [v] = ret v
-  min : ∀ x y : ℤ, D.fn .min [.int x, .int y] = ret (.int (min x y))
-  lt : ∀ x y : ℤ, D.fn .lt [.int x, .int y] = ret (.sym (if x < y then .tru else .fls))
+  min : MinProtocol D
 
 /-! ## Iterators respect their steps -/
 
@@ -355,6 +376,171 @@ theorem iterate_congr (k : Iter) {s₁ s₂ : List Val → Trace}
     | foldl => exact foldlT_congr (fun a x => h2 a x rfl) _ _
     | _ => rfl
   · rfl
+
+/-! ## Shifting: a term moved under a binder means what it meant -/
+
+/-- An environment with `v` inserted at index `c` (missing indices read as `Empty`). -/
+def insertAt : ℕ → Val → List Val → List Val
+  | 0, v, ρ => v :: ρ
+  | c + 1, v, [] => .sym .emp :: insertAt c v []
+  | c + 1, v, w :: ρ => w :: insertAt c v ρ
+
+theorem insertAt_cons (c : ℕ) (v w : Val) (ρ : List Val) :
+    insertAt (c + 1) v (w :: ρ) = w :: insertAt c v ρ := rfl
+
+theorem insertAt_append (v : Val) :
+    ∀ (ws ρ : List Val) (c : ℕ), insertAt (c + ws.length) v (ws ++ ρ) = ws ++ insertAt c v ρ
+  | [], _, _ => rfl
+  | w :: ws, ρ, c => by
+    rw [List.length_cons, show c + (ws.length + 1) = (c + ws.length) + 1 by omega,
+      List.cons_append, insertAt_cons, insertAt_append v ws ρ c]
+    rfl
+
+theorem getD_insertAt_lt (v : Val) :
+    ∀ (c k : ℕ) (ρ : List Val), k < c →
+      (insertAt c v ρ).getD k (.sym .emp) = ρ.getD k (.sym .emp)
+  | 0, _, _, h => absurd h (Nat.not_lt_zero _)
+  | c + 1, 0, [], _ => rfl
+  | c + 1, 0, _ :: _, _ => rfl
+  | c + 1, k + 1, [], h => by
+    have := getD_insertAt_lt v c k [] (by omega)
+    simpa [insertAt] using this
+  | c + 1, k + 1, _ :: ρ, h => by
+    have := getD_insertAt_lt v c k ρ (by omega)
+    simpa [insertAt] using this
+
+theorem getD_insertAt_ge (v : Val) :
+    ∀ (c k : ℕ) (ρ : List Val), c ≤ k →
+      (insertAt c v ρ).getD (k + 1) (.sym .emp) = ρ.getD k (.sym .emp)
+  | 0, _, _, _ => rfl
+  | c + 1, 0, _, h => absurd h (by omega)
+  | c + 1, k + 1, [], h => by
+    have := getD_insertAt_ge v c k [] (by omega)
+    simpa [insertAt] using this
+  | c + 1, k + 1, _ :: ρ, h => by
+    have := getD_insertAt_ge v c k ρ (by omega)
+    simpa [insertAt] using this
+
+section Shift
+
+variable {D : Dialect}
+
+mutual
+/-- **A shifted term reads the inserted environment as the term reads the original**, on a
+dialect whose non-Boolean `if` does not quote its own spelling. -/
+theorem eval_shift (hnb : ∀ t t' v, D.nonBool t v = D.nonBool t' v) (hif2 : D.if2 = true)
+    (v : Val) :
+    ∀ (c : ℕ) (t : Tm) (ρ : List Val), eval D (shift c t) (insertAt c v ρ) = eval D t ρ
+  | c, .var k, ρ => by
+    simp only [shift, eval]
+    split
+    · rename_i h; rw [getD_insertAt_lt v c k ρ h]
+    · rename_i h; rw [getD_insertAt_ge v c k ρ (by omega)]
+  | _, .lit _, _ => rfl
+  | _, .quote _, _ => rfl
+  | c, .tup xs, ρ => by simp only [shift, eval, evalArgs_shift hnb hif2 v c xs ρ]
+  | _, .empty, _ => rfl
+  | c, .if3 a b d, ρ => by
+    simp only [shift, eval, eval_shift hnb hif2 v c a ρ, eval_shift hnb hif2 v c b ρ, eval_shift hnb hif2 v c d ρ]
+    congr 1
+    exact bindT_congr _ fun w => by rw [hnb]
+  | c, .if2 a b, ρ => by
+    simp only [shift, eval, hif2, if_true, eval_shift hnb hif2 v c a ρ, eval_shift hnb hif2 v c b ρ]
+    congr 1
+    exact bindT_congr _ fun w => by rw [hnb]
+  | c, .let_ e b, ρ => by
+    simp only [shift, eval, eval_shift hnb hif2 v c e ρ]
+    congr 1
+    exact bindT_congr _ fun w => by rw [← insertAt_cons, eval_shift hnb hif2 v (c + 1) b (w :: ρ)]
+  | c, .letStar es b, ρ => by
+    simp only [shift, eval]
+    congr 1
+    exact evalLS_shift hnb hif2 v es b (fun c' ρ' => eval_shift hnb hif2 v c' b ρ') c ρ
+  | c, .case_ e alts, ρ => by
+    simp only [shift, eval, eval_shift hnb hif2 v c e ρ, onEmpty_shift hnb hif2 v c alts ρ]
+    congr 2
+    exact bindT_congr _ fun w => select_shift hnb hif2 v c alts w ρ
+  | c, .sup xs, ρ => by simp only [shift, eval, evalSup_shift hnb hif2 v c xs ρ]
+  | c, .once b, ρ => by simp only [shift, eval, eval_shift hnb hif2 v c b ρ]
+  | c, .call f args, ρ => by simp only [shift, eval, evalArgs_shift hnb hif2 v c args ρ]
+  | c, .iterC k ops f, ρ => by simp only [shift, eval, evalArgs_shift hnb hif2 v c ops ρ]
+  | c, .iterB k ops b, ρ => by
+    simp only [shift, eval, evalArgs_shift hnb hif2 v c ops ρ]
+    congr 1
+    refine bindT_congr _ fun w => iterate_congr k (fun vs hl => ?_) w
+    have := eval_shift hnb hif2 v (c + vs.reverse.length) b (vs.reverse ++ ρ)
+    rw [insertAt_append, List.length_reverse, hl] at this
+    exact this
+/-- The argument version. -/
+theorem evalArgs_shift (hnb : ∀ t t' v, D.nonBool t v = D.nonBool t' v) (hif2 : D.if2 = true)
+    (v : Val) :
+    ∀ (c : ℕ) (xs : List Tm) (ρ : List Val),
+      evalArgs D (shifts c xs) (insertAt c v ρ) = evalArgs D xs ρ
+  | _, [], _ => rfl
+  | c, x :: xs, ρ => by
+    simp only [shifts, evalArgs, eval_shift hnb hif2 v c x ρ, evalArgs_shift hnb hif2 v c xs ρ]
+/-- The alternative version. -/
+theorem evalSup_shift (hnb : ∀ t t' v, D.nonBool t v = D.nonBool t' v) (hif2 : D.if2 = true)
+    (v : Val) :
+    ∀ (c : ℕ) (xs : List Tm) (ρ : List Val),
+      evalSup D (shifts c xs) (insertAt c v ρ) = evalSup D xs ρ
+  | _, [], _ => rfl
+  | c, x :: xs, ρ => by
+    simp only [shifts, evalSup, eval_shift hnb hif2 v c x ρ, evalSup_shift hnb hif2 v c xs ρ]
+/-- The `let*` version: each source one binder deeper, the body under all of them. -/
+theorem evalLS_shift (hnb : ∀ t t' v, D.nonBool t v = D.nonBool t' v) (hif2 : D.if2 = true)
+    (v : Val) :
+    ∀ (es : List Tm) (b : Tm),
+      (∀ (c' : ℕ) (ρ' : List Val), eval D (shift c' b) (insertAt c' v ρ') = eval D b ρ') →
+      ∀ (c : ℕ) (ρ : List Val),
+        evalLS D (shiftLS c es) (fun ρ' => eval D (shift (c + es.length) b) ρ') (insertAt c v ρ) =
+          evalLS D es (fun ρ' => eval D b ρ') ρ
+  | [], b, hb, c, ρ => by simpa [shiftLS, evalLS] using hb c ρ
+  | e :: es, b, hb, c, ρ => by
+    simp only [shiftLS, evalLS, eval_shift hnb hif2 v c e ρ]
+    refine bindT_congr _ fun w => ?_
+    rw [← insertAt_cons]
+    have := evalLS_shift hnb hif2 v es b hb (c + 1) (w :: ρ)
+    rwa [show c + 1 + es.length = c + (e :: es).length by simp; omega] at this
+/-- The branch version. -/
+theorem select_shift (hnb : ∀ t t' v, D.nonBool t v = D.nonBool t' v) (hif2 : D.if2 = true)
+    (v : Val) :
+    ∀ (c : ℕ) (alts : List (Pat × Tm)) (w : Val) (ρ : List Val),
+      select D (shiftAlts c alts) w (insertAt c v ρ) = select D alts w ρ
+  | _, [], _, _ => rfl
+  | c, (.bind, b) :: _, w, ρ => by
+    simp only [shiftAlts, Pat.binders, select]
+    rw [← insertAt_cons, eval_shift hnb hif2 v (c + 1) b (w :: ρ)]
+  | c, (.lit l, b) :: rest, w, ρ => by
+    simp only [shiftAlts, Pat.binders, Nat.add_zero, select, eval_shift hnb hif2 v c b ρ,
+      select_shift hnb hif2 v c rest w ρ]
+/-- The empty-scrutinee version. -/
+theorem onEmpty_shift (hnb : ∀ t t' v, D.nonBool t v = D.nonBool t' v) (hif2 : D.if2 = true)
+    (v : Val) :
+    ∀ (c : ℕ) (alts : List (Pat × Tm)) (ρ : List Val),
+      onEmpty D (shiftAlts c alts) (insertAt c v ρ) = onEmpty D alts ρ
+  | _, [], _ => rfl
+  | c, (.bind, b) :: rest, ρ => by
+    simp only [shiftAlts, Pat.binders, onEmpty]
+    have hb : eval D (shift (c + 1) b) (.sym .emp :: insertAt c v ρ) =
+        eval D b (.sym .emp :: ρ) := by
+      rw [← insertAt_cons, eval_shift hnb hif2 v (c + 1) b]
+    have hr := onEmpty_shift hnb hif2 v c rest ρ
+    cases D.caseEmpty with
+    | none => rfl
+    | literal => exact hr
+    | matching => exact hb
+  | c, (.lit l, b) :: rest, ρ => by
+    simp only [shiftAlts, Pat.binders, Nat.add_zero, onEmpty]
+    have hb := eval_shift hnb hif2 v c b ρ
+    have hr := onEmpty_shift hnb hif2 v c rest ρ
+    cases D.caseEmpty with
+    | none => rfl
+    | literal => simp only [hb, hr]
+    | matching => simp only [hb, hr]
+end
+
+end Shift
 
 /-! ## The rules, one by one -/
 
@@ -429,19 +615,20 @@ theorem size_sound (hvr : ∀ v, D.varRead v = ret v) (g : Name) (e : Tm) (ρ : 
     eval D (.call g [e]) ρ = eval D (.let_ e (.call g [.var 0])) ρ := by
   simp [eval, evalArgs, hm, hvr, bindT_assoc, consTup, applyTup]
 
-theorem min_sound (hvr : ∀ n : ℤ, D.varRead (.int n) = ret (.int n))
-    (hmin : ∀ x y : ℤ, D.fn .min [.int x, .int y] = ret (.int (min x y)))
-    (hlt : ∀ x y : ℤ, D.fn .lt [.int x, .int y] = ret (.sym (if x < y then .tru else .fls)))
-    {Γ : Facts} {a b : Tm} (ha : IntAtom Γ a = true) (hb : IntAtom Γ b = true)
-    {ρ : List Val} (hρ : Sat Γ ρ) :
-    eval D (.call .min [a, b]) ρ = eval D (.if3 (.call .lt [a, b]) a b) ρ := by
-  obtain ⟨x, hx⟩ := eval_intAtom hρ D hvr ha
-  obtain ⟨y, hy⟩ := eval_intAtom hρ D hvr hb
-  simp only [eval, evalArgs, hm, List.nil_append, hx, hy, bindT_ret, consTup, applyTup, hmin,
-    hlt]
-  by_cases hxy : x < y
-  · simp [hxy, branch3, min_eq_left (le_of_lt hxy)]
-  · simp [hxy, branch3, min_eq_right (not_lt.mp hxy)]
+/-- **`min` keeps its protocol**: its protocol form evaluates `a` once, then `b` once per
+answer of `a`, and answers by `min`'s test, for every pair of operands. -/
+theorem min_sound (hvr : ∀ v, D.varRead v = ret v)
+    (hnb : ∀ t t' v, D.nonBool t v = D.nonBool t' v) (hif2 : D.if2 = true)
+    (hmin : MinProtocol D) (a b : Tm) (ρ : List Val) :
+    eval D (.call .min [a, b]) ρ = eval D (minForm a b) ρ := by
+  simp only [minForm, eval, evalArgs, hm, List.nil_append, bindT_assoc]
+  refine bindT_congr _ fun x => ?_
+  rw [← eval_shift hnb hif2 x 0 b ρ]
+  simp only [insertAt]
+  refine bindT_congr _ fun y => ?_
+  simp only [minIf, eval, evalArgs, hm, hvr, List.getD_cons_zero, List.getD_cons_succ,
+    bindT_ret, consTup, applyTup, List.nil_append]
+  exact hmin x y
 
 theorem sizeVar_sound (hvr : ∀ v, D.varRead v = ret v) (j : ℕ) (ρ : List Val) :
     eval D (.let_ (.var j) (.call .size [.var 0])) ρ = eval D (.call .size [.var j]) ρ := by
@@ -575,7 +762,7 @@ theorem step_sound {D : Dialect} (hD : Ready D) {top : Bool} {Γ : Facts} {t t' 
     | sup1 => exact sup1_sound D hm _ ρ
     | callable k ops f => exact callable_sound D hm hD.varRead k ops f ρ
     | size e _ => exact size_sound D hm hD.varRead .size e ρ
-    | min a b ha hb => exact min_sound D hm (fun n => hD.varRead _) hD.min hD.lt ha hb hρ
+    | min a b => exact min_sound D hm hD.varRead hD.nonBool hD.if2 hD.min a b ρ
     | sizeVar j => exact sizeVar_sound D hm hD.varRead j ρ
     | letEta e b => exact letEta_sound D hm hD.varRead e b ρ
   | wrap b => intro ρ _; exact (wrap_sound D hm hD.varRead b ρ).symm

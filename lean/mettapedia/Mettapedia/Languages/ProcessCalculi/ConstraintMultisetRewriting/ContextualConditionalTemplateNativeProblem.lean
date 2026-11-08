@@ -1,13 +1,16 @@
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualConditionalTemplateAllocation
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualConditionalTemplateEntryCuts
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualGuardedScheduleProblem
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualNativeBodies
 
 /-!
-# Mixed bodies retain original guard countermodels in one problem
+# Mixed bodies as compiled native bodies
 
-The current information and each saved guard cut have independent tagged
-declarations. Output conditions remain in their saved rows rather than
-becoming global obligations. The construction is computed from source
-syntax, entry information and cuts, before admission or native execution.
+Every surviving output has an unconstrained private declaration block; its
+conditions remain in its saved row rather than becoming global obligations.
+The body is computed from source syntax, entry information and cuts, before
+admission or native execution. The guard problem, with independent blocks
+for the current information and each saved guard cut, is the generic one of
+`ContextualNativeBodies`.
 -/
 
 set_option autoImplicit false
@@ -52,9 +55,6 @@ theorem cuts_solvable_of_final (schedule : Schedule S O Γ sort before after) :
       · have only := List.mem_singleton.mp current
         subst cut
         exact consistent
-
-abbrev CutIndex (schedule : Schedule S O Γ sort before after) := Fin schedule.cuts.length
-abbrev GuardBlockIndex (schedule : Schedule S O Γ sort before after) := Sum (Option schedule.CutIndex) O
 
 private def birthVariables : Option (Birth after.declarations O Γ sort) → Type
   | none => Empty
@@ -119,117 +119,39 @@ theorem output_row_instances (schedule : Schedule S O Γ sort before after) (occ
         exact ⟨birth.row.map birth.locals birth.saved birth.transport, rfl,
           (matches_map_iff birth.locals birth.saved birth.transport candidate pattern birth.row).mpr matched⟩
 
-def currentProblem (schedule : Schedule S O Γ sort before after) : ContextualResidual.Problem after.declarations :=
-  ContextualResidual.mapProblem schedule.frame.assignment before.equations ++ schedule.deltas
-
-def guardVariables (schedule : Schedule S O Γ sort before after) : schedule.GuardBlockIndex → Type
-  | .inl _ => after.Names
-  | .inr occurrence => schedule.outputVariables occurrence
-def guardDeclarations (schedule : Schedule S O Γ sort before after) : ∀ index, schedule.guardVariables index → MetaArity S :=
-  fun index => match index with
-    | .inl _ => after.declarations
-    | .inr occurrence => schedule.outputDeclarations occurrence
-
-def guardConditions (schedule : Schedule S O Γ sort before after) :
-    ∀ index, ContextualResidual.Problem (schedule.guardDeclarations index)
-  | .inl none => schedule.currentProblem
-  | .inl (some index) => (schedule.cuts.get index).problem
-  | .inr _ => []
-
-def guardIndices (schedule : Schedule S O Γ sort before after) : List schedule.GuardBlockIndex :=
-  (none :: (List.finRange schedule.cuts.length).map some).map Sum.inl
-
-theorem guard_index_list_complete (schedule : Schedule S O Γ sort before after) (index : Option schedule.CutIndex) :
-    Sum.inl index ∈ schedule.guardIndices := by
-  apply List.mem_map.mpr
-  refine ⟨index, ?_, rfl⟩
-  cases index with
-  | none => exact List.mem_cons_self
-  | some index => exact List.mem_cons_of_mem _ (List.mem_map.mpr ⟨index, List.mem_finRange index, rfl⟩)
-
-abbrev guardFamily (schedule : Schedule S O Γ sort before after) :=
-  ContextualIndependentProblems.family schedule.guardVariables schedule.guardDeclarations
-
-instance guardEquality (schedule : Schedule S O Γ sort before after) :
-    DecidableEq (ContextualAnswerFamilies.Names schedule.guardVariables) := by
-  let _ : ∀ index, DecidableEq (schedule.guardVariables index) := fun index =>
-    match index with
-    | .inl _ => after.equality
-    | .inr occurrence => schedule.outputEquality occurrence
-  infer_instance
-
-def guardProblem (schedule : Schedule S O Γ sort before after) : ContextualResidual.Problem schedule.guardFamily :=
-  ContextualIndependentProblems.problem schedule.guardVariables schedule.guardDeclarations schedule.guardConditions schedule.guardIndices
-
-theorem guard_blocks_solvable (schedule : Schedule S O Γ sort before after)
-    (consistent : ContextualConditionalExecution.Solvable after.equations) (index : schedule.GuardBlockIndex) :
-    ContextualConditionalExecution.Solvable (schedule.guardConditions index) := by
-  cases index with
-  | inl index =>
-      cases index with
-      | none =>
-          change ContextualConditionalExecution.Solvable schedule.currentProblem
-          rw [currentProblem, ← schedule.final_equations]
-          exact consistent
-      | some index => exact schedule.cuts_solvable_of_final consistent _ (List.get_mem _ _)
-  | inr occurrence =>
-      exact ⟨schedule.outputVariables occurrence, schedule.outputDeclarations occurrence,
-        generator _, (by intro equation member; cases member)⟩
-
-theorem guard_problem_solvable_iff (schedule : Schedule S O Γ sort before after) :
-    ContextualConditionalExecution.Solvable schedule.guardProblem ↔
-      ContextualConditionalExecution.Solvable after.equations := by
-  constructor
-  · rintro ⟨Future, future, candidate, model⟩
-    have current := (ContextualIndependentProblems.models_iff schedule.guardVariables schedule.guardDeclarations
-      schedule.guardConditions schedule.guardIndices candidate).mp model (.inl none) (schedule.guard_index_list_complete _)
-    change ContextualResidual.Models _ schedule.currentProblem at current
-    rw [currentProblem, ← schedule.final_equations] at current
-    exact ⟨Future, future, _, current⟩
-  · intro consistent
-    exact ContextualIndependentProblems.solvable schedule.guardVariables schedule.guardDeclarations schedule.guardConditions
-      (schedule.guard_blocks_solvable consistent) schedule.guardIndices
-
-def guardView (schedule : Schedule S O Γ sort before after) (index : schedule.CutIndex) : Cut schedule.guardFamily O Γ sort :=
-  let cut := schedule.cuts.get index
-  let embedding := ContextualIndependentProblems.inclusion schedule.guardVariables schedule.guardDeclarations (.inl (some index))
-  { cut.map embedding with problem := schedule.guardProblem }
-
-theorem guard_view_iff (schedule : Schedule S O Γ sort before after)
-    (consistent : ContextualConditionalExecution.Solvable after.equations) (index : schedule.CutIndex) :
-    (schedule.guardView index).Holds ↔ (schedule.cuts.get index).Holds := by
-  simp only [Cut.Holds, guardView, Cut.map, List.forall_mem_map]
-  apply forall_congr'
-  intro check
-  apply forall_congr'
-  intro _member
-  exact ContextualIndependentProblems.asks_iff schedule.guardVariables schedule.guardDeclarations schedule.guardConditions
-    (schedule.guard_blocks_solvable consistent) schedule.guardIndices (.inl (some index)) (schedule.guard_index_list_complete _)
-    (schedule.cuts.get index).locals (schedule.cuts.get index).rows (schedule.cuts.get index).world check
-
-theorem guarded_admission_iff (schedule : Schedule S O Γ sort before after) :
-    (schedule.ShapesHold ∧
-      schedule.compile.resources.condition.Holds ContextualSourceSchedules.Schedule.unitLabel before.present ∧
-      ContextualConditionalExecution.Solvable schedule.guardProblem ∧
-      ∀ index : schedule.CutIndex, (schedule.guardView index).Holds) ↔ schedule.Admitted := by
-  rw [← schedule.compile_exact]
-  constructor
-  · rintro ⟨shapes, resources, consistent, guards⟩
-    have terminal := schedule.guard_problem_solvable_iff.mp consistent
-    refine ⟨shapes, resources, ?_, ?_⟩
-    · change ContextualConditionalExecution.Solvable
-        (ContextualResidual.mapProblem schedule.frame.assignment before.equations ++ schedule.deltas)
-      rw [← schedule.final_equations]
-      exact terminal
-    · intro cut member
-      obtain ⟨index, rfl⟩ := List.mem_iff_get.mp member
-      exact (schedule.guard_view_iff terminal index).mp (guards index)
-  · rintro ⟨shapes, resources, consistent, guards⟩
-    have terminal : ContextualConditionalExecution.Solvable after.equations := by
-      rw [schedule.final_equations]
-      exact consistent
-    refine ⟨shapes, resources, schedule.guard_problem_solvable_iff.mpr terminal, ?_⟩
-    intro index
-    exact (schedule.guard_view_iff terminal index).mpr (guards _ (List.get_mem _ _))
+/-- The mixed schedule as a compiled native body. Its publication blocks are
+unconstrained output-private blocks: each row keeps its own conditions. -/
+abbrev native (schedule : Schedule S O Γ sort before after) : ContextualNativeBodies.Body S O Γ sort before after where
+  names := schedule.names
+  names_injective := schedule.names_injective
+  names_preserve := schedule.names_preserve
+  deltas := schedule.deltas
+  final_equations := schedule.final_equations
+  selections := schedule.selections
+  physical_trace := schedule.physical_trace
+  ShapesHold := schedule.ShapesHold
+  cuts := schedule.cuts
+  Admitted := schedule.Admitted
+  admitted_iff := schedule.admitted_characterization
+  cuts_solvable := schedule.cuts_solvable_of_final
+  Extra := O
+  extraIndexEquality := inferInstance
+  extraVariables := schedule.outputVariables
+  extraDeclarations := schedule.outputDeclarations
+  extraEquality := schedule.outputEquality
+  extraConditions _ := []
+  extraIndices := []
+  extras_solvable _ occurrence := ⟨schedule.outputVariables occurrence, schedule.outputDeclarations occurrence,
+    generator _, (by intro equation member; cases member)⟩
+  initialInputs := schedule.initialInputs
+  net_input_is_initial := schedule.net_input_is_initial
+  initial_inputs_realize_together := fun shapes {_} {_} candidate model inputs used =>
+    schedule.initial_inputs_realize_together shapes candidate model inputs used
+  entryCuts := schedule.entryCuts
+  entry_cuts_length := schedule.entry_cuts_length
+  entry_cuts_compare := schedule.entry_cuts_compare
+  entry_cut_inputs := schedule.entry_cut_inputs
+  entry_cut_world := schedule.entry_cut_world
+  entry_cut_created_not_initial := schedule.entry_cut_created_not_initial
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualConditionalTemplateSchedules.Schedule

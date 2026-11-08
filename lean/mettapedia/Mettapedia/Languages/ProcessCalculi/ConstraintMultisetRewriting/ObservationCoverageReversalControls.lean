@@ -35,8 +35,8 @@ theorem agreement_does_not_supply_coverage :
   simp at impossible
 
 theorem exact_counts_disagree :
-    (Check.region (FirstOrder.action signature) zero constantLabel {1} (.const 0)).card = 1 ∧
-      (Check.region (FirstOrder.action signature) zero constantLabel {1, 4} (.const 0)).card = 2 := by
-  simp [Check.region, constantLabel, FirstOrder.action]
+    (Check.matches (FirstOrder.action signature) zero constantLabel {1} (.const 0)).card = 1 ∧
+      (Check.matches (FirstOrder.action signature) zero constantLabel {1, 4} (.const 0)).card = 2 := by
+  simp [Check.matches, constantLabel, FirstOrder.action]
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ObservationCoverageReversalControls

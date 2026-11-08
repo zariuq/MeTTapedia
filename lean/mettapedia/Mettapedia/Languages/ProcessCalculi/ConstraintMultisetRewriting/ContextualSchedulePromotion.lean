@@ -119,7 +119,7 @@ theorem questions_length (prepared : Prepared locals before) :
     ContextualSelectionViews.prepare, ContextualFreshening.ruleAt, RuleInstance.map]
 
 theorem admission (prepared : Prepared locals before) (accepted : Checked locals prepared.questions) :
-    ContextualTransportedActivation.Admission locals before.declarations before.occupied
+    ContextualGuardedStep.Requirements locals before.declarations before.occupied
       prepared.selection prepared.rule before.inventory.rows before.inventory.configuration prepared.outputs := by
   obtain ⟨taken, made, enabled⟩ :=
     (resources_iff prepared.outputs prepared.selection before.inventory.configuration.present).mp prepared.resources
@@ -179,7 +179,7 @@ theorem target_solvable_iff (prepared : Prepared locals before) :
 cut; the target observation law does not replace that earlier question. -/
 theorem firing_retains_original_questions (prepared : Prepared locals before)
     (accepted : Checked locals prepared.questions) :
-    ContextualTransportedActivation.SemanticAdmission locals before.declarations before.occupied
+    ContextualGuardedStep.Valid locals before.declarations before.occupied
       prepared.selection prepared.rule before.inventory.rows before.inventory.configuration prepared.outputs :=
   (prepared.firing accepted).semantic_admission
 

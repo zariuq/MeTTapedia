@@ -6,7 +6,7 @@ import Mettapedia.Languages.MeTTa.PeTTa.ReadAfterRender
 
 The source is a data declaration `(module:document payload)`. Ordinary symbols,
 quoted strings, natural numbers and constructor applications keep their MeTTa
-spellings. Unusual strings have an explicit Unicode-codepoint spelling; unsafe
+spellings. Strings use the shared Unicode-preserving literal codec; unsafe
 symbols and constructor heads are escaped without interpreting them as code.
 
 Lexing, S-expression parsing and atom reading are the existing verified reader.
@@ -65,18 +65,9 @@ private def codepoint? : Term → Option Char
       if (Char.ofNat value).toNat = value then some (Char.ofNat value) else none
   | _ => none
 
-private def codepoints (characters : List Char) : Term :=
-  encodeList (fun character => .natural character.toNat) characters
-
-private theorem codepoints_roundtrip (characters : List Char) :
-    decodeList codepoint? (codepoints characters) = some characters := by
-  apply decodeList_encodeList
-  intro character
-  simp [codepoint?]
-
-def string (value : String) : Term :=
-  if value.toList.all SpaceSemantics.plainStringCharacter then .string value
-  else .application "module:codepoints" [codepoints value.toList]
+/-- Every Unicode string has an ordinary quoted spelling. Codepoint lists
+remain a readable data representation, but are not required for printing. -/
+def string (value : String) : Term := .string value
 
 def string? : Term → Option String
   | .string value => some value
@@ -85,8 +76,7 @@ def string? : Term → Option String
   | _ => none
 
 @[simp] theorem string_roundtrip (value : String) : string? (string value) = some value := by
-  unfold string
-  split <;> simp [string?, codepoints_roundtrip]
+  rfl
 
 private def reserved (head : String) : Bool :=
   ["module:codepoints", "module:symbol", "module:application"].contains head
@@ -147,8 +137,7 @@ end
 
 private theorem unescape_string (value : String) :
     unescape? (string value) = some (.string value) := by
-  unfold string
-  split <;> simp [unescape?, string?, codepoints_roundtrip]
+  simp [string, unescape?]
 
 mutual
   @[simp] theorem unescape_escape (value : Term) :
@@ -220,26 +209,7 @@ private theorem printable_application (head : String) (arguments : List Term)
   cases parts : ReadAfterRender.charsList? (CettaWireAtom.encodeMany arguments) <;>
     simp_all [Printable, CettaWireAtom.encode, ReadAfterRender.chars?, ReadAfterRender.charsList?]
 
-private theorem printable_codepoints (characters : List Char) : Printable (codepoints characters) := by
-  induction characters with
-  | nil => exact printable_symbol "LNil" (by decide)
-  | cons character rest ih =>
-      apply printable_application "LCons" _ (by decide)
-      intro value member
-      simp only [List.mem_cons, List.not_mem_nil, or_false] at member
-      rcases member with rfl | rfl
-      · exact printable_natural _
-      · exact ih
-
-private theorem printable_string (value : String) : Printable (string value) := by
-  unfold string
-  split
-  next plain => simp [Printable, CettaWireAtom.encode, ReadAfterRender.chars?, plain]
-  next =>
-    apply printable_application "module:codepoints" _ (by decide)
-    intro item member
-    rcases List.mem_singleton.mp member with rfl
-    exact printable_codepoints value.toList
+private theorem printable_string (value : String) : Printable (string value) := rfl
 
 mutual
   private theorem escape_printable (value : Term) : Printable (escape value) := by

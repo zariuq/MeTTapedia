@@ -173,7 +173,7 @@ variable {queries locals} {plan : ContextualPublication.Plan
 theorem source_admitted (compiled : Compiled queries locals plan selection) :
     Admitted queries locals before.declarations selection plan.rule before.inventory.rows before.inventory.configuration := by
   have actual := compiled.firing.execution.semantic_admission
-  change ContextualTransportedActivation.SemanticAdmission (bank queries locals) before.declarations before.occupied
+  change ContextualGuardedStep.Valid (bank queries locals) before.declarations before.occupied
     compiled.firing.selection compiled.firing.rule (nativeRows queries locals before.declarations before.inventory.rows)
     before.inventory.configuration compiled.firing.outputs at actual
   rw [compiled.authored, compiled.selected, compiled.values] at actual
@@ -293,18 +293,18 @@ theorem ordinary_body_instances (compiled : Compiled queries locals plan selecti
   rw [actual_problem]
   exact source_instances_extension (frame queries locals before.declarations before.occupied) _ _ next pattern
 
-theorem live_body_value (compiled : Compiled queries locals plan selection)
+theorem shared_body_value (compiled : Compiled queries locals plan selection)
     (port : Fin selection.made.length) (live : compiled.firing.reusable (selection.made.get port) = false) :
-    compiled.firing.target.inventory.rows (selection.made.get port) = ContextualStoredRows.Row.live
+    compiled.firing.target.inventory.rows (selection.made.get port) = ContextualStoredRows.Row.shared
       (instantiate compiled.continuationEnv
         (plan.rule.produce.get ⟨port.val, compiled.source_admitted.output_shape ▸ port.isLt⟩)) := by
   have made : selection.made.get port ∈ compiled.firing.selection.made := by
     rw [compiled.selected]
     exact List.get_mem _ _
-  rw [compiled.firing.live_row made live, compiled.values,
+  rw [compiled.firing.shared_row made live, compiled.values,
     output_at_port queries locals before.declarations before.occupied selection plan.rule before.inventory.rows
       compiled.source_admitted.output_distinct compiled.source_admitted.output_shape port]
-  apply congrArg ContextualStoredRows.Row.live
+  apply congrArg ContextualStoredRows.Row.shared
   unfold continuationEnv
   exact (Assignment.instantiate_compose (ContextualComputedFreshFrame.includeSource compiled.firing.update)
     (frame queries locals before.declarations before.occupied).assignment _).symm.trans

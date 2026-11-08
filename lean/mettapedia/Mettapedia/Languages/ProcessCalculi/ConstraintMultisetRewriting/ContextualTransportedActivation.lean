@@ -95,56 +95,13 @@ theorem transported_problem (change : Assignment (ContextualActivatedStep.target
   simp only [ContextualActivatedStep.problem, map_append, map_useEquations, preparedRule, RuleInstance.map, configurationMap]
   rfl
 
-structure Admission [DecidableEq O] (occupied : Finset Nat) (selection : Selection O) {Γ : Ctx S} {sort : S.Srt}
-    (rule : RuleInstance (Term (signature S (ContextualActivatedStep.source locals captures)) Γ sort))
-    (rows : O → ContextualStoredRows.Row locals captures Γ sort)
-    (before : Configuration (Term (signature S captures) Γ sort) O)
-    (outputLabel : O → Term (signature S (ContextualActivatedStep.target locals captures)) Γ sort) : Prop where
-  take_distinct : selection.taken.Nodup
-  output_distinct : selection.made.Nodup
-  take_length : rule.take.length = selection.taken.length
-  read_length : rule.read.length = selection.read.length
-  outputs : selection.made.map outputLabel = (ContextualActivatedStep.prepared locals captures occupied selection rule rows).rule.produce
-  occurrences : Enabled outputLabel before.present (selection.commit (T := Term (signature S (ContextualActivatedStep.target locals captures)) Γ sort))
-  checks : ∀ check ∈ (ContextualActivatedStep.prepared locals captures occupied selection rule rows).rule.checks,
-    ContextualGuardSemantics.Ask locals (ContextualActivatedStep.problem locals captures occupied selection rule rows before)
-      (ContextualGuardedStep.guardRows locals captures rows) before.present check
-
-/-- The semantic admission of a contextual transform. Guards and solvability
-refer to the same original problem and permit models in any future family.
-The output does not assume a solver return or a preexisting execution. -/
-structure SemanticAdmission [DecidableEq O] (occupied : Finset Nat) (selection : Selection O)
-    {Γ : Ctx S} {sort : S.Srt}
-    (rule : RuleInstance (Term (signature S (ContextualActivatedStep.source locals captures)) Γ sort))
-    (rows : O → ContextualStoredRows.Row locals captures Γ sort)
-    (before : Configuration (Term (signature S captures) Γ sort) O)
-    (outputLabel : O → Term (signature S (ContextualActivatedStep.target locals captures)) Γ sort)
-    extends Admission locals captures occupied selection rule rows before outputLabel where
-  solvable : ContextualFrameUnifier.Solvable
-    (ContextualActivatedStep.problem locals captures occupied selection rule rows before)
-
-/-- The earlier fixed-family profile embeds in semantic admission. The
-converse can fail when a solution requires a fresh declaration arity. -/
-theorem SemanticAdmission.of_fixed [DecidableEq O]
-    {occupied : Finset Nat} {selection : Selection O} {Γ : Ctx S} {sort : S.Srt}
-    {rule : RuleInstance (Term (signature S (ContextualActivatedStep.source locals captures)) Γ sort)}
-    {rows : O → ContextualStoredRows.Row locals captures Γ sort}
-    {before : Configuration (Term (signature S captures) Γ sort) O}
-    {outputs : O → Term (signature S (ContextualActivatedStep.target locals captures)) Γ sort}
-    (fixed : ContextualGuardedStep.Valid locals captures occupied selection rule rows before outputs) :
-    SemanticAdmission locals captures occupied selection rule rows before outputs := by
-  refine ⟨⟨fixed.take_distinct, fixed.output_distinct, fixed.take_length, fixed.read_length,
-    fixed.outputs, fixed.occurrences, fixed.checks⟩, ?_⟩
-  obtain ⟨candidate, model⟩ := fixed.consistent
-  exact ContextualFrameUnifier.solvable_of_model model
-
 structure Valid [DecidableEq O] (change : Assignment (ContextualActivatedStep.target locals captures) next)
     (occupied : Finset Nat) (selection : Selection O) {Γ : Ctx S} {sort : S.Srt}
     (rule : RuleInstance (Term (signature S (ContextualActivatedStep.source locals captures)) Γ sort))
     (rows : O → ContextualStoredRows.Row locals captures Γ sort)
     (before : Configuration (Term (signature S captures) Γ sort) O)
     (outputLabel : O → Term (signature S (ContextualActivatedStep.target locals captures)) Γ sort) : Prop where
-  admitted : Admission locals captures occupied selection rule rows before outputLabel
+  admitted : ContextualGuardedStep.Requirements locals captures occupied selection rule rows before outputLabel
   take_length : (preparedRule locals captures change occupied selection rule rows).take.length = selection.taken.length
   read_length : (preparedRule locals captures change occupied selection rule rows).read.length = selection.read.length
   outputs : selection.made.map (fun occurrence => instantiate change (outputLabel occurrence)) =
@@ -162,7 +119,7 @@ theorem from_update [DecidableEq O] {occupied : Finset Nat} {selection : Selecti
     {rows : O → ContextualStoredRows.Row locals captures Γ sort}
     {before : Configuration (Term (signature S captures) Γ sort) O}
     {outputs : O → Term (signature S (ContextualActivatedStep.target locals captures)) Γ sort}
-    (admitted : Admission locals captures occupied selection rule rows before outputs)
+    (admitted : ContextualGuardedStep.Requirements locals captures occupied selection rule rows before outputs)
     (update : Update (ContextualResidual.observeProblem (ContextualActivatedStep.problem locals captures occupied selection rule rows before)))
     (empty : update.remaining = []) :
     Valid locals captures (ContextualComputedFreshFrame.includeSource update) occupied selection rule rows before outputs := by
@@ -203,7 +160,7 @@ theorem from_run [DecidableEq O] [DecidableEq Local] [DecidableEq Shared] [Decid
     {rows : O → ContextualStoredRows.Row locals captures Γ sort}
     {before : Configuration (Term (signature S captures) Γ sort) O}
     {outputs : O → Term (signature S (ContextualActivatedStep.target locals captures)) Γ sort}
-    (admitted : Admission locals captures occupied selection rule rows before outputs)
+    (admitted : ContextualGuardedStep.Requirements locals captures occupied selection rule rows before outputs)
     (update : Update (ContextualResidual.observeProblem (ContextualActivatedStep.problem locals captures occupied selection rule rows before)))
     (computed : ContextualFrameWorklist.run fuel (ContextualActivatedStep.target locals captures)
       (ContextualResidual.observeProblem (ContextualActivatedStep.problem locals captures occupied selection rule rows before)) = .residual update)
@@ -216,7 +173,7 @@ theorem solve_or_refute [DecidableEq O] [DecidableEq Local] [DecidableEq Shared]
     {rows : O → ContextualStoredRows.Row locals captures Γ sort}
     {before : Configuration (Term (signature S captures) Γ sort) O}
     {outputs : O → Term (signature S (ContextualActivatedStep.target locals captures)) Γ sort}
-    (admitted : Admission locals captures occupied selection rule rows before outputs)
+    (admitted : ContextualGuardedStep.Requirements locals captures occupied selection rule rows before outputs)
     (patterned : ContextualPatternFragment.ProblemPattern
       (ContextualResidual.observeProblem (ContextualActivatedStep.problem locals captures occupied selection rule rows before))) :
     ∃ fuel,
@@ -240,7 +197,7 @@ theorem FromRun.semantic_admission [DecidableEq O] [DecidableEq Local] [Decidabl
     {update : Update (ContextualResidual.observeProblem
       (ContextualActivatedStep.problem locals captures occupied selection rule rows before))}
     (returned : FromRun locals captures fuel occupied selection rule rows before outputs update) :
-    SemanticAdmission locals captures occupied selection rule rows before outputs :=
+    ContextualGuardedStep.Valid locals captures occupied selection rule rows before outputs :=
   ⟨returned.valid.admitted,
     ContextualFrameUnifier.solvable_of_model
       ((ContextualResidual.models_observeProblem _ _).mp (update.completed returned.empty))⟩
@@ -257,11 +214,11 @@ theorem semantic_admission_iff_completed_run [DecidableEq O] [DecidableEq Local]
     {outputs : O → Term (signature S (ContextualActivatedStep.target locals captures)) Γ sort}
     (patterned : ContextualPatternFragment.ProblemPattern
       (ContextualResidual.observeProblem (ContextualActivatedStep.problem locals captures occupied selection rule rows before))) :
-    SemanticAdmission locals captures occupied selection rule rows before outputs ↔
+    ContextualGuardedStep.Valid locals captures occupied selection rule rows before outputs ↔
       ∃ fuel update, FromRun locals captures fuel occupied selection rule rows before outputs update := by
   constructor
   · intro admitted
-    obtain ⟨fuel, completed | refuted⟩ := solve_or_refute locals captures admitted.toAdmission patterned
+    obtain ⟨fuel, completed | refuted⟩ := solve_or_refute locals captures admitted.toRequirements patterned
     · obtain ⟨update, returned⟩ := completed
       exact ⟨fuel, update, returned⟩
     · obtain ⟨impossible, _⟩ := refuted
@@ -278,12 +235,12 @@ theorem present_is_the_same_fire [DecidableEq O] (change : Assignment (Contextua
     (result locals captures change occupied selection rule rows before).present =
       fire before.present (selection.commit (T := Term (signature S next) Γ sort)) := rfl
 
-theorem produced_row_is_live [DecidableEq O] (change : Assignment (ContextualActivatedStep.target locals captures) next)
+theorem produced_row_is_shared [DecidableEq O] (change : Assignment (ContextualActivatedStep.target locals captures) next)
     (selection : Selection O) {Γ : Ctx S} {sort : S.Srt}
     (outputs : O → Term (signature S (ContextualActivatedStep.target locals captures)) Γ sort)
     (rows : O → ContextualStoredRows.Row locals captures Γ sort) {occurrence : O} (made : occurrence ∈ selection.made) :
-    resultRows locals captures change selection outputs rows occurrence = .live (instantiate change (outputs occurrence)) := by
-  rw [resultRows, ContextualActivatedStep.produced_row_is_live locals captures selection outputs rows made]
+    resultRows locals captures change selection outputs rows occurrence = .shared (instantiate change (outputs occurrence)) := by
+  rw [resultRows, ContextualActivatedStep.produced_row_is_shared locals captures selection outputs rows made]
   rfl
 
 theorem retained_row_keeps_private_locals [DecidableEq O]

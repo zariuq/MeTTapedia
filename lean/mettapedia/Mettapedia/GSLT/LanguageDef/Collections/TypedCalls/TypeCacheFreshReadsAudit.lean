@@ -1,0 +1,11 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeCacheFreshReads
+
+/-! # Occurrence-allocator and retained-row result audit -/
+
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeCacheFreshReads.allocated_variant_permutation
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeCacheFreshReads.variant_rows_permutations
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeCacheFreshReads.allocated_rows_permutations
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeCacheFreshReads.allocated_rows_exact
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeCacheFreshReads.different_supplies_same_retained_rows
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeCacheFreshReads.Controls.freshened_duplicates_still_count_twice
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeCacheFreshReads.Controls.open_answers_keep_the_supply_observable

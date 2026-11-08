@@ -28,7 +28,7 @@ local instance : DecidableEq base.Srt := inferInstanceAs (DecidableEq Unit)
 local instance (sort : base.Srt) : DecidableEq (base.Op sort) := inferInstanceAs (DecidableEq DataOperator)
 
 abbrev initial : ContextualClauseSourceState.World none Nat [] () :=
-  ⟨Unit, inferInstance, captures, [], {0}, fun _ => ofStored none captures (.live (symbol 1))⟩
+  ⟨Unit, inferInstance, captures, [], {0}, fun _ => ofStored none captures (.shared (symbol 1))⟩
 
 def consumeCode : RuleInstance (Term (signature base actor) [] ()) := ⟨[symbol 1], [], [], [], []⟩
 def consumePlan : ContextualPublication.Plan (Term (signature base actor) [] ()) := ⟨consumeCode, [], rfl⟩
@@ -88,7 +88,7 @@ theorem the_net_resource_set_is_unchanged : final.present = initial.present := b
 theorem source_row_is_two {V : Type} (decl : V → MetaArity base)
     (candidate : Assignment final.declarations decl) :
     Matches finalLocals final.declarations candidate (symbol 2) (final.rows 0) := by
-  have row := ContextualClauseSourceState.live_output_row produce_admitted ⟨0, by decide +kernel⟩ rfl
+  have row := ContextualClauseSourceState.shared_output_row produce_admitted ⟨0, by decide +kernel⟩ rfl
   change final.rows 0 = _ at row
   rw [row]
   apply (ofStored_matches_iff _ _ candidate _ _).mpr
@@ -150,18 +150,18 @@ theorem fresh_name_repair (fuel : Nat) :
     decide +kernel
   · intro V decl candidate pattern
     have made : 1 ∈ firing.selection.made := by rw [selected]; decide +kernel
-    have live : firing.reusable 1 = false := by rw [kinds]
-    rw [firing.live_row 1 made live, outputs]
-    change Matches _ _ candidate pattern (ofStored _ _ (.live (symbol 2))) ↔ _
-    rw [ofStored_matches_iff, ContextualGuardMatching.live_matches_iff]
+    have isShared : firing.reusable 1 = false := by rw [kinds]
+    rw [firing.shared_row 1 made isShared, outputs]
+    change Matches _ _ candidate pattern (ofStored _ _ (.shared (symbol 2))) ↔ _
+    rw [ofStored_matches_iff, ContextualGuardMatching.shared_matches_iff]
     rfl
 
 theorem source_row_instances {V : Type} (decl : V → MetaArity base)
     (candidate : Assignment final.declarations decl) (pattern : Term (signature base decl) [] ()) :
     Matches finalLocals final.declarations candidate pattern (final.rows 0) ↔ pattern = symbol 2 := by
-  have row := ContextualClauseSourceState.live_output_row produce_admitted ⟨0, by decide +kernel⟩ rfl
+  have row := ContextualClauseSourceState.shared_output_row produce_admitted ⟨0, by decide +kernel⟩ rfl
   change final.rows 0 = _ at row
-  rw [row, ofStored_matches_iff, ContextualGuardMatching.live_matches_iff]
+  rw [row, ofStored_matches_iff, ContextualGuardMatching.shared_matches_iff]
   rfl
 
 def renamedNet : MeTTaCalculus.OccurrenceCommits.Commit (OccurrenceAllocationRenaming.Name Nat) Unit :=

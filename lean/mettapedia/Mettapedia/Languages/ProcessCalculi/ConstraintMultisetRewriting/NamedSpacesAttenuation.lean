@@ -78,7 +78,7 @@ theorem holds_insert_congr {σ : S} {label : O → T} {P : Finset O} {x y : O} (
           A.E (A.apply σ p) (A.apply σ (label y)) :=
         ⟨fun h => A.equivalence.trans h same,
           fun h => A.equivalence.trans h (A.equivalence.symm same)⟩
-      simp only [Check.Holds, Check.region]
+      simp only [Check.Holds, Check.matches]
       rw [Finset.filter_insert, Finset.filter_insert]
       by_cases hX : A.E (A.apply σ p) (A.apply σ (label x))
       · have hY := matching.mp hX
@@ -124,9 +124,9 @@ theorem holds_congr {σ τ : S} {label : O → T} {P : Finset O} :
       have pattern := terms p (by simp [checkTerms])
       classical
       simp only [Check.Holds]
-      have regions : Check.region A τ label P p = Check.region A σ label P p := by
+      have regions : Check.matches A τ label P p = Check.matches A σ label P p := by
         ext o
-        simp only [Check.region, Finset.mem_filter]
+        simp only [Check.matches, Finset.mem_filter]
         constructor
         · rintro ⟨present, matching⟩
           exact ⟨present, A.equivalence.trans (A.equivalence.symm pattern)
@@ -1059,9 +1059,9 @@ theorem forwarded_count_entailed :
   · apply transfer.mpr
     intro σ _
     classical
-    show (Check.region action σ fwdLabel _ _).card = 1
+    show (Check.matches action σ fwdLabel _ _).card = 1
     rw [sentAt_present]
-    simp [Check.region, emptyWorld, Finset.filter_singleton, fwdLabel, Tm.subst]
+    simp [Check.matches, emptyWorld, Finset.filter_singleton, fwdLabel, Tm.subst]
   · intro σ _
     refine ⟨fun i => if i = 5 then .sym "letter" else σ i, ?_, ?_, ?_⟩
     · simp [emptyWorld, SubstitutionAction.Solves, Tm.subst]

@@ -110,6 +110,19 @@ theorem problem_transport (before : Configuration (Term (signature S captures) �
     tells, takenViews, readViews]
   rfl
 
+/-- The equations contributed by the event transport independently of the
+incoming store, with every selected view at its original scope. -/
+theorem added_equations_transport :
+    ContextualFrameUnifier.mapProblem (activeLift locals change)
+        (ContextualActivatedStep.addedEquations locals captures occupied selection rule rows) =
+      ContextualActivatedStep.addedEquations locals next occupied selection
+        (rule.map (instantiate (ContextualStoredRows.liftCaptures locals change)))
+        (fun occurrence => (rows occurrence).map locals change) := by
+  have transported := problem_transport locals change occupied selection rule rows ⟨[], ∅⟩
+  simpa only [ContextualActivatedStep.problem_eq_frame_append,
+    ContextualActivatedStep.frame, ContextualTransportedActivation.configurationMap,
+    ContextualFrameUnifier.mapProblem, List.map_nil, List.nil_append] using transported
+
 theorem ask_forward (before : Configuration (Term (signature S captures) Γ sort) O)
     (check : Check (Term (signature S (ContextualActivatedStep.target locals captures)) Γ sort))
     (asked : ContextualGuardSemantics.Ask locals

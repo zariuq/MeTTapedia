@@ -136,7 +136,7 @@ theorem admitted [DecidableEq O] (before : ContextualExecution.Endpoint locals O
     (distinct : made.Nodup) (fresh : Disjoint made.toFinset before.inventory.configuration.present)
     (lengths : made.length = values.length)
     (consistent : ContextualFrameUnifier.Solvable before.inventory.configuration.equations) :
-    ContextualTransportedActivation.SemanticAdmission (Expanded locals inners) before.declarations before.occupied
+    ContextualGuardedStep.Valid (Expanded locals inners) before.declarations before.occupied
       (selection made) ((rule locals inners before.declarations values).lower locals inners before.declarations)
       (prepared locals inners before).inventory.rows before.inventory.configuration
       (outputs locals inners before values made) := by

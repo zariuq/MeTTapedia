@@ -1,0 +1,8 @@
+let A. let a. assume Ha: a :e A. let motive. let F:set -> set.
+let m. assume Hm: m :e F a. let b. assume Hb: b :e A.
+let h. assume Hh: h :e Lean_Eq_Prop A a b.
+claim E: a = b.
+{ exact LeanEq_sound A a b h Hh. }
+rewrite Lean_Eq_ndrec_unfold.
+rewrite Lean_Eq_elim_eq.
+rewrite <- E. exact Hm.

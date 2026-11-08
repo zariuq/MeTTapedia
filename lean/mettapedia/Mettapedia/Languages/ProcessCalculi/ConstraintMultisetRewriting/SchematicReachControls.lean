@@ -6,9 +6,9 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 
 The selected event reads occurrence 7 twice, matching different data values.
 It publishes one correlated pair at a write-only destination. A distinct
-occurrence retains an explicit live reference. The joint problem accepts
+occurrence retains an explicit shared reference. The joint problem accepts
 every assignment of that retained caller reference. Replacing the reusable
-schema by the live reference makes the same two reads inconsistent.
+schema by the shared reference makes the same two reads inconsistent.
 -/
 
 set_option autoImplicit false
@@ -56,7 +56,7 @@ theorem symbol_injective {Variables : Type} {decl : Variables → MetaArity spac
 def addresses (occurrence : Nat) : Closed captures := if occurrence = 7 then name 1 else name 2
 def rows (occurrence : Nat) : ContextualStoredRows.Row locals captures [] () :=
   if occurrence = 7 then ContextualStoredRows.store locals captures (generator locals 0)
-  else .live (generator captures 0)
+  else .shared (generator captures 0)
 
 def before : Configuration (Closed captures) Nat := ⟨[],{7,11}⟩
 def selection : Selection Nat := ⟨[],[7,7],[8]⟩
@@ -158,21 +158,21 @@ theorem the_schema_is_still_reusable :
       ContextualStoredRows.store locals active (generator locals 0) :=
   retained_schema produced (by decide) (generator locals 0) (by simp [rows])
 
-def liveRows (occurrence : Nat) : ContextualStoredRows.Row locals captures [] () :=
-  .live (generator captures occurrence)
+def sharedRows (occurrence : Nat) : ContextualStoredRows.Row locals captures [] () :=
+  .shared (generator captures occurrence)
 
-theorem live_problem_explicit : eventProblem locals captures ∅ selection addresses liveRows before rule =
+theorem shared_problem_explicit : eventProblem locals captures ∅ selection addresses sharedRows before rule =
     [(place (name 1) (symbol 10),place (name 1)
        (instantiate (ContextualSelectionViews.capturedTarget locals captures) (generator captures 7))),
      (place (name 1) (symbol 20),place (name 1)
        (instantiate (ContextualSelectionViews.capturedTarget locals captures) (generator captures 7)))] := by
   with_unfolding_all rfl
 
-theorem the_live_reference_cannot_take_both_values :
+theorem the_shared_reference_cannot_take_both_values :
     ¬ ContextualFrameUnifier.Solvable
-      (eventProblem locals captures ∅ selection addresses liveRows before rule) := by
+      (eventProblem locals captures ∅ selection addresses sharedRows before rule) := by
   rintro ⟨Future,future,candidate,model⟩
-  rw [live_problem_explicit] at model
+  rw [shared_problem_explicit] at model
   have firstEq := model _ List.mem_cons_self
   have secondEq := model _ (List.mem_cons_of_mem _ List.mem_cons_self)
   dsimp only [Prod.fst,Prod.snd] at firstEq secondEq
@@ -206,7 +206,7 @@ theorem every_retained_reference_equality_is_unchanged (value : Nat) :
   subst identity
   exact the_retained_reference_is_outside_the_changed_component
 
-theorem passing_a_live_reference_can_transmit_any_name (reference value : Nat) :
+theorem passing_a_shared_reference_can_transmit_any_name (reference value : Nat) :
     (∃ other, other ≠ value ∧
       Indistinguishable [] ({generator active (.inr reference)} : Set (Closed active)) value other) ∧
     Possesses [(generator active (.inr reference),name value)] {generator active (.inr reference)} value := by
@@ -403,7 +403,7 @@ theorem fresh_raw_rule : freshLocated locals captures ∅ selection rawRule = ru
   with_unfolding_all rfl
 
 theorem semantic_admission_uses_the_existing_execution :
-    ContextualTransportedActivation.SemanticAdmission locals captures ∅ selection
+    ContextualGuardedStep.Valid locals captures ∅ selection
       (rawRule.toRule (spaceTerms (ContextualSelectionViews.source locals captures)))
       (placedRows locals captures addresses rows) before outputs := by
   have fresh : Admits locals captures ∅ selection known written addresses rows before

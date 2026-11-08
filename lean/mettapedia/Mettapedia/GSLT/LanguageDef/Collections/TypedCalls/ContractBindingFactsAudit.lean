@@ -1,0 +1,30 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ContractBindingFacts
+
+/-! # Axiom audit for native-style binding fact transport -/
+
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ContractBindingFacts.lookup_sound
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ContractBindingFacts.patternUninterpreted_sound
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ContractBindingFacts.patternsUninterpreted_sound
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ContractBindingFacts.ground_observation_preserved
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ContractBindingFacts.observedClaims_sound
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ContractBindingFacts.clean_operands_preserve_facts
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ContractBindingFacts.bind_any_preserves_facts
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ContractBindingFacts.checked_bind_preserves_facts
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ContractBindingFacts.mergeFlags_holds
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ContractBindingFacts.bindPattern_equation
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ContractBindingFacts.ground_pattern_marks
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ContractBindingFacts.uninterpreted_member
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ContractBindingFacts.uninterpreted_substituted_variable
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ContractBindingFacts.uninterpreted_pattern_marks
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ContractBindingFacts.checked_bind_marks_sound
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ContractBindingFacts.Controls.facts_initially_sound
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ContractBindingFacts.Controls.raw_name_gate_allows_interpreted_binding
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ContractBindingFacts.Controls.current_support_gate_refuses
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ContractBindingFacts.Controls.alias_binding_invalidates_protected_fact
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ContractBindingFacts.Controls.actual_source_alias_returns_interpreted
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ContractBindingFacts.Controls.native_gate_not_sufficient
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ContractBindingFacts.Controls.fresh_interpreted_binding_allowed
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ContractBindingFacts.Controls.clean_alias_binding_keeps_uninterpreted
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ContractBindingFacts.Controls.disjoint_native_binding_keeps_facts
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ContractBindingFacts.Controls.unknown_fact_does_not_prove_freshness
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ContractBindingFacts.Controls.ground_mark_reaches_alias

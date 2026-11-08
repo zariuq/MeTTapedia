@@ -44,7 +44,7 @@ theorem covered_rule : RuleCovered (privateScopes scopes) ContextualTransportedA
   apply (ruleRoots_covered_iff (privateScopes scopes) ContextualTransportedActivationControls.occupied rule).mp
   decide +kernel
 
-theorem admitted : ContextualTransportedActivation.SemanticAdmission ContextualTransportedActivationControls.locals ContextualTransportedActivationControls.captures ContextualTransportedActivationControls.occupied
+theorem admitted : ContextualGuardedStep.Valid ContextualTransportedActivationControls.locals ContextualTransportedActivationControls.captures ContextualTransportedActivationControls.occupied
     selected rule ContextualTransportedActivationControls.rows ContextualTransportedActivationControls.before outputs := by
   refine ⟨⟨by decide,by decide,rfl,rfl,rfl,by decide,?_⟩,?_⟩
   · intro check member

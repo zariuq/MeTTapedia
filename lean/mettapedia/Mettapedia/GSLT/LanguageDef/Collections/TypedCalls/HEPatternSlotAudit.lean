@@ -1,0 +1,45 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEPatternSlotControls
+
+/-! # Source pattern emission and slot provenance audit -/
+
+namespace Mettapedia.GSLT.LanguageDef.Collections.TypedCalls
+
+#print axioms HEPatternSlotOrigins.Allocated.monotone
+#print axioms HEPatternSlotOrigins.Allocated.append
+#print axioms HEPatternSlotOrigins.emitted_allocated
+#print axioms HEPatternSlotOrigins.fields_allocated
+#print axioms HEPatternSlotOrigins.compiled_allocated
+#print axioms HEPatternSlotOrigins.BindingFacts.nil
+#print axioms HEPatternSlotOrigins.BindingFacts.append
+#print axioms HEPatternSlotOrigins.emitted_binding_facts
+#print axioms HEPatternSlotOrigins.fields_binding_facts
+#print axioms HEPatternSlotOrigins.compiled_bindings_unique
+#print axioms HEPatternSlotReadback.writeBlock_before
+#print axioms HEPatternSlotReadback.writeBlock_at
+#print axioms HEPatternSlotReadback.writeBlock_after
+#print axioms HEPatternSlotReadback.initial_supported
+#print axioms HEPatternSlotReadback.initial_known
+#print axioms HEPatternSlotReadback.fieldOrigins_at
+#print axioms HEPatternSlotReadback.block_supported
+#print axioms HEPatternSlotReadback.expr_origins_supported
+#print axioms HEPatternSlotReadback.expr_origins_known
+#print axioms HEPatternSlotReadback.run_preserves_unwritten
+#print axioms HEPatternSlotReadback.recovered_slot_read
+#print axioms HEPatternSlotReadback.compiled_slot_read
+#print axioms HEPatternSlotReadback.run_key_prefix
+#print axioms HEPatternSlotReadback.recover_key_prefix
+#print axioms HEPatternSlotReadback.emitted_constructor_key
+#print axioms HEPatternSlotReadback.compiled_slot_returns
+#print axioms HEPatternSlotControls.exact_source_emission
+#print axioms HEPatternSlotControls.actual_emission_earns_allocation
+#print axioms HEPatternSlotControls.actual_emission_never_rebinds
+#print axioms HEPatternSlotControls.first_field_is_recovered_from_emitted_ops
+#print axioms HEPatternSlotControls.nested_field_is_not_mislabelled_first_level
+#print axioms HEPatternSlotControls.successful_same_retains_original_binding
+#print axioms HEPatternSlotControls.different_repeated_value_fails
+#print axioms HEPatternSlotControls.missing_slot_mapping_declines_compilation
+#print axioms HEPatternSlotControls.overlapping_load_breaks_origin
+#print axioms HEPatternSlotControls.overlapping_program_is_not_emittable
+#print axioms HEPatternSlotControls.key_skip_retains_loaded_fields
+
+end Mettapedia.GSLT.LanguageDef.Collections.TypedCalls

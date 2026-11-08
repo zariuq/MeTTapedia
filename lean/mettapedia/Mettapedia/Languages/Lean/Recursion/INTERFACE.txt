@@ -1,0 +1,105 @@
+Recursion interfaces for the Lean-to-Egal interpretation
+======================================================
+
+The core packet is artifacts/lean-declarations/core/recursion.metta. Its
+coverage table and root inventory are beside it. scripts/ExportLeanRecursion.lean
+reads the target's modules.txt, checks the computational equation closure and
+emits the packet. LEAN_RECURSION_CHECK=1 compares a fresh export byte for byte.
+
+Evidence and fact forms
+-----------------------
+
+LeanWfRecursion names the source function, actual implementation, relation,
+optional scalar measure, recipe, well-foundedness proof, accessible reading,
+function bridge, source/target equation pairs and recursive calls.
+
+The measure list is empty when Lean supplies a general well-founded relation
+instead of a separate natural-valued measure. List.merge is such a case.
+
+LeanRecursionDefinition carries Type and Value in the existing FTerm syntax.
+LeanRecursionTheorem carries a generated statement and its axiom dependencies.
+Statements are read from checked declarations, including the source equation
+theorems and the target equations transported through the function bridge.
+
+A call names Current and Argument values, a ConditionsAndDecrease theorem and
+its Proof. Constructor-specialized states remain explicit in Current. All
+branch hypotheses are retained, including hypotheses not needed by the proof.
+SourceProofs records the original supporting lemmas.
+
+For structural proof-argument helpers, SourceCall is the actual source
+application and SourceEquation names its equation. ProofArguments uses
+zero-based positions in the full Lean signature, before erasure, including
+implicit/type parameters. ProofUses identifies the instantiated proposition
+at each such position. Evidence names a derived proof; ForwardedCondition
+identifies an existing caller hypothesis rather than asserting it afresh.
+
+LeanRecursionWrapper carries the actual nonrecursive source context and its
+represented dependencies. Congruence through that context proves the bridge.
+Nat.minFac itself is a wrapper; Nat.minFacAux is its recursive implementation.
+
+LeanProofArgumentFunction records the source type, body, required propositions
+and syntactic use paths for other proof-taking functions in the closure.
+These include Quot.liftOn, Multiset.foldr and three decidability adapters.
+Use paths include proof terms and types. These records add no quotient model
+or fixed-point interpretation claim.
+
+Instances and examples
+----------------------
+
+Nat.gcd: packed state (m,n), measure m. Under m != 0 the call is (n % m,m),
+with the original decrease proof. MeasuredCore.Gcd.functionBridge identifies
+its accessible reading with Nat.gcd on every input.
+
+List.mergeSort: packed state (xs,le), measure length xs. In the two-or-more
+case, the source splitInTwo projections supply two calls and their length
+bounds. The three original mergeSort equations are transported separately.
+
+List.merge: packed pair of lists and Lean's imported well-founded relation.
+The true comparator branch calls (xs,y::ys); the false branch calls (x::xs,ys).
+The actual relation and both conditional decrease proofs are retained.
+
+Nat.primeFactorsList: measure n. At k+2 the recursive argument is
+(k+2) / minFac(k+2); the generated obligation uses the original factors proof.
+
+Nat.minFacAux: measure sqrt n + 2 - k. The call k+2 retains both conditions:
+not (n < k*k) and not (k divides n).
+
+Nat.minFac: the source wrapper returns 2 when 2 divides n and otherwise calls
+minFacAux n 3. Core.MinFac.bridge proves the represented wrapper equal to it.
+
+Nat.div.go: the actual Nat.brecOn motive is (x : Nat) -> x < fuel -> Nat.
+At fuel+1, under y <= x, the recursive call uses fuel and x-y. The packet
+separates the fuel decrease from the derived invariant x-y < fuel. The
+positivity proof for y is forwarded at source argument position 1; the
+invariant proof occupies position 4.
+
+Nat.modCore.go: the same proof interface and recursive call, with the source
+remainder branch retained. StructuralCore.ModGo.functionBridge is checked.
+
+Nat.div: Core.Div.bridge carries its actual positive-divisor branch, including
+the helper's initial fuel x+1 and invariant, and its zero-divisor result 0.
+
+Nat.modCore: its actual wrapper selects the helper for a positive divisor and
+returns x otherwise. Nat.mod additionally retains its zero/successor split
+and comparison before entering modCore. Both wrapper bridges are checked.
+
+Order for the Egal library
+-------------------------
+
+1. Read relations, motives, measures and source function types.
+2. Reconstruct the accessible-recursion existence/uniqueness and unfolding
+   interface. The Lean route reuses Flower's InertRecursor.ofAcc; the existing
+   ZFSetWellFoundedRecursion library provides the set-model counterpart.
+3. Provide the shared Nat.brecOn adapter once. AccessibleNatBrec.below builds
+   its finite table from lower values; below_brecOn and equals_brecOn establish
+   agreement with Lean's primitive. This is semantic correspondence, without
+   a claim that both implementations perform identical work.
+4. Read the per-function recipes, branch obligations and invariant proofs.
+5. Use the original equation/transport pairs as the computation interface.
+   Wrapper equations retain original helper names; their dependency bridges
+   justify replacing those helpers by their accessible readings.
+
+The generated function bridges are Lean proofs about the actual declarations.
+Egal reconstruction and CeTTa execution joins remain separate evidence layers.
+The qualification module checks changed-recipe, nondecreasing-call,
+non-well-founded-relation and omitted-interface controls.

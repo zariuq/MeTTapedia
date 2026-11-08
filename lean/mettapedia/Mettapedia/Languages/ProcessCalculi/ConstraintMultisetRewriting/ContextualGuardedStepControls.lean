@@ -43,8 +43,16 @@ def activeA : Assignment active active
 
 theorem a_true_nonempty_guard_has_an_actual_firing :
     Valid locals captures occupied selection trueRule rows bare outputs := by
-  refine ⟨by decide, by decide, rfl, rfl, rfl, by decide, ?_, ?_⟩
-  · exact ⟨generator active, A.models_nil _⟩
+  refine { take_distinct := by decide
+           output_distinct := by decide
+           take_length := rfl
+           read_length := rfl
+           outputs := rfl
+           occurrences := by decide
+           solvable := ?_
+           checks := ?_ }
+  swap
+  · exact ContextualFrameUnifier.solvable_of_consistent ⟨generator active, A.models_nil _⟩
   · intro check member
     have only : check = .equal (atom active) (atom active) := List.mem_singleton.mp member
     subst check
@@ -69,8 +77,17 @@ theorem the_incoming_binding_remains_in_the_problem :
 
 theorem an_existing_binding_justifies_the_same_guard :
     Valid locals captures occupied selection equalityRule rows bound outputs := by
-  refine ⟨by decide, by decide, rfl, rfl, rfl, by decide, ?_, ?_⟩
-  · refine ⟨activeA, ?_⟩
+  refine { take_distinct := by decide
+           output_distinct := by decide
+           take_length := rfl
+           read_length := rfl
+           outputs := rfl
+           occurrences := by decide
+           solvable := ?_
+           checks := ?_ }
+  swap
+  · apply ContextualFrameUnifier.solvable_of_consistent
+    refine ⟨activeA, ?_⟩
     change A.Models activeA [(generator active (.inr 0), atom active)]
     exact (A.models_cons activeA _ _).mpr ⟨by with_unfolding_all rfl, A.models_nil _⟩
   · intro check member
@@ -108,8 +125,16 @@ theorem the_schematic_count_guard_asks_over_every_future_model :
 
 theorem the_schematic_count_guard_has_an_actual_firing :
     Valid locals captures occupied selection countRule rows bare outputs := by
-  refine ⟨by decide, by decide, rfl, rfl, rfl, by decide, ?_, ?_⟩
-  · exact ⟨generator active, A.models_nil _⟩
+  refine { take_distinct := by decide
+           output_distinct := by decide
+           take_length := rfl
+           read_length := rfl
+           outputs := rfl
+           occurrences := by decide
+           solvable := ?_
+           checks := ?_ }
+  swap
+  · exact ContextualFrameUnifier.solvable_of_consistent ⟨generator active, A.models_nil _⟩
   · intro check member
     have only : check = .count (p (atom active)) 1 := List.mem_singleton.mp member
     subst check
@@ -130,8 +155,17 @@ theorem the_actual_take_problem_retains_its_selected_equation :
 
 theorem the_matching_schema_is_consumed_by_an_actual_firing :
     Valid locals captures occupied takeSelection takeRule rows bare outputs := by
-  refine ⟨by decide, by decide, rfl, rfl, rfl, by decide, ?_, ?_⟩
-  · refine ⟨activeA, ?_⟩
+  refine { take_distinct := by decide
+           output_distinct := by decide
+           take_length := rfl
+           read_length := rfl
+           outputs := rfl
+           occurrences := by decide
+           solvable := ?_
+           checks := ?_ }
+  swap
+  · apply ContextualFrameUnifier.solvable_of_consistent
+    refine ⟨activeA, ?_⟩
     change A.Models activeA
       [(p (atom active), p (generator active (.inl (ScopedVar.at 9 0))))]
     exact (A.models_cons activeA _ _).mpr ⟨by with_unfolding_all rfl, A.models_nil _⟩

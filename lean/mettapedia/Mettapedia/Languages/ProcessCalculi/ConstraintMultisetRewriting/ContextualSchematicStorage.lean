@@ -10,7 +10,7 @@ The existing selected-use machinery then gives each read or take its own
 instance. One instance uses one assignment for the whole atom, preserving
 aliases between a stored rule's head and body.
 
-An explicitly live reference uses `Row.live`; an explicitly captured schema
+An explicitly shared reference uses `Row.shared`; an explicitly captured schema
 uses `Row.schema` with its declared shared component. Ordinary storage does
 not turn its schematic variables into such references. The raw occurrence
 step still operates on already prepared terms.
@@ -32,7 +32,7 @@ def privateSource : Assignment locals (ContextualSelectionViews.source locals ca
   fun name => generator (ContextualSelectionViews.source locals captures) (.inl name)
 
 /-- Store an ordinary atom. Its unresolved schematic variables belong to
-the atom's private template, not to the caller's live variable frame. -/
+the atom's private template, not to the caller's shared variable frame. -/
 def store {Γ : Ctx S} {sort : S.Srt} (atom : Term (signature S locals) Γ sort) :
     Row locals captures Γ sort :=
   .schema (instantiate (privateSource locals captures) atom)

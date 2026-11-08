@@ -1,0 +1,31 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundEntryFacts
+
+/-! # Source-derived ground entry metadata: complete theorem audit -/
+
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundEntryFacts.resolve_ground
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundEntryFacts.GroundData.keep
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundEntryFacts.groundData_variable
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundEntryFacts.groundData_member
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundEntryFacts.groundData_tail
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundEntryFacts.unifyTerms_ground_marks
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundEntryFacts.unifyLists_ground_marks
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundEntryFacts.cons_pattern_support
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundEntryFacts.unifyPattern_ground_marks
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundEntryFacts.source_refinement_keeps_ground
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundEntryFacts.source_mark_active
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundEntryFacts.source_mark_any
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundEntryFacts.source_entry_facts
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundEntryFacts.source_arguments_entry_facts
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundEntryFacts.reached_ground_metadata
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundEntryFacts.delivered_meets_ground
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundEntryFacts.renamedPatterns_toAtoms
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundEntryFacts.selected_head_and_facts
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundEntryFacts.Controls.source_list_view_unifies
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundEntryFacts.Controls.ground_entry_admitted
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundEntryFacts.Controls.real_entry_metadata_sound
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundEntryFacts.Controls.marked_list_variables
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundEntryFacts.Controls.interpreted_cons_pattern_does_not_invalidate_marks
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundEntryFacts.Controls.interpreted_any_is_not_claimed_clean
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundEntryFacts.Controls.protected_field_is_admissible_at_next_call
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundEntryFacts.Controls.unknown_any_cannot_be_promoted_to_protected
+

@@ -6,7 +6,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 A guard depends on its query and the captures of every watched row. Schema
 locals remain per-use existential witnesses; captured variables in those
 schemas are part of the caller dependency footprint. In particular, a closed
-query does not eliminate dependencies hidden in an open live row.
+query does not eliminate dependencies hidden in an open shared row.
 
 The world and row inventory are held fixed in these information-locality
 laws. Physical removal, publication or replacement of watched occurrences
@@ -37,7 +37,7 @@ theorem mem_capturedNames (names : List (Local ⊕ V)) (name : V) :
   | cons head rest ih => cases head <;> simp [capturedNames, ih]
 
 def rowNames : ContextualStoredRows.Row locals declarations Γ sort → List V
-  | .live value => support value
+  | .shared value => support value
   | .schema body => capturedNames (support body)
 
 theorem matches_congr (first second : Assignment declarations future)
@@ -46,7 +46,7 @@ theorem matches_congr (first second : Assignment declarations future)
     (agree : ∀ name ∈ rowNames locals row, first name = second name) :
     Matches locals first pattern row ↔ Matches locals second pattern row := by
   cases row with
-  | live value =>
+  | shared value =>
       change (pattern = instantiate first value) ↔ (pattern = instantiate second value)
       rw [instantiate_congr first second value agree]
   | schema body =>

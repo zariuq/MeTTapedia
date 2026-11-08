@@ -31,9 +31,9 @@ def takeSelection : Selection Nat := ⟨[0], [], []⟩
 def publishRule : RuleInstance (Term signature) := ⟨[], [], [], [.absent blocker], [receipt]⟩
 def publishSelection : Selection Nat := ⟨[], [], [1]⟩
 def takeInstruction : Instruction (Term signature) (Subst signature) Nat :=
-  ⟨takeRule, takeSelection, [CensusAdmission.Query.fixed tokenCensus]⟩
+  ⟨takeRule, takeSelection, [PredicateQueryAdmission.Query.fixed tokenCensus]⟩
 def publishInstruction : Instruction (Term signature) (Subst signature) Nat :=
-  ⟨publishRule, publishSelection, [CensusAdmission.Query.fixed blockerCensus]⟩
+  ⟨publishRule, publishSelection, [PredicateQueryAdmission.Query.fixed blockerCensus]⟩
 def code := [takeInstruction, publishInstruction]
 
 theorem take_ready (world : Finset Nat) (present : 0 ∈ world) :
@@ -50,10 +50,10 @@ theorem take_ready (world : Finset Nat) (present : 0 ∈ world) :
     rfl
   · intro check member candidate _
     obtain rfl := List.mem_singleton.mp member
-    change (Check.region A candidate label world token).card = 1
-    have region : Check.region A candidate label world token = {0} := by
+    change (Check.matches A candidate label world token).card = 1
+    have region : Check.matches A candidate label world token = {0} := by
       ext occurrence
-      rw [Check.region, Finset.mem_filter, Finset.mem_singleton]
+      rw [Check.matches, Finset.mem_filter, Finset.mem_singleton]
       change (occurrence ∈ world ∧ (Term.const 0 : Term signature) = .const occurrence) ↔ occurrence = 0
       constructor
       · rintro ⟨_, same⟩
@@ -64,21 +64,21 @@ theorem take_ready (world : Finset Nat) (present : 0 ∈ world) :
     rw [region]
     rfl
 
-theorem take_good : CensusAdmission.Valid A label takeRule takeInstruction.observations good takeSelection := by
-  apply (CensusAdmission.valid_fixed_iff _ _ _ [tokenCensus] _ _).mpr
+theorem take_good : PredicateQueryAdmission.Valid A label takeRule takeInstruction.observations good takeSelection := by
+  apply (PredicateQueryAdmission.valid_fixed_iff _ _ _ [tokenCensus] _ _).mpr
   exact ⟨take_ready good.present (by decide), fun query member =>
     (List.mem_singleton.mp member) ▸ (by decide +kernel)⟩
 
-theorem take_bad : CensusAdmission.Valid A label takeRule takeInstruction.observations bad takeSelection := by
-  apply (CensusAdmission.valid_fixed_iff _ _ _ [tokenCensus] _ _).mpr
+theorem take_bad : PredicateQueryAdmission.Valid A label takeRule takeInstruction.observations bad takeSelection := by
+  apply (PredicateQueryAdmission.valid_fixed_iff _ _ _ [tokenCensus] _ _).mpr
   exact ⟨take_ready bad.present (by decide), fun query member =>
     (List.mem_singleton.mp member) ▸ (by decide +kernel)⟩
 
 def afterGood := takeSelection.result label takeRule good
 def afterBad := takeSelection.result label takeRule bad
 
-theorem publish_good : CensusAdmission.Valid A label publishRule publishInstruction.observations afterGood publishSelection := by
-  apply (CensusAdmission.valid_fixed_iff _ _ _ [blockerCensus] _ _).mpr
+theorem publish_good : PredicateQueryAdmission.Valid A label publishRule publishInstruction.observations afterGood publishSelection := by
+  apply (PredicateQueryAdmission.valid_fixed_iff _ _ _ [blockerCensus] _ _).mpr
   refine ⟨?_, fun query member => (List.mem_singleton.mp member) ▸ (by decide +kernel)⟩
   refine ⟨by decide, by decide, rfl, rfl, rfl, by decide, ?_, ?_⟩
   · refine ⟨A.identity, ?_⟩

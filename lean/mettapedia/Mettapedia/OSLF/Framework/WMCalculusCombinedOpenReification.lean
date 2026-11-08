@@ -34,7 +34,7 @@ open Mettapedia.OSLF.Framework.WMCalculusCombinedNamedFirstOrder
 set_option autoImplicit false
 
 private abbrev CombinedLang : LanguageDef :=
-  wmExtVertexLanguageDefGuarded combinedVertex
+  wmExtVertexLanguageDef combinedVertex
 
 /-- Check that every free name actually used by one open pattern has a base
 sort declared by the same authored language. Unused ambient assignments do

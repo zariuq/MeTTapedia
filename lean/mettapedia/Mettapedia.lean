@@ -1070,7 +1070,9 @@ import Mettapedia.Machines.AdmissionModuloEquations
 import Mettapedia.Machines.MaximalSharingEquality
 import Mettapedia.Machines.SharedPrependCost
 import Mettapedia.Machines.TierDeoptimization
+import Mettapedia.Machines.RouteCertificates
 import Mettapedia.Machines.AdmissionRewriting
+import Mettapedia.Machines.AnswerRecipes
 import Mettapedia.Machines.SecondSideAnswers
 import Mettapedia.Machines.SpaceReclamationCost
 import Mettapedia.Machines.HeadIndexCost

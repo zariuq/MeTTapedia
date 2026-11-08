@@ -1,0 +1,146 @@
+constant	role	kind	evidence	egal	detail
+And	dependency	inductive	interpretation		read as Egal's conjunction in statements
+And.intro	dependency	constructor	interpretation	Lean_And_intro_node	constructor
+Bool	dependency	inductive	interpretation	Lean_Bool	family
+Bool.casesOn	generated-helper	definition	interpretation	Lean_Bool_rec	case analysis read as the recursor with the minors as methods
+Bool.false	dependency	constructor	interpretation	Lean_Bool_false_node	constructor
+Bool.rec	generated-helper	recursor	interpretation	Lean_Bool_rec	the family's recursor, with its computation rules
+Bool.true	dependency	constructor	interpretation	Lean_Bool_true_node	constructor
+Decidable	dependency	inductive	interpretation	Lean_Decidable	family
+Decidable.casesOn	generated-helper	definition	interpretation	Lean_Decidable_rec	case analysis read as the recursor with the minors as methods
+Decidable.isFalse	dependency	constructor	interpretation	Lean_Decidable_isFalse_node	constructor
+Decidable.isTrue	dependency	constructor	interpretation	Lean_Decidable_isTrue_node	constructor
+Decidable.rec	generated-helper	recursor	interpretation	Lean_Decidable_rec	the family's recursor, with its computation rules
+DecidableEq	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Eq	dependency	inductive	interpretation	Lean_Eq	family
+Eq.ndrec	dependency	definition	interpretation	Lean_Eq_ndrec	function read from its equation theorems; Lean's equations proved
+Eq.rec	generated-helper	recursor	interpretation	Lean_Eq_prec	the recursor of a family of propositions
+Eq.refl	dependency	constructor	interpretation	Lean_Eq_refl_node	constructor
+Eq.symm	dependency	theorem	not-needed		a theorem Lean's proofs use; the theorems are reconstructed in Egal, not transported
+Exists	dependency	inductive	interpretation	Lean_Exists	family
+Exists.intro	dependency	constructor	interpretation	Lean_Exists_intro_node	constructor
+False	dependency	inductive	interpretation	Lean_False	family
+False.elim	generated-helper	definition	not-needed		an eliminator Lean derives from the recursor; the reading uses the recursor
+False.rec	generated-helper	recursor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+HEq	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+HEq.refl	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.Deriv	declaration	inductive	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Deriv	family
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.Deriv.casesOn	generated-helper	definition	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Deriv_rec	case analysis read as the recursor with the minors as methods
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.Deriv.mulZeroL	dependency	constructor	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Deriv_mulZeroL_node	constructor
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.Deriv.mulZeroR	dependency	constructor	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Deriv_mulZeroR_node	constructor
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.Deriv.rec	generated-helper	recursor	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Deriv_rec	the family's recursor, with its computation rules
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.RuleFamily	declaration	definition	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_RuleFamily	function read from its equation theorems; Lean's equations proved
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.Tm	declaration	inductive	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm	family
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.Tm.below	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.Tm.brecOn	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.Tm.brecOn.go	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.Tm.casesOn	generated-helper	definition	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_casesOn	case analysis read as the family's case eliminator
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.Tm.ctorElim	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.Tm.ctorElimType	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.Tm.ctorIdx	dependency	definition	not-needed		an eliminator Lean derives from the recursor; the reading uses the recursor
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.Tm.lit	dependency	constructor	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node	constructor
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.Tm.lit.elim	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.Tm.lit.noConfusion	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.Tm.mul	dependency	constructor	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node	constructor
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.Tm.mul.elim	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.Tm.mul.noConfusion	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.Tm.noConfusion	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.Tm.noConfusionType	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.Tm.rec	generated-helper	recursor	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_rec	the family's recursor, with its computation rules
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.Tm.var	dependency	constructor	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node	constructor
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.Tm.var.elim	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.Tm.var.noConfusion	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.exampleByLeft	declaration	definition	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_exampleByLeft	function read from its equation theorems; Lean's equations proved
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.exampleByRight	declaration	definition	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_exampleByRight	function read from its equation theorems; Lean's equations proved
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.generalizations_incomparable	declaration	theorem	target-reconstruction	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalizations_incomparable	statement read from Lean, proved in Egal
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.generalize	declaration	definition	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize	function read from its equation theorems; Lean's equations proved
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.generalize.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.generalize_meets_example	declaration	theorem	target-reconstruction	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize_meets_example	statement read from Lean, proved in Egal
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.generalize_sound	declaration	definition	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize_sound	function read from its equation theorems; Lean's equations proved
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instDecidableEqTm	declaration	definition	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm	function read from its equation theorems; Lean's equations proved
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instDecidableEqTm.decEq	dependency	definition	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq	function read from its equation theorems; Lean's equations proved
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instDecidableEqTm.decEq._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instDecidableEqTm.decEq.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat	dependency	inductive	interpretation	Lean_Nat	family
+Nat.below	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.beq	dependency	definition	interpretation	Lean_Nat_beq	function read from its equation theorems; Lean's equations proved
+Nat.beq._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.beq.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.ble	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.ble._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.ble.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.brecOn	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.brecOn.go	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.casesOn	generated-helper	definition	interpretation	Lean_Nat_casesOn	case analysis read as the family's case eliminator
+Nat.decEq	dependency	definition	interpretation	Lean_Nat_decEq	function read from its equation theorems; Lean's equations proved
+Nat.decEq.match_1	generated-helper	definition	expanded		matcher, read by its definition at each use
+Nat.eq_of_beq_eq_true	generated-helper	theorem	not-needed		a theorem Lean's proofs use; the theorems are reconstructed in Egal, not transported
+Nat.ne_of_beq_eq_false	dependency	theorem	not-needed		a theorem Lean's proofs use; the theorems are reconstructed in Egal, not transported
+Nat.rec	generated-helper	recursor	interpretation	Lean_Nat_rec	the family's recursor, with its computation rules
+Nat.succ	dependency	constructor	interpretation	Lean_Nat_succ_node	constructor
+Nat.zero	dependency	constructor	interpretation	Lean_Nat_zero_node	constructor
+Ne	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Not	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+OfNat	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+OfNat.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+OfNat.ofNat	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+PProd	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+PProd.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+PULift	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+PULift.down	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+PULift.up	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+PUnit	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+PUnit.unit	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Prod	dependency	inductive	interpretation	Lean_Prod	family
+Prod.fst	dependency	definition	interpretation	Lean_Prod_fst	projection
+Prod.mk	dependency	constructor	interpretation	Lean_Prod_mk_node	constructor
+Prod.snd	dependency	definition	interpretation	Lean_Prod_snd	projection
+True	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+True.intro	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Unit	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Unit.unit	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+cond	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+cond.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+dite	dependency	definition	interpretation	Lean_dite	function read from its equation theorems; Lean's equations proved
+eq_of_heq	dependency	theorem	not-needed		a theorem Lean's proofs use; the theorems are reconstructed in Egal, not transported
+id	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+instDecidableEqNat	dependency	definition	interpretation	Lean_instDecidableEqNat	function read from its equation theorems; Lean's equations proved
+instOfNatNat	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+noConfusion_of_Nat	dependency	theorem	not-needed		a theorem Lean's proofs use; the theorems are reconstructed in Egal, not transported
+rfl	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instReprTm	display	definition	display-excluded		derived display or serialization instance
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instReprTm.repr	display	definition	display-excluded		derived display or serialization instance
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instReprTm.repr._f	display	definition	display-excluded		derived display or serialization instance
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instReprTm.repr._sunfold	display	definition	display-excluded		derived display or serialization instance
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instReprTm.repr._unsafe_rec	display	definition	display-excluded		derived display or serialization instance
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instReprTm.repr.match_1	display	definition	display-excluded		derived display or serialization instance
+And.casesOn	reading	definition	interpretation	Lean_And_rec	case analysis read as the recursor with the minors as methods
+Eq.casesOn	reading	definition	interpretation	Lean_Eq_rec	case analysis read as the recursor with the minors as methods
+Eq.ndrec.eq_1	reading	theorem	interpretation	Lean_Eq_ndrec_eq_1	Lean's equation theorem, proved from the reading
+Exists.casesOn	reading	definition	interpretation	Lean_Exists_rec	case analysis read as the recursor with the minors as methods
+False.casesOn	reading	definition	interpretation	Lean_False_b_rec	case analysis read as the recursor with the minors as methods
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.RuleFamily.eq_1	reading	theorem	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_RuleFamily_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.exampleByLeft.eq_1	reading	theorem	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_exampleByLeft_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.exampleByRight.eq_1	reading	theorem	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_exampleByRight_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.generalize.eq_1	reading	theorem	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.generalize.eq_2	reading	theorem	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize_eq_2	Lean's equation theorem, proved from the reading
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.generalize_sound.eq_1	reading	theorem	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize_sound_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.generalize_sound.eq_2	reading	theorem	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize_sound_eq_2	Lean's equation theorem, proved from the reading
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instDecidableEqTm.decEq.eq_1	reading	theorem	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instDecidableEqTm.decEq.eq_2	reading	theorem	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq_eq_2	Lean's equation theorem, proved from the reading
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instDecidableEqTm.decEq.eq_3	reading	theorem	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq_eq_3	Lean's equation theorem, proved from the reading
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instDecidableEqTm.decEq.eq_4	reading	theorem	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq_eq_4	Lean's equation theorem, proved from the reading
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instDecidableEqTm.decEq.eq_5	reading	theorem	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq_eq_5	Lean's equation theorem, proved from the reading
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instDecidableEqTm.decEq.eq_6	reading	theorem	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq_eq_6	Lean's equation theorem, proved from the reading
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instDecidableEqTm.decEq.eq_7	reading	theorem	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq_eq_7	Lean's equation theorem, proved from the reading
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instDecidableEqTm.decEq.eq_8	reading	theorem	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq_eq_8	Lean's equation theorem, proved from the reading
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instDecidableEqTm.decEq.eq_9	reading	theorem	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq_eq_9	Lean's equation theorem, proved from the reading
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instDecidableEqTm.eq_1	reading	theorem	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_eq_1	Lean's equation theorem, proved from the reading
+Nat.beq.eq_1	reading	theorem	interpretation	Lean_Nat_beq_eq_1	Lean's equation theorem, proved from the reading
+Nat.beq.eq_2	reading	theorem	interpretation	Lean_Nat_beq_eq_2	Lean's equation theorem, proved from the reading
+Nat.beq.eq_3	reading	theorem	interpretation	Lean_Nat_beq_eq_3	Lean's equation theorem, proved from the reading
+Nat.beq.eq_4	reading	theorem	interpretation	Lean_Nat_beq_eq_4	Lean's equation theorem, proved from the reading
+Nat.decEq.eq_1	reading	theorem	interpretation	Lean_Nat_decEq_eq_1	Lean's equation theorem, proved from the reading
+Prod.casesOn	reading	definition	interpretation	Lean_Prod_rec	case analysis read as the recursor with the minors as methods
+dite.eq_1	reading	theorem	interpretation	Lean_dite_eq_1	Lean's equation theorem, proved from the reading
+instDecidableEqNat.eq_1	reading	theorem	interpretation	Lean_instDecidableEqNat_eq_1	Lean's equation theorem, proved from the reading

@@ -1,6 +1,7 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualEventViewScopes
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualGuardReindexing
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.OccurrenceRelabeling
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualTransportedActivation
 import Mathlib.Logic.Equiv.Fintype
 
 /-!
@@ -94,6 +95,87 @@ theorem guard_rows_fixed (permutation : Equiv.Perm Nat) {Γ : Ctx S} {sort : S.S
   change ((rows occurrence).map locals (ContextualSelectionViews.capturedTarget locals captures)).map locals _ = _
   rw [ContextualStoredRows.Row.map_compose, capture_assignment_fixed]
   rfl
+
+section Allocations
+
+variable (sourceLedger targetLedger : Finset Nat) (selection : Selection O)
+  (permutation : Equiv.Perm Nat)
+  (aligned : ∀ port : ContextualActivationScopes.Port selection,
+    permutation (ContextualActivationScopes.scopeAt sourceLedger port) =
+      ContextualActivationScopes.scopeAt targetLedger port)
+  {Γ : Ctx S} {sort : S.Srt}
+  (rule : RuleInstance (Term (signature S (ContextualSelectionViews.source locals captures)) Γ sort))
+  (rows : O → ContextualStoredRows.Row locals captures Γ sort)
+
+include aligned
+
+/-- Changing the occupied scope inventory changes all prepared rule views
+by the same capture-fixing permutation. -/
+theorem prepared_rule_between_allocations :
+    ((ContextualActivatedStep.prepared locals captures sourceLedger selection rule rows).rule).map
+        (instantiate (assignment locals captures permutation)) =
+      (ContextualActivatedStep.prepared locals captures targetLedger selection rule rows).rule := by
+  change (rule.map (ContextualFreshening.termAt locals captures
+    (ContextualActivationScopes.scopeAt sourceLedger (ContextualActivationScopes.rulePort selection)))).map _ = _
+  rw [OccurrenceRelabeling.rule_map_comp]
+  apply congrArg (fun mapping => rule.map mapping)
+  funext term
+  exact (termAt_relocated locals captures permutation _ term).trans
+    (congrArg (fun scope => ContextualFreshening.termAt locals captures scope term)
+      (aligned (ContextualActivationScopes.rulePort selection)))
+
+theorem prepared_take_between_allocations (port : Fin selection.taken.length) :
+    instantiate (assignment locals captures permutation)
+        ((ContextualActivatedStep.prepared locals captures sourceLedger selection rule rows).taken port) =
+      (ContextualActivatedStep.prepared locals captures targetLedger selection rule rows).taken port := by
+  change instantiate (assignment locals captures permutation)
+      (ContextualFreshening.termAt locals captures
+        (ContextualActivationScopes.scopeAt sourceLedger (ContextualActivationScopes.takePort selection port))
+        (ContextualStoredRows.asTemplate locals captures (rows (selection.taken.get port)))) = _
+  rw [termAt_relocated, aligned]
+  rfl
+
+theorem prepared_read_between_allocations (port : Fin selection.read.length) :
+    instantiate (assignment locals captures permutation)
+        ((ContextualActivatedStep.prepared locals captures sourceLedger selection rule rows).read port) =
+      (ContextualActivatedStep.prepared locals captures targetLedger selection rule rows).read port := by
+  change instantiate (assignment locals captures permutation)
+      (ContextualFreshening.termAt locals captures
+        (ContextualActivationScopes.scopeAt sourceLedger (ContextualActivationScopes.readPort selection port))
+        (ContextualStoredRows.asTemplate locals captures (rows (selection.read.get port)))) = _
+  rw [termAt_relocated, aligned]
+  rfl
+
+theorem added_equations_between_allocations :
+    ContextualFrameUnifier.mapProblem (assignment locals captures permutation)
+        (ContextualActivatedStep.addedEquations locals captures sourceLedger selection rule rows) =
+      ContextualActivatedStep.addedEquations locals captures targetLedger selection rule rows := by
+  have mapped := prepared_rule_between_allocations locals captures sourceLedger targetLedger selection
+    permutation aligned rule rows
+  have takes := congrArg RuleInstance.take mapped
+  have reads := congrArg RuleInstance.read mapped
+  have tells := congrArg RuleInstance.tell mapped
+  have takenViews :
+      (List.ofFn (ContextualActivatedStep.prepared locals captures sourceLedger selection rule rows).taken).map
+          (instantiate (assignment locals captures permutation)) =
+        List.ofFn (ContextualActivatedStep.prepared locals captures targetLedger selection rule rows).taken := by
+    rw [List.map_ofFn]
+    exact congrArg List.ofFn (funext (prepared_take_between_allocations locals captures
+      sourceLedger targetLedger selection permutation aligned rule rows))
+  have readViews :
+      (List.ofFn (ContextualActivatedStep.prepared locals captures sourceLedger selection rule rows).read).map
+          (instantiate (assignment locals captures permutation)) =
+        List.ofFn (ContextualActivatedStep.prepared locals captures targetLedger selection rule rows).read := by
+    rw [List.map_ofFn]
+    exact congrArg List.ofFn (funext (prepared_read_between_allocations locals captures
+      sourceLedger targetLedger selection permutation aligned rule rows))
+  dsimp only [RuleInstance.map] at takes reads tells
+  change ContextualFrameUnifier.mapProblem (assignment locals captures permutation)
+    (ContextualActivatedStep.prepared locals captures sourceLedger selection rule rows).rule.tell = _ at tells
+  simp only [ContextualActivatedStep.addedEquations, ContextualTransportedActivation.map_append,
+    ContextualTransportedActivation.map_useEquations, takes, reads, tells, takenViews, readViews]
+
+end Allocations
 
 variable (selections : Fin n → Selection O)
 

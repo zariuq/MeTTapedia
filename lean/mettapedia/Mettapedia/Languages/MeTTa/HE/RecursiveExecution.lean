@@ -1262,14 +1262,14 @@ variable {Context World : Type} {environment : WorldEnvironment Context World} {
 
 private theorem one {label : Context} {world afterWorld : World}
     {before after : Control Context × List Continuation}
-    (advanced : WorldLocalStep environment.view environment.services environment.dispatch environment.lookup policy
+    (advanced : WorldLocalStep (admission := environment.arguments) environment.view environment.services environment.dispatch environment.lookup policy
       world label before afterWorld after) :
     WorldLocalSteps environment policy label world before afterWorld after := .single advanced
 
 private theorem core {label : Context} {world : World}
     {before after : Control Context} {flatBefore flatAfter : Control}
     {stack remaining : List Continuation}
-    (advanced : LocalStep (environment.view world label) environment.dispatch environment.lookup policy
+    (advanced : LocalStep (admission := environment.arguments) (environment.view world label) environment.dispatch environment.lookup policy
       (flatBefore,stack) (flatAfter,remaining))
     (first : UnscopedControl before flatBefore := by constructor)
     (managed : managedContextControl before = false := by
@@ -1673,7 +1673,7 @@ theorem control_complete {label : Context} {world afterWorld : World} {control :
 theorem local_steps_lift {label : Context} {world afterWorld : World}
     {before after : Control Context × List Continuation}
     (path : WorldLocalSteps environment policy label world before afterWorld after) (emitted : List Result) :
-    WorldSteps environment.view environment.services environment.dispatch environment.lookup policy
+    WorldSteps (admission := environment.arguments) environment.view environment.services environment.dispatch environment.lookup policy
       ⟨world,label,before.1,before.2,emitted⟩ ⟨afterWorld,label,after.1,after.2,emitted⟩ := by
   exact Relation.ReflTransGen.lift
     (fun state : World × (Control Context × List Continuation) =>
@@ -1691,10 +1691,10 @@ theorem restore_representation_square
     (source : Completed.RestoreRowsRel snapshots label world policy caller pairs saved results)
     (agreement : BindingSourceAgreement caller.bindings bindings)
     (stack : List Continuation) (emitted : List Result) :
-    WorldSteps environment.view environment.services environment.dispatch environment.lookup policy
+    WorldSteps (admission := environment.arguments) environment.view environment.services environment.dispatch environment.lookup policy
         ⟨world,label,.work (.restore pairs saved caller),stack,emitted⟩
         ⟨world,label,.returning results,stack,emitted⟩ ∧
-      WorldSteps environment.view environment.services environment.dispatch environment.lookup policy
+      WorldSteps (admission := environment.arguments) environment.view environment.services environment.dispatch environment.lookup policy
         ⟨world,label,.work (.restore pairs saved (caller.represent bindings agreement)),stack,emitted⟩
         ⟨world,label,.returning results,stack,emitted⟩ := by
   exact ⟨local_steps_lift (restore_complete provided source stack) emitted,
@@ -1702,11 +1702,11 @@ theorem restore_representation_square
       ((Completed.RestoreRowsRel.represent_caller_iff agreement).mpr source) stack) emitted⟩
 
 theorem drain (label : Context) (world : World) (results emitted : List Result) :
-    WorldSteps environment.view environment.services environment.dispatch environment.lookup policy
+    WorldSteps (admission := environment.arguments) environment.view environment.services environment.dispatch environment.lookup policy
       ⟨world,label,.returning results,[],emitted⟩ ⟨world,label,.returning [],[],emitted ++ results⟩ := by
   induction results generalizing emitted with
   | nil => simpa only [List.append_nil] using
-      (Relation.ReflTransGen.refl : WorldSteps environment.view environment.services environment.dispatch environment.lookup policy
+      (Relation.ReflTransGen.refl : WorldSteps (admission := environment.arguments) environment.view environment.services environment.dispatch environment.lookup policy
         ⟨world,label,.returning [],[],emitted⟩ ⟨world,label,.returning [],[],emitted⟩)
   | cons head tail ih =>
       simpa only [List.append_assoc,List.singleton_append] using
@@ -1717,7 +1717,7 @@ theorem drain (label : Context) (world : World) (results emitted : List Result) 
 history and reached world, including all saved contexts and continuations. -/
 theorem source_to_finished {state : WorldConfiguration Context World} {answers : List Result} {finalWorld : World}
     (source : state.SourceRel environment policy answers finalWorld) :
-    WorldSteps environment.view environment.services environment.dispatch environment.lookup policy
+    WorldSteps (admission := environment.arguments) environment.view environment.services environment.dispatch environment.lookup policy
       state ⟨finalWorld,state.context,.returning [],[],answers⟩ := by
   obtain ⟨current,pending,childWorld,controlled,continued,same⟩ := source
   have work := (control_complete controlled state.stack).trans (stack_complete continued)
@@ -1726,7 +1726,7 @@ theorem source_to_finished {state : WorldConfiguration Context World} {answers :
 
 /-- Terminal runs reflect the independent source judgment. -/
 theorem finished_to_source {state : WorldConfiguration Context World} {answers : List Result} {finalWorld : World}
-    (path : WorldSteps environment.view environment.services environment.dispatch environment.lookup policy
+    (path : WorldSteps (admission := environment.arguments) environment.view environment.services environment.dispatch environment.lookup policy
       state ⟨finalWorld,state.context,.returning [],[],answers⟩) :
     state.SourceRel environment policy answers finalWorld := by
   apply RecursiveCorrectness.Contextual.Stateful.steps_source_back path
@@ -1734,7 +1734,7 @@ theorem finished_to_source {state : WorldConfiguration Context World} {answers :
 
 theorem source_iff_finished (state : WorldConfiguration Context World) (answers : List Result) (finalWorld : World) :
     state.SourceRel environment policy answers finalWorld ↔
-      WorldSteps environment.view environment.services environment.dispatch environment.lookup policy
+      WorldSteps (admission := environment.arguments) environment.view environment.services environment.dispatch environment.lookup policy
         state ⟨finalWorld,state.context,.returning [],[],answers⟩ :=
   ⟨source_to_finished,finished_to_source⟩
 
@@ -1742,7 +1742,7 @@ theorem source_iff_finished (state : WorldConfiguration Context World) (answers 
 explored frontier supplies a failure or a success-priority publication. -/
 theorem source_iff_observed (state : WorldConfiguration Context World) (answers : List Result) (finalWorld : World) :
     state.SourceRel environment policy answers finalWorld ↔
-      ∃ final, WorldSteps environment.view environment.services environment.dispatch environment.lookup policy state final ∧
+      ∃ final, WorldSteps (admission := environment.arguments) environment.view environment.services environment.dispatch environment.lookup policy state final ∧
         worldObserve final = some answers ∧ final.world = finalWorld := by
   constructor
   · intro source
@@ -1755,7 +1755,7 @@ theorem source_iff_observed (state : WorldConfiguration Context World) (answers 
 /-- A completed source suffix reconstructs the earlier completion. The
 saved configuration carries the reached world and unvisited alternatives. -/
 theorem retained_prefix {before after : WorldConfiguration Context World} {answers : List Result} {finalWorld : World}
-    (path : WorldSteps environment.view environment.services environment.dispatch environment.lookup policy before after)
+    (path : WorldSteps (admission := environment.arguments) environment.view environment.services environment.dispatch environment.lookup policy before after)
     (remaining : after.SourceRel environment policy answers finalWorld) :
     before.SourceRel environment policy answers finalWorld :=
   RecursiveCorrectness.Contextual.Stateful.steps_source_back path remaining
@@ -1764,7 +1764,7 @@ theorem retained_prefix {before after : WorldConfiguration Context World} {answe
 theorem task_source_iff_finished (label : Context) (world : World) (task : Task)
     (answers : List Result) (finalWorld : World) :
     task.WorldSourceRel environment policy label world answers finalWorld ↔
-      WorldSteps environment.view environment.services environment.dispatch environment.lookup policy
+      WorldSteps (admission := environment.arguments) environment.view environment.services environment.dispatch environment.lookup policy
         ⟨world,label,.work task,[],[]⟩ ⟨finalWorld,label,.returning [],[],answers⟩ := by
   rw [←source_iff_finished]
   constructor
@@ -1815,7 +1815,7 @@ open RecursiveTasks.Contextual RecursiveMachine.Contextual
 
 private def environment (dispatch : Spec.Eval.GroundedDispatch) (lookup : Completed.CastLookup) :
     WorldEnvironment ModId ModuleStore :=
-  ⟨fun world label => world label,writer,dispatch,lookup⟩
+  ⟨fun world label => world label,writer,dispatch,lookup,.historical⟩
 
 private def writeFirst : Entry.Value :=
   .expression .active [.symbol "call-native",.symbol "world-test",.symbol "add",.symbol "First"]
@@ -1932,7 +1932,7 @@ open RecursiveTasks.Contextual RecursiveMachine.Contextual
 actual chain/collapse/superpose transitions, with the reached host world. -/
 theorem collection_run (policy : Policy) (world : Nat × List Frame) (rows : List Result) :
     ∃ after, let environment := snapshotRowsEnvironment rows
-      WorldSteps environment.view environment.services environment.dispatch environment.lookup policy
+      WorldSteps (admission := environment.arguments) environment.view environment.services environment.dispatch environment.lookup policy
         ⟨world,(),.work (.minimal [] [] none (collectionReplay snapshotRowsCall) Frame.empty),[],[]⟩
         ⟨after,(),.returning [],[],survivingRows rows⟩ ∧ after.1 = world.1 + 1 := by
   obtain ⟨after,source,reached⟩ := Spec.Eval.Completed.Controls.collection_source policy world rows [] [] none
@@ -1948,7 +1948,7 @@ def collectionPaused (world : Nat × List Frame) (rows : List Result) : WorldCon
 
 theorem collection_pause_after_child (policy : Policy) (world : Nat × List Frame) (rows : List Result) :
     let environment := snapshotRowsEnvironment rows
-    WorldSteps environment.view environment.services environment.dispatch environment.lookup policy
+    WorldSteps (admission := environment.arguments) environment.view environment.services environment.dispatch environment.lookup policy
       ⟨world,(),.work (.minimal [] [] none (collectionReplay snapshotRowsCall) Frame.empty),[],[]⟩
       (collectionPaused world rows) := by
   exact ((Relation.ReflTransGen.single (WorldStep.internal
@@ -1958,7 +1958,7 @@ theorem collection_pause_after_child (policy : Policy) (world : Nat × List Fram
 
 theorem collection_resume_after_child (policy : Policy) (world : Nat × List Frame) (rows : List Result) :
     ∃ after, let environment := snapshotRowsEnvironment rows
-      WorldSteps environment.view environment.services environment.dispatch environment.lookup policy
+      WorldSteps (admission := environment.arguments) environment.view environment.services environment.dispatch environment.lookup policy
         (collectionPaused world rows) ⟨after,(),.returning [],[],survivingRows rows⟩ ∧
       after.1 = world.1 + 1 := by
   obtain ⟨packed,after,captured⟩ := Completed.CaptureRowsRel.total (Completed.SnapshotServices.appendModel Unit Nat)
@@ -1981,7 +1981,7 @@ theorem collection_pause_not_complete (world : Nat × List Frame) (rows : List R
 /-- A completed collection cannot reissue the child's committed operation. -/
 theorem collection_cannot_replay (policy : Policy) (world : Nat × List Frame) (rows : List Result) :
     let environment := snapshotRowsEnvironment rows
-    ¬∃ next, WorldStep environment.view environment.services environment.dispatch environment.lookup policy
+    ¬∃ next, WorldStep (admission := environment.arguments) environment.view environment.services environment.dispatch environment.lookup policy
       ⟨world,(),.returning [],[],survivingRows rows⟩ next := world_observed_final rfl
 
 /-- A nonidentity alias representation survives actual snapshot restoration
@@ -2001,10 +2001,10 @@ theorem restore_alias_representation_with_retained_history (policy : Policy) (ba
       RestoreRepresentation
         ⟨world,(),.work (.restore [pair,pair] saved argumentAliasFrame),stack,emitted⟩
         ⟨world,(),.work (.restore [pair,pair] saved representedAliasFrame),stack,emitted⟩ ∧
-      WorldSteps environment.view environment.services environment.dispatch environment.lookup policy
+      WorldSteps (admission := environment.arguments) environment.view environment.services environment.dispatch environment.lookup policy
         ⟨world,(),.work (.restore [pair,pair] saved argumentAliasFrame),stack,emitted⟩
         ⟨world,(),.returning results,stack,emitted⟩ ∧
-      WorldSteps environment.view environment.services environment.dispatch environment.lookup policy
+      WorldSteps (admission := environment.arguments) environment.view environment.services environment.dispatch environment.lookup policy
         ⟨world,(),.work (.restore [pair,pair] saved representedAliasFrame),stack,emitted⟩
         ⟨world,(),.returning results,stack,emitted⟩ ∧
       worldObserve ⟨world,(),.returning results,stack,emitted⟩ = none := by
@@ -2050,7 +2050,7 @@ theorem restore_representation_rejects_readiness_change (policy : Policy) (base 
 /-- A completed host occurrence is retained exactly, including its marks. -/
 theorem native_completed_raw_run (policy : Policy) (value : Entry.Value) (world : Nat) :
     let environment := nativeEnvironment (.ok [(value,Bindings.empty)]) .completed
-    WorldSteps environment.view environment.services environment.dispatch environment.lookup policy
+    WorldSteps (admission := environment.arguments) environment.view environment.services environment.dispatch environment.lookup policy
       ⟨world,(),.work (.invocation [] [] none nativeCallValue Frame.empty),[],[]⟩
       ⟨world + 1,(),.returning [],[],[(value,Frame.empty)]⟩ :=
   (Stateful.task_source_iff_finished () world (.invocation [] [] none nativeCallValue Frame.empty) _ _).mp
@@ -2058,7 +2058,7 @@ theorem native_completed_raw_run (policy : Policy) (value : Entry.Value) (world 
 
 theorem native_completed_full_run (policy : Policy) (value : Entry.Value) (world : Nat) :
     let environment := nativeEnvironment (.ok [(value,Bindings.empty)]) .completed
-    WorldSteps environment.view environment.services environment.dispatch environment.lookup policy
+    WorldSteps (admission := environment.arguments) environment.view environment.services environment.dispatch environment.lookup policy
       ⟨world,(),.work (.call [] [] nativeCallValue Atom.atomType Frame.empty),[],[]⟩
       ⟨world + 1,(),.returning [],[],[(value,Frame.empty)]⟩ :=
   (Stateful.task_source_iff_finished () world (.call [] [] nativeCallValue Atom.atomType Frame.empty) _ _).mp
@@ -2066,7 +2066,7 @@ theorem native_completed_full_run (policy : Policy) (value : Entry.Value) (world
 
 theorem native_emitted_raw_run (policy : Policy) (world : Nat) :
     let environment := nativeEnvironment (.ok [(nativeFunctionValue,Bindings.empty)]) .emitted
-    WorldSteps environment.view environment.services environment.dispatch environment.lookup policy
+    WorldSteps (admission := environment.arguments) environment.view environment.services environment.dispatch environment.lookup policy
       ⟨world,(),.work (.invocation [] [] none nativeCallValue Frame.empty),[],[]⟩
       ⟨world + 1,(),.returning [],[],[(.symbol "Kept",Frame.empty)]⟩ :=
   (Stateful.task_source_iff_finished () world (.invocation [] [] none nativeCallValue Frame.empty) _ _).mp
@@ -2074,7 +2074,7 @@ theorem native_emitted_raw_run (policy : Policy) (world : Nat) :
 
 theorem native_emitted_full_run (policy : Policy) (world : Nat) :
     let environment := nativeEnvironment (.ok [(nativeFunctionValue,Bindings.empty)]) .emitted
-    WorldSteps environment.view environment.services environment.dispatch environment.lookup policy
+    WorldSteps (admission := environment.arguments) environment.view environment.services environment.dispatch environment.lookup policy
       ⟨world,(),.work (.call [] [] nativeCallValue Atom.atomType Frame.empty),[],[]⟩
       ⟨world + 1,(),.returning [],[],[(.symbol "Kept",Frame.empty)]⟩ :=
   (Stateful.task_source_iff_finished () world (.call [] [] nativeCallValue Atom.atomType Frame.empty) _ _).mp
@@ -2394,7 +2394,7 @@ inductive Rule {Context World : Type} (environment : WorldEnvironment Context Wo
     (policy : Policy) : WorldConfiguration Context World →
       Option (Transition (WorldConfiguration Context World) Result (World × List Result) Empty) → Prop where
   | internal {world afterWorld label before after stack remaining emitted} :
-      WorldLocalStep environment.view environment.services environment.dispatch environment.lookup policy
+      WorldLocalStep (admission := environment.arguments) environment.view environment.services environment.dispatch environment.lookup policy
         world label (before,stack) afterWorld (after,remaining) →
       Rule environment policy ⟨world,label,before,stack,emitted⟩
         (some (.silent ⟨afterWorld,label,after,remaining,emitted⟩))
@@ -2404,7 +2404,7 @@ inductive Rule {Context World : Type} (environment : WorldEnvironment Context Wo
   | finished {state answers} : worldObserve state = some answers →
       Rule environment policy state (some (.finish (state.world,answers)))
   | stuck {state} : worldObserve state = none →
-      (¬∃ after, WorldStep environment.view environment.services environment.dispatch environment.lookup policy state after) →
+      (¬∃ after, WorldStep (admission := environment.arguments) environment.view environment.services environment.dispatch environment.lookup policy state after) →
       Rule environment policy state none
 
 variable {Context World : Type} {environment : WorldEnvironment Context World} {policy : Policy}
@@ -2412,7 +2412,7 @@ variable {Context World : Type} {environment : WorldEnvironment Context World} {
 theorem exhausted_steps {fuel : Nat} {before after : WorldConfiguration Context World}
     {events : List Result}
     (path : Derivation (Rule environment policy) fuel before events (.exhausted after)) :
-    WorldSteps environment.view environment.services environment.dispatch environment.lookup policy before after ∧
+    WorldSteps (admission := environment.arguments) environment.view environment.services environment.dispatch environment.lookup policy before after ∧
       after.emitted = before.emitted ++ events := by
   induction fuel generalizing before events with
   | zero => cases path; exact ⟨.refl,by simp⟩
@@ -2432,7 +2432,7 @@ theorem exhausted_steps {fuel : Nat} {before after : WorldConfiguration Context 
 theorem finished_steps {fuel : Nat} {before : WorldConfiguration Context World}
     {events answers : List Result} {finalWorld : World}
     (path : Derivation (Rule environment policy) fuel before events (.finished (finalWorld,answers))) :
-    ∃ after, WorldSteps environment.view environment.services environment.dispatch environment.lookup policy before after ∧
+    ∃ after, WorldSteps (admission := environment.arguments) environment.view environment.services environment.dispatch environment.lookup policy before after ∧
       worldObserve after = some answers ∧ after.world = finalWorld ∧ answers = before.emitted ++ events := by
   induction fuel generalizing before events with
   | zero => cases path
@@ -2459,7 +2459,7 @@ theorem finished_steps {fuel : Nat} {before : WorldConfiguration Context World}
 /-- Every actual finite world path earns its shared-protocol prefix, with
 the exact endpoint, reached world and publication extension. -/
 theorem steps_exhausted {before after : WorldConfiguration Context World}
-    (path : WorldSteps environment.view environment.services environment.dispatch environment.lookup policy before after) :
+    (path : WorldSteps (admission := environment.arguments) environment.view environment.services environment.dispatch environment.lookup policy before after) :
     ∃ fuel events, Derivation (Rule environment policy) fuel before events (.exhausted after) ∧
       after.emitted = before.emitted ++ events := by
   induction path with
@@ -2478,7 +2478,7 @@ theorem steps_exhausted {before after : WorldConfiguration Context World}
 theorem completed_iff_steps (before : WorldConfiguration Context World)
     (answers : List Result) (finalWorld : World) :
     (∃ fuel events, Derivation (Rule environment policy) fuel before events (.finished (finalWorld,answers))) ↔
-      ∃ after, WorldSteps environment.view environment.services environment.dispatch environment.lookup policy before after ∧
+      ∃ after, WorldSteps (admission := environment.arguments) environment.view environment.services environment.dispatch environment.lookup policy before after ∧
         worldObserve after = some answers ∧ after.world = finalWorld := by
   constructor
   · rintro ⟨fuel,events,completed⟩

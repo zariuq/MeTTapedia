@@ -381,8 +381,8 @@ theorem counting_owner_valid :
       List.map_nil, List.mem_singleton] at member
     subst member
     classical
-    show (Check.region action σ countLabel onePost.present _).card = 1
-    simp [Check.region, onePost, Finset.filter_singleton, spaces, countLabel, Tm.subst]
+    show (Check.matches action σ countLabel onePost.present _).card = 1
+    simp [Check.matches, onePost, Finset.filter_singleton, spaces, countLabel, Tm.subst]
 
 /-- **A post spoils the counting owner**: after a second post the owner's rule is not valid,
 though both were valid at the start. -/
@@ -398,13 +398,13 @@ theorem counting_owner_spoiled_by_post :
   have counted := valid.checks (.count (spaces.atSpace (.nm 3) (.sym "letter")) 1)
     (by simp [countingForwarder, LocatedRule.toRule, LocatedCheck.toCheck]) σ solved
   classical
-  change (Check.region action σ countLabel _ _).card = 1 at counted
+  change (Check.matches action σ countLabel _ _).card = 1 at counted
   have presentTwo : ((makeOne 5).result countLabel (clientPost.toRule spaces) onePost).present =
       {1, 5} := by
     ext x
     simp [Selection.result, fire, Selection.commit, makeOne, onePost]
   rw [presentTwo] at counted
-  simp [Check.region, Finset.filter_insert, Finset.filter_singleton, spaces, countLabel,
+  simp [Check.matches, Finset.filter_insert, Finset.filter_singleton, spaces, countLabel,
     Tm.subst] at counted
 
 end Controls

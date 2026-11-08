@@ -1,0 +1,1066 @@
+{
+  "schema": "lean-recursion-interface-qualification-v1",
+  "date": "2026-11-06",
+  "leanToolchain": "leanprover/lean4:v4.33.1",
+  "gitBase": "517c5fcff70545c2ca325326e3769ae6e6bc377b",
+  "sourceDigest": "1a1c6060bce1c6699daf66152b8592a7563858f57a93d7c34b7ff413485d6697",
+  "sourceFiles": {
+    "Mettapedia/Languages/Lean/Recursion/AccessibleNatBrec.lean": "a7b78528710accad7a1a35c12e1d2734cefa9362ab61573595593634528e85c6",
+    "Mettapedia/Languages/Lean/Recursion/AccessibleRecipe.lean": "698cac72fbccc170cf23775f6b7bfff36505efe6b09b1e42ef007b1065010328",
+    "Mettapedia/Languages/Lean/Recursion/Controls.lean": "0bf037403b22e9bb39256fe46d17a3857487e238d01f7cd14cbebd0ab785add5",
+    "Mettapedia/Languages/Lean/Recursion/Core.lean": "e9eb864850e69521d1c6c1c47d44d32f4574a63527d61a030782b77a7829c3fa",
+    "Mettapedia/Languages/Lean/Recursion/Coverage.lean": "c26860e4fbba9aa7e1b4a15016af10f679e2ce2ac1012f979f9de0060e346ce7",
+    "Mettapedia/Languages/Lean/Recursion/Derive.lean": "e409e9d0a202ec20356afe3437b4be7dee5f6daf91034fbb1b5bb516daa7ce4a",
+    "Mettapedia/Languages/Lean/Recursion/Export.lean": "7a446a22c4beaf5e9812255e42ef0a029e5616020abea43e7b48c2634f53151b",
+    "Mettapedia/Languages/Lean/Recursion/INTERFACE.txt": "b1b474ffca024e298b91f7f619a9ce98b60081247f39a783ea6c61892402cfe4",
+    "Mettapedia/Languages/Lean/Recursion/Inspect4331.lean": "8881f88b418504e2e47f527ce2181278a38df6b07ae1f9d0a2951a99b571b1bb",
+    "Mettapedia/Languages/Lean/Recursion/MeasuredCore.lean": "131488580d1ed074fb724435940b94767489b4160249ae5c8571037c8156ba62",
+    "Mettapedia/Languages/Lean/Recursion/ProofArguments.lean": "c059fa0f99640db7f91ed8ab68ee1cbfc0e4dca1733929175d81e4c7c4c62688",
+    "Mettapedia/Languages/Lean/Recursion/Qualification.lean": "a01667743a987f97c7974e33eab613314efcf8588615a57a92047776017241fb",
+    "Mettapedia/Languages/Lean/Recursion/RelationalCore.lean": "018ec7bd473a671e184ee570edf71d9860b921735d0bb1ee245ca04da4290601",
+    "Mettapedia/Languages/Lean/Recursion/StructuralCore.lean": "5e213e7952a64f59a02bec4f9017d461de2ef96aa807befef1e9d0fb96bbfab9",
+    "Mettapedia/Languages/Lean/Recursion/Wrappers.lean": "83ebb4449a840bfe116913d83d12be69087d5d1a5127a860848ed5bb841547a9",
+    "Mettapedia/Languages/Lean/Declarations/TargetEnvironment.lean": "11abcc273338311aa48feb565cd7745d8ae938953de30bc2bf0771fec82f8b21",
+    "scripts/ExportLeanDeclarations.lean": "559be78cee8bc1d2f7c605566b302eb6161ef3a7c521db5fbff075a538ec4a34",
+    "scripts/ExportLeanTerms.lean": "301e15bd334321aeb19d8db7cd2187052f2f73599a6c2d84fba495b8f34a9106",
+    "scripts/ExportLeanTransportManifest.lean": "dc5124b7946bee575a45915f7d42bcb4cf5f715a2a535e096be1dc95dd858445",
+    "scripts/ExportLeanRecursion.lean": "11e793a4768bcb601abe037ab7750dd00a3f6c0540325dda399e6dab52295a3d",
+    "scripts/ExportLeanCodeEquations.lean": "3a5b4f3ec59ee6b8ea5ef5ebf5f6d171f14f28acedec8668f5723160f0154bbe",
+    "scripts/lean_code_equations_diff.py": "3eaf0bb335d155614c5f66b9a72755d332c019db9045f66bc3be7738447414df",
+    "artifacts/lean-declarations/modules.txt": "d7c6589656a3bb75be060899b58cb6d12b87e7dfccd44da744b68241de4b1850",
+    "artifacts/lean-declarations/core/modules.txt": "3fdcb9b3edf2f07b833305d1ce2162f0355182e9298b94d594a92c4fe0087f8c",
+    "artifacts/lean-declarations/functional-correspondence/modules.txt": "ddb01df97ca4c38f51f7e70273972089c0234898b08a117bfdf58a3d3ee369f1",
+    "artifacts/lean-declarations/functional-correspondence-runs/modules.txt": "b65555a9e9111b29a95692c56c41618b3b614cf04e0ac3c8781ae780675230de",
+    "artifacts/lean-declarations/proof-determined-generalization/modules.txt": "b0c598ec319232334ab80862960e77083cd64393a273776069e5e3b3198e3d35",
+    "artifacts/lean-declarations/parity/modules.txt": "4175208d0e364a7567a77dbf7aec73ef91ca06e56ed0a09a668e227afe6244af"
+  },
+  "prerequisiteFiles": {
+    "Mettapedia/Algebra/Order/Dyadic.lean": "fa854eac49431d6136bffcc6a11d87301e6d683c74a0cdeff6a7f2028ac47bb9",
+    "Mettapedia/Algorithms/WellFoundedServices/InertRecursor.lean": "26a9e2be73ea2256a4dae2980c3abf11a4d6c7766327daeaa00fd11714541091",
+    "Mettapedia/CategoryTheory/MonadResolutionObstruction.lean": "d578c860f396d62c27ad2ed59ae18ca82c7bbc516f337ed7b1f33846791d0c1f",
+    "Mettapedia/CategoryTheory/ParameterizedMonad.lean": "b835dc720b6c358397845767253be19e884b60261497f85cc7b0a26ea2418d9b",
+    "Mettapedia/CategoryTheory/RunAccount.lean": "7e8d88756b9102f88aab6de9521cfb779af3ebbafff4d660c9826c947501432c",
+    "Mettapedia/CategoryTheory/WriterActionAdjunction.lean": "25f5fa6073f3c9e9a17aa642983ac58d1bd9689881fd01e3ead7568ff99d426a",
+    "Mettapedia/CategoryTheory/WriterActionObservation.lean": "265321b4d057f646a0e99e6c7e4319bbe4dffb6c558e23e94fd366817c2f9be6",
+    "Mettapedia/CategoryTheory/WriterActionSlice.lean": "d525671bd8cda8caf0682d48276c82a4f47fdb4738f8678372ec492197a318df",
+    "Mettapedia/CategoryTheory/WriterActionTransport.lean": "ced041b2550294ca47ca2b97b23d11ce8bb99812300ef34fa84f91e75703d26b",
+    "Mettapedia/Coalgebra/CoherentPrefixTower.lean": "6ed8351008bdddf02acc4edbfbf4357e0749731181e24f299b30097891907d12",
+    "Mettapedia/Coalgebra/FiniteViewSystem.lean": "a31e59dff566dc4b484e885b80e4473730298cc3a4211f41295e240217c61cd6",
+    "Mettapedia/Coalgebra/StreamFinality.lean": "4f54d23f5fa3056b3d464862d7c890e61f979409e64c4aa53a63c3f3f678e68c",
+    "Mettapedia/Cybernetics/DistinctionCalculus/Basic.lean": "c1f9e613fb396cc1cf0024ac7c2cb411537e1f8e9b71c25deb66d2b8c97470a2",
+    "Mettapedia/Cybernetics/DistinctionCalculus/PreservationGrade.lean": "0e088342553e41137155e2a97522f2dd9fe25dfd3b144973fc2041893ad45454",
+    "Mettapedia/Data/FreshString.lean": "29b8955b08aa86332b856b64c0092c91ccca4b44ff9b247591f00bca5ad66b7b",
+    "Mettapedia/Data/String/Utf8.lean": "1282fc6486f5f1f3b7fb6030045cf2243892efa83854315d8a631c2b225bc624",
+    "Mettapedia/GSLT/Core/ClosureCriteria.lean": "74fd7b58b3e81d8dfd0833b336a01f73c018d15634055175ac136b1592819166",
+    "Mettapedia/GSLT/Core/Composition.lean": "e56c8952dd68328dfe8ece489f4e354b46d38e8ef62301fc0ea787c637f0883f",
+    "Mettapedia/GSLT/Core/GSLT.lean": "c889aa844f6e860d56be284d878065a9df82f629eeb9b786e67a24909edbee9d",
+    "Mettapedia/GSLT/Core/IndexedOperational.lean": "0deaeca66e13b4fb307c7958faa5d9c07b241d71bc03c15ceaf43c2fa4154b09",
+    "Mettapedia/GSLT/Core/InteractionComposition.lean": "b765c9ea3d001217c4780e98a6f441aadb05b809a83bb9834c0db6a062091cb4",
+    "Mettapedia/GSLT/Core/InteractionEvent.lean": "2cfb850757aef3f355f822f94d86561dbfc5e368336767f02b90e652c7662e7b",
+    "Mettapedia/GSLT/Core/NonFactorization.lean": "f0e0ebc0feb70d9b3282fac22a8c94ce2def0df84baf3dcfc466e0c0f873cdc5",
+    "Mettapedia/GSLT/Core/ObservedBisimulation.lean": "7addeb4f7a20344e55306261fe3c4aa66e8714e7558bd5b15f5557a31e9e2313",
+    "Mettapedia/GSLT/Core/OperationalPathFibration.lean": "984f2bfa41663f99266bda4197702c1d4400afde61fa2d44817c31c56bdd60cc",
+    "Mettapedia/GSLT/Core/OperationalRealization.lean": "7b7357e524bcee66cc05a3646a59d4a455c10af8f39953ca0a514c1394eab814",
+    "Mettapedia/GSLT/Core/OperationalRealizationAccounts.lean": "2b67045e8107f705fed134d0e56983845886f0aabfa152091bbeeb776d5ede1d",
+    "Mettapedia/GSLT/Core/StepFree.lean": "640f209a74c5fa54dfd2193b74271701758b7cdef5ba7c579acab3312a67fb1d",
+    "Mettapedia/GSLT/Core/Ultrainfinite.lean": "5f7460e70222439890f4be79e648337e46391820c45289d5420850af80586db1",
+    "Mettapedia/GSLT/Core/UltrainfiniteTransport.lean": "9fa217deac33bcfa23e2e880db6d723b4e62173811f5184cf7b799cfb8ed0be4",
+    "Mettapedia/GSLT/Distinction/BehaviouralMetric.lean": "f552c3482b62f075c847fca5b131efa0f3d63b740c74fcc538cf6313bfae71d8",
+    "Mettapedia/GSLT/Distinction/BlockTransport.lean": "56c6328285f7bdb2ff3a085081333fbc86b796c8edbb4fdfec469aef2b096d6c",
+    "Mettapedia/GSLT/Distinction/Isometry.lean": "f8b769f5d3c6fbc1b1bc5ca55bd67dbcb5b36fae88b1b37213d2fb9ebc7325b8",
+    "Mettapedia/GSLT/Distinction/ProductiveBlocks.lean": "670da38cf090b2b09075e5fa1a3a12e629be43781678df0c75df83537c12cc22",
+    "Mettapedia/GSLT/Distinction/RouteGrades.lean": "e9f3bf6ae2833f89a0fbd78ed0431e905ba14ba1d599f1799d21d0d54f4895cf",
+    "Mettapedia/GSLT/Distinction/SpanTransport.lean": "37b55492d09eefba42321fb10ba3b73c717d20785aad1f4e53a3b2c4825e9959",
+    "Mettapedia/GSLT/Dynamics/DemandAgreement.lean": "023a3b99ae1e3620d25c3317e0600b2a91144c24b0b9ce1cf1a66a48b1b4bb04",
+    "Mettapedia/GSLT/Dynamics/OrderedDemand.lean": "f92777fecba95b5941e03466d89d641280d4b948c8087ccddd5dbddae79421b9",
+    "Mettapedia/GSLT/Dynamics/OrderedOccurrenceBodyAlgebra.lean": "e12f4fbc4349672d1e1c17b43804e90ded151c9649d33051e4eb46be178be3c1",
+    "Mettapedia/GSLT/Dynamics/RegionHolePlan.lean": "0dda31d1a3e72df460a726edbee96d0116900a79f4dd96aff12e88fdf6f426cc",
+    "Mettapedia/GSLT/Dynamics/ResumptionAlgebra.lean": "d5f2cae769e20369f606dacb55e8621e7dff2de6f75ea951b903da2c45f37a9e",
+    "Mettapedia/GSLT/LanguageDef/EmptyDemandCoherence.lean": "e88d91ffdeff7fb814c4905bb4d0963937c6fb2021902b2e17a98b4f2229b9e5",
+    "Mettapedia/GSLT/LanguageDef/Extension.lean": "c94e29974153e3ee4e8a9a3f1d66bc2bb2791c9de5afacef0c798f3f56cb2268",
+    "Mettapedia/GSLT/LanguageDef/IndexedInductive.lean": "f55db81a3abb5e59be8f6f9e76d66416ed210e7e8007751f1dd9ea905b6e3a58",
+    "Mettapedia/GSLT/LanguageDef/IndexedInductiveElimination.lean": "84732eb57f189dc3cf4e9aa8166e75b5114ffbec2037d441605b6bfdae45f375",
+    "Mettapedia/GSLT/LanguageDef/IndexedInductiveNatVec.lean": "2963beacb1e5f534b1ec6483547db1c578df80eaf359f9d45391fbce8cf4926f",
+    "Mettapedia/GSLT/LanguageDef/ModuleSource/IndexedNatVecNames.lean": "22f0c745b2e87b64ccdfdbc45bc31f23f422d4e3783b2b3e57836988d00913f2",
+    "Mettapedia/GSLT/LanguageDef/ModuleSource/IndexedNatVecSource.lean": "6542aeba32e17080556454033e2d76690d29bb0acf326649a3f1f4e02125eb65",
+    "Mettapedia/GSLT/LanguageDef/ModuleSource/InductiveMeTTaData.lean": "b30305e6cfd63d481a83d742b7f0cffb08ef39b0b68f6fbbf720a2f3c9b51a5c",
+    "Mettapedia/GSLT/LanguageDef/ModuleSource/InductiveSyntax.lean": "82f013bcd9011a2c9b134f588734e07c86ad84e5074a5578880daa0061ab31fe",
+    "Mettapedia/GSLT/LanguageDef/ModuleSource/Syntax.lean": "1c857f3846dd4b00cf8738de9dc912e46b5f7fc7656bcad75df595840fd0988e",
+    "Mettapedia/GSLT/Logic/AbstractSeparationLogic.lean": "cc607eda5a8ede2b472c44486abc2b0276ad8305cd03eb76c59a3638a5a13a95",
+    "Mettapedia/GSLT/Logic/AdmissibleContextCongruence.lean": "cf70113082153d0e1d2b3ec65f4cd474dbc1954b14bc923669f05cbd352725fa",
+    "Mettapedia/GSLT/Logic/HennessyMilnerAdequacy.lean": "715671fbcefc39988b1a6575ba1006134a57f2c2ca3e35cfea853b4879d9af42",
+    "Mettapedia/GSLT/Logic/HennessyMilnerTransport.lean": "18e8ee7d88330726ed11f0af9a87d992579bb84deb5b5d663e5633c93f258284",
+    "Mettapedia/GSLT/Logic/MinimalEnablingContext.lean": "7d38cdf5ad2f0418d20ffe9e3f51ba8c982f1133aec4ecf4d3eade43e2b50e5d",
+    "Mettapedia/GSLT/Logic/ObservationSpans.lean": "70ec6aa99f12b27d2049ba8f81a0f446969bfa060e0032a13b09a6a92abc669f",
+    "Mettapedia/GSLT/Logic/ObserverRefinement.lean": "1a08f532a052f92b98e157c7a82841009f9f4149bce5ae19fe43766894fd59bb",
+    "Mettapedia/GSLT/Logic/SaturatedRelativeBisimilarity.lean": "eb341cc9aedaf5f8c5777856cf0a2390e957ed0a1d6a852398a6a109260f3ad6",
+    "Mettapedia/GSLT/Logic/SeparationAlgebra.lean": "b0d0ad54b02c32dd4eb40e5ed66b6af1a5c326a7f311a2b3a9f00df3d46472ff",
+    "Mettapedia/GSLT/Meredith/Bisimulation.lean": "2a3e47d9d0aaeabb61b53ac3ebc85c9fd874c46b8057790a334ffda323f3f87d",
+    "Mettapedia/GSLT/Meredith/GSLT.lean": "4fcd1883b4e5766e8faad1e5e65a1ab494bbf414e33291004ad8c9e6c8e80545",
+    "Mettapedia/GSLT/Parsing/ExactDecimalLexeme.lean": "235fa641de1eb37b0c7a3ea0b0f5d446a9d1cada13f2b52c4b684d51d1e5ea85",
+    "Mettapedia/GSLT/Scope/PredicateDescent.lean": "086dbbf9f11c2d1d20b8b0ec19fed1d5c557f0da84427aa441a8392107aaef9d",
+    "Mettapedia/GSLT/Topos/ConstructivePresheafOperations.lean": "5f99b7e5bbb6e7227f18bdafbeb02db28d12c176c5cbb06aa9f86402d90794aa",
+    "Mettapedia/GSLT/Topos/PresheafEventModalities.lean": "9b7107339d9551e149fc83dc3b1915912ab5ce69ebe05658515eac954e6b50aa",
+    "Mettapedia/Languages/Lean/Declarations/BlockData.lean": "3a30deae8e966942546482f1a9f7b4befc72d0f715f48301bdf10c6ebe0861c1",
+    "Mettapedia/Languages/Lean/Declarations/BlockProfile.lean": "372a0fc0b2ac1daeef637c3d8b8d2293ad7aba32e9cf3639544a8ef05038f7f5",
+    "Mettapedia/Languages/Lean/Declarations/BlockReader.lean": "0974a92217a62c214c8790efa84eacdc9c75b761e52c291be11ca2fe55137c01",
+    "Mettapedia/Languages/Lean/Declarations/Manifest.lean": "1817b8e3e43f1c290000957114852c362e6d081c2b97476dcb1c94e9669ab8dc",
+    "Mettapedia/Languages/Lean/Declarations/NaturalSyntax.lean": "02499e1844e3dfbf22cbbf8622b2f1fb7687c842ebf2622c2657e51a7cc0b238",
+    "Mettapedia/Languages/Lean/Declarations/Profile.lean": "64ee531a74bdd3357435e9e1c0ea5a0abd5d2ca99d526f3f8510576aab1213c2",
+    "Mettapedia/Languages/Lean/Declarations/Reader.lean": "2e2132c0b0aa9a5aea6104c42a3fd53ad45fd4ddac6c5ec7fc0473a9d307d332",
+    "Mettapedia/Languages/Lean/Declarations/ReaderControls.lean": "6257dbcf9c245d88cf4ce8ce7b792b745e218589d4e328bfc9fc26a2c559f49a",
+    "Mettapedia/Languages/Lean/Declarations/Terms.lean": "41fd37ec7882d5098c11962f77d55efa5acc574a1b0b893834bdd4b7369a159a",
+    "Mettapedia/Languages/MeTTa/OSLFCore/Atom.lean": "097af63112d28c3f45448840fb2c39388cf31648285a4a16b4591bbc822122f1",
+    "Mettapedia/Languages/MeTTa/OSLFCore/ByteString.lean": "c88acb8a2f5d06a31a114e64ec00cfd2239b1b8162227753ed1fb97c4044025b",
+    "Mettapedia/Languages/MeTTa/PeTTa/Answers.lean": "ec41b09c2bedb9d0c7922c3b8c18857694b879875f78b9ef788ab51820451a3b",
+    "Mettapedia/Languages/MeTTa/PeTTa/DeclarativeSpec.lean": "97fa090ba6b8983b0c8f7e7d9a37bd08b19bd36eb98be30cd740645b2ea777c9",
+    "Mettapedia/Languages/MeTTa/PeTTa/Effects.lean": "1cf56c1c8bd288afab4d3d9c496b809a62edfa1bed6291acebd8f24fb148101f",
+    "Mettapedia/Languages/MeTTa/PeTTa/Eval.lean": "0dc9fa5bb2c4b8ceb7db92b443affc7fb30132d1757abc87ef44b17256124311",
+    "Mettapedia/Languages/MeTTa/PeTTa/NamedSpaces.lean": "73674069159996e1c6305a7a3ee23288e578ff75cc4f889004fe9f6286822e90",
+    "Mettapedia/Languages/MeTTa/PeTTa/ProgramReplay.lean": "21d4fde1fa3698e1888c79e5fd91971798a2a6de1ebe27f4a133473c0c139763",
+    "Mettapedia/Languages/MeTTa/PeTTa/ProgramReplayProtocol.lean": "74fb99ca10940d7c5010261bf00c33fdc19c5e714be6aec39efe2adb17327412",
+    "Mettapedia/Languages/MeTTa/PeTTa/Resumption.lean": "5dcfa9695f0190759d13538725c90fd4fac35c9053ac571046f7e8fd3fda16b1",
+    "Mettapedia/Languages/MeTTa/PeTTa/SpaceSemantics.lean": "b9c3099e1d268daae3f9751e681e5931d2587b80cc63a04a484035c492330179",
+    "Mettapedia/Languages/MeTTa/PeTTa/StdLib.lean": "bc3a43d20e6be28ec819c8ff8069463620c9fd8b096a34a662737e047591a6d3",
+    "Mettapedia/Languages/MeTTa/PeTTa/StringLiteral.lean": "a17e1eea95f394663f105b5437132fb3d16ca9d808972528d7a01f0afb6d5c06",
+    "Mettapedia/Languages/ProcessCalculi/MORK/MatchSpec.lean": "55fb8805b85a9b9d6669f865c130892211eca8ffbad2cc5936a64d01bb404096",
+    "Mettapedia/Languages/ProcessCalculi/MORK/Space.lean": "25baf906d17e14b8dc6d9edf43b8fb9192532995538f6844dfc8c9b58584eb34",
+    "Mettapedia/Languages/ProcessCalculi/MORK/Syntax.lean": "32e10f8c4b584caaf72c5a37305a1648c6abac22b36121ac0238858249920bea",
+    "Mettapedia/Logic/GunkyMereology.lean": "a8314571b18091087dfe6d1674fc00e2adc2ac83258f57da2e4a0412483dbc0d",
+    "Mettapedia/Logic/Metaphysics/UltrainfinitismCore.lean": "4b93b51b8abbe1b8a5f671e9b193f824e0e535c25005cec5c51535be1bab418b",
+    "Mettapedia/Machines/Cursor/Protocol.lean": "d5c90bdca70ee4048cb40849de092783d153342008505ddaac0e44192fab7e4e",
+    "Mettapedia/Machines/FunctionalCorrespondence.lean": "c1cce22499634ffb7a5a1806584ca465b02ab28bbbccbe223897973a03f61a0e",
+    "Mettapedia/Machines/MachineRefinement.lean": "246f844ca20deb840f0cf83f3140f1125fbe6e2e79ef7a60b17b2c48b4ab8a89",
+    "Mettapedia/Machines/MachineSubstrate.lean": "5928e0cee3f06fb841d7bd1aa894bbf9a6a959b46cd4867415d2aca3b20b1930",
+    "Mettapedia/Machines/ProductiveCoreAdapters.lean": "98c937b1c18f99c6f60789237f3fba0ef79e69c84746653a0052834222ec0f23",
+    "Mettapedia/OSLF/Framework/DerivedModalities.lean": "d3c71c5930614be0c59add02bf8873ccea719a49eb2d6ee3cebff0839c4bd5a2",
+    "Mettapedia/OSLF/Framework/GSLTTypeSynthesis.lean": "b4cb238a9b60eaaaf1bf291eb5875dd68e894d19f6ea73eaf59f3e767e4cf0cc",
+    "Mettapedia/OSLF/Framework/RewriteSystem.lean": "b421f407b8b0528d12776dc3d8ae97822a7bdd0f470002cbe60b71b32c35c78e",
+    "Mettapedia/OSLF/MeTTaIL/Syntax.lean": "e1d686eb2fb663f00b29a9bbe2aa1a265f7ed4cbfaf0076df6e3aa43f3bca99f",
+    "Mettapedia/OSLF/Syntax/ObservationClosure.lean": "468a38e568fd30d1e665a0a49c930c6193c57f4933077e9e0a276d9ff26bf920",
+    "Mettapedia/Order/AccessibilityCode.lean": "9b0eaaaa39c242249c884d661ea06c6a9d59f982d994c64fc0089a8e9091dc8c",
+    "Mettapedia/SetTheory/Ordinal/NaturalSum.lean": "1763dafd3f478c824412422e3492ae766111cd83d0dcc936d4d8e8bd1a5f69d2",
+    "Mettapedia/SetTheory/Surreal/AddGroup.lean": "71b197b2dc2536fcbe8695fbcd03db736d38c8429c17406beb6c0f19743ff35a",
+    "Mettapedia/SetTheory/Surreal/Addition.lean": "b5c72a4ca4aec18b40f2b6d57b7aaa7af0b493258e9f84b788905100a161bb73",
+    "Mettapedia/SetTheory/Surreal/AdditionBirthday.lean": "bca732d9a7572e9ee397f9bee766affea952ad6ad2442176e3d7b627bf353902",
+    "Mettapedia/SetTheory/Surreal/AdditionMeasure.lean": "a58b5d6522b9bd048e70520b7f66b8a916d09cd14124679b7038688240539ebb",
+    "Mettapedia/SetTheory/Surreal/AdditionOrder.lean": "23b437018f8300c8fda9155384bf3de13a157ec7dd2769389b05495ed5258fb0",
+    "Mettapedia/SetTheory/Surreal/AdditiveInverse.lean": "506122aa07f6eaa5ce3902fde2c1a7c5b1a43e0fea484306edfac26933d9f7c1",
+    "Mettapedia/SetTheory/Surreal/Associativity.lean": "ea5f5d85d90d73754bf8bbe7a0c2543f6e89a164e206a5b3f0c7a3026cc17f76",
+    "Mettapedia/SetTheory/Surreal/Birthday.lean": "76c116499eceaf12a7c1601b41b8021fa48b25cb61e42ecf4c50235c88287ab6",
+    "Mettapedia/SetTheory/Surreal/BoundedBirthday.lean": "28c76af8a277f2c0d28a65c5e2076620e8678d00c9e6d4f8caba4e72961343ed",
+    "Mettapedia/SetTheory/Surreal/Cut.lean": "79831a1d83ba75723cd52fe54c7e34e61310f7b24215946801f815a30b26b8e4",
+    "Mettapedia/SetTheory/Surreal/CutConstruction.lean": "2e2c037309b2a3c9c2e44d00ce49a856a6f56db05a145bf4d622ba0410ca4737",
+    "Mettapedia/SetTheory/Surreal/DyadicEmbedding.lean": "8f595cf1ed0ac0d76b7cc95967a8f5d883c46b3373e5e0fde71bc2836aa20dca",
+    "Mettapedia/SetTheory/Surreal/HalvingLadder.lean": "a03bbfdadcd1ef396c1f32cb0a60cc0e98e50fb13e6533fd2be0f15dc783ad4b",
+    "Mettapedia/SetTheory/Surreal/IntegerArithmetic.lean": "59e8d8c3d4f0742336dd2c7658453fb4b00fab66baa7812ccae6dd4d68ebfa7d",
+    "Mettapedia/SetTheory/Surreal/IntegerEmbedding.lean": "0d3ba2c761cc8372b3306f30ff22fd7c15999688852074088b40296b5c889933",
+    "Mettapedia/SetTheory/Surreal/Negation.lean": "7b0707d36f1c4ce08e04ccd345c9068b10c3d1a4f92eecac8230fd1cad8da56c",
+    "Mettapedia/SetTheory/Surreal/PositiveFloor.lean": "1cdf120b647adfb1f3e5dc523606f998ce0dcd5cb8378787129e7857563a7d2f",
+    "Mettapedia/SetTheory/Surreal/SignExpansion.lean": "bcd568615fc86f9d1e852ddbe5bdf868f49c2dd49798e737c4c73353f3e180cc",
+    "Mettapedia/SetTheory/Surreal/Simplicity.lean": "0221698b8543b91ed225a2539f0200c33b9085cd9e29dfdac62574e3e4630ba4",
+    "Mettapedia/TypeTheory/IndexedContainer.lean": "f8574c493c325bdfcfcd2bca61877fdc9574168d6d75bbc3e05ada307a4e9cd1",
+    "Mettapedia/TypeTheory/IndexedContainerInduction.lean": "9a9dc4ca2d048ec5a4508cbb32f369a60344b8e8df27a85371d94d56fabe1eaf",
+    "Mettapedia/TypeTheory/IndexedPolynomial.lean": "b9eae527f792eb19632dcdbfff5aebc021ab843b167da3dec5a793041437486c",
+    "Mettapedia/TypeTheory/IndexedPolynomialCoalgebra.lean": "d86da47bd942fc48a8d200c38cda35d3eac261ce447a5d01bc32e12a8c62c7b9",
+    "Mettapedia/TypeTheory/IndexedPolynomialDescription.lean": "48d565cc2c35a6a99bc84293d65d9a29a229aa65546c3df7a0d2c0a0383a3b3c",
+    "Mettapedia/TypeTheory/IndexedPolynomialEquivalence.lean": "e35836b262f4161885a2998ca482d52c3cf7a749e52e549c6d2e0f28159cfe03",
+    "Mettapedia/TypeTheory/IndexedPolynomialFree.lean": "2cfa1f324e25a0fb4c4947958eee18b45e4c65bb4bc2749b457d5988252fa165",
+    "Mettapedia/TypeTheory/IndexedPolynomialInduction.lean": "708aa95e4c75b08e2051783efb94c385404897c8ca214a8321ddb26b9613b7b5",
+    "Mettapedia/TypeTheory/IndexedPolynomialRepresentation.lean": "b07b0a110a1fe658065680047e053330d125e212fc21cb178edbfd76cce4619d",
+    "Mettapedia/TypeTheory/IndexedPolynomialVectorRepresentation.lean": "7dd678091b50388bd2e1a60041e0a6b722fbc01a66ee02c888e1730b2fbb3eaa",
+    "Mettapedia/TypeTheory/IndexedPositiveContainer.lean": "92ea2869c3856975a1fe87b2ae2d9810625f9b7de5a3b8f29886f82063cb71bf",
+    "Mettapedia/TypeTheory/InductionRecursionBoundary.lean": "6ceb58ad4e1009a4bf8157b23e110590fb2c14350890a80017d3c5e6028ee619",
+    "Mettapedia/TypeTheory/MaterialSets/Hypersets/AccessiblePointedGraph.lean": "fa86516c046d5b3e0478cfcb31575d2e4e5b5607223accdf7ed5b95bd3dc8194",
+    "Mettapedia/TypeTheory/MaterialSets/Hypersets/AntiFoundation.lean": "eeb3c6b823ff6a64ede6bab4bf09d82e7ed16d9a8b8f78266c7309d1c6c716b4",
+    "Mettapedia/TypeTheory/MaterialSets/Hypersets/Bisimulation.lean": "90d44ed0e5614098656d6522827db3238345963fbc10bacb9781e9573c555d99",
+    "Mettapedia/TypeTheory/MaterialSets/Hypersets/Hyperset.lean": "f74db824947a1b9ad4315704d3feb307ad6967e3b4b474eb7acd85de044ded7a",
+    "Mettapedia/TypeTheory/MaterialSets/Hypersets/NaturalOrdinalModel.lean": "49802135a94c698367ff4b87aa3e4eec357a195dc314a91a8c716081bfce1afd",
+    "Mettapedia/TypeTheory/MaterialSets/Hypersets/Operations.lean": "7453acc42a400331b0d5d8c436653ede837ac3b3a586da26299c3ad26d0a4ace",
+    "Mettapedia/TypeTheory/MaterialSets/Hypersets/WellFounded.lean": "dfc7ea71798d3f87dcdeb970c9e7358f6b8eb46a8f9752c25fb900920da820ec",
+    "Mettapedia/TypeTheory/MaterialSets/MembershipEvidence.lean": "f6e710e2fc9d9a1b91b5f87c6b610002b89131c6562c04770ca0078707da0152",
+    "Mettapedia/TypeTheory/NaturalAlgebra.lean": "13e7429dfdbef8bc58da48e4112355d305a70b2e2a8c7c5d65d14ca722ebadb5",
+    "Mettapedia/TypeTheory/NaturalDependentRepresentations.lean": "d3c656c297cb04fa5f35736397f9ec19618099a92aedce053136372e06e39320",
+    "Mettapedia/TypeTheory/NaturalDependentTransport.lean": "0b43be32db1e4dc2eb5a100861cc133dc29e2355cfcd9c9eeeb6e5e8300f283d",
+    "Mettapedia/TypeTheory/NaturalRepresentations.lean": "51f706355485c052a995f2ff38ae1b721d379ba61e4deba1f9ea43ef9d2e0481",
+    "Mettapedia/TypeTheory/NaturalVectorCoherence.lean": "15685f18aaabce895dfbff91d5fe27e58e6d7a0ba0a4f660df255c4c79b90cd3",
+    "Mettapedia/TypeTheory/NaturalVectorTransport.lean": "7e629121c4bd093159fcd2884071341caf189b853f8ec5d58b3584c09a73e61e",
+    "Mettapedia/TypeTheory/PositiveInductiveBlock.lean": "00630f9aa451e3ca5023f15e62d96950364b5657ec59a13d97a1f66582b3ed81",
+    "Mettapedia/Util/LinearHash.lean": "d9943063e7796d76dd0aefb89fc3d7f72c53a3de08772a003bfa776aa9897cfe"
+  },
+  "artifacts": {
+    "artifacts/lean-declarations/core/recursion.metta": "e4b846beb0291f5b3e12d3d3b3bc8732cdc17f692f8f5646ff24b79c30de8814",
+    "artifacts/lean-declarations/core/recursion-coverage.tsv": "24ca8f0a080ff5b77db93485c83d196ab6512a53311848e76456cb9e81918940",
+    "artifacts/lean-declarations/core/recursion-roots.txt": "1035062b126a62f5d49d62f788516d953cc9b66948173da9af0f054b333b6914"
+  },
+  "interfaces": {
+    "LeanWfRecursion": 7,
+    "LeanRecursionWrapper": 4,
+    "LeanProofArgumentFunction": 5,
+    "LeanRecursionTheorem": 74,
+    "LeanRecursionDefinition": 48
+  },
+  "recursiveFunctions": [
+    "Nat.gcd",
+    "List.mergeSort",
+    "Nat.primeFactorsList",
+    "Nat.minFacAux",
+    "Nat.div.go",
+    "Nat.modCore.go",
+    "List.merge"
+  ],
+  "wrappers": [
+    "Nat.div",
+    "Nat.modCore",
+    "Nat.mod",
+    "Nat.minFac"
+  ],
+  "proofArgumentFunctions": [
+    "Multiset.foldr",
+    "Quot.liftOn",
+    "decidable_of_decidable_of_iff",
+    "decidable_of_iff",
+    "decidable_of_iff'"
+  ],
+  "coverageScope": "computational source-equation closure of core receipts plus Nat.div and Nat.mod",
+  "requiredCoverageEntries": 12,
+  "missingCoverageEntries": 0,
+  "strictSourceChecks": 15,
+  "strictPrerequisiteChecks": 6,
+  "declarationAndManifestReproductionChecks": 10,
+  "codeEquationReproductionChecks": 2,
+  "recursionArtifactsReproduce": true,
+  "packetLoadsInCeTTa": true,
+  "negativeControls": [
+    "changed recipe at one input",
+    "nondecreasing recursive argument",
+    "non-well-founded relation",
+    "omitted recursion interface",
+    "unknown target module"
+  ],
+  "standardAxioms": [
+    "propext",
+    "Classical.choice",
+    "Quot.sound"
+  ],
+  "newAxioms": 0,
+  "proofHoles": 0,
+  "maximumPacketLineLength": 120,
+  "runtime": {
+    "core": {
+      "binary": {
+        "name": "cetta",
+        "sha256": "83d8793305349a94928299b37a1272f2852bd17057c9c0e4333b0ab0cc927af1",
+        "version": [
+          "cetta 1.5.0-dev (python)"
+        ],
+        "revision": "bc138fe684eed551335803e0c18110d23b379e8e",
+        "tracked_changes": 0
+      },
+      "agree": 30,
+      "total": 30,
+      "tests": [
+        {
+          "index": 1,
+          "lean_source": "List.map (fun x => x + 1) [1, 2, 3]",
+          "lean_value": "[2, 3, 4]",
+          "expected": "((List.cons 2 (List.cons 3 (List.cons 4 List.nil))))",
+          "answer": "((List.cons 2 (List.cons 3 (List.cons 4 List.nil))))",
+          "status": "agree",
+          "seconds": 0.011,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((List.cons 2 (List.cons 3 (List.cons 4 List.nil))))"
+          ]
+        },
+        {
+          "index": 2,
+          "lean_source": "List.foldl (fun a b => a + b) 0 [1, 2, 3, 4]",
+          "lean_value": "10",
+          "expected": "(10)",
+          "answer": "(10)",
+          "status": "agree",
+          "seconds": 0.006,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "(10)"
+          ]
+        },
+        {
+          "index": 3,
+          "lean_source": "List.foldr (fun a b => a :: a :: b) [] [1, 2]",
+          "lean_value": "[1, 1, 2, 2]",
+          "expected": "((List.cons 1 (List.cons 1 (List.cons 2 (List.cons 2 List.nil)))))",
+          "answer": "((List.cons 1 (List.cons 1 (List.cons 2 (List.cons 2 List.nil)))))",
+          "status": "agree",
+          "seconds": 0.007,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((List.cons 1 (List.cons 1 (List.cons 2 (List.cons 2 List.nil)))))"
+          ]
+        },
+        {
+          "index": 4,
+          "lean_source": "List.reverse [1, 2, 3, 4]",
+          "lean_value": "[4, 3, 2, 1]",
+          "expected": "((List.cons 4 (List.cons 3 (List.cons 2 (List.cons 1 List.nil)))))",
+          "answer": "((List.cons 4 (List.cons 3 (List.cons 2 (List.cons 1 List.nil)))))",
+          "status": "agree",
+          "seconds": 0.008,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((List.cons 4 (List.cons 3 (List.cons 2 (List.cons 1 List.nil)))))"
+          ]
+        },
+        {
+          "index": 5,
+          "lean_source": "[1, 2] ++ [3, 4]",
+          "lean_value": "[1, 2, 3, 4]",
+          "expected": "((List.cons 1 (List.cons 2 (List.cons 3 (List.cons 4 List.nil)))))",
+          "answer": "((List.cons 1 (List.cons 2 (List.cons 3 (List.cons 4 List.nil)))))",
+          "status": "agree",
+          "seconds": 0.009,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((List.cons 1 (List.cons 2 (List.cons 3 (List.cons 4 List.nil)))))"
+          ]
+        },
+        {
+          "index": 6,
+          "lean_source": "List.length [5, 6, 7]",
+          "lean_value": "3",
+          "expected": "(3)",
+          "answer": "(3)",
+          "status": "agree",
+          "seconds": 0.007,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "(3)"
+          ]
+        },
+        {
+          "index": 7,
+          "lean_source": "List.filter (fun x => x % 2 == 0) (List.range 10)",
+          "lean_value": "[0, 2, 4, 6, 8]",
+          "expected": "((List.cons 0 (List.cons 2 (List.cons 4 (List.cons 6 (List.cons 8 List.nil))))))",
+          "answer": "((List.cons 0 (List.cons 2 (List.cons 4 (List.cons 6 (List.cons 8 List.nil))))))",
+          "status": "agree",
+          "seconds": 0.008,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((List.cons 0 (List.cons 2 (List.cons 4 (List.cons 6 (List.cons 8 List.nil))))))"
+          ]
+        },
+        {
+          "index": 8,
+          "lean_source": "List.zip [1, 2, 3] [true, false, true]",
+          "lean_value": "[(1, true), (2, false), (3, true)]",
+          "expected": "((List.cons (Prod.mk 1 true) (List.cons (Prod.mk 2 false) (List.cons (Prod.mk 3 true) List.nil))))",
+          "answer": "((List.cons (Prod.mk 1 true) (List.cons (Prod.mk 2 false) (List.cons (Prod.mk 3 true) List.nil))))",
+          "status": "agree",
+          "seconds": 0.007,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((List.cons (Prod.mk 1 true) (List.cons (Prod.mk 2 false) (List.cons (Prod.mk 3 true) List.nil))))"
+          ]
+        },
+        {
+          "index": 9,
+          "lean_source": "List.sum [1, 2, 3, 4, 5]",
+          "lean_value": "15",
+          "expected": "(15)",
+          "answer": "(15)",
+          "status": "agree",
+          "seconds": 0.012,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "(15)"
+          ]
+        },
+        {
+          "index": 10,
+          "lean_source": "List.mergeSort [5, 3, 8, 1, 9, 2, 7] (fun a b => decide (a ≤ b))",
+          "lean_value": "[1, 2, 3, 5, 7, 8, 9]",
+          "expected": "((List.cons 1 (List.cons 2 (List.cons 3 (List.cons 5 (List.cons 7 (List.cons 8 (List.cons 9 List.nil))))))))",
+          "answer": "((List.cons 1 (List.cons 2 (List.cons 3 (List.cons 5 (List.cons 7 (List.cons 8 (List.cons 9 List.nil))))))))",
+          "status": "agree",
+          "seconds": 0.009,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((List.cons 1 (List.cons 2 (List.cons 3 (List.cons 5 (List.cons 7 (List.cons 8 (List.cons 9 List.nil))))))))"
+          ]
+        },
+        {
+          "index": 11,
+          "lean_source": "List.max? [3, 7, 2]",
+          "lean_value": "some 7",
+          "expected": "((Option.some 7))",
+          "answer": "((Option.some 7))",
+          "status": "agree",
+          "seconds": 0.007,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((Option.some 7))"
+          ]
+        },
+        {
+          "index": 12,
+          "lean_source": "Option.map (fun x => x * 2) (some 21)",
+          "lean_value": "some 42",
+          "expected": "((Option.some 42))",
+          "answer": "((Option.some 42))",
+          "status": "agree",
+          "seconds": 0.006,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((Option.some 42))"
+          ]
+        },
+        {
+          "index": 13,
+          "lean_source": "Option.bind (some 3) (fun x => if x > 2 then some (x + 1) else none)",
+          "lean_value": "some 4",
+          "expected": "((Option.some 4))",
+          "answer": "((Option.some 4))",
+          "status": "agree",
+          "seconds": 0.005,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((Option.some 4))"
+          ]
+        },
+        {
+          "index": 14,
+          "lean_source": "(none : Option Nat).getD 7",
+          "lean_value": "7",
+          "expected": "(7)",
+          "answer": "(7)",
+          "status": "agree",
+          "seconds": 0.007,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "(7)"
+          ]
+        },
+        {
+          "index": 15,
+          "lean_source": "Nat.gcd 1071 462",
+          "lean_value": "21",
+          "expected": "(21)",
+          "answer": "(21)",
+          "status": "agree",
+          "seconds": 0.006,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "(21)"
+          ]
+        },
+        {
+          "index": 16,
+          "lean_source": "Nat.lcm 4 6",
+          "lean_value": "12",
+          "expected": "(12)",
+          "answer": "(12)",
+          "status": "agree",
+          "seconds": 0.006,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "(12)"
+          ]
+        },
+        {
+          "index": 17,
+          "lean_source": "compare 3 5",
+          "lean_value": "Ordering.lt",
+          "expected": "(Ordering.lt)",
+          "answer": "(Ordering.lt)",
+          "status": "agree",
+          "seconds": 0.006,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "(Ordering.lt)"
+          ]
+        },
+        {
+          "index": 18,
+          "lean_source": "2 ^ 100",
+          "lean_value": "1267650600228229401496703205376",
+          "expected": "(1267650600228229401496703205376)",
+          "answer": "(1267650600228229401496703205376)",
+          "status": "agree",
+          "seconds": 0.009,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "(1267650600228229401496703205376)"
+          ]
+        },
+        {
+          "index": 19,
+          "lean_source": "123456789012345678901234567890 / 7",
+          "lean_value": "17636684144620811271604938270",
+          "expected": "(17636684144620811271604938270)",
+          "answer": "(17636684144620811271604938270)",
+          "status": "agree",
+          "seconds": 0.007,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "(17636684144620811271604938270)"
+          ]
+        },
+        {
+          "index": 20,
+          "lean_source": "123456789012345678901234567890 % 7",
+          "lean_value": "0",
+          "expected": "(0)",
+          "answer": "(0)",
+          "status": "agree",
+          "seconds": 0.007,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "(0)"
+          ]
+        },
+        {
+          "index": 21,
+          "lean_source": "10 - 25",
+          "lean_value": "0",
+          "expected": "(0)",
+          "answer": "(0)",
+          "status": "agree",
+          "seconds": 0.007,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "(0)"
+          ]
+        },
+        {
+          "index": 22,
+          "lean_source": "7 / 0",
+          "lean_value": "0",
+          "expected": "(0)",
+          "answer": "(0)",
+          "status": "agree",
+          "seconds": 0.012,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "(0)"
+          ]
+        },
+        {
+          "index": 23,
+          "lean_source": "Nat.factorial 20",
+          "lean_value": "2432902008176640000",
+          "expected": "(2432902008176640000)",
+          "answer": "(2432902008176640000)",
+          "status": "agree",
+          "seconds": 0.007,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "(2432902008176640000)"
+          ]
+        },
+        {
+          "index": 24,
+          "lean_source": "Nat.choose 20 10",
+          "lean_value": "184756",
+          "expected": "(184756)",
+          "answer": "(184756)",
+          "status": "agree",
+          "seconds": 0.418,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "(184756)"
+          ]
+        },
+        {
+          "index": 25,
+          "lean_source": "Nat.fib 50",
+          "lean_value": "12586269025",
+          "expected": "(12586269025)",
+          "answer": "(12586269025)",
+          "status": "agree",
+          "seconds": 0.007,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "(12586269025)"
+          ]
+        },
+        {
+          "index": 26,
+          "lean_source": "Nat.primeFactorsList 360",
+          "lean_value": "[2, 2, 2, 3, 3, 5]",
+          "expected": "((List.cons 2 (List.cons 2 (List.cons 2 (List.cons 3 (List.cons 3 (List.cons 5 List.nil)))))))",
+          "answer": "((List.cons 2 (List.cons 2 (List.cons 2 (List.cons 3 (List.cons 3 (List.cons 5 List.nil)))))))",
+          "status": "agree",
+          "seconds": 0.007,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((List.cons 2 (List.cons 2 (List.cons 2 (List.cons 3 (List.cons 3 (List.cons 5 List.nil)))))))"
+          ]
+        },
+        {
+          "index": 27,
+          "lean_source": "decide (Nat.Prime 97)",
+          "lean_value": "true",
+          "expected": "(true)",
+          "answer": "(true)",
+          "status": "agree",
+          "seconds": 0.009,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "(true)"
+          ]
+        },
+        {
+          "index": 28,
+          "lean_source": "decide (Nat.Prime 91)",
+          "lean_value": "false",
+          "expected": "(false)",
+          "answer": "(false)",
+          "status": "agree",
+          "seconds": 0.008,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "(false)"
+          ]
+        },
+        {
+          "index": 29,
+          "lean_source": "(Finset.range 11).sum id",
+          "lean_value": "55",
+          "expected": "(55)",
+          "answer": "(55)",
+          "status": "agree",
+          "seconds": 0.009,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "(55)"
+          ]
+        },
+        {
+          "index": 30,
+          "lean_source": "(Finset.filter (fun x => x % 3 = 0) (Finset.range 20)).card",
+          "lean_value": "7",
+          "expected": "(7)",
+          "answer": "(7)",
+          "status": "agree",
+          "seconds": 0.009,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "(7)"
+          ]
+        }
+      ]
+    },
+    "functional-correspondence": {
+      "binary": {
+        "name": "cetta",
+        "sha256": "83d8793305349a94928299b37a1272f2852bd17057c9c0e4333b0ab0cc927af1",
+        "version": [
+          "cetta 1.5.0-dev (python)"
+        ],
+        "revision": "bc138fe684eed551335803e0c18110d23b379e8e",
+        "tracked_changes": 0
+      },
+      "agree": 26,
+      "total": 26,
+      "tests": [
+        {
+          "index": 1,
+          "lean_source": "Mettapedia.Machines.FunctionalCorrespondenceRuns.cek 32 Mettapedia.Machines.FunctionalCorrespondenceRuns.identityApplied",
+          "lean_value": "{ state := { ctl := Mettapedia.Machines.CEK.Ctl.ret (Mettapedia.Machines.CEK.Val.lit 7), k := [] },   steps := 6,   outcome := Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed }",
+          "expected": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ret (Mettapedia.Machines.CEK.Val.lit 7)) List.nil) 6 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))",
+          "answer": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ret (Mettapedia.Machines.CEK.Val.lit 7)) List.nil) 6 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))",
+          "status": "agree",
+          "seconds": 0.009,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ret (Mettapedia.Machines.CEK.Val.lit 7)) List.nil) 6 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))"
+          ]
+        },
+        {
+          "index": 2,
+          "lean_source": "Mettapedia.Machines.FunctionalCorrespondenceRuns.krivine 32 Mettapedia.Machines.FunctionalCorrespondenceRuns.identityApplied",
+          "lean_value": "{ state := { t := Mettapedia.Machines.Tm.lit 7, ρ := [], s := [] },   steps := 3,   outcome := Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed }",
+          "expected": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.lit 7) List.nil List.nil) 3 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))",
+          "answer": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.lit 7) List.nil List.nil) 3 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))",
+          "status": "agree",
+          "seconds": 0.009,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.lit 7) List.nil List.nil) 3 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))"
+          ]
+        },
+        {
+          "index": 3,
+          "lean_source": "Mettapedia.Machines.FunctionalCorrespondenceRuns.cek 32 Mettapedia.Machines.FunctionalCorrespondenceRuns.constantApplied",
+          "lean_value": "{ state := { ctl := Mettapedia.Machines.CEK.Ctl.ret (Mettapedia.Machines.CEK.Val.lit 7), k := [] },   steps := 11,   outcome := Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed }",
+          "expected": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ret (Mettapedia.Machines.CEK.Val.lit 7)) List.nil) 11 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))",
+          "answer": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ret (Mettapedia.Machines.CEK.Val.lit 7)) List.nil) 11 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))",
+          "status": "agree",
+          "seconds": 0.008,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ret (Mettapedia.Machines.CEK.Val.lit 7)) List.nil) 11 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))"
+          ]
+        },
+        {
+          "index": 4,
+          "lean_source": "Mettapedia.Machines.FunctionalCorrespondenceRuns.krivine 32 Mettapedia.Machines.FunctionalCorrespondenceRuns.constantApplied",
+          "lean_value": "{ state := { t := Mettapedia.Machines.Tm.lit 7, ρ := [], s := [] },   steps := 5,   outcome := Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed }",
+          "expected": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.lit 7) List.nil List.nil) 5 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))",
+          "answer": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.lit 7) List.nil List.nil) 5 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))",
+          "status": "agree",
+          "seconds": 0.01,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.lit 7) List.nil List.nil) 5 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))"
+          ]
+        },
+        {
+          "index": 5,
+          "lean_source": "Mettapedia.Machines.FunctionalCorrespondenceRuns.cek 128 Mettapedia.Machines.FunctionalCorrespondenceRuns.substitutionApplied",
+          "lean_value": "{ state := { ctl := Mettapedia.Machines.CEK.Ctl.ret (Mettapedia.Machines.CEK.Val.lit 7), k := [] },   steps := 31,   outcome := Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed }",
+          "expected": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ret (Mettapedia.Machines.CEK.Val.lit 7)) List.nil) 31 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))",
+          "answer": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ret (Mettapedia.Machines.CEK.Val.lit 7)) List.nil) 31 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))",
+          "status": "agree",
+          "seconds": 0.011,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ret (Mettapedia.Machines.CEK.Val.lit 7)) List.nil) 31 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))"
+          ]
+        },
+        {
+          "index": 6,
+          "lean_source": "Mettapedia.Machines.FunctionalCorrespondenceRuns.krivine 128 Mettapedia.Machines.FunctionalCorrespondenceRuns.substitutionApplied",
+          "lean_value": "{ state := { t := Mettapedia.Machines.Tm.lit 7, ρ := [], s := [] },   steps := 13,   outcome := Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed }",
+          "expected": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.lit 7) List.nil List.nil) 13 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))",
+          "answer": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.lit 7) List.nil List.nil) 13 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))",
+          "status": "agree",
+          "seconds": 0.008,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.lit 7) List.nil List.nil) 13 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))"
+          ]
+        },
+        {
+          "index": 7,
+          "lean_source": "Mettapedia.Machines.FunctionalCorrespondenceRuns.cek 32 Mettapedia.Machines.FunctionalCorrespondenceRuns.capture",
+          "lean_value": "{ state := { ctl := Mettapedia.Machines.CEK.Ctl.ret (Mettapedia.Machines.CEK.Val.lit 11), k := [] },   steps := 11,   outcome := Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed }",
+          "expected": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ret (Mettapedia.Machines.CEK.Val.lit 11)) List.nil) 11 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))",
+          "answer": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ret (Mettapedia.Machines.CEK.Val.lit 11)) List.nil) 11 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))",
+          "status": "agree",
+          "seconds": 0.009,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ret (Mettapedia.Machines.CEK.Val.lit 11)) List.nil) 11 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))"
+          ]
+        },
+        {
+          "index": 8,
+          "lean_source": "Mettapedia.Machines.FunctionalCorrespondenceRuns.krivine 32 Mettapedia.Machines.FunctionalCorrespondenceRuns.capture",
+          "lean_value": "{ state := { t := Mettapedia.Machines.Tm.lit 11, ρ := [], s := [] },   steps := 5,   outcome := Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed }",
+          "expected": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.lit 11) List.nil List.nil) 5 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))",
+          "answer": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.lit 11) List.nil List.nil) 5 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))",
+          "status": "agree",
+          "seconds": 0.008,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.lit 11) List.nil List.nil) 5 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))"
+          ]
+        },
+        {
+          "index": 9,
+          "lean_source": "Mettapedia.Machines.FunctionalCorrespondenceRuns.cek 32 Mettapedia.Machines.FunctionalCorrespondenceRuns.discardFailure",
+          "lean_value": "{ state := { ctl := Mettapedia.Machines.CEK.Ctl.ret (Mettapedia.Machines.CEK.Val.lit 1),              k := [Mettapedia.Machines.CEK.Frame.callWith (Mettapedia.Machines.CEK.Val.lit 0),                    Mettapedia.Machines.CEK.Frame.callWith                      (Mettapedia.Machines.CEK.Val.clo (Mettapedia.Machines.Tm.lit 7) [])] },   steps := 7,   outcome := Mettapedia.Machines.BoundedDeterministicRun.Outcome.stuck }",
+          "expected": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ret (Mettapedia.Machines.CEK.Val.lit 1)) (List.cons (Mettapedia.Machines.CEK.Frame.callWith (Mettapedia.Machines.CEK.Val.lit 0)) (List.cons (Mettapedia.Machines.CEK.Frame.callWith (Mettapedia.Machines.CEK.Val.clo (Mettapedia.Machines.Tm.lit 7) List.nil)) List.nil))) 7 Mettapedia.Machines.BoundedDeterministicRun.Outcome.stuck))",
+          "answer": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ret (Mettapedia.Machines.CEK.Val.lit 1)) (List.cons (Mettapedia.Machines.CEK.Frame.callWith (Mettapedia.Machines.CEK.Val.lit 0)) (List.cons (Mettapedia.Machines.CEK.Frame.callWith (Mettapedia.Machines.CEK.Val.clo (Mettapedia.Machines.Tm.lit 7) List.nil)) List.nil))) 7 Mettapedia.Machines.BoundedDeterministicRun.Outcome.stuck))",
+          "status": "agree",
+          "seconds": 0.008,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ret (Mettapedia.Machines.CEK.Val.lit 1)) (List.cons (Mettapedia.Machines.CEK.Frame.callWith (Mettapedia.Machines.CEK.Val.lit 0)) (List.cons (Mettapedia.Machines.CEK.Frame.callWith (Mettapedia.Machines.CEK.Val.clo (Mettapedia.Machines.Tm.lit 7) List.nil)) List.nil))) 7 Mettapedia.Machines.BoundedDeterministicRun.Outcome.stuck))"
+          ]
+        },
+        {
+          "index": 10,
+          "lean_source": "Mettapedia.Machines.FunctionalCorrespondenceRuns.krivine 32 Mettapedia.Machines.FunctionalCorrespondenceRuns.discardFailure",
+          "lean_value": "{ state := { t := Mettapedia.Machines.Tm.lit 7,              ρ := [Mettapedia.Machines.Krivine.NThunk.mk                      (Mettapedia.Machines.Tm.app (Mettapedia.Machines.Tm.lit 0) (Mettapedia.Machines.Tm.lit 1))                      []],              s := [] },   steps := 2,   outcome := Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed }",
+          "expected": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.lit 7) (List.cons (Mettapedia.Machines.Krivine.NThunk.mk (Mettapedia.Machines.Tm.app (Mettapedia.Machines.Tm.lit 0) (Mettapedia.Machines.Tm.lit 1)) List.nil) List.nil) List.nil) 2 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))",
+          "answer": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.lit 7) (List.cons (Mettapedia.Machines.Krivine.NThunk.mk (Mettapedia.Machines.Tm.app (Mettapedia.Machines.Tm.lit 0) (Mettapedia.Machines.Tm.lit 1)) List.nil) List.nil) List.nil) 2 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))",
+          "status": "agree",
+          "seconds": 0.008,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.lit 7) (List.cons (Mettapedia.Machines.Krivine.NThunk.mk (Mettapedia.Machines.Tm.app (Mettapedia.Machines.Tm.lit 0) (Mettapedia.Machines.Tm.lit 1)) List.nil) List.nil) List.nil) 2 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))"
+          ]
+        },
+        {
+          "index": 11,
+          "lean_source": "Mettapedia.Machines.FunctionalCorrespondenceRuns.cek 32 Mettapedia.Machines.FunctionalCorrespondenceRuns.failingArgument",
+          "lean_value": "{ state := { ctl := Mettapedia.Machines.CEK.Ctl.ret (Mettapedia.Machines.CEK.Val.lit 1),              k := [Mettapedia.Machines.CEK.Frame.callWith (Mettapedia.Machines.CEK.Val.lit 0)] },   steps := 4,   outcome := Mettapedia.Machines.BoundedDeterministicRun.Outcome.stuck }",
+          "expected": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ret (Mettapedia.Machines.CEK.Val.lit 1)) (List.cons (Mettapedia.Machines.CEK.Frame.callWith (Mettapedia.Machines.CEK.Val.lit 0)) List.nil)) 4 Mettapedia.Machines.BoundedDeterministicRun.Outcome.stuck))",
+          "answer": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ret (Mettapedia.Machines.CEK.Val.lit 1)) (List.cons (Mettapedia.Machines.CEK.Frame.callWith (Mettapedia.Machines.CEK.Val.lit 0)) List.nil)) 4 Mettapedia.Machines.BoundedDeterministicRun.Outcome.stuck))",
+          "status": "agree",
+          "seconds": 0.009,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ret (Mettapedia.Machines.CEK.Val.lit 1)) (List.cons (Mettapedia.Machines.CEK.Frame.callWith (Mettapedia.Machines.CEK.Val.lit 0)) List.nil)) 4 Mettapedia.Machines.BoundedDeterministicRun.Outcome.stuck))"
+          ]
+        },
+        {
+          "index": 12,
+          "lean_source": "Mettapedia.Machines.FunctionalCorrespondenceRuns.krivine 32 Mettapedia.Machines.FunctionalCorrespondenceRuns.failingArgument",
+          "lean_value": "{ state := { t := Mettapedia.Machines.Tm.lit 0,              ρ := [],              s := [Mettapedia.Machines.Krivine.NThunk.mk (Mettapedia.Machines.Tm.lit 1) []] },   steps := 1,   outcome := Mettapedia.Machines.BoundedDeterministicRun.Outcome.stuck }",
+          "expected": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.lit 0) List.nil (List.cons (Mettapedia.Machines.Krivine.NThunk.mk (Mettapedia.Machines.Tm.lit 1) List.nil) List.nil)) 1 Mettapedia.Machines.BoundedDeterministicRun.Outcome.stuck))",
+          "answer": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.lit 0) List.nil (List.cons (Mettapedia.Machines.Krivine.NThunk.mk (Mettapedia.Machines.Tm.lit 1) List.nil) List.nil)) 1 Mettapedia.Machines.BoundedDeterministicRun.Outcome.stuck))",
+          "status": "agree",
+          "seconds": 0.009,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.lit 0) List.nil (List.cons (Mettapedia.Machines.Krivine.NThunk.mk (Mettapedia.Machines.Tm.lit 1) List.nil) List.nil)) 1 Mettapedia.Machines.BoundedDeterministicRun.Outcome.stuck))"
+          ]
+        },
+        {
+          "index": 13,
+          "lean_source": "Mettapedia.Machines.FunctionalCorrespondenceRuns.cek 1 Mettapedia.Machines.FunctionalCorrespondenceRuns.identityApplied",
+          "lean_value": "{ state := { ctl := Mettapedia.Machines.CEK.Ctl.ev (Mettapedia.Machines.Tm.lam (Mettapedia.Machines.Tm.var 0)) [],              k := [Mettapedia.Machines.CEK.Frame.argOf (Mettapedia.Machines.Tm.lit 7) []] },   steps := 1,   outcome := Mettapedia.Machines.BoundedDeterministicRun.Outcome.exhausted }",
+          "expected": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ev (Mettapedia.Machines.Tm.lam (Mettapedia.Machines.Tm.var 0)) List.nil) (List.cons (Mettapedia.Machines.CEK.Frame.argOf (Mettapedia.Machines.Tm.lit 7) List.nil) List.nil)) 1 Mettapedia.Machines.BoundedDeterministicRun.Outcome.exhausted))",
+          "answer": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ev (Mettapedia.Machines.Tm.lam (Mettapedia.Machines.Tm.var 0)) List.nil) (List.cons (Mettapedia.Machines.CEK.Frame.argOf (Mettapedia.Machines.Tm.lit 7) List.nil) List.nil)) 1 Mettapedia.Machines.BoundedDeterministicRun.Outcome.exhausted))",
+          "status": "agree",
+          "seconds": 0.009,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ev (Mettapedia.Machines.Tm.lam (Mettapedia.Machines.Tm.var 0)) List.nil) (List.cons (Mettapedia.Machines.CEK.Frame.argOf (Mettapedia.Machines.Tm.lit 7) List.nil) List.nil)) 1 Mettapedia.Machines.BoundedDeterministicRun.Outcome.exhausted))"
+          ]
+        },
+        {
+          "index": 14,
+          "lean_source": "Mettapedia.Machines.FunctionalCorrespondenceRuns.krivine 1 Mettapedia.Machines.FunctionalCorrespondenceRuns.identityApplied",
+          "lean_value": "{ state := { t := Mettapedia.Machines.Tm.lam (Mettapedia.Machines.Tm.var 0),              ρ := [],              s := [Mettapedia.Machines.Krivine.NThunk.mk (Mettapedia.Machines.Tm.lit 7) []] },   steps := 1,   outcome := Mettapedia.Machines.BoundedDeterministicRun.Outcome.exhausted }",
+          "expected": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.lam (Mettapedia.Machines.Tm.var 0)) List.nil (List.cons (Mettapedia.Machines.Krivine.NThunk.mk (Mettapedia.Machines.Tm.lit 7) List.nil) List.nil)) 1 Mettapedia.Machines.BoundedDeterministicRun.Outcome.exhausted))",
+          "answer": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.lam (Mettapedia.Machines.Tm.var 0)) List.nil (List.cons (Mettapedia.Machines.Krivine.NThunk.mk (Mettapedia.Machines.Tm.lit 7) List.nil) List.nil)) 1 Mettapedia.Machines.BoundedDeterministicRun.Outcome.exhausted))",
+          "status": "agree",
+          "seconds": 0.01,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.lam (Mettapedia.Machines.Tm.var 0)) List.nil (List.cons (Mettapedia.Machines.Krivine.NThunk.mk (Mettapedia.Machines.Tm.lit 7) List.nil) List.nil)) 1 Mettapedia.Machines.BoundedDeterministicRun.Outcome.exhausted))"
+          ]
+        },
+        {
+          "index": 15,
+          "lean_source": "Mettapedia.Machines.FunctionalCorrespondenceRuns.cek 32 (Mettapedia.Machines.Tm.var 0)",
+          "lean_value": "{ state := { ctl := Mettapedia.Machines.CEK.Ctl.ev (Mettapedia.Machines.Tm.var 0) [], k := [] },   steps := 0,   outcome := Mettapedia.Machines.BoundedDeterministicRun.Outcome.stuck }",
+          "expected": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ev (Mettapedia.Machines.Tm.var 0) List.nil) List.nil) 0 Mettapedia.Machines.BoundedDeterministicRun.Outcome.stuck))",
+          "answer": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ev (Mettapedia.Machines.Tm.var 0) List.nil) List.nil) 0 Mettapedia.Machines.BoundedDeterministicRun.Outcome.stuck))",
+          "status": "agree",
+          "seconds": 0.007,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ev (Mettapedia.Machines.Tm.var 0) List.nil) List.nil) 0 Mettapedia.Machines.BoundedDeterministicRun.Outcome.stuck))"
+          ]
+        },
+        {
+          "index": 16,
+          "lean_source": "Mettapedia.Machines.FunctionalCorrespondenceRuns.krivine 32 (Mettapedia.Machines.Tm.var 0)",
+          "lean_value": "{ state := { t := Mettapedia.Machines.Tm.var 0, ρ := [], s := [] },   steps := 0,   outcome := Mettapedia.Machines.BoundedDeterministicRun.Outcome.stuck }",
+          "expected": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.var 0) List.nil List.nil) 0 Mettapedia.Machines.BoundedDeterministicRun.Outcome.stuck))",
+          "answer": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.var 0) List.nil List.nil) 0 Mettapedia.Machines.BoundedDeterministicRun.Outcome.stuck))",
+          "status": "agree",
+          "seconds": 0.008,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.var 0) List.nil List.nil) 0 Mettapedia.Machines.BoundedDeterministicRun.Outcome.stuck))"
+          ]
+        },
+        {
+          "index": 17,
+          "lean_source": "Mettapedia.Machines.CEK.execute 0 ⟨.ret (.lit 3), []⟩",
+          "lean_value": "{ state := { ctl := Mettapedia.Machines.CEK.Ctl.ret (Mettapedia.Machines.CEK.Val.lit 3), k := [] },   steps := 0,   outcome := Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed }",
+          "expected": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ret (Mettapedia.Machines.CEK.Val.lit 3)) List.nil) 0 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))",
+          "answer": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ret (Mettapedia.Machines.CEK.Val.lit 3)) List.nil) 0 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))",
+          "status": "agree",
+          "seconds": 0.007,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ret (Mettapedia.Machines.CEK.Val.lit 3)) List.nil) 0 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))"
+          ]
+        },
+        {
+          "index": 18,
+          "lean_source": "Mettapedia.Machines.Krivine.execute 0 ⟨.lit 3, [], []⟩",
+          "lean_value": "{ state := { t := Mettapedia.Machines.Tm.lit 3, ρ := [], s := [] },   steps := 0,   outcome := Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed }",
+          "expected": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.lit 3) List.nil List.nil) 0 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))",
+          "answer": "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.lit 3) List.nil List.nil) 0 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))",
+          "status": "agree",
+          "seconds": 0.008,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((Mettapedia.Machines.BoundedDeterministicRun.Result.mk (Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.lit 3) List.nil List.nil) 0 Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed))"
+          ]
+        },
+        {
+          "index": 19,
+          "lean_source": "Mettapedia.Machines.CEK.evalV 32 [] Mettapedia.Machines.FunctionalCorrespondenceRuns.identityApplied",
+          "lean_value": "some (Mettapedia.Machines.CEK.Val.lit 7)",
+          "expected": "((Option.some (Mettapedia.Machines.CEK.Val.lit 7)))",
+          "answer": "((Option.some (Mettapedia.Machines.CEK.Val.lit 7)))",
+          "status": "agree",
+          "seconds": 0.011,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((Option.some (Mettapedia.Machines.CEK.Val.lit 7)))"
+          ]
+        },
+        {
+          "index": 20,
+          "lean_source": "Mettapedia.Machines.Krivine.evalN 32 [] Mettapedia.Machines.FunctionalCorrespondenceRuns.identityApplied",
+          "lean_value": "some (Mettapedia.Machines.Krivine.NVal.lit 7)",
+          "expected": "((Option.some (Mettapedia.Machines.Krivine.NVal.lit 7)))",
+          "answer": "((Option.some (Mettapedia.Machines.Krivine.NVal.lit 7)))",
+          "status": "agree",
+          "seconds": 0.01,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((Option.some (Mettapedia.Machines.Krivine.NVal.lit 7)))"
+          ]
+        },
+        {
+          "index": 21,
+          "lean_source": "Mettapedia.Machines.CEK.evalV 32 [] Mettapedia.Machines.FunctionalCorrespondenceRuns.discardFailure",
+          "lean_value": "none",
+          "expected": "(Option.none)",
+          "answer": "(Option.none)",
+          "status": "agree",
+          "seconds": 0.008,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "(Option.none)"
+          ]
+        },
+        {
+          "index": 22,
+          "lean_source": "Mettapedia.Machines.Krivine.evalN 32 [] Mettapedia.Machines.FunctionalCorrespondenceRuns.discardFailure",
+          "lean_value": "some (Mettapedia.Machines.Krivine.NVal.lit 7)",
+          "expected": "((Option.some (Mettapedia.Machines.Krivine.NVal.lit 7)))",
+          "answer": "((Option.some (Mettapedia.Machines.Krivine.NVal.lit 7)))",
+          "status": "agree",
+          "seconds": 0.007,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((Option.some (Mettapedia.Machines.Krivine.NVal.lit 7)))"
+          ]
+        },
+        {
+          "index": 23,
+          "lean_source": "Mettapedia.Machines.CEK.run 32 ⟨.ev Mettapedia.Machines.FunctionalCorrespondenceRuns.identityApplied [], []⟩",
+          "lean_value": "{ ctl := Mettapedia.Machines.CEK.Ctl.ret (Mettapedia.Machines.CEK.Val.lit 7), k := [] }",
+          "expected": "((Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ret (Mettapedia.Machines.CEK.Val.lit 7)) List.nil))",
+          "answer": "((Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ret (Mettapedia.Machines.CEK.Val.lit 7)) List.nil))",
+          "status": "agree",
+          "seconds": 0.012,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ret (Mettapedia.Machines.CEK.Val.lit 7)) List.nil))"
+          ]
+        },
+        {
+          "index": 24,
+          "lean_source": "Mettapedia.Machines.Krivine.run 32 ⟨Mettapedia.Machines.FunctionalCorrespondenceRuns.identityApplied, [], []⟩",
+          "lean_value": "{ t := Mettapedia.Machines.Tm.lit 7, ρ := [], s := [] }",
+          "expected": "((Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.lit 7) List.nil List.nil))",
+          "answer": "((Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.lit 7) List.nil List.nil))",
+          "status": "agree",
+          "seconds": 0.008,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.lit 7) List.nil List.nil))"
+          ]
+        },
+        {
+          "index": 25,
+          "lean_source": "Mettapedia.Machines.CEK.run 1 ⟨.ev Mettapedia.Machines.FunctionalCorrespondenceRuns.identityApplied [], []⟩",
+          "lean_value": "{ ctl := Mettapedia.Machines.CEK.Ctl.ev (Mettapedia.Machines.Tm.lam (Mettapedia.Machines.Tm.var 0)) [],   k := [Mettapedia.Machines.CEK.Frame.argOf (Mettapedia.Machines.Tm.lit 7) []] }",
+          "expected": "((Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ev (Mettapedia.Machines.Tm.lam (Mettapedia.Machines.Tm.var 0)) List.nil) (List.cons (Mettapedia.Machines.CEK.Frame.argOf (Mettapedia.Machines.Tm.lit 7) List.nil) List.nil)))",
+          "answer": "((Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ev (Mettapedia.Machines.Tm.lam (Mettapedia.Machines.Tm.var 0)) List.nil) (List.cons (Mettapedia.Machines.CEK.Frame.argOf (Mettapedia.Machines.Tm.lit 7) List.nil) List.nil)))",
+          "status": "agree",
+          "seconds": 0.007,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((Mettapedia.Machines.CEK.St.mk (Mettapedia.Machines.CEK.Ctl.ev (Mettapedia.Machines.Tm.lam (Mettapedia.Machines.Tm.var 0)) List.nil) (List.cons (Mettapedia.Machines.CEK.Frame.argOf (Mettapedia.Machines.Tm.lit 7) List.nil) List.nil)))"
+          ]
+        },
+        {
+          "index": 26,
+          "lean_source": "Mettapedia.Machines.Krivine.run 1 ⟨Mettapedia.Machines.FunctionalCorrespondenceRuns.identityApplied, [], []⟩",
+          "lean_value": "{ t := Mettapedia.Machines.Tm.lam (Mettapedia.Machines.Tm.var 0),   ρ := [],   s := [Mettapedia.Machines.Krivine.NThunk.mk (Mettapedia.Machines.Tm.lit 7) []] }",
+          "expected": "((Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.lam (Mettapedia.Machines.Tm.var 0)) List.nil (List.cons (Mettapedia.Machines.Krivine.NThunk.mk (Mettapedia.Machines.Tm.lit 7) List.nil) List.nil)))",
+          "answer": "((Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.lam (Mettapedia.Machines.Tm.var 0)) List.nil (List.cons (Mettapedia.Machines.Krivine.NThunk.mk (Mettapedia.Machines.Tm.lit 7) List.nil) List.nil)))",
+          "status": "agree",
+          "seconds": 0.008,
+          "detail": "",
+          "returncode": 0,
+          "stdout_lines": [
+            "((Mettapedia.Machines.Krivine.KSt.mk (Mettapedia.Machines.Tm.lam (Mettapedia.Machines.Tm.var 0)) List.nil (List.cons (Mettapedia.Machines.Krivine.NThunk.mk (Mettapedia.Machines.Tm.lit 7) List.nil) List.nil)))"
+          ]
+        }
+      ]
+    }
+  },
+  "scope": "Lean-side accessible-model correspondence; Egal reconstruction and execution joins are separate evidence"
+}

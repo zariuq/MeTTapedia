@@ -134,7 +134,7 @@ theorem Admits.semantic_admission
     {rule : NamedSpaces.LocatedRule (Closed (ContextualSelectionViews.source locals captures))}
     (admitted : Admits locals captures occupied selection known written addresses rows before
       (freshLocated locals captures occupied selection rule) outputs) :
-    ContextualTransportedActivation.SemanticAdmission locals captures occupied selection
+    ContextualGuardedStep.Valid locals captures occupied selection
       (rule.toRule (spaceTerms (ContextualSelectionViews.source locals captures)))
       (placedRows locals captures addresses rows) before outputs := by
   have resources := (ContextualInteractionFactors.resources_iff outputs selection before.present).mp admitted.resources

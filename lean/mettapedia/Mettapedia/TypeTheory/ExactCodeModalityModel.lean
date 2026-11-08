@@ -219,7 +219,7 @@ def laws : ModalCwFLaws modes cwf where
 
 /-- The designated empty context, comprehension, and small Tarski universe
 also satisfy the semantic coherence laws. -/
-def coherence : ModalCwFCoherence modes cwf laws where
+theorem coherence : ModalCwFCoherence modes cwf laws where
   empty_sub_unique := by
     intro mode context left right
     funext value
@@ -251,14 +251,14 @@ def splicing :
     simp [cwf, laws, ModalCwF.castTm]
   splice_id := by intros; exact HEq.rfl
 
-def beta :
+theorem beta :
     SelectedQuoteSpliceBeta modes cwf laws selected quotation splicing where
   splice_quote := by
     intro high low depth admitted context type term
     funext value
     exact splice_quote depth (term value)
 
-def eta :
+theorem eta :
     SelectedQuoteSpliceEta modes cwf laws selected quotation splicing where
   quote_splice := by
     intro high low depth admitted context type code

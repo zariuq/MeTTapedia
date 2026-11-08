@@ -69,21 +69,21 @@ theorem region_singleton [DecidableEq O] (candidate : Assignment captures next)
     exact (mem_region locals candidate rows {occurrence} pattern occurrence).mpr
       ⟨Finset.mem_singleton_self _, matched⟩
 
-theorem region_live [DecidableEq O] (candidate : Assignment captures captures)
+theorem region_shared [DecidableEq O] (candidate : Assignment captures captures)
     {Γ : Ctx S} {sort : S.Srt} (label : O → Term (signature S captures) Γ sort)
     (world : Finset O) (pattern : Term (signature S captures) Γ sort) :
-    region locals candidate (fun occurrence => .live (label occurrence)) world pattern =
-      Check.region (ContextualFamilies.action captures Γ sort) candidate label world pattern := rfl
+    region locals candidate (fun occurrence => .shared (label occurrence)) world pattern =
+      Check.matches (ContextualFamilies.action captures Γ sort) candidate label world pattern := rfl
 
-theorem holds_live [DecidableEq O] (candidate : Assignment captures captures)
+theorem holds_shared [DecidableEq O] (candidate : Assignment captures captures)
     {Γ : Ctx S} {sort : S.Srt} (label : O → Term (signature S captures) Γ sort)
     (world : Finset O) (check : Check (Term (signature S captures) Γ sort)) :
-    Holds locals candidate (fun occurrence => .live (label occurrence)) world check ↔
+    Holds locals candidate (fun occurrence => .shared (label occurrence)) world check ↔
       check.Holds (ContextualFamilies.action captures Γ sort) candidate label world := by
   cases check with
   | equal left right => rfl
   | absent pattern => rfl
-  | count pattern number => rw [Holds, Check.Holds, region_live]
+  | count pattern number => rw [Holds, Check.Holds, region_shared]
 
 theorem region_after_capture_transport (change : Assignment captures later) (candidate : Assignment later next)
     {Γ : Ctx S} {sort : S.Srt} (rows : O → ContextualStoredRows.Row locals captures Γ sort)
@@ -162,15 +162,15 @@ theorem Ask.transport {Γ : Ctx S} {sort : S.Srt}
 
 /-- All-future asks specialize to the older endomorphic entailment. No
 reflection from an arbitrary smaller declaration frame is assumed. -/
-theorem Ask.live_entails [DecidableEq O] {Γ : Ctx S} {sort : S.Srt}
+theorem Ask.shared_entails [DecidableEq O] {Γ : Ctx S} {sort : S.Srt}
     {problem : EquationStore (Term (signature S captures) Γ sort)}
     (label : O → Term (signature S captures) Γ sort) (world : Finset O)
     (check : Check (Term (signature S captures) Γ sort))
-    (admitted : Ask locals problem (fun occurrence => .live (label occurrence)) world check) :
+    (admitted : Ask locals problem (fun occurrence => .shared (label occurrence)) world check) :
     (ContextualFamilies.action captures Γ sort).Entails problem
       (fun candidate => check.Holds (ContextualFamilies.action captures Γ sort) candidate label world) := by
   intro candidate solved
-  exact (holds_live locals candidate label world check).mp (admitted Shared captures candidate solved)
+  exact (holds_shared locals candidate label world check).mp (admitted Shared captures candidate solved)
 
 theorem region_erase [DecidableEq O] (candidate : Assignment captures next) {Γ : Ctx S} {sort : S.Srt}
     (rows : O → ContextualStoredRows.Row locals captures Γ sort) (world : Finset O)

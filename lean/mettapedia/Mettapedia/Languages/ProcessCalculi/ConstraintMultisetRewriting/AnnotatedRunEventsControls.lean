@@ -117,11 +117,11 @@ theorem fragment_last : Fragment empty [maker, taker, reader] :=
   fragment_of_perm _ (List.perm_append_comm (l₁ := [maker, taker]) (l₂ := [reader]))
 
 theorem maker_inhibits_reader : Inhibits label maker reader :=
-  ⟨Subst.id signature, CensusAdmission.Query.fixed noPersistent, List.mem_singleton_self _, 61,
+  ⟨Subst.id signature, PredicateQueryAdmission.Query.fixed noPersistent, List.mem_singleton_self _, 61,
     Or.inr (List.mem_singleton_self _), rfl⟩
 
 theorem taker_inhibits_reader : Inhibits label taker reader :=
-  ⟨Subst.id signature, CensusAdmission.Query.fixed noPersistent, List.mem_singleton_self _, 61,
+  ⟨Subst.id signature, PredicateQueryAdmission.Query.fixed noPersistent, List.mem_singleton_self _, 61,
     Or.inl (List.mem_singleton_self _), rfl⟩
 
 /-- No edge enters the reader when it comes first. -/

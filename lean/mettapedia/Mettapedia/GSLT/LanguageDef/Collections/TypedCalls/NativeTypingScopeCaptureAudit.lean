@@ -1,0 +1,29 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypingScopeCapture
+
+/-! # Known-row projection and corrected source-scope audit -/
+
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypingScopeCapture.potential_with_closed_head_is_literal
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypingScopeCapture.freshScan_capture_resourceFree
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypingScopeCapture.freshScan_packet_passes
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypingScopeCapture.native_declaration_is_potential
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypingScopeCapture.irrelevant_cannot_match_subtype
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypingScopeCapture.observe_raw
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypingScopeCapture.observeList_raw
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypingScopeCapture.irrelevant_subtypeRow
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypingScopeCapture.filterMap_capture
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypingScopeCapture.subtypeQuery_capture
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypingScopeCapture.annotations_capture
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypingScopeCapture.corrected_same_revision_capture
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypingScopeCapture.corrected_same_revision_queries
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypingScopeCapture.history_rows
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypingScopeCapture.history_revision
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypingScopeCapture.history_same_revision_capture
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypingScopeCapture.history_same_revision_queries
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypingScopeCapture.Controls.live_projection_misses_headless_dependency
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypingScopeCapture.Controls.corrected_projection_invalidates_headless_dependency
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypingScopeCapture.Controls.literal_subtype_already_invalidates
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypingScopeCapture.Controls.unrelated_fact_keeps_packet
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypingScopeCapture.Controls.fresh_gate_rejects_headless_row
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypingScopeCapture.Controls.unrelated_mutable_fact_is_allowed
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypingScopeCapture.Controls.mutable_declaration_is_rejected
+

@@ -72,7 +72,7 @@ omit [DecidableEq O] in
 Consistency is checked separately because substitution may restrict solutions. -/
 theorem information_map
     (information : Information locals captures occupied selection rule rows before)
-    (compatible : (ContextualFamilies.action (target locals next) Γ sort).Consistent
+    (compatible : ContextualFrameUnifier.Solvable
       (problem locals next occupied selection
         (rule.map (instantiate (ContextualStoredRows.liftCaptures locals change)))
         (fun occurrence => (rows occurrence).map locals change)
@@ -94,7 +94,7 @@ theorem information_map
 
 theorem valid_instance
     (valid : ContextualGuardedStep.Valid locals captures occupied selection rule rows before outputs)
-    (compatible : (ContextualFamilies.action (target locals next) Γ sort).Consistent
+    (compatible : ContextualFrameUnifier.Solvable
       (problem locals next occupied selection
         (rule.map (instantiate (ContextualStoredRows.liftCaptures locals change)))
         (fun occurrence => (rows occurrence).map locals change)

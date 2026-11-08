@@ -25,16 +25,16 @@ open ContextualRowAssemblyControls.CapturedCondition (declarations row caller fo
 abbrev locals := declarations false
 def images : Assignment captures none := caller 9
 def pattern : Term (signature base captures) [] () := box (symbol 7)
-def live (n : Nat) : Row locals captures [] () := ofStored locals captures (.live (box (symbol n)))
-def entryRows (occurrence : Nat) : Row locals captures [] () := if occurrence = 0 then live 7 else row
+def shared (n : Nat) : Row locals captures [] () := ofStored locals captures (.shared (box (symbol n)))
+def entryRows (occurrence : Nat) : Row locals captures [] () := if occurrence = 0 then shared 7 else row
 def exitRows (occurrence : Nat) : Row locals captures [] () :=
-  if occurrence = 2 then live 7 else if occurrence = 0 then live 0 else row
+  if occurrence = 2 then shared 7 else if occurrence = 0 then shared 0 else row
 def world : Finset Nat := {0, 1}
 def removed : Finset Nat := {0}
 def created : Finset Nat := {2}
 
-theorem live_match : Matches locals captures images (box (symbol 7)) (live 7) := by
-  rw [live, ofStored_matches_iff, ContextualGuardMatching.live_matches_iff]
+theorem shared_match : Matches locals captures images (box (symbol 7)) (shared 7) := by
+  rw [shared, ofStored_matches_iff, ContextualGuardMatching.shared_matches_iff]
   rfl
 
 theorem the_retained_condition_excludes_an_extra_match : ¬ Matches locals captures images (box (symbol 7)) row :=
@@ -46,7 +46,7 @@ theorem entry_region : region locals images entryRows world pattern = {0} := by
   change (occurrence ∈ world ∧ Matches locals captures images (box (symbol 7)) (entryRows occurrence)) ↔ occurrence ∈ {0}
   by_cases zero : occurrence = 0
   · subst occurrence
-    simp [entryRows, world, live_match]
+    simp [entryRows, world, shared_match]
   · simp [entryRows, zero, the_retained_condition_excludes_an_extra_match]
 
 theorem removed_region : region locals images entryRows removed pattern = {0} := by
@@ -55,7 +55,7 @@ theorem removed_region : region locals images entryRows removed pattern = {0} :=
   change (occurrence ∈ removed ∧ Matches locals captures images (box (symbol 7)) (entryRows occurrence)) ↔ occurrence ∈ {0}
   by_cases zero : occurrence = 0
   · subst occurrence
-    simp [entryRows, removed, live_match]
+    simp [entryRows, removed, shared_match]
   · simp [removed, zero]
 
 theorem created_region : region locals images exitRows created pattern = {2} := by
@@ -64,7 +64,7 @@ theorem created_region : region locals images exitRows created pattern = {2} := 
   change (occurrence ∈ created ∧ Matches locals captures images (box (symbol 7)) (exitRows occurrence)) ↔ occurrence ∈ {2}
   by_cases two : occurrence = 2
   · subst occurrence
-    simp [exitRows, created, live_match]
+    simp [exitRows, created, shared_match]
   · simp [created, two]
 
 theorem retained_frame : ∀ candidatePattern occurrence, occurrence ∈ world → occurrence ∉ removed →
@@ -106,7 +106,7 @@ theorem removing_the_only_match_establishes_absence :
 theorem making_a_matching_row_refutes_absence :
     ¬ Holds locals images exitRows ((world \ removed) ∪ created) (.absent pattern) := by
   intro absent
-  exact absent 2 (by decide +kernel) live_match
+  exact absent 2 (by decide +kernel) shared_match
 
 def incorrectRows (occurrence : Nat) : Row locals captures [] () :=
   if occurrence = 1 then forgettingConditions else exitRows occurrence

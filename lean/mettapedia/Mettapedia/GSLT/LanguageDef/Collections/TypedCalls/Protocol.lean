@@ -308,6 +308,145 @@ theorem guard_of_getType {U : Type} (e : DVar → U) (S : List (Eqn U)) (T : Ty 
   unfold guard
   rw [if_neg (by rwa [Multiset.card_eq_zero])]
 
+/-- Under functional declarations a guard at a closed type continues at most once. -/
+theorem guardCount_le_one {Γ : Decls} (hΓ : Functional Γ) (v : Atom) (T : Ty Empty) (kindName : String) :
+    guardCount (info Γ v) T kindName ≤ 1 := by
+  unfold guardCount
+  have := count_le_one hΓ v T
+  split_ifs <;> omega
+
+/-! ## Stores with the same solutions -/
+
+/-- Two stores with the same solutions: no later guard tells them apart. -/
+def SameSol {U : Type} (S S' : List (Eqn U)) : Prop := ∀ ρ : U → Ty Empty, Solves ρ S ↔ Solves ρ S'
+
+/-- Related continuations: stores with the same solutions, the first satisfiable. -/
+def Agree {U : Type} (S S' : List (Eqn U)) : Prop := SameSol S S' ∧ Sat S
+
+theorem SameSol.append {U : Type} {S S' : List (Eqn U)} (h : SameSol S S') (X : List (Eqn U)) :
+    SameSol (S ++ X) (S' ++ X) := fun ρ => by
+  rw [solves_append, solves_append, h ρ]
+
+theorem SameSol.sat_iff {U : Type} {S S' : List (Eqn U)} (h : SameSol S S') : Sat S ↔ Sat S' :=
+  ⟨fun ⟨ρ, hρ⟩ => ⟨ρ, (h ρ).mp hρ⟩, fun ⟨ρ, hρ⟩ => ⟨ρ, (h ρ).mpr hρ⟩⟩
+
+theorem SameSol.trans {U : Type} {S S' S'' : List (Eqn U)} (h : SameSol S S') (h' : SameSol S' S'') :
+    SameSol S S'' := fun ρ => (h ρ).trans (h' ρ)
+
+theorem SameSol.symm {U : Type} {S S' : List (Eqn U)} (h : SameSol S S') : SameSol S' S :=
+  fun ρ => (h ρ).symm
+
+/-- An equation between equal types binds nothing. -/
+theorem sameSol_taut {U : Type} (S : List (Eqn U)) (t : Ty U) : SameSol (S ++ [(t, t)]) S :=
+  fun ρ => by rw [solves_append, solves_singleton]; simp
+
+open Classical in
+theorem getType_agree {U : Type} (e : DVar → U) {S S' : List (Eqn U)} (h : SameSol S S')
+    (T : Ty U) (j : Info) : Multiset.Rel Agree (getType e S T j) (getType e S' T j) := by
+  unfold getType
+  rw [Multiset.filter_map, Multiset.filter_map]
+  have same : (eff j).filter (Sat ∘ fun d => S ++ d.eqs.map (Eqn.map e) ++ [(d.ty.map e, T)]) =
+      (eff j).filter (Sat ∘ fun d => S' ++ d.eqs.map (Eqn.map e) ++ [(d.ty.map e, T)]) :=
+    Multiset.filter_congr fun d _ => by
+      simp only [Function.comp, List.append_assoc]
+      exact (h.append _).sat_iff
+  rw [same, Multiset.rel_map]
+  refine Multiset.rel_refl_of_refl_on fun d hd => ⟨?_, ?_⟩
+  · simp only [List.append_assoc]
+    exact h.append _
+  · have hsat : Sat (S' ++ (d.eqs.map (Eqn.map e) ++ [(d.ty.map e, T)])) := by
+      simpa only [Function.comp, List.append_assoc] using (Multiset.mem_filter.mp hd).2
+    simpa only [List.append_assoc] using (h.append _).sat_iff.mpr hsat
+
+open Classical in
+/-- **A guard does not tell stores with the same solutions apart.** -/
+theorem guard_agree {U : Type} (e : DVar → U) {S S' : List (Eqn U)} (h : SameSol S S') (T : Ty U)
+    (j : Info) (kindName : String) :
+    Multiset.Rel Agree (guard e S T j kindName) (guard e S' T j kindName) := by
+  have rel := getType_agree e h T j
+  unfold guard
+  rw [Multiset.card_eq_card_of_rel rel]
+  split_ifs
+  · rw [Multiset.filter_singleton, Multiset.filter_singleton]
+    by_cases hs : Sat (S ++ [(.sym kindName, T)])
+    · rw [if_pos hs, if_pos ((h.append _).sat_iff.mp hs)]
+      exact .cons ⟨h.append _, hs⟩ .zero
+    · rw [if_neg hs, if_neg fun hs' => hs ((h.append _).sat_iff.mpr hs')]
+      exact .zero
+  · exact rel
+
+/-- **The guards do not tell stores with the same solutions apart.** -/
+theorem guards_agree : ∀ (k : ℕ) (As : List (Ty String)) (vs : List Atom) {S S' : List (Eqn CallVar)},
+    Agree S S' → Multiset.Rel Agree (guards Γ kind k As vs S) (guards Γ kind k As vs S')
+  | _, [], [], _, _, h => .cons h .zero
+  | k, A :: As, v :: vs, S, S', h => by
+      simp only [guards]
+      split_ifs
+      · exact Multiset.rel_bind (fun _ _ hab => guards_agree (k + 1) As vs hab)
+          (guard_agree _ h.1 _ _ _)
+      · exact guards_agree (k + 1) As vs h
+  | _, [], _ :: _, _, _, _ => by simp only [guards]; exact .zero
+  | _, _ :: _, [], _, _, _ => by simp only [guards]; exact .zero
+
+/-- The result guard reads a store only through its solutions. -/
+theorem resultGuard_congr (k : ℕ) (R : Ty String) {S S' : List (Eqn CallVar)} (h : SameSol S S')
+    (r : Atom) : resultGuard Γ kind k R S r = resultGuard Γ kind k R S' r := by
+  unfold resultGuard
+  split_ifs
+  · rw [Multiset.map_const', Multiset.map_const',
+      Multiset.card_eq_card_of_rel (guard_agree _ h _ _ _)]
+  · rfl
+
+/-- Related continuations give the same answers to anything reading stores
+through their solutions. -/
+theorem bind_agree {β : Type} {s t : Multiset (List (Eqn CallVar))} (h : Multiset.Rel Agree s t)
+    (f g : List (Eqn CallVar) → Multiset β) (hfg : ∀ {S S'}, Agree S S' → f S = g S') :
+    s.bind f = t.bind g := by
+  rw [← Multiset.rel_eq]
+  exact Multiset.rel_bind (fun _ _ hab => by rw [hfg hab]; exact Multiset.rel_eq.mpr rfl) h
+
+/-! ## A guard met on a literal of its class -/
+
+/-- A grounded value of the value class `c`. -/
+def Literal (c : String) : Atom → Prop
+  | .grounded g => valueClass g = some c
+  | _ => False
+
+instance (c : String) (v : Atom) : Decidable (Literal c v) := by
+  cases v <;> unfold Literal <;> infer_instance
+
+open Classical in
+/-- **A guard at a value class on a literal of that class** continues once, with
+the store extended by an equation between equal types: it binds nothing. -/
+theorem guard_literal {U : Type} (e : DVar → U) {S : List (Eqn U)} (hS : Sat S) {c : String}
+    {v : Atom} (hv : Literal c v) (Γ : Decls) (kindName : String) :
+    guard e S (.sym c) (info Γ v) kindName = {S ++ [(.sym c, .sym c)]} := by
+  obtain ⟨g, rfl⟩ : ∃ g, v = .grounded g := by
+    cases v with
+    | grounded g => exact ⟨g, rfl⟩
+    | symbol _ => exact (hv : False).elim
+    | var _ => exact (hv : False).elim
+    | expression _ => exact (hv : False).elim
+  have hinfo := info_grounded_class Γ (show valueClass g = some c from hv)
+  have heff : eff (info Γ (.grounded g)) = {classDeriv c} := by
+    rw [hinfo]
+    unfold eff
+    simp
+  have sat : Sat (S ++ (classDeriv c).eqs.map (Eqn.map e) ++
+      [((classDeriv c).ty.map e, (.sym c : Ty U))]) := by
+    obtain ⟨ρ, hρ⟩ := hS
+    exact ⟨ρ, (solves_append _ _ _).mpr ⟨by simpa [classDeriv] using hρ,
+      (solves_singleton _ _).mpr (by simp [classDeriv])⟩⟩
+  have one : getType e S (.sym c) (info Γ (.grounded g)) =
+      {S ++ [(.sym c, .sym c)]} := by
+    rw [getType_of_eff e S _ heff, if_pos sat]
+    simp [classDeriv]
+  rw [guard_of_getType e S _ _ kindName (by rw [one]; exact Multiset.singleton_ne_zero _), one]
+
+/-- A value class is guarded. -/
+theorem demand_valueClass {c : String} (hc : IsValueClass c) : demand (.sym c) = .guarded := by
+  rcases hc with rfl | rfl | rfl <;> decide
+
 /-! ## Controls -/
 
 namespace Controls

@@ -1,5 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualAnswerFamilies
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualQueryCensus
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualQueryAnswers
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualSchemaBatch
 
 /-!
@@ -12,7 +12,7 @@ gets its own helper family, and the packed result preserves its exact
 original solution instances. No alternative equations are conjoined.
 
 The publication profile copies answers as schematic data. It does not bind
-the caller to all alternatives. Explicit live captures are the distinct
+the caller to all alternatives. Explicit shared captures are the distinct
 constructed-template production mode. Candidate order is not specified by
 the finite answer set; ordered collection retains its separate scanner
 contract.
@@ -30,21 +30,21 @@ open ContextualConjunctiveQueries
 variable {S : Signature} {V : Type} {source : V → MetaArity S}
 
 def returnedUpdate {problem : ContextualResidual.Problem source}
-    (result : ContextualFrameWorklist.Result problem) (success : ContextualQueryCensus.successful result = true) :
+    (result : ContextualFrameWorklist.Result problem) (success : ContextualQueryAnswers.successful result = true) :
     ContextualFrameUpdate.Update problem :=
   match result with
   | .residual update => update
   | .refuted _ => False.elim (Bool.false_ne_true success)
 
 theorem returnedUpdate_computed {problem : ContextualResidual.Problem source}
-    (result : ContextualFrameWorklist.Result problem) (success : ContextualQueryCensus.successful result = true) :
+    (result : ContextualFrameWorklist.Result problem) (success : ContextualQueryAnswers.successful result = true) :
     result = .residual (returnedUpdate result success) := by
   cases result with
   | residual update => rfl
   | refuted _ => cases success
 
 theorem returnedUpdate_finished {problem : ContextualResidual.Problem source}
-    (result : ContextualFrameWorklist.Result problem) (success : ContextualQueryCensus.successful result = true) :
+    (result : ContextualFrameWorklist.Result problem) (success : ContextualQueryAnswers.successful result = true) :
     (returnedUpdate result success).remaining = [] := by
   cases result with
   | residual update => exact List.isEmpty_iff.mp success
@@ -60,7 +60,7 @@ structure Request (before : ContextualExecution.Endpoint locals O Γ sort) where
   template : Term (signature S (queryFamily queries before.declarations)) Γ sort
   budget : (Fin patterns.length → O) → Nat
   complete : letI := before.equality
-    ContextualQueryCensus.certifies queries locals before.declarations before.inventory.configuration.equations
+    ContextualQueryAnswers.certifies queries locals before.declarations before.inventory.configuration.equations
       patterns before.inventory.rows before.inventory.configuration.present budget = true
 
 namespace Request
@@ -69,22 +69,22 @@ variable {queries locals} {before : ContextualExecution.Endpoint locals O Γ sor
 
 def entries (request : Request queries locals before) : Finset (Fin request.patterns.length → O) := by
   letI := before.equality
-  exact ContextualQueryCensus.answers queries locals before.declarations before.inventory.configuration.equations
+  exact ContextualQueryAnswers.answers queries locals before.declarations before.inventory.configuration.equations
     request.patterns before.inventory.rows before.inventory.configuration.present request.budget
 
 abbrev Index (request : Request queries locals before) := { chosen // chosen ∈ request.entries }
 
 def update (request : Request queries locals before) (index : request.Index) :
-    ContextualFrameUpdate.Update (ContextualQueryCensus.problemAt queries locals before.declarations
+    ContextualFrameUpdate.Update (ContextualQueryAnswers.problemAt queries locals before.declarations
       before.inventory.configuration.equations request.patterns before.inventory.rows index.val) := by
   letI := before.equality
-  exact returnedUpdate (ContextualQueryCensus.scan queries locals before.declarations
+  exact returnedUpdate (ContextualQueryAnswers.scan queries locals before.declarations
     before.inventory.configuration.equations request.patterns before.inventory.rows request.budget index.val)
     (Finset.mem_filter.mp index.property).2
 
 theorem update_computed (request : Request queries locals before) (index : request.Index) :
     letI := before.equality
-    ContextualQueryCensus.scan queries locals before.declarations before.inventory.configuration.equations
+    ContextualQueryAnswers.scan queries locals before.declarations before.inventory.configuration.equations
       request.patterns before.inventory.rows request.budget index.val = .residual (request.update index) := by
   let _ := before.equality
   exact returnedUpdate_computed _ (Finset.mem_filter.mp index.property).2
@@ -129,7 +129,7 @@ theorem packed_instances_iff (request : Request queries locals before) (index : 
     {Next : Type} (next : Next → MetaArity S) (pattern : Term (signature S next) Γ sort) :
     ContextualPublication.Instances request.family (request.packedValue index) next pattern ↔
       ContextualPublication.SourceInstances
-        (ContextualQueryCensus.problemAt queries locals before.declarations before.inventory.configuration.equations
+        (ContextualQueryAnswers.problemAt queries locals before.declarations before.inventory.configuration.equations
           request.patterns before.inventory.rows index.val)
         (queryView queries locals before.declarations request.template) next pattern :=
   (ContextualAnswerFamilies.instances_pack_iff request.Variables request.declarations next index
@@ -146,7 +146,7 @@ theorem entry_iff_source_match (request : Request queries locals before) (chosen
             ContextualConjunctiveQueries.Matches queries locals before.declarations candidate request.patterns
               before.inventory.rows chosen := by
   let _ := before.equality
-  exact ContextualQueryCensus.actual_answer_iff queries locals before.declarations before.inventory.configuration.equations
+  exact ContextualQueryAnswers.actual_answer_iff queries locals before.declarations before.inventory.configuration.equations
     request.patterns before.inventory.rows before.inventory.configuration.present request.budget request.complete chosen
 
 /-- Coverage of the physical answer tuples at a cut. This alone is not a
@@ -235,7 +235,7 @@ theorem row_instances (publication : Publication request order) (port : Fin publ
         publication.firing.update.declaration)
       candidate pattern (publication.firing.target.inventory.rows (publication.firing.selection.made.get port)) ↔
     ContextualPublication.SourceInstances
-      (ContextualQueryCensus.problemAt queries locals before.declarations before.inventory.configuration.equations
+      (ContextualQueryAnswers.problemAt queries locals before.declarations before.inventory.configuration.equations
         request.patterns before.inventory.rows (publication.indexAt port).val)
       (queryView queries locals before.declarations request.template) next pattern := by
   have published := ContextualSchemaBatch.published_instances locals request.family (order.map request.packedValue)

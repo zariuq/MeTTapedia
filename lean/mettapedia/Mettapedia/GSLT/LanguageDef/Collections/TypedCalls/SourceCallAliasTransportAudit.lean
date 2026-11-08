@@ -1,0 +1,63 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallAliasTransport
+
+/-! # Source caller-substitution transport: complete theorem audit -/
+
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.unifyLists_refines
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.unifyPattern_refines
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.unifyBinding_refines
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.BindingRefines.pattern
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.BindingRefines.terms
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.BindingRefines.binding
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.BindingRefines.arguments
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.selections_refines
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.application_refines
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.bindAnswers_refines
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.selectCase_refines
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.selectAnswers_refines
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.queryBodies_refines
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.queries_refines
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.transition_refines
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.step_refines
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.steps_refine
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.reached_answers_refine
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.evaluation_entry_refines
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.Runs.completed_endpoint
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.completed_run_refines
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.RefinementControls.actual_control_forms
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.RefinementControls.unique_is_ordinary_in_this_profile
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.RefinementControls.unique_dispatches_as_data
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallAliasTransport.resolve_eq_subst
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallAliasTransport.refined_support
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallAliasTransport.refined_ground_observation
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallAliasTransport.dependencyCheck_preserves
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallAliasTransport.dependencyCheck_transports_predicate
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallAliasTransport.refined_uninterpreted_observation
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallAliasTransport.variable_binding_refines
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallAliasTransport.returned_variable_binding_refines
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallAliasTransport.refined_facts
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallAliasTransport.reached_facts_transport
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallAliasTransport.reached_ground_tail
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallAliasTransport.reached_ground_tail_guard
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallAliasTransport.bindAnswers_exact
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallAliasTransport.bindAnswers_append
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallAliasTransport.source_return_composes
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallAliasTransport.Controls.helper_result_binds_caller
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallAliasTransport.Controls.helper_returns_changed_pair
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallAliasTransport.Controls.recursive_callee_binding_reaches_caller
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallAliasTransport.Controls.ordered_duplicate_branches_keep_their_bindings
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallAliasTransport.Controls.returned_alias_is_real_unification
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallAliasTransport.Controls.before_idempotent
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallAliasTransport.Controls.caller_refined_through_returned_alias
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallAliasTransport.Controls.newly_bound_name_still_shares_current_dependency
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallAliasTransport.Controls.current_dependency_check_detects_damage
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallAliasTransport.Controls.source_name_separation_does_not_protect
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallAliasTransport.Controls.source_result_guard_still_matters
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallAliasTransport.Controls.source_and_guard_boundary
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallAliasTransport.Controls.deduplication_changes_source_result
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallAliasTransport.Controls.ground_dependency_certificate
+
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.transition_step
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.step_transition
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.step_iff_transition
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.completed_run_iff_derivation
+

@@ -61,7 +61,7 @@ def namedErase {Γ : Ctx CombinedSignature}
       pForget (namedErase names scope) (namedErase names world)
 
 private abbrev CombinedLang : LanguageDef :=
-  wmExtVertexLanguageDefGuarded combinedVertex
+  wmExtVertexLanguageDef combinedVertex
 
 /-- The current authored eight-constructor language has no closed first-order
 State, Query, Scope, or Overlap value. The only possible result sort of a
@@ -996,14 +996,14 @@ rejects the target. Sorted intrinsic image receipts therefore cannot be
 inferred from a raw successful match alone. -/
 theorem matcher_accepts_cross_sort_capture :
     matchPattern wrongSortMatcherPattern wrongSortMatcherTarget ≠ [] ∧
-      ¬ HasType (wmExtVertexLanguageDefGuarded combinedVertex)
+      ¬ HasType (wmExtVertexLanguageDef combinedVertex)
         wrongSortFree [] wrongSortMatcherTarget (.base "BinaryEvidence") := by
   constructor
   · decide +kernel
   · intro typed
     have accepted := (checkHasType_eq_true_iff (by decide +kernel)).2 typed
     have rejected :
-        checkHasType (wmExtVertexLanguageDefGuarded combinedVertex)
+        checkHasType (wmExtVertexLanguageDef combinedVertex)
           wrongSortFree [] wrongSortMatcherTarget (.base "BinaryEvidence") = false := by
       decide +kernel
     rw [rejected] at accepted

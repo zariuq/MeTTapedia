@@ -1,0 +1,62 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadQueryRecursiveControls
+
+/-! # Adaptive private-coordinate and recursive reader audit -/
+
+namespace Mettapedia.GSLT.LanguageDef.Collections.TypedCalls
+
+#print axioms Mettapedia.Machines.ReadOnlyQueryWorldRelation.bind_related
+#print axioms Mettapedia.Machines.ReadOnlyQueryWorldRelation.map_related
+#print axioms Mettapedia.Machines.ReadOnlyQueryWorldRelation.optional_reply_mono
+#print axioms Mettapedia.Machines.ReadOnlyQueryWorldRelation.event_mono
+#print axioms Mettapedia.Machines.ReadOnlyQueryWorldRelation.demand_run_related
+#print axioms TypeReadQueryWorlds.types_mono
+#print axioms TypeReadQueryWorlds.binding_mono
+#print axioms TypeReadQueryWorlds.fixed_mono
+#print axioms TypeReadQueryWorlds.atom_mono
+#print axioms TypeReadQueryWorlds.keys_mono
+#print axioms TypeReadQueryWorlds.replies_mono
+#print axioms TypeReadQueryMatcher.apply_supported
+#print axioms TypeReadQueryMatcher.apply_related
+#print axioms TypeReadQueryMatcher.metaCheck_related
+#print axioms TypeReadQueryMatcher.firstChoice_related
+#print axioms TypeReadQueryArguments.argsPlan
+#print axioms TypeReadQueryArguments.liftViews
+#print axioms TypeReadQueryRows.normalized_related
+#print axioms TypeReadQueryRows.source_normalizer
+#print axioms TypeReadQueryRows.arrow_support
+#print axioms TypeReadQueryRows.signature_related
+#print axioms TypeReadQueryRows.rowsPlan
+#print axioms TypeReadQueryServices.option_types_world
+#print axioms TypeReadQueryServices.annotation
+#print axioms TypeReadQueryServices.closure
+#print axioms TypeReadQueryServices.primitive
+#print axioms TypeReadQueryProducts.product
+#print axioms TypeReadQueryProducts.tuple_families
+#print axioms TypeReadQueryProducts.productPlan
+#print axioms TypeReadQueryCallGraph.typesRead
+#print axioms TypeReadQueryCallGraph.closeTypes
+#print axioms TypeReadQueryCallGraph.types_filter
+#print axioms TypeReadQueryCallGraph.supplement_related
+#print axioms TypeReadQueryCallGraph.ordinary
+#print axioms TypeReadQueryCallGraph.annotated
+#print axioms TypeReadQueryCallGraph.node
+#print axioms TypeReadQueryCallGraph.keepTuple_rename
+#print axioms TypeReadQueryCallGraph.body
+#print axioms TypeReadQueryRecursive.completed_related
+#print axioms TypeReadQueryRecursive.retain_protected
+#print axioms TypeReadQueryRecursive.evaluate_coordinates
+#print axioms TypeReadQueryRecursive.retained_types_equal
+#print axioms TypeReadQueryRecursive.retained_evaluate_equal
+#print axioms TypeReadQueryControls.cached_is_actual_closed_reply
+#print axioms TypeReadQueryControls.services_related
+#print axioms TypeReadQueryControls.warm_hit_preserves_following_fresh_read
+#print axioms TypeReadQueryControls.raw_reply_equality_is_too_strong
+#print axioms TypeReadQueryControls.a_hit_really_skips_private_work
+#print axioms TypeReadQueryControls.open_annotation_is_not_a_literal_cache_payload
+#print axioms TypeReadQueryRecursiveControls.repeated_polymorphic_result
+#print axioms TypeReadQueryRecursiveControls.arbitrary_prior_allocation_preserves_polymorphic_result
+#print axioms TypeReadQueryRecursiveControls.arbitrary_prior_allocation_keeps_prefix_and_duplicate_arrows
+#print axioms TypeReadQueryRecursiveControls.open_recursive_answers_need_coordinates
+#print axioms TypeReadQueryRecursiveControls.exhausted_closure_stays_unfinished
+
+end Mettapedia.GSLT.LanguageDef.Collections.TypedCalls

@@ -589,11 +589,11 @@ def splicing : SelectedSpliceTermStructure modes cwf laws selected where
     exact HEq.rfl
   splice_id := by intros; exact HEq.rfl
 
-def beta :
+theorem beta :
     SelectedQuoteSpliceBeta modes cwf laws selected quotation splicing where
   splice_quote := by intros; simp [quotation, splicing]
 
-def eta :
+theorem eta :
     SelectedQuoteSpliceEta modes cwf laws selected quotation splicing where
   quote_splice := by intros; simp [quotation, splicing]
 

@@ -1,0 +1,62 @@
+claim Refl: forall m :e Lean_Nat, Lean_Nat_beq m m = Lean_Bool_true_node.
+{ apply Lean_Nat_ind.
+  - exact Lean_Nat_beq_eq_1.
+  - let m. assume Hm: m :e Lean_Nat. assume IH: Lean_Nat_beq m m = Lean_Bool_true_node.
+    rewrite Lean_Nat_beq_eq_4 m Hm m Hm. exact IH. }
+claim Sound: forall n :e Lean_Nat, forall m :e Lean_Nat, Lean_Nat_beq n m = Lean_Bool_true_node -> n = m.
+{ apply Lean_Nat_ind.
+  - apply Lean_Nat_ind.
+    + assume H. reflexivity.
+    + let m. assume Hm: m :e Lean_Nat. assume IH.
+      assume H: Lean_Nat_beq Lean_Nat_zero_node (Lean_Nat_succ_node m) = Lean_Bool_true_node.
+      apply FalseE. apply Lean_Bool_noconf0_1.
+      rewrite <- Lean_Nat_beq_eq_2 m Hm. exact H.
+  - let n. assume Hn: n :e Lean_Nat.
+    assume IH: forall m :e Lean_Nat, Lean_Nat_beq n m = Lean_Bool_true_node -> n = m.
+    apply Lean_Nat_ind.
+    + assume H: Lean_Nat_beq (Lean_Nat_succ_node n) Lean_Nat_zero_node = Lean_Bool_true_node.
+      apply FalseE. apply Lean_Bool_noconf0_1.
+      rewrite <- Lean_Nat_beq_eq_3 n Hn. exact H.
+    + let m. assume Hm: m :e Lean_Nat. assume IHm.
+      assume H: Lean_Nat_beq (Lean_Nat_succ_node n) (Lean_Nat_succ_node m) = Lean_Bool_true_node.
+      claim E: n = m.
+      { apply IH m Hm. rewrite <- Lean_Nat_beq_eq_4 n Hn m Hm. exact H. }
+      rewrite E. reflexivity. }
+let n. assume Hn: n :e Lean_Nat. let m. assume Hm: m :e Lean_Nat.
+rewrite Lean_Nat_decEq_eq_1 n Hn m Hm.
+claim Cases: forall b :e Lean_Bool, Lean_Nat_beq n m = b ->
+  ((Lean_Bool_rec (fun v_h :e (Lean_Eq_Prop Lean_Bool (Lean_Nat_beq n m) Lean_Bool_false_node) =>
+      (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Nat n m) 0))
+    (fun v_h :e (Lean_Eq_Prop Lean_Bool (Lean_Nat_beq n m) Lean_Bool_true_node) =>
+      (Lean_Decidable_isTrue_node (Lean_Eq_Prop Lean_Nat n m) 0)) b) 0)
+  :e Lean_Decidable (Lean_Eq_Prop Lean_Nat n m).
+{ apply Lean_Bool_ind.
+  - assume Hb: Lean_Nat_beq n m = Lean_Bool_false_node.
+    claim Hh: 0 :e Lean_Eq_Prop Lean_Bool (Lean_Nat_beq n m) Lean_Bool_false_node.
+    { rewrite Hb. exact Lean_Eq_refl_proof_ok Lean_Bool Lean_Bool_false_node. }
+    claim Ne: 0 :e Lean_Eq_Prop Lean_Nat n m -> False.
+    { assume H. apply Lean_Bool_noconf0_1. rewrite <- Hb.
+      rewrite LeanEq_sound Lean_Nat n m 0 H. exact Refl m Hm. }
+    rewrite Lean_Bool_iota0
+      (fun v_h :e (Lean_Eq_Prop Lean_Bool (Lean_Nat_beq n m) Lean_Bool_false_node) =>
+        (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Nat n m) 0))
+      (fun v_h :e (Lean_Eq_Prop Lean_Bool (Lean_Nat_beq n m) Lean_Bool_true_node) =>
+        (Lean_Decidable_isTrue_node (Lean_Eq_Prop Lean_Nat n m) 0)).
+    rewrite beta (Lean_Eq_Prop Lean_Bool (Lean_Nat_beq n m) Lean_Bool_false_node)
+      (fun v_h => Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Nat n m) 0) 0 Hh.
+    exact Lean_Decidable_isFalse_typed (Lean_Eq_Prop Lean_Nat n m) 0
+      (Lean_refute_0 (Lean_Eq_Prop Lean_Nat n m) (Lean_Eq_Prop_prop Lean_Nat n m) Ne).
+  - assume Hb: Lean_Nat_beq n m = Lean_Bool_true_node.
+    claim Hh: 0 :e Lean_Eq_Prop Lean_Bool (Lean_Nat_beq n m) Lean_Bool_true_node.
+    { rewrite Hb. exact Lean_Eq_refl_proof_ok Lean_Bool Lean_Bool_true_node. }
+    claim Ok: 0 :e Lean_Eq_Prop Lean_Nat n m.
+    { rewrite Sound n Hn m Hm Hb. exact Lean_Eq_refl_proof_ok Lean_Nat m. }
+    rewrite Lean_Bool_iota1
+      (fun v_h :e (Lean_Eq_Prop Lean_Bool (Lean_Nat_beq n m) Lean_Bool_false_node) =>
+        (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Nat n m) 0))
+      (fun v_h :e (Lean_Eq_Prop Lean_Bool (Lean_Nat_beq n m) Lean_Bool_true_node) =>
+        (Lean_Decidable_isTrue_node (Lean_Eq_Prop Lean_Nat n m) 0)).
+    rewrite beta (Lean_Eq_Prop Lean_Bool (Lean_Nat_beq n m) Lean_Bool_true_node)
+      (fun v_h => Lean_Decidable_isTrue_node (Lean_Eq_Prop Lean_Nat n m) 0) 0 Hh.
+    exact Lean_Decidable_isTrue_typed (Lean_Eq_Prop Lean_Nat n m) 0 Ok. }
+apply Cases (Lean_Nat_beq n m) (Lean_Nat_beq_In n Hn m Hm). reflexivity.

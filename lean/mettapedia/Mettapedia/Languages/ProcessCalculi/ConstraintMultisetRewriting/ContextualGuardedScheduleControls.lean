@@ -25,9 +25,9 @@ open ContextualScheduleControls.EarlierSchema
 
 local instance : DecidableEq base.Srt := inferInstanceAs (DecidableEq Unit)
 local instance (sort : base.Srt) : DecidableEq (base.Op sort) := inferInstanceAs (DecidableEq DataOperator)
-local instance : DecidableEq (ContextualAnswerFamilies.Names guardedBody.guardVariables) := Schedule.guardEquality guardedBody
+local instance : DecidableEq (ContextualAnswerFamilies.Names guardedBody.native.guardVariables) := ContextualNativeBodies.Body.guardEquality guardedBody.native
 
-def firstCut : guardedBody.CutIndex := ⟨0, by decide +kernel⟩
+def firstCut : guardedBody.native.CutIndex := ⟨0, by decide +kernel⟩
 
 theorem terminal_consistent : ContextualConditionalExecution.Solvable guardedResult.equations := by
   rw [guardedBody.final_equations]
@@ -48,14 +48,14 @@ theorem the_first_guard_is_false : ¬ (guardedBody.cuts.get firstCut).Holds := b
       cases member
 
 theorem the_joint_problem_is_consistent_despite_the_refusal :
-    ContextualConditionalExecution.Solvable guardedBody.guardProblem :=
-  guardedBody.guard_problem_solvable_iff.mpr terminal_consistent
+    ContextualConditionalExecution.Solvable guardedBody.native.guardProblem :=
+  guardedBody.native.guard_problem_solvable_iff.mpr terminal_consistent
 
 theorem every_bounded_return_keeps_the_earlier_failure (fuel : Nat) :
-    ∃ update : ContextualFrameUpdate.Update guardedBody.guardProblem,
-      ContextualFrameWorklist.run fuel guardedBody.guardFamily guardedBody.guardProblem = .residual update ∧
-        ¬ (guardedBody.reducedGuardView update firstCut).Holds := by
-  obtain ⟨update, computed, same⟩ := guardedBody.actual_guard_update terminal_consistent fuel
+    ∃ update : ContextualFrameUpdate.Update guardedBody.native.guardProblem,
+      ContextualFrameWorklist.run fuel guardedBody.native.guardFamily guardedBody.native.guardProblem = .residual update ∧
+        ¬ (guardedBody.native.reducedGuardView update firstCut).Holds := by
+  obtain ⟨update, computed, same⟩ := guardedBody.native.actual_guard_update terminal_consistent fuel
   exact ⟨update, computed, fun accepted => the_first_guard_is_false ((same firstCut).mp accepted)⟩
 
 end EarlierGuard
@@ -69,13 +69,13 @@ local instance : DecidableEq base.Srt := inferInstanceAs (DecidableEq Unit)
 local instance (sort : base.Srt) : DecidableEq (base.Op sort) := by
   change DecidableEq (DataOperator ⊕ Operator (SchematicReach.spaceDeclaration dataSignature () (Name := Nat)) sort)
   infer_instance
-local instance : DecidableEq (ContextualAnswerFamilies.Names body.guardVariables) := Schedule.guardEquality body
+local instance : DecidableEq (ContextualAnswerFamilies.Names body.native.guardVariables) := ContextualNativeBodies.Body.guardEquality body.native
 
 theorem every_bounded_return_preserves_the_computed_guard (fuel : Nat) :
-    ∃ update : ContextualFrameUpdate.Update body.guardProblem,
-      ContextualFrameWorklist.run fuel body.guardFamily body.guardProblem = .residual update ∧
-        ∀ index : body.CutIndex, (body.reducedGuardView update index).Holds := by
-  obtain ⟨update, computed, same⟩ := body.actual_guard_update (body.admitted_final_solvable admitted) fuel
+    ∃ update : ContextualFrameUpdate.Update body.native.guardProblem,
+      ContextualFrameWorklist.run fuel body.native.guardFamily body.native.guardProblem = .residual update ∧
+        ∀ index : body.native.CutIndex, (body.native.reducedGuardView update index).Holds := by
+  obtain ⟨update, computed, same⟩ := body.native.actual_guard_update (body.admitted_final_solvable admitted) fuel
   refine ⟨update, computed, ?_⟩
   intro index
   exact (same index).mpr ((body.compile_exact.mpr admitted).2.2.2 _ (List.get_mem _ _))

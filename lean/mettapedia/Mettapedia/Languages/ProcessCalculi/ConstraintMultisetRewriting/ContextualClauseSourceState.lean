@@ -7,7 +7,7 @@ The source state contains equations and stored rows, without a native scope
 ledger or solver cache. Each step introduces its query and per-use row names
 in the independently indexed source family. Its continuation retains those
 bindings. Ordinary outputs store the source value and conditions as a fresh
-schema; live outputs retain the source references.
+schema; shared outputs retain the source references.
 
 The update is constructed from source syntax and admission. It does not
 call the native solver or project a native target state.
@@ -56,7 +56,7 @@ def producedRow (port : Fin plan.rule.produce.length) :
   if plan.reusable.get ⟨port.val, plan.shape.symm ▸ port.isLt⟩ then
     ContextualConditionalPublication.ordinary locals (resultFamily queries locals before)
       (resultFamily queries locals before) ⟨information queries locals before plan picked, value⟩
-  else ofStored _ _ (.live value)
+  else ofStored _ _ (.shared value)
 
 def producedRows := List.ofFn (producedRow queries locals before plan picked)
 
@@ -132,15 +132,15 @@ theorem retained_matches (occurrence : O) (notMade : occurrence ∉ picked.made)
   exact (ContextualConditionalPublication.extendPrivate_matches_iff locals _ _ candidate _ pattern).trans
     (matches_map_iff locals _ (captureEmbedding queries locals before.declarations) candidate pattern _)
 
-theorem live_output_row (source : Admitted queries locals before plan picked)
+theorem shared_output_row (source : Admitted queries locals before plan picked)
     (port : Fin picked.made.length)
-    (live : plan.reusable.get ⟨port.val, source.output_shape.trans plan.shape.symm ▸ port.isLt⟩ = false) :
-    (target queries locals before plan picked).rows (picked.made.get port) = ofStored _ _ (.live
+    (isShared : plan.reusable.get ⟨port.val, source.output_shape.trans plan.shape.symm ▸ port.isLt⟩ = false) :
+    (target queries locals before plan picked).rows (picked.made.get port) = ofStored _ _ (.shared
       (queryView queries locals before.declarations
         (plan.rule.produce.get ⟨port.val, source.output_shape ▸ port.isLt⟩))) := by
   rw [produced_at source port]
   unfold producedRow
-  rw [live]
+  rw [isShared]
   rfl
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualClauseSourceState

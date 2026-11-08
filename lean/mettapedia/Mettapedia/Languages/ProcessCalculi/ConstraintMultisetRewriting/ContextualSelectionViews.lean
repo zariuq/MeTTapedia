@@ -7,7 +7,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 The rule and each selected take/read port are freshened with their reserved
 scopes. One whole row uses one assignment, preserving repeated-variable
 aliases. Explicit captures keep their existing identities. A row consisting
-only of captured/live variables therefore has the same view at every port.
+only of captured/shared variables therefore has the same view at every port.
 
 The physical selection is the input index of the prepared views: no read is
 turned into a new physical occurrence. This prepares terms and a scope
@@ -91,7 +91,7 @@ def capturedSource : Assignment captures (source locals captures) :=
 def capturedTarget : Assignment captures (target locals captures) :=
   fun name => generator (target locals captures) (.inr name)
 
-theorem live_value_at_port (occupied : Finset Nat) {size : Nat}
+theorem shared_value_at_port (occupied : Finset Nat) {size : Nat}
     (port : Fin size) {Γ : Ctx S} {sort : S.Srt}
     (value : Term (signature S captures) Γ sort) :
     termAtPort locals captures occupied port (instantiate (capturedSource locals captures) value) =
@@ -106,11 +106,11 @@ theorem live_value_at_port (occupied : Finset Nat) {size : Nat}
       (Sum.inr name)
   rw [same]
 
-theorem live_value_does_not_change_between_ports (occupied : Finset Nat) {size : Nat}
+theorem shared_value_does_not_change_between_ports (occupied : Finset Nat) {size : Nat}
     (first second : Fin size) {Γ : Ctx S} {sort : S.Srt}
     (value : Term (signature S captures) Γ sort) :
     termAtPort locals captures occupied first (instantiate (capturedSource locals captures) value) =
       termAtPort locals captures occupied second (instantiate (capturedSource locals captures) value) := by
-  rw [live_value_at_port, live_value_at_port]
+  rw [shared_value_at_port, shared_value_at_port]
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualSelectionViews

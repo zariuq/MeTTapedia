@@ -55,10 +55,10 @@ theorem possible_eq (problem : EquationStore (Term signature)) (label : O → Te
 omit [DecidableEq O] in
 theorem certain_eq (answer : Subst signature) (label : O → Term signature)
     (world : Finset O) (pattern : Term signature) :
-    certain answer label world pattern = Check.region A answer label world pattern := by
+    certain answer label world pattern = Check.matches A answer label world pattern := by
   classical
   ext occurrence
-  simp only [certain, Check.region, Finset.mem_filter, FirstOrder.action]
+  simp only [certain, Check.matches, Finset.mem_filter, FirstOrder.action]
 
 def acceptsCertainCheck (problem : EquationStore (Term signature)) (label : O → Term signature)
     (world : Finset O) (check : Check (Term signature)) : Bool :=

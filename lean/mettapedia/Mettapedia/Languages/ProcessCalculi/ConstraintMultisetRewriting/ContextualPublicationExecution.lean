@@ -2,11 +2,11 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualExecutionEndpoints
 
 /-!
-# Reusable and live output metadata in the same actual firing result
+# Reusable and shared output metadata in the same actual firing result
 
 The actual worklist return supplies the solved value for reusable storage.
 Live outputs retain the existing source inclusion, preserving their original
-shared reference identities. Only the output metadata differs from the live
+shared reference identities. Only the output metadata differs from the shared
 profile: the original admission, occurrence commit, equations, retained
 roots and fresh-scope ledger remain those of the existing execution owner.
 No intermediate publication transition is introduced.
@@ -57,23 +57,23 @@ def completedTarget (before : ContextualExecution.Endpoint locals O Γ sort)
     (outputs : O → Term (signature S (ContextualActivatedStep.target locals before.declarations)) Γ sort)
     (reusable : O → Bool)
     (ruleCovered : RuleCovered (privateScopes before.scopes) before.occupied rule)
-    (admitted : ContextualTransportedActivation.Admission locals before.declarations before.occupied
+    (admitted : ContextualGuardedStep.Requirements locals before.declarations before.occupied
       selection rule before.inventory.rows before.inventory.configuration outputs)
     (update : Update (ContextualResidual.observeProblem
       (ContextualActivatedStep.problem locals before.declarations before.occupied selection rule
         before.inventory.rows before.inventory.configuration))) :
     ContextualExecution.Endpoint (privateFamily locals update.declaration) O Γ sort :=
-  let liveTarget := ContextualExecution.computedTarget locals before rule selection outputs ruleCovered admitted update
-  { Names := liveTarget.Names
-    equality := liveTarget.equality
-    declarations := liveTarget.declarations
-    scopes := liveTarget.scopes
-    occupied := liveTarget.occupied
-    inventory := replaceOutputs locals update.declaration liveTarget.declarations selection reusable
-      (fun occurrence => instantiate update.answer (outputs occurrence)) liveTarget.inventory
-    covered := replaceOutputs_covered locals update.declaration liveTarget.declarations selection reusable
-      (fun occurrence => instantiate update.answer (outputs occurrence)) liveTarget.scopes liveTarget.occupied
-      liveTarget.inventory liveTarget.covered }
+  let sharedTarget := ContextualExecution.computedTarget locals before rule selection outputs ruleCovered admitted update
+  { Names := sharedTarget.Names
+    equality := sharedTarget.equality
+    declarations := sharedTarget.declarations
+    scopes := sharedTarget.scopes
+    occupied := sharedTarget.occupied
+    inventory := replaceOutputs locals update.declaration sharedTarget.declarations selection reusable
+      (fun occurrence => instantiate update.answer (outputs occurrence)) sharedTarget.inventory
+    covered := replaceOutputs_covered locals update.declaration sharedTarget.declarations selection reusable
+      (fun occurrence => instantiate update.answer (outputs occurrence)) sharedTarget.scopes sharedTarget.occupied
+      sharedTarget.inventory sharedTarget.covered }
 
 variable {locals} {before : ContextualExecution.Endpoint locals O Γ sort}
     [DecidableEq S.Srt] [∀ result, DecidableEq (S.Op result)]
@@ -122,12 +122,12 @@ theorem retained_row (firing : Firing (before := before)) {occurrence : O}
   dsimp only [target,completedTarget,replaceOutputs]
   rw [if_neg (fun both => notMade both.1)]
 
-theorem live_row (firing : Firing (before := before)) {occurrence : O}
-    (made : occurrence ∈ firing.selection.made) (live : firing.reusable occurrence = false) :
-    firing.target.inventory.rows occurrence = ContextualStoredRows.Row.live
+theorem shared_row (firing : Firing (before := before)) {occurrence : O}
+    (made : occurrence ∈ firing.selection.made) (isShared : firing.reusable occurrence = false) :
+    firing.target.inventory.rows occurrence = ContextualStoredRows.Row.shared
       (instantiate (ContextualComputedFreshFrame.includeSource firing.update) (firing.outputs occurrence)) := by
   dsimp only [target,completedTarget,replaceOutputs]
-  rw [if_neg (by simp [live])]
+  rw [if_neg (by simp [isShared])]
   change extendPrivate locals firing.update.declaration
     (ContextualTransportedActivation.resultRows locals before.declarations
       (ContextualComputedFreshFrame.includeSource firing.update) firing.selection firing.outputs
@@ -152,7 +152,7 @@ end Firing
 variable (locals)
 
 /-- The same admitted solver execution constructs the publication result;
-there is no public live-output state followed by a metadata rewrite. -/
+there is no public shared-output state followed by a metadata rewrite. -/
 theorem realize_publication
     (before : ContextualExecution.Endpoint locals O Γ sort)
     (rule : RuleInstance (Term (signature S (ContextualActivatedStep.source locals before.declarations)) Γ sort))
@@ -160,7 +160,7 @@ theorem realize_publication
     (outputs : O → Term (signature S (ContextualActivatedStep.target locals before.declarations)) Γ sort)
     (reusable : O → Bool)
     (ruleCovered : RuleCovered (privateScopes before.scopes) before.occupied rule)
-    (admitted : ContextualTransportedActivation.SemanticAdmission locals before.declarations before.occupied
+    (admitted : ContextualGuardedStep.Valid locals before.declarations before.occupied
       selection rule before.inventory.rows before.inventory.configuration outputs)
     (patterned : ContextualPatternFragment.ProblemPattern (ContextualResidual.observeProblem
       (ContextualActivatedStep.problem locals before.declarations before.occupied selection rule

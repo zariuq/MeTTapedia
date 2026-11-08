@@ -150,7 +150,7 @@ def rule {Γ Δ : Ctx sig} (selected : Kind) (context : Context Γ Δ) : RuleIns
 def selection : Selection Nat := ⟨[0], [], [1]⟩
 def occupied : Finset Nat := ∅
 def rows (Δ : Ctx sig) {Γ : Ctx sig} (input : Term sig Γ .term) (_ : Nat) :
-    ContextualStoredRows.Row (locals Δ) captures Γ .term := .live (encode captures input)
+    ContextualStoredRows.Row (locals Δ) captures Γ .term := .shared (encode captures input)
 def before (Γ : Ctx sig) : Configuration (Term (signature sig captures) Γ .term) Nat := ⟨[], {0}⟩
 def openTerm {Γ Δ : Ctx sig} (term : Term (signature sig (raw Δ)) Γ .term) :=
   ContextualFreshening.termAt (locals Δ) captures
@@ -233,7 +233,7 @@ theorem input_pattern {Γ Δ : Ctx sig} (selected : Kind) (context : Context Γ 
   · exact ContextualPatternFragment.rigid_inclusion_pattern _ input
 
 theorem admitted {Γ Δ : Ctx sig} (selected : Kind) (context : Context Γ Δ) (input : Term sig Γ .term) :
-    ContextualTransportedActivation.Admission (locals Δ) captures occupied selection
+    ContextualGuardedStep.Requirements (locals Δ) captures occupied selection
       (rule selected context) (rows Δ input) (before Γ) (outputs selected context) := by
   refine ⟨by decide, by decide, rfl, rfl, rfl, ?_, ?_⟩
   · refine ⟨?_, ?_, ?_, ?_, ?_⟩

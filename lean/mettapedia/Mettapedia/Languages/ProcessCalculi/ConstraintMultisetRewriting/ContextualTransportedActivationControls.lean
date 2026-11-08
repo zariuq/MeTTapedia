@@ -49,7 +49,7 @@ def swapped : ActiveTerm := rename (S := signature base active) swap formal
 def occupied : Finset Nat := {0, 2}
 def selection : Selection Nat := ⟨[], [], []⟩
 def rule : RuleInstance RawTerm := ⟨[], [], [(rawFormal, rawSwapped)], [.equal rawFormal rawSwapped], []⟩
-def rows (_ : Nat) : ContextualStoredRows.Row locals captures [(), ()] () := .live (.var .zero)
+def rows (_ : Nat) : ContextualStoredRows.Row locals captures [(), ()] () := .shared (.var .zero)
 def before : Configuration (Term (signature base captures) [(), ()] ()) Nat := ⟨[], ∅⟩
 def outputs (_ : Nat) : ActiveTerm := .var .zero
 def problem := ContextualActivatedStep.problem locals captures occupied selection rule rows before
@@ -58,7 +58,7 @@ theorem the_actual_prepared_problem_is_the_swapped_equation : problem = [(formal
   with_unfolding_all rfl
 
 theorem physical_and_guard_admission_does_not_supply_a_model :
-    Admission locals captures occupied selection rule rows before outputs := by
+    ContextualGuardedStep.Requirements locals captures occupied selection rule rows before outputs := by
   refine ⟨by decide, by decide, rfl, rfl, rfl, by decide, ?_⟩
   intro check member
   have only : check = .equal formal swapped := List.mem_singleton.mp member
@@ -138,14 +138,14 @@ theorem the_actual_guarded_activation_has_a_genuine_consistent_helper_frame :
       exact ⟨update, formed, formed.valid.consistent⟩
 
 theorem an_unjustified_guard_still_has_no_admission :
-    ¬ Admission ContextualSelectionViews.Controls.locals ContextualSelectionViews.Controls.captures
+    ¬ ContextualGuardedStep.Requirements ContextualSelectionViews.Controls.locals ContextualSelectionViews.Controls.captures
       ContextualGuardedStep.Controls.occupied ContextualGuardedStep.Controls.selection
       ContextualGuardedStep.Controls.equalityRule ContextualGuardedStep.Controls.rows
       ContextualGuardedStep.Controls.bare ContextualGuardedStep.Controls.outputs := by
   intro admitted
   apply ContextualGuardedStep.Controls.an_unjustified_equality_guard_refuses_even_with_a_closed_output
-  refine ⟨admitted.take_distinct, admitted.output_distinct, admitted.take_length, admitted.read_length,
-    admitted.outputs, admitted.occurrences, ?_, admitted.checks⟩
-  exact ⟨generator _, fun _ member => False.elim (List.not_mem_nil member)⟩
+  refine ⟨admitted, ?_⟩
+  exact ContextualFrameUnifier.solvable_of_consistent
+    ⟨generator _, fun _ member => False.elim (List.not_mem_nil member)⟩
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualTransportedActivationControls

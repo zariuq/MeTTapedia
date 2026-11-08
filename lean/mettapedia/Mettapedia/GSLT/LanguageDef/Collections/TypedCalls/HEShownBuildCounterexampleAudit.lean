@@ -1,0 +1,23 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEShownBuildCounterexample
+
+/-! # Shown-constructor applicability counterexample audit -/
+
+namespace Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEShownBuildCounterexample
+
+#print axioms open_formals_closed_range
+#print axioms operator_declaration_is_unique
+#print axioms shown_clause_accepts
+#print axioms positive_count_comes_from_expression_row
+#print axioms constructor_has_no_equation
+#print axioms applicability_is_error
+#print axioms actual_applicability_rejects
+#print axioms actual_source_does_not_return_the_built_value
+#print axioms actual_source_returns_error
+#print axioms applicability_rejects_at_every_larger_budget
+#print axioms classifier_and_count_do_not_earn_source_acceptance
+#print axioms legitimate_open_constructor_returns_value
+#print axioms even_owed_typing_does_not_establish_applicability
+#print axioms self_annotation_does_not_repair_the_source_program
+
+end Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEShownBuildCounterexample
+

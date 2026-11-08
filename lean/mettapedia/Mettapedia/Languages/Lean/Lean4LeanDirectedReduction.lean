@@ -149,7 +149,7 @@ def toRaw : forall {expectedType source target : VExpr},
 
 /-- Every directed event is sound for Lean4Lean's independently authored
 declarative conversion judgment. -/
-def defEq : forall {expectedType source target : VExpr},
+theorem defEq : forall {expectedType source target : VExpr},
     CoreHeadEvent environment universeParameters context
       expectedType source target ->
     environment.IsDefEq universeParameters context source target expectedType

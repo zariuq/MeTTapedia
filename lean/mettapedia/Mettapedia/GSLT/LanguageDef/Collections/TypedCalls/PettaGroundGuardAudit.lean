@@ -1,0 +1,34 @@
+import Mettapedia.Languages.MeTTa.PeTTa.StableGroundGuardControls
+
+/-! Kernel audit of the actual ground-uninterpreted query and guard discharge. -/
+
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableGroundTypeQueries.admitted_is_ground
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableGroundTypeQueries.schema_is_ground
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableGroundTypeQueries.no_head_declarations
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableGroundTypeQueries.no_function_derivations
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableGroundTypeQueries.freshRows_singleton
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableGroundTypeQueries.row_map_ofFn
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableGroundTypeQueries.fresh_singleton
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableGroundTypeQueries.ground_fields_apart
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableGroundTypeQueries.fieldVariables_range
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableGroundTypeQueries.row_apply
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableGroundTypeQueries.structural_ground_entry
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableGroundTypeQueries.resolved_ground_singleton
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableGroundTypeQueries.zip_ground_schemas
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableGroundTypeQueries.bound_own_singleton
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableGroundGuardDischarge.ground_self_match_is_identity
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableGroundGuardDischarge.join_entailed_ground_is_readonly
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableGroundGuardDischarge.return_guard_readonly
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableGroundGuardDischarge.variable_requirement_is_fresh
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableGroundGuardDischarge.input_query_singleton
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableGroundGuardDischarge.join_ground_to_variable
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableGroundGuardDischarge.input_guard_single_refinement
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableGroundGuardDischarge.input_refinement_preserves_independent_observations
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableGroundGuardDischarge.Controls.admitted_despite_unrelated_overloads
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableGroundGuardDischarge.Controls.input_check_is_one_actual_refinement
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableGroundGuardDischarge.Controls.return_check_is_literally_readonly
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableGroundGuardDischarge.Controls.observing_the_type_name_prevents_input_erasure
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableGroundGuardDischarge.Controls.groundness_alone_does_not_give_one_continuation
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableGroundGuardDischarge.Controls.changed_declarations_can_invalidate_a_ground_range
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableGroundGuardDischarge.Controls.open_values_need_the_other_path
+

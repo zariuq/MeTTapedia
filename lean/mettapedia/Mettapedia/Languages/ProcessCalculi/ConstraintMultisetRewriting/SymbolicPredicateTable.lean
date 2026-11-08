@@ -1,4 +1,4 @@
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.CensusAdmission
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.PredicateQueryAdmission
 
 /-!
 # Finite predicate tables retain candidate-dependent matching
@@ -28,7 +28,7 @@ structure Table (Label : Type uL) (O : Type uO) where
 variable {Label : Type uL} {A : Type uA} {O : Type uO} [DecidableEq O]
     (predicate : A → O → Label → Bool)
 
-def Table.query (table : Table Label O) : CensusAdmission.Query (O × Label) A O :=
+def Table.query (table : Table Label O) : PredicateQueryAdmission.Query (O × Label) A O :=
   ⟨(fun candidate label =>
     if member : label.1 ∈ table.seen then
       predicate candidate label.1 label.2 == predicate candidate label.1 (table.payload label.1 member)

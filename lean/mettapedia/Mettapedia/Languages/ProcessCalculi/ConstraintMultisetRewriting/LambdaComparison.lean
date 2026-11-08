@@ -217,7 +217,7 @@ def selection : Selection Nat := ⟨[0], [], [1]⟩
 def occupied : Finset Nat := ∅
 
 def rows (Δ : Ctx sig) {Γ : Ctx sig} (input : Term sig Γ .term) (_ : Nat) :
-    ContextualStoredRows.Row (locals Δ) captures Γ .term := .live (encode captures input)
+    ContextualStoredRows.Row (locals Δ) captures Γ .term := .shared (encode captures input)
 
 def before (Γ : Ctx sig) : Configuration (Term (signature sig captures) Γ .term) Nat := ⟨[], {0}⟩
 
@@ -289,7 +289,7 @@ theorem input_pattern {Γ Δ : Ctx sig} (context : Context Γ Δ) (input : Term 
   · exact encode_pattern input
 
 theorem admitted {Γ Δ : Ctx sig} (context : Context Γ Δ) (input : Term sig Γ .term) :
-    ContextualTransportedActivation.Admission (locals Δ) captures occupied selection
+    ContextualGuardedStep.Requirements (locals Δ) captures occupied selection
       (rule context) (rows Δ input) (before Γ) (outputs context) := by
   refine ⟨by decide, by decide, rfl, rfl, rfl, ?_, ?_⟩
   · refine ⟨?_, ?_, ?_, ?_, ?_⟩
@@ -445,7 +445,7 @@ theorem source_step_iff_executes {Γ : Ctx sig} (input output : Term sig Γ .ter
     rw [same]
     exact context.congr_step (.beta body argument)
 
-/-- The returned solution reads the actual emitted live value as the source
+/-- The returned solution reads the actual emitted shared value as the source
 reduct. Fresh original/helper identities remain in the stored value; this
 theorem interprets them rather than silently rewriting the whole world. -/
 theorem emitted_value_in_actual_frame {Γ Δ : Ctx sig} (context : Context Γ Δ)
@@ -463,13 +463,13 @@ theorem emitted_value_in_actual_frame {Γ Δ : Ctx sig} (context : Context Γ Δ
     output_for_every_solution context body argument update.answer
       ((ContextualResidual.models_observeProblem _ _).mp (update.completed returned.empty)), instantiate_encode]
 
-theorem actual_result_publishes_live_value {Γ Δ : Ctx sig} (context : Context Γ Δ)
+theorem actual_result_publishes_shared_value {Γ Δ : Ctx sig} (context : Context Γ Δ)
     (input : Term sig Γ .term)
     (update : ContextualFrameUpdate.Update (ContextualResidual.observeProblem (problem context input))) :
     ContextualTransportedActivation.resultRows (locals Δ) captures
       (ContextualComputedFreshFrame.includeSource update) selection (outputs context) (rows Δ input) 1 =
-      .live (instantiate (ContextualComputedFreshFrame.includeSource update) (outputs context 1)) :=
-  ContextualTransportedActivation.produced_row_is_live (locals Δ) captures _ selection _ _ (by decide)
+      .shared (instantiate (ContextualComputedFreshFrame.includeSource update) (outputs context 1)) :=
+  ContextualTransportedActivation.produced_row_is_shared (locals Δ) captures _ selection _ _ (by decide)
 
 theorem actual_result_consumes_and_publishes {Γ Δ : Ctx sig} (context : Context Γ Δ)
     (input : Term sig Γ .term)

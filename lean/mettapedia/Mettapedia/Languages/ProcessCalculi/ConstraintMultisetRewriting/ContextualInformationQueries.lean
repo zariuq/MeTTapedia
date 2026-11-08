@@ -46,7 +46,7 @@ theorem Admitted.transport
     {joined : List (List (Term (signature S (ContextualConjunctiveQueries.queryFamily queries captures)) Γ sort))}
     (admitted : Admitted queries locals problem rows world checks joined)
     (change : Assignment captures next)
-    (compatible : (ContextualFamilies.action next Γ sort).Consistent
+    (compatible : ContextualFrameUnifier.Solvable
       (ContextualFrameUnifier.mapProblem change problem)) :
     Admitted queries locals (ContextualFrameUnifier.mapProblem change problem)
       (fun occurrence => (rows occurrence).map locals change) world
@@ -68,7 +68,7 @@ theorem Admitted.refine
     {joined : List (List (Term (signature S (ContextualConjunctiveQueries.queryFamily queries captures)) Γ sort))}
     (admitted : Admitted queries locals problem rows world checks joined)
     (refinement : ContextualInformation.Refines stronger problem)
-    (compatible : (ContextualFamilies.action captures Γ sort).Consistent stronger) :
+    (compatible : ContextualFrameUnifier.Solvable stronger) :
     Admitted queries locals stronger rows world checks joined :=
   ⟨ContextualInformation.admitted_refinement locals refinement compatible admitted.ordinary,
     fun patterns present Future future candidate model => admitted.absent patterns present Future future candidate

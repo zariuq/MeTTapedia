@@ -88,7 +88,7 @@ inductive GrowthTransition : VEnv → VEnv → Type where
   | stutter (environment : VEnv) : GrowthTransition environment environment
 
 /-- Every growth transition is monotone on Lean4Lean environments. -/
-def GrowthTransition.environmentLE
+theorem GrowthTransition.environmentLE
     {before after : VEnv} (transition : GrowthTransition before after) :
     before ≤ after :=
   match transition with
@@ -307,7 +307,7 @@ theorem typeConstant_adds :
       some afterTypeAxiom := by
   rfl
 
-def typeAxiomStep :
+theorem typeAxiomStep :
     CoreDeclStep VEnv.empty (.axiom typeConstant) afterTypeAxiom :=
   .addAxiom typeConstant_wellTyped typeConstant_adds
 

@@ -1,0 +1,26 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEOperatorAliasPublication
+
+/-! # Source operator alias-frame audit -/
+
+namespace Mettapedia.GSLT.LanguageDef.Collections.TypedCalls
+
+#print axioms HEOperatorAliasPublication.symbol_match_tail
+#print axioms HEOperatorAliasPublication.symbol_match_prefix
+#print axioms HEOperatorAliasPublication.arrow_match
+#print axioms HEOperatorAliasPublication.arrow_source_match
+#print axioms HEOperatorAliasPublication.symbol_unify_tail
+#print axioms HEOperatorAliasPublication.symbol_unify_prefix
+#print axioms HEOperatorAliasPublication.materialized_arrow
+#print axioms HEOperatorAliasPublication.arrow_contextual_match
+#print axioms HEOperatorAliasPublication.alias_frame
+#print axioms HEOperatorAliasPublication.cast_from_query
+#print axioms HEOperatorAliasPublication.signature_variant
+#print axioms HEOperatorAliasPublication.scoped_query
+#print axioms HEOperatorAliasPublication.source_operator
+#print axioms HEOperatorAliasPublication.fresh_packet
+#print axioms HEOperatorAliasPublication.fresh_scoped_operator
+#print axioms HEOperatorAliasPublication.Controls.two_occurrences_one_merged_constraint
+#print axioms HEOperatorAliasPublication.Controls.conflicting_operator_instance_rejected
+#print axioms HEOperatorAliasPublication.Controls.exact_expression_packet
+
+end Mettapedia.GSLT.LanguageDef.Collections.TypedCalls

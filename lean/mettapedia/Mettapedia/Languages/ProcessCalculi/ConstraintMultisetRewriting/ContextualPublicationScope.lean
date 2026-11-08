@@ -5,8 +5,8 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 # Publication retains the existing finite scope inventory
 
 Extending the private bank transports existing templates and rows. New
-private indices introduce no live captures before a later use opens them.
-A reusable solved value therefore needs no live-variable scope of its own;
+private indices introduce no shared captures before a later use opens them.
+A reusable solved value therefore needs no shared-variable scope of its own;
 its rigid syntax, object binders and repeated private variables remain data.
 -/
 
@@ -29,7 +29,7 @@ theorem asTemplate_extendPrivate {Γ : Ctx S} {sort : S.Srt}
       instantiate (includePrivate locals declaration) (ContextualStoredRows.asTemplate locals captures row) := by
   cases row with
   | schema body => rfl
-  | live value =>
+  | shared value =>
       dsimp only [extendPrivate,ContextualStoredRows.asTemplate]
       rw [instantiate_comp]
       congr 1

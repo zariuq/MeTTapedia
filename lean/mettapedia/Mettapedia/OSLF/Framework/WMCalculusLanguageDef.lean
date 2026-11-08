@@ -183,7 +183,7 @@ def coreRules : List RewriteRule :=
 
 /-- The core WM calculus LanguageDef: only the 5 unconditional core rules
     (evidence-add, revision-comm, revision-assoc, combine-comm, combine-zero).
-    Used as the "raw core" shared by all vertices, and as the reference
+    Used as the core shared by all vertices, and as the reference
     LanguageDef for encoding faithfulness (WMStep ↔ langReduces). -/
 def wmCoreLanguageDef : LanguageDef := {
   name := "WMCalculusCore"
@@ -287,8 +287,8 @@ inductive WMForgettingMode where
   | supportTracked : WMForgettingMode  -- SupportTrackedForgettingLayer rules
   deriving DecidableEq, Repr
 
-/-- A scope acts on a state; the outside-scope test remains a guarded
-relation rather than an unconditional equation. -/
+/-- A scope acts on a state; the outside-scope test remains a relation
+premise rather than an unconditional equation. -/
 def forgetDecl : GrammarRule := {
   label := "Forget"
   category := "State"
@@ -355,8 +355,7 @@ def ruleForgetIdempotent : RewriteRule := {
   right := pForget (.fvar "S") (.fvar "W")
 }
 
-/-- The forgetting rules.  The raw and the guarded calculi share them; a
-support-tracked vertex adds `supportTrackedRules`. -/
+/-- The forgetting rules; a support-tracked vertex adds `supportTrackedRules`. -/
 def forgettingRules : WMForgettingMode → List RewriteRule
   | .none => []
   | .scopeBased => [ruleForgetOutside, ruleForgetIdempotent]
@@ -406,8 +405,7 @@ def ruleForgetClean : RewriteRule := {
   right := .fvar "W"
 }
 
-/-- The support-tracked forgetting rules.  They carry their premises, and the
-raw and the guarded calculi share them. -/
+/-- The support-tracked forgetting rules.  They carry their premises. -/
 def supportTrackedRules : WMForgettingMode → List RewriteRule
   | .supportTracked => [ruleForgetAbsorbSupported, ruleForgetClean]
   | _ => []
@@ -446,6 +444,10 @@ def pTrustedAll : Pattern := .apply "TrustedAll" []
 /-- BinaryEvidence value one (positive singleton). -/
 def pEvidenceOne : Pattern := .apply "EvidenceOne" []
 
+/-- BinaryEvidence value `⟨0, 1⟩`: one observation against (negative singleton).
+It is the evidence of a singleton state at a query its point refutes. -/
+def pEvidenceOneNegative : Pattern := .apply "EvidenceOneNegative" []
+
 /-- Fixpoint closure operators. -/
 def pImmediateStep (rules w seed current : Pattern) : Pattern :=
   .apply "ImmediateStep" [rules, w, seed, current]
@@ -476,6 +478,10 @@ def pScheduleError (base steps₁ steps₂ q : Pattern) : Pattern :=
 def pRunSchedule (base steps : Pattern) : Pattern :=
   .apply "RunSchedule" [base, steps]
 
+/-- The zero order cost.  Swap anomalies and schedule errors are costs, not
+evidence, so a vanishing anomaly is this constant rather than `EvidenceZero`. -/
+def pCostZero : Pattern := .apply "CostZero" []
+
 /-- Conservation / anti-hallucination operators. -/
 def pLeakageBudget (scope delta budget : Pattern) : Pattern :=
   .apply "LeakageBudget" [scope, delta, budget]
@@ -484,8 +490,10 @@ def pLeakageBudget (scope delta budget : Pattern) : Pattern :=
 def pExperimentEvidence (w q : Pattern) : Pattern :=
   .apply "ExperimentEvidence" [w, q]
 
-def pBlackwellPullback (kappa q : Pattern) : Pattern :=
-  .apply "BlackwellPullback" [kappa, q]
+/-- The pullback of the query `q` along the garbling `kappa` to the channel
+`strong`: the same outcome predicate, read after `kappa`, on `strong`. -/
+def pBlackwellPullback (strong kappa q : Pattern) : Pattern :=
+  .apply "BlackwellPullback" [strong, kappa, q]
 
 def pChannelComp (ch₁ ch₂ : Pattern) : Pattern :=
   .apply "ChannelComp" [ch₁, ch₂]
@@ -543,29 +551,37 @@ def ruleCompatibleSymm : RewriteRule := {
   right := pSourceCompatible (.fvar "W2") (.fvar "W1")
 }
 
-/-- FallbackRevision(W₁,W₂) ↦ Revise(W₁,W₂) when compatible. -/
+/-- The premise that `W1` and `W2` are source-compatible. -/
+def sourceCompatiblePremise : Premise :=
+  .relationQuery "sourceCompatible" [.fvar "W1", .fvar "W2"]
+
+/-- FallbackRevision(W₁,W₂) ↦ Revise(W₁,W₂) when compatible
+(`fallbackRevision_eq_add_of_compatible`). -/
 def ruleFallbackCompatible : RewriteRule := {
   name := "WM_FallbackCompatible"
   typeContext := [("W1", .base "State"), ("W2", .base "State")]
-  premises := []  -- side condition: SourceCompatible(W₁,W₂)
+  premises := [sourceCompatiblePremise]
   left := pFallbackRevision (.fvar "W1") (.fvar "W2")
   right := pRevise (.fvar "W1") (.fvar "W2")
 }
 
-/-- FallbackRevision(W₁,W₂) ↦ W₁ when incompatible. -/
+/-- FallbackRevision(W₁,W₂) ↦ W₁ when incompatible
+(`fallbackRevision_eq_left_of_not_compatible`). -/
 def ruleFallbackIncompatible : RewriteRule := {
   name := "WM_FallbackIncompatible"
   typeContext := [("W1", .base "State"), ("W2", .base "State")]
-  premises := []  -- side condition: ¬ SourceCompatible(W₁,W₂)
+  premises := [.relationQuery "notSourceCompatible" [.fvar "W1", .fvar "W2"]]
   left := pFallbackRevision (.fvar "W1") (.fvar "W2")
   right := .fvar "W1"
 }
 
-/-- PartialRevision(W₁,W₂) ↦ Revise(W₁,W₂) when compatible. -/
+/-- PartialRevision(W₁,W₂) ↦ Revise(W₁,W₂) when compatible
+(`partialRevision_eq_some_add_of_compatible`); an incompatible partial revision
+is undefined and has no reduct. -/
 def rulePartialRevisionCompatible : RewriteRule := {
   name := "WM_PartialRevisionCompatible"
   typeContext := [("W1", .base "State"), ("W2", .base "State")]
-  premises := []  -- side condition: SourceCompatible(W₁,W₂)
+  premises := [sourceCompatiblePremise]
   left := pPartialRevision (.fvar "W1") (.fvar "W2")
   right := pRevise (.fvar "W1") (.fvar "W2")
 }
@@ -579,13 +595,14 @@ def ruleTrustedGateAll : RewriteRule := {
   right := .fvar "W"
 }
 
-/-- BinaryEvidence additivity under compatible fallback revision.
+/-- BinaryEvidence additivity under compatible fallback revision
+(`weightedEvidence_fallback_eq_add_of_compatible`):
     Extract(FallbackRevision(W₁,W₂), q) ↦ Combine(Extract(W₁,q), Extract(W₂,q))
-    [when compatible] -/
+    when compatible. -/
 def ruleSourceEvidenceAdd : RewriteRule := {
   name := "WM_SourceEvidenceAdd"
   typeContext := [("W1", .base "State"), ("W2", .base "State"), ("q", .base "Query")]
-  premises := []  -- side condition: SourceCompatible(W₁,W₂)
+  premises := [sourceCompatiblePremise]
   left := pExtract (pFallbackRevision (.fvar "W1") (.fvar "W2")) (.fvar "q")
   right := pCombine (pExtract (.fvar "W1") (.fvar "q")) (pExtract (.fvar "W2") (.fvar "q"))
 }
@@ -641,23 +658,27 @@ def ruleIterUnfolding : RewriteRule := {
     (pImmediateIter (.fvar "R") (.fvar "W") (.fvar "seed") (.fvar "n"))
 }
 
-/-- PolicyRevisedState(TrustedAll, W₁, W₂) ↦ Revise(W₁, W₂) when compatible.
+/-- PolicyRevisedState(TrustedAll, W₁, W₂) ↦ Revise(W₁, W₂) when compatible
+(`policyRevisedState_eq_add_of_compatible_trustedAll`).
     All-trusted policy with compatible sources reduces to plain revision. -/
 def rulePolicyTrustedAllCompatible : RewriteRule := {
   name := "WM_PolicyTrustedAllCompatible"
   typeContext := [("W1", .base "State"), ("W2", .base "State")]
-  premises := []  -- side condition: SourceCompatible(W₁,W₂)
+  premises := [sourceCompatiblePremise]
   left := pPolicyRevisedState pTrustedAll (.fvar "W1") (.fvar "W2")
   right := pRevise (.fvar "W1") (.fvar "W2")
 }
 
-/-- ImmediateIter(R, W, seed, Card(Q)) ↦ LeastClosure(R, W, seed)
-    On finite query spaces, iteration stabilizes at cardinality bound. -/
+/-- ImmediateIter(R, W, seed, Card(Q)) ↦ LeastClosure(R, W, seed) when `Q`
+enumerates the query space of `R` (`querySpaceOf(R, Q)`): on a finite query
+space the iteration reaches the least closure by the space's cardinality
+(`immediateIter_eq_leastRuleClosure_at_card_of_finite`).  A finite set that
+misses queries of the space bounds nothing. -/
 def ruleCascadeAtCard : RewriteRule := {
   name := "WM_CascadeAtCard"
   typeContext := [("R", .base "RuleSet"), ("W", .base "State"),
                   ("seed", .base "QuerySet"), ("Q", .base "QuerySpace")]
-  premises := []  -- side condition: Fintype Q
+  premises := [.relationQuery "querySpaceOf" [.fvar "R", .fvar "Q"]]
   left := pImmediateIter (.fvar "R") (.fvar "W") (.fvar "seed") (pCard (.fvar "Q"))
   right := pLeastClosure (.fvar "R") (.fvar "W") (.fvar "seed")
 }
@@ -695,13 +716,14 @@ def ruleSwapAnomalySymm : RewriteRule := {
   right := pSwapAnomaly (.fvar "W2") (.fvar "W1") (.fvar "q")
 }
 
-/-- SwapAnomaly(W₁,W₂,q) ↦ EvidenceZero when observation counts are equal. -/
+/-- SwapAnomaly(W₁,W₂,q) ↦ CostZero when the two merge orders give equal
+observation counts (`swapAnomalyCount_zero_of_count_eq`). -/
 def ruleSwapAnomalyZero : RewriteRule := {
   name := "WM_SwapAnomalyZero"
   typeContext := [("W1", .base "State"), ("W2", .base "State"), ("q", .base "Query")]
-  premises := []  -- side condition: count(W₁,W₂,q) = count(W₂,W₁,q)
+  premises := [.relationQuery "equalCounts" [.fvar "W1", .fvar "W2", .fvar "q"]]
   left := pSwapAnomaly (.fvar "W1") (.fvar "W2") (.fvar "q")
-  right := pEvidenceZero
+  right := pCostZero
 }
 
 /-- ScheduleError(b,s₁,s₂,q) ↦ ScheduleError(b,s₂,s₁,q) — symmetric in schedules. -/
@@ -748,9 +770,8 @@ reads a query `q` places it outside the same scope with `outsideScope(S, q)`:
 
 Anti-hallucination and Noether conservation have no scope on their left-hand
 sides.  Their scope is a rule variable: the erasure premise binds it from a
-returned row, and the outside-scope premise reads that binding.  Both calculi
-carry the two rules with their premises, so under the empty relation
-environment neither fires.  Zero leakage is in no rule list. -/
+returned row, and the outside-scope premise reads that binding.  Under the
+empty relation environment neither rule fires.  Zero leakage is in no rule list. -/
 
 /-- The conservation premises: forgetting the scope `S` erases `D`, and `q` lies
 outside `S`.  The erasure premise comes first and binds `S`. -/
@@ -789,8 +810,7 @@ def ruleZeroLeakage : RewriteRule := {
   right := pLeakageBudget (.fvar "S") (.fvar "D") pEvidenceZero
 }
 
-/-- The conservation rules.  They carry their premises, and the raw and the
-guarded calculi share them. -/
+/-- The conservation rules.  They carry their premises. -/
 def conservationRules : WMConservationMode → List RewriteRule
   | .none => []
   | .conserving => [ruleAntiHallucination, ruleNoetherConservation]
@@ -832,14 +852,18 @@ def ruleExperimentEvidenceAdd : RewriteRule := {
                      (pExperimentEvidence (.fvar "W2") (.fvar "q"))
 }
 
-/-- Blackwell factorization pullback:
-    ExperimentEvidence(W, BlackwellPullback(κ, q)) ↦ ExperimentEvidence(W, q)
-    When weak = strong ∘ κ, pulled-back queries preserve evidence. -/
+/-- Blackwell factorization pullback (`wmQueryEq_of_blackwellFactor`):
+    ExperimentEvidence(W, BlackwellPullback(Strong, κ, q)) ↦ ExperimentEvidence(W, q)
+    when the channel of `q` factors as `κ ∘ Strong`
+    (`blackwellQueryFactors(q, Strong, κ)`).  The pullback reads the outcome of
+    `q` after `κ` on `Strong`, so the pattern names the strong channel. -/
 def ruleBlackwellPullback : RewriteRule := {
   name := "WM_BlackwellPullback"
-  typeContext := [("W", .base "State"), ("k", .base "Channel"), ("q", .base "Query")]
-  premises := []  -- side condition: factorization holds
-  left := pExperimentEvidence (.fvar "W") (pBlackwellPullback (.fvar "k") (.fvar "q"))
+  typeContext := [("W", .base "State"), ("Strong", .base "Channel"),
+                  ("k", .base "Channel"), ("q", .base "Query")]
+  premises := [.relationQuery "blackwellQueryFactors" [.fvar "q", .fvar "Strong", .fvar "k"]]
+  left := pExperimentEvidence (.fvar "W")
+    (pBlackwellPullback (.fvar "Strong") (.fvar "k") (.fvar "q"))
   right := pExperimentEvidence (.fvar "W") (.fvar "q")
 }
 
@@ -873,15 +897,16 @@ def ruleChannelCompAssoc : RewriteRule := {
   right := pChannelComp (.fvar "f") (pChannelComp (.fvar "g") (.fvar "h"))
 }
 
-/-- Blackwell utility transport:
+/-- Blackwell utility transport (`expectedUtility_eq_of_blackwellFactor`):
     ExpectedUtility(π, Weak, δ, u) ↦ ExpectedUtility(π, Strong, LiftPolicy(κ,δ), u)
-    Under Blackwell factorization, utility is preserved by policy lifting. -/
+    when `Weak = Strong ≫ κ`.  `Strong` and `κ` occur only on the right side;
+    the premise `blackwellFactors(Weak, Strong, κ)` binds both from its row. -/
 def ruleBlackwellUtilityTransport : RewriteRule := {
   name := "WM_BlackwellUtilityTransport"
   typeContext := [("pi", .base "Prior"), ("Weak", .base "Channel"),
                   ("Strong", .base "Channel"), ("k", .base "Channel"),
                   ("d", .base "Policy"), ("u", .base "Utility")]
-  premises := []  -- side condition: Weak = Strong ≫ κ
+  premises := [.relationQuery "blackwellFactors" [.fvar "Weak", .fvar "Strong", .fvar "k"]]
   left := pExpectedUtility (.fvar "pi") (.fvar "Weak") (.fvar "d") (.fvar "u")
   right := pExpectedUtility (.fvar "pi") (.fvar "Strong")
     (pLiftPolicy (.fvar "k") (.fvar "d")) (.fvar "u")
@@ -930,22 +955,25 @@ def ruleKripkeEvidenceAdd : RewriteRule := {
                      (pKripkeEvidence (.fvar "W2") (.fvar "phi"))
 }
 
-/-- Singleton satisfaction: KripkeEvidence(Singleton(pk), φ) ↦ EvidenceOne [when pk ⊨ φ] -/
+/-- Singleton satisfaction: KripkeEvidence(Singleton(pk), φ) ↦ EvidenceOne when
+pk ⊨ φ (`crispEvidence_singleton_of_satisfies`, evidence `⟨1, 0⟩`). -/
 def ruleKripkeSingletonSat : RewriteRule := {
   name := "WM_KripkeSingletonSat"
   typeContext := [("pk", .base "PointedKripke"), ("phi", .base "ModalQuery")]
-  premises := []  -- side condition: pk ⊨ φ
+  premises := [.relationQuery "kripkeSat" [.fvar "pk", .fvar "phi"]]
   left := pKripkeEvidence (pSingleton (.fvar "pk")) (.fvar "phi")
   right := pEvidenceOne
 }
 
-/-- Singleton refutation: KripkeEvidence(Singleton(pk), φ) ↦ EvidenceZero [when pk ⊭ φ] -/
+/-- Singleton refutation: KripkeEvidence(Singleton(pk), φ) ↦ EvidenceOneNegative
+when pk ⊭ φ (`crispEvidence_singleton_of_not_satisfies`, evidence `⟨0, 1⟩`).
+A refuting point is one observation against, not the absence of evidence. -/
 def ruleKripkeSingletonNotSat : RewriteRule := {
   name := "WM_KripkeSingletonNotSat"
   typeContext := [("pk", .base "PointedKripke"), ("phi", .base "ModalQuery")]
-  premises := []  -- side condition: ¬ pk ⊨ φ
+  premises := [.relationQuery "kripkeNotSat" [.fvar "pk", .fvar "phi"]]
   left := pKripkeEvidence (pSingleton (.fvar "pk")) (.fvar "phi")
-  right := pEvidenceZero
+  right := pEvidenceOneNegative
 }
 
 def kripkeRules : WMKripkeMode → List RewriteRule
@@ -981,11 +1009,13 @@ def ruleGenericEvidenceAdd : RewriteRule := {
 }
 
 /-- Query equivalence transport:
-    GenericEvidence(W, q₁) ↦ GenericEvidence(W, q₂) [when q₁ ≈ q₂] -/
+    GenericEvidence(W, q₁) ↦ GenericEvidence(W, q₂) when every state extracts
+    the same evidence at `q₁` and `q₂` (`WMQueryEq`).  `q₂` occurs only on the
+    right side; the premise `queryEquiv(q₁, q₂)` binds it from its row. -/
 def ruleQueryEquivTransport : RewriteRule := {
   name := "WM_QueryEquivTransport"
   typeContext := [("W", .base "State"), ("q1", .base "Query"), ("q2", .base "Query")]
-  premises := []  -- side condition: ∀ W', evidence(W', q₁) = evidence(W', q₂)
+  premises := [.relationQuery "queryEquiv" [.fvar "q1", .fvar "q2"]]
   left := pGenericEvidence (.fvar "W") (.fvar "q1")
   right := pGenericEvidence (.fvar "W") (.fvar "q2")
 }
@@ -994,178 +1024,26 @@ def carrierRules : WMCarrierMode → List RewriteRule
   | .concrete => []
   | .generic => [ruleGenericEvidenceAdd, ruleQueryEquivTransport]
 
-/-! ## Guarded Rule Variants
+/-! ## One calculus
 
-Each side-conditioned rule gets a guarded variant using `Premise.relationQuery`.
-The guarded variant has the same `left`/`right` but non-empty `premises`.
-A `RelationEnv` must supply the side-condition oracle at reduction time.
-The forgetting rules (`forgettingRules`), the support-tracked rules
-(`supportTrackedRules`) and the conservation rules (`conservationRules`) have no
-guarded variant: each carries the premise its law needs, if any, and both
-calculi share them. -/
+Every side-conditioned rule carries its condition as a relation premise and
+fires only on a row that the relation environment returns, so each vertex has
+one LanguageDef (`wmExtVertexLanguageDef`, `wmFullVertexLanguageDef`) and its
+congruence closure.  Under the empty relation environment exactly the
+premise-free rules fire.  Besides the forgetting, support-tracked and
+conservation relations, the premises name
 
--- Provenance guards --
+- provenance: `sourceCompatible(W1, W2)` and `notSourceCompatible(W1, W2)`;
+- fixpoint: `querySpaceOf(R, Q)`;
+- cost: `equalCounts(W1, W2, q)`;
+- experiment: `blackwellQueryFactors(q, Strong, k)` and
+  `blackwellFactors(Weak, Strong, k)`;
+- Kripke: `kripkeSat(pk, phi)` and `kripkeNotSat(pk, phi)`;
+- carrier: `queryEquiv(q1, q2)`.
 
-/-- Guarded: FallbackRevision(W₁,W₂) ↦ Revise(W₁,W₂) when compatible. -/
-def ruleFallbackCompatibleGuarded : RewriteRule := {
-  name := "WM_FallbackCompatible_Guarded"
-  typeContext := [("W1", .base "State"), ("W2", .base "State")]
-  premises := [.relationQuery "sourceCompatible" [.fvar "W1", .fvar "W2"]]
-  left := pFallbackRevision (.fvar "W1") (.fvar "W2")
-  right := pRevise (.fvar "W1") (.fvar "W2")
-}
-
-/-- Guarded: FallbackRevision(W₁,W₂) ↦ W₁ when incompatible. -/
-def ruleFallbackIncompatibleGuarded : RewriteRule := {
-  name := "WM_FallbackIncompatible_Guarded"
-  typeContext := [("W1", .base "State"), ("W2", .base "State")]
-  premises := [.relationQuery "notSourceCompatible" [.fvar "W1", .fvar "W2"]]
-  left := pFallbackRevision (.fvar "W1") (.fvar "W2")
-  right := .fvar "W1"
-}
-
-/-- Guarded: PartialRevision(W₁,W₂) ↦ Revise(W₁,W₂) when compatible. -/
-def rulePartialRevisionCompatibleGuarded : RewriteRule := {
-  name := "WM_PartialRevisionCompatible_Guarded"
-  typeContext := [("W1", .base "State"), ("W2", .base "State")]
-  premises := [.relationQuery "sourceCompatible" [.fvar "W1", .fvar "W2"]]
-  left := pPartialRevision (.fvar "W1") (.fvar "W2")
-  right := pRevise (.fvar "W1") (.fvar "W2")
-}
-
-/-- Guarded: Extract(FallbackRevision(W₁,W₂), q) ↦ Combine(Extract(W₁,q), Extract(W₂,q))
-    when compatible. -/
-def ruleSourceEvidenceAddGuarded : RewriteRule := {
-  name := "WM_SourceEvidenceAdd_Guarded"
-  typeContext := [("W1", .base "State"), ("W2", .base "State"), ("q", .base "Query")]
-  premises := [.relationQuery "sourceCompatible" [.fvar "W1", .fvar "W2"]]
-  left := pExtract (pFallbackRevision (.fvar "W1") (.fvar "W2")) (.fvar "q")
-  right := pCombine (pExtract (.fvar "W1") (.fvar "q")) (pExtract (.fvar "W2") (.fvar "q"))
-}
-
--- Fixpoint guards --
-
-/-- Guarded: PolicyRevisedState(TrustedAll, W₁, W₂) ↦ Revise(W₁, W₂) when compatible. -/
-def rulePolicyTrustedAllCompatibleGuarded : RewriteRule := {
-  name := "WM_PolicyTrustedAllCompatible_Guarded"
-  typeContext := [("W1", .base "State"), ("W2", .base "State")]
-  premises := [.relationQuery "sourceCompatible" [.fvar "W1", .fvar "W2"]]
-  left := pPolicyRevisedState pTrustedAll (.fvar "W1") (.fvar "W2")
-  right := pRevise (.fvar "W1") (.fvar "W2")
-}
-
-/-- Guarded: ImmediateIter(R, W, seed, Card(Q)) ↦ LeastClosure(R, W, seed)
-    when Q is finite. -/
-def ruleCascadeAtCardGuarded : RewriteRule := {
-  name := "WM_CascadeAtCard_Guarded"
-  typeContext := [("R", .base "RuleSet"), ("W", .base "State"),
-                  ("seed", .base "QuerySet"), ("Q", .base "QuerySpace")]
-  premises := [.relationQuery "finiteSpace" [.fvar "Q"]]
-  left := pImmediateIter (.fvar "R") (.fvar "W") (.fvar "seed") (pCard (.fvar "Q"))
-  right := pLeastClosure (.fvar "R") (.fvar "W") (.fvar "seed")
-}
-
--- Cost guards --
-
-/-- Guarded: SwapAnomaly(W₁,W₂,q) ↦ EvidenceZero when counts are equal. -/
-def ruleSwapAnomalyZeroGuarded : RewriteRule := {
-  name := "WM_SwapAnomalyZero_Guarded"
-  typeContext := [("W1", .base "State"), ("W2", .base "State"), ("q", .base "Query")]
-  premises := [.relationQuery "equalCounts" [.fvar "W1", .fvar "W2", .fvar "q"]]
-  left := pSwapAnomaly (.fvar "W1") (.fvar "W2") (.fvar "q")
-  right := pEvidenceZero
-}
-
--- Experiment guards --
-
-/-- Guarded: Blackwell pullback when factorization holds. -/
-def ruleBlackwellPullbackGuarded : RewriteRule := {
-  name := "WM_BlackwellPullback_Guarded"
-  typeContext := [("W", .base "State"), ("k", .base "Channel"), ("q", .base "Query")]
-  premises := [.relationQuery "blackwellFactors" [.fvar "k", .fvar "q"]]
-  left := pExperimentEvidence (.fvar "W") (pBlackwellPullback (.fvar "k") (.fvar "q"))
-  right := pExperimentEvidence (.fvar "W") (.fvar "q")
-}
-
-/-- Guarded: Blackwell utility transport when Weak = Strong ≫ κ. -/
-def ruleBlackwellUtilityTransportGuarded : RewriteRule := {
-  name := "WM_BlackwellUtilityTransport_Guarded"
-  typeContext := [("pi", .base "Prior"), ("Weak", .base "Channel"),
-                  ("Strong", .base "Channel"), ("k", .base "Channel"),
-                  ("d", .base "Policy"), ("u", .base "Utility")]
-  premises := [.relationQuery "blackwellFactors" [.fvar "Weak", .fvar "Strong", .fvar "k"]]
-  left := pExpectedUtility (.fvar "pi") (.fvar "Weak") (.fvar "d") (.fvar "u")
-  right := pExpectedUtility (.fvar "pi") (.fvar "Strong")
-    (pLiftPolicy (.fvar "k") (.fvar "d")) (.fvar "u")
-}
-
--- Kripke guards --
-
-/-- Guarded: KripkeEvidence(Singleton(pk), φ) ↦ EvidenceOne when pk ⊨ φ. -/
-def ruleKripkeSingletonSatGuarded : RewriteRule := {
-  name := "WM_KripkeSingletonSat_Guarded"
-  typeContext := [("pk", .base "PointedKripke"), ("phi", .base "ModalQuery")]
-  premises := [.relationQuery "kripkeSat" [.fvar "pk", .fvar "phi"]]
-  left := pKripkeEvidence (pSingleton (.fvar "pk")) (.fvar "phi")
-  right := pEvidenceOne
-}
-
-/-- Guarded: KripkeEvidence(Singleton(pk), φ) ↦ EvidenceZero when pk ⊭ φ. -/
-def ruleKripkeSingletonNotSatGuarded : RewriteRule := {
-  name := "WM_KripkeSingletonNotSat_Guarded"
-  typeContext := [("pk", .base "PointedKripke"), ("phi", .base "ModalQuery")]
-  premises := [.relationQuery "kripkeNotSat" [.fvar "pk", .fvar "phi"]]
-  left := pKripkeEvidence (pSingleton (.fvar "pk")) (.fvar "phi")
-  right := pEvidenceZero
-}
-
--- Carrier guards --
-
-/-- Guarded: GenericEvidence(W, q₁) ↦ GenericEvidence(W, q₂) when queries are equivalent. -/
-def ruleQueryEquivTransportGuarded : RewriteRule := {
-  name := "WM_QueryEquivTransport_Guarded"
-  typeContext := [("W", .base "State"), ("q1", .base "Query"), ("q2", .base "Query")]
-  premises := [.relationQuery "queryEquiv" [.fvar "q1", .fvar "q2"]]
-  left := pGenericEvidence (.fvar "W") (.fvar "q1")
-  right := pGenericEvidence (.fvar "W") (.fvar "q2")
-}
-
-/-! ### Guarded Axis Rule Selectors -/
-
-def provenanceRulesGuarded : WMProvenanceMode → List RewriteRule
-  | .none => []
-  | .sourceLabeled => [ruleCompatibleSymm, ruleFallbackCompatibleGuarded,
-      ruleFallbackIncompatibleGuarded, rulePartialRevisionCompatibleGuarded,
-      ruleTrustedGateAll, ruleSourceEvidenceAddGuarded]
-
-def fixpointRulesGuarded : WMFixpointMode → List RewriteRule
-  | .none => []
-  | .closureOnly => [ruleClosureFixpoint, ruleIterUnfolding]
-  | .policyDriven => [ruleClosureFixpoint, ruleIterUnfolding,
-      rulePolicyTrustedAllCompatibleGuarded]
-  | .cascade => [ruleClosureFixpoint, ruleIterUnfolding,
-      rulePolicyTrustedAllCompatibleGuarded, ruleCascadeAtCardGuarded]
-
-def costRulesGuarded : WMCostMode → List RewriteRule
-  | .none => []
-  | .costTracked => [ruleSwapAnomalySymm, ruleSwapAnomalyZeroGuarded, ruleScheduleErrorSymm]
-
-def experimentRulesGuarded : WMExperimentMode → List RewriteRule
-  | .none => []
-  | .deterministic => [ruleExperimentEvidenceAdd, ruleBlackwellPullbackGuarded,
-      ruleChannelCompId]
-  | .stochastic => [ruleExperimentEvidenceAdd, ruleBlackwellPullbackGuarded,
-      ruleChannelCompId, ruleStochEvidenceAdd, ruleChannelCompAssoc,
-      ruleBlackwellUtilityTransportGuarded, ruleKleisliIdentity]
-
-def kripkeRulesGuarded : WMKripkeMode → List RewriteRule
-  | .none => []
-  | .pointedKripke => [ruleKripkeEvidenceAdd, ruleKripkeSingletonSatGuarded,
-      ruleKripkeSingletonNotSatGuarded]
-
-def carrierRulesGuarded : WMCarrierMode → List RewriteRule
-  | .concrete => []
-  | .generic => [ruleGenericEvidenceAdd, ruleQueryEquivTransportGuarded]
+A premise may bind a metavariable that the left side leaves free: the
+evaluator treats an unbound top-level metavariable of a relation premise as an
+output position, so `Strong`, `k` and `q2` come from the returned row. -/
 
 /-! ## Extended WM Vertex (6-axis, backward compatible) -/
 
@@ -1346,55 +1224,6 @@ def wmFullVertexLanguageDef (v : WMFullVertex) : LanguageDef := {
 def wmVertexLanguageDef (v : WMVertex) : LanguageDef :=
   wmExtVertexLanguageDef { base := v, overlap := .additive, forgetting := .none }
 
-/-! ### Guarded LanguageDef Constructors -/
-
-/-- Guarded WM calculus LanguageDef for a 6-axis vertex.  Its rewrite rules are
-those of `wmExtVertexLanguageDef v`, because both share the forgetting rules
-(`wmExtVertexLanguageDefGuarded_rewrites_eq`); only the name differs. -/
-def wmExtVertexLanguageDefGuarded (v : WMExtVertex) : LanguageDef := {
-  name := s!"WMCalculusGuarded"
-  types := wmTypes v
-  terms := coreTerms ++ overlapTerms v.overlap ++ forgettingTerms v.forgetting
-  equations := []
-  rewrites := coreRules
-    ++ logicRules (v.base .logic)
-    ++ tvRules (v.base .truthValue)
-    ++ intervalRules (v.base .interval)
-    ++ typingRules (v.base .typing)
-    ++ overlapRules v.overlap
-    ++ forgettingRules v.forgetting
-}
-
-/-- At a 6-axis vertex the raw and the guarded calculus have the same rewrite
-rules. -/
-theorem wmExtVertexLanguageDefGuarded_rewrites_eq (v : WMExtVertex) :
-    (wmExtVertexLanguageDefGuarded v).rewrites = (wmExtVertexLanguageDef v).rewrites :=
-  rfl
-
-/-- Guarded WM calculus LanguageDef for a 13-axis vertex.
-    All side-conditioned rules use `Premise.relationQuery` guards. -/
-def wmFullVertexLanguageDefGuarded (v : WMFullVertex) : LanguageDef := {
-  name := "WMCalculusFullGuarded"
-  types := wmFullTypes v
-  terms := coreTerms ++ overlapTerms v.overlap ++ forgettingTerms v.forgetting
-  equations := []
-  rewrites := coreRules
-    ++ logicRules (v.base .logic)
-    ++ tvRules (v.base .truthValue)
-    ++ intervalRules (v.base .interval)
-    ++ typingRules (v.base .typing)
-    ++ overlapRules v.overlap
-    ++ forgettingRules v.forgetting
-    ++ supportTrackedRules v.forgetting
-    ++ provenanceRulesGuarded v.provenance
-    ++ fixpointRulesGuarded v.fixpoint
-    ++ costRulesGuarded v.cost
-    ++ conservationRules v.conservation
-    ++ experimentRulesGuarded v.experiment
-    ++ kripkeRulesGuarded v.kripke
-    ++ carrierRulesGuarded v.carrier
-}
-
 /-- The 6-axis and full LanguageDefs have the same rewrite rules (when extra axes are off).
     The names differ ("WMCalculus" vs "WMCalculusFull"), and at a supportTracked
     vertex only the full version carries the two support-tracked rules. -/
@@ -1428,35 +1257,6 @@ theorem coreRules_subset_wmFullVertex (v : WMFullVertex) :
   intro r hr
   simp only [wmFullVertexLanguageDef, List.mem_append] at hr ⊢
   repeat (first | exact hr | left)
-
-/-- The core rules are a subset of any guarded 6-axis vertex's rules. -/
-theorem coreRules_subset_wmExtVertexGuarded (v : WMExtVertex) :
-    ∀ r ∈ coreRules, r ∈ (wmExtVertexLanguageDefGuarded v).rewrites := by
-  intro r hr
-  simp only [wmExtVertexLanguageDefGuarded, List.mem_append] at hr ⊢
-  left; left; left; left; left; left; exact hr
-
-/-- The core rules are a subset of any guarded full vertex's rules. -/
-theorem coreRules_subset_wmFullVertexGuarded (v : WMFullVertex) :
-    ∀ r ∈ coreRules, r ∈ (wmFullVertexLanguageDefGuarded v).rewrites := by
-  intro r hr
-  simp only [wmFullVertexLanguageDefGuarded, List.mem_append] at hr ⊢
-  repeat (first | exact hr | left)
-
-/-! ### Guarded ⊆ Raw: Forgetful Relationship
-
-A guarded rule has `premises ≠ []`, while the corresponding raw rule has
-`premises = []`. Dropping premises only enables MORE reductions (every
-guarded reduction is also a raw reduction). The direction is:
-  guarded → raw (for each rule pair).
-
-The key insight: for a rule with `premises = []`, `applyPremisesWithEnv` is
-the identity on bindings. For a guarded rule, `applyPremisesWithEnv` filters
-bindings through the RelationEnv. Since both rules share `left`/`right`, any
-bindings that survive premise checking also match the raw rule.  The
-forgetting, the support-tracked and the conservation rules are the exception:
-both calculi carry them with their premises (`forgettingRules_premiseFree`,
-`supportTrackedRules_premises_ne_nil`, `conservationRules_premises_ne_nil`). -/
 
 /-! ## LanguageDef Step Lemmas -/
 
@@ -1651,22 +1451,21 @@ theorem langReducesUsing_forgetOutside (relEnv : RelationEnv)
   · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, bs, ruleForgetOutside,
       pExtract, applyBindings]
 
-/-- Outside-scope invariance at a forgetting-enabled guarded full vertex. -/
-theorem wmFullGuardedReduces_forgetOutside (relEnv : RelationEnv)
+/-- Outside-scope invariance at a forgetting-enabled full vertex. -/
+theorem wmFullLangReducesUsing_forgetOutside (relEnv : RelationEnv)
     (v : WMFullVertex) (hfg : v.forgetting = .scopeBased ∨ v.forgetting = .supportTracked)
     (pS pw pq : Pattern)
     (outside : [pS, pq] ∈ relEnv.tuples "outsideScope" [pS, pq]) :
-    langReducesUsing relEnv (wmFullVertexLanguageDefGuarded v)
+    langReducesUsing relEnv (wmFullVertexLanguageDef v)
       (pExtract (pForget pS pw) pq) (pExtract pw pq) := by
   refine langReducesUsing_forgetOutside relEnv _ ?_ pS pw pq outside
-  simp only [wmFullVertexLanguageDefGuarded, List.mem_append]
+  simp only [wmFullVertexLanguageDef, List.mem_append]
   rcases hfg with hfg | hfg <;> simp [hfg, forgettingRules]
 
 #print axioms forgettingRules_premiseFree
-#print axioms wmExtVertexLanguageDefGuarded_rewrites_eq
 #print axioms ruleForgetOutside_refuse_empty
 #print axioms langReducesUsing_forgetOutside
-#print axioms wmFullGuardedReduces_forgetOutside
+#print axioms wmFullLangReducesUsing_forgetOutside
 
 /-! ### Support-Tracked Forgetting Steps
 
@@ -1724,24 +1523,24 @@ theorem langReducesUsing_forgetClean (relEnv : RelationEnv)
   · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, bs, ruleForgetClean,
       applyBindings]
 
-/-- Absorption at a support-tracked guarded full vertex. -/
-theorem wmFullGuardedReduces_forgetAbsorbSupported (relEnv : RelationEnv)
+/-- Absorption at a support-tracked full vertex. -/
+theorem wmFullLangReducesUsing_forgetAbsorbSupported (relEnv : RelationEnv)
     (v : WMFullVertex) (hfg : v.forgetting = .supportTracked) (pS pw pD : Pattern)
     (supported : [pS, pD] ∈ relEnv.tuples "supportedInScope" [pS, pD]) :
-    langReducesUsing relEnv (wmFullVertexLanguageDefGuarded v)
+    langReducesUsing relEnv (wmFullVertexLanguageDef v)
       (pForget pS (pRevise pw pD)) (pForget pS pw) := by
   refine langReducesUsing_forgetAbsorbSupported relEnv _ ?_ pS pw pD supported
-  simp only [wmFullVertexLanguageDefGuarded, hfg, supportTrackedRules, List.mem_append,
+  simp only [wmFullVertexLanguageDef, hfg, supportTrackedRules, List.mem_append,
     List.mem_cons, List.mem_nil_iff]
   tauto
 
-/-- The clean-base identity at a support-tracked guarded full vertex. -/
-theorem wmFullGuardedReduces_forgetClean (relEnv : RelationEnv)
+/-- The clean-base identity at a support-tracked full vertex. -/
+theorem wmFullLangReducesUsing_forgetClean (relEnv : RelationEnv)
     (v : WMFullVertex) (hfg : v.forgetting = .supportTracked) (pS pw : Pattern)
     (clean : [pS, pw] ∈ relEnv.tuples "cleanForScope" [pS, pw]) :
-    langReducesUsing relEnv (wmFullVertexLanguageDefGuarded v) (pForget pS pw) pw := by
+    langReducesUsing relEnv (wmFullVertexLanguageDef v) (pForget pS pw) pw := by
   refine langReducesUsing_forgetClean relEnv _ ?_ pS pw clean
-  simp only [wmFullVertexLanguageDefGuarded, hfg, supportTrackedRules, List.mem_append,
+  simp only [wmFullVertexLanguageDef, hfg, supportTrackedRules, List.mem_append,
     List.mem_cons, List.mem_nil_iff]
   tauto
 
@@ -1749,8 +1548,8 @@ theorem wmFullGuardedReduces_forgetClean (relEnv : RelationEnv)
 #print axioms supportTrackedRules_refuse_empty
 #print axioms langReducesUsing_forgetAbsorbSupported
 #print axioms langReducesUsing_forgetClean
-#print axioms wmFullGuardedReduces_forgetAbsorbSupported
-#print axioms wmFullGuardedReduces_forgetClean
+#print axioms wmFullLangReducesUsing_forgetAbsorbSupported
+#print axioms wmFullLangReducesUsing_forgetClean
 
 /-- Compatible-symmetry at a provenance-enabled full vertex. -/
 theorem wmFullLangReduces_compatibleSymm (v : WMFullVertex)
@@ -1935,27 +1734,27 @@ theorem langReducesUsing_zeroLeakage (relEnv : RelationEnv)
   · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, bs, ruleZeroLeakage,
       pLeakageBudget, pEvidenceZero, applyBindings]
 
-/-- Anti-hallucination at a conserving guarded full vertex. -/
-theorem wmFullGuardedReduces_antiHallucination (relEnv : RelationEnv)
+/-- Anti-hallucination at a conserving full vertex. -/
+theorem wmFullLangReducesUsing_antiHallucination (relEnv : RelationEnv)
     (v : WMFullVertex) (hcons : v.conservation = .conserving) (pS pD pq : Pattern)
     (erases : [pS, pD] ∈ relEnv.tuples "erasesInScope" [.fvar "S", pD])
     (outside : [pS, pq] ∈ relEnv.tuples "outsideScope" [pS, pq]) :
-    langReducesUsing relEnv (wmFullVertexLanguageDefGuarded v)
+    langReducesUsing relEnv (wmFullVertexLanguageDef v)
       (pExtract pD pq) pEvidenceZero := by
   refine langReducesUsing_antiHallucination relEnv _ ?_ pS pD pq erases outside
-  simp only [wmFullVertexLanguageDefGuarded, hcons, conservationRules, List.mem_append,
+  simp only [wmFullVertexLanguageDef, hcons, conservationRules, List.mem_append,
     List.mem_cons, List.mem_nil_iff]
   tauto
 
-/-- Noether conservation at a conserving guarded full vertex. -/
-theorem wmFullGuardedReduces_noetherConservation (relEnv : RelationEnv)
+/-- Noether conservation at a conserving full vertex. -/
+theorem wmFullLangReducesUsing_noetherConservation (relEnv : RelationEnv)
     (v : WMFullVertex) (hcons : v.conservation = .conserving) (pS pw pD pq : Pattern)
     (erases : [pS, pD] ∈ relEnv.tuples "erasesInScope" [.fvar "S", pD])
     (outside : [pS, pq] ∈ relEnv.tuples "outsideScope" [pS, pq]) :
-    langReducesUsing relEnv (wmFullVertexLanguageDefGuarded v)
+    langReducesUsing relEnv (wmFullVertexLanguageDef v)
       (pExtract (pRevise pw pD) pq) (pExtract pw pq) := by
   refine langReducesUsing_noetherConservation relEnv _ ?_ pS pw pD pq erases outside
-  simp only [wmFullVertexLanguageDefGuarded, hcons, conservationRules, List.mem_append,
+  simp only [wmFullVertexLanguageDef, hcons, conservationRules, List.mem_append,
     List.mem_cons, List.mem_nil_iff]
   tauto
 
@@ -1964,8 +1763,8 @@ theorem wmFullGuardedReduces_noetherConservation (relEnv : RelationEnv)
 #print axioms langReducesUsing_antiHallucination
 #print axioms langReducesUsing_noetherConservation
 #print axioms langReducesUsing_zeroLeakage
-#print axioms wmFullGuardedReduces_antiHallucination
-#print axioms wmFullGuardedReduces_noetherConservation
+#print axioms wmFullLangReducesUsing_antiHallucination
+#print axioms wmFullLangReducesUsing_noetherConservation
 
 /-- Experiment evidence additivity at an experiment-enabled full vertex. -/
 theorem wmFullLangReduces_experimentEvidenceAdd (v : WMFullVertex)

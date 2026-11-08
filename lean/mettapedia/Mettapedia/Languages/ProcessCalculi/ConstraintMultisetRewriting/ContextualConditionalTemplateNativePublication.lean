@@ -1,4 +1,5 @@
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualConditionalTemplateNativeAdmission
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualConditionalTemplateNativeProducer
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualNativeResults
 
 /-!
 # Actual native producer results carry their conditional row metadata
@@ -33,84 +34,70 @@ local instance : LawfulBEq (Option (OccurrenceAllocationRenaming.Name O)) where
   eq_of_beq := of_decide_eq_true
   rfl := of_decide_eq_self_eq_true _
 
-structure NativePublication (schedule : Schedule S O Γ sort before after) (occupied : Finset Nat) where
-  firing : ContextualConditionalExecution.Firing
-    (ContextualClauseFrames.bank schedule.bindingLocals schedule.bindingLocals) (schedule.nativeBindingState occupied)
-  compiled : firing.rule = schedule.producerRule
-  selected : firing.selection = schedule.bindingSelection
-  values : firing.outputs = schedule.producerOutputs occupied
-  flags : firing.reusable = schedule.producerReusable
+abbrev NativePublication (schedule : Schedule S O Γ sort before after) (occupied : Finset Nat) :=
+  ContextualConditionalExecution.Published
+    (ContextualClauseFrames.bank schedule.native.bindingLocals schedule.native.bindingLocals)
+    (schedule.native.nativeBindingState occupied) schedule.producer.rule schedule.native.bindingSelection
+    (schedule.producer.outputs occupied) (.all schedule.producerReusable)
 
 namespace NativePublication
 
 variable {schedule : Schedule S O Γ sort before after} {occupied : Finset Nat}
 
 def returnGuard (publication : NativePublication schedule occupied) :
-    Assignment schedule.guardFamily publication.firing.target.declarations :=
+    Assignment schedule.native.guardFamily publication.firing.target.declarations :=
   Assignment.compose (ContextualComputedFreshFrame.includeSource publication.firing.update)
-    (ContextualSelectionViews.capturedTarget (ContextualClauseFrames.bank schedule.bindingLocals schedule.bindingLocals)
-      schedule.guardFamily)
+    (ContextualSelectionViews.capturedTarget (ContextualClauseFrames.bank schedule.native.bindingLocals schedule.native.bindingLocals)
+      schedule.native.guardFamily)
 
-def returnCurrent (publication : NativePublication schedule occupied) :
+abbrev producerCaller (publication : NativePublication schedule occupied) :
     Assignment after.declarations publication.firing.target.declarations :=
-  Assignment.compose publication.returnGuard schedule.bindingCurrent
+  schedule.native.producerCaller occupied publication.firing
 
-abbrev PrivateNames (publication : NativePublication schedule occupied) : Option O → Type
-  | none => (ContextualAnswerFamilies.Names schedule.bindingVariables ⊕ ContextualAnswerFamilies.Names schedule.bindingVariables) ⊕
-      publication.firing.update.Variables
-  | some occurrence => schedule.outputVariables occurrence
+abbrev PrivateNames (publication : NativePublication schedule occupied) : Option O → Type :=
+  ContextualConditionalRowPacking.WithFallback schedule.outputVariables
+    (Raw := (ContextualAnswerFamilies.Names schedule.native.bindingVariables ⊕
+      ContextualAnswerFamilies.Names schedule.native.bindingVariables) ⊕ publication.firing.update.Variables)
 
-abbrev privateDeclarations (publication : NativePublication schedule occupied) : ∀ index, publication.PrivateNames index → MetaArity S
-  | none => ContextualPublication.privateFamily (ContextualClauseFrames.bank schedule.bindingLocals schedule.bindingLocals)
-      publication.firing.update.declaration
-  | some occurrence => schedule.outputDeclarations occurrence
+abbrev privateDeclarations (publication : NativePublication schedule occupied) : ∀ index, publication.PrivateNames index → MetaArity S :=
+  ContextualConditionalRowPacking.fallbackDeclarations schedule.outputVariables schedule.outputDeclarations
+    (ContextualPublication.privateFamily (ContextualClauseFrames.bank schedule.native.bindingLocals schedule.native.bindingLocals)
+      publication.firing.update.declaration)
 
 abbrev resultLocals (publication : NativePublication schedule occupied) :=
   ContextualConditionalRowPacking.family publication.PrivateNames publication.privateDeclarations
 
+/-- The recipe's private names enter the output block of the shared bank;
+the raw firing's private/helper names occupy its retained block. -/
+def embedRecipe (publication : NativePublication schedule occupied)
+    (recipe : ContextualConditionalPublication.Recipe schedule.producerLocals
+      (ContextualClauseFrames.nativeActive schedule.native.bindingLocals
+        schedule.native.bindingLocals schedule.native.guardFamily)) :
+    ContextualConditionalPublication.Recipe publication.resultLocals
+      (ContextualClauseFrames.nativeActive schedule.native.bindingLocals
+        schedule.native.bindingLocals schedule.native.guardFamily) :=
+  ContextualConditionalRowPacking.includeRecipe schedule.outputVariables schedule.outputDeclarations
+    (ContextualClauseFrames.nativeActive schedule.native.bindingLocals schedule.native.bindingLocals schedule.native.guardFamily)
+    (ContextualPublication.privateFamily (ContextualClauseFrames.bank schedule.native.bindingLocals schedule.native.bindingLocals)
+      publication.firing.update.declaration) recipe
+
+noncomputable def recipes (publication : NativePublication schedule occupied)
+    (physical : Option (OccurrenceAllocationRenaming.Name O)) :=
+  (schedule.producerRecipes physical).map publication.embedRecipe
+
 noncomputable def rows (publication : NativePublication schedule occupied)
     (physical : Option (OccurrenceAllocationRenaming.Name O)) :
     Row publication.resultLocals publication.firing.target.declarations Γ sort :=
-  if physical ∈ schedule.bindingSelection.made then
-    match physical with
-    | some name =>
-        match schedule.outputRow (OccurrenceAllocationRenaming.erase name) with
-        | some row => ContextualConditionalRowPacking.pack publication.PrivateNames publication.privateDeclarations
-            publication.firing.target.declarations (some (OccurrenceAllocationRenaming.erase name))
-            (row.map _ _ publication.returnCurrent)
-        | none => ContextualConditionalRowPacking.pack publication.PrivateNames publication.privateDeclarations
-            publication.firing.target.declarations none (publication.firing.target.rows physical)
-    | none => ContextualConditionalRowPacking.pack publication.PrivateNames publication.privateDeclarations
-        publication.firing.target.declarations none (publication.firing.target.rows physical)
-  else ContextualConditionalRowPacking.pack publication.PrivateNames publication.privateDeclarations
-    publication.firing.target.declarations none (publication.firing.target.rows physical)
+  ContextualConditionalRowPacking.publishWithFallback schedule.outputVariables schedule.outputDeclarations
+    (ContextualClauseFrames.nativeActive schedule.native.bindingLocals schedule.native.bindingLocals schedule.native.guardFamily)
+    (ContextualPublication.privateFamily (ContextualClauseFrames.bank schedule.native.bindingLocals schedule.native.bindingLocals)
+      publication.firing.update.declaration)
+    schedule.producerRecipes (ContextualComputedFreshFrame.includeSource publication.firing.update)
+    publication.firing.outputs publication.firing.target.rows physical
 
 noncomputable def target (publication : NativePublication schedule occupied) :
-    ContextualConditionalExecution.State publication.resultLocals (Option (OccurrenceAllocationRenaming.Name O)) Γ sort where
-  Names := publication.firing.target.Names
-  equality := publication.firing.target.equality
-  declarations := publication.firing.target.declarations
-  occupied := publication.firing.target.occupied
-  equations := publication.firing.target.equations
-  present := publication.firing.target.present
-  rows := publication.rows
-
-theorem output_matches (publication : NativePublication schedule occupied) (physical : OccurrenceAllocationRenaming.Name O)
-    (made : some physical ∈ schedule.bindingSelection.made)
-    (row : Row (schedule.outputDeclarations (OccurrenceAllocationRenaming.erase physical)) after.declarations Γ sort)
-    (selectedRow : schedule.outputRow (OccurrenceAllocationRenaming.erase physical) = some row)
-    {Next : Type} (next : Next → MetaArity S)
-    (candidate : Assignment publication.firing.target.declarations next) (pattern : Term (signature S next) Γ sort) :
-    Matches publication.resultLocals publication.firing.target.declarations candidate pattern
-        (publication.target.rows (some physical)) ↔
-      Matches (schedule.outputDeclarations (OccurrenceAllocationRenaming.erase physical)) after.declarations
-        (Assignment.compose candidate publication.returnCurrent) pattern row := by
-  change Matches _ _ candidate pattern (publication.rows (some physical)) ↔ _
-  simp only [rows, if_pos made, selectedRow]
-  exact (ContextualConditionalRowPacking.matches_iff publication.PrivateNames publication.privateDeclarations
-    publication.firing.target.declarations (some (OccurrenceAllocationRenaming.erase physical)) _ candidate pattern).trans
-      (matches_map_iff (schedule.outputDeclarations (OccurrenceAllocationRenaming.erase physical)) after.declarations
-        publication.returnCurrent candidate pattern row)
+    ContextualConditionalExecution.State publication.resultLocals (Option (OccurrenceAllocationRenaming.Name O)) Γ sort :=
+  publication.firing.target.withRows publication.resultLocals publication.rows
 
 theorem retained_matches (publication : NativePublication schedule occupied)
     (physical : Option (OccurrenceAllocationRenaming.Name O)) (notMade : physical ∉ publication.firing.selection.made)
@@ -120,14 +107,22 @@ theorem retained_matches (publication : NativePublication schedule occupied)
       Matches (publication.privateDeclarations none) publication.firing.target.declarations candidate pattern
         (publication.firing.target.rows physical) := by
   change Matches _ _ candidate pattern (publication.rows physical) ↔ _
-  have missing : physical ∉ schedule.bindingSelection.made := by rw [← publication.selected]; exact notMade
-  simp only [rows, if_neg missing]
-  exact ContextualConditionalRowPacking.matches_iff publication.PrivateNames publication.privateDeclarations
-    publication.firing.target.declarations none _ candidate pattern
+  have missing : physical ∉ schedule.native.bindingSelection.made := by rw [← publication.selected]; exact notMade
+  exact ContextualConditionalRowPacking.publishWithFallback_none_matches
+    schedule.outputVariables schedule.outputDeclarations
+    (ContextualClauseFrames.nativeActive schedule.native.bindingLocals schedule.native.bindingLocals schedule.native.guardFamily)
+    (ContextualPublication.privateFamily (ContextualClauseFrames.bank schedule.native.bindingLocals schedule.native.bindingLocals)
+      publication.firing.update.declaration)
+    schedule.producerRecipes (ContextualComputedFreshFrame.includeSource publication.firing.update)
+    publication.firing.outputs publication.firing.target.rows physical
+    (schedule.producerRecipes_none_of_not_made physical missing) candidate pattern
 
 theorem physical_result (publication : NativePublication schedule occupied) :
-    publication.target.present = fire (schedule.nativeBindingState occupied).present (schedule.bindingSelection.commit (T := Unit)) := by
-  rw [target, publication.firing.physical_result, publication.selected]
+    publication.target.present = fire (schedule.native.nativeBindingState occupied).present (schedule.native.bindingSelection.commit (T := Unit)) := by
+  change publication.firing.target.present = _
+  exact publication.firing.physical_result.trans
+    (congrArg (fun selection => fire (schedule.native.nativeBindingState occupied).present
+      (selection.commit (T := Unit))) publication.selected)
 
 end NativePublication
 
@@ -136,7 +131,7 @@ theorem realize_native_publication (schedule : Schedule S O Γ sort before after
     (resources : Executable ContextualSourceSchedules.Schedule.unitLabel before.present schedule.commits)
     (consistent : ContextualConditionalExecution.Solvable after.equations) (occupied : Finset Nat) (fuel : Nat) :
     ∃ publication : NativePublication schedule occupied, publication.firing.fuel = fuel := by
-  obtain ⟨firing, compiled, selected, values, flags, budget⟩ := schedule.realize_native_producer shapes resources consistent occupied fuel
+  obtain ⟨firing, compiled, selected, values, flags, budget⟩ := schedule.producer.realize shapes resources consistent occupied fuel
   exact ⟨⟨firing, compiled, selected, values, flags⟩, budget⟩
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualConditionalTemplateSchedules.Schedule

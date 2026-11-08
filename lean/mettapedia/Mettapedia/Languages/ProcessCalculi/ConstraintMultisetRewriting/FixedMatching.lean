@@ -82,7 +82,7 @@ private theorem labels_eq_zero_iff (label : O → T) (world : Finset O) :
 theorem literal_region (A : SubstitutionAction T S) (label : O → T)
     (world : Finset O) (pattern : T) :
     regionOf label world (semRegion (ResolvedMatching.literalLayer A)
-      ResolvedMatching.assignment pattern) = Check.region A A.identity label world pattern := by
+      ResolvedMatching.assignment pattern) = Check.matches A A.identity label world pattern := by
   simpa only [A.apply_identity] using ResolvedMatching.resolved_region A A.identity label world pattern
 
 theorem check_holds_iff (A : SubstitutionAction T S) (label : O → T)
@@ -101,7 +101,7 @@ theorem check_holds_iff (A : SubstitutionAction T S) (label : O → T)
       rw [A.apply_identity, GuardedMultisetRewriting.matchesIn_labels, regions, labels_eq_zero_iff]
       constructor
       · intro empty occurrence present equal
-        have member : occurrence ∈ Check.region A A.identity label world pattern :=
+        have member : occurrence ∈ Check.matches A A.identity label world pattern :=
           Finset.mem_filter.mpr ⟨present, equal⟩
         rw [empty] at member
         exact Finset.notMem_empty _ member

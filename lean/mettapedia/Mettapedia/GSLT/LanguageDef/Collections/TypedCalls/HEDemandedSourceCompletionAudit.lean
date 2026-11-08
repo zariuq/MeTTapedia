@@ -1,0 +1,58 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEDemandedSlotJoin
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEStickyPublicationTrace
+
+/-! # Complete demanded source program, SLOT join and publication audit -/
+
+namespace Mettapedia.GSLT.LanguageDef.Collections.TypedCalls
+
+#print axioms HEDemandedConstructorInferred.no_subtype_rows
+#print axioms HEDemandedConstructorInferred.closure_finished
+#print axioms HEDemandedConstructorInferred.symbol_read
+#print axioms HEDemandedConstructorInferred.pair_declared
+#print axioms HEDemandedConstructorInferred.pair_head_read
+#print axioms HEDemandedConstructorInferred.number_read
+#print axioms HEDemandedConstructorInferred.selection
+#print axioms HEDemandedConstructorInferred.operator_source
+#print axioms HEDemandedConstructorInferred.number_at_private
+#print axioms HEDemandedConstructorInferred.arguments_source
+#print axioms HEDemandedConstructorInferred.constructor_source
+#print axioms HEDemandedConstructorInferred.consumer_selection
+#print axioms HEDemandedConstructorInferred.demanded_reentry
+#print axioms HEDemandedConstructorInferred.uniform_producer_edge
+#print axioms HEDemandedConstructorProgram.producer_alpha
+#print axioms HEDemandedConstructorProgram.producer_frontier
+#print axioms HEDemandedConstructorProgram.producer_call
+#print axioms HEDemandedConstructorProgram.producer_head_read
+#print axioms HEDemandedConstructorProgram.producer_selection
+#print axioms HEDemandedConstructorProgram.closed_operator
+#print axioms HEDemandedConstructorProgram.producer_source
+#print axioms HEDemandedConsumerFrame.value_closed
+#print axioms HEDemandedConsumerFrame.query_closed
+#print axioms HEDemandedConsumerFrame.capture
+#print axioms HEDemandedConsumerFrame.complete_frame
+#print axioms HEDemandedConsumerFrame.consumer_call
+#print axioms HEDemandedWholeProgram.source_call
+#print axioms HEDemandedWholeProgram.whole_program_is_not_a_late_cast
+#print axioms HEDemandedSlotJoin.formal_is_the_shown_range
+#print axioms HEDemandedSlotJoin.source_pattern_emits_slot
+#print axioms HEDemandedSlotJoin.ordinary_entry_keeps_ready_value
+#print axioms HEDemandedSlotJoin.compact_entry_is_the_same
+#print axioms HEDemandedSlotJoin.source_and_slot_agree
+#print axioms HEDemandedSlotJoin.absent_input_does_not_bind
+#print axioms HEStickyPublication.erase_publish
+#print axioms HEStickyPublication.unchanged_success
+#print axioms HEStickyPublication.changed_retains_value
+#print axioms HEStickyPublication.held_survives
+#print axioms HEStickyPublication.preserving_policy_matches
+#print axioms HEStickyPublication.ready_agrees_on_unchanged
+#print axioms HEStickyPublication.ready_agrees_on_held
+#print axioms HEStickyPublication.Controls.changed_active_does_not_become_ready
+#print axioms HEStickyPublication.Controls.inherited_mark_is_not_cleared
+#print axioms HEStickyPublicationTrace.constructor_publication
+#print axioms HEStickyPublicationTrace.producer_keeps_constructor_mark
+#print axioms HEStickyPublicationTrace.consumer_keeps_constructor_mark
+#print axioms HEStickyPublicationTrace.ready_publications_agree_on_this_trace
+#print axioms HEStickyPublicationTrace.actual_source_trace
+#print axioms HEStickyPublicationTrace.closed_resolver_read_keeps_marks
+
+end Mettapedia.GSLT.LanguageDef.Collections.TypedCalls

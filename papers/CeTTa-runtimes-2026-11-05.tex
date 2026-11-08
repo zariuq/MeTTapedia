@@ -1,350 +1,754 @@
-\section{Runtime Snapshot: 5 November 2026}
+\section{Application Measurements: 5 November 2026}
 \label{app:runtimes-20261105}
 
-This appendix measures the Linux preview's working source before its next
-commit.  It is a dated local snapshot, not a claim that the historical tables
-elsewhere describe the current executable.  The reproducibility record is
-\code{benchmarks/snapshots/2026-11-05/} in the CeTTa repository: individual
-trials, source and oracle hashes, the selected workload manifest, corpus
-fixture policy, and build/environment metadata.  The problems are generated
-by the tracked \code{benchmarks/mam\_families/app\_panel.py},
-\code{join\_panel.py} and \code{path\_panel.py}; the shared runner is
-\code{run.py}.  Expected answers are computed independently in Python.
-Native MM2 fixtures also live under \code{tests/support/mork\_mm2/}; the
-wider \code{benchmarks/mm2\_corpus/manifest.tsv} additionally names external
-MORK resources and a separately versioned fork, so that wider corpus is not
-entirely self-contained.
+This appendix measures the November preview against the reference
+implementation of each comparison: standalone MORK on its own MM2 programs,
+SWI-\PeTTa{} on the \PeTTa{} examples and on a learning program, Hyperon
+Experimental on shared \HE{} programs, and the Python ai-mathematician on its
+premise-selection stage.  Every timed run was checked: a run counts only if its
+answers agree with an independent oracle or with the reference's complete
+result set, as stated with each table, and a run that did not finish is
+reported as such, never as a time.  Measurements from earlier dates are kept
+only in Section~\ref{app:runtimes-earlier}, separate from these.
 
-\subsection{Identity and measurement conditions}
+\subsection{Systems and method}
+\label{app:runtimes-method}
 
-The machine is an AMD Ryzen 7 9800X3D, with eight cores and sixteen logical
-CPUs, running Linux x86\_64.  It is a shared workstation, not an isolated
-benchmark host.  Process startup, library loading and normal output are
-included.  The paired panel uses one logical CPU and three alternating trials
-for every applicable engine/case pair; reported times are medians.  Its
-five-second per-invocation cap was not reached.  Peak RSS is the largest
-observed process peak over those trials, recorded separately in the TSV data.
-Small millisecond differences are startup-dominated observations, not
-steady-state kernel throughput.
+\begin{description}
+\item[\CeTTa{}.] Version 1.5.0-dev, the default build (Python support, no
+  MORK bridge), built from pre-main commit \code{2ca1c923} with the preview
+  repairs then staged; executable SHA-256 prefix \code{18091c10633b}.  The
+  \PeTTa{} lane is \code{-{}-lang petta}.  The Opt suite and the MORK
+  side-by-side programs also select \code{-{}-profile extended}, whose
+  \code{(new-space set)} gives the set semantics MM2's spaces have.
+\item[MORK.] Commit \code{1c44f70} (the current upstream \code{main}) with
+  \PathMap{} \code{fb979b4}, release builds with nightly Rust.  The
+  \emph{default} build joins relation by relation through MORK's product
+  zipper (prefix \code{88c740354eae}); the \emph{leapfrog} build enables
+  MORK's experimental variable-at-a-time leapfrog join for flat conjunctive
+  bodies (prefix \code{0e5082db27cb}).  Each run is
+  \code{mork run IN.mm2 OUT.mm2 -{}-instrumentation 0}.
+\item[SWI-\PeTTa{}.] \PeTTa{} commit \code{b74af1b} with local, uncommitted
+  fixes (typed calls use only declarations of their own arity, an empty
+  \code{superpose} fails, reader and launcher changes), on SWI-Prolog 10.1.9,
+  run as \code{run.sh FILE -{}-silent}.
+\item[Hyperon Experimental.] \code{metta-repl} 0.2.10 built from the fork
+  branch \code{fixes} (\code{b1b2206a}): upstream release 0.2.10 plus three
+  fixes (imports, space index and numbers; argument type errors; evaluated
+  flags after nested substitutions).  Prefix \code{32b45f7dbeec}.
+\item[Machine.] A shared workstation with an AMD Ryzen 7 9800X3D (eight
+  cores, sixteen logical CPUs) and 59\,GiB of memory, Linux 7.0.  Other
+  agents' jobs kept its one-minute load average between about 5 and 21 at the
+  starts of the measurement batches, and above 20 at times.  Each batch waited briefly for a quieter moment and then
+  ran every job pinned to the logical CPU that was least busy at its start; the
+  start load of every batch is recorded with the data.  Repeated trials varied
+  little (MORK's backward chainer, for instance, took 14.4--14.8\,s), but the
+  absolute times are those of a shared machine.  Jobs ran with
+  \code{RAYON\_NUM\_THREADS=1} and an unlimited stack for every engine (MORK
+  recurses over term depth; with the default stack its unary-clock programs
+  abort).
+\end{description}
 
-The CeTTa executable reports \code{1.5.0-dev (main)}, with SHA-256 prefix
-\code{5b05f6158ea3ce8f}; its source is based on commit \code{2ca1c923b93d}
-plus the pending preview repairs.  Full digests are in the metadata.
-This is the bridge-enabled \code{BUILD=main} CLI, linked with GMP,
-SWI-Prolog and CPython 3.13.  Its timings do not measure the Prolog-free
-Python-wheel runtime.
+\noindent Every cell is the median of three fresh processes, run in
+alternating engine order; times are in seconds unless a column says
+otherwise.  \emph{Wall} is the whole process: start-up,
+loading, execution and output.  \emph{CPU} is user plus system time.
+\emph{MiB} is the peak resident set.  Some batches also counted user-mode
+instructions, whose counter adds about 7\,ms to each wall time.  In the
+application table, \CeTTa{}'s and the leapfrog build's times come from runs
+without the counter; the default build's and SWI-\PeTTa{}'s include it, which
+matters only for their cells below 0.3\,s.  The scale ladder counted
+throughout.  MORK's
+\emph{execute} column is the
+execution time MORK itself reports; it excludes reading its input and writing
+its final store, which it serializes completely, while the MeTTa programs print
+only their relation sizes.  The MORK columns therefore bracket its time: the
+execute column alone is the comparison least favourable to \CeTTa{}, whose
+cells always include loading and output.  Ratios in the text compare
+\CeTTa{}'s wall time with MORK's execute time.
 
-The SWI-PeTTa checkout is based on \code{b74af1bc26af}, with local edits to
-its launcher, parser, reader and translator; its tracked diff digest and
-individual example hashes are recorded.  This screen is therefore against
-that working PeTTa tree, not a new conformance claim against an unmodified
-release oracle.
+\subsection{The Opt application suite}
+\label{app:runtimes-opt}
 
-\textbf{MORK provenance limitation.}  The measured artifact is the available
-MORK release executable, with SHA-256 prefix
-\code{13bd3d0b7a913b73}.
-The adjacent source checkout is \code{ed57c6716d8c}, but the executable's
-association with that source revision is unverified.  An attempted
-\code{cargo build -{}-release -{}-locked -{}-offline -p mork} refused a
-lock-file update.  No lock file was changed.  The numbers below compare these
-identified local executables; they do not establish performance against a
-fresh build of current upstream MORK.
+The suite pairs nine tasks written as MM2 programs with ordinary \PeTTa{}
+programs over the same generated facts.  The MM2 programs are MORK's: the
+two-hop and triangle join, the five-clique query, the process calculus, the
+odd--even sort and the backward chainer \code{bc3} come from MORK's kernel
+benchmarks (several at MORK's own benchmark sizes), the counter machine from
+its resources, and Hexlife and the path-producing reachability from its
+tutorials.  The \PeTTa{} programs are idiomatic solutions of the same tasks,
+not translations of the MM2 rules, and three of them use a different
+algorithm: the counter machine runs as a function over the machine state that
+records every state, where MM2 fires one clocked rule per step; backward proof
+search is a depth-bounded top-down search per target, where MM2's \code{bc3}
+saturates goals and evidence on a clock; and Hexlife counts each candidate
+cell's live neighbours directly, where MM2 uses count sinks.  The comparison is
+between two systems' solutions of one task, checked to compute one result
+relation.  The graph workload computes the distinct two-hop endpoint pairs and
+the directed closed triples of a random graph; it is not a fixed-point
+transitive closure.
 
-\subsection{Generated application, join and path panel}
+\paragraph{Checks.}  Before any timing, every pair was run with complete output:
+the full set of every result relation, alpha-normalized, with the process
+calculus's \code{!}, \code{?} and \code{|} renamed to its \PeTTa{} constructors,
+was compared with MORK's final store.  The comparison was made at the small
+control sizes and again at the timed sizes, where the largest set has
+1,080,571 rows; all 27 runs at each size agreed for \CeTTa{}, SWI-\PeTTa{} and
+the default MORK build, and the leapfrog build agreed too.  Every timed run
+then checks every relation's size against MORK.  Independent Python
+computations confirm the graph counts (bit sets or hash sets: 1,064,228 pairs
+and 16,343 triangles at 49,727 edges; 4,794,018 and 16,961 at 200{,}000 draws;
+19,913,332 and 8,935 at one million; 99,909,346 and 8,356 at five million), the
+five-clique counts (79 and 637) and the counter machine's state rows (an
+integer machine: 16,218 at register value 300, 54,018 at 1,000).
 
-All 192 timed executions passed their declared independent answer oracle:
-17 selected cases, three trials per engine, with two cases applicable only
-to CeTTa-PeTTa and SWI-PeTTa.  A dash means the generator supplies no program
-for that engine/case pair, not a timed failure.  The comparison is between
-explicit programs solving the same task, sometimes with different execution
-plans or answer encodings.  It does not assert an identical algorithm or a
-general MM2-to-MeTTa compiler result.  Both faster and slower observations are
-retained; no best-of-trials selection or aggregate superiority claim is made.
+\paragraph{A corrected program.}  The complete-set check exposed an error in
+the original \PeTTa{} counter program: it stored
+\code{(add-atom \&m (state \$pt (IC (peano \$ic))))}, and an atom being
+added is data, so the instruction counter held the unevaluated
+\code{(peano \$ic)}.  SWI-\PeTTa{} and \CeTTa{} agree on that reading.  Row
+counts matched MORK's, but at register value 3, 30 instruction-counter rows
+differed.  The corrected program binds the computed numeral first.  Earlier
+counter timings measured the faulty program and are withdrawn.
 
+%% table:opt-base begin
 \begin{center}
 \small
-\setlength{\tabcolsep}{4pt}
-\begin{tabular}{@{}p{0.43\linewidth}rrrr@{}}
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{@{}p{0.36\linewidth}rrrrrr@{}}
 \toprule
-case & CeTTa-P & CeTTa-HE & SWI-P & MORK artifact \\
- & \multicolumn{4}{c}{median wall time, milliseconds} \\
+ & \CeTTa{} & \multicolumn{2}{c}{MORK default} & \multicolumn{2}{c}{MORK leapfrog} & SWI-\PeTTa{} \\
+\cmidrule(lr){3-4}\cmidrule(lr){5-6}
+application & wall & execute & wall & execute & wall & wall \\
 \midrule
-\nolinkurl{ancestor_chain_256_natural} & 4.27 & 6.29 & 56.50 & 32.92 \\
-\nolinkurl{ancestor_chain_256_levelwise} & 4.58 & 22.47 & 55.06 & 31.89 \\
-\nolinkurl{closure_ring_32_levelwise} & 6.33 & 67.66 & 55.47 & 9.71 \\
-\nolinkurl{counter_64_natural} & 3.76 & 43.52 & 49.15 & 2634.35 \\
-\nolinkurl{sort_64_natural} & 3.39 & 4.21 & 48.84 & 10.12 \\
-\nolinkurl{arithmetic_10000} & 45.07 & 48.17 & 218.57 & 23.27 \\
-\nolinkurl{tally_1000x8} & 8.32 & 19.64 & 200.89 & 14.23 \\
-\nolinkurl{kb_load_10000} & 149.30 & -- & 605.47 & -- \\
-\nolinkurl{space_step_1000_2000} & 11.11 & -- & 63.05 & -- \\
-\nolinkurl{triangle_dense_32_count} & 4.40 & 4.86 & 97.25 & 65.56 \\
-\nolinkurl{guarded_triangle_32_count} & 4.64 & 4.92 & 111.47 & 6.14 \\
-\nolinkurl{triangle_duplicates_witnesses} & 2.74 & 3.57 & 46.87 & 2.18 \\
-\nolinkurl{triangle_empty_witnesses} & 2.56 & 3.27 & 46.39 & 2.04 \\
-\nolinkurl{path_product_12_count} & 3.51 & 54.88 & 52.42 & 29.58 \\
-\nolinkurl{path_product_12_separator_count} & 3.38 & 54.89 & 53.61 & 2.36 \\
-\nolinkurl{path_correlated_6_witnesses} & 2.54 & 3.89 & 47.74 & 2.62 \\
-\nolinkurl{path_isolated_8_512_count} & 4.98 & 12.13 & 118.45 & 7.58 \\
+Two-hop pairs, triangles; 49,727 edges & 0.109 & 0.881 & 0.997 & 0.612 & 0.724 & 4.12 \\
+Five-cliques; 200 vertices, 3,600 edges & 0.006 & 18.68 & 18.69 & 0.032 & 0.037 & 18.28 \\
+\quad the same, MM2 in early order & 0.006 & 0.094 & 0.103 & 0.032 & 0.038 &  \\
+Odd--even sort; 300 items & 0.059 & 0.141 & 0.157 & 0.142 & 0.152 & 1.33 \\
+Backward proof search; 1,000 targets & 0.028 & 14.48 & 14.49 & 5.97 & 5.98 & 0.258 \\
+Hexlife; 80 cells, 20 generations & 0.038 & 17.65 & 17.66 & 17.31 & 17.32 & 0.171 \\
+Ancestry; 1,000 people & 0.172 & 1.25 & 1.39 & 0.439 & 0.558 & 12.27 \\
+Reachability with paths; 500 states & 0.020 & 6.93 & 6.95 & 7.55 & 7.56 & 0.133 \\
+Counter machine; register 300 & 1.14 & 100.4 & 100.5 & 7.67 & 7.83 & 1.71 \\
+Process calculus; 200 $+$ 200 & 0.285 & 23.77 & 23.79 & 5.19 & 5.20 & 24.75 \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-For example, the arithmetic batch favors this MORK executable, while the
-counter program favors CeTTa's ordinary MeTTa solution.  The two path-product
-rows make the plan visible: the same product can be counted through complete
-combination work or a separator plan.  These distinctions belong to the
-comparison, rather than being hidden inside one speedup number.  The full
-trial ranges, RSS observations, source programs and result contracts are
-recoverable from the snapshot and its tracked generators.
-
-\subsection{The native MM2 front end and standalone MORK}
-
-The same generated MM2 programs were also run directly through
-\code{cetta -{}-lang mm2}, with their declared step counts and result-head
-projections.  All 45 supplemental executions passed their independent answer
-oracle.  This is the default MORK-bridge route, not a claim of an independent
-C implementation of the MM2 kernel.  CeTTa prints the final store to stdout;
-standalone MORK writes it to a file.  These end-to-end times include those
-normal publication costs.  Three trials were measured per case after the
-original panel; the MORK medians below reuse its original trials rather than
-claiming a new alternating pair.  The artifact-provenance limitation above
-continues to apply.
-
 \begin{center}
 \small
-\begin{tabular}{@{}p{0.55\linewidth}rr@{}}
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{@{}p{0.36\linewidth}rrrrrrrr@{}}
 \toprule
-case & CeTTa-MM2 & MORK artifact \\
- & \multicolumn{2}{c}{median wall time, milliseconds} \\
+ & \multicolumn{2}{c}{\CeTTa{}} & \multicolumn{2}{c}{MORK default} & \multicolumn{2}{c}{MORK leapfrog} & \multicolumn{2}{c}{SWI-\PeTTa{}} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}
+application & CPU & MiB & CPU & MiB & CPU & MiB & CPU & MiB \\
 \midrule
-\nolinkurl{ancestor_chain_256_natural} & 19.16 & 32.92 \\
-\nolinkurl{ancestor_chain_256_levelwise} & 20.82 & 31.89 \\
-\nolinkurl{closure_ring_32_levelwise} & 7.51 & 9.71 \\
-\nolinkurl{counter_64_natural} & 1571.62 & 2634.35 \\
-\nolinkurl{sort_64_natural} & 15.80 & 10.12 \\
-\nolinkurl{arithmetic_10000} & 45.48 & 23.27 \\
-\nolinkurl{tally_1000x8} & 32.04 & 14.23 \\
-\nolinkurl{triangle_dense_32_count} & 48.58 & 65.56 \\
-\nolinkurl{guarded_triangle_32_count} & 14.68 & 6.14 \\
-\nolinkurl{triangle_duplicates_witnesses} & 2.82 & 2.18 \\
-\nolinkurl{triangle_empty_witnesses} & 2.36 & 2.04 \\
-\nolinkurl{path_product_12_count} & 16.54 & 29.58 \\
-\nolinkurl{path_product_12_separator_count} & 2.62 & 2.36 \\
-\nolinkurl{path_correlated_6_witnesses} & 2.76 & 2.62 \\
-\nolinkurl{path_isolated_8_512_count} & 14.28 & 7.58 \\
+Two-hop pairs, triangles; 49,727 edges & 0.10 & 27.7 & 0.96 & 62.0 & 0.70 & 62.4 & 4.10 & 686 \\
+Five-cliques; 200 vertices, 3,600 edges & $<$0.01 & 13.3 & 18.67 & 6.4 & 0.03 & 6.7 & 18.25 & 29.4 \\
+\quad the same, MM2 in early order & $<$0.01 & 13.0 & 0.09 & 6.5 & 0.03 & 6.6 &  &  \\
+Odd--even sort; 300 items & 0.05 & 18.3 & 0.14 & 8.4 & 0.14 & 8.4 & 1.31 & 178 \\
+Backward proof search; 1,000 targets & 0.02 & 14.4 & 14.47 & 8.8 & 5.97 & 12.1 & 0.24 & 38.0 \\
+Hexlife; 80 cells, 20 generations & 0.03 & 14.5 & 17.60 & 6.7 & 17.30 & 6.8 & 0.15 & 22.5 \\
+Ancestry; 1,000 people & 0.16 & 48.6 & 1.37 & 20.9 & 0.54 & 21.0 & 12.25 & 898 \\
+Reachability with paths; 500 states & 0.01 & 15.1 & 6.93 & 37.6 & 7.55 & 37.9 & 0.12 & 28.0 \\
+Counter machine; register 300 & 1.13 & 22.6 & 100.5 & 36.4 & 7.81 & 26.7 & 1.69 & 1093 \\
+Process calculus; 200 $+$ 200 & 0.28 & 15.8 & 23.77 & 11.8 & 5.19 & 11.6 & 24.72 & 48.1 \\
 \bottomrule
 \end{tabular}
 \end{center}
+%% table:opt-base end
 
-\subsection{Complete tracked top-level PeTTa example screen}
+\paragraph{Reading the table.}  \CeTTa{}'s whole process is faster than MORK's execution alone in every row,
+against both builds.  Against the faster of MORK's two builds for each task the
+factor is 2.4 for the odd--even sort and 2.5 for ancestry; 5--7 for the
+five-cliques, the two-hop pairs and the counter machine; 18 for the process
+calculus; and 200--460 for backward proof search, reachability and Hexlife.
+For those three and for the counter machine the two programs use different
+algorithms, so their factors compare solutions rather than engines.  MORK's
+two builds differ by up to 580 times (the five-cliques in the benchmark's order)
+and 13 times (the counter machine); the leapfrog join is slower than the default
+one only on reachability (7.55 against 6.93\,s) and ties on the sort, so a
+comparison with one build alone would misstate MORK.  \CeTTa{} uses more memory than MORK on most of these
+small inputs, where its start-up footprint of about 13\,MiB dominates, and less
+on the two-hop pairs, reachability and the counter machine.  SWI-\PeTTa{} is
+faster than both MORK builds on the four tasks whose \PeTTa{} programs search
+differently, slower than MORK's faster build on the other five, and needs up to
+1.1\,GiB where \CeTTa{} needs under 50\,MiB.  User-mode instruction counts,
+taken in a separate batch of the same programs, are independent of the
+machine's load and tell the same story: 0.04 billion for \CeTTa{}'s whole
+five-clique process against 419 billion for MORK's default build in the
+benchmark order and 2.1 billion in the early order, and 1.9 against 17 billion
+for the two-hop pairs.  On the counter machine SWI-\PeTTa{} executes fewer
+instructions than \CeTTa{} (20 against 27 billion) and still takes longer.
 
-The population is all 164 tracked \code{examples/*.metta} files directly
-inside the PeTTa example directory; nested directories are not included.
-Each engine has one timed invocation per case and a two-second cap.  This
-is a bounded coverage/timing screen, not a repeated latency study.  The
-existing corpus fixture policy supplies scripted input and isolated I/O;
-explicitly mapped cases use corrected-source or library fixtures.  The
-snapshot records the fixture kind and actual fixture-source digest as well
-as the original example digest.
+\paragraph{Order of a conjunction.}  MORK's default join follows the written
+order of an \code{exec} body.  The five-clique row uses MORK's own benchmark
+query, which lists the ten edge conditions lexicographically.  Written so that
+each new vertex's edges are checked as soon as it is introduced, the same MM2
+query is the row marked ``early order''; the \PeTTa{} program is unchanged,
+since \CeTTa{} chooses its own join order.  With that order MORK's default build executes the query in 0.094\,s instead
+of 18.7\,s; the leapfrog build takes 0.032\,s in either order, and \CeTTa{}
+0.006\,s.
 
-There are 156 matching normalized observations, five capped SWI-PeTTa
-invocations, and three exit differences.  The exit differences are
-\nolinkurl{python.metta}, \nolinkurl{python_import.metta} and
-\nolinkurl{test_unify_eval_branches.metta}: the first two expose provider
-value/string distinctions, and the last fails to load \code{lib/lib\_he} on
-CeTTa.  They remain visible rather than contributing speedup ratios.  Nor is
-an agreement necessarily a successful application: matching exit status and
-normalized output can include a shared deliberate failure.  The TSV records
-both exit codes.  In the table, ``ok'' means matching observations, ``cap''
-means the SWI invocation was incomplete, and ``exit'' means differing exit
-status.  Times are milliseconds; $>2000$ is the cap, not a completed runtime.
+\subsection{The scale ladder}
+\label{app:runtimes-scale}
 
+The larger rungs of the same tasks, against MORK's leapfrog build: on the base
+tasks above it was the faster of MORK's two builds, or level with the default
+one, everywhere except reachability, where the default build was 9\% faster.
+SWI-\PeTTa{} was not run at these sizes.  These runs also counted user-mode
+instructions, which adds about 7\,ms to each wall time.
+
+%% table:opt-scale begin
+\begin{center}
+\small
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{@{}p{0.34\linewidth}rrrrrrrr@{}}
+\toprule
+ & \multicolumn{4}{c}{\CeTTa{}} & \multicolumn{4}{c}{MORK leapfrog} \\
+\cmidrule(lr){2-5}\cmidrule(lr){6-9}
+application & wall & CPU & MiB & G\,instr. & execute & wall & MiB & G\,instr. \\
+\midrule
+Two-hop, triangles; 200,000 draws & 1.05 & 0.95 & 145 & 9.3 & 4.92 & 6.62 & 380 & 47.2 \\
+Two-hop, triangles; 1,000,000 draws & 9.04 & 8.21 & 590 & 46.9 & 24.46 & 30.91 & 1743 & 208.9 \\
+Two-hop, triangles; 5,000,000 draws & 97.39 & 93.22 & 2898 & 244.3 & 125.8 & 158.4 & 8625 & 1110.0 \\
+Odd--even sort; 2,000 items & 7.12 & 6.84 & 22.8 & 71.8 & 14.36 & 14.97 & 99.1 & 131.5 \\
+Odd--even sort; 5,000 items & 68.56 & 67.15 & 2020 & 522.2 & 127.4 & 130.6 & 582 & 823.7 \\
+Five-cliques; 8,100 edges & 0.169 & 0.13 & 13.4 & 2.1 & 0.237 & 0.265 & 7.0 & 2.9 \\
+Backward proof search; 3,000 targets & 13.93 & 13.02 & 18.5 & 199.6 & 74.59 & 74.65 & 23.3 & 1110.4 \\
+Ancestry; 3,000 people & 24.39 & 22.28 & 1466 & 142.7 & 24.87 & 42.48 & 412 & 500.8 \\
+Reachability with paths; 1,500 states & 0.097 & 0.07 & 16.1 & 0.9 & 188.3 & 188.4 & 283 & 1430.1 \\
+\bottomrule
+\end{tabular}
+\end{center}
+%% table:opt-scale end
+
+Every run agreed with MORK on every relation's size, and the graph and
+five-clique rungs also with the independent computations of
+Section~\ref{app:runtimes-opt}.  \CeTTa{}'s whole process is faster than
+MORK's execution alone on all nine rungs: by 1.3 to 5.4 times on the graph,
+sort, five-clique and proof-search rungs, level on ancestry (24.4 against
+24.9\,s, while MORK's whole job takes 42.5\,s), and by three orders of
+magnitude on reachability.  The instruction counts, which do not depend on the
+load, give factors of 1.4 to 5.6 on the same rungs and 3.5 on ancestry.  Memory
+goes both ways: \CeTTa{} needs a third of MORK's at five million draws
+(2.8 against 8.4\,GiB) and about 3.5 times MORK's on the 5,000-item sort and
+on ancestry.  This batch ran at a one-minute load of about 20, which slows
+memory-bound runs most: at five million draws \CeTTa{} executes 4.5 times fewer
+instructions than MORK but is only 1.3 times faster in wall time.
+
+The instruction counts also show where the preview has fallen behind the opt
+line's binary of 29 October, whose ladder was counted the same way: backward
+proof search over 3,000 targets now executes 200 billion instructions against
+0.8 billion then, ancestry over 3,000 people 143 against 88 billion, the
+300-vertex five-cliques 2.1 against 1.0 billion, and the 5,000-item sort 522
+against 450 billion, with a peak of 2.0\,GiB where that binary needed
+76\,MiB.  Run back to back at today's load, the opt binary of 30 October takes
+0.09\,s for the 3,000-target proof search, against 14.5\,s for the preview.
+The other rungs are level or better on the preview (the graph rungs execute up
+to 15\% fewer instructions), and the two base cases run back to back, proof
+search and ancestry, are level.  These are
+regressions of the preview to be repaired, not properties of the programs.
+
+\subsection{MORK's showcase workloads with its leapfrog join}
+\label{app:runtimes-leapfrog}
+
+A second suite was written to meet MORK on ground it was built for: graph
+analytics, knowledge-graph queries and combinatorial search, at sizes from
+thousands to millions of facts, each with an MM2 program for MORK, a
+\PeTTa{} program for \CeTTa{} and an independent Python oracle in its
+generator.  LDBC Graphalytics kernels run on Graph500 Kronecker graphs
+(breadth-first depths, weakly connected components, deterministic label
+propagation, local clustering coefficients and single-source shortest paths at
+scales 12 and 14; the first three at scale 16); LUBM queries run on 1, 5 and 10
+generated universities; four LDBC SNB business-intelligence queries run on
+LDBC's own SF0.1 and SF0.3 data, returning their full results without the
+queries' final top-$k$ limit.  The rest are Hilbert-style proof search by
+backward chaining done as forward chaining (MORK's own \code{bfc} benchmark),
+simulation signatures of a 4,096-bit adder for equivalence checking,
+condensed-detachment saturation in three axiom systems, CTL model checking of
+the dining philosophers, approximate matching of sequencing $k$-mers by masked
+views, five-cliques on 800 vertices with MORK's best conjunction order, Apriori
+frequent itemsets, and analytics over a million-fact knowledge graph shaped like
+MORK's FlyBase workload.  The reference is MORK's leapfrog build.  A run
+passes only if every relation's size equals the oracle's and, for the 34 tasks
+whose oracle lists rows, the complete row set equals the oracle's.  The
+generators are in \code{benchmarks/mork\_leapfrog/}; the SNB inputs need the
+official LDBC datasets.
+
+%% table:leapfrog begin
 \begingroup
 \footnotesize
-\setlength{\tabcolsep}{4pt}
-\begin{longtable}{@{}p{0.54\linewidth}rrl@{}}
+\setlength{\tabcolsep}{3.5pt}
+\begin{longtable}{@{}lrrrrrrl@{}}
 \toprule
-example & CeTTa-P & SWI-P & observation \\
+ & \multicolumn{3}{c}{MORK leapfrog} & \multicolumn{3}{c}{\CeTTa{}} & \\
+task & wall & CPU & MiB & wall & CPU & MiB & checked \\
 \midrule
 \endfirsthead
 \toprule
-example (continued) & CeTTa-P & SWI-P & observation \\
+task (continued) & wall & CPU & MiB & wall & CPU & MiB & checked \\
 \midrule
 \endhead
 \bottomrule
 \endfoot
-\nolinkurl{add_atom_fun_space.metta} & 3.10 & 58.04 & ok \\
-\nolinkurl{and_or.metta} & 3.29 & 57.26 & ok \\
-\nolinkurl{atomops.metta} & 3.14 & 54.97 & ok \\
-\nolinkurl{booleansolver.metta} & 2.18 & 48.42 & ok \\
-\nolinkurl{builin_types.metta} & 4.94 & 59.88 & ok \\
-\nolinkurl{callquoteevalreduce.metta} & 2.88 & 61.07 & ok \\
-\nolinkurl{callquoteevalreduce2.metta} & 3.98 & 58.04 & ok \\
-\nolinkurl{case.metta} & 2.93 & 58.76 & ok \\
-\nolinkurl{case2.metta} & 3.45 & 59.50 & ok \\
-\nolinkurl{caseconstrain.metta} & 2.38 & 57.53 & ok \\
-\nolinkurl{caseempty.metta} & 3.55 & 59.56 & ok \\
-\nolinkurl{casenew.metta} & 2.84 & 54.52 & ok \\
-\nolinkurl{chain.metta} & 3.40 & 52.77 & ok \\
-\nolinkurl{collapse.metta} & 2.41 & 52.70 & ok \\
-\nolinkurl{comments.metta} & 3.07 & 51.17 & ok \\
-\nolinkurl{constanthead.metta} & 2.31 & 51.72 & ok \\
-\nolinkurl{curry.metta} & 3.73 & 56.40 & ok \\
-\nolinkurl{cut.metta} & 2.47 & 55.16 & ok \\
-\nolinkurl{empty.metta} & 2.81 & 51.72 & ok \\
-\nolinkurl{eval.metta} & 2.42 & 54.92 & ok \\
-\nolinkurl{factorial.metta} & 2.96 & 52.33 & ok \\
-\nolinkurl{fib.metta} & 52.81 & 376.26 & ok \\
-\nolinkurl{fibadd.metta} & 48.27 & 413.25 & ok \\
-\nolinkurl{fibsmart.metta} & 2.74 & 48.83 & ok \\
-\nolinkurl{fibsmartimport.metta} & 3.25 & 47.46 & ok \\
-\nolinkurl{foldall.metta} & 3.27 & 50.59 & ok \\
-\nolinkurl{foldallmatch.metta} & 3.03 & 49.46 & ok \\
-\nolinkurl{foldallspacecount.metta} & 2.51 & 50.45 & ok \\
-\nolinkurl{forall.metta} & 3.62 & 57.23 & ok \\
-\nolinkurl{functionhead.metta} & 2.30 & 48.08 & ok \\
-\nolinkurl{functionhead2.metta} & 4.43 & 54.38 & ok \\
-\nolinkurl{functionhead3.metta} & 2.66 & 52.93 & ok \\
-\nolinkurl{functionremoval.metta} & 4.71 & 53.60 & ok \\
-\nolinkurl{functionremovalspec.metta} & 4.16 & 49.42 & ok \\
-\nolinkurl{functiontypes.metta} & 2.85 & 46.98 & ok \\
-\nolinkurl{git_import.metta} & 14.31 & 49.79 & ok \\
-\nolinkurl{git_import2.metta} & 84.20 & 124.83 & ok \\
-\nolinkurl{greedy_chess.metta} & 5.45 & 85.83 & ok \\
-\nolinkurl{he_assert.metta} & 3.60 & 50.07 & ok \\
-\nolinkurl{he_atomspace.metta} & 3.09 & 50.42 & ok \\
-\nolinkurl{he_equalreduct.metta} & 3.80 & 53.57 & ok \\
-\nolinkurl{he_error.metta} & 16.46 & 51.52 & ok \\
-\nolinkurl{he_evaluation.metta} & 3.53 & 51.63 & ok \\
-\nolinkurl{he_math.metta} & 2.16 & 49.66 & ok \\
-\nolinkurl{he_minimalmetta.metta} & 1585.32 & $>2000$ & cap \\
-\nolinkurl{he_quoting.metta} & 3.18 & 52.63 & ok \\
-\nolinkurl{he_types.metta} & 4.30 & 57.57 & ok \\
-\nolinkurl{holbenchmark.metta} & 819.03 & $>2000$ & cap \\
-\nolinkurl{holfunctions.metta} & 3.53 & 57.88 & ok \\
-\nolinkurl{holfunctions_intrinsicop.metta} & 2.93 & 48.11 & ok \\
-\nolinkurl{hyperpose_primes.metta} & 193.35 & 1035.62 & ok \\
-\nolinkurl{identity.metta} & 2.98 & 46.31 & ok \\
-\nolinkurl{if.metta} & 2.48 & 46.78 & ok \\
-\nolinkurl{if2.metta} & 1.90 & 45.69 & ok \\
-\nolinkurl{if3.metta} & 2.53 & 46.89 & ok \\
-\nolinkurl{if4.metta} & 1.81 & 46.65 & ok \\
-\nolinkurl{ifcasenondet.metta} & 2.66 & 45.35 & ok \\
-\nolinkurl{ifsimple.metta} & 1.93 & 45.40 & ok \\
-\nolinkurl{invertfunction.metta} & 15.50 & 45.05 & ok \\
-\nolinkurl{invertpeanoplus.metta} & 2.57 & 47.17 & ok \\
-\nolinkurl{is_alpha_member_test.metta} & 3.53 & 51.55 & ok \\
-\nolinkurl{iter.metta} & 2.03 & 47.44 & ok \\
-\nolinkurl{lambda.metta} & 3.44 & 47.02 & ok \\
-\nolinkurl{lambda_fresh_names.metta} & 2.14 & 49.23 & ok \\
-\nolinkurl{let_superpose_if_case.metta} & 3.07 & 60.16 & ok \\
-\nolinkurl{letext.metta} & 2.07 & 51.23 & ok \\
-\nolinkurl{letlet.metta} & 2.58 & 47.65 & ok \\
-\nolinkurl{letstar.metta} & 1.85 & 46.35 & ok \\
-\nolinkurl{lib_roman_pair_helpers.metta} & 3.68 & 53.34 & ok \\
-\nolinkurl{library.metta} & 2.77 & 56.59 & ok \\
-\nolinkurl{listhead.metta} & 3.13 & 47.97 & ok \\
-\nolinkurl{llm_cities.metta} & 13.31 & 89.56 & ok \\
-\nolinkurl{logicprog.metta} & 2.67 & 48.52 & ok \\
-\nolinkurl{logicprogset.metta} & 1.98 & 48.76 & ok \\
-\nolinkurl{matchnested.metta} & 2.74 & 49.04 & ok \\
-\nolinkurl{matchnested2.metta} & 2.04 & 49.36 & ok \\
-\nolinkurl{matchsingle.metta} & 3.67 & 50.05 & ok \\
-\nolinkurl{matchtypes.metta} & 2.50 & 49.39 & ok \\
-\nolinkurl{matespace.metta} & 255.39 & $>2000$ & cap \\
-\nolinkurl{matespace2.metta} & 455.65 & $>2000$ & cap \\
-\nolinkurl{matespacefast.metta} & 1315.33 & $>2000$ & cap \\
-\nolinkurl{math.metta} & 2.83 & 52.16 & ok \\
-\nolinkurl{meta_types.metta} & 2.67 & 48.93 & ok \\
-\nolinkurl{metta4_prog.metta} & 1.90 & 47.16 & ok \\
-\nolinkurl{metta4_streams.metta} & 3.05 & 53.74 & ok \\
-\nolinkurl{mettaset.metta} & 1.97 & 60.71 & ok \\
-\nolinkurl{multicall.metta} & 2.63 & 48.01 & ok \\
-\nolinkurl{multiset_operations.metta} & 2.06 & 52.23 & ok \\
-\nolinkurl{mutex_and_transaction.metta} & 2.97 & 58.78 & ok \\
-\nolinkurl{myinterpreter.metta} & 2.45 & 51.99 & ok \\
-\nolinkurl{nars_direct.metta} & 5.72 & 68.14 & ok \\
-\nolinkurl{nars_tuffy.metta} & 119.50 & 357.34 & ok \\
-\nolinkurl{nestedcons.metta} & 2.91 & 51.25 & ok \\
-\nolinkurl{newtons_method.metta} & 2.27 & 53.47 & ok \\
-\nolinkurl{nilbc.metta} & 18.19 & 673.11 & ok \\
-\nolinkurl{once.metta} & 3.06 & 50.11 & ok \\
-\nolinkurl{outputtype.metta} & 3.07 & 50.81 & ok \\
-\nolinkurl{parametric_types.metta} & 2.32 & 50.09 & ok \\
-\nolinkurl{parse.metta} & 2.80 & 55.76 & ok \\
-\nolinkurl{partialdef.metta} & 2.45 & 50.26 & ok \\
-\nolinkurl{patrick_iterate_fib.metta} & 3.32 & 51.81 & ok \\
-\nolinkurl{patrick_iterate_quad.metta} & 1373.66 & 660.59 & ok \\
-\nolinkurl{patrick_test.metta} & 3.78 & 53.91 & ok \\
-\nolinkurl{peano.metta} & 14.66 & 1663.08 & ok \\
-\nolinkurl{peanofast.metta} & 5.04 & 466.01 & ok \\
-\nolinkurl{permutations.metta} & 560.27 & 721.23 & ok \\
-\nolinkurl{pln_direct.metta} & 6.97 & 70.62 & ok \\
-\nolinkurl{pln_roman.metta} & 35.18 & 119.61 & ok \\
-\nolinkurl{pln_tuffy.metta} & 9.69 & 71.86 & ok \\
-\nolinkurl{plntest.metta} & 2.70 & 51.09 & ok \\
-\nolinkurl{plntestdirect.metta} & 4.00 & 51.81 & ok \\
-\nolinkurl{prologimport.metta} & 24.12 & 58.87 & ok \\
-\nolinkurl{python.metta} & 12.54 & 83.80 & exit \\
-\nolinkurl{python_import.metta} & 11.16 & 64.23 & exit \\
-\nolinkurl{recursive_types.metta} & 3.18 & 50.29 & ok \\
-\nolinkurl{recursive_types2.metta} & 2.50 & 52.50 & ok \\
-\nolinkurl{repl.metta} & 3.61 & 51.50 & ok \\
-\nolinkurl{repr.metta} & 2.10 & 50.90 & ok \\
-\nolinkurl{roman_test.metta} & 5.53 & 59.04 & ok \\
-\nolinkurl{scale.metta} & 462.39 & 897.91 & ok \\
-\nolinkurl{selfprog.metta} & 2.87 & 51.74 & ok \\
-\nolinkurl{smartdispatch.metta} & 2.42 & 51.23 & ok \\
-\nolinkurl{spacefunction.metta} & 2.77 & 50.98 & ok \\
-\nolinkurl{spaces.metta} & 2.08 & 48.84 & ok \\
-\nolinkurl{spaces2.metta} & 2.88 & 49.42 & ok \\
-\nolinkurl{spaces3.metta} & 2.25 & 50.88 & ok \\
-\nolinkurl{spaces_find.metta} & 3.30 & 49.70 & ok \\
-\nolinkurl{spaces_removeallatoms.metta} & 2.84 & 52.58 & ok \\
-\nolinkurl{spaces_succeedspredicate.metta} & 3.30 & 51.50 & ok \\
-\nolinkurl{specialize.metta} & 3.70 & 52.68 & ok \\
-\nolinkurl{specialize_recursive_wrap.metta} & 3.84 & 66.58 & ok \\
-\nolinkurl{specializecyclic.metta} & 2.57 & 52.71 & ok \\
-\nolinkurl{specializefunctiontypes.metta} & 3.54 & 55.20 & ok \\
-\nolinkurl{state.metta} & 4.02 & 58.05 & ok \\
-\nolinkurl{streamops.metta} & 3.45 & 57.46 & ok \\
-\nolinkurl{string.metta} & 2.09 & 51.50 & ok \\
-\nolinkurl{supercollapse.metta} & 2.89 & 53.11 & ok \\
-\nolinkurl{superpose_nested.metta} & 3.53 & 53.39 & ok \\
-\nolinkurl{superpose_primes.metta} & 4.16 & 58.34 & ok \\
-\nolinkurl{swrite_variable_identity.metta} & 3.29 & 63.53 & ok \\
-\nolinkurl{tabling_fib.metta} & 4.09 & 62.77 & ok \\
-\nolinkurl{test_alpha_unique_atom.metta} & 3.45 & 67.77 & ok \\
-\nolinkurl{test_datetime.metta} & 20.00 & 63.78 & ok \\
-\nolinkurl{test_memo_aggregate.metta} & 3.06 & 64.79 & ok \\
-\nolinkurl{test_memo_dependency_invalidation.metta} & 5.72 & 80.29 & ok \\
-\nolinkurl{test_memo_multi_answer.metta} & 5.59 & 69.83 & ok \\
-\nolinkurl{test_memo_per_arity.metta} & 3.26 & 67.27 & ok \\
-\nolinkurl{test_memo_same_name_multi_arity.metta} & 2.60 & 72.29 & ok \\
-\nolinkurl{test_memo_stats.metta} & 3.79 & 83.31 & ok \\
-\nolinkurl{test_memo_variant_nonground.metta} & 3.18 & 87.79 & ok \\
-\nolinkurl{test_string_comments.metta} & 5.38 & 69.51 & ok \\
-\nolinkurl{test_unify_eval_branches.metta} & 2.73 & 64.81 & exit \\
-\nolinkurl{tests.metta} & 4.58 & 55.56 & ok \\
-\nolinkurl{tilepuzzle.metta} & 1134.99 & 1974.13 & ok \\
-\nolinkurl{torch.metta} & 12.65 & 82.08 & ok \\
-\nolinkurl{translatepredicate.metta} & 3.28 & 56.12 & ok \\
-\nolinkurl{translatorrule.metta} & 3.29 & 55.90 & ok \\
-\nolinkurl{translatorrule_fib.metta} & 2.49 & 58.84 & ok \\
-\nolinkurl{translatorrule_for.metta} & 3.32 & 54.77 & ok \\
-\nolinkurl{twostage.metta} & 2.81 & 51.76 & ok \\
-\nolinkurl{types.metta} & 3.61 & 61.17 & ok \\
-\nolinkurl{types_dependent.metta} & 16.48 & 64.60 & ok \\
-\nolinkurl{types_nondet.metta} & 3.05 & 49.52 & ok \\
-\nolinkurl{xor.metta} & 2.09 & 52.38 & ok \\
+\code{g500s12\_bfs} & 0.127 & 0.11 & 15.3 & 0.107 & 0.09 & 23.1 & rows \\
+\code{g500s12\_wcc} & 0.149 & 0.13 & 19.8 & 0.124 & 0.10 & 24.1 & rows \\
+\code{g500s12\_cdlp} & 2.10 & 2.08 & 36.6 & 0.719 & 0.67 & 19.9 & rows \\
+\code{g500s12\_lcc} & 9.52 & 9.42 & 26.8 & 7.06 & 6.94 & 19.5 & rows \\
+\code{g500s12\_sssp} & 1.97 & 1.94 & 35.1 & 0.153 & 0.14 & 33.8 & rows \\
+\code{g500s14\_bfs} & 0.513 & 0.47 & 45.1 & 0.491 & 0.47 & 41.3 & rows \\
+\code{g500s14\_wcc} & 0.655 & 0.63 & 63.9 & 0.360 & 0.33 & 36.9 & rows \\
+\code{g500s14\_cdlp} & 11.18 & 11.06 & 138 & 3.46 & 3.39 & 38.6 & rows \\
+\code{g500s14\_lcc} & 97.00 & 79.89 & 97.3 & 56.13 & 55.51 & 35.9 & rows \\
+\code{g500s14\_sssp} & 11.11 & 10.92 & 126 & 0.878 & 0.85 & 99.9 & rows \\
+\code{g500s16\_bfs} & 2.90 & 2.78 & 170 & 2.75 & 2.71 & 92.4 & rows \\
+\code{g500s16\_wcc} & 3.61 & 3.54 & 252 & 2.26 & 2.23 & 66.8 & rows \\
+\code{g500s16\_cdlp} & 62.61 & 62.23 & 642 & 18.91 & 17.71 & 75.6 & rows \\
+\code{lubm\_1} & 0.471 & 0.45 & 28.0 & 0.348 & 0.32 & 44.1 & rows \\
+\code{lubm\_5} & 2.72 & 2.66 & 139 & 2.39 & 2.25 & 180 & rows \\
+\code{lubm\_10} & 5.86 & 5.47 & 276 & 5.69 & 5.34 & 365 & rows \\
+\code{snb0.1\_bi9} & 1.54 & 1.52 & 105 & 1.25 & 1.22 & 148 & rows \\
+\code{snb0.1\_bi11} & 0.168 & 0.14 & 14.8 & 0.055 & 0.03 & 18.0 & rows \\
+\code{snb0.1\_bi12} & 2.10 & 2.06 & 125 & 1.99 & 1.95 & 193 & rows \\
+\code{snb0.1\_bi18} & 0.668 & 0.65 & 26.4 & 0.180 & 0.16 & 44.0 & rows \\
+\code{snb0.3\_bi9} & 4.78 & 4.72 & 312 & 4.29 & 4.13 & 415 & rows \\
+\code{snb0.3\_bi11} & 0.503 & 0.48 & 31.8 & 0.160 & 0.13 & 30.1 & rows \\
+\code{snb0.3\_bi12} & 6.72 & 6.51 & 382 & 6.84 & 6.66 & 585 & rows \\
+\code{snb0.3\_bi18} & 3.51 & 3.45 & 88.0 & 0.873 & 0.79 & 178 & rows \\
+\code{bfc\_19} & 7.50 & 7.00 & 396 & 7.67 & 7.56 & 538 & sizes \\
+\code{circuit\_add4096} & 15.11 & 15.03 & 710 & 9.97 & 9.85 & 472 & rows \\
+\code{cd\_KS\_r5} & 9.35 & 9.17 & 172 & 8.33 & 8.27 & 168 & rows \\
+\code{cd\_XGK\_r5} & 0.196 & 0.17 & 10.6 & 0.181 & 0.16 & 18.1 & rows \\
+\code{cd\_lukC\_r6} & 0.495 & 0.47 & 15.1 & 0.316 & 0.30 & 26.3 & rows \\
+\code{ctl\_dp8} & 2.63 & 2.61 & 64.7 & 1.28 & 1.25 & 39.0 & rows \\
+\code{ctl\_dp9} & 11.36 & 11.34 & 238 & 7.28 & 7.24 & 67.2 & rows \\
+\code{hamming\_r100000\_k12} & 4.70 & 4.56 & 227 & 3.76 & 3.42 & 295 & rows \\
+\code{hamming\_r300000\_k12} & 15.02 & 13.95 & 557 & 11.07 & 9.95 & 668 & rows \\
+\code{clique\_n800\_m57600\_k5} & 17.72 & 17.63 & 116 & 12.17 & 12.13 & 44.2 & sizes \\
+\code{apriori\_T50000} & 17.79 & 17.74 & 130 & 2.81 & 2.79 & 42.9 & rows \\
+\code{kg\_1000000} & 100.3 & 100.2 & 2896 & 86.48 & 86.02 & 2243 & rows \\
 \end{longtable}
 \endgroup
+%% table:leapfrog end
 
-\paragraph{Reproduction boundary.}  The snapshot's \code{reproduce.txt}
-lists the generator and runner commands and selected cases.  Raw process logs
-and stores were retained with the measurement run; the repository carries the
-small machine-readable receipts and independent workload definitions.
-This snapshot does not requalify portable wheels, physical AArch64, GMP
-allocation-failure recovery, Prime or the paper's older heavy genomic and
-proof-search benchmarks.
+All 216 runs passed their checks.  \CeTTa{} finishes first on 34 of the 36
+tasks and is within 2\% of MORK on the other two (\code{bfc\_19} and BI~12 on
+SF0.3).  Its wall time is a geometric mean of 0.55 of MORK's, from 0.08 on
+single-source shortest paths to 1.02, and its CPU time a geometric mean of
+0.53.  Memory goes both ways: \CeTTa{} needs more on 17 tasks, at most about
+twice MORK's (BI~18 on SF0.3), and less on the others, down to an eighth (label
+propagation at scale 16).  This batch ran while other jobs kept the one-minute
+load between about 11 and 25, so its absolute times are up to about twice those
+of the quieter runs above; both engines ran in alternation under the same
+conditions.
+
+\subsection{The \HE{} lane against Hyperon Experimental}
+\label{app:runtimes-he}
+
+The same source file and the same independent expected answer bag for both
+engines; \CeTTa{} runs \code{-{}-lang he}.  Twenty-three cases were attempted
+with a 600-second limit per run.  Seventeen completed on both engines with the expected answers and are
+timed below.  Hyperon Experimental aborted on three of the larger joins
+(\nolinkurl{triangle_dense_32_count}, \nolinkurl{guarded_triangle_32_count},
+\nolinkurl{path_product_12_cardinality_count}) at an assertion of its
+expression index (\code{size < TK\_MAX\_EXPRESSION\_SIZE}); \CeTTa{}
+answered all three correctly.  Three path cases
+(\nolinkurl{path_product_12_count}, \nolinkurl{path_product_12_separator_count},
+\nolinkurl{path_isolated_8_512_count}) use \CeTTa{}'s extended \code{fold},
+which Hyperon Experimental, following MeTTa's rule for unknown symbols, leaves
+uninterpreted; they are not portable programs and are not compared.  No run
+reached the limit.
+
+%% table:he begin
+\begin{center}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+ & \multicolumn{2}{c}{Hyperon Experimental} & \multicolumn{2}{c}{\CeTTa{} \HE{} lane} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+case & wall (s) & MiB & wall (s) & MiB \\
+\midrule
+\nolinkurl{ancestor_chain_256_natural} & 6.92 & 93.6 & 0.007 & 14.9 \\
+\nolinkurl{ancestor_chain_256_levelwise} & 56.93 & 1947 & 0.023 & 19.7 \\
+\nolinkurl{closure_ring_32_levelwise} & 16.02 & 47.8 & 0.066 & 22.7 \\
+\nolinkurl{counter_64_natural} & 10.09 & 960 & 0.044 & 31.0 \\
+\nolinkurl{sort_64_natural} & 1.28 & 29.0 & 0.007 & 13.3 \\
+\nolinkurl{arithmetic_10000} & 5.59 & 46.9 & 0.099 & 28.3 \\
+\nolinkurl{tally_1000x8} & 4.76 & 14.8 & 0.036 & 14.6 \\
+\nolinkurl{ancestor_chain_64_natural} & 0.283 & 19.4 & 0.010 & 14.7 \\
+\nolinkurl{counter_4_natural} & 0.121 & 19.6 & 0.019 & 15.5 \\
+\nolinkurl{sort_16_natural} & 0.159 & 13.4 & 0.011 & 13.1 \\
+\nolinkurl{triangle_duplicates_witnesses} & 0.030 & 12.3 & 0.011 & 12.2 \\
+\nolinkurl{triangle_empty_witnesses} & 0.021 & 12.2 & 0.013 & 12.0 \\
+\nolinkurl{triangle_dense_8_count} & 0.729 & 14.8 & 0.014 & 12.5 \\
+\nolinkurl{guarded_triangle_8_count} & 0.053 & 12.9 & 0.009 & 12.6 \\
+\nolinkurl{path_correlated_6_witnesses} & 0.055 & 13.4 & 0.012 & 12.9 \\
+\nolinkurl{path_product_8_cardinality_count} & 0.403 & 16.9 & 0.008 & 12.6 \\
+\nolinkurl{path_product_4_witnesses} & 0.026 & 12.3 & 0.011 & 12.3 \\
+\bottomrule
+\end{tabular}
+\end{center}
+%% table:he end
+
+\CeTTa{}'s \HE{} lane is faster on all seventeen: from 1.6 times on the
+triangle join with no answers, where both processes are dominated by start-up,
+to about 2,500
+times on the level-wise ancestor chain (56.9\,s against 0.023\,s), with a
+geometric mean of 36.  Hyperon Experimental's peak memory reaches 1.9\,GiB on
+that case and 960\,MiB on the counter, against at most 31\,MiB for \CeTTa{}.
+The four cases that the earlier five-second screen reported as Hyperon
+Experimental timeouts all complete, in 6.9 to 57\,s.
+
+\subsection{The \PeTTa{} examples against SWI-\PeTTa{}}
+\label{app:runtimes-examples}
+
+The population is all 164 tracked \code{examples/*.metta} files at the top of
+the \PeTTa{} checkout.  Each was first run once on both engines through the
+corpus harness, with its fixture policy (scripted input, isolated
+workspaces, deterministic stand-ins for external services) and output
+normalization, under a 600-second limit; no run reached it.  Examples without a
+fixture were then timed.  Of the 164, 161 print the same normalized output on both
+engines; the six with fixtures are listed without times.  Most examples are
+dominated by start-up (the median example takes 54\,ms on SWI-\PeTTa{} and
+4\,ms on \CeTTa{}), so the overall ratio says little: over the 155 timed examples whose outputs agree,
+\CeTTa{} is faster on 154 (median factor 14) and slower on one,
+\nolinkurl{patrick_iterate_quad.metta} (1.31 against 0.65\,s).  Of the nine
+examples that take SWI-\PeTTa{} more than a second, \CeTTa{} is faster by 1.3
+(\nolinkurl{he_minimalmetta.metta}) to 103 times (\nolinkurl{peano.metta}).
+The five examples that the earlier two-second screen reported as incomplete
+(\nolinkurl{he_minimalmetta.metta}, \nolinkurl{holbenchmark.metta} and the three
+\nolinkurl{matespace} programs) all finish on SWI-\PeTTa{}, in 2.0 to 5.8\,s.
+
+Three examples differ, and no difference is a failure to finish.  In
+\nolinkurl{python.metta} and \nolinkurl{python_import.metta}, \CeTTa{}
+returns Python text as a MeTTa string, by a recorded decision of 27 October
+that follows Hyperon Experimental, while this SWI-\PeTTa{} checkout returns it
+as a symbol, the default of its Python bridge: \code{(.upper "abc")} prints
+\code{ABC} on SWI-\PeTTa{} and \code{"ABC"} on \CeTTa{}, and a \code{repr}
+of the returned text shows the quotes.  The examples' expected values were
+written for symbols, so \CeTTa{} fails their assertions.
+\nolinkurl{test_unify_eval_branches.metta} imports \code{lib/lib\_he} by a
+path relative to the \PeTTa{} checkout: SWI-\PeTTa{} finds it from its
+working directory, while \CeTTa{} resolves an import against the importing
+file's directory and stops with an existence error.
+
+%% table:examples begin
+\begingroup
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{longtable}{@{}p{0.46\linewidth}rrrrl@{}}
+\toprule
+ & \multicolumn{2}{c}{wall (ms)} & \multicolumn{2}{c}{MiB} & \\
+example & SWI & \CeTTa{} & SWI & \CeTTa{} & result \\
+\midrule
+\endfirsthead
+\toprule
+example (continued) & SWI & \CeTTa{} & SWI & \CeTTa{} & result \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\nolinkurl{add_atom_fun_space.metta} & 72.5 & 4.6 & 18.9 & 12.3 & same \\
+\nolinkurl{and_or.metta} & 72.8 & 3.7 & 18.9 & 12.2 & same \\
+\nolinkurl{atomops.metta} & 76.3 & 4.6 & 19.0 & 11.9 & same \\
+\nolinkurl{booleansolver.metta} & 73.8 & 3.6 & 18.9 & 12.0 & same \\
+\nolinkurl{builin_types.metta} & 77.6 & 5.7 & 19.6 & 12.3 & same \\
+\nolinkurl{callquoteevalreduce.metta} & 75.6 & 4.4 & 19.7 & 13.0 & same \\
+\nolinkurl{callquoteevalreduce2.metta} & 74.0 & 4.4 & 18.9 & 12.6 & same \\
+\nolinkurl{case.metta} & 72.2 & 3.7 & 18.9 & 12.6 & same \\
+\nolinkurl{case2.metta} & 72.5 & 4.8 & 18.9 & 12.7 & same \\
+\nolinkurl{caseconstrain.metta} & 73.3 & 3.4 & 18.9 & 11.5 & same \\
+\nolinkurl{caseempty.metta} & 74.0 & 4.7 & 18.9 & 12.5 & same \\
+\nolinkurl{casenew.metta} & 73.8 & 4.5 & 18.9 & 12.5 & same \\
+\nolinkurl{chain.metta} & 73.8 & 4.2 & 18.8 & 12.3 & same \\
+\nolinkurl{collapse.metta} & 72.5 & 3.6 & 18.9 & 11.7 & same \\
+\nolinkurl{comments.metta} & 72.5 & 3.9 & 18.9 & 12.0 & same \\
+\nolinkurl{constanthead.metta} & 73.6 & 3.6 & 18.9 & 12.0 & same \\
+\nolinkurl{curry.metta} & 75.3 & 4.8 & 19.0 & 12.5 & same \\
+\nolinkurl{cut.metta} & 77.0 & 4.0 & 18.9 & 12.9 & same \\
+\nolinkurl{empty.metta} & 48.5 & 3.9 & 18.9 & 12.0 & same \\
+\nolinkurl{eval.metta} & 50.2 & 3.8 & 19.0 & 13.0 & same \\
+\nolinkurl{factorial.metta} & 52.4 & 3.9 & 18.9 & 12.2 & same \\
+\nolinkurl{fib.metta} & 665.3 & 81.7 & 19.7 & 12.3 & same \\
+\nolinkurl{fibadd.metta} & 515.3 & 82.4 & 19.6 & 12.4 & same \\
+\nolinkurl{fibsmart.metta} & 49.6 & 5.4 & 19.0 & 12.3 & same \\
+\nolinkurl{fibsmartimport.metta} & 51.3 & 4.6 & 19.0 & 12.3 & same \\
+\nolinkurl{foldall.metta} & 76.9 & 4.9 & 19.1 & 12.9 & same \\
+\nolinkurl{foldallmatch.metta} & 74.8 & 4.4 & 18.9 & 12.7 & same \\
+\nolinkurl{foldallspacecount.metta} & 74.3 & 4.0 & 18.9 & 13.0 & same \\
+\nolinkurl{forall.metta} & 78.0 & 5.4 & 19.7 & 12.5 & same \\
+\nolinkurl{functionhead.metta} & 75.0 & 4.1 & 18.9 & 12.5 & same \\
+\nolinkurl{functionhead2.metta} & 76.4 & 4.5 & 19.0 & 12.4 & same \\
+\nolinkurl{functionhead3.metta} & 75.0 & 4.5 & 18.9 & 12.8 & same \\
+\nolinkurl{functionremoval.metta} & 75.3 & 5.0 & 19.0 & 12.8 & same \\
+\nolinkurl{functionremovalspec.metta} & 76.9 & 4.6 & 19.0 & 12.7 & same \\
+\nolinkurl{functiontypes.metta} & 76.8 & 5.4 & 19.1 & 12.8 & same \\
+\nolinkurl{git_import.metta} & 79.2 & 23.7 & 19.0 & 20.3 & same \\
+\nolinkurl{git_import2.metta} & \multicolumn{4}{c}{fixture; not timed} & same \\
+\nolinkurl{greedy_chess.metta} & \multicolumn{4}{c}{fixture; not timed} & same \\
+\nolinkurl{he_assert.metta} & 78.8 & 5.3 & 19.6 & 13.3 & same \\
+\nolinkurl{he_atomspace.metta} & 81.0 & 4.8 & 19.6 & 13.6 & same \\
+\nolinkurl{he_equalreduct.metta} & 83.1 & 5.2 & 19.7 & 13.0 & same \\
+\nolinkurl{he_error.metta} & 81.1 & 26.3 & 19.7 & 20.6 & same \\
+\nolinkurl{he_evaluation.metta} & 80.7 & 5.8 & 19.6 & 13.5 & same \\
+\nolinkurl{he_math.metta} & 77.1 & 4.3 & 19.3 & 12.2 & same \\
+\nolinkurl{he_minimalmetta.metta} & 1979.5 & 1491.5 & 84.3 & 34.2 & same \\
+\nolinkurl{he_quoting.metta} & 51.2 & 4.9 & 19.6 & 13.3 & same \\
+\nolinkurl{he_types.metta} & 49.7 & 4.0 & 19.7 & 12.9 & same \\
+\nolinkurl{holbenchmark.metta} & 4096.4 & 711.9 & 850 & 627 & same \\
+\nolinkurl{holfunctions.metta} & 51.4 & 3.9 & 19.0 & 12.8 & same \\
+\nolinkurl{holfunctions_intrinsicop.metta} & 49.7 & 3.4 & 19.0 & 12.6 & same \\
+\nolinkurl{hyperpose_primes.metta} & 3467.2 & 624.2 & 20.3 & 65.6 & same \\
+\nolinkurl{identity.metta} & 49.6 & 3.4 & 18.9 & 11.9 & same \\
+\nolinkurl{if.metta} & 50.3 & 3.4 & 18.9 & 11.8 & same \\
+\nolinkurl{if2.metta} & 50.0 & 2.9 & 18.9 & 11.9 & same \\
+\nolinkurl{if3.metta} & 56.2 & 5.0 & 18.9 & 12.2 & same \\
+\nolinkurl{if4.metta} & 55.0 & 3.3 & 18.9 & 12.0 & same \\
+\nolinkurl{ifcasenondet.metta} & 55.5 & 6.2 & 18.9 & 12.6 & same \\
+\nolinkurl{ifsimple.metta} & 61.2 & 3.1 & 18.9 & 11.7 & same \\
+\nolinkurl{invertfunction.metta} & 54.6 & 17.5 & 19.0 & 19.9 & same \\
+\nolinkurl{invertpeanoplus.metta} & 55.0 & 4.2 & 19.0 & 12.5 & same \\
+\nolinkurl{is_alpha_member_test.metta} & 58.3 & 4.4 & 19.7 & 12.3 & same \\
+\nolinkurl{iter.metta} & 70.1 & 3.7 & 18.9 & 12.5 & same \\
+\nolinkurl{lambda.metta} & 70.0 & 5.6 & 19.0 & 13.4 & same \\
+\nolinkurl{lambda_fresh_names.metta} & 68.0 & 4.0 & 18.9 & 12.2 & same \\
+\nolinkurl{let_superpose_if_case.metta} & 50.4 & 4.0 & 18.8 & 12.4 & same \\
+\nolinkurl{letext.metta} & 48.3 & 2.6 & 18.9 & 12.1 & same \\
+\nolinkurl{letlet.metta} & 48.4 & 3.5 & 18.9 & 12.1 & same \\
+\nolinkurl{letstar.metta} & 47.8 & 2.6 & 18.8 & 11.5 & same \\
+\nolinkurl{lib_roman_pair_helpers.metta} & 52.2 & 4.4 & 19.7 & 13.4 & same \\
+\nolinkurl{library.metta} & 51.9 & 3.7 & 19.7 & 13.6 & same \\
+\nolinkurl{listhead.metta} & 48.4 & 4.0 & 18.9 & 12.6 & same \\
+\nolinkurl{llm_cities.metta} & \multicolumn{4}{c}{fixture; not timed} & same \\
+\nolinkurl{logicprog.metta} & 49.0 & 3.7 & 19.0 & 12.5 & same \\
+\nolinkurl{logicprogset.metta} & 48.7 & 2.8 & 18.9 & 12.4 & same \\
+\nolinkurl{matchnested.metta} & 48.9 & 3.8 & 18.9 & 12.0 & same \\
+\nolinkurl{matchnested2.metta} & 48.9 & 3.5 & 18.9 & 12.2 & same \\
+\nolinkurl{matchsingle.metta} & 49.0 & 3.8 & 19.0 & 12.6 & same \\
+\nolinkurl{matchtypes.metta} & 48.9 & 3.1 & 19.0 & 12.2 & same \\
+\nolinkurl{matespace.metta} & 4054.7 & 273.9 & 626 & 16.4 & same \\
+\nolinkurl{matespace2.metta} & 5819.5 & 688.0 & 564 & 16.3 & same \\
+\nolinkurl{matespacefast.metta} & 4304.3 & 1184.6 & 3341 & 250 & same \\
+\nolinkurl{math.metta} & 53.8 & 3.8 & 19.3 & 12.0 & same \\
+\nolinkurl{meta_types.metta} & 47.8 & 3.0 & 18.9 & 11.7 & same \\
+\nolinkurl{metta4_prog.metta} & 46.0 & 2.6 & 18.9 & 11.8 & same \\
+\nolinkurl{metta4_streams.metta} & 48.6 & 3.8 & 18.9 & 13.1 & same \\
+\nolinkurl{mettaset.metta} & 49.0 & 2.8 & 18.9 & 12.0 & same \\
+\nolinkurl{multicall.metta} & 50.4 & 3.4 & 18.9 & 11.8 & same \\
+\nolinkurl{multiset_operations.metta} & 48.6 & 2.7 & 18.9 & 11.6 & same \\
+\nolinkurl{mutex_and_transaction.metta} & 54.1 & 3.9 & 19.8 & 12.6 & same \\
+\nolinkurl{myinterpreter.metta} & 48.6 & 3.2 & 19.0 & 12.7 & same \\
+\nolinkurl{nars_direct.metta} & 63.6 & 6.0 & 19.9 & 15.2 & same \\
+\nolinkurl{nars_tuffy.metta} & 302.0 & 112.9 & 19.9 & 21.3 & same \\
+\nolinkurl{nestedcons.metta} & 47.5 & 3.2 & 18.9 & 12.4 & same \\
+\nolinkurl{newtons_method.metta} & 53.4 & 2.9 & 19.3 & 12.4 & same \\
+\nolinkurl{nilbc.metta} & 1023.0 & 27.8 & 21.5 & 14.0 & same \\
+\nolinkurl{once.metta} & 47.5 & 3.5 & 18.9 & 12.8 & same \\
+\nolinkurl{outputtype.metta} & 46.8 & 3.4 & 19.0 & 12.9 & same \\
+\nolinkurl{parametric_types.metta} & 47.3 & 3.3 & 18.9 & 12.4 & same \\
+\nolinkurl{parse.metta} & 49.0 & 3.2 & 19.0 & 11.6 & same \\
+\nolinkurl{partialdef.metta} & 47.5 & 3.0 & 19.1 & 12.5 & same \\
+\nolinkurl{patrick_iterate_fib.metta} & 70.8 & 5.2 & 19.2 & 13.3 & same \\
+\nolinkurl{patrick_iterate_quad.metta} & 647.7 & 1306.7 & 19.7 & 23.2 & same \\
+\nolinkurl{patrick_test.metta} & 52.6 & 4.2 & 19.1 & 13.1 & same \\
+\nolinkurl{peano.metta} & 1571.4 & 15.2 & 23.4 & 14.3 & same \\
+\nolinkurl{peanofast.metta} & 421.5 & 5.9 & 342 & 15.2 & same \\
+\nolinkurl{permutations.metta} & 639.2 & 515.0 & 144 & 12.2 & same \\
+\nolinkurl{pln_direct.metta} & 64.2 & 6.6 & 23.2 & 15.0 & same \\
+\nolinkurl{pln_roman.metta} & 110.3 & 30.1 & 23.3 & 20.9 & same \\
+\nolinkurl{pln_tuffy.metta} & 65.5 & 8.5 & 23.2 & 15.7 & same \\
+\nolinkurl{plntest.metta} & 50.1 & 3.6 & 19.7 & 13.0 & same \\
+\nolinkurl{plntestdirect.metta} & 50.2 & 4.2 & 19.6 & 13.0 & same \\
+\nolinkurl{prologimport.metta} & 55.2 & 24.0 & 19.8 & 21.9 & same \\
+\nolinkurl{python.metta} & 65.2 & 12.0 & 27.1 & 19.6 & differs \\
+\nolinkurl{python_import.metta} & 63.8 & 12.0 & 27.1 & 18.5 & differs \\
+\nolinkurl{recursive_types.metta} & 52.8 & 3.6 & 19.0 & 11.9 & same \\
+\nolinkurl{recursive_types2.metta} & 50.5 & 3.6 & 19.0 & 12.9 & same \\
+\nolinkurl{repl.metta} & \multicolumn{4}{c}{fixture; not timed} & same \\
+\nolinkurl{repr.metta} & 52.0 & 3.9 & 18.9 & 11.9 & same \\
+\nolinkurl{roman_test.metta} & 57.5 & 7.4 & 19.8 & 14.0 & same \\
+\nolinkurl{scale.metta} & 879.4 & 455.7 & 399 & 126 & same \\
+\nolinkurl{selfprog.metta} & 49.3 & 3.7 & 18.9 & 12.1 & same \\
+\nolinkurl{smartdispatch.metta} & 49.2 & 3.2 & 19.0 & 12.8 & same \\
+\nolinkurl{spacefunction.metta} & 48.9 & 3.9 & 19.1 & 12.5 & same \\
+\nolinkurl{spaces.metta} & 47.9 & 3.1 & 18.9 & 12.7 & same \\
+\nolinkurl{spaces2.metta} & 49.1 & 3.6 & 19.0 & 12.4 & same \\
+\nolinkurl{spaces3.metta} & 48.5 & 3.0 & 19.0 & 12.2 & same \\
+\nolinkurl{spaces_find.metta} & 50.5 & 4.3 & 19.1 & 13.1 & same \\
+\nolinkurl{spaces_removeallatoms.metta} & 60.0 & 3.7 & 19.1 & 13.0 & same \\
+\nolinkurl{spaces_succeedspredicate.metta} & 51.5 & 3.9 & 19.1 & 12.8 & same \\
+\nolinkurl{specialize.metta} & 52.1 & 4.1 & 19.7 & 13.6 & same \\
+\nolinkurl{specialize_recursive_wrap.metta} & 49.6 & 3.6 & 19.1 & 12.4 & same \\
+\nolinkurl{specializecyclic.metta} & 49.5 & 3.9 & 19.0 & 12.8 & same \\
+\nolinkurl{specializefunctiontypes.metta} & 48.1 & 3.7 & 18.9 & 12.8 & same \\
+\nolinkurl{state.metta} & 47.7 & 2.7 & 19.0 & 11.7 & same \\
+\nolinkurl{streamops.metta} & 48.5 & 3.6 & 19.0 & 11.8 & same \\
+\nolinkurl{string.metta} & 51.0 & 2.6 & 18.9 & 11.5 & same \\
+\nolinkurl{supercollapse.metta} & 51.3 & 4.1 & 19.0 & 12.5 & same \\
+\nolinkurl{superpose_nested.metta} & 50.8 & 3.5 & 19.1 & 12.5 & same \\
+\nolinkurl{superpose_primes.metta} & 55.7 & 4.8 & 19.7 & 13.4 & same \\
+\nolinkurl{swrite_variable_identity.metta} & 55.8 & 5.5 & 21.1 & 14.1 & same \\
+\nolinkurl{tabling_fib.metta} & 49.9 & 4.3 & 19.1 & 13.4 & same \\
+\nolinkurl{test_alpha_unique_atom.metta} & 51.5 & 3.4 & 19.7 & 12.2 & same \\
+\nolinkurl{test_datetime.metta} & \multicolumn{4}{c}{fixture; not timed} & same \\
+\nolinkurl{test_memo_aggregate.metta} & 53.8 & 3.7 & 19.2 & 12.4 & same \\
+\nolinkurl{test_memo_dependency_invalidation.metta} & 54.5 & 3.7 & 19.2 & 12.1 & same \\
+\nolinkurl{test_memo_multi_answer.metta} & 53.1 & 2.9 & 19.2 & 12.3 & same \\
+\nolinkurl{test_memo_per_arity.metta} & 54.1 & 4.0 & 19.2 & 12.4 & same \\
+\nolinkurl{test_memo_same_name_multi_arity.metta} & 54.1 & 3.0 & 19.2 & 12.2 & same \\
+\nolinkurl{test_memo_stats.metta} & 53.8 & 3.8 & 19.2 & 12.3 & same \\
+\nolinkurl{test_memo_variant_nonground.metta} & 53.4 & 3.0 & 19.2 & 12.2 & same \\
+\nolinkurl{test_string_comments.metta} & 49.3 & 3.6 & 19.0 & 11.9 & same \\
+\nolinkurl{test_unify_eval_branches.metta} & 50.8 & 2.4 & 19.7 & 10.7 & differs \\
+\nolinkurl{tests.metta} & 49.6 & 3.9 & 19.0 & 12.7 & same \\
+\nolinkurl{tilepuzzle.metta} & 1553.5 & 954.0 & 122 & 162 & same \\
+\nolinkurl{torch.metta} & \multicolumn{4}{c}{fixture; not timed} & same \\
+\nolinkurl{translatepredicate.metta} & 51.5 & 3.6 & 18.9 & 11.8 & same \\
+\nolinkurl{translatorrule.metta} & 50.1 & 3.6 & 19.1 & 12.0 & same \\
+\nolinkurl{translatorrule_fib.metta} & 49.5 & 3.2 & 18.9 & 12.0 & same \\
+\nolinkurl{translatorrule_for.metta} & 50.6 & 3.8 & 19.1 & 12.7 & same \\
+\nolinkurl{twostage.metta} & 50.8 & 3.5 & 18.9 & 12.1 & same \\
+\nolinkurl{types.metta} & 50.7 & 4.2 & 19.0 & 12.8 & same \\
+\nolinkurl{types_dependent.metta} & 49.6 & 17.6 & 19.1 & 20.3 & same \\
+\nolinkurl{types_nondet.metta} & 49.1 & 4.2 & 19.1 & 12.6 & same \\
+\nolinkurl{xor.metta} & 47.9 & 4.0 & 18.9 & 12.7 & same \\
+\end{longtable}
+\endgroup
+%% table:examples end
+
+\subsection{Inductive learning: nuPLN}
+\label{app:runtimes-ilp}
+
+nuPLN, Nil Geisweiller's proof-producing learner, induces a predicate from
+three labelled examples by backward chaining: it constructs the conjunction
+$F \wedge G$ together with the typing and evaluation proofs that explain
+every label.  Its reference implementation is the same \PeTTa{} file on
+SWI-\PeTTa{}.  The benchmark keeps the file's eight inference equations and
+its knowledge base unchanged, drops the random-sampling helper (which consults
+a Prolog file and is not used by the query) and the self-tests, and repeats the
+final learning query 1,000 times as top-level queries; the generator is in
+\code{benchmarks/nupln/}.  Both engines print the same 1,000 answers, byte for
+byte.
+
+%% table:nupln begin
+\begin{center}
+\small
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+1,000 learning queries & wall (s) & CPU (s) & MiB \\
+\midrule
+SWI-\PeTTa{} & 0.60 & 0.59 & 52.9 \\
+\CeTTa{} & 0.11 & 0.11 & 19.9 \\
+\bottomrule
+\end{tabular}
+\end{center}
+%% table:nupln end
+
+\CeTTa{} is about five times faster, with less than half the peak memory.
+This is one small learning problem repeated, a throughput measurement, not a
+thousand different problems; a single query is too short to time apart from
+start-up.
+
+\subsection{The ai-mathematician}
+\label{app:runtimes-aimath}
+
+The ai-mathematician, a theorem-proving pipeline over a Megalodon corpus,
+has a \PeTTa{} port that runs on \CeTTa{}; its original is in Python.  The
+stage that runs without external provers is premise selection: for each of the
+966 theorems of the 1,158-declaration corpus that have recorded dependencies,
+rank the earlier facts and report the recall of the true dependencies among the
+first 8, 16, 32 and 64.  The port's matched harness runs the frozen Python v4
+code and the port on the same corpus; both report the same recall summary to
+the last printed digit.  The preview binary does not run this stage: the
+port's search preparation, \code{(ai-math:search \$decls)}, returns no answer on
+it, although loading the corpus works.  The table therefore measures the NIK
+line's binary of 26 October on which the port was qualified (SHA-256 prefix
+\code{f11e8311279f}), not the preview.
+
+%% table:aimath begin
+\begin{center}
+\small
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+966 goals & load (s) & prepare (s) & rank (s) & total (s) & CPU (s) & MiB \\
+\midrule
+Python v4 & 2.56 & 0.005 & 16.28 & 18.74 & 18.54 & 247 \\
+\PeTTa{} port on \CeTTa{} & 2.83 & 0.392 & 13.20 & 16.63 & 16.30 & 402 \\
+\bottomrule
+\end{tabular}
+\end{center}
+%% table:aimath end
+
+The port ranks about a fifth faster than the Python original (13.2 against
+16.3\,s; on the loaded machine its three runs ranged from 11.8 to 14.5\,s),
+loads the corpus slightly more slowly and needs 1.6 times the peak memory.
+Python's total covers loading, preparation and ranking inside an interpreter
+that has already started; the port's total is its whole process.
+
+\subsection{What was not measured}
+\label{app:runtimes-unmeasured}
+
+\begin{itemize}
+\item \textbf{The ai-mathematician beyond premise selection.}  Its proof stages
+  call Vampire and Lean.  The port's Lean worker requires Linux user
+  namespaces for its isolation, which the measuring session did not have, and a
+  full discovery cohort takes about a day on two workers; the preview binary
+  also fails the port's search stage (above).
+\item \textbf{Other inductive-learning programs.}  The Popper, Hopper and IGGP
+  programs in the tree replay the reference systems' published programs over
+  every example rather than learn them, and the Metagol-style learners have no
+  matching reference task here; Hopper's own learner is not runnable on this
+  machine.  nuPLN's distractor ladder was not timed: with one always-true
+  distractor predicate, \CeTTa{}'s depth-first search needed about seven
+  minutes in an untimed run under load, and the faster first-witness strategy
+  reported in September was never committed.
+\item \textbf{Upstream Hyperon Experimental.}  Only the fork build named above
+  was measured.
+\item \textbf{Three rungs of the scale ladder}: Hexlife with 200 cells and 30
+  generations, the counter machine at register value 1,000 and the process
+  calculus at 500~$+$~500, each of whose MORK runs takes minutes at this load;
+  and SWI-\PeTTa{} and MORK's default build at the ladder's sizes.
+\item \textbf{The largest graph rungs} of Section~\ref{app:runtimes-earlier}
+  on the preview.
+\item \textbf{Portable wheels, physical AArch64 and recovery from allocation
+  failure inside GMP} are not requalified by this appendix.
+\end{itemize}
+
+\subsection{Earlier experiments}
+\label{app:runtimes-earlier}
+
+These are dated observations of earlier binaries and are not measurements of
+the November preview.  On 29 October a NumPy PCG64 input series (seed 0;
+\code{benchmarks/opt\_suite/generate\_large\_graph.py}) took the two-hop and
+triangle task to hundreds of millions of derived pairs, in single runs on a
+loaded machine against MORK's default build:
+
+\begin{center}
+\small
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+ & \multicolumn{2}{c}{Opt, 29 October} & \multicolumn{2}{c}{MORK default, 29 October} \\
+derived two-hop pairs & wall (s) & peak GiB & wall (s) & peak GiB \\
+\midrule
+149,892,361 & 47.87 & 3.16 & 176.85 & 12.60 \\
+599,911,956 & 323.81 & 12.54 & \multicolumn{2}{c}{stopped by a memory guard at 15.6\,GiB} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent The input series is reproduced by the generator: an independent hash-set
+computation on the regenerated 7,499,796-edge input gives 149,892,361 pairs and
+8,897 triangles, the counts both engines recorded then.
+The values agree with the raw records of those runs.  No completed-reference
+time is assigned to the stopped MORK run, and these runs establish neither a
+capacity limit nor the preview's footprint.
+
+\paragraph{Reproduction.}  The generators and runners are in the \CeTTa{}
+repository: \code{benchmarks/opt\_suite/} (the application suite, its scale
+ladder, the large graph series and the independent oracles),
+\code{benchmarks/mork\_leapfrog/}, \code{benchmarks/petta\_examples/},
+\code{benchmarks/nupln/}, and \code{benchmarks/mam\_families/} for the \HE{}
+cases.  Large inputs are generated, not stored.

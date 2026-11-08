@@ -27,7 +27,7 @@ structure Admitted
     (problem : EquationStore (Term (signature S captures) Γ sort))
     (rows : O → ContextualStoredRows.Row locals captures Γ sort) (world : Finset O)
     (checks : List (Check (Term (signature S captures) Γ sort))) : Prop where
-  consistent : (ContextualFamilies.action captures Γ sort).Consistent problem
+  solvable : ContextualFrameUnifier.Solvable problem
   checks : ∀ check ∈ checks, ContextualGuardSemantics.Ask locals problem rows world check
 
 /-- A stronger contextual store admits no new solutions in any later frame. -/
@@ -96,11 +96,11 @@ theorem ask_of_refines {first second : EquationStore (Term (signature S captures
 
 theorem admitted_refinement {first second : EquationStore (Term (signature S captures) Γ sort)}
     (refinement : Refines first second)
-    (consistent : (ContextualFamilies.action captures Γ sort).Consistent first)
+    (solvable : ContextualFrameUnifier.Solvable first)
     {rows : O → ContextualStoredRows.Row locals captures Γ sort} {world : Finset O}
     {checks : List (Check (Term (signature S captures) Γ sort))}
     (admitted : Admitted locals second rows world checks) : Admitted locals first rows world checks :=
-  ⟨consistent, fun check member => ask_of_refines locals refinement (admitted.checks check member)⟩
+  ⟨solvable, fun check member => ask_of_refines locals refinement (admitted.checks check member)⟩
 
 theorem admitted_equivalent {first second : EquationStore (Term (signature S captures) Γ sort)}
     (same : Equivalent first second)
@@ -109,12 +109,12 @@ theorem admitted_equivalent {first second : EquationStore (Term (signature S cap
     Admitted locals first rows world checks ↔ Admitted locals second rows world checks := by
   constructor
   · intro admitted
-    obtain ⟨candidate, model⟩ := admitted.consistent
-    exact ⟨⟨candidate, same.1 Shared captures candidate model⟩,
+    obtain ⟨Future, future, candidate, model⟩ := admitted.solvable
+    exact ⟨⟨Future, future, candidate, same.1 Future future candidate model⟩,
       fun check member => ask_of_refines locals same.2 (admitted.checks check member)⟩
   · intro admitted
-    obtain ⟨candidate, model⟩ := admitted.consistent
-    exact ⟨⟨candidate, same.2 Shared captures candidate model⟩,
+    obtain ⟨Future, future, candidate, model⟩ := admitted.solvable
+    exact ⟨⟨Future, future, candidate, same.2 Future future candidate model⟩,
       fun check member => ask_of_refines locals same.1 (admitted.checks check member)⟩
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualInformation

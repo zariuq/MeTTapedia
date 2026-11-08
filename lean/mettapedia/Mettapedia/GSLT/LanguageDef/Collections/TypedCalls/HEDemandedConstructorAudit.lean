@@ -1,0 +1,32 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEDemandedConstructorEdge
+
+/-! # Shared-formal constructor and demanded reentry audit -/
+
+namespace Mettapedia.GSLT.LanguageDef.Collections.TypedCalls
+
+#print axioms HERepeatedFormalSource.repeat_empty_alias
+#print axioms HERepeatedFormalSource.arrow_match
+#print axioms HERepeatedFormalSource.repeated_constraint_packet
+#print axioms HERepeatedFormalSource.arrow_source_match
+#print axioms HERepeatedFormalSource.first_number_frame
+#print axioms HERepeatedFormalSource.signature_variant
+#print axioms HERepeatedFormalSource.signature_lookup
+#print axioms HERepeatedFormalSource.selection
+#print axioms HERepeatedFormalSource.operator_source
+#print axioms HERepeatedFormalSource.arguments_source
+#print axioms HERepeatedFormalSource.constructor_source
+#print axioms HERepeatedFormalSource.constructor_ready
+#print axioms HEDemandedConstructorEdge.constructor_produces_held
+#print axioms HEDemandedConstructorEdge.held_read
+#print axioms HEDemandedConstructorEdge.demanded_reentry
+#print axioms HEDemandedConstructorEdge.produced_then_demanded
+#print axioms HEDemandedConstructorEdge.producer_inferred
+#print axioms HEDemandedConstructorEdge.final_expression_inferred
+#print axioms HEDemandedConstructorEdge.consumer_head_inferred
+#print axioms HEDemandedConstructorEdge.consumer_static_selection
+#print axioms HEDemandedConstructorEdge.final_value_needs_cast_at_a_new_boundary
+#print axioms HEDemandedConstructorEdge.fresh_final_cast_rejects
+#print axioms HEDemandedConstructorEdge.checked_producer_reuse_is_not_a_fresh_cast
+#print axioms HEDemandedConstructorEdge.wrong_second_field_is_rejected
+
+end Mettapedia.GSLT.LanguageDef.Collections.TypedCalls

@@ -19,7 +19,9 @@ def chrOperators : ReaderOperator.Table := [
   ⟨"@", ⟨1200, by decide, by decide⟩, .xfx⟩,
   ⟨"chr_constraint", ⟨1150, by decide, by decide⟩, .fx⟩]
 
-def profile : Profile := {swi with operators := chrOperators ++ swi.operators}
+/-- SWI's reader with CHR's operators. Double-quoted text reads as an atom
+(SWI's `double_quotes=atom`), as C0 names have one atom kind. -/
+def profile : Profile := {swi with doubleQuotes := .atom, operators := chrOperators ++ swi.operators}
 
 private def row (name category : String) (sorts : List String) : GrammarRule :=
   { PrologSyntax.row name category (sorts.map Sum.inr) with label := "chr:" ++ name }

@@ -1,6 +1,6 @@
 import Mettapedia.TypeTheory.Models.RevisionedFamilies.ComputedOpenAnswerFamily
 import Mettapedia.OSLF.Framework.WMCalculusCheckedScopeNativeCapability
-import Mettapedia.OSLF.Framework.WMCalculusGuardedExecutableOccurrence
+import Mettapedia.OSLF.Framework.WMCalculusCheckedExecutableOccurrence
 import Mettapedia.OSLF.Framework.EngineOccurrenceGSLT
 
 /-!
@@ -41,7 +41,7 @@ open Mettapedia.OSLF.Framework.WMCalculusCombinedOpenReification
 open Mettapedia.OSLF.Framework.WMCalculusCombinedGenericOpenCodec
 open Mettapedia.OSLF.Framework.WMCalculusCheckedScopeRelationProvider
 open Mettapedia.OSLF.Framework.WMCalculusCheckedScopeNativeCapability
-open Mettapedia.OSLF.Framework.WMCalculusGuardedExecutableOccurrence
+open Mettapedia.OSLF.Framework.WMCalculusCheckedExecutableOccurrence
 open Mettapedia.OSLF.Framework.WMCalculusCountScopeRelationProvider (singletonX)
 open Mettapedia.OSLF.Framework.WeightedOccurrence
 open Mettapedia.OSLF.Framework.PremiseAwareOccurrence
@@ -49,7 +49,7 @@ open Mettapedia.OSLF.Framework.EngineOccurrenceGSLT
 open Mettapedia.TypeTheory.Models.RevisionedFamilies.ComputedOpenAnswerFamily
 
 private abbrev EvidenceSort := TypeExpr.base "BinaryEvidence"
-private abbrev CombinedLang := wmExtVertexLanguageDefGuarded combinedVertex
+private abbrev CombinedLang := wmExtVertexLanguageDef combinedVertex
 
 def extractSchema : Pattern := pExtract (.fvar "W") (.fvar "q")
 

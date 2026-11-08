@@ -1,6 +1,7 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualConditionalClauses
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualClauseControls
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.SchematicReachControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualExecutionCommutationNames
 
 /-!
 # A pending value is published, read with its equation, and consumed atomically
@@ -45,7 +46,7 @@ def before : State locals Nat [] () where
   occupied := ∅
   equations := [(observe x, observe (symbol 1))]
   present := ∅
-  rows _ := ofStored locals captures (.live x)
+  rows _ := ofStored locals captures (.shared x)
 
 def rule : RuleInstance (SchematicReach.Closed raw) :=
   ⟨[], [], [], [], [generator raw (.inr 0)]⟩
@@ -314,5 +315,154 @@ theorem the_same_source_guard_cannot_publish_through_the_conditional_compiler :
   exact ContextualClausePublication.Controls.a_contradictory_body_guard_is_refused
     ((ContextualConditionalSourceAdmission.admitted_ofEndpoint_iff queries locals ContextualClausePublication.Controls.before
       ContextualClausePublication.Controls.selected ContextualClausePublication.Controls.refusedCode).mp compiled.source_admitted)
+
+namespace ScopeRelocation
+
+def guardedRule (number : Nat) : RuleInstance (SchematicReach.Closed laterRaw) :=
+  {consumerRule number with checks := [.count (symbol 1) 1, .absent (symbol 2)]}
+
+theorem guarded_one_admitted :
+    Admitted laterLocals producer.target (guardedRule 1) consumerSelection consumerOutputs := by
+  refine ⟨taking_one_is_admitted.take_distinct, taking_one_is_admitted.output_distinct,
+    taking_one_is_admitted.take_length, taking_one_is_admitted.read_length, taking_one_is_admitted.outputs,
+    taking_one_is_admitted.taken_present, taking_one_is_admitted.read_present,
+    taking_one_is_admitted.apart, taking_one_is_admitted.fresh, taking_one_is_admitted.solvable, ?_⟩
+  intro check member Future future candidate _model
+  change check ∈ [.count (symbol 1) 1, .absent (symbol 2)] at member
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at member
+  rcases member with rfl | rfl
+  · exact (ContextualConditionalGuards.holds_transport laterLocals
+      (ContextualSelectionViews.capturedTarget laterLocals laterCaptures) candidate
+      producer.target.rows producer.target.present (.count (symbol 1) 1)).mpr
+        (the_count_guard_sees_exactly_one_one future _)
+  · exact (ContextualConditionalGuards.holds_transport laterLocals
+      (ContextualSelectionViews.capturedTarget laterLocals laterCaptures) candidate
+      producer.target.rows producer.target.present (.absent (symbol 2))).mpr
+        (the_absence_guard_excludes_two future _)
+
+def guardedFiring : Firing laterLocals producer.target :=
+  ⟨guardedRule 1, consumerSelection, consumerOutputs, (fun _ => true), guarded_one_admitted,
+    0, ContextualFrameWorklist.identity (consumerProblem 1), rfl⟩
+
+def reservedScopes : Finset Nat := producer.target.occupied ∪ {100}
+
+def relocatedBefore : State laterLocals Nat [] () := {producer.target with occupied := reservedScopes}
+
+theorem original_and_relocated_scopes_differ :
+    ContextualActivationScopes.scopeAt producer.target.occupied (ContextualActivationScopes.takePort consumerSelection ⟨0, by decide⟩) ≠
+      ContextualActivationScopes.scopeAt reservedScopes (ContextualActivationScopes.takePort consumerSelection ⟨0, by decide⟩) := by
+  decide +kernel
+
+theorem relocated_input_keeps_scope_coverage :
+    ContextualConditionalScopes.Formed laterLocals relocatedBefore
+      (ContextualConditionalScopes.targetScopes locals producer initialScopes) :=
+  actual_conditional_publication_preserves_formation.mono laterLocals reservedScopes Finset.subset_union_left
+
+/-- A genuine pending conditional input is consumed after scope relocation;
+count and absence still check the original inventory, at every budget. -/
+theorem relocated_guarded_firing_exists (fuel : Nat) :
+    ∃ permutation : Equiv.Perm Nat,
+      (∀ port : ContextualActivationScopes.Port consumerSelection,
+        permutation (ContextualActivationScopes.scopeAt producer.target.occupied port) =
+          ContextualActivationScopes.scopeAt reservedScopes port) ∧
+      ∃ moved : Firing laterLocals relocatedBefore,
+        moved.rule = guardedRule 1 ∧ moved.selection = consumerSelection ∧
+          moved.fuel = fuel ∧ moved.target.present = {2} ∧
+          ∀ (Next : Type) (next : Next → MetaArity base) (candidate : Assignment moved.target.declarations next),
+            Matches (ContextualPublication.privateFamily laterLocals moved.update.declaration)
+              moved.target.declarations candidate (symbol 7) (moved.target.rows 2) := by
+  obtain ⟨permutation, aligned⟩ := ContextualPairFrames.exists_scope_relocation consumerSelection
+    producer.target.occupied reservedScopes
+  obtain ⟨moved, rule, selection, outputs, reuse, budget, physical⟩ :=
+    guardedFiring.relocate_exists laterLocals reservedScopes permutation aligned fuel
+  refine ⟨permutation, aligned, moved, rule, selection, budget, physical, ?_⟩
+  intro Next next candidate
+  let original : Assignment guardedFiring.target.declarations next :=
+    fun name => constantAt next 0 (guardedFiring.target.declarations name)
+  have compared := guardedFiring.relocated_ordinary_matches reservedScopes permutation aligned
+    moved rule selection 2 (by decide +kernel) (congrFun outputs 2) rfl
+    (by rw [reuse]; rfl) next original candidate (symbol 7)
+  exact compared.mp (the_second_firing_publishes_seven next original)
+
+/-- Renaming fresh scopes cannot repair an incompatible selected row. -/
+theorem taking_two_still_has_no_relocated_firing
+    (permutation : Equiv.Perm Nat)
+    (aligned : ∀ port : ContextualActivationScopes.Port consumerSelection,
+      permutation (ContextualActivationScopes.scopeAt producer.target.occupied port) =
+        ContextualActivationScopes.scopeAt reservedScopes port) :
+    ¬ Admitted laterLocals relocatedBefore (consumerRule 2) consumerSelection
+      (fun occurrence => instantiate (ContextualEventViewRelocation.assignment laterLocals laterCaptures permutation)
+        (consumerOutputs occurrence)) := by
+  intro admitted
+  exact taking_two_has_no_conditional_firing
+    ((admitted_relocation_iff laterLocals producer.target (consumerRule 2) consumerSelection consumerOutputs
+      reservedScopes permutation aligned).mp admitted)
+
+end ScopeRelocation
+
+namespace PrivateTransport
+
+abbrev doubled (name : Bool × (Nat ⊕ producer.update.Variables)) : MetaArity base :=
+  laterLocals name.2
+
+/-- The actual pending answer survives a nonidentity embedding of its
+private bank. Its equation still excludes the incompatible answer. -/
+theorem actual_pending_answer_survives_private_reindexing
+    {Next : Type} (next : Next → MetaArity base) (candidate : Assignment laterCaptures next) :
+    let moved := ContextualConditionalPublication.reindexPrivate laterLocals doubled laterCaptures
+      (fun name => (true, name)) (fun _ => rfl) (producer.target.rows 1)
+    Matches doubled laterCaptures candidate (symbol 1) moved ∧
+      ¬ Matches doubled laterCaptures candidate (symbol 2) moved := by
+  have preserved (number : Nat) := ContextualConditionalPublication.reindexPrivate_matches_iff
+    laterLocals doubled laterCaptures (fun name => (true, name)) Prod.snd
+    (fun _ => rfl) (fun _ => rfl) (fun _ => rfl) candidate (producer.target.rows 1) (symbol number)
+  exact ⟨(preserved 1).mpr (the_stored_conditional_row_accepts_one next candidate),
+    fun matched => the_stored_conditional_row_rejects_two next candidate ((preserved 2).mp matched)⟩
+
+def capturedOnes : Assignment laterCaptures captures :=
+  fun name => constantAt captures 1 (laterCaptures name)
+
+def openedOnes : Assignment (ContextualActivatedStep.target laterLocals captures) captures :=
+  fun name => constantAt captures 1 (ContextualActivatedStep.target laterLocals captures name)
+
+/-- The complete prepared information of the actual consuming rule,
+including the pending row equation, survives a caller refinement. -/
+theorem refined_consumer_information_has_a_model :
+    ContextualResidual.Models openedOnes
+      (information laterLocals captures producer.target.occupied consumerSelection
+        ((consumerRule 1).map (instantiate (ContextualStoredRows.liftCaptures laterLocals capturedOnes)))
+        (fun occurrence => (producer.target.rows occurrence).map laterLocals laterCaptures capturedOnes)
+        (ContextualResidual.mapProblem capturedOnes producer.target.equations)) := by
+  rw [← information_transport]
+  apply (ContextualResidual.models_mapProblem _ _ _).mpr
+  have square : Assignment.compose openedOnes (ContextualViewNaturality.activeLift laterLocals capturedOnes) =
+      laterModel := by
+    funext name
+    cases name with
+    | inl name => exact instantiate_generator _ _
+    | inr name => rfl
+  rw [square]
+  exact taking_one_has_a_joint_model
+
+def capturedZeros : Assignment captures captures := fun name => constantAt captures 0 (captures name)
+
+/-- Guard transport alone cannot justify admission: a noninvertible caller
+refinement may contradict the firing's incoming information. -/
+theorem capture_refinement_can_destroy_solvability :
+    ¬ Solvable (information locals captures ∅ selected
+      (rule.map (instantiate (ContextualStoredRows.liftCaptures locals capturedZeros)))
+      (fun occurrence => (before.rows occurrence).map locals captures capturedZeros)
+      (ContextualResidual.mapProblem capturedZeros before.equations)) := by
+  erw [← information_transport locals captures capturedZeros ∅ selected rule before.rows before.equations]
+  change ¬ Solvable (ContextualResidual.mapProblem
+    (ContextualViewNaturality.activeLift locals capturedZeros) problem)
+  rw [problem_explicit]
+  rintro ⟨Future, future, candidate, modeled⟩
+  change ContextualResidual.Models candidate [(observe (symbol 0), observe (symbol 1))] at modeled
+  have same := (ContextualResidual.models_observed_iff candidate _ _).mp modeled
+  change symbol (decl := future) 0 = symbol 1 at same
+  exact (by decide : (0 : Nat) ≠ 1) (SchematicReach.Controls.symbol_injective same)
+
+end PrivateTransport
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualConditionalExecution.Controls

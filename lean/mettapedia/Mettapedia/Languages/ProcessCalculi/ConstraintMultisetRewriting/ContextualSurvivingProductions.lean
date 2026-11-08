@@ -26,7 +26,7 @@ variable {S : Signature} {V W O : Type} {declaration : V → MetaArity S} {later
 
 def Birth.origin (birth : Birth declaration O Γ sort) : Origin declaration Γ sort :=
   if birth.reusable then .schema birth.saved birth.problem birth.value
-  else .live (instantiate birth.transport birth.value)
+  else .shared (instantiate birth.transport birth.value)
 
 theorem Birth.origin_map (birth : Birth declaration O Γ sort) (change : Assignment declaration later) :
     (birth.map change).origin = birth.origin.map change := by
@@ -97,7 +97,7 @@ theorem created_birth_origin (port : Fin plan.rule.produce.length) :
   unfold originalBirths
   rw [List.get_ofFn]
   change (if plan.reusable.get ⟨port.val, _⟩ then
-    Origin.schema _ _ _ else Origin.live (instantiate (generator _) _)) = _
+    Origin.schema _ _ _ else Origin.shared (instantiate (generator _) _)) = _
   rw [instantiate_identity]
   rfl
 
@@ -221,9 +221,9 @@ def outputRow {Local : Type} (locals : Local → MetaArity S) (index : schedule.
     Row (ContextualPublication.privateFamily locals result.update.declaration) result.family Γ sort :=
   if (schedule.births.get index).reusable then
     ContextualConditionalPublication.ordinary locals result.update.declaration _
-      (ContextualResidualAnswers.ofUpdate result.update (schedule.outputValue index))
+      (ContextualConditionalAnswers.ofUpdate result.update (schedule.outputValue index))
   else
-    ofStored _ _ (.live (instantiate (ContextualComputedFreshFrame.includeSource result.update) (schedule.outputValue index)))
+    ofStored _ _ (.shared (instantiate (ContextualComputedFreshFrame.includeSource result.update) (schedule.outputValue index)))
 
 theorem output_origin_instances {Local Next : Type} (locals : Local → MetaArity S)
     (index : schedule.BirthIndex) (next : Next → MetaArity S)
@@ -238,7 +238,7 @@ theorem output_origin_instances {Local Next : Type} (locals : Local → MetaArit
     exact result.birth_row_instances locals index next candidate pattern
   · have shared : (schedule.births.get index).reusable = false := Bool.eq_false_iff.mpr ordinary
     simp only [outputRow, Schedule.outputValue, Birth.origin, shared, Bool.false_eq_true, if_false,
-      ofStored_matches_iff, ContextualGuardMatching.live_matches_iff, Origin.Instances,
+      ofStored_matches_iff, ContextualGuardMatching.shared_matches_iff, Origin.Instances,
       currentEmbedding, Assignment.instantiate_compose]
     exact Iff.of_eq (congrArg (fun value => pattern = instantiate candidate value)
       (Assignment.instantiate_compose (ContextualComputedFreshFrame.includeSource result.update)

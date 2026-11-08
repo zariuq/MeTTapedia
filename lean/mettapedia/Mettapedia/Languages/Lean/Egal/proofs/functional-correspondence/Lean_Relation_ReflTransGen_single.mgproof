@@ -1,0 +1,3 @@
+let l. assume Hl: nat_p l. let A. assume HA: A :e LeanUniv l. let r. assume Hr.
+let a. assume Ha: a :e A. let b. assume Hb: b :e A. assume H.
+exact Lean_RTG_single A r a Ha b Hb H.

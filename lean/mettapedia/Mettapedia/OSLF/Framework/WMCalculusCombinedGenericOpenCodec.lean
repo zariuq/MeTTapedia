@@ -30,7 +30,7 @@ open Mettapedia.GSLT.LanguageDef.MeTTaILFirstOrderRuleCompilation
 set_option autoImplicit false
 
 private abbrev CombinedLang : LanguageDef :=
-  wmExtVertexLanguageDefGuarded combinedVertex
+  wmExtVertexLanguageDef combinedVertex
 
 /-- The semantic-support data for an ordinary authored argument row. It is
 derived below from the generic syntactic certificate, not from raw matching. -/

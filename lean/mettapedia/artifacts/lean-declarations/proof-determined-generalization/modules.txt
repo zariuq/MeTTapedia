@@ -1,0 +1,1 @@
+source Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization

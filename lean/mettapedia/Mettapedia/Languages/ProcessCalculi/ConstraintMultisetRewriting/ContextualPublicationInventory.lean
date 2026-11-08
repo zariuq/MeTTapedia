@@ -34,7 +34,7 @@ def extendPrivate {Γ : Ctx S} {sort : S.Srt} :
     ContextualStoredRows.Row locals captures Γ sort →
       ContextualStoredRows.Row (privateFamily locals declaration) captures Γ sort
   | .schema body => .schema (instantiate (includePrivate locals declaration) body)
-  | .live value => .live value
+  | .shared value => .shared value
 
 theorem instance_includePrivate {Future : Type} {future : Future → MetaArity S}
     (images : Assignment (privateFamily locals declaration) future)
@@ -61,7 +61,7 @@ theorem extendPrivate_matches_iff (candidate : Assignment captures next)
     Matches (privateFamily locals declaration) candidate pattern (extendPrivate locals declaration row) ↔
       Matches locals candidate pattern row := by
   cases row with
-  | live value => rfl
+  | shared value => rfl
   | schema body =>
       constructor
       · rintro ⟨extension,images,same⟩

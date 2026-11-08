@@ -9,8 +9,8 @@ operations. This reading models revision by addition of query counts and
 overlap-aware merge by their pointwise maximum. The overlap factor is the
 pointwise minimum, so the correction is genuine when sources coincide.
 Forgetting removes counts in a Boolean scope. The laws here cover the core
-reading and the three guarded-extension root computations; they do not yet
-interpret every raw authored pattern or certify a relation environment.
+reading and the three root computations of the combined extension; they do not yet
+interpret every authored pattern or certify a relation environment.
 -/
 
 namespace Mettapedia.OSLF.Framework.WMCalculusCombinedConcreteReading
@@ -39,7 +39,7 @@ structure CombinedReading (State Query Ev Ov Scope : Type) where
     core.extract (forget scope state) query = core.extract state query
 
 /-- Exactly the nontrivial behavioral congruence obligations among the ten
-guarded-extension argument positions. Positions whose semantics is literal
+argument positions of the combined extension. Positions whose semantics is literal
 equality are congruent automatically. -/
 structure CombinedCongruence {State Query Ev Ov Scope : Type}
     (reading : CombinedReading State Query Ev Ov Scope) : Prop where
@@ -123,7 +123,7 @@ private theorem countingAgree_iff_eq (first second : CountState) :
     exact countingCore.agree_refl .state second
 
 /-- The concrete counting reading respects all five behavioral positions;
-the remaining guarded-vertex positions follow from literal equality. -/
+the remaining positions of the combined vertex follow from literal equality. -/
 theorem countingCombined_congruence : CombinedCongruence countingCombined := by
   constructor
   · intro first first' second agreement

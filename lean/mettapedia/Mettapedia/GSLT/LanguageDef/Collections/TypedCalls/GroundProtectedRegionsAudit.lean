@@ -1,0 +1,44 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions
+
+/-! # Ground-protected source regions: complete exported theorem audit -/
+
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.empty_clean
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.empty_oracle_clean
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.structural_extension
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.ground_observation_unchanged
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.protected_ground_return
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.captured_body_returns_original
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.dataCheck_sound
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.dataCheck_complete
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.groundValueGate_iff
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.gate_iff
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.admitted_call_elides
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.captured_any_entry
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.captured_unguarded_protocol_elides
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.captured_any_protocol_elides
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.captured_undefined_protocol_elides
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.atom_and_undefined_demands_differ
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.recursive_per_call_exact
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.nonground_keeps_guard
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.Controls.body_accepted
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.Controls.body_returns
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.Controls.real_space_is_not_functional
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.Controls.capture_contains_interpreted_data
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.Controls.interpreted_binding_with_ground_protected
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.Controls.ground_call_protocol_exact
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.Controls.any_argument_may_be_interpreted
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.Controls.undefined_argument_may_be_interpreted
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.Controls.open_alias_is_rejected
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.Controls.open_alias_changes_protected
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.Controls.ground_but_interpreted_is_rejected
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.Controls.all_inputs_keep_canonical_guards
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.Controls.afterChild_accepted
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.Controls.afterChild_returns
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.Controls.recursiveBody_accepted
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.Controls.recursiveBody_returns
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.Controls.both_recursive_entries_admitted
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.Controls.real_recursion_is_required
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.Controls.recursive_protocol_result
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.Controls.duplicate_answers_are_retained
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.Controls.duplicate_protocol_is_exact
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.GroundProtectedRegions.Controls.deduplicating_changes_the_result

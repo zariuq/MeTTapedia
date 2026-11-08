@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 
 Guard cuts move into the terminal family by injective capture extensions,
 without adding equations of later steps. A production keeps its own original
-declarations, conditions and value. Its transport is used for live references;
+declarations, conditions and value. Its transport is used for shared references;
 ordinary schema meaning remains attached to its birth prefix.
 -/
 

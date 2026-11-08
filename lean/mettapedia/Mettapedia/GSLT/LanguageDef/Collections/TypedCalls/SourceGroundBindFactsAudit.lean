@@ -1,0 +1,22 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundBindFacts
+
+/-! # Source bind-any metadata: complete theorem audit -/
+
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundBindFacts.terms_resolve_right
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundBindFacts.pattern_resolve_right
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundBindFacts.terms_delivered_ground_marks
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundBindFacts.pattern_delivered_ground_marks
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundBindFacts.quote_pattern_support
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundBindFacts.binding_delivered_ground_marks
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundBindFacts.source_bindAny_sound
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundBindFacts.returned_bind_metadata
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundBindFacts.Controls.initial_idempotent
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundBindFacts.Controls.interpreted_bind_admitted
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundBindFacts.Controls.actual_interpreted_bind
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundBindFacts.Controls.interpreted_value_metadata
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundBindFacts.Controls.interpreted_bind_preserves_ground_metadata
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundBindFacts.Controls.resulting_flags_do_not_invent_cleanliness
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundBindFacts.Controls.falsely_claimed_uninterpreted_value_is_rejected
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundBindFacts.Controls.quoted_and_list_view_bindings_differ
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceGroundBindFacts.Controls.quoted_binding_metadata_sound
+

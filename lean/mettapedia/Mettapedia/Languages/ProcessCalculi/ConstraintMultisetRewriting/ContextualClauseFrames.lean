@@ -163,7 +163,7 @@ theorem row_term (occupied : Finset Nat) (scope : Nat) {Γ : Ctx S} {sort : S.Sr
           (instantiate (ContextualPublication.includePrivate locals queries) body)
       rw [← Assignment.instantiate_compose, ← Assignment.instantiate_compose,
         ← Assignment.instantiate_compose, ← Assignment.compose_associative, row_square]
-  | live value =>
+  | shared value =>
       rw [← ContextualStoredRows.viewAt_eq_freshening]
       change instantiate (frame queries locals captures occupied).assignment
         (instantiate (rowEmbedding queries locals captures)

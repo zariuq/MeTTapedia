@@ -84,7 +84,7 @@ theorem the_actual_fallback_keeps_its_census_and_commits_once :
     decide +kernel
 
 def lateRows (occurrence : Nat) : Row locals captures [] () :=
-  if occurrence = 8 then ofStored locals captures (.live (request (symbol 3)))
+  if occurrence = 8 then ofStored locals captures (.shared (request (symbol 3)))
   else declarationWorld.rows occurrence
 def lateState : ContextualConditionalExecution.State locals Nat [] () :=
   {declarationWorld with present := insert 8 declarationWorld.present, rows := lateRows}

@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 # Capture transport acts on real producer values without freshening schema locals
 
 The capture interface is the actual producer's returned endpoint, not just
-the initial caller family. A nonidentity binding changes its live output;
+the initial caller family. A nonidentity binding changes its shared output;
 the retained schema's private variable is untouched. Pure extensions reflect
 asks, while that binding can make an earlier unsupported question true.
 -/
@@ -40,7 +40,7 @@ abbrev next := ContextualActivatedStep.target locals after.declarations
 abbrev rawNext := ContextualActivatedStep.source locals after.declarations
 def nextBound : Term (signature base next) [] () := pair (atom _) (atom _)
 
-theorem actual_live_output_transport_changes_the_capture_value :
+theorem actual_shared_output_transport_changes_the_capture_value :
     instantiate (activeLift locals binding)
       (ContextualStoredRows.viewAt locals after.declarations 20 (after.inventory.rows 99)) = nextBound := by
   rw [viewAt_transport locals binding]

@@ -65,6 +65,12 @@ private def parseCharacterCode (lexeme : String) : Except Error Constant :=
       match ReaderLexer.simpleEscape escaped with
       | some character => .ok (.integer (Int.ofNat character.toNat))
       | none => .error (.invalidCharacterCode lexeme)
+  | '0' :: '\'' :: '\\' :: body =>
+      match ReaderEscape.numeric? body with
+      | some decoded =>
+          if decoded.rest.isEmpty then .ok (.integer (Int.ofNat decoded.value.toNat))
+          else .error (.invalidCharacterCode lexeme)
+      | none => .error (.invalidCharacterCode lexeme)
   | _ => .error (.invalidCharacterCode lexeme)
 
 private def removeSeparators (characters : List Char) : List Char :=

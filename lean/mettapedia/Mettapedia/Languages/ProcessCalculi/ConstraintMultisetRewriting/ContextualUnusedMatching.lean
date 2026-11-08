@@ -1,7 +1,7 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualUnusedExtensions
 
 /-!
-# Schema and live-row matches reflect unused-frame extension
+# Schema and shared-row matches reflect unused-frame extension
 
 Schema witnesses are joined with the unused declarations through the actual
 constructed extension square. Restriction preserves their captured images.
@@ -35,7 +35,7 @@ theorem instance_add_unused (extension : Extension next)
           (instantiate extension.assignment (candidate name)) =
         instantiate (extension.addUnused unused).assignment (instantiate (inclusion unused next) (candidate name))
       rw [Extension.addUnused_assignment]
-      exact (ContextualStoredRows.liftCaptures_on_live_value unused extension.assignment (candidate name)).symm
+      exact (ContextualStoredRows.liftCaptures_on_shared_value unused extension.assignment (candidate name)).symm
 
 theorem instance_restrict_unused (extension : Extension (extended unused next))
     (localBodies : Assignment locals extension.declarations) (candidate : Assignment captures next) :
@@ -58,7 +58,7 @@ theorem matches_inclusion_iff (candidate : Assignment captures next)
         (instantiate (inclusion unused next) pattern) row ↔
       Matches locals candidate pattern row := by
   cases row with
-  | live value =>
+  | shared value =>
       change (instantiate (inclusion unused next) pattern =
         instantiate (Assignment.compose (inclusion unused next) candidate) value) ↔
           pattern = instantiate candidate value
@@ -91,7 +91,7 @@ theorem matches_inclusion_iff (candidate : Assignment captures next)
             (instantiate extension.assignment pattern) =
               instantiate (extension.addUnused unused).assignment (instantiate (inclusion unused next) pattern) := by
           rw [Extension.addUnused_assignment]
-          exact (ContextualStoredRows.liftCaptures_on_live_value unused extension.assignment pattern).symm
+          exact (ContextualStoredRows.liftCaptures_on_shared_value unused extension.assignment pattern).symm
         exact left.symm.trans (mapped.trans right)
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualGuardMatching

@@ -54,7 +54,7 @@ structure FiringEvidence (Firing : Type uF) (Witness : Type uWitness)
   world : World
   round : Round
   /-- Ordered scanner answers, guard verdicts or other evidence beyond the
-  unordered occurrence identities already stored in `CensusAdmission.Query.seen`. -/
+  unordered occurrence identities already stored in `PredicateQueryAdmission.Query.seen`. -/
   queryEvidence : Answers
 
 /-- A completed attempt that did not fire.  Its answer table and physical

@@ -4,7 +4,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 /-!
 # Occupied scopes cover the complete finite root inventory
 
-The inventory retains live rows, both sides of configuration equations,
+The inventory retains shared rows, both sides of configuration equations,
 heterogeneous continuation roots and stored template captures. Its footprint
 is computed from actual binding-term support. Template locals contribute no
 live scope until a selected use opens them.
@@ -349,8 +349,8 @@ theorem afterInventory_covered [DecidableEq O] (scopes : Shared → Finset Nat) 
     change occurrence ∈ fire inventory.configuration.present selection.commit at member
     by_cases made : occurrence ∈ selection.made
     · change row locals _ _ (resultRows locals captures selection outputs inventory.rows occurrence) ⊆ _
-      rw [produced_row_is_live locals captures selection outputs inventory.rows made]
-      apply row_live
+      rw [produced_row_is_shared locals captures selection outputs inventory.rows made]
+      apply row_shared
       apply ruleSafe.produce (outputs occurrence)
       rw [← outputsShape]
       exact List.mem_map.mpr ⟨occurrence, made, rfl⟩

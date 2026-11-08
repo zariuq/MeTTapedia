@@ -29,7 +29,7 @@ local instance (sort : base.Srt) : DecidableEq (base.Op sort) := inferInstanceAs
 
 abbrev nativeFamily := ContextualActivatedStep.target none captures
 def rows (occurrence : Nat) : Row none nativeFamily [] () :=
-  ofStored none nativeFamily (.live (symbol (if occurrence = 0 then 1 else 2)))
+  ofStored none nativeFamily (.shared (symbol (if occurrence = 0 then 1 else 2)))
 
 def countCondition (number : Nat) (candidate : Candidate nativeFamily) : Prop :=
   ContextualGuardRegression.entryCondition none none candidate.assignment rows rows {0} {0} {1}
@@ -42,7 +42,7 @@ theorem input_region_empty (candidate : Candidate nativeFamily) :
   obtain ⟨present, matched⟩ := (ContextualConditionalGuards.mem_region _ _ _ _ _ _).mp member
   have zero := Finset.mem_singleton.mp present
   subst occurrence
-  rw [rows, ofStored_matches_iff, ContextualGuardMatching.live_matches_iff] at matched
+  rw [rows, ofStored_matches_iff, ContextualGuardMatching.shared_matches_iff] at matched
   change symbol (decl := candidate.declarations) 2 = symbol 1 at matched
   have impossible : (2 : Nat) = 1 := DataOperator.symbol.inj (Sum.inl.inj (Term.op.inj matched).1)
   omega
@@ -57,7 +57,7 @@ theorem output_region_one (candidate : Candidate nativeFamily) :
     have one := Finset.mem_singleton.mp member
     subst occurrence
     refine ⟨Finset.mem_singleton_self _, ?_⟩
-    rw [rows, ofStored_matches_iff, ContextualGuardMatching.live_matches_iff]
+    rw [rows, ofStored_matches_iff, ContextualGuardMatching.shared_matches_iff]
     rfl
 
 theorem count_condition_iff (number : Nat) (candidate : Candidate nativeFamily) :
@@ -104,7 +104,7 @@ namespace PhantomInsertion
 open ContextualAtomicIdentityControls (freshSelection fusedRule fusedOutputs)
 
 def storedRows (occurrence : Nat) : Row none captures [] () :=
-  ofStored none captures (.live (symbol (if occurrence = 3 then 2 else 1)))
+  ofStored none captures (.shared (symbol (if occurrence = 3 then 2 else 1)))
 
 abbrev state (inserted : Bool) : ContextualClauseSourceState.World none Nat [] () where
   Names := Unit
@@ -146,14 +146,14 @@ theorem the_marker_query_admits_after_a_matching_insertion (fuel : Nat) :
     intro Future future candidate counted
     have first : Matches (ContextualPublication.privateFamily none firing.update.declaration)
         firing.target.declarations candidate (symbol 2) (firing.target.rows 1) := by
-      rw [firing.live_row 1 (by rw [selected]; decide +kernel) (by rw [kinds]), outputs]
-      rw [ofStored_matches_iff, ContextualGuardMatching.live_matches_iff]
+      rw [firing.shared_row 1 (by rw [selected]; decide +kernel) (by rw [kinds]), outputs]
+      rw [ofStored_matches_iff, ContextualGuardMatching.shared_matches_iff]
       rfl
     have third : Matches (ContextualPublication.privateFamily none firing.update.declaration)
         firing.target.declarations candidate (symbol 2) (firing.target.rows 3) := by
       apply (firing.retained_matches 3 (by rw [selected]; decide +kernel) future candidate _).mpr
       dsimp only [ContextualClauseSourceState.World.native, state, storedRows]
-      rw [ofStored_matches_iff, ContextualGuardMatching.live_matches_iff]
+      rw [ofStored_matches_iff, ContextualGuardMatching.shared_matches_iff]
       rfl
     have physical : firing.target.present = {1, 3} := by
       rw [firing.physical_result, selected]
@@ -185,8 +185,8 @@ theorem actual_data_query_refuses_the_phantom
     ⟨Future, future, candidate⟩).mp (asked Future future candidate model)
   apply absent 3 (by decide +kernel)
   have actual : ContextualConditionalExecution.guardRows none captures storedRows 3 =
-      ofStored none nativeFamily (.live (symbol 2)) := by with_unfolding_all rfl
-  rw [actual, ofStored_matches_iff, ContextualGuardMatching.live_matches_iff]
+      ofStored none nativeFamily (.shared (symbol 2)) := by with_unfolding_all rfl
+  rw [actual, ofStored_matches_iff, ContextualGuardMatching.shared_matches_iff]
 
 theorem actual_data_query_admits_the_same_program_before_the_insertion (fuel : Nat) :
     ∃ observed : WithQueries none ((state false).native ∅),
@@ -203,8 +203,8 @@ theorem actual_data_query_admits_the_same_program_before_the_insertion (fuel : N
   have zero := Finset.mem_singleton.mp present
   subst occurrence
   have actual : ContextualConditionalExecution.guardRows none captures storedRows 0 =
-      ofStored none nativeFamily (.live (symbol 1)) := by with_unfolding_all rfl
-  rw [actual, ofStored_matches_iff, ContextualGuardMatching.live_matches_iff] at matched
+      ofStored none nativeFamily (.shared (symbol 1)) := by with_unfolding_all rfl
+  rw [actual, ofStored_matches_iff, ContextualGuardMatching.shared_matches_iff] at matched
   change symbol (decl := future) 2 = symbol 1 at matched
   have impossible : (2 : Nat) = 1 := DataOperator.symbol.inj (Sum.inl.inj (Term.op.inj matched).1)
   omega
@@ -223,8 +223,8 @@ theorem an_unrelated_actual_data_query_is_still_admitted (fuel : Nat) :
   apply (matching_ask_empty_iff none _ (symbol 7) _ _).mpr
   intro Future future candidate _model occurrence _present matched
   have actual : ContextualConditionalExecution.guardRows none captures storedRows occurrence =
-      ofStored none nativeFamily (.live (symbol (if occurrence = 3 then 2 else 1))) := by with_unfolding_all rfl
-  rw [actual, ofStored_matches_iff, ContextualGuardMatching.live_matches_iff] at matched
+      ofStored none nativeFamily (.shared (symbol (if occurrence = 3 then 2 else 1))) := by with_unfolding_all rfl
+  rw [actual, ofStored_matches_iff, ContextualGuardMatching.shared_matches_iff] at matched
   change symbol (decl := future) 7 = symbol (if occurrence = 3 then 2 else 1) at matched
   have impossible : (7 : Nat) = if occurrence = 3 then 2 else 1 :=
     DataOperator.symbol.inj (Sum.inl.inj (Term.op.inj matched).1)
@@ -232,12 +232,12 @@ theorem an_unrelated_actual_data_query_is_still_admitted (fuel : Nat) :
 
 theorem the_unrelated_query_would_detect_its_own_matching_fact (candidate : Candidate nativeFamily) :
     (matchingQuery none (symbol 7) (∅ : Finset Nat)).region candidate
-      (99, ofStored none nativeFamily (.live (symbol 7))) = true := by
+      (99, ofStored none nativeFamily (.shared (symbol 7))) = true := by
   classical
   change decide (Matches none nativeFamily candidate.assignment
-    (instantiate candidate.assignment (symbol 7)) (ofStored none nativeFamily (.live (symbol 7)))) = true
+    (instantiate candidate.assignment (symbol 7)) (ofStored none nativeFamily (.shared (symbol 7)))) = true
   apply decide_eq_true_eq.mpr
-  rw [ofStored_matches_iff, ContextualGuardMatching.live_matches_iff]
+  rw [ofStored_matches_iff, ContextualGuardMatching.shared_matches_iff]
 
 end PhantomInsertion
 

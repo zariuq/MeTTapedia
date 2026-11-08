@@ -158,10 +158,13 @@ theorem publication_perm (rows : List (Nat × Nat × CHR.Constraint)) (final : L
 #print axioms programValue_roundtrip
 #print axioms publication_perm
 
-example : hostVocabularySupported ⟨["word"], [.atom "true", .atom "7", .atom "a b"]⟩ = true := by decide_cbv
-example : hostVocabularySupported ⟨["word"], [.atom "True"]⟩ = false := by decide_cbv
-example : hostVocabularySupported ⟨["False"], []⟩ = false := by decide_cbv
-example : hostVocabularySupported ⟨["word"], [.tuple [.atom ""]]⟩ = false := by decide_cbv
-example : hostVocabularySupported ⟨["word"], [.atom "a\u0000b"]⟩ = false := by decide_cbv
+/-! Host spelling controls: the names a host symbol carries unchanged. The
+other names travel as host strings. -/
+
+example : ["word", "true", "7", "a b"].all hostSymbolSupported = true := by decide_cbv
+example : hostSymbolSupported "True" = false := by decide_cbv
+example : hostSymbolSupported "False" = false := by decide_cbv
+example : hostSymbolSupported "" = false := by decide_cbv
+example : hostSymbolSupported "a\u0000b" = false := by decide_cbv
 
 end Mettapedia.GSLT.LanguageDef.ModuleFormat.CHRRuntimeCompiler

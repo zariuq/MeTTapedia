@@ -11,7 +11,7 @@ stay inside that answer.
 
 * `answerOccurrences_antitone`, `encodedAnswers_antitone`: a stronger store
   over the same occurrences can only remove answers.
-* `OrderEffect`: with a live variable shared by the collapsed query and a later
+* `OrderEffect`: with a shared variable shared by the collapsed query and a later
   query, collapsing first gives the answers `1 2` and then `2`; constraining
   first gives `2` and then `2`. This is the order effect measured on Hyperon
   Experimental, PeTTa and the CeTTa PeTTa lane. The two bags differ
@@ -612,30 +612,30 @@ theorem twin_preserves_validity {label : O → Atom} {rule : RuleInstance Atom}
         change subst σ t = subst σ (label n) at sees
         rw [subst_of_vars_eq_nil σ _ groundTwin] at sees
         obtain ⟨solved', seesSource⟩ := transport t ruleCheck σ solved sees
-        have atSolution : (Check.region atomAction σ label before.present t).card = k := original
-        have atRenamed : (Check.region atomAction (renameSubst c d σ) label before.present t).card = k :=
+        have atSolution : (Check.matches atomAction σ label before.present t).card = k := original
+        have atRenamed : (Check.matches atomAction (renameSubst c d σ) label before.present t).card = k :=
           valid.checks (.count t k) member _ solved'
-        have empty : Check.region atomAction σ label before.present t = ∅ := by
-          unfold Check.region
+        have empty : Check.matches atomAction σ label before.present t = ∅ := by
+          unfold Check.matches
           apply Finset.filter_eq_empty_iff.mpr
           intro o present same
           change subst σ t = subst σ (label o) at same
           rw [sees, subst_of_vars_eq_nil σ _ (ground o present)] at same
           exact labelsFree o present (same ▸ twinHasC)
-        have nonempty : 0 < (Check.region atomAction (renameSubst c d σ) label before.present t).card := by
+        have nonempty : 0 < (Check.matches atomAction (renameSubst c d σ) label before.present t).card := by
           apply Finset.card_pos.mpr
           refine ⟨source, ?_⟩
-          unfold Check.region
+          unfold Check.matches
           rw [Finset.mem_filter]
           refine ⟨sourcePresent, ?_⟩
           change subst _ t = subst _ (label source)
           rw [seesSource, subst_of_vars_eq_nil _ _ (ground source sourcePresent)]
         rw [empty, Finset.card_empty] at atSolution
         omega
-      change (Check.region atomAction σ label (insert n before.present) t).card = k
-      have same : Check.region atomAction σ label (insert n before.present) t =
-          Check.region atomAction σ label before.present t := by
-        unfold Check.region
+      change (Check.matches atomAction σ label (insert n before.present) t).card = k
+      have same : Check.matches atomAction σ label (insert n before.present) t =
+          Check.matches atomAction σ label before.present t := by
+        unfold Check.matches
         rw [Finset.filter_insert, if_neg unseen]
       rw [same]
       exact original

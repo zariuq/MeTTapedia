@@ -87,7 +87,7 @@ theorem actual_worklist_solves_frame_and_inference :
     active independentAnswer independent_model]
   decide +kernel
 
-theorem physical_admission : ContextualTransportedActivation.Admission locals captures
+theorem physical_admission : ContextualGuardedStep.Requirements locals captures
     occupied selection nativeRule nativeRows nativeBefore nativeOutputs := by
   refine ⟨by decide, by decide, rfl, rfl, ?_, ?_, ?_⟩
   · unfold nativeRule nativeRows

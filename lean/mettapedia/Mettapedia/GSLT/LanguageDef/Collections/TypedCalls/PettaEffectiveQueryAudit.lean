@@ -1,0 +1,13 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaEffectiveQueryLeaves
+
+/-! Current intrinsic-query leaf audit for effective constant admission. -/
+
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaEffectiveQueryLeaves.accepted_is_complete_singleton
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaEffectiveQueryLeaves.actual_symbol_query
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaEffectiveQueryLeaves.actual_bool_query
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaEffectiveQueryLeaves.effective_bool_ignores_authored_rows
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaEffectiveQueryLeaves.actual_arrow_bool_mgu_rejected
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaEffectiveQueryLeaves.Controls.ordinary_function_keeps_complete_effective_type
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaEffectiveQueryLeaves.Controls.authored_truth_arrow_cannot_replace_effective_bool
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaEffectiveQueryLeaves.Controls.unfinished_empty_and_undefined_all_decline_admission
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaEffectiveQueryLeaves.Controls.ordered_overload_is_not_first_selected

@@ -6,7 +6,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 
 One capture assignment satisfies a retained guard; another refutes it, while
 both keep the same resource selection and consistent equation problem. The
-uninstantiated source guard is unresolved. An additional live row can also
+uninstantiated source guard is unresolved. An additional shared row can also
 invalidate an absence guard without changing the original binding problem.
 -/
 
@@ -33,7 +33,7 @@ def mappedOutputs (change : Assignment captures captures) :=
 
 theorem first_instance_information :
     Information locals captures occupied selection (mappedRule pinA) (mappedRows pinA) (mappedBefore pinA) := by
-  refine ⟨⟨generator active, ?_⟩, ?_⟩
+  refine ⟨ContextualFrameUnifier.solvable_of_consistent ⟨generator active, ?_⟩, ?_⟩
   · exact SubstitutionAction.models_nil _ _
   · intro check member
     have only : check = .equal (atom active) (atom active) := List.mem_singleton.mp member
@@ -78,7 +78,7 @@ def absentRule : RuleInstance RawTerm := ⟨[], [], [], [.absent rawA], [rawA]�
 def emptyWorld : Configuration (Term (signature base captures) [] ()) Nat := ⟨[], ∅⟩
 
 theorem absence_in_the_empty_world : Information locals captures occupied selection absentRule rows emptyWorld := by
-  refine ⟨⟨generator active, SubstitutionAction.models_nil _ _⟩, ?_⟩
+  refine ⟨ContextualFrameUnifier.solvable_of_consistent ⟨generator active, SubstitutionAction.models_nil _ _⟩, ?_⟩
   intro check member
   have only : check = .absent (atom active) := List.mem_singleton.mp member
   subst check

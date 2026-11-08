@@ -45,7 +45,7 @@ open Mettapedia.OSLF.Framework.WMCalculusSupportedContextCategory
 
 private abbrev EvidenceSort : TypeExpr := .base "BinaryEvidence"
 private abbrev CombinedLang : LanguageDef :=
-  wmExtVertexLanguageDefGuarded combinedVertex
+  wmExtVertexLanguageDef combinedVertex
 
 /-- An evidence answer carries the actual equality with the interpretation
 of a supported intrinsic term. This Type-valued receipt is subsingleton;

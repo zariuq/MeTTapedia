@@ -33,7 +33,7 @@ theorem after_first_membership (occurrence : Nat) :
   omega
 
 theorem after_first_region (assignment : Subst signature) (solved : A.Models assignment problem) :
-    Check.region A assignment label afterFirst.present (.var 0) = {1, 4} := by
+    Check.matches A assignment label afterFirst.present (.var 0) = {1, 4} := by
   classical
   have bound := caller_binding_reaches_frame assignment ((problem_models_iff assignment).mp solved)
   change assignment 0 = Term.const (σ := signature) 0 at bound
@@ -60,7 +60,7 @@ theorem second_firing_is_valid : right.Valid A label second afterFirst := by
   change A.Models assignment problem at solved
   change check ∈ [Check.count (.var 0) 2, .absent (f (.const 0))] at member
   rcases List.mem_cons.mp member with rfl | member
-  · change (Check.region A assignment label afterFirst.present (.var 0)).card = 2
+  · change (Check.matches A assignment label afterFirst.present (.var 0)).card = 2
     rw [after_first_region assignment solved]
     decide
   · have only := List.mem_singleton.mp member

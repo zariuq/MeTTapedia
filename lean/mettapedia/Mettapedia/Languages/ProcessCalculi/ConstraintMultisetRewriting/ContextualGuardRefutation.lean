@@ -45,9 +45,9 @@ theorem instance_preserves_models (localBodies : Assignment locals future)
       (ContextualFrameUnifier.mapProblem (ContextualSelectionViews.capturedSource locals captures) problem) := by
   intro equation member
   obtain ⟨original, present, rfl⟩ := List.mem_map.mp member
-  exact (instance_on_live_value locals localBodies embedding candidate original.1).trans
+  exact (instance_on_shared_value locals localBodies embedding candidate original.1).trans
     ((congrArg (instantiate embedding) (solved original present)).trans
-      (instance_on_live_value locals localBodies embedding candidate original.2).symm)
+      (instance_on_shared_value locals localBodies embedding candidate original.2).symm)
 
 theorem match_gives_joint_model (candidate : Assignment captures next)
     {Γ : Ctx S} {sort : S.Srt} (problem : EquationStore (Term (signature S captures) Γ sort))
@@ -67,8 +67,8 @@ theorem match_gives_joint_model (candidate : Assignment captures next)
       · intro equation member
         have only := List.mem_singleton.mp member
         subst equation
-        exact same.trans (instance_on_live_value locals localBodies extension.assignment candidate pattern).symm
-  | live value =>
+        exact same.trans (instance_on_shared_value locals localBodies extension.assignment candidate pattern).symm
+  | shared value =>
       let extension := Extension.withLocals locals next
       let localBodies : Assignment locals extension.declarations :=
         fun identity => generator extension.declarations (.inl identity)
@@ -79,9 +79,9 @@ theorem match_gives_joint_model (candidate : Assignment captures next)
       · intro equation member
         have only := List.mem_singleton.mp member
         subst equation
-        exact (instance_on_live_value locals localBodies extension.assignment candidate value).trans
+        exact (instance_on_shared_value locals localBodies extension.assignment candidate value).trans
           ((congrArg (instantiate extension.assignment) matched.symm).trans
-            (instance_on_live_value locals localBodies extension.assignment candidate pattern).symm)
+            (instance_on_shared_value locals localBodies extension.assignment candidate pattern).symm)
 
 theorem observed_joint_models {Γ : Ctx S} {sort : S.Srt}
     (problem : EquationStore (Term (signature S captures) Γ sort))

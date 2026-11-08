@@ -406,41 +406,135 @@ theorem finishAt?_eq (profile : ParserProfileLayer) (plan : CompiledParserPackPl
   | rounds + 1, state => by
     simp only [finishAt?, fastFinish?, stepAt_eq, finishAt?_eq profile plan input rounds]
 
-def candidateAt? (profile : ParserProfileLayer) (plan : CompiledParserPackPlan) (tables : Tables)
-    (families : List Family) (fuel : Nat) : Option State := do
-  let index := ClassAwareChartIndex.build (ClassAwareChartIndex.recognizedKeys ⟨[], families⟩) tables.input.size
-  let requests ← close (requestsAt profile tables index) fuel [(plan.lexical.startSort, 0)] {} []
-  pure ⟨requests, families⟩
+/-! ### An untrusted closure for the reference chart
 
-theorem candidateAt?_eq (profile : ParserProfileLayer) (plan : CompiledParserPackPlan) (input : List Nat)
-    (families : List Family) (fuel : Nat) :
-    candidateAt? profile plan (tables plan input) families fuel = candidate? profile plan input families fuel := by
-  have size : (tables plan input).input.size = input.length := by simp [tables]
-  have requests : ∀ index : ClassAwareChartIndex.Index,
-      requestsAt profile (tables plan input) index = demand profile plan input index := fun index =>
-    funext (requestsAt_eq profile plan input index)
-  simp only [candidateAt?, candidate?, size, requests]
+The chart above is iterated naively: each round derives every family again,
+and dead items deepen by one level per round. The candidate below is built
+once by an Earley-style worklist instead: each request starts its productions
+once, each partial body waits on the key it needs next, and each new key
+resumes the bodies waiting on it. Nothing about it is trusted. The checked
+step must find it fixed, and any fixed point is saturated. -/
 
+/-- A structural body of `sort` from `start`, with its remaining items. -/
+structure Partial where
+  sort : String
+  start : Nat
+  production : Nat
+  rest : List PackItem
+  cursor : Nat
+  /-- Children read so far, newest first. -/
+  children : List ChildRef
+
+inductive Event where
+  | request (request : Request)
+  | advance (item : Partial)
+  | key (key : NodeKey)
+
+structure Closure where
+  requests : Array Request
+  requestSeen : Std.HashSet Request
+  families : Array Family
+  familySeen : Std.HashSet Family
+  /-- Recognized stops for each sort and start. -/
+  stops : Std.HashMap Request (List Nat)
+  /-- Bodies waiting on a key of each sort and start. -/
+  waiting : Std.HashMap Request (List Partial)
+
+def addRequest (closure : Closure) (request : Request) (pending : List Event) : Closure × List Event :=
+  if closure.requestSeen.contains request then (closure, pending)
+  else ({ closure with
+      requests := closure.requests.push request
+      requestSeen := closure.requestSeen.insert request }, .request request :: pending)
+
+def addFamily (closure : Closure) (family : Family) (pending : List Event) : Closure × List Event :=
+  if closure.familySeen.contains family then (closure, pending)
+  else
+    let closure := { closure with
+      families := closure.families.push family
+      familySeen := closure.familySeen.insert family }
+    let slot : Request := (family.parent.resultSort, family.parent.start)
+    let known := closure.stops.getD slot []
+    if known.contains family.parent.stop then (closure, pending)
+    else ({ closure with stops := closure.stops.insert slot (family.parent.stop :: known) },
+      .key family.parent :: pending)
+
+def resume (item : Partial) (rest : List PackItem) (key : NodeKey) : Event :=
+  .advance { item with rest, cursor := key.stop, children := .node key :: item.children }
+
+def handle (profile : ParserProfileLayer) (tables : Tables) (closure : Closure) :
+    Event → List Event → Closure × List Event
+  | .request (sort, start), pending =>
+    let lexical := (tables.lexical.getD sort []).foldl (fun (current : Closure × List Event) entry =>
+      match terminalAt? profile tables.input entry.1.matcher start with
+      | none => current
+      | some (stop, _) => addFamily current.1
+          ⟨⟨entry.1.resultSort, start, stop⟩, .lexical entry.2, [.terminal entry.1.matcher start stop]⟩
+          current.2) (closure, pending)
+    (lexical.1, (tables.structural.getD sort []).foldl (fun pending entry =>
+      .advance ⟨sort, start, entry.2, entry.1.items, start, []⟩ :: pending) lexical.2)
+  | .advance item, pending =>
+    match item.rest with
+    | [] => addFamily closure
+        ⟨⟨item.sort, item.start, item.cursor⟩, .structural item.production, item.children.reverse⟩ pending
+    | .terminal matcher :: rest =>
+      match terminalAt? profile tables.input matcher item.cursor with
+      | none => (closure, pending)
+      | some (middle, _) => (closure, .advance { item with
+          rest, cursor := middle, children := .terminal matcher item.cursor middle :: item.children } :: pending)
+    | .nonterminal sort :: rest =>
+      let slot : Request := (sort, item.cursor)
+      let requested := addRequest closure slot pending
+      let closure := { requested.1 with
+        waiting := requested.1.waiting.insert slot (item :: requested.1.waiting.getD slot []) }
+      (closure, (closure.stops.getD slot []).foldl (fun pending stop =>
+        resume item rest ⟨sort, item.cursor, stop⟩ :: pending) requested.2)
+  | .key key, pending =>
+    (closure, (closure.waiting.getD (key.resultSort, key.start) []).foldl (fun pending item =>
+      match item.rest with
+      | .nonterminal _ :: rest => resume item rest key :: pending
+      | _ => pending) pending)
+
+/-- Process events until none remain; `none` when the allowance runs out. -/
+def run (profile : ParserProfileLayer) (tables : Tables) : Nat → Closure → List Event → Option Closure
+  | 0, _, _ => none
+  | _ + 1, closure, [] => some closure
+  | fuel + 1, closure, event :: pending =>
+    let handled := handle profile tables closure event pending
+    run profile tables fuel handled.1 handled.2
+
+def closedCandidate? (profile : ParserProfileLayer) (plan : CompiledParserPackPlan) (tables : Tables)
+    (fuel : Nat) : Option State := do
+  let empty : Closure := ⟨#[], {}, #[], {}, {}, {}⟩
+  let started := addRequest empty (plan.lexical.startSort, 0) []
+  let closure ← run profile tables fuel started.1 started.2
+  pure ⟨closure.requests.toList, closure.families.toList⟩
+
+/-- The checked chart started from the untrusted closure. -/
 def referenceAt? (profile : ParserProfileLayer) (plan : CompiledParserPackPlan) (input : List Nat)
-    (families : List Family) (fuel rounds : Nat) : Option Forest :=
+    (fuel rounds : Nat) : Option Forest :=
   let prepared := tables plan input
-  (candidateAt? profile plan prepared families fuel).bind fun state =>
+  (closedCandidate? profile plan prepared fuel).bind fun state =>
     finishAt? profile plan prepared input rounds state
 
-theorem referenceAt?_eq (profile : ParserProfileLayer) (plan : CompiledParserPackPlan) (input : List Nat)
-    (families : List Family) (fuel rounds : Nat) :
-    referenceAt? profile plan input families fuel rounds = reference? profile plan input families fuel rounds := by
-  simp only [referenceAt?, reference?, candidateAt?_eq, finishAt?_eq]
+theorem referenceAt?_complete {profile : ParserProfileLayer} {plan : CompiledParserPackPlan}
+    {input : List Nat} {fuel rounds : Nat} {result : Forest}
+    (certified : referenceAt? profile plan input fuel rounds = some result) :
+    RootParserComplete result profile plan input := by
+  obtain ⟨state, _, finished⟩ := Option.bind_eq_some_iff.mp certified
+  rw [finishAt?_eq, fastFinish?_eq] at finished
+  exact ClassAwareChartDemand.finish?_complete rounds state result finished
 
 def coverageAt? (profile : ParserProfileLayer) (plan : CompiledParserPackPlan) (input : List Nat)
     (backend : Forest) (fuel rounds : Nat) : Option Bool :=
-  (referenceAt? profile plan input backend.families fuel rounds).map fun reference =>
+  (referenceAt? profile plan input fuel rounds).map fun reference =>
     validateForestCovers reference backend
 
-theorem coverageAt?_eq (profile : ParserProfileLayer) (plan : CompiledParserPackPlan) (input : List Nat)
-    (backend : Forest) (fuel rounds : Nat) :
-    coverageAt? profile plan input backend fuel rounds = coverage? profile plan input backend fuel rounds := by
-  simp only [coverageAt?, coverage?, referenceAt?_eq]
+theorem coverageAt?_complete {profile : ParserProfileLayer} {plan : CompiledParserPackPlan}
+    {input : List Nat} {backend : Forest} {fuel rounds : Nat}
+    (accepted : coverageAt? profile plan input backend fuel rounds = some true) :
+    RootParserComplete backend profile plan input := by
+  obtain ⟨reference, finished, covered⟩ := Option.map_eq_some_iff.mp accepted
+  exact rootParserComplete_of_covers (validateForestCovers_sound covered) (referenceAt?_complete finished)
 
 /-- The snapshot-level check, as `ClassAwareChartCoverage.validate?`, with the
 representation check over frontier rounds. -/
@@ -470,14 +564,13 @@ theorem validate?_sound {snapshot : Snapshot} {view : ForestView}
     · rename_i valid
       rw [ClassAwareNativeForestReachabilityFrontier.validateExactFamilyRepresentationFrontier_eq] at valid
       obtain ⟨inputs, represents⟩ := validateExactFamilyRepresentation_sound valid
-      rw [coverageAt?_eq] at accepted
-      have complete := coverage?_complete accepted
+      have complete := coverageAt?_complete accepted
       rw [← decodedForest_eq_data inputs.families] at complete
       exact ⟨inventory, rfl, inputs, ⟨represents, complete⟩⟩
     · cases accepted
 
 #print axioms coverage?_complete
 #print axioms validate?_sound
-#print axioms coverageAt?_eq
+#print axioms coverageAt?_complete
 
 end Mettapedia.GSLT.Parsing.ClassAwareChartCertificate

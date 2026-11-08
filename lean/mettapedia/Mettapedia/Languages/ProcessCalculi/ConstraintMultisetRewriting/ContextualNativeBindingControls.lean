@@ -1,4 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualNativeBindingProblem
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualGuardedScheduleProblem
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualScheduleControls
 
 /-!
@@ -32,25 +33,25 @@ def sourceValue : Term (signature base result.declarations) [] () :=
   queryView captures ContextualClauseSequencingControls.rowLocals origin
     (located 10 ContextualClauseSequencingControls.retainedAnswer)
 
-def produced : List (Term (signature base (queryFamily body.bindingLocals body.guardFamily)) [] ()) :=
+def produced : List (Term (signature base (queryFamily body.native.bindingLocals body.native.guardFamily)) [] ()) :=
   [located 9 (symbol 7),
-    instantiate (ContextualSelectionViews.capturedSource body.bindingLocals body.guardFamily)
-      (instantiate body.bindingCurrent sourceValue)]
+    instantiate (ContextualSelectionViews.capturedSource body.native.bindingLocals body.native.guardFamily)
+      (instantiate body.native.bindingCurrent sourceValue)]
 
 theorem the_computed_body_has_a_native_binding_model (occupied : Finset Nat) :
-    ContextualConditionalExecution.Solvable (body.nativeBindingInformation occupied produced []) := by
+    ContextualConditionalExecution.Solvable (body.native.nativeBindingInformation occupied produced []) := by
   have parts := body.admitted_characterization.mp admitted
-  exact (body.native_binding_solvable_iff parts.1 parts.2.1 occupied produced []).mpr parts.2.2.1
+  exact (body.native.native_binding_solvable_iff parts.1 parts.2.1 occupied produced []).mpr parts.2.2.1
 
 theorem every_native_binding_model_retains_seven {Future : Type} (future : Future → MetaArity base)
     (occupied : Finset Nat)
-    (candidate : Assignment (ContextualClauseFrames.nativeActive body.bindingLocals body.bindingLocals body.guardFamily) future)
-    (model : ContextualResidual.Models candidate (body.nativeBindingInformation occupied produced [])) :
+    (candidate : Assignment (ContextualClauseFrames.nativeActive body.native.bindingLocals body.native.bindingLocals body.native.guardFamily) future)
+    (model : ContextualResidual.Models candidate (body.native.nativeBindingInformation occupied produced [])) :
     instantiate candidate
       (instantiate (ContextualSelectionViews.capturedTarget
-        (ContextualClauseFrames.bank body.bindingLocals body.bindingLocals) body.guardFamily)
-        (instantiate body.bindingCurrent sourceValue)) = located 10 (symbol 7) := by
-  have source := body.binding_current_model _ (body.native_binding_model_reflects occupied produced [] candidate model)
+        (ContextualClauseFrames.bank body.native.bindingLocals body.native.bindingLocals) body.native.guardFamily)
+        (instantiate body.native.bindingCurrent sourceValue)) = located 10 (symbol 7) := by
+  have source := body.native.binding_current_model _ (body.native.native_binding_model_reflects occupied produced [] candidate model)
   erw [← Assignment.instantiate_compose, ← Assignment.instantiate_compose]
   exact ContextualClauseSequencingControls.source_next_preserves_the_returned_answer future _ source
 
@@ -65,10 +66,10 @@ private theorem conflicting_information_has_no_model :
   cases member
 
 theorem incompatible_reuse_has_no_native_binding_model (occupied : Finset Nat) :
-    ¬ ContextualConditionalExecution.Solvable (conflictingBody.nativeBindingInformation occupied [] []) := by
+    ¬ ContextualConditionalExecution.Solvable (conflictingBody.native.nativeBindingInformation occupied [] []) := by
   have good := body.admitted_characterization.mp admitted
   exact fun consistent => conflicting_information_has_no_model
-    ((conflictingBody.native_binding_solvable_iff good.1 good.2.1 occupied [] []).mp consistent)
+    ((conflictingBody.native.native_binding_solvable_iff good.1 good.2.1 occupied [] []).mp consistent)
 
 end Computed
 
@@ -114,10 +115,10 @@ theorem selected_information_ignores_the_unused_condition :
   with_unfolding_all rfl
 
 theorem the_native_binding_is_still_consistent (occupied : Finset Nat) :
-    ContextualConditionalExecution.Solvable (body.nativeBindingInformation occupied [] []) := by
+    ContextualConditionalExecution.Solvable (body.native.nativeBindingInformation occupied [] []) := by
   have good := ContextualScheduleControls.ComputedBody.body.admitted_characterization.mp
     ContextualScheduleControls.ComputedBody.admitted
-  apply (body.native_binding_solvable_iff good.1 good.2.1 occupied [] []).mpr
+  apply (body.native.native_binding_solvable_iff good.1 good.2.1 occupied [] []).mpr
   rw [selected_information_ignores_the_unused_condition]
   exact good.2.2.1
 
@@ -131,7 +132,7 @@ open ContextualScheduleControls.EarlierSchema (body admitted guardedBody)
 /-- Binding compilation cannot discharge an earlier guard merely because
 later equations make the final joint problem consistent. -/
 theorem a_binding_model_is_not_guard_admission (occupied : Finset Nat) :
-    ContextualConditionalExecution.Solvable (guardedBody.nativeBindingInformation occupied [] []) ∧
+    ContextualConditionalExecution.Solvable (guardedBody.native.nativeBindingInformation occupied [] []) ∧
       ¬ guardedBody.Admitted := by
   have good := body.admitted_characterization.mp admitted
   have final : ContextualConditionalExecution.Solvable ContextualScheduleControls.EarlierSchema.guardedResult.equations := by
@@ -140,7 +141,7 @@ theorem a_binding_model_is_not_guard_admission (occupied : Finset Nat) :
       (ContextualResidual.mapProblem guardedBody.frame.assignment initial.equations ++ guardedBody.deltas) at consistent
     rw [← guardedBody.final_equations] at consistent
     exact consistent
-  refine ⟨(guardedBody.native_binding_solvable_iff good.1 good.2.1 occupied [] []).mpr final, ?_⟩
+  refine ⟨(guardedBody.native.native_binding_solvable_iff good.1 good.2.1 occupied [] []).mpr final, ?_⟩
   intro accepted
   exact ContextualScheduleControls.EarlierSchema.a_later_binding_does_not_repair_the_compiled_earlier_check
     (guardedBody.compile_exact.mpr accepted)

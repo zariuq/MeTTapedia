@@ -53,7 +53,7 @@ theorem freshening_square (change : Assignment captures next) (scope : Nat) :
         instantiate (ContextualFreshening.assignment locals next scope)
           (instantiate (ContextualSelectionViews.capturedSource locals next) (change name))
       rw [instantiate_generator]
-      exact ContextualStoredRows.viewAt_eq_freshening locals next scope (.live (change name))
+      exact ContextualStoredRows.viewAt_eq_freshening locals next scope (.shared (change name))
 
 theorem termAt_transport (change : Assignment captures next) (scope : Nat) {Γ : Ctx S} {sort : S.Srt}
     (body : Term (signature S (ContextualActivatedStep.source locals captures)) Γ sort) :
@@ -69,8 +69,8 @@ theorem viewAt_transport (change : Assignment captures next) (scope : Nat) {Γ :
       ContextualStoredRows.viewAt locals next scope (row.map locals change) := by
   cases row with
   | schema body => exact termAt_transport locals change scope body
-  | live value =>
-      exact ContextualStoredRows.liftCaptures_on_live_value
+  | shared value =>
+      exact ContextualStoredRows.liftCaptures_on_shared_value
         (fun name : ScopedVar Local => locals name.name) change value
 
 theorem guardRows_transport {O : Type} (change : Assignment captures next) {Γ : Ctx S} {sort : S.Srt}

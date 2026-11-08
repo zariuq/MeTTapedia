@@ -102,7 +102,7 @@ def noPersistent : MeTTaCalculus.OccurrenceCommits.PredicateQuery Nat (Term sign
 
 /-- Observes that no persistent atom is present, and makes the output `60`. -/
 def reader : Run :=
-  ⟨⟨[], [], [], [], [.const 2]⟩, [CensusAdmission.Query.fixed noPersistent], ⟨[], [], [60]⟩⟩
+  ⟨⟨[], [], [], [], [.const 2]⟩, [PredicateQueryAdmission.Query.fixed noPersistent], ⟨[], [], [60]⟩⟩
 
 /-- Makes the persistent atom `61`. -/
 def maker : Run := ⟨⟨[], [], [], [], [.const 9]⟩, [], ⟨[], [], [61]⟩⟩
@@ -177,7 +177,7 @@ theorem no_round (f : Run) (inF : f ∈ [reader, maker, taker]) (g : Run)
 /-! ### Both orders run, to one configuration -/
 
 theorem reader_valid_empty : reader.Valid A label empty := by
-  refine (CensusAdmission.valid_fixed_iff A label reader.rule [noPersistent] empty
+  refine (PredicateQueryAdmission.valid_fixed_iff A label reader.rule [noPersistent] empty
     reader.selection).mpr ⟨⟨by decide, by decide, rfl, rfl, rfl, by decide,
       ⟨Subst.id signature, by simp [Selection.problem, Selection.equations, empty, reader]⟩,
       by simp [reader]⟩, ?_⟩
@@ -220,7 +220,7 @@ theorem query_last_runs : Executable A label empty [maker, taker, reader] := by
       ⟨Subst.id signature, taker_problem_solved _ _ (by
         simp [Selection.problem, Selection.equations, Selection.result, Firing.result, empty,
           maker])⟩, by simp [taker]⟩, by simp [taker]⟩
-  · refine (CensusAdmission.valid_fixed_iff A label reader.rule [noPersistent] _
+  · refine (PredicateQueryAdmission.valid_fixed_iff A label reader.rule [noPersistent] _
       reader.selection).mpr ⟨⟨by decide, by decide, rfl, rfl, rfl, by decide,
         ⟨Subst.id signature, by
           intro equation member

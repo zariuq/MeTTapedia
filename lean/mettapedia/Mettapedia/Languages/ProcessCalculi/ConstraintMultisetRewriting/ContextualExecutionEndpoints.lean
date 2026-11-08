@@ -51,7 +51,7 @@ def computedTarget (before : Endpoint locals O Γ sort)
     (selection : Selection O)
     (outputs : O → Term (signature S (ContextualActivatedStep.target locals before.declarations)) Γ sort)
     (ruleCovered : RuleCovered (ContextualScopeSupport.privateScopes before.scopes) before.occupied rule)
-    (admitted : ContextualTransportedActivation.Admission locals before.declarations before.occupied
+    (admitted : ContextualGuardedStep.Requirements locals before.declarations before.occupied
       selection rule before.inventory.rows before.inventory.configuration outputs)
     (update : Update (ContextualResidual.observeProblem
       (ContextualActivatedStep.problem locals before.declarations before.occupied selection rule
@@ -83,7 +83,7 @@ structure Firing (before after : Endpoint locals O Γ sort) where
   update : Update (ContextualResidual.observeProblem
     (ContextualActivatedStep.problem locals before.declarations before.occupied selection rule
       before.inventory.rows before.inventory.configuration))
-  admitted : ContextualTransportedActivation.Admission locals before.declarations before.occupied
+  admitted : ContextualGuardedStep.Requirements locals before.declarations before.occupied
     selection rule before.inventory.rows before.inventory.configuration outputs
   computed : letI := before.equality
     ContextualFrameWorklist.run fuel (ContextualActivatedStep.target locals before.declarations)
@@ -133,7 +133,7 @@ theorem realize_semantic_admission
     (selection : Selection O)
     (outputs : O → Term (signature S (ContextualActivatedStep.target locals before.declarations)) Γ sort)
     (ruleCovered : RuleCovered (ContextualScopeSupport.privateScopes before.scopes) before.occupied rule)
-    (admitted : ContextualTransportedActivation.SemanticAdmission locals before.declarations before.occupied
+    (admitted : ContextualGuardedStep.Valid locals before.declarations before.occupied
       selection rule before.inventory.rows before.inventory.configuration outputs)
     (patterned : ContextualPatternFragment.ProblemPattern (ContextualResidual.observeProblem
       (ContextualActivatedStep.problem locals before.declarations before.occupied selection rule
@@ -143,9 +143,9 @@ theorem realize_semantic_admission
   let _ := before.equality
   obtain ⟨fuel, update, returned⟩ :=
     (ContextualTransportedActivation.semantic_admission_iff_completed_run locals before.declarations patterned).mp admitted
-  let after := computedTarget locals before rule selection outputs ruleCovered admitted.toAdmission update
+  let after := computedTarget locals before rule selection outputs ruleCovered admitted.toRequirements update
   let firing : Firing locals before after :=
-    ⟨rule, ruleCovered, selection, outputs, fuel, update, admitted.toAdmission,
+    ⟨rule, ruleCovered, selection, outputs, fuel, update, admitted.toRequirements,
       returned.computed, returned.empty, rfl⟩
   exact ⟨after, firing, rfl, rfl, rfl⟩
 
@@ -156,7 +156,7 @@ variable {locals} {before after : Endpoint locals O Γ sort}
 /-- Actual completed edges do not invent semantic admission. This direction
 also covers successful computations outside the complete pattern fragment. -/
 theorem semantic_admission (firing : Firing locals before after) :
-    ContextualTransportedActivation.SemanticAdmission locals before.declarations before.occupied
+    ContextualGuardedStep.Valid locals before.declarations before.occupied
       firing.selection firing.rule before.inventory.rows before.inventory.configuration firing.outputs := by
   let _ := before.equality
   exact ContextualTransportedActivation.FromRun.semantic_admission locals before.declarations firing.returned

@@ -18,15 +18,15 @@ def isPersistent : Term signature → Bool
   | _ => false
 
 def completeRead : PredicateQuery Nat (Term signature) := ⟨isPersistent, {4}⟩
-def observations : List (CensusAdmission.Query (Term signature) (Subst signature) Nat) :=
-  [CensusAdmission.Query.fixed completeRead]
+def observations : List (PredicateQueryAdmission.Query (Term signature) (Subst signature) Nat) :=
+  [PredicateQueryAdmission.Query.fixed completeRead]
 
-theorem first_census_ready : CensusAdmission.Valid A rows firstRule observations initial firstSelection := by
-  exact (CensusAdmission.valid_fixed_iff _ _ _ [completeRead] _ _).mpr
+theorem first_census_ready : PredicateQueryAdmission.Valid A rows firstRule observations initial firstSelection := by
+  exact (PredicateQueryAdmission.valid_fixed_iff _ _ _ [completeRead] _ _).mpr
     ⟨first_ready, fun query member => (List.mem_singleton.mp member) ▸ (by decide +kernel)⟩
 
-theorem second_census_ready : CensusAdmission.Valid A rows secondRule observations initial secondSelection := by
-  exact (CensusAdmission.valid_fixed_iff _ _ _ [completeRead] _ _).mpr
+theorem second_census_ready : PredicateQueryAdmission.Valid A rows secondRule observations initial secondSelection := by
+  exact (PredicateQueryAdmission.valid_fixed_iff _ _ _ [completeRead] _ _).mpr
     ⟨second_ready, fun query member => (List.mem_singleton.mp member) ▸ (by decide +kernel)⟩
 
 theorem census_ignores_first : ∀ query ∈ observations,
@@ -46,8 +46,8 @@ theorem census_ignores_second : ∀ query ∈ observations,
 /-- The two events impose X = f(Y) and Y = 1, share a persistent occurrence,
 and retain their original equality, absence and complete-region checks. -/
 theorem complete_observations_survive_both_orders :
-    CensusAdmission.Valid A rows secondRule observations (firstSelection.result rows firstRule initial) secondSelection ∧
-      CensusAdmission.Valid A rows firstRule observations (secondSelection.result rows secondRule initial) firstSelection ∧
+    PredicateQueryAdmission.Valid A rows secondRule observations (firstSelection.result rows firstRule initial) secondSelection ∧
+      PredicateQueryAdmission.Valid A rows firstRule observations (secondSelection.result rows secondRule initial) firstSelection ∧
       SameUpTo A (secondSelection.result rows secondRule (firstSelection.result rows firstRule initial))
         (firstSelection.result rows firstRule (secondSelection.result rows secondRule initial)) :=
   CensusComposition.independently_ready_commute A rows first second initial observations observations

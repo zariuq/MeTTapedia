@@ -7,7 +7,7 @@ import Mettapedia.GSLT.LanguageDef.EquationPremiseStability
 The literal structural map carries the core equation declarations. This file
 checks the stronger semantic consequence on the exact generic OSLF relation:
 an instance, a contextual equation path, and an equation-saturated directed
-step of the structural core each remain valid in the guarded extension.
+step of the structural core each remain valid in the combined extension.
 The map is forward only; no target-to-source completeness is asserted.
 -/
 
@@ -67,7 +67,7 @@ theorem structuralEquationContextStep_in_combined
       · exact False.elim (no_structuralCore_derivedInstance _ _ derived)
 
 /-- The entire contextual symmetric/transitive closure of structural-core
-equations is retained by the guarded structural extension. -/
+equations is retained by the combined structural extension. -/
 theorem structuralEquationEquiv_in_combined
     {base : BasePremiseEvaluator} {source target : Pattern}
     (equivalent : EquationEquiv base wmStructuralLanguageDef source target) :

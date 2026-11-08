@@ -193,10 +193,10 @@ theorem row_map {Next : Type} (locals : Local → MetaArity S)
     (ContextualStoredRows.liftCaptures locals assignment)
     (respects_liftCaptures locals inScopes outScopes assignment respects) covered
 
-theorem row_live (locals : Local → MetaArity S) (captures : Shared → MetaArity S)
+theorem row_shared (locals : Local → MetaArity S) (captures : Shared → MetaArity S)
     (scopes : Shared → Finset Nat) {occupied : Finset Nat} {Γ : Ctx S} {sort : S.Srt}
     {value : Term (signature S captures) Γ sort} (covered : Covered scopes occupied value) :
-    row locals captures scopes (.live value) ⊆ occupied :=
+    row locals captures scopes (.shared value) ⊆ occupied :=
   covered_instantiate_of_respects scopes _ occupied _ (respects_capturedSource locals captures scopes) covered
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualScopeSupport

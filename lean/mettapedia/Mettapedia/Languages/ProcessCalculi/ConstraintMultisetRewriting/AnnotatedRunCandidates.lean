@@ -91,7 +91,7 @@ variable {T : Type uT} {S : Type uS} {O : Type uO} [DecidableEq O]
 
 /-- A catalogue entry: a freshened rule instance with its predicate queries. -/
 abbrev Entry (T : Type uT) (S : Type uS) (O : Type uO) :=
-  RuleInstance T × List (CensusAdmission.Query T S O)
+  RuleInstance T × List (PredicateQueryAdmission.Query T S O)
 
 /-- The entry of a firing. -/
 def entryOf (f : Firing T S O) : Entry T S O := (f.rule, f.queries)

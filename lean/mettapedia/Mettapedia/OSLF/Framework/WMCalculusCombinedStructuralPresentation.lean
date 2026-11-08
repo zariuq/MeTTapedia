@@ -1,10 +1,10 @@
 import Mettapedia.OSLF.Framework.WMCalculusCombinedIntrinsicTransport
 
 /-!
-# A structural-equation presentation of the guarded overlap/scope vertex
+# A structural-equation presentation of the overlap/scope vertex
 
 The directed combined vertex and the structural WM core have different rule
-inventories. This presentation retains the combined typed grammar and guarded
+inventories. This presentation retains the combined typed grammar and premise-carrying
 extension rules, places the three evidence monoid laws in the equation list,
 and keeps extraction computational. Core congruence rules and the complete
 argument-position inventory for the four added constructors are retained.
@@ -27,7 +27,7 @@ set_option autoImplicit false
 set_option maxRecDepth 100000
 set_option maxHeartbeats 2000000
 
-/-- The guarded extension computations, with the outside-scope premise
+/-- The overlap/scope extension computations, with the outside-scope premise
 retained on its authored rule. -/
 def extensionComputations : List RewriteRule :=
   [ruleOverlapExtract, ruleForgetOutside, ruleForgetIdempotent]
@@ -66,15 +66,15 @@ theorem combinedStructural_inventory :
 
 private theorem sameTermValidation (term : GrammarRule) :
     combinedStructuralLanguageDef.validateTerm term =
-      (wmExtVertexLanguageDefGuarded combinedVertex).validateTerm term := rfl
+      (wmExtVertexLanguageDef combinedVertex).validateTerm term := rfl
 
 private theorem sameEquationValidation (equation : Equation) :
     combinedStructuralLanguageDef.validateEquation equation =
-      (wmExtVertexLanguageDefGuarded combinedVertex).validateEquation equation := rfl
+      (wmExtVertexLanguageDef combinedVertex).validateEquation equation := rfl
 
 private theorem sameRewriteValidation (rule : RewriteRule) :
     combinedStructuralLanguageDef.validateRewrite rule =
-      (wmExtVertexLanguageDefGuarded combinedVertex).validateRewrite rule := rfl
+      (wmExtVertexLanguageDef combinedVertex).validateRewrite rule := rfl
 
 private theorem sameEquationSignatureValidation (equation : Equation) :
     combinedStructuralLanguageDef.validateEquation equation =
@@ -124,7 +124,7 @@ private theorem checked_existingTerm (term : GrammarRule)
       exact member)
 
 private theorem checked_existingRewrite (rule : RewriteRule)
-    (member : rule ∈ (wmExtVertexLanguageDefGuarded combinedVertex).rewrites) :
+    (member : rule ∈ (wmExtVertexLanguageDef combinedVertex).rewrites) :
     combinedStructuralLanguageDef.validateRewrite rule = [] := by
   rw [sameRewriteValidation]
   exact LanguageDef.validateRewrite_eq_nil_of_validate_eq_nil _ combined_validation
@@ -256,7 +256,7 @@ def structuralCoreToCombined :
     tauto
 
 /-- Directed reduction of a structural-core term remains available in the
-guarded structural extension. This is only a forward simulation. -/
+structural overlap/scope extension. This is only a forward simulation. -/
 theorem structuralCoreStep_in_combined
     {first second : Pattern}
     (step : Mettapedia.OSLF.Framework.TypeSynthesis.langReduces

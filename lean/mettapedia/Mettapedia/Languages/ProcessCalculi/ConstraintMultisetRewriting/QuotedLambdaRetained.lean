@@ -77,14 +77,14 @@ def Represents {Γ : Ctx sig} (state : State Γ) (source : Term sig Γ .term) : 
   state.1.inventory.configuration.present = {state.2} ∧
   (ContextualFamilies.action state.1.declarations Γ .term).Consistent state.1.inventory.configuration.equations ∧
   ∃ value : Term (signature sig state.1.declarations) Γ .term,
-    state.1.inventory.rows state.2 = .live value ∧
+    state.1.inventory.rows state.2 = .shared value ∧
     ∀ (Future : Type) (future : Future → MetaArity sig) (candidate : Assignment state.1.declarations future),
       ContextualFrameUnifier.Models candidate state.1.inventory.configuration.equations →
         instantiate candidate value = encode future source
 
 theorem actual_problem {Γ Δ : Ctx sig} (state : State Γ) (selected : Kind) (context : Context Γ Δ)
     (value : Term (signature sig state.1.declarations) Γ .term)
-    (live : state.1.inventory.rows state.2 = .live value) :
+    (isShared : state.1.inventory.rows state.2 = .shared value) :
     ContextualActivatedStep.problem locals state.1.declarations state.1.occupied (selection state.2)
         (rule state.1.declarations selected context) state.1.inventory.rows state.1.inventory.configuration =
       ContextualFrameUnifier.mapProblem (ContextualSelectionViews.capturedTarget locals state.1.declarations)
@@ -93,15 +93,15 @@ theorem actual_problem {Γ Δ : Ctx sig} (state : State Γ) (selected : Kind) (c
         instantiate (ContextualSelectionViews.capturedTarget locals state.1.declarations) value)] := by
   change _ ++ [(ContextualFreshening.termAt locals _ _ (instantiate (schemaMap _ _) (QuotedLambdaExecution.lhs selected context)),
     ContextualFreshening.termAt locals _ _ (ContextualStoredRows.asTemplate locals _ (state.1.inventory.rows state.2)))] ++ [] ++ [] = _
-  rw [live, fresh_schema_map]
+  rw [isShared, fresh_schema_map]
   simp only [ContextualStoredRows.asTemplate, List.append_nil]
-  rw [← ContextualSelectionViews.live_value_at_port locals state.1.declarations state.1.occupied
+  rw [← ContextualSelectionViews.shared_value_at_port locals state.1.declarations state.1.occupied
     (ContextualActivationScopes.takePort (selection state.2) ⟨0, by simp [selection]⟩) value]
   rfl
 
 theorem admission {Γ Δ : Ctx sig} (state : State Γ) (selected : Kind) (context : Context Γ Δ)
     (present : state.1.inventory.configuration.present = {state.2}) :
-    ContextualTransportedActivation.Admission locals state.1.declarations state.1.occupied (selection state.2)
+    ContextualGuardedStep.Requirements locals state.1.declarations state.1.occupied (selection state.2)
       (rule state.1.declarations selected context) state.1.inventory.rows state.1.inventory.configuration
       (fun _ => output state.1.declarations state.1.occupied state.2 selected context) := by
   refine ⟨by simp [selection], by simp [selection], rfl, rfl, ?_, ?_, ?_⟩
@@ -182,14 +182,14 @@ theorem restricted_extended_model (old : Assignment captures next) {Δ : Ctx sig
 
 theorem extended_model_solves {Γ Δ : Ctx sig} (state : State Γ) (context : Context Γ Δ) (redex : Redex Δ)
     (value : Term (signature sig state.1.declarations) Γ .term)
-    (live : state.1.inventory.rows state.2 = .live value)
+    (isShared : state.1.inventory.rows state.2 = .shared value)
     (old : Assignment state.1.declarations next)
     (solved : ContextualFrameUnifier.Models old state.1.inventory.configuration.equations)
     (observed : instantiate old value = encode next (context.plug redex.source)) :
     ContextualFrameUnifier.Models (extendModel old redex)
       (ContextualActivatedStep.problem locals state.1.declarations state.1.occupied (selection state.2)
         (rule state.1.declarations (kind redex) context) state.1.inventory.rows state.1.inventory.configuration) := by
-  rw [actual_problem state (kind redex) context value live]
+  rw [actual_problem state (kind redex) context value isShared]
   apply (ContextualFrameUnifier.models_append _ _ _).mpr
   constructor
   · apply (ContextualFrameUnifier.models_mapProblem _ _ _).mpr
@@ -225,11 +225,11 @@ theorem valid_of_source {Γ Δ : Ctx sig} (state : State Γ) (context : Context 
     ContextualGuardedStep.Valid locals state.1.declarations state.1.occupied (selection state.2)
       (rule state.1.declarations (kind redex) context) state.1.inventory.rows state.1.inventory.configuration
       (fun _ => output state.1.declarations state.1.occupied state.2 (kind redex) context) := by
-  obtain ⟨present, ⟨old, solved⟩, value, live, observes⟩ := represented
+  obtain ⟨present, ⟨old, solved⟩, value, isShared, observes⟩ := represented
   have formation := admission state (kind redex) context present
-  refine ⟨formation.take_distinct, formation.output_distinct, formation.take_length, formation.read_length,
-    formation.outputs, formation.occurrences, ?_, formation.checks⟩
-  exact ⟨extendModel old redex, extended_model_solves state context redex value live old solved
+  refine ⟨formation, ?_⟩
+  apply ContextualFrameUnifier.solvable_of_consistent
+  exact ⟨extendModel old redex, extended_model_solves state context redex value isShared old solved
     (observes _ state.1.declarations old solved)⟩
 
 theorem restrict_actual_model {Γ Δ : Ctx sig} (state : State Γ) (selected : Kind) (context : Context Γ Δ)
@@ -240,8 +240,8 @@ theorem restrict_actual_model {Γ Δ : Ctx sig} (state : State Γ) (selected : K
         (rule state.1.declarations selected context) state.1.inventory.rows state.1.inventory.configuration)) :
     ContextualFrameUnifier.Models (restrict Δ (ruleScope state.1.occupied state.2) candidate)
       (QuotedLambdaExecution.problem selected context source) := by
-  obtain ⟨_, _, value, live, observes⟩ := represented
-  rw [actual_problem state selected context value live] at solved
+  obtain ⟨_, _, value, isShared, observes⟩ := represented
+  rw [actual_problem state selected context value isShared] at solved
   obtain ⟨old, current⟩ := (ContextualFrameUnifier.models_append _ _ _).mp solved
   have oldModel := (ContextualFrameUnifier.models_mapProblem _ _ _).mp old
   have oldValue := observes Future future _ oldModel
@@ -339,10 +339,13 @@ theorem destination_represents {Γ Δ : Ctx sig} (state : State Γ) (context : C
       (rule state.1.declarations (kind redex) context) state.1.inventory.rows state.1.inventory.configuration
       (fun _ => output state.1.declarations state.1.occupied state.2 (kind redex) context)) :
     Represents (destination state (kind redex) context valid) (context.plug redex.target) := by
-  refine ⟨?_, valid.consistent, output state.1.declarations state.1.occupied state.2 (kind redex) context, ?_, ?_⟩
+  have consistent := (ContextualFrameUnifier.solvable_iff_consistent
+    (source := active state.1.declarations)
+    (fun | .term => QuotedLambdaExecution.lam (active state.1.declarations) (.var .zero)) _).mp valid.solvable
+  refine ⟨?_, consistent, output state.1.declarations state.1.occupied state.2 (kind redex) context, ?_, ?_⟩
   · change (state.1.inventory.configuration.present \ {state.2}) ∪ {state.2 + 1} = {state.2 + 1}
     rw [represented.1, Finset.sdiff_self, Finset.empty_union]
-  · exact ContextualActivatedStep.produced_row_is_live locals state.1.declarations (selection state.2)
+  · exact ContextualActivatedStep.produced_row_is_shared locals state.1.declarations (selection state.2)
       (fun _ => output state.1.declarations state.1.occupied state.2 (kind redex) context) state.1.inventory.rows
       (List.mem_singleton_self _)
   · intro Future future candidate solved
@@ -360,7 +363,7 @@ theorem source_step_reflected {Γ : Ctx sig} {state after : State Γ}
     (transition : Transition state after) (source : Term sig Γ .term) (represented : Represents state source) :
     ∃ target, QuotedLambda.Step Γ source target ∧ Represents after target := by
   obtain ⟨selected, Δ, context, valid, rfl⟩ := transition
-  obtain ⟨candidate, solved⟩ := valid.consistent
+  obtain ⟨Future, future, candidate, solved⟩ := valid.solvable
   obtain ⟨redex, rfl, shape⟩ := input_model_recovers_source state selected context source represented candidate solved
   refine ⟨context.plug redex.target, ?_, ?_⟩
   · rw [shape]
@@ -369,9 +372,9 @@ theorem source_step_reflected {Γ : Ctx sig} {state after : State Γ}
 
 theorem represents_unique {Γ : Ctx sig} {state : State Γ} {first second : Term sig Γ .term}
     (left : Represents state first) (right : Represents state second) : first = second := by
-  obtain ⟨_, ⟨candidate, solved⟩, value, live, observes⟩ := left
+  obtain ⟨_, ⟨candidate, solved⟩, value, isShared, observes⟩ := left
   obtain ⟨_, _, other, otherLive, otherObserves⟩ := right
-  have same : value = other := ContextualStoredRows.Row.live.inj (live.symm.trans otherLive)
+  have same : value = other := ContextualStoredRows.Row.shared.inj (isShared.symm.trans otherLive)
   have firstValue := observes _ state.1.declarations candidate solved
   have secondValue := otherObserves _ state.1.declarations candidate solved
   rw [← same] at secondValue
@@ -411,10 +414,10 @@ theorem source_path_iff_execution {Γ : Ctx sig} (state : State Γ)
 
 def initial {Γ : Ctx sig} (source : Term sig Γ .term) : State Γ := by
   refine (⟨Empty, inferInstance, QuotedLambdaExecution.captures, (fun impossible => nomatch impossible), ∅,
-    ⟨⟨[], {0}⟩, (fun _ => .live (encode QuotedLambdaExecution.captures source)), [], []⟩, ?_⟩, 0)
+    ⟨⟨[], {0}⟩, (fun _ => .shared (encode QuotedLambdaExecution.captures source)), [], []⟩, ?_⟩, 0)
   refine ⟨Finset.empty_subset _, ?_, Finset.empty_subset _, Finset.empty_subset _⟩
   intro occurrence _
-  apply row_live
+  apply row_shared
   apply (covered_iff _ _ _).mpr
   intro impossible _
   exact nomatch impossible
@@ -444,8 +447,8 @@ theorem every_old_solution_extends {Γ Δ : Ctx sig} (state : State Γ) (context
       instantiate (extendModel old redex)
         (instantiate (ContextualSelectionViews.capturedTarget locals state.1.declarations) value) =
       instantiate (ContextualSelectionViews.capturedTarget locals next) (instantiate old value) := by
-  obtain ⟨_, _, value, live, observes⟩ := represented
-  refine ⟨extended_model_solves state context redex value live old solved (observes _ next old solved), ?_⟩
+  obtain ⟨_, _, value, isShared, observes⟩ := represented
+  refine ⟨extended_model_solves state context redex value isShared old solved (observes _ next old solved), ?_⟩
   intro objectContext sort value
   rw [← Assignment.instantiate_compose, extendModel_captures, Assignment.instantiate_compose]
 
@@ -454,10 +457,10 @@ theorem equation_count_increases {Γ : Ctx sig} {state after : State Γ}
     after.1.inventory.configuration.equations.length = state.1.inventory.configuration.equations.length + 1 ∧
       after.2 = state.2 + 1 := by
   obtain ⟨selected, Δ, context, valid, rfl⟩ := transition
-  obtain ⟨_, _, value, live, _⟩ := represented
+  obtain ⟨_, _, value, isShared, _⟩ := represented
   constructor
   · change (ContextualActivatedStep.problem locals _ _ _ _ _ _).length = _
-    rw [actual_problem state selected context value live]
+    rw [actual_problem state selected context value isShared]
     simp only [List.length_append, ContextualFrameUnifier.mapProblem, List.length_map,
       List.length_cons, List.length_nil, Nat.zero_add]
   · rfl
@@ -516,19 +519,19 @@ theorem observed_problem_split {Γ Δ : Ctx sig} (state : State Γ) (selected : 
   rw [ContextualActivatedStep.problem_eq_frame_append]
   exact List.map_append
 
-theorem added_problem_of_live {Γ Δ : Ctx sig} (state : State Γ) (selected : Kind) (context : Context Γ Δ)
+theorem added_problem_of_shared {Γ Δ : Ctx sig} (state : State Γ) (selected : Kind) (context : Context Γ Δ)
     (value : Term (signature sig state.1.declarations) Γ .term)
-    (live : state.1.inventory.rows state.2 = .live value) :
+    (isShared : state.1.inventory.rows state.2 = .shared value) :
     addedProblem state selected context =
       [(observe (instantiate (schemaAt state.1.declarations Δ (ruleScope state.1.occupied state.2))
           (QuotedLambdaExecution.lhs selected context)),
         observe (instantiate (ContextualSelectionViews.capturedTarget locals state.1.declarations) value))] := by
-  have equations := actual_problem state selected context value live
+  have equations := actual_problem state selected context value isShared
   rw [ContextualActivatedStep.problem_eq_frame_append] at equations
   have suffix := List.append_cancel_left equations
   exact congrArg ContextualResidual.observeProblem suffix
 
-/-- The cache reparametrizes the genuinely retained live input. The result
+/-- The cache reparametrizes the genuinely retained shared input. The result
 is a pattern problem because that input is determined by the old equations,
 not because compound raw applications were declared to be patterns. -/
 theorem cached_problem_is_pattern {Γ Δ : Ctx sig} (state : State Γ) (selected : Kind) (context : Context Γ Δ)
@@ -537,12 +540,12 @@ theorem cached_problem_is_pattern {Γ Δ : Ctx sig} (state : State Γ) (selected
     ContextualPatternFragment.ProblemPattern
       ((extendedCache state cache complete).remaining ++
         ContextualResidual.mapProblem (extendedCache state cache complete).answer (addedProblem state selected context)) := by
-  obtain ⟨_, _, value, live, observes⟩ := represented
+  obtain ⟨_, _, value, isShared, observes⟩ := represented
   have valueSolved := observes cache.Variables cache.declaration cache.answer
     ((ContextualResidual.models_observeProblem _ _).mp (cache.completed complete))
   change ContextualPatternFragment.ProblemPattern
     (ContextualResidual.mapProblem (ContextualStoredRows.liftCaptures scopedLocals cache.answer) (addedProblem state selected context))
-  rw [added_problem_of_live state selected context value live]
+  rw [added_problem_of_shared state selected context value isShared]
   intro equation member
   have only := List.mem_singleton.mp member
   subst equation
@@ -555,7 +558,7 @@ theorem cached_problem_is_pattern {Γ Δ : Ctx sig} (state : State Γ) (selected
   constructor
   · rw [lifted_schema]
     exact schema_pattern cache.declaration Δ _ selected context
-  · have transported := ContextualStoredRows.liftCaptures_on_live_value scopedLocals cache.answer value
+  · have transported := ContextualStoredRows.liftCaptures_on_shared_value scopedLocals cache.answer value
     have exactValue : instantiate (ContextualSelectionViews.capturedSource scopedLocals cache.declaration)
         (instantiate cache.answer value) = encode (active cache.declaration) source := by
       rw [valueSolved, Rigid.instantiate_include]
@@ -594,8 +597,8 @@ theorem solveCached_completes_valid {Γ Δ : Ctx sig} (state : State Γ) (select
   cases finished with
   | solved result empty => exact ⟨fuel, result, computed, empty⟩
   | refuted proof =>
-      obtain ⟨candidate, model⟩ := valid.consistent
-      exact False.elim (proof (active state.1.declarations) candidate
+      obtain ⟨Future, future, candidate, model⟩ := valid.solvable
+      exact False.elim (proof future candidate
         ((ContextualResidual.models_observeProblem _ _).mpr model))
 
 def initialCache {Γ : Ctx sig} (source : Term sig Γ .term) : Cache (initial source) :=

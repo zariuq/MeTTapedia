@@ -41,7 +41,7 @@ theorem rule_covered : RuleCovered (privateScopes scopes) occupied countRule := 
   apply (ruleRoots_covered_iff (privateScopes scopes) occupied countRule).mp
   decide +kernel
 
-theorem admitted : ContextualTransportedActivation.Admission locals captures occupied selection
+theorem admitted : ContextualGuardedStep.Requirements locals captures occupied selection
     countRule rows bare outputs := by
   have valid := ContextualGuardedStep.Controls.the_schematic_count_guard_has_an_actual_firing
   exact ⟨valid.take_distinct, valid.output_distinct, valid.take_length, valid.read_length,
@@ -76,7 +76,7 @@ theorem the_guarded_edge_produces_and_retains_its_original_ask :
     ContextualGuardedStep.Controls.the_schematic_count_guard_asks_over_every_future_model, rfl⟩
 
 theorem the_unsupported_guard_cannot_be_admitted :
-    ¬ ContextualTransportedActivation.Admission locals captures occupied selection
+    ¬ ContextualGuardedStep.Requirements locals captures occupied selection
       equalityRule rows bare outputs := by
   intro admission
   have ask := admission.checks (.equal (generator active (.inr 0)) (atom active))

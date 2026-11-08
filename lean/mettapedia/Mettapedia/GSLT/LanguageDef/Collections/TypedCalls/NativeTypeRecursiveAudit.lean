@@ -1,0 +1,77 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveWorld
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveControls
+
+/-! # Recursive native type-source and primitive-certificate audit -/
+
+#print axioms Mettapedia.Machines.ReadOnlyQueryExpansion.expansion_answer
+#print axioms Mettapedia.Machines.ReadOnlyQueryExpansion.expansion_reads
+#print axioms Mettapedia.Machines.ReadOnlyQueryExpansion.expanded_replay
+#print axioms Mettapedia.Machines.ReadOnlyQueryExpansion.successful_demand_reads_some
+#print axioms Mettapedia.Machines.ReadOnlyQueryExpansion.Controls.held_branch_never_requests_unfinished_child
+#print axioms Mettapedia.Machines.ReadOnlyQueryExpansion.Controls.demanded_unfinished_child_stops_with_its_reads
+#print axioms Mettapedia.Machines.ReadOnlyQueryExpansion.Controls.completed_false_is_not_unfinished
+#print axioms Mettapedia.Machines.ReadOnlyQuerySafety.completed_sound
+#print axioms Mettapedia.Machines.ReadOnlyQuerySafety.bind_guarantees
+#print axioms Mettapedia.Machines.ReadOnlyQuerySafety.map_guarantees
+#print axioms Mettapedia.Machines.ReadOnlyQuerySafety.reads_valid
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeCallGraph.completedStore_view
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeCallGraph.liftViews_answer
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeCallGraph.ordinary_exact
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeCallGraph.node_exact
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveDriver.completed_some
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveDriver.evaluate_unfold
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveDriver.expanded_answer
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveDriver.expanded_service_replies
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveDriver.expanded_reads
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveDriver.primitive_replay
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveDriver.success_stable
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveDriver.unavailable_is_not_empty
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveDriver.publish_empty_only_if_complete
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeCallGraphSafety.native_typesRead
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeCallGraphSafety.argsPlan
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeCallGraphSafety.rowsPlan
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeCallGraphSafety.productPlan
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeCallGraphSafety.viewQuestion_safe
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeCallGraphSafety.liftViews
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeCallGraphSafety.typesRead
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeCallGraphSafety.finishTypes
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeCallGraphSafety.closeTypes
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeCallGraphSafety.filter_safe
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeCallGraphSafety.tuple_product_safe
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeCallGraphSafety.ordinary
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeCallGraphSafety.node
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeCallGraphSafety.body
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeSourcePorts.rawDeclarations_safe
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeSourcePorts.declarations_safe
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeSourcePorts.declarations_world
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeSourcePorts.primitive_safe
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeSourcePorts.primitive_world
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveSafety.returned_safe
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveSafety.available_safe
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveSafety.reached_keys_safe
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveSafety.expanded_keys_safe
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveSafety.source_returns_safe
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveSafety.source_primitive_world_stable
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveControls.source_safe
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveControls.held_unknown_is_not_inferred
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveControls.completed_child_results_are_recursive_not_annotation_only
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveControls.inferred_and_tuple_questions_differ
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveControls.undeclared_expression_operator_uses_recursive_arrow
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveControls.attempted_function_failure_is_completed_empty
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveControls.first_empty_tuple_part_skips_later_child
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveControls.unfinished_closure_is_not_a_negative_typing
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveControls.unused_unfinished_closure_does_not_block_application
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveControls.native_handle_needs_only_its_literal_classification
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveControls.recursive_driver_preserves_row_order_and_duplicates
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveControls.open_completion_is_not_retention
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeCallGraphWorld.lifted_demand
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeCallGraphWorld.view_store_safe
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeCallGraphWorld.ordinary_world
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeCallGraphWorld.node_world
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeCallGraphWorld.body_world
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveWorld.step_world_of_children
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveWorld.evaluate_world
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveWorld.expanded_world
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveWorld.source_world
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeRecursiveWorld.expanded_source_world
+

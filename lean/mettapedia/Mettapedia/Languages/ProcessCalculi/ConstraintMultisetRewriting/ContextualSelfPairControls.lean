@@ -3,7 +3,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ScopePullbackControls
 
 /-!
-# Same-hole equations preserve local binders and the old live frame
+# Same-hole equations preserve local binders and the old active frame
 
 Swapping both parameters leaves no old parameter available to a structural
 solution. A lambda may still use its own bound variable. A second control

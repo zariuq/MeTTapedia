@@ -3,7 +3,7 @@ import Mettapedia.OSLF.Framework.WMCalculusScopeSortedBoundary
 /-!
 # Combined overlap and scope formation
 
-The two guarded axes share the four-constructor WM core but add distinct
+The overlap and scope axes share the four-constructor WM core but add distinct
 sorts, constructor rows, and rewrite rows. This module checks their first
 combined vertex directly and exhibits a nested term using both operations.
 It does not identify structural validation with semantic compatibility of
@@ -27,18 +27,18 @@ def combinedVertex : WMExtVertex :=
   {wmExtVertexMinimal with overlap := .overlapAware, forgetting := .scopeBased}
 
 theorem combined_types :
-    (wmExtVertexLanguageDefGuarded combinedVertex).types =
+    (wmExtVertexLanguageDef combinedVertex).types =
       ["State", "Query", "BinaryEvidence", "Overlap", "Scope"] := rfl
 
 theorem combined_terms :
-    (wmExtVertexLanguageDefGuarded combinedVertex).terms =
+    (wmExtVertexLanguageDef combinedVertex).terms =
       coreTerms ++ [overlapMergeDecl, overlapFactorDecl, overlapCorrectDecl]
         ++ [forgetDecl] := rfl
 
 /-- Constructor inversion for the one authored combined signature. No
 semantic constructor is added outside this validated inventory. -/
 theorem combined_declaration_cases {rule : GrammarRule}
-    (member : rule ∈ (wmExtVertexLanguageDefGuarded combinedVertex).terms) :
+    (member : rule ∈ (wmExtVertexLanguageDef combinedVertex).terms) :
     rule = reviseDecl ∨ rule = extractDecl ∨ rule = combineDecl ∨
       rule = evidenceZeroDecl ∨ rule = overlapMergeDecl ∨
       rule = overlapFactorDecl ∨ rule = overlapCorrectDecl ∨
@@ -48,7 +48,7 @@ theorem combined_declaration_cases {rule : GrammarRule}
     or_false, or_assoc] using member
 
 private def checkedLanguage : LanguageDef :=
-  LanguageDef.ofCore "WMCalculusGuarded"
+  LanguageDef.ofCore "WMCalculus"
     ["State", "Query", "BinaryEvidence", "Overlap", "Scope"]
     (coreTerms ++ [overlapMergeDecl, overlapFactorDecl, overlapCorrectDecl]
       ++ [forgetDecl]) []
@@ -56,7 +56,7 @@ private def checkedLanguage : LanguageDef :=
       [ruleForgetOutside, ruleForgetIdempotent])
 
 private theorem checkedLanguage_eq :
-    wmExtVertexLanguageDefGuarded combinedVertex = checkedLanguage := rfl
+    wmExtVertexLanguageDef combinedVertex = checkedLanguage := rfl
 
 private theorem checked_evidenceAdd :
     checkedLanguage.validateRewrite ruleEvidenceAdd = [] := by
@@ -124,7 +124,7 @@ private theorem checked_forgetIdempotent :
   decide +kernel
 
 theorem combined_validation :
-    (wmExtVertexLanguageDefGuarded combinedVertex).validate = [] := by
+    (wmExtVertexLanguageDef combinedVertex).validate = [] := by
   rw [checkedLanguage_eq]
   have coreRows : coreRules.flatMap (LanguageDef.validateRewrite checkedLanguage) = [] := by
     simp only [coreRules, List.flatMap_cons, List.flatMap_nil,
@@ -144,11 +144,11 @@ theorem combined_validation :
 /-- Validation of the authored combined language licenses deterministic
 constructor lookup by label. -/
 theorem combined_constructor_labels_nodup :
-    ((wmExtVertexLanguageDefGuarded combinedVertex).terms.map (·.label)).Nodup :=
+    ((wmExtVertexLanguageDef combinedVertex).terms.map (·.label)).Nodup :=
   LanguageDef.constructorLabels_nodup_of_validate_eq_nil _ combined_validation
 
 private theorem combined_simple_parameter_check :
-    (wmExtVertexLanguageDefGuarded combinedVertex).terms.all
+    (wmExtVertexLanguageDef combinedVertex).terms.all
       (fun rule => rule.params.all fun parameter =>
         match parameter with
         | .simple _ _ => true
@@ -159,7 +159,7 @@ private theorem combined_simple_parameter_check :
 /-- No authored combined-WM constructor binds an argument. This is the
 precise scope fact needed when inverting first-order typed captures. -/
 theorem combined_declaration_parameter_simple {rule : GrammarRule}
-    (member : rule ∈ (wmExtVertexLanguageDefGuarded combinedVertex).terms)
+    (member : rule ∈ (wmExtVertexLanguageDef combinedVertex).terms)
     {parameter : TermParam} (parameterMember : parameter ∈ rule.params) :
     ∃ (parameterName : String) (parameterSort : TypeExpr),
       parameter = .simple parameterName parameterSort := by
@@ -176,9 +176,9 @@ theorem combined_declaration_parameter_simple {rule : GrammarRule}
       simp at parameterSimple
 
 theorem combined_rewrites_checked :
-    (wmExtVertexLanguageDefGuarded combinedVertex).rewrites.all
+    (wmExtVertexLanguageDef combinedVertex).rewrites.all
       (checkRewriteWellSorted
-        (wmExtVertexLanguageDefGuarded combinedVertex)) = true := by
+        (wmExtVertexLanguageDef combinedVertex)) = true := by
   decide +kernel
 
 private def combinedFree : FreeTypeContext :=
@@ -192,20 +192,20 @@ private def nestedObservation : Pattern :=
 
 /-- An observation can cross both newly declared operations in one term. -/
 theorem nestedObservation_typed :
-    HasType (wmExtVertexLanguageDefGuarded combinedVertex)
+    HasType (wmExtVertexLanguageDef combinedVertex)
       combinedFree [] nestedObservation (.base "BinaryEvidence") := by
   exact (checkHasType_eq_true_iff (by decide +kernel)).1 (by decide +kernel)
 
 /-- An overlap factor cannot masquerade as the scope argument of `Forget`. -/
 theorem overlapFactor_not_scope :
-    ¬ HasType (wmExtVertexLanguageDefGuarded combinedVertex)
+    ¬ HasType (wmExtVertexLanguageDef combinedVertex)
       combinedFree []
       (pForget (pOverlapFactor (.fvar "W1") (.fvar "W2") (.fvar "q"))
         (.fvar "W1")) (.base "State") := by
   intro typed
   have accepted := (checkHasType_eq_true_iff (by decide +kernel)).2 typed
   have rejected :
-      checkHasType (wmExtVertexLanguageDefGuarded combinedVertex)
+      checkHasType (wmExtVertexLanguageDef combinedVertex)
         combinedFree []
         (pForget (pOverlapFactor (.fvar "W1") (.fvar "W2") (.fvar "q"))
           (.fvar "W1")) (.base "State") = false := by

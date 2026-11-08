@@ -48,7 +48,7 @@ private theorem frame_output (producer : Producer before) (empty : before.invent
 
 theorem target_rows (producer : Producer before) (empty : before.inventory.configuration.equations = []) (occurrence : O) :
     (producer.target empty).inventory.rows occurrence =
-      if occurrence ∈ producer.made then .live
+      if occurrence ∈ producer.made then .shared
         (instantiate (ContextualExecutionCommutationNames.intoCreated locals before.declarations producer.scope)
           (producer.value occurrence))
       else (before.inventory.rows occurrence).map locals
@@ -59,7 +59,7 @@ theorem target_rows (producer : Producer before) (empty : before.inventory.confi
   unfold ContextualActivatedStep.resultRows
   simp only [selection]
   split_ifs with member
-  · change ContextualStoredRows.Row.live (instantiate _ (instantiate _ _)) = _
+  · change ContextualStoredRows.Row.shared (instantiate _ (instantiate _ _)) = _
     rw [← Assignment.instantiate_compose, frame_output producer empty]
   · rw [ContextualStoredRows.Row.map_compose, frame_capture]
 

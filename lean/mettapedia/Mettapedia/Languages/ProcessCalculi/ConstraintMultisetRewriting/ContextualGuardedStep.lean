@@ -39,24 +39,33 @@ def guardRows {Γ : Ctx S} {sort : S.Srt}
     O → ContextualStoredRows.Row locals (target locals captures) Γ sort :=
   fun occurrence => (rows occurrence).map locals (ContextualSelectionViews.capturedTarget locals captures)
 
+/-- Port, resource and guard obligations before equation solvability has
+been established. Solver refutation operates on these obligations too. -/
+structure Requirements [DecidableEq O] (occupied : Finset Nat) (selection : Selection O) {Γ : Ctx S} {sort : S.Srt}
+    (rule : RuleInstance (Term (signature S (ContextualActivatedStep.source locals captures)) Γ sort))
+    (rows : O → ContextualStoredRows.Row locals captures Γ sort)
+    (before : Configuration (Term (signature S captures) Γ sort) O)
+    (outputLabel : O → Term (signature S (ContextualActivatedStep.target locals captures)) Γ sort) : Prop where
+  take_distinct : selection.taken.Nodup
+  output_distinct : selection.made.Nodup
+  take_length : rule.take.length = selection.taken.length
+  read_length : rule.read.length = selection.read.length
+  outputs : selection.made.map outputLabel = (ContextualActivatedStep.prepared locals captures occupied selection rule rows).rule.produce
+  occurrences : Enabled outputLabel before.present (selection.commit (T := Term (signature S (ContextualActivatedStep.target locals captures)) Γ sort))
+  checks : ∀ check ∈ (ContextualActivatedStep.prepared locals captures occupied selection rule rows).rule.checks,
+    ContextualGuardSemantics.Ask locals (ContextualActivatedStep.problem locals captures occupied selection rule rows before)
+      (guardRows locals captures rows) before.present check
+
+/-- Contextual admission permits solutions in any later declaration frame. -/
 structure Valid [DecidableEq O] (occupied : Finset Nat) (selection : Selection O)
     {Γ : Ctx S} {sort : S.Srt}
     (rule : RuleInstance (Term (signature S (source locals captures)) Γ sort))
     (rows : O → ContextualStoredRows.Row locals captures Γ sort)
     (before : Configuration (Term (signature S captures) Γ sort) O)
-    (outputLabel : O → Term (signature S (target locals captures)) Γ sort) : Prop where
-  take_distinct : selection.taken.Nodup
-  output_distinct : selection.made.Nodup
-  take_length : rule.take.length = selection.taken.length
-  read_length : rule.read.length = selection.read.length
-  outputs : selection.made.map outputLabel = (prepared locals captures occupied selection rule rows).rule.produce
-  occurrences : Enabled outputLabel before.present
-    (selection.commit (T := Term (signature S (target locals captures)) Γ sort))
-  consistent : (ContextualFamilies.action (target locals captures) Γ sort).Consistent
+    (outputLabel : O → Term (signature S (target locals captures)) Γ sort)
+    extends Requirements locals captures occupied selection rule rows before outputLabel where
+  solvable : ContextualFrameUnifier.Solvable
     (problem locals captures occupied selection rule rows before)
-  checks : ∀ check ∈ (prepared locals captures occupied selection rule rows).rule.checks,
-    ContextualGuardSemantics.Ask locals (problem locals captures occupied selection rule rows before)
-      (guardRows locals captures rows) before.present check
 
 theorem valid_iff_factors [DecidableEq O] (occupied : Finset Nat) (selection : Selection O)
     {Γ : Ctx S} {sort : S.Srt}
@@ -71,12 +80,12 @@ theorem valid_iff_factors [DecidableEq O] (occupied : Finset Nat) (selection : S
     exact ⟨⟨valid.take_length, valid.read_length, valid.outputs⟩,
       (ContextualInteractionFactors.resources_iff outputs selection before.present).mpr
         ⟨valid.take_distinct, valid.output_distinct, valid.occurrences⟩,
-      ⟨valid.consistent, valid.checks⟩⟩
+      ⟨valid.solvable, valid.checks⟩⟩
   · intro admitted
     obtain ⟨taken, made, enabled⟩ :=
       (ContextualInteractionFactors.resources_iff outputs selection before.present).mp admitted.resources
-    exact ⟨taken, made, admitted.formation.take_length, admitted.formation.read_length,
-      admitted.formation.outputs, enabled, admitted.information.consistent, admitted.information.checks⟩
+    exact ⟨⟨taken, made, admitted.formation.take_length, admitted.formation.read_length,
+      admitted.formation.outputs, enabled, admitted.information.checks⟩, admitted.information.solvable⟩
 
 def Step [DecidableEq O] (occupied : Finset Nat) {Γ : Ctx S} {sort : S.Srt}
     (rule : RuleInstance (Term (signature S (source locals captures)) Γ sort))
@@ -102,10 +111,10 @@ theorem valid_iff_positive [DecidableEq O] {occupied : Finset Nat} {selection : 
   constructor
   · intro valid
     exact ⟨noChecks, valid.take_distinct, valid.output_distinct, valid.take_length, valid.read_length,
-      valid.outputs, valid.occurrences, valid.consistent⟩
+      valid.outputs, valid.occurrences, valid.solvable⟩
   · intro valid
-    refine ⟨valid.take_distinct, valid.output_distinct, valid.take_length, valid.read_length,
-      valid.outputs, valid.occurrences, valid.consistent, ?_⟩
+    refine ⟨⟨valid.take_distinct, valid.output_distinct, valid.take_length, valid.read_length,
+      valid.outputs, valid.occurrences, ?_⟩, valid.solvable⟩
     intro check member
     simp only [prepared, ContextualSelectionViews.prepare, ContextualFreshening.ruleAt,
       RuleInstance.map, noChecks, List.map_nil, List.not_mem_nil] at member
@@ -123,7 +132,7 @@ theorem step_iff_positive [DecidableEq O] {occupied : Finset Nat} {Γ : Ctx S} {
   simp only [Step, ContextualActivatedStep.Step, ← valid_iff_factors,
     valid_iff_positive locals captures noChecks]
 
-theorem Step.consistent [DecidableEq O] {occupied : Finset Nat} {Γ : Ctx S} {sort : S.Srt}
+theorem Step.solvable [DecidableEq O] {occupied : Finset Nat} {Γ : Ctx S} {sort : S.Srt}
     {rule : RuleInstance (Term (signature S (source locals captures)) Γ sort)}
     {rows : O → ContextualStoredRows.Row locals captures Γ sort}
     {before : Configuration (Term (signature S captures) Γ sort) O}
@@ -132,9 +141,9 @@ theorem Step.consistent [DecidableEq O] {occupied : Finset Nat} {Γ : Ctx S} {so
     {afterRows : O → ContextualStoredRows.Row locals (target locals captures) Γ sort}
     {afterOccupied : Finset Nat}
     (step : Step locals captures occupied rule rows before outputs after afterRows afterOccupied) :
-    (ContextualFamilies.action (target locals captures) Γ sort).Consistent after.equations := by
+    ContextualFrameUnifier.Solvable after.equations := by
   obtain ⟨selection, valid, rfl, _, _⟩ := step
-  exact valid.information.consistent
+  exact valid.information.solvable
 
 theorem Step.refines_old_frame [DecidableEq O] {Later : Type} (later : Later → MetaArity S)
     {occupied : Finset Nat} {Γ : Ctx S} {sort : S.Srt}

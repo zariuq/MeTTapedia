@@ -133,10 +133,10 @@ theorem region_eq_of_covered [DecidableEq O] (A : SubstitutionAction T S)
     {equations : EquationStore T} {label : O → T} {visible world : Finset O} {pattern : T}
     (included : visible ⊆ world) (covered : CoversMatches A equations label visible world pattern)
     (σ : S) (model : A.Models σ equations) :
-    region A σ label visible pattern = region A σ label world pattern := by
+    «matches» A σ label visible pattern = «matches» A σ label world pattern := by
   classical
   ext o
-  simp only [region, Finset.mem_filter]
+  simp only [«matches», Finset.mem_filter]
   exact ⟨fun h => ⟨included h.1, h.2⟩, fun h => ⟨covered σ model o h.1 h.2, h.2⟩⟩
 
 /-- A negative scan is sound only with the coverage argument. Equations and
@@ -159,10 +159,10 @@ theorem entails_count_iff_of_covered [DecidableEq O] (A : SubstitutionAction T S
     A.Entails equations (fun σ => (count pattern number).Holds A σ label visible) ↔
       A.Entails equations (fun σ => (count pattern number).Holds A σ label world) := by
   constructor <;> intro holds σ model
-  · change (region A σ label world pattern).card = number
+  · change («matches» A σ label world pattern).card = number
     rw [← region_eq_of_covered A included covered σ model]
     exact holds σ model
-  · change (region A σ label visible pattern).card = number
+  · change («matches» A σ label visible pattern).card = number
     rw [region_eq_of_covered A included covered σ model]
     exact holds σ model
 
@@ -203,10 +203,10 @@ theorem region_fire_eq_of_apart [DecidableEq O] (A : SubstitutionAction T S)
     (selection : Selection O) {pattern : T}
     (apart : ∀ o ∈ selection.taken ++ selection.made, A.Apart equations pattern (label o))
     (σ : S) (model : A.Models σ equations) :
-    region A σ label (fire world (selection.commit (T := T))) pattern = region A σ label world pattern := by
+    «matches» A σ label (fire world (selection.commit (T := T))) pattern = «matches» A σ label world pattern := by
   classical
   ext o
-  simp only [region, Finset.mem_filter]
+  simp only [«matches», Finset.mem_filter]
   constructor
   · rintro ⟨present, same⟩
     rcases mem_fire.mp present with ⟨old, _⟩ | made
@@ -232,13 +232,13 @@ theorem holds_fire_iff_of_ignored [DecidableEq O] (A : SubstitutionAction T S)
   | absent pattern =>
       have same := region_fire_eq_of_apart A world selection ignored σ model
       have absent_iff (current : Finset O) :
-          (Check.absent pattern).Holds A σ label current ↔ region A σ label current pattern = ∅ := by
+          (Check.absent pattern).Holds A σ label current ↔ «matches» A σ label current pattern = ∅ := by
         classical
-        simp only [Holds, region, Finset.filter_eq_empty_iff]
+        simp only [Holds, «matches», Finset.filter_eq_empty_iff]
       rw [absent_iff, absent_iff, same]
   | count pattern number =>
-      change (region A σ label (fire world (selection.commit (T := T))) pattern).card = number ↔
-        (region A σ label world pattern).card = number
+      change («matches» A σ label (fire world (selection.commit (T := T))) pattern).card = number ↔
+        («matches» A σ label world pattern).card = number
       rw [region_fire_eq_of_apart A world selection ignored σ model]
 
 end Check

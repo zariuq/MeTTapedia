@@ -1,5 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Core
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.CensusAdmission
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.PredicateQueryAdmission
 
 /-!
 # The guarded two-way diamond retains complete query observations
@@ -23,9 +23,9 @@ variable {T : Type uT} {S : Type uS} {O : Type uO} [DecidableEq O]
 
 theorem independently_ready_commute (A : SubstitutionAction T S) (label : O → T)
     (first second : ConditionalSchedule.Firing T O) (before : Configuration T O)
-    (firstQueries secondQueries : List (CensusAdmission.Query T S O))
-    (firstReady : CensusAdmission.Valid A label first.1 firstQueries before first.2)
-    (secondReady : CensusAdmission.Valid A label second.1 secondQueries before second.2)
+    (firstQueries secondQueries : List (PredicateQueryAdmission.Query T S O))
+    (firstReady : PredicateQueryAdmission.Valid A label first.1 firstQueries before first.2)
+    (secondReady : PredicateQueryAdmission.Valid A label second.1 secondQueries before second.2)
     (resources : Independent label first.2.commit second.2.commit)
     (joint : A.Consistent ((before.equations ++ added label first.1 first.2) ++ added label second.1 second.2))
     (firstChecks : ∀ check ∈ first.1.checks,
@@ -40,8 +40,8 @@ theorem independently_ready_commute (A : SubstitutionAction T S) (label : O → 
     (secondCensus : ∀ query ∈ secondQueries,
       query.IgnoresWrites A ((before.equations ++ added label first.1 first.2) ++ added label second.1 second.2)
         label first.2) :
-    CensusAdmission.Valid A label second.1 secondQueries (first.2.result label first.1 before) second.2 ∧
-      CensusAdmission.Valid A label first.1 firstQueries (second.2.result label second.1 before) first.2 ∧
+    PredicateQueryAdmission.Valid A label second.1 secondQueries (first.2.result label first.1 before) second.2 ∧
+      PredicateQueryAdmission.Valid A label first.1 firstQueries (second.2.result label second.1 before) first.2 ∧
       SameUpTo A (second.2.result label second.1 (first.2.result label first.1 before))
         (first.2.result label first.1 (second.2.result label second.1 before)) := by
   obtain ⟨secondRaw, firstRaw, same⟩ := Core.independently_ready_commute A label first second before

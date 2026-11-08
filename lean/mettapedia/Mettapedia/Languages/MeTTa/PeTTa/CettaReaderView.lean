@@ -76,10 +76,10 @@ def readToken (token : String) : Except String Atom :=
         if name.isEmpty then .error "empty source variable" else .ok (.var name)
       else if token = "True" || token = "true" then .ok (.symbol "true")
       else if token = "False" || token = "false" then .ok (.symbol "false")
-      else if token.startsWith "\"" then do
-        match ← Lean.Json.parse token with
-        | .str value => .ok (.grounded (.string value))
-        | _ => .error "expected a quoted string"
+      else if token.startsWith "\"" then
+        match SpaceSemantics.readQuoted? token with
+        | some value => .ok (.grounded (.string value))
+        | none => .error "expected a quoted string"
       else
         match parseInteger? token with
         | some value => .ok (.grounded (.int value))
@@ -107,9 +107,7 @@ theorem token_view (token : String) :
               simp [(not_or.mp negative).1, (not_or.mp negative).2]
             simp only [notNegative, Bool.false_eq_true, ↓reduceIte]
             split
-            · cases parsed : Lean.Json.parse token <;>
-                simp only [bind, Except.bind, Except.map]
-              case ok value => cases value <;> rfl
+            · cases quoted : SpaceSemantics.readQuoted? token <;> rfl
             · cases integer : parseInteger? token with
               | some value => rfl
               | none =>

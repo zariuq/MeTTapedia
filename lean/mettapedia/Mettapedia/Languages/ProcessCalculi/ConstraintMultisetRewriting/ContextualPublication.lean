@@ -111,11 +111,11 @@ theorem ordinary_is_independent_of_caller {Other : Type} {other : Other → Meta
 
 /-- Values without contextual unknowns have the same matching observations
 under either storage kind. This is a semantic erasure law, not a cost claim. -/
-theorem rigid_publication_matches_live (candidate : Assignment captures next)
+theorem rigid_publication_matches_shared (candidate : Assignment captures next)
     {Γ : Ctx S} {sort : S.Srt} (value : Term S Γ sort) (pattern : Term (signature S next) Γ sort) :
     Matches (privateFamily locals declaration) candidate pattern
         (ordinary locals declaration (Rigid.includeTerm declaration value)) ↔
-      Matches locals candidate pattern (.live (Rigid.includeTerm captures value)) := by
+      Matches locals candidate pattern (.shared (Rigid.includeTerm captures value)) := by
   rw [ordinary_matches_iff]
   change Instances declaration (Rigid.includeTerm declaration value) next pattern ↔
     pattern = instantiate candidate (Rigid.includeTerm captures value)

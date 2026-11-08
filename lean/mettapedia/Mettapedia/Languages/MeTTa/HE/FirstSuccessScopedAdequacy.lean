@@ -8773,7 +8773,8 @@ theorem ScopedConfigurationRel.scoped_empty_types_selection_failed_square
       RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
         (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) := by
     simpa only [cBefore, cAfter, entryReady.2.1, Completed.diagnosticResults, List.map_nil] using
-      (RecursiveMachine.Contextual.LocalStep.atomSelectionFailed hEntry hReadVal hSelRead)
+      (RecursiveMachine.Contextual.LocalStep.atomSelectionFailed
+        (admission := .historical) hEntry hReadVal hSelRead)
   exact ⟨hSelRel, step0, step1, step2, runPrefix, cLocal, .internal cLocal,
     ⟨rfl, .returning .nil, .cons (.filter expr) stackRel, emittedRel⟩⟩
 

@@ -103,6 +103,6 @@ theorem completedUpdateWithUnused_preserves_old_term [DecidableEq Extra]
     instantiate (completedUpdateWithUnused unused problem update empty).answer
         (instantiate (inclusion unused source) value) =
       instantiate (inclusion unused update.declaration) (instantiate update.answer value) :=
-  ContextualStoredRows.liftCaptures_on_live_value unused update.answer value
+  ContextualStoredRows.liftCaptures_on_shared_value unused update.answer value
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualPrefixModels

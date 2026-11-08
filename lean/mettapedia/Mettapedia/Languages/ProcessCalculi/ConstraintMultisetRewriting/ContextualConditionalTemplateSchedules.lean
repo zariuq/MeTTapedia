@@ -41,7 +41,7 @@ def Birth.map (change : Assignment declaration later) (birth : Birth declaration
 def Birth.ofOrdinary (birth : ContextualSourceSchedules.Birth declaration O Γ sort) : Birth declaration O Γ sort :=
   ⟨birth.SavedNames, birth.equality, birth.saved, birth.SavedNames, birth.equality, birth.saved,
     if birth.reusable then ContextualConditionalPublication.store birth.saved birth.saved ⟨birth.problem, birth.value⟩
-      else ofStored birth.saved birth.saved (.live birth.value), birth.occurrence, birth.transport⟩
+      else ofStored birth.saved birth.saved (.shared birth.value), birth.occurrence, birth.transport⟩
 
 def templateBirths {Local Query Inner : Type} {locals : Local → MetaArity S}
     [DecidableEq Local] [DecidableEq Query] [DecidableEq Inner] [DecidableEq O]

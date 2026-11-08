@@ -1,0 +1,31 @@
+test	outcome	reason
+1	joined	
+2	joined	
+3	joined	
+4	joined	
+5	joined	
+6	joined	
+7	joined	
+8	joined	
+9	joined	
+10	refused	List.mergeSort is not read: not one equation per constructor
+11	joined	
+12	joined	
+13	joined	
+14	joined	
+15	joined	
+16	joined	
+17	joined	
+18	joined	
+19	joined	
+20	joined	
+21	joined	
+22	joined	
+23	joined	
+24	joined	
+25	joined	
+26	refused	Nat.primeFactorsList is not read: not one equation per constructor
+27	refused	Nat.instMonoid is not read: applies Monoid.mk, which is not read
+28	refused	Nat.instMonoid is not read: applies Monoid.mk, which is not read
+29	refused	Nat.instAddCommMonoid is not read: applies AddCommMonoid.mk, which is not read
+30	refused	Finset.range is not read: applies Finset.mk, which is not read

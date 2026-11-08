@@ -131,9 +131,9 @@ theorem the_physical_output_is_the_last_creation :
 theorem source_row_instances {Next : Type} (next : Next → MetaArity base)
     (candidate : Assignment last.declarations next) (pattern : Term (signature base next) [] ()) :
     Matches lastLocals last.declarations candidate pattern (last.rows 0) ↔ pattern = symbol 3 := by
-  have row := ContextualClauseSourceState.live_output_row produce_admitted ⟨0, by decide +kernel⟩ rfl
+  have row := ContextualClauseSourceState.shared_output_row produce_admitted ⟨0, by decide +kernel⟩ rfl
   change last.rows 0 = _ at row
-  rw [row, ofStored_matches_iff, ContextualGuardMatching.live_matches_iff]
+  rw [row, ofStored_matches_iff, ContextualGuardMatching.shared_matches_iff]
   rfl
 
 theorem the_compiled_row_has_exactly_the_latest_value (fuel : Nat) :

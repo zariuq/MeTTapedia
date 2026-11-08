@@ -54,7 +54,7 @@ theorem admission_from_common
       ContextualGuardSemantics.Ask locals
         (ContextualCommonEventProblems.problem locals captures selections globalLedger event rule rows before)
         (ContextualGuardedStep.guardRows locals captures rows) before.present check) :
-    ContextualTransportedActivation.Admission locals captures localLedger (selections event) rule rows before
+    ContextualGuardedStep.Requirements locals captures localLedger (selections event) rule rows before
       (pullOutputs locals captures permutation outputs) := by
   have mappedRule := prepared_rule_relocated locals captures localLedger globalLedger event permutation aligned rule rows
   have restoredRule :
@@ -151,7 +151,7 @@ variable {S : Signature} {Local Shared O : Type} [DecidableEq O]
 include aligned
 
 set_option backward.isDefEq.respectTransparency false in
-/-- Producer-origin constraints construct the consumer admission, with live outputs shared and guards kept at their cut. -/
+/-- Producer-origin constraints construct the consumer admission, with shared outputs shared and guards kept at their cut. -/
 theorem second_admission_causal
     (shape : ContextualInteractionFactors.Formation locals captures virtualLedger secondSelection secondRule rows secondOutputs)
     (resources : ContextualInteractionFactors.Resources secondSelection (fire before.present (firstSelection.commit (T := Unit))))
@@ -163,7 +163,7 @@ theorem second_admission_causal
         (rowsAfterFirst locals captures rows firstSelection firstOutputs)
         (fire before.present (firstSelection.commit (T := Unit)))
         (check.map (instantiate (second locals captures).assignment))) :
-    ContextualTransportedActivation.SemanticAdmission locals (afterFirst locals captures update.declaration)
+    ContextualGuardedStep.Valid locals (afterFirst locals captures update.declaration)
       actualLedger secondSelection
       (secondRule.map (instantiate (ContextualStoredRows.liftCaptures locals (oldCaller locals captures update.declaration).assignment)))
       (ContextualTransportedActivation.resultRows locals captures (ContextualComputedFreshFrame.includeSource update)
@@ -217,7 +217,7 @@ theorem second_admission_from_common
         (rowsAfterFirst locals captures rows firstSelection firstOutputs)
         (fire before.present (firstSelection.commit (T := Unit)))
         (check.map (instantiate (second locals captures).assignment))) :
-    ContextualTransportedActivation.SemanticAdmission locals (afterFirst locals captures update.declaration)
+    ContextualGuardedStep.Valid locals (afterFirst locals captures update.declaration)
       actualLedger secondSelection
       (secondRule.map (instantiate (ContextualStoredRows.liftCaptures locals (oldCaller locals captures update.declaration).assignment)))
       (ContextualTransportedActivation.resultRows locals captures (ContextualComputedFreshFrame.includeSource update)
@@ -315,7 +315,7 @@ variable {S : Signature} {Local O : Type} [DecidableEq O] [DecidableEq Local]
 set_option backward.isDefEq.respectTransparency false in
 /-- Two actual family-changing events are constructed from one initial
 endpoint and common producer-origin constraints. The consumer can read or
-consume newly produced live data while retaining the producer's variables.
+consume newly produced shared data while retaining the producer's variables.
 No first or second solver return is supplied. -/
 theorem realize_causal_pair
     (before : Endpoint locals O Γ sort)
@@ -325,7 +325,7 @@ theorem realize_causal_pair
     (firstOutputs secondOutputs : O → Term (signature S (ContextualSelectionViews.target locals before.declarations)) Γ sort)
     (firstCovered : RuleCovered (privateScopes before.scopes) before.occupied firstRule)
     (secondCovered : RuleCovered (privateScopes before.scopes) before.occupied secondRule)
-    (firstReady : ContextualTransportedActivation.SemanticAdmission locals before.declarations before.occupied
+    (firstReady : ContextualGuardedStep.Valid locals before.declarations before.occupied
       firstSelection firstRule before.inventory.rows before.inventory.configuration firstOutputs)
     (firstPattern : ContextualPatternFragment.ProblemPattern (ContextualResidual.observeProblem
       (ContextualActivatedStep.problem locals before.declarations before.occupied firstSelection firstRule
@@ -463,7 +463,7 @@ theorem realize_ordered_pair
     (firstOutputs secondOutputs : O → Term (signature S (ContextualSelectionViews.target locals before.declarations)) Γ sort)
     (firstCovered : RuleCovered (privateScopes before.scopes) before.occupied firstRule)
     (secondCovered : RuleCovered (privateScopes before.scopes) before.occupied secondRule)
-    (firstReady : ContextualTransportedActivation.SemanticAdmission locals before.declarations before.occupied
+    (firstReady : ContextualGuardedStep.Valid locals before.declarations before.occupied
       firstSelection firstRule before.inventory.rows before.inventory.configuration firstOutputs)
     (firstPattern : ContextualPatternFragment.ProblemPattern (ContextualResidual.observeProblem
       (ContextualActivatedStep.problem locals before.declarations before.occupied firstSelection firstRule
@@ -543,7 +543,7 @@ theorem realize_two_orders
     (rules : Bool → RuleInstance (Term (signature S (ContextualSelectionViews.source locals before.declarations)) Γ sort))
     (outputs : Bool → O → Term (signature S (ContextualSelectionViews.target locals before.declarations)) Γ sort)
     (covered : ∀ event, RuleCovered (privateScopes before.scopes) before.occupied (rules event))
-    (ready : ∀ event, ContextualTransportedActivation.SemanticAdmission locals before.declarations before.occupied
+    (ready : ∀ event, ContextualGuardedStep.Valid locals before.declarations before.occupied
       (selected event) (rules event) before.inventory.rows before.inventory.configuration (outputs event))
     (patterns : ∀ event, ContextualPatternFragment.ProblemPattern (ContextualResidual.observeProblem
       (ContextualActivatedStep.problem locals before.declarations before.occupied (selected event) (rules event)

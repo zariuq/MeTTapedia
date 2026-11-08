@@ -123,12 +123,23 @@ $H$ supplies the symbolic solution $M(x,y)=H$. Adding an unused nullary
 declaration can therefore change fixed-family consistency while leaving
 the original semantic problem unchanged.
 
-The indexed interface \code{SemanticAdmission} combines port and resource
-conditions, the original all-future guards, and future-family solvability.
-The older fixed-family validity judgment embeds into it as a proper
-restriction. Injective arity-preserving declaration extension preserves
-and reflects this admission, including output shape; no arbitrary
-substitution is given that reflection law.
+The contextual judgment \code{ContextualGuardedStep.Valid} combines port
+and resource conditions, the original all-future guards, and future-family
+solvability. Its \code{Requirements} record omits solvability so that the
+solver can still refute a candidate; it is not full admission. Positive
+activation and information admission use the same future-family criterion.
+Injective arity-preserving declaration extension preserves and reflects
+admission, including output shape; no arbitrary substitution is given that
+reflection law.
+
+The one-frame monoid comparison remains a restricted profile. Ground terms
+for every sort suffice to turn any future model into an endomorphic model.
+The theorem \code{solvable\_iff\_consistent} in
+\code{ContextualFrameUnifier} constructs that conversion.
+This grounding condition belongs to that comparison, not to
+general contextual admission. The helper-requiring consuming execution
+above is admitted without it, while its original equation store still has
+no endomorphic model.
 
 \begin{theorem}[Contextual realization]
 Within the declared structural-pattern fragment, semantic admission holds
@@ -252,7 +263,7 @@ intermediate effect histories.
 \begin{theorem}[Causal contextual realization]
 Suppose the first event is semantically admitted in the structural-pattern
 fragment. Prepare each second-event input from its origin: a produced row
-uses the first event's live output; an older row uses its declared schema or
+uses the first event's shared output; an older row uses its declared schema or
 live view at the consumer port. If resources are available after production,
 the joint problem is a solvable structural-pattern problem, output formation
 holds, and the consumer's guards hold at its admission cut, then an actual
@@ -273,7 +284,7 @@ Its guard counts one physical matching occurrence, even with two read ports.
 The guarded take succeeds although the lambda is absent afterward; checking
 the same count in the final world would reject this valid execution.
 Two incompatible reads, demanding both the lambda and a distinct constant
-from the one live value, have no joint solution. Refusing that later
+from the one shared value, have no joint solution. Refusing that later
 constraint problem does not undo the producer's valid publication: an
 executed prefix and an atomic whole-chain refusal have different occurrence
 worlds. General surrounding continuations, joined-schema guards, authority
@@ -518,7 +529,7 @@ Every finite reduction of the quoted-lambda source has an execution through
 the existing contextual transform inventories with actual incremental
 worklist computations. Conversely, every such selected execution from a
 represented source term returns a source-reachable answer. All intermediate
-equations, live output terms and scope inventories are retained. Each old
+equations, shared output terms and scope inventories are retained. Each old
 joint solution extends through a source step without changing its old
 observations.
 \end{theorem}
@@ -987,7 +998,7 @@ is supplied by the semantic transport theorem.
 \section{Resolved clauses and subsequent admission}
 
 \code{ContextualClauseSourceState} defines a source world of contextual
-declarations, equations, stored schemas or live references, and physical
+declarations, equations, stored schemas or shared references, and physical
 occurrences. Its update is constructed directly from an admitted resolved
 clause. Query variables are shared across that clause's ports; each use of
 a stored schema has its own private variables and latent equations.
@@ -1281,7 +1292,7 @@ excludes $9$. A separate capture control links a row-private variable
 to a shared reference; packing preserves the link, whereas dropping
 its latent equation invents an answer.
 
-This constructs the complete result data for the selected ordinary/live
+This constructs the complete result data for the selected ordinary/shared
 clause profile. It does not identify that construction with an ordinary
 single-clause native firing. Such a lowering must account for per-output
 creation conditions and original guard contexts. No evaluator callback,
@@ -1345,8 +1356,9 @@ its remaining equation queue is nonempty.
 \end{theorem}
 The production connection is in
 \code{ContextualProductionAllocation}.
-The guard comparison is in
-\code{ContextualGuardedScheduleProblem}.
+The guard comparison is stated once for compiled bodies in
+\code{ContextualNativeBodies}; \code{ContextualGuardedScheduleProblem}
+presents selected ordinary/shared bodies as compiled bodies.
 The controls include a consistent final problem with an earlier false
 guard, and an admitted computed join with a true answer guard. Representing
 the saved guard worlds in a native entry inventory remains a separate
@@ -1414,7 +1426,7 @@ that actual native problem through an injective fresh declaration frame.
 The current source assignment is retained on every original name.
 Conversely, every native binding model projects to a source model.
 \end{theorem}
-The construction is in
+The construction is stated once for compiled bodies in
 \code{ContextualNativeBindingProblem}.
 Input witnesses are extracted from source ports in
 \code{ContextualScheduleInputModels}; unused stored conditions are not
@@ -1457,9 +1469,9 @@ inside the private prefix: the entry query alone passes, and the creation
 check restores refusal.
 
 The comparisons fix the constructed entry world and compiled physical
-selection. Production meanings,
-conditional captured outputs and program-context observations still need
-their joined one-firing comparison. No parent-space copying policy follows
+selection. Production meanings and conditional captured outputs are joined
+in the one-firing comparisons below; program-context observations remain
+separate. No parent-space copying policy follows
 from the logical declaration reset.
 
 \begin{theorem}[Conditional count-table translation]
@@ -1559,6 +1571,93 @@ The construction is in \code{ContextualConditionalTemplates},
 template production grammar and conditional execution, installing the
 authored conditional metadata without a second resource transition.
 
+Resolved clauses, direct templates and compiled native bodies now share
+one pinned execution record:
+\code{ContextualConditionalExecution.Published}.
+It fixes the authored rule, physical selection and actual output code.
+The reuse contract explicitly specifies either all flags or the flags at
+produced ports. The latter forgets off-output metadata, as the preceding
+resolved-clause contract already did. An actual four-output control changes
+an off-output flag: every returned row is unchanged, while the exact
+flag-function contract rejects the change. Source-specific row decoders
+still establish conditional meaning; the common record does not assume it.
+Result-frame transport and extension of every given information model are
+proved once on the underlying solver-backed firing.
+
+\begin{theorem}[Publication meaning does not factor through the raw firing]
+At every finite solver budget, two authored conditional publications can
+have the exact same raw firing, including its computed solver return, but
+different conditional answer sets. Consequently no observation of that
+raw firing alone recovers answer existence for every authored publication.
+\end{theorem}
+The control swaps only the saved conditions of two schema outputs while
+leaving their value code unchanged. The caller establishes $X=0$. The first
+row is usable in one publication and unusable in the other. An actual
+following clause succeeds for the first and is refused for the second.
+These results are in
+\code{ContextualConditionalTemplateControls.PublicationBoundary}
+and \code{ContextualConditionalTemplateReuse}.
+
+The raw native-step result and the interpreted conditional publication
+therefore remain distinct contracts. The constructed publication theorems
+retain their stated meaning, but composing the raw native result as though
+it already contained the schema conditions is invalid. A canonical program
+execution must retain the publication descriptor as execution data, or
+encode it in the actual output representation. This boundary is not closed
+by the pinned raw-execution record alone.
+
+The direct compiler now retains a structured schema recipe. It contains
+an arity-preserving name-role map $\rho$ into private names and captures,
+and a finite local equation list $E$, both constructed before execution.
+It contains no replacement body. Given the actual emitted term $v$ and
+the returned capture assignment $\sigma$, publication computes
+\[
+  \bigl(\mathsf{schema}(\sigma^{\uparrow}(\rho(v))),
+         \sigma^{\uparrow}(\rho(E))\bigr),
+\]
+where $\sigma^{\uparrow}$ leaves private names fixed. The equations stay
+in that row, rather than becoming assertions in the global store.
+\code{ContextualConditionalPublication.Recipe} supplies this construction.
+\code{ContextualConditionalTemplates.recipe\_publish} proves equality with
+the independently constructed conditional template, for both body and
+conditions. The actual direct-template target now uses this recipe on its
+emitted output. Its row function factors through the raw execution plus
+the pre-execution recipes; recipes outside produced ports are absent.
+The shared step must preserve this data for each publication family; an
+interface exposing only the raw result cannot support this composition.
+
+Mixed native bodies now use the same recipe construction. Their recipes
+are computed from surviving authored births before execution, preserving
+the schema/shared constructor tag as well as name roles and conditions.
+Private names enter the existing tagged result bank; neither the physical
+commit nor the global information problem changes. A schema body is decoded
+from the actual emitted term, while a live body is that emitted term under
+the returned capture assignment.
+
+\begin{theorem}[Native publication from emitted values and recipes]
+For every actual compiled mixed-body firing, each selected output row is
+exactly the row obtained from the saved source birth, including its
+constructor, value and local equations. Under the source shape and resource
+conditions, every net output has a recipe, and retained ports have none.
+\end{theorem}
+The construction and its equality theorem reuse
+\code{ContextualConditionalTemplateNativeProducer} and
+\code{ContextualConditionalTemplateNativePublicationValues}.
+The matching theorem is derived from this row equality. Thus the existing
+source-world and invocation comparisons continue to apply to the constructed
+result, without a separate resource-query or invocation proof chain.
+
+The packed-bank construction is shared in
+\code{ContextualConditionalRowPacking}: the existing execution-private bank
+occupies the \code{none} block, and output-private families occupy their
+\code{some} blocks.
+
+\code{publishWithFallback} renders recipes from actual
+outputs and retains the actual execution rows at ports without recipes.
+Its retained-row theorem preserves the complete conditional matching
+relation under every future assignment. Mixed native publication is an
+instance of this construction.
+
 The concrete mixed clause establishes $X=0$ and publishes two schemas
 $\mathsf{pair}(X,\mathsf{pair}(Y,Y))$, conditioned respectively by $X=0$
 and $X=1$, beside ordinary and shared outputs. A following actual clause
@@ -1652,14 +1751,18 @@ result, under the declared bound-name projection. Every source model
 extends to a returned model, and every returned model projects to a source
 model; row instances agree in every fresh future.
 \end{theorem}
-The binding construction is in
-\code{ContextualConditionalTemplateNativeBinding}.
+The mixed body is a compiled body in
+\code{ContextualConditionalTemplateNativeProblem}; its binding construction
+is the common one.
 
 The actual output decoding is in
 \code{ContextualConditionalTemplateNativePublicationValues}.
 
 The world comparison is in
 \code{ContextualConditionalTemplateNativeResult}.
+
+Its physical, model and world laws are the common ones of
+\code{ContextualNativeResults}.
 
 Output-private declarations carry no global assertion of their row
 conditions. Value and conditional metadata use the same role transport.
@@ -1670,20 +1773,25 @@ row.
 The controls are in
 \code{ContextualConditionalTemplateNativeControls}.
 
-This is a result comparison, not yet an admission equivalence for the
-mixed grammar: original-cut data queries are not attached to this producer.
-A control has consistent information and available resources while a
-private creation refutes a later absence guard. The source is refused,
-but the binding/resource producer executes. Thus producer existence alone
-cannot replace source admission. This control is in
+This is a result comparison; admission needs the original-cut data
+queries. A control has consistent information and available resources
+while a private creation refutes a later absence guard. The source is
+refused, but the binding/resource producer executes. Thus producer
+existence alone cannot replace source admission; with the queries
+attached, the same body has no admitted firing. This control is in
 \code{ContextualConditionalTemplateNativeGuardBoundaryControls}.
 
-The following joined admission theorem continues to concern the
-ordinary/shared grammar.
+Every original cut of a mixed body is represented over entry occurrences
+and authored prefix creations, with the same problem, checks and guard
+meaning. The joined admission theorem below is therefore stated once for
+compiled bodies.
+
+The mixed cut representation is in
+\code{ContextualConditionalTemplateEntryCuts}.
 
 \begin{theorem}[Selected private body to one native firing]
-For the finite authored clause grammar with ordinary and shared
-productions, source admission holds if and only if there exists one
+For a finite authored body, with ordinary and shared productions and with
+selectively captured conditional templates, source admission holds if and only if there exists one
 actual query-admitted native firing with the constructed rule, physical
 selection, output function, publication flags and query list, at any
 declared finite solver budget. No source shape, resource-validity or
@@ -1696,11 +1804,15 @@ native model, every native model projects to a source model, returned
 bindings agree, and conditional row-matching observations agree in every
 fresh declaration extension.
 \end{theorem}
-The admission theorem is in \code{ContextualNativeProgramExecution}.
+The admission theorem is in \code{ContextualNativeProgramExecution}, for
+every compiled body and producer.
 
 The joined theorem is \code{source\_iff\_native\_body}.
 
-It and the world comparison are in \code{ContextualNativeProgramResult}.
+For ordinary/shared bodies it and the world comparison are in
+\code{ContextualNativeProgramResult}; for mixed bodies they are in
+\code{ContextualConditionalTemplateNativeResult}, where captured rows keep
+their conditions as row metadata.
 
 The producer reads authored birth descriptors, not the final source row
 store. Its ordinary values retain their birth problem; shared values use
@@ -1724,11 +1836,62 @@ the same internal program is admitted from an empty entry.
 The comparison fixes the selected authored body and uses the stated
 conditional row-and-model observation. Its entry control and helper
 encodings remain observable to unrestricted native programs.
-Guard-complete selectively captured body lowering, arbitrary target
-selections and program observers, full active evaluation, collection
+Arbitrary target selections and program observers, full active evaluation, collection
 composition, fairness and cost retain their separate obligations.
 Semantic support tables do not supply a total higher-order matching or
 guard-decision procedure.
+
+\begin{theorem}[Conditional preparation and private publication transport]
+Mapping captured declarations commutes with the complete firing-information
+store: incoming equations, matched values, authored equations and each
+selected row's latent conditions. Take/read scopes and the physical world
+are unchanged. The corresponding original-cut guard ask is preserved.
+This does not assert that every capture map preserves solvability: the
+control substituting zero for a captured value constrained to one is
+inconsistent after transport.
+
+An arity-preserving reindexing of private row names commutes with publication
+and with capture transport, preserving the schema/shared constructor, value
+and pending equations. Reindexing cannot invent a matching answer; an
+arity-preserving left inverse also gives the converse. Thus private
+renaming preserves matching without identifying captured references.
+\end{theorem}
+The preparation and guard laws are in
+\code{ContextualConditionalExecution}; the private-row and recipe laws are
+in \code{ContextualConditionalPublication}. The actual pending-answer
+control still accepts one and rejects two after embedding its private bank
+in a fresh tagged bank. The mixed native consumer checks that reindexing
+its compiled recipes agrees exactly with reindexing its published rows.
+These are transport components. They do not establish the full native
+commuting diamond or equivalence for all following clients.
+
+\begin{theorem}[Relocation of actual conditional firings]
+Let a permutation align every freshly allocated rule, take and read scope
+between two occupied-scope inventories, fixing the captured summand.
+Relocating the output expressions preserves and reflects conditional
+admission, including the full heterogeneous information and original-cut
+count and absence asks. Every admitted relocated operation has an actual
+solver return at every finite budget, with the same physical occurrence
+effects. Ordinary reusable outputs have exactly the same matching instances
+in both executions, even when the returned helper families differ and
+residual equations remain.
+\end{theorem}
+The preparation laws are in \code{ContextualEventViewRelocation}.
+
+Conditional asks and source instances are handled by
+\code{ContextualConditionalNaturality}.
+
+Admission and firing relocation are in
+\code{ContextualConditionalExecution}. Adding scope reservations preserves
+formation in \code{ContextualConditionalScopes}.
+
+A concrete relocated
+consumer takes a pending answer, checks count and absence, and still
+publishes seven; an incompatible take remains refused. The execution
+component of an actual compiled mixed body also consumes the relocation
+theorem. Transport of its native predicate-query list and selectively
+captured publication recipes remains separate, as do private-family changes
+after intervening effects and the full two-firing diamond.
 
 \begin{theorem}[Selected invocation completion]
 The compiled firing takes its invocation control after the data takes
@@ -1738,8 +1901,10 @@ indicator from one to zero, while preserving the source/result comparison.
 No subsequent admission requiring the same control is possible after any
 intervening data steps that do not produce a control occurrence.
 \end{theorem}
-The theorem and the strengthened source comparison are in
-\code{ContextualNativeInvocation}.
+The completion facts are in \code{ContextualNativeInvocation}, for every
+compiled body; the strengthened source comparisons are
+\code{source\_iff\_completed\_invocation} for ordinary/shared and for mixed
+bodies.
 Appending the control preserves every data opening ordinal and the
 control's own former read ordinal. This is ordinary resource consumption,
 not a new identity or occurrence-lifetime model. A fresh control production

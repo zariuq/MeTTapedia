@@ -39,7 +39,7 @@ variable {T : Type uT} {S : Type uS} {O : Type uO} [DecidableEq O]
 structure Instruction (T : Type uT) (S : Type uS) (O : Type uO) where
   rule : RuleInstance T
   selection : Selection O
-  observations : List (CensusAdmission.Query T S O)
+  observations : List (PredicateQueryAdmission.Query T S O)
 
 def Instruction.raw (instruction : Instruction T S O) : ConditionalSchedule.Firing T O :=
   (instruction.rule, instruction.selection)
@@ -47,7 +47,7 @@ def Instruction.raw (instruction : Instruction T S O) : ConditionalSchedule.Firi
 structure Observation (T : Type uT) (S : Type uS) (O : Type uO) where
   equations : EquationStore T
   effect : Commit O T
-  query : CensusAdmission.Query T S O
+  query : PredicateQueryAdmission.Query T S O
 
 def Observation.Holds (observation : Observation T S O) (action : SubstitutionAction T S)
     (label : O → T) (before : Configuration T O) : Prop :=
@@ -91,7 +91,7 @@ def Executable (action : SubstitutionAction T S) (label : O → T) :
     Configuration T O → List (Instruction T S O) → Prop
   | before, [] => action.Consistent before.equations
   | before, instruction :: rest =>
-      CensusAdmission.Valid action label instruction.rule instruction.observations before instruction.selection ∧
+      PredicateQueryAdmission.Valid action label instruction.rule instruction.observations before instruction.selection ∧
         Executable action label (instruction.selection.result label instruction.rule before) rest
 
 theorem Executable.raw {action : SubstitutionAction T S} {label : O → T} :
@@ -195,7 +195,7 @@ theorem realize_net_under_retained_admission (action : SubstitutionAction T S) (
     let plan := (compile label code).raw
     let selected := CensusSourceCompilation.selection plan.effect
     let rule := CensusSourceCompilation.rule label plan.effect plan.equations
-    CensusAdmission.Valid action label rule (plan.effect.queries.map CensusAdmission.Query.fixed) before selected ∧
+    PredicateQueryAdmission.Valid action label rule (plan.effect.queries.map PredicateQueryAdmission.Query.fixed) before selected ∧
       action.Equivalent (selected.result label rule before).equations
         (ConditionalSchedule.follow label before (code.map Instruction.raw)).equations ∧
       (selected.result label rule before).present =

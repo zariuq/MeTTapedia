@@ -1,0 +1,10 @@
+constant	role	kind	evidence	egal	detail
+False.casesOn	reading	definition	interpretation	_b_rec	case analysis read as the recursor with the minors as methods
+Mettapedia.Languages.Lean.Declarations.Controls.Even	reading	inductive	interpretation	Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even	family
+Mettapedia.Languages.Lean.Declarations.Controls.Even.casesOn	reading	definition	interpretation	Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_rec	case analysis read as the recursor with the minors as methods
+Mettapedia.Languages.Lean.Declarations.Controls.Even.succ	reading	constructor	interpretation	Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_succ_b_node	constructor of a nested block, read with the block
+Mettapedia.Languages.Lean.Declarations.Controls.Even.zero	reading	constructor	interpretation	Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_zero_b_node	constructor of a nested block, read with the block
+Mettapedia.Languages.Lean.Declarations.Controls.Odd	reading	inductive	interpretation	Lean_Mettapedia_Languages_Lean_Declarations_Controls_Odd	family
+Mettapedia.Languages.Lean.Declarations.Controls.Odd.casesOn	reading	definition	interpretation	Lean_Mettapedia_Languages_Lean_Declarations_Controls_Odd_b_rec	case analysis read as the recursor with the minors as methods
+Mettapedia.Languages.Lean.Declarations.Controls.Odd.succ	reading	constructor	interpretation	Lean_Mettapedia_Languages_Lean_Declarations_Controls_Odd_succ_b_node	constructor of a nested block, read with the block
+Mettapedia.Languages.Lean.Declarations.ParityBlockCorrespondence.odd_zero_false	reading	theorem	target-reconstruction	Lean_Mettapedia_Languages_Lean_Declarations_ParityBlockCorrespondence_odd_zero_false	statement read from Lean, proved in Egal

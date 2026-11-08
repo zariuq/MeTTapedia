@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.LambdaExe
 
 The first redex is beneath two binders and the next beneath one. Both use
 the same local declaration family. The second input is the first actual
-endpoint, including its equation, live output, retained roots and scope
+endpoint, including its equation, shared output, retained roots and scope
 ledger. No source reconstruction occurs between the two transitions.
 -/
 

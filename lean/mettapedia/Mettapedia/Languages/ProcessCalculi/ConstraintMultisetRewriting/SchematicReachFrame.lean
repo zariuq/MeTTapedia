@@ -3,7 +3,7 @@ import Mettapedia.OSLF.Syntax.ContextualFamilySupport
 
 /-!+# Semantic framing by equation dependency
 
-An untouched occurrence may still change meaning when its live variables
+An untouched occurrence may still change meaning when its shared variables
 are constrained. The untouched variables below are outside the connected
 component of the actual new equations in the old equation graph. Model
 amalgamation preserves every reading on that untouched component. Different

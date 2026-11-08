@@ -6,7 +6,7 @@ import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.InteractionTypes.Facets
 # Contextual formation with scopes, declared locations and handle rights
 
 This interface adds situated formation to the existing contextual firing.
-The actual root inventory covers incoming equations, live rows, retained
+The actual root inventory covers incoming equations, shared rows, retained
 continuations and stored template captures. Location lists describe authored
 ports. Observation sites are declared regions, including empty regions; they
 must cover all occurrences inspected by each whole-world absence/count ask.

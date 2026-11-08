@@ -1,10 +1,10 @@
 import Mettapedia.OSLF.Framework.WMCalculusOverlapSortedBoundary
 
 /-!
-# A checked guarded forgetting vertex
+# A checked forgetting vertex
 
 The `Forget` constructor has a scope argument and a state argument. Its
-outside-scope observation rule is guarded; declaring the constructor does not
+outside-scope observation rule carries a premise; declaring the constructor does not
 erase that premise or turn forgetting into unconditional observation equality.
 This module checks formation and rule sorting for the scope-only vertex, not
 semantic soundness of an arbitrary relation environment.
@@ -27,21 +27,21 @@ def scopeOnlyVertex : WMExtVertex :=
   {wmExtVertexMinimal with forgetting := .scopeBased}
 
 theorem scopeOnly_types :
-    (wmExtVertexLanguageDefGuarded scopeOnlyVertex).types =
+    (wmExtVertexLanguageDef scopeOnlyVertex).types =
       ["State", "Query", "BinaryEvidence", "Scope"] := rfl
 
 theorem scopeOnly_terms :
-    (wmExtVertexLanguageDefGuarded scopeOnlyVertex).terms =
+    (wmExtVertexLanguageDef scopeOnlyVertex).terms =
       coreTerms ++ [forgetDecl] := rfl
 
 private def checkedLanguage : LanguageDef :=
-  LanguageDef.ofCore "WMCalculusGuarded"
+  LanguageDef.ofCore "WMCalculus"
     ["State", "Query", "BinaryEvidence", "Scope"]
     (coreTerms ++ [forgetDecl]) []
     (coreRules ++ [ruleForgetOutside, ruleForgetIdempotent])
 
 private theorem checkedLanguage_eq :
-    wmExtVertexLanguageDefGuarded scopeOnlyVertex = checkedLanguage := rfl
+    wmExtVertexLanguageDef scopeOnlyVertex = checkedLanguage := rfl
 
 private theorem checked_evidenceAdd :
     checkedLanguage.validateRewrite ruleEvidenceAdd = [] := by
@@ -102,7 +102,7 @@ private theorem checked_forgetIdempotent :
   decide +kernel
 
 theorem scopeOnly_validation :
-    (wmExtVertexLanguageDefGuarded scopeOnlyVertex).validate = [] := by
+    (wmExtVertexLanguageDef scopeOnlyVertex).validate = [] := by
   rw [checkedLanguage_eq]
   have coreRows : coreRules.flatMap (LanguageDef.validateRewrite checkedLanguage) = [] := by
     simp only [coreRules, List.flatMap_cons, List.flatMap_nil,
@@ -119,9 +119,9 @@ theorem scopeOnly_validation :
     List.flatMap_nil, List.nil_append]
 
 theorem scopeOnly_rewrites_checked :
-    (wmExtVertexLanguageDefGuarded scopeOnlyVertex).rewrites.all
+    (wmExtVertexLanguageDef scopeOnlyVertex).rewrites.all
       (checkRewriteWellSorted
-        (wmExtVertexLanguageDefGuarded scopeOnlyVertex)) = true := by
+        (wmExtVertexLanguageDef scopeOnlyVertex)) = true := by
   decide +kernel
 
 /-- The guard is part of the authored rule and is not discarded by the typed
@@ -131,16 +131,16 @@ theorem forgetOutside_has_guard :
       [.relationQuery "outsideScope" [.fvar "S", .fvar "q"]] := rfl
 
 theorem forgetOutside_sorted :
-    RewriteWellSorted (wmExtVertexLanguageDefGuarded scopeOnlyVertex)
+    RewriteWellSorted (wmExtVertexLanguageDef scopeOnlyVertex)
       ruleForgetOutside := by
   apply checkRewriteWellSorted_sound
   exact (List.all_eq_true.mp scopeOnly_rewrites_checked) _
-    (by simp [wmExtVertexLanguageDefGuarded, scopeOnlyVertex,
+    (by simp [wmExtVertexLanguageDef, scopeOnlyVertex,
       forgettingRules])
 
 /-- The no-forgetting vertex does not silently gain a state mutation. -/
 theorem noForgettingVertex_has_no_forget :
-    forgetDecl ∉ (wmExtVertexLanguageDefGuarded wmExtVertexMinimal).terms := by
+    forgetDecl ∉ (wmExtVertexLanguageDef wmExtVertexMinimal).terms := by
   decide +kernel
 
 #print axioms scopeOnly_validation

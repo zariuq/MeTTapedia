@@ -2,6 +2,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualConditionalPublication
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualExtensionModels
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualUnusedMatching
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualEventViewRelocation
 
 /-!
 # Conditional rows and heterogeneous problems reflect fresh extensions
@@ -34,12 +35,87 @@ theorem map_problem_compose (first : Assignment source middle) (second : Assignm
   funext equation
   simp only [Function.comp_def, instantiateObservation_comp]
 
+/-- The row's value and conditions open at the same relocated use scope. -/
+theorem obligations_relocated (permutation : Equiv.Perm Nat) (scope : Nat)
+    {Γ : Ctx S} {sort : S.Srt} (row : Row locals captures Γ sort) :
+    ContextualResidual.mapProblem (ContextualEventViewRelocation.assignment locals captures permutation)
+        (row.obligationsAt locals captures scope) =
+      row.obligationsAt locals captures (permutation scope) := by
+  rw [Row.obligationsAt, map_problem_compose, ContextualEventViewRelocation.freshening_composes]
+  rfl
+
 theorem row_map_compose (first : Assignment captures middle) (second : Assignment middle target)
     {Γ : Ctx S} {sort : S.Srt} (row : Row locals captures Γ sort) :
     (row.map locals captures first).map locals middle second =
       row.map locals captures (Assignment.compose second first) := by
   cases row
   simp only [Row.map, ContextualStoredRows.Row.map_compose, map_problem_compose, ContextualStoredRows.liftCaptures_compose]
+
+theorem row_map_identity {Γ : Ctx S} {sort : S.Srt} (row : Row locals captures Γ sort) :
+    row.map locals captures (generator captures) = row := by
+  cases row
+  simp only [Row.map, ContextualStoredRows.Row.map_identity, ContextualStoredRows.liftCaptures_identity,
+    ContextualResidual.mapProblem, instantiateObservation_identity, List.map_id']
+
+/-- Reindexing the entire conditional ask retains its row-local equations,
+including for absence and count checks at the original physical world. -/
+theorem ask_reindex_iff (forward : V → W) (backward : W → V)
+    (forwardPreserves : ∀ name, middle (forward name) = source name)
+    (backwardPreserves : ∀ name, source (backward name) = middle name)
+    (leftInverse : Function.LeftInverse backward forward)
+    {Γ : Ctx S} {sort : S.Srt} (problem : ContextualResidual.Problem source)
+    (rows : O → Row locals source Γ sort) (world : Finset O)
+    (check : Check (Term (signature S source) Γ sort)) :
+    ContextualConditionalGuards.Ask locals (ContextualResidual.mapProblem (reindex forward forwardPreserves) problem)
+        (fun occurrence => (rows occurrence).map locals source (reindex forward forwardPreserves)) world
+        (check.map (instantiate (reindex forward forwardPreserves))) ↔
+      ContextualConditionalGuards.Ask locals problem rows world check := by
+  have inverse := reindex_left_inverse forward backward forwardPreserves backwardPreserves leftInverse
+  constructor
+  · intro transported
+    have restored := ContextualConditionalGuards.ask_transport locals (reindex backward backwardPreserves) transported
+    have problemRestored : ContextualResidual.mapProblem (reindex backward backwardPreserves)
+        (ContextualResidual.mapProblem (reindex forward forwardPreserves) problem) = problem := by
+      rw [map_problem_compose, inverse]
+      simp only [ContextualResidual.mapProblem, instantiateObservation_identity, List.map_id']
+    have rowsRestored : (fun occurrence =>
+        ((rows occurrence).map locals source (reindex forward forwardPreserves)).map locals middle
+          (reindex backward backwardPreserves)) = rows := by
+      funext occurrence
+      rw [row_map_compose, inverse, row_map_identity]
+    have checkRestored : (check.map (instantiate (reindex forward forwardPreserves))).map
+        (instantiate (reindex backward backwardPreserves)) = check := by
+      cases check <;> simp only [Check.map,
+        instantiate_reindex_inverse forward backward forwardPreserves backwardPreserves leftInverse]
+    rw [problemRestored, rowsRestored, checkRestored] at restored
+    exact restored
+  · exact ContextualConditionalGuards.ask_transport locals (reindex forward forwardPreserves)
+
+/-- Reindexing a source value together with its problem preserves its
+instances. This compares solutions, not the identities of solver helpers. -/
+theorem sourceInstances_reindex_iff (forward : V → W) (backward : W → V)
+    (forwardPreserves : ∀ name, middle (forward name) = source name)
+    (backwardPreserves : ∀ name, source (backward name) = middle name)
+    (leftInverse : Function.LeftInverse backward forward) (problem : ContextualResidual.Problem source)
+    {Γ : Ctx S} {sort : S.Srt} (value : Term (signature S source) Γ sort)
+    (next : Next → MetaArity S) (pattern : Term (signature S next) Γ sort) :
+    ContextualPublication.SourceInstances (ContextualResidual.mapProblem (reindex forward forwardPreserves) problem)
+        (instantiate (reindex forward forwardPreserves) value) next pattern ↔
+      ContextualPublication.SourceInstances problem value next pattern := by
+  have inverse := reindex_left_inverse forward backward forwardPreserves backwardPreserves leftInverse
+  constructor
+  · rintro ⟨extension, images, model, same⟩
+    refine ⟨extension, Assignment.compose images (reindex forward forwardPreserves),
+      (ContextualResidual.models_mapProblem _ _ _).mp model, ?_⟩
+    exact (Assignment.instantiate_compose images _ value).trans same
+  · rintro ⟨extension, images, model, same⟩
+    refine ⟨extension, Assignment.compose images (reindex backward backwardPreserves), ?_, ?_⟩
+    · apply (ContextualResidual.models_mapProblem _ _ _).mpr
+      rw [← Assignment.compose_associative, inverse, Assignment.compose_identity_right]
+      exact model
+    · rw [← Assignment.instantiate_compose, ← Assignment.compose_associative,
+        inverse, Assignment.compose_identity_right]
+      exact same
 
 theorem holds_extendPrivate (candidate : Assignment captures next) {Γ : Ctx S} {sort : S.Srt}
     (rows : O → Row locals captures Γ sort) (world : Finset O) (check : Check (Term (signature S captures) Γ sort)) :
@@ -142,7 +218,7 @@ theorem matches_inclusion_iff (candidate : Assignment captures next) {Γ : Ctx S
       have right : instantiate (inclusion unused extension.declarations) (instantiate extension.assignment pattern) =
           instantiate (extension.addUnused unused).assignment (instantiate (inclusion unused next) pattern) := by
         rw [Extension.addUnused_assignment]
-        exact (ContextualStoredRows.liftCaptures_on_live_value unused extension.assignment pattern).symm
+        exact (ContextualStoredRows.liftCaptures_on_shared_value unused extension.assignment pattern).symm
       exact left.symm.trans (mapped.trans right)
 
 theorem region_inclusion (candidate : Assignment captures next) {Γ : Ctx S} {sort : S.Srt}

@@ -6,7 +6,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 
 The rule is an already scoped instance. Each selected input opens its own
 schema view, even when two reads select one physical occurrence. Addresses
-retain their live capture identities. The single joint equation problem
+retain their shared capture identities. The single joint equation problem
 resolves ports without imposing a written source order. Guards use schema
 matching on the original occurrence world, counting a physical row once.
 

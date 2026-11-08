@@ -2,7 +2,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.FirstOrde
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.EquationWakeupControls
 
 /-!
-# An unrelated binding preserves a live-row absence verdict
+# An unrelated binding preserves a shared-row absence verdict
 
 The query is closed, but its observed row contains a shared variable. A tell
 about another variable preserves the verdict; a tell about the row's variable

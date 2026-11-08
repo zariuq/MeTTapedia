@@ -4,7 +4,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 /-!
 # Resource-disjoint events can interfere through equations and watched rows
 
-A closed count pattern has no captured variables, but its watched live row
+A closed count pattern has no captured variables, but its watched shared row
 does. A tell can therefore enable that count without changing the physical
 world. The source firing below is an actual completed contextual computation,
 not a synthetic state update. Transporting the earlier question keeps its
@@ -20,7 +20,7 @@ open Mettapedia.OSLF.Binding.ContextualFamily
 open ContextualExecution ContextualGuardMatching ContextualSchedulePromotion
 open ContextualWorldScopeLedger ContextualScopeSupport
 open ContextualSelectionViews.Controls (base locals captures active atom p sharedValue)
-open ContextualGuardSemantics.Controls (CapturedTerm capturedAtom query liveRows world assignedA)
+open ContextualGuardSemantics.Controls (CapturedTerm capturedAtom query sharedRows world assignedA)
 open ContextualPathSnapshotControls (tell tellRule tellOutputs)
 
 local instance : DecidableEq base.Srt := inferInstanceAs (DecidableEq Unit)
@@ -35,24 +35,24 @@ theorem a_closed_pattern_can_have_a_hidden_row_dependency :
   constructor <;> with_unfolding_all rfl
 
 theorem binding_a_watched_row_entails_the_count :
-    ContextualGuardSemantics.Ask locals bound liveRows world (.count query 1) := by
+    ContextualGuardSemantics.Ask locals bound sharedRows world (.count query 1) := by
   intro Next next candidate model
   have same := model (sharedValue, capturedAtom) (List.mem_singleton_self _)
-  have matched : Matches locals candidate (instantiate candidate query) (liveRows 7) := by
+  have matched : Matches locals candidate (instantiate candidate query) (sharedRows 7) := by
     change instantiate candidate (p capturedAtom) = instantiate candidate (p sharedValue)
     have result := congrArg (p (declaration := next)) same.symm
     exact result
   exact (congrArg Finset.card
-    (ContextualGuardSemantics.Controls.singleton_region next candidate liveRows query matched)).trans
+    (ContextualGuardSemantics.Controls.singleton_region next candidate sharedRows query matched)).trans
       (by decide : ({7} : Finset Nat).card = 1)
 
 theorem same_world_different_information_changes_the_guard :
-    ¬ ContextualGuardSemantics.Ask locals ([] : EquationStore CapturedTerm) liveRows world (.count query 1) ∧
-      ContextualGuardSemantics.Ask locals bound liveRows world (.count query 1) :=
-  ⟨ContextualGuardSemantics.Controls.an_unknown_live_row_does_not_entail_count_one,
+    ¬ ContextualGuardSemantics.Ask locals ([] : EquationStore CapturedTerm) sharedRows world (.count query 1) ∧
+      ContextualGuardSemantics.Ask locals bound sharedRows world (.count query 1) :=
+  ⟨ContextualGuardSemantics.Controls.an_unknown_shared_row_does_not_entail_count_one,
     binding_a_watched_row_entails_the_count⟩
 
-def inventory : Inventory locals captures (O := Nat) [] () := ⟨⟨[], world⟩, liveRows, [], []⟩
+def inventory : Inventory locals captures (O := Nat) [] () := ⟨⟨[], world⟩, sharedRows, [], []⟩
 def initial : Endpoint locals Nat [] () where
   Names := Nat
   equality := inferInstance
@@ -65,7 +65,7 @@ def initial : Endpoint locals Nat [] () where
 theorem tell_rule_covered : RuleCovered (privateScopes initial.scopes) initial.occupied tellRule :=
   ContextualPathSnapshotControls.tellRule_covered
 
-theorem tell_admitted : ContextualTransportedActivation.Admission locals captures initial.occupied tell tellRule
+theorem tell_admitted : ContextualGuardedStep.Requirements locals captures initial.occupied tell tellRule
     initial.inventory.rows initial.inventory.configuration tellOutputs := by
   exact ⟨by decide +kernel, by decide +kernel, rfl, rfl, rfl, by decide +kernel, fun _ member => by cases member⟩
 
@@ -76,9 +76,9 @@ theorem tell_patterned : ContextualPatternFragment.ProblemPattern
   decide +kernel
 
 def beforeQuestion : Question locals (O := Nat) [] () :=
-  ⟨Nat, captures, [], liveRows, world, .count query 1⟩
+  ⟨Nat, captures, [], sharedRows, world, .count query 1⟩
 def boundQuestion : Question locals (O := Nat) [] () :=
-  ⟨Nat, captures, bound, liveRows, world, .count query 1⟩
+  ⟨Nat, captures, bound, sharedRows, world, .count query 1⟩
 
 theorem an_actual_equation_only_firing_changes_the_current_count_but_not_the_old_cut :
     ∃ target : Endpoint locals Nat [] (), ∃ firing : Firing locals initial target,
@@ -100,7 +100,7 @@ theorem an_actual_equation_only_firing_changes_the_current_count_but_not_the_old
     · change MeTTaCalculus.OccurrenceCommits.fire world (tell.commit (T := Nat)) = world
       simp [MeTTaCalculus.OccurrenceCommits.fire, Selection.commit, tell]
     · intro accepted
-      exact ContextualGuardSemantics.Controls.an_unknown_live_row_does_not_entail_count_one
+      exact ContextualGuardSemantics.Controls.an_unknown_shared_row_does_not_entail_count_one
         ((Question.holds_extension_iff beforeQuestion (pathExtension path)).mp accepted)
     · have admitted := Question.holds_map boundQuestion (pathAssignment path)
         binding_a_watched_row_entails_the_count

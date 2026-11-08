@@ -38,7 +38,7 @@ theorem possible_member_iff (A : SubstitutionAction T S) (problem : EquationStor
 theorem region_subset_possible (A : SubstitutionAction T S) {problem : EquationStore T}
     (label : O → T) (world : Finset O) (pattern : T) {assignment : S}
     (solved : A.Models assignment problem) :
-    Check.region A assignment label world pattern ⊆ possibleRegion A problem label world pattern := by
+    Check.matches A assignment label world pattern ⊆ possibleRegion A problem label world pattern := by
   classical
   intro occurrence member
   obtain ⟨present, same⟩ := Finset.mem_filter.mp member
@@ -52,7 +52,7 @@ theorem principal_region_subset (A : SubstitutionAction T S)
     (argument : pattern ∈ observed)
     (values : ∀ occurrence ∈ world, label occurrence ∈ observed)
     {assignment : S} (solved : A.Models assignment problem) :
-    Check.region A answer label world pattern ⊆ Check.region A assignment label world pattern := by
+    Check.matches A answer label world pattern ⊆ Check.matches A assignment label world pattern := by
   classical
   obtain ⟨residual, factors⟩ := principal.factors assignment solved
   intro occurrence member
@@ -71,20 +71,20 @@ theorem count_iff_regions (A : SubstitutionAction T S)
     (argument : pattern ∈ observed)
     (values : ∀ occurrence ∈ world, label occurrence ∈ observed) :
     A.Entails problem (fun assignment => (Check.count pattern number).Holds A assignment label world) ↔
-      (Check.region A answer label world pattern).card = number ∧
-        possibleRegion A problem label world pattern = Check.region A answer label world pattern := by
+      (Check.matches A answer label world pattern).card = number ∧
+        possibleRegion A problem label world pattern = Check.matches A answer label world pattern := by
   classical
   constructor
   · intro entailed
-    have baseline : (Check.region A answer label world pattern).card = number := entailed answer principal.sound
+    have baseline : (Check.matches A answer label world pattern).card = number := entailed answer principal.sound
     refine ⟨baseline, Finset.Subset.antisymm ?_ (region_subset_possible A label world pattern principal.sound)⟩
     intro occurrence member
     obtain ⟨present, assignment, solved, same⟩ :=
       (possible_member_iff A problem label world pattern occurrence).mp member
     have lower := principal_region_subset A principal label world pattern argument values solved
-    have equalRegions : Check.region A answer label world pattern = Check.region A assignment label world pattern :=
+    have equalRegions : Check.matches A answer label world pattern = Check.matches A assignment label world pattern :=
       Finset.eq_of_subset_of_card_le lower (by
-        have size : (Check.region A assignment label world pattern).card = number := entailed assignment solved
+        have size : (Check.matches A assignment label world pattern).card = number := entailed assignment solved
         omega)
     rw [equalRegions]
     exact Finset.mem_filter.mpr ⟨present, same⟩
@@ -93,7 +93,7 @@ theorem count_iff_regions (A : SubstitutionAction T S)
     have upper := region_subset_possible A label world pattern solved
     rw [samePossible] at upper
     have equalRegions := Finset.Subset.antisymm upper lower
-    change (Check.region A assignment label world pattern).card = number
+    change (Check.matches A assignment label world pattern).card = number
     rw [equalRegions]
     exact baseline
 

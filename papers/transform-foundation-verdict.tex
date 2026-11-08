@@ -1,0 +1,1035 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=2.4cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\setlist{nosep,leftmargin=1.6em}
+
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}[theorem]{Proposition}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newtheorem{example}{Example}
+
+\usepackage{xstring}
+\newcommand{\lean}[1]{{\ttfamily\def\_{\textunderscore\allowbreak}\noexpandarg\StrSubstitute{#1}{.}{.\allowbreak}}}
+\newcommand{\inmod}[1]{in~{\ttfamily\def\_{\textunderscore\allowbreak}#1}}
+\newcommand{\Solv}{\mathsf{Solvable}}
+\newcommand{\Ent}{\mathsf{Entails}}
+\newcommand{\Mod}{\models}
+\newcommand{\mt}[1]{{\ttfamily\frenchspacing #1}}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\emergencystretch=3em
+
+\title{Transform as the step of Prime's calculus:\\ the verdict, with joined qualification}
+\date{7 November 2026, revised}
+\author{}
+
+\begin{document}
+\sloppy
+\maketitle
+
+\begin{abstract}
+We ask how far one guarded, information-carrying transformation of occurrences can serve as the
+unifying step of a calculus for higher-order MeTTa Prime, and where it cannot. The calculus is one
+rule over an abstract category of frames: a firing is admitted when its shapes hold, its selection
+is enabled, its information is solvable, and its guards and predicate queries hold at every
+solution; its result keeps the information along a settling morphism. The first-order, contextual
+and dependent steps are instances of that rule, and each feature is proved at the rule, or on a
+named restriction with a control that fails off it and a bridge back, or named as an open gap. The
+conflict-bearing first-order step is the $\eta$-long fibre of a dependent step with takes, reads,
+makes, tells, guards and predicate queries, and the admission of equation-guarded firings transfers
+through the fibre wherever the dependent unifier decides; both halves of ``decides'' are inhabited by actual kernel runs. Whether
+the unifier decides the whole dynamic pattern fragment is open: it is false for the earlier rule
+set, and the current solver's remaining gaps are named. The evidence forces revisions, each by a
+proved separation, and each stronger hypothesis is rejected with an obstruction under a stated
+adequacy criterion. No obstruction to the rule itself is known. We recommend retaining it as the
+operational core of the calculus, and list the open rows with their estimates.
+\end{abstract}
+
+\begingroup\raggedright
+\paragraph{Conventions.} Lean declarations are cited by name. Unless they start with
+\lean{Mettapedia}, names are relative to
+\lean{Mettapedia.Languages.ProcessCalculi.\allowbreak ConstraintMultisetRewriting}. A rule's
+\emph{patterns} say what a firing takes, reads and makes, what it tells the knowledge, and what it
+guards; a state's present occurrences form its \emph{space}, and occurrences may carry a
+\emph{handle} naming the space they belong to. Programs are written in MeTTa notation: variables
+\mt{\$x}, program equations \mt{(= lhs rhs)} as schemas, typing \mt{(: \$x A)}; equations of the
+knowledge are written $\doteq$. Estimates of open rows are probabilities of success. All cited
+declarations use only the standard axioms \lean{propext}, \lean{Classical.choice} and
+\lean{Quot.sound}, or fewer (Section~\ref{sec:receipts}).\par
+\endgroup
+
+\tableofcontents
+
+\section{The question and the answer}
+
+The question is whether one transform calculus coherently accounts for communication, querying and
+execution, together with ordinary Prime programs and checked inference, and if not, why not. The
+completion rule is strict: lists of results do not settle it, and an impossibility needs a proved
+obstruction under explicit adequacy criteria.
+
+\paragraph{Answer.} Retain the step. In detail:
+\begin{enumerate}
+\item \emph{Retain.} Every behaviour in the seven decisive tests is decided by theorems about
+  instances of one rule, and no obstruction to the rule is known (Section~\ref{sec:recommendation}).
+\item \emph{One calculus.} The calculus is the one rule \lean{Interface.Step} over the abstract
+  category of frames \lean{Interface.Frames}, with admission characterized once
+  (\lean{Interface.Step.admits\_iff}). The first-order step, the contextual steps and the dependent
+  full step are instances, and every other step the comparisons use is placed as an instance or a
+  restriction of one, the contextual guarded firings at admission. Each feature is proved at the
+  interface, or on a named restriction with a separating control and a bridge, or named as an open
+  gap (Section~\ref{sec:joined}).
+\item \emph{The join.} The second-order and first-order conflict-bearing steps are the $\eta$-long
+  fibre of the dependent full step \lean{Interface.DependentFull.step}. For firings whose guards
+  and predicate queries are equations, admission transfers through the fibre wherever the
+  dependent unifier decides the translated information
+  (\lean{Interface.DependentFull.fibre\_admission\_transfer\_of\_full}); absence and counting
+  transfer by separate theorems with their own hypotheses (Section~\ref{sec:join}). Both halves of ``decides''
+  are inhabited by actual kernel runs of the unifier: a solved translated pattern store whose firing
+  is admitted on both sides, and a refuted one whose firing is refused on both sides
+  (\lean{Interface.DependentFull.NonVacuity.solved\_case\_nonvacuous},
+  \lean{Interface.DependentFull.NonVacuity.refuted\_case\_refused}).
+\item \emph{Open.} Whether the dependent unifier decides every store of the dynamic pattern
+  fragment is open. It is false for the earlier rule set
+  (\lean{ContextualDependentFragment.Controls.fragment\_not\_decisive},
+  \lean{ContextualDependentFragment.Controls.blocked\_not\_decisive}). The current solver keeps
+  every outcome of the previous one and decides both stores that refuted the earlier set; what is
+  missing is
+  firing on the flexible Miller-pattern equations, three rigid shapes, and closure of a stratified
+  class under answers (Section~\ref{sec:open-unification}). Everything stated ``where the unifier
+  decides'' stays true whatever the answer.
+\end{enumerate}
+The rule is not, by itself, the whole calculus, and the reasons are proved:
+\begin{enumerate}
+\item logical validity is not admission: inference is an \emph{authority restriction} of the step's
+  firings, and checked holes need a second, \emph{closed} ask;
+\item the frames must be dependent with $\eta$: the second-order frames are their $\eta$-long fibre,
+  without $\eta$ the translated pattern equations lose their principal answers, and principal
+  answers transfer through the fibre in one direction only;
+\item what the step may observe is split into ordinary queries, read through solutions, and
+  reflection queries, which see syntax;
+\item transport of native firings exists only up to dead names, with a move defined on part of the
+  firings, and helper firings at dependent frames agree only up to the exchange of their telescopes;
+\item concurrent waves need joint solvability of the whole wave;
+\item atomic blocks of unbounded size need rules computed per block or a compound occurrence;
+\item fresh identities are those never born, not those merely absent;
+\item spaces share the knowledge, so a firing at one space can change admission at another through
+  a shared unknown, and independence across spaces holds on the restriction that the firing adds no
+  information; rights alone do not bound what a space receives;
+\item contention between firings includes inhibition through predicate queries;
+\item a guard that something bad is never reached has a finite certificate exactly on finite-state
+  data, and is lowered to the check of one; reachability of a proof does not make fair search
+  complete.
+\end{enumerate}
+Each is a revision of the candidate as first presented, not an obstruction to the rule. The
+precisely stated stronger hypotheses are rejected in Section~\ref{sec:recommendation}, each with
+its obstruction.
+
+\section{The core calculus}\label{sec:core}
+
+\subsection{Syntax, frames and solutions}
+
+Terms are built over a binding signature: sorts, operators with binding arities, bound variables, and
+metavariables declared with arities $(\bar s, s)$ that are applied to terms of the sorts
+$\bar s$. A \emph{frame} declares metavariables: the unknowns that exist and their sorts or types.
+The canonical frames are declaration families, the foundation's frames are formed dependent
+telescopes, and a substitution action has one frame.
+
+\begin{definition}[Frames acting on terms; \lean{Interface.Frames}]
+A frame action has frames $a,b,\dots$, terms $T_a$, morphisms $f : a\to b$ with an action
+$f_* : T_a \to T_b$, identities and composites, and an equivalence $\approx_a$ on each $T_a$, with
+$(\mathrm{id})_*t=t$, $(g\circ f)_*t = g_*f_*t$ and $s\approx t \Rightarrow f_*s\approx f_*t$.
+\end{definition}
+
+For an equation store $P$ at $a$, a \emph{solution} is a morphism $f : a\to b$ into any later frame with
+$f_*s\approx f_*t$ for every $(s,t)\in P$. $\Solv(P)$ asks for one; $\Ent(P,\varphi)$ asks that
+$\varphi(b,f)$ hold at every solution; $u : a\to m$ is \emph{principal} when it is a solution and
+every solution factors through it (\lean{Interface.Frames.Principal}), and then a store's solutions
+are exactly the factorizations through $u$ (\lean{Interface.Frames.Principal.models\_iff}).
+Solvability is witnessed at a weakly terminal frame, and the frame with one parameterless
+metavariable per sort is weakly terminal, so existence never needs a higher-order helper
+(\lean{Interface.Frames.solvable\_iff\_into}, \lean{Interface.Frames.firstOrderFrame\_weaklyTerminal},
+\lean{Interface.Frames.contextual\_solvable\_iff\_consistent}). A substitution action is the one-frame
+case, whose solvability is consistency (\lean{Interface.Frames.ofSubstitution\_solvable\_iff}).
+
+\paragraph{Closed asks.} Given a closed frame, a store is \emph{closed-solvable} when it has a solution
+into it (\lean{Interface.Frames.ClosedSolvable}). Symbolic and closed solvability agree under a
+principal answer whose frame has a closed point
+(\lean{Interface.Frames.closedSolvable\_iff\_of\_principal}).
+
+\subsection{States}
+
+A state $\langle\Gamma;K;W\rangle$ has a frame $\Gamma$, its \emph{knowledge} $K$ (an equation store
+at $\Gamma$) and its space $W$, a finite set of occurrence identities; each occurrence carries a
+label, a term at the frame. Occurrence identities are physical: equal labels at two identities are
+two occurrences. Fresh schematic variables of a rule are opened in a fresh scope at each firing;
+caller variables shared with the state are not renamed; the identities a firing makes are fresh.
+
+\subsection{The rule}
+
+\begin{definition}[The step; \lean{Interface.Step}]\label{def:step}
+A firing $f$ at a state $s=\langle\Gamma;K;W\rangle$ has a selection (the occurrences it
+\emph{takes}, \emph{reads} and \emph{makes}), a target frame $\Gamma'$ with an extension
+$e_f:\Gamma\to\Gamma'$ (its new unknowns), its \emph{information} $I_f$ at $\Gamma'$, which contains
+$(e_f)_*K$ together with the equations matching its take and read patterns to the selected labels
+and the equations it \emph{tells}, its shapes, and at every solution $\sigma$ of $I_f$ the predicate
+$H_f(\sigma)$: its \emph{guards} and \emph{predicate queries}. The one rule is
+\[
+\frac{\mathrm{Shapes}(f)\qquad \mathrm{Enabled}(W,f)\qquad \Solv(I_f)\qquad \Ent(I_f,H_f)}
+{\langle\Gamma;K;W\rangle\ \xrightarrow{\ f\ }\ \langle\Gamma'';\,(c_f)_*I_f;\,(W\setminus\mathrm{taken}_f)\cup\mathrm{made}_f\rangle}
+\ \textup{[\textsc{Fire}]}
+\]
+where $c_f:\Gamma'\to\Gamma''$ is the firing's settling morphism.
+\end{definition}
+
+The definition is exactly the fields of \lean{Interface.Step}. Admission is characterized once,
+for every instance, by the field \lean{Interface.Step.admits\_iff}: the shapes, the enabling of the
+selection's commit at the present occurrences, semantic solvability of the information, and the ask
+of $H_f$ at every solution of it. The result's space is
+$(W\setminus\mathrm{taken})\cup\mathrm{made}$ (field \lean{Interface.Step.present\_result}), and its
+knowledge is the information carried along the settling morphism (fields
+\lean{Interface.Step.settle} and \lean{Interface.Step.knowledge\_result}). The settling morphism is
+the identity on the dependent full step and an inclusion on the native step. Whether settling keeps
+solvable information solvable is a named property, \lean{EvidenceInterface.SettlesConservatively},
+not part of the rule.
+
+Enabling requires the taken occurrences to be present, the read ones present and apart from the
+taken ones, and the made ones fresh. The shapes are each instance's own: the number of patterns, the
+distinctness of takes and makes, and the labels of what is made. Two read positions may select one
+occurrence.
+
+The guard is asked at every solution of the firing's \emph{own} information, which includes its own
+tells and its own matches: that is the \emph{birth/guard cut}. A predicate query fixes the
+complete set of present occurrences in a region at every solution; absence is the empty case.
+
+\paragraph{Runs and the cut.} Runs are dependent words of admitted firings
+(\lean{Interface.Step.Run}). Knowledge only refines along them: every solution of the last
+knowledge pulls back to a solution of the first (\lean{Interface.Step.Run.models\_start}). With
+unknowns read as proof obligations and solutions as proofs, a run's final solution is a proof of the
+start's obligations. What an admitted firing's guards and predicate queries answered at its cut
+holds at every later solution, read back to its target frame
+(\lean{InterfaceTable.holds\_of\_admitted}, \lean{InterfaceTable.cut\_preserved}).
+
+\subsection{Identity of states}
+
+Three identities of states are used, each with its theorem.
+\begin{itemize}
+\item \emph{Renaming of occurrences and equivalence modulo the knowledge}
+  (\lean{Observation.ModuloEquivalent}): a bisimulation of the ordinary step
+  (\lean{Observation.ModuloEquivalent.semantic\_bisimilar}). Queries that read through solutions
+  keep it; raw inspection of quoted syntax does not (\lean{Program.rawQuoted\_not\_semantic}).
+\item \emph{Up to dead names} on the native step: states that agree except on names no row,
+  knowledge or ledger entry mentions are bisimilar
+  (\lean{Interface.NativeUpToDead.bisimilar\_of\_deadEquiv'}).
+\item \emph{The races layer}: strong, weak and branching bisimilarity over any instance and any
+  transport (\lean{Race.Generic.Bisimilar}, \lean{Race.Generic.WeakBisimilar},
+  \lean{Race.Generic.BranchingBisimilar}); transport-equivalent states are bisimilar
+  (\lean{Race.Generic.bisimilar\_of\_same}). At dependent frames, firings that make helpers are alike
+  up to an isomorphism of telescopes (\lean{Interface.DependentFull.HelperAlike}).
+\end{itemize}
+
+\subsection{The fibre tower}
+
+\begin{center}\small
+\begin{longtable}{@{}L{0.20\textwidth}L{0.74\textwidth}@{}}
+\toprule
+\textbf{Level} & \textbf{Frames and the theorem that relates it to the next} \\
+\midrule
+\endhead
+one frame & a substitution action; consistency, entailment, principality (\lean{Interface.Frames.ofSubstitution\_solvable\_iff}) \\
+first order & parameterless metavariables of declaration families; weakly terminal, decides existence (\lean{Interface.Frames.contextual\_solvable\_iff\_firstOrder}); separately, first-order terms with their own unifier, which decides (\lean{FirstOrder.accepted\_iff\_consistent}, \lean{FirstOrder.accepted\_principal}); no frame map between the two presentations is proved \\
+patterns & metavariables applied to distinct bound variables; the driver solves or refutes (\lean{ContextualPatternTermination.solves\_or\_refutes}); elsewhere residuals stay and lose no solution (\lean{ContextualFrameWorklist.preserves\_every\_solution}, \lean{BetaEtaReadings.FlexFlex.never\_refuted}) \\
+second order & declaration families; raised into dependent telescopes, with reflection of solutions and asks (\lean{Interface.Translation.translation\_reflects}) \\
+dependent, with $\eta$ & formed telescopes with typed $\beta\eta$; the second-order frames are its $\eta$-long fibre on translated frames (\lean{ContextualDependentFibre.fibre\_full}, \lean{ContextualDependentFibre.fibre\_solutions\_correspond}); a dependent principal answer of a translated store at a translated assignment gives a second-order principal answer, one way only (\lean{ContextualDependentFibre.fibre\_principal\_reflect}); a pattern equation has a principal answer (\lean{ContextualDependentGeneralPattern.Pattern.replace\_principal}); the driver returns principal answers when it solves, refutes only with a certificate, and never refutes a solvable store (\lean{ContextualDependentWorklist.drive\_solved\_principal}, \lean{ContextualDependentWorklist.drive\_not\_refuted\_of\_solvable}); decisiveness on the whole dynamic pattern fragment is open (Section~\ref{sec:open-unification}) \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+The tower ends at the dependent frames with $\eta$ because principality of pattern answers comes from
+$\eta$: over the dependent frames without $\eta$ the translated pattern equation $m(x)\doteq n(x)$ has
+no principal answer (\lean{Interface.Translation.pattern\_no\_principal},
+\lean{ContextualDependentFibre.Controls.point\_pattern\_no\_principal}), and with $\eta$ it has one
+(\lean{ContextualDependentFibre.Controls.point\_pattern\_principal},
+\lean{Interface.Translation.EtaFrames.eta\_pattern\_principal}). Conservativity stops at frames the
+second-order side cannot express: at a frame with a $\Sigma$-typed variable a projection solves a
+translated store and is no translation (\lean{ContextualDependentFibre.Controls.offImage\_solution}).
+That a second-order principal answer stays principal against solutions into arbitrary dependent
+telescopes, with $\Pi$, $\Sigma$ or identity types outside the image, is not proved; admission does
+not need it where the unifier decides, since the answers of the solvers in the tree land in
+translated telescopes (Section~\ref{sec:join}).
+
+\section{One calculus: joined qualification}\label{sec:joined}
+
+The results we use come from several developments. They are about one calculus only if each
+step is an instance of Definition~\ref{def:step}, each feature is proved at the interface or on a
+named restriction, and two definitions of one concept agree or are proved to differ.
+
+\subsection{\texorpdfstring{The feature $\times$ instance table}{The feature x instance table}}
+
+The columns are the interface, the first-order step \lean{AnnotatedRuns.firstOrder}, the
+contextual steps over declaration frames (the helper step \lean{Interface.Helpers.helperStep}, with
+the native step \lean{Interface.native} where the helper step lacks a feature), and the dependent
+full step \lean{Interface.DependentFull.step}. In the three instance columns, unqualified names are
+in \lean{InterfaceTable}. A \emph{gap} is open.
+
+\begin{center}\scriptsize\setlength{\tabcolsep}{3pt}
+\begin{longtable}{@{}L{0.11\textwidth}L{0.25\textwidth}L{0.20\textwidth}L{0.18\textwidth}L{0.20\textwidth}@{}}
+\toprule
+\textbf{Feature} & \textbf{Interface} & \textbf{First order} & \textbf{Contextual} & \textbf{Dependent full} \\
+\midrule
+\endhead
+frames and solutions & \lean{Interface.Frames.Principal.models\_iff} & \lean{frames\_firstOrder} & \lean{frames\_contextual} & \lean{frames\_dependent} \\
+admission & \lean{Interface.Step.admits\_iff} & \lean{admission\_firstOrder} & \lean{admission\_helper}, \lean{admission\_native} & \lean{admission\_dependent} \\
+runs & \lean{Interface.Step.Run.models\_start} & \lean{runs\_firstOrder} & \lean{runs\_helper}, \lean{runs\_native} & \lean{runs\_dependent} \\
+the cut & \lean{InterfaceTable.cut\_preserved} & \lean{cut\_firstOrder} & \lean{cut\_helper}, \lean{cut\_native} & \lean{cut\_dependent} \\
+guards & \lean{InterfaceTable.holds\_of\_admitted} & \lean{guards\_firstOrder} & \lean{guards\_helper} & \lean{guards\_dependent} \\
+predicate queries & absence: \lean{Interface.DependentFull.entails\_absent\_iff}; count: \lean{Interface.Frames.Principal.entails\_count\_iff} & \lean{absence\_firstOrder}, \lean{count\_firstOrder} & \lean{absence\_contextual}, \lean{count\_contextual} at frames; the helper step has none; the native step asks them (\lean{admission\_native}) & \lean{absence\_dependent}, \lean{count\_dependent} \\
+spaces & \lean{Spaces.run\_executable}, \lean{Spaces.present\_result\_spaces}, \lean{Spaces.fiber\_unchanged}; commuting only on a restriction & \lean{SpacesInterface.located\_independent} & \lean{spaces\_helper}, with no restriction & \lean{SpacesInterface.dependent\_independent}; gap: query regions are not located \\
+permissions & \lean{Permissions.refused\_without\_receive}, \lean{PermissionsInterface.witness\_present}; \lean{PermissionsInterface.absence\_preserved} on a restriction & \lean{PermissionsInterface.old\_owned\_absence\_preserved} & \lean{witness\_helper}; native absence: gap & \lean{PermissionsInterface.dependent\_absence\_preserved} \\
+disequations & \lean{DisequalityFrames.frames}; \lean{DisequalityFrames.Prestep.withDisequations}, \lean{DisequalityFrames.Unguarded.withDisequations} on restrictions & \lean{DisequalityFrames.oneFrame\_admits\_iff} & \lean{diseq\_helper}; \lean{diseq\_native} without guards; guarded native: gap & \lean{diseq\_dependent} \\
+evidence rows & \lean{Evidence.not\_admits\_of\_not\_solvable}; \lean{EvidenceInterface.run\_solvable} on a restriction & \lean{EvidenceInterface.old\_firstOrder\_run\_consistent}, \lean{Evidence.Family.profiles\_distinct} & \lean{evidence\_helper}, \lean{evidence\_native}; the four-way family: gap & \lean{EvidenceInterface.dependent\_run\_solvable}, \lean{EvidenceInterface.DependentFamily.profiles\_distinct} \\
+races and identity & \lean{Race.Generic.bisimilar\_of\_same} & \lean{races\_firstOrder} & \lean{races\_helper} & \lean{Interface.DependentFull.plain\_bisimilar\_of\_same}, \lean{Interface.DependentFull.helper\_bisimilar\_of\_same} \\
+programs & gap: one program core over the interface & the first-order core (Section~\ref{sec:programs}) & the binder core; joined with the first-order core by agreement & gap \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\subsection{Features on a restriction}
+
+For each feature that does not hold on every instance, the restriction theorem, a control that fails
+off the restriction, and the bridge by which an instance meets it.
+
+\begin{center}\footnotesize
+\begin{longtable}{@{}L{0.14\textwidth}L{0.26\textwidth}L{0.24\textwidth}L{0.28\textwidth}@{}}
+\toprule
+\textbf{Feature} & \textbf{Restriction} & \textbf{Control off it} & \textbf{Bridge} \\
+\midrule
+\endhead
+spaces commute & \emph{quiet}: the firing adds no information, its information being equivalent to the knowledge (\lean{SpacesInterface.located\_independent}, \lean{SpacesInterface.dependent\_independent}) & a shared unknown carries a binding across spaces (\lean{Spaces.Controls.shared\_variable\_crosses\_spaces}, \lean{SpacesInterface.Controls.dependent\_shared\_variable\_crosses\_spaces}) & a syntactic check implies quiet (\lean{SpacesInterface.quiet\_of\_exact}, \lean{SpacesInterface.exact\_independent}, \lean{SpacesInterface.Controls.quiet\_read\_exact}) \\
+absence under permissions & labels move along firings, \lean{PermissionsInterface.LabelLaw} (\lean{PermissionsInterface.absence\_preserved}) & a firing that relabels a row spoils the absence (\lean{PermissionsInterface.Controls.relabel\_spoils\_absence}) & \lean{PermissionsInterface.locatedLabels\_law}, \lean{PermissionsInterface.dependentLabels\_law} \\
+disequations & a prestep whose settlement reflects equality (\lean{DisequalityFrames.Prestep.withDisequations}) & a step that settles by guessing passes every admission test and holds $0\neq 0$ (\lean{DisequalityFrames.Restriction.guess\_breaks\_frame}, \lean{DisequalityFrames.Restriction.guess\_not\_reflects}) & \lean{DisequalityFrames.firstOrder\_reflects}, \lean{DisequalityFrames.Dependent.reflects}; for steps whose result needs its own admission, firings without guards (\lean{DisequalityFrames.Unguarded.DFiring.admits\_base}, \lean{DisequalityFrames.Unguarded.native\_unguarded}) \\
+no inconsistent store & \lean{EvidenceInterface.SettlesConservatively} (\lean{EvidenceInterface.run\_solvable}); a retraction suffices (\lean{EvidenceInterface.conservative\_of\_retracts}) & a step that settles by guessing enters $0\doteq 1$ (\lean{EvidenceInterface.Controls.guess\_enters\_inconsistency}, \lean{EvidenceInterface.Controls.guess\_not\_retracts}) & \lean{EvidenceInterface.firstOrder\_retracts}, \lean{EvidenceInterface.helper\_retracts}, \lean{EvidenceInterface.dependent\_retracts}, \lean{EvidenceInterface.withDisequations\_retracts}; native: \lean{EvidenceInterface.Native.native\_conservative} \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+There is no single generic theorem for commuting spaces: a locality hypothesis general enough to
+state one would restate the residual law and be met by one instance only, so independence is proved
+per instance into the interface's own notion of independence.
+
+\subsection{The join through the fibre}\label{sec:join}
+
+\paragraph{The dependent full step.} \lean{Interface.DependentFull.step} is an instance over the
+typed $\beta\eta$ frames. A firing makes a telescope of fresh helpers, has take and read patterns
+and made rows at the extended frame, tells and guards equations of typed terms, and asks predicate
+queries that read through solutions; absence and counting are instances. Its admission is the
+interface's (\lean{Interface.DependentFull.admits\_iff}); its takes really constrain
+(\lean{Interface.DependentFull.Firing.admitted\_take\_unifies}); after a firing every row is typed,
+a made row at its checked type and every other row as the old label carried along the weakening
+(\lean{Interface.DependentFull.Firing.subject\_reduction}). Told equations between different types
+are heterogeneous, and are refused only through solvability
+(\lean{Interface.DependentFull.Controls.tell\_heterogeneous}); an ill-typed make is refused
+(\lean{Interface.DependentFull.Controls.illTyped\_refused}).
+
+\paragraph{Admission transfer.} For candidate steps over the second-order frames whose guards and
+predicate queries are equations, admission equals the dependent admission of the translated data
+whenever the unifier decides the translated information inside the fibre
+(\lean{Interface.DependentFull.fibre\_admission\_transfer}), under the package's standard facts, a
+closed realization and injective names. That condition is derived, not assumed: the full solver
+deciding the translated store at some budget gives it
+(\lean{Interface.DependentFull.decidedInFibre\_of\_full},
+\lean{Interface.DependentFull.fibre\_admission\_transfer\_of\_full}). Absence and counting go through
+separate theorems with their own hypotheses. For the first-order step at the second-order
+endomorphism action, admission without census queries is translated admission when the unifier
+decides the problem and every absence extension by an endomorphic answer or a refutation
+(\lean{Interface.DependentFull.admits\_translate\_iff}), with equal results
+(\lean{Interface.DependentFull.result\_translate}); counting checks transfer under the same
+condition for each extension (\lean{Interface.DependentFull.admits\_translate\_iff\_count}).
+Census queries with arbitrary regions are not translated: a second-order region has no meaning at a
+dependent solution outside the image. A second-order step over several frames with equation guards
+needs no endomorphism condition (\lean{Interface.DependentFull.translateEquation\_admits\_iff\_of\_full}).
+
+\paragraph{Solvers that keep translated telescopes.} Every rule of the pattern and full solvers
+keeps the frame, removes the newest metavariable, or replaces two metavariables by a pruned one,
+and each keeps translated telescopes (\lean{Interface.DependentFull.full\_keeps\_translated}). The
+later solvers do too: rotation only permutes chains of sorts, and preparation normalizes what is
+already normal under the checkable condition that the root evaluator is silent on chains of sorts,
+which the evaluator without root steps meets (\lean{Interface.DependentFull.normalizing\_keeps\_translated},
+\lean{Interface.DependentFull.permuting\_keeps\_translated},
+\lean{Interface.DependentFull.fragment\_keeps\_translated},
+\lean{Interface.DependentFull.identity\_keeps\_translated},
+\lean{Interface.DependentFull.pi\_keeps\_translated}, \lean{Interface.DependentFull.chainsSilent\_none},
+\lean{Interface.DependentFull.decidedInFibre\_of\_keeps}).
+
+\paragraph{Non-vacuity.} In the package with one sort constant, the actual full solver, evaluated by
+the kernel, solves the translated $m(x)\doteq n(x)$ with a principal answer at a translated
+telescope of one metavariable and refutes $F(x)\doteq y$
+(\lean{Interface.DependentFull.NonVacuity.pattern\_commit},
+\lean{Interface.DependentFull.NonVacuity.take\_transfer}). A second-order firing whose information is
+the first store is admitted on both sides
+(\lean{Interface.DependentFull.NonVacuity.solved\_case\_nonvacuous}); the firing for the second is
+refused on both sides, with an independent second-order proof
+(\lean{Interface.DependentFull.NonVacuity.refuted\_case\_refused},
+\lean{Interface.DependentFull.NonVacuity.outside\_unsolvable\_direct}). Off the image, a firing with a
+$\Sigma$-typed helper is admitted and its result is outside the fibre, without disturbing admission
+on it (\lean{Interface.DependentFull.FibreControls.pair\_admitted},
+\lean{Interface.DependentFull.FibreControls.pair\_result\_not\_translated}).
+
+\paragraph{Concurrency at dependent frames.} Two helper-free firings are independent when they take
+disjoint occurrences, neither takes what the other reads, they make distinct occurrences, their joint
+information is solvable, and neither writes into the other's query regions; then both orders are
+admitted and the composites have the same occurrences and labels, with equivalent knowledge
+(\lean{Interface.DependentFull.local\_diamond}), and every clause
+but the query clause is necessary (\lean{Interface.DependentFull.clauses\_of\_residuals}). One-helper
+firings close up to the swap of their helpers (\lean{Interface.DependentFull.helper\_diamond}), a
+helper firing and a helper-free one close on the nose (\lean{Interface.DependentFull.mixed\_diamond}),
+and firings that make whole telescopes close up to the block exchange, the unique map between the two
+pullbacks (\lean{Interface.DependentFull.telescope\_diamond},
+\lean{Interface.DependentFull.exchange\_unique}). Without the exchange the composites differ
+(\lean{Interface.DependentFull.TelescopeControls.composites\_differ}); a made row whose type mentions
+the other firing's helper is the residual of no firing
+(\lean{Interface.DependentFull.no\_residual\_of\_mentions}). Helper firings are placed in the races
+layer up to an isomorphism of telescopes (\lean{Interface.DependentFull.helper\_bisimilar\_of\_same},
+\lean{Interface.DependentFull.helper\_branchingBisimilar\_of\_same}).
+
+\paragraph{Open in the join.} Census queries through the join (60\%); the endomorphism condition of
+the first-order instance from the solver's answers, which needs inhabitants of dropped metavariables'
+types (45\%); absence and counting through the multi-frame instance (65\%); step bisimilarity for
+helper firings, which needs a strict transport (60\%); the converse of dead-helper simulation, which
+needs strengthening of typed judgments (45\%).
+
+\subsection{Other steps as instances}
+
+\begin{center}\small
+\begin{longtable}{@{}L{0.24\textwidth}L{0.70\textwidth}@{}}
+\toprule
+\textbf{Step} & \textbf{Placing theorem} \\
+\midrule
+\endhead
+occurrence core & a core step is an admitted query-free firing of the first-order step, and core reachability is exactly a query-free run (\lean{TransformQualification.core\_step\_iff\_admitted}, \lean{TransformQualification.coreReaches\_iff\_run}); with predicate queries, \lean{TransformQualification.query\_step\_iff\_admitted}. This places the resource, census, snapshot, Need-machine and register-comparison results, each over its own substitution action \\
+compiled clauses & a compiled clause is admitted exactly when its constructed firing is admitted by the native step (\lean{TransformQualification.Native.admitted\_iff\_native}) \\
+contextual guarded firings & a guarded firing at an execution endpoint is admitted exactly when its query-free native firing is, at every budget (\lean{TransformQualification.Native.guarded\_valid\_iff\_native}); this covers the contextual $\lambda$, pair, causal and schematic-storage executions at admission. Their results are not compared with the native published state \\
+live native step & \lean{Interface.NativeUpToDead.live}, the native step on firings with pattern queries, live outputs and no recipes \\
+dependent and simple fibre & \lean{Interface.Dependent.helperStep}; the simple-telescope fibre computes the full instance's admission when the knowledge has a principal answer at a simple frame (\lean{Interface.Dependent.simpleStep\_admits\_iff}) \\
+disequation steps & \lean{Disequality.step}, an instance over the disequation frames of a substitution action (\lean{Disequality.admits\_iff\_frames}); over any frames, \lean{DisequalityFrames.Prestep.withDisequations} \\
+ordinary step & \lean{Semantic.semanticStep}, a restriction of the first-order step (\lean{Semantic.semanticStep\_admits\_iff}) \\
+program core & translated runs are runs of the ordinary step, exactly (\lean{Program.program\_interface\_iff}); the scope of fresh rule variables is threaded by the translated run, not by the frame extension \\
+binder program core & each translated equation firing is a step of the contextual guarded step (\lean{ProgramBinders.destination\_is\_core\_step}), and the unmatched return is a guarded firing (\lean{ProgramBinders.unmatched\_is\_guarded\_step}) \\
+typing & \lean{TypingChecking.goalStep}, \lean{TypingStates.computeStep}, \lean{TypingCheckingMeta.metaGoalStep}: instances by construction; call contracts are first-order firings (\lean{TypingFirings.closed\_call\_admits\_iff}) \\
+inference hosts & a step of a schema process is exactly an admitted query-free first-order firing whose rule is an installed schema's activation and whose made occurrences the process may publish to (\lean{TransformQualification.schema\_step\_iff\_admitted}, \lean{TransformQualification.rule\_step\_iff\_admitted}) \\
+restrictions by rights & any instance restricted by a predicate on firings is again an instance (\lean{Spaces.restrict\_admits\_iff}) \\
+MM2 \mt{exec} & a covered \mt{exec} over a duplicate-free ground representation is one firing (\lean{MeTTaOperationsExec.exec\_is\_one\_firing}) \\
+outside & the abstract machines of the Need lane (for instance \lean{Mettapedia.Machines.BranchLocalNeed.CallTimeChoiceInstructions.source\_iff\_executable}) and the register semantics of Meta-MeTTa are comparison sources, not instances \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\subsection{Reconciliations and mismatches}
+
+\begin{center}\small
+\begin{longtable}{@{}L{0.20\textwidth}L{0.74\textwidth}@{}}
+\toprule
+\textbf{Concept} & \textbf{Two definitions, and the theorem relating them} \\
+\midrule
+\endhead
+a step of occurrences & the core relation and the first-order instance coincide (\lean{TransformQualification.core\_step\_iff\_admitted}) \\
+absence & the guard $\mathsf{absent}(p)$ and the predicate query with an empty census for the region of $p$ hold at the same solutions, and moving the guard into the queries keeps admission (\lean{TransformQualification.absenceQuery\_holds\_iff}, \lean{TransformQualification.admits\_absent\_check\_iff\_query}); the two program hosts' absence checks agree on embedded first-order rows, and so do their return firings (\lean{ProgramHosts.absence\_agrees}, \lean{ProgramHosts.return\_admitted\_iff}) \\
+closed solvability & the interface's closed solvability and the dependent unifier's are the same at the typed $\beta\eta$ frames, definitionally (\lean{TransformQualification.Closed.closedSolvable\_iff\_frames}) \\
+transport & strict transports are transports up to dead names with the same state classes (\lean{Interface.Transport.toDead\_same\_iff}); the strict separation law fails natively (\lean{Interface.NativeUpToDeadLaws.strict\_separation\_fails}) \\
+queries & a raw label query is not invariant under knowledge equivalence (\lean{Semantic.SemanticControls.syntactic\_collision}); a query read through solutions is (\lean{Semantic.SemanticControls.noYSemantic\_agrees}); the same split at dependent frames (\lean{Interface.DependentFull.Controls.syntactic\_collision}) \\
+freshness & absent from the space versus never born: a firing whose made identity is absent and was born earlier is admitted and is realized by no commit protocol run after that history (\lean{Interface.NativeFreshnessControls.maker\_absent}, \lean{Interface.NativeFreshnessControls.maker\_not\_realized}); the protocol realizes exactly the runs fresh from the born identities (\lean{Interface.native\_run\_protocol\_iff}); a space is born by a firing that makes its marker, and ``fresh'' is never born (\lean{SpacesCreation.created\_never\_born}) \\
+solvability & symbolic and closed solvability differ at an obligation of an empty type (\lean{Interface.Dependent.obligation\_trap}, \lean{ContextualDependentClosedBoundary.Controls.point\_not\_closedSolvable}) and agree under a principal answer with a closed point (\lean{ContextualDependentClosedBoundary.principal\_closed\_iff}) \\
+independence & the interface's semantic diamond and the static independence of guard-free firings coincide on static firings (\lean{AnnotatedRuns.firstOrder\_independent\_iff\_static}) \\
+first-order terms & the one-frame instance over first-order terms and the parameterless fibre of the declaration families are two presentations; the occurrence core is generic over substitution actions and is placed for both, but no map between the two is proved \\
+application & the closure machine of the program core computes substitution $\beta$, both ways, on closed terms (\lean{ProgramSubstitution.plotkin\_closed}, \lean{ProgramSubstitution.machine\_iff}), and every such evaluation is a run of the contextual $\lambda$ execution (\lean{ProgramSubstitution.eval\_executes}); $\beta$ as an equation of the binder core agrees with both on runs (\lean{ProgramBinders.Nested.lambda\_three\_way}) \\
+compiled and interpreted programs & one compiled firing answers a call exactly when the fixed interpreter's run answers it, up to renaming both ways, for calls and rows below the call's scope and rows that are data (\lean{ProgramInterpreterJoin.interpreter\_join\_iff}) \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\section{The requirements and their theorems}\label{sec:map}
+
+Each row gives the requirement, the theorems, the instance, and a classification: a
+\emph{restriction} of the step, a \emph{compositional encoding} over it, a \emph{necessary
+extension}, or a \emph{proved obstruction}. The status is proved unless a row says otherwise. The
+separating example of each row is in Section~\ref{sec:examples} or named in the row.
+
+\subsection{Open unification}\label{sec:open-unification}
+
+\begin{center}\small
+\begin{longtable}{@{}L{0.20\textwidth}L{0.52\textwidth}L{0.22\textwidth}@{}}
+\toprule
+\textbf{Requirement} & \textbf{Theorems} & \textbf{Instance; class} \\
+\midrule
+\endhead
+compatible shared constraints & two interactions with shared equations commute when resources are independent, the joint equations are consistent and writes avoid the other's guards (\lean{Core.independently\_ready\_commute}, \lean{Core.Controls.nontrivial\_guarded\_interactions\_commute}); the tells $X\doteq 1$, $Y\doteq 2$ are independent (\lean{AnnotatedRuns.LawfulControls.unlawful\_changes\_independence}) & first order; restriction \\
+incompatible shared constraints & tells of $X\doteq\mathrm{true}$ and $X\doteq\mathrm{false}$: each alone, neither after the other (\lean{Interface.NativeResidualExample.tellers\_not\_after}); at dependent frames, $X\doteq \mathrm{Ground}$ against $X\doteq \mathrm{Ground}\to\mathrm{Ground}$ (\lean{Interface.DependentFull.IndependenceControls.tells\_clash\_refused}) & native; dependent full \\
+fresh local variables & helper families renamed by isomorphisms keep solvability (\lean{Interface.Frames.Iso.solvable\_applyStore\_iff}); consumption and production need the fresh family (\lean{ContextualExecutionControls.HelperConsumption.actual\_consumption\_and\_production\_require\_the\_fresh\_family}); helper telescopes at dependent frames (\lean{Interface.DependentFull.telescope\_diamond}). The rows on the one-frame first-order step (\lean{TransformQualification.Examples.OpenUnification.fresh\_second\_read\_admitted}, the program core) exercise freshness by scope numbering, not by frame extension & contextual; dependent full; encoding \\
+genuine binder crossing & composition under a real binder (\lean{ContextualUnifierComposition.Controls.both\_orders\_act\_under\_a\_real\_binder}); dependent pattern answers (\lean{ContextualDependentGeneralPattern.Pattern.replace\_principal}); principal with $\eta$ only (\lean{ContextualDependentFibre.Controls.point\_pattern\_principal} against \lean{ContextualDependentFibre.Controls.point\_pattern\_no\_principal}); a take through a binder, admitted on both sides of the fibre (\lean{Interface.DependentFull.FibreControls.binder\_take\_admitted}) & dependent $\eta$ frames; extension of the frames \\
+intentional caller sharing & a shared second read is refused (\lean{ContextualSchematicStorage.Controls.the\_explicit\_shared\_second\_read\_is\_refused}, on the activated step, whose shared-row, guard-free profile is the occurrence core over the contextual action, \lean{ContextualActiveStepProfile.step\_iff}; that this control lies in the profile is not proved); a shared output keeps one reading, a reusable one has independent readings (\lean{ContextualPublication.Controls.shared\_publication\_keeps\_one\_shared\_reading}, \lean{ContextualPublication.Controls.the\_reusable\_output\_has\_both\_independent\_readings}) & activated step; restriction \\
+solver guarantees & first order decides; patterns decide; the dependent driver never refutes a solvable store and loses no solution (\lean{ContextualDependentWorklist.drive\_no\_loss}); decisiveness on one-equation stores where a rule fires (\lean{ContextualDependentDecisiveFragment.single\_decided}); a non-pattern store is suspended by the fragment and rigid solvers at every budget and number of rounds (\lean{ContextualDependentFragment.Controls.repeated\_pending}) & tower \\
+the earlier rule set does not decide the fragment & two fragment stores are decided at no budget: the unsolvable $\lambda a\,b.\,\mathrm{Id}\,T\,a\,b\doteq\lambda a\,b.\,\mathrm{Id}\,T\,b\,a$ and the solvable $T\doteq A$ over $A,T,G:(x{:}A)\to T$ (\lean{ContextualDependentFragment.Controls.fragment\_not\_decisive}, \lean{ContextualDependentFragment.Controls.blocked\_not\_decisive}) & proved obstruction for that rule set \\
+repairs & identity and $\Pi$ decomposition (\lean{ContextualDependentFragment.Controls.id\_identity\_decided}, \lean{ContextualDependentFragment.Controls.pi\_principal}); solving in place (\lean{ContextualDependentInPlace.Controls.blocked\_decided\_principal}); the occurs check along domains, codomains and carriers (\lean{ContextualDependentOccursFull.occurrence\_not\_typeEq}, \lean{ContextualDependentOccursFull.Controls.codomain\_in\_fragment\_refuted}); a rank that every decomposition lowers (\lean{ContextualDependentRank.weightRank\_wf}, \lean{ContextualDependentRank.rankedSettledOfConst}); rigid clashes under abstractions (\lean{ContextualDependentFragmentDecisive.ClashControls.clashes\_decided}) & dependent $\eta$ frames \\
+the census and the stratified class & each fragment equation is classified by the shapes of its opened sides (\lean{ContextualDependentCensus.census\_fragment}); a class beyond the fragment whose annotations agree under every solution of the earlier equations contains it and is kept by the scan and the twin step (\lean{ContextualDependentClosure.stratified\_of\_fragment}, \lean{ContextualDependentClosure.Stratified.splice}, \lean{ContextualDependentAcceptance.scan\_stratified}, \lean{ContextualDependentAcceptance.collapse\_stratified}); the solver chain keeps every outcome of the previous family (\lean{ContextualDependentAcceptance.drive\_conservative}, \lean{ContextualDependentAcceptance.arguments\_decided\_of\_any}) & dependent $\eta$ frames \\
+decisiveness on the whole dynamic pattern fragment & \emph{open}, 45\%. Missing: progress of the pattern, in-place and prune rules on every Miller-pattern equation (40\%); three rigid shapes, each in the fragment and solvable, suspended at budget 16 (\lean{ContextualDependentCensus.Controls.rows\_unread}; nested and applied projections, spines at a flexible base type); closure of the stratified class under answers (45\%) & tower \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\subsection{Absence}
+
+\begin{center}\small
+\begin{longtable}{@{}L{0.20\textwidth}L{0.52\textwidth}L{0.22\textwidth}@{}}
+\toprule
+\textbf{Requirement} & \textbf{Theorems} & \textbf{Instance; class} \\
+\midrule
+\endhead
+$\mathit{cancel}(0)$ with $u$ unknown & refused (\lean{TransformQualification.AbsenceExample.ask\_refused\_unknown}) & first order; restriction \\
+later $u\doteq 1$, $u\doteq 0$ & admitted after $u\doteq 1$, refused after $u\doteq 0$; the run $\mathit{bind}\,1;\mathit{ask}$ (\lean{TransformQualification.AbsenceExample.ask\_admitted\_after\_one}, \lean{TransformQualification.AbsenceExample.ask\_refused\_after\_zero}, \lean{TransformQualification.AbsenceExample.later\_equation\_run}) & first order \\
+absence at every solution & absence holds at every solution exactly when each extension that would match is refuted, with no principal answer needed (\lean{Interface.DependentFull.entails\_absent\_iff}); at dependent frames the answer can change through a type-level solution alone (\lean{Interface.DependentFull.Controls.absence\_refused\_after\_ground}, \lean{Interface.DependentFull.Controls.absence\_admitted\_after\_arrow}) & dependent full \\
+contextual absence by certified refutation & ``no equation matches'' is one guard per equation on the guarded step, holding exactly when no equation matches any reading (\lean{ProgramBinders.guarded\_checks\_iff}); decided by refuting a joint problem: sound (\lean{ProgramBinders.certified\_guarded}), complete for Miller patterns (\lean{ProgramBinders.certifies\_guarded\_of\_absent}), and never for a matched equation at any budget (\lean{ProgramBinders.guarded\_never\_certified}) & contextual guarded step; restriction \\
+absence stable under later bindings & every later instance of an unmatched call is unmatched (\lean{ProgramNested.absence\_stable}); under binders, in every frame (\lean{ProgramBinders.absence\_stable}) & ordinary; contextual \\
+incomplete scans & a scan is sound exactly under coverage, and coverage is the apartness of every omitted row (\lean{Check.entails\_absent\_iff\_of\_covered}, \lean{Check.coversMatches\_iff\_omitted\_apart}); the partial scan of the example lacks it (\lean{FirstOrderChecks.Controls.OpenAbsence.the\_partial\_scan\_lacks\_coverage}); an unfinished search never reports none (\lean{ContextualAttemptOutcomes.Attempt.unfinished\_cannot\_report\_none}) & checks over the first-order step; restriction \\
+relevant insertions & inserting $\mathit{cancel}(1)$ after $u\doteq 1$ refuses (\lean{TransformQualification.AbsenceExample.relevant\_insertion\_refuses}); in compiled clauses, \lean{ContextualNativeGuardControls.a\_matching\_insertion\_is\_detected} & first order; native \\
+unrelated updates & inserting $\mathit{cancel}(2)$ keeps admission (\lean{TransformQualification.AbsenceExample.unrelated\_insertion\_keeps}); writers outside a guard's region keep it (\lean{Interface.Step.Guards.guard\_fire}); \lean{ContextualNativeGuardControls.an\_unrelated\_insertion\_is\_permitted} & first order; native \\
+the original cut & the earlier cut refuses, a later one would accept (\lean{ContextualNativeGuardControls.the\_actual\_earlier\_query\_is\_refused}, \lean{ContextualNativeGuardControls.choosing\_the\_later\_cut\_would\_accept}); the firing's own equation counts (\lean{ContextualNativeGuardControls.OwnEquations.the\_clause\_own\_equation\_is\_retained}); an earlier count cannot be rebased (\lean{ContextualCausalExecutionControls.the\_original\_count\_cannot\_be\_rebased\_to\_the\_final\_cut}); at the interface, \lean{InterfaceTable.cut\_preserved} & native; interface \\
+conflicting evidence against an inconsistent store & at knowledge with no solution no firing is admitted (\lean{Evidence.not\_admits\_of\_not\_solvable}); rows for $p$ and its opposition coexist with consistent knowledge and still steer admission (\lean{Evidence.Rows.conflict\_consistent}, \lean{Evidence.Rows.accept\_refused\_with\_opposition}); a store holding both tells admits nothing (\lean{Evidence.Rows.both\_tells\_admit\_nothing}) & first order; restriction \\
+absence, refutation, incomplete search and disequality & four ways of not finding $p(a)$ give four distinct verdict profiles on four probes (\lean{Evidence.Family.profiles\_distinct}), and a scan that skips the open row would license the absence (\lean{Evidence.Family.incomplete\_scan\_would\_license}); the same profiles on the dependent full step (\lean{EvidenceInterface.DependentFamily.profiles\_distinct}) & first order; dependent full \\
+disequality tells & a necessary extension, built: disequation frames over any category of frames (\lean{DisequalityFrames.frames}); after $X\neq a$, $X\doteq b$ is admitted and $X\doteq a$ refused (\lean{Disequality.Controls.disequality\_checked}); absence changes with an insertion, a disequality does not (\lean{Disequality.Controls.absence\_vs\_disequality}); conservative over equation-only knowledge (\lean{Disequality.conservative}); principal answers live in constrained frames, and no single substitution presents $X\neq a$ (\lean{Disequality.principal}, \lean{Disequality.Controls.no\_presenting\_answer}) & disequation steps; necessary extension \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\subsection{Composition}
+
+\begin{center}\small
+\begin{longtable}{@{}L{0.20\textwidth}L{0.52\textwidth}L{0.22\textwidth}@{}}
+\toprule
+\textbf{Requirement} & \textbf{Theorems} & \textbf{Instance; class} \\
+\midrule
+\endhead
+resource independence with information interference & trace-independent footprints, and only one order runs, because a guard reads the other's tell (\lean{AnnotatedRuns.Controls.told\_check\_one\_order}); a query against a writer into its region (\lean{AnnotatedRuns.Controls.census\_writer\_one\_order}) & first order; restriction \\
+retained guards & a later binding does not repair an earlier check (\lean{ContextualScheduleControls.EarlierSchema.a\_later\_binding\_does\_not\_repair\_the\_compiled\_earlier\_check}); a firing cannot discard a countermodel (\lean{ContextualPrefixGuardControls.an\_actual\_firing\_cannot\_discard\_that\_countermodel}) & contextual; restriction \\
+joint solutions against failure prefixes & every order of a jointly solvable clear family runs and all agree up to dead names (\lean{Interface.NativeIterated.every\_order\_admitted}, \lean{Interface.NativeIterated.every\_order\_agrees}); without joint solvability no order runs (\lean{Interface.NativeIterated.no\_order\_of\_not\_jointly}); a refused joint problem keeps the executed producer prefix (\lean{ContextualCausalExecutionControls.joint\_refusal\_does\_not\_erase\_the\_executed\_producer\_prefix}); a refused block leaves no residue (\lean{StagedSourceEffects.refused\_has\_no\_residue}) & native; first order \\
+independence is a property of the step & two lawful transports with the same state classes have the same independent pairs (\lean{Interface.Transport.Lawful.independent\_iff}); an unlawful residual changes independence (\lean{AnnotatedRuns.LawfulControls.unlawful\_changes\_independence}) & interface \\
+congruence & rule-labelled bisimilarity is a congruence for disjoint contexts (\lean{Semantic.ruleBisimilar\_tensor}); closed bisimilarity of a program is not (\lean{Observation.CongruenceControls.closed\_not\_congruence}) & first order \\
+native diamonds & composites of a clear diamond are bisimilar and step bisimilar (\lean{Interface.NativeDead.composites\_bisimilar}, \lean{Interface.NativeUpToDead.makers\_composites\_stepBisimilar}); a concurrent step is bisimilar to each sequentialization (\lean{Interface.NativeConcurrent.Concurrent.bisimilar}) & live native \\
+dependent diamonds & helper-free firings close on the nose under five independence clauses, each but the query clause necessary (\lean{Interface.DependentFull.local\_diamond}, \lean{Interface.DependentFull.clauses\_of\_residuals}); helper firings up to the block exchange (\lean{Interface.DependentFull.telescope\_diamond}, \lean{Interface.DependentFull.TelescopeControls.exchanged\_diamond}, \lean{Interface.DependentFull.TelescopeControls.composites\_differ}); a dependency between the made rows excludes any exchange (\lean{Interface.DependentFull.no\_residual\_of\_mentions}) & dependent full \\
+probabilities of causal histories & for positive rate systems and maximal runs of two parts, the jump-chain likelihood summed over all interleavings is the product of the parts' likelihoods (\lean{CausalHistories.sum\_shuffles}, \lean{CausalHistories.history\_factorizes}), with the ternary coherence (\lean{CausalHistories.history\_factorizes\_three}); on two ground races of the step (\lean{CausalHistories.StepControls.step\_history\_product}, \lean{CausalHistories.StepControls.local\_exact}); on a confused contention set the per-firing reading depends on the order (\lean{CausalHistories.Controls.confusion\_control}) & rate systems; first order \\
+contention & contention is a shared take, a take of what the other reads, or inhibition: a take or make inside the other's predicate-query region, and contending firings are not independent (\lean{Contention.not\_independent\_of\_contends}); contention as sharing alone gives local likelihoods of total mass $2$, contention as interference gives the step's (\lean{Contention.Controls.inhibition\_control}, \lean{Contention.Controls.maker\_guarded\_dependent}) & first order with queries \\
+interventions & a \mt{do} restricts weights, composes by conjunction and commutes (\lean{Intervention.restrictWeight\_comm}), lowers exactly on static alphabets (\lean{Intervention.prob\_restrictWeight}), and at a space reaches only firings with the right to make there (\lean{Intervention.doAt\_of\_no\_send}); one atom through an absence guard performs a hard intervention (\lean{Intervention.Controls.context\_performs\_do}) & first order; encoding \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\subsection{Resources}
+
+\begin{center}\small
+\begin{longtable}{@{}L{0.20\textwidth}L{0.52\textwidth}L{0.22\textwidth}@{}}
+\toprule
+\textbf{Requirement} & \textbf{Theorems} & \textbf{Instance; class} \\
+\midrule
+\endhead
+aliased reads & one occurrence read twice is admitted (\lean{TransformQualification.Examples.Resources.aliased\_read\_admitted}); two read views count as one stored row (\lean{SchematicReach.Controls.two\_read\_views\_still\_count\_as\_one\_stored\_row}); unrestricted aliasing admits a firing the register semantics has no counterpart for (\lean{MetaMeTTaComparison.Family.unrestricted\_read\_aliasing\_admits\_another\_firing}) & first order; restriction \\
+distinct takes & one occurrence taken twice is refused (\lean{TransformQualification.Examples.Resources.take\_same\_twice\_refused}); a consumed cursor cannot be replayed (\lean{NeedSnapshots.Controls.consumed\_cursor\_cannot\_be\_replayed}) & first order \\
+occurrence multiplicity & two equal-valued occurrences are both taken (\lean{TransformQualification.Examples.Resources.take\_two\_admitted}); equal payloads keep two cells (\lean{NeedSnapshots.Controls.equal\_payloads\_keep\_two\_cells}) & first order \\
+read before consume & reading then taking is a run, the converse order is refused (\lean{TransformQualification.Examples.Resources.read\_then\_take}, \lean{TransformQualification.Examples.Resources.read\_after\_take\_refused}) & first order \\
+several spaces & one space whose occurrences carry handles behaves as several: enabling and results split by handle, and the frame is unchanged (\lean{Spaces.spaces\_injective}, \lean{Spaces.enabled\_iff\_spaces}, \lean{Spaces.present\_result\_spaces}, \lean{Spaces.fiber\_unchanged}); every run of every instance is an executable commit word (\lean{Spaces.run\_executable}); on the located first-order step, admission at a handle depends only on its space and the knowledge (\lean{Spaces.admits\_iff\_of\_fiber}) & interface; located first order; encoding \\
+independence across spaces & on the restriction \emph{quiet} (Section~\ref{sec:joined}); the knowledge is shared, so isolation between spaces is physical, not informational (\lean{Spaces.Controls.shared\_variable\_crosses\_spaces}) & first order, dependent full; restriction \\
+creating a space & a firing that makes a birth marker at an unborn handle creates a space; markers are never taken, and every occurrence lies at a handle already born (\lean{SpacesCreation.created\_never\_born}, \lean{SpacesCreation.wellBorn\_result}) & first order; restriction \\
+rights per handle & a firing without \mt{receive}, \mt{peek} or \mt{send} at a space is refused (\lean{Permissions.refused\_without\_receive}, \lean{Permissions.refused\_without\_peek}, \lean{Permissions.refused\_without\_send}); without \mt{receive} a space only grows and a witness survives, on every instance (\lean{PermissionsInterface.witness\_present}); without \mt{send} it only shrinks and an absence survives, on instances whose labels move along firings (\lean{PermissionsInterface.absence\_preserved}) & interface; restriction \\
+the authority escape & on runs of ticketed firings the rows made plus the tickets left never exceed the tickets at the start (\lean{Permissions.made\_le\_tickets}); rights alone allow unbounded writes (\lean{Permissions.Controls.rights\_alone\_unbounded}), a ticket per write blocks them (\lean{Permissions.Controls.ticketed\_blocks}) & first order; restriction \\
+earlier space and permission layers & permitted runs are non-interfering (\lean{Permissions.permitted\_noninterference}); the reach step is a restriction of the first-order step (\lean{SpacesPlacement.reachStep\_iff\_admitted}); the delegation core and the transaction layers are not placed & first order \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\subsection{Evaluation and the common operations}
+
+\begin{center}\small
+\begin{longtable}{@{}L{0.20\textwidth}L{0.52\textwidth}L{0.22\textwidth}@{}}
+\toprule
+\textbf{Requirement} & \textbf{Theorems} & \textbf{Instance; class} \\
+\midrule
+\endhead
+expression application & $\beta$ up to terminating administrative firings (\lean{Program.beta\_on\_step}, \lean{Program.administrative\_wellFounded}); an atom applied is stuck (\lean{Program.atom\_application\_stuck}); the closure machine computes substitution $\beta$ (\lean{ProgramSubstitution.plotkin\_closed}); contextual $\lambda$: \lean{LambdaComparison.source\_step\_iff\_executes} & program core; encoding \\
+lexical binding & every halted run returns the uncaptured value (\lean{Program.no\_capture\_on\_step}) & program core; encoding \\
+correlated against independent choice & shared choice always agrees, independent choices can disagree, over all runs (\lean{Program.shared\_vs\_independent\_on\_step}) & program core; encoding \\
+inert quotation, explicit activation & quoted code halts as a value, activation runs it one layer (\lean{Program.quotation\_inert}, \lean{Program.activate\_quote\_on\_step}, a run of the machine, not one firing); activation needs code (\lean{Program.activation\_needs\_code}) & program core; encoding \\
+pattern equations & a call is matched against every equation by two-way unification, one branch per matching equation in program order (\lean{ProgramEquations.answers\_exact}); admission is unifiability (\lean{ProgramEquations.call\_valid\_iff}); the call's own variable is bound by the equation (\lean{ProgramEquations.Controls.variable\_bound\_on\_step}) & ordinary step; encoding \\
+nested calls & call by value, leftmost-innermost, with held data \mt{val} where a position is declared \mt{Atom} (the elaboration by declared type is not formalized); one schema per machine rule, both ways (\lean{ProgramNested.nested\_execution}); the next redex is unique (\lean{ProgramNested.decomposition\_unique}); reduction in contexts agrees up to renaming of fresh scopes (\lean{ProgramNested.reference\_complete}) & ordinary step; encoding \\
+unmatched calls return themselves & one firing with an absence predicate query over the equations of the version read (\lean{ProgramNested.unmatched\_fire}, \lean{ProgramNested.u\_execution}); under binders, a guarded firing of \mt{(= \$C \$C)} admitted exactly when no equation matches, final after it fires (\lean{ProgramBinders.returns\_iff}, \lean{ProgramBinders.returned\_is\_final}, \lean{ProgramBinders.evaluates\_iff}) & ordinary; contextual guarded \\
+equations under binders & source rewriting by holes with declared parameters is exactly the readings of runs (\lean{ProgramBinders.execution\_iff}); principal answers for Miller patterns on the step (\lean{ProgramBinders.principal\_answers\_on\_step}, \lean{ProgramBinders.miller\_with\_solvers}); controls: $\eta$, capture refused, a non-pattern pending at every fuel (\lean{ProgramBinders.Controls.eta\_on\_step}, \lean{ProgramBinders.Controls.capture\_refused\_on\_step}, \lean{ProgramBinders.Controls.twice\_pending\_on\_step}) & contextual guarded; encoding \\
+strategies under binders & innermost: one guarded firing per position is exactly one reference step, runs agree both ways for determinate equations, and the checks are decided by certified refutation (\lean{ProgramBinders.Strategy.innermost\_step\_iff}, \lean{ProgramBinders.Strategy.innermost\_execution\_iff}, \lean{ProgramBinders.Strategy.innermost\_of\_certified}, \lean{ProgramBinders.Strategy.innermost\_redex\_certified}); leftmost-innermost with \mt{Atom} positions: the next redex is unique, and without declarations one step agrees both ways and runs agree for determinate equations (\lean{ProgramBinders.Leftmost.selects\_unique}, \lean{ProgramBinders.LeftmostStep.leftmost\_step\_iff}, \lean{ProgramBinders.LeftmostStep.leftmost\_execution\_iff}); with declarations sound, and complete when nothing frozen inside the redex matches (\lean{ProgramBinders.LeftmostStep.leftmost\_step\_sound\_atoms}, \lean{ProgramBinders.LeftmostStep.leftmost\_step\_complete\_atoms}) & contextual guarded; complete \mt{Atom} positions on the step \emph{open}, 40\% \\
+unused divergent work and call by need & quoted divergent code halts, activated it diverges (\lean{Program.quoted\_loop\_halts}, \lean{Program.activated\_loop\_diverges}); call by need at first order: Launchbury's semantics and its machine agree (\lean{ProgramNeed.need\_adequacy}), a thunk is evaluated at most once and later demands read its value (\lean{ProgramNeed.later\_demand\_reads}), agreement with call by value for determinate programs and pure terminating thunks (\lean{ProgramNeed.need\_value\_agree}), on the ordinary step (\lean{ProgramNeed.need\_on\_step}); a loop bound and unused answers by need and has no answer by value (\lean{ProgramNeed.need\_answers\_loop}, \lean{ProgramNeed.value\_diverges\_loop}); a shared choice is never mixed (\lean{ProgramNeed.choice\_never\_mixed}) & program core; ordinary step; under binders \emph{open}, 45\% \\
+effects & immediate effects of a failed branch stay, deferred ones vanish (\lean{Program.immediate\_effects\_leave\_a\_trace}, \lean{Program.deferred\_failed\_branch\_leaves\_no\_trace}); a deferred block is all or nothing (\lean{Program.deferred\_block}) and one firing at the cut (\lean{Program.deferred\_one\_firing}); \mt{defer} as a source construct (\lean{ProgramSourceDefer.defer\_one\_firing}) & program core; encoding with computed rules \\
+atomic blocks & a rule family with a uniform bound on made rows cannot commit a larger block in one firing (\lean{TransformQualification.no\_bounded\_family\_commits}, \lean{Program.no\_fixed\_atomic\_commit}) & first order; \emph{proved obstruction} to uniformly bounded rules \\
+suspension & a suspended continuation resumes exactly once per demand (\lean{Program.exactly\_once\_per\_demand}); a read demand replays without bound (\lean{Program.replay\_unbounded}) & program core; encoding \\
+changing definitions & a conclusion does not carry to a new version without a recheck (\lean{Program.unconditional\_transport\_unsound}); what stays valid (\lean{Program.what\_stays\_valid}); for pattern equations, adding equations keeps the old answers and appends the new (\lean{ProgramEquations.Versions.answers\_append}); an unmatched answer cites the version it read, and installing a later one changes no earlier answer (\lean{ProgramNested.UnmatchedControls.no\_retroactive\_change\_on\_step}) & ordinary step; on the binder core \emph{open}, 45\% \\
+interpreting programs & a fixed rule family cannot answer every call with variables in one firing (\lean{ProgramCompiled.no\_fixed\_one\_firing\_interpreter}); most general unifiers are unique up to renaming (\lean{ProgramMGURenaming.mgu\_unique\_up\_to\_renaming}); the fixed interpreter and the compiled program give the same answers up to renaming, both ways, on the step (\lean{ProgramInterpreterJoin.interpreter\_join\_iff}, \lean{ProgramInterpreterJoin.interpreter\_join\_on\_step}, \lean{ProgramInterpreterJoin.interpreter\_join\_converse\_on\_step}) & ordinary step; encoding \\
+communication & rho source paths are exactly firing paths (\lean{ContextualCommunicationAdequacy.source\_path\_iff\_firings}), on configurations whose equations the identity solves, so with no open constraints & occurrence core over the process-term action; encoding \\
+querying & complete answers are exactly the matches at a solution (\lean{ContextualQueryAnswers.actual\_answer\_iff}); query rows realized by census firings (\lean{CensusSourceCompilation.realize\_query\_row}) & first order; restriction \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\subsection{Reflection}
+
+\begin{center}\small
+\begin{longtable}{@{}L{0.20\textwidth}L{0.52\textwidth}L{0.22\textwidth}@{}}
+\toprule
+\textbf{Requirement} & \textbf{Theorems} & \textbf{Instance; class} \\
+\midrule
+\endhead
+declared syntax and value readings & ordinary queries depend only on represented rows (\lean{Program.semantic\_admission\_iff}); modulo equivalence is a bisimulation of the ordinary step (\lean{Observation.ModuloEquivalent.semantic\_bisimilar}) & ordinary step; restriction \\
+counterexamples to identification & raw queries collide (\lean{Semantic.SemanticControls.syntactic\_collision}, \lean{Program.rawQuoted\_collision}); the census controls read syntax (\lean{Semantic.persistent\_not\_semantic}); telling a structural equality of distinct constants is inconsistent (\lean{MetaMeTTaComparison.OperationalEquality.telling\_that\_structural\_equality\_would\_be\_inconsistent}); an admitted object theory makes syntactic refutation unsound and head readouts ill defined (\lean{BetaEtaReadings.Application.refutation\_not\_admitted}, \lean{BetaEtaReadings.StoredRedex.head\_readout\_not\_invariant}); reduction does not identify quoted syntax (\lean{QuotedLambdaRetained.Controls.reduction\_does\_not\_identify\_the\_quoted\_syntax}) & first order; separation \\
+preservation under the restrictions & the pure fragment agrees with the original execution (\lean{QuotedLambdaRetained.pure\_fragment\_agrees\_with\_original\_execution}); quoted code ignores the environment (\lean{RhoContinuation.quoted\_code\_ignores\_environment}); corrected nested reflection is sound and the naive step misses it (\lean{Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.Corrected.Controls.corrected\_nested\_sound}, \lean{Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.Corrected.Controls.naive\_step\_misses\_nested\_reflection}) & contextual; encoding \\
+reflection as a source construct & \mt{reflect} asks a raw syntax question, and its firing is not one of the ordinary step: two configurations with the same rows answer it differently (\lean{ProgramSourceReflection.reflect\_not\_semantic}, \lean{ProgramSourceReflection.reflect\_collision}) & ordinary step extended; separation \\
+absence is an ordinary guard & the unmatched-call query reads through solutions (\lean{ProgramNested.absentQuery\_semantic}); on the binder core absence is asked at every future solution (\lean{ProgramBinders.guarded\_checks\_iff}), and a pending problem is told apart from a refutation by solver results, not by reflection (\lean{ProgramBinders.Controls.twice\_pending\_on\_step}) & ordinary; contextual guarded \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\subsection{Inference}
+
+\begin{center}\small
+\begin{longtable}{@{}L{0.20\textwidth}L{0.52\textwidth}L{0.22\textwidth}@{}}
+\toprule
+\textbf{Requirement} & \textbf{Theorems} & \textbf{Instance; class} \\
+\midrule
+\endhead
+valid derivations succeed & reachability of a judgment is exactly a derivation of the independently specified checker (\lean{InferenceKernelReachability.reaches\_iff\_derivation}); runs reproduce the exact proof (\lean{PersistentInference.realizes\_derivation}); published judgments have source derivations (\lean{InferenceSchemaKernel.System.published\_judgment\_has\_source\_derivation}); MM0 (\lean{Mettapedia.Logic.TierZero.Adequacy.MM0LocatedReachability.located\_kernel\_reaches\_iff\_derives}); typing runs are derivations (\lean{TypingChecking.Kernel.checking\_run\_sound}, \lean{TypingCheckingMeta.checking\_run\_sound}) & authority restriction of the first-order step; typing steps \\
+dependent checking as a run & checking tells its obligations into the store, a solution of the store yields the derivation, and an unsolvable store refuses (\lean{TypingCheckingMeta.checking\_run\_sound\_of\_store}, \lean{TypingCheckingMeta.refused\_of\_unsolvable}); the checking step works at a fixed metavariable frame and allocates no fresh metavariable, and its completeness holds when the goal is typed at the identity (\lean{TypingCheckingMeta.switch\_complete}, \lean{TypingCheckingMeta.app\_complete}) & typing step \\
+the certain checks as a calculus & a derivation calculus for the first-order checks is sound for free Henkin models and complete at generic points (\lean{AnnotatedRuns.CertainChecks.derives\_sound\_free}, \lean{AnnotatedRuns.CertainChecks.derives\_complete\_generic}); the Herbrand model is sound and not complete (\lean{AnnotatedRuns.CertainChecks.oneConstant\_separates}); a query-free firing is admitted exactly when its admission is derivable (\lean{AnnotatedRuns.CertainChecks.admitsDerivably\_iff}) & first order \\
+forged evidence fails & a public row cannot serve as a protected premise (\lean{InferenceAuthorityControls.wrong\_space\_premise\_refused}); a counterfeit conclusion is no activation (\lean{InferenceAuthorityControls.fabricated\_output\_refused}) & first order \\
+wrong premises fail & one row cannot supply distinct judgments (\lean{InferenceProjectionControls.one\_row\_cannot\_supply\_distinct\_judgments}); a ground term is not a function (\lean{TypingCheckingControls.ground\_not\_function}) & first order; typing \\
+capture fails & assignments cannot capture bound indices (\lean{ScopedInferenceValueControls.contextual\_assignment\_cannot\_capture\_its\_bound\_index}); resolution refuses capture (\lean{Resolution.Controls.capture\_refused}) & first order \\
+missing authority fails & a non-writer creates no protected occurrence (\lean{SchemaPublicationAuthority.System.nonwriter\_creates\_no\_protected\_occurrence}); a client cannot publish (\lean{InferenceAuthorityControls.client\_cannot\_publish}) & authority restriction \\
+execution confers no validity & the forged producer is admitted by the step and published by no step of its process (\lean{TransformQualification.forged\_admitted\_but\_not\_published}); runtime acceptance of a void contract the step refuses (\lean{TypingContractsControls.void\_trap}); symbolic admission of a hole of an empty type (\lean{Interface.Dependent.trap\_helper}) & \emph{necessary extension}: authority and closed asks \\
+guards by polarity & ``never bad'' has a finite certificate exactly when it holds and the datum has finitely many reachable states (\lean{GuardFragments.exists\_invariant\_iff}); the budgeted closure verdict certifies exactly on finite-state data and is suspended at every budget on infinite-state data (\lean{GuardFragments.always\_iff\_exists\_commit}, \lean{GuardFragments.suspended\_of\_infinite}); on open data a reachability guard is decided at a principal answer and a ``never'' guard is not stable (\lean{GuardFragmentsOpen.eventually\_entails\_iff}, \lean{GuardFragmentsOpen.Controls.always\_not\_stable}) & interface asks; restriction \\
+lowering by checked certificates & where an invariant kept by every admitted rule makes the specification equivalent to the existence of a certificate, the runs with the specification are exactly the runs with the check, certificates erased (\lean{GuardLowering.runs\_spec\_iff\_lowered}, \lean{GuardLowering.certified\_runs}); a checked certificate is sound whoever made it (\lean{GuardLowering.admitted\_of\_certificate}); a fragment not closed under successors admits wrongly (\lean{GuardLowering.Controls.closure\_free\_admits\_wrongly}); a guard priced by the store it scans breaks interleaving invariance (\lean{MeteredGuards.Controls.scan\_price\_order}) & first order; encoding \\
+fair search makes certificates & a monotone search firing, enabled and weakly fair, fires or is preempted (\lean{FairSearch.fires\_or\_preempted}); on finite-state data every weakly fair run's store becomes a certificate the lowered guard checks (\lean{FairSearch.fair\_search\_certifies}); in one store the answer is sound under every schedule and arrives under weak fairness (\lean{FairSearchGuards.answer\_sound}, \lean{FairSearchGuards.answer\_eventually}); search firings that take are not complete under fairness (Example~\ref{ex:takerace}) & commits; restriction to monotone search \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\section{Minimized examples}\label{sec:examples}
+
+Each example is the smallest we know of on the common structure. All are kernel-checked.
+
+\begin{example}[Open unification; \lean{TransformQualification.Examples.OpenUnification}]
+Rows $0:p(1)$ and $1:p(2)$ in the first-order step. After reading row $0$ through $p(X_0)$, reading
+row $1$ through the same caller variable is refused, and through a fresh variable is admitted
+(\lean{shared\_second\_read\_refused}, \lean{fresh\_second\_read\_admitted}). The tells $X_0\doteq1$ and
+$X_0\doteq2$ are each admitted and never both (\lean{tells\_conflict}), and the two failed compositions
+leave prefixes that every solution distinguishes (\lean{prefixes\_differ}); a compatible pair runs
+(\lean{compatible\_run}). Binder crossing is not first order; its minimal pair is the pattern
+equation $m(x)\doteq n(x)$, principal with $\eta$ and not without
+(\lean{ContextualDependentFibre.Controls.point\_pattern\_principal},
+\lean{ContextualDependentFibre.Controls.point\_pattern\_no\_principal}).
+\end{example}
+
+\begin{example}[Absence; \lean{TransformQualification.AbsenceExample}]
+Row $0$ is $\mathit{cancel}(0)$, rows $1,2$ are requests. The firing $\mathit{ask}$ takes request $1$
+under the guard that no $\mathit{cancel}(u)$ is present. With $u$ unknown it is refused; after the
+tell $u\doteq1$ it is admitted; after $u\doteq0$ it is refused. After $u\doteq1$, inserting $\mathit{cancel}(1)$
+refuses it and inserting $\mathit{cancel}(2)$ keeps it (\lean{insertions\_separate}). Moving the
+guard into an empty-census predicate query gives the same verdicts
+(\lean{ask\_as\_query\_refused\_unknown}, \lean{ask\_as\_query\_admitted\_after\_one}).
+\end{example}
+
+\begin{example}[Composition]
+At the empty state, $\mathit{tell}(X\doteq1)$ and $\mathit{ask}(X\doteq1)$ have trace-independent footprints;
+only the order tell-then-ask runs (\lean{AnnotatedRuns.Controls.told\_check\_one\_order}). Three tells
+$X\doteq Y$, $X\doteq1$, $Y\doteq2$ are pairwise independent and form no cell
+(\lean{AnnotatedRuns.CellControls.hollow\_cube}); natively, three pairwise clear tellers have no order
+at all (\lean{Interface.NativeIteratedControls.pairwise\_not\_enough}).
+\end{example}
+
+\begin{example}[Resources; \lean{TransformQualification.Examples.Resources}]
+Rows $0:c$ and $1:c$. Taking $c$ twice takes both (\lean{take\_two\_admitted}); taking $0$ twice is
+refused (\lean{take\_same\_twice\_refused}); reading $0$ twice is admitted
+(\lean{aliased\_read\_admitted}); read-then-take runs, take-then-read is refused
+(\lean{read\_then\_take}, \lean{read\_after\_take\_refused}).
+\end{example}
+
+\begin{example}[Evaluation and reflection]
+On the program core: one shared choice used twice agrees with itself in every halted run, two
+independent choices disagree in some (\lean{Program.shared\_vs\_independent\_on\_step}). Quoted
+$\Omega$ halts and activated $\Omega$ diverges (\lean{Program.quoted\_loop\_halts},
+\lean{Program.activated\_loop\_diverges}). Two rows $20:X$ and $21:Y$ under $X\doteq Y$ are equivalent modulo
+the knowledge, and a query for the label $Y$ itself separates them, while the query read through
+solutions does not (\lean{Semantic.SemanticControls.syntactic\_collision},
+\lean{Semantic.SemanticControls.noYSemantic\_agrees}).
+\end{example}
+
+\begin{example}[An unmatched call returns itself;
+\lean{ProgramNested.UnmatchedControls}]\label{ex:unmatched}
+The program is
+\begin{center}\ttfamily\frenchspacing (= (g a) b)\qquad (= (f \$x) (out \$x))\end{center}
+and the call is \mt{(f (g c))}. No equation matches \mt{(g c)}, so its call returns the data
+\mt{(g c)} by one firing whose absence predicate query sees no matching equation at its cut; the
+outer call then matches, and the run answers \mt{(out (g c))}
+(\lean{inner\_value\_outer\_call\_on\_step}). Without the return firing the machine has no step at the inner call
+(\lean{ProgramNested.Controls.unmatched\_inner\_stuck}). Versions: under a version with no equation
+for \mt{f}, \mt{(f a)} answers itself and cites that version
+(\lean{answered\_as\_itself\_v1\_on\_step}); where \mt{(= (f a) b)} is installed the return is refused
+(\lean{unmatched\_refused\_v2}); installing it later changes neither the earlier answer nor its
+citation (\lean{no\_retroactive\_change\_on\_step}). Under a binder, with only
+\mt{(= (f (\(\lambda\) x. \$N)) \$N)}, the call \mt{(f (\(\lambda\) y. y))} matches nothing, since \mt{\$N} may not
+capture \mt{x}, and returns itself
+(\lean{ProgramBinders.UnmatchedControls.capture\_returns\_itself}).
+\end{example}
+
+\begin{example}[Inhibition: one atom forces a race; \lean{Contention.Controls}]\label{ex:inhibition}
+The space holds one occurrence \mt{a}. Two firings race for it, with positive weights $w_r$ and
+$w_v$:
+\begin{center}\ttfamily\frenchspacing
+racer: take a, make out\qquad vetoed: take a, guard (absent p), make out
+\end{center}
+At this space \mt{racer} wins with probability $w_r/(w_r+w_v)<1$; after one atom \mt{p} is added
+from outside, \mt{vetoed} is refused and \mt{racer} wins with probability $1$
+(\lean{forcing\_control}). Without inhibition no context forces a race over positive weights
+(\lean{Contention.no\_context\_forces}), and no added atoms force \mt{vetoed}
+(\lean{cannot\_force\_vetoed}). The same inhibition separates the two readings of contention: a
+firing that takes \mt{a} and makes \mt{p}, and one that takes \mt{b} under \mt{(absent p)}, share no
+occurrence, yet the first refuses the second; normalizing within shared occurrences gives local
+likelihoods of total mass $2$, and normalizing within interference gives the step's own, of total
+mass $1$ (\lean{inhibition\_control}).
+\end{example}
+
+\begin{example}[A take race that fair search never completes; \lean{FairSearch.Controls}]\label{ex:takerace}
+The space holds the goal \mt{goal}, and two search firings race for it:
+\begin{center}\ttfamily\frenchspacing
+take goal, make dead\qquad take goal, make proof
+\end{center}
+A run in which the first wins and then idles is strongly fair for every task, has unbounded budget,
+and never makes \mt{proof} (\lean{race\_stronglyFair}, \lean{race\_never\_proves}), although
+\mt{proof} is reachable (\lean{race\_proof\_reachable}). Reading the goal instead of taking it, every
+weakly fair run proves (\lean{read\_race\_proves}). Adding the repair \mt{take dead, make proof}
+reaches exactly the same stores (\lean{race\_reachable\_iff}), and every weakly fair run of the
+repaired race proves (\lean{repair\_fair\_proves}). So reachability does not decide fair
+completeness (\lean{reachability\_does\_not\_decide\_fair\_completeness}). What separates the two
+races is that a proof stays reachable from every reachable store, a property bisimilarity preserves
+and reachability does not (\lean{FairSearchIdentity.alwaysPossibly\_of\_bisimilar},
+\lean{FairSearchIdentity.search\_identity\_is\_branching}); that this property with strong fairness
+gives completeness on every finite-state system is open.
+\end{example}
+
+\begin{example}[Inference]
+The identity is typed by a run of the typing step and a ground term against a function type is
+refused (\lean{TypingCheckingControls.identity\_run}, \lean{TypingCheckingControls.ground\_not\_function}).
+The producer of a protected occurrence is admitted by the first-order step and reaches its result by
+no step of the client's process (\lean{TransformQualification.forged\_admitted\_but\_not\_published}).
+\end{example}
+
+\section{Full programs from the core}\label{sec:programs}
+
+\paragraph{The interpreter core.} A source language over S-expressions with closures, lexical
+binding, quotation and activation, choice, facts added and removed, suspension and versioned
+definitions has an independent reference semantics of 24 rules. Each rule is a schema of take and
+read patterns and made terms, copied into a fresh scope at each firing; the two-way unifier solves
+the equations. One source step is exactly one firing of the ordinary step, in both directions, for
+every program (\lean{Program.step\_iff\_rewrites}, \lean{Program.program\_interface\_iff}), and the
+administrative firings terminate (\lean{Program.administrative\_wellFounded}). The laws of
+evaluation in Section~\ref{sec:map} are theorems about these runs.
+
+\paragraph{Pattern equations.} A program is a list of equations \mt{(= (f p1 ... pn) rhs)}, each
+compiled to one schema that takes the call and makes the instantiated right-hand side; the step's own
+knowledge does the unification. Each matching equation gives exactly one branch, in program order,
+duplicates included, and a call that matches nothing has no step (\lean{ProgramEquations.answers\_exact},
+\lean{ProgramEquations.stuck\_iff}); the reference semantics is an independent inductive relation
+over a semantic notion of most general unifier (\lean{ProgramEquations.equations\_execution}).
+Calls inside arguments and right-hand sides are evaluated by call by value, leftmost-innermost, the
+reading of the HE specification, with positions declared \mt{Atom} written as held data
+(\lean{ProgramNested.nested\_execution}). A call that matches nothing returns itself by an absence
+predicate query, ordinary, exact at its cut and stable under later bindings, and its answer cites the
+version it read (Example~\ref{ex:unmatched}).
+
+\paragraph{Compiled and interpreted.} A fixed interpreter of 13 equations answers calls with
+variables by allocating one fresh variable per slot in administrative firings and unifying the
+renamed copy in one firing; its answers are the compiled ones up to renaming, in both directions,
+at the source and on the step (\lean{ProgramInterpreterJoin.interpreter\_join\_iff},
+\lean{ProgramInterpreterJoin.interpreter\_join\_converse\_on\_step}). The allocation is forced: a
+fixed rule family cannot answer every call with variables in one firing
+(\lean{ProgramCompiled.no\_fixed\_one\_firing\_interpreter}). This is the positive reflective result:
+an interpreter on the step that runs stored equations as data.
+
+\paragraph{Equations under binders.} On the contextual guarded step, over any binding signature, an
+equation is a pair of terms with holes that list the object variables their solutions may use. One
+schema per equation; the equation \mt{lhs} $\doteq$ \mt{call} joins the retained store, and a hole
+no equation constrains stays unknown, to be bound by a later firing. Source rewriting is exactly the
+readings of runs (\lean{ProgramBinders.execution\_iff}), and for Miller patterns the actual worklist
+computes one principal answer at every firing (\lean{ProgramBinders.principal\_answers\_on\_step},
+\lean{ProgramBinders.miller\_with\_solvers}). The $\lambda$ calculus and the quoted-$\lambda$ account are
+instances: $\beta$ is \mt{(= ((\(\lambda\) x. \$B x) \$A) \$B[\$A])} and activation is
+\mt{(= (activate (quote \$C)) \$C)} (\lean{ProgramBinders.Nested.lambda\_three\_way},
+\lean{ProgramBinders.Quoted.executes\_iff\_rewrites}). Absence of a matching equation is a guard per
+equation, decided by certified refutation, and it gives unmatched calls that return themselves and
+innermost and leftmost-innermost reduction under binders (Section~\ref{sec:map}). On embedded
+first-order rows the binder core agrees with the first-order core
+(\lean{ProgramBinders.FirstOrder.step\_join}, \lean{ProgramHosts.absence\_agrees}).
+
+\paragraph{Call by need.} At first order, a heap cell holds a thunk; the first demand marks it busy,
+evaluates it and writes the value, and every later demand reads the value. Launchbury's semantics,
+its machine and the ordinary step agree (\lean{ProgramNeed.need\_adequacy},
+\lean{ProgramNeed.need\_eval\_on\_step}); each cell is its own row, and a demand of a value reads the row
+without taking it.
+
+\paragraph{Computed rules.} A rule family with a uniform bound on made rows bounds what one firing
+commits (\lean{TransformQualification.added\_card\_le},
+\lean{TransformQualification.no\_bounded\_family\_commits}). Atomic blocks of unbounded size are
+therefore realized by a rule computed per block, which is still one firing of the step at the
+block's cut (\lean{Program.deferred\_one\_firing}, \lean{ProgramSourceDefer.defer\_one\_firing},
+\lean{StagedSourceEffects.refused\_has\_no\_residue}), or by a compound occurrence carrying the block.
+
+\paragraph{Compiled clauses and contextual executions.} Compiled source clauses are admitted exactly
+as native firings with their resource and original-cut queries
+(\lean{TransformQualification.Native.admitted\_iff\_native}). Contextual guarded firings, which
+carry the $\lambda$ and quoted-$\lambda$ executions, are admitted exactly as query-free native firings
+(\lean{TransformQualification.Native.guarded\_valid\_iff\_native}).
+
+\paragraph{Inference hosts.} Steps of schema processes are exactly authorized first-order firings
+(\lean{TransformQualification.schema\_step\_iff\_admitted}); validity lives in the authority
+restriction and in the derivation adequacy of the host, never in admission alone.
+
+\paragraph{What programs still lack.} The two program hosts are joined by agreement, not by one
+program core over the interface: a single core needs frames that can adjoin a schema's holes, an
+operation \lean{Interface.Frames} does not have (55\%). Programs at dependent frames are not built
+(45\%). On the binder core: versions, which need a state of two occurrences with absence scoped to
+the call (45\%); complete \mt{Atom} positions on the step, since whether a position is frozen
+depends on heads a solution may still choose (40\%); call by need (45\%); runs from the reference
+to the step for non-determinate programs (40\%). Call by need with open data and two-way unification
+(55\%); answers up to $\eta$ in matching (50\%); fairness and cost.
+
+\paragraph{Necessary extensions.} A rule generator for atomic blocks; the authority layer for
+publication; closed asks for checked holes; a born ledger for identities
+(\lean{Interface.nativeUnborn}); an $\eta$ frame category; disequation frames for disequality tells.
+Each is placed above or inside the same step.
+
+\section{Recommendation}\label{sec:recommendation}
+
+\subsection{Retain}
+
+Retain the rule of Definition~\ref{def:step} as the operational core of the calculus: one firing
+that takes, reads and makes occurrences, tells equations, and asks its guards and predicate queries
+at every solution of its own information, over an abstract category of frames. Justification: every
+proved row of Section~\ref{sec:map} is a theorem about an instance of it; the admission characterization is the
+same theorem in every instance; each feature holds at the interface or on a named restriction with a
+control and a bridge, or is a named gap (Section~\ref{sec:joined}); the first-order and second-order steps are the
+dependent step's fibre wherever the unifier decides, and that condition is inhabited on both sides;
+no obstruction to the rule is known.
+
+\subsection{Revise}
+
+\begin{center}\small
+\begin{longtable}{@{}L{0.32\textwidth}L{0.62\textwidth}@{}}
+\toprule
+\textbf{Revision} & \textbf{Forcing theorem} \\
+\midrule
+\endhead
+transport up to dead names, with a partial move & \lean{Interface.NativeUpToDeadLaws.strict\_separation\_fails}, \lean{Interface.NativeResidualSeparation.residual\_not\_separated}; partiality: \lean{Interface.NativeDead.Controls.deadQuery\_realized} with \lean{Interface.NativeDead.Controls.carrying\_not\_surjective} \\
+helper firings agree up to the exchange of their telescopes & \lean{Interface.DependentFull.TelescopeControls.composites\_differ}, \lean{Interface.DependentFull.SwapControls.composites\_differ} \\
+waves need joint solvability & \lean{Interface.NativeIteratedControls.pairwise\_not\_enough}, \lean{Interface.NativeIterated.no\_order\_of\_not\_jointly}, \lean{AnnotatedRuns.CellControls.hollow\_cube} \\
+principal pattern answers need $\eta$ & \lean{Interface.Translation.pattern\_no\_principal}, \lean{ContextualDependentFibre.Controls.point\_pattern\_no\_principal} \\
+ordinary and reflection queries split & \lean{Semantic.SemanticControls.syntactic\_collision}, \lean{Program.rawQuoted\_collision}, \lean{ProgramSourceReflection.reflect\_collision} \\
+atomic blocks need computed rules or a compound occurrence & \lean{TransformQualification.no\_bounded\_family\_commits}, \lean{Program.no\_fixed\_atomic\_commit} \\
+an interpreter allocates fresh variables in administrative firings & \lean{ProgramCompiled.no\_fixed\_one\_firing\_interpreter} \\
+freshness needs the born ledger & \lean{Interface.NativeFreshnessControls.maker\_not\_realized}, \lean{Interface.native\_run\_protocol\_iff} \\
+consistency and inhabitation are two asks & \lean{Interface.Dependent.trap\_helper} (relative to an empty type), \lean{ContextualDependentClosedBoundary.Controls.point\_not\_closedSolvable} with \lean{ContextualDependentClosedBoundary.Controls.ground\_uninhabited} \\
+publication is an authority restriction & \lean{TransformQualification.forged\_admitted\_but\_not\_published} \\
+reusable outputs are snapshots & \lean{Interface.NativeSnapshot.snapshot\_obstruction}; they commute under conservativity (\lean{Interface.NativeSnapshot.snapshots\_commute}) \\
+open systems need labels for the context & \lean{Observation.CongruenceControls.closed\_not\_congruence} \\
+disequality is a frame extension, told only on restrictions & \lean{DisequalityFrames.Restriction.guess\_breaks\_frame}; principal answers in constrained frames: \lean{Disequality.Controls.no\_presenting\_answer} \\
+independence across spaces is a restriction, since the knowledge is shared & \lean{Spaces.Controls.shared\_variable\_crosses\_spaces} \\
+rights alone do not bound writes; a ticket per write does & \lean{Permissions.Controls.rights\_alone\_unbounded}, \lean{Permissions.made\_le\_tickets} \\
+contention includes inhibition & \lean{Contention.Controls.inhibition\_control}, \lean{Contention.Controls.forcing\_control} \\
+a ``never'' guard is certified by a checked certificate, which exists exactly on finite-state data & \lean{GuardFragments.exists\_invariant\_iff}, \lean{GuardFragments.suspended\_of\_infinite}, \lean{GuardFragmentsOpen.Controls.always\_not\_stable} \\
+reachability does not decide fair completeness; the identity of searches is branching & \lean{FairSearch.Controls.reachability\_does\_not\_decide\_fair\_completeness}, \lean{FairSearchIdentity.search\_identity\_is\_branching} \\
+the dependent unifier needs more rules than the earlier set & \lean{ContextualDependentFragment.Controls.fragment\_not\_decisive}, \lean{ContextualDependentFragment.Controls.blocked\_not\_decisive} \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\subsection{Reject}
+
+Each hypothesis below is rejected by an obstruction under the stated adequacy criterion.
+
+\begin{enumerate}
+\item \emph{Native diamonds close up to isomorphisms of states.} Criterion: residual solutions agreeing
+  along both carrying morphisms agree. Obstruction: \lean{Interface.NativeResidualSeparation.residual\_not\_separated}.
+\item \emph{Transport up to dead names is total on firings.} Criterion: every admitted firing at the
+  larger state is carried from the smaller. Obstruction: \lean{Interface.NativeDead.Controls.deadQuery\_realized}, \lean{Interface.NativeDead.Controls.carrying\_not\_surjective}.
+\item \emph{Pairwise independence suffices for a wave.} Criterion: some order of the family runs.
+  Obstruction: \lean{Interface.NativeIteratedControls.pairwise\_not\_enough}.
+\item \emph{Second-order frames without $\eta$, raised into dependent frames, keep principal pattern
+  answers.} Criterion: a principal answer in the dependent frames, over a package with no root
+  computation and symmetric head equality. Obstruction: \lean{Interface.Translation.pattern\_no\_principal}.
+\item \emph{Raw label queries are ordinary.} Criterion: configurations equivalent modulo the knowledge
+  admit renamed firings together. Obstruction: \lean{Semantic.SemanticControls.syntactic\_collision}.
+\item \emph{A rule family with a uniform bound on made rows commits every atomic block in one firing.}
+  Criterion: one block, one firing adding the block's rows. Obstruction:
+  \lean{TransformQualification.no\_bounded\_family\_commits}. A family with no uniform bound, such as
+  one rule per block size, and a block packaged as one compound occurrence are not excluded.
+\item \emph{Absence from the space is freshness.} Criterion: the commit protocol realizes the run.
+  Obstruction: \lean{Interface.NativeFreshnessControls.maker\_not\_realized}.
+\item \emph{Symbolic admission certifies a checked hole.} Criterion: a closed solution exists.
+  Obstruction: \lean{ContextualDependentClosedBoundary.Controls.point\_not\_closedSolvable}.
+\item \emph{Admission confers publication of a judgment.} Criterion: the process's step reaches the
+  result. Obstruction: \lean{TransformQualification.forged\_admitted\_but\_not\_published}.
+\item \emph{The literal prototype step simulates the published register semantics with identical
+  outputs.} Obstruction: \lean{Mettapedia.Languages.MeTTa.OSLFCore.MetaMeTTa.Controls.no\_identity\_output\_simulation};
+  a different encoding is not excluded.
+\item \emph{The earlier rule set of the dependent unifier decides the dynamic pattern fragment.}
+  Criterion: every fragment store is solved principally or refuted at some budget. Obstruction:
+  \lean{ContextualDependentFragment.Controls.fragment\_not\_decisive},
+  \lean{ContextualDependentFragment.Controls.blocked\_not\_decisive}. The question for the current
+  solver is open.
+\item \emph{A fixed rule family interprets every call with variables in one firing.} Criterion: one
+  firing makes the answer row. Obstruction: \lean{ProgramCompiled.no\_fixed\_one\_firing\_interpreter}.
+\item \emph{Firings at different spaces are independent.} Criterion: a firing at one space leaves
+  admission at another unchanged. Obstruction: \lean{Spaces.Controls.shared\_variable\_crosses\_spaces}.
+\item \emph{A rights table alone bounds what a space receives.} Criterion: a bound on the rows made by
+  permitted runs. Obstruction: \lean{Permissions.Controls.rights\_alone\_unbounded}.
+\item \emph{Contention is the sharing of an occurrence.} Criterion: local normalization gives the
+  step's probabilities, of total mass $1$. Obstruction: \lean{Contention.Controls.inhibition\_control}.
+\item \emph{No context forces a race over positive weights,} with predicate queries. Criterion: added
+  atoms leave every competitor below probability $1$. Obstruction:
+  \lean{Contention.Controls.forcing\_control}; without inhibition the hypothesis holds
+  (\lean{Contention.no\_context\_forces}).
+\item \emph{Reachability of proofs decides completeness of fair search.} Criterion: two searches with
+  the same reachable stores are both fairly complete or both not. Obstruction:
+  \lean{FairSearch.Controls.reachability\_does\_not\_decide\_fair\_completeness}.
+\item \emph{A guard may be priced by the store it scans.} Criterion: the price of a history is
+  invariant under its interleavings. Obstruction: \lean{MeteredGuards.Controls.scan\_price\_order}.
+\end{enumerate}
+
+\subsection{What stays open}
+
+\begin{center}\small
+\begin{longtable}{@{}L{0.33\textwidth}L{0.09\textwidth}L{0.52\textwidth}@{}}
+\toprule
+\textbf{Open row} & \textbf{Est.} & \textbf{What is missing, and the effect on the verdict} \\
+\midrule
+\endhead
+decisiveness of the dependent unifier on the whole dynamic pattern fragment & 45\% & progress of the pattern, in-place and prune rules on every Miller-pattern equation (40\%); the three unread rigid shapes, by one reader of elimination spines and spine inversion through $\eta$ (60\%, 45\%); closure of the stratified class under answers (45\%). Proved: solver completeness on the fragment, and through the fibre on translated pattern stores. Refuted for the current solver: more rules are needed, as after the refutation of the earlier set, or the fragment is narrowed. The rule is unaffected, since residuals stay pending without loss \\
+pruning under an older metavariable & 50\% & base-type instantiations keep the normal form of the instantiated term; outside the fragment \\
+census queries and multi-frame queries through the join & 60\%, 65\% & a meaning for arbitrary regions at dependent solutions; absence and counting through the multi-frame instance \\
+the endomorphism condition for the first-order instance & 45\% & endomorphic answers need inhabitants of the dropped metavariables' types, which can be empty \\
+principality against arbitrary dependent telescopes & 40\% & second-order principal answers against solutions outside the image; admission does not need it \\
+step bisimilarity for helper firings; the dead-helper converse & 60\%, 45\% & a strict transport; strengthening of typed judgments and query tests natural under weakening \\
+located labels at dependent frames & 70\% & query regions that respect spaces, removing the remaining hypotheses of the dependent spaces theorem \\
+guarded native firings with disequations; a label law for native rows; the four-way family on the native step & 55\%, 60\%, 65\% & checks asked at separating solutions only; term labels through publication \\
+one program core over the interface; programs at dependent frames & 55\%, 45\% & frames with schema extensions \\
+the binder program core: versions, complete \mt{Atom} positions, call by need, non-determinate runs & 45\%, 40\%, 45\%, 40\% & see Section~\ref{sec:programs}; no effect on retain or reject \\
+results of contextual guarded executions against native published states & 70\% & admission is placed; results are not. Would not change the verdict \\
+native transport for recipes, reusable outputs and closure queries & 50\% & refines the revisions (patterns as queries; conservative reuse); a closure query does not determine its residual (\lean{Interface.NativeClosingControls.closure\_extensions\_disagree}) \\
+full abstraction and congruence for contextual and native firings & 50\% & would strengthen observation; no effect on retain or reject \\
+causal Bayesian networks on the step & 70\% & the confusion-free race identity for cells enabled by joins, then the staged network program (65\% after it) and replay (60\%) \\
+``never'' guards on infinite-state data; fairness in general & 60\%, 70\% & search firings discharging a symbolic closure obligation; strong fairness with ``a proof stays reachable'' giving completeness on finite-state systems \\
+grants as firings & 70\% & delegation, the sealed case and revocation; the permission vocabulary is unsettled \\
+a checker generated from the calculus's own rules & 50\% & \texttt{checkProof = accept} exactly for derivations, generated from admitted rules; located kernel adequacy covers MM0 only \\
+behavioural modalities over the rule & 60\% & $\Diamond$ and $\Box$ of the OSLF framework over \lean{Interface.Step}; the one link is that observed bisimilarity preserves ``a proof stays reachable'' (\lean{FairSearchIdentity.alwaysPossibly\_of\_bisimilar}) \\
+HE semantics and a uniform register-semantics encoding & 50\% & comparisons; no effect on the rule \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\section{Addendum: results after the revision}\label{sec:addendum}
+
+Two results arrived after the revision above. They change no row of the recommendation; they
+narrow two open rows.
+
+\subsection{Firing of the pattern rules}
+The open-unification row of Section~\ref{sec:map} named firing on Miller-pattern equations as the
+main gap. The pattern rules now provably make progress, at a large enough budget, on three rows of
+the census:
+\begin{itemize}
+\item \textbf{inversion} for the newest metavariable, $F\,\bar x \doteq t$ with $t$ over $\bar x$
+  and older declarations (\lean{ContextualDependentPatternFiring.firingRound\_fires\_inversion});
+\item \textbf{inversion in place}, for an older metavariable solved past the later declarations
+  (\lean{ContextualDependentPatternFiring.placedRound\_fires});
+\item \textbf{refutation by a rigid local outside $\bar x$}, even with flexible spines inside $t$
+  (\lean{ContextualDependentPatternFiring.firingRound\_fires},
+  \lean{ContextualDependentPatternFiring.refuted\_rigidOccurrence}).
+\end{itemize}
+Their hypotheses are inhabited: each is instantiated on a tower store
+(\lean{ContextualDependentPatternFiring.Controls.inversion\_fires},
+\lean{ContextualDependentPatternFiring.Controls.placed\_fires},
+\lean{ContextualDependentPatternFiring.Controls.rigid\_fires}). One reader of elimination spines,
+along the literal $\Pi$/$\Sigma$ types of the prefixes, reads the nested and applied projections
+(\lean{ContextualDependentEliminations.elim\_exact},
+\lean{ContextualDependentEliminations.elim\_weight}), and the stratified class is closed under an
+answer for the newest metavariable
+(\lean{ContextualDependentStratifiedClosure.stratified\_instantiate\_newest}). Each new layer acts
+only where the one below it is stuck, so every earlier decision is kept
+(\lean{ContextualDependentEliminations.elims\_decided\_of\_placed}).
+
+\emph{Still open.} Four flexible rows (intersection, pruning under rigid structure, flex--flex with
+a declaration between, and the cumulative argument) and the spine at a flexible base type are in
+the fragment, solvable, and stuck at budget 16
+(\lean{ContextualDependentPatternFiring.Controls.unread\_flexible\_rows},
+\lean{ContextualDependentEliminations.Controls.flexibleBase\_elims\_suspended}). The four flexible
+rows need a rank under which a step that keeps every declaration still decreases; closure under
+in-place answers is open. Decisiveness on the fragment stays open.
+
+\subsection{Causal networks on the step}
+The composition row now carries Pearl's calculus. When every race, once open, persists until it
+fires, normalizing each choice within its own race gives exactly the step's trace probabilities
+summed over orders, also through joins
+(\lean{CausalCells.CellSystem.History.race\_identity}). A causal Bayesian network is then a
+program: each variable's schema takes \mt{(pend v)}, reads \mt{(reg v r)} and its parents'
+\mt{(val p b)}, and makes \mt{(val v b)}, weighted by its table; its likelihood is the network's
+joint (\lean{CausalNetworksStep.step\_likelihood\_eq\_jointWeight}). A restriction at the
+variable's handle gives the truncated factorization under positivity
+(\lean{CausalNetworksStep.step\_do\_likelihood}); telling a forcing regime atom gives it always,
+and equals conditioning on the regime (\lean{Mettapedia.GSLT.Causality.StepBridge.step\_regime\_likelihood},
+\lean{Mettapedia.GSLT.Causality.StepBridge.regime\_is\_conditioning},
+\lean{Mettapedia.GSLT.Causality.StepBridge.do\_is\_regime}). Replay of recorded draws is the
+counterfactual (\lean{CausalReplay.replay\_likelihood}, \lean{CausalReplay.replay\_average}), and
+the network's graph is read off the step's independence
+(\lean{CausalSeparation.history\_staticIndependent\_iff}).
+
+The names cited in this addendum were audited separately, through the same memory gate: all use
+\lean{propext}, \lean{Classical.choice} and \lean{Quot.sound}, or fewer, and none uses
+\lean{sorryAx}.
+
+\section{Receipts}\label{sec:receipts}
+
+Every declaration cited here resolves in the current tree. Unqualified names in an example are in
+the namespace in its title, and those in the instance columns of the feature table are in
+\lean{InterfaceTable}. One audit file imports 229 modules that own the cited declarations, with
+warnings as errors, and prints the axioms of all 492 of them: 429 use \lean{propext},
+\lean{Classical.choice} and \lean{Quot.sound}, 42 use \lean{propext} and \lean{Quot.sound}, 5 use
+\lean{propext} alone, and 16 use no axiom; none uses \lean{sorryAx}, and every name resolves to a
+declaration of the \lean{Mettapedia} tree.
+
+\section*{Vocabulary}
+\begin{description}
+\item[frame] an object of the frame category: a declaration family, a formed telescope, or the one
+  object of a substitution action;
+\item[take, read, make] what a firing removes from the space, observes there without removing, and
+  adds to it with fresh identities;
+\item[tell] an equation a firing adds to its information;
+\item[guard] an ask of a firing at every solution of its information;
+\item[knowledge] the equation store of a state; \textbf{information}: that of a firing at its target;
+\item[space] the present occurrences of a state, or those at one \textbf{handle};
+\item[rights] what a firing may do at a handle: \mt{receive} (take), \mt{peek} (read), \mt{send}
+  (make), \mt{observe} (query);
+\item[schema] a rule whose variables are opened in a fresh scope at each firing; its \textbf{capture
+  set} lists the caller variables it shares;
+\item[birth/guard cut] the information at which a firing's guards are asked;
+\item[predicate query] a complete census of a region at every solution;
+\item[dead names] names of a larger frame that no row, knowledge or ledger entry mentions;
+\item[authority restriction] the firings a process may fire, by publication rights;
+\item[fibre] a restriction of the frames with stronger guarantees.
+\end{description}
+
+\end{document}

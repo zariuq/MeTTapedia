@@ -1,0 +1,41 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HECompletionCallCases
+
+/-! # Local completion gate and marked-ready source/slot audit -/
+
+namespace Mettapedia.GSLT.LanguageDef.Collections.TypedCalls
+
+#print axioms HECompletionEntry.completeFields_map
+#print axioms HECompletionEntry.markedFields_all
+#print axioms HECompletionEntry.marked_complete_fixed
+#print axioms HECompletionEntry.raw_template_refused
+#print axioms HECompletionEntry.collected_template_refused
+#print axioms HECompletionEntry.incompatible_marks_refused
+#print axioms HECompletionEntry.repeated_binding_join
+#print axioms HECompletionEntry.field_value_is_earned
+#print axioms HECompletionEntry.structural_slot_known
+#print axioms HECompletionEntry.completed_gate_excludes_variable_and_compat
+#print axioms HECompletionEntry.ready_expression_value_cases
+#print axioms HECompletionEntry.ready_field_projection
+#print axioms HECompletionEntry.Controls.parent_mark_is_not_enough
+#print axioms HECompletionEntry.Controls.same_value_different_entry_mode
+#print axioms HECompletionEntry.Controls.structural_variable_return_declines
+#print axioms HECompletionEntry.Controls.collected_entry_declines
+#print axioms HECompletionEntry.Controls.known_complete_entry
+#print axioms HECompletionEntry.Controls.empty_expression_is_not_root_held
+#print axioms HECompletionEntry.Controls.deep_completion_does_not_repair_a_held_parent
+#print axioms HECompletionMarkedFields.marked_field
+#print axioms HECompletionMarkedFields.selected_nonempty_is_held
+#print axioms HECompletionMarkedFields.materialized_field_unassigned
+#print axioms HECompletionMarkedFields.held_entry
+#print axioms HECompletionMarkedFields.held_capture_source
+#print axioms HECompletionMarkedFields.admitted_marked_field_capture
+#print axioms HECompletionMarkedSlots.marked_whole_capture
+#print axioms HECompletionMarkedSlots.compiled_field_capture
+#print axioms HECompletionCallCases.singleSlot_exact
+#print axioms HECompletionCallCases.completed_singleSlot_iff
+#print axioms HECompletionCallCases.completed_field_case
+#print axioms HECompletionCallCases.raw_singleSlot_declines
+#print axioms HECompletionCallCases.collected_singleSlot_declines
+#print axioms HECompletionCallCases.actual_ready_consumer_trace
+
+end Mettapedia.GSLT.LanguageDef.Collections.TypedCalls

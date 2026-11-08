@@ -55,7 +55,7 @@ theorem produced_matches (port : Fin picked.made.length)
   have productionEq := congrArg Sigma.fst descriptionEq
   change rule.code.produce.get origin = production at productionEq
   change Matches _ _ _ _ (match rule.code.produce.get origin with
-    | .ordinary value => _ | .live value => _ | .schema body => _) ↔ _ at old
+    | .ordinary value => _ | .shared value => _ | .schema body => _) ↔ _ at old
   rw [productionEq] at old
   cases production with
   | ordinary value =>
@@ -72,7 +72,7 @@ theorem produced_matches (port : Fin picked.made.length)
         (Assignment.compose candidate compiled.sourceFrame.assignment) pattern).trans
         (old.trans (ContextualConditionalRowPacking.matches_iff (PrivateNames compiled) (privateDeclarations compiled)
           compiled.firing.target.declarations true _ candidate pattern).symm)
-  | live value =>
+  | shared value =>
       cases conditions
       have nativeRow : (target compiled).rows (picked.made.get port) =
           packOrdinary compiled (compiled.firing.target.rows (picked.made.get port)) := by

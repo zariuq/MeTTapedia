@@ -721,16 +721,6 @@ section Stores
 universe uT uS uO
 variable {T : Type uT} {S : Type uS} {O : Type uO} [DecidableEq O]
 
-/-- The final store of a run is the start store with every firing's equations. -/
-theorem follow_equations (label : O → T) :
-    ∀ (C : Configuration T O) (w : List (Firing T S O)),
-      (follow label C w).equations = C.equations ++ w.flatMap (Firing.added label)
-  | C, [] => by simp [follow]
-  | C, f :: rest => by
-      change (follow label (f.result label C) rest).equations = _
-      rw [follow_equations label (f.result label C) rest, Firing.result_equations',
-        List.flatMap_cons, List.append_assoc]
-
 /-- The final store of a run is consistent. -/
 theorem Executable.final_consistent (A : SubstitutionAction T S) (label : O → T)
     {C : Configuration T O} {w : List (Firing T S O)} (run : Executable A label C w) :
@@ -897,7 +887,6 @@ end Checker
 #print axioms applyTerm_ap
 #print axioms evaluate_injective
 #print axioms applyTerm_quoteValue
-#print axioms follow_equations
 #print axioms Executable.final_consistent
 #print axioms Executable.valid_of_mem
 #print axioms Observes.of_refines

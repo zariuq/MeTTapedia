@@ -76,7 +76,7 @@ and the row of the evidence of `seen` made at `r`. -/
 def revisionFiring (φ : W → Bool) (row : Evidence ℕ → T) (seen : Finset O) (r : O) :
     Firing T S O :=
   ⟨⟨[], [], [], [], [row (ledgerEvidence (recorded label outcome) φ seen)]⟩,
-    [CensusAdmission.Query.fixed (ledgerQuery space seen)], ⟨[], [], [r]⟩⟩
+    [PredicateQueryAdmission.Query.fixed (ledgerQuery space seen)], ⟨[], [], [r]⟩⟩
 
 /-- **Admission of revision**: the predicate query saw the ledger, the row is fresh and carries the
 counts, and the store has a solution. -/
@@ -86,9 +86,9 @@ theorem revisionFiring_valid_iff (φ : W → Bool) (row : Evidence ℕ → T) (s
       ledger label space C = seen ∧ r ∉ C.present ∧
         label r = row (ledgerEvidence (recorded label outcome) φ seen) ∧
         A.Consistent C.equations := by
-  change CensusAdmission.Valid A label _ ([ledgerQuery space seen].map CensusAdmission.Query.fixed)
+  change PredicateQueryAdmission.Valid A label _ ([ledgerQuery space seen].map PredicateQueryAdmission.Query.fixed)
     C _ ↔ _
-  rw [CensusAdmission.valid_fixed_iff]
+  rw [PredicateQueryAdmission.valid_fixed_iff]
   constructor
   · rintro ⟨firing, holds⟩
     refine ⟨holds _ (List.mem_singleton_self _), ?_, ?_, ?_⟩
@@ -247,7 +247,7 @@ noncomputable def deductionFiring (bits : GuardBits A) (row : ℝ → T) (seen :
     Firing T S O :=
   ⟨⟨[], [], [], [bits.check (decide (Screened a b c (bagOf label outcome seen)))],
       [row (deductionValue a b c (bagOf label outcome seen))]⟩,
-    [CensusAdmission.Query.fixed (ledgerQuery space seen)], ⟨[], [], [r]⟩⟩
+    [PredicateQueryAdmission.Query.fixed (ledgerQuery space seen)], ⟨[], [], [r]⟩⟩
 
 /-- **Adequacy of deduction**: an admitted deduction firing saw the ledger, the ledger screens off,
 and its row is the world-model answer to the conclusion. -/
@@ -256,9 +256,9 @@ theorem deduction_adequate {bits : GuardBits A} {row : ℝ → T} {seen : Finset
     (valid : (deductionFiring A label space outcome a b c bits row seen r).Valid A label C) :
     seen = ledger label space C ∧ Screened a b c (bagOf label outcome (ledger label space C)) ∧
       label r = row (linkValue a c (bagOf label outcome (ledger label space C))) := by
-  have unfolded : CensusAdmission.Valid A label _
-      ([ledgerQuery space seen].map CensusAdmission.Query.fixed) C _ := valid
-  rw [CensusAdmission.valid_fixed_iff] at unfolded
+  have unfolded : PredicateQueryAdmission.Valid A label _
+      ([ledgerQuery space seen].map PredicateQueryAdmission.Query.fixed) C _ := valid
+  rw [PredicateQueryAdmission.valid_fixed_iff] at unfolded
   obtain ⟨firing, holds⟩ := unfolded
   have seenEq : ledger label space C = seen := holds _ (List.mem_singleton_self _)
   subst seenEq

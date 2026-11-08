@@ -160,7 +160,7 @@ theorem repeated_output_keys_are_applied_at_most_once :
       (outputDeliveries [outputFour, outputFourAgain, outputFive])).applied.Nodup :=
   replayed_outputs_at_most_once _
 
-open ContextualConjunctiveControls ContextualQueryCensusControls
+open ContextualConjunctiveControls ContextualQueryAnswersControls
 open ContextualSelectionViews.Controls (base)
 open ConstraintMultisetRewriting.Controls (A)
 

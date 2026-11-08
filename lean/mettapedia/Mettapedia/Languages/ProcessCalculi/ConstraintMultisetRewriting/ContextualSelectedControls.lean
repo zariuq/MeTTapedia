@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 # Actual aliased reads, independent consumption and the read-before-take boundary
 
 The positive pair has unequal port counts, a nonempty incoming equation
-store, two reads of a rigid schema at row 7 and a take of live row 8. Both source executions return
+store, two reads of a rigid schema at row 7 and a take of shared row 8. Both source executions return
 at fuel one per event. The smallest asymmetric control reads and then takes
 one occurrence; no source firing can perform the read after consumption.
 -/
@@ -33,7 +33,7 @@ def labels (occurrence : Nat) := if occurrence = 8 then b else a
 def prior := [b]
 def rows (occurrence : Nat) : ContextualStoredRows.Row locals captures [] () :=
   if occurrence = 7 then .schema (Rigid.includeTerm raw (labels occurrence))
-  else .live (Rigid.includeTerm captures (labels occurrence))
+  else .shared (Rigid.includeTerm captures (labels occurrence))
 def inventory : Inventory locals captures (O := Nat) [] () :=
   ⟨⟨diagonals captures prior, {7, 8}⟩, rows,
     [observe (generator captures 0)], [observe privateVariable]⟩
@@ -54,9 +54,9 @@ theorem row_template (occurrence : Nat) :
   · rfl
   · exact Rigid.instantiate_include _ (labels occurrence)
 
-theorem inputs_include_a_stored_schema_and_a_live_row :
+theorem inputs_include_a_stored_schema_and_a_shared_row :
     initial.inventory.rows 7 = .schema (Rigid.includeTerm raw a) ∧
-      initial.inventory.rows 8 = .live (Rigid.includeTerm captures b) := ⟨rfl, rfl⟩
+      initial.inventory.rows 8 = .shared (Rigid.includeTerm captures b) := ⟨rfl, rfl⟩
 
 def reader : Interaction initial where
   made := [99]

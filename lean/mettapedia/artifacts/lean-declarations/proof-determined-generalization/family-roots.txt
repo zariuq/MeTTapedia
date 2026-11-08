@@ -1,0 +1,16 @@
+And
+Bool
+Decidable
+Eq
+Exists
+False
+HEq
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.Deriv
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.Tm
+Nat
+OfNat
+PProd
+PULift
+PUnit
+Prod
+True

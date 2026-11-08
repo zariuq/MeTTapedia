@@ -1,0 +1,759 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{microtype}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!60!black,
+  citecolor=green!50!black,
+  urlcolor=blue!70!black
+}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{remark}[theorem]{Remark}
+
+\DeclareUrlCommand\leanurl{\urlstyle{tt}}
+\DeclareRobustCommand{\lean}[1]{%
+  \ifmmode\text{\normalfont\ttfamily\footnotesize\detokenize{#1}}%
+  \else{\normalfont\footnotesize\leanurl{#1}}\fi}
+\DeclareRobustCommand{\metta}[1]{\text{\normalfont\ttfamily\footnotesize #1}}
+\DeclareRobustCommand{\RuleName}[1]{\text{\normalfont\scshape\small #1}}
+\pdfstringdefDisableCommands{%
+  \def\lean#1{#1}%
+  \def\metta#1{#1}%
+  \def\RuleName#1{#1}%
+}
+\newcommand{\seq}{\;\vdash\;}
+\newcommand{\ccseq}{\;\vdash_{\mathrm{cc}}\;}
+\newcommand{\doteqStore}{\;\doteq\;}
+\emergencystretch=3em
+
+\title{\textbf{The Transform Calculus: Birth-Cut Constraint Multiset Rewriting\\and the Certain-Check Proof Logic for MeTTa}}
+\author{Formalized in Lean~4\\(\lean{Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting})}
+\date{November 7, 2026}
+
+\begin{document}
+\sloppy
+\maketitle
+
+\begin{abstract}
+When a rewriting or logic engine combines multiset state, unification variables, and negative or cardinality guards (such as testing the absence of a pattern or counting its matches), operational engines routinely suffer from four pathologies: testing absence only at a principal unifier is unsound under later variable instantiation; collapsing spaces into sets destroys occurrence multiplicity while naive multiset counting explodes combinatorially; inspecting raw syntactic terms leaks across equated variables; and conflating symbolic consistency with closed inhabitation allows rules guarded by uninhabited types to fire vacuously.
+
+We present the \emph{Transform Calculus}, a formal model of transactional constraint multiset rewriting designed as the semantic kernel for MeTTa and mechanized in Lean~4 (over $215$ sorry-free modules). Rather than a monolithic machine, the calculus is structured around a single categorical step interface (\lean{Interface.Frames} and \lean{Interface.Step}) whose admission law (\lean{admits_iff}) separates physical occurrence commits from semantic constraint solving and universal model-theoretic guard entailment at the firing's birth cut. Its primary first-order instance (\lean{AnnotatedRuns.firstOrder} and \lean{Spaces.located}) is governed by the \emph{certain-check proof calculus} (\lean{CertainChecks.Derives}), a three-rule inference system that decides equality, absence, and exact cardinality over every solution of an equation store by refuting candidate extensions via occurs-checked unification. We prove soundness and completeness of \lean{CertainChecks.Derives} for free Henkin models and the free term algebra (\lean{derives_iff_termModel}), establish the incompleteness of the ground Herbrand model (\lean{oneConstant_separates}), and characterize query-free firing admission as formal derivability (\lean{admitsDerivably_iff}). We then show how SLD resolution, guarded superposition (via upward guard closure \lean{entails_closure_iff}), ground Knuth--Bendix completion, MeTTa space operations (\metta{match}, \metta{collapse}, equation calls, and MM2 \metta{exec}), and higher-order contextual and dependent instances inhabit the same step interface.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+% =========================================================================
+\section{Introduction: Four Pathologies of Open Rewriting}
+\label{sec:intro}
+% =========================================================================
+
+Languages that combine pattern-directed multiset rewriting, logic variables, and reflective queries over a shared workspace---including MeTTa~\cite{Goertzel2023MeTTa}, Constraint Handling Rules (CHR)~\cite{Fruhwirth2009CHR}, Maude~\cite{Meseguer1992Conditional}, and the $\rho$-calculus~\cite{MeredithRadestock2005Rho}---face a recurring tension between operational convenience and logical soundness. In mechanized stress-testing of candidate operational semantics in Lean~4, four foundational pathologies repeatedly emerge whenever open variables interact with workspace queries:
+
+\begin{enumerate}[leftmargin=2em,label=\textbf{P\arabic*.}]
+  \item \textbf{The Principal-Answer Fallacy for Absence.}
+  Suppose a workspace contains the open atom $\metta{(p \$X)}$ at occurrence $o_1$, the equation store $K$ is empty, and a default rule asks for the \emph{absence} of $\metta{(p a)}$ before emitting $\metta{(fallback a)}$. Evaluated at the most general unifier $\mu = \mathrm{id}$ of $K$, the terms $\mu(\metta{(p a)}) = \metta{(p a)}$ and $\mu(\metta{(p \$X)}) = \metta{(p \$X)}$ are syntactically distinct. An engine that tests negation-as-absence only at the current principal unifier fires the default rule immediately. Yet a subsequent step may bind $\$X \doteqStore \metta{a}$, retroactively falsifying the absence premise in the refined model. As happens in free-variable tableaux~\cite{Fitting1996Tableaux,Hahnle2001Tableaux}, an existential variable in the state turns a negative guard into a universal closure obligation over \emph{all} solutions of $K$.
+
+  \item \textbf{Set Collapse versus Combinatorial Count Explosion.}
+  Suppose a rule requires exactly $n$ occurrences matching pattern $p$ in the workspace. If the workspace is a set (as in MM2/MORK~\cite{Goertzel2023MeTTa}), duplicate physical witnesses of $\metta{(coin head)}$ collapse into one. Conversely, in a multiset with open variables, checking that $|\{o \in W \mid \sigma(p) = \sigma(\ell(o))\}| = n$ holds across \emph{every} solution $\sigma$ of $K$ appears to require enumerating all subsets of $W$ of size $n$. How can an engine decide universal exact cardinality in a single pass without combinatorial subset enumeration?
+
+  \item \textbf{Syntactic Query Leakage.}
+  If a workspace query inspects the raw syntax of stored labels rather than their equivalence classes under solutions of $K$, two configurations with identical solution sets can be separated by an observation (\lean{ModuloControls.syntactic_region_separates}). Sound observations must read through solutions (\lean{QueriesReadThroughSolutions}).
+
+  \item \textbf{The Uninhabited-Type Admission Trap.}
+  In a typed or proof-carrying workspace where a fresh metavariable $\$h : A$ represents a proof obligation, symbolic solvability (\lean{Frames.Solvable}) asks whether $K$ has a solution into \emph{some} later declaration frame. Because the extended frame $\Gamma, (\$h : A)$ maps to itself by the identity substitution regardless of whether $A$ has any closed inhabitants (\lean{solvable_extend_iff}), symbolic admission permits firings guarded by empty types (\lean{obligation_trap}, \lean{trap_helper}, and \lean{Step.TypingContractsControls.void_trap}). Separating symbolic consistency from closed inhabitation (\lean{ClosedSolvable}, \lean{ClosedAdmits}) is essential when firings represent proof steps.
+\end{enumerate}
+
+\paragraph{Contributions and Architecture.}
+Rather than inventing an ad-hoc operational patch for each pathology, the \emph{Transform Calculus} resolves them through a layered architecture mechanized in Lean~4 under \lean{Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting}:
+\begin{itemize}[leftmargin=1.8em]
+  \item \textbf{One Categorical Step Interface, Multiple Exact Instances (\S\ref{sec:interface}).}
+  We define a category of declaration frames acting on terms (\lean{Interface.Frames}) and a single step signature (\lean{Interface.Step}) whose admission theorem (\lean{admits_iff}) requires physical occurrence enabling, semantic solvability of the firing's information store, and universal entailment (\lean{Frames.Entails}) of all guards and queries across every solution at the firing's birth cut. Table~\ref{tab:instances} maps each Lean instance to its exact features, avoiding any conflation between first-order, located, disequality, contextual, and dependent instances.
+  \item \textbf{MeTTa Operation Compilation and Located Spaces (\S\ref{sec:metta-ops}).}
+  We give an explicit translation table (Table~\ref{tab:metta-translation}) relating MeTTa surface constructs---\metta{match}, \metta{collapse}, stored equations \metta{(= (f \$x) body)}, \metta{add-atom}/\metta{remove-atom}, and MM2 \metta{exec}---to firings and store-level observations (\lean{MeTTaOperationsMatch}, \lean{MeTTaOperationsCollapse}, \lean{MeTTaOperationsCall}, \lean{MeTTaOperationsExec}), together with handle-located spaces (\lean{Step.Spaces}) and per-handle facet permissions (\lean{Step.Permissions}).
+  \item \textbf{The Certain-Check Proof Calculus (\S\ref{sec:certain-checks}).}
+  The centerpiece of the first-order development is \lean{CertainChecks.Derives} (\lean{Step/ModelDerivation.lean}), a proof calculus with three inference rules (\RuleName{Der-Equal}, \RuleName{Der-Absent}, \RuleName{Der-Count}) that reduces universal birth-cut entailment to occurs-checked unification (\lean{unifyTotal}) and pairwise compatibility refutation (\lean{FirstOrderChecks.compatible}). We trace a complete worked MeTTa example of absence under later instantiation and provide proof sketches for:
+  \begin{enumerate}[label=(\roman*)]
+    \item the \emph{Absence Refutation and Count Squeeze Theorem} (\lean{entails_absent_iff}, \lean{absent_iff_possible_empty}, \lean{Frames.Principal.entails_count_iff}, \lean{count_iff_regions});
+    \item the \emph{Henkin Completeness and Herbrand Incompleteness Theorem} (\lean{derives_sound_free}, \lean{derives_complete_generic}, \lean{derives_iff_termModel}, \lean{oneConstant_separates}, \lean{admitsDerivably_iff}); and
+    \item the \emph{$4 \times 4$ Evidence Separation Matrix} (\lean{Evidence.Family.profiles_distinct}) over the disequality step (\lean{Disequality.step}).
+  \end{enumerate}
+  \item \textbf{Automated Reasoning, Programs, Concurrency, and Dependent Status (\S\ref{sec:atp}--\S\ref{sec:related}).}
+  We show how first-order resolution (\lean{Step.ResolutionFiring}), guarded superposition via upward closure (\lean{entails_closure_iff}), ground Knuth--Bendix completion (\lean{Step.CompletionCorrectness}), fair search (\lean{Step.SearchPolicy}), MeTTa program compilation and interpretation (\lean{Step.Program*}), concurrency diamonds and Milner's race spectrum (\lean{Step.RacePair}, \lean{Step.RaceSpectrum}), and the contextual/dependent instances (\lean{Step.DependentFull}, \lean{Step.DependentClosed}, \lean{Step.DependentFullFibre}) fit together, accompanied by a transparent accounting of proved theorems versus open problems (\S\ref{sec:dependent}).
+\end{itemize}
+
+% =========================================================================
+\section{The Step Interface and Its Instance Architecture}
+\label{sec:interface}
+% =========================================================================
+
+A central design principle of the Lean~4 formalization is that capabilities such as multiple spaces, handle permissions, disequality constraints, higher-order binders, and dependent telescopes are \emph{not} piled into a single monolithic record. Instead, \lean{Step/Interface.lean} defines a single categorical signature once, and each capability is constructed as an explicit instance or combinator over that interface.
+
+\subsection{Frames, Solutions, and Principal Answers (\lean{Interface.Frames})}
+
+\begin{definition}[Category of Frames Acting on Terms --- \lean{Interface.Frames}]
+\label{def:frames}
+A frame system $\mathcal{X} : \lean{Frames}\;\mathrm{Tm}\;\mathrm{Hom}$ over a type of frame objects $\mathrm{Obj}$ consists of:
+\begin{enumerate}[leftmargin=2em, nosep]
+  \item For each frame $a : \mathrm{Obj}$, a type of terms $\mathrm{Tm}(a)$ equipped with an equivalence relation $\equiv_a$ (\lean{X.E}, \lean{X.equivalence}).
+  \item For each pair of frames $a, b : \mathrm{Obj}$, a type of frame morphisms $\mathrm{Hom}(a, b)$ with identity $\mathrm{id}_a : \mathrm{Hom}(a, a)$ and composition $g \circ f : \mathrm{Hom}(a, c)$ for $f : \mathrm{Hom}(a, b)$ and $g : \mathrm{Hom}(b, c)$.
+  \item A capture-avoiding instantiation action $\mathrm{act} : \mathrm{Hom}(a, b) \to \mathrm{Tm}(a) \to \mathrm{Tm}(b)$ satisfying the functorial action laws $\mathrm{act}(\mathrm{id}_a, t) = t$ (\lean{act_id}), $\mathrm{act}(g \circ f, t) = \mathrm{act}(g, \mathrm{act}(f, t))$ (\lean{act_comp}), and congruence $s \equiv_a t \implies \mathrm{act}(f, s) \equiv_b \mathrm{act}(f, t)$ (\lean{preserves}).
+\end{enumerate}
+\end{definition}
+
+An \emph{equation store} $K$ at frame $a$ (\lean{EquationStore}) is a finite list of formal equations $s \doteqStore t$ with $s, t : \mathrm{Tm}(a)$. Throughout this paper, we write $s \doteqStore t$ for equations in the constraint store $K$, reserving $\metta{(= lhs rhs)}$ for MeTTa program-equation atoms stored as data in a workspace.
+
+\begin{definition}[Models, Solvability, Entailment, and Principal Answers]
+Let $\mathcal{X}$ be a \lean{Frames} structure and $K$ an equation store at frame $a$:
+\begin{itemize}[leftmargin=1.8em, nosep]
+  \item \textbf{Model} (\lean{Frames.Models}): A morphism $\sigma : \mathrm{Hom}(a, b)$ into a later frame $b$ \emph{models} $K$, written $\sigma \models K$, iff $\mathrm{act}(\sigma, s) \equiv_b \mathrm{act}(\sigma, t)$ for every $(s \doteqStore t) \in K$.
+  \item \textbf{Semantic Solvability} (\lean{Frames.Solvable}): $K$ is solvable iff $\exists (b : \mathrm{Obj})\;(\sigma : \mathrm{Hom}(a, b)),\; \sigma \models K$.
+  \item \textbf{Universal Ask / Entailment} (\lean{Frames.Entails}): Given a family of observations $\Phi : (b : \mathrm{Obj}) \to \mathrm{Hom}(a, b) \to \mathrm{Prop}$, $K$ entails $\Phi$ (written $K \models \Phi$) iff $\forall (b : \mathrm{Obj})\;(\sigma : \mathrm{Hom}(a, b)),\; \sigma \models K \implies \Phi(b, \sigma)$.
+  \item \textbf{Principal Answer} (\lean{Frames.Principal}): A morphism $\mu : \mathrm{Hom}(a, m)$ is \emph{principal} for $K$ iff $\mu \models K$ (\lean{sound}) and for every $b$ and $\sigma : \mathrm{Hom}(a, b)$ with $\sigma \models K$, there exists a residual morphism $\rho : \mathrm{Hom}(m, b)$ such that $\forall t : \mathrm{Tm}(a),\; \mathrm{act}(\sigma, t) \equiv_b \mathrm{act}(\rho \circ \mu, t)$ (\lean{factors}).
+\end{itemize}
+\end{definition}
+
+Every classical substitution monoid $\mathcal{A} : \lean{SubstitutionAction}\;T\;S$ embeds as the one-object frame category $\lean{Frames.ofSubstitution}\;\mathcal{A}$ over $\mathrm{Obj} = \mathbf{1}$ (\lean{PUnit}), where \lean{Frames.Solvable}, \lean{Frames.Entails}, and \lean{Frames.Principal} coincide definitionally with $\mathcal{A}.\lean{Consistent}$, $\mathcal{A}.\lean{Entails}$, and $\mathcal{A}.\lean{Principal}$ (\lean{ofSubstitution_solvable_iff}, \lean{ofSubstitution_entails_iff}, \lean{ofSubstitution_principal_iff}).
+
+\subsection{The Step Signature (\lean{Interface.Step}) and the Instance Matrix}
+
+\begin{definition}[The Step Interface --- \lean{Interface.Step}]
+\label{def:step}
+Over a frame system $\mathcal{X} : \lean{Frames}\;\mathrm{Tm}\;\mathrm{Hom}$ and a decidable type of physical occurrence identities $O$, an instance $P : \lean{Interface.Step}\;\mathcal{X}\;O\;\mathrm{State}\;\mathrm{Firing}$ specifies:
+\begin{enumerate}[leftmargin=2em, nosep]
+  \item For each state $s : \mathrm{State}$, its declaration frame $\mathrm{frame}(s) : \mathrm{Obj}$, its current equation store $\mathrm{knowledge}(s) : \lean{EquationStore}(\mathrm{Tm}(\mathrm{frame}(s)))$, and its finite set of alive occurrence identities $\mathrm{present}(s) : \lean{Finset}\;O$.
+  \item For each candidate firing $f : \mathrm{Firing}(s)$, its physical occurrence selection $\mathrm{selection}(f) = \langle \mathrm{taken}, \mathrm{read}, \mathrm{made} \rangle : \lean{Selection}\;O$, its target frame $\mathrm{target}(f) : \mathrm{Obj}$ reached via $\mathrm{extension}(f) : \mathrm{Hom}(\mathrm{frame}(s), \mathrm{target}(f))$, and its birth-cut equation store $\mathrm{information}(f) : \lean{EquationStore}(\mathrm{Tm}(\mathrm{target}(f)))$, which must contain the transported prior knowledge (\lean{transported}).
+  \item A well-formedness predicate $\mathrm{Shapes}(f) : \mathrm{Prop}$, a birth-cut observation predicate $\mathrm{Holds}(f, b, \sigma) : \mathrm{Prop}$ for each solution $\sigma : \mathrm{Hom}(\mathrm{target}(f), b)$, and an admission predicate $\mathrm{Admits}(f) : \mathrm{Prop}$ characterized by the universal law (\lean{admits_iff}):
+  \begin{equation}
+  \label{eq:admits-iff}
+  \begin{aligned}
+  P.\mathrm{Admits}(f) \iff\;& P.\mathrm{Shapes}(f)
+    \;\land\; \mathrm{Enabled}\big(P.\mathrm{present}(s),\, P.\mathrm{selection}(f)\big) \\
+    &\land\; \mathcal{X}.\mathrm{Solvable}\big(P.\mathrm{information}(f)\big) \\
+    &\land\; \mathcal{X}.\mathrm{Entails}\big(P.\mathrm{information}(f),\, P.\mathrm{Holds}(f)\big).
+  \end{aligned}
+  \end{equation}
+  \item A transition function $\mathrm{result}(f, h_{\mathrm{adm}}) : \mathrm{State}$ and a settling morphism $\mathrm{settle}(f, h_{\mathrm{adm}}) : \mathrm{Hom}(\mathrm{target}(f), \mathrm{frame}(\mathrm{result}(f, h_{\mathrm{adm}})))$ updating the alive occurrences by multiset commit (\lean{present_result}: $(P.\mathrm{present}(s) \setminus \mathrm{taken}) \cup \mathrm{made}$ when $\mathrm{taken}, \mathrm{read} \subseteq P.\mathrm{present}(s)$, $\mathrm{taken} \cap \mathrm{read} = \emptyset$, and $\mathrm{made} \cap P.\mathrm{present}(s) = \emptyset$) and transporting the knowledge along $\mathrm{settle}$ (\lean{knowledge_result}).
+\end{enumerate}
+\end{definition}
+
+Runs of any instance $P$ are dependent words of admitted firings (\lean{Interface.Step.Run}). Just as the $\pi$-calculus and $\rho$-calculus are governed by a single reaction rule ($\textsc{Comm}$) modulo structural congruence, the entire Transform Calculus is governed by a single firing rule $\textsc{[Fire]}$ over $\mathcal{X}$ (\lean{admits_iff}, \lean{present_result}, \lean{knowledge_result}):
+\[
+\fbox{$\displaystyle
+\frac{
+  P.\mathrm{Shapes}(f) \quad
+  \mathrm{Enabled}(W,\, (T, R, M)) \quad
+  \mathcal{X}.\mathrm{Solvable}(\Gamma',\, I_f) \quad
+  \mathcal{X}.\mathrm{Entails}(\Gamma',\, I_f,\, P.\mathrm{Holds}(f))
+}{
+  \langle \Gamma \,;\, K \,;\, W \rangle
+  \;\xrightarrow{\;f\;}\;
+  \langle \Gamma'' \,;\, \mathrm{act}(\mathrm{settle}(f), I_f) \,;\, (W \setminus T) \cup M \rangle
+}\;\textsc{[Fire]}
+$}
+\]
+where $\Gamma = P.\mathrm{frame}(s)$, $K = P.\mathrm{knowledge}(s) \subseteq I_f$, $W = P.\mathrm{present}(s)$, and $\Gamma \xrightarrow{\mathrm{extension}(f)} \Gamma' \xrightarrow{\mathrm{settle}(f)} \Gamma''$. Around $\textsc{[Fire]}$ sit three structural components: (i) \emph{structural congruence} $\equiv$, comprising occurrence renaming (\lean{Iso}), observation equivalence modulo solutions of $K$ (\lean{Step.ObservationModulo}, \lean{QueriesReadThroughSolutions}), and garbage-collection of unused unknowns (\lean{NativeUpToDead}, \lean{ContextualDependentEtaLongWeakening}); (ii) \emph{the choice of frame category $\mathcal{X}$}, which determines what the unknowns are (first-order variables, disequation frames, higher-order contextual patterns $\metta{(\$M x)}$, or dependent $\Pi/\Sigma/\mathrm{Id}$ telescopes); and (iii) \emph{derived forms}, such as located spaces (\lean{Spaces}) and compiled program schemas (\lean{ProgramEquations.compile}). Along any run $r : P.\mathrm{Run}(s)$, knowledge only refines: every solution of the final state's knowledge pulls back along $r.\mathrm{toLast}$ to a solution of the initial state's knowledge (\lean{Step.Run.models_start}, \lean{Step.Run.solvable_start}), and any state with unsolvable knowledge admits no firing of any instance (\lean{Evidence.not_admits_of_not_solvable}). Runs form a free category under concatenation (\lean{Step.Run.append}), and monoid-valued site accounts are functors out of it (\lean{Step.Run.account_append}).
+
+  \begin{table}[t]
+\centering
+\caption{The Instance Matrix of \lean{Interface.Step}: each capability in the formalization is a specific instance or combinator over \lean{Interface.Step}, never a conflated mega-record.}
+\label{tab:instances}
+\footnotesize
+\setlength{\tabcolsep}{3.5pt}
+\renewcommand{\arraystretch}{1.18}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{3.2cm}>{\raggedright\arraybackslash}p{3.2cm}>{\raggedright\arraybackslash}p{3.0cm}>{\raggedright\arraybackslash}p{3.1cm}>{\raggedright\arraybackslash}p{2.3cm}@{}}
+\toprule
+\textbf{Instance / Combinator} & \textbf{Lean Module} & \textbf{Frames ($\mathrm{Obj}, \mathrm{Hom}$)} & \textbf{Guards \& Queries} & \textbf{Settlement $\mathrm{settle}$} \\
+\midrule
+First-order step \newline \lean{AnnotatedRuns.firstOrder} & \lean{AnnotatedRuns} & One frame $\mathbf{1}$ \newline (\lean{ofSubstitution}) & \lean{Check}: \metta{equal}, \metta{absent}, \metta{count} + census \lean{Query} & Identity $\mathrm{id}_{\mathbf{1}}$ \\
+Guarded FO step \newline \lean{Superposition.guarded} & \lean{Step.SuperpositionGuarded} & One frame $\mathbf{1}$ \newline (\lean{ofSubstitution}) & FO checks + solution predicates $G : S \to \mathrm{Prop}$ & Identity $\mathrm{id}_{\mathbf{1}}$ \\
+Located spaces \newline \lean{Spaces.located} & \lean{Step.Spaces} & One frame $\mathbf{1}$ over rigid handle pairs $(h, t)$ & Space-scoped checks \lean{checkAt} \& queries at $h$ & Identity $\mathrm{id}_{\mathbf{1}}$ \\
+Permission restriction \newline \lean{Permissions.permitted} & \lean{Step.Permissions} & Inherited from base step $P$ (\lean{Spaces.restrict}) & Restricts $\mathrm{Shapes}$ by \lean{FormedUnder} ($\Gamma(h,\text{facet})$) & Inherited from $P$ \\
+Disequality step \newline \lean{Disequality.step} & \lean{Step.Disequality} & Disequation stores $D$ (\lean{Disequality.frames}) & FO checks \& queries over $D$-separating solutions & Identity on $D \cup D_{\mathrm{told}}$ \\
+Contextual HO step \newline \lean{Contextual.step} & \lean{Step.Interface} \newline \lean{Step.ContextualDiamond} & Declaration frames $(\mathrm{Names}, \mathrm{arity})$ (\lean{contextual}) & Equations \& queries on \lean{Observation} & Identity on extended frame \\
+Dependent helper step \newline \lean{Dependent.helperStep} & \lean{Step.DependentHelpers} \newline \lean{Step.TypingStates} & Formed contexts $\Gamma$ (\lean{Dependent.frames}) & Fresh helper $x : A$ + equation guards & Identity on $\Gamma, (x : A)$ \\
+Dependent full step \newline \lean{DependentFull.step} & \lean{Step.DependentFull} & Typed $\beta\eta$ contexts \newline (\lean{ContextualDependentEta}) & Helper telescope $\Delta$, takes, reads, makes, tells, \lean{Query} & Identity $\mathbf{1}_{\Delta}$ on $\Delta = f.\mathrm{helpers}.\mathrm{frame}$ \\
+Closed admission \newline \lean{Step.ClosedAdmits} & \lean{Step.DependentClosed} & Any $\mathcal{X}$ with designated closed frame $\mathrm{point}$ & Uses \lean{ClosedSolvable} and \lean{ClosedEntails} & Modifier on admission \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{How the Instances Relate (Table~\ref{tab:instances}).}
+Table~\ref{tab:instances} records the exact scope of each instance in the repository:
+\begin{itemize}[leftmargin=1.8em, nosep]
+  \item \lean{AnnotatedRuns.firstOrder} is the one-frame instance over any \lean{SubstitutionAction} $\mathcal{A}$. A configuration $C = \langle K, W \rangle$ carries an equation store $K$ and a present set $W : \lean{Finset}\;O$, with an ambient labelling $\ell : O \to T$. A firing $f = \langle r, Q, \mathrm{sel} \rangle$ combines a five-port \lean{RuleInstance} $r = \langle \mathrm{take}, \mathrm{read}, \mathrm{tell}, \mathrm{checks}, \mathrm{produce} \rangle$, a list of predicate queries $Q$, and a selection $\mathrm{sel} = \langle \vec{o}_{\mathrm{take}}, \vec{o}_{\mathrm{read}}, \vec{o}_{\mathrm{make}} \rangle$. Its birth-cut store (\lean{Selection.problem}) appends to $K$ the matching equations $\mathrm{take}_i \doteqStore \ell(o_{\mathrm{take},i})$, $\mathrm{read}_j \doteqStore \ell(o_{\mathrm{read},j})$, and $r.\mathrm{tell}$.
+  \item \lean{Disequality.step} adds told disequations $s \neq t$ without modifying \lean{Interface.Step} by placing the disequation store $D$ into the \emph{frame object} (\lean{Disequality.Frame}) and restricting frame morphisms to substitutions that pull separating solutions back to separating solutions (\lean{Disequality.frames}).
+  \item \lean{DependentFull.step} works over the typed $\beta\eta$ frames of the dependent unifier (\lean{ContextualDependentEta.frames}), with helper telescopes, typed takes/reads/makes, heterogeneous equation tells/guards, and solution-respecting queries (\lean{DependentFull.Query}). Crucially, in \lean{DependentFull.step}, the post-state $f.\mathrm{after}$ remains at the extended telescope $\Delta = f.\mathrm{helpers}.\mathrm{frame}$ and its settlement morphism is the identity $\mathbf{1}_{\Delta}$---there is no implicit variable-elimination settlement step in \lean{DependentFull.Firing.after}.
+\end{itemize}
+
+\paragraph{Lifting Features to the Interface and Exact Restrictions (\lean{Step.InterfaceTable}, \lean{Step.DisequalityFrames*}, \lean{Step.EvidenceInterface*}, \lean{Step.PermissionsInterface*}, \lean{Step.SpacesInterface}).}
+Rather than leaving capabilities tied to individual instances, the formalization collects the full feature $\times$ instance correspondence in \lean{Step.InterfaceTable} (\lean{InterfaceTable.cut_preserved}) and lifts features directly to \lean{Interface.Frames} and \lean{Interface.Step}, accompanied by separating counterexamples whenever a checkable restriction is required:
+\begin{enumerate}[leftmargin=2em, nosep]
+  \item \textbf{Disequation Frames Over Any $\mathcal{X} : \lean{Interface.Frames}$ (\lean{Step.DisequalityFrames}, \lean{Step.DisequalityFramesStep}, \lean{Step.DisequalityFramesRestriction}, \lean{Step.DisequalityFramesUnguarded}):}
+  \lean{DisequalityFrames.frames} equips any frame category $\mathcal{X}$ with disequation stores separated by frame morphisms (\lean{Separates}, \lean{separates_id_iff}), recovering \lean{Disequality} at $\mathcal{X} = \lean{ofSubstitution}\;\mathcal{A}$ (\lean{solvable_iff_old}). Lifting a prestep to carry told disequations (\lean{Prestep.withDisequations}) requires that settlement reflect equality (\lean{Prestep.Reflects}); without reflection, a prestep that settles by guessing $X \mapsto 0$ admits $X \doteqStore 1 \land X \neq 0$ and transports the disequation to $0 \neq 0$, which no frame contains (\lean{guess_breaks_frame}, \lean{guess_not_reflects}). For non-presteps whose result depends on base admission (such as the native step), \lean{Unguarded.withDisequations} lifts unguarded firings whenever settlement reflects equality (\lean{Unguarded.native_unguarded}).
+  \item \textbf{Interface-Level Run Consistency and Dependent $4 \times 4$ Evidence Table (\lean{Step.EvidenceInterface}, \lean{Step.EvidenceInterfaceFamily}, \lean{Step.EvidenceInterfaceNative}):}
+  Any instance whose settlement keeps solvable stores solvable (\lean{SettlesConservatively}, for which \lean{RetractsSettlement} suffices via \lean{conservative_of_retracts}) preserves knowledge solvability along every run (\lean{run_solvable}, instantiated at \lean{firstOrder_retracts}, \lean{dependent_retracts}, \lean{helper_retracts}, \lean{withDisequations_retracts}, and on the non-retracting native step via \lean{Native.native_conservative}), whereas a guessed settlement enters an unsolvable store (\lean{guess_enters_inconsistency}). Moreover, \lean{EvidenceInterface.DependentFamily} lifts the $4 \times 4$ evidence matrix (Table~\ref{tab:evidence-matrix}) to \lean{DisequalityFrames.Dependent.withDisequations} at frame $X : U_0, x : X, g : \mathrm{Ground}$ (\lean{profiles_distinct}).
+  \item \textbf{Interface-Level Permissions and Space Independence (\lean{Step.PermissionsInterface}, \lean{Step.PermissionsInterfaceControls}, \lean{Step.SpacesInterface}):}
+  Existential read stability holds on \emph{every} instance of \lean{Interface.Step} (\lean{PermissionsInterface.witness_present}), while universal absence preservation across firings without $\lean{send}$ holds on every instance satisfying \lean{LabelLaw} (\lean{absence_preserved}, instantiated at \lean{locatedLabels} and \lean{dependent_absence_preserved}) and fails if a firing relabels a surviving occurrence in place (\lean{relabel_spoils_absence}). Similarly, \lean{SpacesInterface} proves \lean{Transport.Independent} for quiet firings at distinct spaces on both the located first-order step (\lean{located_independent}) and the dependent full step (\lean{dependent_independent}), alongside the dependent shared-variable counterexample (\lean{dependent_shared_variable_crosses_spaces}).
+\end{enumerate}
+
+\paragraph{The State Triple $\langle \Gamma \,;\, K \,;\, W \rangle$, Three Kinds of Variables, and Native LCF Proof Kernels.}
+Separating a configuration into $\langle \Gamma \,;\, K \,;\, W \rangle$ resolves two longstanding tensions in MeTTa:
+\begin{itemize}[leftmargin=1.8em, nosep]
+  \item \textbf{Three Distinct Variable Roles:} The calculus cleanly separates (1) \emph{lexical bound variables} ($\lambda x$, $\metta{let}$, template variables of $\metta{map}$/$\metta{fold}$), which are $\alpha$-renamed and never unified; (2) \emph{frame unknowns} ($\Gamma$, MeTTa's $\$x$), which persist in $K$ across firings for two-way unification; and (3) \emph{rule holes}, which are freshened per firing via $\mathrm{extension}(f) : \Gamma \to \Gamma'$. Under binders, Miller pattern raising $\metta{(\$M }x\metta{)}$ explicitly lists the bound variables on which an unknown $\$M$ may depend, preventing variable capture while allowing broad unification outside the scope (\lean{Step.ProgramBinders*}).
+  \item \textbf{$\lean{Frames}$ as a Native Proof Kernel:} Under the propositions-as-types reading of \lean{Interface.Frames}, unknowns in $\Gamma$ are open proof obligations, a model $\sigma \models K$ is a proof witnessing them, a firing $f$ is an inference step, and \lean{Step.Run.models_start} composes proofs along a run by pulling any final solution back to the initial obligations, while space permissions (\lean{PermissionsInterface}) enforce LCF theorem sealing without an external seal primitive (only kernel schemas hold $\lean{send}$ on the theorem space).
+\end{itemize}
+
+% =========================================================================
+\section{MeTTa Surface Operations and Located Spaces}
+\label{sec:metta-ops}
+% =========================================================================
+
+To connect the Transform Calculus directly to MeTTa programming, the formalization provides an explicit semantics for MeTTa's workspace operations (\lean{MeTTaOperationsMatch}, \lean{MeTTaOperationsCollapse}, \lean{MeTTaOperationsCall}, \lean{MeTTaOperationsExec}) and for multi-space handles and capabilities (\lean{Step.Spaces}, \lean{Step.Permissions}).
+
+\subsection{Translation of MeTTa Operations to the Step}
+
+In MeTTa, a workspace (or \emph{space}, denoted \metta{\&self} for the default space) holds S-expression atoms, which may be ground data $\metta{(edge a b)}$, open data $\metta{(p \$z)}$, typing assertions $\metta{(: x Int)}$, or program equations $\metta{(= (f \$x) (g \$x))}$. Table~\ref{tab:metta-translation} summarizes how each core MeTTa operation translates into the Transform Calculus and cites the corresponding adequacy and obstruction theorems.
+
+\begin{table}[t]
+\centering
+\caption{Translation of MeTTa surface operations into the Transform Calculus (\lean{MeTTaOperations*}).}
+\label{tab:metta-translation}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{3.0cm}>{\raggedright\arraybackslash}p{4.1cm}>{\raggedright\arraybackslash}p{4.0cm}>{\raggedright\arraybackslash}p{3.6cm}@{}}
+\toprule
+\textbf{MeTTa Operation} & \textbf{Transform Calculus Realization} & \textbf{Key Properties \& Subtleties} & \textbf{Lean Theorems} \\
+\midrule
+$\metta{(match }\!s\;p\;t\metta{)}$ \newline (Workspace query) & One single-read firing per matching occurrence $o \in W$: read $o$ through $p$, produce $t$ at fresh $m$ & Preserves occurrence multiplicity; stored atoms with live variables require per-use fresh opening & \lean{valid_iff}, \lean{resolved_answer}, \lean{encodedAnswers_eq_reference}, \lean{shared_variable_conflates_queries} \\
+$\metta{(collapse }\!e\metta{)}$ \newline (Collect all answers) & Store-level observation collecting the bag of resolved answers of all valid single-read firings at $C$ & Cannot be certified by a single 5-port firing; requires a predicate query or store-level observation; sensitive to shared-variable order & \lean{encodedAnswers_antitone}, \lean{OrderEffect.order_matters}, \lean{private_pattern_bag_invariant}, \lean{validity_never_certifies_completeness}, \lean{predicate_query_detects_twin} \\
+$\metta{(f }\!a\metta{)}$ against \newline $\metta{(= (f \$x) body)}$ & Single-read firing reading an opened copy of $\metta{(= (f \$x) body)}$ through $\metta{(= (f }a\metta{) \$r)}$, or compiled 1-firing rule schema & Open call $\metta{(f \$y)}$ binds caller's $\$y$ via two-way unification; unmatched call falls back via an \metta{absent} check & \lean{callRule}, \lean{Probe.closed_call}, \lean{Probe.open_call_binds_caller}, \lean{Probe.no_equation_returns_call}, \lean{eqStep_iff} \\
+$\metta{(add-atom }\!s\;a\metta{)}$ \newline $\metta{(remove-atom }\!s\;p\metta{)}$ & Firing at space handle $s$ with $\mathrm{produce}=[a]$ (fresh $o^+$) or $\mathrm{take}=[p]$ (consuming $o^- \in W_s$) & Atomic multiset commit; staged sequences commit all-or-nothing in one firing (\lean{defer_one_firing}) & \lean{present_result}, \lean{spaces_fire}, \lean{defer_one_firing}, \lean{no_partial_effects} \\
+$\metta{(exec }\!p\;\metta{(, }\!\vec{s}\metta{)}$ \newline $\metta{(O (+ }\!\vec{a}\metta{) (- }\!\vec{r}\metta{)))}$ \newline (MM2 / MORK) & Atomic snapshot-and-commit over a duplicate-free set representation: take $\metta{exec}$ and all matched $\vec{r}$, produce new $\vec{a}$ & MORK spaces are \emph{sets} with all-row snapshot semantics; row-by-row firing fails on overlapping removals or creates duplicates & \lean{Result}, \lean{exec_firing_adequacy}, \lean{exec_is_one_firing}, \lean{Probe.row_protocol_refuses_overlap}, \lean{Probe.row_protocol_duplicates} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Three foundational lessons from \lean{MeTTaOperations*} merit emphasis:
+\begin{enumerate}[leftmargin=2em, nosep]
+  \item \textbf{Multiplicity and Per-Use Opening in \metta{match} (\lean{MeTTaOperationsMatch}).}
+  Encoding $\metta{(match }\!s\;p\;t\metta{)}$ as the family of valid single-read firings indexed by $o \in W$ reproduces the reference answer bag with exact multiplicity (\lean{encodedAnswers_eq_reference}): on $\metta{(p 1)}\;\metta{(p 1)}\;\metta{(p 2)}$ with pattern $\metta{(p \$x)}$ and template $\metta{(r \$x)}$, the encoded answer bag is $\metta{(r 1)}\;\metta{(r 1)}\;\metta{(r 2)}$ (\lean{probe_answers}). However, if a stored atom $\metta{(q \$z)}$ has a live variable in the shared store, reading it directly binds $\$z$ globally and blocks a subsequent query $\metta{(q 7)}$ after $\metta{(q 5)}$ (\lean{shared_variable_conflates_queries}); stored templates with variables must therefore be opened with fresh variables per use.
+  \item \textbf{Why \metta{collapse} Requires a Predicate Query or Store Observation (\lean{MeTTaOperationsCollapse}).}
+  A five-port rule instance $\langle \mathrm{take}, \mathrm{read}, \mathrm{tell}, \mathrm{checks}, \mathrm{produce} \rangle$ cannot certify that a finite list of read occurrences exhausts \emph{all} matches of an open pattern $p$: adding a ``twin'' occurrence containing a fresh constant outside the firing's vocabulary preserves validity of the firing while enlarging the true match set (\lean{twin_preserves_validity}, \lean{validity_never_certifies_completeness}). A birth-cut predicate query (\lean{predicate_query_detects_twin}) or store-level observation (\lean{encodedAnswers}) is therefore essential. Moreover, when a variable $\$x$ is shared between a collapsed query and an outer constraint, operational evaluation order changes the result bag (\lean{OrderEffect.order_matters}), whereas if the pattern's variables are private to the collapsed query, the answer bag is invariant across all consistent stores (\lean{private_pattern_bag_invariant}).
+  \item \textbf{Multi-Space Handles and Read/Write Polarity (\lean{Step.Spaces}, \lean{Step.Permissions}).}
+  When occurrences carry space handles $\mathrm{space} : O \to H$, a single store decomposes into its handle fibers $\mathrm{fiber}(\mathrm{space}, h, W) = \{o \in W \mid \mathrm{space}(o) = h\}$ (\lean{spaces_injective}, \lean{spaces_fire}). In the located first-order step (\lean{Spaces.located}), a firing at handle $a$ that adds no equations (\emph{quiet}) commutes with admission at any distinct handle $b \neq a$ (\lean{Spaces.independent}, \lean{Controls.quiet_read_independent}), whereas a read at space $1$ that binds a shared variable can refuse a read at space $2$ sharing that variable (\lean{Controls.shared_variable_crosses_spaces}: spaces separate resources and observations, not shared equations). Under facet rights $\Gamma : H \to \{\metta{receive}, \metta{peek}, \metta{send}, \metta{observe}\} \to \mathrm{Bool}$ (\lean{Step.Permissions}), a firing lacking the required right is refused (\lean{refused_without_receive}, \lean{refused_without_peek}, \lean{refused_without_send}), a permitted run is noninterfering with spaces where it holds no rights (\lean{permitted_noninterference}), a space without \metta{receive} \emph{only grows} (\lean{fiber_mono_without_receive}, preserving existential witnesses \lean{owned_witness_present}), and a space without \metta{send} \emph{only shrinks} (\lean{fiber_anti_without_send}, preserving universal absence \lean{owned_absence_preserved}).
+\end{enumerate}
+
+% =========================================================================
+\section{The Certain-Check Proof Calculus}
+\label{sec:certain-checks}
+% =========================================================================
+
+We now present the deductive core of the first-order Transform Calculus: the \emph{certain-check proof calculus} \lean{CertainChecks.Derives} (\lean{Step/ModelDerivation.lean}), together with its underlying region theorems (\lean{FirstOrderChecks.lean}, \lean{PrincipalCheckRegions.lean}) and disequality separation matrix (\lean{Step/Evidence.lean}).
+
+\subsection{Syntax, Regions, and Inference Rules of \lean{CertainChecks.Derives}}
+
+Fix a first-order signature $\sigma : \lean{LPSignature}$ with decidable equality on variables, constants, and function symbols, and let $\mathcal{A}_\sigma = \lean{FirstOrder.action}\;\sigma$ be the standard substitution action of $\mathrm{Subst}(\sigma)$ on $\mathrm{Term}(\sigma)$. A first-order check $c : \lean{Check}(\mathrm{Term}(\sigma))$ has one of three forms:
+\[
+  c \;\;::=\;\; \metta{equal}(t, u) \;\mid\; \metta{absent}(p) \;\mid\; \metta{count}(p, n)
+  \qquad (t, u, p \in \mathrm{Term}(\sigma),\; n \in \mathbb{N}).
+\]
+Given an equation store $K : \lean{EquationStore}(\mathrm{Term}(\sigma))$, an occurrence labelling $\ell : O \to \mathrm{Term}(\sigma)$, and a finite world of present occurrences $W : \lean{Finset}\;O$, the semantic satisfaction relation $c.\mathrm{Holds}(\mathcal{A}_\sigma, \theta, \ell, W)$ at a substitution $\theta : \mathrm{Subst}(\sigma)$ is:
+\begin{align*}
+  \metta{equal}(t, u).\mathrm{Holds}(\mathcal{A}_\sigma, \theta, \ell, W) &\iff \theta(t) = \theta(u), \\
+  \metta{absent}(p).\mathrm{Holds}(\mathcal{A}_\sigma, \theta, \ell, W) &\iff \forall o \in W,\; \theta(p) \neq \theta(\ell(o)), \\
+  \metta{count}(p, n).\mathrm{Holds}(\mathcal{A}_\sigma, \theta, \ell, W) &\iff \big|\{o \in W \mid \theta(p) = \theta(\ell(o))\}\big| = n.
+\end{align*}
+To decide whether $K$ is consistent \emph{and} entails $c.\mathrm{Holds}(\mathcal{A}_\sigma, \theta, \ell, W)$ across \emph{every} solution $\theta \models K$, \lean{FirstOrderChecks} defines pairwise compatibility and the \emph{certain} and \emph{possible} occurrence regions using the total occurs-checked unifier $\lean{unifyTotal} : \lean{EquationStore}(\mathrm{Term}(\sigma)) \to \lean{Option}(\mathrm{Subst}(\sigma))$:
+\begin{align}
+  \mathrm{compatible}(K, p, t) &:=\; \big(\mathrm{unifyTotal}(K \cup \{p \doteqStore t\})\big).\mathrm{isSome}, \label{eq:compatible}\\
+  \mathrm{certain}(\mu, \ell, W, p) &:=\; \{o \in W \mid \mu(p) = \mu(\ell(o))\}, \label{eq:certain-region}\\
+  \mathrm{possible}(K, \ell, W, p) &:=\; \{o \in W \mid \mathrm{compatible}(K, p, \ell(o)) = \mathrm{true}\}. \label{eq:possible-region}
+\end{align}
+
+\begin{figure}[t]
+\centering
+\fbox{\begin{minipage}{0.96\textwidth}
+\vspace{4pt}
+\textbf{Judgment Forms (\lean{Step/ModelDerivation.lean}):}
+\begin{itemize}[leftmargin=1.8em, nosep]
+  \item $K; \ell; W \ccseq c$ \quad (\lean{CertainChecks.Derives}): check $c$ is derivably certain from equation store $K$ over labelled world $(W, \ell)$.
+  \item $C; \ell \ccseq \mathrm{admit}(f)$ \quad (\lean{CertainChecks.AdmitsDerivably}): query-free first-order firing $f$ is derivably admitted at configuration $C = \langle K, W \rangle$.
+\end{itemize}
+\vspace{6pt}
+\textbf{Inference Rules for Certain Checks (\lean{CertainChecks.Derives}):}
+\[
+\frac{
+  \mathrm{unifyTotal}(K) = \mathrm{some}(\mu) \qquad \mu(t) = \mu(u)
+}{
+  K; \ell; W \ccseq \metta{equal}(t, u)
+}\;\RuleName{Der-Equal}\;(\lean{Derives.equal})
+\]
+\vspace{4pt}
+\[
+\frac{
+  \mathrm{unifyTotal}(K) = \mathrm{some}(\mu) \qquad
+  \forall o \in W,\; \mathrm{compatible}\big(K, p, \ell(o)\big) = \mathrm{false}
+}{
+  K; \ell; W \ccseq \metta{absent}(p)
+}\;\RuleName{Der-Absent}\;(\lean{Derives.absent})
+\]
+\vspace{4pt}
+\[
+\frac{
+  \begin{array}{c}
+  \mathrm{unifyTotal}(K) = \mathrm{some}(\mu) \qquad
+  \big|\mathrm{certain}(\mu, \ell, W, p)\big| = n \\[2pt]
+  \forall o \in W,\; \mu(p) = \mu(\ell(o)) \;\lor\; \mathrm{compatible}\big(K, p, \ell(o)\big) = \mathrm{false}
+  \end{array}
+}{
+  K; \ell; W \ccseq \metta{count}(p, n)
+}\;\RuleName{Der-Count}\;(\lean{Derives.count})
+\]
+\vspace{6pt}
+\textbf{Derivable Firing Admission (\lean{CertainChecks.AdmitsDerivably}):}
+{\small
+\[
+\frac{
+  \begin{array}{c}
+  \mathrm{Shapes}(C, f) \qquad \mathrm{Enabled}(C.\mathrm{present}, f.\mathrm{selection}) \\[2pt]
+  K_f := f.\mathrm{selection}.\mathrm{problem}(\ell, f.\mathrm{rule}, C) \qquad \mathrm{unifyTotal}(K_f).\mathrm{isSome} \\[2pt]
+  \forall c \in f.\mathrm{rule}.\mathrm{checks},\;\; K_f; \ell; C.\mathrm{present} \ccseq c
+  \end{array}
+}{
+  C; \ell \ccseq \mathrm{admit}(f)
+}\;\RuleName{Der-Admit}
+\]}
+\vspace{2pt}
+\end{minipage}}
+\caption{The Certain-Check Proof Calculus (\lean{CertainChecks.Derives} and \lean{AdmitsDerivably} in \lean{Step/ModelDerivation.lean}).}
+\label{fig:certain-checks}
+\end{figure}
+
+Figure~\ref{fig:certain-checks} displays the inference rules of \lean{CertainChecks.Derives} and \lean{CertainChecks.AdmitsDerivably}. Unlike operational negation-as-failure, \RuleName{Der-Absent} does \emph{not} test whether $\mu(p) \neq \mu(\ell(o))$ holds at the principal unifier $\mu$; instead, for every present occurrence $o \in W$, it requires $\mathrm{compatible}(K, p, \ell(o)) = \mathrm{false}$---that is, $\mathrm{unifyTotal}(K \cup \{p \doteqStore \ell(o)\}) = \mathrm{none}$, refuting the existence of any unifying extension. Similarly, \RuleName{Der-Count} requires that the principal unifier $\mu$ already equates $p$ with $n$ occurrences in $W$, and that every remaining occurrence $o \in W$ is incompatible with $p$ under $K$.
+
+\subsection{Worked Example: Absence Under Later Instantiation}
+
+\begin{example}[Guarded Default Firing vs.\ Open Workspace Occurrence]
+\label{ex:worked-absence}
+Consider a MeTTa workspace $W = \{o_1\}$ containing a single open atom $\ell(o_1) = \metta{(p \$X)}$ with empty equation store $K = []$. Suppose a program defines a specific rule for $\metta{(p a)}$ and a fallback rule $f_{\mathrm{def}}$ that emits $\metta{(fallback a)}$ at fresh occurrence $o_2$ when $\metta{(p a)}$ is absent (\lean{MeTTaOperationsCall.Probe.no_equation_returns_call}, \lean{Step.ProgramUnmatched}):
+\[
+  f_{\mathrm{def}}.\mathrm{rule} = \big\langle \mathrm{take}=[],\; \mathrm{read}=[],\; \mathrm{tell}=[],\; \mathrm{checks}=[\metta{absent}(\metta{(p a)})],\; \mathrm{produce}=[\metta{(fallback a)}] \big\rangle.
+\]
+Let us trace $C; \ell \ccseq \mathrm{admit}(f_{\mathrm{def}})$ through the rules of Figure~\ref{fig:certain-checks}:
+\begin{enumerate}[leftmargin=2em, nosep]
+  \item \textbf{Birth-Cut Store:} Since $f_{\mathrm{def}}$ takes, reads, and tells nothing, its birth-cut problem is $K_{f_{\mathrm{def}}} = []$. Running $\mathrm{unifyTotal}([])$ returns $\mathrm{some}(\mu)$ with $\mu = \mathrm{id}$.
+  \item \textbf{Why Principal-Answer Testing Fails:} At $\mu = \mathrm{id}$, we have $\mu(\metta{(p a)}) = \metta{(p a)} \neq \metta{(p \$X)} = \mu(\ell(o_1))$, so $\mathrm{certain}(\mathrm{id}, \ell, \{o_1\}, \metta{(p a)}) = \emptyset$. An engine checking only the principal answer would wrongly fire $f_{\mathrm{def}}$ (\lean{open_absence_remains_unaccepted}, \lean{OpenAbsence.the_three_guard_verdicts}).
+  \item \textbf{Refutation Check in \RuleName{Der-Absent}:} Rule \RuleName{Der-Absent} evaluates $\mathrm{compatible}([], \metta{(p a)}, \metta{(p \$X)})$ by calling $\mathrm{unifyTotal}([\metta{(p a)} \doteqStore \metta{(p \$X)}])$, which succeeds with $\mathrm{some}([\$X \mapsto \metta{a}])$. Thus $\mathrm{compatible} = \mathrm{true}$, $\mathrm{possible}([], \ell, \{o_1\}, \metta{(p a)}) = \{o_1\} \neq \emptyset$, and \RuleName{Der-Absent} \emph{refuses} $f_{\mathrm{def}}$.
+  \item \textbf{Resolution After Further Information:}
+  \begin{itemize}[nosep]
+    \item If a firing tells $\$X \doteqStore \metta{b}$ (with $\metta{b} \neq \metta{a}$), the new store is $K' = [\$X \doteqStore \metta{b}]$. Now $\mathrm{unifyTotal}([\$X \doteqStore \metta{b},\; \metta{(p a)} \doteqStore \metta{(p \$X)}]) = \mathrm{none}$, so $\mathrm{compatible}(K', \metta{(p a)}, \metta{(p \$X)}) = \mathrm{false}$, and $K'; \ell; \{o_1\} \ccseq \metta{absent}(\metta{(p a)})$ is derived by \RuleName{Der-Absent} (\lean{genuine_incompatibility_establishes_absence_and_zero_count}).
+    \item Alternatively, in the disequality instance \lean{Disequality.step} (\S\ref{subsec:evidence}), if the disequation frame records $\$X \neq \metta{a}$ while keeping $K = []$, no separating substitution can unify $\metta{(p a)}$ with $\metta{(p \$X)}$, and $f_{\mathrm{def}}$ is admitted without binding $\$X$ to any concrete constant (\lean{Evidence.Family.table}).
+  \end{itemize}
+\end{enumerate}
+\end{example}
+
+\subsection{Main Theorems of the Proof Logic (with Proof Sketches)}
+
+\begin{theorem}[Absence Refutation Reduction and Exact Count Squeeze]
+\label{thm:absence-count}
+Let $\mathcal{X} : \lean{Frames}\;\mathrm{Tm}\;\mathrm{Hom}$ be any frame system, $K$ an equation store at frame $a$, $W : \lean{Finset}\;O$ a finite set of present occurrences, $\ell : O \to \mathrm{Tm}(a)$ a labelling, and $p : \mathrm{Tm}(a)$ a pattern.
+\begin{enumerate}[leftmargin=2em, nosep]
+  \item \textbf{Absence Needs No Principal Answer (\lean{DependentFull.entails_absent_iff}, \lean{PrincipalCheckRegions.absent_iff_possible_empty}):}
+  $K$ entails that $p$ matches no occurrence in $W$ at any solution if and only if for every $o \in W$, the extended store $K \cup \{p \doteqStore \ell(o)\}$ is unsolvable:
+  \[
+  \begin{aligned}
+    \mathcal{X}.\mathrm{Entails}\big(K,\, \lambda b\,\tau.\; \forall o \in W,\, &\neg\,\mathcal{X}.\mathrm{E}(\mathcal{X}.\mathrm{act}\;\tau\;p,\, \mathcal{X}.\mathrm{act}\;\tau\;\ell(o))\big) \\
+    &\iff\; \forall o \in W,\; \neg\,\mathcal{X}.\mathrm{Solvable}\big(K \cup \{p \doteqStore \ell(o)\}\big).
+  \end{aligned}
+  \]
+  \item \textbf{Exact Count Squeeze at a Principal Answer (\lean{Frames.Principal.entails_count_iff}, \lean{PrincipalCheckRegions.count_iff_regions}):}
+  Suppose $\mu : \mathrm{Hom}(a, m)$ is a principal answer for $K$. For any solution $\tau : \mathrm{Hom}(a, b)$ of $K$, define $\mathrm{matchedAt}(\tau) := \{o \in W \mid \mathcal{X}.\mathrm{E}(\mathcal{X}.\mathrm{act}\;\tau\;p,\, \mathcal{X}.\mathrm{act}\;\tau\;\ell(o))\}$. Then:
+  \[
+  \begin{aligned}
+    \mathcal{X}.\mathrm{Entails}\big(K,\, &\lambda b\,\tau.\; |\mathrm{matchedAt}(\tau)| = n\big) \;\iff\; |\mathrm{matchedAt}(\mu)| = n \\
+    &\land\; \forall o \in W \setminus \mathrm{matchedAt}(\mu),\; \neg\,\mathcal{X}.\mathrm{Solvable}\big(K \cup \{p \doteqStore \ell(o)\}\big).
+  \end{aligned}
+  \]
+\end{enumerate}
+\end{theorem}
+\begin{proof}[Proof Sketch]
+For (1), an occurrence $o \in W$ violates absence at some solution $\tau \models K$ iff $\tau$ also solves $p \doteqStore \ell(o)$, which by definition of \lean{models_append} holds iff $\tau \models K \cup \{p \doteqStore \ell(o)\}$; negating existential solvability over $o \in W$ yields the universal refutation condition without assuming a principal answer.
+
+For (2), because $\mu$ is principal for $K$, any solution $\tau \models K$ factors as $\tau \equiv \rho \circ \mu$ for some residual morphism $\rho$ (\lean{principal.factors}). By congruence (\lean{preserves}), any equation $\mathrm{act}(\mu, p) \equiv \mathrm{act}(\mu, \ell(o))$ is preserved by $\rho$, so $\mathrm{matchedAt}(\mu) \subseteq \mathrm{matchedAt}(\tau) \subseteq \mathrm{possibleRegion}(K)$ for every $\tau \models K$ (\lean{Principal.equated}, \lean{principal_region_subset}).
+$(\Rightarrow)$: If $|\mathrm{matchedAt}(\tau)| = n$ for all $\tau \models K$, then choosing $\tau = \mu$ gives $|\mathrm{matchedAt}(\mu)| = n$. If some $o \in W \setminus \mathrm{matchedAt}(\mu)$ had a solution $\tau \models K \cup \{p \doteqStore \ell(o)\}$, then $\mathrm{matchedAt}(\mu) \subsetneq \mathrm{matchedAt}(\tau)$ would be a strict finite subset (\lean{Finset.ssubset_iff_subset_ne}), forcing $n = |\mathrm{matchedAt}(\mu)| < |\mathrm{matchedAt}(\tau)| = n$ (\lean{Finset.card_lt_card}), a contradiction.
+$(\Leftarrow)$: Conversely, if every $o \notin \mathrm{matchedAt}(\mu)$ has $K \cup \{p \doteqStore \ell(o)\}$ unsolvable, then no $\tau \models K$ can equate $p$ with any $o \notin \mathrm{matchedAt}(\mu)$, so $\mathrm{matchedAt}(\tau) \subseteq \mathrm{matchedAt}(\mu)$. Combined with $\mathrm{matchedAt}(\mu) \subseteq \mathrm{matchedAt}(\tau)$, the finite sets coincide and $|\mathrm{matchedAt}(\tau)| = |\mathrm{matchedAt}(\mu)| = n$.
+\end{proof}
+
+\begin{theorem}[Soundness, Henkin Completeness, Herbrand Incompleteness, and Derivable Admission]
+\label{thm:henkin-completeness}
+In the first-order proof calculus \lean{CertainChecks} (\lean{Step/ModelDerivation.lean}):
+\begin{enumerate}[leftmargin=2em, nosep]
+  \item \textbf{Executable Equivalence and Semantic Entailment (\lean{derives_iff_accepts}, \lean{derives_iff_entails}):}
+  \[
+  \begin{aligned}
+    (K; \ell; W \ccseq c) &\;\iff\; \mathrm{acceptsCertainCheck}(K, \ell, W, c) = \mathrm{true} \\
+    &\;\iff\; \mathcal{A}_\sigma.\mathrm{Consistent}(K) \land \mathcal{A}_\sigma.\mathrm{Entails}(K, c.\mathrm{Holds}).
+  \end{aligned}
+  \]
+  \item \textbf{Soundness and Completeness for Free Henkin Models and the Term Algebra (\lean{derives_sound_free}, \lean{derives_complete_generic}, \lean{derives_iff_termModel}):}
+  If $K; \ell; W \ccseq c$, then $\mathrm{checkGuard}(\ell, W, c)$ holds at every point satisfying $K$ of every free Henkin model in every universe. Conversely, if $K$ has a generic point and $\mathrm{checkGuard}(\ell, W, c)$ holds at every generic point satisfying $K$, then $K; \ell; W \ccseq c$. In particular, one set model---the free term algebra $\mathrm{termModel}(\sigma)$ whose points are substitutions $\theta : \sigma.\mathrm{vars} \to \mathrm{Term}(\sigma)$---is both sound and complete (\lean{derives_iff_termModel}), and for distinct constants $c \neq d$, $\neg(K; \ell; W \ccseq \metta{equal}(c, d))$ (\lean{not_derives_clash}).
+  \item \textbf{Incompleteness of the Ground Herbrand Model (\lean{oneConstant_separates}):}
+  The ground Herbrand model $\mathrm{herbrandModel}(\sigma)$ is sound (\lean{derives_herbrand_sound}) but \emph{not} complete: over the signature $\mathrm{oneSig}$ with one constant $\mathtt{c}$, no function symbols, and variables $\mathbb{N}$, the check $\metta{equal}(X_0, \mathtt{c})$ holds at every ground assignment $g : \mathbb{N} \to \mathrm{GroundTerm}(\mathrm{oneSig})$ over the empty store $K = []$, yet $[] ; \ell ; \emptyset \not\ccseq \metta{equal}(X_0, \mathtt{c})$.
+  \item \textbf{Admission as Formal Derivation (\lean{admitsDerivably_iff}):}
+  For every query-free first-order firing $f$ ($f.\mathrm{queries} = []$),
+  \[
+    (C; \ell \ccseq \mathrm{admit}(f)) \;\iff\; f.\mathrm{Valid}\;\mathcal{A}_\sigma\;\ell\;C.
+  \]
+\end{enumerate}
+\end{theorem}
+\begin{proof}[Proof Sketch]
+Part (1) combines the soundness and principality of total occurs-checked unification (\lean{FirstOrder.accepted_principal}, \lean{FirstOrder.refused_iff_inconsistent}) with Theorem~\ref{thm:absence-count} (\lean{equal_iff_principal_answer}, \lean{absent_iff_possible_empty}, \lean{count_iff_regions}).
+For Part (2), any free Henkin model $M$ realizes every syntactic substitution action homomorphically (\lean{Frames.HenkinModel.sound}), yielding soundness across all universes; completeness follows because the generic model $\mathrm{Frames.generic}$ (and Concrete $\mathrm{termModel}(\sigma)$) contains the identity substitution $\mathrm{Subst.id}$ and all substitution instances as points (\lean{Frames.complete}, \lean{termModel_realizes}).
+For Part (3), in $\mathrm{oneSig}$ every closed ground term $g(0) : \mathrm{GroundTerm}(\mathrm{oneSig})$ is necessarily $\mathrm{GroundTerm.const}\;()$ by case analysis (since $\mathrm{functionSymbols} = \mathrm{Empty}$), so $g \models (X_0 = \mathtt{c})$ for all ground $g$; however, in $\mathrm{termModel}(\mathrm{oneSig})$, the identity substitution $\theta_{\mathrm{id}}(X_0) = \mathrm{Term.var}\;0 \neq \mathrm{Term.const}\;()$ models $K = []$ and falsifies $X_0 = \mathtt{c}$, refuting derivability.
+Part (4) unfolds \lean{firstOrder_admits_iff}: when $f.\mathrm{queries} = []$, universal satisfaction of $f.\mathrm{rule}.\mathrm{checks}$ over a solvable $K_f$ is equivalent by Part (1) to $\mathrm{unifyTotal}(K_f).\mathrm{isSome}$ plus $K_f; \ell; C.\mathrm{present} \ccseq c$ for each $c \in f.\mathrm{rule}.\mathrm{checks}$.
+\end{proof}
+
+\subsection{Conflicting Evidence vs.\ Inconsistent Stores and the \texorpdfstring{$4 \times 4$}{4x4} Separation Matrix}
+\label{subsec:evidence}
+
+A critical distinction in non-monotonic and epistemic reasoning is that \emph{conflicting evidence in the workspace is data, whereas an inconsistent equation store is unsolvable knowledge} (\lean{Step/Evidence.lean}). Adding both an evidence atom $\metta{ev(p)}$ and an opposing atom $\metta{opp(p)}$ to the workspace leaves the equation store consistent (\lean{Evidence.Rows.conflict_consistent}): a firing \lean{weigh} that reads both is admitted (\lean{weigh_admitted}), whereas a defeasible firing \lean{accept} that reads $\metta{ev(p)}$ under an absence guard $\metta{absent(opp(p))}$ is admitted when $\metta{ev(p)}$ is alone (\lean{accept_admitted_with_evidence}) and refused once $\metta{opp(p)}$ arrives (\lean{accept_refused_with_opposition}). By contrast, telling both $X \doteqStore \metta{true}$ and $X \doteqStore \metta{false}$ into the equation store is refused (\lean{tell_false_refused_after_true}), and a state containing both admits no firing at all (\lean{both_tells_admit_nothing}).
+
+\begin{table}[t]
+\centering
+\caption{The $4 \times 4$ Evidence Separation Matrix proved in \lean{Evidence.Family.table} and \lean{Evidence.Family.profiles_distinct} (\lean{Step/Evidence.lean}) over the disequality step (\lean{Disequality.step}) with rows $\ell(1) = \metta{opp(a)}$ and $\ell(2) = \metta{p(X)}$.}
+\label{tab:evidence-matrix}
+\footnotesize
+\setlength{\tabcolsep}{3.5pt}
+\renewcommand{\arraystretch}{1.18}
+\begin{tabular}{@{}p{3.0cm}p{4.3cm}llll@{}}
+\toprule
+\textbf{Member} & \textbf{Workspace \& Frame State} & \textbf{Guard} & \textbf{Read} & \textbf{Tell} & \textbf{Read} \\
+(\lean{Evidence.Family.Member}) & & \textbf{no $\metta{p(a)}$} & \textbf{$\metta{opp(a)}$} & \textbf{$X \doteqStore \metta{a}$} & \textbf{$\metta{p(a)}$} \\
+\midrule
+1. \lean{Member.covered} & Nothing present ($W = \emptyset, D = []$) & Admitted & Refused & Admitted & Refused \\
+2. \lean{Member.refuted} & $\metta{opp(a)}$ present ($W = \{1\}, D = []$) & Admitted & Admitted & Admitted & Refused \\
+3. \lean{Member.incomplete} & $\metta{p(X)}$ present, $X$ open ($W = \{2\}, D = []$) & Refused & Refused & Admitted & Admitted \\
+4. \lean{Member.disequal} & $\metta{p(X)}$ present ($W = \{2\}, D = [X \neq \metta{a}]$) & Admitted & Refused & Refused & Refused \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Furthermore, over the disequality step \lean{Disequality.step} (\lean{Step/Disequality.lean}), \lean{Evidence.Family} proves that four distinct epistemic states regarding ``not finding $\metta{p(a)}$'' have pairwise distinct behavioral profiles across four atomic firing probes (\lean{Evidence.Family.table}, \lean{Evidence.Family.profiles_distinct}, Table~\ref{tab:evidence-matrix}). In particular, Member~3 (\lean{Member.incomplete}, where $\metta{p(X)}$ is present with $X$ open) refuses the absence guard ``no $\metta{p(a)}$'' while admitting the tell $X \doteqStore \metta{a}$ and the unifying read $\metta{p(a)}$; a partial scan that skips the open row $o = 2$ would falsely license the absence guard (\lean{incomplete_scan_would_license}, \lean{skipping_scan_not_covering}). Member~4 (\lean{Member.disequal}, where $\metta{p(X)}$ is present under the disequation frame $X \neq \metta{a}$) derivably admits the absence guard ``no $\metta{p(a)}$'' while refusing both the tell $X \doteqStore \metta{a}$ (\lean{same_refused}) and the read $\metta{p(a)}$. In general, as proved in \lean{Disequality.presents_iff}, a satisfiable disequation store that some substitution violates (such as $X \neq \metta{a}$) has no single presenting substitution; elevating disequation stores into the frame category \lean{Disequality.frames} recovers principal answers as morphisms into the residual disequation frame (\lean{Disequality.principal}, \lean{solvable_iff_separates}).
+
+% =========================================================================
+\section{Proof Calculi and Fair Search as Firings}
+\label{sec:atp}
+% =========================================================================
+
+Because \lean{Interface.Step} separates non-consuming reads from consuming takes and supports solution-level guards, classic automated theorem proving calculi and search engines embed directly as firings and runs of the step.
+
+\subsection{Resolution, Guarded Superposition, and Ground Completion}
+
+\begin{enumerate}[leftmargin=2em, nosep]
+  \item \textbf{First-Order Resolution (\lean{Step.ResolutionFiring}, \lean{Step.ResolutionReadPort}, \lean{Step.ResolutionAnswers}):}
+  Background clauses are kept in place and read via the read port (\lean{ReadPort.resolve_valid_iff}), while active goal clauses are taken and replaced by their resolvents (\lean{resolve_sld_step}). Switching literal selection order yields trace-equivalent firings (\lean{resolve_switch_traceEquiv}), and $N$-step resolution derivations are sound and refutationally complete (\lean{NDerivation.complete}). By contrast, attempting to split a positive disjunction $P \lor Q$ in a single deterministic firing without branching leaves an unconsumed residue (\lean{Controls.split_leaves_residue}).
+
+  \item \textbf{Superposition and the Upward Closure of Co-Stable Guards (\lean{Step.SuperpositionGuarded}, \lean{Step.SuperpositionCompleteness}, \lean{Step.SuperpositionGenerator}):}
+  Superposition requires ordering side conditions such as $\neg(r \succeq l)$ that lie outside the syntax of \lean{Check}. \lean{Superposition.guarded} extends \lean{AnnotatedRuns.firstOrder} with solution predicates $G : S \to \mathrm{Prop}$. A subtlety arises at the birth cut: while positive equations are \emph{stable} under instantiation ($\mathrm{Stable}(G) := \forall \nu\,\sigma,\, G(\sigma) \implies G(\nu \circ \sigma)$), negated ordering constraints $\neg(r \succeq l)$ are \emph{co-stable} ($\mathrm{CoStable}(G) := \forall \nu\,\sigma,\, G(\nu \circ \sigma) \implies G(\sigma)$). Asking a co-stable guard at \emph{every} solution of $K$ is strictly stronger than asking it at the principal unifier $\mu$ (\lean{at_principal_of_entails}). \lean{Step.SuperpositionGuarded} resolves this by taking the \emph{upward closure} of $G$:
+  \[
+    \mathrm{Closure}(K, G)(\sigma) \;:=\; \exists \tau \models K,\;\; \mathrm{Factors}(\sigma, \tau) \;\land\; G(\tau).
+  \]
+  $\mathrm{Closure}(K, G)$ is always stable (\lean{Closure.stable}), and at any store $K$ with a principal unifier $\mu$, universal entailment of $\mathrm{Closure}(K, G)$ over all solutions is equivalent to $G(\mu)$ at the MGU (\lean{entails_closure_iff})---and over a minimal complete set of unifiers $U$, to $\forall \mu \in U,\, G(\mu)$ (\lean{entails_closure_iff_complete}). On ground clauses, the superposition calculus is refutationally complete via Bachmair--Ganzinger model construction (\lean{SuperpositionCompleteness}), simplification takes redundant clauses (\lean{simplify_takes_redundant}), and the fair given-clause loop is complete (\lean{givenClause_complete}).
+
+  \item \textbf{Ground Knuth--Bendix Completion (\lean{Step.CompletionFiring}, \lean{Step.CompletionCorrectness}, \lean{Step.CompletionCommutativity}):}
+  All six rules of ground Knuth--Bendix completion~\cite{KnuthBendix1970Simple} over $\mathrm{GroundTerm}(\sigma)$---Deduce, Orient, Delete, Simplify, Compose, and Collapse---are formalized as firings (\lean{Move.transition}), where inference rules read equations and simplification rules take and replace them. Every fair derivation from a decreasing initial state converges to a canonical convergent system deciding the equational theory (\lean{Derivation.convergent}, \lean{Derivation.decides}), whereas commutativity can never be oriented by any symmetric reduction order (\lean{no_symmetric_order_orients}, \lean{commutativity_fails}).
+\end{enumerate}
+
+\subsection{The Search Outcome Algebra, Guard Polarities, and Fair Exploration (\lean{Step.Search*}, \lean{Step.GuardFragments*}, \lean{Step.FairSearch*})}
+
+When multiple firings contend at a configuration, bounded exploration and behavioral guards are governed by \lean{SearchOutcome.Outcome} (\lean{Step/SearchOutcome.lean}, \lean{Step/SearchSpace.lean}, \lean{Step/SearchPolicy.lean}) and the polarity-graded guard suite (\lean{Step/GuardFragments.lean}, \lean{Step/GuardFragmentsOpen.lean}, \lean{Step/GuardLowering.lean}, \lean{Step/MeteredGuards.lean}, \lean{Step/FairSearch.lean}, \lean{Step/FairSearchIdentity.lean}, \lean{Step/FairSearchGuards.lean}):
+\begin{itemize}[leftmargin=1.8em, nosep]
+  \item \textbf{Commutative Nondeterminism Monad \& Three-Valued Verdicts:} Search outcomes carry a bag of answers and a termination status (\metta{complete} vs.\ \metta{cutOff}), forming a commutative monad up to multiset equivalence (\lean{Outcome.choice_comm}, \lean{Outcome.bind_assoc}). The three-valued verdict (\lean{Outcome.verdict}) strictly separates resource exhaustion (\metta{.cutOff}) from finite failure (\metta{.refuted}): a cut-off search never yields a refutation verdict (\lean{Outcome.verdict_ne_refuted_of_cutOff}), proved refutations are sound across all budgets (\lean{refuted_sound}), and conflating cutoff with refutation is unsound (\lean{Controls.misread_refutes}). While depth-first search can be trapped forever in a left-recursive branch (\lean{Controls.dfs_loses}), breadth-first search and iterative deepening find every reachable answer at a finite budget (\lean{bfs_complete}, \lean{deepen_complete}; tabling controls in \lean{Step.SearchTabling} and \lean{Step.ResolutionTabling}).
+  \item \textbf{Guard Polarities, Park Certificates, and Exact Lowering (\lean{Step.GuardFragments}, \lean{Step.GuardLowering}):} Behavioral guards over a datum's transition graph split into reachability ($\Sigma$, least fixed point, witnessed by one finite path \lean{eventually_iff_exists_checkPath}) and safety/invariance ($\Pi$, greatest fixed point, refuted by one finite path \lean{not_always_iff_exists_checkPath}). Certifying a $\Pi$ guard requires a finite post-fixed point (Park induction), which exists if and only if the datum holds and has finitely many reachable states (\lean{exists_invariant_iff}, \lean{always_iff_exists_checkInvariant}); on cyclic finite-state data, the three-valued closure verdict \lean{verdictAlways} commits where depth-bounded tree search is cut off at every budget (\lean{always_iff_exists_commit}, \lean{tree_search_never_certifies_loop}), whereas infinite-state data remain suspended at every finite budget and require an offline symbolic invariant (\lean{suspended_of_infinite}, \lean{always_iff_of_symbolicInvariant}). On open data, $\Sigma$ guards are stable and decided at a principal answer (\lean{eventually_entails_iff}), whereas $\Pi$ guards are not (\lean{always_not_stable}). Replacing a $\Pi$ specification by a checked certificate preserves and reflects all runs modulo certificate erasure whenever configurations preserve the finite-state invariant (\lean{runs_spec_iff_lowered}, \lean{certified_runs}), whereas unfolding over a subset not closed under successors admits unsoundly (\lean{closure_free_unsound}, \lean{closure_free_admits_wrongly}). Guard cost must be metered as a site charge on the certificate (\lean{certified_metered_iff}) rather than by store-scan size, which breaks interleaving invariance (\lean{scan_price_order}).
+  \item \textbf{Fair Search Makes the Certificate \& Branching-Time Proof Identity (\lean{Step.FairSearch*}, \lean{Step.FairSearchIdentity}):} Monotone search firings that only read and make saturate the reachable state space under weak fairness (\lean{fires_or_preempted}, \lean{fair_search_certifies}, \lean{answer_sound}, \lean{answer_eventually}). By contrast, search firings that \emph{take} a goal (competing OR-receives) can fail to prove even along a strongly fair run when a proof is reachable (\lean{race_stronglyFair}, \lean{race_never_proves}, \lean{race_proof_reachable}), whereas adding a repair firing yields the exact same reachable stores and converges under weak fairness (\lean{reachability_does_not_decide_fair_completeness}). Fair completeness requires $\mathsf{AG}\,\mathsf{EF}$ (persistent reachability), which is preserved by observed bisimilarity with zero axioms (\lean{alwaysPossibly_of_bisimilar}, \lean{search_identity_is_branching}).
+\end{itemize}
+
+% =========================================================================
+\section{Programs on the Step: Compilation, Interpretation, and Binders}
+\label{sec:programs}
+% =========================================================================
+
+The \lean{Step.Program*} suite establishes how functional and rewrite programs execute over the Transform Calculus on the ordinary first-order step and the higher-order contextual step:
+
+\begin{enumerate}[leftmargin=2em, nosep]
+  \item \textbf{Substitution Evaluation vs.\ Environment Machine (\lean{Step.ProgramSubstitution}, \lean{Step.ProgramSubstitutionMachine}):}
+  Following Plotkin~\cite{Plotkin1975CallByName}, evaluation of closed terms (\lean{Term}) by environment frames and explicit closures corresponds forward and backward to substitution-based evaluation (\lean{plotkin_forward}, \lean{plotkin_backward}, \lean{plotkin_closed}) and to the multi-step abstract machine on the step (\lean{machine_iff}).
+
+  \item \textbf{Compiled Rule Schemas vs.\ Stored-Equation Interpreter (\lean{Step.ProgramEquations}, \lean{Step.ProgramCompiledInterpreter}, \lean{Step.ProgramCompiledObstruction}):}
+  A program of pattern equations $\metta{(= lhs rhs)}$ executes in two ways:
+  \begin{itemize}[nosep]
+    \item \emph{Compiled execution} (\lean{ProgramEquations.compile}): each program equation compiles to its own rule schema, rewriting a call in a single firing (\lean{eqStep_iff}, \lean{equations_execution}; versioned updates in \lean{vstep_iff}, \lean{vexecution}). On open calls, two-way unification computes answers in one firing uniquely up to MGU variable renaming~\cite{Eder1985Properties} (\lean{mgu_unique_up_to_renaming}). When no equation matches, a default branch fires under an \metta{absent} guard once the unmatched call is sufficiently instantiated for absence to be stable (\lean{absence_stable}, \lean{unmatched_fire} in \lean{Step.ProgramUnmatched}).
+    \item \emph{Stored-equation interpretation} (\lean{ProgramCompiled.metaProg}, \lean{Step.ProgramInterpreterConverseJoin}): by \lean{no_fixed_one_firing_interpreter} (\lean{Step/ProgramCompiledObstruction.lean}), no fixed finite family of rule schemas with bounded pattern variables can interpret arbitrary stored equations in a single firing. Instead, \lean{metaProg} is a fixed 16-equation interpreter that reads stored equation codes (\lean{eqCode}) and executes administrative matching (\metta{mt}, \metta{ck}) and building (\metta{bj}, \metta{rd}) firings. On ground calls of a range-restricted program, \emph{one compiled firing corresponds to a complete multi-firing interpreter run} (\lean{compiled_iff_interpreted}), an interpreter step embeds into a firing on the step (\lean{interpreter_join_on_step}), and on open calls with data rows (\lean{DataRows}), interpreted and compiled answers agree \emph{both ways} up to MGU variable renaming (\lean{interpreter_join_converse}, \lean{interpreter_join_forward}, \lean{interpreter_join_iff}).
+  \end{itemize}
+
+  \item \textbf{Nested Calls, Call-by-Need Sharing, Inert Quotation, and Binders (\lean{Step.ProgramNested*}, \lean{Step.ProgramNeed*}, \lean{Step.ProgramReflection}, \lean{Step.ProgramBinders*}, \lean{Step.ProgramHosts}):}
+  Nested expression calls reduce via an 8-rule stack operational semantics \lean{KStep} and tree semantics \lean{CStep} (\lean{Step/ProgramNestedSource.lean}), which are sound and complete for nested execution on the step (\lean{nested_execution}, \lean{reference_complete}), while Launchbury call-by-need evaluation with heap-shared thunks corresponds both ways to step runs (\lean{nstep_fires}, \lean{fires_nstep}, \lean{need_on_step}, \lean{need_eval_on_step} in \lean{Step.ProgramNeedStepAdequacy}). Sequences of workspace effects (\metta{add-atom} followed by \metta{remove-atom}) stage into a single atomic firing with no partial intermediate effects (\lean{defer_one_firing}, \lean{no_partial_effects}). Quoted expressions $\metta{(quote }e\metta{)}$ are completely inert (\lean{quotation_inert}), and activating a quoted expression runs the multi-step evaluation machine on the step (\lean{activate_quote_on_step}), while raw syntactic variable-reflection probes violate semantic congruence (\lean{reflect_not_semantic}, \lean{ordinary_by_rows}). On the higher-order contextual guarded step (\lean{ContextualGuardedStep}), pattern equations rewrite under $\lambda$-binders via quoted contextual terms (\lean{quoted_rewrites_iff}, \lean{quoted_execution_iff} in \lean{Step.ProgramBindersQuoted}) and obey a general raising grammar law (\lean{raise_answers_iff}, \lean{root_runs_on_step} in \lean{Step.ProgramBindersRaisingConverse}, \lean{Step.ProgramBindersRaisingConverseGrammar}): absence of a matching equation at a contextual firing is decided by certified refutation on the Miller pattern fragment (\lean{guarded_admitted_iff}, \lean{certified_guarded}, \lean{certifies_guarded_of_absent}, \lean{absence_stable}), unmatched calls under binders return themselves (\lean{returns_iff}, \lean{returned_is_final}, \lean{evaluates_iff} in \lean{Step.ProgramBindersUnmatched}) and agree with the first-order host on embedded rows (\lean{absence_agrees}, \lean{return_admitted_iff} in \lean{Step.ProgramHosts}), and both general innermost reduction and deterministic leftmost-innermost reduction under binders are sound, complete, and decided (\lean{innermost_step_iff}, \lean{innermost_execution_iff}, \lean{innermost_of_certified}, \lean{innermost_redex_certified}, \lean{leftmost_step_iff}, \lean{leftmost_execution_iff} in \lean{Step.ProgramBindersStrategy}, \lean{Step.ProgramBindersStrategyDecision}, \lean{Step.ProgramBindersLeftmostStep}).
+\end{enumerate}
+
+% =========================================================================
+\section{Concurrency, Races, and Behavioral Equivalence}
+\label{sec:concurrency}
+% =========================================================================
+
+\begin{theorem}[Concurrency Diamonds Across Step Instances]
+\label{thm:diamonds}
+Across the first-order, contextual, and dependent instances of \lean{Interface.Step}:
+\begin{enumerate}[leftmargin=2em, nosep]
+  \item \textbf{First-Order and Contextual Diamonds (\lean{AnnotatedRuns}, \lean{Step.ContextualDiamond}):}
+  Two firings with disjoint consumed footprints, mutually compatible birth-cut stores, and non-interfering query regions commute up to state isomorphism (\lean{swap_valid}, \lean{traceEquiv_executable}, \lean{Step.ContextualDiamond}).
+  \item \textbf{Dependent Plain, Helper, and Telescope Diamonds (\lean{Step.DependentFullIndependence}, \lean{Step.DependentFullSwap}, \lean{Step.DependentFullTelescopes}, \lean{Step.DependentFullRaceHelpers}):}
+  In \lean{DependentFull.step}, two plain firings at frame $\Delta$ commute iff their mutual residuals are admitted (\lean{local_diamond}, \lean{independent_iff_residuals}). Two helper firings introducing fresh metavariables $x : A$ and $y : B$ commute via the context swap isomorphism $\Gamma, x:A, y:B \cong \Gamma, y:B, x:A$ (\lean{helper_diamond}), whereas if $B$ depends on $x$, no independent residual exists before $x$ is introduced (\lean{no_residual_of_mentions}). Multi-variable helper telescopes $\vec{H}_1, \vec{H}_2$ commute similarly (\lean{telescope_diamond}), and isomorphic helper states induce branching bisimilarity (\lean{helper_branchingBisimilar_of_same}).
+\end{enumerate}
+\end{theorem}
+
+\paragraph{Milner's Race Pair and the Behavioral Spectrum (\lean{Step.RacePair}, \lean{Step.RaceSpectrum}).}
+When two firings compete for a shared occurrence, trace equivalence and answer-bag equality are strictly coarser than bisimilarity. In \lean{Step/RacePair.lean}, Milner's classic pair~\cite{Milner1980CCS} $P = a.(b + c)$ and $Q = a.b + a.c$ is realized directly as firings on the step: $P$ and $Q$ are trace-equivalent (\lean{traceEquivalent_P_Q}) and produce identical answer bags at every depth (\lean{collect_P_eq_collect_Q}), yet for $b \neq c$ they are not bisimilar (\lean{not_bisimilar_P_Q}). Across \lean{Step/RaceSpectrum.lean} and \lean{Step/RaceHistories.lean}, the formalization establishes the strict hierarchy:
+\[
+  \text{\small History-Preserving Bisim.} \;\subsetneq\; \text{\small Step Bisim.} \;\subsetneq\; \text{\small Interleaving Bisim.} \;\subsetneq\; \text{\small Trace / Bag Equivalence}.
+\]
+
+\paragraph{Graded Choice, Causal-History Factorization, and Interventions (\lean{Step.CausalHistories}, \lean{Step.Contention}, \lean{Step.Intervention}).}
+When enabled firings carry positive rates, total exit rates add across parallel components (\lean{total_par}), and summing the global jump-chain likelihood over all interleavings (\lean{shuffles}) of two non-interfering maximal runs $\alpha, \beta$ yields the exact product of their component history probabilities (\lean{sum_shuffles}, \lean{history_factorizes}, \lean{history_factorizes_three}, \lean{step_history_product}, \lean{local_exact}). Crucially, on a step with absence guards, contention must be defined as step interference rather than consumed-occurrence sharing alone (\lean{not_independent_of_contends}): when one firing emits an atom that another firing's absence guard forbids, sharing-only normalization assigns total mass $2$ whereas interference-aware normalization recovers total mass $1$ (\lean{inhibition_control}). On inhibition-free firings, no external context can force a positive-weight race to certainty (\lean{no_context_forces}), whereas with an absence guard a single added context atom performs a hard causal intervention (\lean{forcing_control}, \lean{context_performs_do}). Scoped interventions $\mathsf{do}(\varphi)$ compose commutatively (\lean{restrictWeight_comm}), lower exactly on static alphabets (\lean{prob_restrictWeight}), and when placed at a located space $i$ reach only firings holding the $\lean{send}$ permission at $i$ (\lean{doAt_of_no_send}).
+
+% =========================================================================
+\section{Contextual \& Dependent Instances and Formalization Status}
+\label{sec:dependent}
+% =========================================================================
+
+We now summarize the higher-order contextual and dependent instances of \lean{Interface.Step}, the open versus closed admission distinction, the three fibre-join theorems, and the exact boundary between completed proofs and active work in progress.
+
+\subsection{Contextual and Dependent Instances and the Open/Closed Admission Trap}
+
+\begin{enumerate}[leftmargin=2em, nosep]
+  \item \textbf{Contextual Second-Order Frames (\lean{Interface.Frames.contextual}):}
+  In \lean{Step/Interface.lean}, \lean{Frames.contextual} takes declaration frames $F = (\mathrm{Names}, \mathrm{arity})$ as objects and contextual assignments as morphisms acting on observations by capture-avoiding instantiation. Because the frame $\lean{firstOrderFrame}\;S$ (one parameterless metavariable per sort) is weakly terminal (\lean{firstOrderFrame_weaklyTerminal}), semantic solvability of any contextual equation store is witnessed at a first-order frame without needing higher-order helpers (\lean{contextual_solvable_iff_firstOrder}), and on an inhabited frame coincides with endomorphic consistency (\lean{contextual_solvable_iff_consistent}).
+
+  \item \textbf{Typed Dependent Frames and Subject Reduction (\lean{Step.TypingStates}, \lean{Step.DependentFull}):}
+  On the dependent helper step (\lean{Dependent.helperStep}), state typing is preserved along every run (\lean{TypingStates.run_preserves}), and along runs from a simple frame with empty knowledge, the non-dependent simple fibre decides admission identically to the dependent helper step (\lean{Dependent.simpleStep_admits_iff}, \lean{Dependent.admits_iff_along}). On the full dependent step (\lean{DependentFull.step}), every admitted firing preserves typing of all surviving and newly made rows at the extended telescope $\Delta = f.\mathrm{helpers}.\mathrm{frame}$ (\lean{Firing.subject_reduction}).
+
+  \item \textbf{Open vs.\ Closed Admission (\lean{Step.DependentClosed}):}
+  Given a designated closed frame $\mathrm{point}$ (the empty context $\cdot$), \lean{Step.ClosedAdmits} \emph{replaces} symbolic solvability and symbolic entailment in Eq.~\eqref{eq:admits-iff} with $\mathcal{X}.\mathrm{ClosedSolvable}(\mathrm{point}, \mathrm{information}(f))$ and $\mathcal{X}.\mathrm{ClosedEntails}(\mathrm{point}, \mathrm{information}(f), \mathrm{Holds}(f, \mathrm{point}))$:
+  \[
+  \begin{aligned}
+    P.\mathrm{ClosedAdmits}(\mathrm{point}, f) \iff\;& P.\mathrm{Shapes}(f) \;\land\; \mathrm{Enabled}\big(P.\mathrm{present}(s), P.\mathrm{selection}(f)\big) \\
+    &\land\; \mathcal{X}.\mathrm{ClosedSolvable}(\mathrm{point}, K_f) \\
+    &\land\; \mathcal{X}.\mathrm{ClosedEntails}(\mathrm{point}, K_f, \mathrm{Holds}).
+  \end{aligned}
+  \]
+  While symbolic solvability ignores the type $A$ of a fresh metavariable (\lean{solvable_extend_iff}: $K$ lifted to $\Gamma, x:A$ is symbolically solvable iff $K$ is solvable at $\Gamma$), closed solvability requires $A$ to be inhabited at a closed solution of $K$ (\lean{closedSolvable_extend_iff}). Consequently, at a frame $x : A$ where $A$ has no closed term, the empty store is symbolically solvable but not closed-solvable (\lean{obligation_trap}), and a guard-free helper firing is symbolically admitted yet closed-refused (\lean{trap_helper}). When $K$ has a principal answer into a closed-inhabited frame, symbolic and closed solvability coincide (\lean{closedSolvable_iff_of_principal}).
+\end{enumerate}
+
+\subsection{The \texorpdfstring{$\eta$}{eta}-Long Fibre and the Three Fibre-Join Theorems}
+
+When embedding a second-order step into a dependent type theory with $\Pi$, $\Sigma$, and $\mathrm{Id}$ types, two obstacles arise if $\beta\eta$-disciplines are misconfigured: (i) if object-level $\beta$-redexes are conflated with meta-level instantiation, solvable equations become unsolvable (\lean{ObjectTheory.object_beta_unsolvable}); and (ii) without $\eta$-conversion (\lean{ContextualDependentEta.function_eta}, \lean{pair_eta}), even simple pattern equations such as $(\lambda y.\, M(y)) \doteqStore N$ have two incomparable minimal solutions ($N \mapsto \lambda y.\, M(y)$ and $M \mapsto \lambda y.\, N(y)$) and therefore \emph{no principal unifier} (\lean{pattern_no_principal}).
+
+In \lean{ContextualDependentFibre.lean}, the composite frame map $\lean{fibre}$ embeds second-order list frames into the dependent unifier's typed $\beta\eta$ frames (\lean{ContextualDependentEta.frames}) as the \emph{$\eta$-long fibre}: under a closed realization, translated models coincide on translated assignments (\lean{fibre_models_iff}), universal asks reflect (\lean{fibre_entails_reflect}), and certified dependent refutations transfer back to second-order unsolvability (\lean{fibre_refutation}). Rather than a single merged statement, the transfer of firing admission across \lean{fibre} is proved in \emph{three distinct theorems} with explicit hypotheses:
+
+\begin{theorem}[The Three Fibre-Join Theorems]
+\label{thm:three-joins}
+Let $\Phi = \lean{fibre}$ be the $\eta$-long fibre map from the second-order step at list frame $M$ into \lean{DependentFull.step} under a closed, sort- and operator-injective realization:
+\begin{enumerate}[leftmargin=2em, nosep]
+  \item \textbf{Equation-Guard Join Where the Full Pattern+Prune+Exchange Solver Decides (\lean{DependentFullJoinFull.fibre_admission_transfer_of_full}):}
+  Because translated metavariable types are closed $\Pi$-chains of sort constants (\lean{constChain}), both strengthening (\lean{invert_chain}) and binder pruning (\lean{dropPis_chain}) preserve translated telescopes (\lean{full_keeps_translated}). Consequently, for any firing whose guards are equation guards and whose translated information store is decided by \lean{ContextualDependentPatternSolver.fullSolver} (\lean{decidedInFibre_of_full}), second-order admission is preserved and reflected by \lean{DependentFull.step}. (Normalized and permuted solver variants are covered similarly by \lean{normalizing_keeps_translated} and \lean{permuting_keeps_translated} in \lean{Step.DependentFullJoinSolvers}.)
+
+  \item \textbf{Absence-Check Join Under \lean{EndoDecided} (\lean{DependentFullFibre.admits_translate_iff}, \lean{result_translate}):}
+  For any first-order firing $f$ of the second-order action without census queries ($f.\mathrm{queries} = []$) and without counting checks, whenever the dependent unifier decides the translated birth-cut information \emph{and} each translated absence extension $K_f \cup \{p \doteqStore \ell(o)\}$ by an endomorphic principal answer or a refutation (\lean{EndoDecided}), first-order admission is equivalent to dependent admission of $\mathrm{translateFiring}(f)$ (together with the first-order fixed-labelling shape on produced occurrences), and the post-states correspond (\lean{result_translate}).
+
+  \item \textbf{Exact Count-Check Join Under \lean{EndoDecided} (\lean{DependentFullCount.admits_translate_iff_count}):}
+  Using Theorem~\ref{thm:absence-count}(2) (\lean{Frames.Principal.entails_count_iff}), the exclusion of counting checks in (2) is removed: for any firing $f$ with $f.\mathrm{queries} = []$ (allowing equality, absence, and exact count checks), under \lean{EndoDecided} on the translated problem and on each absence and count extension, first-order admission is preserved and reflected by \lean{DependentFull.step}.
+\end{enumerate}
+\end{theorem}
+
+\subsection{Honest Status of Dependent Unification}
+
+In accordance with strict formalization hygiene, we explicitly separate what is machine-checked in Lean~4 today from what remains open in the dependent unifier (\lean{ContextualDependent*}):
+\begin{itemize}[leftmargin=1.8em, nosep]
+  \item \textbf{Completed and Sorry-Free:}
+  All $270+$ modules cited in this paper compile in Lean~4 with \textbf{zero \texttt{sorry}} and only standard Lean axioms (\texttt{propext}, \texttt{Quot.sound}, \texttt{Classical.choice}). For the dependent unifier specifically, the repository proves the well-founded weight/rank measure (\lean{ContextualDependentRank.weightRank_wf}), conversion-aware spine recognition and eventual recognition when declared argument types agree (\lean{ContextualDependentRecognitionConversion.recognizeConv}, \lean{patternShape_some}, \lean{recognizeConv_eventually} in \lean{ContextualDependentPatternFiringRecognition}, alongside the cumulativity control \lean{cumulative_unread}), in-place rule application (\lean{ContextualDependentInPlace.inPlaceRule}), structural decomposition under $\Pi/\Sigma/\mathrm{Id}$ formers, dependent spines, and local-head projection spines (\lean{ContextualDependentSpinesManyFormers.underParts_exact}, \lean{ContextualDependentSpinesManyDependent.dependent_exact}, \lean{proj_exact}), certified $\eta$ for $\Sigma$ on rigid neutrals (\lean{expandOne_solves}), skeleton and kind clashes (\lean{headClash_not_equal}), occurs-check refutation across formers, identity endpoints, and universe-domain spine arguments (\lean{ContextualDependentOccursFull.occurrence_not_typeEq}, \lean{ContextualDependentOccursFullUnder.prefixed_not_equal}, \lean{inside_not_typeEq}, \lean{occursAt_not_typeEq}), the equation census and stratified closure class (\lean{census_fragment}, \lean{Stratified}, \lean{stratified_of_fragment}, \lean{Stratified.splice}), and outcome conservativity of the extended rule chain over earlier solver families (\lean{drive_conservative}, \lean{arguments_decided_of_any}).
+  \item \textbf{Open Work in Progress (Dynamic-Pattern Decisiveness \metta{E1}):}
+  While the first-order unifier \lean{unifyTotal} is unconditionally total and complete (\lean{FirstOrder.accepted_iff_consistent}), \emph{full algorithmic decisiveness of the dependent unifier on the dynamic higher-order pattern fragment~\cite{AbelPientka2011HigherOrder} is open}. In \lean{ContextualDependentFragmentWorklist} and \lean{ContextualDependentAcceptance}, \lean{Settled.ofConst} and \lean{argumentsSettledOfConst} remain conditional on an eventual-constancy / acceptance obligation over \lean{Stratified}: while the rigid census rows are read (\lean{headClashAt_complete}), three rigid shapes remain unread (\lean{rows_unread}: flexible-base spines, nested projections, and applied projections) and progress of the flexible pattern rules at sufficient budget together with closure of \lean{Stratified} under answers is active ongoing work.
+\end{itemize}
+
+% =========================================================================
+\section{Comparison with Related Calculi and Systems}
+\label{sec:related}
+% =========================================================================
+
+Table~\ref{tab:comparison} summarizes how the Transform Calculus compares with nine major families of rewriting, concurrency, and logic programming systems.
+
+\begin{table}[t]
+\centering
+\caption{Comparison of the Transform Calculus with related rewriting, process, and proof systems.}
+\label{tab:comparison}
+\footnotesize
+\setlength{\tabcolsep}{3.5pt}
+\renewcommand{\arraystretch}{1.18}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{2.3cm}>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{3.6cm}>{\raggedright\arraybackslash}p{3.6cm}@{}}
+\toprule
+\textbf{System / Calculus} & \textbf{State Substrate} & \textbf{Read vs.\ Consume} & \textbf{Negation / Absence / Count} & \textbf{Unification \& Binding} \\
+\midrule
+\textbf{Transform Calculus} \newline (This work) & Multiset of $O$ with handles (\lean{Spaces}) & Explicit $\mathrm{take}$ vs.\ $\mathrm{read}$ ports & Birth-cut universal entailment $\forall \sigma \models K$ (\lean{CertainChecks.Derives}) & Modular \lean{Frames}: FO, disequality, contextual HO, dependent $\beta\eta$ \\
+\textbf{$\rho$-Calculus / Rholang} \newline \cite{MeredithRadestock2005Rho} & Parallel process multiset & Consume in core $\rho$; Rholang adds \metta{peek} (\texttt{<<-}) & No native absence or cardinality guard in core $\rho$ & Syntactic quote/drop $\equiv_{\mathrm{N}}$; no open unification store $K$ \\
+\textbf{MeTTa (HE / PeTTa / CeTTa)} \newline \cite{Goertzel2023MeTTa} & Atomspace (multiset or indexed trie) & Read via \metta{match}; consume via \metta{remove-atom} & Operational via \metta{collapse}; order-dependent on shared vars & Two-way FO unification; no native birth-cut universal check \\
+\textbf{MM2 / MORK} \newline \cite{Goertzel2023MeTTa} & \textbf{Set} of atoms (\lean{Finset}\;\lean{Atom}, with vars) & Atomic snapshot-all-rows $+/-$ commit & Set subtraction on snapshot; no multiset occurrence IDs & Unification across sources against snapshot (\lean{MeTTaOperationsExec}) \\
+\textbf{CHR \& $\text{CHR}^\neg$} \newline \cite{Fruhwirth2009CHR,VanWeert2006CHRneg} & Constraint multiset + global store & Simpagation ($H_1 \setminus H_2 \Longleftrightarrow G \mid B$) & Operational $\omega_r$ negation-as-absence in $\text{CHR}^\neg$ & Built-in FO/CLP constraint theory $\mathcal{CT}$ \\
+\textbf{Maude / Rewriting Logic} \newline \cite{Meseguer1992Conditional} & Algebraic term modulo $Ax$ (ACU) & Consuming rewrite; read by re-emitting & Reflective \texttt{metaSearch} at meta-level & Order-sorted matching modulo $Ax$ (and narrowing) \\
+\textbf{CHAM / Gamma \& MSR} \newline \cite{BanatreLeMetayer1990Gamma,BerryBoudol1992CHAM,Cervesato2000MSR} & Chemical multiset / typed multiset & Reaction consumes; membrane/catalytic read & Reaction condition local to selected molecules & Pattern matching (CHAM) or dependent LF types (MSR) \\
+\textbf{CLF \& Lolli / LO} \newline \cite{Cervesato2002CLF,HodasMiller1994Lolli,AndreoliPareschi1991LO} & Linear $\Delta$ + unrestricted $\Gamma$ & Linear ($\multimap$) vs.\ persistent ($!$) & Monotone linear proof search; no $\forall \sigma$ absence/count guard & $\exists x.\, A$ in CLF monad; Miller $L_\lambda$ HO patterns \\
+\textbf{$\lambda$Prolog, CLP(X) \& FV Tableaux} \newline \cite{MillerNadathur2012LambdaProlog,JaffarMaher1994CLP,Fitting1996Tableaux} & Goal stack / tableau branch + store $K$ & Clause backchaining / branch expansion & Universal branch closure / rigid $E$-unification~\cite{Gallier1992Rigid} & CLP(X) solver or $L_\lambda$ HO pattern unification \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{1.\ Distinction from the $\rho$-Calculus and Rholang.}
+In the $\rho$-calculus~\cite{MeredithRadestock2005Rho}, names are quoted processes ($\ulcorner P \urcorner$), communication is linear consumption, and there is no persistent equation store $K$ or birth-cut universal guard. (Rholang extends core $\rho$ with persistent peek \texttt{for (y <<- x)} and spatial-behavioral where-clauses.) In \lean{ContextualCommunicationAdequacy.lean} and \lean{ContextualCommunicationReflection.lean}, the core $\rho$-calculus embeds into the Transform Calculus with exact step and path adequacy: given a normalized occurrence representation whose background equations hold at the identity model, a source $\rho$-step exists if and only if an interpreted firing exists (\lean{source_step_iff_firing}, \lean{source_path_iff_firings}). Moreover, in complete agreement with \texttt{Mettapedia/papers/rho.tex}, the formalization separates name-level quote-drop ($\ulcorner *x \urcorner = x$, \lean{name_quote_drop_is_equation}) from operational process-level drop-quote ($*\ulcorner P \urcorner \to P$): in the core communication profile without the reflection rule, $*\ulcorner \mathbf{0} \urcorner$ has no communication step and no core occurrence firing (\lean{dropped_null_has_no_core_occurrence_execution}), whereas in the extended profile \lean{withReflection} it fires as an explicit operational step that is not a syntactic conversion (\lean{process_drop_source_step}, \lean{operational_drop_need_not_be_conversion}).
+
+\paragraph{2.\ Distinction from MeTTa (HE, PeTTa, CeTTa) and MM2/MORK.}
+Existing MeTTa runtimes evaluate queries operationally along a search schedule, which makes $\metta{(collapse }\dots\metta{)}$ sensitive to whether a shared variable is constrained before or after the collapse (\lean{OrderEffect.order_matters}). The Transform Calculus gives a schedule-independent declarative admission criterion (\lean{admits_iff}) and proves when operational shortcuts are sound (e.g., private-pattern invariance \lean{private_pattern_bag_invariant} and covered scans \lean{absent_accepts_iff_of_covered}). Compared to MM2/MORK (\lean{MeTTaOperationsExec}), MORK stores expressions (including expressions with variables) in a \emph{set} (\lean{Finset}\;\lean{Atom}) and executes $\metta{exec}$ by matching all source rows against a snapshot, writing all $+$ instances, and subtracting all $-$ instances (\lean{Result}, \lean{exec_firing_adequacy}, \lean{exec_is_one_firing}). Executing MORK's rules one row at a time in a multiset either fails when two rows remove the same atom (\lean{Probe.row_protocol_refuses_overlap}) or creates duplicate atoms that a set collapses (\lean{Probe.row_protocol_duplicates}).
+
+\paragraph{3.\ Distinction from CHR, $\text{CHR}^\neg$, CHAM/Gamma, MSR, CLF, and Free-Variable Tableaux.}
+CHR's simpagation rules~\cite{Fruhwirth2009CHR} inspired our separation of $\mathrm{read}$ (kept) and $\mathrm{take}$ (removed) ports, while $\text{CHR}^\neg$~\cite{VanWeert2006CHRneg} adds operational negation-as-absence under the refined semantics $\omega_r$. Our \lean{CertainChecks.Derives} calculus makes absence and exact counting \emph{model-theoretically sound and complete} with respect to free Henkin models (\lean{derives_iff_termModel}) and characterizes firing admission as formal derivability (\lean{admitsDerivably_iff}). Similarly, whereas CHAM~\cite{BerryBoudol1992CHAM}, Gamma~\cite{BanatreLeMetayer1990Gamma}, MSR~\cite{Cervesato2000MSR}, Lolli/LO~\cite{HodasMiller1994Lolli,AndreoliPareschi1991LO}, and CLF~\cite{Cervesato2002CLF} (which supports existential quantification $\exists x.\, A$ inside its concurrency monad) are monotone with respect to workspace extension, the Transform Calculus supports non-monotonic birth-cut absence and exact cardinality guards while maintaining explicit occurrence identities and formalizing the universal-closure problem familiar from free-variable tableaux~\cite{Fitting1996Tableaux,Hahnle2001Tableaux} and rigid $E$-unification~\cite{Gallier1992Rigid}.
+
+% =========================================================================
+\section{Conclusion and Mechanization Summary}
+\label{sec:conclusion}
+% =========================================================================
+
+The Transform Calculus demonstrates that a single, small categorical step interface (\lean{Interface.Frames} and \lean{Interface.Step}) can unify multiset rewriting, logic programming with occurs-checked unification, Henkin-complete negative and cardinality guards (\lean{CertainChecks.Derives}), automated theorem proving calculi (resolution, guarded superposition, ground completion), and MeTTa program semantics without sacrificing mathematical rigor. Every theorem cited in this paper is machine-checked in Lean~4 under \lean{Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting} with zero \texttt{sorry}s, providing a rock-solid foundation for next-generation reflective languages and proof engines.
+
+\begin{thebibliography}{99}
+
+\bibitem{AbelPientka2011HigherOrder}
+A.~Abel and B.~Pientka.
+\newblock Higher-order dynamic pattern unification for dependent types and records.
+\newblock In \emph{Typed Lambda Calculi and Applications (TLCA)}, LNCS 6690, pp.\ 10--26. Springer, 2011.
+
+\bibitem{AndreoliPareschi1991LO}
+J.-M.~Andreoli and R.~Pareschi.
+\newblock Linear objects: Logical processes with built-in inheritance.
+\newblock \emph{New Generation Computing}, 9(3--4):445--473, 1991.
+
+\bibitem{BanatreLeMetayer1990Gamma}
+J.-P.~Ban\^{a}tre and D.~Le~M\'{e}tayer.
+\newblock The Gamma model and its discipline of programming.
+\newblock \emph{Science of Computer Programming}, 15(1):55--77, 1990.
+
+\bibitem{BerryBoudol1992CHAM}
+G.~Berry and G.~Boudol.
+\newblock The chemical abstract machine.
+\newblock \emph{Theoretical Computer Science}, 96(1):217--248, 1992.
+
+\bibitem{Cervesato2000MSR}
+I.~Cervesato, N.~A.~Durgin, P.~D.~Lincoln, J.~C.~Mitchell, and A.~Scedrov.
+\newblock Relating strands and multiset rewriting for security protocol analysis.
+\newblock In \emph{IEEE Computer Security Foundations Workshop (CSFW)}, pp.\ 35--51, 2000.
+
+\bibitem{Cervesato2002CLF}
+I.~Cervesato, F.~Pfenning, D.~Walker, and K.~Watkins.
+\newblock A concurrent logical framework {I}: Judgments and properties.
+\newblock Technical Report CMU-CS-02-101, Carnegie Mellon University, 2002.
+
+\bibitem{Eder1985Properties}
+E.~Eder.
+\newblock Properties of substitutions and unifications.
+\newblock \emph{Journal of Symbolic Computation}, 1(1):31--46, 1985.
+
+\bibitem{Fitting1996Tableaux}
+M.~Fitting.
+\newblock \emph{First-Order Logic and Automated Theorem Proving}.
+\newblock Springer, 2nd edition, 1996.
+
+\bibitem{Fruhwirth2009CHR}
+T.~Fr\"{u}hwirth.
+\newblock \emph{Constraint Handling Rules}.
+\newblock Cambridge University Press, 2009.
+
+\bibitem{Gallier1992Rigid}
+J.~Gallier, P.~Narendran, D.~Plaisted, and S.~Raatz.
+\newblock Rigid {$E$}-unification is {NP}-complete.
+\newblock \emph{Information and Computation}, 87(1--2):129--195, 1992.
+
+\bibitem{Goertzel2023MeTTa}
+B.~Goertzel, S.~Bogdanov, A.~Potapov, et~al.
+\newblock {OpenCog Hyperon} and the {MeTTa} language: Architecture and specification.
+\newblock OpenCog Foundation Technical Reports, 2023--2026.
+
+\bibitem{Hahnle2001Tableaux}
+R.~H\"{a}hnle.
+\newblock Tableaux and related methods.
+\newblock In A.~Robinson and A.~Voronkov, editors, \emph{Handbook of Automated Reasoning}, volume~I, chapter~3, pp.\ 100--178. Elsevier, 2001.
+
+\bibitem{HodasMiller1994Lolli}
+J.~S.~Hodas and D.~Miller.
+\newblock Logic programming in a fragment of intuitionistic linear logic.
+\newblock \emph{Information and Computation}, 110(2):327--365, 1994.
+
+\bibitem{JaffarMaher1994CLP}
+J.~Jaffar and M.~J.~Maher.
+\newblock Constraint logic programming: A survey.
+\newblock \emph{Journal of Logic Programming}, 19/20:503--581, 1994.
+
+\bibitem{KnuthBendix1970Simple}
+D.~E.~Knuth and P.~B.~Bendix.
+\newblock Simple word problems in universal algebras.
+\newblock In J.~Leech, editor, \emph{Computational Problems in Abstract Algebra}, pp.\ 263--297. Pergamon Press, 1970.
+
+\bibitem{MeredithRadestock2005Rho}
+L.~G.~Meredith and M.~Radestock.
+\newblock A reflective higher-order calculus.
+\newblock \emph{Electronic Notes in Theoretical Computer Science}, 141(5):49--67, 2005.
+
+\bibitem{Meseguer1992Conditional}
+J.~Meseguer.
+\newblock Conditional rewriting logic as a unified model of concurrency.
+\newblock \emph{Theoretical Computer Science}, 96(1):73--155, 1992.
+
+\bibitem{MillerNadathur2012LambdaProlog}
+D.~Miller and G.~Nadathur.
+\newblock \emph{Programming with Higher-Order Logic}.
+\newblock Cambridge University Press, 2012.
+
+\bibitem{Milner1980CCS}
+R.~Milner.
+\newblock \emph{A Calculus of Communicating Systems}, LNCS 92.
+\newblock Springer, 1980.
+
+\bibitem{Plotkin1975CallByName}
+G.~D.~Plotkin.
+\newblock Call-by-name, call-by-value and the $\lambda$-calculus.
+\newblock \emph{Theoretical Computer Science}, 1(2):125--159, 1975.
+
+\bibitem{VanWeert2006CHRneg}
+P.~Van~Weert, J.~Sneyers, T.~Schrijvers, and B.~Demoen.
+\newblock Extending {CHR} with negation as absence.
+\newblock In \emph{Workshop on Constraint Handling Rules (CHR)}, pp.\ 125--140, 2006.
+
+\end{thebibliography}
+
+\end{document}

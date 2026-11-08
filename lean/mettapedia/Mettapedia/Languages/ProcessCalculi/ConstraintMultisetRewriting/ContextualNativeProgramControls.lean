@@ -29,18 +29,18 @@ local instance : DecidableEq base.Srt := inferInstanceAs (DecidableEq Unit)
 local instance (sort : base.Srt) : DecidableEq (base.Op sort) := inferInstanceAs (DecidableEq DataOperator)
 
 theorem an_actual_compiled_body_preserves_the_earlier_schema (fuel : Nat) :
-    ∃ observed : WithQueries body.guardNativeBank (body.nativeBindingState ∅),
-      observed.firing.rule = body.producerRule ∧ observed.firing.selection = body.bindingSelection ∧
-        observed.firing.outputs = body.producerOutputs ∅ ∧ observed.firing.reusable = body.producerReusable ∧
-        observed.firing.fuel = fuel ∧ observed.queries = body.producerQueries ∅ ∧
+    ∃ observed : WithQueries body.native.guardNativeBank (body.native.nativeBindingState ∅),
+      observed.firing.rule = body.producer.rule ∧ observed.firing.selection = body.native.bindingSelection ∧
+        observed.firing.outputs = body.producer.outputs ∅ ∧ observed.firing.reusable = body.producerReusable ∧
+        observed.firing.fuel = fuel ∧ observed.queries = body.producer.queries ∅ ∧
         ContextualWorldComparison.Equivalent afterSecond (generator afterSecond.declarations)
-          (body.producerProjection ∅ observed.firing) (body.producerCaller ∅ observed.firing) ∧
+          (body.native.producerProjection ∅ observed.firing) (body.native.producerCaller ∅ observed.firing) ∧
         ∀ (Future : Type) (future : Future → MetaArity base) (candidate : Assignment observed.firing.target.declarations future),
-          Matches (ContextualPublication.privateFamily body.guardNativeBank observed.firing.update.declaration)
+          Matches (ContextualPublication.privateFamily body.native.guardNativeBank observed.firing.update.declaration)
             observed.firing.target.declarations candidate (box (symbol 2))
-            (observed.firing.target.rows (body.producerPhysical 0)) := by
+            (observed.firing.target.rows (body.native.producerPhysical 0)) := by
   obtain ⟨observed, rule, selection, outputs, flags, budget, queries⟩ :=
-    (body.source_iff_native_body_admission ∅ fuel).mp admitted
+    (body.producer.source_iff_native_body_admission ∅ fuel).mp admitted
   refine ⟨observed, rule, selection, outputs, flags, budget, queries,
     body.producer_world_equivalent ∅ observed.firing admitted rule selection outputs flags, ?_⟩
   intro Future future candidate
@@ -49,13 +49,13 @@ theorem an_actual_compiled_body_preserves_the_earlier_schema (fuel : Nat) :
   exact the_earlier_schema_still_matches_two future _
 
 theorem a_later_tell_cannot_make_the_whole_native_body_fire (fuel : Nat) :
-    ¬ ∃ observed : WithQueries guardedBody.guardNativeBank (guardedBody.nativeBindingState ∅),
-      observed.firing.rule = guardedBody.producerRule ∧ observed.firing.selection = guardedBody.bindingSelection ∧
-        observed.firing.outputs = guardedBody.producerOutputs ∅ ∧ observed.firing.reusable = guardedBody.producerReusable ∧
-        observed.firing.fuel = fuel ∧ observed.queries = guardedBody.producerQueries ∅ := by
+    ¬ ∃ observed : WithQueries guardedBody.native.guardNativeBank (guardedBody.native.nativeBindingState ∅),
+      observed.firing.rule = guardedBody.producer.rule ∧ observed.firing.selection = guardedBody.native.bindingSelection ∧
+        observed.firing.outputs = guardedBody.producer.outputs ∅ ∧ observed.firing.reusable = guardedBody.producerReusable ∧
+        observed.firing.fuel = fuel ∧ observed.queries = guardedBody.producer.queries ∅ := by
   intro native
   exact ContextualScheduleControls.EarlierSchema.a_later_binding_does_not_repair_the_compiled_earlier_check
-    (guardedBody.compile_exact.mpr ((guardedBody.source_iff_native_body_admission ∅ fuel).mpr native))
+    (guardedBody.compile_exact.mpr ((guardedBody.producer.source_iff_native_body_admission ∅ fuel).mpr native))
 
 end Earlier
 
@@ -71,28 +71,28 @@ local instance (sort : base.Srt) : DecidableEq (base.Op sort) := by
   infer_instance
 
 theorem the_computed_join_and_repeated_read_are_one_native_firing (fuel : Nat) :
-    ∃ observed : WithQueries body.guardNativeBank (body.nativeBindingState ∅),
-      observed.firing.rule = body.producerRule ∧ observed.firing.selection = body.bindingSelection ∧
-        observed.firing.outputs = body.producerOutputs ∅ ∧ observed.firing.reusable = body.producerReusable ∧
-        observed.firing.fuel = fuel ∧ observed.queries = body.producerQueries ∅ ∧
+    ∃ observed : WithQueries body.native.guardNativeBank (body.native.nativeBindingState ∅),
+      observed.firing.rule = body.producer.rule ∧ observed.firing.selection = body.native.bindingSelection ∧
+        observed.firing.outputs = body.producer.outputs ∅ ∧ observed.firing.reusable = body.producerReusable ∧
+        observed.firing.fuel = fuel ∧ observed.queries = body.producer.queries ∅ ∧
         ContextualWorldComparison.Equivalent result (generator result.declarations)
-          (body.producerProjection ∅ observed.firing) (body.producerCaller ∅ observed.firing) ∧
-        (body.producerProjection ∅ observed.firing).present = {0, 1, 2, 4, 5} := by
+          (body.native.producerProjection ∅ observed.firing) (body.native.producerCaller ∅ observed.firing) ∧
+        (body.native.producerProjection ∅ observed.firing).present = {0, 1, 2, 4, 5} := by
   obtain ⟨observed, rule, selection, outputs, flags, budget, queries⟩ :=
-    (body.source_iff_native_body_admission ∅ fuel).mp admitted
+    (body.producer.source_iff_native_body_admission ∅ fuel).mp admitted
   refine ⟨observed, rule, selection, outputs, flags, budget, queries,
     body.producer_world_equivalent ∅ observed.firing admitted rule selection outputs flags, ?_⟩
-  rw [body.producer_projection_physical ∅ observed.firing (body.admitted_characterization.mp admitted).2.1 selection]
+  rw [body.native.projection_physical ∅ observed.firing (body.admitted_characterization.mp admitted).2.1 selection _ _]
   decide +kernel
 
 theorem incompatible_reuse_has_no_compiled_firing (fuel : Nat) :
-    ¬ ∃ observed : WithQueries conflictingBody.guardNativeBank (conflictingBody.nativeBindingState ∅),
-      observed.firing.rule = conflictingBody.producerRule ∧ observed.firing.selection = conflictingBody.bindingSelection ∧
-        observed.firing.outputs = conflictingBody.producerOutputs ∅ ∧ observed.firing.reusable = conflictingBody.producerReusable ∧
-        observed.firing.fuel = fuel ∧ observed.queries = conflictingBody.producerQueries ∅ := by
+    ¬ ∃ observed : WithQueries conflictingBody.native.guardNativeBank (conflictingBody.native.nativeBindingState ∅),
+      observed.firing.rule = conflictingBody.producer.rule ∧ observed.firing.selection = conflictingBody.native.bindingSelection ∧
+        observed.firing.outputs = conflictingBody.producer.outputs ∅ ∧ observed.firing.reusable = conflictingBody.producerReusable ∧
+        observed.firing.fuel = fuel ∧ observed.queries = conflictingBody.producer.queries ∅ := by
   intro native
   exact ContextualScheduleControls.ComputedBody.the_conflicting_body_is_refused
-    (conflictingBody.compile_exact.mpr ((conflictingBody.source_iff_native_body_admission ∅ fuel).mpr native))
+    (conflictingBody.compile_exact.mpr ((conflictingBody.producer.source_iff_native_body_admission ∅ fuel).mpr native))
 
 end Computed
 
@@ -119,7 +119,7 @@ theorem admitted : body.Admitted := by
   have consistent : ContextualConditionalExecution.Solvable result.equations := ContextualNativeGuardControls.OwnEquations.consistent
   apply body.admitted_characterization.mpr
   refine ⟨shapes, resources, consistent, ?_⟩
-  apply (body.entry_guards_iff shapes resources).mp
+  apply (body.native.entry_guards_iff shapes resources).mp
   intro cut member
   obtain ⟨index, rfl⟩ := List.mem_iff_get.mp member
   have bound : index.val < 2 := index.isLt
@@ -137,14 +137,14 @@ theorem admitted : body.Admitted := by
     cases selected
 
 theorem the_own_equation_count_has_one_constructed_firing (fuel : Nat) :
-    ∃ observed : WithQueries body.guardNativeBank (body.nativeBindingState ∅),
-      observed.firing.rule = body.producerRule ∧ observed.firing.selection = body.bindingSelection ∧
-        observed.firing.outputs = body.producerOutputs ∅ ∧ observed.firing.reusable = body.producerReusable ∧
-        observed.firing.fuel = fuel ∧ observed.queries = body.producerQueries ∅ ∧
+    ∃ observed : WithQueries body.native.guardNativeBank (body.native.nativeBindingState ∅),
+      observed.firing.rule = body.producer.rule ∧ observed.firing.selection = body.native.bindingSelection ∧
+        observed.firing.outputs = body.producer.outputs ∅ ∧ observed.firing.reusable = body.producerReusable ∧
+        observed.firing.fuel = fuel ∧ observed.queries = body.producer.queries ∅ ∧
         ContextualWorldComparison.Equivalent result (generator result.declarations)
-          (body.producerProjection ∅ observed.firing) (body.producerCaller ∅ observed.firing) := by
+          (body.native.producerProjection ∅ observed.firing) (body.native.producerCaller ∅ observed.firing) := by
   obtain ⟨observed, rule, selection, outputs, flags, budget, queries⟩ :=
-    (body.source_iff_native_body_admission ∅ fuel).mp admitted
+    (body.producer.source_iff_native_body_admission ∅ fuel).mp admitted
   exact ⟨observed, rule, selection, outputs, flags, budget, queries,
     body.producer_world_equivalent ∅ observed.firing admitted rule selection outputs flags⟩
 
@@ -158,7 +158,7 @@ local instance : DecidableEq base.Srt := inferInstanceAs (DecidableEq Unit)
 local instance (sort : base.Srt) : DecidableEq (base.Op sort) := inferInstanceAs (DecidableEq DataOperator)
 
 abbrev world (initial : Finset Nat) : ContextualClauseSourceState.World none Nat [] () :=
-  ⟨Empty, inferInstance, none, [], initial, fun _ => ofStored none none (.live (symbol 9))⟩
+  ⟨Empty, inferInstance, none, [], initial, fun _ => ofStored none none (.shared (symbol 9))⟩
 
 def makePlan : ContextualPublication.Plan (Term (signature base (queryFamily none none)) [] ()) :=
   ⟨⟨[], [], [], [], [symbol 7]⟩, [true], rfl⟩
@@ -185,36 +185,36 @@ theorem the_net_effect_alone_accepts_the_invalid_prefix :
 theorem the_full_resource_condition_refuses_the_invalid_prefix :
     ¬ Executable Schedule.unitLabel (world {0}).present (body {0}).commits := by
   intro executable
-  have condition : (body {0}).sourceResourceCondition.Holds Schedule.unitLabel (world {0}).present :=
+  have condition : (body {0}).native.sourceResourceCondition.Holds Schedule.unitLabel (world {0}).present :=
     (CompiledSchedule.compile_condition_iff _ _ _).mpr executable
-  have absent : (0 : Nat) ∈ (body {0}).sourceResourceCondition.absent := by decide +kernel
+  have absent : (0 : Nat) ∈ (body {0}).native.sourceResourceCondition.absent := by decide +kernel
   have present : (0 : Nat) ∈ (world {0}).present := by decide +kernel
   exact Finset.disjoint_left.mp condition.2.2.1 absent present
 
-theorem the_native_absence_query_sees_the_conflict (candidate : Candidate (body {0}).guardNativeFamily) :
-    ¬ (((body {0}).producerAbsentQuery).atSolution candidate).Holds
-      (nativeLabels (body {0}).guardNativeBank ((body {0}).nativeBindingState ∅))
-      ((body {0}).nativeBindingState ∅).present := by
+theorem the_native_absence_query_sees_the_conflict (candidate : Candidate (body {0}).native.guardNativeFamily) :
+    ¬ (((body {0}).native.producerAbsentQuery).atSolution candidate).Holds
+      (nativeLabels (body {0}).native.guardNativeBank ((body {0}).native.nativeBindingState ∅))
+      ((body {0}).native.nativeBindingState ∅).present := by
   intro observed
-  have member : Schedule.entryIdentity 0 ∈ regionOf
-      (nativeLabels (body {0}).guardNativeBank ((body {0}).nativeBindingState ∅))
-      ((body {0}).nativeBindingState ∅).present ((body {0}).producerAbsentQuery.region candidate) := by
+  have member : ContextualNativeBodies.Body.entryIdentity 0 ∈ regionOf
+      (nativeLabels (body {0}).native.guardNativeBank ((body {0}).native.nativeBindingState ∅))
+      ((body {0}).native.nativeBindingState ∅).present ((body {0}).native.producerAbsentQuery.region candidate) := by
     apply mem_regionOf.mpr
     refine ⟨by decide +kernel, ?_⟩
-    change decide (Schedule.entryIdentity 0 ∈ (body {0}).sourceResourceCondition.absent.image Schedule.entryIdentity) = true
-    exact decide_eq_true (Finset.mem_image_of_mem Schedule.entryIdentity (by decide +kernel))
-  change regionOf (nativeLabels (body {0}).guardNativeBank ((body {0}).nativeBindingState ∅))
-    ((body {0}).nativeBindingState ∅).present ((body {0}).producerAbsentQuery.region candidate) = ∅ at observed
+    change decide (ContextualNativeBodies.Body.entryIdentity 0 ∈ (body {0}).native.sourceResourceCondition.absent.image ContextualNativeBodies.Body.entryIdentity) = true
+    exact decide_eq_true (Finset.mem_image_of_mem ContextualNativeBodies.Body.entryIdentity (by decide +kernel))
+  change regionOf (nativeLabels (body {0}).native.guardNativeBank ((body {0}).native.nativeBindingState ∅))
+    ((body {0}).native.nativeBindingState ∅).present ((body {0}).native.producerAbsentQuery.region candidate) = ∅ at observed
   rw [observed] at member
   exact Finset.notMem_empty _ member
 
 theorem the_invalid_prefix_has_no_complete_native_firing (fuel : Nat) :
-    ¬ ∃ observed : WithQueries (body {0}).guardNativeBank ((body {0}).nativeBindingState ∅),
-      observed.firing.rule = (body {0}).producerRule ∧ observed.firing.selection = (body {0}).bindingSelection ∧
-        observed.firing.outputs = (body {0}).producerOutputs ∅ ∧ observed.firing.reusable = (body {0}).producerReusable ∧
-        observed.firing.fuel = fuel ∧ observed.queries = (body {0}).producerQueries ∅ := by
+    ¬ ∃ observed : WithQueries (body {0}).native.guardNativeBank ((body {0}).native.nativeBindingState ∅),
+      observed.firing.rule = (body {0}).producer.rule ∧ observed.firing.selection = (body {0}).native.bindingSelection ∧
+        observed.firing.outputs = (body {0}).producer.outputs ∅ ∧ observed.firing.reusable = (body {0}).producerReusable ∧
+        observed.firing.fuel = fuel ∧ observed.queries = (body {0}).producer.queries ∅ := by
   intro native
-  have source := ((body {0}).source_iff_native_body_admission ∅ fuel).mpr native
+  have source := ((body {0}).producer.source_iff_native_body_admission ∅ fuel).mpr native
   exact the_full_resource_condition_refuses_the_invalid_prefix ((body {0}).admitted_characterization.mp source).2.1
 
 theorem the_empty_entry_body_is_admitted : (body ∅).Admitted := by
@@ -237,11 +237,11 @@ theorem the_empty_entry_body_is_admitted : (body ∅).Admitted := by
       by intro check member; cases member⟩
 
 theorem the_valid_internal_make_take_has_a_complete_firing (fuel : Nat) :
-    ∃ observed : WithQueries (body ∅).guardNativeBank ((body ∅).nativeBindingState ∅),
-      observed.firing.rule = (body ∅).producerRule ∧ observed.firing.selection = (body ∅).bindingSelection ∧
-        observed.firing.outputs = (body ∅).producerOutputs ∅ ∧ observed.firing.reusable = (body ∅).producerReusable ∧
-        observed.firing.fuel = fuel ∧ observed.queries = (body ∅).producerQueries ∅ :=
-  ((body ∅).source_iff_native_body_admission ∅ fuel).mp the_empty_entry_body_is_admitted
+    ∃ observed : WithQueries (body ∅).native.guardNativeBank ((body ∅).native.nativeBindingState ∅),
+      observed.firing.rule = (body ∅).producer.rule ∧ observed.firing.selection = (body ∅).native.bindingSelection ∧
+        observed.firing.outputs = (body ∅).producer.outputs ∅ ∧ observed.firing.reusable = (body ∅).producerReusable ∧
+        observed.firing.fuel = fuel ∧ observed.queries = (body ∅).producer.queries ∅ :=
+  ((body ∅).producer.source_iff_native_body_admission ∅ fuel).mp the_empty_entry_body_is_admitted
 
 end InternalFreshness
 

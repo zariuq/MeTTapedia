@@ -72,7 +72,7 @@ theorem check_ignoresWrites_of_refines {stronger weaker : EquationStore T}
 omit [DecidableEq O] in
 theorem query_ignoresWrites_of_refines {stronger weaker : EquationStore T}
     (refines : A.Refines stronger weaker) {writer : Selection O}
-    {query : CensusAdmission.Query T S O}
+    {query : PredicateQueryAdmission.Query T S O}
     (ignored : query.IgnoresWrites A weaker label writer) :
     query.IgnoresWrites A stronger label writer :=
   A.entails_of_refines refines ignored
@@ -303,7 +303,7 @@ variable (A : SubstitutionAction T S) (label : O → T)
 /-- **A writer into a query region refuses the query.** -/
 theorem census_refused_after_writer {f g : Firing T S O} {C : Configuration T O}
     (fValid : f.Valid A label C) (gEnabled : Enabled label C.present (g.selection.commit (T := T)))
-    {query : CensusAdmission.Query T S O} (member : query ∈ f.queries) {σ : S}
+    {query : PredicateQueryAdmission.Query T S O} (member : query ∈ f.queries) {σ : S}
     (solved : A.Models σ (f.selection.problem label f.rule (g.result label C)))
     {o : O} (written : o ∈ g.selection.taken ∨ o ∈ g.selection.made)
     (inRegion : query.region σ (label o) = true) :
@@ -783,14 +783,14 @@ def noPersistent : MeTTaCalculus.OccurrenceCommits.PredicateQuery Nat (Term sign
 
 /-- Queries that no persistent atom is present, and makes the persistent `9`. -/
 def skewNine : Run :=
-  ⟨⟨[], [], [], [], [.const 9]⟩, [CensusAdmission.Query.fixed noPersistent], ⟨[], [], [9]⟩⟩
+  ⟨⟨[], [], [], [], [.const 9]⟩, [PredicateQueryAdmission.Query.fixed noPersistent], ⟨[], [], [9]⟩⟩
 
 /-- Queries that no persistent atom is present, and makes the persistent `10`. -/
 def skewTen : Run :=
-  ⟨⟨[], [], [], [], [.const 9]⟩, [CensusAdmission.Query.fixed noPersistent], ⟨[], [], [10]⟩⟩
+  ⟨⟨[], [], [], [], [.const 9]⟩, [PredicateQueryAdmission.Query.fixed noPersistent], ⟨[], [], [10]⟩⟩
 
 theorem skewNine_valid : skewNine.Valid A skewLabel empty := by
-  refine (CensusAdmission.valid_fixed_iff A skewLabel _ [noPersistent] empty _).mpr
+  refine (PredicateQueryAdmission.valid_fixed_iff A skewLabel _ [noPersistent] empty _).mpr
     ⟨⟨by decide, by decide, rfl, rfl, rfl, by decide,
       ⟨Subst.id signature, by simp [Selection.problem, Selection.equations, empty, skewNine]⟩,
       by simp [skewNine]⟩, ?_⟩
@@ -799,7 +799,7 @@ theorem skewNine_valid : skewNine.Valid A skewLabel empty := by
   decide
 
 theorem skewTen_valid : skewTen.Valid A skewLabel empty := by
-  refine (CensusAdmission.valid_fixed_iff A skewLabel _ [noPersistent] empty _).mpr
+  refine (PredicateQueryAdmission.valid_fixed_iff A skewLabel _ [noPersistent] empty _).mpr
     ⟨⟨by decide, by decide, rfl, rfl, rfl, by decide,
       ⟨Subst.id signature, by simp [Selection.problem, Selection.equations, empty, skewTen]⟩,
       by simp [skewTen]⟩, ?_⟩

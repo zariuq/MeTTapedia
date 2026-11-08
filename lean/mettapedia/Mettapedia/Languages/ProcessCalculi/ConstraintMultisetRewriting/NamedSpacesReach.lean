@@ -483,12 +483,12 @@ theorem valid_of_agree_on_reach {D : Configuration T O}
         exact holdsC o ((same o (matchedAt (spaceMember rfl) solved at_m matching)).mpr presentD)
           matching
     | count s p k =>
-        change (Check.region A σ (located sts space payload) P' (sts.atSpace s p)).card = k
-        have sameMatches : Check.region A σ (located sts space payload) P' (sts.atSpace s p) =
-            Check.region A σ (located sts space payload) P (sts.atSpace s p) := by
+        change (Check.matches A σ (located sts space payload) P' (sts.atSpace s p)).card = k
+        have sameMatches : Check.matches A σ (located sts space payload) P' (sts.atSpace s p) =
+            Check.matches A σ (located sts space payload) P (sts.atSpace s p) := by
           classical
           ext o
-          simp only [Check.region, Finset.mem_filter]
+          simp only [Check.matches, Finset.mem_filter]
           constructor
           · rintro ⟨presentD, matching⟩
             obtain ⟨m, at_m⟩ := wellD o presentD

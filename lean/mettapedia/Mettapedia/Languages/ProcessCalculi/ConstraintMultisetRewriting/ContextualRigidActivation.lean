@@ -32,7 +32,7 @@ def rule (original : RuleInstance T) :
   original.map (into encode (ContextualActivatedStep.source locals captures))
 
 def rows (label : O → T) : O → ContextualStoredRows.Row locals captures Γ sort :=
-  fun occurrence => .live (into encode captures (label occurrence))
+  fun occurrence => .shared (into encode captures (label occurrence))
 
 def before (original : Configuration T O) : Configuration (Term (signature S captures) Γ sort) O :=
   OccurrenceRelabeling.configuration (into encode captures) original

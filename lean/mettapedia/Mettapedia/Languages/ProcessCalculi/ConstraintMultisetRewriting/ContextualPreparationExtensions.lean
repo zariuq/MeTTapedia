@@ -103,12 +103,12 @@ theorem semantic_admission_extension_iff [DecidableEq O]
     (rows : O → ContextualStoredRows.Row locals captures Γ sort)
     (before : Configuration (Term (signature S captures) Γ sort) O)
     (outputs : O → Term (signature S (ContextualActivatedStep.target locals captures)) Γ sort) :
-    ContextualTransportedActivation.SemanticAdmission locals extension.declarations occupied selection
+    ContextualGuardedStep.Valid locals extension.declarations occupied selection
         (rule.map (instantiate (ContextualStoredRows.liftCaptures locals extension.assignment)))
         (fun occurrence => (rows occurrence).map locals extension.assignment)
         (ContextualTransportedActivation.configurationMap extension.assignment before)
         (fun occurrence => instantiate (activeLift locals extension.assignment) (outputs occurrence)) ↔
-      ContextualTransportedActivation.SemanticAdmission locals captures occupied selection rule rows before outputs := by
+      ContextualGuardedStep.Valid locals captures occupied selection rule rows before outputs := by
   have prepared := ContextualPreparationNaturality.prepared_rule_transport locals extension.assignment
     occupied selection rule rows
   have produced := congrArg RuleInstance.produce prepared

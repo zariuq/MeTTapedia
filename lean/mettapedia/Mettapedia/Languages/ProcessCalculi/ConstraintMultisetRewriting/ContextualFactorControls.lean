@@ -21,7 +21,7 @@ open ContextualActivatedStep ContextualInteractionFactors
 open ContextualSelectionViews.Controls (base locals captures raw active RawTerm ActiveTerm atom p rawA)
 open ContextualGuardedStep.Controls (occupied selection bare outputs trueRule equalityRule activeA)
 
-def rows (_ : Nat) : ContextualStoredRows.Row locals captures [] () := .live (atom captures)
+def rows (_ : Nat) : ContextualStoredRows.Row locals captures [] () := .shared (atom captures)
 def extraRead : Selection Nat := ⟨[], [7], [99]⟩
 def doubleTake : Selection Nat := ⟨[7, 7], [], [99]⟩
 def doubleTakeRule : RuleInstance RawTerm := ⟨[rawA, rawA], [], [], [], [rawA]⟩
@@ -31,7 +31,7 @@ theorem malformed_ports_still_have_resources : Resources extraRead bare.present 
   decide
 
 theorem malformed_ports_still_have_information : Information locals captures occupied extraRead trueRule rows bare := by
-  refine ⟨⟨generator active, ?_⟩, ?_⟩
+  refine ⟨ContextualFrameUnifier.solvable_of_consistent ⟨generator active, ?_⟩, ?_⟩
   · change (ContextualFamilies.action active [] ()).Models (generator active) []
     exact SubstitutionAction.models_nil _ _
   · intro check member
@@ -48,7 +48,7 @@ theorem doubled_take_has_formation : Formation locals captures occupied doubleTa
   exact ⟨rfl, rfl, rfl⟩
 
 theorem doubled_take_has_information : Information locals captures occupied doubleTake doubleTakeRule rows bare := by
-  refine ⟨⟨generator active, ?_⟩, ?_⟩
+  refine ⟨ContextualFrameUnifier.solvable_of_consistent ⟨generator active, ?_⟩, ?_⟩
   · intro equation member
     change equation ∈ [(atom active, atom active), (atom active, atom active)] at member
     simp only [List.mem_cons, List.not_mem_nil, or_false, or_self] at member

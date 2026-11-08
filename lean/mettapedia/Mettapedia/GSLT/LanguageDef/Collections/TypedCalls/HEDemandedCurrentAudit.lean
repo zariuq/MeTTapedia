@@ -1,0 +1,36 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEDemandedCurrentSource
+
+/-! # Earned current-reader source composition audit -/
+
+namespace Mettapedia.GSLT.LanguageDef.Collections.TypedCalls
+
+#print axioms HEDemandedConstructorInferred.historical_producer_head
+#print axioms HEDemandedConstructorInferred.selection_of_reads
+#print axioms HEDemandedConstructorInferred.operator_source_of_reads
+#print axioms HEDemandedConstructorInferred.number_at_private_of_reads
+#print axioms HEDemandedConstructorInferred.arguments_source_of_reads
+#print axioms HEDemandedConstructorInferred.constructor_published_of_reads
+#print axioms HEDemandedConstructorInferred.constructor_source_with_marking_of_reads
+#print axioms HEDemandedConstructorInferred.consumer_selection_of_reads
+#print axioms HEDemandedConstructorInferred.demanded_reentry_with_marking_of_reads
+#print axioms HEDemandedConstructorProgram.producer_call_with_marking_of_reads
+#print axioms HEDemandedConstructorProgram.producer_selection_with_policy_of_reads
+#print axioms HEDemandedConstructorProgram.closed_operator_with_policy_of_reads
+#print axioms HEDemandedConstructorProgram.producer_source_with_marking_of_reads
+#print axioms HEDemandedConsumerFrame.consumer_call_with_marking_of_reads
+#print axioms HEDemandedWholeProgram.source_call_with_marking_of_reads
+#print axioms HEDemandedSlotJoin.source_and_slot_agree_of_reads
+#print axioms HEDemandedCurrentReads.symbol_read
+#print axioms HEDemandedCurrentReads.pair_head_read
+#print axioms HEDemandedCurrentReads.number_read
+#print axioms HEDemandedCurrentReads.producer_inferred
+#print axioms HEDemandedCurrentReads.consumer_head_read
+#print axioms HEDemandedCurrentReads.producer_head_read
+#print axioms HEDemandedCurrentReads.reads
+#print axioms HEDemandedCurrentReads.final_expression_read
+#print axioms HEDemandedCurrentReads.historical_override_is_not_current
+#print axioms HEDemandedCurrentReads.new_final_cast_accepts
+#print axioms HEDemandedCurrentSource.source_call
+#print axioms HEDemandedCurrentSource.source_and_slot_agree
+
+end Mettapedia.GSLT.LanguageDef.Collections.TypedCalls

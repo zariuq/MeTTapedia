@@ -55,6 +55,26 @@ theorem models_compose {first : Assignment source middle}
   intro equation member
   simpa only [Assignment.instantiate_compose] using congrArg (instantiate second) (solved equation member)
 
+/-- A model in the original declaration frame is also a future-frame model. -/
+theorem solvable_of_consistent {problem : EquationStore (Term (signature S source) Γ sort)}
+    (consistent : (ContextualFamilies.action source Γ sort).Consistent problem) : Solvable problem := by
+  obtain ⟨candidate, model⟩ := consistent
+  exact solvable_of_model model
+
+/-- Ground terms for every sort collapse any future model back into the
+original frame. This condition belongs to the one-frame comparison, not to
+general contextual admission. -/
+theorem solvable_iff_consistent
+    (ground : ∀ result, Term (signature S source) [] result)
+    (problem : EquationStore (Term (signature S source) Γ sort)) :
+    Solvable problem ↔ (ContextualFamilies.action source Γ sort).Consistent problem := by
+  constructor
+  · rintro ⟨Future, future, candidate, model⟩
+    let close : Assignment future source := fun name =>
+      rename (S := signature S source) (Γ := []) (Δ := (future name).1) (fun _ impossible => nomatch impossible) (ground (future name).2)
+    exact ⟨Assignment.compose close candidate, models_compose model close⟩
+  · exact solvable_of_consistent
+
 theorem models_mapProblem (first : Assignment source middle) (second : Assignment middle target)
     (problem : EquationStore (Term (signature S source) Γ sort)) :
     Models second (mapProblem first problem) ↔ Models (Assignment.compose second first) problem := by

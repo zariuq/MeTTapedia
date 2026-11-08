@@ -13,7 +13,7 @@ point condition on the invocation control row.
 
 set_option autoImplicit false
 
-namespace Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualSourceSchedules.Schedule
+namespace Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualNativeBodies.Body
 
 open Mettapedia.OSLF.Binding hiding instantiate instantiateArgs
 open Mettapedia.OSLF.Binding.ContextualFamily
@@ -39,15 +39,15 @@ variable {S : Signature} {O First Last : Type} [DecidableEq O]
     {before : ContextualClauseSourceState.World first O Γ sort}
     {after : ContextualClauseSourceState.World last O Γ sort}
 
-abbrev ProducerQuery (schedule : Schedule S O Γ sort before after) :=
-  DataQuery schedule.guardNativeFamily
-    (GuardPhysical O × Row schedule.guardNativeBank schedule.guardNativeFamily Γ sort) (GuardPhysical O)
+abbrev ProducerQuery (body : Body S O Γ sort before after) :=
+  DataQuery body.guardNativeFamily
+    (GuardPhysical O × Row body.guardNativeBank body.guardNativeFamily Γ sort) (GuardPhysical O)
 
-def sourceResourceCondition (schedule : Schedule S O Γ sort before after) : CommitPrecondition O Unit :=
-  (CompiledSchedule.compile unitLabel schedule.commits).condition
+def sourceResourceCondition (body : Body S O Γ sort before after) : CommitPrecondition O Unit :=
+  (CompiledSchedule.compile ContextualSourceSchedules.Schedule.unitLabel body.commits).condition
 
-theorem source_resource_queries_empty (schedule : Schedule S O Γ sort before after) :
-    schedule.sourceResourceCondition.queries = [] := by
+theorem source_resource_queries_empty (body : Body S O Γ sort before after) :
+    body.sourceResourceCondition.queries = [] := by
   apply condition_queries_empty
   intro commit member
   obtain ⟨selection, _selected, rfl⟩ := List.mem_map.mp member
@@ -59,23 +59,23 @@ omit [DecidableEq O] in
 theorem entry_identity_injective : Function.Injective (entryIdentity (O := O)) :=
   fun _ _ same => Sum.inl.inj (Option.some.inj same)
 
-def producerPresentQuery (schedule : Schedule S O Γ sort before after) : schedule.ProducerQuery :=
-  let required := schedule.sourceResourceCondition.present.image entryIdentity
+def producerPresentQuery (body : Body S O Γ sort before after) : body.ProducerQuery :=
+  let required := body.sourceResourceCondition.present.image entryIdentity
   ⟨fun _ label => decide (label.1 ∈ required), required⟩
 
-def producerAbsentQuery (schedule : Schedule S O Γ sort before after) : schedule.ProducerQuery :=
-  let forbidden := schedule.sourceResourceCondition.absent.image entryIdentity
+def producerAbsentQuery (body : Body S O Γ sort before after) : body.ProducerQuery :=
+  let forbidden := body.sourceResourceCondition.absent.image entryIdentity
   ⟨fun _ label => decide (label.1 ∈ forbidden), ∅⟩
 
-noncomputable def producerStaticQuery (schedule : Schedule S O Γ sort before after) : schedule.ProducerQuery :=
-  liftPoint (ofCondition (fun _ => schedule.ShapesHold ∧ schedule.sourceResourceCondition.possible = true) none)
+noncomputable def producerStaticQuery (body : Body S O Γ sort before after) : body.ProducerQuery :=
+  liftPoint (ofCondition (fun _ => body.ShapesHold ∧ body.sourceResourceCondition.possible = true) none)
 
-noncomputable def producerResourceQueries (schedule : Schedule S O Γ sort before after) : List schedule.ProducerQuery :=
-  [schedule.producerStaticQuery, schedule.producerPresentQuery, schedule.producerAbsentQuery]
+noncomputable def producerResourceQueries (body : Body S O Γ sort before after) : List body.ProducerQuery :=
+  [body.producerStaticQuery, body.producerPresentQuery, body.producerAbsentQuery]
 
 private theorem finite_presence {N Label : Type} {Candidate : Type uA} [DecidableEq N]
     (required world : Finset N) (rows : N → Label) (candidate : Candidate) :
-    ((CensusAdmission.Query.mk (fun (_ : Candidate) (label : N × Label) => decide (label.1 ∈ required)) required).atSolution candidate).Holds
+    ((PredicateQueryAdmission.Query.mk (fun (_ : Candidate) (label : N × Label) => decide (label.1 ∈ required)) required).atSolution candidate).Holds
       (fun occurrence => (occurrence, rows occurrence)) world ↔ required ⊆ world := by
   change regionOf _ world (fun label : N × Label => decide (label.1 ∈ required)) = required ↔ _
   constructor
@@ -90,7 +90,7 @@ private theorem finite_presence {N Label : Type} {Candidate : Type uA} [Decidabl
 
 private theorem finite_absence {N Label : Type} {Candidate : Type uA} [DecidableEq N]
     (forbidden world : Finset N) (rows : N → Label) (candidate : Candidate) :
-    ((CensusAdmission.Query.mk (fun (_ : Candidate) (label : N × Label) => decide (label.1 ∈ forbidden)) ∅).atSolution candidate).Holds
+    ((PredicateQueryAdmission.Query.mk (fun (_ : Candidate) (label : N × Label) => decide (label.1 ∈ forbidden)) ∅).atSolution candidate).Holds
       (fun occurrence => (occurrence, rows occurrence)) world ↔ Disjoint forbidden world := by
   change regionOf _ world (fun label : N × Label => decide (label.1 ∈ forbidden)) = ∅ ↔ _
   constructor
@@ -107,8 +107,8 @@ private theorem finite_absence {N Label : Type} {Candidate : Type uA} [Decidable
     obtain ⟨present, excluded⟩ := mem_regionOf.mp member
     exact Finset.disjoint_left.mp apart (of_decide_eq_true excluded) present
 
-theorem entry_presence_iff (schedule : Schedule S O Γ sort before after) (occupied : Finset Nat) (required : Finset O) :
-    required.image entryIdentity ⊆ (schedule.nativeBindingState occupied).present ↔ required ⊆ before.present := by
+theorem entry_presence_iff (body : Body S O Γ sort before after) (occupied : Finset Nat) (required : Finset O) :
+    required.image entryIdentity ⊆ (body.nativeBindingState occupied).present ↔ required ⊆ before.present := by
   constructor
   · intro checked occurrence member
     have inside := checked (Finset.mem_image_of_mem entryIdentity member)
@@ -122,8 +122,8 @@ theorem entry_presence_iff (schedule : Schedule S O Γ sort before after) (occup
     obtain ⟨occurrence, original, rfl⟩ := Finset.mem_image.mp member
     exact Finset.mem_insert_of_mem (Finset.mem_image_of_mem entryIdentity (checked original))
 
-theorem entry_absence_iff (schedule : Schedule S O Γ sort before after) (occupied : Finset Nat) (forbidden : Finset O) :
-    Disjoint (forbidden.image entryIdentity) (schedule.nativeBindingState occupied).present ↔ Disjoint forbidden before.present := by
+theorem entry_absence_iff (body : Body S O Γ sort before after) (occupied : Finset Nat) (forbidden : Finset O) :
+    Disjoint (forbidden.image entryIdentity) (body.nativeBindingState occupied).present ↔ Disjoint forbidden before.present := by
   constructor
   · intro apart
     apply Finset.disjoint_left.mpr
@@ -142,15 +142,16 @@ theorem entry_absence_iff (schedule : Schedule S O Γ sort before after) (occupi
       subst other
       exact Finset.disjoint_left.mp apart original visible
 
-theorem producer_resource_queries_iff (schedule : Schedule S O Γ sort before after) (occupied : Finset Nat)
-    (consistent : ContextualConditionalExecution.Solvable (schedule.nativeBindingInformation occupied schedule.producerValues [])) :
-    (∀ query ∈ schedule.producerResourceQueries,
-      AskData (schedule.nativeBindingInformation occupied schedule.producerValues []) query
-        (nativeLabels schedule.guardNativeBank (schedule.nativeBindingState occupied)) (schedule.nativeBindingState occupied).present) ↔
-      schedule.ShapesHold ∧ Executable unitLabel before.present schedule.commits := by
-  have static : AskData (schedule.nativeBindingInformation occupied schedule.producerValues []) schedule.producerStaticQuery
-      (nativeLabels schedule.guardNativeBank (schedule.nativeBindingState occupied)) (schedule.nativeBindingState occupied).present ↔
-      schedule.ShapesHold ∧ schedule.sourceResourceCondition.possible = true := by
+theorem producer_resource_queries_iff (body : Body S O Γ sort before after) (occupied : Finset Nat)
+    (produced : List (Term (signature S (queryFamily body.bindingLocals body.guardFamily)) Γ sort))
+    (consistent : ContextualConditionalExecution.Solvable (body.nativeBindingInformation occupied produced [])) :
+    (∀ query ∈ body.producerResourceQueries,
+      AskData (body.nativeBindingInformation occupied produced []) query
+        (nativeLabels body.guardNativeBank (body.nativeBindingState occupied)) (body.nativeBindingState occupied).present) ↔
+      body.ShapesHold ∧ Executable ContextualSourceSchedules.Schedule.unitLabel before.present body.commits := by
+  have static : AskData (body.nativeBindingInformation occupied produced []) body.producerStaticQuery
+      (nativeLabels body.guardNativeBank (body.nativeBindingState occupied)) (body.nativeBindingState occupied).present ↔
+      body.ShapesHold ∧ body.sourceResourceCondition.possible = true := by
     erw [producerStaticQuery, lift_point_ask_iff, ask_condition_iff _ _ _ (Finset.mem_insert_self _ _)]
     constructor
     · intro checked
@@ -158,32 +159,32 @@ theorem producer_resource_queries_iff (schedule : Schedule S O Γ sort before af
       exact checked Future future candidate model
     · intro holds Future future candidate _model
       exact holds
-  have present : AskData (schedule.nativeBindingInformation occupied schedule.producerValues []) schedule.producerPresentQuery
-      (nativeLabels schedule.guardNativeBank (schedule.nativeBindingState occupied)) (schedule.nativeBindingState occupied).present ↔
-      schedule.sourceResourceCondition.present ⊆ before.present := by
+  have present : AskData (body.nativeBindingInformation occupied produced []) body.producerPresentQuery
+      (nativeLabels body.guardNativeBank (body.nativeBindingState occupied)) (body.nativeBindingState occupied).present ↔
+      body.sourceResourceCondition.present ⊆ before.present := by
     constructor
     · intro checked
       obtain ⟨Future, future, candidate, model⟩ := consistent
-      exact (schedule.entry_presence_iff occupied _).mp ((finite_presence _ _ _ (⟨Future, future, candidate⟩ : Candidate schedule.guardNativeFamily)).mp
+      exact (body.entry_presence_iff occupied _).mp ((finite_presence _ _ _ (⟨Future, future, candidate⟩ : Candidate body.guardNativeFamily)).mp
         (checked Future future candidate model))
     · intro holds Future future candidate _model
-      exact (finite_presence _ _ _ (⟨Future, future, candidate⟩ : Candidate schedule.guardNativeFamily)).mpr ((schedule.entry_presence_iff occupied _).mpr holds)
-  have absent : AskData (schedule.nativeBindingInformation occupied schedule.producerValues []) schedule.producerAbsentQuery
-      (nativeLabels schedule.guardNativeBank (schedule.nativeBindingState occupied)) (schedule.nativeBindingState occupied).present ↔
-      Disjoint schedule.sourceResourceCondition.absent before.present := by
+      exact (finite_presence _ _ _ (⟨Future, future, candidate⟩ : Candidate body.guardNativeFamily)).mpr ((body.entry_presence_iff occupied _).mpr holds)
+  have absent : AskData (body.nativeBindingInformation occupied produced []) body.producerAbsentQuery
+      (nativeLabels body.guardNativeBank (body.nativeBindingState occupied)) (body.nativeBindingState occupied).present ↔
+      Disjoint body.sourceResourceCondition.absent before.present := by
     constructor
     · intro checked
       obtain ⟨Future, future, candidate, model⟩ := consistent
-      exact (schedule.entry_absence_iff occupied _).mp ((finite_absence _ _ _ (⟨Future, future, candidate⟩ : Candidate schedule.guardNativeFamily)).mp
+      exact (body.entry_absence_iff occupied _).mp ((finite_absence _ _ _ (⟨Future, future, candidate⟩ : Candidate body.guardNativeFamily)).mp
         (checked Future future candidate model))
     · intro holds Future future candidate _model
-      exact (finite_absence _ _ _ (⟨Future, future, candidate⟩ : Candidate schedule.guardNativeFamily)).mpr ((schedule.entry_absence_iff occupied _).mpr holds)
-  have resources : Executable unitLabel before.present schedule.commits ↔
-      schedule.sourceResourceCondition.possible = true ∧ schedule.sourceResourceCondition.present ⊆ before.present ∧
-        Disjoint schedule.sourceResourceCondition.absent before.present := by
+      exact (finite_absence _ _ _ (⟨Future, future, candidate⟩ : Candidate body.guardNativeFamily)).mpr ((body.entry_absence_iff occupied _).mpr holds)
+  have resources : Executable ContextualSourceSchedules.Schedule.unitLabel before.present body.commits ↔
+      body.sourceResourceCondition.possible = true ∧ body.sourceResourceCondition.present ⊆ before.present ∧
+        Disjoint body.sourceResourceCondition.absent before.present := by
     rw [← CompiledSchedule.compile_condition_iff]
-    change schedule.sourceResourceCondition.Holds unitLabel before.present ↔ _
-    rw [CommitPrecondition.Holds, schedule.source_resource_queries_empty]
+    change body.sourceResourceCondition.Holds ContextualSourceSchedules.Schedule.unitLabel before.present ↔ _
+    rw [CommitPrecondition.Holds, body.source_resource_queries_empty]
     simp only [List.not_mem_nil, false_implies, implies_true, and_true]
   constructor
   · intro checked
@@ -199,4 +200,4 @@ theorem producer_resource_queries_iff (schedule : Schedule S O Γ sort before af
     · exact present.mpr parts.2.1
     · exact absent.mpr parts.2.2
 
-end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualSourceSchedules.Schedule
+end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualNativeBodies.Body

@@ -80,8 +80,8 @@ def producedDescription (origin : Nat)
         (resultFamily queries inners locals before)
         ⟨information queries inners locals before rule picked,
           instantiate (actorEnv queries inners locals before) value⟩)
-  | ⟨.live value, _⟩ => packOrdinary queries inners locals before
-      (ofStored _ _ (.live (instantiate (actorEnv queries inners locals before) value)))
+  | ⟨.shared value, _⟩ => packOrdinary queries inners locals before
+      (ofStored _ _ (.shared (instantiate (actorEnv queries inners locals before) value)))
   | ⟨.schema body, conditions⟩ => packTemplate queries inners locals before
       (ContextualConditionalTemplates.stored queries inners before.declarations
         (actorEnv queries inners locals before) origin ⟨.schema body, conditions⟩)
@@ -129,8 +129,8 @@ theorem raw_produced_row (port : Fin rule.code.produce.length) :
       | .ordinary value => ContextualConditionalPublication.ordinary locals (resultFamily queries inners locals before)
           (resultFamily queries inners locals before)
           ⟨information queries inners locals before rule picked, instantiate (actorEnv queries inners locals before) value⟩
-      | .live value => ofStored _ _ (.live (instantiate (actorEnv queries inners locals before) value))
-      | .schema body => ofStored _ _ (.live
+      | .shared value => ofStored _ _ (.shared (instantiate (actorEnv queries inners locals before) value))
+      | .schema body => ofStored _ _ (.shared
           (queryView (expanded queries inners) locals before.declarations
             (instantiate (templateInclusion queries inners before.declarations port.val) body))) := by
   have bit : (ordinaryBits queries inners locals before rule).get

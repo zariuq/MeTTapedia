@@ -105,7 +105,7 @@ an occurrence of the region is maximal there exactly when it is maximal in the c
 theorem argmax_iff_census {f : Firing T S O} {C : Configuration T O}
     (valid : f.Valid A label C)
     {query : MeTTaCalculus.OccurrenceCommits.PredicateQuery O T}
-    (member : CensusAdmission.Query.fixed query ∈ f.queries) (weight : T → ℕ) (o : O) :
+    (member : PredicateQueryAdmission.Query.fixed query ∈ f.queries) (weight : T → ℕ) (o : O) :
     (o ∈ regionOf label C.present query.region ∧
         ∀ other ∈ regionOf label C.present query.region, weight (label other) ≤ weight (label o)) ↔
       (o ∈ query.seen ∧ ∀ other ∈ query.seen, weight (label other) ≤ weight (label o)) := by
@@ -118,7 +118,7 @@ theorem argmax_iff_census {f : Firing T S O} {C : Configuration T O}
 firing, the region of a predicate query has exactly the census's size at every solution of the
 firing's cut, so the charge is a function of the firing. -/
 theorem census_region_card {f : Firing T S O} {C : Configuration T O}
-    (valid : f.Valid A label C) {query : CensusAdmission.Query T S O} (member : query ∈ f.queries)
+    (valid : f.Valid A label C) {query : PredicateQueryAdmission.Query T S O} (member : query ∈ f.queries)
     {σ : S} (solved : A.Models σ (f.selection.problem label f.rule C)) :
     (regionOf label C.present (query.region σ)).card = query.seen.card :=
   (valid.observations query member).card solved

@@ -1,0 +1,30 @@
+claim HL: (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)) :e
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm.
+{ exact Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_typed (LeanNum 0) (LeanNum_In 0
+    nat_0). }
+claim HM: (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0))
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0))) :e
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm.
+{ exact Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_typed
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)) HL
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)) HL. }
+apply andI.
+- rewrite Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_exampleByRight_eq_1.
+  rewrite Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize_eq_1
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)) HL
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)) HL
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0))
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0))) HM
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)) HL.
+  reflexivity.
+- rewrite Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_exampleByLeft_eq_1.
+  rewrite Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize_eq_2
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)) HL
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)) HL
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0))
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0))) HM
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)) HL.
+  reflexivity.

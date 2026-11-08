@@ -4,7 +4,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 # Publication intent belongs to the produced ports
 
 Fresh occurrence allocation must not choose whether an output is reusable
-or live. A plan declares one intent per production port, and the selected
+or shared. A plan declares one intent per production port, and the selected
 fresh identities receive those intents in the same order. The allocation
 map preserves the declared list and commutes with injective identity changes.
 -/
@@ -66,7 +66,7 @@ theorem realize_planned_publication {Γ : Ctx S} {sort : S.Srt}
     (outputs : O → Term (signature S (ContextualActivatedStep.target locals before.declarations)) Γ sort)
     (covered : ContextualWorldScopeLedger.RuleCovered (ContextualScopeSupport.privateScopes before.scopes)
       before.occupied plan.rule)
-    (admitted : ContextualTransportedActivation.SemanticAdmission locals before.declarations before.occupied
+    (admitted : ContextualGuardedStep.Valid locals before.declarations before.occupied
       selection plan.rule before.inventory.rows before.inventory.configuration outputs)
     (patterned : ContextualPatternFragment.ProblemPattern (ContextualResidual.observeProblem
       (ContextualActivatedStep.problem locals before.declarations before.occupied selection plan.rule

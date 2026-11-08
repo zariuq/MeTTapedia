@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 
 The value grammar is reused unchanged. A schema output carries its own
 finite equation list over private holes and actor captures. Ordinary and
-live outputs have no additional template-condition payload. Lowering uses
+shared outputs have no additional template-condition payload. Lowering uses
 the existing rule; schema conditions are published as data, not asserted
 as requirements on the caller's global information.
 -/
@@ -23,7 +23,7 @@ variable {S : Signature} {Local Inner Shared O : Type}
 
 def Conditions {Γ : Ctx S} {sort : S.Srt} : Production locals inners captures Γ sort → Type
   | .schema _ => ContextualResidual.Problem (Blueprint locals inners captures)
-  | .ordinary _ | .live _ => PUnit
+  | .ordinary _ | .shared _ => PUnit
 
 abbrev Description (context : Ctx S) (sort : S.Srt) :=
   (production : Production locals inners captures context sort) × Conditions locals inners captures production

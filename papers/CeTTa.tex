@@ -69,8 +69,7 @@
 
 \title{\CeTTa{}:\\
 \large A Direct C Runtime for the MeTTa Family\\[2pt]
-\normalsize How to program it, how it is built, and what each line of
-development has achieved}
+\normalsize Programming, execution architecture and application measurements}
 \author{Zar Goertzel\\Oru\v{z}i}
 \date{5 November 2026\\\small Tutorial and historical results: 27 October and earlier}
 
@@ -78,35 +77,39 @@ development has achieved}
 \maketitle
 
 \begin{abstract}
-\CeTTa{} is a direct C runtime for MeTTa, the reflective, nondeterministic
-language of the Hyperon framework.  One binary hosts several dialects: \PeTTa{}
-(the default, version 1.0.6, with a typed 1.1), \CeTTa{}'s fork of Hyperon
-Experimental 0.2.10 with its profile family, and MeTTa Prime, a distinct
-language with call by need, call-time choice and a native dependent kernel,
-beside the reflective rho calculus, MM2, MeTTa Zero and a HOL Light
-proof-stream checker.  This paper is written for a reader who wants to program
-\CeTTa{} today.  It teaches the language with listings that run on named
-binaries on three lanes, quotes their output, and records where the lanes
-differ.  It describes the architecture and the specification-driven
-semantics: profiles, oracle conformance, a reflective modal layer, and a
-small-step rule table whose rule-removal tests show that the evaluator depends
-on the declared rules.  It then gives each line of development its purpose,
-history and measured results: the published \code{main}; the opt line, whose
-October work realized \code{transform} natively, made space drains linear and
-cut the evaluator's cost of crossing between machines; pre-main, which unifies
-execution across those machines for the next \code{main}; the native
-inference kernel lines; and the Prime families, the draft, the weights, cost
-and parallel line, and \code{cetta-ours}, which keeps the live agents running.
-For spaces and channels it adopts the direction of an interaction basis: one
-atomic commit that observes, keeps or takes, and makes; spaces and channels as
-one object that differs only in the rights a holder has; region profiles as
-metadata.  The Prime draft runs this basis as a native kernel.  The
-reflective rho calculus with its Lean-characterized evaluation at
-communication, the cross-runtime benchmark ladder and the abstract-machine
-design record are kept, with their dates.  The November preview adds a reusable
-C embedding interface, a Python package, NumPy interoperability and bounded
-dot-product and matrix--vector operations.  A separate dated appendix records
-the preview's example timings and correctness-gated MM2/MORK comparisons.
+\CeTTa{} is a direct C runtime for the MeTTa family, with \PeTTa{} as its
+primary dialect and a distinct Hyperon Experimental-compatible lane.  It
+combines symbolic rewriting and nondeterministic search with mutable spaces,
+indexed relational queries and native execution of admitted program fragments.
+The ordinary evaluator and the specialized machines share explicit call,
+answer, ownership and fallback contracts; data returned by one route must not
+be executed accidentally by another.  A reusable C ABI and Python package
+expose engines, structured atoms, spaces, retained answers, streams, callbacks
+and numerical buffers.
+
+This paper teaches the languages with executable examples, describes the
+runtime and its specification and proof boundaries, and measures the November
+preview against reference implementations, checking every timed run's answers.
+On nine application tasks whose MM2 programs come from MORK's own benchmarks
+and tutorials, ordinary \PeTTa{} programs on \CeTTa{} compute the same complete
+result sets as standalone MORK, and \CeTTa{}'s whole process is faster than
+MORK's execution alone on every task with either of MORK's two builds, by 2.4
+to 460 times against the faster one.  On 36 graph-analytics, query and search
+workloads written for MORK's experimental leapfrog join, \CeTTa{} is faster on
+34 and within 2\% on the other two, at a geometric mean of 0.55 of MORK's time.
+\CeTTa{}'s \PeTTa{} lane prints the same output as SWI-\PeTTa{} on 161 of the
+164 \PeTTa{} examples, with the three differences explained, and is faster on
+all timed examples but one; its \HE{} lane is faster than Hyperon Experimental
+on all 17 shared programs that both complete, by a geometric mean of 36, and
+completes three on which Hyperon Experimental aborts.  The nuPLN inductive
+learner runs five times faster than on SWI-\PeTTa{}.  The ai-mathematician's
+premise selection matches its Python original's results and runs slightly
+faster, measured on an earlier binary because the preview fails that stage.
+Runs that fail or do not finish are reported as such, never as times, and
+earlier measurements keep their dates.  The reflective rho calculus, Prime
+research lines, translation results and historical experiments retain their
+stated scopes and dates; their proofs and tests do not amount to a proof of
+the whole C implementation.
 \end{abstract}
 
 %% ────────────────────────────────────────────────────────────────────
@@ -186,6 +189,14 @@ principles.
   measured on 26 October, the native \code{transform} and its MeTTa library
   ran faster than SWI-\PeTTa{} running the same library; space drains went
   from quadratic to linear.
+\item Answer-checked measurements of the November preview
+  (Appendix~\ref{app:runtimes-20261105}): against standalone MORK, in its
+  default build and with its leapfrog join, on MORK's own MM2 programs and on
+  graph-analytics, query and search workloads; against SWI-\PeTTa{} on all 164
+  \PeTTa{} examples and on an inductive learner; against Hyperon Experimental
+  on shared \HE{} programs; and against the Python ai-mathematician's premise
+  selection.  Every timed run's answers are checked, and runs that fail or do
+  not finish are reported as such.
 \item The interaction basis as the direction for spaces and channels, with
   what is proved in Lean, what the Prime draft runs, and what the native
   runtime still lacks.
@@ -1102,19 +1113,17 @@ arenas; the \PeTTa{} lane runs a heap-based choice and continuation machine;
 the Prime lane adds need cells and an exact outcome carrier over the same term
 and space substrate.
 
-\subsection{Size and parts}
+\subsection{Parts of the implementation}
 
-In the 27 October snapshot, the pre-main tree, the candidate for the next
-\code{main}, has 182 C sources
-in its core (about 434{,}000 lines with headers), 65 native modules (about
-72{,}000 lines), and four Rust crates that bridge to \PathMap{} and MORK.  The
-Prime draft's core has 228 C sources (about 559{,}000 lines); the published
-\code{main} of August has 63 (about 197{,}000).  The growth since August is
-mostly new machinery rather than new surface: the \PeTTa{} machine, compiled
-fragments, typed tiers, native modules (JSON, regular expressions, Unicode
-classes, LanguageDef and parser machinery, TPTP, seals, module values),
-libraries for tensors, files and processes, a native HOL Light kernel, the
-space service, and the Prime judgments.
+The runtime core implements atoms, symbols, bindings, arenas, term identity,
+spaces, matching, evaluation and retained execution state.  Native modules
+provide parsers and language services, regular expressions, tensors, files,
+processes and proof checkers.  Optional Rust bridges connect to PathMap and
+MORK; they are separate from the C/Python embedding runtime's dependencies.
+The PeTTa search machine, prepared fragments and shared query machinery are
+implementation routes through these services, not separate language meanings.
+The source tree and named build configurations identify which optional
+providers a particular executable contains.
 
 \subsection{Core design}
 
@@ -1128,9 +1137,9 @@ space service, and the Prime judgments.
   the hot path compares identifiers.  The interning table uses a
   hash-derived odd stride, so every probe sequence visits the whole table
   (Appendix~\ref{app:algorithms}).
-\item[Equation index.] Equations are indexed by head-symbol hash into 256
-  buckets, with a discrimination trie inside each bucket; an epoch-based
-  substitution tree removes per-candidate variable renaming.
+\item[Equation index.] Head-symbol and structural indexes select candidate equations and facts;
+  revision-aware compiled views reuse their discrimination work.  Shared
+  binding and substitution machinery avoids per-candidate variable copying.
 \item[Tail calls and fuel.] A trampoline re-enters tail calls without growing
   the C stack.  Fuel is unlimited by default; a stack overflow is caught on an
   alternate signal stack and reported.
@@ -1206,16 +1215,16 @@ failure inside GMP can still abort the host process.
 
 \subsection{Tests and gates}
 
-The 27 October test manifest of the pre-main tree lists 705 programs, of which 640 run on
-the \HE{} lane and 65 on the Prime lane; 476 belong to the ordinary
-\code{make test} lane and 659 compare against a golden output.  The Prime
-draft's manifest lists 898 (646 and 252).  Beyond the manifest the trees track
-about 2{,}300 (pre-main) and 2{,}800 (draft) test programs, run by dedicated
-lanes: the \PeTTa{} conformance gates against SWI-\PeTTa{}, the step-rule
-removal lane (Section~\ref{sec:langdefpack}), the \HE{} I/O semantic suite
-against upstream \HE{} (Section~\ref{sec:conformance}), sanitizer portfolios,
-the \PathMap{} and MORK lanes, and the Prime gates.  The receipts of these
-gates for each line are given with the line in Section~\ref{sec:lines}.
+The test manifest records each fixture's language, profile and observation
+policy; dedicated targets cover the runtime boundaries, language references,
+space backends, proof checkers and host adapters.  A readiness run on the
+measured preview state (5 November) recorded 524 passing, no failing and 78
+skipped cases of \code{make test}; it also left two decisions about the
+\PeTTa{} reference open (the version that decides whether a function added at
+run time is visible to code loaded before it, and which stable \PeTTa{} commit
+is the model).  Those are specific observations of the identified preview,
+not a claim that every optional mode or failure path has been qualified.
+Historical gate receipts below retain their original dates.
 
 For the November preview, \code{make main-readiness} is a bounded candidate
 check with a default twenty-minute budget including builds.  It runs the
@@ -1993,8 +2002,15 @@ obligation rather than silently pretending the legacy API was already
 faithful.
 
 %% ────────────────────────────────────────────────────────────────────
-\section{Lines of Development}
+\section{Development Lines and Integration}
 \label{sec:lines}
+
+The November preview combines Opt's evaluator/query/storage work, NIK's
+checking infrastructure and the Python/C embedding interface.  Its source
+identity and fresh application observations are recorded in the appendix.
+The dated histories below explain how those mechanisms arose; they are not
+an open-bug checklist for the preview or a claim that independent Prime
+research branches have all been release-qualified.
 
 \CeTTa{} is developed on several lines at once, each a git branch with its
 own worktree and its own purpose.  This section gives each line's purpose,
@@ -2040,13 +2056,13 @@ weights line and \code{cetta-ours} several times before
 \small
 \begin{tabular}{@{}lp{0.20\linewidth}p{0.47\linewidth}@{}}
 \toprule
-line & head on 27 Oct & purpose \\
+line & historical snapshot (27 Oct) & purpose \\
 \midrule
 \code{main} & 12da03b4, 14 Aug & the published, qualified baseline \\
-opt & feba78e3 + 59 staged files & the careful fixes: execution, query and memory architecture \\
-pre-main & feba78e3 + staged repairs & one execution contract across the machines, qualified for \code{main} \\
+opt & working tree based on feba78e3 & the careful fixes: execution, query and memory architecture \\
+pre-main & integration tree based on feba78e3 & integration of the execution contracts; a candidate for \code{main} \\
 NIK & 2f168dca & native inference kernels, then native application libraries \\
-Prime draft & a0f1077a + staged basis & Prime in C, in step with its metatheory \\
+Prime draft & working tree based on a0f1077a & Prime in C, in step with its metatheory \\
 weights & 750896ae & weights, cost accounting and parallel execution for Prime \\
 \code{cetta-ours} & d436e11b & the engine of the live agents, kept running by quick fixes \\
 \bottomrule
@@ -2080,8 +2096,11 @@ corpus at 183/183 and \code{fib(999999)} giving the same SHA-256 digest on
 the \HE{}, Prime and \PeTTa{} lanes.  The same tranche retired the ground-call
 memoization table, which earlier drafts of this paper described.
 
-Nothing has landed on \code{main} since 14 August.  Every other line contains
-it: pre-main is 205 commits ahead of it.
+The published baseline described here is the August version.  The November
+preview combines the committed Opt/NIK integration with the Python/C ABI and
+pending readiness repairs; its measured executable is identified in
+Appendix~\ref{app:runtimes-20261105}.  Historical branch distances are not
+a release-readiness criterion.
 
 %% ────────────────────────────────────────────────────────────────────
 \subsection{opt}
@@ -2212,41 +2231,73 @@ the hand-written loop 1.00G and 13.3G became 0.24G and 0.93G.  The
 specification library \code{lib\_transform\_specs}, quadratic by design, still
 runs 1.8--2.3 times slower than on SWI-\PeTTa{}.
 
-\paragraph{Joins against MORK (27 October, staged).}  The latest opt work is
-staged but not committed.  It targets the programs MORK's MM2 language runs
-well, against MORK rebuilt from current upstream and SWI-\PeTTa{} running the
-faster correct program per task.  MORK and SWI-\PeTTa{} are single runs or
-best of two; \CeTTa{} is best of three.
+\paragraph{Applications on MORK's MM2 workload families.}
+The Opt programme used nine application families: two-hop materialization
+and triangle joins, five-cliques, odd-even sorting, backward proof search,
+Hexlife, ancestry, path-producing reachability, a unary counter machine and
+process-calculus communication.  These exercise evolving result sets, deeply
+nested terms, non-ground process bodies and sustained joins, rather than
+only startup or arithmetic loops.  Their MM2 sources and ordinary MeTTa
+solutions share declared input facts and result relations; they are distinct
+programs, not a benchmark of a wrapper calling the same MORK implementation.
 
-These unequal trial counts make this an exploratory historical table, not a
-controlled same-snapshot speedup estimate.  The November appendix uses equal
-trial counts and retains its local-artifact provenance limits explicitly.
 
-\begin{center}
-\small
-\begin{tabular}{@{}lrrrr@{}}
-\toprule
-task & MORK & SWI-\PeTTa{} & \CeTTa{} & \CeTTa{} RSS / MORK \\
-\midrule
-transitive closure, 50K edges & 1.13\,s & 4.25\,s & 0.167\,s & 1.39 \\
-5-clique & 21.2\,s & 18.6\,s & 0.009\,s & 1.80 \\
-odd-even sort, 300 & 0.187\,s & 1.27\,s & 0.119\,s & 3.06 \\
-backward chaining, 1{,}000 & 15.7\,s & 0.27\,s & 0.026\,s & 1.67 \\
-Hexlife, 20 generations & 20.0\,s & 0.15\,s & 0.040\,s & 2.04 \\
-ancestry, 1{,}000 & 1.48\,s & 19.0\,s & 0.576\,s & 2.71 \\
-reachability, 500 & 8.71\,s & 0.21\,s & 0.035\,s & 0.43 \\
-counter machine, 300 & 104\,s & 1.76\,s & 0.544\,s & 0.60 \\
-process calculus, 200 & 26.3\,s & 27.9\,s & 8.10\,s & 1.32 \\
-\bottomrule
-\end{tabular}
-\end{center}
+For the five-clique task, the input has 200 vertices and 3,600 distinct
+undirected edges, each stored once with its smaller endpoint first.  A
+result is a five-tuple whose ten required edges exist.  The measured program
+is a conjunction over those facts with a set insertion; after the facts it
+reads:
+\begin{lstlisting}[style=metta]
+!(bind! &t (new-space set))
+(= (rule-clique)
+   (match &self
+     (, (edge $x0 $x1) (edge $x0 $x2) (edge $x0 $x3) (edge $x0 $x4)
+        (edge $x1 $x2) (edge $x1 $x3) (edge $x1 $x4)
+        (edge $x2 $x3) (edge $x2 $x4) (edge $x3 $x4))
+     (add-atom &t (5-clique $x0 $x1 $x2 $x3 $x4))))
+!(let $r (collapse (rule-clique)) done)
+!(size-atom (collapse (match &t (5-clique $x0 $x1 $x2 $x3 $x4) t)))
+\end{lstlisting}
+There is no clique-specific native primitive here.  The workload exercises
+shared variable constraints across a ten-leg join, the choice of join order
+and publication into a set; the input has 79 result tuples.  MORK's own
+benchmark writes the same ten conditions in the same order, and MORK's
+default join follows that order, while \CeTTa{} plans its own; the appendix
+therefore also times the MM2 query with its conditions reordered in MORK's
+favour.
 
-\noindent
-The odd-even sort's peak memory is just over three times MORK's.  The same
-batch found that four catalog cells had drifted 4--9\% slower across earlier
-batches, each screened only against its predecessor; screened against the
-goal's starting point the catalog is now 4.0\% faster on the geometric mean,
-with no cell above $+1.5\%$.
+The process-communication task stresses a different boundary: the space
+contains non-ground receive bodies and ground sends.  A matching payload
+instantiates a receive's body and adds the resulting process; a parallel
+process contributes both children.  These are persistent rules of MORK's
+benchmark, not consuming Rholang channel semantics:
+\begin{lstlisting}[style=metta]
+(= (communicate)
+   (match &p (, (recv $channel $payload $body) (send $channel $payload))
+     (add-atom &p $body)))
+(= (split)
+   (match &p (par $l $r) (let $_ (add-atom &p $l) (add-atom &p $r))))
+(= (rounds $k)
+   (if (== $k 0) done
+     (let* (($c (collapse (communicate))) ($s (collapse (split))))
+       (rounds (- $k 1)))))
+\end{lstlisting}
+The measured program builds unary addition from these rules and runs 500
+rounds, as MORK's clocked program alternates its two rules 1,000 times.
+Retaining variable identity and deeply shared payload terms matters as much
+as finding the initial matches.
+
+The generators of both programs of every pair are in
+\code{benchmarks/opt\_suite/}.  Appendix~\ref{app:runtimes-opt} measures the
+suite on the November preview against both of MORK's builds, the default one
+and the one with its experimental leapfrog join, after checking that every
+pair computes the same complete result set at the timed sizes.  Two earlier
+statements are corrected there.  The counter-machine timings of the earlier
+drafts measured a faulty \PeTTa{} program, which stored an unevaluated
+numeral in its instruction-counter field; matching row counts had concealed
+the differing states, and the corrected program passes the complete-state
+check.  And the workload earlier called transitive closure materializes
+two-hop pairs and triangles; it does not compute a fixed point.
 
 \paragraph{Set aside.}  An earlier broad branch of Nil support was archived on
 6 October: building a term could run code and child spaces copied the whole
@@ -2256,13 +2307,12 @@ library natives ignore added equations; its non-\HE{} parts returned the next
 day.  An attempt to merge opt into the \code{cetta-ours} and weights
 integration was aborted on 17 October (41 conflicted files).
 
-\paragraph{Open.}  The staged work awaits commit.  The committed spread hash
-for \code{unique-atom} disagrees with structural equality on two
-representations of the empty list, and the checked replacement is not yet
-committed.  \code{remove-atom} of a bare symbol answers \code{true} and leaves
-the symbol.  Timing holds stand on three cells (+6\% to +14\%).
-SWI-\PeTTa{} still wins on Ambient, the rho cell, the chainer cells (2.3--3.8
-times) and the foreign-read cells.
+\paragraph{Integration status, 5 November.}  The Opt mechanisms are merged
+into the preview's integration base.  Fresh application timings and their
+result checks belong to the dated appendix; earlier catalogue figures describe
+their original checkpoints.  Remaining release qualifications, including
+platform and allocation-failure limits, are stated with the embedding preview
+rather than inferred from an old list of staged changes.
 
 %% ────────────────────────────────────────────────────────────────────
 \subsection{pre-main}
@@ -2301,17 +2351,17 @@ of the step coincides with that merge.  Measured mechanism gains include an 8{,}
 open-equation-machine native call from 2{,}066 host goals to 2.  Correctness
 held at every checkpoint: the 471-program corpus in normal and statistics
 builds, 1{,}413 differential queries, and focused sanitizer runs.  Against
-SWI-\PeTTa{} 1.0.6, on references timed on 23 October, \CeTTa{} is slower on
+SWI-\PeTTa{} 1.0.6, on references timed on 23 October, \CeTTa{} was slower on
 Ambient (15.06 against 14.02\,s) and the rho cell (3.80 against 2.87\,s), and
 faster on the lambda cell (1.11 against 1.29\,s) and a million-element map
 (0.416 against 1.664\,s).
 
-\paragraph{Open.}  Everything after feba78e3 is uncommitted, including the
-repair of the hash that kept two representations of the empty list apart.
-Native step lowering is held back by measured regressions (first 10\% in
-wall time on the NIK cell, after a repair 5.8\% on another).  The source grew by about 8{,}400 lines of mechanism
-against an aim of shrinking it by a tenth.  The exhaustive \code{main}
-qualification has not been run.
+\paragraph{Integration status, 5 November.}  Pre-main now contains the
+committed Opt/NIK merge and the Python/C ABI integration, with the pending
+preview fixes described above.  The candidate check is bounded and records
+which work passed.  Broad proof, sanitizer, performance and distribution
+campaigns retain their distinct scopes; the ordinary preview's usability is
+not presented as an exhaustive-release certificate.
 
 %% ────────────────────────────────────────────────────────────────────
 \subsection{NIK}
@@ -3428,7 +3478,7 @@ thread count --- each with expected outputs checked by the test suite, alongside
 walkthrough of the calculus, both syntaxes, and the profile.
 
 %% ────────────────────────────────────────────────────────────────────
-\section{Cross-Runtime Benchmarks}
+\section{Historical Cross-Runtime Benchmarks}
 \label{sec:benchmark-programs}
 
 The rows in this section were measured between June and September 2026, on
@@ -3542,8 +3592,8 @@ Runtime & Time & vs.\ \PeTTa{} & Status \\
 \end{center}
 
 \PeTTa{}'s Prolog search remains decisively better on deep branching
-proof search; the current rerun widens the gap to roughly
-4.8$\times$.  \HE{} still cannot finish within 120\,s.
+proof search; the recorded rerun widens the gap to roughly
+4.8$\times$.  \HE{} did not finish within that recorded 120\,s run.
 
 \subsection{Forward Chaining at Scale}
 
@@ -3559,12 +3609,12 @@ of modus ponens:
            (add-atom $ss (: ($f $x1 $x2) $b)))))))
 !(count-atoms &ss)
 \end{lstlisting}
-The current \CeTTa{} rerun of
+The recorded \CeTTa{} rerun of
 \href{https://github.com/zariuq/CeTTa/blob/07928677c0237a19b2f3c32dffca28d7d2626723/tests/nil_pc_fc_d4.metta}{\code{tests/nil\_pc\_fc\_d4.metta}}
 completes in 100.86\,s and reports 8.19M accumulated results after the
 four forward passes.  We do \emph{not} reuse the older
 ``11.7M generated pairs'' sentence as benchmark evidence, because the
-current HE lane does not time out on this driver; it errors immediately
+recorded HE lane did not time out on this driver; it errors immediately
 (\code{match expects a space as the first argument}).  So the forward
 row remains a useful workload, but it is not yet paper-ready as a clean
 cross-runtime benchmark.
@@ -3582,10 +3632,10 @@ converts \code{prog1} to nested \code{let} with fresh variables:
                  (let $__tr_discard_2 (println! "done")
                    $__tr_result_1)))
 \end{lstlisting}
-The current source file
+The recorded source file
 \href{https://github.com/zariuq/CeTTa/blob/07928677c0237a19b2f3c32dffca28d7d2626723/benchmarks/bench_backchain_petta_native.metta}{\code{benchmarks/bench\_backchain\_petta\_native.metta}}
 produces 30 proof-carrying witnesses on native \PeTTa{}, and the
-current translated artifact produces the same 30 witnesses on both
+recorded translated artifact produces the same 30 witnesses on both
 \CeTTa{} and \HE{}:
 \begin{center}
 \begin{tabular}{lrrl}
@@ -3666,7 +3716,7 @@ vs.\ hypothesis-count split matters here: the \code{34} traces are
 genuinely multiple proof routes collapsing to \code{8} unique
 \code{(gene,disease,drug,tissue)} hypotheses, not a stale counting
 mistake.  Fresh timings on this grounded full row are 16.4\,s on
-\CeTTa{} and 44.5\,s on \PeTTa{} (about 2.7$\times$ faster).  Upstream \HE{} does not currently
+\CeTTa{} and 44.5\,s on \PeTTa{} (about 2.7$\times$ faster).  Upstream \HE{} did not in that run
 run this loader shape directly: its \code{metta} runner rejects the
 relative-file \code{import! ./support/...} syntax as an illegal module
 name, so the \HE{} column for this row remains a loader blocker rather
@@ -3689,7 +3739,7 @@ is extracted from the Rejuve genomic KB (338M Prolog lines, 57\,GB) and
 discretized into categorical attributes (tissue breadth, effect size)
 for pattern mining.
 
-The current audit does \emph{not} reuse the older cross-engine mining
+The recorded audit does \emph{not} reuse the older cross-engine mining
 speed table as benchmark evidence, and no current in-tree driver
 re-emits the earlier specialization-core atom count, so we do not carry
 that number forward.  We keep the pattern miner as a methodological
@@ -3862,7 +3912,7 @@ benchmark rows retained in the paper are only the subset rerun directly
 in this audit.
 
 \paragraph{Multi-relational deep chaining.}
-The strongest current multi-relational row is the 17-phase snapshot
+The strongest recorded multi-relational row is the 17-phase snapshot
 \href{https://github.com/zariuq/CeTTa/blob/07928677c0237a19b2f3c32dffca28d7d2626723/tests/bench_bio_bc_deep_snapshot_20260327.metta}{\code{tests/bench\_bio\_bc\_deep\_snapshot\_20260327.metta}}.
 It extends the mined-pattern chainer with pathway membership,
 same-pathway transfer, disease associations, compound--disease
@@ -3876,7 +3926,7 @@ variant-to-drug row is still a typed backward-chaining program:
                  (: $e2 (treats $compound $disease))
                  (drug-hypothesis $snp $compound $disease $gene)))
 \end{lstlisting}
-The current rerun produces exactly \textbf{1{,}411{,}430 hypotheses}
+The recorded rerun produced exactly \textbf{1{,}411{,}430 hypotheses}
 across 17 query phases, identical on both runtimes, with the bucket
 breakdown:
 
@@ -3909,7 +3959,7 @@ Runtime & Wall time & Peak RSS & vs.\ \PeTTa{} & Output contract \\
 \end{tabular}
 \end{center}
 
-\noindent The current timings still favor \CeTTa{}, but the table makes
+\noindent The recorded timings still favor \CeTTa{}, but the table makes
 the memory tradeoff explicit: this high-fan-out row is one where
 \CeTTa{} materializes many answers and pays roughly 3$\times$ \PeTTa{}'s
 peak footprint.
@@ -3920,7 +3970,7 @@ typed backward chaining with proof terms at every step.
 
 \paragraph{Dependent binder encoding.}
 PLN rule declarations use \code{(rule-sig name type)} instead of
-\code{(: name type)} to avoid a current HE spec limitation: the
+\code{(: name type)} to avoid a HE specification limitation in that version: the
 \code{(: \$e T)} syntax in arrow-domain positions is treated as a
 literal expected type, not a dependent binder, causing \code{BadArgType}
 on both HE and \CeTTa{} (see Section~\ref{sec:heprime}).
@@ -4137,7 +4187,7 @@ Cells & Result pairs & Lane & Native & \PathMap{} \\
 7{,}381 & 43{,}560 & \PeTTa{} & 22.21\,s / 2{,}447{,}440\,kB & 22.71\,s / 2{,}452{,}192\,kB \\
 \bottomrule
 \end{tabular}
-\caption{Answer-checked HexLife conjunction on current native and counted
+\caption{Answer-checked HexLife conjunction on the recorded native and counted
 \PathMap{} spaces.  Each cell is wall time / peak RSS for one process.}
 \label{tab:hexlife-pathmap-current}
 \end{table}
@@ -4145,7 +4195,7 @@ Cells & Result pairs & Lane & Native & \PathMap{} \\
 Earlier in the audit the \PathMap{} route exposed an effectively complete
 candidate scan.  The repair gives the counted trie one synchronized native
 discrimination view for candidate coordinates, while the counted \PathMap{}
-remains the occurrence authority.  This is why the current table measures a
+remains the occurrence authority.  This is why the dated table measures a
 real index rather than storage followed by a full native unifier scan.
 \PathMap{} crosses over slightly on Prime and reaches \PeTTa{} parity on this
 trie-suitable join; the large remaining \PeTTa{} time at the higher scale is
@@ -4381,9 +4431,9 @@ algorithms in Appendix~\ref{app:algorithms}:
 On the bulk-ingest family the native engine matches the reference
 Prolog engine's complexity class ($O(N)$); the residual difference is a
 constant factor addressed by revision-keyed compiled views
-(Appendix~\ref{app:algorithms}).  Benchmark tables elsewhere in the
-paper are being re-measured against the current engine and should be
-read as indicative.
+(Appendix~\ref{app:algorithms}).  Fresh, answer-checked measurements of
+the November preview are in Appendix~\ref{app:runtimes-20261105}; every
+other table describes the binary and the date named with it.
 
 \subsection{Earlier heap profiles}
 
@@ -4781,11 +4831,14 @@ path still groups quadratically; and upstream source/sink coverage remains
 incomplete.  The prototype therefore remains under \code{tools/}, with no
 new unnamespaced standard-library builtins.
 
-A different route to the same workloads is to run them as ordinary MeTTa with
-native joins.  The opt line's staged work of 27 October does this for nine
-programs of an MM2 application suite, from transitive closure to a process
-calculus, and runs each faster than MORK, with one task just over three times
-MORK's peak memory (Section~\ref{sec:line-opt}).
+The application comparison is different from this front end: ordinary
+MeTTa programs execute through \CeTTa{}'s own evaluator and query machinery,
+while standalone MORK, in its default build and in its build with the
+leapfrog join, executes its MM2 programs.  The Opt application suite, its
+scale ladder and MORK's showcase workloads are measured in
+Appendix~\ref{app:runtimes-20261105}.  Timing \CeTTa{}'s MORK-backed MM2
+front end against standalone MORK would measure hosting and publication
+overhead, not a competing kernel.
 
 %% ────────────────────────────────────────────────────────────────────
 \section{The MeTTa Dialect Landscape}
@@ -6021,17 +6074,22 @@ The lines of development divide the work.  \code{main} is the published
 baseline of August.  Opt does the careful fixes: in October it realized
 \code{transform} natively over its MeTTa library, made space drains linear,
 brought the cost of crossing between machines toward the cost of an ordinary
-step, and, in staged work, runs an MM2 application suite as MeTTa faster than
-MORK.  Pre-main unifies execution across the machines behind one call and
+step, and built the native query path, set spaces and joins with which
+ordinary MeTTa programs now run MORK's own application tasks faster than
+standalone MORK, with the same result sets (Appendix~\ref{app:runtimes-opt}).  Pre-main unifies execution across the machines behind one call and
 return contract, as the candidate for the next \code{main}.  The NIK line
 grew native kernels and native application libraries.  The Prime draft
 develops Prime in C in step with its metatheory, has absorbed the weights,
 cost and parallel line and \code{cetta-ours}, and runs the interaction basis
-as a native kernel.  The measured results are honest in both directions:
-\CeTTa{}'s \PeTTa{} lane is clearly faster than SWI-\PeTTa{} on most of a
-96-cell panel and still slower on foreign-data reads, the chainer cells, the
-Ambient program and a rho cell; the Prime lane is the slow one, and its need
-machinery is the cost.
+as a native kernel.  The measured results are honest in both directions.  In
+the November measurements \CeTTa{}'s \PeTTa{} lane is faster than
+SWI-\PeTTa{} on all but one of the timed \PeTTa{} examples and its \HE{} lane
+faster than Hyperon Experimental on every shared program both complete, while
+MORK's leapfrog join ties \CeTTa{} on two of its 36 showcase workloads and
+needs less memory on 17 of them, and the ai-mathematician port's premise selection does not
+run on the preview binary.  On the panel of 23 October \CeTTa{} was still
+slower on foreign-data reads, the chainer cells, the Ambient program and a rho
+cell; the Prime lane is the slow one, and its need machinery is the cost.
 
 For spaces and channels the direction is one interaction form.  Its theory is
 largely proved; its surface runs in the Prime draft; its native runtime, with
@@ -6040,10 +6098,13 @@ wait index, is the main thing still to build.
 
 \paragraph{Remaining work.}
 \begin{itemize}
-\item \textbf{Opt.} Commit the staged join work; commit the checked spread
-  hash, so that two representations of the empty list are one atom to
-  \code{unique-atom}; make \code{remove-atom} of a bare symbol remove it;
-  clear the three timing holds; and close the remaining SWI-\PeTTa{} wins.
+\item \textbf{Opt.} Make the ai-mathematician port's search preparation
+  answer on the preview, as it does on the NIK line's binary; close the
+  measured losses of Appendix~\ref{app:runtimes-20261105}
+  (the two showcase ties with MORK's leapfrog join, the 17 showcase workloads
+on which MORK needs less memory, and \nolinkurl{patrick_iterate_quad.metta},
+on which SWI-\PeTTa{} is twice as fast); and settle the two \PeTTa{}-reference decisions that
+  the readiness run left open.
 \item \textbf{Pre-main.} Commit the staged repairs, run the exhaustive
   \code{main} qualification, and advance \code{main}.
 \item \textbf{Prime draft.} Repair the deviations of

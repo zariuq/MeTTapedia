@@ -160,7 +160,7 @@ def rowsAfterFirst [DecidableEq O] (firstSelection : Selection O)
     (outputs : O → Term (signature S (ContextualSelectionViews.target locals captures)) Γ sort) :
     O → ContextualStoredRows.Row locals (common locals captures) Γ sort :=
   fun occurrence => if occurrence ∈ firstSelection.made then
-    .live (instantiate (first locals captures).assignment (outputs occurrence))
+    .shared (instantiate (first locals captures).assignment (outputs occurrence))
   else (rows occurrence).map locals (caller locals captures)
 
 def jointProblem (firstSelection : Selection O)
@@ -176,7 +176,7 @@ def rowsAfterBoth [DecidableEq O] (firstSelection secondSelection : Selection O)
     (firstOutputs secondOutputs : O → Term (signature S (ContextualSelectionViews.target locals captures)) Γ sort) :
     O → ContextualStoredRows.Row locals (common locals captures) Γ sort :=
   fun occurrence => if occurrence ∈ secondSelection.made then
-    .live (instantiate (second locals captures).assignment (secondOutputs occurrence))
+    .shared (instantiate (second locals captures).assignment (secondOutputs occurrence))
   else rowsAfterFirst locals captures rows firstSelection firstOutputs occurrence
 
 include aligned
@@ -351,7 +351,7 @@ theorem second_solvable_iff_joint [DecidableEq O]
 
 omit aligned in
 /-- The common frame describes every surviving row, including schemas and
-new live outputs. It is then embedded into the actual second activation. -/
+new shared outputs. It is then embedded into the actual second activation. -/
 theorem second_guard_rows [DecidableEq O]
     (firstSelection : Selection O)
     (firstRule : RuleInstance (Term (signature S (ContextualSelectionViews.source locals captures)) Γ sort))
@@ -368,7 +368,7 @@ theorem second_guard_rows [DecidableEq O]
   by_cases made : occurrence ∈ firstSelection.made
   · simp only [ContextualGuardedStep.guardRows, ContextualTransportedActivation.resultRows,
       ContextualActivatedStep.resultRows, rowsAfterFirst, if_pos made, ContextualStoredRows.Row.map]
-    apply congrArg ContextualStoredRows.Row.live
+    apply congrArg ContextualStoredRows.Row.shared
     rw [← Assignment.instantiate_compose, ← Assignment.instantiate_compose,
       first_activation_square, firstSource_actual]
   · simp only [ContextualGuardedStep.guardRows, ContextualTransportedActivation.resultRows,
@@ -450,7 +450,7 @@ theorem second_problem_pattern [DecidableEq O]
     (ContextualNamedPatternImages.reindex_images _ _) _ patterned
 
 omit aligned in
-/-- The entire final row inventory, including produced live terms and
+/-- The entire final row inventory, including produced shared terms and
 unselected schemas, is the common row inventory embedded into the actual
 second activation. No equality of private helper families is required. -/
 theorem second_result_rows [DecidableEq O]
@@ -469,7 +469,7 @@ theorem second_result_rows [DecidableEq O]
   funext occurrence
   by_cases made : occurrence ∈ selection.made
   · simp only [ContextualActivatedStep.resultRows, rowsAfterBoth, if_pos made, ContextualStoredRows.Row.map]
-    apply congrArg ContextualStoredRows.Row.live
+    apply congrArg ContextualStoredRows.Row.shared
     exact Assignment.instantiate_compose _ _ _
   · simp only [ContextualActivatedStep.resultRows, rowsAfterBoth, if_neg made]
     exact congrFun (second_guard_rows locals captures virtualLedger relocation rows firstSelection firstRule before
@@ -529,7 +529,7 @@ variable {S : Signature} {Local Shared O : Type} [DecidableEq O]
   (producer : Selection O)
   (produced : O → Term (signature S (ContextualSelectionViews.target locals captures)) Γ sort)
 
-/-- A produced occurrence keeps its producer's live variables. An older
+/-- A produced occurrence keeps its producer's shared variables. An older
 schema instead opens at the consumer port's own fresh scope. -/
 def causalInput (scope : Nat) (occurrence : O) : Term (signature S (common locals captures)) Γ sort :=
   if occurrence ∈ producer.made then instantiate (first locals captures).assignment (produced occurrence)
@@ -561,7 +561,7 @@ variable (actualLedger : Finset Nat) (relocation : Equiv.Perm Nat)
     (ContextualActivatedStep.problem locals captures occupied producer producerRule rows before)))
 
 /-- Each actual consumer view is the corresponding common origin view.
-Fresh scope allocation changes old schemas, never the identity of a live
+Fresh scope allocation changes old schemas, never the identity of a shared
 value just published by the producer. -/
 theorem causal_input_transport (scope : Nat) (occurrence : O) :
     instantiate (secondActive locals captures update.declaration relocation).assignment
@@ -660,7 +660,7 @@ theorem causal_added_transport :
     ContextualTransportedActivation.map_useEquations, takes, reads, tells, takeViews, readViews]
   rfl
 
-/-- Causal composition keeps the producer equations and uses its actual live
+/-- Causal composition keeps the producer equations and uses its actual shared
 outputs in consumer ports. It neither freshens those outputs as schemas nor
 assumes that the consumer's inputs already existed before the producer. -/
 theorem causal_problem_after_first :
@@ -919,11 +919,11 @@ theorem final_rows_exchange (apart : Disjoint firstSelection.made.toFinset secon
   · have notSecond : occurrence ∉ secondSelection.made := fun member =>
       Finset.disjoint_left.mp apart (List.mem_toFinset.mpr madeFirst) (List.mem_toFinset.mpr member)
     simp only [rowsAfterBoth, rowsAfterFirst, if_pos madeFirst, if_neg notSecond, ContextualStoredRows.Row.map]
-    apply congrArg ContextualStoredRows.Row.live
+    apply congrArg ContextualStoredRows.Row.shared
     rw [← Assignment.instantiate_compose, exchange_first]
   · by_cases madeSecond : occurrence ∈ secondSelection.made
     · simp only [rowsAfterBoth, rowsAfterFirst, if_neg madeFirst, if_pos madeSecond, ContextualStoredRows.Row.map]
-      apply congrArg ContextualStoredRows.Row.live
+      apply congrArg ContextualStoredRows.Row.shared
       rw [← Assignment.instantiate_compose, exchange_second]
     · simp only [rowsAfterBoth, rowsAfterFirst, if_neg madeFirst, if_neg madeSecond,
         ContextualStoredRows.Row.map_compose, exchange_caller locals captures]

@@ -32,7 +32,6 @@ set_option autoImplicit false
 
 namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.DependentReflectiveCommunicationCell
 
-open CategoryTheory
 open Mettapedia.GSLT.Core.ContextualLadder
 open Mettapedia.GSLT.Dynamics.AnswerEffects
 open Mettapedia.GSLT.Dynamics.IndexedPolynomialProtocol
@@ -58,7 +57,7 @@ def exactEndpoints (communication : ExactCommunication) :
   endpointReadout.observe communication.1
 
 /-- Every exact communication is a literal typed-protocol step. -/
-def exactTypedStep (communication : ExactCommunication) :
+theorem exactTypedStep (communication : ExactCommunication) :
     typedCommSystem.Step
       (exactEndpoints communication).1 (exactEndpoints communication).2 :=
   (lts_step_iff StrictCoreCommOccurrence).2 ⟨communication.2⟩

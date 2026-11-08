@@ -54,8 +54,8 @@ theorem batch_enabled : Enabled label before.present batch := by decide +kernel
 /-- The complete batch retains a genuine two-way constraint, rather than
 solving the census in an empty or ground-only equation store. -/
 theorem complete_batch_is_admitted :
-    CensusAdmission.Valid atomAction label (CensusSourceCompilation.rule label batch tells)
-      (batch.queries.map CensusAdmission.Query.fixed) before (CensusSourceCompilation.selection batch) :=
+    PredicateQueryAdmission.Valid atomAction label (CensusSourceCompilation.rule label batch tells)
+      (batch.queries.map PredicateQueryAdmission.Query.fixed) before (CensusSourceCompilation.selection batch) :=
   CensusSourceCompilation.realize_commit atomAction label batch tells before batch_enabled constraints_consistent
 
 theorem duplicate_answers_are_retained : labels label batch.made = {r one, r one, r two} := by
@@ -76,21 +76,21 @@ claim that every answer was observed. -/
 theorem missed_row_separates_admissions :
     (CensusSourceCompilation.selection batch).Valid atomAction label
         (CensusSourceCompilation.rule label batch tells) withMissedRow ∧
-      ¬ CensusAdmission.Valid atomAction label (CensusSourceCompilation.rule label batch tells)
-        (batch.queries.map CensusAdmission.Query.fixed) withMissedRow (CensusSourceCompilation.selection batch) := by
+      ¬ PredicateQueryAdmission.Valid atomAction label (CensusSourceCompilation.rule label batch tells)
+        (batch.queries.map PredicateQueryAdmission.Query.fixed) withMissedRow (CensusSourceCompilation.selection batch) := by
   constructor
   · exact (CensusSourceCompilation.realize_commit atomAction label withoutCensus tells withMissedRow
       (by decide +kernel) constraints_consistent).firing
   · intro valid
-    have holds := ((CensusAdmission.valid_fixed_iff _ _ _ batch.queries _ _).mp valid).2 query
+    have holds := ((PredicateQueryAdmission.valid_fixed_iff _ _ _ batch.queries _ _).mp valid).2 query
       (List.mem_singleton_self query)
     exact (by decide +kernel : ¬ query.Holds label withMissedRow.present) holds
 
 def withUnrelatedRow : Configuration Atom Nat := ⟨before.equations, insert 8 before.present⟩
 
 theorem unrelated_arrival_preserves_admission :
-    CensusAdmission.Valid atomAction label (CensusSourceCompilation.rule label batch tells)
-      (batch.queries.map CensusAdmission.Query.fixed) withUnrelatedRow (CensusSourceCompilation.selection batch) :=
+    PredicateQueryAdmission.Valid atomAction label (CensusSourceCompilation.rule label batch tells)
+      (batch.queries.map PredicateQueryAdmission.Query.fixed) withUnrelatedRow (CensusSourceCompilation.selection batch) :=
   CensusSourceCompilation.realize_commit atomAction label batch tells withUnrelatedRow
     (by decide +kernel) constraints_consistent
 
@@ -100,13 +100,13 @@ def selfJoin : Commit Nat Atom := ⟨∅, {0, 1, 2}, {6}, [query]⟩
 same complete source observation; checking that observation on the result
 would incorrectly reject this legitimate self-join update. -/
 theorem self_join_observes_the_original_cut :
-    CensusAdmission.Valid atomAction label (CensusSourceCompilation.rule label selfJoin tells)
-        (selfJoin.queries.map CensusAdmission.Query.fixed) before (CensusSourceCompilation.selection selfJoin) ∧
+    PredicateQueryAdmission.Valid atomAction label (CensusSourceCompilation.rule label selfJoin tells)
+        (selfJoin.queries.map PredicateQueryAdmission.Query.fixed) before (CensusSourceCompilation.selection selfJoin) ∧
       ¬ query.Holds label (fire before.present selfJoin) := by
   exact ⟨CensusSourceCompilation.realize_commit atomAction label selfJoin tells before
     (by decide +kernel) constraints_consistent, by decide +kernel⟩
 
-def bindingQuery (seen : Finset Nat) : CensusAdmission.Query Atom Subst Nat :=
+def bindingQuery (seen : Finset Nat) : PredicateQueryAdmission.Query Atom Subst Nat :=
   ⟨fun candidate value => decide (subst candidate (p x) = value), seen⟩
 
 theorem at_one : (bindingQuery {0, 1}).Ask atomAction [(x, one)] label before.present := by

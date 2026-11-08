@@ -89,7 +89,7 @@ theorem raw_private_outputs_require_scope_transport :
   have left : 99 ∈ first.made := by decide
   have right : 99 ∉ second.made := by decide
   simp only [if_pos left, if_neg right] at formula
-  have terms := ContextualStoredRows.Row.live.inj formula
+  have terms := ContextualStoredRows.Row.shared.inj formula
   have supports := congrArg support terms
   change [earlier (V := Nat) (Mettapedia.Logic.LP.ScopedVar.at 8 0)] =
     [later (V := Nat) (Mettapedia.Logic.LP.ScopedVar.at 10 0)] at supports

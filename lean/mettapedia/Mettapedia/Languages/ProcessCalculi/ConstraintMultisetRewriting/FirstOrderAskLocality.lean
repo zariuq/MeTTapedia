@@ -9,7 +9,7 @@ An equation component is closed when no existing equation crosses its boundary.
 Consistent new equations outside that component preserve every observation
 depending only on it, including entailed, refuted and unresolved verdicts.
 
-For an absence or count observation, dependencies include the live labels it
+For an absence or count observation, dependencies include the shared labels it
 inspects. A closed query alone does not make such an observation independent of
 bindings. The conditions below are sufficient locality bounds, not a claim of
 minimal support or native incremental-index correctness.
@@ -131,10 +131,10 @@ theorem count_reads_query_and_rows {O : Type*} [DecidableEq O]
   intro first second agree
   have querySame := Subst.applyTerm_congr (t := query)
     (fun name member => agree name (querySupport name member))
-  have regions : Check.region (FirstOrder.action signature) first label world query =
-      Check.region (FirstOrder.action signature) second label world query := by
+  have regions : Check.matches (FirstOrder.action signature) first label world query =
+      Check.matches (FirstOrder.action signature) second label world query := by
     ext occurrence
-    simp only [Check.region, Finset.mem_filter]
+    simp only [Check.matches, Finset.mem_filter]
     by_cases present : occurrence ∈ world
     · have rowSame := Subst.applyTerm_congr (t := label occurrence)
         (fun name member => agree name (rowSupport occurrence present name member))
@@ -142,8 +142,8 @@ theorem count_reads_query_and_rows {O : Type*} [DecidableEq O]
         (occurrence ∈ world ∧ second.applyTerm query = second.applyTerm (label occurrence))
       rw [querySame, rowSame]
     · simp [present]
-  change (Check.region (FirstOrder.action signature) first label world query).card = number ↔
-    (Check.region (FirstOrder.action signature) second label world query).card = number
+  change (Check.matches (FirstOrder.action signature) first label world query).card = number ↔
+    (Check.matches (FirstOrder.action signature) second label world query).card = number
   rw [regions]
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.FirstOrderAskLocality

@@ -20,7 +20,7 @@ local instance (sort : ContextualSelectionViews.Controls.base.Srt) :
 theorem the_actual_refuter_constructs_the_joined_information :
     Admitted queries locals [] rows world [] [patterns] := by
   apply of_certified_refutations queries locals 2 [] rows world [] [patterns]
-  · exact ⟨⟨generator captures, SubstitutionAction.models_nil _ _⟩, by simp⟩
+  · exact ⟨ContextualFrameUnifier.solvable_of_consistent ⟨generator captures, SubstitutionAction.models_nil _ _⟩, by simp⟩
   · intro chosen member
     obtain rfl := List.mem_singleton.mp member
     exact the_shared_variable_conjunction_is_certifiably_absent

@@ -1,17 +1,35 @@
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.CensusAdmission
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.PredicateQueryAdmission
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.GuardFreeProcessOrders
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits.Traces
 import Mettapedia.GSLT.Distinction.CausalGluing
 import Mettapedia.GSLT.Causality.HistoryMonad
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Interface
 
 /-!
 # Runs of the candidate step: the base of every annotation
 
 A firing of the candidate step is a rule instance, its predicate queries and its
-selected occurrences. Its admission is `CensusAdmission.Valid`: the queries'
+selected occurrences. Its admission is `PredicateQueryAdmission.Valid`: the queries'
 census, the complete answer table, must hold at the firing's cut. Its update is
 the existing `Selection.result`. A run is a word of firings, each admitted where
 its predecessors left the configuration.
+
+## The first-order step is the one-frame instance of the interface
+
+The candidate step is stated once in `Interface.Step`, over a category of frames whose canonical
+instance is the contextual one. This file is its **one-frame case** (`firstOrder`): the frame is
+the one object of `Interface.Frames.ofSubstitution A`, a firing moves along the identity, its
+information is `Selection.problem`, and its admission is `Firing.Valid`, which is the interface's
+characterization (`firstOrder_admits_iff`). The executable words are the runs of that instance
+(`executable_iff_run`, `follow_eq_last`), so every theorem here is a theorem about the one-frame
+case of the interface. The static independence below is a property of a fixed alphabet of
+firings and belongs to this one-frame case.
+
+## Renaming occurrence identities
+
+A bijection of occurrence identities that keeps their labels renames firings and configurations.
+Admission, the update and runs are equivariant (`Firing.valid_rename`, `Firing.result_rename`,
+`executable_rename`, `follow_rename`): fresh identities are interchangeable.
 
 ## The base category
 
@@ -75,7 +93,7 @@ theorem sameUpTo_symm (A : SubstitutionAction T S) {C D : Configuration T O}
 occurrences. -/
 structure Firing (T : Type uT) (S : Type uS) (O : Type uO) where
   rule : RuleInstance T
-  queries : List (CensusAdmission.Query T S O)
+  queries : List (PredicateQueryAdmission.Query T S O)
   selection : Selection O
 
 namespace Firing
@@ -90,7 +108,7 @@ variable (A : SubstitutionAction T S) (label : O → T)
 
 /-- Admission is the existing census admission: the queries must hold at the firing's cut. -/
 def Valid (f : Firing T S O) (C : Configuration T O) : Prop :=
-  CensusAdmission.Valid A label f.rule f.queries C f.selection
+  PredicateQueryAdmission.Valid A label f.rule f.queries C f.selection
 
 /-- The update is the existing occurrence operation; the queries add none. -/
 def result (f : Firing T S O) (C : Configuration T O) : Configuration T O :=
@@ -98,12 +116,12 @@ def result (f : Firing T S O) (C : Configuration T O) : Configuration T O :=
 
 /-- The ground footprint of a firing at one solution, its queries included. -/
 def footprintAt (f : Firing T S O) (σ : S) : Commit O T :=
-  CensusAdmission.commit f.selection f.queries σ
+  PredicateQueryAdmission.commit f.selection f.queries σ
 
-/-- Without queries, admission is the plain admission (`CensusAdmission.valid_empty_iff`). -/
+/-- Without queries, admission is the plain admission (`PredicateQueryAdmission.valid_empty_iff`). -/
 theorem valid_ofPlain_iff (x : ConditionalSchedule.Firing T O) (C : Configuration T O) :
     (ofPlain x : Firing T S O).Valid A label C ↔ x.2.Valid A label x.1 C :=
-  CensusAdmission.valid_empty_iff A label x.1 C x.2
+  PredicateQueryAdmission.valid_empty_iff A label x.1 C x.2
 
 /-- Admission with queries depends only on the solutions and the present occurrences. -/
 theorem valid_congr {f : Firing T S O} {C D : Configuration T O} (same : SameUpTo A C D) :
@@ -180,6 +198,313 @@ theorem follow_congr (w : List (Firing T S O)) {C D : Configuration T O} (same :
   exact GuardFreeProcessOrders.follow_congr A label _ same
 
 end Runs
+
+/-! ## The one-frame instance of the interface -/
+
+section OneFrame
+
+variable (A : SubstitutionAction T S) (label : O → T)
+
+open Interface (Frames)
+
+/-- **The first-order step as the one-frame instance of the candidate step's interface.** Its
+frame is the one object of `Frames.ofSubstitution A`, its firings move along the identity, and its
+information is `Selection.problem`. -/
+def firstOrder :
+    Interface.Step (Frames.ofSubstitution A) O (Configuration T O) (fun _ => Firing T S O) where
+  frame _ := PUnit.unit
+  knowledge C := C.equations
+  present C := C.present
+  selection f := f.selection
+  target _ := PUnit.unit
+  extension _ := A.identity
+  information {C} f := f.selection.problem label f.rule C
+  transported := by
+    intro C f e member
+    show (A.apply A.identity e.1, A.apply A.identity e.2) ∈ f.selection.problem label f.rule C
+    rw [A.apply_identity, A.apply_identity]
+    exact List.mem_append_left _ (List.mem_append_left _ (List.mem_append_left _ member))
+  Shapes f := f.selection.taken.Nodup ∧ f.selection.made.Nodup ∧
+    f.rule.take.length = f.selection.taken.length ∧ f.rule.read.length = f.selection.read.length ∧
+    f.selection.made.map label = f.rule.produce
+  Holds {C} f _ σ := (∀ check ∈ f.rule.checks, check.Holds A σ label C.present) ∧
+    ∀ query ∈ f.queries, (query.atSolution σ).Holds label C.present
+  Admits {C} f := f.Valid A label C
+  admits_iff := by
+    intro C f
+    constructor
+    · rintro ⟨⟨takeDistinct, outputDistinct, takeLength, readLength, outputs, occurrences,
+        consistent, checks⟩, observations⟩
+      refine ⟨⟨takeDistinct, outputDistinct, takeLength, readLength, outputs⟩,
+        ⟨occurrences.taken_subset, occurrences.kept_subset, occurrences.apart, occurrences.fresh, ?_⟩,
+        (Frames.ofSubstitution_solvable_iff A _).mpr consistent, ?_⟩
+      · intro query member
+        simp [Selection.commit] at member
+      · intro _ σ solved
+        exact ⟨fun check present => checks check present σ solved,
+          fun query present => observations query present σ solved⟩
+    · rintro ⟨⟨takeDistinct, outputDistinct, takeLength, readLength, outputs⟩, occurrences,
+        solvable, asks⟩
+      refine ⟨⟨takeDistinct, outputDistinct, takeLength, readLength, outputs,
+        ⟨occurrences.taken_subset, occurrences.kept_subset, occurrences.apart, occurrences.fresh, ?_⟩,
+        (Frames.ofSubstitution_solvable_iff A _).mp solvable, ?_⟩, ?_⟩
+      · intro query member
+        simp [Selection.commit] at member
+      · intro check present σ solved
+        exact (asks PUnit.unit σ solved).1 check present
+      · intro query present σ solved
+        exact (asks PUnit.unit σ solved).2 query present
+  result {C} f _ := f.result label C
+  present_result _ _ := rfl
+  settle _ _ := A.identity
+  knowledge_result {C} f _ := (Frames.applyStore_id (X := Frames.ofSubstitution A)
+    (f.selection.problem label f.rule C)).symm
+
+/-- Admission of the one-frame instance is `Firing.Valid`: the interface's characterization. -/
+theorem firstOrder_admits_iff (C : Configuration T O) (f : Firing T S O) :
+    f.Valid A label C ↔ (firstOrder A label).Shapes (s := C) f ∧
+      MeTTaCalculus.OccurrenceCommits.Enabled (fun _ : O => ()) C.present (f.selection.commit (T := Unit)) ∧
+      (Frames.ofSubstitution A).Solvable (a := PUnit.unit) (f.selection.problem label f.rule C) ∧
+      (Frames.ofSubstitution A).Entails (a := PUnit.unit) (f.selection.problem label f.rule C)
+        ((firstOrder A label).Holds (s := C) f) :=
+  (firstOrder A label).admits_iff (s := C) f
+
+/-- **The executable words are the runs of the one-frame instance** that end in consistent
+knowledge. -/
+theorem executable_iff_run : ∀ (C : Configuration T O) (w : List (Firing T S O)),
+    Executable A label C w ↔ ∃ r : (firstOrder A label).Run C,
+      r.word.map Sigma.snd = w ∧ A.Consistent r.last.equations
+  | C, [] => by
+      constructor
+      · intro consistent
+        exact ⟨.nil C, rfl, consistent⟩
+      · rintro ⟨r, word, consistent⟩
+        cases r with
+        | nil => exact consistent
+        | cons f admitted rest => simp [Interface.Step.Run.word] at word
+  | C, f :: rest => by
+      constructor
+      · rintro ⟨valid, later⟩
+        obtain ⟨r, word, consistent⟩ := (executable_iff_run (f.result label C) rest).mp later
+        refine ⟨.cons f valid r, ?_, consistent⟩
+        show List.map Sigma.snd (⟨C, f⟩ :: r.word) = f :: rest
+        rw [List.map_cons, word]
+      · rintro ⟨r, word, consistent⟩
+        cases r with
+        | nil => simp [Interface.Step.Run.word] at word
+        | cons g admitted r =>
+            simp only [Interface.Step.Run.word, List.map_cons, List.cons.injEq] at word
+            obtain ⟨rfl, word⟩ := word
+            exact ⟨admitted, (executable_iff_run (g.result label C) rest).mpr ⟨r, word, consistent⟩⟩
+
+/-- A run of the one-frame instance ends where its word leaves the configuration. -/
+theorem follow_eq_last : ∀ {C : Configuration T O} (r : (firstOrder A label).Run C),
+    follow label C (r.word.map Sigma.snd) = r.last
+  | _, .nil _ => rfl
+  | _, .cons _ _ r => follow_eq_last r
+
+end OneFrame
+
+/-! ## Renaming occurrence identities
+
+A bijection of occurrence identities that keeps their labels renames a selection, the identities
+the predicate queries of a firing saw, and the present occurrences of a configuration; knowledge
+never mentions identities. Admission and the update are equivariant (`Firing.valid_rename`,
+`Firing.result_rename`), and so are runs (`executable_rename`, `follow_rename`). -/
+
+section Renaming
+
+variable (π : O ≃ O)
+
+/-- Rename the occurrences a selection takes, reads and makes. -/
+def renameSelection (selection : Selection O) : Selection O :=
+  ⟨selection.taken.map π, selection.read.map π, selection.made.map π⟩
+
+/-- Rename the identities a predicate query saw. -/
+def renameQuery (query : PredicateQueryAdmission.Query T S O) : PredicateQueryAdmission.Query T S O :=
+  ⟨query.region, query.seen.map π.toEmbedding⟩
+
+/-- Rename a firing: its selection and its queries' sightings. -/
+def Firing.rename (f : Firing T S O) : Firing T S O :=
+  ⟨f.rule, f.queries.map (renameQuery π), renameSelection π f.selection⟩
+
+/-- Rename the present occurrences of a configuration. -/
+def renameConfiguration (C : Configuration T O) : Configuration T O :=
+  ⟨C.equations, C.present.map π.toEmbedding⟩
+
+variable {label : O → T} {π}
+
+omit [DecidableEq O] in
+theorem equations_rename (keeps : ∀ o, label (π o) = label o) (patterns : List T)
+    (selected : List O) :
+    Selection.equations label patterns (selected.map π) = Selection.equations label patterns selected := by
+  simp only [Selection.equations, List.zipWith_map_right, keeps]
+
+omit [DecidableEq O] in
+theorem problem_rename (keeps : ∀ o, label (π o) = label o) (selection : Selection O)
+    (rule : RuleInstance T) (C : Configuration T O) :
+    (renameSelection π selection).problem label rule (renameConfiguration π C) =
+      selection.problem label rule C := by
+  simp only [Selection.problem, renameSelection, renameConfiguration, equations_rename keeps]
+
+theorem toFinset_rename (l : List O) : (l.map π).toFinset = l.toFinset.map π.toEmbedding := by
+  ext o
+  simp only [List.mem_toFinset, List.mem_map, Finset.mem_map, Equiv.coe_toEmbedding]
+
+theorem fire_rename (present : Finset O) (selection : Selection O) :
+    fire (present.map π.toEmbedding) ((renameSelection π selection).commit (T := T)) =
+      (fire present (selection.commit (T := T))).map π.toEmbedding := by
+  simp only [fire, Selection.commit, renameSelection, toFinset_rename, Finset.map_sdiff,
+    Finset.map_union]
+
+theorem enabled_rename (present : Finset O) (selection : Selection O) :
+    MeTTaCalculus.OccurrenceCommits.Enabled label (present.map π.toEmbedding)
+        ((renameSelection π selection).commit (T := T)) ↔
+      MeTTaCalculus.OccurrenceCommits.Enabled label present (selection.commit (T := T)) := by
+  constructor
+  · rintro ⟨taken, kept, apart, fresh, -⟩
+    simp only [Selection.commit, renameSelection, toFinset_rename, Finset.map_subset_map,
+      Finset.disjoint_map] at taken kept apart fresh
+    exact ⟨taken, kept, apart, fresh, by simp [Selection.commit]⟩
+  · rintro ⟨taken, kept, apart, fresh, -⟩
+    refine ⟨?_, ?_, ?_, ?_, by simp [Selection.commit]⟩ <;>
+      simp only [Selection.commit, renameSelection, toFinset_rename, Finset.map_subset_map,
+        Finset.disjoint_map] <;> assumption
+
+omit [DecidableEq O] in
+theorem region_rename (A : SubstitutionAction T S) (keeps : ∀ o, label (π o) = label o) (σ : S)
+    (present : Finset O) (pattern : T) :
+    Check.matches A σ label (present.map π.toEmbedding) pattern =
+      (Check.matches A σ label present pattern).map π.toEmbedding := by
+  classical
+  ext o
+  simp only [Check.matches, Finset.mem_filter, Finset.mem_map, Equiv.coe_toEmbedding]
+  constructor
+  · rintro ⟨⟨a, member, rfl⟩, matched⟩
+    exact ⟨a, ⟨member, by rwa [keeps] at matched⟩, rfl⟩
+  · rintro ⟨a, ⟨member, matched⟩, rfl⟩
+    exact ⟨⟨a, member, rfl⟩, by rwa [keeps]⟩
+
+omit [DecidableEq O] in
+theorem holds_rename (A : SubstitutionAction T S) (keeps : ∀ o, label (π o) = label o) (σ : S)
+    (present : Finset O) (check : Check T) :
+    check.Holds A σ label (present.map π.toEmbedding) ↔ check.Holds A σ label present := by
+  cases check with
+  | equal left right => exact Iff.rfl
+  | absent pattern =>
+      constructor
+      · intro absent o member matched
+        apply absent _ (Finset.mem_map_of_mem π.toEmbedding member)
+        show A.E (A.apply σ pattern) (A.apply σ (label (π o)))
+        rw [keeps]
+        exact matched
+      · intro absent o member matched
+        obtain ⟨a, inside, rfl⟩ := Finset.mem_map.mp member
+        change A.E (A.apply σ pattern) (A.apply σ (label (π a))) at matched
+        rw [keeps] at matched
+        exact absent a inside matched
+  | count pattern number =>
+      show (Check.matches A σ label (present.map π.toEmbedding) pattern).card = number ↔
+        (Check.matches A σ label present pattern).card = number
+      rw [region_rename A keeps, Finset.card_map]
+
+omit [DecidableEq O] in
+theorem regionOf_rename (keeps : ∀ o, label (π o) = label o) (present : Finset O)
+    (region : T → Bool) :
+    regionOf label (present.map π.toEmbedding) region =
+      (regionOf label present region).map π.toEmbedding := by
+  ext o
+  simp only [regionOf, Finset.mem_filter, Finset.mem_map, Equiv.coe_toEmbedding]
+  constructor
+  · rintro ⟨⟨a, member, rfl⟩, inside⟩
+    exact ⟨a, ⟨member, by rwa [keeps] at inside⟩, rfl⟩
+  · rintro ⟨a, ⟨member, inside⟩, rfl⟩
+    exact ⟨⟨a, member, rfl⟩, by rwa [keeps]⟩
+
+omit [DecidableEq O] in
+theorem queryHolds_rename (keeps : ∀ o, label (π o) = label o) (σ : S) (present : Finset O)
+    (query : PredicateQueryAdmission.Query T S O) :
+    ((renameQuery π query).atSolution σ).Holds label (present.map π.toEmbedding) ↔
+      (query.atSolution σ).Holds label present := by
+  show regionOf label (present.map π.toEmbedding) (query.region σ) = query.seen.map π.toEmbedding ↔
+    regionOf label present (query.region σ) = query.seen
+  rw [regionOf_rename keeps]
+  exact Finset.map_inj
+
+/-- **Admission is equivariant** under label-preserving renamings of occurrence identities. -/
+theorem Firing.valid_rename (A : SubstitutionAction T S) (keeps : ∀ o, label (π o) = label o)
+    (f : Firing T S O) (C : Configuration T O) :
+    (f.rename π).Valid A label (renameConfiguration π C) ↔ f.Valid A label C := by
+  have problem := problem_rename keeps f.selection f.rule C
+  have outputs : (f.selection.made.map π).map label = f.selection.made.map label := by
+    rw [List.map_map]
+    exact congrArg (fun g => f.selection.made.map g) (funext keeps)
+  constructor
+  · rintro ⟨⟨takeDistinct, outputDistinct, takeLength, readLength, outputsEq, occurrences,
+      consistent, checks⟩, observations⟩
+    refine ⟨⟨List.Nodup.of_map π takeDistinct, List.Nodup.of_map π outputDistinct, ?_, ?_, ?_,
+      (enabled_rename C.present f.selection).mp occurrences, ?_, ?_⟩, ?_⟩
+    · simpa [Firing.rename, renameSelection] using takeLength
+    · simpa [Firing.rename, renameSelection] using readLength
+    · exact outputs.symm.trans outputsEq
+    · simpa only [Firing.rename, problem] using consistent
+    · intro check member σ solved
+      have asked := checks check member σ (by simpa only [Firing.rename, problem] using solved)
+      exact (holds_rename A keeps σ C.present check).mp asked
+    · intro query member σ solved
+      have asked := observations (renameQuery π query) (List.mem_map_of_mem member) σ
+        (by simpa only [Firing.rename, problem] using solved)
+      exact (queryHolds_rename keeps σ C.present query).mp asked
+  · rintro ⟨⟨takeDistinct, outputDistinct, takeLength, readLength, outputsEq, occurrences,
+      consistent, checks⟩, observations⟩
+    refine ⟨⟨takeDistinct.map π.injective, outputDistinct.map π.injective, ?_, ?_, ?_,
+      (enabled_rename C.present f.selection).mpr occurrences, ?_, ?_⟩, ?_⟩
+    · simpa [Firing.rename, renameSelection] using takeLength
+    · simpa [Firing.rename, renameSelection] using readLength
+    · exact outputs.trans outputsEq
+    · simpa only [Firing.rename, problem] using consistent
+    · intro check member σ solved
+      have asked := checks check member σ (by simpa only [Firing.rename, problem] using solved)
+      exact (holds_rename A keeps σ C.present check).mpr asked
+    · intro query member σ solved
+      obtain ⟨original, present, rfl⟩ := List.mem_map.mp member
+      have asked := observations original present σ (by simpa only [Firing.rename, problem] using solved)
+      exact (queryHolds_rename keeps σ C.present original).mpr asked
+
+/-- **The update is equivariant.** -/
+theorem Firing.result_rename (keeps : ∀ o, label (π o) = label o) (f : Firing T S O)
+    (C : Configuration T O) :
+    (f.rename π).result label (renameConfiguration π C) = renameConfiguration π (f.result label C) := by
+  show Configuration.mk ((renameSelection π f.selection).problem label f.rule (renameConfiguration π C))
+      (fire (C.present.map π.toEmbedding) ((renameSelection π f.selection).commit (T := T))) =
+    Configuration.mk (f.selection.problem label f.rule C)
+      ((fire C.present (f.selection.commit (T := T))).map π.toEmbedding)
+  rw [problem_rename keeps, fire_rename]
+
+/-- **Runs are equivariant.** -/
+theorem executable_rename (A : SubstitutionAction T S) (keeps : ∀ o, label (π o) = label o) :
+    ∀ (C : Configuration T O) (w : List (Firing T S O)),
+      Executable A label (renameConfiguration π C) (w.map (Firing.rename π)) ↔ Executable A label C w
+  | _, [] => Iff.rfl
+  | C, f :: rest => by
+      change ((f.rename π).Valid A label (renameConfiguration π C) ∧
+          Executable A label ((f.rename π).result label (renameConfiguration π C))
+            (rest.map (Firing.rename π))) ↔ (f.Valid A label C ∧ Executable A label (f.result label C) rest)
+      rw [Firing.valid_rename A keeps, Firing.result_rename keeps,
+        executable_rename A keeps (f.result label C) rest]
+
+theorem follow_rename (keeps : ∀ o, label (π o) = label o) :
+    ∀ (C : Configuration T O) (w : List (Firing T S O)),
+      follow label (renameConfiguration π C) (w.map (Firing.rename π)) =
+        renameConfiguration π (follow label C w)
+  | _, [] => rfl
+  | C, f :: rest => by
+      change follow label ((f.rename π).result label (renameConfiguration π C))
+        (rest.map (Firing.rename π)) = _
+      rw [Firing.result_rename keeps]
+      exact follow_rename keeps (f.result label C) rest
+
+end Renaming
 
 /-! ## The static independence -/
 
@@ -262,7 +587,7 @@ theorem writesOutside (independent : Independent label f g) (σ : S) :
   apply (independent σ).1.2.1
   right
   exact ⟨query.atSolution σ, List.mem_map.mpr ⟨query, member, rfl⟩, o, written,
-    by simpa [CensusAdmission.Query.atSolution] using inRegion⟩
+    by simpa [PredicateQueryAdmission.Query.atSolution] using inRegion⟩
 
 end Independent
 
@@ -460,7 +785,7 @@ theorem Executable.ground : ∀ {C : Configuration T O} {w : List (Firing T S O)
 /-- A firing without predicate queries has its selection's commit as its footprint. -/
 theorem Firing.footprintAt_of_queries_nil {f : Firing T S O} (empty : f.queries = []) (σ : S) :
     f.footprintAt σ = f.selection.commit (T := T) := by
-  simp [Firing.footprintAt, CensusAdmission.commit, Selection.commit, empty]
+  simp [Firing.footprintAt, PredicateQueryAdmission.commit, Selection.commit, empty]
 
 /-- A ground swap of the footprints of a run without guards and predicate queries lifts to a
 swap of its firings. -/
@@ -886,13 +1211,13 @@ def noPersistent : MeTTaCalculus.OccurrenceCommits.PredicateQuery Nat (Term sign
 
 /-- Observes that no persistent atom is present. -/
 def observer : Run :=
-  ⟨⟨[], [], [], [], []⟩, [CensusAdmission.Query.fixed noPersistent], ⟨[], [], []⟩⟩
+  ⟨⟨[], [], [], [], []⟩, [PredicateQueryAdmission.Query.fixed noPersistent], ⟨[], [], []⟩⟩
 
 /-- Makes the persistent atom `9`. -/
 def maker : Run := ⟨⟨[], [], [], [], [.const 9]⟩, [], ⟨[], [], [9]⟩⟩
 
 theorem observer_valid : observer.Valid A label empty := by
-  refine (CensusAdmission.valid_fixed_iff A label observer.rule [noPersistent] empty
+  refine (PredicateQueryAdmission.valid_fixed_iff A label observer.rule [noPersistent] empty
     observer.selection).mpr ⟨⟨by decide, by decide, rfl, rfl, rfl, by decide,
       ⟨Subst.id signature, by simp [Selection.problem, Selection.equations, empty, observer]⟩,
       by simp [observer]⟩, ?_⟩
@@ -942,6 +1267,13 @@ end Controls
 #print axioms executable_ofPlain_iff
 #print axioms executable_congr
 #print axioms follow_congr
+#print axioms firstOrder_admits_iff
+#print axioms executable_iff_run
+#print axioms follow_eq_last
+#print axioms Firing.valid_rename
+#print axioms Firing.result_rename
+#print axioms executable_rename
+#print axioms follow_rename
 #print axioms Independent.writesOutside
 #print axioms independent_self_iff
 #print axioms traceEquiv_irreflexive_iff

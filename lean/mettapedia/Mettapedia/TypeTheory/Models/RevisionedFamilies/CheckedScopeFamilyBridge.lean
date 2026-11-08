@@ -1,7 +1,7 @@
 import Mettapedia.Logic.Bridges.WMCheckedScopeGSLTIL
 import Mettapedia.TypeTheory.Models.RevisionedFamilies.CapabilityPiRepresentability
 import Mettapedia.OSLF.Framework.WMCalculusCombinedIntrinsicTransport
-import Mettapedia.OSLF.Framework.WMCalculusGuardedExecutableOccurrence
+import Mettapedia.OSLF.Framework.WMCalculusCheckedExecutableOccurrence
 import Mettapedia.OSLF.Framework.HennessyMilnerNativeTypes
 import Mettapedia.GSLT.LanguageDef.MultiRewriteSchematic
 
@@ -32,7 +32,7 @@ open Mettapedia.OSLF.Framework.WMCalculusCheckedScopeNativeCapability
 open Mettapedia.OSLF.Framework.WMCalculusCountScopeRelationProvider
 open Mettapedia.OSLF.Framework.WMCalculusObservationalQuotient
 open Mettapedia.OSLF.Framework.WMCalculusOSLFBridge
-open Mettapedia.OSLF.Framework.WMCalculusGuardedExecutableOccurrence
+open Mettapedia.OSLF.Framework.WMCalculusCheckedExecutableOccurrence
 open Mettapedia.OSLF.Framework.WMCalculusContextClosure
 open Mettapedia.OSLF.Framework.PremiseAwareOccurrence
 open Mettapedia.OSLF.MeTTaIL.ContextualStep
@@ -85,13 +85,13 @@ theorem checked_guard_operational_family_coherence
       Mettapedia.OSLF.MeTTaIL.Engine.applyPremisesWithEnv
         (Mettapedia.OSLF.Framework.WMCalculusCheckedScopeRelationProvider.relationEnv
           provider)
-        (wmExtVertexLanguageDefGuarded combinedVertex)
+        (wmExtVertexLanguageDef combinedVertex)
         ruleForgetOutside.premises
         [("q", queryHandle), ("W", worldHandle), ("S", scopeHandle)]) :
     langSemanticReducesUsing
         (Mettapedia.OSLF.Framework.WMCalculusCheckedScopeRelationProvider.relationEnv
           provider)
-        (wmExtVertexLanguageDefGuarded combinedVertex)
+        (wmExtVertexLanguageDef combinedVertex)
         (pExtract (pForget scopeHandle worldHandle) queryHandle)
         (pExtract worldHandle queryHandle) ∧
       reading.core.extract (reading.forget scope state) query =
@@ -100,7 +100,7 @@ theorem checked_guard_operational_family_coherence
         (reading.core.extract state query)
         (classOf reading.core state, query)) := by
   have supported := checked_premise_supports reading provider
-    (wmExtVertexLanguageDefGuarded combinedVertex)
+    (wmExtVertexLanguageDef combinedVertex)
     scopeHandle worldHandle queryHandle scope query state
     scopeDecode queryDecode success
   refine ⟨forgetOutside_raw_of_guard
@@ -109,7 +109,7 @@ theorem checked_guard_operational_family_coherence
       scopeHandle worldHandle queryHandle success,
     reading.forgetOutside supported, ?_⟩
   exact checked_premise_observable_receipt reading provider
-    (wmExtVertexLanguageDefGuarded combinedVertex)
+    (wmExtVertexLanguageDef combinedVertex)
     scopeHandle worldHandle queryHandle scope query state
     scopeDecode queryDecode success
 
@@ -128,26 +128,26 @@ theorem checked_guard_executable_native_family_coherence
       Mettapedia.OSLF.MeTTaIL.Engine.applyPremisesWithEnv
         (Mettapedia.OSLF.Framework.WMCalculusCheckedScopeRelationProvider.relationEnv
           provider)
-        (wmExtVertexLanguageDefGuarded combinedVertex)
+        (wmExtVertexLanguageDef combinedVertex)
         ruleForgetOutside.premises
         [("q", queryHandle), ("W", worldHandle), ("S", scopeHandle)]) :
     ∃ occurrence ∈ rewriteAtOccurrences
         (engineBasePremises
           (Mettapedia.OSLF.Framework.WMCalculusCheckedScopeRelationProvider.relationEnv
             provider))
-        (wmExtVertexLanguageDefGuarded combinedVertex) 1
+        (wmExtVertexLanguageDef combinedVertex) 1
         (pExtract (pForget scopeHandle worldHandle) queryHandle),
       occurrence.target = pExtract worldHandle queryHandle ∧
       occurrence.ruleName = "WM_ForgetOutside" ∧
       langDiamondUsing
         (Mettapedia.OSLF.Framework.WMCalculusCheckedScopeRelationProvider.relationEnv
           provider)
-        (wmExtVertexLanguageDefGuarded combinedVertex)
+        (wmExtVertexLanguageDef combinedVertex)
         (equationClassNativeType
           (S := langGSLTUsing
             (Mettapedia.OSLF.Framework.WMCalculusCheckedScopeRelationProvider.relationEnv
               provider)
-            (wmExtVertexLanguageDefGuarded combinedVertex))
+            (wmExtVertexLanguageDef combinedVertex))
           (pExtract worldHandle queryHandle)).pred
         (pExtract (pForget scopeHandle worldHandle) queryHandle) ∧
       Nonempty (observableReceiptFamily (outsideCapability reading scope)
@@ -161,18 +161,18 @@ theorem checked_guard_executable_native_family_coherence
   have diamond : langDiamondUsing
       (Mettapedia.OSLF.Framework.WMCalculusCheckedScopeRelationProvider.relationEnv
         provider)
-      (wmExtVertexLanguageDefGuarded combinedVertex)
+      (wmExtVertexLanguageDef combinedVertex)
       (equationClassNativeType
         (S := langGSLTUsing
           (Mettapedia.OSLF.Framework.WMCalculusCheckedScopeRelationProvider.relationEnv
             provider)
-          (wmExtVertexLanguageDefGuarded combinedVertex))
+          (wmExtVertexLanguageDef combinedVertex))
         (pExtract worldHandle queryHandle)).pred
       (pExtract (pForget scopeHandle worldHandle) queryHandle) := by
     apply (langDiamondUsing_spec
       (Mettapedia.OSLF.Framework.WMCalculusCheckedScopeRelationProvider.relationEnv
         provider)
-      (wmExtVertexLanguageDefGuarded combinedVertex) _ _).2
+      (wmExtVertexLanguageDef combinedVertex) _ _).2
     refine ⟨pExtract worldHandle queryHandle,
       forgetOutside_raw_of_guard
         (Mettapedia.OSLF.Framework.WMCalculusCheckedScopeRelationProvider.relationEnv
@@ -181,11 +181,11 @@ theorem checked_guard_executable_native_family_coherence
     exact (langGSLTUsing
       (Mettapedia.OSLF.Framework.WMCalculusCheckedScopeRelationProvider.relationEnv
         provider)
-      (wmExtVertexLanguageDefGuarded combinedVertex)).equations.iseqv.refl _
+      (wmExtVertexLanguageDef combinedVertex)).equations.iseqv.refl _
   exact ⟨occurrence, member, target, ruleName,
     diamond,
     checked_premise_observable_receipt reading provider
-      (wmExtVertexLanguageDefGuarded combinedVertex)
+      (wmExtVertexLanguageDef combinedVertex)
       scopeHandle worldHandle queryHandle scope query state
       scopeDecode queryDecode success⟩
 
@@ -201,24 +201,24 @@ theorem checked_guard_target_native_diamond
       Mettapedia.OSLF.MeTTaIL.Engine.applyPremisesWithEnv
         (Mettapedia.OSLF.Framework.WMCalculusCheckedScopeRelationProvider.relationEnv
           provider)
-        (wmExtVertexLanguageDefGuarded combinedVertex)
+        (wmExtVertexLanguageDef combinedVertex)
         ruleForgetOutside.premises
         [("q", queryHandle), ("W", worldHandle), ("S", scopeHandle)]) :
     langDiamondUsing
       (Mettapedia.OSLF.Framework.WMCalculusCheckedScopeRelationProvider.relationEnv
         provider)
-      (wmExtVertexLanguageDefGuarded combinedVertex)
+      (wmExtVertexLanguageDef combinedVertex)
       (equationClassNativeType
         (S := langGSLTUsing
           (Mettapedia.OSLF.Framework.WMCalculusCheckedScopeRelationProvider.relationEnv
             provider)
-          (wmExtVertexLanguageDefGuarded combinedVertex))
+          (wmExtVertexLanguageDef combinedVertex))
         (pExtract worldHandle queryHandle)).pred
       (pExtract (pForget scopeHandle worldHandle) queryHandle) := by
   apply (langDiamondUsing_spec
     (Mettapedia.OSLF.Framework.WMCalculusCheckedScopeRelationProvider.relationEnv
       provider)
-    (wmExtVertexLanguageDefGuarded combinedVertex) _ _).2
+    (wmExtVertexLanguageDef combinedVertex) _ _).2
   refine ⟨pExtract worldHandle queryHandle,
     forgetOutside_raw_of_guard
       (Mettapedia.OSLF.Framework.WMCalculusCheckedScopeRelationProvider.relationEnv
@@ -227,7 +227,7 @@ theorem checked_guard_target_native_diamond
   exact (langGSLTUsing
     (Mettapedia.OSLF.Framework.WMCalculusCheckedScopeRelationProvider.relationEnv
       provider)
-    (wmExtVertexLanguageDefGuarded combinedVertex)).equations.iseqv.refl _
+    (wmExtVertexLanguageDef combinedVertex)).equations.iseqv.refl _
 
 /-- The same checked unary action survives admission of arbitrary atomic
 n-ary joins, provided that library contributes no competing unary
@@ -246,13 +246,13 @@ theorem checked_guard_schematic_window_and_receipt
       Mettapedia.OSLF.MeTTaIL.Engine.applyPremisesWithEnv
         (Mettapedia.OSLF.Framework.WMCalculusCheckedScopeRelationProvider.relationEnv
           provider)
-        (wmExtVertexLanguageDefGuarded combinedVertex)
+        (wmExtVertexLanguageDef combinedVertex)
         ruleForgetOutside.premises
         [("q", queryHandle), ("W", worldHandle), ("S", scopeHandle)]) :
     (schematicGSLTUsing
         (Mettapedia.OSLF.Framework.WMCalculusCheckedScopeRelationProvider.relationEnv
           provider)
-        (wmExtVertexLanguageDefGuarded combinedVertex) library).Step
+        (wmExtVertexLanguageDef combinedVertex) library).Step
       [pExtract (pForget scopeHandle worldHandle) queryHandle]
       [pExtract worldHandle queryHandle] ∧
     Nonempty (observableReceiptFamily (outsideCapability reading scope)
@@ -265,7 +265,7 @@ theorem checked_guard_schematic_window_and_receipt
   exact ⟨(singleton_step_iff
     (Mettapedia.OSLF.Framework.WMCalculusCheckedScopeRelationProvider.relationEnv
       provider)
-    (wmExtVertexLanguageDefGuarded combinedVertex) library nonUnary _ _).2
+    (wmExtVertexLanguageDef combinedVertex) library nonUnary _ _).2
       canonicalStep, receipt⟩
 
 /-- The checked outside-scope result can execute under one authored Combine
@@ -283,14 +283,14 @@ theorem checked_guard_combine_context_and_receipt
       Mettapedia.OSLF.MeTTaIL.Engine.applyPremisesWithEnv
         (Mettapedia.OSLF.Framework.WMCalculusCheckedScopeRelationProvider.relationEnv
           provider)
-        (wmExtVertexLanguageDefGuarded combinedVertex)
+        (wmExtVertexLanguageDef combinedVertex)
         ruleForgetOutside.premises
         [("q", queryHandle), ("W", worldHandle), ("S", scopeHandle)]) :
     (∃ occurrence ∈ rewriteAtOccurrences
         (engineBasePremises
           (Mettapedia.OSLF.Framework.WMCalculusCheckedScopeRelationProvider.relationEnv
             provider))
-        (wmExtVertexLanguageDefGuardedWithCong combinedVertex) 2
+        (wmExtVertexLanguageDefWithCong combinedVertex) 2
         (pCombine (pExtract (pForget scopeHandle worldHandle) queryHandle)
           otherTerm),
       occurrence.target = pCombine (pExtract worldHandle queryHandle)
@@ -324,7 +324,7 @@ theorem counting_outside_family_inhabited :
       (classOf countingCombined.core (countingCore.world "x"), "y")) := by
   apply checked_premise_observable_receipt countingCombined
     (checkedProvider demoTable)
-    (wmExtVertexLanguageDefGuarded combinedVertex)
+    (wmExtVertexLanguageDef combinedVertex)
     scopeHandle worldHandle outsideHandle singletonX "y"
     (countingCore.world "x")
   · rfl
@@ -338,7 +338,7 @@ theorem counting_guard_operational_family_coherence (state : CountState) :
     langSemanticReducesUsing
         (Mettapedia.OSLF.Framework.WMCalculusCountScopeRelationProvider.relationEnv
           demoTable)
-        (wmExtVertexLanguageDefGuarded combinedVertex)
+        (wmExtVertexLanguageDef combinedVertex)
         (pExtract (pForget scopeHandle worldHandle) outsideHandle)
         (pExtract worldHandle outsideHandle) ∧
       countingCombined.core.extract
@@ -361,12 +361,12 @@ theorem counting_guard_target_native_diamond :
     langDiamondUsing
       (Mettapedia.OSLF.Framework.WMCalculusCountScopeRelationProvider.relationEnv
         demoTable)
-      (wmExtVertexLanguageDefGuarded combinedVertex)
+      (wmExtVertexLanguageDef combinedVertex)
       (equationClassNativeType
         (S := langGSLTUsing
           (Mettapedia.OSLF.Framework.WMCalculusCountScopeRelationProvider.relationEnv
             demoTable)
-          (wmExtVertexLanguageDefGuarded combinedVertex))
+          (wmExtVertexLanguageDef combinedVertex))
         (pExtract worldHandle outsideHandle)).pred
       (pExtract (pForget scopeHandle worldHandle) outsideHandle) := by
   exact checked_guard_target_native_diamond countingCombined

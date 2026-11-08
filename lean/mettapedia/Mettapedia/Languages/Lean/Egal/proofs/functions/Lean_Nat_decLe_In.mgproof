@@ -1,0 +1,129 @@
+claim Step: forall n, forall i :e Lean_Nat, 0 :e Lean_Nat_le_Prop n i -> 0 :e Lean_Nat_le_Prop n (Lean_Nat_succ_node i).
+{ let n i. assume Hi: i :e Lean_Nat. assume H: 0 :e Lean_Nat_le_Prop n i.
+  apply SepE2 1 (fun x => exists w, w :e Lean_Nat_le n i) 0 H.
+  let w. assume Hw: w :e Lean_Nat_le n i.
+  exact Lean_Nat_le_step_proof_ok n i Hi w Hw. }
+claim ZeroLe: forall m :e Lean_Nat, 0 :e Lean_Nat_le_Prop Lean_Nat_zero_node m.
+{ apply Lean_Nat_ind.
+  - exact Lean_Nat_le_refl_proof_ok Lean_Nat_zero_node.
+  - let m. assume Hm: m :e Lean_Nat. assume IH: 0 :e Lean_Nat_le_Prop Lean_Nat_zero_node m.
+    exact Step Lean_Nat_zero_node m Hm IH. }
+claim SuccLe: forall n :e Lean_Nat, forall m, 0 :e Lean_Nat_le_Prop n m ->
+  0 :e Lean_Nat_le_Prop (Lean_Nat_succ_node n) (Lean_Nat_succ_node m).
+{ let n. assume Hn: n :e Lean_Nat. let m. assume H: 0 :e Lean_Nat_le_Prop n m.
+  claim HC: forall i t, {z :e 1 | 0 :e Lean_Nat_le_Prop (Lean_Nat_succ_node n) (Lean_Nat_succ_node i)} :e LeanProp.
+  { let i t. exact Lean_sep1_prop (0 :e Lean_Nat_le_Prop (Lean_Nat_succ_node n) (Lean_Nat_succ_node i)). }
+  claim H0: 0 :e {z :e 1 | 0 :e Lean_Nat_le_Prop (Lean_Nat_succ_node n) (Lean_Nat_succ_node n)}.
+  { apply SepI 1 (fun z => 0 :e Lean_Nat_le_Prop (Lean_Nat_succ_node n) (Lean_Nat_succ_node n)) 0 In_0_1.
+    exact Lean_Nat_le_refl_proof_ok (Lean_Nat_succ_node n). }
+  claim H1: 0 :e (Pi_ x0 :e Lean_Nat, (Pi_ x1 :e (Lean_Nat_le n x0),
+    (Pi_ y1 :e {z :e 1 | 0 :e Lean_Nat_le_Prop (Lean_Nat_succ_node n) (Lean_Nat_succ_node x0)},
+    {z :e 1 | 0 :e Lean_Nat_le_Prop (Lean_Nat_succ_node n) (Lean_Nat_succ_node (Lean_Nat_succ_node x0))}))).
+  { apply Pi_0_In. let x0. assume Hx0: x0 :e Lean_Nat.
+    prove 0 :e (Pi_ x1 :e (Lean_Nat_le n x0),
+      (Pi_ y1 :e {z :e 1 | 0 :e Lean_Nat_le_Prop (Lean_Nat_succ_node n) (Lean_Nat_succ_node x0)},
+      {z :e 1 | 0 :e Lean_Nat_le_Prop (Lean_Nat_succ_node n) (Lean_Nat_succ_node (Lean_Nat_succ_node x0))})).
+    apply Pi_0_In. let x1. assume Hx1.
+    prove 0 :e (Pi_ y1 :e {z :e 1 | 0 :e Lean_Nat_le_Prop (Lean_Nat_succ_node n) (Lean_Nat_succ_node x0)},
+      {z :e 1 | 0 :e Lean_Nat_le_Prop (Lean_Nat_succ_node n) (Lean_Nat_succ_node (Lean_Nat_succ_node x0))}).
+    apply Pi_0_In. let y1.
+    assume Hy1: y1 :e {z :e 1 | 0 :e Lean_Nat_le_Prop (Lean_Nat_succ_node n) (Lean_Nat_succ_node x0)}.
+    prove 0 :e {z :e 1 | 0 :e Lean_Nat_le_Prop (Lean_Nat_succ_node n) (Lean_Nat_succ_node (Lean_Nat_succ_node x0))}.
+    apply SepI 1 (fun z => 0 :e Lean_Nat_le_Prop (Lean_Nat_succ_node n) (Lean_Nat_succ_node (Lean_Nat_succ_node x0))) 0 In_0_1.
+    exact Step (Lean_Nat_succ_node n) (Lean_Nat_succ_node x0) (Lean_Nat_succ_typed x0 Hx0)
+      (SepE2 1 (fun z => 0 :e Lean_Nat_le_Prop (Lean_Nat_succ_node n) (Lean_Nat_succ_node x0)) y1 Hy1). }
+  claim L: Lean_Nat_le_prec n 0 0 m 0
+    :e {z :e 1 | 0 :e Lean_Nat_le_Prop (Lean_Nat_succ_node n) (Lean_Nat_succ_node m)}.
+  { exact Lean_Nat_le_prec_type n (fun i t => {z :e 1 | 0 :e Lean_Nat_le_Prop (Lean_Nat_succ_node n) (Lean_Nat_succ_node i)})
+      HC 0 H0 0 H1 m 0 H. }
+  exact SepE2 1 (fun z => 0 :e Lean_Nat_le_Prop (Lean_Nat_succ_node n) (Lean_Nat_succ_node m))
+    (Lean_Nat_le_prec n 0 0 m 0) L. }
+claim LeOfBle: forall n :e Lean_Nat, forall m :e Lean_Nat, Lean_Nat_ble n m = Lean_Bool_true_node ->
+  0 :e Lean_Nat_le_Prop n m.
+{ apply Lean_Nat_ind.
+  - let m. assume Hm: m :e Lean_Nat. assume H. exact ZeroLe m Hm.
+  - let n. assume Hn: n :e Lean_Nat.
+    assume IH: forall m :e Lean_Nat, Lean_Nat_ble n m = Lean_Bool_true_node -> 0 :e Lean_Nat_le_Prop n m.
+    apply Lean_Nat_ind.
+    + assume H: Lean_Nat_ble (Lean_Nat_succ_node n) Lean_Nat_zero_node = Lean_Bool_true_node.
+      apply FalseE. apply Lean_Bool_noconf0_1. rewrite <- Lean_Nat_ble_eq_2 n Hn. exact H.
+    + let m. assume Hm: m :e Lean_Nat. assume IHm.
+      assume H: Lean_Nat_ble (Lean_Nat_succ_node n) (Lean_Nat_succ_node m) = Lean_Bool_true_node.
+      apply SuccLe n Hn m. apply IH m Hm. rewrite <- Lean_Nat_ble_eq_3 n Hn m Hm. exact H. }
+claim BleRefl: forall n :e Lean_Nat, Lean_Nat_ble n n = Lean_Bool_true_node.
+{ apply Lean_Nat_ind.
+  - exact Lean_Nat_ble_eq_1 Lean_Nat_zero_node Lean_Nat_zero_typed.
+  - let n. assume Hn: n :e Lean_Nat. assume IH: Lean_Nat_ble n n = Lean_Bool_true_node.
+    rewrite Lean_Nat_ble_eq_3 n Hn n Hn. exact IH. }
+claim BleStep: forall n :e Lean_Nat, forall m :e Lean_Nat, Lean_Nat_ble n m = Lean_Bool_true_node ->
+  Lean_Nat_ble n (Lean_Nat_succ_node m) = Lean_Bool_true_node.
+{ apply Lean_Nat_ind.
+  - let m. assume Hm: m :e Lean_Nat. assume H.
+    exact Lean_Nat_ble_eq_1 (Lean_Nat_succ_node m) (Lean_Nat_succ_typed m Hm).
+  - let n. assume Hn: n :e Lean_Nat.
+    assume IH: forall m :e Lean_Nat, Lean_Nat_ble n m = Lean_Bool_true_node ->
+      Lean_Nat_ble n (Lean_Nat_succ_node m) = Lean_Bool_true_node.
+    apply Lean_Nat_ind.
+    + assume H: Lean_Nat_ble (Lean_Nat_succ_node n) Lean_Nat_zero_node = Lean_Bool_true_node.
+      apply FalseE. apply Lean_Bool_noconf0_1. rewrite <- Lean_Nat_ble_eq_2 n Hn. exact H.
+    + let m. assume Hm: m :e Lean_Nat. assume IHm.
+      assume H: Lean_Nat_ble (Lean_Nat_succ_node n) (Lean_Nat_succ_node m) = Lean_Bool_true_node.
+      rewrite Lean_Nat_ble_eq_3 n Hn (Lean_Nat_succ_node m) (Lean_Nat_succ_typed m Hm).
+      apply IH m Hm. rewrite <- Lean_Nat_ble_eq_3 n Hn m Hm. exact H. }
+claim BleOfLe: forall n :e Lean_Nat, forall m, 0 :e Lean_Nat_le_Prop n m -> Lean_Nat_ble n m = Lean_Bool_true_node.
+{ let n. assume Hn: n :e Lean_Nat. let m. assume H: 0 :e Lean_Nat_le_Prop n m.
+  claim HC: forall i t, {z :e 1 | Lean_Nat_ble n i = Lean_Bool_true_node} :e LeanProp.
+  { let i t. exact Lean_sep1_prop (Lean_Nat_ble n i = Lean_Bool_true_node). }
+  claim H0: 0 :e {z :e 1 | Lean_Nat_ble n n = Lean_Bool_true_node}.
+  { exact SepI 1 (fun z => Lean_Nat_ble n n = Lean_Bool_true_node) 0 In_0_1 (BleRefl n Hn). }
+  claim H1: 0 :e (Pi_ x0 :e Lean_Nat, (Pi_ x1 :e (Lean_Nat_le n x0),
+    (Pi_ y1 :e {z :e 1 | Lean_Nat_ble n x0 = Lean_Bool_true_node},
+    {z :e 1 | Lean_Nat_ble n (Lean_Nat_succ_node x0) = Lean_Bool_true_node}))).
+  { apply Pi_0_In. let x0. assume Hx0: x0 :e Lean_Nat.
+    prove 0 :e (Pi_ x1 :e (Lean_Nat_le n x0), (Pi_ y1 :e {z :e 1 | Lean_Nat_ble n x0 = Lean_Bool_true_node},
+      {z :e 1 | Lean_Nat_ble n (Lean_Nat_succ_node x0) = Lean_Bool_true_node})).
+    apply Pi_0_In. let x1. assume Hx1.
+    prove 0 :e (Pi_ y1 :e {z :e 1 | Lean_Nat_ble n x0 = Lean_Bool_true_node},
+      {z :e 1 | Lean_Nat_ble n (Lean_Nat_succ_node x0) = Lean_Bool_true_node}).
+    apply Pi_0_In. let y1. assume Hy1: y1 :e {z :e 1 | Lean_Nat_ble n x0 = Lean_Bool_true_node}.
+    prove 0 :e {z :e 1 | Lean_Nat_ble n (Lean_Nat_succ_node x0) = Lean_Bool_true_node}.
+    apply SepI 1 (fun z => Lean_Nat_ble n (Lean_Nat_succ_node x0) = Lean_Bool_true_node) 0 In_0_1.
+    exact BleStep n Hn x0 Hx0 (SepE2 1 (fun z => Lean_Nat_ble n x0 = Lean_Bool_true_node) y1 Hy1). }
+  claim L: Lean_Nat_le_prec n 0 0 m 0 :e {z :e 1 | Lean_Nat_ble n m = Lean_Bool_true_node}.
+  { exact Lean_Nat_le_prec_type n (fun i t => {z :e 1 | Lean_Nat_ble n i = Lean_Bool_true_node}) HC 0 H0 0 H1 m 0 H. }
+  exact SepE2 1 (fun z => Lean_Nat_ble n m = Lean_Bool_true_node) (Lean_Nat_le_prec n 0 0 m 0) L. }
+let n. assume Hn: n :e Lean_Nat. let m. assume Hm: m :e Lean_Nat.
+rewrite Lean_Nat_decLe_eq_1 n Hn m Hm.
+claim Hb: Lean_Nat_ble n m :e Lean_Bool.
+{ exact Lean_Nat_ble_In n Hn m Hm. }
+claim HT: (fun v_h :e (Lean_Eq_Prop Lean_Bool (Lean_Nat_ble n m) Lean_Bool_true_node) =>
+    (Lean_Decidable_isTrue_node (Lean_Nat_le_Prop n m) 0))
+  :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (Lean_Nat_ble n m) Lean_Bool_true_node), Lean_Decidable (Lean_Nat_le_Prop n m)).
+{ apply lam_Pi (Lean_Eq_Prop Lean_Bool (Lean_Nat_ble n m) Lean_Bool_true_node)
+    (fun ux => Lean_Decidable (Lean_Nat_le_Prop n m)) (fun v_h => Lean_Decidable_isTrue_node (Lean_Nat_le_Prop n m) 0).
+  let h. assume Hh: h :e Lean_Eq_Prop Lean_Bool (Lean_Nat_ble n m) Lean_Bool_true_node.
+  exact Lean_Decidable_isTrue_typed (Lean_Nat_le_Prop n m) 0
+    (LeOfBle n Hn m Hm (LeanEq_sound Lean_Bool (Lean_Nat_ble n m) Lean_Bool_true_node h Hh)). }
+claim HE: (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (Lean_Nat_ble n m) Lean_Bool_true_node), Lean_False_Prop) =>
+    (Lean_Decidable_isFalse_node (Lean_Nat_le_Prop n m) 0))
+  :e (Pi_ ux :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (Lean_Nat_ble n m) Lean_Bool_true_node), Lean_False_Prop),
+      Lean_Decidable (Lean_Nat_le_Prop n m)).
+{ apply lam_Pi (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (Lean_Nat_ble n m) Lean_Bool_true_node), Lean_False_Prop)
+    (fun ux => Lean_Decidable (Lean_Nat_le_Prop n m)) (fun v_h => Lean_Decidable_isFalse_node (Lean_Nat_le_Prop n m) 0).
+  let h. assume Hh: h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (Lean_Nat_ble n m) Lean_Bool_true_node), Lean_False_Prop).
+  claim Not: 0 :e Lean_Nat_le_Prop n m -> False.
+  { assume Hle.
+    claim E0: 0 :e Lean_Eq_Prop Lean_Bool (Lean_Nat_ble n m) Lean_Bool_true_node.
+    { rewrite BleOfLe n Hn m Hle. exact Lean_Eq_refl_proof_ok Lean_Bool Lean_Bool_true_node. }
+    exact Lean_False_Prop_false (h 0)
+      (ap_Pi (Lean_Eq_Prop Lean_Bool (Lean_Nat_ble n m) Lean_Bool_true_node) (fun ux => Lean_False_Prop) h 0 Hh E0). }
+  exact Lean_Decidable_isFalse_typed (Lean_Nat_le_Prop n m) 0
+    (Lean_refute_0 (Lean_Nat_le_Prop n m) (Lean_Nat_le_Prop_prop n m) Not). }
+exact Lean_dite_In (Lean_Decidable (Lean_Nat_le_Prop n m))
+  (Lean_Eq_Prop Lean_Bool (Lean_Nat_ble n m) Lean_Bool_true_node) (Lean_Eq_Prop_prop Lean_Bool (Lean_Nat_ble n m) Lean_Bool_true_node)
+  (Lean_instDecidableEqBool (Lean_Nat_ble n m) Lean_Bool_true_node)
+  (Lean_instDecidableEqBool_In (Lean_Nat_ble n m) Hb Lean_Bool_true_node Lean_Bool_true_typed)
+  (fun v_h :e (Lean_Eq_Prop Lean_Bool (Lean_Nat_ble n m) Lean_Bool_true_node) =>
+    (Lean_Decidable_isTrue_node (Lean_Nat_le_Prop n m) 0)) HT
+  (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (Lean_Nat_ble n m) Lean_Bool_true_node), Lean_False_Prop) =>
+    (Lean_Decidable_isFalse_node (Lean_Nat_le_Prop n m) 0)) HE.

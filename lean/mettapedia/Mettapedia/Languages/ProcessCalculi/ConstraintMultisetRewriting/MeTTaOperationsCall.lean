@@ -15,7 +15,7 @@ the same store; the answers form a bag, as for `match`.
   equation binds the caller's `y` to `0` in every solution, giving
   `(pair 0 zero)`; through the first it reads `(g y)` with `y` still open.
   Hyperon Experimental, PeTTa and the CeTTa draft print both answers.
-* `Probe.live_equation_conflates_calls`: reading one stored equation without
+* `Probe.shared_equation_conflates_calls`: reading one stored equation without
   opening it lets the first call `(f 3)` fix its variable for the second call
   `(f 4)`. `Probe.fresh_equation_serves_both` opens a copy per call.
 * `Probe.no_equation_returns_call`: `(g 0)` with no equation for `g` is one
@@ -194,7 +194,7 @@ theorem open_call_keeps_variable :
 
 /-- One stored equation read twice without opening: the call `(f 3)` fixes
 `x1`, and the call `(f 4)` through the same occurrence is refused. -/
-theorem live_equation_conflates_calls :
+theorem shared_equation_conflates_calls :
     (selection 0 2).Valid atomAction (label r) (callRule (f three) "r" r) before ∧
       ¬ (selection 0 3).Valid atomAction (label r) (callRule (f four) "s" (.var "s"))
         ((selection 0 2).result (label r) (callRule (f three) "r" r) before) := by

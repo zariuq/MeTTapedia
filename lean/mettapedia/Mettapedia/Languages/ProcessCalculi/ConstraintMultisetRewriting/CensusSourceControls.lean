@@ -78,8 +78,8 @@ information store over these values. No empty-store hypothesis is built into
 the bridge. Nontrivial logical-variable cuts are exercised in CensusControls. -/
 theorem actual_query_batch_is_admitted {S : Type*} (action : SubstitutionAction Value S)
     (equations tells : EquationStore Value) (consistent : action.Consistent (equations ++ tells)) :
-    CensusAdmission.Valid action label (CensusSourceCompilation.rule label batch tells)
-      (batch.queries.map CensusAdmission.Query.fixed) ⟨equations, contents.toFinset⟩
+    PredicateQueryAdmission.Valid action label (CensusSourceCompilation.rule label batch tells)
+      (batch.queries.map PredicateQueryAdmission.Query.fixed) ⟨equations, contents.toFinset⟩
       (CensusSourceCompilation.selection batch) :=
   CensusSourceCompilation.realize_commit action label batch tells _ actual_source_firing.enabled consistent
 

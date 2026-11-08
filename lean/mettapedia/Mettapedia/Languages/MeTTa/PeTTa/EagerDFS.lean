@@ -120,6 +120,7 @@ def eagerControlForm : Atom → Bool
   | .expression [.symbol "let", _, _, _]
   | .expression [.symbol "let*", .expression _, _]
   | .expression [.symbol "case", _, .expression _]
+  | .expression [.symbol "if", _, _]
   | .expression [.symbol "if", _, _, _]
   | .expression [.symbol "collapse", _]
   | .expression [.symbol "superpose", .expression _]
@@ -195,6 +196,8 @@ def localStep (program : Program) (world : World) (branch : Branch) :
           | none => replace (.fault (.invalidArguments "case"))
       | .expression [.symbol "if", condition, yes, no] =>
           push (.branch bindings yes no) bindings condition
+      | .expression [.symbol "if", condition, yes] =>
+          push (.branch bindings yes (.expression [.symbol "empty"])) bindings condition
       | .expression [.symbol "collapse", expression] =>
           some (world, .collect bindings expression branch.frames)
       | .expression [.symbol "superpose", .expression alternatives] =>
@@ -392,6 +395,11 @@ inductive LocalTransition (program : Program) : World → Branch → World → M
       LocalTransition program world
         ⟨.evaluate bindings (.expression [.symbol "if", condition, yes, no]), frames⟩
         world (.next ⟨.evaluate bindings condition, .branch bindings yes no :: frames⟩)
+  | if_without_else {world bindings condition yes frames} :
+      LocalTransition program world
+        ⟨.evaluate bindings (.expression [.symbol "if", condition, yes]), frames⟩
+        world (.next ⟨.evaluate bindings condition,
+          .branch bindings yes (.expression [.symbol "empty"]) :: frames⟩)
   | collapse_enter {world bindings expression frames} :
       LocalTransition program world ⟨.evaluate bindings (.expression [.symbol "collapse", expression]), frames⟩
         world (.collect bindings expression frames)
@@ -597,6 +605,8 @@ theorem local_step_transition {program : Program} {world after : World}
               exact .case_bad (by assumption)
           · rcases Option.some.inj computed with ⟨rfl, rfl⟩
             exact .if_enter
+          · rcases Option.some.inj computed with ⟨rfl, rfl⟩
+            exact .if_without_else
           · rcases Option.some.inj computed with ⟨rfl, rfl⟩
             exact .collapse_enter
           · rcases Option.some.inj computed with ⟨rfl, rfl⟩
@@ -1065,6 +1075,7 @@ theorem equation_branches_within {allowed : String → Bool} {program : Program}
 theorem local_transition_within {allowed : String → Bool} {program : Program}
     {world after : World} {branch : Branch} {movement : Movement}
     (closed : Eval.ProgramClosed allowed program)
+    (emptyAllowed : allowed "empty" = true)
     (transition : LocalTransition program world branch after movement)
     (within : branchWithin allowed branch = true) : movementWithin allowed movement = true := by
   cases transition
@@ -1141,6 +1152,7 @@ theorem install_within {allowed : String → Bool} {world : World} {scope : Scop
 
 theorem transition_within {allowed : String → Bool} {program : Program}
     {source target : Configuration} (closed : Eval.ProgramClosed allowed program)
+    (emptyAllowed : allowed "empty" = true)
     (transition : Transition program source target)
     (within : configurationWithin allowed source) : configurationWithin allowed target := by
   cases transition with
@@ -1148,7 +1160,7 @@ theorem transition_within {allowed : String → Bool} {program : Program}
       simp only [configurationWithin, List.all_cons, Bool.and_eq_true] at within
       have head := within.1
       simp only [scopeWithin, frontier, List.all_cons, Bool.and_eq_true] at head
-      apply install_within _ within.2 (local_transition_within closed derivation head.1.1)
+      apply install_within _ within.2 (local_transition_within closed emptyAllowed derivation head.1.1)
       simp only [scopeWithin, Bool.and_eq_true]
       exact ⟨head.1.2, head.2⟩
   | collapse_return =>
@@ -1165,6 +1177,7 @@ theorem transition_within {allowed : String → Bool} {program : Program}
 
 theorem advance_within (program : Program) (fuel : Nat) (configuration : Configuration)
     {allowed : String → Bool} (closed : Eval.ProgramClosed allowed program)
+    (emptyAllowed : allowed "empty" = true)
     (within : configurationWithin allowed configuration) :
     configurationWithin allowed (advance program fuel configuration) := by
   induction fuel generalizing configuration with
@@ -1173,7 +1186,7 @@ theorem advance_within (program : Program) (fuel : Nat) (configuration : Configu
       cases next : step program configuration with
       | none => simpa [advance, next] using within
       | some target =>
-          simpa [advance, next] using ih target (transition_within closed (step_transition next) within)
+          simpa [advance, next] using ih target (transition_within closed emptyAllowed (step_transition next) within)
 
 theorem transition_preserves_state {program : Program} {source target : Configuration}
     (within : configurationWithin ProgramReplay.readOnlyHead source)
@@ -1203,7 +1216,7 @@ theorem advance_preserves_state (program : Program) (fuel : Nat) (configuration 
       | some target =>
           have transition := step_transition next
           simpa only [advance, next] using
-            (ih target (transition_within closed transition within)).trans
+            (ih target (transition_within closed (by decide +kernel) transition within)).trans
               (transition_preserves_state within transition)
 
 theorem chunks_loaded_store_reconstruction (program : Program) (fuels : List Nat)
@@ -1665,6 +1678,8 @@ inductive Goal where
   /-- The condition has returned; neither authored branch has run yet. -/
   | branch (condition yes no destination : Atom)
   | invoke (head : String) (arguments : List Atom) (destination : Atom)
+  /-- Surface match executes each template under that row's reached record. -/
+  | query (location pattern template destination : Atom)
   | argumentReturn (value destination : Atom) (callerDepth : Nat)
   | openCommit
   | commit
@@ -1675,6 +1690,7 @@ def Goal.atoms : Goal → List Atom
   | .evaluate expression destination | .equate expression destination => [expression, destination]
   | .branch condition yes no destination => [condition, yes, no, destination]
   | .invoke _ arguments destination => destination :: arguments
+  | .query location pattern template destination => [location, pattern, template, destination]
   | .argumentReturn value destination _ => [value, destination]
   | .openCommit | .commit | .restoreCommit _ => []
 
@@ -1749,6 +1765,11 @@ def replace (control : Control) (goals : List Goal) : Control :=
 def callable (program : SpaceSemantics.Program) (head : String) : Bool :=
   Eval.ioHead head || StdLib.known head || program.equations.any (·.head == head)
 
+/-- Authored match equations need their canonical dispatch policy. This
+component does not silently override them with the intrinsic query. -/
+def queryOwned (program : SpaceSemantics.Program) : Bool :=
+  !(program.equations.any fun equation => equation.head == "match" && equation.arguments.length == 3)
+
 /-- This classification is restricted to the ordinary fixed-head source
 surface. Captured native plans, callable pattern heads and opaque host values
 remain separate admission facts when constructing the native map. -/
@@ -1792,6 +1813,7 @@ def dataGoals (policy : Policy) (children slots : List Atom) (destination : Atom
 
 inductive Boundary where
   | invoke (head : String) (arguments : List Atom) (destination : Atom)
+  | query (location pattern template destination : Atom)
   | invalidEnvironment
   | invalidDelimiter (callerDepth available : Nat)
   | openCommit
@@ -1821,6 +1843,9 @@ def prepare (policy : Policy) (program : SpaceSemantics.Program)
   | .expression [.symbol "if", condition, yes, no] =>
       let value := Atom.var (freshName control 0)
       resume [.evaluate condition value, .branch value yes no destination]
+  | .expression [.symbol "if", condition, yes] =>
+      let value := Atom.var (freshName control 0)
+      resume [.evaluate condition value, .branch value yes (.expression [.symbol "empty"]) destination]
   | .expression (.symbol head :: arguments) =>
       if callable program head then
         let (pending, ready) := callArguments program head arguments
@@ -1880,6 +1905,11 @@ def machine {Context : Type} (policy : Policy) (program : SpaceSemantics.Program
                   | some bindings => .silent { cursor with control :=
                       { cursor.control with bindings, goals := older } }
                 else .silent { cursor with control := replace cursor.control remaining }
+    | .query location pattern template destination :: _ =>
+        match resolve cursor.control.bindings with
+        | none => .call .invalidEnvironment cursor
+        | some environment =>
+            .call (.query (read environment location) pattern template destination) cursor
     | .invoke head arguments destination :: older =>
         match resolve cursor.control.bindings with
         | none => .call .invalidEnvironment cursor
@@ -2250,6 +2280,8 @@ def Goal.readout (table : TypeSubst) : Goal → Goal
   | .branch condition yes no destination =>
       .branch (table.apply condition) (table.apply yes) (table.apply no) (table.apply destination)
   | .invoke head arguments destination => .invoke head (arguments.map table.apply) (table.apply destination)
+  | .query location pattern template destination =>
+      .query (table.apply location) (table.apply pattern) (table.apply template) (table.apply destination)
   | .argumentReturn value destination depth => .argumentReturn (table.apply value) (table.apply destination) depth
   | .openCommit => .openCommit
   | .commit => .commit
@@ -2691,13 +2723,13 @@ theorem prepare_wellDelimited (policy : Policy) (program : SpaceSemantics.Progra
   · exact prefix_wellDelimited _ _ (by simp [noDelimiter]) valid
   · exact prefix_wellDelimited _ _ (by simp [noDelimiter]) valid
   · exact prefix_wellDelimited _ _ (by simp [noDelimiter]) valid
+  · exact prefix_wellDelimited _ _ (by simp [noDelimiter]) valid
   · split
     · apply prefix_wellDelimited _ _ ?_ valid
       intro goal occurs
       rcases List.mem_append.mp occurs with pending | invoke
       · exact callArguments_plain _ _ _ _ goal pending
-      · simp only [List.mem_singleton] at invoke
-        subst goal
+      · cases List.mem_singleton.mp invoke
         trivial
     · apply prefix_wellDelimited _ _ ?_ valid
       intro goal occurs
@@ -2767,6 +2799,9 @@ theorem step_wellDelimited {Context : Type} (policy : Policy) (program : SpaceSe
                 subst target
                 exact valid
               · simp at advanced
+      | query location pattern template destination =>
+          simp only [machine, goals] at advanced
+          cases resolved : resolve cursor.control.bindings <;> simp_all
       | argumentReturn value destination depth =>
           obtain ⟨bound, rest⟩ := valid
           have selected : callerSuffix? depth older = some (older.drop (older.length - depth)) := by
@@ -2811,6 +2846,9 @@ theorem no_invalidDelimiter_step {Context : Type} (policy : Policy) (program : S
           | some environment =>
               simp only [resolved] at bad
               split at bad <;> simp_all
+      | query location pattern template destination =>
+          simp only [machine, goals] at bad
+          cases resolved : resolve cursor.control.bindings <;> simp_all
       | argumentReturn value destination callerDepth =>
           have selected : callerSuffix? callerDepth older = some (older.drop (older.length - callerDepth)) := by
             simp [callerSuffix?, valid.1]
@@ -6795,6 +6833,85 @@ def primitiveWork {Context : Type} (control : Control) (context : Context)
   values.zipIdx.map fun (value, index) =>
     ({control with goals := .equate value destination :: older}, context, origins ++ [index])
 
+/-- One stored occurrence is fresh for this query, using the same proved
+caller-avoiding allocation as source clause selection. -/
+def queryRow (control : Control) (occurrence : Nat) (row : Atom) : Atom :=
+  Mettapedia.Languages.MeTTa.HE.Spec.Type.RuntimeRefinement.renameTypeVars
+    (ClauseChoice.rename control occurrence [row]) row
+
+def queryAttempt (control : Control) (pattern template destination : Atom) (older : List Goal)
+    (occurrence : Nat) (row : Atom) : Option Control := do
+  let bindings ← refine control.bindings pattern (queryRow control occurrence row)
+  pure {control with bindings, goals := .evaluate template destination :: older}
+
+def queryChoices (control : Control) (pattern template destination : Atom) (older : List Goal)
+    (rows : List Atom) (start : Nat := 0) : List (Nat × Control) :=
+  (rows.zipIdx start).filterMap fun (row, occurrence) =>
+    (queryAttempt control pattern template destination older occurrence row).map fun next => (occurrence, next)
+
+def queryWork {Context : Type} (control : Control) (context : Context) (origins : List Nat)
+    (pattern template destination : Atom) (older : List Goal) (rows : List Atom) : List (CollectionWork Context) :=
+  (queryChoices control pattern template destination older rows).map fun (occurrence, next) =>
+    (next, context, origins ++ [occurrence])
+
+/-- Each selected stored occurrence contributes its source template under
+the reached constraints. Duplicate rows remain distinct source occurrences. -/
+inductive QueryFrontier (control : Control) (pattern template destination : Atom) (older : List Goal) :
+    Nat → List Atom → List (Nat × Control) → Prop where
+  | nil (start : Nat) : QueryFrontier control pattern template destination older start [] []
+  | selected (start : Nat) (row : Atom) (rest : List Atom) (bindings : Equations)
+      (tail : List (Nat × Control))
+      (accepted : Refinement control.bindings pattern (queryRow control start row) (some bindings))
+      (following : QueryFrontier control pattern template destination older (start + 1) rest tail) :
+      QueryFrontier control pattern template destination older start (row :: rest)
+        ((start, {control with bindings, goals := .evaluate template destination :: older}) :: tail)
+  | refused (start : Nat) (row : Atom) (rest : List Atom) (tail : List (Nat × Control))
+      (rejected : Refinement control.bindings pattern (queryRow control start row) none)
+      (following : QueryFrontier control pattern template destination older (start + 1) rest tail) :
+      QueryFrontier control pattern template destination older start (row :: rest) tail
+
+theorem queryChoices_has_source (control : Control) (pattern template destination : Atom)
+    (older : List Goal) (rows : List Atom) (start : Nat) :
+    QueryFrontier control pattern template destination older start rows
+      (queryChoices control pattern template destination older rows start) := by
+  induction rows generalizing start with
+  | nil => exact .nil start
+  | cons row rest ih =>
+      cases accepted : refine control.bindings pattern (queryRow control start row) with
+      | none =>
+          simpa [queryChoices, List.zipIdx_cons, queryAttempt, accepted] using
+            QueryFrontier.refused start row rest _ ((refinement_iff _ _ _ _).mpr accepted) (ih (start + 1))
+      | some bindings =>
+          simpa [queryChoices, List.zipIdx_cons, queryAttempt, accepted] using
+            QueryFrontier.selected start row rest bindings _ ((refinement_iff _ _ _ _).mpr accepted) (ih (start + 1))
+
+theorem QueryFrontier.execution {control : Control} {pattern template destination : Atom} {older : List Goal}
+    {start : Nat} {rows : List Atom} {selected : List (Nat × Control)}
+    (source : QueryFrontier control pattern template destination older start rows selected) :
+    queryChoices control pattern template destination older rows start = selected := by
+  induction source with
+  | nil => rfl
+  | selected start row rest bindings tail accepted following ih =>
+      simp [queryChoices, List.zipIdx_cons, queryAttempt, (refinement_iff _ _ _ _).mp accepted] at *
+      exact ih
+  | refused start row rest tail rejected following ih =>
+      simp [queryChoices, List.zipIdx_cons, queryAttempt, (refinement_iff _ _ _ _).mp rejected] at *
+      exact ih
+
+/-- Surface query entry uses the reached space and schedules each template
+recipe under the selected row's constraints. It does not materialize a
+template variable into executable syntax before its source evaluation. -/
+def scopedQuery {Context : Type} (source : ScopedCursor Context) (scope : CollectionScope Context)
+    (parents : List (CollectionScope Context)) (control : Control) (context : Context)
+    (origins : List Nat) (pending : List (CollectionWork Context))
+    (location pattern template destination : Atom) (older : List Goal) :
+    Mettapedia.GSLT.Distinction.ProductiveBlocks.Transition (ScopedCursor Context) CollectedAnswer (ScopedCursor Context) ScopeBoundary :=
+  match Effects.readHandle location >>= source.2.world.state.read with
+  | none => .call (.fault .invalidSpace) source
+  | some rows =>
+      .silent (source.1, ⟨source.2.world, {scope with frontier :=
+        (queryWork (protectControl control (collectionSupport source.2)) context origins
+          pattern template destination older rows ++ pending)} :: parents⟩)
 /-- Interpret only the existing primitive table here. Every failed primitive
 is retained as a control fault; unknown requests remain explicit. -/
 def scopedInvocation {Context : Type} (program : SpaceSemantics.Program)
@@ -6863,6 +6980,12 @@ def installChild {Context : Type} (program : SpaceSemantics.Program)
       | .invoke _ _ _ :: older =>
           scopedInvocation program source scope parents reached.control reached.context origins pending
             head arguments destination older
+      | _ => .call .invalidScope source
+  | .call (.query location pattern template destination) reached =>
+      match reached.control.goals with
+      | .query _ _ _ _ :: older =>
+          scopedQuery source scope parents reached.control reached.context origins pending
+            location pattern template destination older
       | _ => .call .invalidScope source
   | .call request _ => .call (.branch request) source
   | .fail _ => .call .invalidScope source
@@ -7199,6 +7322,9 @@ def Goal.rename (rename : String → String) : Goal → Goal
       .branch (renameTypeVars rename condition) (renameTypeVars rename yes)
         (renameTypeVars rename no) (renameTypeVars rename destination)
   | .invoke head arguments destination => .invoke head (arguments.map (renameTypeVars rename)) (renameTypeVars rename destination)
+  | .query location pattern template destination =>
+      .query (renameTypeVars rename location) (renameTypeVars rename pattern)
+        (renameTypeVars rename template) (renameTypeVars rename destination)
   | .argumentReturn value destination depth =>
       .argumentReturn (renameTypeVars rename value) (renameTypeVars rename destination) depth
   | .openCommit => .openCommit
@@ -7437,13 +7563,7 @@ private theorem scopedInvocation_not_publish {Context : Type} (program : SpaceSe
     scopedInvocation program source scope parents control context origins pending head arguments destination older ≠
       .publish events after := by
   unfold scopedInvocation
-  split
-  · split
-    · split <;> intro impossible <;> contradiction
-    · intro impossible; contradiction
-  · split
-    · split <;> intro impossible <;> contradiction
-    · split <;> intro impossible <;> contradiction
+  repeat' first | (intro impossible; contradiction) | split
 
 /-- Publication can only come from the actual value-return constructor of a
 child. The wrapper cannot invent an answer from refusal or a service request. -/
@@ -7490,6 +7610,12 @@ theorem installChild_published_origin {Context : Type} (program : SpaceSemantics
       simp only [installChild] at published
       split at published
       · exact False.elim (scopedInvocation_not_publish _ _ _ _ _ _ _ _ _ _ _ _ _ _ published)
+      · contradiction
+    | query location pattern template destination =>
+      simp only [installChild] at published
+      split at published
+      · unfold scopedQuery at published
+        split at published <;> contradiction
       · contradiction
 
 /-- Any root event has the independent solution model earned by the actual
@@ -7654,24 +7780,13 @@ private theorem scopedInvocation_scopes_valid {Context : Type} (program : SpaceS
     (valid : ScopesValid source.2.scopes) (same : source.2.scopes = scope :: parents) :
     ScopesPreserved (scopedInvocation program source scope parents control context origins pending
       head arguments destination older) := by
+  have headValid : ScopesValid (scope :: parents) := same ▸ valid
   unfold scopedInvocation
-  split
-  · split
-    · split
-      · exact valid
-      · exact valid
-      · rw [same] at valid
-        exact valid.replace_head _ _
-    · exact valid
-  · split
-    · split
-      · exact valid
-      · rw [same] at valid
-        exact valid.replace_head _ _
-    · split
-      · rename_i next entered
-        exact enterEquations_scopes_valid program _ _ valid entered
-      · exact valid
+  repeat' first
+    | exact valid
+    | exact headValid.replace_head _ _
+    | exact enterEquations_scopes_valid program _ _ valid (by assumption)
+    | split
 
 private theorem installChild_scopes_valid {Context : Type} (program : SpaceSemantics.Program)
     (source : ScopedCursor Context) (scope : CollectionScope Context)
@@ -7712,6 +7827,14 @@ private theorem installChild_scopes_valid {Context : Type} (program : SpaceSeman
       split
       · exact scopedInvocation_scopes_valid program source scope parents _ _ origins pending
           head arguments destination _ valid same
+      · exact valid
+    | query location pattern template destination =>
+      simp only [installChild]
+      split
+      · unfold scopedQuery
+        split
+        · exact valid
+        · exact headValid.replace_head _ _
       · exact valid
 
 theorem scopeStep_scopes_valid {Context : Type} (policy : Policy) (program : SpaceSemantics.Program)
@@ -8535,6 +8658,7 @@ def lexicalForm : Atom → Bool
   | .expression [.symbol "quote", _]
   | .expression [.symbol "let", _, _, _]
   | .expression [.symbol "cut"]
+  | .expression [.symbol "if", _, _]
   | .expression [.symbol "if", _, _, _]
   | .expression [.symbol "once", _] => true
   | _ => false
@@ -8571,6 +8695,10 @@ inductive Prepared (policy : Policy) (program : Program) (control : Control)
       Prepared policy program control destination older (.expression [.symbol "if", condition, yes, no])
         (replace control (.evaluate condition (.var (freshName control 0)) ::
           .branch (.var (freshName control 0)) yes no destination :: older))
+  | conditionalWithoutElse (condition yes : Atom) :
+      Prepared policy program control destination older (.expression [.symbol "if", condition, yes])
+        (replace control (.evaluate condition (.var (freshName control 0)) ::
+          .branch (.var (freshName control 0)) yes (.expression [.symbol "empty"]) destination :: older))
   | application (head : String) (arguments : List Atom)
       (ordinary : lexicalForm (.expression (.symbol head :: arguments)) = false)
       (declared : callable program head = true) :
@@ -8606,6 +8734,7 @@ theorem Prepared.execution {policy : Policy} {program : Program} {control : Cont
   | cut => rfl
   | once _ => rfl
   | conditional _ _ _ => rfl
+  | conditionalWithoutElse _ _ => rfl
   | application head arguments ordinary declared =>
       unfold prepare
       split <;> simp_all [lexicalForm, replace, List.append_assoc]
@@ -8637,6 +8766,7 @@ theorem prepare_has_source (policy : Policy) (program : Program) (control : Cont
   · exact .cut
   · exact .once _
   · exact .conditional _ _ _
+  · exact .conditionalWithoutElse _ _
   · split
     · apply Prepared.application
       · unfold lexicalForm
@@ -8697,6 +8827,8 @@ inductive Licensed (control : Control) : Prop where
       (atGoal : control.goals = .argumentReturn value destination depth :: remaining) : Licensed control
   | invocation (head : String) (arguments : List Atom) (destination : Atom) (older : List Goal)
       (atGoal : control.goals = .invoke head arguments destination :: older) : Licensed control
+  | querying (location pattern template destination : Atom) (older : List Goal)
+      (atGoal : control.goals = .query location pattern template destination :: older) : Licensed control
   | opening (older : List Goal) (atGoal : control.goals = .openCommit :: older) : Licensed control
   | committing (older : List Goal) (atGoal : control.goals = .commit :: older) : Licensed control
   | restoring (boundary : Nat) (older : List Goal)
@@ -8712,6 +8844,8 @@ inductive ReadSite (control : Control) : Prop where
       (atGoal : control.goals = .argumentReturn value destination depth :: remaining) : ReadSite control
   | invocation (head : String) (arguments : List Atom) (destination : Atom) (older : List Goal)
       (atGoal : control.goals = .invoke head arguments destination :: older) : ReadSite control
+  | querying (location pattern template destination : Atom) (older : List Goal)
+      (atGoal : control.goals = .query location pattern template destination :: older) : ReadSite control
 
 /-- Independent local branch rules. No constructor calls the branch stepper,
 runner, or a recursive language evaluator. Requests retain the entire cursor;
@@ -8722,6 +8856,10 @@ inductive Step {Context : Type} (policy : Policy) (program : Program)
       Step policy program cursor (.call .openCommit cursor)
   | committing (older : List Goal) (atGoal : cursor.control.goals = .commit :: older) :
       Step policy program cursor (.call (.commit cursor.control.cutBoundary) cursor)
+  | querying (location pattern template destination : Atom) (older : List Goal) (environment : Environment)
+      (atGoal : cursor.control.goals = .query location pattern template destination :: older)
+      (resolved : resolve cursor.control.bindings = some environment) :
+      Step policy program cursor (.call (.query (read environment location) pattern template destination) cursor)
   | restoring (boundary : Nat) (older : List Goal)
       (atGoal : cursor.control.goals = .restoreCommit boundary :: older) :
       Step policy program cursor
@@ -8782,6 +8920,7 @@ theorem Step.execution {Context : Type} {policy : Policy} {program : Program}
     (machine policy program).step cursor = some action := by
   cases source with
   | opening _ atGoal | committing _ atGoal | restoring _ _ atGoal => simp only [machine,atGoal]
+  | querying location pattern template destination older environment atGoal resolved => simp only [machine,atGoal,resolved]
   | expanded expression destination older next atGoal _ source =>
       simp only [machine, atGoal, source.execution]
   | accepted value destination older after atGoal source =>
@@ -8811,6 +8950,12 @@ theorem step_has_source {Context : Type} (policy : Policy) (program : Program)
     ∃ action, Step policy program cursor action ∧ (machine policy program).step cursor = some action := by
   classical
   cases licensed with
+  | querying location pattern template destination older atGoal =>
+      cases resolved : resolve cursor.control.bindings with
+      | none => exact ⟨_, .inconsistent (.querying location pattern template destination older atGoal)
+          ((resolve_none_iff _).mp resolved), by simp only [machine, atGoal, resolved]⟩
+      | some environment => exact ⟨_, .querying location pattern template destination older environment atGoal resolved,
+          by simp only [machine, atGoal, resolved]⟩
   | opening older atGoal => exact ⟨_,.opening older atGoal,by simp only [machine,atGoal]⟩
   | committing older atGoal => exact ⟨_,.committing older atGoal,by simp only [machine,atGoal]⟩
   | restoring boundary older atGoal => exact ⟨_,.restoring boundary older atGoal,by simp only [machine,atGoal]⟩
@@ -9092,6 +9237,8 @@ theorem Step.licensed {Context : Type} {policy : Policy} {program : Program}
     {cursor : Cursor Context} {action : Action Context} (source : Step policy program cursor action) :
     Licensed cursor.control := by
   cases source with
+  | querying location pattern template destination older environment atGoal resolved =>
+      exact .querying location pattern template destination older atGoal
   | opening older atGoal => exact .opening older atGoal
   | committing older atGoal => exact .committing older atGoal
   | restoring boundary older atGoal => exact .restoring boundary older atGoal
@@ -9109,6 +9256,7 @@ theorem Step.licensed {Context : Type} {policy : Policy} {program : Program}
           exact .conditional condition yes no destination older atGoal
       | argument value destination depth remaining atGoal => exact .argument value destination depth remaining atGoal
       | invocation head arguments destination older atGoal => exact .invocation head arguments destination older atGoal
+      | querying location pattern template destination older atGoal => exact .querying location pattern template destination older atGoal
   | argument value destination younger older action atGoal _ =>
       exact .argument value destination older.length (younger ++ older) (by simpa only [List.cons_append] using atGoal)
   | invalidDelimiter value destination depth remaining _ atGoal _ _ =>
@@ -9434,6 +9582,7 @@ inductive ActiveStep {Supply Context : Type} (fresh : FreshOperations Supply)
   | boundary (request : Boundary) (saved : Cursor Context)
       (source : Step policy program ⟨world, control, context⟩ (.call request saved))
       (notInvocation : ∀ head arguments destination, request ≠ .invoke head arguments destination)
+      (notQuery : ∀ location pattern template destination, request ≠ .query location pattern template destination)
       (notOpening : request ≠ .openCommit) (notCommit : ∀ retained, request ≠ .commit retained) :
       ActiveStep fresh policy program supply world scope parents control context origins pending
         (.call (.branch request) (supply, ⟨world, scope :: parents⟩))
@@ -9445,6 +9594,22 @@ inductive ActiveStep {Supply Context : Type} (fresh : FreshOperations Supply)
       (served : Invocation fresh program supply world scope parents control context origins pending
         head arguments destination older environment action) :
       ActiveStep fresh policy program supply world scope parents control context origins pending action
+  | queried (location pattern template destination : Atom) (older : List Goal) (environment : Environment)
+      (rows : List Atom) (selected : List (Nat × Control))
+      (atQuery : control.goals = .query location pattern template destination :: older)
+      (resolved : resolve control.bindings = some environment)
+      (readRows : (Effects.readHandle (read environment location) >>= world.state.read) = some rows)
+      (frontier : QueryFrontier (protectControl control (collectionSupport ⟨world, scope :: parents⟩))
+        pattern template destination older 0 rows selected) :
+      ActiveStep fresh policy program supply world scope parents control context origins pending
+        (.silent (supply, ⟨world, {scope with frontier :=
+          (selected.map (fun row => (row.2, context, origins ++ [row.1])) ++ pending)} :: parents⟩))
+  | queryFault (location pattern template destination : Atom) (older : List Goal) (environment : Environment)
+      (atQuery : control.goals = .query location pattern template destination :: older)
+      (resolved : resolve control.bindings = some environment)
+      (noSpace : (Effects.readHandle (read environment location) >>= world.state.read) = none) :
+      ActiveStep fresh policy program supply world scope parents control context origins pending
+        (.call (.fault .invalidSpace) (supply, ⟨world, scope :: parents⟩))
   | collapsed (expression destination : Atom) (older : List Goal)
       (atGoal : control.goals = .evaluate (.expression [.symbol "collapse", expression]) destination :: older) :
       ActiveStep fresh policy program supply world scope parents control context origins pending
@@ -9491,14 +9656,29 @@ theorem ActiveStep.execution {Context : Type} {policy : Policy} {program : Progr
   | answered value bindings reached localStep =>
       rw [source_step_scope policy program supply world scope parents control context origins pending frontier _ localStep]
       rfl
-  | boundary request saved localStep notInvocation notOpening notCommit =>
+  | boundary request saved localStep notInvocation notQuery notOpening notCommit =>
       rw [source_step_scope policy program supply world scope parents control context origins pending frontier _ localStep]
-      cases request <;> simp_all [installChild]
+      cases request with
+      | invoke head arguments destination => exact False.elim (notInvocation _ _ _ rfl)
+      | query location pattern template destination => exact False.elim (notQuery _ _ _ _ rfl)
+      | openCommit => exact False.elim (notOpening rfl)
+      | commit retained => exact False.elim (notCommit _ rfl)
+      | invalidEnvironment | invalidDelimiter => rfl
   | invocation head arguments destination older environment action atCall resolved notPrint served =>
       have localStep := Step.requested (cursor := (⟨world, control, context⟩ : Cursor Context))
         (policy := policy) (program := program) head arguments destination older environment atCall resolved notPrint
       rw [source_step_scope policy program supply world scope parents control context origins pending frontier _ localStep]
       simpa only [installChild, atCall] using served.execution frontier atCall resolved
+  | queried location pattern template destination older environment rows selected atQuery resolved readRows selectedRows =>
+      have localStep := Step.querying (cursor := (⟨world, control, context⟩ : Cursor Context))
+        (policy := policy) (program := program) location pattern template destination older environment atQuery resolved
+      rw [source_step_scope policy program supply world scope parents control context origins pending frontier _ localStep]
+      simp [installChild, atQuery, scopedQuery, readRows, queryWork, selectedRows.execution]
+  | queryFault location pattern template destination older environment atQuery resolved noSpace =>
+      have localStep := Step.querying (cursor := (⟨world, control, context⟩ : Cursor Context))
+        (policy := policy) (program := program) location pattern template destination older environment atQuery resolved
+      rw [source_step_scope policy program supply world scope parents control context origins pending frontier _ localStep]
+      simp [installChild, atQuery, scopedQuery, noSpace]
   | collapsed expression destination older atGoal =>
       exact scope_collapse_entry policy program supply world scope parents control context origins pending
         expression destination older frontier atGoal
@@ -9609,6 +9789,7 @@ theorem active_has_source {Supply Context : Type} (fresh : FreshOperations Suppl
       | equate value destination => exact .equation value destination older atGoal
       | branch condition yes no destination => exact .conditional condition yes no destination older atGoal
       | invoke head arguments destination => exact .invocation head arguments destination older atGoal
+      | query location pattern template destination => exact .querying location pattern template destination older atGoal
       | argumentReturn value destination depth => exact .argument value destination depth older atGoal
       | evaluate expression destination =>
         apply Licensed.evaluation expression destination older atGoal
@@ -9632,15 +9813,20 @@ theorem active_has_source {Supply Context : Type} (fresh : FreshOperations Suppl
   | accepted => exact ⟨_, .next _ original⟩
   | refused => exact ⟨_, .refused _ _ original⟩
   | returned => exact ⟨_, .answered _ _ _ original⟩
-  | inconsistent => exact ⟨_, .boundary _ _ original (by simp) (by simp) (by simp)⟩
-  | invalidDelimiter => exact ⟨_, .boundary _ _ original (by simp) (by simp) (by simp)⟩
+  | inconsistent => exact ⟨_, .boundary _ _ original (by simp) (by simp) (by simp) (by simp)⟩
+  | invalidDelimiter => exact ⟨_, .boundary _ _ original (by simp) (by simp) (by simp) (by simp)⟩
+  | querying location pattern template destination older environment atQuery resolved =>
+      cases readRows : (Effects.readHandle (read environment location) >>= world.state.read) with
+      | none => exact ⟨_, .queryFault location pattern template destination older environment atQuery resolved readRows⟩
+      | some rows => exact ⟨_, .queried location pattern template destination older environment rows _ atQuery resolved readRows
+          (queryChoices_has_source _ _ _ _ _ _ _)⟩
   | printed => exact ⟨_, .next _ original⟩
   | argument value destination younger older action atGoal returned =>
       cases returned with
       | ordinary => exact ⟨_, .next _ original⟩
       | propagated => exact ⟨_, .next _ original⟩
       | refused => exact ⟨_, .refused _ _ original⟩
-      | invalid => exact ⟨_, .boundary _ _ original (by simp) (by simp) (by simp)⟩
+      | invalid => exact ⟨_, .boundary _ _ original (by simp) (by simp) (by simp) (by simp)⟩
   | requested head arguments destination older environment atGoal resolved notPrint =>
       obtain ⟨action, served⟩ := invocation_has_source fresh program supply world scope parents control context origins pending
         head arguments destination older environment

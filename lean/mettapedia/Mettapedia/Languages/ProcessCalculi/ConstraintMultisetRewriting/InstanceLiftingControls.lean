@@ -88,13 +88,13 @@ theorem count_instance_valid :
       ((guarded countCheck).map (A.apply zero)) (SubstitutionStability.configuration A zero guardWorld) := by
   apply image_valid_of_check zero countCheck
   intro residual
-  change (Check.region A residual (fun occurrence => A.apply zero (guardLabel occurrence))
+  change (Check.matches A residual (fun occurrence => A.apply zero (guardLabel occurrence))
     guardWorld.present (A.apply zero (.var 0))).card = 1
-  have region : Check.region A residual (fun occurrence => A.apply zero (guardLabel occurrence))
+  have region : Check.matches A residual (fun occurrence => A.apply zero (guardLabel occurrence))
       guardWorld.present (A.apply zero (.var 0)) = {0} := by
     classical
     ext occurrence
-    simp only [Check.region, Finset.mem_filter]
+    simp only [Check.matches, Finset.mem_filter]
     constructor
     · exact fun member => by simpa [guardWorld] using member.1
     · intro member
@@ -109,7 +109,7 @@ theorem count_source_refused : ¬ makeOutput.Valid A guardLabel (guarded countCh
   have asked := valid.checks countCheck (by simp [guarded]) one (by
     intro equation member
     simp [Selection.problem, Selection.equations, makeOutput, guardWorld, guarded] at member)
-  have region : Check.region A one guardLabel guardWorld.present (.var 0) = ∅ := by
+  have region : Check.matches A one guardLabel guardWorld.present (.var 0) = ∅ := by
     classical
     ext occurrence
     constructor
@@ -121,7 +121,7 @@ theorem count_source_refused : ¬ makeOutput.Valid A guardLabel (guarded countCh
       cases same
     · intro member
       cases member
-  change (Check.region A one guardLabel guardWorld.present (.var 0)).card = 1 at asked
+  change (Check.matches A one guardLabel guardWorld.present (.var 0)).card = 1 at asked
   simp [region] at asked
 
 theorem check_free_nonidentity_instance_lifts :

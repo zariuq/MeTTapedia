@@ -1,0 +1,33 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ScopedSubtypeReadWorlds
+
+/-! # Stateful subtype-query coordinate and retention audit -/
+
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadWorlds.extend_variant_family
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadWorlds.list_rename_agrees
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadWorlds.empty_related
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadWorlds.allocated_related
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadWorlds.remember_related
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadWorlds.ResultRelated.change_base
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadWorlds.ResultRelated.restrict
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadWorlds.append_related
+
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ScopedSubtypeReadCoordinates.variable_variant
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ScopedSubtypeReadCoordinates.extend_fresh_name
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ScopedSubtypeReadCoordinates.chosen_name_extension
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ScopedSubtypeReadCoordinates.pattern_rename
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ScopedSubtypeReadCoordinates.readBack_at_renamed
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ScopedSubtypeReadCoordinates.subtypeRow_rename
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ScopedSubtypeReadCoordinates.possibleRow_rename
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ScopedSubtypeReadCoordinates.Controls.selected_unifier_retains_the_shared_rule_coordinate
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ScopedSubtypeReadCoordinates.Controls.unresolved_result_is_still_refused_after_renaming
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ScopedSubtypeReadCoordinates.Controls.reusing_the_output_name_can_capture_the_input
+
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ScopedSubtypeReadWorlds.rows_append
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ScopedSubtypeReadWorlds.one_row_coordinates
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ScopedSubtypeReadWorlds.rows_coordinates
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ScopedSubtypeReadWorlds.query_coordinates
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ScopedSubtypeReadWorlds.retained_query_equal
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ScopedSubtypeReadWorlds.Controls.actual_query_keeps_duplicate_supertypes
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ScopedSubtypeReadWorlds.Controls.failed_candidate_does_not_erase_a_later_answer
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ScopedSubtypeReadWorlds.Controls.failed_candidate_still_allocates
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.ScopedSubtypeReadWorlds.Controls.nonretained_result_exposes_private_coordinates

@@ -1,4 +1,6 @@
 import Mettapedia.Logic.Prolog.SourceSignature
+import Mettapedia.Logic.Prolog.ReaderEscape
+import Mettapedia.Logic.Prolog.ReaderUnicode
 
 /-!
 # SWI-shaped Prolog source lexer
@@ -15,6 +17,12 @@ forms return located errors rather than being silently repaired.
 -/
 
 namespace Mettapedia.Logic.Prolog.ReaderLexer
+
+/-- Prolog layout includes vertical tab and form feed. The syntaxGSLT's
+`PlSpace` class uses these same six codepoints. -/
+def isLayout (c : Char) : Bool :=
+  decide (c = ' ') || decide (c = '\t') || decide (c = '\r') ||
+    decide (c = '\n') || decide (c = '\u000b') || decide (c = '\u000c')
 
 structure Position where
   offset : Nat
@@ -91,7 +99,7 @@ private def takeWhile (predicate : Char -> Bool) :
         ([], character :: rest)
 
 private def isIdentifierContinue (character : Char) : Bool :=
-  character.isAlphanum || character = '_'
+  character.isAlphanum || character = '_' || ReaderUnicode.isNameScalar character
 
 def isGraphic (character : Char) : Bool :=
   ['#', '$', '&', '*', '+', '-', '.', '/', ':', '<', '=', '>', '?', '@', '\\', '^', '~'].contains character
@@ -116,7 +124,10 @@ private def takeNumberTail : Char -> List Char -> List Char × List Char
         if character = '\\' then
           match rest with
           | [] => ([character], [])
-          | escaped :: tail => ([character, escaped], tail)
+          | escaped :: tail =>
+            match ReaderEscape.numeric? (escaped :: tail) with
+            | some decoded => (character :: decoded.consumed, decoded.rest)
+            | none => ([character, escaped], tail)
         else
           ([character], rest)
       else if character = '.' then
@@ -178,10 +189,16 @@ private def scanQuoted : Nat -> Char -> Position -> List Char -> Position ->
                 ((position.advance character).advance escaped) reversed
             else
               match simpleEscape escaped with
-              | none => .error {
-                  position := position.advance character
-                  kind := .unsupportedEscape escaped
-                }
+              | none =>
+                  match ReaderEscape.numeric? (escaped :: tail) with
+                  | some decoded =>
+                      scanQuoted fuel delimiter start decoded.rest
+                        ((position.advance character).advanceMany decoded.consumed)
+                        (decoded.value :: reversed)
+                  | none => .error {
+                      position := position.advance character
+                      kind := .unsupportedEscape escaped
+                    }
               | some decoded =>
                   scanQuoted fuel delimiter start tail
                     ((position.advance character).advance escaped)
@@ -217,7 +234,7 @@ private def token (kind : Kind) (start stop : Position) : Token :=
 private def fullStopFollows : List Char -> Bool
   | [] => true
   | '/' :: '*' :: _ => true
-  | next :: _ => next.isWhitespace || next = '%'
+  | next :: _ => ReaderLexer.isLayout next || next = '%'
 
 private def scanAux : Nat -> List Char -> Position ->
     Except Error (List Token)
@@ -226,8 +243,8 @@ private def scanAux : Nat -> List Char -> Position ->
       .error { position, kind := .exhaustedInputMeasure }
   | _ + 1, [], _ => .ok []
   | fuel + 1, character :: rest, position =>
-      if character.isWhitespace then
-        let (layout, suffix) := takeWhile Char.isWhitespace rest
+      if ReaderLexer.isLayout character then
+        let (layout, suffix) := takeWhile ReaderLexer.isLayout rest
         scanAux fuel suffix
           (position.advanceMany (character :: layout))
       else if character = '%' then
@@ -292,11 +309,11 @@ private def scanAux : Nat -> List Char -> Position ->
                 let following <- scanAux fuel suffix nextPosition
                 pure (token (.number (String.ofList lexeme)) position nextPosition ::
                   following)
-            else if first.isAlpha || first = '_' then
+            else if first.isAlpha || first = '_' || ReaderUnicode.isNameScalar first then
               let (more, suffix) := takeWhile isIdentifierContinue tail
               let lexeme := first :: more
               let nextPosition := position.advanceMany lexeme
-              let kind := if first.isUpper || first = '_' then
+              let kind := if first.isUpper || first = '_' || ReaderUnicode.isUpperScalar first.toNat then
                   Kind.variable (String.ofList lexeme)
                 else Kind.atom (String.ofList lexeme)
               do
@@ -329,5 +346,19 @@ where
 def scan (source : String) : Except Error (List Token) :=
   let characters := source.toList
   scanAux characters.length characters Position.initial
+
+example : (scan "\u000b p.\u000c").map (List.map (·.kind)) =
+    .ok [.atom "p", .punctuation .fullStop] := by decide_cbv
+example : (scan "'\\x3bb\\'.").map (List.map (·.kind)) =
+    .ok [.quotedAtom "λ", .punctuation .fullStop] := by decide_cbv
+example : (scan "'\\141\\'.").map (List.map (·.kind)) =
+    .ok [.quotedAtom "a", .punctuation .fullStop] := by decide_cbv
+set_option maxRecDepth 8192 in
+/-- Unicode names: SWI reads `café` and `λ` as atoms and `Été` as a variable. -/
+example : (scan "w(café, λ, Été).").map (List.map (·.kind)) =
+    .ok [.atom "w", .punctuation .leftParen, .atom "café", .punctuation .comma, .atom "λ",
+      .punctuation .comma, .variable "Été", .punctuation .rightParen, .punctuation .fullStop] := by decide_cbv
+/-- Negative control: an ideographic space is not a name character. -/
+example : (scan "a\u3000b.").toOption = none := by decide_cbv
 
 end Mettapedia.Logic.Prolog.ReaderLexer

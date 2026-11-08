@@ -22,7 +22,7 @@ theorem coversMatches_iff_all_model_counts [DecidableEq O] (A : SubstitutionActi
     (included : visible ⊆ world) :
     CoversMatches A equations label visible world pattern ↔
       ∀ σ, A.Models σ equations →
-        (region A σ label visible pattern).card = (region A σ label world pattern).card := by
+        («matches» A σ label visible pattern).card = («matches» A σ label world pattern).card := by
   classical
   constructor
   · intro covers σ model

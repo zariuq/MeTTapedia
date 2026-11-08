@@ -37,11 +37,11 @@ theorem problem_map (A : SubstitutionAction T S) (θ : S) (label : O → T)
 omit [DecidableEq O] in
 private theorem region_map (A : SubstitutionAction T S) (outer inner : S) (label : O → T)
     (world : Finset O) (pattern : T) :
-    Check.region A outer (fun o => A.apply inner (label o)) world (A.apply inner pattern) =
-      Check.region A (A.compose outer inner) label world pattern := by
+    Check.matches A outer (fun o => A.apply inner (label o)) world (A.apply inner pattern) =
+      Check.matches A (A.compose outer inner) label world pattern := by
   classical
   ext o
-  simp only [Check.region, Finset.mem_filter, A.apply_compose]
+  simp only [Check.matches, Finset.mem_filter, A.apply_compose]
 
 omit [DecidableEq O] in
 theorem check_map (A : SubstitutionAction T S) (outer inner : S) (label : O → T)

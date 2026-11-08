@@ -44,7 +44,7 @@ def rawRule : NamedSpaces.LocatedRule (SchematicReach.Closed raw) :=
   ⟨[],[],[(rawVariable 0,symbol 10)],[],[(SchematicReach.name 1,rawTemplate)]⟩
 def rule := rawRule.toRule (SchematicReach.spaceTerms raw)
 def addresses (_ : Nat) : SchematicReach.Closed captures := SchematicReach.name 2
-def payloads (_ : Nat) : ContextualStoredRows.Row locals captures [] () := .live (generator captures 0)
+def payloads (_ : Nat) : ContextualStoredRows.Row locals captures [] () := .shared (generator captures 0)
 def rows := SchematicReach.placedRows locals captures addresses payloads
 def initial : Configuration (SchematicReach.Closed captures) Nat := ⟨[],{7}⟩
 def inventory : Inventory locals captures (O := Nat) [] () := ⟨initial,rows,[],[]⟩
@@ -105,15 +105,15 @@ theorem covered_rule : RuleCovered (privateScopes scopes) ∅ rule := by
   apply (ruleRoots_covered_iff (privateScopes scopes) ∅ rule).mp
   decide +kernel
 
-theorem admission : ContextualTransportedActivation.Admission locals captures ∅ selected rule rows initial outputs := by
+theorem admission : ContextualGuardedStep.Requirements locals captures ∅ selected rule rows initial outputs := by
   refine ⟨by decide,by decide,rfl,rfl,?_,by decide,?_⟩
   · with_unfolding_all rfl
   · intro check member
     cases member
 
-def liveTarget := ContextualExecution.computedTarget locals start rule selected outputs covered_rule admission update
+def sharedTarget := ContextualExecution.computedTarget locals start rule selected outputs covered_rule admission update
 
-def execution : ContextualExecution.Firing locals start liveTarget where
+def execution : ContextualExecution.Firing locals start sharedTarget where
   rule := rule
   ruleCovered := covered_rule
   selection := selected
@@ -126,7 +126,7 @@ def execution : ContextualExecution.Firing locals start liveTarget where
   destination := rfl
 
 def firing (reusable : Bool) : ContextualPublication.Firing (before := start) :=
-  ⟨liveTarget,execution,fun _ => reusable⟩
+  ⟨sharedTarget,execution,fun _ => reusable⟩
 
 def answer (value : Nat) {Next : Type} (next : Next → MetaArity base) : SchematicReach.Closed next :=
   SchematicReach.place (SchematicReach.name 1) (pair (symbol 10) (pair (symbol value) (symbol value)))
@@ -157,7 +157,7 @@ theorem physical_result_is_one_committed_output :
     (firing true).target.inventory.configuration.present = {7,99} := by decide +kernel
 
 theorem query_rows_do_not_rewrite_the_retained_owner :
-    (firing true).target.inventory.rows 7 = .live
+    (firing true).target.inventory.rows 7 = .shared
       (instantiate (ContextualComputedFreshFrame.includeSource update)
         (SchematicReach.place (SchematicReach.name 2)
           (instantiate (ContextualSelectionViews.capturedTarget locals captures) (generator captures 0)))) := by
@@ -198,14 +198,14 @@ theorem a_single_read_keeps_the_repeated_variable_equal {Next : Type}
   have impossible : (20 : Nat) = 30 := SchematicReach.Controls.symbol_injective (repeated.1.symm.trans repeated.2)
   omega
 
-theorem live_publication_keeps_one_shared_reading {Next : Type}
+theorem shared_publication_keeps_one_shared_reading {Next : Type}
     (next : Next → MetaArity base) (candidate : Assignment (firing false).target.declarations next) :
     ¬ (ContextualGuardMatching.Matches (privateFamily locals update.declaration) candidate (answer 20 next)
         ((firing false).target.inventory.rows 99) ∧
       ContextualGuardMatching.Matches (privateFamily locals update.declaration) candidate (answer 30 next)
         ((firing false).target.inventory.rows 99)) := by
   rintro ⟨first,second⟩
-  rw [(firing false).live_row (by decide) rfl] at first second
+  rw [(firing false).shared_row (by decide) rfl] at first second
   change answer 20 next = _ at first
   change answer 30 next = _ at second
   have same := first.trans second.symm
@@ -263,7 +263,7 @@ theorem mixed_covered : RuleCovered (privateScopes scopes) ∅ mixedRule := by
   apply (ruleRoots_covered_iff (privateScopes scopes) ∅ mixedRule).mp
   decide +kernel
 
-theorem mixed_admitted : ContextualTransportedActivation.SemanticAdmission locals captures ∅ mixedSelection
+theorem mixed_admitted : ContextualGuardedStep.Valid locals captures ∅ mixedSelection
     mixedRule rows initial outputs := by
   refine ⟨⟨by decide,by decide,rfl,rfl,?_,by decide,?_⟩,?_⟩
   · with_unfolding_all rfl

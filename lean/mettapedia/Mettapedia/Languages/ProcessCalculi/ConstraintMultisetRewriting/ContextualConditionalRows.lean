@@ -1,11 +1,11 @@
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualResidualAnswers
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualConditionalAnswers
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualExtensionSplitting
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualViewNaturality
 
 /-!
 # Stored values with latent equations in the same private frame
 
-The value retains the existing schema/live representation. Latent equations
+The value retains the existing schema/shared representation. Latent equations
 use that same row-local declaration family and its declared captures. A use
 opens the value and equations with one assignment. Ordinary stored rows are
 the empty-equation fragment. Equations may live under different object
@@ -59,10 +59,10 @@ theorem ofStored_matches_iff (candidate : Assignment captures next) {Γ : Ctx S}
         exact ⟨extension, images, same⟩
       · rintro ⟨extension, images, same⟩
         exact ⟨extension, images, (by intro equation member; cases member), same⟩
-  | live value =>
+  | shared value =>
       constructor
       · rintro ⟨extension, images, _, same⟩
-        have fixed := instance_on_live_value locals images extension.assignment candidate value
+        have fixed := instance_on_shared_value locals images extension.assignment candidate value
         exact (extension.instantiate_injective (fixed.symm.trans same)).symm
       · intro same
         let extension := Extension.withLocals locals next
@@ -70,7 +70,7 @@ theorem ofStored_matches_iff (candidate : Assignment captures next) {Γ : Ctx S}
           (by intro equation member; cases member), ?_⟩
         change instantiate (instanceAssignment locals _ extension.assignment candidate)
           (instantiate (ContextualSelectionViews.capturedSource locals captures) value) = _
-        exact (instance_on_live_value locals _ extension.assignment candidate value).trans
+        exact (instance_on_shared_value locals _ extension.assignment candidate value).trans
           (congrArg (instantiate extension.assignment) same).symm
 
 theorem matches_map_iff (change : Assignment captures later) (candidate : Assignment later next)

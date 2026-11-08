@@ -1,0 +1,36 @@
+import Mettapedia.Languages.MeTTa.PeTTa.Bridges.ScopedReturnDepth
+import Mettapedia.Languages.MeTTa.PeTTa.Bridges.ScopedReturnEntry
+
+/-! Audit of return-syntax, fresh-entry and nested-caller components.
+The all-transition compound return theorem is not supplied by this module. -/
+
+open Mettapedia.Languages.MeTTa.PeTTa.Bridges
+
+#print axioms ScopedReturnSyntax.checksSurfaceReturn_sound
+#print axioms ScopedReturnSyntax.Returns.rename
+#print axioms ScopedReturnSyntax.sequence_lowering_returns
+#print axioms ScopedReturnSyntax.checked_sequence_lowering
+#print axioms ScopedReturnSyntax.query_frontier_returns
+#print axioms ScopedReturnSyntax.selected_case_returns
+#print axioms ScopedReturnSyntax.Controls.nested_missing_else_query_is_recognized
+#print axioms ScopedReturnSyntax.Controls.one_bad_return_arm_is_rejected
+#print axioms ScopedReturnSyntax.Controls.malformed_sequence_recognition_is_not_lowering
+#print axioms ScopedReturnEntry.fresh_recipe_read
+#print axioms ScopedReturnEntry.fresh_recipe_fixed
+#print axioms ScopedReturnEntry.selected_return_contract
+#print axioms ScopedReturnEntry.selected_ground_return_contract
+#print axioms ScopedReturnDepth.attachAt_zero
+#print axioms ScopedReturnDepth.attachAt_world
+#print axioms ScopedReturnDepth.attachScopes_length
+#print axioms ScopedReturnDepth.immediate_child_frontier_unchanged
+#print axioms ScopedReturnDepth.immediate_child_caller_attached
+#print axioms ScopedReturnDepth.childName_attach
+#print axioms ScopedReturnDepth.collapseChild_attach
+#print axioms ScopedReturnDepth.collection_entry_moves_obligation_to_saved_caller
+#print axioms ScopedReturnDepth.allocated_return_keeps_pending_caller
+#print axioms ScopedReturnDepth.copied_return_keeps_pending_caller
+#print axioms ScopedReturnDepth.attachSavedCaller_support
+#print axioms ScopedReturnDepth.attachAt_one_support
+#print axioms ScopedReturnDepth.finishAllocated_attach
+#print axioms ScopedReturnDepth.collapse_entry_attach
+#print axioms ScopedReturnDepth.active_child_is_not_the_suspended_caller

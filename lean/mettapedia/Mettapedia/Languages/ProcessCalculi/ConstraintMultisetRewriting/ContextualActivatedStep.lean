@@ -112,7 +112,7 @@ def resultRows [DecidableEq O] (selection : Selection O) {Γ : Ctx S} {sort : S.
     (outputs : O → Term (signature S (target locals captures)) Γ sort)
     (rows : O → ContextualStoredRows.Row locals captures Γ sort) :
     O → ContextualStoredRows.Row locals (target locals captures) Γ sort :=
-  fun occurrence => if occurrence ∈ selection.made then .live (outputs occurrence)
+  fun occurrence => if occurrence ∈ selection.made then .shared (outputs occurrence)
     else (rows occurrence).map locals (ContextualSelectionViews.capturedTarget locals captures)
 
 structure Valid [DecidableEq O] (occupied : Finset Nat) (selection : Selection O)
@@ -129,7 +129,7 @@ structure Valid [DecidableEq O] (occupied : Finset Nat) (selection : Selection O
   outputs : selection.made.map outputLabel = (prepared locals captures occupied selection rule rows).rule.produce
   occurrences : Enabled outputLabel before.present
     (selection.commit (T := Term (signature S (target locals captures)) Γ sort))
-  consistent : (ContextualFamilies.action (target locals captures) Γ sort).Consistent
+  solvable : ContextualFrameUnifier.Solvable
     (problem locals captures occupied selection rule rows before)
 
 def Step [DecidableEq O] (occupied : Finset Nat) {Γ : Ctx S} {sort : S.Srt}
@@ -299,11 +299,11 @@ theorem Valid.retained_row_transports_captures [DecidableEq O]
       (by simpa [Selection.commit] using made) old
   exact if_neg notMade
 
-theorem produced_row_is_live [DecidableEq O] (selection : Selection O) {Γ : Ctx S} {sort : S.Srt}
+theorem produced_row_is_shared [DecidableEq O] (selection : Selection O) {Γ : Ctx S} {sort : S.Srt}
     (outputs : O → Term (signature S (target locals captures)) Γ sort)
     (rows : O → ContextualStoredRows.Row locals captures Γ sort)
     {occurrence : O} (made : occurrence ∈ selection.made) :
-    resultRows locals captures selection outputs rows occurrence = .live (outputs occurrence) :=
+    resultRows locals captures selection outputs rows occurrence = .shared (outputs occurrence) :=
   if_pos made
 
 theorem produced_occurrence_is_present [DecidableEq O] (occupied : Finset Nat) (selection : Selection O)
@@ -317,7 +317,7 @@ theorem produced_occurrence_is_present [DecidableEq O] (occupied : Finset Nat) (
     (c := selection.commit (T := Term (signature S (target locals captures)) Γ sort))
     (by simpa [Selection.commit] using made)
 
-theorem Step.consistent [DecidableEq O] {occupied : Finset Nat} {Γ : Ctx S} {sort : S.Srt}
+theorem Step.solvable [DecidableEq O] {occupied : Finset Nat} {Γ : Ctx S} {sort : S.Srt}
     {rule : RuleInstance (Term (signature S (source locals captures)) Γ sort)}
     {rows : O → ContextualStoredRows.Row locals captures Γ sort}
     {before : Configuration (Term (signature S captures) Γ sort) O}
@@ -326,9 +326,9 @@ theorem Step.consistent [DecidableEq O] {occupied : Finset Nat} {Γ : Ctx S} {so
     {afterRows : O → ContextualStoredRows.Row locals (target locals captures) Γ sort}
     {afterOccupied : Finset Nat}
     (step : Step locals captures occupied rule rows before outputs after afterRows afterOccupied) :
-    (ContextualFamilies.action (target locals captures) Γ sort).Consistent after.equations := by
+    ContextualFrameUnifier.Solvable after.equations := by
   obtain ⟨selection, valid, rfl, _, _⟩ := step
-  exact valid.consistent
+  exact valid.solvable
 
 theorem Step.refines_old_frame [DecidableEq O] {Next : Type} (next : Next → MetaArity S)
     {occupied : Finset Nat} {Γ : Ctx S} {sort : S.Srt}

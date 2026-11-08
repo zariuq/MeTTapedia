@@ -30,12 +30,12 @@ def mkLet : Tm → Tm → Tm
   | .let_ e (.var 0), b => mkLet e b
   | e, b => .let_ e b
 
-/-- A strict call at the root, with `id`, `size` and `min` applied. -/
-def mkCall (Γ : Facts) : Name → List Tm → Tm
+/-- A strict call at the root, with `id`, `size` and `min` applied.  No rule reads the
+facts. -/
+def mkCall (_Γ : Facts) : Name → List Tm → Tm
   | .id, [x] => x
   | .size, [e] => mkLet e (.call .size [.var 0])
-  | .min, [a, b] =>
-    if IntAtom Γ a && IntAtom Γ b then .if3 (.call .lt [a, b]) a b else .call .min [a, b]
+  | .min, [a, b] => mkLet a (mkLet (shift 0 b) minIf)
   | f, args => .call f args
 
 /-- A `superpose` at the root, with `sup1` applied. -/
@@ -161,6 +161,218 @@ theorem mkLet_eta : ∀ (x b : Tm), mkLet (mkLet x (.var 0)) b = mkLet x b
   | .iterC _ _ _, b | .iterB _ _ _, b => by
     rw [mkLet_plain _ (.var 0) (by simp) (by simp), mkLet_letEta]
 
+/-! ## Shifting commutes with the normalizer -/
+
+theorem shifts_eq_map (c : ℕ) (xs : List Tm) : shifts c xs = xs.map (shift c) := by
+  induction xs with
+  | nil => rfl
+  | cons x xs ih => simp [shifts, ih]
+
+theorem shift_var_lt {c k : ℕ} (h : k < c) : shift c (.var k) = .var k := by
+  simp [shift, h]
+
+theorem shift_var_eq_zero {c : ℕ} {t : Tm} (h : shift (c + 1) t = .var 0) : t = .var 0 := by
+  cases t with
+  | var k =>
+    simp only [shift, Tm.var.injEq] at h
+    split at h
+    · rw [h]
+    · omega
+  | _ => simp [shift] at h
+
+theorem shift_size_var0 {c : ℕ} {t : Tm} (h : shift (c + 1) t = .call .size [.var 0]) :
+    t = .call .size [.var 0] := by
+  cases t with
+  | call f args =>
+    simp only [shift, Tm.call.injEq] at h
+    obtain ⟨rfl, h⟩ := h
+    rcases args with _ | ⟨x, _ | ⟨y, rest⟩⟩
+    · simp [shifts] at h
+    · simp only [shifts, List.cons.injEq, and_true] at h
+      rw [shift_var_eq_zero h]
+    · simp [shifts] at h
+  | _ => simp [shift] at h
+
+/-- Shifting commutes with `mkLet`. -/
+theorem shift_mkLet (c : ℕ) : ∀ (e b : Tm), shift c (mkLet e b) = mkLet (shift c e) (shift (c + 1) b)
+  | .var j, b => by
+    by_cases hb : b = .call .size [.var 0]
+    · subst hb
+      rw [mkLet_var_size]
+      simp only [shift, shifts, show (0 : ℕ) < c + 1 by omega, if_true]
+      rw [mkLet_var_size]
+    · rw [mkLet_var_of_ne j b hb]
+      have hb' : shift (c + 1) b ≠ .call .size [.var 0] := fun h => hb (shift_size_var0 h)
+      simp only [shift]
+      rw [mkLet_var_of_ne _ _ hb']
+  | .let_ e x, b => by
+    by_cases hx : x = .var 0
+    · subst hx
+      rw [mkLet_letEta]
+      simp only [shift, show (0 : ℕ) < c + 1 by omega, if_true]
+      rw [mkLet_letEta, shift_mkLet c e b]
+    · rw [mkLet_plain (.let_ e x) b (by simp) (by simp [hx])]
+      have hx' : shift (c + 1) x ≠ .var 0 := fun h => hx (shift_var_eq_zero h)
+      simp only [shift]
+      rw [mkLet_plain _ _ (by simp) (by simp [hx'])]
+  | .lit _, b | .quote _, b | .tup _, b | .empty, b | .if3 _ _ _, b | .if2 _ _, b
+  | .letStar _ _, b | .case_ _ _, b | .sup _, b | .once _, b | .call _ _, b
+  | .iterC _ _ _, b | .iterB _ _ _, b => by
+    rw [mkLet_plain _ b (by simp) (by simp)]
+    simp only [shift]
+    rw [mkLet_plain _ _ (by simp) (by simp)]
+
+mutual
+/-- Lifting at two cutoffs in either order. -/
+theorem shift_comm : ∀ (i j : ℕ) (t : Tm), i ≤ j →
+    shift (j + 1) (shift i t) = shift i (shift j t)
+  | i, j, .var k, h => by
+    simp only [shift]
+    by_cases h1 : k < i
+    · have h2 : k < j := by omega
+      simp [h1, h2, show k < j + 1 by omega]
+    · by_cases h2 : k < j
+      · simp [h1, h2, show k + 1 < j + 1 by omega]
+      · simp [h1, h2, show ¬ k + 1 < j + 1 by omega, show ¬ k + 1 < i by omega]
+  | _, _, .lit _, _ => rfl
+  | _, _, .quote _, _ => rfl
+  | i, j, .tup xs, h => by simp only [shift, shifts_comm i j xs h]
+  | _, _, .empty, _ => rfl
+  | i, j, .if3 a b d, h => by
+    simp only [shift, shift_comm i j a h, shift_comm i j b h, shift_comm i j d h]
+  | i, j, .if2 a b, h => by simp only [shift, shift_comm i j a h, shift_comm i j b h]
+  | i, j, .let_ e b, h => by
+    simp only [shift, shift_comm i j e h, shift_comm (i + 1) (j + 1) b (by omega)]
+  | i, j, .letStar es b, h => by
+    simp only [shift, shiftLS_comm i j es h, shiftLS_length]
+    rw [show j + 1 + es.length = j + es.length + 1 by omega,
+      shift_comm (i + es.length) (j + es.length) b (by omega)]
+  | i, j, .case_ e alts, h => by
+    simp only [shift, shift_comm i j e h, shiftAlts_comm i j alts h]
+  | i, j, .sup xs, h => by simp only [shift, shifts_comm i j xs h]
+  | i, j, .once b, h => by simp only [shift, shift_comm i j b h]
+  | i, j, .call f args, h => by simp only [shift, shifts_comm i j args h]
+  | i, j, .iterC k ops f, h => by simp only [shift, shifts_comm i j ops h]
+  | i, j, .iterB k ops b, h => by
+    simp only [shift, shifts_comm i j ops h]
+    rw [show j + 1 + k.binders = j + k.binders + 1 by omega,
+      shift_comm (i + k.binders) (j + k.binders) b (by omega)]
+theorem shifts_comm : ∀ (i j : ℕ) (xs : List Tm), i ≤ j →
+    shifts (j + 1) (shifts i xs) = shifts i (shifts j xs)
+  | _, _, [], _ => rfl
+  | i, j, x :: xs, h => by simp only [shifts, shift_comm i j x h, shifts_comm i j xs h]
+theorem shiftLS_comm : ∀ (i j : ℕ) (es : List Tm), i ≤ j →
+    shiftLS (j + 1) (shiftLS i es) = shiftLS i (shiftLS j es)
+  | _, _, [], _ => rfl
+  | i, j, e :: es, h => by
+    simp only [shiftLS, shift_comm i j e h]
+    rw [show j + 1 + 1 = (j + 1) + 1 from rfl, shiftLS_comm (i + 1) (j + 1) es (by omega)]
+theorem shiftAlts_comm : ∀ (i j : ℕ) (alts : List (Pat × Tm)), i ≤ j →
+    shiftAlts (j + 1) (shiftAlts i alts) = shiftAlts i (shiftAlts j alts)
+  | _, _, [], _ => rfl
+  | i, j, (p, b) :: rest, h => by
+    simp only [shiftAlts]
+    rw [show j + 1 + p.binders = j + p.binders + 1 by omega,
+      shift_comm (i + p.binders) (j + p.binders) b (by omega), shiftAlts_comm i j rest h]
+end
+
+theorem shift_minIf (c : ℕ) : shift (c + 2) minIf = minIf := by
+  simp [minIf, shift, shifts]
+
+theorem shifts_vars (c : ℕ) (k : Iter) : shifts (c + k.binders) k.vars = k.vars := by
+  cases k <;> simp [Iter.vars, Iter.binders, shifts, shift]
+
+/-- Shifting commutes with `mkCall`, whatever the facts. -/
+theorem shift_mkCall (Γ Γ' : Facts) (c : ℕ) (f : Name) (args : List Tm) :
+    shift c (mkCall Γ f args) = mkCall Γ' f (shifts c args) := by
+  match f, args with
+  | .id, [x] => simp [mkCall, shifts]
+  | .size, [e] =>
+    simp only [mkCall, shifts, shift_mkLet]
+    simp [shift, shifts]
+  | .min, [a, b] =>
+    simp only [mkCall, shifts, shift_mkLet]
+    rw [show c + 1 + 1 = c + 2 from rfl, shift_minIf, shift_comm 0 c b (Nat.zero_le c)]
+  | .id, [] => rfl
+  | .id, _ :: _ :: _ => rfl
+  | .size, [] => rfl
+  | .size, _ :: _ :: _ => rfl
+  | .min, [] => rfl
+  | .min, [_] => rfl
+  | .min, _ :: _ :: _ :: _ => rfl
+  | .lt, _ => rfl
+  | .le, _ => rfl
+  | .user _, _ => rfl
+
+theorem shift_mkSup (c : ℕ) (xs : List Tm) : shift c (mkSup xs) = mkSup (shifts c xs) := by
+  match xs with
+  | [x] => rfl
+  | [] => rfl
+  | _ :: _ :: _ => rfl
+
+theorem shift_mkCase (c : ℕ) (e : Tm) (alts : List (Pat × Tm)) :
+    shift c (mkCase e alts) = mkCase (shift c e) (shiftAlts c alts) := by
+  match alts with
+  | [(.bind, b)] => simp [mkCase, shiftAlts, Pat.binders, shift_mkLet]
+  | [] => rfl
+  | [(.lit _, _)] => rfl
+  | (.bind, _) :: (_, _) :: _ => rfl
+  | (.lit _, _) :: (_, _) :: _ => rfl
+
+mutual
+/-- **The normalizer commutes with shifting**, whatever the facts. -/
+theorem N_shift : ∀ (Γ Γ' : Facts) (c : ℕ) (t : Tm), N Γ' (shift c t) = shift c (N Γ t)
+  | _, _, _, .var _ => rfl
+  | _, _, _, .lit _ => rfl
+  | _, _, _, .quote _ => rfl
+  | Γ, Γ', c, .tup xs => by simp only [shift, N, Ns_shift Γ Γ' c xs]
+  | _, _, _, .empty => rfl
+  | Γ, Γ', c, .if3 a b d => by
+    simp only [shift, N, N_shift Γ Γ' c a, N_shift Γ Γ' c b, N_shift Γ Γ' c d]
+  | Γ, Γ', c, .if2 a b => by simp only [shift, N, N_shift Γ Γ' c a, N_shift Γ Γ' c b]
+  | Γ, Γ', c, .let_ e b => by
+    simp only [shift, N, N_shift Γ Γ' c e, N_shift (push Γ) (push Γ') (c + 1) b, shift_mkLet]
+  | Γ, Γ', c, .letStar es b => by
+    simp only [shift, N]
+    exact NLS_shift Γ Γ' c es b (fun Γ₁ Γ₂ c' => N_shift Γ₁ Γ₂ c' b)
+  | Γ, Γ', c, .case_ e alts => by
+    simp only [shift, N, N_shift Γ Γ' c e, NAlts_shift Γ Γ' c alts, shift_mkCase]
+  | Γ, Γ', c, .sup xs => by simp only [shift, N, Ns_shift Γ Γ' c xs, shift_mkSup]
+  | Γ, Γ', c, .once b => by
+    simp only [shift, N, N_shift Γ Γ' c b, show (0 : ℕ) < c + 1 by omega, if_true]
+  | Γ, Γ', c, .call f args => by
+    simp only [shift, N, Ns_shift Γ Γ' c args, shift_mkCall Γ Γ' c f]
+  | Γ, Γ', c, .iterC k ops f => by
+    simp only [shift, N, Ns_shift Γ Γ' c ops,
+      shift_mkCall (pushN k.binders Γ) (pushN k.binders Γ') (c + k.binders) f, shifts_vars]
+  | Γ, Γ', c, .iterB k ops b => by
+    simp only [shift, N, Ns_shift Γ Γ' c ops,
+      N_shift (pushN k.binders Γ) (pushN k.binders Γ') (c + k.binders) b]
+theorem Ns_shift : ∀ (Γ Γ' : Facts) (c : ℕ) (xs : List Tm), Ns Γ' (shifts c xs) = shifts c (Ns Γ xs)
+  | _, _, _, [] => rfl
+  | Γ, Γ', c, x :: xs => by simp only [shifts, Ns, N_shift Γ Γ' c x, Ns_shift Γ Γ' c xs]
+theorem NAlts_shift : ∀ (Γ Γ' : Facts) (c : ℕ) (alts : List (Pat × Tm)),
+    NAlts Γ' (shiftAlts c alts) = shiftAlts c (NAlts Γ alts)
+  | _, _, _, [] => rfl
+  | Γ, Γ', c, (p, b) :: rest => by
+    cases p with
+    | bind =>
+      simp only [shiftAlts, NAlts, Pat.scope, Pat.binders,
+        N_shift (push Γ) (push Γ') (c + 1) b, NAlts_shift Γ Γ' c rest]
+    | lit l =>
+      simp only [shiftAlts, NAlts, Pat.scope, Pat.binders, Nat.add_zero,
+        N_shift Γ Γ' c b, NAlts_shift Γ Γ' c rest]
+theorem NLS_shift : ∀ (Γ Γ' : Facts) (c : ℕ) (es : List Tm) (b : Tm),
+    (∀ (Γ₁ Γ₂ : Facts) (c' : ℕ), N Γ₂ (shift c' b) = shift c' (N Γ₁ b)) →
+    NLS Γ' (shiftLS c es) (fun G => N G (shift (c + es.length) b)) =
+      shift c (NLS Γ es (fun G => N G b))
+  | Γ, Γ', c, [], b, hb => by simp only [shiftLS, NLS, List.length_nil, Nat.add_zero]; exact hb Γ Γ' c
+  | Γ, Γ', c, e :: es, b, hb => by
+    simp only [shiftLS, NLS, List.length_cons]
+    rw [shift_mkLet, N_shift Γ Γ' c e, ← NLS_shift (push Γ) (push Γ') (c + 1) es b hb]
+    rw [show c + 1 + es.length = c + (es.length + 1) by omega]
+end
+
 /-! ## Invariance under steps -/
 
 theorem rule_N {Γ : Facts} {t t' : Tm} (h : Rule Γ t t') : N Γ t = N Γ t' := by
@@ -174,9 +386,10 @@ theorem rule_N {Γ : Facts} {t t' : Tm} (h : Rule Γ t t') : N Γ t = N Γ t' :=
   | size e he =>
     simp only [N, Ns, mkCall]
     rw [mkLet_var_size]
-  | min a b ha hb =>
-    simp only [N, Ns, mkCall, N_of_intAtom ha, N_of_intAtom hb, ha, hb, Bool.and_self,
-      if_true]
+  | min a b =>
+    simp only [N, Ns, mkCall, minForm]
+    rw [N_shift Γ (push Γ) 0 b]
+    rfl
   | sizeVar j => simp only [N, Ns, mkCall]; rw [mkLet_var_size, mkLet_var_size]
   | letEta e b => simp only [N]; exact mkLet_eta _ _
 
@@ -308,11 +521,10 @@ theorem mkCall_reduces (top : Bool) (Γ : Facts) (f : Name) (args : List Tm) :
     · simp only [not_exists] at he
       exact (star_single (.rule (.size e he))).trans (mkLet_reduces top Γ e _)
   · rename_i a b
-    split
-    · rename_i h
-      simp only [Bool.and_eq_true] at h
-      exact star_single (.rule (.min a b h.1 h.2))
-    · exact .refl
+    have h1 : ReflTransGen (Step top Γ) (minForm a b) (.let_ a (mkLet (shift 0 b) minIf)) :=
+      star_map (fun y => Tm.let_ a y) (fun _ _ h => .letB a h.toTrue)
+        (mkLet_reduces true (push Γ) (shift 0 b) minIf)
+    exact ((star_single (.rule (.min a b))).trans h1).trans (mkLet_reduces top Γ a _)
   · exact .refl
 
 theorem mkSup_reduces (top : Bool) (Γ : Facts) (xs : List Tm) :
@@ -679,10 +891,15 @@ example : N noFacts (.let_ (.once (.var 0)) (.var 0)) = .let_ (.once (.var 0)) (
 example : N noFacts (.case_ (.once (.var 0)) [(.bind, .var 0)]) =
     .let_ (.once (.var 0)) (.var 0) := rfl
 
-/-- `(min $a 3)` with `$a` an integer → `(if (< $a 3) $a 3)`; without the fact it stays. -/
+/-- `(min $a 3)` → `(let $x $a (let $y 3 (if (<= $x $y) $x $y)))`, with or without facts. -/
 example : N intAt0 (.call .min [.var 0, .lit (.int 3)]) =
-    .if3 (.call .lt [.var 0, .lit (.int 3)]) (.var 0) (.lit (.int 3)) := rfl
-example : N noFacts (.call .min [.var 0, .lit (.int 3)]) = .call .min [.var 0, .lit (.int 3)] := rfl
+    .let_ (.var 0) (.let_ (.lit (.int 3)) minIf) := rfl
+example : N noFacts (.call .min [.var 0, .lit (.int 3)]) =
+    .let_ (.var 0) (.let_ (.lit (.int 3)) minIf) := rfl
+
+/-- `(min (g) $a)`: the second argument moves under the first binder, its index lifted. -/
+example : N noFacts (.call .min [.call (.user 1) [], .var 0]) =
+    .let_ (.call (.user 1) []) (.let_ (.var 1) minIf) := rfl
 
 /-- `(foldl-atom $l 0 +)` → `(foldl-atom $l 0 $a $b (+ $a $b))`. -/
 example : N noFacts (.iterC .foldl [.var 0, .lit (.int 0)] plus) =

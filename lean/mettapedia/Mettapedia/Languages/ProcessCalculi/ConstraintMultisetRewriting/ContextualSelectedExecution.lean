@@ -7,7 +7,7 @@ import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits.Exact
 # Actual contextual firings with rigid selected row views
 
 Input patterns are fixed binding terms of the original signature. A selected
-row's template view must really be the corresponding rigid term. Both live
+row's template view must really be the corresponding rigid term. Both shared
 rows and rigid stored schemas are permitted. Reads retain their port
 multiplicity, including aliases. Outputs may contain private contextual
 locals and shared captures. The complete reflexive joint problem remains in

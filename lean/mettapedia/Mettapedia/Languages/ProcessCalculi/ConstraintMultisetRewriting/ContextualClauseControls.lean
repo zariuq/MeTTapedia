@@ -7,7 +7,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Schematic
 One schema describes f(x) = b(x,2). The clause calls it with 1 and 2 through
 two reads of the same physical row, binds their pair in a body equation,
 consumes a token and publishes the pair. Its second output deliberately
-retains a live caller reference. A contradictory body guard rejects the
+retains a shared caller reference. A contradictory body guard rejects the
 whole compiled clause despite all its input occurrences being available.
 -/
 
@@ -46,7 +46,7 @@ def captureVar (identity : Nat) : SchematicReach.Closed actor := generator actor
 def privateVar : SchematicReach.Closed (ContextualSelectionViews.source locals captures) := generator (ContextualSelectionViews.source locals captures) (Sum.inl 0)
 def definitionBody := placed 1 (pair (call privateVar) (body privateVar))
 def rows (occurrence : Nat) : ContextualStoredRows.Row locals captures [] () :=
-  if occurrence = 7 then .schema definitionBody else .live (placed 3 (symbol 0))
+  if occurrence = 7 then .schema definitionBody else .shared (placed 3 (symbol 0))
 def initial : Configuration (SchematicReach.Closed captures) Nat := ⟨[], {0, 7}⟩
 def scopes (_ : Nat) : Finset Nat := ∅
 def inventory : Inventory locals captures (O := Nat) [] () := ⟨initial, rows, [], []⟩
@@ -132,7 +132,7 @@ theorem first_output_is_reusable (compiled : Compiled queries locals (before := 
   change [compiled.firing.reusable 90, compiled.firing.reusable 91] = [true, false] at intents
   exact (List.cons.inj intents).1
 
-theorem second_output_is_live (compiled : Compiled queries locals (before := before) plan selected) :
+theorem second_output_is_shared (compiled : Compiled queries locals (before := before) plan selected) :
     compiled.firing.reusable 91 = false := by
   have intents := compiled.intents
   change [compiled.firing.reusable 90, compiled.firing.reusable 91] = [true, false] at intents
@@ -229,11 +229,11 @@ theorem the_actual_output_refuses_an_aliased_call_result
   have impossible : (2 : Nat) = 1 := SchematicReach.Controls.symbol_injective argument
   omega
 
-theorem the_live_output_uses_the_returned_source_environment
+theorem the_shared_output_uses_the_returned_source_environment
     (compiled : Compiled queries locals (before := before) plan selected) :
-    compiled.firing.target.inventory.rows 91 = ContextualStoredRows.Row.live
+    compiled.firing.target.inventory.rows 91 = ContextualStoredRows.Row.shared
       (instantiate compiled.continuationEnv (placed 9 (pair (queryVar 0) (captureVar 0)))) :=
-  compiled.live_body_value ⟨1, by decide +kernel⟩ (second_output_is_live compiled)
+  compiled.shared_body_value ⟨1, by decide +kernel⟩ (second_output_is_shared compiled)
 
 def refusedCode : RuleInstance (SchematicReach.Closed actor) :=
   { code with checks := [.equal (queryVar 2) (symbol 999)] }

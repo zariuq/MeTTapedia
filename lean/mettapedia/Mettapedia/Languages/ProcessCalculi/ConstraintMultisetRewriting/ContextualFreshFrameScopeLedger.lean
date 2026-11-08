@@ -135,7 +135,7 @@ theorem computed_activation_inventory_covered {Shared : Type} {O : Type}
     (outputs : O → Term (signature S (ContextualActivatedStep.target locals captures)) Γ sort)
     (covered : ContextualWorldScopeLedger.CoveredWorld locals captures scopes occupied inventory)
     (ruleCovered : ContextualWorldScopeLedger.RuleCovered (privateScopes scopes) occupied rule)
-    (admitted : ContextualTransportedActivation.Admission locals captures occupied selection rule
+    (admitted : ContextualGuardedStep.Requirements locals captures occupied selection rule
       inventory.rows inventory.configuration outputs)
     (update : Update (ContextualResidual.observeProblem
       (ContextualActivatedStep.problem locals captures occupied selection rule inventory.rows inventory.configuration))) :

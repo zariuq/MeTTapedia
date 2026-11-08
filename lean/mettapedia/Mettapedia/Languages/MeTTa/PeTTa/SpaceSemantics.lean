@@ -3,6 +3,7 @@ import Mettapedia.GSLT.Parsing.ExactDecimalLexeme
 import Mettapedia.Data.FreshString
 import Mettapedia.Languages.ProcessCalculi.MORK.MatchSpec
 import Lean.Data.Json.Parser
+import Mettapedia.Languages.MeTTa.PeTTa.StringLiteral
 
 /-!
 # PeTTa source atoms, programs and ordered selection
@@ -46,13 +47,13 @@ open Algorithms.MeTTa.Simple.Parser (SExpr)
 open Mettapedia.GSLT.Parsing
 open Mettapedia.GSLT.Parsing.ExactDecimalLexeme (parseInteger?)
 
-/-- Printable ASCII characters whose spelling needs no string escape. -/
+/-- Unicode characters whose spelling needs no string escape. -/
 def plainStringCharacter (character : Char) : Bool :=
-  0x20 ≤ character.toNat && character.toNat < 0x7f &&
+  0x20 ≤ character.toNat && character.toNat != 0x7f &&
     character != '"' && character != '\\'
 
-/-- The total plain-string fragment of the shared reader. Escaped or non-ASCII
-tokens continue through the existing general string reader. -/
+/-- The plain-string fragment of the shared reader, read character for
+character. Other quoted tokens are decoded by `readQuoted?`. -/
 @[simp] def readPlainString (token : String) : Option String :=
   match token.toList with
   | '"' :: rest =>
@@ -69,6 +70,13 @@ theorem readPlainString_quoted (body : List Char)
       some (String.ofList body) := by
   simp [readPlainString, plain]
 
+/-- A quoted token's string, as CeTTa's reader decodes its body
+(`StringLiteral.decodeBody`). -/
+def readQuoted? (token : String) : Option String :=
+  match token.toList with
+  | '"' :: rest => if rest.getLast? == some '"' then StringLiteral.decodeBody rest.dropLast else none
+  | _ => none
+
 def readToken (token : String) : Except String Atom :=
   match readPlainString token with
   | some value => .ok (.grounded (.string value))
@@ -78,10 +86,10 @@ def readToken (token : String) : Except String Atom :=
         if name.isEmpty then .error "empty source variable" else .ok (.var name)
       else if token = "True" || token = "true" then .ok (.grounded (.bool true))
       else if token = "False" || token = "false" then .ok (.grounded (.bool false))
-      else if token.startsWith "\"" then do
-        match ← Lean.Json.parse token with
-        | .str value => .ok (.grounded (.string value))
-        | _ => .error "expected a quoted string"
+      else if token.startsWith "\"" then
+        match readQuoted? token with
+        | some value => .ok (.grounded (.string value))
+        | none => .error "expected a quoted string"
       else
         match parseInteger? token with
         | some value => .ok (.grounded (.int value))

@@ -1,0 +1,61 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaSourceTypeControls
+
+/-! Audit of the live-world typed source services. Executed whole-program
+`#guard` controls are separate from these kernel theorem checks. -/
+
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeEquationSolver.decode_encode
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeEquationSolver.encode_decode
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeEquationSolver.decode_apply
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeEquationSolver.encode_bind
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeEquationSolver.sat_of_unifies
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeEquationSolver.unifies_of_sat
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeEquationSolver.check_iff_sat
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeEquationSolver.check_eq_decide
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeEquationSolver.check_injective_rename
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.OrderedTypeRelation.effective_erases
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.OrderedTypeRelation.checked_filter
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.OrderedTypeRelation.argumentEquations_erases
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.OrderedTypeRelation.functionDerivations_erases
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.OrderedTypeRelation.tuplePartsOrdered_erases
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.OrderedTypeRelation.tupleDerivations_erases
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.OrderedTypeRelation.leaf_erases
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.OrderedTypeRelation.node_erases
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.OrderedTypeRelation.infer_erases
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.OrderedTypeRelation.exactTypes_erases
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.OrderedTypeRelation.guardOrdered_erases
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.OrderedTypeRelation.exactTypes_order
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.OrderedTypeRelation.exactTypes_accepts_iff
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.OrderedTypeRelation.function_declaration_order
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.OrderedTypeRelation.guard_exact_before_metatype
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.OrderedTypeRelation.guard_metatype_only_after_empty
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.OrderedTypeRelation.guardOrdered_extends
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.OrderedTypeRelation.guardOrdered_keeps_row_solution
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaSourceTypeServices.kind_is_source_metatype
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaSourceTypeServices.orderedGuard_exact
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaSourceTypeServices.orderedGuard_order
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaSourceTypeServices.unsupported_source_retained
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaSourceTypeServices.unsupported_carrier_retained
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaSourceTypeServices.orderedGuard_extends_store
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaSourceTypeRows.parse_typeAtom
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaSourceTypeRows.parse_typeAtoms
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaSourceTypeRows.typeAtoms_map
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaSourceTypeRows.reads_actual_self
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaSourceTypeRows.annotations_append
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaSourceTypeRows.no_intrinsic_reads_current_world
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaSourceTypeRows.intrinsic_precedence
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaSourceTypeRows.unsupported_is_unserved
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaSourceTypeRows.parseRows_encoded
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaSourceTypeRows.written_declarations_order
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaSourceTypeRows.declarations_supported
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaSourceTypeRows.parseTypes_filterMap
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaSourceTypeRows.parseTypes_exists
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaSourceTypeRows.annotation_type_supported
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaSourceTypeRows.raw_types_supported
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaSourceTypeRows.declarations_complete
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaSourceTypeRows.lookup_written_rows
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaSourceTypeRows.append_annotation_changes_live_read
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaSourceTypeControls.unsupported_type_is_not_absent
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaSourceTypeControls.expression_annotation_needs_other_profile
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaSourceTypeControls.one_row_shares_parameter_and_range_variable
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaSourceTypeControls.unsupported_guard_is_retained
+

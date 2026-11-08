@@ -79,7 +79,7 @@ theorem realize_template_publication
         before.inventory.configuration (freshLocated (Expanded locals inners) before.declarations before.occupied selection locatedRule)))) :
     ∃ firing : ContextualTemplatePublication.Firing locals inners before,
       firing.sourceRule = sourceRule ∧ firing.selection = selection ∧ firing.execution.outputs = outputs := by
-  have semantic : ContextualTransportedActivation.SemanticAdmission (Expanded locals inners) before.declarations
+  have semantic : ContextualGuardedStep.Valid (Expanded locals inners) before.declarations
       before.occupied selection (sourceRule.lower locals inners before.declarations) before.inventory.rows
       before.inventory.configuration outputs := by
     rw [lowered, located]

@@ -24,8 +24,22 @@ open Mettapedia.Languages.ProcessCalculi.MORK (Subst applySubst)
 open SpaceSemantics (Program Cases)
 open Effects (State Fault)
 open Eval (Target ioHead argumentIsRaw readCases nestedLets)
-open DeclarativeSpec (controlForm)
 open LiveEquations (liveEquations)
+
+/-- Control forms actually handled before ordinary applications by
+`Unifying.step`. This source profile does not yet implement the matching
+machine's `unique` control form; it follows ordinary call/data dispatch here. -/
+def sourceControlForm : Atom → Bool
+  | .expression [.symbol "let", _, _, _]
+  | .expression [.symbol "let*", .expression _, _]
+  | .expression [.symbol "case", _, .expression _]
+  | .expression [.symbol "if", _, _, _]
+  | .expression [.symbol "collapse", _]
+  | .expression [.symbol "superpose", .expression _]
+  | .expression [.symbol "empty"]
+  | .expression [.symbol "quote", _]
+  | .expression [.symbol "match", _, _, _] => true
+  | _ => false
 
 /-- The rules of one request translated against `registry`. -/
 inductive Transition (registry : Program) : Configuration → Configuration → Prop where
@@ -217,14 +231,14 @@ inductive Transition (registry : Program) : Configuration → Configuration → 
           frames := .query pattern body :: source.frames }
   | call_enter {source : Configuration} {bindings : Subst} {head : String} {arguments : List Atom}
       (control : source.control = .evaluate bindings (.expression (.symbol head :: arguments)))
-      (notControl : controlForm (.expression (.symbol head :: arguments)) = false)
+      (notControl : sourceControlForm (.expression (.symbol head :: arguments)) = false)
       (callable : (ioHead head || StdLib.known head ||
         registry.equations.any (·.head == head)) = true) :
       Transition registry source
         { source with control := .arguments bindings (.function head) arguments [] 0 }
   | data_enter {source : Configuration} {bindings : Subst} {head : String} {arguments : List Atom}
       (control : source.control = .evaluate bindings (.expression (.symbol head :: arguments)))
-      (notControl : controlForm (.expression (.symbol head :: arguments)) = false)
+      (notControl : sourceControlForm (.expression (.symbol head :: arguments)) = false)
       (notCallable : (ioHead head || StdLib.known head ||
         registry.equations.any (·.head == head)) = false) :
       Transition registry source
@@ -293,17 +307,17 @@ theorem transition_step {registry : Program} {source target : Configuration}
     (derivation : Transition registry source target) :
     step registry source = some target := by
   cases derivation
-  all_goals try solve | simp_all [step, controlForm, ioHead]
+  all_goals try solve | simp_all [step, sourceControlForm, ioHead]
   case raw_argument bindings target first rest values index control raw =>
     cases target <;> simp_all [step]
   case evaluated_argument bindings target first rest values index control demanded =>
     cases target <;> simp_all [step]
   case call_enter bindings head arguments control notControl callable =>
     simp only [step, control]
-    split <;> simp_all [controlForm] <;> aesop
+    split <;> simp_all [sourceControlForm] <;> aesop
   case data_enter bindings head arguments control notControl notCallable =>
     simp only [step, control]
-    split <;> simp_all [controlForm]
+    split <;> simp_all [sourceControlForm]
   case remove_bad bindings index held control invalid =>
     cases held with
     | nil => simp [step, control, ioHead]
@@ -493,12 +507,12 @@ theorem step_transition {registry : Program} {source target : Configuration}
       · split at computed
         · cases computed
           apply Transition.call_enter rfl _ (by assumption)
-          simp only [controlForm]
+          simp only [sourceControlForm]
           split <;> (simp only [Atom.expression.injEq, List.cons.injEq, Atom.symbol.injEq] at * <;> aesop)
         · rename_i notCallable
           cases computed
           apply Transition.data_enter rfl _ (Bool.eq_false_iff.mpr notCallable)
-          simp only [controlForm]
+          simp only [sourceControlForm]
           split <;> (simp only [Atom.expression.injEq, List.cons.injEq, Atom.symbol.injEq] at * <;> aesop)
       · cases computed
         apply Transition.expression_enter rfl

@@ -1,0 +1,8 @@
+let v_y. assume H_y: v_y :e Lean_Nat.
+let a1. assume H_a1: a1 :e (Lean_Nat_le_Prop (Lean_Nat_succ_node (LeanNum 0)) v_y).
+let v_fuel. assume H_fuel: v_fuel :e Lean_Nat.
+let v_x. assume H_x: v_x :e Lean_Nat.
+let a4. assume H_a4: a4 :e (Lean_Nat_le_Prop (Lean_Nat_succ_node v_x) v_fuel).
+prove (Lean_Nat_rec (Lean_Nat_div_go_method0_0 v_y) (Lean_Nat_div_go_method1_0 v_y) v_fuel) v_x :e Lean_Nat.
+exact ap_Pi Lean_Nat (fun _ => Lean_Nat) (Lean_Nat_rec (Lean_Nat_div_go_method0_0 v_y) (Lean_Nat_div_go_method1_0 v_y) v_fuel)
+  v_x (Lean_Nat_div_go_recIn v_y H_y v_fuel H_fuel) H_x.

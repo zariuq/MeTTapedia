@@ -8,16 +8,16 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.SchematicReachRealization
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.SchematicReachPublication
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualPublicationPlan
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.CensusAdmission
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.PredicateQueryAdmission
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.CensusSourceCompilation
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualQueryCensus
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualQueryAnswers
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualCensusPublication
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.StagedSourceEffects
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.StratifiedCensusCollection
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualAttemptOutcomes
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.OrderedCensusAdmission
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.OrderedPredicateQueryAdmission
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualClausePublication
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualResidualAnswers
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualConditionalAnswers
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualConditionalScopes
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualConditionalClauses
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualConditionalTemplateExecution
@@ -61,15 +61,15 @@ joint constraints. Equal labels never identify occurrence identities.
 
 Ordinary stored atoms enter through `ContextualStoredRows.store`: their
 schematic variables are private, and every selected read or take opens a
-fresh whole-atom instance. `Row.live` explicitly retains shared references;
+fresh whole-atom instance. `Row.shared` explicitly retains shared references;
 `Row.schema` can additionally carry declared captures. The raw occurrence
 operation below remains the operation on already prepared terms. In
-particular, applying its live profile directly to an unprepared stored atom
+particular, applying its shared profile directly to an unprepared stored atom
 does not describe ordinary schematic storage. Per-use opening belongs to
 the atomic binding admission, not to an extra resource firing.
 
 `SchematicReach` joins per-use schema opening, reachable spaces, explicitly
-live references and write-only production in one admission on scoped rule
+shared references and write-only production in one admission on scoped rule
 instances. Its located preparation has exactly the existing contextual
 activation's equations, physical resources and original schema guard cuts.
 In the structural-pattern fragment, this admission constructs a completed
@@ -80,10 +80,10 @@ ordered physical reads; direct queries remain repeatable and consuming
 traces are preserved. The profile does not choose source name ownership,
 prescribe a physical storage layout or introduce a new evaluator.
 
-`ContextualPublication` gives reusable and live outputs distinct metadata
+`ContextualPublication` gives reusable and shared outputs distinct metadata
 in the same completed firing result. Reusable values preserve the actual
 solver substitution and freshen their remaining variables on later uses;
-live values retain their original shared reference identities. Their intent
+shared values retain their original shared reference identities. Their intent
 belongs to the production ports, independently of fresh occurrence allocation.
 The publication record wraps the existing checked execution. Its reusable
 row instances are exactly the original problem/template solution instances,
@@ -93,7 +93,7 @@ counts, guard semantics and scope coverage. `SchematicReach.realize_publication`
 connects that construction to the same located reach admission.
 `ContextualTemplateExecution` additionally compiles constructed templates
 with private holes and declared actor captures. Its actual publication keeps
-those captures live, with ordinary and live outputs in the same firing.
+those captures shared, with ordinary and shared outputs in the same firing.
 `SchematicReachTemplatePublication` retains the located admission. The
 instance-observation theorem does not license arbitrary inspection of
 internal helper encodings.
@@ -104,25 +104,25 @@ separate source identities. Their complete joint problem, including body
 equations and guards, is embedded into the actual allocated activation.
 Source admission and actual compiled publication agree in the established
 structural-pattern fragment. Reusable body outputs have exactly the original
-source instances; live outputs retain the returned source environment. That
+source instances; shared outputs retain the returned source environment. That
 environment also preserves source instances across helper-family changes
 for following bodies. This does not yet compile arbitrary active-expression
 episodes or select a textual scope default.
 
-`ContextualResidualAnswers` gives the value together with an actual update's
+`ContextualConditionalAnswers` gives the value together with an actual update's
 remaining equations exactly the original source meaning, without assuming
 that the queue has finished. Erasing those obligations can admit a wrong
 value. `ContextualConditionalExecution` stores both as one binding unit and
 opens them together at each selected read or take. Its joint information
 retains incoming constraints, all selected latent equations and body tells.
 The actual finite-budget solver return may remain unfinished. Reusable
-outputs have exactly the original conditional source instances; live
+outputs have exactly the original conditional source instances; shared
 outputs retain their references. Admission still requires joint semantic
 solvability and the guards at their original cut. An unfinished return alone
 does not establish either obligation. Empty latent conditions recover the
 earlier semantic admission in both directions. `ContextualConditionalScopes`
 preserves coverage of values and heterogeneous equations through the actual
-publication, including its fresh private bank and live captures. This does
+publication, including its fresh private bank and shared captures. This does
 not impose a new textual ownership policy, storage layout or authority
 primitive. `ContextualConditionalSourceAdmission` extends the independent
 resolved-clause source problem with incoming heterogeneous conditions and
@@ -142,6 +142,18 @@ family. The existing template binding map transports both. The body is
 decoded from the actual prepared production; only schema metadata is
 installed from the authored descriptor. Ordinary/shared outputs, retained
 rows, the physical update and global information use the existing execution.
+`ContextualConditionalExecution.Published` is the common pinned execution
+record for resolved clauses, direct templates and compiled native bodies.
+Each instance fixes its authored rule, selection and output expressions.
+Reuse intent explicitly distinguishes a produced-port contract from an
+exact flag-function contract. `CompiledTemplate` pairs authored template
+data with that same record. Row overlays use `State.withRows`; result-frame
+transport and every-model extension are proved once for the base firing.
+The publication descriptor remains semantically necessary: the boundary
+controls give identical raw executions with different conditional answer
+sets and different admission of a following clause. The canonical raw
+native target therefore cannot replace the interpreted publication target.
+Program composition must retain structured publication data at that boundary.
 Every actor model extends through publication, and every result model
 projects back. Dormant schema equations are not global obligations.
 `ContextualConditionalTemplateState` now constructs the independent source
@@ -154,10 +166,9 @@ observations with model coverage in both directions.
 `ContextualConditionalTemplateSchedules` composes these source clauses with
 existing ordinary/shared segments. Its admission compiler retains original
 guard cuts, intermediate resource freshness and authored conditional birth
-rows with their separate capture transports. The extended grammar has an
-actual binding/resource producer with exact conditional result observations;
-its guard-complete admission comparison remains a separate obligation.
-The existing joined admission theorem still concerns ordinary/shared bodies.
+rows with their separate capture transports. The extended grammar is a
+compiled native body like the ordinary one, so the common native chain
+applies to it, including its original-cut queries.
 `ContextualConditionalTemplateOriginSemantics` identifies every final
 mixed-body row with its latest authored birth or retained entry, under
 port shapes alone. Its lookup reads selections and saved rows, not the
@@ -167,23 +178,30 @@ joint entry-row witnesses for every given final information model.
 allocated resource net: each net input is a tracked entry occurrence, and
 each net output has a surviving conditional birth with the final row's
 meaning. Reused logical identifiers receive distinct bound allocation
-names. `ContextualConditionalTemplateNativeBinding` constructs the mixed
-binding problem and extends every given source model. Output-private names
-have declaration blocks without global equations for dormant conditions.
+names. `ContextualConditionalTemplateNativeProblem` presents the mixed body
+as a compiled native body: output-private names have declaration blocks
+without global equations for dormant conditions, and the common binding
+problem of `ContextualNativeBindingProblem` extends every given source model.
 `ContextualConditionalTemplateNativePublicationValues` decodes published
 values from the actual produced expressions. The matching and model laws in
 `ContextualConditionalTemplateNativeResult` identify the returned world
 with the source under the declared row/model observation and bound-name
-projection. Original-cut actual-data queries must still be attached before
-producer existence characterizes source admission. The guard-boundary control
-exhibits a refused source body whose binding/resource producer executes.
+projection. `ContextualConditionalTemplateEntryCuts` represents every
+original cut over entry occurrences and authored prefix creations, with the
+same problem, checks and guard meaning, so the common resource and
+original-cut queries attach. The mixed `source_iff_native_body` theorem then
+characterizes admission by one actual query-admitted firing whose
+conditional publication is source-equivalent, and
+`source_iff_completed_invocation` adds control consumption. The
+guard-boundary control exhibits a refused source body whose
+binding/resource producer still executes: the queries are necessary.
 
 `ContextualClauseSourceState` constructs the independent source update
 without a native allocation ledger or solver result. `ContextualClauseStateRefinement`
 compares the actual compiler target with that state: information, solvability,
 physical effects, all conditional row-matching observations and the returned
 query environment agree across the actual family extension. Ordinary
-schemas, live references and retained rows are compared separately. The
+schemas, shared references and retained rows are compared separately. The
 computed-join control uses a queried lambda body to determine a subsequent
 lookup key, then takes a permit and publishes the unique source answer in
 one firing. Its competing key has no source or compiled firing. These are
@@ -193,7 +211,7 @@ exposed environment, model coverage in both directions, and conditional
 row observations in all fresh futures. Private declaration families may
 differ. Finite row-matching witnesses can be amalgamated without changing
 their shared query assignment. Source updates and actual compiler firings
-preserve the same comparison, including returned bindings, schemas, live
+preserve the same comparison, including returned bindings, schemas, shared
 references, retained rows and original-world guards.
 
 `ContextualClauseSequences` gives an independent finite authored program
@@ -203,10 +221,10 @@ ordered physical selection trace and final conditional return value. Each
 native step has an actual worklist computation; no rule calls a whole
 source evaluator. The exposed observation profile is explicit. This does
 not supply a total automatic guard decision, select a textual scope policy
-or impose runtime snapshot copying. The selected ordinary/shared private
-body has the single-firing comparison below. Complete-census program
-composition, arbitrary active evaluator contexts, selectively captured
-productions and program-context joins remain open.
+or impose runtime snapshot copying. Selected ordinary/shared bodies and
+mixed bodies with selectively captured productions have the single-firing
+comparison below. Complete-census program composition, arbitrary active
+evaluator contexts and program-context joins remain open.
 
 `ContextualPrefixIsolation` records a necessary distinction for that fusion:
 an earlier reusable schema and an earlier nonbinding check retain their own
@@ -244,7 +262,7 @@ handle or query-variable ownership policy is changed. The subsequent native
 program construction joins conditional ordinary/shared rows and guards.
 
 `ContextualOccurrenceRenaming` preserves conditional absence and occurrence
-counts under an injective physical renaming with corresponding live rows.
+counts under an injective physical renaming with corresponding shared rows.
 `ContextualScheduleCutRenaming` uses each private prefix's own allocation
 map, retaining its information and watched world; all compiled original-cut
 guard asks are preserved and reflected. `ContextualClauseOccurrenceRenaming`
@@ -258,7 +276,7 @@ These supply the allocation comparisons used by the subsequent body compiler.
 `ContextualScheduleOrigins` now compiles the full selected body's row
 origins from initial data and authored productions. Retained rows carry
 their capture transport, ordinary schemas keep their own saved problem,
-and live values retain the final caller environment. No final source-row
+and shared values retain the final caller environment. No final source-row
 lookup or evaluator callback supplies these origins. The origin theorem
 preserves and reflects every conditional row instance across an admitted
 body. `ContextualConditionalRowPacking` constructs actual row data in one
@@ -299,8 +317,12 @@ the same returned caller environment. `ContextualProductionAllocation`
 proves that every physical net output has a surviving production index;
 inherited names take the retained-input path, even with source-number reuse.
 
-`ContextualGuardedScheduleProblem` places the original guard problems in
-separate private blocks. Consistency is equivalent to terminal source
+`ContextualNativeBodies` states the interface of a compiled body (entry
+frame, added information, selections, shapes, cuts and their entry
+representations, the admission characterization, net inputs and the
+publication blocks of its clause kind) and places the original guard
+problems in separate private blocks. `ContextualGuardedScheduleProblem`
+presents ordinary/shared schedules as compiled bodies. Consistency is equivalent to terminal source
 consistency, without assuming successful guards. Joint consistency,
 original-world guard views, shapes and resource preconditions preserve and
 reflect source admission. Every actual bounded solver return preserves
@@ -315,7 +337,7 @@ witnesses for these rows; their private names can be opened together while
 retaining that particular caller assignment. Successful guards are not
 assumed, and unused stored conditions remain dormant.
 
-`ContextualNativeBindingProblem` constructs an explicit declaration frame,
+`ContextualNativeBindingProblem` constructs, for every compiled body, an explicit declaration frame,
 a conditional invocation control row, and the net take/read pattern syntax.
 Every given source model extends through the matching equations of the
 actual native activation, and every native binding model projects to the
@@ -396,8 +418,8 @@ update exists, yet an actual firing at every finite worklist budget retains
 the equation and publishes the declared value 7. Changing a relevant row or
 adding a duplicate matching occurrence invalidates the saved table. Another
 control joins the count of box(1) to a clause's own X=1 equation and refuses
-the wrong count. The selected ordinary/shared body uses these comparisons
-below. Captured-template and program-context comparisons remain open.
+the wrong count. Every compiled body, ordinary/shared or mixed, uses these
+comparisons below. Program-context comparisons remain open.
 
 `ContextualNativeBirthPublication` joins output instances to the actual
 native binding information. Every original instance of an ordinary birth
@@ -417,14 +439,14 @@ matches box(2), while the returned caller remains X=1. A separate shared
 producer accepts box(1) and refuses box(2). These give actual firing
 instances of the output laws. The module does not construct the complete
 compiler firing uniformly for arbitrary selected bodies. The following
-program and invocation modules supply those joins. Selectively captured
-templates and general program contexts remain open.
+program and invocation modules supply those joins; general program
+contexts remain open.
 
 `ContextualNativeProducerProgram` computes the entire production list,
 per-occurrence output lookup and publication flags from surviving authored
 births. No final source row store supplies the result syntax.
-`ContextualNativeProducerAdmission` realizes that producer with an actual
-worklist return at every finite budget. `ContextualNativeResourceQueries`
+`ContextualNativeProducerAdmission` realizes every body producer with an
+actual worklist return at every finite budget. `ContextualNativeResourceQueries`
 checks the whole compiled resource precondition against actual required and
 forbidden entry identities, retaining freshness of intermediate creations
 even when they disappear from the net output. Only port shapes and the
@@ -432,8 +454,11 @@ store-independent possibility flag use a point condition. The finite list
 in `ContextualNativeProgramGuards` additionally checks every equality,
 absence and conditional count at its original cut.
 
-The `source_iff_native_body` theorem in `ContextualNativeProgramResult` is
-the joined comparison for the current selected ordinary/shared clause grammar.
+`ContextualNativeProgramExecution` proves, for every compiled body and
+producer, that source admission is equivalent to one actual query-admitted
+firing. The `source_iff_native_body` theorem in `ContextualNativeProgramResult`
+is the joined comparison for ordinary/shared bodies; the mixed theorem of the
+same name is in `ContextualConditionalTemplateNativeResult`.
 Source admission is equivalent to one actual query-admitted native firing
 with the constructed rule, selection, outputs, flags, query list and finite
 solver budget. No successful source admission, source shape or resource
@@ -451,13 +476,12 @@ schema, refusal of an earlier guard despite a later tell, and a count at
 its clause's own equation cut. An invalid make-then-take prefix has an
 enabled net effect but fails the complete source resource condition and
 the native absence query. Starting with an empty entry admits that same
-internal make/take program. Selectively captured production grammar,
-fresh invocation installation, arbitrary raw selections/program observers and full
+internal make/take program. Fresh invocation installation, arbitrary raw selections/program observers and full
 active-evaluator/collection composition remain open. No total higher-order
 matching or guard-decision algorithm is supplied by semantic query support.
 
-`ContextualNativeInvocation` makes completion linear using the existing
-take operation. The invocation control is appended after the data takes,
+`ContextualNativeInvocation` makes completion linear for every compiled
+body using the existing take operation. The invocation control is appended after the data takes,
 preserving their opening ordinals and those of the data reads. No output
 recreates the control. The joined `source_iff_completed_invocation` theorem
 retains actual execution and source-world equivalence while proving control
@@ -519,7 +543,7 @@ retroactively justify fallback. A new matching row excludes it. Whole
 reactive source equivalence and deadline arms retain their own comparisons.
 
 Complete queries require more than the fixed five-port restriction.
-`CensusAdmission` extends admission of the same equation/occurrence update
+`PredicateQueryAdmission` extends admission of the same equation/occurrence update
 with complete region observations. A query predicate may perform local
 matching independently of the caller's substitution; the census must hold
 for every joint solution at its original observation cut. Fixed predicates
@@ -530,7 +554,7 @@ with retained equations, explicit tells and exact produced bags (or the
 source's declared value equality). Its multiset `every` and the separately
 compared MM2 set profile retain their different repeated-consumption laws.
 
-`ContextualQueryCensus` constructs every physical candidate tuple and runs
+`ContextualQueryAnswers` constructs every physical candidate tuple and runs
 the existing contextual solver separately for each. A completed table covers
 exactly the source matches over all later declaration families. Each answer
 factors every original solution, so alternatives are not conjoined and an
@@ -564,7 +588,7 @@ and may fire vacuously. Search and prepared effect interfaces retain their
 source-compilation obligation. Semantic exhaustiveness is not a decision
 procedure for arbitrary higher-order guards.
 
-For queries that promise order, `OrderedCensusAdmission` additionally retains
+For queries that promise order, `OrderedPredicateQueryAdmission` additionally retains
 and validates the existing adaptive query program's ordered read transcript
 at the firing cut. Its complete reads contribute ordinary census queries;
 those queries alone do not recover the order. Validated source rows have
@@ -572,7 +596,7 @@ actual candidate firings and exact produced bags. Ordinary unordered queries
 do not acquire an ordered-scanner requirement.
 
 The original raw relation and the comparisons below retain their declared
-restrictions. For scoped terms, `ContextualTransportedActivation.SemanticAdmission` checks
+restrictions. For scoped terms, `ContextualGuardedStep.Valid` checks
 the actual prepared views, original guards and solvability in any future
 declaration family. Within the structural-pattern fragment it is equivalent
 to an actual admitted, completed worklist return. `realize_semantic_admission`
@@ -583,7 +607,7 @@ Pure arity-preserving declaration extensions preserve and reflect semantic
 admission, including output shape and guards at the same original cut.
 `ContextualPairFrames.realize_causal_pair` constructs two actual scoped
 events from common producer-origin constraints, without supplied solver
-returns or paths. A consumer can read or take newly produced live data;
+returns or paths. A consumer can read or take newly produced shared data;
 those uses share the producer's variables instead of freshening them as
 schemas. The complete second problem retains the first event's equations.
 `realize_ordered_pair` recovers the independently available-input profile.
@@ -603,7 +627,7 @@ The independent lambda comparison is a concrete client of these steps.
 context-indexed four-rule lambda source through a completed worklist run.
 `LambdaExecution.finite_execution_iff` compares finite source reductions
 with a selected semantic transform profile over retained raw endpoints.
-The latter carries old equations, live output terms and scope inventories
+The latter carries old equations, shared output terms and scope inventories
 across changing binder depths. Every old joint solution extends through a
 step. `LambdaExecution.finite_execution_with_solvers_iff` supplies actual
 incremental worklist computations along these paths. Completed prefixes

@@ -1,4 +1,6 @@
 import Mettapedia.GSLT.LanguageDef.ModuleFormat.PrologSyntaxModule
+import Mettapedia.GSLT.LanguageDef.ModuleFormat.CHRPrologSyntax
+import Mettapedia.GSLT.LanguageDef.ModuleFormat.SourceSyntaxIO
 import Mettapedia.Logic.Prolog.ReaderTermRegression
 
 /-! Profile separation and shared .module loading controls. These qualify
@@ -10,6 +12,11 @@ set_option maxHeartbeats 8000000
 namespace Mettapedia.GSLT.LanguageDef.ModuleFormat.PrologSyntaxControls
 open Mettapedia.Logic.Prolog ReaderProfile ReaderTermRegression
 open scoped ModuleSource.Loader
+
+-- Lexical scalar sorts and structural escape sorts have distinct roles.
+#guard (ScalarSyntaxCore.admit? (SourceSyntaxIO.description (PrologSyntax.description iso))).isSome
+#guard (ScalarSyntaxCore.admit? (SourceSyntaxIO.description (PrologSyntax.description swi))).isSome
+#guard (ScalarSyntaxCore.admit? (SourceSyntaxIO.description CHRPrologSyntax.description)).isSome
 
 namespace ISOCase
 #module_tree "../../../../../../metta/gslt/module/prolog/ISOSyntax.module" as Loaded
@@ -50,5 +57,13 @@ def read (profile : Profile) (source : String) : Option Shape :=
 #guard read iso "[]." == read iso "'[]'."
 #guard read iso "[a]." == read iso "'.'(a,[])."
 #guard read swi "[a]." != read swi "'.'(a,[])."
+
+#guard read swi "'\\x3bb\\'." == some (.atom "λ")
+#guard read swi "'\\141'." == some (.atom "a")
+#guard read swi "'\\u03bc'." == some (.atom "μ")
+#guard read swi "0'\\x41\\." == some (.integer 65)
+#guard read swi "'\\uD800'." == none
+#guard !(PrologSyntax.extensionRows iso).any (fun r => r.label == "pl:escape-unicode-four")
+#guard (PrologSyntax.extensionRows swi).any (fun r => r.label == "pl:escape-unicode-four")
 
 end Mettapedia.GSLT.LanguageDef.ModuleFormat.PrologSyntaxControls

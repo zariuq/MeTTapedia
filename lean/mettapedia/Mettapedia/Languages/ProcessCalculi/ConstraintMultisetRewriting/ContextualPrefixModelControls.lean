@@ -53,7 +53,7 @@ abbrev wide := extended futureScope callers
 
 def callerU : Term (signature emptySignature wide) [] () := generator wide (.inr false)
 def callerV : Term (signature emptySignature wide) [] () := generator wide (.inr true)
-def rows (_ : Nat) : ContextualStoredRows.Row noDeclarations wide [] () := .live callerU
+def rows (_ : Nat) : ContextualStoredRows.Row noDeclarations wide [] () := .shared callerU
 
 def aliasCallers : Assignment callers callers := fun _ => generator callers false
 def oldCallerProblem : EquationStore (Term (signature emptySignature callers) [] ()) :=

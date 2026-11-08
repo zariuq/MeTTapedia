@@ -1,0 +1,60 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeRowFreshening
+
+/-! # Alpha normalization and row-local retained-cache audit -/
+
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeAlphaComparison.check_iff_variant
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeAlphaComparison.check_iff_permutation
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeAlphaComparison.check_iff_observed_alpha
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeAlphaComparison.equivariant
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeAlphaComparison.reflexive
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeAlphaComparison.symmetric
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeAlphaComparison.Controls.swapping_names_is_not_a_logical_cycle
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeAlphaComparison.Controls.shared_variables_cannot_be_split
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeAlphaComparison.Controls.independent_variables_cannot_be_merged
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeAlphaComparison.Controls.scalar_values_and_kinds_remain_observable
+
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeAlphaNormalization.arityError_support
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeAlphaNormalization.arityError_closed
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeAlphaNormalization.arityError_rename
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeAlphaNormalization.finish_support
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeAlphaNormalization.finish_closed
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeAlphaNormalization.finish_rename
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeAlphaNormalization.comparison_equivariant
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeAlphaNormalization.results_supported
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeAlphaNormalization.results_closed
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeAlphaNormalization.equivariant
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeAlphaNormalization.normalization_keeps_names
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeAlphaNormalization.normalization_renames
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeAlphaNormalization.next_read_cannot_capture_normalized_names
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeAlphaNormalization.Controls.alpha_selection_keeps_selected_operand
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeAlphaNormalization.Controls.malformed_arity_is_an_error_not_decline
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeAlphaNormalization.Controls.error_retains_original_argument_variables
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeAlphaNormalization.Controls.normalizer_does_not_dispatch_short_forms
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeAlphaNormalization.Controls.a_different_sharing_pattern_selects_other_operand
+
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeRowFreshening.admitted_rename
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeRowFreshening.admittedList_rename
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeRowFreshening.admitted_resourceFree
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeRowFreshening.admittedList_resourceFree
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeRowFreshening.metaCheck_rename
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeRowFreshening.initial_rename
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeRowFreshening.args_rename
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeRowFreshening.functionArgs_rename
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeRowFreshening.functionRange_rename
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeRowFreshening.arrow_rename
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeRowFreshening.args_preserves
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeRowFreshening.row_rename
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeRowFreshening.retained_child_fixed
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeRowFreshening.retained_children_safe
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeRowFreshening.retained_children_fixed
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeRowFreshening.retained_row_exact
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeRowFreshening.independently_fresh_rows_exact
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeRowFreshening.alpha_normalized_retained_rows_exact
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeRowFreshening.Controls.private_rows_preserve_duplicate_answers
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeRowFreshening.Controls.shared_formal_is_not_two_independent_checks
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeRowFreshening.Controls.unresolved_range_cannot_be_retained
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeRowFreshening.Controls.metatype_cut_does_not_require_an_inferred_typing
+
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeScopeRenaming.Controls.actual_atom_is_not_a_universal_type
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeScopeRenaming.Controls.space_class_bridge_does_not_bind_the_discipline
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeScopeRenaming.Controls.space_bridge_requires_the_declared_shape

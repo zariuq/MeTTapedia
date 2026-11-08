@@ -197,6 +197,9 @@ end ActivationPartition
 
 /-! ## Open annotation-to-policy equipment -/
 
+-- As in PolicyFamily, bundled policy, result and readout carriers retain
+-- independent universe bounds in their projections.
+set_option linter.checkUnivs false in
 /-- A readout together with the exact advisory policies it can execute.
 
 The policy family may contain heterogeneous decisions.  Its realization is

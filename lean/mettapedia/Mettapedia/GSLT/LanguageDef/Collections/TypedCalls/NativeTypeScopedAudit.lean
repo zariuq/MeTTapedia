@@ -1,0 +1,69 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeScopedWorldControls
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeScopedReadVariants
+
+/-! # Occurrence-scoped inference theorem dependencies -/
+
+namespace Mettapedia.GSLT.LanguageDef.Collections.TypedCalls
+
+#print axioms TypeReadSupply.remember_old
+#print axioms TypeReadSupply.remember_new
+#print axioms TypeReadSupply.variables_rename
+#print axioms TypeReadSupply.variablesList_rename
+#print axioms TypeReadSupply.fresh_avoids
+#print axioms TypeReadSupply.fresh_remembers
+#print axioms TypeReadSupply.freshList_remembers
+#print axioms TypeReadSupply.freshList_length
+#print axioms TypeReadSupply.freshList_existing
+#print axioms TypeReadSupply.freshList_output_remembers
+#print axioms TypeReadSupply.freshList_avoids
+#print axioms TypeReadSupply.later_read_is_apart
+#print axioms TypeReadSupply.fresh_map_injective
+#print axioms TypeReadSupply.fresh_resourceFree
+#print axioms TypeReadSupply.freshList_resourceFree
+#print axioms TypeReadSupply.Controls.sharing_inside_one_instance_is_preserved
+#print axioms TypeReadSupply.Controls.caller_name_is_not_captured
+#print axioms TypeReadSupply.Controls.equal_templates_receive_distinct_variables
+#print axioms TypeReadSupply.fresh_variant
+#print axioms TypeReadSupply.freshList_variants
+#print axioms TypeReadSupply.later_list_avoids_earlier
+#print axioms ScopedSubtypeReadSafety.rows_world
+#print axioms ScopedSubtypeReadSafety.query_world
+#print axioms ScopedSubtypeReadSafety.discoveries_world
+#print axioms ScopedSubtypeReadSafety.round_world
+#print axioms ScopedSubtypeReadSafety.run_world
+#print axioms ScopedSubtypeReadSafety.completeTypes_world
+#print axioms ScopedSubtypeReadSafety.completeTypes_safe
+#print axioms NativeTypeScopedReads.retain_old
+#print axioms NativeTypeScopedReads.primitive_remembers
+#print axioms NativeTypeScopedReads.primitive_retains_reply
+#print axioms NativeTypeScopedReads.evaluate_remembers
+#print axioms NativeTypeScopedReads.evaluated_reply_retained
+#print axioms NativeTypeScopedSafety.rawDeclarations_world
+#print axioms NativeTypeScopedSafety.primitive_safe
+#print axioms NativeTypeScopedSafety.primitive_world
+#print axioms NativeTypePlanRelated.native_typesRead
+#print axioms NativeTypePlanRelated.argsPlan
+#print axioms NativeTypePlanRelated.rowsPlan
+#print axioms NativeTypePlanRelated.liftViews
+#print axioms NativeTypePlanRelated.typesRead
+#print axioms NativeTypePlanRelated.ordinary
+#print axioms NativeTypePlanRelated.node
+#print axioms NativeTypePlanRelated.body
+#print axioms NativeTypeScopedWorld.returned_safe
+#print axioms NativeTypeScopedWorld.evaluate_world
+#print axioms NativeTypeScopedWorld.source_world
+#print axioms NativeTypeScopedReads.annotation_variants
+#print axioms NativeTypeScopedReads.annotation_avoids
+#print axioms NativeTypeScopedReads.read_occurrences_are_apart
+#print axioms NativeTypeScopedReads.Controls.same_polymorphic_subject_is_instantiated_twice
+#print axioms NativeTypeScopedReads.Controls.missing_depth_is_not_empty_typing
+#print axioms NativeTypeScopedReads.Controls.tuple_parts_get_independent_instances
+#print axioms NativeTypeScopedReads.Controls.within_signature_equality_is_not_freshened_apart
+#print axioms NativeTypeScopedReads.Controls.subtype_row_does_not_capture_input_variable
+#print axioms NativeTypeScopedWorld.Controls.polymorphic_world_equality_keeps_final_supply
+#print axioms NativeTypeScopedWorld.Controls.unfinished_child_keeps_earlier_allocation
+#print axioms NativeTypeScopedWorld.Controls.mutable_source_is_not_admitted
+#print axioms NativeTypeScopedWorld.Controls.unsafe_primitive_can_change_across_worlds
+
+end Mettapedia.GSLT.LanguageDef.Collections.TypedCalls
+

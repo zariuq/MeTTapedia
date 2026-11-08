@@ -4,7 +4,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 # A resolved clause preserves the world comparison
 
 Both worlds execute the same authored clause through their exposed
-environments. Retained rows use the old model relation, live outputs use
+environments. Retained rows use the old model relation, shared outputs use
 the returned environment, and reusable outputs use the proved equivalence
 of complete conditional source instances. The resulting comparison has
 the same form and can therefore be used by another clause.
@@ -114,9 +114,9 @@ theorem result_related (equivalent : Equivalent left leftEnv right rightEnv)
           leftAdmitted.taken_present leftAdmitted.read_present (plan.rule.produce.get output) pattern
         exact firstRows.trans (answers.symm.trans secondRows.symm)
     | false =>
-        rw [ContextualClauseSourceState.live_output_row leftAdmitted port kind,
-          ContextualClauseSourceState.live_output_row rightAdmitted port kind,
-          ofStored_matches_iff, ofStored_matches_iff, live_matches_iff, live_matches_iff]
+        rw [ContextualClauseSourceState.shared_output_row leftAdmitted port kind,
+          ContextualClauseSourceState.shared_output_row rightAdmitted port kind,
+          ofStored_matches_iff, ofStored_matches_iff, shared_matches_iff, shared_matches_iff]
         erw [prepared_output queries left.declarations leftEnv plan output,
           prepared_output queries right.declarations rightEnv plan output,
           result_value, result_value, ← Assignment.compose_associative, ← Assignment.compose_associative, bindings]

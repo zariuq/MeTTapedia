@@ -1,0 +1,85 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEForcedRangeControls
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEUnconstrainedRangeAlias
+
+/-! # Axiom dependencies of source private-range entry, aliases and returns -/
+
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEUnconstrainedRangeAlias.empty_class
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEUnconstrainedRangeAlias.source_merge
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEUnconstrainedRangeAlias.arrow_source_match
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEUnconstrainedRangeAlias.arrow_policy_match
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEUnconstrainedRangeAlias.Controls.unconstrained_if_arrow_keeps_caller_alias
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEUnconstrainedRangeAlias.Controls.fresh_alias_does_not_mean_number
+
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshRangeFrame.fresh_lookup
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshRangeFrame.assign_eq_extend
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshRangeFrame.closed_nonvariable
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshRangeFrame.source_match
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshRangeFrame.extended_model
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshRangeFrame.old_constraints_retained
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshRangeFrame.forced_range_read
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshRangeFrame.fresh_range_frame
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshRangeFrame.symbol_of_erase
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshRangeFrame.number_range_frame
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshRangeFrame.Controls.old_aliases_survive
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshRangeFrame.Controls.unbound_alias_is_not_fresh
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshRangeFrame.Controls.wildcard_cannot_establish_range
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshRangeAlias.fresh_not_in_equalities
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshRangeAlias.extended_private_facts
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshRangeAlias.assigned_in_support
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshRangeAlias.alias_class_singleton
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshRangeAlias.alias_merge
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshRangeAlias.alias_model
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshRangeAlias.empty_alias_merge
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshRangeAlias.arrow_match
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshRangeAlias.arrow_source_match
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshRangeAlias.forced_alias_read
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshRangeAlias.arrow_alias_frame
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshRangeAlias.if_number_alias_frame
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshRangeControls.if_range_and_operator_frames
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshRangeControls.aliased_caller_survives_both_steps
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshRangeControls.conflicting_alias_has_no_model
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshRangeControls.distinct_is_not_fresh
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEAssignedRangeReturn.valued_class_match
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEAssignedRangeReturn.number_class_match
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEAssignedRangeReturn.number_class_renewal
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEAssignedRangeReturn.number_at_range
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEAssignedRangeReturn.alias_both_classes
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEAssignedRangeReturn.Controls.indirect_range_match_keeps_record
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEAssignedRangeReturn.Controls.repeating_class_values_is_not_an_extra_cast_answer
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEAliasExplicitFrames.agreement
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEAliasExplicitFrames.explicit_bindings
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEAliasExplicitFrames.explicit_shape
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEAliasExplicitFrames.explicit_environment
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEAliasExplicitFrames.explicit_read
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEAliasExplicitFrames.logical_output
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEAliasExplicitFrames.row_explicit
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEAliasExplicitFrames.frontier_explicit
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEAliasExplicitFrames.explicit_work_frame
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEAliasExplicitFrames.explicit_unifier
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEAliasExplicitFrames.Controls.alias_record_changes_without_changing_reads
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEForcedRangeReturn.read_forces
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEForcedRangeReturn.read_supported
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEForcedRangeReturn.class_value_model
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEForcedRangeReturn.class_value_nonvariable
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEForcedRangeReturn.class_values_number
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEForcedRangeReturn.number_values_agree
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEForcedRangeReturn.append_forced_agreement
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEForcedRangeReturn.source_match
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEForcedRangeReturn.renewed_frame
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEForcedRangeReturn.number_at_range
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEForcedRangeAlias.old_model
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEForcedRangeAlias.alias_shape
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEForcedRangeAlias.source_merge
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEForcedRangeAlias.source_match
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEForcedRangeAlias.arrow_source_match
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEForcedRangeAlias.retained_reads
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEForcedRangeAlias.fresh_range_frame
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEForcedRangeControls.indirect_agreement
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEForcedRangeControls.indirect_shape
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEForcedRangeControls.indirect_has_no_range_class_value
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEForcedRangeControls.indirect_raw_match_changes_record
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEForcedRangeControls.indirect_frame
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEForcedRangeControls.indirect_cast_is_actual_source
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEForcedRangeControls.third_private_range
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEForcedRangeControls.empty_class_does_not_force_number
+

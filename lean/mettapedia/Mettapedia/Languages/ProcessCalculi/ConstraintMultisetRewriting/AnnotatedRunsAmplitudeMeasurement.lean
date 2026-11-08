@@ -25,6 +25,11 @@ execution (`born_runAmplitude_complex`, from `rational_execution_readout`).
 * A binary measurement reads two regions of the space, the rows of `yes` and of `no`. Its Born
   probability is `born Z_yes / (born Z_yes + born Z_no)` (`bornProbability`), and its truth value
   pairs it with the PLN confidence `n/(n+k)` of a declared concentration `n` (`measuredTruth`).
+* This reads `born Z_Q` as a Born probability, which is exact when the histories of each region
+  have one end (`AmplitudeRuns.endReadout_of_one_end`). With the nominal end, histories that differ
+  only in the identities they make share an end (`AmplitudeRuns.nominalEnd`); with the
+  identity-observing end every made row is a record, and the Born weights of different ends add
+  (`AmplitudeRuns.branchReadout`).
 * **Through `PLNAmplitudePhase`**: the measurement is the phased state with the Hellinger
   magnitudes of that probability, the relative phase of the two amplitudes, and the concentration
   (`phasedState`). Its typed STV is the measured truth value, for any confidence chart, and the
@@ -179,7 +184,8 @@ end Execution
 
 section Measurement
 
-/-- **The Born probability of `yes`** from the regional amplitudes of `yes` and `no`. -/
+/-- **The Born probability of `yes`** from the regional amplitudes of `yes` and `no`: a probability when
+the histories of each region have one end. -/
 def bornProbability (yes no : Amplitude) : ℚ := born yes / (born yes + born no)
 
 theorem bornProbability_nonneg (yes no : Amplitude) : 0 ≤ bornProbability yes no :=
@@ -290,7 +296,7 @@ omit [DecidableEq O] in
 row `t` at `r`. -/
 def rowFiring (queries : List (PredicateQuery O T)) (checks : List (Check T)) (t : T) (r : O) :
     Firing T S O :=
-  ⟨⟨[], [], [], checks, [t]⟩, queries.map CensusAdmission.Query.fixed, ⟨[], [], [r]⟩⟩
+  ⟨⟨[], [], [], checks, [t]⟩, queries.map PredicateQueryAdmission.Query.fixed, ⟨[], [], [r]⟩⟩
 
 /-- **Admission of a row firing**: every query saw its region whole, the row is fresh and carries
 `t`, the store has a solution, and every guard holds at every solution of the store. -/
@@ -303,9 +309,9 @@ theorem rowFiring_valid_iff (queries : List (PredicateQuery O T)) (checks : List
   have problem : (⟨[], [], [r]⟩ : Selection O).problem label
       (⟨[], [], [], checks, [t]⟩ : RuleInstance T) C = C.equations := by
     simp [Selection.problem, Selection.equations]
-  change CensusAdmission.Valid A label (⟨[], [], [], checks, [t]⟩ : RuleInstance T)
-      (queries.map CensusAdmission.Query.fixed) C (⟨[], [], [r]⟩ : Selection O) ↔ _
-  rw [CensusAdmission.valid_fixed_iff]
+  change PredicateQueryAdmission.Valid A label (⟨[], [], [], checks, [t]⟩ : RuleInstance T)
+      (queries.map PredicateQueryAdmission.Query.fixed) C (⟨[], [], [r]⟩ : Selection O) ↔ _
+  rw [PredicateQueryAdmission.valid_fixed_iff]
   constructor
   · rintro ⟨firing, holds⟩
     have consistent := firing.consistent

@@ -26,6 +26,10 @@ A store holds path rows: `30` and `32` carry the path `1`, `31` carries `-1`.
 * **A dark fringe** (`Fringe.dark_fringe`): of three superposed alternatives, two of amplitudes `1`
   and `-1` end in the outcome `yes` and one of amplitude `1` in `no`. The incoherent readout gives
   `yes` the probability `2/3`; the `yes` paths cancel, so its Born probability is `0`.
+  That reading gives the two `yes` histories one end, as the nominal end does
+  (`AggregationControls.Superposed.nominal_interferes` for the same pair); with the
+  identity-observing end their answer rows are records and `yes` reads `2/3`
+  (`QuantumFringe.dark_fringe_recorded`).
 * **The status travels with the rows** (`complete_published_fires`, `incomplete_published_refused`):
   gathered with its status row, the complete collection fires the certified guard. The staged
   superposition at depth budget `1` has an incomplete collection whose paths `1` and `-1` cancel;
@@ -484,7 +488,8 @@ theorem no_paths : branchAmplitudes A label shifted alternatives₃ 1 root noOut
 end in the outcome `yes`; the third, of amplitude `1`, ends in the outcome `no`. Each `yes` path
 alone has Born weight `1`, and the incoherent readout gives `yes` the probability `2/3`. Coherently
 the `yes` paths cancel, which the complete collection certifies, the regional amplitudes are `0`
-and `1`, and the Born probability of `yes` is `0`. -/
+and `1`, and the Born probability of `yes` is `0`. This reads the two `yes` histories as having one end, which
+holds for the nominal end and fails for the identity-observing end. -/
 theorem dark_fringe :
     branchAmplitudes A label shifted alternatives₃ 1 root yesOutcome = {1, -1} ∧
       branchAmplitudes A label shifted alternatives₃ 1 root noOutcome = {1} ∧

@@ -1,0 +1,32 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HESelectedCallCompositionControls
+
+/-! # Selected ordinary-call composition theorem dependencies -/
+
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HESelectedCallComposition.selectedWorker_of_runs
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HESelectedCallComposition.selectedSource_of_parts
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HESelectedCallComposition.selected_of_derivations
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HESelectedCallComposition.Controls.eraseOperator
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HESelectedCallComposition.Controls.eraseOperand
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HESelectedCallComposition.Controls.eraseCall
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HESelectedCallComposition.Controls.emptyBindings
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HESelectedCallComposition.Controls.actEmpty
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HESelectedCallComposition.Controls.annotations_closed
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HESelectedCallComposition.Controls.emptyMerge
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HESelectedCallComposition.Controls.numberMatch
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HESelectedCallComposition.Controls.arrowMatch
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HESelectedCallComposition.Controls.headQuery
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HESelectedCallComposition.Controls.operandQuery
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HESelectedCallComposition.Controls.selectedSource
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HESelectedCallComposition.Controls.entry
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HESelectedCallComposition.Controls.operatorDerivation
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HESelectedCallComposition.Controls.operandDerivation
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HESelectedCallComposition.Controls.argumentsDerivation
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HESelectedCallComposition.Controls.callDerivation
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HESelectedCallComposition.Controls.typed_constructor_region
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HESelectedCallComposition.Controls.typed_constructor_source
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HESelectedCallComposition.Controls.typed_constructor_finishes
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HESelectedCallComposition.Controls.added_equation_invalidates_absence
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HESelectedCallComposition.Controls.added_equation_changes_return
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HESelectedCallComposition.Controls.added_equation_changes_selected_worker
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HESelectedCallComposition.Controls.ignoring_equation_would_change_answer
+

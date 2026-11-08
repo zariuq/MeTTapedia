@@ -20,7 +20,7 @@ open ContextualPrefixPublicationControls
 local instance : DecidableEq base.Srt := inferInstanceAs (DecidableEq Unit)
 local instance (sort : base.Srt) : DecidableEq (base.Op sort) := inferInstanceAs (DecidableEq DataOperator)
 
-def rows (_ : Nat) : Row none captures [] () := ofStored none captures (.live (symbol 0))
+def rows (_ : Nat) : Row none captures [] () := ofStored none captures (.shared (symbol 0))
 def savedCheck : Check (Term (signature base captures) [] ()) := .equal (generator captures ()) (symbol 1)
 
 theorem the_original_check_has_a_countermodel :

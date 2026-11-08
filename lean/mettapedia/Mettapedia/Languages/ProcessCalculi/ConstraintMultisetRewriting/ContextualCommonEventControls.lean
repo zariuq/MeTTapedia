@@ -7,7 +7,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 
 The common allocator distinguishes the two row-use ports. Each event's
 common data also construct an actual original worklist return. Replacing
-the schema by one live shared value makes the joint equations impossible;
+the schema by one shared value makes the joint equations impossible;
 explicit caller captures likewise remain shared across event scopes.
 -/
 
@@ -94,22 +94,22 @@ theorem each_common_event_constructs_an_actual_original_return (event : Fin 2) :
     · exact (ContextualFrameUnifier.models_append _ _ _).mp one_model_solves_both_events_and_keeps_callers_fixed.1 |>.1
     · exact (ContextualFrameUnifier.models_append _ _ _).mp one_model_solves_both_events_and_keeps_callers_fixed.1 |>.2
 
-def liveRows (_ : Nat) : ContextualStoredRows.Row locals captures [] () :=
-  .live (p (generator captures 0))
-def liveEquations (event : Fin 2) :=
-  ContextualCommonEventProblems.problem locals captures selections occupied event (rule event) liveRows before
+def sharedRows (_ : Nat) : ContextualStoredRows.Row locals captures [] () :=
+  .shared (p (generator captures 0))
+def sharedEquations (event : Fin 2) :=
+  ContextualCommonEventProblems.problem locals captures selections occupied event (rule event) sharedRows before
 def shared : ActiveTerm := generator active (.inr 0)
 
-theorem live_rows_keep_the_same_capture_at_both_ports :
-    liveEquations 0 = [(p a, p shared)] ∧ liveEquations 1 = [(p b, p shared)] := by
+theorem shared_rows_keep_the_same_capture_at_both_ports :
+    sharedEquations 0 = [(p a, p shared)] ∧ sharedEquations 1 = [(p b, p shared)] := by
   constructor <;> with_unfolding_all rfl
 
-theorem a_live_shared_row_cannot_supply_the_two_distinct_instances
+theorem a_shared_row_cannot_supply_the_two_distinct_instances
     {Future : Type} {future : Future → MetaArity base} (model : Assignment active future) :
-    ¬ ContextualFrameUnifier.Models model (liveEquations 0 ++ liveEquations 1) := by
+    ¬ ContextualFrameUnifier.Models model (sharedEquations 0 ++ sharedEquations 1) := by
   intro solved
-  rw [live_rows_keep_the_same_capture_at_both_ports.1,
-    live_rows_keep_the_same_capture_at_both_ports.2] at solved
+  rw [shared_rows_keep_the_same_capture_at_both_ports.1,
+    shared_rows_keep_the_same_capture_at_both_ports.2] at solved
   have first := solved (p a, p shared) (by simp)
   have second := solved (p b, p shared) (by simp)
   have same := first.trans second.symm
@@ -239,7 +239,7 @@ def rule (bind : Bool) : RuleInstance RawTerm :=
     if bind then [.equal (rawHole 1) (atom raw)] else [.equal rawFormal rawSwapped], [output]⟩
 def rows (occurrence : Nat) : ContextualStoredRows.Row locals captures [(), ()] () :=
   if occurrence = 7 then .schema (p (.op (.inr (.mk (.inl 0))) .nil))
-  else if occurrence = 8 then .live (hole 2) else .live (atom captures)
+  else if occurrence = 8 then .shared (hole 2) else .shared (atom captures)
 def before : Configuration (Term (signature base captures) [(), ()] ()) Nat :=
   ⟨[(hole 2, atom captures)], {0, 1, 7, 8}⟩
 def occupied : Finset Nat := ∅
@@ -317,7 +317,7 @@ theorem original_guard_is_an_equation (bind : Bool)
     apply List.mem_append_right
     exact List.mem_cons_self
 
-theorem original_admission (bind : Bool) : ContextualTransportedActivation.SemanticAdmission
+theorem original_admission (bind : Bool) : ContextualGuardedStep.Valid
     locals captures occupied (selection bind) (rule bind) rows before (outputs bind) := by
   refine ⟨⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ContextualFrameUnifier.solvable_of_model (original_problem_has_model bind)⟩
   · cases bind <;> decide +kernel
@@ -514,7 +514,7 @@ def model : Assignment shared ground
   | .inr (.inl name) => localBody true name
   | .inr (.inr name) => callerBody name
 
-theorem producer_admitted : ContextualTransportedActivation.SemanticAdmission
+theorem producer_admitted : ContextualGuardedStep.Valid
     locals captures occupied producer producerRule rows before produced := by
   have old := ContextualPairExecutionControls.original_admission false
   exact ⟨⟨old.take_distinct, old.output_distinct, old.take_length, old.read_length,

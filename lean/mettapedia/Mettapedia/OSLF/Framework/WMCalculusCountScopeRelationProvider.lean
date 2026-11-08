@@ -75,29 +75,29 @@ theorem returned_row_preserves_counted_query (table : HandleTable)
 /-- A successful guarded step and its counting-model preservation arise from
 the same checked provider answer. The theorem is restricted to decoded
 handles and this authored root rule; contextual closure remains separate. -/
-theorem guarded_forget_step_and_sound (table : HandleTable)
+theorem forget_step_and_sound (table : HandleTable)
     (scopeHandle worldHandle queryHandle : Pattern)
     (scope : CountScope) (query : String) (state : CountState)
     (scopeDecode : lookupScope table.scopes scopeHandle = some scope)
     (queryDecode : lookupQuery table.queries queryHandle = some query)
     (success : [("q", queryHandle), ("W", worldHandle), ("S", scopeHandle)] ∈
       applyPremisesWithEnv (relationEnv table)
-        (wmExtVertexLanguageDefGuarded combinedVertex)
+        (wmExtVertexLanguageDef combinedVertex)
         ruleForgetOutside.premises
         [("q", queryHandle), ("W", worldHandle), ("S", scopeHandle)]) :
     langReducesUsing (relationEnv table)
-        (wmExtVertexLanguageDefGuarded combinedVertex)
+        (wmExtVertexLanguageDef combinedVertex)
         (pExtract (pForget scopeHandle worldHandle) queryHandle)
         (pExtract worldHandle queryHandle) ∧
       countingCombined.core.extract (countingCombined.forget scope state) query =
         countingCombined.core.extract state query := by
   constructor
-  · exact Mettapedia.OSLF.Framework.WMCalculusBNBridge.guarded_forget_of_dsep
+  · exact Mettapedia.OSLF.Framework.WMCalculusBNBridge.forget_of_dsep
       combinedVertex (Or.inl rfl) (relationEnv table)
       scopeHandle worldHandle queryHandle success
   · apply countingCombined.forgetOutside
     exact WMCalculusCheckedScopeRelationProvider.premise_success_implies_outside
-      (checkedProvider table) (wmExtVertexLanguageDefGuarded combinedVertex)
+      (checkedProvider table) (wmExtVertexLanguageDef combinedVertex)
       scopeHandle worldHandle queryHandle scope query
       scopeDecode queryDecode success
 
@@ -122,14 +122,14 @@ private def handleTypeContext : FreeTypeContext :=
 /-- The provider's positive operational test inhabits the authored typed
 WM syntax; the handles are variables with explicit sorts, not new formers. -/
 theorem outside_source_typed :
-    HasType (wmExtVertexLanguageDefGuarded combinedVertex)
+    HasType (wmExtVertexLanguageDef combinedVertex)
       handleTypeContext []
       (pExtract (pForget scopeHandle worldHandle) outsideHandle)
       (.base "BinaryEvidence") := by
   exact (checkHasType_eq_true_iff (by decide +kernel)).1 (by decide +kernel)
 
 theorem outside_target_typed :
-    HasType (wmExtVertexLanguageDefGuarded combinedVertex)
+    HasType (wmExtVertexLanguageDef combinedVertex)
       handleTypeContext []
       (pExtract worldHandle outsideHandle)
       (.base "BinaryEvidence") := by
@@ -143,7 +143,7 @@ theorem outside_row_returned :
 theorem outside_premise_accepted :
     [("q", outsideHandle), ("W", worldHandle), ("S", scopeHandle)] ∈
       applyPremisesWithEnv (relationEnv demoTable)
-        (wmExtVertexLanguageDefGuarded combinedVertex)
+        (wmExtVertexLanguageDef combinedVertex)
         ruleForgetOutside.premises
         [("q", outsideHandle), ("W", worldHandle), ("S", scopeHandle)] := by
   decide +kernel
@@ -155,7 +155,7 @@ theorem inside_row_rejected :
 
 theorem inside_premise_rejected :
     applyPremisesWithEnv (relationEnv demoTable)
-      (wmExtVertexLanguageDefGuarded combinedVertex)
+      (wmExtVertexLanguageDef combinedVertex)
       ruleForgetOutside.premises
       [("q", insideHandle), ("W", worldHandle), ("S", scopeHandle)] = [] := by
   decide +kernel
@@ -167,7 +167,7 @@ theorem unknown_row_rejected :
 
 theorem unknown_premise_rejected :
     applyPremisesWithEnv (relationEnv demoTable)
-      (wmExtVertexLanguageDefGuarded combinedVertex)
+      (wmExtVertexLanguageDef combinedVertex)
       ruleForgetOutside.premises
       [("q", .fvar "query:unknown"), ("W", worldHandle),
         ("S", scopeHandle)] = [] := by
@@ -178,10 +178,10 @@ the semantic preservation theorem above proves what this answer means for
 the counting reading. -/
 theorem outside_guard_fires :
     langReducesUsing (relationEnv demoTable)
-      (wmExtVertexLanguageDefGuarded combinedVertex)
+      (wmExtVertexLanguageDef combinedVertex)
       (pExtract (pForget scopeHandle worldHandle) outsideHandle)
       (pExtract worldHandle outsideHandle) := by
-  apply Mettapedia.OSLF.Framework.WMCalculusBNBridge.guarded_forget_of_dsep
+  apply Mettapedia.OSLF.Framework.WMCalculusBNBridge.forget_of_dsep
     combinedVertex (Or.inl rfl) (relationEnv demoTable)
     scopeHandle worldHandle outsideHandle
   exact outside_premise_accepted
@@ -207,7 +207,7 @@ theorem inside_guard_would_change_count :
   decide +kernel
 
 #print axioms returned_row_preserves_counted_query
-#print axioms guarded_forget_step_and_sound
+#print axioms forget_step_and_sound
 #print axioms outside_guard_fires
 #print axioms outside_premise_accepted
 #print axioms outside_guard_preserves_count

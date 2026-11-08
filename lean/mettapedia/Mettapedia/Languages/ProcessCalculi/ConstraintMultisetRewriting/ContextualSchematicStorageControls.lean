@@ -7,7 +7,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 The stored atom is `(= (f a) (b a 2))`. Two successive readers ask for
 `f 1` and `f 2`. Their retained equation store gives answers `b 1 2` and
 `b 2 2`, while the original occurrence stays schematic. Any assignment to
-the caller's live variables extends to both reads.
+the caller's shared variables extends to both reads.
 
 The operators below are the literal constructors of this example; the
 storage and per-use interpretation come from the generic owners.
@@ -102,7 +102,7 @@ def query {Shared : Type} (shared : Shared → MetaArity base) (n : Nat) :
 
 def before : Configuration (Closed captures) Nat := ⟨[], {7,8}⟩
 def rows (o : Nat) : ContextualStoredRows.Row locals captures [] () :=
-  if o = 7 then store locals captures storedRule else .live (generator captures 0)
+  if o = 7 then store locals captures storedRule else .shared (generator captures 0)
 def occupied : Finset Nat := {0}
 def first : Selection Nat := ⟨[], [7], [99]⟩
 def second : Selection Nat := ⟨[], [7], [100]⟩
@@ -170,13 +170,13 @@ theorem first_valid :
     ContextualActivatedStep.Valid locals captures occupied first (query captures 1) rows before firstOutput := by
   refine ⟨rfl, by decide, by decide, rfl, rfl, ?_, by decide, ?_⟩
   · with_unfolding_all rfl
-  · exact ⟨firstWitness,first_read_accepts_every_caller_assignment _ _⟩
+  · exact ContextualFrameUnifier.solvable_of_consistent ⟨firstWitness,first_read_accepts_every_caller_assignment _ _⟩
 
 theorem second_valid :
     ContextualActivatedStep.Valid locals active firstOccupied second (query active 2) firstRows firstAfter secondOutput := by
   refine ⟨rfl, by decide, by decide, rfl, rfl, ?_, by decide, ?_⟩
   · with_unfolding_all rfl
-  · exact ⟨secondWitness,both_reads_accept_every_caller_assignment _ _⟩
+  · exact ContextualFrameUnifier.solvable_of_consistent ⟨secondWitness,both_reads_accept_every_caller_assignment _ _⟩
 
 theorem two_successive_reads :
     ContextualActivatedStep.Step locals captures occupied (query captures 1) rows before
@@ -212,7 +212,7 @@ theorem stored_rule_is_preserved_after_both_reads :
 theorem the_same_physical_rule_survives :
     firstAfter.present = {7,8,99} ∧ secondAfter.present = {7,8,99,100} := by decide +kernel
 
-theorem the_callers_live_variable_remains_arbitrary {Next : Type} (target : Next → MetaArity base)
+theorem the_callers_shared_variable_remains_arbitrary {Next : Type} (target : Next → MetaArity base)
     (caller : Assignment captures target) :
     instantiate (secondSolution target caller)
       (instantiate keep (instantiate (ContextualSelectionViews.capturedTarget locals captures) (generator captures 0))) =
@@ -242,47 +242,47 @@ theorem second_actual_solver_completes :
       (both_reads_accept_every_caller_assignment _ _))]
   decide +kernel
 
-def explicitLiveRows (o : Nat) : ContextualStoredRows.Row locals captures [] () :=
-  if o = 7 then .live (equation (f (generator captures 0)) (b (generator captures 0) (number 2)))
+def explicitSharedRows (o : Nat) : ContextualStoredRows.Row locals captures [] () :=
+  if o = 7 then .shared (equation (f (generator captures 0)) (b (generator captures 0) (number 2)))
     else rows o
-def liveFirstProblem := ContextualActivatedStep.problem locals captures occupied first
-  (query captures 1) explicitLiveRows before
-def liveFirstAfter := ContextualActivatedStep.result locals captures occupied first
-  (query captures 1) explicitLiveRows before
-def liveFirstRows := ContextualActivatedStep.resultRows locals captures first firstOutput explicitLiveRows
-def liveSecondProblem := ContextualActivatedStep.problem locals active firstOccupied second
-  (query active 2) liveFirstRows liveFirstAfter
+def sharedFirstProblem := ContextualActivatedStep.problem locals captures occupied first
+  (query captures 1) explicitSharedRows before
+def sharedFirstAfter := ContextualActivatedStep.result locals captures occupied first
+  (query captures 1) explicitSharedRows before
+def sharedFirstRows := ContextualActivatedStep.resultRows locals captures first firstOutput explicitSharedRows
+def sharedSecondProblem := ContextualActivatedStep.problem locals active firstOccupied second
+  (query active 2) sharedFirstRows sharedFirstAfter
 def ownerAfter : Closed later := generator later (.inr (.inr 0))
 
-theorem explicit_live_first_problem :
-    liveFirstProblem = [(equation (f (number 1)) (localVariable 1 1),
+theorem explicit_shared_first_problem :
+    sharedFirstProblem = [(equation (f (number 1)) (localVariable 1 1),
       equation (f (generator active (.inr 0))) (b (generator active (.inr 0)) (number 2)))] := by
   with_unfolding_all rfl
 
-theorem explicit_live_second_problem :
-    liveSecondProblem =
+theorem explicit_shared_second_problem :
+    sharedSecondProblem =
       [(equation (f (number 1)) (instantiate keep (localVariable 1 1)),
         equation (f ownerAfter) (b ownerAfter (number 2))),
        (equation (f (number 2)) (laterVariable 3 1),
         equation (f ownerAfter) (b ownerAfter (number 2)))] := by
   with_unfolding_all rfl
 
-theorem reading_an_explicit_live_reference_binds_it (candidate : Assignment active next)
-    (solved : ContextualFrameUnifier.Models candidate liveFirstProblem) :
+theorem reading_an_explicit_shared_reference_binds_it (candidate : Assignment active next)
+    (solved : ContextualFrameUnifier.Models candidate sharedFirstProblem) :
     instantiate candidate (generator active (.inr 0)) = number 1 := by
-  rw [explicit_live_first_problem] at solved
+  rw [explicit_shared_first_problem] at solved
   exact read_argument candidate (generator active (.inr 0)) (localVariable 1 1) 1
     (solved _ List.mem_cons_self)
 
-def liveFirstWitness : Assignment active active := firstSolution active (fun _ => number 1)
+def sharedFirstWitness : Assignment active active := firstSolution active (fun _ => number 1)
 
-theorem explicit_live_first_valid :
+theorem explicit_shared_first_valid :
     ContextualActivatedStep.Valid locals captures occupied first (query captures 1)
-      explicitLiveRows before firstOutput := by
-  refine ⟨rfl, by decide, by decide, rfl, rfl, ?_, by decide, liveFirstWitness, ?_⟩
+      explicitSharedRows before firstOutput := by
+  refine ⟨rfl, by decide, by decide, rfl, rfl, ?_, by decide, ContextualFrameUnifier.solvable_of_consistent ⟨sharedFirstWitness, ?_⟩⟩
   · with_unfolding_all rfl
-  · change ContextualFrameUnifier.Models liveFirstWitness liveFirstProblem
-    rw [explicit_live_first_problem]
+  · change ContextualFrameUnifier.Models sharedFirstWitness sharedFirstProblem
+    rw [explicit_shared_first_problem]
     intro e member
     have same := List.mem_singleton.mp member
     subst e
@@ -297,11 +297,11 @@ theorem one_and_two_are_distinct : (number 1 : Closed declaration) ≠ number 2 
   exact (by decide : (1 : Nat) ≠ 2) (Option.some.inj (congrArg numberValue same))
 
 /-- Explicit sharing retains the earlier binding; the second reader cannot
-resample that one live variable to a different value. -/
-theorem the_two_reads_cannot_independently_bind_one_live_reference (candidate : Assignment later next) :
-    ¬ ContextualFrameUnifier.Models candidate liveSecondProblem := by
+resample that one shared variable to a different value. -/
+theorem the_two_reads_cannot_independently_bind_one_shared_reference (candidate : Assignment later next) :
+    ¬ ContextualFrameUnifier.Models candidate sharedSecondProblem := by
   intro solved
-  rw [explicit_live_second_problem] at solved
+  rw [explicit_shared_second_problem] at solved
   have one := read_argument candidate ownerAfter (instantiate keep (localVariable 1 1)) 1
     (solved _ List.mem_cons_self)
   have two := read_argument candidate ownerAfter (laterVariable 3 1) 2
@@ -309,12 +309,12 @@ theorem the_two_reads_cannot_independently_bind_one_live_reference (candidate : 
       equation (f ownerAfter) (b ownerAfter (number 2))) (by simp))
   exact one_and_two_are_distinct (one.symm.trans two)
 
-theorem the_explicit_live_second_read_is_refused :
+theorem the_explicit_shared_second_read_is_refused :
     ¬ ContextualActivatedStep.Valid locals active firstOccupied second (query active 2)
-      liveFirstRows liveFirstAfter secondOutput := by
+      sharedFirstRows sharedFirstAfter secondOutput := by
   intro valid
-  obtain ⟨candidate,solved⟩ := valid.consistent
-  exact the_two_reads_cannot_independently_bind_one_live_reference candidate solved
+  obtain ⟨Future, future, candidate, solved⟩ := valid.solvable
+  exact the_two_reads_cannot_independently_bind_one_shared_reference candidate solved
 
 def takeFirst : Selection Nat := ⟨[7],[],[99]⟩
 def takeQuery : RuleInstance (Closed raw) :=
@@ -322,7 +322,7 @@ def takeQuery : RuleInstance (Closed raw) :=
 
 theorem taking_a_schema_uses_a_fresh_instance :
     ContextualActivatedStep.Valid locals captures occupied takeFirst takeQuery rows before firstOutput := by
-  refine ⟨rfl, by decide, by decide, rfl, rfl, ?_, by decide, firstWitness, ?_⟩
+  refine ⟨rfl, by decide, by decide, rfl, rfl, ?_, by decide, ContextualFrameUnifier.solvable_of_consistent ⟨firstWitness, ?_⟩⟩
   · with_unfolding_all rfl
   · have same : ContextualActivatedStep.problem locals captures occupied takeFirst takeQuery rows before =
         firstProblem := by with_unfolding_all rfl

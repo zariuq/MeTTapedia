@@ -9,7 +9,7 @@ two reads share one physical occurrence, while the count observes two equal
 values at distinct occurrences. The reverse bridge preserves those choices.
 
 Two negative controls delimit the bridge: a currently successful literal
-absence test over a live variable is not a certain ask, and a matching
+absence test over a shared variable is not a certain ask, and a matching
 receipt cannot make an inconsistent tell store admissible.
 -/
 
@@ -53,7 +53,7 @@ theorem matching_receipt_is_independently_valid :
     · change regionOf label before.present (semRegion (ResolvedMatching.literalLayer A)
         ResolvedMatching.assignment (.const 2)) = {1, 4}
       rw [literal_region]
-      simp only [Check.region, A.apply_identity]
+      simp only [Check.matches, A.apply_identity]
       change ({0, 1, 4} : Finset Nat).filter
         (fun occurrence => Term.const (σ := signature) 2 = label occurrence) = {1, 4}
       ext occurrence
@@ -73,7 +73,7 @@ theorem matching_receipt_is_independently_valid :
     · change regionOf label before.present (semRegion (ResolvedMatching.literalLayer A)
         ResolvedMatching.assignment (.const 8)) = ∅
       rw [literal_region]
-      simp only [Check.region, A.apply_identity]
+      simp only [Check.matches, A.apply_identity]
       change ({0, 1, 4} : Finset Nat).filter
         (fun occurrence => Term.const (σ := signature) 8 = label occurrence) = ∅
       apply Finset.eq_empty_iff_forall_notMem.mpr
@@ -151,7 +151,7 @@ theorem a_literal_open_absence_receipt_can_be_valid :
   · change regionOf ConstraintMultisetRewriting.Controls.label openBefore.present
       (semRegion (ResolvedMatching.literalLayer A) ResolvedMatching.assignment (.const 0)) = ∅
     rw [literal_region]
-    simp only [Check.region, A.apply_identity]
+    simp only [Check.matches, A.apply_identity]
     change ({1} : Finset Nat).filter
       (fun occurrence => Term.const (σ := signature) 0 = ConstraintMultisetRewriting.Controls.label occurrence) = ∅
     apply Finset.eq_empty_iff_forall_notMem.mpr

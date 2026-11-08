@@ -914,12 +914,12 @@ surrounding phase has finished. The relation retains source freshening choices;
 selecting a concrete fresh-name/query implementation is a later realization.
 -/
 
-inductive LocalStep : Space → Spec.Eval.GroundedDispatch → Completed.CastLookup → Policy →
+inductive LocalStepWith (admission : Completed.ArgumentService) : Space → Spec.Eval.GroundedDispatch → Completed.CastLookup → Policy →
     Control × List Continuation → Control × List Continuation → Prop where
   | delivered {space dispatch lookup policy live scope value expected activation stack} :
       Entry.Rel policy.reentry (activation.read policy value).status
         (activation.read policy value).erase expected .deliver →
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.atom live scope value expected activation),stack)
         (.returning [(activation.read policy value,activation)],stack)
   | cast {space dispatch lookup policy live scope value expected activation raw results stack} :
@@ -933,14 +933,14 @@ inductive LocalStep : Space → Spec.Eval.GroundedDispatch → Completed.CastLoo
         (lookup (invocationTypeScope scope live
           (activation.read policy value).erase expected activation.bindings) space)
         activation (activation.read policy value) expected) raw results →
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.atom live scope value expected activation),stack) (.returning results,stack)
   | atomTuple {space dispatch lookup policy live scope value expected activation readiness operator arguments stack} :
       Entry.Rel policy.reentry (activation.read policy value).status
         (activation.read policy value).erase expected .interpret →
       activation.read policy value = .expression readiness (operator :: arguments) →
       TypeOccurrencesRel (space.atoms : Multiset Atom) operator.erase {Atom.undefinedType} →
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.atom live scope value expected activation),stack)
         (.work (.tuple (expected :: live) scope (operator :: arguments) activation),
           .calls live scope expected :: .publish (activation.read policy value).erase :: stack)
@@ -948,9 +948,9 @@ inductive LocalStep : Space → Spec.Eval.GroundedDispatch → Completed.CastLoo
       Entry.Rel policy.reentry (activation.read policy value).status
         (activation.read policy value).erase expected .interpret →
       activation.read policy value = .expression readiness (operator :: arguments) →
-      Completed.InvocationSelectionRel space lookup policy live scope (activation.read policy value).erase
+      admission.selection space lookup policy live scope (activation.read policy value).erase
         operator.erase expected activation (.selected signature frames) →
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.atom live scope value expected activation),stack)
         (.work (.invocations live scope expected signature operator arguments frames),
           .publish (activation.read policy value).erase :: stack)
@@ -958,9 +958,9 @@ inductive LocalStep : Space → Spec.Eval.GroundedDispatch → Completed.CastLoo
       Entry.Rel policy.reentry (activation.read policy value).status
         (activation.read policy value).erase expected .interpret →
       activation.read policy value = .expression readiness (operator :: arguments) →
-      Completed.InvocationSelectionRel space lookup policy live scope (activation.read policy value).erase
+      admission.selection space lookup policy live scope (activation.read policy value).erase
         operator.erase expected activation (.exhausted errors true) →
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.atom live scope value expected activation),stack)
         (.work (.tuple (expected :: live) scope (operator :: arguments) activation),
           .calls live scope expected :: .diagnostics errors activation ::
@@ -969,121 +969,121 @@ inductive LocalStep : Space → Spec.Eval.GroundedDispatch → Completed.CastLoo
       Entry.Rel policy.reentry (activation.read policy value).status
         (activation.read policy value).erase expected .interpret →
       activation.read policy value = .expression readiness (operator :: arguments) →
-      Completed.InvocationSelectionRel space lookup policy live scope (activation.read policy value).erase
+      admission.selection space lookup policy live scope (activation.read policy value).erase
         operator.erase expected activation (.exhausted errors false) →
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.atom live scope value expected activation),stack)
         (.returning (Completed.diagnosticResults errors activation),
           .publish (activation.read policy value).erase :: stack)
   | tupleNil {space dispatch lookup policy live scope activation stack} :
-      LocalStep space dispatch lookup policy (.work (.tuple live scope [] activation),stack)
+      LocalStepWith admission space dispatch lookup policy (.work (.tuple live scope [] activation),stack)
         (.returning [(.expression .active [],activation)],stack)
   | tupleSingleton {space dispatch lookup policy live scope value activation stack} :
-      LocalStep space dispatch lookup policy (.work (.tuple live scope [value] activation),stack)
+      LocalStepWith admission space dispatch lookup policy (.work (.tuple live scope [value] activation),stack)
         (.work (.atom live scope value Atom.undefinedType activation),.singleton :: stack)
   | tupleCons {space dispatch lookup policy live scope head second remaining activation stack} :
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.tuple live scope (head :: second :: remaining) activation),stack)
         (.work (.atom (.expression ((second :: remaining).map Entry.Value.erase) :: live)
           scope head Atom.undefinedType activation),.branches live scope (second :: remaining) :: stack)
   | branchesNil {space dispatch lookup policy live scope tail stack} :
-      LocalStep space dispatch lookup policy (.work (.branches live scope tail []),stack) (.returning [],stack)
+      LocalStepWith admission space dispatch lookup policy (.work (.branches live scope tail []),stack) (.returning [],stack)
   | branchesStopped {space dispatch lookup policy live scope tail head heads stack} :
       IsEmptyOrErrorRel head.1.erase →
-      LocalStep space dispatch lookup policy (.work (.branches live scope tail (head :: heads)),stack)
+      LocalStepWith admission space dispatch lookup policy (.work (.branches live scope tail (head :: heads)),stack)
         (.work (.branches live scope tail heads),.prepend [head] :: stack)
   | branchesContinue {space dispatch lookup policy live scope tail head heads stack} :
       ¬IsEmptyOrErrorRel head.1.erase →
-      LocalStep space dispatch lookup policy (.work (.branches live scope tail (head :: heads)),stack)
+      LocalStepWith admission space dispatch lookup policy (.work (.branches live scope tail (head :: heads)),stack)
         (.work (.tuple (head.1.erase :: live) scope tail head.2),
           .tupleTail head.1 :: .append (.branches live scope tail heads) :: stack)
   | argumentsNil {space dispatch lookup policy live scope activation stack} :
-      LocalStep space dispatch lookup policy (.work (.arguments live scope [] activation),stack)
+      LocalStepWith admission space dispatch lookup policy (.work (.arguments live scope [] activation),stack)
         (.returning [(Entry.Value.argumentPacket [],activation)],stack)
   | argumentsCons {space dispatch lookup policy live scope request requests activation stack} :
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.arguments live scope (request :: requests) activation),stack)
         (.work (.atom (Completed.argumentScope requests ++ live) scope request.1 request.2 activation),
           .arguments live scope request.1 requests :: stack)
   | argumentBranchesNil {space dispatch lookup policy live scope original requests stack} :
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.argumentBranches live scope original requests []),stack) (.returning [],stack)
   | argumentBranchesStopped {space dispatch lookup policy live scope original requests head heads stack} :
       Completed.ArgumentStopped original head →
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.argumentBranches live scope original requests (head :: heads)),stack)
         (.work (.argumentBranches live scope original requests heads),.prepend [head] :: stack)
   | argumentBranchesContinue {space dispatch lookup policy live scope original requests head heads stack} :
       ¬Completed.ArgumentStopped original head →
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.argumentBranches live scope original requests (head :: heads)),stack)
         (.work (.arguments (head.1.erase :: live) scope requests head.2),
           .argumentTail head.1 :: .append (.argumentBranches live scope original requests heads) :: stack)
   | functionStart {space dispatch lookup policy live scope expected signature operator arguments activation stack} :
       arguments.length = signature.argumentTypes.length →
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.function live scope expected signature operator arguments activation),stack)
         (.work (.atom (signature.functionType :: arguments.map Entry.Value.erase ++ live)
           (scope ++ expectedApplicationScope (.expression ((operator :: arguments).map Entry.Value.erase)) expected)
           operator signature.functionType activation),
           .functionHeads live scope (arguments.zip signature.argumentTypes) :: stack)
   | functionBranchesNil {space dispatch lookup policy live scope requests stack} :
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.functionBranches live scope requests []),stack) (.returning [],stack)
   | functionBranchesStopped {space dispatch lookup policy live scope requests head heads stack} :
       IsEmptyOrErrorRel head.1.erase →
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.functionBranches live scope requests (head :: heads)),stack)
         (.work (.functionBranches live scope requests heads),.prepend [head] :: stack)
   | functionBranchesContinue {space dispatch lookup policy live scope requests head heads stack} :
       ¬IsEmptyOrErrorRel head.1.erase →
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.functionBranches live scope requests (head :: heads)),stack)
         (.work (.arguments (head.1.erase :: live) scope requests head.2),
           .functionAssemble head.1 :: .append (.functionBranches live scope requests heads) :: stack)
   | invocationsNil {space dispatch lookup policy live scope expected signature operator arguments stack} :
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.invocations live scope expected signature operator arguments []),stack) (.returning [],stack)
   | invocationsCons {space dispatch lookup policy live scope expected signature operator arguments activation activations stack} :
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.invocations live scope expected signature operator arguments (activation :: activations)),stack)
         (.work (.function (Completed.invocationReturnType signature :: live) scope expected signature
           operator arguments activation),
           .calls live scope (Completed.invocationReturnType signature) ::
             .append (.invocations live scope expected signature operator arguments activations) :: stack)
   | callsNil {space dispatch lookup policy live scope expected stack} :
-      LocalStep space dispatch lookup policy (.work (.calls live scope expected []),stack) (.returning [],stack)
+      LocalStepWith admission space dispatch lookup policy (.work (.calls live scope expected []),stack) (.returning [],stack)
   | callsCons {space dispatch lookup policy live scope expected head heads stack} :
-      LocalStep space dispatch lookup policy (.work (.calls live scope expected (head :: heads)),stack)
+      LocalStepWith admission space dispatch lookup policy (.work (.calls live scope expected (head :: heads)),stack)
         (.work (.call live scope head.1 expected head.2),.append (.calls live scope expected heads) :: stack)
   | callError {space dispatch lookup policy live scope value expected activation stack} :
       IsErrorRel value.erase →
-      LocalStep space dispatch lookup policy (.work (.call live scope value expected activation),stack)
+      LocalStepWith admission space dispatch lookup policy (.work (.call live scope value expected activation),stack)
         (.returning [(value,activation)],stack)
   | callEmbedded {space dispatch lookup policy live scope value expected activation stack} :
       ¬IsErrorRel value.erase → ¬Minimal.HostCall dispatch value.erase →
       Minimal.embeddedInstruction value.erase = true →
-      LocalStep space dispatch lookup policy (.work (.call live scope value expected activation),stack)
+      LocalStepWith admission space dispatch lookup policy (.work (.call live scope value expected activation),stack)
         (.work (.invocation (expected :: live) scope none value activation),
           .boundaryBatch live scope none (.returned value expected) :: stack)
   | callAbsent {space dispatch lookup policy live scope value expected activation stack} :
       ¬IsErrorRel value.erase → NonGroundedCallRel dispatch value.erase →
       EquationFrontierRel space (expected :: live) value.erase activation.bindings [] →
-      LocalStep space dispatch lookup policy (.work (.call live scope value expected activation),stack)
+      LocalStepWith admission space dispatch lookup policy (.work (.call live scope value expected activation),stack)
         (.returning [(value,activation)],stack)
   | callEquations {space dispatch lookup policy live scope value expected activation works stack} :
       ¬IsErrorRel value.erase → NonGroundedCallRel dispatch value.erase →
       EquationFrontierRel space (expected :: live) value.erase activation.bindings works → works ≠ [] →
-      LocalStep space dispatch lookup policy (.work (.call live scope value expected activation),stack)
+      LocalStepWith admission space dispatch lookup policy (.work (.call live scope value expected activation),stack)
         (.work (.equations live scope value expected activation works),stack)
   | equationsNil {space dispatch lookup policy live scope original expected activation stack} :
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.equations live scope original expected activation []),stack) (.returning [],stack)
   | equationsCons {space dispatch lookup policy live scope original expected activation work works output stack} :
       output.bindings = work.bindings →
       Entry.Value.UnifyRel policy.rebuilding activation.environment original (Entry.Value.ofAtom work.pattern)
         output.environment →
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.equations live scope original expected activation (work :: works)),stack)
         (.work (.boundary (expected :: live) scope (some original.erase) .producer
           (output.read policy (Entry.Value.ofAtom work.body)) output),
@@ -1091,35 +1091,35 @@ inductive LocalStep : Space → Spec.Eval.GroundedDispatch → Completed.CastLoo
           .append (.equations live scope original expected activation works) :: stack)
   | returnRefused {space dispatch lookup policy live scope original expected value activation stack} :
       value.erase = Atom.notReducible →
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.returned live scope original expected value activation),stack)
         (.returning [(original,activation)],stack)
   | returnStopped {space dispatch lookup policy live scope original expected value activation stack} :
       IsEmptyOrErrorRel value.erase →
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.returned live scope original expected value activation),stack)
         (.returning [(value,activation)],stack)
   | returnEvaluate {space dispatch lookup policy live scope original expected value activation stack} :
       value.erase ≠ Atom.notReducible → ¬IsEmptyOrErrorRel value.erase →
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.returned live scope original expected value activation),stack)
         (.work (.atom live scope value expected activation),stack)
   | minimalData {space dispatch lookup policy live scope caller value activation stack} :
       Minimal.embeddedInstruction value.erase = false →
-      LocalStep space dispatch lookup policy (.work (.minimal live scope caller value activation),stack)
+      LocalStepWith admission space dispatch lookup policy (.work (.minimal live scope caller value activation),stack)
         (.returning [(value,activation)],stack)
   | minimalEval {space dispatch lookup policy live scope caller readiness operand activation stack} :
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.minimal live scope caller (.expression readiness [.symbol "eval",operand]) activation),stack)
         (.work (.invocation live scope caller (activation.read policy operand) activation),stack)
   | minimalEvalc {space context dispatch lookup policy live scope caller readiness operand activation services enumeration stack} :
       dispatch.minimal = some ⟨services,enumeration⟩ →
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.minimal live scope caller
           (.expression readiness [.symbol "evalc",operand,.grounded (services.contextPayload context)]) activation),stack)
         (.context context (.work (.invocation live scope caller (activation.read policy operand) activation)) [],stack)
   | minimalChain {space dispatch lookup policy live scope caller readiness operand name template activation stack} :
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.minimal live scope caller (.expression readiness [.symbol "chain",operand,.var name,template]) activation),stack)
         (.work (.minimal ((.expression [.symbol "chain",operand.erase,.var name,template.erase]) :: live) scope
           (some (.expression [.symbol "chain",operand.erase,.var name,template.erase])) operand activation),
@@ -1127,175 +1127,189 @@ inductive LocalStep : Space → Spec.Eval.GroundedDispatch → Completed.CastLoo
   | minimalUnifyYes {space dispatch lookup policy live scope caller readiness target pattern yes no activation output stack} :
       UnifyCandidateRel target.erase pattern.erase activation.bindings output.bindings →
       Entry.Value.UnifyRel policy.rebuilding activation.environment target pattern output.environment →
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.minimal live scope caller (.expression readiness [.symbol "unify",target,pattern,yes,no]) activation),stack)
         (.returning [(output.read policy yes,output)],stack)
   | minimalUnifyNo {space dispatch lookup policy live scope caller readiness target pattern yes no activation stack} :
       UnifyNoMatchRel target.erase pattern.erase activation.bindings →
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.minimal live scope caller (.expression readiness [.symbol "unify",target,pattern,yes,no]) activation),stack)
         (.returning [(no,activation)],stack)
   | minimalUnifyBadArity {space dispatch lookup policy live scope caller readiness tail activation stack} :
       tail.length ≠ 4 →
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.minimal live scope caller (.expression readiness (.symbol "unify" :: tail)) activation),stack)
         (.returning [(Entry.Value.ofAtom (mkErrorMessage (.expression (.symbol "unify" :: tail.map Entry.Value.erase))
           (dispatch.unifyBadArityMessage (.expression (.symbol "unify" :: tail.map Entry.Value.erase)))),activation)],stack)
   | minimalConsAtom {space dispatch lookup policy live scope caller readiness tailReadiness head tail activation stack} :
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.minimal live scope caller
           (.expression readiness [.symbol "cons-atom",head,.expression tailReadiness tail]) activation),stack)
         (.returning [(.expression .active (head :: tail),activation)],stack)
   | minimalDeconsAtom {space dispatch lookup policy live scope caller readiness valueReadiness head tail activation stack} :
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.minimal live scope caller
           (.expression readiness [.symbol "decons-atom",.expression valueReadiness (head :: tail)]) activation),stack)
         (.returning [(.expression .active [head,.expression .active tail],activation)],stack)
   | minimalFunction {space dispatch lookup policy live scope caller readiness body bodyReadiness children activation stack} :
       body = .expression bodyReadiness children →
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.minimal live scope caller (.expression readiness [.symbol "function",body]) activation),stack)
         (.work (.body ((.expression [.symbol "function",body.erase]) :: live) scope
           (some (.expression [.symbol "function",body.erase])) body activation),
           .boundaryBatch live scope caller .functionDone :: stack)
   | minimalMetta {space context dispatch lookup policy live scope caller readiness operand expected activation services enumeration stack} :
       dispatch.minimal = some ⟨services,enumeration⟩ →
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.minimal live scope caller
           (.expression readiness [.symbol "metta",operand,expected,.grounded (services.contextPayload context)]) activation),stack)
         (.context context (.work (.atom live scope operand expected.erase activation)) [],stack)
   | minimalContextSpace {space dispatch lookup policy live scope caller readiness activation services enumeration stack} :
       dispatch.minimal = some ⟨services,enumeration⟩ →
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.minimal live scope caller (.expression readiness [.symbol "context-space"]) activation),stack)
         (.returning [(.grounded (services.contextPayload space),activation)],stack)
   | bodyStart {space dispatch lookup policy live scope caller value activation stack} :
-      LocalStep space dispatch lookup policy (.work (.body live scope caller value activation),stack)
+      LocalStepWith admission space dispatch lookup policy (.work (.body live scope caller value activation),stack)
         (.work (.minimal live scope caller value activation),.boundaryBatch live scope caller .body :: stack)
   | invocationEmbedded {space dispatch lookup policy live scope caller value activation stack} :
       ¬Minimal.HostCall dispatch value.erase → Minimal.embeddedInstruction value.erase = true →
-      LocalStep space dispatch lookup policy (.work (.invocation live scope caller value activation),stack)
+      LocalStepWith admission space dispatch lookup policy (.work (.invocation live scope caller value activation),stack)
         (.work (.minimal live scope caller value activation),stack)
   | invocationAbsent {space dispatch lookup policy live scope caller value activation stack} :
       NonGroundedCallRel dispatch value.erase → EquationFrontierRel space live value.erase activation.bindings [] →
-      LocalStep space dispatch lookup policy (.work (.invocation live scope caller value activation),stack)
+      LocalStepWith admission space dispatch lookup policy (.work (.invocation live scope caller value activation),stack)
         (.returning [(.symbol "NotReducible",activation)],stack)
   | invocationEquations {space dispatch lookup policy live scope caller value activation works stack} :
       NonGroundedCallRel dispatch value.erase →
       EquationFrontierRel space live value.erase activation.bindings works → works ≠ [] →
-      LocalStep space dispatch lookup policy (.work (.invocation live scope caller value activation),stack)
+      LocalStepWith admission space dispatch lookup policy (.work (.invocation live scope caller value activation),stack)
         (.work (.invocationEquations live scope value activation works),stack)
   | invocationEquationsNil {space dispatch lookup policy live scope original activation stack} :
-      LocalStep space dispatch lookup policy (.work (.invocationEquations live scope original activation []),stack) (.returning [],stack)
+      LocalStepWith admission space dispatch lookup policy (.work (.invocationEquations live scope original activation []),stack) (.returning [],stack)
   | invocationEquationsCons {space dispatch lookup policy live scope original activation work works output stack} :
       output.bindings = work.bindings →
       Entry.Value.UnifyRel policy.rebuilding activation.environment original (Entry.Value.ofAtom work.pattern) output.environment →
-      LocalStep space dispatch lookup policy (.work (.invocationEquations live scope original activation (work :: works)),stack)
+      LocalStepWith admission space dispatch lookup policy (.work (.invocationEquations live scope original activation (work :: works)),stack)
         (.work (.boundary live scope (some original.erase) .producer (output.read policy (Entry.Value.ofAtom work.body)) output),
           .append (.invocationEquations live scope original activation works) :: stack)
   | boundaryChain {space dispatch lookup policy live scope caller name template value activation stack} :
-      LocalStep space dispatch lookup policy (.work (.boundary live scope caller (.chain name template) value activation),stack)
+      LocalStepWith admission space dispatch lookup policy (.work (.boundary live scope caller (.chain name template) value activation),stack)
         (.work (.minimal live scope caller (Completed.substituteBinder policy name (activation.read policy value) template) activation),stack)
   | boundaryBodyTerminal {space dispatch lookup policy live scope caller value activation stack} :
       Minimal.embeddedInstruction (activation.read policy value).erase = false →
-      LocalStep space dispatch lookup policy (.work (.boundary live scope caller .body value activation),stack)
+      LocalStepWith admission space dispatch lookup policy (.work (.boundary live scope caller .body value activation),stack)
         (.returning [(activation.read policy value,activation)],stack)
   | boundaryBodyResume {space dispatch lookup policy live scope caller value activation stack} :
       Minimal.embeddedInstruction (activation.read policy value).erase = true →
-      LocalStep space dispatch lookup policy (.work (.boundary live scope caller .body value activation),stack)
+      LocalStepWith admission space dispatch lookup policy (.work (.boundary live scope caller .body value activation),stack)
         (.work (.body live scope caller (activation.read policy value) activation),stack)
   | boundaryFunctionReturn {space dispatch lookup policy live scope caller readiness returned activation stack} :
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.boundary live scope caller .functionDone (.expression readiness [.symbol "return",returned]) activation),stack)
         (.returning [(returned,activation)],stack)
   | boundaryFunctionNoReturn {space dispatch lookup policy live scope caller value activation stack} :
       (∀ returned, value.erase ≠ .expression [.symbol "return",returned]) →
-      LocalStep space dispatch lookup policy (.work (.boundary live scope caller .functionDone value activation),stack)
+      LocalStepWith admission space dispatch lookup policy (.work (.boundary live scope caller .functionDone value activation),stack)
         (.returning [(Entry.Value.ofAtom (Minimal.functionTerminalResult caller value.erase),activation)],stack)
   | boundaryProducerRaw {space dispatch lookup policy live scope caller value activation stack} :
       ¬Completed.FunctionPending policy value →
-      LocalStep space dispatch lookup policy (.work (.boundary live scope caller .producer value activation),stack)
+      LocalStepWith admission space dispatch lookup policy (.work (.boundary live scope caller .producer value activation),stack)
         (.returning [(value,activation)],stack)
   | boundaryProducerFunction {space dispatch lookup policy live scope caller value activation stack} :
       Completed.FunctionPending policy value →
-      LocalStep space dispatch lookup policy (.work (.boundary live scope caller .producer value activation),stack)
+      LocalStepWith admission space dispatch lookup policy (.work (.boundary live scope caller .producer value activation),stack)
         (.work (.minimal live scope caller value activation),stack)
   | boundaryReturned {space dispatch lookup policy live scope caller original expected value activation stack} :
-      LocalStep space dispatch lookup policy (.work (.boundary live scope caller (.returned original expected) value activation),stack)
+      LocalStepWith admission space dispatch lookup policy (.work (.boundary live scope caller (.returned original expected) value activation),stack)
         (.work (.returned live scope original expected value activation),stack)
   | boundaryBatchNil {space dispatch lookup policy live scope caller site stack} :
-      LocalStep space dispatch lookup policy (.work (.boundaryBatch live scope caller site []),stack) (.returning [],stack)
+      LocalStepWith admission space dispatch lookup policy (.work (.boundaryBatch live scope caller site []),stack) (.returning [],stack)
   | boundaryBatchCons {space dispatch lookup policy live scope caller site head heads stack} :
-      LocalStep space dispatch lookup policy (.work (.boundaryBatch live scope caller site (head :: heads)),stack)
+      LocalStepWith admission space dispatch lookup policy (.work (.boundaryBatch live scope caller site (head :: heads)),stack)
         (.work (.boundary live scope caller site head.1 head.2),.append (.boundaryBatch live scope caller site heads) :: stack)
   | boundaryNativeEmittedRaw {space dispatch lookup policy live scope caller original value activation stack} :
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.boundary live scope caller (.native original none .emitted) value activation),stack)
         (.work (.boundary live scope (some original.erase) .producer value activation),stack)
   | boundaryNativeEmittedReturn {space dispatch lookup policy live scope caller original expected value activation stack} :
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.boundary live scope caller (.native original (some expected) .emitted) value activation),stack)
         (.work (.boundary (expected :: live) scope (some original.erase) .producer value activation),
           .boundaryBatch live scope caller (.returned original expected) :: stack)
   | boundaryNativeCompletedRaw {space dispatch lookup policy live scope caller original value activation stack} :
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.boundary live scope caller (.native original none .completed) value activation),stack)
         (.returning [(value,activation)],stack)
   | boundaryNativeCompletedReturn {space dispatch lookup policy live scope caller original expected value activation results stack} :
       Completed.NativeCompletedReturnRel space
         (lookup (invocationTypeScope scope live original.erase expected activation.bindings) space)
         policy value expected activation results →
-      LocalStep space dispatch lookup policy
+      LocalStepWith admission space dispatch lookup policy
         (.work (.boundary live scope caller (.native original (some expected) .completed) value activation),stack)
         (.returning results,stack)
   | publish {space dispatch lookup policy original raw selected stack} :
       SuccessPriorityRel (fun result : Result => isErrorAtom result.1.erase)
         (raw.map (Completed.readResult policy)) selected →
-      LocalStep space dispatch lookup policy (.returning raw,.publish original :: stack)
+      LocalStepWith admission space dispatch lookup policy (.returning raw,.publish original :: stack)
         (.returning (selected.map (Completed.publishResult policy original)),stack)
   | singleton {space dispatch lookup policy results stack} :
-      LocalStep space dispatch lookup policy (.returning results,.singleton :: stack)
+      LocalStepWith admission space dispatch lookup policy (.returning results,.singleton :: stack)
         (.returning (results.map Completed.tupleSingleton),stack)
   | branches {space dispatch lookup policy live scope tail heads stack} :
-      LocalStep space dispatch lookup policy (.returning heads,.branches live scope tail :: stack)
+      LocalStepWith admission space dispatch lookup policy (.returning heads,.branches live scope tail :: stack)
         (.work (.branches live scope tail heads),stack)
   | tupleTail {space dispatch lookup policy head results stack} :
-      LocalStep space dispatch lookup policy (.returning results,.tupleTail head :: stack)
+      LocalStepWith admission space dispatch lookup policy (.returning results,.tupleTail head :: stack)
         (.returning (results.map (Completed.tuplePrepend head)),stack)
   | arguments {space dispatch lookup policy live scope original requests heads stack} :
-      LocalStep space dispatch lookup policy (.returning heads,.arguments live scope original requests :: stack)
+      LocalStepWith admission space dispatch lookup policy (.returning heads,.arguments live scope original requests :: stack)
         (.work (.argumentBranches live scope original requests heads),stack)
   | argumentTail {space dispatch lookup policy head results stack} :
-      LocalStep space dispatch lookup policy (.returning results,.argumentTail head :: stack)
+      LocalStepWith admission space dispatch lookup policy (.returning results,.argumentTail head :: stack)
         (.returning (results.map (Completed.argumentPrepend head)),stack)
   | functionHeads {space dispatch lookup policy live scope requests heads stack} :
-      LocalStep space dispatch lookup policy (.returning heads,.functionHeads live scope requests :: stack)
+      LocalStepWith admission space dispatch lookup policy (.returning heads,.functionHeads live scope requests :: stack)
         (.work (.functionBranches live scope requests heads),stack)
   | functionAssemble {space dispatch lookup policy head results stack} :
-      LocalStep space dispatch lookup policy (.returning results,.functionAssemble head :: stack)
+      LocalStepWith admission space dispatch lookup policy (.returning results,.functionAssemble head :: stack)
         (.returning (results.map (Completed.functionAssemble head)),stack)
   | diagnostics {space dispatch lookup policy errors activation results stack} :
-      LocalStep space dispatch lookup policy (.returning results,.diagnostics errors activation :: stack)
+      LocalStepWith admission space dispatch lookup policy (.returning results,.diagnostics errors activation :: stack)
         (.returning (results ++ Completed.diagnosticResults errors activation),stack)
   | boundaryBatch {space dispatch lookup policy live scope caller site rows stack} :
-      LocalStep space dispatch lookup policy (.returning rows,.boundaryBatch live scope caller site :: stack)
+      LocalStepWith admission space dispatch lookup policy (.returning rows,.boundaryBatch live scope caller site :: stack)
         (.work (.boundaryBatch live scope caller site rows),stack)
   | calls {space dispatch lookup policy live scope expected rows stack} :
-      LocalStep space dispatch lookup policy (.returning rows,.calls live scope expected :: stack)
+      LocalStepWith admission space dispatch lookup policy (.returning rows,.calls live scope expected :: stack)
         (.work (.calls live scope expected rows),stack)
   | append {space dispatch lookup policy remaining results stack} :
-      LocalStep space dispatch lookup policy (.returning results,.append remaining :: stack)
+      LocalStepWith admission space dispatch lookup policy (.returning results,.append remaining :: stack)
         (.work remaining,.prepend results :: stack)
   | prepend {space dispatch lookup policy selected results stack} :
-      LocalStep space dispatch lookup policy (.returning results,.prepend selected :: stack)
+      LocalStepWith admission space dispatch lookup policy (.returning results,.prepend selected :: stack)
         (.returning (selected ++ results),stack)
   | contextStep {space context dispatch lookup policy child inner next remaining stack} :
-      LocalStep context dispatch lookup policy (child,inner) (next,remaining) →
-      LocalStep space dispatch lookup policy (.context context child inner,stack)
+      LocalStepWith admission context dispatch lookup policy (child,inner) (next,remaining) →
+      LocalStepWith admission space dispatch lookup policy (.context context child inner,stack)
         (.context context next remaining,stack)
   | contextReturn {space context dispatch lookup policy results stack} :
-      LocalStep space dispatch lookup policy (.context context (.returning results) [],stack)
+      LocalStepWith admission space dispatch lookup policy (.context context (.returning results) [],stack)
         (.returning results,stack)
+
+/-- The existing interface selects historical argument queries unless a
+separate operand-admission service is explicitly supplied. -/
+abbrev LocalStep (space : Space) (dispatch : Spec.Eval.GroundedDispatch)
+    (lookup : Completed.CastLookup) (policy : Policy)
+    (before after : Control × List Continuation)
+    (admission : Completed.ArgumentService := .historical) : Prop :=
+  LocalStepWith admission space dispatch lookup policy before after
+
+namespace LocalStep
+export LocalStepWith (
+  delivered cast atomTuple atomFunction atomFallback atomSelectionFailed tupleNil tupleSingleton tupleCons branchesNil branchesStopped branchesContinue argumentsNil argumentsCons argumentBranchesNil argumentBranchesStopped argumentBranchesContinue functionStart functionBranchesNil functionBranchesStopped functionBranchesContinue invocationsNil invocationsCons callsNil callsCons callError callEmbedded callAbsent callEquations equationsNil equationsCons returnRefused returnStopped returnEvaluate minimalData minimalEval minimalEvalc minimalChain minimalUnifyYes minimalUnifyNo minimalUnifyBadArity minimalConsAtom minimalDeconsAtom minimalFunction minimalMetta minimalContextSpace bodyStart invocationEmbedded invocationAbsent invocationEquations invocationEquationsNil invocationEquationsCons boundaryChain boundaryBodyTerminal boundaryBodyResume boundaryFunctionReturn boundaryFunctionNoReturn boundaryProducerRaw boundaryProducerFunction boundaryReturned boundaryBatchNil boundaryBatchCons boundaryNativeEmittedRaw boundaryNativeEmittedReturn boundaryNativeCompletedRaw boundaryNativeCompletedReturn publish singleton branches tupleTail arguments argumentTail functionHeads functionAssemble diagnostics boundaryBatch calls append prepend contextStep contextReturn
+)
+end LocalStep
 
 inductive Step (dispatch : Spec.Eval.GroundedDispatch) (lookup : Completed.CastLookup)
     (policy : Policy) : Configuration → Configuration → Prop where
@@ -1411,130 +1425,153 @@ nodes reuse its primitive logical rules. Context entry stores identities;
 each continuing primitive reads its space from the actual reached world.
 The native rule installs a locally justified completed host operation; it
 neither computes a recursive evaluator reply nor gives a host cost bound. -/
-inductive WorldLocalStep {Context World : Type} (view : World → Context → Space)
+inductive WorldLocalStepWith (admission : Completed.ArgumentService) {Context World : Type} (view : World → Context → Space)
     (services : WorldServices Context World) (dispatch : Spec.Eval.GroundedDispatch)
     (lookup : Completed.CastLookup) (policy : Policy) :
     World → Context → Control Context × List Continuation →
     World → Control Context × List Continuation → Prop where
   | core {world label before flatBefore after flatAfter stack remaining} :
       UnscopedControl before flatBefore → managedContextControl before = false →
-      LocalStep (view world label) dispatch lookup policy (flatBefore,stack) (flatAfter,remaining) →
+      LocalStep (admission := admission) (view world label) dispatch lookup policy (flatBefore,stack) (flatAfter,remaining) →
       UnscopedControl after flatAfter →
-      WorldLocalStep view services dispatch lookup policy world label (before,stack) world (after,remaining)
+      WorldLocalStepWith admission view services dispatch lookup policy world label (before,stack) world (after,remaining)
   | context {world afterWorld label childLabel child inner next remaining stack} :
-      WorldLocalStep view services dispatch lookup policy world childLabel (child,inner) afterWorld (next,remaining) →
-      WorldLocalStep view services dispatch lookup policy world label (.context childLabel child inner,stack)
+      WorldLocalStepWith admission view services dispatch lookup policy world childLabel (child,inner) afterWorld (next,remaining) →
+      WorldLocalStepWith admission view services dispatch lookup policy world label (.context childLabel child inner,stack)
         afterWorld (.context childLabel next remaining,stack)
   | contextReturn {world label childLabel results stack} :
-      WorldLocalStep view services dispatch lookup policy world label (.context childLabel (.returning results) [],stack)
+      WorldLocalStepWith admission view services dispatch lookup policy world label (.context childLabel (.returning results) [],stack)
         world (.returning results,stack)
   | evalc {world label childLabel live scope caller readiness operand activation stack} :
-      WorldLocalStep view services dispatch lookup policy world label
+      WorldLocalStepWith admission view services dispatch lookup policy world label
         (.work (.minimal live scope caller
           (.expression readiness [.symbol "evalc",operand,.grounded (services.contextPayload childLabel)]) activation),stack)
         world (.context childLabel (.work (.invocation live scope caller (activation.read policy operand) activation)) [],stack)
   | metta {world label childLabel live scope caller readiness operand expected activation stack} :
-      WorldLocalStep view services dispatch lookup policy world label
+      WorldLocalStepWith admission view services dispatch lookup policy world label
         (.work (.minimal live scope caller
           (.expression readiness [.symbol "metta",operand,expected,.grounded (services.contextPayload childLabel)]) activation),stack)
         world (.context childLabel (.work (.atom live scope operand expected.erase activation)) [],stack)
   | contextSpace {world label live scope caller readiness activation stack} :
-      WorldLocalStep view services dispatch lookup policy world label
+      WorldLocalStepWith admission view services dispatch lookup policy world label
         (.work (.minimal live scope caller (.expression readiness [.symbol "context-space"]) activation),stack)
         world (.returning [(.grounded (services.contextPayload label),activation)],stack)
   | native {world afterWorld label live scope caller readiness name function arguments activation results stack} :
       services.nativeCall label world name.erase function.erase arguments.erase activation results afterWorld →
-      WorldLocalStep view services dispatch lookup policy world label
+      WorldLocalStepWith admission view services dispatch lookup policy world label
         (.work (.minimal live scope caller
           (.expression readiness [.symbol "call-native",name,function,arguments]) activation),stack)
         afterWorld (.returning results,stack)
 
   | callGroundedDone {world afterWorld label live scope value expected activation operator arguments outcome results stack} :
       value.erase = .expression (operator :: arguments) → dispatch.executable operator → ¬IsErrorRel value.erase →
-      services.groundedCall label world value outcome afterWorld →
+      services.groundedAt label world live scope activation value outcome afterWorld →
       Completed.NativeOutcomeRel policy dispatch operator arguments value (some expected) activation outcome (.done results) →
-      WorldLocalStep view services dispatch lookup policy world label
+      WorldLocalStepWith admission view services dispatch lookup policy world label
         (.work (.call live scope value expected activation),stack) afterWorld (.returning results,stack)
   | callGroundedResume {world afterWorld label live scope value expected activation operator arguments outcome rows stack} :
       value.erase = .expression (operator :: arguments) → dispatch.executable operator → ¬IsErrorRel value.erase →
-      services.groundedCall label world value outcome afterWorld →
+      services.groundedAt label world live scope activation value outcome afterWorld →
       Completed.NativeOutcomeRel policy dispatch operator arguments value (some expected) activation outcome (.resume rows) →
-      WorldLocalStep view services dispatch lookup policy world label
+      WorldLocalStepWith admission view services dispatch lookup policy world label
         (.work (.call live scope value expected activation),stack) afterWorld
         (.work (.boundaryBatch live scope none (.native value (some expected) (dispatch.valueProvenance operator arguments)) rows),stack)
   | invocationGroundedDone {world afterWorld label live scope caller value activation operator arguments outcome results stack} :
       value.erase = .expression (operator :: arguments) → dispatch.executable operator →
-      services.groundedCall label world value outcome afterWorld →
+      services.groundedAt label world live scope activation value outcome afterWorld →
       Completed.NativeOutcomeRel policy dispatch operator arguments value none activation outcome (.done results) →
-      WorldLocalStep view services dispatch lookup policy world label
+      WorldLocalStepWith admission view services dispatch lookup policy world label
         (.work (.invocation live scope caller value activation),stack) afterWorld (.returning results,stack)
   | invocationGroundedResume {world afterWorld label live scope caller value activation operator arguments outcome rows stack} :
       value.erase = .expression (operator :: arguments) → dispatch.executable operator →
-      services.groundedCall label world value outcome afterWorld →
+      services.groundedAt label world live scope activation value outcome afterWorld →
       Completed.NativeOutcomeRel policy dispatch operator arguments value none activation outcome (.resume rows) →
-      WorldLocalStep view services dispatch lookup policy world label
+      WorldLocalStepWith admission view services dispatch lookup policy world label
         (.work (.invocation live scope caller value activation),stack) afterWorld
         (.work (.boundaryBatch live scope caller (.native value none (dispatch.valueProvenance operator arguments)) rows),stack)
 
   | collapseEnter {world label live scope caller readiness operand activation snapshots stack} :
       services.snapshots = some snapshots →
-      WorldLocalStep view services dispatch lookup policy world label
+      WorldLocalStepWith admission view services dispatch lookup policy world label
         (.work (.minimal live scope caller (.expression readiness [.symbol "collapse-bind",operand]) activation),stack)
         world (.work (.minimal live scope caller operand activation),.collect activation :: stack)
   | collectEnter {world label rows activation snapshots stack} :
       services.snapshots = some snapshots →
-      WorldLocalStep view services dispatch lookup policy world label (.returning rows,.collect activation :: stack)
+      WorldLocalStepWith admission view services dispatch lookup policy world label (.returning rows,.collect activation :: stack)
         world (.work (.capture rows [] activation),stack)
   | captureNil {world label saved activation snapshots stack} :
       services.snapshots = some snapshots →
-      WorldLocalStep view services dispatch lookup policy world label (.work (.capture [] saved activation),stack)
+      WorldLocalStepWith admission view services dispatch lookup policy world label (.work (.capture [] saved activation),stack)
         world (.returning [(.expression .active saved.reverse,activation)],stack)
   | captureEmpty {world label head tail saved activation snapshots stack} :
       services.snapshots = some snapshots → head.1.erase = Atom.empty →
-      WorldLocalStep view services dispatch lookup policy world label (.work (.capture (head :: tail) saved activation),stack)
+      WorldLocalStepWith admission view services dispatch lookup policy world label (.work (.capture (head :: tail) saved activation),stack)
         world (.work (.capture tail saved activation),stack)
   | captureOne {world afterWorld label head tail saved activation snapshots payload stack} :
       services.snapshots = some snapshots → head.1.erase ≠ Atom.empty →
       snapshots.capture label world head.2 payload afterWorld →
-      WorldLocalStep view services dispatch lookup policy world label (.work (.capture (head :: tail) saved activation),stack)
+      WorldLocalStepWith admission view services dispatch lookup policy world label (.work (.capture (head :: tail) saved activation),stack)
         afterWorld (.work (.capture tail (.expression .active [head.1,.grounded payload] :: saved) activation),stack)
   | superposeEnter {world label live scope caller readiness tupleReadiness pairs activation snapshots stack} :
       services.snapshots = some snapshots →
-      WorldLocalStep view services dispatch lookup policy world label
+      WorldLocalStepWith admission view services dispatch lookup policy world label
         (.work (.minimal live scope caller (.expression readiness [.symbol "superpose-bind",.expression tupleReadiness pairs]) activation),stack)
         world (.work (.restore pairs [] activation),stack)
   | restoreNil {world label saved activation snapshots stack} :
       services.snapshots = some snapshots →
-      WorldLocalStep view services dispatch lookup policy world label (.work (.restore [] saved activation),stack)
+      WorldLocalStepWith admission view services dispatch lookup policy world label (.work (.restore [] saved activation),stack)
         world (.returning saved.reverse,stack)
   | restoreOne {world label readiness value payload captured output tail saved activation snapshots stack} :
       services.snapshots = some snapshots → snapshots.restore label world payload captured →
       Completed.Frame.SnapshotMergeRel policy captured activation output →
-      WorldLocalStep view services dispatch lookup policy world label
+      WorldLocalStepWith admission view services dispatch lookup policy world label
         (.work (.restore (.expression readiness [value,.grounded payload] :: tail) saved activation),stack)
         world (.work (.restore tail ((value,output) :: saved) activation),stack)
   | restoreRejected {world label readiness value payload captured tail saved activation snapshots stack} :
       services.snapshots = some snapshots → snapshots.restore label world payload captured →
       (¬∃ output, Spec.Bindings.ScopeObservation.LogicalMergeRel captured.bindings activation.bindings output) →
-      WorldLocalStep view services dispatch lookup policy world label
+      WorldLocalStepWith admission view services dispatch lookup policy world label
         (.work (.restore (.expression readiness [value,.grounded payload] :: tail) saved activation),stack)
         world (.work (.restore tail saved activation),stack)
+
+abbrev WorldLocalStep {Context World : Type} (view : World → Context → Space)
+    (services : WorldServices Context World) (dispatch : Spec.Eval.GroundedDispatch)
+    (lookup : Completed.CastLookup) (policy : Policy)
+    (world : World) (label : Context) (before : Control Context × List Continuation)
+    (afterWorld : World) (after : Control Context × List Continuation)
+    (admission : Completed.ArgumentService := .historical) : Prop :=
+  WorldLocalStepWith admission view services dispatch lookup policy world label before afterWorld after
+
+namespace WorldLocalStep
+export WorldLocalStepWith (core context contextReturn evalc metta contextSpace native callGroundedDone callGroundedResume invocationGroundedDone invocationGroundedResume collapseEnter collectEnter captureNil captureEmpty captureOne superposeEnter restoreNil restoreOne restoreRejected)
+end WorldLocalStep
 
 /-- Global administration retains one world and the root context identity.
 Effects reached inside a child return to the enclosing caller in that world;
 answer publication keeps the same occurrence history as the old core. -/
-inductive WorldStep {Context World : Type} (view : World → Context → Space)
+inductive WorldStepWith (admission : Completed.ArgumentService) {Context World : Type} (view : World → Context → Space)
     (services : WorldServices Context World) (dispatch : Spec.Eval.GroundedDispatch)
     (lookup : Completed.CastLookup) (policy : Policy) :
     WorldConfiguration Context World → WorldConfiguration Context World → Prop where
   | internal {world afterWorld label before after stack remaining emitted} :
-      WorldLocalStep view services dispatch lookup policy world label (before,stack) afterWorld (after,remaining) →
-      WorldStep view services dispatch lookup policy
+      WorldLocalStep (admission := admission) view services dispatch lookup policy world label (before,stack) afterWorld (after,remaining) →
+      WorldStepWith admission view services dispatch lookup policy
         ⟨world,label,before,stack,emitted⟩ ⟨afterWorld,label,after,remaining,emitted⟩
   | publish {world label head tail emitted} :
-      WorldStep view services dispatch lookup policy
+      WorldStepWith admission view services dispatch lookup policy
         ⟨world,label,.returning (head :: tail),[],emitted⟩
         ⟨world,label,.returning tail,[],emitted ++ [head]⟩
+
+abbrev WorldStep {Context World : Type} (view : World → Context → Space)
+    (services : WorldServices Context World) (dispatch : Spec.Eval.GroundedDispatch)
+    (lookup : Completed.CastLookup) (policy : Policy)
+    (before after : WorldConfiguration Context World)
+    (admission : Completed.ArgumentService := .historical) : Prop :=
+  WorldStepWith admission view services dispatch lookup policy before after
+
+namespace WorldStep
+export WorldStepWith (internal publish)
+end WorldStep
 
 theorem WorldStep.preserves_context {Context World : Type} {view services dispatch lookup policy}
     {before after : WorldConfiguration Context World}
@@ -1643,8 +1680,10 @@ open RecursiveTasks.Contextual
 
 abbrev WorldSteps {Context World : Type} (view : World → Context → Space)
     (services : WorldServices Context World) (dispatch : Spec.Eval.GroundedDispatch)
-    (lookup : Completed.CastLookup) (policy : Policy) :=
-  Relation.ReflTransGen (WorldStep view services dispatch lookup policy)
+    (lookup : Completed.CastLookup) (policy : Policy)
+    (before after : WorldConfiguration Context World)
+    (admission : Completed.ArgumentService := .historical) : Prop :=
+  Relation.ReflTransGen (WorldStep (admission := admission) view services dispatch lookup policy) before after
 
 /-- The world extension uses the same relation-level common-machine boundary
 as the existing contextual evaluator. Edges retain their actual world steps. -/
@@ -1706,11 +1745,11 @@ theorem symm {Context World : Type} {before after : WorldConfiguration Context W
 /-- Each actual transition is matched by one actual transition, with the same
 world and publication history. Rejection uses logical inconsistency; no new
 readout representative or completion hypothesis is supplied. -/
-theorem step {Context World : Type} {view : World → Context → Space}
+theorem step {admission : Completed.ArgumentService} {Context World : Type} {view : World → Context → Space}
     {services dispatch lookup policy} {before target after : WorldConfiguration Context World}
     (related : RestoreRepresentation before target)
-    (advanced : WorldStep view services dispatch lookup policy before after) :
-    ∃ next, WorldStep view services dispatch lookup policy target next ∧
+    (advanced : WorldStep (admission := admission) view services dispatch lookup policy before after) :
+    ∃ next, WorldStep (admission := admission) view services dispatch lookup policy target next ∧
       RestoreRepresentation after next := by
   cases related with
   | same => exact ⟨after,advanced,.same _⟩
@@ -1731,11 +1770,11 @@ theorem step {Context World : Type} {view : World → Context → Space}
               exact impossible ⟨output,(Spec.Bindings.ScopeObservation.LogicalMergeRel.congr_inputs
                 (BindingSourceAgreement.refl _) agreement).mpr merged⟩
 
-theorem steps {Context World : Type} {view : World → Context → Space}
+theorem steps {admission : Completed.ArgumentService} {Context World : Type} {view : World → Context → Space}
     {services dispatch lookup policy} {before target after : WorldConfiguration Context World}
     (related : RestoreRepresentation before target)
-    (path : WorldSteps view services dispatch lookup policy before after) :
-    ∃ next, WorldSteps view services dispatch lookup policy target next ∧
+    (path : WorldSteps (admission := admission) view services dispatch lookup policy before after) :
+    ∃ next, WorldSteps (admission := admission) view services dispatch lookup policy target next ∧
       RestoreRepresentation after next := by
   induction path generalizing target with
   | refl => exact ⟨target,.refl,related⟩
@@ -1846,7 +1885,7 @@ abbrev WorldLocalSteps {Context World : Type}
     (afterWorld : World) (after : Control Context × List Continuation) : Prop :=
   Relation.ReflTransGen
     (fun first last : World × (Control Context × List Continuation) =>
-      WorldLocalStep environment.view environment.services environment.dispatch environment.lookup policy
+      WorldLocalStep (admission := environment.arguments) environment.view environment.services environment.dispatch environment.lookup policy
         first.1 label first.2 last.1 last.2) (world,before) (afterWorld,after)
 
 theorem worldObserve_eq_some {Context World : Type}
@@ -2072,7 +2111,7 @@ theorem LocalStep.rename (p : Equiv.Perm String)
           Completed.InvocationSelection.rename] using selected.rename p
       simpa only [Control.rename, Task.rename, Continuation.rename, List.map_cons,
         Completed.Frame.read_rename, Entry.Value.rename_erase] using
-        LocalStep.atomFunction enteredRenamed shapedRenamed selectedRenamed
+        LocalStep.atomFunction (admission := .historical) enteredRenamed shapedRenamed selectedRenamed
   | @atomFallback space dispatch lookup policy live scope value expected activation readiness
       operator arguments errors stack entered shaped selected =>
       have enteredRenamed :
@@ -2098,7 +2137,7 @@ theorem LocalStep.rename (p : Equiv.Perm String)
           Completed.InvocationSelection.rename] using selected.rename p
       simpa only [Control.rename, Task.rename, Continuation.rename, List.map_cons,
         Completed.Frame.read_rename, Entry.Value.rename_erase] using
-        LocalStep.atomFallback enteredRenamed shapedRenamed selectedRenamed
+        LocalStep.atomFallback (admission := .historical) enteredRenamed shapedRenamed selectedRenamed
   | @atomSelectionFailed space dispatch lookup policy live scope value expected activation readiness
       operator arguments errors stack entered shaped selected =>
       have enteredRenamed :
@@ -2125,7 +2164,7 @@ theorem LocalStep.rename (p : Equiv.Perm String)
       simpa only [Control.rename, Task.rename, Continuation.rename, List.map_cons,
         Completed.Frame.read_rename, Entry.Value.rename_erase,
         Completed.diagnosticResults_rename] using
-        LocalStep.atomSelectionFailed enteredRenamed shapedRenamed selectedRenamed
+        LocalStep.atomSelectionFailed (admission := .historical) enteredRenamed shapedRenamed selectedRenamed
   | tupleNil =>
       simpa [Control.rename, Task.rename, Completed.Result.rename] using LocalStep.tupleNil
   | tupleSingleton =>
@@ -3146,12 +3185,12 @@ theorem control3_partial_renaming_changes_answer
     simp [Completed.Frame.read, Entry.Value.substitute, Entry.Value.resolve,
       argumentCastFrame, argumentCastEnvironment, List.lookup]
   refine ⟨?_, ?_, by simp⟩
-  · have step := LocalStep.delivered (space := space) (dispatch := dispatch)
+  · have step := LocalStep.delivered (admission := .historical) (space := space) (dispatch := dispatch)
       (lookup := lookup) (policy := policy) (live := []) (scope := [])
       (value := .var "x") (expected := Atom.atomType) (activation := argumentCastFrame)
       (stack := []) (Entry.atom_demand policy.reentry _ _)
     simpa only [readX] using step
-  · have step := LocalStep.delivered (space := space) (dispatch := dispatch)
+  · have step := LocalStep.delivered (admission := .historical) (space := space) (dispatch := dispatch)
       (lookup := lookup) (policy := policy) (live := []) (scope := [])
       (value := Entry.Value.rename swapXZ (.var "x")) (expected := Atom.atomType)
       (activation := argumentCastFrame) (stack := [])

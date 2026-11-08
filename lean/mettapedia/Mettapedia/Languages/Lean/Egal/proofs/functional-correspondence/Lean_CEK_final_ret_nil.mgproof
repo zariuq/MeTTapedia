@@ -1,0 +1,6 @@
+let v_v. assume H: v_v :e Lean_CEK_Val.
+prove 0 :e Lean_Eq_Prop (Lean_Option Lean_CEK_St)
+  (Lean_CEK_step (Lean_CEK_St_mk_node (Lean_CEK_Ctl_ret_node v_v) (Lean_List_nil_node Lean_CEK_Frame)))
+  (Lean_Option_none_node Lean_CEK_St).
+rewrite Lean_CEK_step_eq_8 v_v H.
+exact Lean_Eq_refl_proof_ok (Lean_Option Lean_CEK_St) (Lean_Option_none_node Lean_CEK_St).

@@ -4,7 +4,7 @@ import Mathlib.Data.List.OfFn
 /-!
 # The already-active-row profile of contextual occurrence activation
 
-When the rule and stored values contain only live captures, computed views
+When the rule and stored values contain only shared captures, computed views
 are independent of their use ports. The positive activation step is then
 exactly the existing ordinary step in the common extended frame. Existing
 equations, labels and rule positions are all transported into that frame.
@@ -34,9 +34,9 @@ def targetRule {Γ : Ctx S} {sort : S.Srt}
     (rule : RuleInstance (Term (signature S captures) Γ sort)) :=
   rule.map (instantiate (ContextualSelectionViews.capturedTarget locals captures))
 
-def liveRows {Γ : Ctx S} {sort : S.Srt} (label : O → Term (signature S captures) Γ sort) :
+def sharedRows {Γ : Ctx S} {sort : S.Srt} (label : O → Term (signature S captures) Γ sort) :
     O → ContextualStoredRows.Row locals captures Γ sort :=
-  fun occurrence => .live (label occurrence)
+  fun occurrence => .shared (label occurrence)
 
 def targetLabel {Γ : Ctx S} {sort : S.Srt} (label : O → Term (signature S captures) Γ sort) :
     O → Term (signature S (target locals captures)) Γ sort :=
@@ -64,7 +64,7 @@ theorem freshened_captured_rule (scope : Nat) {Γ : Ctx S} {sort : S.Srt}
       fun value : Term (signature S captures) Γ sort =>
         instantiate (ContextualSelectionViews.capturedTarget locals captures) value := by
     funext value
-    exact (ContextualStoredRows.viewAt_eq_freshening locals captures scope (.live value)).symm
+    exact (ContextualStoredRows.viewAt_eq_freshening locals captures scope (.shared value)).symm
   exact congrArg (fun f : Term (signature S captures) Γ sort →
     Term (signature S (target locals captures)) Γ sort => rule.map f) same
 
@@ -72,7 +72,7 @@ theorem prepared_rule_eq (occupied : Finset Nat) (selection : Selection O) {Γ :
     (rule : RuleInstance (Term (signature S captures) Γ sort))
     (label : O → Term (signature S captures) Γ sort) :
     (prepared locals captures occupied selection (rawRule locals captures rule)
-      (liveRows locals captures label)).rule = targetRule locals captures rule :=
+      (sharedRows locals captures label)).rule = targetRule locals captures rule :=
   freshened_captured_rule locals captures _ rule
 
 private theorem ofFn_get_map {T U : Type*} (values : List T) (f : T → U) :
@@ -84,7 +84,7 @@ theorem taken_values_eq (occupied : Finset Nat) (selection : Selection O) {Γ : 
     (rule : RuleInstance (Term (signature S captures) Γ sort))
     (label : O → Term (signature S captures) Γ sort) :
     List.ofFn (prepared locals captures occupied selection (rawRule locals captures rule)
-      (liveRows locals captures label)).taken = selection.taken.map (targetLabel locals captures label) := by
+      (sharedRows locals captures label)).taken = selection.taken.map (targetLabel locals captures label) := by
   calc
     _ = List.ofFn (fun position : Fin selection.taken.length =>
         targetLabel locals captures label (selection.taken.get position)) := by
@@ -98,7 +98,7 @@ theorem read_values_eq (occupied : Finset Nat) (selection : Selection O) {Γ : C
     (rule : RuleInstance (Term (signature S captures) Γ sort))
     (label : O → Term (signature S captures) Γ sort) :
     List.ofFn (prepared locals captures occupied selection (rawRule locals captures rule)
-      (liveRows locals captures label)).read = selection.read.map (targetLabel locals captures label) := by
+      (sharedRows locals captures label)).read = selection.read.map (targetLabel locals captures label) := by
   calc
     _ = List.ofFn (fun position : Fin selection.read.length =>
         targetLabel locals captures label (selection.read.get position)) := by
@@ -112,7 +112,7 @@ theorem problem_eq (occupied : Finset Nat) (selection : Selection O) {Γ : Ctx S
     (rule : RuleInstance (Term (signature S captures) Γ sort))
     (label : O → Term (signature S captures) Γ sort)
     (before : Configuration (Term (signature S captures) Γ sort) O) :
-    problem locals captures occupied selection (rawRule locals captures rule) (liveRows locals captures label) before =
+    problem locals captures occupied selection (rawRule locals captures rule) (sharedRows locals captures label) before =
       selection.problem (targetLabel locals captures label) (targetRule locals captures rule)
         (frame locals captures before) := by
   simp only [problem, prepared_rule_eq, taken_values_eq, read_values_eq, useEquations,
@@ -123,7 +123,7 @@ theorem result_eq [DecidableEq O] (occupied : Finset Nat) (selection : Selection
     (rule : RuleInstance (Term (signature S captures) Γ sort))
     (label : O → Term (signature S captures) Γ sort)
     (before : Configuration (Term (signature S captures) Γ sort) O) :
-    result locals captures occupied selection (rawRule locals captures rule) (liveRows locals captures label) before =
+    result locals captures occupied selection (rawRule locals captures rule) (sharedRows locals captures label) before =
       selection.result (targetLabel locals captures label) (targetRule locals captures rule)
         (frame locals captures before) := by
   apply congrArg₂ Configuration.mk
@@ -132,18 +132,19 @@ theorem result_eq [DecidableEq O] (occupied : Finset Nat) (selection : Selection
 
 theorem resultRows_eq [DecidableEq O] (selection : Selection O) {Γ : Ctx S} {sort : S.Srt}
     (label : O → Term (signature S captures) Γ sort) :
-    resultRows locals captures selection (targetLabel locals captures label) (liveRows locals captures label) =
-      liveRows locals (target locals captures) (targetLabel locals captures label) := by
+    resultRows locals captures selection (targetLabel locals captures label) (sharedRows locals captures label) =
+      sharedRows locals (target locals captures) (targetLabel locals captures label) := by
   funext occurrence
-  simp only [resultRows, liveRows, ContextualStoredRows.Row.map, targetLabel]
+  simp only [resultRows, sharedRows, ContextualStoredRows.Row.map, targetLabel]
   split <;> rfl
 
 theorem valid_iff [DecidableEq O] (occupied : Finset Nat) (selection : Selection O)
     {Γ : Ctx S} {sort : S.Srt}
+    (ground : ∀ result, Term (signature S (target locals captures)) [] result)
     (rule : RuleInstance (Term (signature S captures) Γ sort)) (noChecks : rule.checks = [])
     (label : O → Term (signature S captures) Γ sort)
     (before : Configuration (Term (signature S captures) Γ sort) O) :
-    Valid locals captures occupied selection (rawRule locals captures rule) (liveRows locals captures label)
+    Valid locals captures occupied selection (rawRule locals captures rule) (sharedRows locals captures label)
       before (targetLabel locals captures label) ↔
       selection.Valid (ContextualFamilies.action (target locals captures) Γ sort)
         (targetLabel locals captures label) (targetRule locals captures rule) (frame locals captures before) := by
@@ -153,7 +154,8 @@ theorem valid_iff [DecidableEq O] (occupied : Finset Nat) (selection : Selection
     · simpa only [rawRule, targetRule, RuleInstance.map, List.length_map] using valid.take_length
     · simpa only [rawRule, targetRule, RuleInstance.map, List.length_map] using valid.read_length
     · simpa only [prepared_rule_eq] using valid.outputs
-    · simpa only [problem_eq] using valid.consistent
+    · have model := (ContextualFrameUnifier.solvable_iff_consistent ground _).mp valid.solvable
+      simpa only [problem_eq] using model
     · intro check member
       simp only [targetRule, RuleInstance.map, noChecks, List.map_nil, List.not_mem_nil] at member
   · intro valid
@@ -162,28 +164,30 @@ theorem valid_iff [DecidableEq O] (occupied : Finset Nat) (selection : Selection
     · simpa only [rawRule, targetRule, RuleInstance.map, List.length_map] using valid.take_length
     · simpa only [rawRule, targetRule, RuleInstance.map, List.length_map] using valid.read_length
     · simpa only [prepared_rule_eq] using valid.outputs
-    · simpa only [problem_eq] using valid.consistent
+    · apply ContextualFrameUnifier.solvable_of_consistent
+      simpa only [problem_eq] using valid.consistent
 
-/-- With all source rows and rule variables already live, the positive
-activation step, observed without its private ledger, is the existing
-ordinary step on the explicitly transported common frame. -/
+/-- With all source rows and rule variables already shared, the positive
+activation step, observed without its private ledger and in a frame
+with ground terms for every sort, is the existing ordinary step on the explicitly transported common frame. -/
 theorem step_iff [DecidableEq O] (occupied : Finset Nat) {Γ : Ctx S} {sort : S.Srt}
+    (ground : ∀ result, Term (signature S (target locals captures)) [] result)
     (rule : RuleInstance (Term (signature S captures) Γ sort)) (noChecks : rule.checks = [])
     (label : O → Term (signature S captures) Γ sort)
     (before : Configuration (Term (signature S captures) Γ sort) O)
     (after : Configuration (Term (signature S (target locals captures)) Γ sort) O) :
     (∃ ledger, ContextualActivatedStep.Step locals captures occupied (rawRule locals captures rule)
-      (liveRows locals captures label) before (targetLabel locals captures label) after
-      (liveRows locals (target locals captures) (targetLabel locals captures label)) ledger) ↔
+      (sharedRows locals captures label) before (targetLabel locals captures label) after
+      (sharedRows locals (target locals captures) (targetLabel locals captures label)) ledger) ↔
       ConstraintMultisetRewriting.Step (ContextualFamilies.action (target locals captures) Γ sort)
         (targetLabel locals captures label) (targetRule locals captures rule) (frame locals captures before) after := by
   constructor
   · rintro ⟨ledger, selection, valid, rfl, _, _⟩
-    exact ⟨selection, (valid_iff locals captures occupied selection rule noChecks label before).mp valid,
+    exact ⟨selection, (valid_iff locals captures occupied selection ground rule noChecks label before).mp valid,
       result_eq locals captures occupied selection rule label before⟩
   · rintro ⟨selection, valid, rfl⟩
     refine ⟨ContextualActivationScopes.after occupied selection, selection,
-      (valid_iff locals captures occupied selection rule noChecks label before).mpr valid, ?_, ?_, rfl⟩
+      (valid_iff locals captures occupied selection ground rule noChecks label before).mpr valid, ?_, ?_, rfl⟩
     · exact (result_eq locals captures occupied selection rule label before).symm
     · exact (resultRows_eq locals captures selection label).symm
 

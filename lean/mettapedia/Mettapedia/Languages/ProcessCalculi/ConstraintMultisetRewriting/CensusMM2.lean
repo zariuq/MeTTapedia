@@ -1,4 +1,4 @@
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.CensusAdmission
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.PredicateQueryAdmission
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.MeTTaOperationsExec
 
 /-!
@@ -42,15 +42,15 @@ theorem complete_exec_is_one_firing {label : O → Atom} {before : Configuration
     (supply : ∀ (avoid : Finset O) (atom : Atom), ∃ made, made ∉ avoid ∧ label made = atom)
     (base : atomAction.Consistent before.equations) :
     ∃ removed : List O, ∃ added : List Atom, ∃ made : List O,
-      CensusAdmission.Valid atomAction label (stepRule label (selfOcc :: removed) added)
-        [CensusAdmission.Query.fixed (snapshot before.present)] before
+      PredicateQueryAdmission.Valid atomAction label (stepRule label (selfOcc :: removed) added)
+        [PredicateQueryAdmission.Query.fixed (snapshot before.present)] before
         (stepSelection (selfOcc :: removed) made) ∧
       Result space exec (((stepSelection (selfOcc :: removed) made).result label
         (stepRule label (selfOcc :: removed) added) before).present.image label) := by
   obtain ⟨removed, added, made, valid, exactResult⟩ :=
     exec_is_one_firing covered represents injective selfPresent selfLabel supply base
   refine ⟨removed, added, made, ?_, exactResult⟩
-  exact (CensusAdmission.valid_fixed_iff _ _ _ [snapshot before.present] _ _).mpr
+  exact (PredicateQueryAdmission.valid_fixed_iff _ _ _ [snapshot before.present] _ _).mpr
     ⟨valid, fun query member => (List.mem_singleton.mp member) ▸ snapshot_holds label before.present⟩
 
 theorem arrival_invalidates_snapshot (label : O → Atom) (world : Finset O) (newOccurrence : O)
@@ -65,9 +65,9 @@ theorem arrival_invalidates_snapshot (label : O → Atom) (world : Finset O) (ne
 /-- The census is checked at the original source cut, not on the result
 after the operation has consumed its own exec atom and removal targets. -/
 theorem p5_with_complete_admission :
-    CensusAdmission.Valid atomAction Probe.label5
+    PredicateQueryAdmission.Valid atomAction Probe.label5
       (stepRule Probe.label5 [3, 2] [Probe.pair "r" Probe.one, Probe.pair "r" Probe.two])
-      [CensusAdmission.Query.fixed (snapshot Probe.before5.present)] Probe.before5
+      [PredicateQueryAdmission.Query.fixed (snapshot Probe.before5.present)] Probe.before5
       (stepSelection [3, 2] [4, 5]) ∧
     Result Probe.space5 Probe.exec5
       (((stepSelection [3, 2] [4, 5]).result Probe.label5
@@ -78,7 +78,7 @@ theorem p5_with_complete_admission :
   swap
   · rw [exactResult]
     exact Probe.result5_reference
-  exact (CensusAdmission.valid_fixed_iff _ _ _ [snapshot Probe.before5.present] _ _).mpr
+  exact (PredicateQueryAdmission.valid_fixed_iff _ _ _ [snapshot Probe.before5.present] _ _).mpr
     ⟨valid, fun query member => (List.mem_singleton.mp member) ▸ snapshot_holds Probe.label5 Probe.before5.present⟩
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.CensusMM2

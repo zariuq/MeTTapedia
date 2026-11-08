@@ -47,18 +47,18 @@ theorem core_row_never_supplies_license
 
 theorem region_is_private_query (frame : Finset CoreOccurrence) (store : Store)
     (assignment : ABTProtectedParameters.Assignment InferenceSchemaActivation.Head 0) (key : Key) :
-    Check.region locatedAction assignment label (world frame store) (licenses, HOLLightCanonicalLicenses.payload key) =
+    Check.matches locatedAction assignment label (world frame store) (licenses, HOLLightCanonicalLicenses.payload key) =
       (store.query key).image Sum.inr := by
   ext occurrence
   cases occurrence with
   | inl row =>
-      simp [Check.region, core_row_never_supplies_license, Finset.mem_image]
+      simp [Check.matches, core_row_never_supplies_license, Finset.mem_image]
   | inr row =>
       have matched : locatedAction.E
           (locatedAction.apply assignment (licenses, HOLLightCanonicalLicenses.payload key))
           (locatedAction.apply assignment (label (.inr row))) ↔ row.2 = key :=
         HOLLightCanonicalLicenses.matches_iff_key assignment key row
-      simp only [Check.region, Finset.mem_filter, inr_world, matched]
+      simp only [Check.matches, Finset.mem_filter, inr_world, matched]
       simp [CanonicalMetadataStore.Store.query, Finset.mem_image]
 
 theorem canonical_count_one (frame : Finset CoreOccurrence) (store : Store)
@@ -66,7 +66,7 @@ theorem canonical_count_one (frame : Finset CoreOccurrence) (store : Store)
     (key : Key) (index : Nat) (known : store.lookup key = some index) :
     Check.Holds locatedAction assignment label (world frame store)
       (.count (licenses, HOLLightCanonicalLicenses.payload key) 1) := by
-  change (Check.region locatedAction assignment label (world frame store) _).card = 1
+  change (Check.matches locatedAction assignment label (world frame store) _).card = 1
   rw [region_is_private_query, store.query_of_present key index known]
   simp
 
@@ -77,7 +77,7 @@ theorem missing_license_absent (frame : Finset CoreOccurrence) (store : Store)
       (.absent (licenses, HOLLightCanonicalLicenses.payload key)) := by
   classical
   intro occurrence present matched
-  have inRegion : occurrence ∈ Check.region locatedAction assignment label (world frame store)
+  have inRegion : occurrence ∈ Check.matches locatedAction assignment label (world frame store)
       (licenses, HOLLightCanonicalLicenses.payload key) := Finset.mem_filter.mpr ⟨present, matched⟩
   rw [region_is_private_query, store.query_of_absent key missing] at inRegion
   simp at inRegion
@@ -89,16 +89,16 @@ theorem successful_read_is_unique (frame : Finset CoreOccurrence) (store : Store
       locatedAction.E (locatedAction.apply assignment (licenses, HOLLightCanonicalLicenses.payload key))
         (locatedAction.apply assignment (label occurrence)) := by
   classical
-  have query : Check.region locatedAction assignment label (world frame store)
+  have query : Check.matches locatedAction assignment label (world frame store)
       (licenses, HOLLightCanonicalLicenses.payload key) = {Sum.inr (index, key)} := by
     rw [region_is_private_query, store.query_of_present key index known]
     simp
   refine ⟨.inr (index, key), ?_, ?_⟩
-  · have member : Sum.inr (index, key) ∈ Check.region locatedAction assignment label (world frame store)
+  · have member : Sum.inr (index, key) ∈ Check.matches locatedAction assignment label (world frame store)
         (licenses, HOLLightCanonicalLicenses.payload key) := by rw [query]; exact Finset.mem_singleton_self _
     exact Finset.mem_filter.mp member
   · intro occurrence properties
-    have member : occurrence ∈ Check.region locatedAction assignment label (world frame store)
+    have member : occurrence ∈ Check.matches locatedAction assignment label (world frame store)
         (licenses, HOLLightCanonicalLicenses.payload key) := Finset.mem_filter.mpr properties
     rw [query] at member
     exact Finset.mem_singleton.mp member

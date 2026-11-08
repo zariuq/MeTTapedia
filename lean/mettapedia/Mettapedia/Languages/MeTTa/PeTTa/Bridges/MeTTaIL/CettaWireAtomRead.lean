@@ -12,6 +12,8 @@ mutual
     | .symbol name => some (.symbol name)
     | .grounded (.string value) => some (.string value)
     | .grounded (.int value) => if value < 0 then none else some (.natural value.toNat)
+    -- The source reader recognizes wire truth tokens as host Booleans.
+    | .grounded (.bool value) => some (.symbol (if value then "True" else "False"))
     | .expression (.symbol head :: arguments) => Term.application head <$> decodeMany? arguments
     | _ => none
   def decodeMany? : List Atom → Option (List Term)

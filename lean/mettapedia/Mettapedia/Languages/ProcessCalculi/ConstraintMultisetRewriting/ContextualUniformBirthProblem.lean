@@ -162,7 +162,7 @@ abbrev family := ContextualComputedFreshFrame.active schedule.uniformFamily resu
 def birthRow {Local : Type} (locals : Local → MetaArity S) (index : schedule.BirthIndex) :
     Row (ContextualPublication.privateFamily locals result.update.declaration) result.family Γ sort :=
   ContextualConditionalPublication.ordinary locals result.update.declaration result.family
-    (ContextualResidualAnswers.ofUpdate result.update
+    (ContextualConditionalAnswers.ofUpdate result.update
       (instantiate (ContextualIndependentProblems.inclusion schedule.blockVariables schedule.blockDeclarations (some index))
         (schedule.births.get index).value))
 

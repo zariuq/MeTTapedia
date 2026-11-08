@@ -74,6 +74,7 @@ theorem continuation_capture (name : before.Names) :
   erw [ContextualClauseFrames.frame_capture, instantiate_generator]
   exact ContextualFreshFrameScopeLedger.includeSource_image compiled.firing.update _
 
+set_option maxHeartbeats 800000 in
 theorem decoder_square (origin : Nat) :
     Assignment.compose (Assignment.compose (decoder compiled) compiled.continuationEnv)
         (templateInclusion queries inners before.declarations origin) =

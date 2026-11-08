@@ -1,0 +1,46 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HESelectiveRangeGate
+
+/-! # Unique and selective instantiated-range gate dependencies -/
+
+namespace Mettapedia.GSLT.LanguageDef.Collections.TypedCalls
+
+#print axioms HEUniqueRangeGate.sole_some_iff
+#print axioms HEUniqueRangeGate.arguments_length
+#print axioms HEUniqueRangeGate.arguments_sound
+#print axioms HEUniqueRangeGate.prepare_witness
+#print axioms HEUniqueRangeGate.prepare_applicable
+#print axioms HEUniqueRangeGate.read_policy
+#print axioms HEUniqueRangeGate.prepare_select
+#print axioms HEUniqueRangeGate.prepare_enter
+#print axioms HEUniqueRangeGate.prepare_ready
+#print axioms HEUniqueRangeGate.Controls.same_instantiated_tail_admitted
+#print axioms HEUniqueRangeGate.Controls.replacement_tail_declines
+#print axioms HEUniqueRangeGate.Controls.caller_constraint_not_a_second_result_filter
+#print axioms HEUniqueRangeGate.Controls.undefined_callee_policy_retained
+#print axioms HEUniqueRangeGate.Controls.duplicate_success_declines
+#print axioms HEUniqueRangeGate.Controls.earlier_mismatch_does_not_block_unique_success
+#print axioms HEUniqueRangeGate.Controls.source_first_success_can_accept_declined_unique_gate
+
+#print axioms HESelectiveRangeGate.choose_prefix
+#print axioms HESelectiveRangeGate.allArguments_loop
+#print axioms HESelectiveRangeGate.arguments_length
+#print axioms HESelectiveRangeGate.arguments_prefix
+#print axioms HESelectiveRangeGate.prepare_applicable_prefix
+#print axioms HESelectiveRangeGate.prepare_select
+#print axioms HESelectiveRangeGate.prepareRange_select
+#print axioms HESelectiveRangeGate.prepare_witness
+#print axioms HESelectiveRangeGate.prepare_enter
+#print axioms HESelectiveRangeGate.prepare_ready
+#print axioms HESelectiveRangeGate.prepare_scoped_step
+#print axioms HESelectiveRangeGate.Controls.private_duplicates_are_admitted
+#print axioms HESelectiveRangeGate.Controls.shared_duplicates_decline
+#print axioms HESelectiveRangeGate.Controls.private_duplicates_select_once
+#print axioms HESelectiveRangeGate.Controls.open_private_formal_keeps_its_first_instance
+#print axioms HESelectiveRangeGate.Controls.private_instance_is_not_erased
+#print axioms HESelectiveRangeGate.Controls.open_private_source_selection
+#print axioms HESelectiveRangeGate.Controls.range_mask_distinguishes_private_formal
+#print axioms HESelectiveRangeGate.Controls.mixed_unique_private_instance
+#print axioms HESelectiveRangeGate.Controls.coupled_local_choice_declines
+#print axioms HESelectiveRangeGate.Controls.coupled_source_later_path_succeeds
+
+end Mettapedia.GSLT.LanguageDef.Collections.TypedCalls

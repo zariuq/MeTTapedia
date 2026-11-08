@@ -57,14 +57,14 @@ theorem Check.holds_congr (A : SubstitutionAction T S) (first second : S)
       · intro absent occurrence member same
         exact absent occurrence member ((comparisons occurrence member).mp same)
   | count pattern number =>
-      have regions : Check.region A first label world pattern = Check.region A second label world pattern := by
+      have regions : Check.matches A first label world pattern = Check.matches A second label world pattern := by
         classical
         ext occurrence
-        simp only [Check.region, Finset.mem_filter]
+        simp only [Check.matches, Finset.mem_filter]
         exact and_congr_right fun member =>
           equality_iff A (arguments pattern (by simp [Check.terms])) (values occurrence member)
-      change (Check.region A first label world pattern).card = number ↔
-        (Check.region A second label world pattern).card = number
+      change (Check.matches A first label world pattern).card = number ↔
+        (Check.matches A second label world pattern).card = number
       rw [regions]
 
 /-- All residual answers must satisfy the transported check, and the

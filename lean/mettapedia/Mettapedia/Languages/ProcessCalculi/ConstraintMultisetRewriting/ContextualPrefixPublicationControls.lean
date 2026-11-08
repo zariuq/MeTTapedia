@@ -43,7 +43,7 @@ def box {V : Type} {decl : V → MetaArity base} {Γ : Ctx base}
   .op (.inl .box) (.cons value .nil)
 
 abbrev initial : ContextualClauseSourceState.World none Nat [] () :=
-  ⟨Unit, inferInstance, captures, [], ∅, fun _ => ofStored none captures (.live (symbol 0))⟩
+  ⟨Unit, inferInstance, captures, [], ∅, fun _ => ofStored none captures (.shared (symbol 0))⟩
 local instance : DecidableEq initial.Names := initial.equality
 
 abbrev actor := queryFamily none captures

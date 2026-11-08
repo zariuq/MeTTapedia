@@ -23,7 +23,7 @@ open ContextualConditionalTemplateControls
 local instance : DecidableEq base.Srt := inferInstanceAs (DecidableEq Unit)
 local instance (sort : base.Srt) : DecidableEq (base.Op sort) := inferInstanceAs (DecidableEq Operation)
 
-variable (firing : ContextualConditionalTemplateExecution.Firing locals inners before)
+variable (firing : ContextualConditionalTemplateExecution.CompiledTemplate locals inners before)
     (authored : firing.sourceRule = sourceRule) (selected : firing.selection = chosen)
 
 local instance : DecidableEq firing.update.Variables := firing.update.equality
@@ -116,9 +116,9 @@ theorem no_compiled_firing_selects_the_incompatible_schema (fuel : Nat) :
 
 omit authored selected in
 theorem two_actual_firings_with_independent_reuse (publicationFuel useFuel : Nat) :
-    ∃ first : ContextualConditionalTemplateExecution.Firing locals inners before,
-      first.sourceRule = sourceRule ∧ first.selection = chosen ∧ first.execution.outputs = outputs ∧
-        first.execution.fuel = publicationFuel ∧
+    ∃ first : ContextualConditionalTemplateExecution.CompiledTemplate locals inners before,
+      first.sourceRule = sourceRule ∧ first.selection = chosen ∧ first.publication.firing.outputs = outputs ∧
+        first.publication.firing.fuel = publicationFuel ∧
       ∃ second : ContextualConditionalClauses.Compiled locals (privateNames first)
           (before := first.target) (plan first) selection,
         second.firing.fuel = useFuel ∧ second.firing.selection.read = [10, 10] ∧
@@ -131,5 +131,50 @@ theorem two_actual_firings_with_independent_reuse (publicationFuel useFuel : Nat
   obtain ⟨second, secondBudget, reads, present⟩ := two_reads_compile_at_any_budget first source picked useFuel
   exact ⟨first, source, picked, values, budget, second, secondBudget, reads, present,
     selecting_the_incompatible_schema_is_refused first source picked⟩
+
+end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualConditionalTemplateReuse
+
+namespace Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualConditionalTemplateReuse
+
+open Mettapedia.OSLF.Binding hiding instantiate instantiateArgs
+open Mettapedia.OSLF.Binding.ContextualFamily
+open ContextualConditionalRows ContextualConditionalRealizations ContextualClauseWitnesses
+open ContextualConditionalTemplateControls ContextualConditionalTemplateControls.PublicationBoundary
+
+local instance : DecidableEq base.Srt := inferInstanceAs (DecidableEq Unit)
+local instance (sort : base.Srt) : DecidableEq (base.Op sort) := inferInstanceAs (DecidableEq Operation)
+local instance (first : ContextualConditionalTemplateExecution.CompiledTemplate locals inners before) :
+    DecidableEq first.update.Variables := first.update.equality
+
+/-- The same continuation that runs after the original publication is
+refused after swapping only its saved conditions, despite an identical raw
+first execution. This is a program observation of the publication boundary. -/
+theorem swapped_conditions_refuse_the_same_continuation
+    (first : ContextualConditionalTemplateExecution.CompiledTemplate locals inners before)
+    (authored : first.sourceRule = sourceRule) (selected : first.selection = chosen) :
+    ¬ ContextualConditionalSourceAdmission.Admitted locals (privateNames first)
+      first.target.declarations selection (code first) (swapConditions first authored).target.rows
+      first.target.equations first.target.present := by
+  intro admitted
+  obtain ⟨Next, next, images, model⟩ := admitted.solvable
+  let witness := witness_of_model locals (privateNames first) first.target.declarations
+    selection (code first) (swapConditions first authored).target.rows first.target.equations rfl rfl images model
+  have matched := (witness.read ⟨0, by decide +kernel⟩).matches (privateNames first) first.target.declarations
+  exact swapped_first_row_has_no_instance first authored selected next witness.capture witness.previous _ matched
+
+theorem actual_reuse_distinguishes_equal_raw_executions (publicationFuel useFuel : Nat) :
+    ∃ first : ContextualConditionalTemplateExecution.CompiledTemplate locals inners before,
+      ∃ authored : first.sourceRule = sourceRule,
+        first.publication.firing.fuel = publicationFuel ∧
+        (swapConditions first authored).publication.firing = first.publication.firing ∧
+        (∃ second : ContextualConditionalClauses.Compiled locals (privateNames first)
+          (before := first.target) (plan first) selection, second.firing.fuel = useFuel) ∧
+        ¬ ContextualConditionalSourceAdmission.Admitted locals (privateNames first)
+          first.target.declarations selection (code first) (swapConditions first authored).target.rows
+          first.target.equations first.target.present := by
+  obtain ⟨first, authored, selected, _outputs, budget, _present, _solvable⟩ := an_actual_mixed_firing_exists publicationFuel
+  obtain ⟨second, secondBudget, _reads, _present⟩ := two_reads_compile_at_any_budget first authored selected useFuel
+  exact ⟨first, authored, budget, rfl, ⟨second, secondBudget⟩,
+    swapped_conditions_refuse_the_same_continuation first authored selected⟩
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualConditionalTemplateReuse

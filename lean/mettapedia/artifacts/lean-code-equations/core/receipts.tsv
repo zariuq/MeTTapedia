@@ -1,0 +1,115 @@
+function	theorem	kind	statement_digest	axioms
+List.map	List.map.eq_1	equation	3628313616	
+List.map	List.map.eq_2	equation	751125029	
+List.foldl	List.foldl.eq_1	equation	1724586242	
+List.foldl	List.foldl.eq_2	equation	394576346	
+List.foldr	List.foldr.eq_1	equation	2706548966	
+List.foldr	List.foldr.eq_2	equation	2170035150	
+List.reverse	List.reverse.eq_1	equation	1476222445	
+List.append	List.append.eq_1	equation	1794585983	
+List.append	List.append.eq_2	equation	1164026942	
+List.length	List.length.eq_1	equation	1887323071	
+List.length	List.length.eq_2	equation	2317829160	
+List.filter	List.filter.eq_1	equation	1049409160	
+List.filter	List.filter.eq_2	equation	946656945	
+instDecidableEqNat	instDecidableEqNat.eq_1	equation	1640768476	
+List.range	List.range.eq_1	equation	248109846	
+List.zip	List.zip.eq_1	equation	444410807	
+List.sum	List.sum.eq_1	equation	3671851631	
+instAddNat	instAddNat.eq_1	equation	2020406042	
+List.mergeSort	List.mergeSort.eq_1	equation	1399613355	propext,Quot.sound
+List.mergeSort	List.mergeSort.eq_2	equation	444773611	propext,Quot.sound
+List.mergeSort	List.mergeSort.eq_3	equation	4213744023	propext,Quot.sound
+List.max?	List.max?.eq_1	equation	3928188317	
+List.max?	List.max?.eq_2	equation	2324372222	
+Nat.instMax	Nat.instMax.eq_1	equation	1314102570	
+Option.map	Option.map.eq_1	equation	2348205275	
+Option.map	Option.map.eq_2	equation	2206276830	
+Option.bind	Option.bind.eq_1	equation	3543490157	
+Option.bind	Option.bind.eq_2	equation	1707951122	
+Option.getD	Option.getD.eq_1	equation	2162103739	
+Option.getD	Option.getD.eq_2	equation	3656575078	
+Nat.gcd	Nat.gcd.eq_1	equation	2685267990	Quot.sound
+Nat.lcm	Nat.lcm.eq_1	equation	4180212064	
+compareOfLessAndEq	compareOfLessAndEq.eq_1	equation	3452565093	
+instLTNat	instLTNat.eq_1	equation	1265377891	
+Nat.factorial	Nat.factorial.eq_1	equation	3493226937	
+Nat.factorial	Nat.factorial.eq_2	equation	110719561	
+Nat.choose	Nat.choose.eq_1	equation	2874669642	
+Nat.choose	Nat.choose.eq_2	equation	173429890	
+Nat.choose	Nat.choose.eq_3	equation	927451254	
+Nat.fib	Nat.fib.eq_1	equation	3676078998	
+Nat.primeFactorsList	Nat.primeFactorsList.eq_1	equation	518290124	propext,Classical.choice,Quot.sound
+Nat.primeFactorsList	Nat.primeFactorsList.eq_2	equation	322775473	propext,Classical.choice,Quot.sound
+Nat.primeFactorsList	Nat.primeFactorsList.eq_3	equation	4140184584	propext,Classical.choice,Quot.sound
+Nat.decidablePrime	Nat.decidablePrime.eq_1	equation	2573434571	propext,Classical.choice,Quot.sound
+Finset.sum	Finset.sum.eq_1	equation	1194252111	propext,Quot.sound
+Nat.instAddCommMonoid	Nat.instAddCommMonoid.eq_1	equation	3623298314	propext
+Finset.range	Finset.range.eq_1	equation	2213107918	propext,Classical.choice,Quot.sound
+id	id.eq_1	equation	3897527904	
+Finset.card	Finset.card.eq_1	equation	3930454784	propext,Quot.sound
+Finset.filter	Finset.filter.eq_1	equation	3832976824	propext,Quot.sound
+List.reverseAux	List.reverseAux.eq_1	equation	276107252	
+List.reverseAux	List.reverseAux.eq_2	equation	2325223703	
+List.filter.match_1	_private.scripts.ExportLeanCodeEquations.0.List.filter.match_1.eq_1	matcher-equation	2773188013	
+List.filter.match_1	_private.scripts.ExportLeanCodeEquations.0.List.filter.match_1.eq_2	matcher-equation	1893929778	
+List.range.loop	List.range.loop.eq_1	equation	1855936408	
+List.range.loop	List.range.loop.eq_2	equation	2728420983	
+List.zipWith	List.zipWith.eq_1	equation	1186223343	
+List.zipWith	List.zipWith.eq_2	equation	2402071751	
+Add.add	Add.add	projection	2736173627	-
+Zero.zero	Zero.zero	projection	1351900946	-
+List.merge	List.merge.eq_1	equation	1788216735	propext,Quot.sound
+List.merge	List.merge.eq_2	equation	542016452	propext,Quot.sound
+List.merge	List.merge.eq_3	equation	3793400694	propext,Quot.sound
+Subtype.val	Subtype.val	projection	2875877041	-
+Prod.fst	Prod.fst	projection	1427615629	-
+List.MergeSort.Internal.splitInTwo	List.MergeSort.Internal.splitInTwo.eq_1	equation	2624791718	propext,Quot.sound
+Prod.snd	Prod.snd	projection	2463326835	-
+Max.max	Max.max	projection	2243624016	-
+maxOfLe	maxOfLe.eq_1	equation	1641264148	
+instLENat	instLENat.eq_1	equation	1152568123	
+Nat.iterate	Nat.iterate.eq_1	equation	1303063392	
+Nat.iterate	Nat.iterate.eq_2	equation	3863111963	
+Nat.minFac	Nat.minFac.eq_1	equation	32996985	propext,Classical.choice,Quot.sound
+decidable_of_iff'	decidable_of_iff'.eq_1	equation	2338311302	
+instDecidableAnd	instDecidableAnd.eq_1	equation	2877069531	
+instDecidableAnd	instDecidableAnd.eq_2	equation	895030301	
+instDecidableAnd	instDecidableAnd.eq_3	equation	2166950735	
+Nat.decidableLoHi	Nat.decidableLoHi.eq_1	equation	3202057442	propext,Classical.choice,Quot.sound
+instDecidableNot	instDecidableNot.eq_1	equation	1922689119	
+instDecidableNot	instDecidableNot.eq_2	equation	645411312	
+Nat.decidable_dvd	Nat.decidable_dvd.eq_1	equation	3986948929	propext
+Multiset.sum	Multiset.sum.eq_1	equation	2607920674	propext
+Multiset.map	Multiset.map.eq_1	equation	3582524169	propext,Quot.sound
+Finset.val	Finset.val	projection	960713715	-
+inferInstance	inferInstance.eq_1	equation	3624754066	
+Multiset.range	Multiset.range.eq_1	equation	2996635796	
+Multiset.card	Multiset.card.eq_1	equation	4290227001	propext
+Multiset.filter	Multiset.filter.eq_1	equation	3298733475	propext,Quot.sound
+Unit.unit	Unit.unit.eq_1	equation	3722246311	
+instDecidableEqBool	instDecidableEqBool.eq_1	equation	2136972715	
+List.splitAt	List.splitAt.eq_1	equation	2246599139	
+Nat.minFacAux	Nat.minFacAux.eq_1	equation	4194173946	propext,Classical.choice,Quot.sound
+decidable_of_decidable_of_iff	decidable_of_decidable_of_iff.eq_1	equation	746476589	
+decidable_of_iff	decidable_of_iff.eq_1	equation	1513722794	
+Nat.decidableBallLT	Nat.decidableBallLT.eq_1	equation	502244984	
+Nat.decidableBallLT	Nat.decidableBallLT.eq_2	equation	1358885639	
+Multiset.foldr	Multiset.foldr.eq_1	equation	1627644574	propext
+AddSemigroup.toAdd	AddSemigroup.toAdd	projection	1817990591	-
+AddMonoid.toAddSemigroup	AddMonoid.toAddSemigroup	projection	1378207289	-
+AddCommMonoid.toAddMonoid	AddCommMonoid.toAddMonoid	projection	1196223083	-
+AddMonoid.toZero	AddMonoid.toZero	projection	2108963988	-
+Quot.liftOn	Quot.liftOn.eq_1	equation	1879514711	
+Multiset.ofList	Multiset.ofList.eq_1	equation	3302666032	
+Bool.decEq	Bool.decEq.eq_1	equation	1564927632	
+Bool.decEq	Bool.decEq.eq_2	equation	3540440316	
+Bool.decEq	Bool.decEq.eq_3	equation	526094128	
+Bool.decEq	Bool.decEq.eq_4	equation	3387219894	
+List.splitAt.go	List.splitAt.go.eq_1	equation	439683064	
+List.splitAt.go	List.splitAt.go.eq_2	equation	1049511267	
+List.splitAt.go	List.splitAt.go.eq_3	equation	2679893395	propext
+Nat.decidableBallLT.match_3	_private.scripts.ExportLeanCodeEquations.0.Nat.decidableBallLT.match_3.eq_1	matcher-equation	124825837	
+Nat.decidableBallLT.match_3	_private.scripts.ExportLeanCodeEquations.0.Nat.decidableBallLT.match_3.eq_2	matcher-equation	572045124	
+Nat.decidableBallLT.match_1	_private.scripts.ExportLeanCodeEquations.0.Nat.decidableBallLT.match_1.eq_1	matcher-equation	3346898862	
+Nat.decidableBallLT.match_1	_private.scripts.ExportLeanCodeEquations.0.Nat.decidableBallLT.match_1.eq_2	matcher-equation	1769255474	

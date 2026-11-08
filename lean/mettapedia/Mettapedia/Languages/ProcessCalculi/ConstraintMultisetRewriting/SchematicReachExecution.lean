@@ -7,9 +7,9 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Propagati
 
 The occurrence result, row metadata and propagation record are committed
 together. Retained schemas transport captures and retain their private
-templates. Produced values use the existing live-output rule-instance
+templates. Produced values use the existing shared-output rule-instance
 profile; a source construct that stores a reusable template must supply the
-ordinary schema storage entry rather than silently convert it to a live
+ordinary schema storage entry rather than silently convert it to a shared
 reference. Source-level publication classification is not inferred here.
 -/
 
@@ -42,7 +42,7 @@ def resultAddresses (selection : Selection O) (addresses : O → Closed captures
 def resultPayloads (selection : Selection O) (rows : O → ContextualStoredRows.Row locals captures [] point)
     (produced : O → ActiveTerm locals captures × ActiveTerm locals captures) :
     O → ContextualStoredRows.Row locals (Active locals captures) [] point :=
-  fun occurrence => if occurrence ∈ selection.made then .live (produced occurrence).2
+  fun occurrence => if occurrence ∈ selection.made then .shared (produced occurrence).2
     else (rows occurrence).map locals (ContextualSelectionViews.capturedTarget locals captures)
 
 def Step (installation : Installation) (standing : Bool) (occupied : Finset Nat) (selection : Selection O)

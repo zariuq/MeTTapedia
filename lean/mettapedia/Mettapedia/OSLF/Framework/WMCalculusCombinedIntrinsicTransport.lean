@@ -6,12 +6,12 @@ import Mettapedia.GSLT.LanguageDef.StructuralSimulation
 import Mettapedia.OSLF.Syntax.EquationTransport
 
 /-!
-# Intrinsic transport from the WM core to the combined guarded vertex
+# Intrinsic transport from the WM core to the combined overlap/scope vertex
 
 The core declarations and unconditional rewrites are literally retained by
 the overlap-plus-scope vertex. Their inclusion is a structural language map,
 so the existing binding-signature transport carries core typed terms and
-their substitution action into the guarded extension. The extra constructors
+their substitution action into the overlap/scope extension. The extra constructors
 remain distinct additions, not changes to core operators.
 -/
 
@@ -36,7 +36,7 @@ def coreValidated : ValidatedLanguageDef :=
   ⟨wmCoreLanguageDef, core_validation⟩
 
 def combinedValidated : ValidatedLanguageDef :=
-  ⟨wmExtVertexLanguageDefGuarded combinedVertex, combined_validation⟩
+  ⟨wmExtVertexLanguageDef combinedVertex, combined_validation⟩
 
 def structuralValidated : ValidatedLanguageDef :=
   ⟨WMCalculusStructuralPresentation.wmStructuralLanguageDef,
@@ -64,7 +64,7 @@ def coreToCombined : StructuralMorphism coreValidated combinedValidated where
     intro declaration member
     simp only [mapTypeDecl_id]
     dsimp [coreValidated] at member
-    change List.Mem declaration (wmExtVertexLanguageDefGuarded combinedVertex).types
+    change List.Mem declaration (wmExtVertexLanguageDef combinedVertex).types
     rw [combined_types]
     have small : List.Mem declaration
         (["State", "Query", "BinaryEvidence"] : List Mettapedia.OSLF.MeTTaIL.Syntax.TypeDecl) := by
@@ -100,11 +100,11 @@ def coreToCombined : StructuralMorphism coreValidated combinedValidated where
 
 def coreSignatureMap :
     SigMor (signatureOf wmCoreLanguageDef)
-      (signatureOf (wmExtVertexLanguageDefGuarded combinedVertex)) :=
+      (signatureOf (wmExtVertexLanguageDef combinedVertex)) :=
   signatureMorphism coreToCombined
 
 abbrev CombinedSignature :=
-  signatureOf (wmExtVertexLanguageDefGuarded combinedVertex)
+  signatureOf (wmExtVertexLanguageDef combinedVertex)
 
 private abbrev State := TypeExpr.base "State"
 private abbrev Query := TypeExpr.base "Query"
@@ -343,7 +343,7 @@ theorem bind_forget {Γ Δ : Ctx CombinedSignature}
 unconditional rule; the scope-dependent forgetting rule is not used here. -/
 theorem overlapExtract_raw (first second query : Pattern) :
     langSemanticReduces
-      (wmExtVertexLanguageDefGuarded combinedVertex)
+      (wmExtVertexLanguageDef combinedVertex)
       (pExtract (pOverlapMerge first second) query)
       (pOverlapCorrect (pExtract first query) (pExtract second query)
         (pOverlapFactor first second query)) := by
@@ -352,7 +352,7 @@ theorem overlapExtract_raw (first second query : Pattern) :
   let bs : Bindings := [("q", query), ("W2", second), ("W1", first)]
   apply step_of_rule (rule := ruleOverlapExtract)
     (initialBindings := bs) (finalBindings := bs)
-  · simp [wmExtVertexLanguageDefGuarded, combinedVertex, overlapRules]
+  · simp [wmExtVertexLanguageDef, combinedVertex, overlapRules]
   · simp [bs, ruleOverlapExtract, pExtract, pOverlapMerge,
       matchPattern, matchArgs, mergeBindings]
   · exact .nil
@@ -367,7 +367,7 @@ theorem intrinsic_overlapExtract_computes {Γ : Ctx CombinedSignature}
     (first second : Term CombinedSignature Γ State)
     (query : Term CombinedSignature Γ Query) :
     langSemanticReduces
-      (wmExtVertexLanguageDefGuarded combinedVertex)
+      (wmExtVertexLanguageDef combinedVertex)
       (erase (extract (overlapMerge first second) query))
       (erase (overlapCorrect (extract first query) (extract second query)
         (overlapFactor first second query))) := by
@@ -382,7 +382,7 @@ theorem intrinsic_overlapExtract_substitution_stable {Γ Δ : Ctx CombinedSignat
     (first second : Term CombinedSignature Γ State)
     (query : Term CombinedSignature Γ Query) :
     langSemanticReduces
-      (wmExtVertexLanguageDefGuarded combinedVertex)
+      (wmExtVertexLanguageDef combinedVertex)
       (erase (bind sigma (extract (overlapMerge first second) query)))
       (erase (bind sigma (overlapCorrect (extract first query) (extract second query)
         (overlapFactor first second query)))) := by
@@ -395,7 +395,7 @@ theorem intrinsic_overlapExtract_substitution_stable {Γ Δ : Ctx CombinedSignat
 idempotence rule, independently of an outside-scope oracle. -/
 theorem forgetIdempotent_raw (scope world : Pattern) :
     langSemanticReduces
-      (wmExtVertexLanguageDefGuarded combinedVertex)
+      (wmExtVertexLanguageDef combinedVertex)
       (pForget scope (pForget scope world))
       (pForget scope world) := by
   apply langReduces_to_semantic
@@ -403,7 +403,7 @@ theorem forgetIdempotent_raw (scope world : Pattern) :
   let bs : Bindings := [("W", world), ("S", scope)]
   apply step_of_rule (rule := ruleForgetIdempotent)
     (initialBindings := bs) (finalBindings := bs)
-  · simp [wmExtVertexLanguageDefGuarded, combinedVertex,
+  · simp [wmExtVertexLanguageDef, combinedVertex,
       forgettingRules]
   · rw [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule_eq_syntactic]
     simp [bs, ruleForgetIdempotent, pForget, matchPattern,
@@ -421,7 +421,7 @@ theorem intrinsic_forgetIdempotent_substitution_stable
     (scope : Term CombinedSignature Γ Scope)
     (world : Term CombinedSignature Γ State) :
     langSemanticReduces
-      (wmExtVertexLanguageDefGuarded combinedVertex)
+      (wmExtVertexLanguageDef combinedVertex)
       (erase (bind sigma (forget scope (forget scope world))))
       (erase (bind sigma (forget scope world))) := by
   have step := forgetIdempotent_raw (erase (bind sigma scope))
@@ -432,7 +432,7 @@ theorem intrinsic_forgetIdempotent_substitution_stable
 empty provider supplies none, even though `Forget` is a typed constructor. -/
 theorem forgetOutside_empty_premise (scope world query : Pattern) :
     applyPremisesWithEnv RelationEnv.empty
-      (wmExtVertexLanguageDefGuarded combinedVertex)
+      (wmExtVertexLanguageDef combinedVertex)
       ruleForgetOutside.premises
       [("q", query), ("W", world), ("S", scope)] = [] := by
   simp [applyPremisesWithEnv, ruleForgetOutside, premiseStepWithEnv,
@@ -445,11 +445,11 @@ theorem forgetOutside_raw_of_guard (relEnv : RelationEnv)
     (scope world query : Pattern)
     (guard : [("q", query), ("W", world), ("S", scope)] ∈
       applyPremisesWithEnv relEnv
-        (wmExtVertexLanguageDefGuarded combinedVertex)
+        (wmExtVertexLanguageDef combinedVertex)
         ruleForgetOutside.premises
         [("q", query), ("W", world), ("S", scope)]) :
     langSemanticReducesUsing relEnv
-      (wmExtVertexLanguageDefGuarded combinedVertex)
+      (wmExtVertexLanguageDef combinedVertex)
       (pExtract (pForget scope world) query)
       (pExtract world query) := by
   apply langReducesUsing_to_semantic
@@ -458,7 +458,7 @@ theorem forgetOutside_raw_of_guard (relEnv : RelationEnv)
     (rule := ruleForgetOutside)
     (initialBindings := [("q", query), ("W", world), ("S", scope)])
     (finalBindings := [("q", query), ("W", world), ("S", scope)])
-  · simp [wmExtVertexLanguageDefGuarded, combinedVertex,
+  · simp [wmExtVertexLanguageDef, combinedVertex,
       forgettingRules]
   · rw [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule_eq_syntactic]
     simp [ruleForgetOutside, pExtract, pForget,
@@ -478,11 +478,11 @@ theorem intrinsic_forgetOutside_of_guard {Γ : Ctx CombinedSignature}
     (query : Term CombinedSignature Γ Query)
     (guard : [("q", erase query), ("W", erase world), ("S", erase scope)] ∈
       applyPremisesWithEnv relEnv
-        (wmExtVertexLanguageDefGuarded combinedVertex)
+        (wmExtVertexLanguageDef combinedVertex)
         ruleForgetOutside.premises
         [("q", erase query), ("W", erase world), ("S", erase scope)]) :
     langSemanticReducesUsing relEnv
-      (wmExtVertexLanguageDefGuarded combinedVertex)
+      (wmExtVertexLanguageDef combinedVertex)
       (erase (extract (forget scope world) query))
       (erase (extract world query)) := by
   simpa [erase_extract, erase_forget] using
@@ -505,12 +505,12 @@ theorem mappedCoreTerm_erasure {Γ : List Mettapedia.OSLF.MeTTaIL.Syntax.TypeExp
     mapPattern LanguageDefSymbolMap.id (erase term) at mapped
   simpa only [mapPattern_id] using mapped
 
-/-- A core typed term remains typed by the guarded overlap/scope vertex. -/
+/-- A core typed term remains typed by the overlap/scope vertex. -/
 theorem mappedCoreTerm_typed {Γ : List Mettapedia.OSLF.MeTTaIL.Syntax.TypeExpr}
     {s : Mettapedia.OSLF.MeTTaIL.Syntax.TypeExpr}
     (term : Term (signatureOf wmCoreLanguageDef) Γ s) :
     Mettapedia.GSLT.LanguageDef.WellSorted.HasType
-      (wmExtVertexLanguageDefGuarded combinedVertex)
+      (wmExtVertexLanguageDef combinedVertex)
       Mettapedia.GSLT.LanguageDef.WellSorted.FreeTypeContext.empty
       (Γ.map (mapTypeExpr LanguageDefSymbolMap.id))
       (erase (coreSignatureMap.onTerm term))
@@ -518,17 +518,17 @@ theorem mappedCoreTerm_typed {Γ : List Mettapedia.OSLF.MeTTaIL.Syntax.TypeExpr}
   exact mapped_erase_typed coreToCombined term
 
 /-- The generic structural simulation carries every core step into the
-combined guarded vertex. The target is allowed to have additional steps. -/
+combined overlap/scope vertex. The target is allowed to have additional steps. -/
 theorem coreStep_in_combined {first second : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern}
     (step : Mettapedia.OSLF.Framework.TypeSynthesis.langReduces
       wmCoreLanguageDef first second) :
     Mettapedia.OSLF.Framework.TypeSynthesis.langReduces
-      (wmExtVertexLanguageDefGuarded combinedVertex) first second := by
+      (wmExtVertexLanguageDef combinedVertex) first second := by
   have transported :=
     Mettapedia.GSLT.LanguageDef.StructuralSimulation.langReduces_map_of_structuralMorphism
       coreToCombined (by intro x y equality; exact equality) rfl step
   change Mettapedia.OSLF.Framework.TypeSynthesis.langReduces
-    (wmExtVertexLanguageDefGuarded combinedVertex)
+    (wmExtVertexLanguageDef combinedVertex)
     (mapPattern LanguageDefSymbolMap.id first)
     (mapPattern LanguageDefSymbolMap.id second) at transported
   simpa only [mapPattern_id] using transported
@@ -538,7 +538,7 @@ OSLF step relation, since the source core has no structural equations. -/
 theorem coreSemanticStep_in_combined
     {first second : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern}
     (step : langSemanticReduces wmCoreLanguageDef first second) :
-    langSemanticReduces (wmExtVertexLanguageDefGuarded combinedVertex)
+    langSemanticReduces (wmExtVertexLanguageDef combinedVertex)
       first second := by
   have noEquations : wmCoreLanguageDef.isEquationFree = true := by decide +kernel
   have primitive :=
@@ -547,7 +547,7 @@ theorem coreSemanticStep_in_combined
   exact langReduces_to_semantic _ (coreStep_in_combined primitive)
 
 /-- Intrinsic core terms therefore retain their operational step when
-embedded in the guarded extension; both endpoints keep their typing. -/
+embedded in the overlap/scope extension; both endpoints keep their typing. -/
 theorem mappedCoreStep_in_combined
     {Γ : List Mettapedia.OSLF.MeTTaIL.Syntax.TypeExpr}
     {s : Mettapedia.OSLF.MeTTaIL.Syntax.TypeExpr}
@@ -555,7 +555,7 @@ theorem mappedCoreStep_in_combined
     (step : Mettapedia.OSLF.Framework.TypeSynthesis.langReduces
       wmCoreLanguageDef (erase first) (erase second)) :
     Mettapedia.OSLF.Framework.TypeSynthesis.langReduces
-      (wmExtVertexLanguageDefGuarded combinedVertex)
+      (wmExtVertexLanguageDef combinedVertex)
       (erase (coreSignatureMap.onTerm first))
       (erase (coreSignatureMap.onTerm second)) := by
   rw [mappedCoreTerm_erasure, mappedCoreTerm_erasure]

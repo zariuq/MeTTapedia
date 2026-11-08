@@ -105,7 +105,7 @@ theorem row_extendPrivate (added : Added → MetaArity S) (scopes : Shared → F
   exact conditions_map _ _ _ _ (ContextualPublication.includePrivate_respects locals added captures scopes) covered.2
 
 theorem row_ordinary (added : Added → MetaArity S) (scopes : Shared → Finset Nat)
-    {Γ : Ctx S} {sort : S.Srt} (answer : ContextualResidualAnswers.Answer added Γ sort) :
+    {Γ : Ctx S} {sort : S.Srt} (answer : ContextualConditionalAnswers.Answer added Γ sort) :
     RowCovered (ContextualPublication.privateFamily locals added) captures scopes ∅
       (ContextualConditionalPublication.ordinary locals added captures answer) := by
   refine ⟨ContextualPublication.ordinary_covered locals added captures scopes answer.value, ?_⟩
@@ -132,6 +132,15 @@ structure Formed {Γ : Ctx S} {sort : S.Srt} (before : State locals O Γ sort)
     (scopes : before.Names → Finset Nat) : Prop where
   equations : ConditionsCovered scopes before.occupied before.equations
   rows : ∀ occurrence ∈ before.present, RowCovered locals before.declarations scopes before.occupied (before.rows occurrence)
+
+/-- Reserving additional scopes retains coverage of all existing values
+and latent equations; it does not reclassify captured names as fresh. -/
+theorem Formed.mono {Γ : Ctx S} {sort : S.Srt} {before : State locals O Γ sort}
+    {scopes : before.Names → Finset Nat} (formed : Formed locals before scopes)
+    (occupied : Finset Nat) (retained : before.occupied ⊆ occupied) :
+    Formed locals {before with occupied := occupied} scopes :=
+  ⟨formed.equations.mono retained,
+    fun occurrence member => (formed.rows occurrence member).mono locals before.declarations retained⟩
 
 theorem of_endpoint_formed {Γ : Ctx S} {sort : S.Srt} (before : ContextualExecution.Endpoint locals O Γ sort) :
     Formed locals (ofEndpoint locals before) before.scopes := by
@@ -241,12 +250,12 @@ theorem firing_preserves_formation (firing : Firing locals before) (scopes : bef
     · change RowCovered _ _ _ _ (if _ then (if _ then _ else _) else _)
       rw [if_pos made, if_pos reusable]
       exact (row_ordinary locals firing.target.declarations firing.update.declaration
-        (targetScopes locals firing scopes) (ContextualResidualAnswers.ofUpdate firing.update (firing.outputs occurrence))).mono
+        (targetScopes locals firing scopes) (ContextualConditionalAnswers.ofUpdate firing.update (firing.outputs occurrence))).mono
           _ _ (Finset.empty_subset _)
-    · have live : firing.reusable occurrence = false := Bool.eq_false_iff.mpr reusable
-      rw [firing.live_row occurrence made live]
+    · have isShared : firing.reusable occurrence = false := Bool.eq_false_iff.mpr reusable
+      rw [firing.shared_row occurrence made isShared]
       apply row_ofStored
-      apply row_live
+      apply row_shared
       have ruleSafe := ContextualWorldScopeLedger.prepared_rule_covered locals before.declarations scopes
         before.occupied firing.selection firing.rule (fun index => (before.rows index).value) ruleCovered
       have outputSafe : Covered (activeScopes (Local := Local) scopes)

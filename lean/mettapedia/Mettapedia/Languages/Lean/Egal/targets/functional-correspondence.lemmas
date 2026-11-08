@@ -1,0 +1,7 @@
+# Mathlib's lemmas on the reflexive-transitive closure that the development's
+# proofs use; their statements are read from Lean and proved in Egal.
+Relation.ReflTransGen.single
+Relation.ReflTransGen.head
+Relation.ReflTransGen.trans
+Relation.ReflTransGen.head_induction_on
+Relation.ReflTransGen.cases_head

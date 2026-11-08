@@ -1,0 +1,771 @@
+constant	role	kind	evidence	egal	detail
+Add	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Add.add	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Add.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+And	dependency	inductive	interpretation		read as Egal's conjunction in statements
+And.intro	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Array	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Array.empty	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Array.emptyWithCapacity	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Array.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Array.push	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Array.toList	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+BitVec	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+BitVec.ofFin	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+BitVec.ofNat	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+BitVec.ofNat._proof_1	generated-helper	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+BitVec.ofNatLT	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+BitVec.toFin	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+BitVec.toNat	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Bool	dependency	inductive	interpretation	Lean_Bool	family
+Bool.and	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Bool.and.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Bool.casesOn	generated-helper	definition	interpretation	Lean_Bool_rec	case analysis read as the recursor with the minors as methods
+Bool.decEq	dependency	definition	interpretation	Lean_Bool_decEq	function read from its equation theorems; Lean's equations proved
+Bool.decEq.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Bool.false	dependency	constructor	interpretation	Lean_Bool_false_node	constructor
+Bool.noConfusion	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Bool.noConfusionType	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Bool.rec	generated-helper	recursor	interpretation	Lean_Bool_rec	the family's recursor, with its computation rules
+Bool.true	dependency	constructor	interpretation	Lean_Bool_true_node	constructor
+ByteArray	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+ByteArray.IsValidUTF8	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+ByteArray.IsValidUTF8.intro	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+ByteArray.casesOn	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+ByteArray.empty	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+ByteArray.emptyWithCapacity	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+ByteArray.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+ByteArray.push	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+ByteArray.push.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+ByteArray.rec	generated-helper	recursor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Char	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Char.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Char.ofNat	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Char.ofNat._proof_1	generated-helper	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Char.ofNat._proof_2	generated-helper	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Char.ofNatAux	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Char.ofNatAux._private_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Char.val	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Decidable	dependency	inductive	interpretation	Lean_Decidable	family
+Decidable.casesOn	generated-helper	definition	interpretation	Lean_Decidable_rec	case analysis read as the recursor with the minors as methods
+Decidable.decide	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Decidable.isFalse	dependency	constructor	interpretation	Lean_Decidable_isFalse_node	constructor
+Decidable.isTrue	dependency	constructor	interpretation	Lean_Decidable_isTrue_node	constructor
+Decidable.rec	generated-helper	recursor	interpretation	Lean_Decidable_rec	the family's recursor, with its computation rules
+DecidableEq	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Div	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Div.div	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Div.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Eq	dependency	inductive	interpretation	Lean_Eq	family
+Eq.ndrec	dependency	definition	interpretation	Lean_Eq_ndrec	function read from its equation theorems; Lean's equations proved
+Eq.rec	generated-helper	recursor	interpretation	Lean_Eq_prec	the recursor of a family of propositions
+Eq.refl	dependency	constructor	interpretation	Lean_Eq_refl_node	constructor
+Eq.symm	dependency	theorem	not-needed		a theorem Lean's proofs use; the theorems are reconstructed in Egal, not transported
+Exists	dependency	inductive	interpretation	Lean_Exists	family
+Exists.intro	dependency	constructor	interpretation	Lean_Exists_intro_node	constructor
+False	dependency	inductive	interpretation	Lean_False	family
+False.elim	generated-helper	definition	not-needed		an eliminator Lean derives from the recursor; the reading uses the recursor
+False.rec	generated-helper	recursor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Fin	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Fin.Internal.ofNat	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Fin.casesOn	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Fin.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Fin.rec	generated-helper	recursor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Fin.val	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+GetElem	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+GetElem.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+GetElem?	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+GetElem?.getElem?	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+GetElem?.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+HAdd	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+HAdd.hAdd	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+HAdd.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+HDiv	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+HDiv.hDiv	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+HDiv.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+HEq	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+HEq.refl	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+HMod	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+HMod.hMod	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+HMod.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+HPow	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+HPow.hPow	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+HPow.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+HSub	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+HSub.hSub	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+HSub.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Inhabited	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Inhabited.default	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Inhabited.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+InvImage	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+LE	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+LE.le	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+LE.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+LT	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+LT.lt	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+LT.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+List	dependency	inductive	interpretation	Lean_List	family
+List._sizeOf_1	generated-helper	definition	not-needed		Lean's size measure for termination; not part of the development's meaning
+List._sizeOf_inst	generated-helper	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+List.append	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+List.append._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+List.append.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+List.below	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+List.brecOn	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+List.brecOn.go	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+List.casesOn	generated-helper	definition	interpretation	Lean_List_casesOn	case analysis read as the family's case eliminator
+List.concat	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+List.concat._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+List.concat.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+List.cons	dependency	constructor	interpretation	Lean_List_cons_node	constructor
+List.ctorIdx	dependency	definition	not-needed		an eliminator Lean derives from the recursor; the reading uses the recursor
+List.flatMap	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+List.flatten	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+List.flatten._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+List.flatten.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+List.get	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+List.get!Internal	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+List.get!Internal._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+List.get._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+List.get.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+List.get?Internal	dependency	definition	interpretation	Lean_List_getu63Internal	function read from its equation theorems; Lean's equations proved
+List.get?Internal._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+List.get?Internal._sparseCasesOn_1	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+List.get?Internal.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+List.instGetElem?NatLtLength	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+List.instGetElemNatLtLength	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+List.length	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+List.length._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+List.map	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+List.map._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+List.nil	dependency	constructor	interpretation	Lean_List_nil_node	constructor
+List.rec	generated-helper	recursor	interpretation	Lean_List_rec	the family's recursor, with its computation rules
+List.toByteArray	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+List.toByteArray.loop	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+List.toByteArray.loop._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+List.toByteArray.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+List.utf8Encode	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Mettapedia.Machines.BoundedDeterministicRun.Outcome	dependency	inductive	interpretation	Lean_BoundedDeterministicRun_Outcome	family
+Mettapedia.Machines.BoundedDeterministicRun.Outcome.completed	dependency	constructor	interpretation	Lean_BoundedDeterministicRun_Outcome_completed_node	constructor
+Mettapedia.Machines.BoundedDeterministicRun.Outcome.exhausted	dependency	constructor	interpretation	Lean_BoundedDeterministicRun_Outcome_exhausted_node	constructor
+Mettapedia.Machines.BoundedDeterministicRun.Outcome.stuck	dependency	constructor	interpretation	Lean_BoundedDeterministicRun_Outcome_stuck_node	constructor
+Mettapedia.Machines.BoundedDeterministicRun.Result	dependency	inductive	interpretation	Lean_BoundedDeterministicRun_Result	family
+Mettapedia.Machines.BoundedDeterministicRun.Result.mk	dependency	constructor	interpretation	Lean_BoundedDeterministicRun_Result_mk_node	constructor
+Mettapedia.Machines.BoundedDeterministicRun.Result.outcome	dependency	definition	interpretation	Lean_BoundedDeterministicRun_Result_outcome	projection
+Mettapedia.Machines.BoundedDeterministicRun.Result.state	dependency	definition	interpretation	Lean_BoundedDeterministicRun_Result_state	projection
+Mettapedia.Machines.BoundedDeterministicRun.Result.steps	dependency	definition	interpretation	Lean_BoundedDeterministicRun_Result_steps	projection
+Mettapedia.Machines.BoundedDeterministicRun.execute	dependency	definition	interpretation	Lean_BoundedDeterministicRun_execute	function read from its equation theorems; Lean's equations proved
+Mettapedia.Machines.BoundedDeterministicRun.execute._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.BoundedDeterministicRun.run	dependency	definition	interpretation	Lean_BoundedDeterministicRun_run	function read from its equation theorems; Lean's equations proved
+Mettapedia.Machines.BoundedDeterministicRun.run._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.BoundedDeterministicRun.run.match_1	generated-helper	definition	expanded		matcher, read by its definition at each use
+Mettapedia.Machines.BoundedDeterministicRun.run.match_3	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Mettapedia.Machines.CEK.Ctl	declaration	inductive	interpretation	Lean_CEK_Ctl	family
+Mettapedia.Machines.CEK.Ctl._sizeOf_1	generated-helper	definition	not-needed		Lean's size measure for termination; not part of the development's meaning
+Mettapedia.Machines.CEK.Ctl._sizeOf_inst	generated-helper	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.Ctl.casesOn	generated-helper	definition	interpretation	Lean_CEK_Ctl_rec	case analysis read as the recursor with the minors as methods
+Mettapedia.Machines.CEK.Ctl.ctorElim	declaration	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.Ctl.ctorElimType	declaration	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.Ctl.ctorIdx	declaration	definition	not-needed		an eliminator Lean derives from the recursor; the reading uses the recursor
+Mettapedia.Machines.CEK.Ctl.ev	declaration	constructor	interpretation	Lean_CEK_Ctl_ev_node	constructor
+Mettapedia.Machines.CEK.Ctl.ev.elim	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.Ctl.ev.inj	generated-helper	theorem	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.CEK.Ctl.ev.injEq	generated-helper	theorem	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.CEK.Ctl.ev.noConfusion	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.CEK.Ctl.ev.sizeOf_spec	generated-helper	theorem	not-needed		Lean's size measure for termination; not part of the development's meaning
+Mettapedia.Machines.CEK.Ctl.noConfusion	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.CEK.Ctl.noConfusionType	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.CEK.Ctl.rec	generated-helper	recursor	interpretation	Lean_CEK_Ctl_rec	the family's recursor, with its computation rules
+Mettapedia.Machines.CEK.Ctl.recOn	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.Ctl.ret	declaration	constructor	interpretation	Lean_CEK_Ctl_ret_node	constructor
+Mettapedia.Machines.CEK.Ctl.ret.elim	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.Ctl.ret.inj	generated-helper	theorem	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.CEK.Ctl.ret.injEq	generated-helper	theorem	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.CEK.Ctl.ret.noConfusion	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.CEK.Ctl.ret.sizeOf_spec	generated-helper	theorem	not-needed		Lean's size measure for termination; not part of the development's meaning
+Mettapedia.Machines.CEK.Env	declaration	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.Final	declaration	definition	interpretation	Lean_CEK_Final	function read from its equation theorems; Lean's equations proved
+Mettapedia.Machines.CEK.Final.eq_1	generated-helper	theorem	interpretation	Lean_CEK_Final_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.CEK.Frame	declaration	inductive	interpretation	Lean_CEK_Frame	family
+Mettapedia.Machines.CEK.Frame._sizeOf_1	generated-helper	definition	not-needed		Lean's size measure for termination; not part of the development's meaning
+Mettapedia.Machines.CEK.Frame._sizeOf_inst	generated-helper	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.Frame.argOf	declaration	constructor	interpretation	Lean_CEK_Frame_argOf_node	constructor
+Mettapedia.Machines.CEK.Frame.argOf.elim	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.Frame.argOf.inj	generated-helper	theorem	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.CEK.Frame.argOf.injEq	generated-helper	theorem	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.CEK.Frame.argOf.noConfusion	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.CEK.Frame.argOf.sizeOf_spec	generated-helper	theorem	not-needed		Lean's size measure for termination; not part of the development's meaning
+Mettapedia.Machines.CEK.Frame.callWith	declaration	constructor	interpretation	Lean_CEK_Frame_callWith_node	constructor
+Mettapedia.Machines.CEK.Frame.callWith.elim	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.Frame.callWith.inj	generated-helper	theorem	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.CEK.Frame.callWith.injEq	generated-helper	theorem	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.CEK.Frame.callWith.noConfusion	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.CEK.Frame.callWith.sizeOf_spec	generated-helper	theorem	not-needed		Lean's size measure for termination; not part of the development's meaning
+Mettapedia.Machines.CEK.Frame.casesOn	generated-helper	definition	interpretation	Lean_CEK_Frame_rec	case analysis read as the recursor with the minors as methods
+Mettapedia.Machines.CEK.Frame.ctorElim	declaration	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.Frame.ctorElimType	declaration	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.Frame.ctorIdx	declaration	definition	not-needed		an eliminator Lean derives from the recursor; the reading uses the recursor
+Mettapedia.Machines.CEK.Frame.noConfusion	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.CEK.Frame.noConfusionType	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.CEK.Frame.rec	generated-helper	recursor	interpretation	Lean_CEK_Frame_rec	the family's recursor, with its computation rules
+Mettapedia.Machines.CEK.Frame.recOn	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.Kont	declaration	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.St	declaration	inductive	interpretation	Lean_CEK_St	family
+Mettapedia.Machines.CEK.St._sizeOf_1	generated-helper	definition	not-needed		Lean's size measure for termination; not part of the development's meaning
+Mettapedia.Machines.CEK.St._sizeOf_inst	generated-helper	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.St.casesOn	generated-helper	definition	interpretation	Lean_CEK_St_rec	case analysis read as the recursor with the minors as methods
+Mettapedia.Machines.CEK.St.ctl	declaration	definition	interpretation	Lean_CEK_St_ctl	projection
+Mettapedia.Machines.CEK.St.ctorIdx	declaration	definition	not-needed		an eliminator Lean derives from the recursor; the reading uses the recursor
+Mettapedia.Machines.CEK.St.k	declaration	definition	interpretation	Lean_CEK_St_k	projection
+Mettapedia.Machines.CEK.St.mk	declaration	constructor	interpretation	Lean_CEK_St_mk_node	constructor
+Mettapedia.Machines.CEK.St.mk._flat_ctor	generated-helper	definition	not-needed		an eliminator Lean derives from the recursor; the reading uses the recursor
+Mettapedia.Machines.CEK.St.mk.inj	generated-helper	theorem	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.CEK.St.mk.injEq	generated-helper	theorem	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.CEK.St.mk.noConfusion	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.CEK.St.mk.sizeOf_spec	generated-helper	theorem	not-needed		Lean's size measure for termination; not part of the development's meaning
+Mettapedia.Machines.CEK.St.noConfusion	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.CEK.St.noConfusionType	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.CEK.St.rec	generated-helper	recursor	interpretation	Lean_CEK_St_rec	the family's recursor, with its computation rules
+Mettapedia.Machines.CEK.St.recOn	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.StepRel	declaration	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.StepRel.eq_1	generated-helper	theorem	not-needed		a theorem Lean's proofs use; the theorems are reconstructed in Egal, not transported
+Mettapedia.Machines.CEK.Steps	declaration	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.Val	declaration	inductive	interpretation	Lean_CEK_Val	family
+Mettapedia.Machines.CEK.Val._sizeOf_1	generated-helper	definition	not-needed		Lean's size measure for termination; not part of the development's meaning
+Mettapedia.Machines.CEK.Val._sizeOf_2	generated-helper	definition	not-needed		Lean's size measure for termination; not part of the development's meaning
+Mettapedia.Machines.CEK.Val._sizeOf_2_eq	generated-helper	theorem	not-needed		Lean's size measure for termination; not part of the development's meaning
+Mettapedia.Machines.CEK.Val._sizeOf_inst	generated-helper	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.Val.below	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.Val.below_1	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.Val.brecOn	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.Val.brecOn.eq	declaration	theorem	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+Mettapedia.Machines.CEK.Val.brecOn.go	declaration	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.Val.brecOn_1	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.Val.brecOn_1.eq	declaration	theorem	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+Mettapedia.Machines.CEK.Val.brecOn_1.go	declaration	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.Val.casesOn	generated-helper	definition	interpretation	Lean_CEK_Val_rec	case analysis read as the recursor with the minors as methods
+Mettapedia.Machines.CEK.Val.clo	declaration	constructor	interpretation	Lean_CEK_Val_clo_node	constructor
+Mettapedia.Machines.CEK.Val.clo.elim	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.Val.clo.inj	generated-helper	theorem	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.CEK.Val.clo.injEq	generated-helper	theorem	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.CEK.Val.clo.noConfusion	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.CEK.Val.clo.sizeOf_spec	generated-helper	theorem	not-needed		Lean's size measure for termination; not part of the development's meaning
+Mettapedia.Machines.CEK.Val.ctorElim	declaration	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.Val.ctorElimType	declaration	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.Val.ctorIdx	declaration	definition	not-needed		an eliminator Lean derives from the recursor; the reading uses the recursor
+Mettapedia.Machines.CEK.Val.lit	declaration	constructor	interpretation	Lean_CEK_Val_lit_node	constructor
+Mettapedia.Machines.CEK.Val.lit.elim	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.Val.lit.inj	generated-helper	theorem	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.CEK.Val.lit.injEq	generated-helper	theorem	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.CEK.Val.lit.noConfusion	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.CEK.Val.lit.sizeOf_spec	generated-helper	theorem	not-needed		Lean's size measure for termination; not part of the development's meaning
+Mettapedia.Machines.CEK.Val.noConfusion	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.CEK.Val.noConfusionType	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.CEK.Val.rec	generated-helper	recursor	interpretation	Lean_CEK_Val_rec	the family's recursor, with its computation rules
+Mettapedia.Machines.CEK.Val.recOn	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.Val.rec_1	generated-helper	recursor	interpretation	Lean_CEK_Val_rec	the family's recursor, with its computation rules
+Mettapedia.Machines.CEK.answer	dependency	definition	interpretation	Lean_CEK_answer	function read from its equation theorems; Lean's equations proved
+Mettapedia.Machines.CEK.answer._sparseCasesOn_1	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.answer._sparseCasesOn_2	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.answer.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Mettapedia.Machines.CEK.evalV	declaration	definition	interpretation	Lean_CEK_evalV	function read from its equation theorems; Lean's equations proved
+Mettapedia.Machines.CEK.evalV._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.CEK.evalV._sunfold	generated-helper	definition	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+Mettapedia.Machines.CEK.evalV._unsafe_rec	generated-helper	definition	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+Mettapedia.Machines.CEK.evalV.eq_1	generated-helper	theorem	interpretation	Lean_CEK_evalV_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.CEK.evalV.eq_2	generated-helper	theorem	interpretation	Lean_CEK_evalV_eq_2	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.CEK.evalV.eq_3	generated-helper	theorem	interpretation	Lean_CEK_evalV_eq_3	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.CEK.evalV.eq_4	generated-helper	theorem	interpretation	Lean_CEK_evalV_eq_4	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.CEK.evalV.eq_5	generated-helper	theorem	interpretation	Lean_CEK_evalV_eq_5	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.CEK.evalV.eq_def	generated-helper	theorem	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+Mettapedia.Machines.CEK.evalV.match_1	generated-helper	definition	expanded		matcher, read by its definition at each use
+Mettapedia.Machines.CEK.evalV.match_3	generated-helper	definition	expanded		matcher, read by its definition at each use
+Mettapedia.Machines.CEK.evalV.match_5	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Mettapedia.Machines.CEK.eval_to_machine	declaration	theorem	target-reconstruction	Lean_CEK_eval_to_machine	statement read from Lean, proved in Egal
+Mettapedia.Machines.CEK.execute	declaration	definition	interpretation	Lean_CEK_execute	function read from its equation theorems; Lean's equations proved
+Mettapedia.Machines.CEK.final_ret_nil	declaration	theorem	target-reconstruction	Lean_CEK_final_ret_nil	statement read from Lean, proved in Egal
+Mettapedia.Machines.CEK.run	declaration	definition	interpretation	Lean_CEK_run	function read from its equation theorems; Lean's equations proved
+Mettapedia.Machines.CEK.step	declaration	definition	interpretation	Lean_CEK_step	function read from its equation theorems; Lean's equations proved
+Mettapedia.Machines.CEK.step.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Mettapedia.Machines.CEK.steps_final_unique	declaration	theorem	target-reconstruction	Lean_CEK_steps_final_unique	statement read from Lean, proved in Egal
+Mettapedia.Machines.Krivine.KSt	declaration	inductive	interpretation	Lean_Krivine_KSt	family
+Mettapedia.Machines.Krivine.KSt._sizeOf_1	generated-helper	definition	not-needed		Lean's size measure for termination; not part of the development's meaning
+Mettapedia.Machines.Krivine.KSt._sizeOf_inst	generated-helper	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.Krivine.KSt.casesOn	generated-helper	definition	interpretation	Lean_Krivine_KSt_rec	case analysis read as the recursor with the minors as methods
+Mettapedia.Machines.Krivine.KSt.ctorIdx	declaration	definition	not-needed		an eliminator Lean derives from the recursor; the reading uses the recursor
+Mettapedia.Machines.Krivine.KSt.mk	declaration	constructor	interpretation	Lean_Krivine_KSt_mk_node	constructor
+Mettapedia.Machines.Krivine.KSt.mk._flat_ctor	generated-helper	definition	not-needed		an eliminator Lean derives from the recursor; the reading uses the recursor
+Mettapedia.Machines.Krivine.KSt.mk.inj	generated-helper	theorem	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.Krivine.KSt.mk.injEq	generated-helper	theorem	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.Krivine.KSt.mk.noConfusion	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.Krivine.KSt.mk.sizeOf_spec	generated-helper	theorem	not-needed		Lean's size measure for termination; not part of the development's meaning
+Mettapedia.Machines.Krivine.KSt.noConfusion	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.Krivine.KSt.noConfusionType	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.Krivine.KSt.rec	generated-helper	recursor	interpretation	Lean_Krivine_KSt_rec	the family's recursor, with its computation rules
+Mettapedia.Machines.Krivine.KSt.recOn	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.Krivine.KSt.s	declaration	definition	interpretation	Lean_Krivine_KSt_s	projection
+Mettapedia.Machines.Krivine.KSt.t	declaration	definition	interpretation	Lean_Krivine_KSt_t	projection
+Mettapedia.Machines.Krivine.KSt.ρ	declaration	definition	interpretation	Lean_Krivine_KSt_u961	projection
+Mettapedia.Machines.Krivine.KStepRel	declaration	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.Krivine.KSteps	declaration	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.Krivine.NEnv	declaration	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.Krivine.NThunk	declaration	inductive	interpretation	Lean_Krivine_NThunk	family
+Mettapedia.Machines.Krivine.NThunk._sizeOf_1	generated-helper	definition	not-needed		Lean's size measure for termination; not part of the development's meaning
+Mettapedia.Machines.Krivine.NThunk._sizeOf_2	generated-helper	definition	not-needed		Lean's size measure for termination; not part of the development's meaning
+Mettapedia.Machines.Krivine.NThunk._sizeOf_2_eq	generated-helper	theorem	not-needed		Lean's size measure for termination; not part of the development's meaning
+Mettapedia.Machines.Krivine.NThunk._sizeOf_inst	generated-helper	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.Krivine.NThunk.below	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.Krivine.NThunk.below_1	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.Krivine.NThunk.brecOn	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.Krivine.NThunk.brecOn.eq	declaration	theorem	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+Mettapedia.Machines.Krivine.NThunk.brecOn.go	declaration	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.Krivine.NThunk.brecOn_1	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.Krivine.NThunk.brecOn_1.eq	declaration	theorem	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+Mettapedia.Machines.Krivine.NThunk.brecOn_1.go	declaration	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.Krivine.NThunk.casesOn	generated-helper	definition	interpretation	Lean_Krivine_NThunk_rec	case analysis read as the recursor with the minors as methods
+Mettapedia.Machines.Krivine.NThunk.ctorIdx	declaration	definition	not-needed		an eliminator Lean derives from the recursor; the reading uses the recursor
+Mettapedia.Machines.Krivine.NThunk.mk	declaration	constructor	interpretation	Lean_Krivine_NThunk_mk_node	constructor
+Mettapedia.Machines.Krivine.NThunk.mk.inj	generated-helper	theorem	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.Krivine.NThunk.mk.injEq	generated-helper	theorem	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.Krivine.NThunk.mk.noConfusion	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.Krivine.NThunk.mk.sizeOf_spec	generated-helper	theorem	not-needed		Lean's size measure for termination; not part of the development's meaning
+Mettapedia.Machines.Krivine.NThunk.noConfusion	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.Krivine.NThunk.noConfusionType	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.Krivine.NThunk.rec	generated-helper	recursor	interpretation	Lean_Krivine_NThunk_rec	the family's recursor, with its computation rules
+Mettapedia.Machines.Krivine.NThunk.recOn	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.Krivine.NThunk.rec_1	generated-helper	recursor	interpretation	Lean_Krivine_NThunk_rec	the family's recursor, with its computation rules
+Mettapedia.Machines.Krivine.NVal	declaration	inductive	interpretation	Lean_Krivine_NVal	family
+Mettapedia.Machines.Krivine.NVal._sizeOf_1	generated-helper	definition	not-needed		Lean's size measure for termination; not part of the development's meaning
+Mettapedia.Machines.Krivine.NVal._sizeOf_inst	generated-helper	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.Krivine.NVal.casesOn	generated-helper	definition	interpretation	Lean_Krivine_NVal_rec	case analysis read as the recursor with the minors as methods
+Mettapedia.Machines.Krivine.NVal.clo	declaration	constructor	interpretation	Lean_Krivine_NVal_clo_node	constructor
+Mettapedia.Machines.Krivine.NVal.clo.elim	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.Krivine.NVal.clo.inj	generated-helper	theorem	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.Krivine.NVal.clo.injEq	generated-helper	theorem	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.Krivine.NVal.clo.noConfusion	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.Krivine.NVal.clo.sizeOf_spec	generated-helper	theorem	not-needed		Lean's size measure for termination; not part of the development's meaning
+Mettapedia.Machines.Krivine.NVal.ctorElim	declaration	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.Krivine.NVal.ctorElimType	declaration	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.Krivine.NVal.ctorIdx	declaration	definition	not-needed		an eliminator Lean derives from the recursor; the reading uses the recursor
+Mettapedia.Machines.Krivine.NVal.lit	declaration	constructor	interpretation	Lean_Krivine_NVal_lit_node	constructor
+Mettapedia.Machines.Krivine.NVal.lit.elim	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.Krivine.NVal.lit.inj	generated-helper	theorem	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.Krivine.NVal.lit.injEq	generated-helper	theorem	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.Krivine.NVal.lit.noConfusion	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.Krivine.NVal.lit.sizeOf_spec	generated-helper	theorem	not-needed		Lean's size measure for termination; not part of the development's meaning
+Mettapedia.Machines.Krivine.NVal.noConfusion	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.Krivine.NVal.noConfusionType	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.Krivine.NVal.rec	generated-helper	recursor	interpretation	Lean_Krivine_NVal_rec	the family's recursor, with its computation rules
+Mettapedia.Machines.Krivine.NVal.recOn	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.Krivine.Presents	declaration	definition	interpretation	Lean_Krivine_Presents	function read from its equation theorems; Lean's equations proved
+Mettapedia.Machines.Krivine.Presents.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Mettapedia.Machines.Krivine.answer	dependency	definition	interpretation	Lean_Krivine_answer	function read from its equation theorems; Lean's equations proved
+Mettapedia.Machines.Krivine.answer._sparseCasesOn_1	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.Krivine.answer.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Mettapedia.Machines.Krivine.evalN	declaration	definition	interpretation	Lean_Krivine_evalN	function read from its equation theorems; Lean's equations proved
+Mettapedia.Machines.Krivine.evalN._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.Krivine.evalN._sunfold	generated-helper	definition	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+Mettapedia.Machines.Krivine.evalN._unsafe_rec	generated-helper	definition	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+Mettapedia.Machines.Krivine.evalN.eq_1	generated-helper	theorem	interpretation	Lean_Krivine_evalN_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.Krivine.evalN.eq_2	generated-helper	theorem	interpretation	Lean_Krivine_evalN_eq_2	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.Krivine.evalN.eq_3	generated-helper	theorem	interpretation	Lean_Krivine_evalN_eq_3	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.Krivine.evalN.eq_4	generated-helper	theorem	interpretation	Lean_Krivine_evalN_eq_4	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.Krivine.evalN.eq_5	generated-helper	theorem	interpretation	Lean_Krivine_evalN_eq_5	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.Krivine.evalN.eq_def	generated-helper	theorem	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+Mettapedia.Machines.Krivine.evalN.match_1	generated-helper	definition	expanded		matcher, read by its definition at each use
+Mettapedia.Machines.Krivine.evalN.match_3	generated-helper	definition	expanded		matcher, read by its definition at each use
+Mettapedia.Machines.Krivine.evalN.match_5	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Mettapedia.Machines.Krivine.eval_to_machine	declaration	theorem	target-reconstruction	Lean_Krivine_eval_to_machine	statement read from Lean, proved in Egal
+Mettapedia.Machines.Krivine.execute	declaration	definition	interpretation	Lean_Krivine_execute	function read from its equation theorems; Lean's equations proved
+Mettapedia.Machines.Krivine.kstep	declaration	definition	interpretation	Lean_Krivine_kstep	function read from its equation theorems; Lean's equations proved
+Mettapedia.Machines.Krivine.kstep.match_1	generated-helper	definition	expanded		matcher, read by its definition at each use
+Mettapedia.Machines.Krivine.kstep.match_3	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Mettapedia.Machines.Krivine.run	declaration	definition	interpretation	Lean_Krivine_run	function read from its equation theorems; Lean's equations proved
+Mettapedia.Machines.Tm	declaration	inductive	interpretation	Lean_Tm	family
+Mettapedia.Machines.Tm._sizeOf_1	generated-helper	definition	not-needed		Lean's size measure for termination; not part of the development's meaning
+Mettapedia.Machines.Tm._sizeOf_inst	generated-helper	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.Tm.app	declaration	constructor	interpretation	Lean_Tm_app_node	constructor
+Mettapedia.Machines.Tm.app.elim	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.Tm.app.inj	generated-helper	theorem	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.Tm.app.injEq	generated-helper	theorem	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.Tm.app.noConfusion	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.Tm.app.sizeOf_spec	generated-helper	theorem	not-needed		Lean's size measure for termination; not part of the development's meaning
+Mettapedia.Machines.Tm.below	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.Tm.brecOn	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.Tm.brecOn.eq	declaration	theorem	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+Mettapedia.Machines.Tm.brecOn.go	declaration	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.Tm.casesOn	generated-helper	definition	interpretation	Lean_Tm_casesOn	case analysis read as the family's case eliminator
+Mettapedia.Machines.Tm.ctorElim	declaration	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.Tm.ctorElimType	declaration	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.Tm.ctorIdx	declaration	definition	not-needed		an eliminator Lean derives from the recursor; the reading uses the recursor
+Mettapedia.Machines.Tm.lam	declaration	constructor	interpretation	Lean_Tm_lam_node	constructor
+Mettapedia.Machines.Tm.lam.elim	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.Tm.lam.inj	generated-helper	theorem	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.Tm.lam.injEq	generated-helper	theorem	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.Tm.lam.noConfusion	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.Tm.lam.sizeOf_spec	generated-helper	theorem	not-needed		Lean's size measure for termination; not part of the development's meaning
+Mettapedia.Machines.Tm.lit	declaration	constructor	interpretation	Lean_Tm_lit_node	constructor
+Mettapedia.Machines.Tm.lit.elim	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.Tm.lit.inj	generated-helper	theorem	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.Tm.lit.injEq	generated-helper	theorem	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.Tm.lit.noConfusion	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.Tm.lit.sizeOf_spec	generated-helper	theorem	not-needed		Lean's size measure for termination; not part of the development's meaning
+Mettapedia.Machines.Tm.noConfusion	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.Tm.noConfusionType	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.Tm.rec	generated-helper	recursor	interpretation	Lean_Tm_rec	the family's recursor, with its computation rules
+Mettapedia.Machines.Tm.recOn	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.Tm.var	declaration	constructor	interpretation	Lean_Tm_var_node	constructor
+Mettapedia.Machines.Tm.var.elim	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.Tm.var.inj	generated-helper	theorem	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.Tm.var.injEq	generated-helper	theorem	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.Tm.var.noConfusion	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Mettapedia.Machines.Tm.var.sizeOf_spec	generated-helper	theorem	not-needed		Lean's size measure for termination; not part of the development's meaning
+Mettapedia.Machines.instDecidableEqTm	declaration	definition	interpretation	Lean_instDecidableEqTm	function read from its equation theorems; Lean's equations proved
+Mettapedia.Machines.instDecidableEqTm.decEq	declaration	definition	interpretation	Lean_instDecidableEqTm_decEq	function read from its equation theorems; Lean's equations proved
+Mettapedia.Machines.instDecidableEqTm.decEq._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Mettapedia.Machines.instDecidableEqTm.decEq._proof_1	generated-helper	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.Machines.instDecidableEqTm.decEq._proof_10	generated-helper	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.Machines.instDecidableEqTm.decEq._proof_11	generated-helper	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.Machines.instDecidableEqTm.decEq._proof_12	generated-helper	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.Machines.instDecidableEqTm.decEq._proof_13	generated-helper	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.Machines.instDecidableEqTm.decEq._proof_14	generated-helper	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.Machines.instDecidableEqTm.decEq._proof_15	generated-helper	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.Machines.instDecidableEqTm.decEq._proof_16	generated-helper	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.Machines.instDecidableEqTm.decEq._proof_17	generated-helper	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.Machines.instDecidableEqTm.decEq._proof_18	generated-helper	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.Machines.instDecidableEqTm.decEq._proof_19	generated-helper	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.Machines.instDecidableEqTm.decEq._proof_2	generated-helper	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.Machines.instDecidableEqTm.decEq._proof_20	generated-helper	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.Machines.instDecidableEqTm.decEq._proof_21	generated-helper	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.Machines.instDecidableEqTm.decEq._proof_3	generated-helper	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.Machines.instDecidableEqTm.decEq._proof_4	generated-helper	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.Machines.instDecidableEqTm.decEq._proof_5	generated-helper	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.Machines.instDecidableEqTm.decEq._proof_6	generated-helper	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.Machines.instDecidableEqTm.decEq._proof_7	generated-helper	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.Machines.instDecidableEqTm.decEq._proof_8	generated-helper	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.Machines.instDecidableEqTm.decEq._proof_9	generated-helper	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.Machines.instDecidableEqTm.decEq._sunfold	generated-helper	definition	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+Mettapedia.Machines.instDecidableEqTm.decEq._unsafe_rec	generated-helper	definition	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+Mettapedia.Machines.instDecidableEqTm.decEq.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Mod	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Mod.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Mod.mod	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat	dependency	inductive	interpretation	Lean_Nat	family
+Nat.add	dependency	definition	interpretation	Lean_Nat_add	function read from its equation theorems; Lean's equations proved
+Nat.add._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.add.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.below	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.beq	dependency	definition	interpretation	Lean_Nat_beq	function read from its equation theorems; Lean's equations proved
+Nat.beq._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.beq.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.bitwise	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.bitwise._unary	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.ble	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.ble._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.ble.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.brecOn	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.brecOn.go	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.casesOn	generated-helper	definition	interpretation	Lean_Nat_casesOn	case analysis read as the family's case eliminator
+Nat.ctorIdx	dependency	definition	not-needed		an eliminator Lean derives from the recursor; the reading uses the recursor
+Nat.decEq	dependency	definition	interpretation	Lean_Nat_decEq	function read from its equation theorems; Lean's equations proved
+Nat.decEq.match_1	generated-helper	definition	expanded		matcher, read by its definition at each use
+Nat.decLe	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+Nat.decLt	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+Nat.digitChar	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.div	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.div.go	dependency	definition	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+Nat.div.go._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.div.go.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.div_rec_fuel_lemma	dependency	theorem	not-needed		a theorem Lean's proofs use; the theorems are reconstructed in Egal, not transported
+Nat.eq_of_beq_eq_true	generated-helper	theorem	not-needed		a theorem Lean's proofs use; the theorems are reconstructed in Egal, not transported
+Nat.hasNotBit	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.instDiv	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+Nat.instMod	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+Nat.isValidChar	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.land	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.le	dependency	inductive	interpretation	Lean_Nat_le	family
+Nat.le.casesOn	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.le.rec	generated-helper	recursor	interpretation	Lean_Nat_le_prec	the recursor of a family of propositions
+Nat.le.refl	dependency	constructor	interpretation	Lean_Nat_le_refl_node	constructor
+Nat.le.step	dependency	constructor	interpretation	Lean_Nat_le_step_node	constructor
+Nat.le_of_ble_eq_true	dependency	theorem	not-needed		a theorem Lean's proofs use; the theorems are reconstructed in Egal, not transported
+Nat.le_of_succ_le_succ	dependency	theorem	not-needed		a theorem Lean's proofs use; the theorems are reconstructed in Egal, not transported
+Nat.lt	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.lt_succ_self	dependency	theorem	not-needed		a theorem Lean's proofs use; the theorems are reconstructed in Egal, not transported
+Nat.mod	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.mod.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.modCore	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.modCore.go	dependency	definition	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+Nat.modCore.go._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.mod_lt	dependency	theorem	not-needed		a theorem Lean's proofs use; the theorems are reconstructed in Egal, not transported
+Nat.mul	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.mul._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.mul.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.ne_of_beq_eq_false	dependency	theorem	not-needed		a theorem Lean's proofs use; the theorems are reconstructed in Egal, not transported
+Nat.not_le_of_not_ble_eq_true	dependency	theorem	not-needed		a theorem Lean's proofs use; the theorems are reconstructed in Egal, not transported
+Nat.pow	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.pow._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.pow.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.pred	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.rec	generated-helper	recursor	interpretation	Lean_Nat_rec	the family's recursor, with its computation rules
+Nat.repr	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.shiftLeft.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.shiftRight	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.shiftRight._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.sub	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.sub._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.succ	dependency	constructor	interpretation	Lean_Nat_succ_node	constructor
+Nat.toDigits	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.toDigitsCore	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.toDigitsCore._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.zero	dependency	constructor	interpretation	Lean_Nat_zero_node	constructor
+NatPow	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+NatPow.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+NatPow.pow	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Ne	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Not	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+OfNat	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+OfNat.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+OfNat.ofNat	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Option	dependency	inductive	interpretation	Lean_Option	family
+Option.casesOn	generated-helper	definition	interpretation	Lean_Option_rec	case analysis read as the recursor with the minors as methods
+Option.getD.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Option.map	dependency	definition	interpretation	Lean_Option_map	function read from its equation theorems; Lean's equations proved
+Option.none	dependency	constructor	interpretation	Lean_Option_none_node	constructor
+Option.rec	generated-helper	recursor	interpretation	Lean_Option_rec	the family's recursor, with its computation rules
+Option.some	dependency	constructor	interpretation	Lean_Option_some_node	constructor
+Or	dependency	inductive	interpretation		read as Egal's disjunction in statements
+Or.inl	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Or.inr	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+PProd	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+PProd.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+PSigma	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+PSigma.casesOn	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+PSigma.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+PSigma.rec	generated-helper	recursor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+PULift	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+PULift.down	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+PULift.up	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+PUnit	dependency	inductive	interpretation	Lean_PUnit	family
+PUnit.unit	dependency	constructor	interpretation	Lean_PUnit_unit_node	constructor
+Pi.instInhabited	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+Pow	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Pow.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Pow.pow	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Relation.ReflTransGen	dependency	inductive	interpretation	Lean_Relation_ReflTransGen	family
+Relation.ReflTransGen.refl	dependency	constructor	interpretation	Lean_Relation_ReflTransGen_refl_node	constructor
+Relation.ReflTransGen.tail	dependency	constructor	interpretation	Lean_Relation_ReflTransGen_tail_node	constructor
+SizeOf	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+SizeOf.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+SizeOf.sizeOf	generated-helper	definition	not-needed		Lean's size measure for termination; not part of the development's meaning
+String	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+String.Internal.append	dependency	opaque	not-needed		no read definition, equation, theorem or test uses it
+String.instInhabited	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+String.ofByteArray	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+String.ofList	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+String.ofList._proof_1	generated-helper	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+String.utf8EncodeChar	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Sub	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Sub.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Sub.sub	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+ToString	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+ToString.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+ToString.toString	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+True	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+True.intro	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+UInt32	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+UInt32.isValidChar	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+UInt32.ofBitVec	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+UInt32.size	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+UInt32.toBitVec	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+UInt32.toNat	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+UInt8	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+UInt8.ofBitVec	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+UInt8.ofNat	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Unit	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Unit.unit	dependency	definition	interpretation	Lean_Unit_unit	function read from its equation theorems; Lean's equations proved
+WellFounded.Nat.eager	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+WellFounded.Nat.fix	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+WellFounded.Nat.fix._proof_1	generated-helper	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+WellFounded.Nat.fix._proof_2	generated-helper	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+WellFounded.Nat.fix.go	dependency	definition	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+WellFounded.Nat.fix.go._proof_1	generated-helper	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+_private.Init.Data.Nat.Bitwise.Basic.0.Nat.bitwise._unary._proof_1	dependency	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+_private.Init.Data.Repr.0.Nat.toDigitsCore.match_1	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+_private.Init.Prelude.0.isValidChar_UInt32	dependency	theorem	not-needed		a theorem Lean's proofs use; the theorems are reconstructed in Egal, not transported
+_private.Mettapedia.Machines.FunctionalCorrespondence.0.Mettapedia.Machines.CEK.evalV.match_1.eq_1	declaration	theorem	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+_private.Mettapedia.Machines.FunctionalCorrespondence.0.Mettapedia.Machines.CEK.evalV.match_1.eq_2	declaration	theorem	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+_private.Mettapedia.Machines.FunctionalCorrespondence.0.Mettapedia.Machines.CEK.evalV.match_1.splitter	declaration	definition	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+_private.Mettapedia.Machines.FunctionalCorrespondence.0.Mettapedia.Machines.CEK.evalV.match_3.eq_1	declaration	theorem	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+_private.Mettapedia.Machines.FunctionalCorrespondence.0.Mettapedia.Machines.CEK.evalV.match_3.eq_2	declaration	theorem	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+_private.Mettapedia.Machines.FunctionalCorrespondence.0.Mettapedia.Machines.CEK.evalV.match_3.splitter	declaration	definition	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+_private.Mettapedia.Machines.FunctionalCorrespondence.0.Mettapedia.Machines.CEK.evalV.match_5.eq_1	declaration	theorem	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+_private.Mettapedia.Machines.FunctionalCorrespondence.0.Mettapedia.Machines.CEK.evalV.match_5.eq_2	declaration	theorem	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+_private.Mettapedia.Machines.FunctionalCorrespondence.0.Mettapedia.Machines.CEK.evalV.match_5.eq_3	declaration	theorem	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+_private.Mettapedia.Machines.FunctionalCorrespondence.0.Mettapedia.Machines.CEK.evalV.match_5.eq_4	declaration	theorem	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+_private.Mettapedia.Machines.FunctionalCorrespondence.0.Mettapedia.Machines.CEK.evalV.match_5.eq_5	declaration	theorem	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+_private.Mettapedia.Machines.FunctionalCorrespondence.0.Mettapedia.Machines.CEK.evalV.match_5.splitter	declaration	definition	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+_private.Mettapedia.Machines.FunctionalCorrespondence.0.Mettapedia.Machines.Krivine.evalN.match_1.eq_1	declaration	theorem	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+_private.Mettapedia.Machines.FunctionalCorrespondence.0.Mettapedia.Machines.Krivine.evalN.match_1.eq_2	declaration	theorem	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+_private.Mettapedia.Machines.FunctionalCorrespondence.0.Mettapedia.Machines.Krivine.evalN.match_1.splitter	declaration	definition	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+_private.Mettapedia.Machines.FunctionalCorrespondence.0.Mettapedia.Machines.Krivine.evalN.match_3.eq_1	declaration	theorem	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+_private.Mettapedia.Machines.FunctionalCorrespondence.0.Mettapedia.Machines.Krivine.evalN.match_3.eq_2	declaration	theorem	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+_private.Mettapedia.Machines.FunctionalCorrespondence.0.Mettapedia.Machines.Krivine.evalN.match_3.eq_3	declaration	theorem	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+_private.Mettapedia.Machines.FunctionalCorrespondence.0.Mettapedia.Machines.Krivine.evalN.match_3.splitter	declaration	definition	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+_private.Mettapedia.Machines.FunctionalCorrespondence.0.Mettapedia.Machines.Krivine.evalN.match_5.eq_1	declaration	theorem	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+_private.Mettapedia.Machines.FunctionalCorrespondence.0.Mettapedia.Machines.Krivine.evalN.match_5.eq_2	declaration	theorem	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+_private.Mettapedia.Machines.FunctionalCorrespondence.0.Mettapedia.Machines.Krivine.evalN.match_5.eq_3	declaration	theorem	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+_private.Mettapedia.Machines.FunctionalCorrespondence.0.Mettapedia.Machines.Krivine.evalN.match_5.eq_4	declaration	theorem	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+_private.Mettapedia.Machines.FunctionalCorrespondence.0.Mettapedia.Machines.Krivine.evalN.match_5.eq_5	declaration	theorem	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+_private.Mettapedia.Machines.FunctionalCorrespondence.0.Mettapedia.Machines.Krivine.evalN.match_5.splitter	declaration	definition	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+cond	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+cond.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+dite	dependency	definition	interpretation	Lean_dite	function read from its equation theorems; Lean's equations proved
+id	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+instAddNat	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+instDecidableAnd	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+instDecidableAnd._proof_1	generated-helper	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+instDecidableAnd._proof_2	generated-helper	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+instDecidableAnd.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+instDecidableEqBool	dependency	definition	interpretation	Lean_instDecidableEqBool	function read from its equation theorems; Lean's equations proved
+instDecidableEqList.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+instDecidableEqNat	dependency	definition	interpretation	Lean_instDecidableEqNat	function read from its equation theorems; Lean's equations proved
+instDecidableOr	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+instDecidableOr._proof_1	generated-helper	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+instHAdd	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+instHDiv	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+instHMod	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+instHPow	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+instHSub	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+instLENat	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+instLTNat	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+instNatPowNat	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+instOfNatNat	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+instPowNat	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+instSizeOfNat	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+instSubNat	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+instToStringNat	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+ite	dependency	definition	interpretation	Lean_ite	function read from its equation theorems; Lean's equations proved
+mkPanicMessageWithDecl	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+namedPattern	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+noConfusion_of_Nat	dependency	theorem	not-needed		a theorem Lean's proofs use; the theorems are reconstructed in Egal, not transported
+outParam	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+panic	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+panicCore	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+panicWithPosWithDecl	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+rfl	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Mettapedia.Machines.instReprTm	display	definition	display-excluded		derived display or serialization instance
+Mettapedia.Machines.instReprTm.repr	display	definition	display-excluded		derived display or serialization instance
+Mettapedia.Machines.instReprTm.repr._f	display	definition	display-excluded		derived display or serialization instance
+Mettapedia.Machines.instReprTm.repr._sunfold	display	definition	display-excluded		derived display or serialization instance
+Mettapedia.Machines.instReprTm.repr._unsafe_rec	display	definition	display-excluded		derived display or serialization instance
+Mettapedia.Machines.instReprTm.repr.match_1	display	definition	display-excluded		derived display or serialization instance
+And.casesOn	reading	definition	interpretation	Lean_And_b_rec	case analysis read as the recursor with the minors as methods
+Bool.decEq.eq_1	reading	theorem	interpretation	Lean_Bool_decEq_eq_1	Lean's equation theorem, proved from the reading
+Bool.decEq.eq_2	reading	theorem	interpretation	Lean_Bool_decEq_eq_2	Lean's equation theorem, proved from the reading
+Bool.decEq.eq_3	reading	theorem	interpretation	Lean_Bool_decEq_eq_3	Lean's equation theorem, proved from the reading
+Bool.decEq.eq_4	reading	theorem	interpretation	Lean_Bool_decEq_eq_4	Lean's equation theorem, proved from the reading
+Eq.casesOn	reading	definition	interpretation	Lean_Eq_rec	case analysis read as the recursor with the minors as methods
+Eq.ndrec.eq_1	reading	theorem	interpretation	Lean_Eq_ndrec_eq_1	Lean's equation theorem, proved from the reading
+Exists.casesOn	reading	definition	interpretation	Lean_Exists_rec	case analysis read as the recursor with the minors as methods
+False.casesOn	reading	definition	interpretation	Lean_False_b_rec	case analysis read as the recursor with the minors as methods
+List.get?Internal.eq_1	reading	theorem	interpretation	Lean_List_getu63Internal_eq_1	Lean's equation theorem, proved from the reading
+List.get?Internal.eq_2	reading	theorem	interpretation	Lean_List_getu63Internal_eq_2	Lean's equation theorem, proved from the reading
+List.get?Internal.eq_3	reading	theorem	interpretation	Lean_List_getu63Internal_eq_3	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.BoundedDeterministicRun.Outcome.casesOn	reading	definition	interpretation	Lean_BoundedDeterministicRun_Outcome_rec	case analysis read as the recursor with the minors as methods
+Mettapedia.Machines.BoundedDeterministicRun.Result.casesOn	reading	definition	interpretation	Lean_BoundedDeterministicRun_Result_rec	case analysis read as the recursor with the minors as methods
+Mettapedia.Machines.BoundedDeterministicRun.execute.eq_1	reading	theorem	interpretation	Lean_BoundedDeterministicRun_execute_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.BoundedDeterministicRun.execute.eq_2	reading	theorem	interpretation	Lean_BoundedDeterministicRun_execute_eq_2	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.BoundedDeterministicRun.run.eq_1	reading	theorem	interpretation	Lean_BoundedDeterministicRun_run_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.BoundedDeterministicRun.run.eq_2	reading	theorem	interpretation	Lean_BoundedDeterministicRun_run_eq_2	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.CEK.Val._nested_1	reading	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Mettapedia.Machines.CEK.Val._nested_1.cons	reading	constructor	interpretation	Lean_CEK_Val__nested_1_cons_b_node	constructor of a nested block, read with the block
+Mettapedia.Machines.CEK.Val._nested_1.nil	reading	constructor	interpretation	Lean_CEK_Val__nested_1_nil_b_node	constructor of a nested block, read with the block
+Mettapedia.Machines.CEK.answer.eq_1	reading	theorem	interpretation	Lean_CEK_answer_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.CEK.answer.eq_2	reading	theorem	interpretation	Lean_CEK_answer_eq_2	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.CEK.execute.eq_1	reading	theorem	interpretation	Lean_CEK_execute_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.CEK.run.eq_1	reading	theorem	interpretation	Lean_CEK_run_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.CEK.step.eq_1	reading	theorem	interpretation	Lean_CEK_step_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.CEK.step.eq_2	reading	theorem	interpretation	Lean_CEK_step_eq_2	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.CEK.step.eq_3	reading	theorem	interpretation	Lean_CEK_step_eq_3	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.CEK.step.eq_4	reading	theorem	interpretation	Lean_CEK_step_eq_4	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.CEK.step.eq_5	reading	theorem	interpretation	Lean_CEK_step_eq_5	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.CEK.step.eq_6	reading	theorem	interpretation	Lean_CEK_step_eq_6	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.CEK.step.eq_7	reading	theorem	interpretation	Lean_CEK_step_eq_7	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.CEK.step.eq_8	reading	theorem	interpretation	Lean_CEK_step_eq_8	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.FunctionalCorrespondenceRuns.capture	reading	definition	interpretation	Lean_FunctionalCorrespondenceRuns_capture	function read from its equation theorems; Lean's equations proved
+Mettapedia.Machines.FunctionalCorrespondenceRuns.capture.eq_1	reading	theorem	interpretation	Lean_FunctionalCorrespondenceRuns_capture_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.FunctionalCorrespondenceRuns.cek	reading	definition	interpretation	Lean_FunctionalCorrespondenceRuns_cek	function read from its equation theorems; Lean's equations proved
+Mettapedia.Machines.FunctionalCorrespondenceRuns.cek.eq_1	reading	theorem	interpretation	Lean_FunctionalCorrespondenceRuns_cek_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.FunctionalCorrespondenceRuns.constant	reading	definition	interpretation	Lean_FunctionalCorrespondenceRuns_constant	function read from its equation theorems; Lean's equations proved
+Mettapedia.Machines.FunctionalCorrespondenceRuns.constant.eq_1	reading	theorem	interpretation	Lean_FunctionalCorrespondenceRuns_constant_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.FunctionalCorrespondenceRuns.constantApplied	reading	definition	interpretation	Lean_FunctionalCorrespondenceRuns_constantApplied	function read from its equation theorems; Lean's equations proved
+Mettapedia.Machines.FunctionalCorrespondenceRuns.constantApplied.eq_1	reading	theorem	interpretation	Lean_FunctionalCorrespondenceRuns_constantApplied_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.FunctionalCorrespondenceRuns.discardFailure	reading	definition	interpretation	Lean_FunctionalCorrespondenceRuns_discardFailure	function read from its equation theorems; Lean's equations proved
+Mettapedia.Machines.FunctionalCorrespondenceRuns.discardFailure.eq_1	reading	theorem	interpretation	Lean_FunctionalCorrespondenceRuns_discardFailure_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.FunctionalCorrespondenceRuns.failingArgument	reading	definition	interpretation	Lean_FunctionalCorrespondenceRuns_failingArgument	function read from its equation theorems; Lean's equations proved
+Mettapedia.Machines.FunctionalCorrespondenceRuns.failingArgument.eq_1	reading	theorem	interpretation	Lean_FunctionalCorrespondenceRuns_failingArgument_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.FunctionalCorrespondenceRuns.identity	reading	definition	interpretation	Lean_FunctionalCorrespondenceRuns_identity	function read from its equation theorems; Lean's equations proved
+Mettapedia.Machines.FunctionalCorrespondenceRuns.identity.eq_1	reading	theorem	interpretation	Lean_FunctionalCorrespondenceRuns_identity_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.FunctionalCorrespondenceRuns.identityApplied	reading	definition	interpretation	Lean_FunctionalCorrespondenceRuns_identityApplied	function read from its equation theorems; Lean's equations proved
+Mettapedia.Machines.FunctionalCorrespondenceRuns.identityApplied.eq_1	reading	theorem	interpretation	Lean_FunctionalCorrespondenceRuns_identityApplied_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.FunctionalCorrespondenceRuns.krivine	reading	definition	interpretation	Lean_FunctionalCorrespondenceRuns_krivine	function read from its equation theorems; Lean's equations proved
+Mettapedia.Machines.FunctionalCorrespondenceRuns.krivine.eq_1	reading	theorem	interpretation	Lean_FunctionalCorrespondenceRuns_krivine_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.FunctionalCorrespondenceRuns.substitution	reading	definition	interpretation	Lean_FunctionalCorrespondenceRuns_substitution	function read from its equation theorems; Lean's equations proved
+Mettapedia.Machines.FunctionalCorrespondenceRuns.substitution.eq_1	reading	theorem	interpretation	Lean_FunctionalCorrespondenceRuns_substitution_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.FunctionalCorrespondenceRuns.substitutionApplied	reading	definition	interpretation	Lean_FunctionalCorrespondenceRuns_substitutionApplied	function read from its equation theorems; Lean's equations proved
+Mettapedia.Machines.FunctionalCorrespondenceRuns.substitutionApplied.eq_1	reading	theorem	interpretation	Lean_FunctionalCorrespondenceRuns_substitutionApplied_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.Krivine.NThunk._nested_1	reading	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Mettapedia.Machines.Krivine.NThunk._nested_1.cons	reading	constructor	interpretation	Lean_Krivine_NThunk__nested_1_cons_b_node	constructor of a nested block, read with the block
+Mettapedia.Machines.Krivine.NThunk._nested_1.nil	reading	constructor	interpretation	Lean_Krivine_NThunk__nested_1_nil_b_node	constructor of a nested block, read with the block
+Mettapedia.Machines.Krivine.Presents.eq_1	reading	theorem	interpretation	Lean_Krivine_Presents_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.Krivine.Presents.eq_2	reading	theorem	interpretation	Lean_Krivine_Presents_eq_2	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.Krivine.answer.eq_1	reading	theorem	interpretation	Lean_Krivine_answer_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.Krivine.answer.eq_2	reading	theorem	interpretation	Lean_Krivine_answer_eq_2	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.Krivine.answer.eq_3	reading	theorem	interpretation	Lean_Krivine_answer_eq_3	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.Krivine.execute.eq_1	reading	theorem	interpretation	Lean_Krivine_execute_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.Krivine.kstep.eq_1	reading	theorem	interpretation	Lean_Krivine_kstep_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.Krivine.kstep.eq_2	reading	theorem	interpretation	Lean_Krivine_kstep_eq_2	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.Krivine.kstep.eq_3	reading	theorem	interpretation	Lean_Krivine_kstep_eq_3	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.Krivine.kstep.eq_4	reading	theorem	interpretation	Lean_Krivine_kstep_eq_4	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.Krivine.kstep.eq_5	reading	theorem	interpretation	Lean_Krivine_kstep_eq_5	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.Krivine.run.eq_1	reading	theorem	interpretation	Lean_Krivine_run_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.instDecidableEqTm.decEq.eq_1	reading	theorem	interpretation	Lean_instDecidableEqTm_decEq_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.instDecidableEqTm.decEq.eq_10	reading	theorem	interpretation	Lean_instDecidableEqTm_decEq_eq_10	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.instDecidableEqTm.decEq.eq_11	reading	theorem	interpretation	Lean_instDecidableEqTm_decEq_eq_11	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.instDecidableEqTm.decEq.eq_12	reading	theorem	interpretation	Lean_instDecidableEqTm_decEq_eq_12	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.instDecidableEqTm.decEq.eq_13	reading	theorem	interpretation	Lean_instDecidableEqTm_decEq_eq_13	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.instDecidableEqTm.decEq.eq_14	reading	theorem	interpretation	Lean_instDecidableEqTm_decEq_eq_14	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.instDecidableEqTm.decEq.eq_15	reading	theorem	interpretation	Lean_instDecidableEqTm_decEq_eq_15	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.instDecidableEqTm.decEq.eq_16	reading	theorem	interpretation	Lean_instDecidableEqTm_decEq_eq_16	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.instDecidableEqTm.decEq.eq_2	reading	theorem	interpretation	Lean_instDecidableEqTm_decEq_eq_2	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.instDecidableEqTm.decEq.eq_3	reading	theorem	interpretation	Lean_instDecidableEqTm_decEq_eq_3	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.instDecidableEqTm.decEq.eq_4	reading	theorem	interpretation	Lean_instDecidableEqTm_decEq_eq_4	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.instDecidableEqTm.decEq.eq_5	reading	theorem	interpretation	Lean_instDecidableEqTm_decEq_eq_5	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.instDecidableEqTm.decEq.eq_6	reading	theorem	interpretation	Lean_instDecidableEqTm_decEq_eq_6	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.instDecidableEqTm.decEq.eq_7	reading	theorem	interpretation	Lean_instDecidableEqTm_decEq_eq_7	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.instDecidableEqTm.decEq.eq_8	reading	theorem	interpretation	Lean_instDecidableEqTm_decEq_eq_8	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.instDecidableEqTm.decEq.eq_9	reading	theorem	interpretation	Lean_instDecidableEqTm_decEq_eq_9	Lean's equation theorem, proved from the reading
+Mettapedia.Machines.instDecidableEqTm.eq_1	reading	theorem	interpretation	Lean_instDecidableEqTm_eq_1	Lean's equation theorem, proved from the reading
+Nat.add.eq_1	reading	theorem	interpretation	Lean_Nat_add_eq_1	Lean's equation theorem, proved from the reading
+Nat.add.eq_2	reading	theorem	interpretation	Lean_Nat_add_eq_2	Lean's equation theorem, proved from the reading
+Nat.beq.eq_1	reading	theorem	interpretation	Lean_Nat_beq_eq_1	Lean's equation theorem, proved from the reading
+Nat.beq.eq_2	reading	theorem	interpretation	Lean_Nat_beq_eq_2	Lean's equation theorem, proved from the reading
+Nat.beq.eq_3	reading	theorem	interpretation	Lean_Nat_beq_eq_3	Lean's equation theorem, proved from the reading
+Nat.beq.eq_4	reading	theorem	interpretation	Lean_Nat_beq_eq_4	Lean's equation theorem, proved from the reading
+Nat.decEq.eq_1	reading	theorem	interpretation	Lean_Nat_decEq_eq_1	Lean's equation theorem, proved from the reading
+Option.map.eq_1	reading	theorem	interpretation	Lean_Option_map_eq_1	Lean's equation theorem, proved from the reading
+Option.map.eq_2	reading	theorem	interpretation	Lean_Option_map_eq_2	Lean's equation theorem, proved from the reading
+Or.casesOn	reading	definition	interpretation	Lean_Or_b_rec	case analysis read as the recursor with the minors as methods
+PUnit.casesOn	reading	definition	interpretation	Lean_PUnit_rec	case analysis read as the recursor with the minors as methods
+Relation.ReflTransGen.casesOn	reading	definition	interpretation	Lean_Relation_ReflTransGen_rec	case analysis read as the recursor with the minors as methods
+Relation.ReflTransGen.cases_head	reading	theorem	target-reconstruction	Lean_Relation_ReflTransGen_cases_head	statement read from Lean, proved in Egal
+Relation.ReflTransGen.head	reading	theorem	target-reconstruction	Lean_Relation_ReflTransGen_head	statement read from Lean, proved in Egal
+Relation.ReflTransGen.head_induction_on	reading	theorem	target-reconstruction	Lean_Relation_ReflTransGen_head_induction_on	statement read from Lean, proved in Egal
+Relation.ReflTransGen.single	reading	theorem	target-reconstruction	Lean_Relation_ReflTransGen_single	statement read from Lean, proved in Egal
+Relation.ReflTransGen.trans	reading	theorem	target-reconstruction	Lean_Relation_ReflTransGen_trans	statement read from Lean, proved in Egal
+Unit.unit.eq_1	reading	theorem	interpretation	Lean_Unit_unit_eq_1	Lean's equation theorem, proved from the reading
+dite.eq_1	reading	theorem	interpretation	Lean_dite_eq_1	Lean's equation theorem, proved from the reading
+instDecidableEqBool.eq_1	reading	theorem	interpretation	Lean_instDecidableEqBool_eq_1	Lean's equation theorem, proved from the reading
+instDecidableEqNat.eq_1	reading	theorem	interpretation	Lean_instDecidableEqNat_eq_1	Lean's equation theorem, proved from the reading
+ite.eq_1	reading	theorem	interpretation	Lean_ite_eq_1	Lean's equation theorem, proved from the reading

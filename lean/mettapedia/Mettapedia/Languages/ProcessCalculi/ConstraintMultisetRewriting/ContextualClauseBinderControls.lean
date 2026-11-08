@@ -62,7 +62,7 @@ def callBody (number : Nat) : SchematicReach.Closed actor :=
 def sourceCall (number : Nat) : SchematicReach.Closed origin :=
   .op (.inr (.mk (.inl false))) (.cons (symbol number) .nil)
 
-def rows (_ : Nat) : ContextualStoredRows.Row locals captures [] () := .live (located 1 (function captures))
+def rows (_ : Nat) : ContextualStoredRows.Row locals captures [] () := .shared (located 1 (function captures))
 def initial : Configuration (SchematicReach.Closed captures) Nat := ⟨[], {0}⟩
 def scopes (impossible : Empty) : Finset Nat := nomatch impossible
 def inventory : Inventory locals captures (O := Nat) [] () := ⟨initial, rows, [], []⟩

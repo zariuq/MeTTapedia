@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 # The actual compiled clause represents its independent source state update
 
 The comparison retains the whole information problem, physical effects,
-ordinary schemas, live references, untouched rows and returned query
+ordinary schemas, shared references, untouched rows and returned query
 environment. Native scope and helper allocation may change declaration
 families; source observations are pulled back along the actual source frame.
 No solver completion assumption is needed.
@@ -73,16 +73,16 @@ theorem reusable_at (port : Fin picked.made.length) :
   rw [List.getElem?_eq_getElem first, List.getElem?_eq_getElem second] at atPort
   simpa only [List.get_eq_getElem, List.getElem_map] using Option.some.inj atPort
 
-theorem live_value (port : Fin picked.made.length)
+theorem shared_value (port : Fin picked.made.length)
     (live : compiled.firing.reusable (picked.made.get port) = false) :
-    compiled.firing.target.rows (picked.made.get port) = ofStored _ _ (.live
+    compiled.firing.target.rows (picked.made.get port) = ofStored _ _ (.shared
       (instantiate compiled.continuationEnv
         (plan.rule.produce.get ⟨port.val, compiled.source_admitted.output_shape ▸ port.isLt⟩))) := by
   have made : picked.made.get port ∈ compiled.firing.selection.made := by
     rw [compiled.selected]
     exact List.get_mem _ _
-  rw [compiled.firing.live_row _ made live, compiled.values]
-  apply congrArg (fun value => ofStored _ _ (ContextualStoredRows.Row.live value))
+  rw [compiled.firing.shared_row _ made live, compiled.values]
+  apply congrArg (fun value => ofStored _ _ (ContextualStoredRows.Row.shared value))
   change instantiate (ContextualComputedFreshFrame.includeSource compiled.firing.update)
     (ContextualClauseAdmission.outputs queries locals before.declarations occupied picked plan.rule
       (fun occurrence => (before.rows occurrence).value) (picked.made.get port)) = _
@@ -107,9 +107,9 @@ theorem produced_matches (port : Fin picked.made.length) {Next : Type} (next : N
         (compiled.ordinary_body_instances port reusable next candidate pattern).symm
   | false =>
       have sourceKind := (reusable_at compiled port).symm.trans reusable
-      rw [ContextualClauseSourceState.live_output_row (source_is_admitted compiled) port sourceKind,
-        live_value compiled port reusable]
-      rw [ofStored_matches_iff, ofStored_matches_iff, live_matches_iff, live_matches_iff]
+      rw [ContextualClauseSourceState.shared_output_row (source_is_admitted compiled) port sourceKind,
+        shared_value compiled port reusable]
+      rw [ofStored_matches_iff, ofStored_matches_iff, shared_matches_iff, shared_matches_iff]
       erw [Assignment.instantiate_compose, returned_environment compiled]
 
 theorem retained_matches (occurrence : O) (notMade : occurrence ∉ picked.made)

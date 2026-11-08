@@ -4,7 +4,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 /-!
 # Actual paths distinguish retained prefix snapshots from later effects
 
-A guarded event produces a live row and the following actual event consumes
+A guarded event produces a shared row and the following actual event consumes
 it. The intermediate prefix snapshot still contains that row. Separately,
 an actual tell binds a previously unconstrained caller; its original prefix
 ask remains unentailed under pure path transport.
@@ -45,7 +45,7 @@ theorem consumeRule_covered : RuleCovered (privateScopes middle.scopes) middle.o
   change (∅ : Finset Nat) ⊆ middle.occupied
   exact Finset.empty_subset _
 
-theorem consume_admitted : ContextualTransportedActivation.Admission locals middle.declarations middle.occupied
+theorem consume_admitted : ContextualGuardedStep.Requirements locals middle.declarations middle.occupied
     consume consumeRule middle.inventory.rows middle.inventory.configuration consumeOutputs := by
   refine ⟨by decide +kernel, by decide +kernel, rfl, rfl, rfl, ?_, ?_⟩
   · change Enabled consumeOutputs ({7, 99} : Finset Nat) (consume.commit (T := Term (signature base secondActive) [] ()))
@@ -112,7 +112,7 @@ theorem tellRule_covered : RuleCovered (privateScopes initial.scopes) initial.oc
   change (∅ : Finset Nat) ⊆ initial.occupied
   exact Finset.empty_subset _
 
-theorem tell_admitted : ContextualTransportedActivation.Admission locals captures initial.occupied tell tellRule
+theorem tell_admitted : ContextualGuardedStep.Requirements locals captures initial.occupied tell tellRule
     initial.inventory.rows initial.inventory.configuration tellOutputs := by
   exact ⟨by decide +kernel, by decide +kernel, rfl, rfl, rfl, by decide +kernel, fun _ member => by cases member⟩
 

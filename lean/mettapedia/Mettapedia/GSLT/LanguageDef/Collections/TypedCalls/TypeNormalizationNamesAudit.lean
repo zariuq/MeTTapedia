@@ -1,0 +1,34 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeNormalizationNames
+
+/-! # Normalization support and coordinate-symmetry axiom audit -/
+
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeNormalizationNames.head_support
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeNormalizationNames.normalize_support
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeNormalizationNames.normalizeList_support
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeNormalizationNames.normalize_remains_allocated
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeNormalizationNames.head_equivariant
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeNormalizationNames.normalize_equivariant
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeNormalizationNames.normalizeList_equivariant
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeNormalizationNames.booleanResult_support
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeNormalizationNames.chooseResult_support
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeNormalizationNames.booleanResult_equivariant
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeNormalizationNames.chooseResult_equivariant
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeNormalizationNames.renameAtom_injective
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeNormalizationNames.equality_equivariant
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeNormalizationNames.head_observed
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeNormalizationNames.normalize_observed
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeNormalizationNames.normalizeList_observed
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeNormalizationNames.normalize_observed_support
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeNormalizationNames.normalize_observed_equivariant
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeNormalizationNames.normalized_before_later_read
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeNormalizationNames.observed_normalized_before_later_read
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeNormalizationNames.Controls.comparisons_supported
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeNormalizationNames.Controls.comparisons_equivariant
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeNormalizationNames.Controls.comparisons_closed
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeNormalizationNames.Controls.selector_returns_existing_variable
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeNormalizationNames.Controls.selector_renames_its_result
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeNormalizationNames.Controls.fabricated_is_resource_closed
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeNormalizationNames.Controls.fabricated_is_not_supported
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeNormalizationNames.Controls.fabricated_is_not_equivariant
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeNormalizationNames.Controls.resource_free_normalization_can_fabricate_a_variable
+

@@ -1,0 +1,27 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallMetadata
+
+/-! # Retained source calls and their separate typed boundary: theorem audit -/
+
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.Transition.append_frames
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.step_append_frames
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.step_append_frames_exact
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.steps_append_frames
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.completed_run_above_caller
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.RetainedFrameControls.isolated_child_returns_seven
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.RetainedFrameControls.resuming_the_caller_is_a_distinct_phase
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.RetainedFrameControls.caller_record_need_not_refine_child
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.Unifying.RetainedFrameControls.resetting_global_refinement_to_child_is_wrong
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallMetadata.unknown_reply_faithful
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallMetadata.unknown_reply_strict
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallMetadata.protected_reply_strict
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallMetadata.unknown_call_flags
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallMetadata.unknown_reply_does_not_admit_ground_version
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallMetadata.polymorphic_entry_once
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallMetadata.known_body_boundary
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallMetadata.known_body_above_caller
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallMetadata.Controls.raw_dispatch_does_not_check_range
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallMetadata.Controls.separate_row_boundary_rejects_wrong_range
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallMetadata.Controls.closed_range_check_does_not_imply_ground
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallMetadata.Controls.separate_closed_boundary_keeps_open_reply
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.SourceCallMetadata.Controls.ground_faithful_is_not_a_dynamic_head_certificate
+

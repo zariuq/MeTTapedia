@@ -1,0 +1,28 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEDemandedSlotJoin
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEStickyPublicationTrace
+
+/-! # Whole-source derivation under preserving publication -/
+
+namespace Mettapedia.GSLT.LanguageDef.Collections.TypedCalls
+
+#print axioms HEDemandedPublication.read
+#print axioms HEDemandedPublication.unchanged
+#print axioms HEDemandedPublication.held
+#print axioms HEDemandedPublication.preserving_policy
+#print axioms HEDemandedConstructorInferred.constructor_published
+#print axioms HEDemandedConstructorInferred.constructor_source_with_marking
+#print axioms HEDemandedConstructorInferred.demanded_reentry_with_marking
+#print axioms HEDemandedConstructorProgram.producer_call_with_marking
+#print axioms HEDemandedConstructorProgram.producer_selection_with_policy
+#print axioms HEDemandedConstructorProgram.closed_operator_with_policy
+#print axioms HEDemandedConstructorProgram.producer_source_with_marking
+#print axioms HEDemandedConsumerFrame.consumer_call_with_marking
+#print axioms HEDemandedWholeProgram.source_call_with_marking
+#print axioms HEDemandedWholeProgram.source_call_preserving
+#print axioms HEDemandedSlotJoin.source_and_slot_agree_with_marking
+#print axioms HEDemandedSlotJoin.source_and_slot_agree_preserving
+#print axioms HEStickyPublicationTrace.actual_source_trace_preserving
+#print axioms HEStickyPublication.Controls.changed_active_does_not_become_ready
+#print axioms HEStickyPublication.Controls.inherited_mark_is_not_cleared
+
+end Mettapedia.GSLT.LanguageDef.Collections.TypedCalls

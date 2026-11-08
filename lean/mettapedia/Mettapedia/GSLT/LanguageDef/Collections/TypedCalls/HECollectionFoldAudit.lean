@@ -1,0 +1,72 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HECollectionFoldControls
+
+/-! Principal checks for the source-level collection fold body. The full
+collapse source ingress and native lowering are separate obligations. -/
+
+open Mettapedia.GSLT.LanguageDef.Collections.TypedCalls
+
+#print axioms HECollectionFoldEmission.renamed_injective
+#print axioms HECollectionFoldEmission.renamed_fresh
+#print axioms HECollectionFoldEmission.chain_fresh
+#print axioms HECollectionFoldEmission.chain_distinct_from_renamed
+#print axioms HECollectionFoldEmission.protects_caller_and_hidden
+#print axioms HECollectionFoldEmission.protects_call
+#print axioms HECollectionFoldEmission.chain_distinct_from_parameters
+#print axioms HECollectionFoldEmission.collapse_template
+#print axioms HECollectionFoldEmission.empty_returns_init
+#print axioms HECollectionFoldEmission.step_is_minimal_instruction
+
+#print axioms HECollectionFoldReadback.resolve_of_fixed
+#print axioms HECollectionFoldReadback.substituteBinder_absent
+#print axioms HECollectionFoldReadback.next_call_substitution
+#print axioms HECollectionFoldReadback.call_read
+#print axioms HECollectionFoldReadback.context_substitution
+#print axioms HECollectionFoldReadback.step_read
+#print axioms HECollectionFoldReadback.protected_step_read
+
+#print axioms HECollectionFoldNativeEntry.emission_not_function
+#print axioms HECollectionFoldNativeEntry.invocation
+#print axioms HECollectionFoldNativeEntry.eval_entry
+
+#print axioms HECollectionFoldSourceLoop.stored_closed
+#print axioms HECollectionFoldSourceLoop.pairs_closed
+#print axioms HECollectionFoldSourceLoop.finish_emission
+#print axioms HECollectionFoldSourceLoop.eval_body
+
+#print axioms HECollectionFoldFunction.source
+
+#print axioms HECollectionAppendSource.selection
+#print axioms HECollectionAppendSource.operator_source
+#print axioms HECollectionAppendSource.expression_delivery
+#print axioms HECollectionAppendSource.arguments_source
+#print axioms HECollectionAppendSource.singleton_priority
+#print axioms HECollectionAppendSource.completed_call
+#print axioms HECollectionAppendSource.source
+#print axioms HECollectionAppendSource.append_calls
+
+#print axioms HECollectionFoldModel.hidden_covers
+#print axioms HECollectionFoldModel.append_query
+#print axioms HECollectionFoldModel.emitter
+#print axioms HECollectionFoldModel.append_interface
+#print axioms HECollectionFoldModel.source
+#print axioms HECollectionFoldModel.retained_run
+
+#print axioms HECollectionFoldControls.row_values
+#print axioms HECollectionFoldControls.fixed_acc
+#print axioms HECollectionFoldControls.fixed_item
+#print axioms HECollectionFoldControls.stored
+#print axioms HECollectionFoldControls.closed
+#print axioms HECollectionFoldControls.duplicates_and_error_source
+#print axioms HECollectionFoldControls.empty_source
+#print axioms HECollectionFoldControls.duplicate_erasure_changes_result
+#print axioms HECollectionFoldControls.reverse_append_rejected
+#print axioms HECollectionFoldControls.missing_snapshot_rejected
+#print axioms HECollectionFoldControls.pause_is_not_completion
+#print axioms HECollectionFoldControls.pause_and_resume
+
+#print axioms HECollectionClosedAppend.closed_read
+#print axioms HECollectionClosedAppend.append_of_stored
+#print axioms HECollectionClosedAppend.output_root_mark
+#print axioms HECollectionClosedAppend.open_value_is_outside_profile
+#print axioms HECollectionClosedAppend.closed_error_is_kept
+

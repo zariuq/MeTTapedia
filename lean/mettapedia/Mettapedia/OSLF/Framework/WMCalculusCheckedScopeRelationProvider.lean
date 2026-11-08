@@ -3,7 +3,7 @@ import Mettapedia.PLN.WorldModel.PLNWorldModelSupportForgetting
 import Mettapedia.PLN.WorldModel.WorldModelConservationPack
 
 /-!
-# Certified relation-provider boundary for guarded WM forgetting
+# Certified relation-provider boundary for WM forgetting and conservation
 
 An authored `outsideScope` premise receives rows from `RelationEnv`. This
 module gives a reusable finite-handle provider whose Boolean decision comes
@@ -699,7 +699,7 @@ theorem forgetAbsorbSupported_forgetClean_sound (P : CheckedSupportProvider F)
 
 end Provider
 
-/-! ## Control: the premise-free inverse against the guarded rules
+/-! ## Control: the premise-free inverse against the rules with premises
 
 A ledger of observation identities is a support-tracked forgetting layer: the
 evidence for the claim "`o` was recorded" is the number of times `o` occurs,
@@ -713,13 +713,13 @@ revision `{0, 2}` separate the rules: the revision is not supported in `{0}`
   `Forget({0}, Revise({1}, {0, 2}))` to `{1}`, although forgetting gives
   `{1, 2}` (`premiseFreeInverse_rewrites_unsupported`,
   `premiseFreeInverse_unsound`).
-* The guarded maximal calculus has no step from that term
-  (`guarded_refuses_unsupported`).
+* The maximal calculus has no step from that term
+  (`maximal_refuses_unsupported`).
 * It undoes the supported revision `{0}` of the clean base `{1}` in two steps
-  (`guarded_absorbs_supported`, `guarded_clean_base`).  On the base `{0, 1}`,
+  (`maximal_absorbs_supported`, `maximal_clean_base`).  On the base `{0, 1}`,
   which is not clean, it absorbs the revision and stops at
   `Forget({0}, {0, 1})`, whose value `{1}` is not the base
-  (`guarded_absorbs_on_unclean_base`, `guarded_stops_on_unclean_base`,
+  (`maximal_absorbs_on_unclean_base`, `maximal_stops_on_unclean_base`,
   `inverse_fails_on_unclean_base`). -/
 
 namespace Control
@@ -812,12 +812,12 @@ def premiseFreeInverse : RewriteRule := {
   right := .fvar "W"
 }
 
-/-- The guarded maximal calculus. -/
-abbrev guardedMaximal : LanguageDef := wmFullVertexLanguageDefGuarded wmFullVertexMaximal
+/-- The maximal calculus. -/
+abbrev maximalCalculus : LanguageDef := wmFullVertexLanguageDef wmFullVertexMaximal
 
-/-- The guarded maximal calculus with the premise-free rule added. -/
+/-- The maximal calculus with the premise-free rule added. -/
 def withPremiseFreeInverse : LanguageDef :=
-  { guardedMaximal with rewrites := premiseFreeInverse :: guardedMaximal.rewrites }
+  { maximalCalculus with rewrites := premiseFreeInverse :: maximalCalculus.rewrites }
 
 def unsupportedRedex : Pattern := pForget scopeZero (pRevise baseOne revisionZeroTwo)
 
@@ -838,11 +838,11 @@ private theorem noncontextualPremises_sound : ∀ {premises : List Premise},
   | .congruence _ _ :: _, accepted => by simp [noncontextualPremises] at accepted
   | .scopedStep _ :: _, accepted => by simp [noncontextualPremises] at accepted
 
-/-- No premise of the guarded maximal calculus is contextual, so its steps are
+/-- No premise of the maximal calculus is contextual, so its steps are
 the root steps the executable frontier lists. -/
-theorem guardedMaximal_noncontextual :
-    ∀ rule ∈ guardedMaximal.rewrites, NoncontextualPremises rule.premises := by
-  have checked : ∀ rule ∈ guardedMaximal.rewrites,
+theorem maximal_noncontextual :
+    ∀ rule ∈ maximalCalculus.rewrites, NoncontextualPremises rule.premises := by
+  have checked : ∀ rule ∈ maximalCalculus.rewrites,
       noncontextualPremises rule.premises = true := by
     decide +kernel
   exact fun rule member => noncontextualPremises_sound (checked rule member)
@@ -852,7 +852,7 @@ theorem withPremiseFreeInverse_noncontextual :
   intro rule member
   rcases List.mem_cons.mp member with rfl | member
   · exact .nil
-  · exact guardedMaximal_noncontextual rule member
+  · exact maximal_noncontextual rule member
 
 /-- The handles name the scope `{0}`, the base `{1}` and the revision `{0, 2}`. -/
 theorem unsupported_decodes :
@@ -876,9 +876,9 @@ theorem premiseFreeInverse_frontier :
       [baseOne] := by
   decide +kernel
 
-/-- The guarded maximal calculus gives it no reduct. -/
-theorem guarded_frontier :
-    rewriteStepWithPremisesUsing controlEnv guardedMaximal unsupportedRedex = [] := by
+/-- The maximal calculus gives it no reduct. -/
+theorem maximal_frontier :
+    rewriteStepWithPremisesUsing controlEnv maximalCalculus unsupportedRedex = [] := by
   decide +kernel
 
 theorem premiseFreeInverse_rewrites_unsupported :
@@ -887,10 +887,10 @@ theorem premiseFreeInverse_rewrites_unsupported :
     premiseFreeInverse_frontier]
   exact List.mem_singleton_self _
 
-theorem guarded_refuses_unsupported (target : Pattern) :
-    ¬ langReducesUsing controlEnv guardedMaximal unsupportedRedex target := by
-  rw [← mem_rootFrontier_iff_langReducesUsing _ _ guardedMaximal_noncontextual,
-    guarded_frontier]
+theorem maximal_refuses_unsupported (target : Pattern) :
+    ¬ langReducesUsing controlEnv maximalCalculus unsupportedRedex target := by
+  rw [← mem_rootFrontier_iff_langReducesUsing _ _ maximal_noncontextual,
+    maximal_frontier]
   exact List.not_mem_nil
 
 /-- Forgetting `{0}` after the revision `{0, 2}` of `{1}` gives `{1, 2}`, not the
@@ -901,22 +901,22 @@ theorem premiseFreeInverse_unsound :
   decide +kernel
 
 /-- The supported revision `{0}` of the clean base `{1}` is absorbed. -/
-theorem guarded_absorbs_supported :
-    langReducesUsing controlEnv guardedMaximal
+theorem maximal_absorbs_supported :
+    langReducesUsing controlEnv maximalCalculus
       (pForget scopeZero (pRevise baseOne revisionZero)) (pForget scopeZero baseOne) :=
-  wmFullGuardedReduces_forgetAbsorbSupported controlEnv wmFullVertexMaximal rfl
+  wmFullLangReducesUsing_forgetAbsorbSupported controlEnv wmFullVertexMaximal rfl
     scopeZero baseOne revisionZero (by decide +kernel)
 
 /-- Forgetting fixes the clean base `{1}`. -/
-theorem guarded_clean_base :
-    langReducesUsing controlEnv guardedMaximal (pForget scopeZero baseOne) baseOne :=
-  wmFullGuardedReduces_forgetClean controlEnv wmFullVertexMaximal rfl
+theorem maximal_clean_base :
+    langReducesUsing controlEnv maximalCalculus (pForget scopeZero baseOne) baseOne :=
+  wmFullLangReducesUsing_forgetClean controlEnv wmFullVertexMaximal rfl
     scopeZero baseOne (by decide +kernel)
 
 /-- The row that lets absorption fire certifies absorption on every base. -/
 theorem control_absorption_sound (W : Multiset ℕ) :
     ledgerForgetting.forget {0} (W + {0}) = ledgerForgetting.forget {0} W :=
-  forgetAbsorbSupported_sound (ledgerProvider controlTable) guardedMaximal
+  forgetAbsorbSupported_sound (ledgerProvider controlTable) maximalCalculus
     scopeZero baseOne revisionZero (by decide +kernel) (by decide +kernel)
     (final := [("W", baseOne), ("D", revisionZero), ("S", scopeZero)])
     (by decide +kernel) W
@@ -927,18 +927,18 @@ theorem exact_on_clean_base :
   decide +kernel
 
 /-- On the base `{0, 1}`, which is not clean, the revision is still absorbed. -/
-theorem guarded_absorbs_on_unclean_base :
-    langReducesUsing controlEnv guardedMaximal
+theorem maximal_absorbs_on_unclean_base :
+    langReducesUsing controlEnv maximalCalculus
       (pForget scopeZero (pRevise baseZeroOne revisionZero))
       (pForget scopeZero baseZeroOne) :=
-  wmFullGuardedReduces_forgetAbsorbSupported controlEnv wmFullVertexMaximal rfl
+  wmFullLangReducesUsing_forgetAbsorbSupported controlEnv wmFullVertexMaximal rfl
     scopeZero baseZeroOne revisionZero (by decide +kernel)
 
 /-- There the calculus stops: `Forget({0}, {0, 1})` has no reduct. -/
-theorem guarded_stops_on_unclean_base (target : Pattern) :
-    ¬ langReducesUsing controlEnv guardedMaximal (pForget scopeZero baseZeroOne) target := by
-  rw [← mem_rootFrontier_iff_langReducesUsing _ _ guardedMaximal_noncontextual,
-    show rewriteStepWithPremisesUsing controlEnv guardedMaximal
+theorem maximal_stops_on_unclean_base (target : Pattern) :
+    ¬ langReducesUsing controlEnv maximalCalculus (pForget scopeZero baseZeroOne) target := by
+  rw [← mem_rootFrontier_iff_langReducesUsing _ _ maximal_noncontextual,
+    show rewriteStepWithPremisesUsing controlEnv maximalCalculus
       (pForget scopeZero baseZeroOne) = [] by decide +kernel]
   exact List.not_mem_nil
 
@@ -970,18 +970,18 @@ decoded state (`scopeFree_sound`).
   handle as the scope `{1}`, which excludes `0`, and accept, although `{0}` has
   evidence `1` at `0` (`scopeFree_antiHallucination_accepts`,
   `evidence_at_zero`).  The rule binds the scope `{0}` that erases `{0}`, finds
-  `0` inside it, and the guarded maximal calculus has no step
-  (`guarded_refuses_shared`).  With separate names the earlier premises refuse
+  `0` inside it, and the maximal calculus has no step
+  (`maximal_refuses_shared`).  With separate names the earlier premises refuse
   even a correct case, because a state handle names no scope
   (`scopeFree_antiHallucination_refuses_correct`).
-* In the guarded maximal calculus anti-hallucination rewrites `Extract({0}, 1)`
+* In the maximal calculus anti-hallucination rewrites `Extract({0}, 1)`
   to `EvidenceZero`, and Noether conservation rewrites
   `Extract(Revise({1}, {0}), 1)` to `Extract({1}, 1)`; both conclusions hold
-  (`guarded_antiHallucination`, `control_antiHallucination_sound`,
-  `guarded_noetherConservation`, `control_noetherConservation_sound`).  At the
+  (`maximal_antiHallucination`, `control_antiHallucination_sound`,
+  `maximal_noetherConservation`, `control_noetherConservation_sound`).  At the
   query `0`, inside the erasing scope, neither fires
-  (`guarded_refuses_inside`, `guarded_noether_frontier_inside`,
-  `guarded_noether_refuses_inside`), and both conclusions would be false there
+  (`maximal_refuses_inside`, `maximal_noether_frontier_inside`,
+  `maximal_noether_refuses_inside`), and both conclusions would be false there
   (`evidence_at_zero`, `noether_fails_inside`). -/
 
 /-- Observation counts of ledger evidence. -/
@@ -1058,7 +1058,7 @@ def scopeFreeAntiHallucination : RewriteRule :=
 
 /-- The test accepts the budget term for the scope `{1}` and the revision `{0}`. -/
 theorem scopeFree_accepts_wrong_scope :
-    applyPremisesWithEnv scopeFreeEnv guardedMaximal scopeFreeZeroLeakage.premises
+    applyPremisesWithEnv scopeFreeEnv maximalCalculus scopeFreeZeroLeakage.premises
       [("D", revisionZero), ("S", scopeOne)] ≠ [] := by
   decide +kernel
 
@@ -1079,14 +1079,14 @@ theorem wrong_scope_leaks :
 
 /-- Zero leakage refuses the scope `{1}`, which does not erase `{0}`. -/
 theorem zeroLeakage_refuses_wrong_scope :
-    applyPremisesWithEnv controlEnv guardedMaximal ruleZeroLeakage.premises
+    applyPremisesWithEnv controlEnv maximalCalculus ruleZeroLeakage.premises
       [("D", revisionZero), ("S", scopeOne)] = [] := by
   decide +kernel
 
 /-- It accepts the scope `{0}`, which erases `{0}`. -/
 theorem zeroLeakage_accepts :
     [("D", revisionZero), ("S", scopeZero)] ∈
-      applyPremisesWithEnv controlEnv guardedMaximal ruleZeroLeakage.premises
+      applyPremisesWithEnv controlEnv maximalCalculus ruleZeroLeakage.premises
         [("D", revisionZero), ("S", scopeZero)] := by
   decide +kernel
 
@@ -1095,7 +1095,7 @@ theorem control_zeroLeakage_sound :
     OutsideLeakageBudget ledgerForgetting.toForgettingLayer ({0} : Finset ℕ)
       ({0} : Multiset ℕ) 0 :=
   Conservation.zeroLeakage_sound (supportRelationEnv_certifies (ledgerProvider controlTable))
-    ledger_zeroPreserving guardedMaximal scopeZero revisionZero (by decide +kernel)
+    ledger_zeroPreserving maximalCalculus scopeZero revisionZero (by decide +kernel)
     (by decide +kernel) zeroLeakage_accepts
 
 /-- The shared name decodes as the scope `{1}` and as the state `{0}`. -/
@@ -1106,31 +1106,31 @@ theorem shared_decodes :
 
 /-- The earlier anti-hallucination premises accept `Extract(sharedName, 0)`. -/
 theorem scopeFree_antiHallucination_accepts :
-    applyPremisesWithEnv scopeFreeEnv guardedMaximal scopeFreeAntiHallucination.premises
+    applyPremisesWithEnv scopeFreeEnv maximalCalculus scopeFreeAntiHallucination.premises
       [("q", queryZero), ("D", sharedName)] ≠ [] := by
   decide +kernel
 
-/-- The guarded maximal calculus has no step from `Extract(sharedName, 0)`. -/
-theorem guarded_refuses_shared (target : Pattern) :
-    ¬ langReducesUsing controlEnv guardedMaximal (pExtract sharedName queryZero) target := by
-  rw [← mem_rootFrontier_iff_langReducesUsing _ _ guardedMaximal_noncontextual,
-    show rewriteStepWithPremisesUsing controlEnv guardedMaximal
+/-- The maximal calculus has no step from `Extract(sharedName, 0)`. -/
+theorem maximal_refuses_shared (target : Pattern) :
+    ¬ langReducesUsing controlEnv maximalCalculus (pExtract sharedName queryZero) target := by
+  rw [← mem_rootFrontier_iff_langReducesUsing _ _ maximal_noncontextual,
+    show rewriteStepWithPremisesUsing controlEnv maximalCalculus
       (pExtract sharedName queryZero) = [] by decide +kernel]
   exact List.not_mem_nil
 
 /-- With separate names the earlier premises refuse the correct case
 `Extract({0}, 1)`: the state handle names no scope. -/
 theorem scopeFree_antiHallucination_refuses_correct :
-    applyPremisesWithEnv scopeFreeEnv guardedMaximal scopeFreeAntiHallucination.premises
+    applyPremisesWithEnv scopeFreeEnv maximalCalculus scopeFreeAntiHallucination.premises
       [("q", queryOne), ("D", revisionZero)] = [] := by
   decide +kernel
 
 /-- Anti-hallucination rewrites `Extract({0}, 1)` to `EvidenceZero`: `{0}` is
 erased by `{0}`, which excludes `1`. -/
-theorem guarded_antiHallucination :
-    langReducesUsing controlEnv guardedMaximal (pExtract revisionZero queryOne)
+theorem maximal_antiHallucination :
+    langReducesUsing controlEnv maximalCalculus (pExtract revisionZero queryOne)
       pEvidenceZero :=
-  wmFullGuardedReduces_antiHallucination controlEnv wmFullVertexMaximal rfl
+  wmFullLangReducesUsing_antiHallucination controlEnv wmFullVertexMaximal rfl
     scopeZero revisionZero queryOne (by decide +kernel) (by decide +kernel)
 
 /-- The firing certifies the conclusion: `{0}` has no evidence at `1`. -/
@@ -1139,24 +1139,24 @@ theorem control_antiHallucination_sound :
       ({0} : Multiset ℕ) 1 = 0 :=
   Conservation.antiHallucination_sound
     (supportRelationEnv_certifies (ledgerProvider controlTable)) ledger_zeroPreserving
-    guardedMaximal revisionZero queryOne (by decide +kernel) (by decide +kernel)
+    maximalCalculus revisionZero queryOne (by decide +kernel) (by decide +kernel)
     (final := [("S", scopeZero), ("q", queryOne), ("D", revisionZero)]) (by decide +kernel)
 
 /-- At the query `0`, inside the erasing scope, anti-hallucination does not
 fire. -/
-theorem guarded_refuses_inside (target : Pattern) :
-    ¬ langReducesUsing controlEnv guardedMaximal (pExtract revisionZero queryZero) target := by
-  rw [← mem_rootFrontier_iff_langReducesUsing _ _ guardedMaximal_noncontextual,
-    show rewriteStepWithPremisesUsing controlEnv guardedMaximal
+theorem maximal_refuses_inside (target : Pattern) :
+    ¬ langReducesUsing controlEnv maximalCalculus (pExtract revisionZero queryZero) target := by
+  rw [← mem_rootFrontier_iff_langReducesUsing _ _ maximal_noncontextual,
+    show rewriteStepWithPremisesUsing controlEnv maximalCalculus
       (pExtract revisionZero queryZero) = [] by decide +kernel]
   exact List.not_mem_nil
 
 /-- Noether conservation rewrites `Extract(Revise({1}, {0}), 1)` to
 `Extract({1}, 1)`. -/
-theorem guarded_noetherConservation :
-    langReducesUsing controlEnv guardedMaximal
+theorem maximal_noetherConservation :
+    langReducesUsing controlEnv maximalCalculus
       (pExtract (pRevise baseOne revisionZero) queryOne) (pExtract baseOne queryOne) :=
-  wmFullGuardedReduces_noetherConservation controlEnv wmFullVertexMaximal rfl
+  wmFullLangReducesUsing_noetherConservation controlEnv wmFullVertexMaximal rfl
     scopeZero baseOne revisionZero queryOne (by decide +kernel) (by decide +kernel)
 
 /-- The firing certifies the conclusion on every base. -/
@@ -1165,22 +1165,22 @@ theorem control_noetherConservation_sound (W : Multiset ℕ) :
       AdditiveWorldModel.extract (State := Multiset ℕ) (Query := ℕ) (Ev := ℕ) W 1 :=
   Conservation.noetherConservation_sound
     (supportRelationEnv_certifies (ledgerProvider controlTable)) ledger_zeroPreserving
-    guardedMaximal baseOne revisionZero queryOne (by decide +kernel) (by decide +kernel)
+    maximalCalculus baseOne revisionZero queryOne (by decide +kernel) (by decide +kernel)
     (final := [("S", scopeZero), ("q", queryOne), ("D", revisionZero), ("W", baseOne)])
     (by decide +kernel) W
 
 /-- At the query `0` only evidence-add fires on `Extract(Revise({1}, {0}), 0)`. -/
-theorem guarded_noether_frontier_inside :
-    rewriteStepWithPremisesUsing controlEnv guardedMaximal
+theorem maximal_noether_frontier_inside :
+    rewriteStepWithPremisesUsing controlEnv maximalCalculus
         (pExtract (pRevise baseOne revisionZero) queryZero) =
       [pCombine (pExtract baseOne queryZero) (pExtract revisionZero queryZero)] := by
   decide +kernel
 
-theorem guarded_noether_refuses_inside :
-    ¬ langReducesUsing controlEnv guardedMaximal
+theorem maximal_noether_refuses_inside :
+    ¬ langReducesUsing controlEnv maximalCalculus
       (pExtract (pRevise baseOne revisionZero) queryZero) (pExtract baseOne queryZero) := by
-  rw [← mem_rootFrontier_iff_langReducesUsing _ _ guardedMaximal_noncontextual,
-    guarded_noether_frontier_inside]
+  rw [← mem_rootFrontier_iff_langReducesUsing _ _ maximal_noncontextual,
+    maximal_noether_frontier_inside]
   decide +kernel
 
 /-- Rightly: the revision changes the evidence at `0` on the base `{1}`. -/
@@ -1198,11 +1198,11 @@ theorem noether_fails_inside :
   inside the scope: after forgetting, the evidence at `0` is `0`, and the base
   has `1` (`premiseFreeForgetOutside_rewrites_inside`,
   `premiseFreeForgetOutside_unsound`).
-* The guarded maximal calculus has no step from that term
-  (`guarded_refuses_forget_inside`).
+* The maximal calculus has no step from that term
+  (`maximal_refuses_forget_inside`).
 * At the query `1`, outside `{0}`, outside-scope invariance is the only step,
-  and its conclusion holds on every base (`guarded_forgetOutside_frontier`,
-  `guarded_forgetOutside`, `control_forgetOutside_sound`). -/
+  and its conclusion holds on every base (`maximal_forgetOutside_frontier`,
+  `maximal_forgetOutside`, `control_forgetOutside_sound`). -/
 
 /-- Outside-scope invariance without its premise.  It is in no rule list. -/
 def premiseFreeForgetOutside : RewriteRule :=
@@ -1210,16 +1210,16 @@ def premiseFreeForgetOutside : RewriteRule :=
     name := "WM_PremiseFreeForgetOutside_Control"
     premises := [] }
 
-/-- The guarded maximal calculus with the premise-free rule added. -/
+/-- The maximal calculus with the premise-free rule added. -/
 def withPremiseFreeForgetOutside : LanguageDef :=
-  { guardedMaximal with rewrites := premiseFreeForgetOutside :: guardedMaximal.rewrites }
+  { maximalCalculus with rewrites := premiseFreeForgetOutside :: maximalCalculus.rewrites }
 
 theorem withPremiseFreeForgetOutside_noncontextual :
     ∀ rule ∈ withPremiseFreeForgetOutside.rewrites, NoncontextualPremises rule.premises := by
   intro rule member
   rcases List.mem_cons.mp member with rfl | member
   · exact .nil
-  · exact guardedMaximal_noncontextual rule member
+  · exact maximal_noncontextual rule member
 
 /-- `Extract(Forget({0}, {0, 1}), 0)`: a query inside the forgotten scope. -/
 def insideForgetRedex : Pattern := pExtract (pForget scopeZero baseZeroOne) queryZero
@@ -1247,25 +1247,25 @@ theorem premiseFreeForgetOutside_unsound :
         ({0, 1} : Multiset ℕ) 0 = 1 := by
   decide +kernel
 
-/-- The guarded maximal calculus has no step from the inside query. -/
-theorem guarded_refuses_forget_inside (target : Pattern) :
-    ¬ langReducesUsing controlEnv guardedMaximal insideForgetRedex target := by
-  rw [← mem_rootFrontier_iff_langReducesUsing _ _ guardedMaximal_noncontextual,
-    show rewriteStepWithPremisesUsing controlEnv guardedMaximal insideForgetRedex = [] by
+/-- The maximal calculus has no step from the inside query. -/
+theorem maximal_refuses_forget_inside (target : Pattern) :
+    ¬ langReducesUsing controlEnv maximalCalculus insideForgetRedex target := by
+  rw [← mem_rootFrontier_iff_langReducesUsing _ _ maximal_noncontextual,
+    show rewriteStepWithPremisesUsing controlEnv maximalCalculus insideForgetRedex = [] by
       decide +kernel]
   exact List.not_mem_nil
 
 /-- At the query `1`, outside `{0}`, outside-scope invariance is the only step. -/
-theorem guarded_forgetOutside_frontier :
-    rewriteStepWithPremisesUsing controlEnv guardedMaximal
+theorem maximal_forgetOutside_frontier :
+    rewriteStepWithPremisesUsing controlEnv maximalCalculus
         (pExtract (pForget scopeZero baseZeroOne) queryOne) =
       [pExtract baseZeroOne queryOne] := by
   decide +kernel
 
-theorem guarded_forgetOutside :
-    langReducesUsing controlEnv guardedMaximal
+theorem maximal_forgetOutside :
+    langReducesUsing controlEnv maximalCalculus
       (pExtract (pForget scopeZero baseZeroOne) queryOne) (pExtract baseZeroOne queryOne) :=
-  wmFullGuardedReduces_forgetOutside controlEnv wmFullVertexMaximal (Or.inr rfl)
+  wmFullLangReducesUsing_forgetOutside controlEnv wmFullVertexMaximal (Or.inr rfl)
     scopeZero baseZeroOne queryOne (by decide +kernel)
 
 /-- The firing certifies the conclusion on every base. -/
@@ -1274,7 +1274,7 @@ theorem control_forgetOutside_sound (W : Multiset ℕ) :
         (ledgerForgetting.forget {0} W) 1 =
       AdditiveWorldModel.extract (State := Multiset ℕ) (Query := ℕ) (Ev := ℕ) W 1 :=
   Conservation.forgetOutside_sound
-    (supportRelationEnv_certifies (ledgerProvider controlTable)) guardedMaximal
+    (supportRelationEnv_certifies (ledgerProvider controlTable)) maximalCalculus
     scopeZero baseZeroOne queryOne (by decide +kernel) (by decide +kernel)
     (final := [("q", queryOne), ("W", baseZeroOne), ("S", scopeZero)]) (by decide +kernel) W
 
@@ -1287,20 +1287,20 @@ end SupportTracked
 #print axioms SupportTracked.forgetAbsorbSupported_sound
 #print axioms SupportTracked.forgetClean_sound
 #print axioms SupportTracked.forgetAbsorbSupported_forgetClean_sound
-#print axioms SupportTracked.Control.guardedMaximal_noncontextual
+#print axioms SupportTracked.Control.maximal_noncontextual
 #print axioms SupportTracked.Control.unsupported_decodes
 #print axioms SupportTracked.Control.unsupported_rows_absent
 #print axioms SupportTracked.Control.premiseFreeInverse_frontier
-#print axioms SupportTracked.Control.guarded_frontier
+#print axioms SupportTracked.Control.maximal_frontier
 #print axioms SupportTracked.Control.premiseFreeInverse_rewrites_unsupported
-#print axioms SupportTracked.Control.guarded_refuses_unsupported
+#print axioms SupportTracked.Control.maximal_refuses_unsupported
 #print axioms SupportTracked.Control.premiseFreeInverse_unsound
-#print axioms SupportTracked.Control.guarded_absorbs_supported
-#print axioms SupportTracked.Control.guarded_clean_base
+#print axioms SupportTracked.Control.maximal_absorbs_supported
+#print axioms SupportTracked.Control.maximal_clean_base
 #print axioms SupportTracked.Control.control_absorption_sound
 #print axioms SupportTracked.Control.exact_on_clean_base
-#print axioms SupportTracked.Control.guarded_absorbs_on_unclean_base
-#print axioms SupportTracked.Control.guarded_stops_on_unclean_base
+#print axioms SupportTracked.Control.maximal_absorbs_on_unclean_base
+#print axioms SupportTracked.Control.maximal_stops_on_unclean_base
 #print axioms SupportTracked.Control.inverse_fails_on_unclean_base
 #print axioms Conservation.erased_of_row
 #print axioms Conservation.outside_of_row
@@ -1322,15 +1322,15 @@ end SupportTracked
 #print axioms SupportTracked.Control.control_zeroLeakage_sound
 #print axioms SupportTracked.Control.shared_decodes
 #print axioms SupportTracked.Control.scopeFree_antiHallucination_accepts
-#print axioms SupportTracked.Control.guarded_refuses_shared
+#print axioms SupportTracked.Control.maximal_refuses_shared
 #print axioms SupportTracked.Control.scopeFree_antiHallucination_refuses_correct
-#print axioms SupportTracked.Control.guarded_antiHallucination
+#print axioms SupportTracked.Control.maximal_antiHallucination
 #print axioms SupportTracked.Control.control_antiHallucination_sound
-#print axioms SupportTracked.Control.guarded_refuses_inside
-#print axioms SupportTracked.Control.guarded_noetherConservation
+#print axioms SupportTracked.Control.maximal_refuses_inside
+#print axioms SupportTracked.Control.maximal_noetherConservation
 #print axioms SupportTracked.Control.control_noetherConservation_sound
-#print axioms SupportTracked.Control.guarded_noether_frontier_inside
-#print axioms SupportTracked.Control.guarded_noether_refuses_inside
+#print axioms SupportTracked.Control.maximal_noether_frontier_inside
+#print axioms SupportTracked.Control.maximal_noether_refuses_inside
 #print axioms SupportTracked.Control.noether_fails_inside
 #print axioms Conservation.outside_of_forgetOutside
 #print axioms Conservation.forgetOutside_sound
@@ -1338,9 +1338,9 @@ end SupportTracked
 #print axioms SupportTracked.Control.premiseFreeForgetOutside_frontier
 #print axioms SupportTracked.Control.premiseFreeForgetOutside_rewrites_inside
 #print axioms SupportTracked.Control.premiseFreeForgetOutside_unsound
-#print axioms SupportTracked.Control.guarded_refuses_forget_inside
-#print axioms SupportTracked.Control.guarded_forgetOutside_frontier
-#print axioms SupportTracked.Control.guarded_forgetOutside
+#print axioms SupportTracked.Control.maximal_refuses_forget_inside
+#print axioms SupportTracked.Control.maximal_forgetOutside_frontier
+#print axioms SupportTracked.Control.maximal_forgetOutside
 #print axioms SupportTracked.Control.control_forgetOutside_sound
 
 end Mettapedia.OSLF.Framework.WMCalculusCheckedScopeRelationProvider

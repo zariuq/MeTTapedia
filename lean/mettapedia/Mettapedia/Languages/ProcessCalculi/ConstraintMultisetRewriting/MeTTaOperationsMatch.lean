@@ -30,7 +30,7 @@ The bag is an observation over the set of valid selections at one store. It
 is not itself a firing: `MeTTaOperationsCollapse` proves that validity of one
 firing cannot certify that a set of reads is complete.
 
-Stored atoms with variables need per-use opening. `live_variable_conflates_queries`
+Stored atoms with variables need per-use opening. `shared_variable_conflates_queries`
 shows that reading a stored `(q $z)` whose variable is live binds that
 variable for every later reader: a second query `(q 7)` is refused after
 `(q 5)`. Hyperon Experimental answers both, as does a fresh copy per use.
@@ -372,14 +372,14 @@ end Probe
 
 /-! ## A stored variable must be opened per use -/
 
-namespace LiveStorage
+namespace SharedStorage
 
 def q (value : Atom) : Atom := .expression [.symbol "q", value]
 def five : Atom := .symbol "5"
 def seven : Atom := .symbol "7"
 def yes : Atom := .symbol "yes"
 
-/-- Occurrence 0 stores `(q $z)` with a live `z`; outputs are labelled `yes`. -/
+/-- Occurrence 0 stores `(q $z)` with a shared `z`; outputs are labelled `yes`. -/
 def label (n : Nat) : Atom := if n = 0 then q (.var "z") else yes
 
 def before : Configuration Atom Nat := ⟨[], {0}⟩
@@ -394,8 +394,8 @@ theorem first_query_valid :
   change subst _ (q five) = subst _ (q (.var "z"))
   simp [q, five, subst, subst.substList, Insertion.single]
 
-/-- After the first query, the live variable is bound for every reader. -/
-theorem live_variable_conflates_queries :
+/-- After the first query, the shared variable is bound for every reader. -/
+theorem shared_variable_conflates_queries :
     ¬ (selection 0 2).Valid atomAction label (rule (q seven) yes)
       ((selection 0 1).result label (rule (q five) yes) before) := by
   intro valid
@@ -437,6 +437,6 @@ theorem opened_copies_answer_both :
       · change subst _ (q seven) = subst _ (openedLabel 1)
         simp [q, five, seven, subst, subst.substList, openedLabel]
 
-end LiveStorage
+end SharedStorage
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.MeTTaOperationsMatch

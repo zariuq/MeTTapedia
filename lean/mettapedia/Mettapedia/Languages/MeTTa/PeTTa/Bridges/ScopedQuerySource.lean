@@ -1,4 +1,5 @@
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.LiteralQuerySource
+import Mettapedia.Languages.MeTTa.PeTTa.Bridges.ScopedCaseSource
 
 /-!
 # Captured, effectful query bodies in retained source frames
@@ -406,5 +407,137 @@ theorem split_resume {Context : Type} (policy : Policy) (program : SpaceSemantic
     (machine policy program).run (first + second) source =
       (events ++ ((machine policy program).run second saved).1, ((machine policy program).run second saved).2) :=
   (machine policy program).established_and_pending first second source saved events paused
+
+/-! ## Owned finite two-way extension
+
+The earlier completed profile is retained verbatim. This entrance fills only
+an explicit canonical-query request, after checking the structural carrier.
+It shares the same syntax, producer, world and continuation owners.
+-/
+
+/-- Pattern views requiring a separate native codec do not become ordinary
+first-order constructors. Stored variables themselves are supported. -/
+def plainQueryPattern : Atom → Bool
+  | .expression children =>
+      !LiteralQuerySource.consView children &&
+        (match children with | .symbol "quote" :: _ => false | _ => true) &&
+        children.attach.all (fun child => plainQueryPattern child.1)
+  | atom => finiteStructural atom
+termination_by atom => sizeOf atom
+decreasing_by
+  simp_wf
+  exact Nat.lt_trans (List.sizeOf_lt_of_mem child.property) (by omega)
+
+def unifyingReady (pattern : Atom) (rows : List Atom) : Bool :=
+  plainQueryPattern pattern &&
+    (match pattern with
+      | .expression (.symbol "," :: _) | .expression (.symbol "|" :: _) => false
+      | _ => true) && rows.all finiteStructural
+
+/-- Ownership is checked at the actual call stage. The retained control
+distinguishes source evaluation from ready invocation; argument production
+is not replayed when the ready boundary needs canonical service. -/
+def ownershipStep {Context : Type} (program : SpaceSemantics.Program)
+    (source : ScopedCursor Context) : Option (Action Context) := do
+  if queryOwned program then none else do
+    let scope :: _ := source.2.scopes | none
+    let (control, _, _) :: _ := scope.frontier | none
+    match control.goals with
+    | .evaluate (.expression [.symbol "match", space, pattern, body]) destination :: _
+    | .invoke "match" [space, pattern, body] destination :: _ =>
+        some (.call (.branch (.invoke "match" [space, pattern, body] destination)) source)
+    | _ => none
+
+/-- An admitted request enters the existing query continuation. Its pattern
+and template remain recipes in the reached record, not substituted source. -/
+def unifyingQueryStep {Context : Type} (source : ScopedCursor Context) : Option (Action Context) := do
+  let scope :: parents := source.2.scopes | none
+  let (control, context, origins) :: pending := scope.frontier | none
+  let .invoke "match" [space, pattern, body] destination :: older := control.goals | none
+  let environment ← resolve control.bindings
+  let rows ← Effects.readHandle (read environment space) >>= source.2.world.state.read
+  if unifyingReady (read environment pattern) rows then
+    let next := {control with goals := .query space pattern body destination :: older}
+    some (.silent (source.1, ⟨source.2.world,
+      {scope with frontier := (next, context, origins) :: pending} :: parents⟩))
+  else none
+
+/-- Case enters its source key/selection continuation before ordinary
+dispatch. Outside those entrances, completed old steps are retained; only
+an explicit query-reference request gains the admitted finite unifier. -/
+def ownedStep {Context : Type} (policy : Policy) (program : SpaceSemantics.Program)
+    (source : ScopedCursor Context) : Action Context :=
+  match ScopedCaseSource.entryStep source with
+  | some entered => entered
+  | none =>
+      match ScopedCaseSource.readyStep plainQueryPattern source with
+      | some selected => selected
+      | none =>
+          match ownershipStep program source with
+          | some retained => retained
+          | none =>
+              let ordinary := step policy program source
+              match ordinary with
+              | .call (.branch (.invoke "match" [_, _, _] _)) _ =>
+                  (unifyingQueryStep source).getD ordinary
+              | _ => ordinary
+
+def ownedMachine {Context : Type} (policy : Policy) (program : SpaceSemantics.Program) :
+    Machine (ScopedCursor Context) CollectedAnswer (ScopedCursor Context) ScopeBoundary where
+  step source := some (ownedStep policy program source)
+
+theorem owned_keeps_completed_step {Context : Type} (policy : Policy) (program : SpaceSemantics.Program)
+    (source after : ScopedCursor Context) (owned : ownershipStep program source = none)
+    (noCaseEntry : ScopedCaseSource.entryStep source = none)
+    (noCaseSelection : ScopedCaseSource.readyStep plainQueryPattern source = none)
+    (completed : step policy program source = .silent after) :
+    ownedStep policy program source = .silent after := by simp [ownedStep, noCaseEntry, noCaseSelection, owned, completed]
+
+theorem owned_keeps_publication {Context : Type} (policy : Policy) (program : SpaceSemantics.Program)
+    (source after : ScopedCursor Context) (events : List CollectedAnswer)
+    (owned : ownershipStep program source = none)
+    (noCaseEntry : ScopedCaseSource.entryStep source = none)
+    (noCaseSelection : ScopedCaseSource.readyStep plainQueryPattern source = none)
+    (completed : step policy program source = .publish events after) :
+    ownedStep policy program source = .publish events after := by simp [ownedStep, noCaseEntry, noCaseSelection, owned, completed]
+
+theorem unifying_entry {Context : Type} (allocator : Allocator) (world : World)
+    (scope : CollectionScope Context) (parents : List (CollectionScope Context))
+    (control : Control) (context : Context) (origins : List Nat) (pending : List (CollectionWork Context))
+    (space pattern body destination : Atom) (older : List Goal) (environment : Environment) (rows : List Atom)
+    (frontier : scope.frontier = (control, context, origins) :: pending)
+    (atCall : control.goals = .invoke "match" [space, pattern, body] destination :: older)
+    (resolved : resolve control.bindings = some environment)
+    (readRows : (Effects.readHandle (read environment space) >>= world.state.read) = some rows)
+    (admitted : unifyingReady (read environment pattern) rows = true) :
+    unifyingQueryStep (allocator, ⟨world, scope :: parents⟩) =
+      some (.silent (allocator, ⟨world, {scope with frontier :=
+        ({control with goals := .query space pattern body destination :: older}, context, origins) :: pending} :: parents⟩)) := by
+  obtain ⟨handle, location, reading⟩ := Option.bind_eq_some_iff.mp readRows
+  simp [unifyingQueryStep, frontier, atCall, resolved, location, reading, admitted]
+
+theorem ownership_source_stage_retained {Context : Type} (program : SpaceSemantics.Program)
+    (allocator : Allocator) (world : World) (scope : CollectionScope Context)
+    (parents : List (CollectionScope Context)) (control : Control) (context : Context)
+    (origins : List Nat) (pending : List (CollectionWork Context)) (space pattern body destination : Atom)
+    (older : List Goal) (unowned : queryOwned program = false)
+    (frontier : scope.frontier = (control, context, origins) :: pending)
+    (atSource : control.goals = .evaluate (.expression [.symbol "match", space, pattern, body]) destination :: older) :
+    ownershipStep program (allocator, ⟨world, scope :: parents⟩) =
+      some (.call (.branch (.invoke "match" [space, pattern, body] destination))
+        (allocator, ⟨world, scope :: parents⟩)) := by
+  simp [ownershipStep, unowned, frontier, atSource]
+
+theorem ownership_ready_stage_retained {Context : Type} (program : SpaceSemantics.Program)
+    (allocator : Allocator) (world : World) (scope : CollectionScope Context)
+    (parents : List (CollectionScope Context)) (control : Control) (context : Context)
+    (origins : List Nat) (pending : List (CollectionWork Context)) (space pattern body destination : Atom)
+    (older : List Goal) (unowned : queryOwned program = false)
+    (frontier : scope.frontier = (control, context, origins) :: pending)
+    (atReady : control.goals = .invoke "match" [space, pattern, body] destination :: older) :
+    ownershipStep program (allocator, ⟨world, scope :: parents⟩) =
+      some (.call (.branch (.invoke "match" [space, pattern, body] destination))
+        (allocator, ⟨world, scope :: parents⟩)) := by
+  simp [ownershipStep, unowned, frontier, atReady]
 
 end Mettapedia.Languages.MeTTa.PeTTa.Bridges.ScopedQuerySource

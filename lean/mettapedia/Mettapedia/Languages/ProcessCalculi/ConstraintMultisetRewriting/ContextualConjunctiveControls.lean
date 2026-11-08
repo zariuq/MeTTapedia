@@ -49,9 +49,9 @@ def shared : Pattern := generator (queryFamily queries captures) (.inr 0)
 def patterns : List Pattern := [p x, q x]
 
 def rows (occurrence : Nat) : Stored :=
-  if occurrence = 10 then .live (p a)
-  else if occurrence = 20 then .live (q b)
-  else .live (q a)
+  if occurrence = 10 then .shared (p a)
+  else if occurrence = 20 then .shared (q b)
+  else .shared (q a)
 def world : Finset Nat := {10, 20}
 def enlarged : Finset Nat := {10, 20, 30}
 
@@ -259,7 +259,7 @@ theorem the_check_cannot_manufacture_or_forget_the_caller_binding :
   exact absent Nat captures boundLater (by intro equation member; cases member) (fun _ => 10)
     (fun _ => by decide +kernel) later_binding_of_a_caller_variable_can_make_a_join
 
-theorem a_live_caller_variable_prevents_absence_certification (fuel : Nat) :
+theorem a_shared_caller_variable_prevents_absence_certification (fuel : Nat) :
     certifies queries locals captures fuel [] [p shared] rows {10} = false := by
   apply Bool.eq_false_iff.mpr
   intro accepted
@@ -272,7 +272,7 @@ def binderPattern : Term (signature base (queryFamily binderQueries captures)) [
     (.op (.inr (Operator.mk (declaration := queryFamily binderQueries captures) (.inl 0)))
       (.cons (.var .zero) .nil)) .nil)
 def boundIdentity : Captured := .op (.inl .lam) (.cons (.var .zero) .nil)
-def binderRows (_ : Nat) : Stored := .live boundIdentity
+def binderRows (_ : Nat) : Stored := .shared boundIdentity
 
 theorem a_declared_query_parameter_can_refer_to_its_bound_variable :
     ContextualConjunctiveQueries.Matches binderQueries locals captures (generator captures)

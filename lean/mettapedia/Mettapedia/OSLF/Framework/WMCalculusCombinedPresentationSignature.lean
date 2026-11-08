@@ -25,7 +25,7 @@ open Mettapedia.OSLF.Framework.WMCalculusContextClosure
 set_option autoImplicit false
 
 theorem same_authored_constructors :
-    (wmExtVertexLanguageDefGuarded combinedVertex).terms =
+    (wmExtVertexLanguageDef combinedVertex).terms =
       combinedStructuralLanguageDef.terms := rfl
 
 /-- The same constructor signature is not an operational identification:
@@ -33,7 +33,7 @@ directed evidence commutation is a rewrite in one presentation and only an
 equation in the other. -/
 theorem same_signature_different_directed_rule :
     ruleCombineComm ∈
-        (wmExtVertexLanguageDefGuarded combinedVertex).rewrites ∧
+        (wmExtVertexLanguageDef combinedVertex).rewrites ∧
       ruleCombineComm ∉ combinedStructuralLanguageDef.rewrites := by
   constructor
   · change ruleCombineComm ∈ coreRules ++ [ruleOverlapExtract] ++
@@ -52,34 +52,34 @@ theorem same_signature_different_directed_rule :
 morphism: it does not pretend that directed commutation is a target rewrite. -/
 def directedToStructural :
     SigMor
-      (signatureOf (wmExtVertexLanguageDefGuarded combinedVertex))
+      (signatureOf (wmExtVertexLanguageDef combinedVertex))
       (signatureOf combinedStructuralLanguageDef) :=
   signatureSameTerms same_authored_constructors
 
 def structuralToDirected :
     SigMor (signatureOf combinedStructuralLanguageDef)
-      (signatureOf (wmExtVertexLanguageDefGuarded combinedVertex)) :=
+      (signatureOf (wmExtVertexLanguageDef combinedVertex)) :=
   signatureSameTerms same_authored_constructors.symm
 
 /-- Changing the presentation and changing it back loses no operator, even
 though the two rewrite systems are not being identified. -/
 theorem directed_operator_roundtrip {sort : TypeExpr}
-    (operator : (signatureOf (wmExtVertexLanguageDefGuarded combinedVertex)).Op sort) :
+    (operator : (signatureOf (wmExtVertexLanguageDef combinedVertex)).Op sort) :
     structuralToDirected.opMap (directedToStructural.opMap operator) =
       operator :=
   Operator.ofSameTerms_symm same_authored_constructors operator
 
 theorem directed_signature_roundtrip :
     directedToStructural.comp structuralToDirected =
-      SigMor.ident (signatureOf (wmExtVertexLanguageDefGuarded combinedVertex)) :=
+      SigMor.ident (signatureOf (wmExtVertexLanguageDef combinedVertex)) :=
   signatureSameTerms_comp_ident same_authored_constructors
 
 /-- The two WM presentations have the same intrinsic term carrier even though
 one directs evidence commutation and the other makes it structural. -/
 theorem directed_term_roundtrip
-    {Γ : Ctx (signatureOf (wmExtVertexLanguageDefGuarded combinedVertex))}
+    {Γ : Ctx (signatureOf (wmExtVertexLanguageDef combinedVertex))}
     {sort : TypeExpr}
-    (term : Term (signatureOf (wmExtVertexLanguageDefGuarded combinedVertex))
+    (term : Term (signatureOf (wmExtVertexLanguageDef combinedVertex))
       Γ sort) :
     transportSameTerms same_authored_constructors.symm
       (transportSameTerms same_authored_constructors term) = term :=
@@ -96,10 +96,10 @@ theorem structural_term_roundtrip
 /-- Presentation transport commutes with the *existing* generic simultaneous
 substitution action, including the generic binding representation forms. -/
 theorem transportTerm_bind
-    {Γ Δ : Ctx (signatureOf (wmExtVertexLanguageDefGuarded combinedVertex))}
-    (sigma : Sub (signatureOf (wmExtVertexLanguageDefGuarded combinedVertex)) Γ Δ)
+    {Γ Δ : Ctx (signatureOf (wmExtVertexLanguageDef combinedVertex))}
+    (sigma : Sub (signatureOf (wmExtVertexLanguageDef combinedVertex)) Γ Δ)
     {sort : TypeExpr}
-    (term : Term (signatureOf (wmExtVertexLanguageDefGuarded combinedVertex))
+    (term : Term (signatureOf (wmExtVertexLanguageDef combinedVertex))
       Γ sort) :
     transportSameTerms same_authored_constructors (bind sigma term) =
       bind (fun sort position => transportSameTerms same_authored_constructors

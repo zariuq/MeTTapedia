@@ -751,23 +751,13 @@ unique homomorphism to $(V, +, 0)$.
 \end{theorem}
 
 \noindent
-These five rules organize into a $2 \times 2$ square along two
-orthogonal axes:
-
-\begin{center}
-\begin{tabular}{lll}
-\toprule
-& \textbf{Plain} & \textbf{+ Congruence} \\
-\midrule
-\textbf{Raw (schematic)} & all rules fire & + context descent \\
-\textbf{Guarded (faithful)} & side-condition oracle & + context descent \\
-\bottomrule
-\end{tabular}
-\end{center}
+These five rules form one calculus, and a congruence extension lets them act
+inside subterms.  Rules beyond the core carry their side conditions as
+premises, which fire only on rows that a relation environment returns.
 
 \noindent
 This is presented \emph{abstractly} here.
-Chapter~\ref{ch:typed} incarnates the $2 \times 2$ square as
+Chapter~\ref{ch:typed} incarnates the calculus as
 concrete typed rewrite rules over the 13-axis vertex family.
 
 
@@ -980,7 +970,7 @@ explaining show \emph{why} the kernel stores states rather than bare
 values.  A bare value can be queried but cannot be partially retracted
 or audited.
 
-The $2 \times 2$ calculus square of~\S\ref{sec:algebraic-core} is
+The calculus of~\S\ref{sec:algebraic-core} is
 the abstract face of a full natively typed presentation: the five
 algebraic rules encode as typed rewrite rules over a 13-axis vertex
 family, developed in Chapter~\ref{ch:typed}.  Native types do not
@@ -1968,7 +1958,7 @@ steps; extract views only at the end, for display or decision.
 
 Chapter~\ref{ch:world-models} presented the world-model calculus as
 an algebraic interface: three operations, five rules in the additive
-regime, a $2 \times 2$ refinement square.  This chapter shows that the
+regime, one calculus with its congruence extension.  This chapter shows that the
 same calculus has a \emph{typed rewrite face}: a concrete family of
 typed rewrite rules whose terms carry native types and whose reductions
 correspond exactly to the algebraic laws.
@@ -2030,7 +2020,7 @@ core that is always present.%
 The five algebraic rules from \S\ref{sec:algebraic-core} --- the
 same five, now expressed as pattern-matching rewrites rather than
 algebraic identities:  Each has a typed left-hand
-side, a right-hand side, and (for guarded rules) a premise:
+side, a right-hand side, and (for rules with side conditions) premises:
 
 \begin{enumerate}
 \item $\mathsf{Extract}(\mathsf{Revise}(W_1, W_2), q) \;\leadsto\;
@@ -2053,38 +2043,36 @@ side, a right-hand side, and (for guarded rules) a premise:
 All five derive from the single condition that $\mathsf{Extract}$ is
 an additive monoid homomorphism.  The Lean formalization encodes each
 as a \code{RewriteRule} with typed metavariables, premises, and
-left/right patterns.  Eighteen step lemmas are kernel-checked across
+left/right patterns.  Twenty-four step lemmas are kernel-checked across
 the core and extension axes.%
 \footnote{Formalized in
 \codepath{Mettapedia/OSLF/Framework/WMCalculusLanguageDef.lean}.}
 
 
-\section{The \texorpdfstring{$2 \times 2$}{2x2} Calculus Square
-  as Concrete Rewrites}
+\section{One Calculus as Concrete Rewrites}
 
-Two orthogonal refinements produce four variant calculi:
-
-\begin{center}
-\begin{tabular}{lll}
-\toprule
-& \textbf{Plain} & \textbf{+ Congruence} \\
-\midrule
-\textbf{Raw} & all rules fire & + descent into subterms \\
-\textbf{Guarded} & side-condition oracle & + descent into subterms \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-\noindent
-The raw calculus overapproximates the guarded one: dropping premises
-only enables more reductions.  The outside-scope forgetting rule, the two
-support-tracked forgetting rules and the two conservation rules keep their
-premises in both.  The congruence extension adds
-15~explicit rules enabling reductions to propagate into subterms.
-All four inclusion arrows and Galois connections
-$\Diamond \dashv \Box$ are kernel-checked.%
+Every rule with a side condition carries it as a premise that reads rows from
+a relation environment: compatibility for fallback and partial revision, an
+enumerated query space for the cascade bound, equal counts for a vanishing
+swap anomaly, a factorization for the Blackwell rules, satisfaction or
+refutation for singleton Kripke states, query equivalence for transport, and
+the forgetting and conservation conditions.  So each vertex has one calculus.
+The congruence extension adds explicit rules, one per argument position,
+enabling reductions to propagate into subterms; every step is a step of the
+extension, under every relation environment, and Galois connections
+$\Diamond \dashv \Box$ are kernel-checked for both.%
 \footnote{Formalized in
 \codepath{Mettapedia/OSLF/Framework/WMCalculusContextClosure.lean}.}
+
+The calculus is sound for a world model of every axis: under a relation
+environment whose rows denote related values, every step and every run, at
+any contextual depth, preserves the denotation of the term it rewrites.  The
+rules as they stood before their premises were added are kept as negative
+controls; a singleton refutation, for example, read zero evidence where the
+law gives one observation against.%
+\footnote{Formalized in
+\codepath{Mettapedia/OSLF/Framework/WMCalculusDenotationalSoundness.lean}
+and \codepath{Mettapedia/OSLF/Framework/WMCalculusCounterexamples.lean}.}
 
 The congruence infrastructure enables multi-step decomposition under
 context.  For example, the term

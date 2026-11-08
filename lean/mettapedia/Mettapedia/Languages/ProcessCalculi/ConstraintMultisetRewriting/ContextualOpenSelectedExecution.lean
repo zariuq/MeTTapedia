@@ -96,7 +96,7 @@ theorem open_captured (scope : Nat) (value : Term (signature S before.declaratio
     ContextualFreshening.termAt locals before.declarations scope
         (instantiate (ContextualSelectionViews.capturedSource locals before.declarations) value) =
       instantiate (ContextualSelectionViews.capturedTarget locals before.declarations) value :=
-  (ContextualStoredRows.viewAt_eq_freshening locals before.declarations scope (.live value)).symm
+  (ContextualStoredRows.viewAt_eq_freshening locals before.declarations scope (.shared value)).symm
 
 omit [DecidableEq Local] [DecidableEq S.Srt] [∀ result, DecidableEq (S.Op result)] in
 theorem taken_view (interaction : Interaction before) (position : Fin interaction.taken.length) :
@@ -128,11 +128,15 @@ theorem actual_views (interaction : Interaction before) :
   · rw [show (ContextualActivatedStep.prepared locals before.declarations before.occupied interaction.selection interaction.rule before.inventory.rows).taken =
         fun position => instantiate (ContextualSelectionViews.capturedTarget locals before.declarations) (interaction.label (interaction.taken.get position))
       from funext interaction.taken_view]
-    exact List.ofFn_getElem_eq_map interaction.taken _
+    simpa only [List.get_eq_getElem, Function.comp_def] using
+      (List.ofFn_getElem_eq_map interaction.taken
+        (instantiate (ContextualSelectionViews.capturedTarget locals before.declarations) ∘ interaction.label))
   · rw [show (ContextualActivatedStep.prepared locals before.declarations before.occupied interaction.selection interaction.rule before.inventory.rows).read =
         fun position => instantiate (ContextualSelectionViews.capturedTarget locals before.declarations) (interaction.label (interaction.read.get position))
       from funext interaction.read_view]
-    exact List.ofFn_getElem_eq_map interaction.read _
+    simpa only [List.get_eq_getElem, Function.comp_def] using
+      (List.ofFn_getElem_eq_map interaction.read
+        (instantiate (ContextualSelectionViews.capturedTarget locals before.declarations) ∘ interaction.label))
 
 omit [DecidableEq O] [DecidableEq Local] [DecidableEq S.Srt] [∀ result, DecidableEq (S.Op result)] in
 private theorem use_same {V : Type} {declaration : V → MetaArity S}
@@ -140,7 +144,10 @@ private theorem use_same {V : Type} {declaration : V → MetaArity S}
     ContextualActivatedStep.useEquations values values = termDiagonals values := by
   induction values with
   | nil => rfl
-  | cons head tail earlier => change (head, head) :: _ = (head, head) :: _; rw [earlier]
+  | cons head tail earlier =>
+      change (head, head) :: ContextualActivatedStep.useEquations tail tail =
+        (head, head) :: termDiagonals tail
+      exact congrArg (List.cons (head, head)) earlier
 
 omit [DecidableEq Local] [DecidableEq S.Srt] [∀ result, DecidableEq (S.Op result)] in
 theorem problem_is_complete_diagonals (interaction : Interaction before)
@@ -167,7 +174,6 @@ theorem problem_is_complete_diagonals (interaction : Interaction before)
   change ContextualFrameUnifier.mapProblem _ before.inventory.configuration.equations ++ _ ++ _ ++ [] = _
   rw [incoming, map_termDiagonals]
   simp only [activeTerms, terms, termDiagonals, List.map_append, List.map_map, List.append_nil]
-  rfl
 
 def prepared (interaction : Interaction before) (prior : List (Term (signature S before.declarations) Γ sort))
     (incoming : before.inventory.configuration.equations = termDiagonals prior) : Prepared locals before where

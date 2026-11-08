@@ -2,10 +2,10 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualFrameControls
 
 /-!
-# Repeated physical reads, private instances and live aliases
+# Repeated physical reads, private instances and shared aliases
 
 Two ports may read one schematic row at different instances. A captured
-live variable instead stays linked across both ports. Repeated occurrences
+shared variable instead stays linked across both ports. Repeated occurrences
 of a schema variable within one whole row stay linked as well; freshening
 separate holes would accept an invalid mixed instance.
 -/
@@ -47,7 +47,7 @@ def universalRow : RawTerm := p privateVariable
 def repeatedRow : RawTerm := pair privateVariable privateVariable
 
 def sharedValue : Term (signature base captures) [] () := generator captures 0
-def liveRow : RawTerm :=
+def sharedRow : RawTerm :=
   instantiate (capturedSource locals captures) (p sharedValue)
 
 def selection : Selection Nat := ⟨[], [7, 7], [99]⟩
@@ -61,7 +61,7 @@ def rule : RuleInstance RawTerm :=
   ⟨[], [p rawA, p rawB], [(privateVariable, rawA)], [.equal privateVariable rawA], [universalRow]⟩
 def prepared := prepare locals captures occupied selection rule (fun _ => universalRow)
 def repeated := prepare locals captures occupied selection rule (fun _ => repeatedRow)
-def live := prepare locals captures occupied selection rule (fun _ => liveRow)
+def shared := prepare locals captures occupied selection rule (fun _ => sharedRow)
 
 def split : Assignment active active
   | .inl name =>
@@ -109,8 +109,8 @@ theorem the_retained_check_uses_the_same_rule_local :
       .equal (generator active (.inl (ScopedVar.at 8 0))) (atom active) := by
   with_unfolding_all rfl
 
-theorem live_shared_variables_do_not_get_a_new_identity_per_read : live.read first = live.read second :=
-  live_value_does_not_change_between_ports locals captures occupied firstPort secondPort (p sharedValue)
+theorem shared_variables_do_not_get_a_new_identity_per_read : shared.read first = shared.read second :=
+  shared_value_does_not_change_between_ports locals captures occupied firstPort secondPort (p sharedValue)
 
 theorem distinct_ground_instances_are_unequal : p a ≠ p b := by
   intro same
@@ -120,12 +120,12 @@ theorem distinct_ground_instances_are_unequal : p a ≠ p b := by
   change 1 = 3 at sizes
   omega
 
-theorem no_assignment_can_treat_a_live_shared_row_as_two_private_instances
+theorem no_assignment_can_treat_a_shared_row_as_two_private_instances
     (candidate : Assignment active active) :
-    ¬ (instantiate candidate (live.read first) = p a ∧
-      instantiate candidate (live.read second) = p b) := by
+    ¬ (instantiate candidate (shared.read first) = p a ∧
+      instantiate candidate (shared.read second) = p b) := by
   rintro ⟨one, two⟩
-  rw [live_shared_variables_do_not_get_a_new_identity_per_read] at one
+  rw [shared_variables_do_not_get_a_new_identity_per_read] at one
   exact distinct_ground_instances_are_unequal (one.symm.trans two)
 
 theorem a_whole_row_keeps_both_occurrences_of_one_schema_variable_linked

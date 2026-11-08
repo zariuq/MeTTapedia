@@ -114,7 +114,7 @@ def goal (allocation : Allocation) (source : SourceTerm) : Lower CHR.Goal := do
     | some ("is", [.var sourceVar, right]) =>
         let some index := index? allocation sourceVar | .error "assignment variable is outside its rule scope"
         pure (.assign index (← expression allocation right))
-    | some ("is", _) => .error "C0 assignments require a variable on the left of is"
+    | some ("is", [_, _]) => .error "C0 assignments require a variable on the left of is"
     | _ => CHR.Goal.tell <$> head allocation source
 
 def goals (allocation : Allocation) (source : SourceTerm) : Lower (List CHR.Goal) :=
@@ -169,6 +169,11 @@ def form (ordinal : Nat) (source : SourceTerm) : Lower Form := do
       | some ("chr_option", [mode, value]) =>
           if mode = SourceSignature.atom "optimize" ∧ value = SourceSignature.atom "off" then pure .metadata
           else .error "C0 uses its declared refined execution profile"
+      | some ("set_prolog_flag", [flag, mode]) =>
+          if flag = SourceSignature.atom "double_quotes" ∧ mode = SourceSignature.atom "atom" then pure .metadata
+          else if flag = SourceSignature.atom "double_quotes" then
+            .error "C0 reads double-quoted text as atoms; other double_quotes modes need value kinds C0 does not have"
+          else .error "unsupported C0 source flag"
       | _ => .error "unsupported C0 source directive"
   | some ("?-", [query]) => Form.query <$> (conjunction query).filterMapM fun source => do
       if source = SourceSignature.atom "true" then pure none else some <$> groundConstraint source

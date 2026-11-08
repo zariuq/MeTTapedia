@@ -42,4 +42,13 @@ theorem producer_existence_cannot_replace_source_admission :
   obtain ⟨publication, _budget⟩ := the_binding_producer_still_executes ∅ 0
   exact source_guard_refuses (comparison.mpr ⟨publication⟩)
 
+/-- The attached queries refuse the same constructed firing at every budget. -/
+theorem attached_queries_refuse_the_firing (occupied : Finset Nat) (fuel : Nat) :
+    ¬ ∃ observed : ContextualPredicateQueryAdmission.WithQueries source.native.guardNativeBank
+        (source.native.nativeBindingState occupied),
+      observed.firing.rule = source.producer.rule ∧ observed.firing.selection = source.native.bindingSelection ∧
+        observed.firing.outputs = source.producer.outputs occupied ∧ observed.firing.reusable = source.producerReusable ∧
+        observed.firing.fuel = fuel ∧ observed.queries = source.producer.queries occupied :=
+  fun native => source_guard_refuses ((source.producer.source_iff_native_body_admission occupied fuel).mpr native)
+
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualConditionalTemplateNativeGuardBoundaryControls

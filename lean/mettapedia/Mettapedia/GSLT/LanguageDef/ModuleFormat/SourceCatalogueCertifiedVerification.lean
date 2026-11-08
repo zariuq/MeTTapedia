@@ -18,10 +18,10 @@ open ClassAwareNativeForestFamilyWitness ClassAwareNativeForestQualification
 open ClassAwareNativeForestFamilyCompleteness ClassAwareNativeForestReachabilityFrontier
 open ClassAwareNativeForestParserCompleteness
 
-/-- Worklist steps and chart rounds granted for an allowance. A chart stops at
-its first fixed point, so a generous round bound costs nothing when the
-warm-started chart converges early. -/
-def fuel (rounds : Nat) : Nat := 65536 * (rounds + 1)
+/-- Worklist events and chart rounds granted for an allowance. The closure
+stops when its worklist empties and the chart at its first fixed point, so a
+generous bound costs nothing on inputs that finish early. -/
+def fuel (rounds : Nat) : Nat := 4194304 * (rounds + 1)
 def chartRounds (rounds : Nat) : Nat := 1024 * (rounds + 1)
 
 def complete? (spec : Portable.SyntaxDescription) (input : String)
@@ -117,18 +117,115 @@ theorem catalogue?_eq (spec : Portable.SyntaxDescription) (filters : List Source
   unfold catalogue? SourceCatalogue.validate?
   simp only [validateExactFamilyRepresentationFrontier_eq, ClassAwareForestCatalogueIndexed.validateIndexed?_eq]
 
+/-! ### Admission stages
+
+Each stage either refuses, stays pending, or hands its result to the rest of
+admission. Later stages run only when the earlier ones pass. -/
+
+def afterInventory (resolved : Option Inventory) (rest : Inventory → Option Bool) : Option Bool :=
+  match resolved with
+  | none => some false
+  | some inventory => rest inventory
+
+def afterRepresentation (represented : Bool) (rest : Unit → Option Bool) : Option Bool :=
+  if represented then rest () else some false
+
+def afterCertificates (certified : Option (List ClassAwareParserPackCertificate.Certificate))
+    (rest : List ClassAwareParserPackCertificate.Certificate → Option Bool) :
+    Option Bool :=
+  match certified with
+  | none => some false
+  | some native => rest native
+
+def afterCoverage (covered : Option Bool) (rest : Unit → Option Bool) : Option Bool :=
+  match covered with
+  | none => none
+  | some false => some false
+  | some true => rest ()
+
+theorem afterInventory_true {resolved : Option Inventory} {rest : Inventory → Option Bool}
+    (accepted : afterInventory resolved rest = some true) :
+    ∃ inventory, resolved = some inventory ∧ rest inventory = some true := by
+  cases resolved with
+  | none => simp [afterInventory] at accepted
+  | some inventory => exact ⟨inventory, rfl, accepted⟩
+
+theorem afterRepresentation_true {represented : Bool} {rest : Unit → Option Bool}
+    (accepted : afterRepresentation represented rest = some true) :
+    represented = true ∧ rest () = some true := by
+  cases represented with
+  | false => simp [afterRepresentation] at accepted
+  | true => exact ⟨rfl, accepted⟩
+
+theorem afterCertificates_true {certified : Option (List ClassAwareParserPackCertificate.Certificate)}
+    {rest : List ClassAwareParserPackCertificate.Certificate → Option Bool}
+    (accepted : afterCertificates certified rest = some true) :
+    ∃ native, certified = some native ∧ rest native = some true := by
+  cases certified with
+  | none => simp [afterCertificates] at accepted
+  | some native => exact ⟨native, rfl, accepted⟩
+
+theorem afterCoverage_true {covered : Option Bool} {rest : Unit → Option Bool}
+    (accepted : afterCoverage covered rest = some true) :
+    covered = some true ∧ rest () = some true := by
+  cases covered with
+  | none => simp [afterCoverage] at accepted
+  | some value =>
+    cases value with
+    | false => simp [afterCoverage] at accepted
+    | true => exact ⟨rfl, accepted⟩
+
+/-- The shared stages of admission once the forest view is decoded: the
+representation check, packet certificates and decoded families are computed
+once and serve both the coverage and the catalogue checks. -/
+def admitView? (spec : Portable.SyntaxDescription) (filters : List SourceSyntax.FamilyFilter)
+    (plan : ClassAwareParserPackCorrespondence.CompiledParserPackPlan)
+    (table : ClassAwareNativeForestIdentityWire.Snapshot)
+    (view : ClassAwareNativeForestWire.NativeForestView) (packets : List SourcePacket.Packet)
+    (rounds : Nat) : Option Bool :=
+  afterInventory (table.resolveInventory? plan) fun inventory =>
+  afterRepresentation (validateExactFamilyRepresentationFrontier view inventory spec.profile plan) fun _ =>
+  afterCertificates (SourceCatalogue.certificates? plan view.codepoints packets) fun native =>
+  let decoded := decodedForestData view inventory spec.profile
+  afterCoverage (ClassAwareChartCertificate.coverageAt? spec.profile plan view.codepoints decoded
+      (fuel rounds) (chartRounds rounds)) fun _ =>
+  ClassAwareForestCatalogueIndexed.validateIndexed? decoded
+    (SourcePacketSelection.allows filters view.codepoints)
+    ⟨plan.lexical.startSort, 0, view.codepoints.length⟩ (chartRounds rounds) native
+
+theorem admitView?_true {spec : Portable.SyntaxDescription} {filters : List SourceSyntax.FamilyFilter}
+    {plan : ClassAwareParserPackCorrespondence.CompiledParserPackPlan}
+    {table : ClassAwareNativeForestIdentityWire.Snapshot}
+    {view : ClassAwareNativeForestWire.NativeForestView} {packets : List SourcePacket.Packet}
+    {rounds : Nat} (accepted : admitView? spec filters plan table view packets rounds = some true) :
+    ∃ inventory, table.resolveInventory? plan = some inventory ∧
+      validateExactFamilyRepresentationFrontier view inventory spec.profile plan = true ∧
+      ∃ native, SourceCatalogue.certificates? plan view.codepoints packets = some native ∧
+        ClassAwareChartCertificate.coverageAt? spec.profile plan view.codepoints
+          (decodedForestData view inventory spec.profile) (fuel rounds) (chartRounds rounds) = some true ∧
+        ClassAwareForestCatalogueIndexed.validateIndexed? (decodedForestData view inventory spec.profile)
+          (SourcePacketSelection.allows filters view.codepoints)
+          ⟨plan.lexical.startSort, 0, view.codepoints.length⟩ (chartRounds rounds) native = some true := by
+  obtain ⟨inventory, resolved, accepted⟩ := afterInventory_true accepted
+  obtain ⟨represented, accepted⟩ := afterRepresentation_true accepted
+  obtain ⟨native, certified, accepted⟩ := afterCertificates_true accepted
+  obtain ⟨covered, accepted⟩ := afterCoverage_true accepted
+  exact ⟨inventory, resolved, represented, native, certified, covered, accepted⟩
+
+/-- Admission in one pass, with the checks and their order of `check`,
+`complete?` and `catalogue?`. -/
 def verify? (spec : Portable.SyntaxDescription) (filters : List SourceSyntax.FamilyFilter)
     (input : String) (forest identity : List UInt8) (packets : List SourcePacket.Packet)
     (rounds : Nat) : Option Bool :=
-  if !check spec input forest identity then some false else
-    match SourceSyntaxExport.plan? spec with
+  match SourceSyntaxExport.plan? spec, ClassAwareNativeForestWire.decodeSnapshot? forest,
+      ClassAwareNativeForestIdentityWire.decodeSnapshot? identity with
+  | some plan, some snapshot, some table =>
+    match snapshot.completedView? with
     | none => some false
-    | some plan =>
-      if (SourceCatalogue.certificates? plan (input.toList.map Char.toNat) packets).isNone then some false else
-        match complete? spec input forest identity rounds with
-        | none => none
-        | some false => some false
-        | some true => catalogue? spec filters input forest identity packets (chartRounds rounds)
+    | some view =>
+      if view.codepoints != input.toList.map Char.toNat then some false
+      else admitView? spec filters plan table view packets rounds
+  | _, _, _ => some false
 
 theorem verify?_sound (spec : Portable.SyntaxDescription) (filters : List SourceSyntax.FamilyFilter)
     (input : String) (forest identity : List UInt8) (packets : List SourcePacket.Packet) (rounds : Nat)
@@ -137,19 +234,41 @@ theorem verify?_sound (spec : Portable.SyntaxDescription) (filters : List Source
       SourceCatalogue.validate? spec filters input forest identity packets (chartRounds rounds) = some true := by
   unfold verify? at verified
   split at verified
-  · cases verified
-  · cases plan : SourceSyntaxExport.plan? spec with
-    | none => simp [plan] at verified
-    | some plan =>
-      simp only [plan] at verified
+  · rename_i plan snapshot table hp hf hi
+    split at verified
+    · exact absurd verified (by simp)
+    · rename_i view hv
       split at verified
-      · cases verified
-      · cases complete : complete? spec input forest identity rounds with
-        | none => simp [complete] at verified
-        | some result =>
-          cases result with
-          | false => simp [complete] at verified
-          | true => exact ⟨rfl, by simpa only [complete, catalogue?_eq] using verified⟩
+      · exact absurd verified (by simp)
+      · rename_i matched
+        have same : view.codepoints = input.toList.map Char.toNat := by
+          simpa [bne_iff_ne] using matched
+        obtain ⟨inventory, resolved, represented, native, certified, covered, catalogued⟩ :=
+          admitView?_true verified
+        constructor
+        · unfold complete?
+          rw [hp, hf, hi]
+          dsimp only
+          rw [hv]
+          dsimp only
+          rw [if_pos (by simp [same])]
+          unfold ClassAwareChartCertificate.validate?
+          rw [resolved]
+          dsimp only
+          rw [if_pos represented]
+          exact covered
+        · rw [← catalogue?_eq]
+          unfold catalogue?
+          rw [hp, hf, hi]
+          simp only [Option.bind_eq_bind, Option.bind_some]
+          rw [hv]
+          simp only [Option.bind_some]
+          rw [if_neg (by simp [same]), resolved]
+          simp only [Option.bind_some]
+          rw [if_neg (by simp [represented]), certified]
+          simp only [Option.bind_some]
+          exact catalogued
+  · exact absurd verified (by simp)
 
 #print axioms complete?_sound
 #print axioms verify?_sound

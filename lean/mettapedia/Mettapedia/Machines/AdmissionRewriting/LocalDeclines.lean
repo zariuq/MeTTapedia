@@ -35,6 +35,24 @@ This file proves:
 * `eval_guard_neutral`: a guard declaration that agrees with the old function on integer
   arguments does not change the trace of a program whose calls of that head all take
   integer atoms: redeclaring `+` over numbers is answer-neutral on numeric programs.
+
+**Faithful costs.**  `localCost` is the per-step price list: the cost of a run whose
+every re-entry succeeds, with free hand-overs (`localCostRun_eq_localCost`), so the cost
+theorems above are theorems of that run.  `localCostRun` prices the transitions the
+tiered run performs, refused re-entries included:
+* `localCostRun_le_wholeCost`: at most the whole-graph cost plus the dearest hand-over at
+  each declined step the run reaches (`localCostRun_le_wholeCost_free`: at most the
+  whole-graph cost when hand-overs are free);
+* `localCostRun_lt_wholeCost`: strictly cheaper on the cliff families, whatever
+  hand-overs cost, since a run whose executed steps are all admitted makes none;
+* `localCostRun_neutral_unexecuted`: a declaration of a head the run never executes
+  leaves the faithful cost unchanged.
+`leastLocalCost` is the least faithful cost of the tier that chooses (`leastCost`): never
+above refusing the graph, whatever hand-overs cost (`leastLocalCost_le_wholeCost`), and
+monotone in declarations up to their checks (`leastLocalCost_type_monotone`).  The forced
+tier is not monotone once hand-overs have prices
+(`TierDeoptimization.Controls.forced_not_monotone`), so `type_monotone` holds of the
+per-step price list and of the tier that chooses, not of the forced run.
 -/
 
 set_option autoImplicit false
@@ -279,6 +297,277 @@ theorem contagious_not_monotone [DecidableEq H] (declOK : Decls H Decl → Bool)
         exact fun k hk => hnot k (by simp [hk])
       have := ih (fun k hk => hnot k (by simp [hk])) (fun k hk => hle k (by simp [hk])) hf' hj'
       omega
+
+/-! ## The faithful cost of local declines
+
+`localCost` is the per-step price list of `TierDeoptimization.costTiered`: the cost of a run
+whose every re-entry succeeds, with free hand-overs (`localCostRun_eq_localCost`).
+`localCostRun` prices the transitions the tiered run performs, refused re-entries
+included, and `leastLocalCost` is the least such cost of the tier that chooses. -/
+
+/-- Prices under per-site admission: a compiled site pays its declaration's checks. -/
+def SiteAdmission.prices (p : Prices ι) (Γd : Decls H Decl) : Prices ι :=
+  { p with fast := A.cost p.fast Γd }
+
+/-- The faithful cost of a run under per-site admission. -/
+def localCostRun (E : Engines ι σf σg) (p : Prices ι) (Γd : Decls H Decl) (is : List ι)
+    (s : σf) : ℕ :=
+  costRun (tierOf E (A.adm Γd)) (A.prices p Γd) is s
+
+/-- With free hand-overs and no refused re-entry, the faithful cost is `localCost`. -/
+theorem localCostRun_eq_localCost (E : Engines ι σf σg) (p : Prices ι) (Γd : Decls H Decl)
+    (is : List ι) (s : σf) (hfree : p.Free)
+    (hnr : Event.refused ∉ events (tierOf E (A.adm Γd)) is s) :
+    localCostRun A E p Γd is s = localCost A E p.fast p.gen Γd is :=
+  costRun_eq_costTiered _ (A.prices p Γd) ⟨hfree.1, hfree.2.1, hfree.2.2⟩ is s hnr
+
+theorem tierOf_all_supported (E : Engines ι σf σg) (adm : ι → Bool) (is : List ι)
+    (h : ∀ i ∈ is, adm i = true) : is.all (supported (tierOf E adm)) = true := by
+  rw [List.all_eq_true]
+  intro i hi
+  rw [supported_tierOf]
+  exact h i hi
+
+/-- **Local declines against refusing the graph, faithfully**: at most the whole-graph
+cost plus the dearest hand-over at each declined step the run reaches. -/
+theorem localCostRun_le_wholeCost (E : Engines ι σf σg) (declOK : Decls H Decl → Bool)
+    (sites : List ι) (p : Prices ι) (Γd : Decls H Decl)
+    (hle : ∀ i, A.adm Γd i = true → A.cost p.fast Γd i ≤ p.gen i) (is : List ι) (s : σf)
+    (hsub : ∀ i ∈ is, i ∈ sites) :
+    localCostRun A E p Γd is s ≤
+      wholeCost A declOK sites p.fast p.gen Γd is +
+        p.handOver * unsupportedCount (tierOf E (A.adm Γd)) is := by
+  unfold wholeCost localCostRun
+  split
+  · next h =>
+    simp only [Bool.and_eq_true, List.all_eq_true] at h
+    rw [costRun_all_supported _ _ is s (tierOf_all_supported E _ is fun i hi => h.2 i (hsub i hi))]
+    simp only [SiteAdmission.prices]
+    omega
+  · have := costRun_le_gen_add (tierOf E (A.adm Γd)) (A.prices p Γd)
+      (fun i hi => by rw [supported_tierOf] at hi; exact hle i hi) is s
+    simpa [SiteAdmission.prices, Prices.handOver] using this
+
+/-- With free hand-overs, local declines never cost more than refusing the graph. -/
+theorem localCostRun_le_wholeCost_free (E : Engines ι σf σg) (declOK : Decls H Decl → Bool)
+    (sites : List ι) (p : Prices ι) (Γd : Decls H Decl) (hfree : p.Free)
+    (hle : ∀ i, A.adm Γd i = true → A.cost p.fast Γd i ≤ p.gen i) (is : List ι) (s : σf)
+    (hsub : ∀ i ∈ is, i ∈ sites) :
+    localCostRun A E p Γd is s ≤ wholeCost A declOK sites p.fast p.gen Γd is := by
+  have := localCostRun_le_wholeCost A E declOK sites p Γd hle is s hsub
+  rwa [p.handOver_free hfree, zero_mul, add_zero] at this
+
+/-- **The cliff, faithfully.**  When the graph is refused although every executed step is
+admitted, and one executed step is strictly cheaper fast, local declines are strictly
+cheaper, whatever hand-overs cost: such a run makes none. -/
+theorem localCostRun_lt_wholeCost (E : Engines ι σf σg) (declOK : Decls H Decl → Bool)
+    (sites : List ι) (p : Prices ι) (Γd : Decls H Decl)
+    (hle : ∀ i, A.adm Γd i = true → A.cost p.fast Γd i ≤ p.gen i) (is : List ι) (s : σf)
+    (hrefused : (declOK Γd && sites.all (A.adm Γd)) = false)
+    (hrun : ∀ i ∈ is, A.adm Γd i = true)
+    (hcheap : ∃ j ∈ is, A.cost p.fast Γd j < p.gen j) :
+    localCostRun A E p Γd is s < wholeCost A declOK sites p.fast p.gen Γd is := by
+  have heq : localCostRun A E p Γd is s = localCost A E p.fast p.gen Γd is := by
+    unfold localCostRun
+    rw [costRun_all_supported _ _ is s (tierOf_all_supported E _ is hrun), localCost_eq]
+    simp only [SiteAdmission.prices]
+    congr 1
+    exact List.map_congr_left fun i hi => by simp [hrun i hi]
+  rw [heq]
+  exact localCost_lt_wholeCost A E declOK sites p.fast p.gen Γd hle is hrefused hrun hcheap
+
+theorem events_tierOf_congr (E : Engines ι σf σg) (adm adm' : ι → Bool) :
+    ∀ (is : List ι) (s : σf), (∀ i ∈ is, adm i = adm' i) →
+      events (tierOf E adm) is s = events (tierOf E adm') is s
+  | [], _, _ => rfl
+  | i :: is, s, h => by
+    have hi := h i (by simp)
+    have ih := fun s => events_tierOf_congr E adm adm' is s (fun j hj => h j (by simp [hj]))
+    by_cases ha : adm i = true
+    · have hf : (tierOf E adm).fast i = some (E.fast i) := by simp [tierOf, ha]
+      have hf' : (tierOf E adm').fast i = some (E.fast i) := by simp [tierOf, ← hi, ha]
+      rw [events_cons_fast hf, events_cons_fast hf', ih]
+    · simp only [Bool.not_eq_true] at ha
+      have hf : (tierOf E adm).fast i = none := by simp [tierOf, ha]
+      have hf' : (tierOf E adm').fast i = none := by simp [tierOf, ← hi, ha]
+      cases hd : E.dec (E.gen i (E.enc s)) with
+      | some s' =>
+        rw [events_cons_reenter hf hd, events_cons_reenter hf' hd, ih]
+      | none =>
+        rw [events_cons_refused hf hd, events_cons_refused hf' hd]
+
+theorem fast_mem_events (T : Tiered ι σf σg) :
+    ∀ (is : List ι) (s : σf) (i : ι), Event.fast i ∈ events T is s → i ∈ is
+  | [], _, _, h => by simp [events] at h
+  | j :: is, s, i, h => by
+    cases hf : T.fast j with
+    | some f =>
+      rw [events_cons_fast hf] at h
+      rcases List.mem_cons.mp h with he | h'
+      · cases he; simp
+      · exact List.mem_cons_of_mem _ (fast_mem_events T is (f s) i h')
+    | none =>
+      cases hd : T.dec (T.gen j (T.enc s)) with
+      | some s' =>
+        rw [events_cons_reenter hf hd] at h
+        have h' : Event.fast i ∈ events T is s' := by simpa using h
+        exact List.mem_cons_of_mem _ (fast_mem_events T is s' i h')
+      | none =>
+        rw [events_cons_refused hf hd] at h
+        simp [eventsGen] at h
+
+/-- A declaration of a head the run never executes leaves the faithful cost unchanged. -/
+theorem localCostRun_neutral_unexecuted [DecidableEq H] (E : Engines ι σf σg) (p : Prices ι)
+    (Γd : Decls H Decl) (f : H) (od : Option Decl) (is : List ι) (s : σf)
+    (hnot : ∀ i ∈ is, A.head i ≠ f) :
+    localCostRun A E p (Function.update Γd f od) is s = localCostRun A E p Γd is s := by
+  have hΓ : ∀ i ∈ is, Function.update Γd f od (A.head i) = Γd (A.head i) := fun i hi => by
+    simp [hnot i hi]
+  unfold localCostRun costRun
+  rw [events_tierOf_congr E _ (A.adm Γd) is s (fun i hi => by
+    unfold SiteAdmission.adm; rw [hΓ i hi])]
+  apply Prices.cost_congr
+  intro e he
+  cases e with
+  | fast i =>
+    have hi := fast_mem_events _ is s i he
+    simp only [Prices.price, SiteAdmission.prices, SiteAdmission.cost, hΓ i hi]
+  | gen i => rfl
+  | deopt => rfl
+  | reenter => rfl
+  | refused => rfl
+
+/-- The least faithful cost of the tier that chooses, under per-site admission. -/
+noncomputable def leastLocalCost (E : Engines ι σf σg) (p : Prices ι) (Γd : Decls H Decl)
+    (is : List ι) (s : σf) : ℕ :=
+  leastCost (tierOf E (A.adm Γd)) (A.prices p Γd) is s
+
+theorem tierOf_extends (E : Engines ι σf σg) (adm adm' : ι → Bool)
+    (h : ∀ i, adm i = true → adm' i = true) : Extends (tierOf E adm) (tierOf E adm') where
+  gen := rfl
+  enc := rfl
+  fast := by
+    intro i f hf
+    by_cases ha : adm i = true
+    · simp only [tierOf, ha, if_true, Option.some.injEq] at hf
+      simp [tierOf, h i ha, hf]
+    · simp [tierOf, ha] at hf
+  dec := fun _ _ h => h
+
+/-- The tier that chooses never costs more than refusing the graph, whatever hand-overs
+cost. -/
+theorem leastLocalCost_le_wholeCost (E : Engines ι σf σg) (declOK : Decls H Decl → Bool)
+    (sites : List ι) (p : Prices ι) (Γd : Decls H Decl)
+    (hle : ∀ i, A.adm Γd i = true → A.cost p.fast Γd i ≤ p.gen i) (is : List ι) (s : σf)
+    (hsub : ∀ i ∈ is, i ∈ sites) :
+    leastLocalCost A E p Γd is s ≤ wholeCost A declOK sites p.fast p.gen Γd is := by
+  have h1 := leastCost_le_costDecline (tierOf E (A.adm Γd)) (A.prices p Γd) is s
+  refine h1.trans ?_
+  unfold costDecline wholeCost
+  simp only [SiteAdmission.prices]
+  split
+  · next hall =>
+    split
+    · exact le_rfl
+    · apply List.sum_le_sum
+      intro i hi
+      rw [List.all_eq_true] at hall
+      have := hall i hi
+      rw [supported_tierOf] at this
+      exact hle i this
+  · split
+    · next hw =>
+      exfalso
+      simp only [Bool.and_eq_true, List.all_eq_true] at hw
+      rename_i hall
+      exact hall (tierOf_all_supported E _ is fun i hi => hw.2 i (hsub i hi))
+    · exact le_rfl
+
+theorem sum_map_le_of_sublist {α : Type} (w : α → ℕ) {l l' : List α} (h : l'.Sublist l) :
+    (l'.map w).sum ≤ (l.map w).sum := by
+  induction h with
+  | slnil => exact le_rfl
+  | cons a _ ih => simp only [List.map_cons, List.sum_cons]; omega
+  | cons_cons a _ ih => simp only [List.map_cons, List.sum_cons]; omega
+
+theorem sum_map_ite_filter {α : Type} (P : α → Bool) (w : α → ℕ) :
+    ∀ l : List α, (l.map fun i => if P i then w i else 0).sum = ((l.filter P).map w).sum
+  | [] => rfl
+  | a :: l => by
+    by_cases h : P a = true
+    · simp [h, sum_map_ite_filter P w l]
+    · simp only [Bool.not_eq_true] at h
+      simp [h, sum_map_ite_filter P w l]
+
+/-- The extra price of a fast step at a site of the declared head. -/
+def extraFast [DecidableEq H] (f : H) (w : ι → ℕ) : Event ι → ℕ
+  | .fast i => if A.head i = f then w i else 0
+  | _ => 0
+
+theorem sum_extraFast [DecidableEq H] (f : H) (w : ι → ℕ) :
+    ∀ es : List (Event ι), (es.map (extraFast A f w)).sum =
+      ((es.filterMap Event.fastOf).map fun i => if A.head i = f then w i else 0).sum
+  | [] => rfl
+  | e :: es => by
+    have ih := sum_extraFast f w es
+    cases e with
+    | fast i => simp [extraFast, Event.fastOf, ih]
+    | gen i => simp only [List.map_cons, List.sum_cons, extraFast, List.filterMap_cons,
+        Event.fastOf, ih, zero_add]
+    | deopt => simp only [List.map_cons, List.sum_cons, extraFast, List.filterMap_cons,
+        Event.fastOf, ih, zero_add]
+    | reenter => simp only [List.map_cons, List.sum_cons, extraFast, List.filterMap_cons,
+        Event.fastOf, ih, zero_add]
+    | refused => simp only [List.map_cons, List.sum_cons, extraFast, List.filterMap_cons,
+        Event.fastOf, ih, zero_add]
+
+/-- **Type monotonicity, faithfully, for the tier that chooses.**  A new declaration of `f`,
+under per-site admission that keeps every admitted `f` site admitted, costs at most the
+old least cost plus its checks at the executed `f` sites, whatever hand-overs cost.  (The
+forced tier has no such bound: `TierDeoptimization.Controls.forced_not_monotone`.) -/
+theorem leastLocalCost_type_monotone [DecidableEq H] (E : Engines ι σf σg) (p : Prices ι)
+    (Γd : Decls H Decl) (f : H) (d : Decl) (hnone : Γd f = none)
+    (hcheck : ∀ i, A.check none i = 0)
+    (hext : ∀ i, A.head i = f → A.admit none i = true → A.admit (some d) i = true)
+    (is : List ι) (s : σf) :
+    leastLocalCost A E p (Function.update Γd f (some d)) is s ≤
+      leastLocalCost A E p Γd is s +
+        ((is.filter (fun i => A.head i = f)).map (A.check (some d))).sum := by
+  set Γ' := Function.update Γd f (some d)
+  obtain ⟨es, g, h, hc, -⟩ := leastCost_attained (tierOf E (A.adm Γd)) (A.prices p Γd) is s
+  have hx : Extends (tierOf E (A.adm Γd)) (tierOf E (A.adm Γ')) :=
+    tierOf_extends E _ _ fun i hi => fast_path_kept A Γd f d hnone hext i hi
+  obtain ⟨es', h', hs⟩ := h.extend hx
+  have hprice : ∀ e, (A.prices p Γ').price e =
+      (A.prices p Γd).price e + extraFast A f (A.check (some d)) e := by
+    intro e
+    cases e with
+    | fast i =>
+      by_cases hf : A.head i = f
+      · simp [Prices.price, SiteAdmission.prices, SiteAdmission.cost, extraFast, Γ', hf,
+          hnone, hcheck]
+      · simp [Prices.price, SiteAdmission.prices, SiteAdmission.cost, extraFast, Γ', hf]
+    | gen i => simp [Prices.price, SiteAdmission.prices, extraFast]
+    | deopt => simp [Prices.price, SiteAdmission.prices, extraFast]
+    | reenter => simp [Prices.price, SiteAdmission.prices, extraFast]
+    | refused => simp [Prices.price, SiteAdmission.prices, extraFast]
+  have hcost : (A.prices p Γ').cost es' =
+      (A.prices p Γd).cost es' + (es'.map (extraFast A f (A.check (some d)))).sum := by
+    have hm : es'.map (A.prices p Γ').price = es'.map (fun e =>
+        (A.prices p Γd).price e + extraFast A f (A.check (some d)) e) :=
+      List.map_congr_left fun e _ => hprice e
+    rw [Prices.cost, hm, List.sum_map_add]
+    rfl
+  have hextra : (es'.map (extraFast A f (A.check (some d)))).sum ≤
+      ((is.filter (fun i => A.head i = f)).map (A.check (some d))).sum := by
+    rw [sum_extraFast, ← sum_map_ite_filter]
+    simp only [decide_eq_true_eq]
+    exact sum_map_le_of_sublist _ h'.fast_sublist
+  have hle1 : leastLocalCost A E p Γ' is s ≤ (A.prices p Γ').cost es' := leastCost_le _ h'
+  have hle2 : (A.prices p Γd).cost es' ≤ (A.prices p Γd).cost es :=
+    (A.prices p Γd).cost_le_of_sublist hs
+  have hc' : (A.prices p Γd).cost es = leastLocalCost A E p Γd is s := hc
+  omega
 
 /-! ## Answer-neutral declarations in the admission fragment -/
 

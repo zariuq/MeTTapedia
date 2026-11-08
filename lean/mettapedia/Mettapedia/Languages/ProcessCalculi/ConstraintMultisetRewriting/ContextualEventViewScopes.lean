@@ -142,11 +142,11 @@ theorem prepared_read_is_the_original_schema_view (occupied : Finset Nat) (event
         (rows ((selections event).read.get port)) :=
   (ContextualStoredRows.viewAt_eq_freshening locals captures _ _).symm
 
-theorem live_read_keeps_its_shared_identity (occupied : Finset Nat) (event : Fin n)
+theorem shared_read_keeps_its_shared_identity (occupied : Finset Nat) (event : Fin n)
     {Γ : Ctx S} {sort : S.Srt}
     (value : Term (signature S captures) Γ sort) (port : Fin (selections event).read.length) :
     ContextualStoredRows.viewAt locals captures
-      (scope selections occupied (readUse selections event port)) (.live value) =
+      (scope selections occupied (readUse selections event port)) (.shared value) =
         instantiate (ContextualSelectionViews.capturedTarget locals captures) value := rfl
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualEventViewScopes

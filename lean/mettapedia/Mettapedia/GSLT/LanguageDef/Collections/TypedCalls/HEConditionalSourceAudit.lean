@@ -1,0 +1,29 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEContextualRangeActivationAudit
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEConditionalSourceInvocation
+
+/-! Audited exact branch capture, complete clause coverage and source invocation.
+This endpoint delivers branch syntax; recursive evaluation and macro lowering remain separate.
+-/
+
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshSyntaxBinding.resolve_fresh
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshSyntaxBinding.ground_substitution
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshSyntaxBinding.ground_nonvariable
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshSyntaxBinding.source_binding
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshSyntaxBinding.bound_read
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshSyntaxBinding.binding_keeps_caller
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshSyntaxBinding.other_stays_fresh
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshSyntaxBinding.prior_binding_read
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshSyntaxBinding.conditional_parameters
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshSyntaxBinding.Controls.retained_branch_marks
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshSyntaxBinding.Controls.erasing_branch_marks_changes_the_value
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEConditionalEquationFrames.query_ground
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEConditionalEquationFrames.selected_frame
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEConditionalEquationFrames.fresh_occurrence
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEConditionalEquationFrames.source_frame
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEConditionalEquationFrames.opposite_clause_refused
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEConditionalSourceFrontier.reached_row
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEConditionalSourceFrontier.complete_singleton
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEConditionalSourceInvocation.source
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEConditionalSourceInvocation.retained_source
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEConditionalSourceInvocation.Range.branch_delivery
+

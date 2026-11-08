@@ -2,6 +2,9 @@ import Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping
 import Mettapedia.Languages.MeTTa.PeTTa.TableReuse
 import Mettapedia.Languages.MeTTa.PeTTa.Answers
 import Mettapedia.Languages.MeTTa.PeTTa.SpaceSemantics
+import Mettapedia.Languages.MeTTa.PeTTa.LibTransform
+import Mettapedia.Languages.MeTTa.PeTTa.LibTransformControls
+import Mettapedia.Languages.MeTTa.PeTTa.LibTransformQuery
 import Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite.Answers
 import Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite.Space
 import Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite.Commands
@@ -81,6 +84,19 @@ profiles and static-checker/code-generation studies have the explicit umbrella
 - `SpaceSemantics`, `Effects`, `StdLib`: reading, programs, ordered selection,
   named spaces, cells and primitives over `OSLFCore.Atom`.
 - `Answers`: ordered Atom values, preserving duplicate occurrences.
+- `LibTransform`: the laws of the PeTTa transform library (`lib_transform_specs`) over
+  ordered stores, structural one-way matching and sequential search with a global store.
+  A proposal is the guide of a kernel match, the atoms it matched; a branch fires its
+  guided sources, so its absences, unique counts and collections are those of the store
+  when it fires. Reads alone answer as `match` does, one firing takes exactly its
+  footprint's takes, the branches are the fold of single firings, `once` fires the first
+  proposal that holds, and `all`/`collect` takes consume every match in one firing.
+  `absent`, `unique` and `collect` of a conjunction range over its joint matches: absent
+  holds iff there is none, unique fires on the one tuple with its parts as footprint,
+  and a take-mode collect keeps the tuples that fit their stored copies and takes every
+  copy of each participating atom.
+  `LibTransformQuery` states reads alone against `SpaceSemantics.query`;
+  `LibTransformControls` has the positive and negative controls.
 - `DeclarativeSpec`: independent transitions and finite whole-program judgments.
 - `Eval`: the executable machine, its adequacy theorem and execution laws.
 - `OperationalGSLT`: the judgment as an OSLF-generating GSLT, with executable

@@ -1,0 +1,2 @@
+# Nat for the indices of Even and Odd, Bool for numerals, False for the control theorem.
+functional-correspondence Nat Bool False

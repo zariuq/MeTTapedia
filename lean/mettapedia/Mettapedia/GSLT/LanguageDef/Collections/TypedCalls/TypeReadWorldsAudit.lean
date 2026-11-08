@@ -1,0 +1,31 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeReadWorlds
+
+/-! # Private-world extension and actual annotation-read audit -/
+
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadWorlds.rename_agrees_on_support
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadWorlds.rename_comp
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadWorlds.rename_inverse
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadWorlds.extend_allocated_family
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadWorlds.retained_term_unchanged
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadWorlds.variables_support
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadWorlds.initial_supported
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadWorlds.supported_readout
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadWorlds.supported_mono
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadWorlds.covered_support
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadWorlds.unify_preserves_support
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadWorlds.firstChoice_preserves_support
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadWorlds.extend_allocated_world
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadWorlds.allocated_firstChoice
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadWorlds.Controls.unequal_histories_are_not_equal_states
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadWorlds.Controls.unequal_histories_keep_caller_and_shared_schema
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadWorlds.Controls.caller_alias_is_supported
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadWorlds.Controls.a_preserved_name_may_still_have_an_observable_alias
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadWorlds.Controls.pretending_the_alias_is_private_breaks_support
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadWorlds.Controls.allocation_cannot_split_a_repeated_schema_variable
+
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeReadWorlds.remember_protects
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeReadWorlds.remember_mapped_subject
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeReadWorlds.annotation_coordinates
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeReadWorlds.annotation_keeps_existing_state
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeReadWorlds.Controls.actual_same_subject_has_different_private_coordinates
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeReadWorlds.Controls.actual_read_extends_the_caller_map

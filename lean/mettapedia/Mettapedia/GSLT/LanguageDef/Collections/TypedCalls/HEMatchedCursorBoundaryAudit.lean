@@ -1,0 +1,30 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEMatchedCursorBoundary
+
+/-! # Matched-only cursor boundary: theorem dependency audit -/
+
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEMatchedCursorBoundary.queryBatches_flatten
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEMatchedCursorBoundary.equationReturns_append
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEMatchedCursorBoundary.scan_exact
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEMatchedCursorBoundary.actual_query_scan
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEMatchedCursorBoundary.scan_split
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEMatchedCursorBoundary.function_signature_declares
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEMatchedCursorBoundary.typed_no_match_handoff
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEMatchedCursorBoundary.typed_closed_iff_matched
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEMatchedCursorBoundary.typed_scan_accepted_has_query
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEMatchedCursorBoundary.typed_scan_eq_offer
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEMatchedCursorBoundary.typed_scan_invocation
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEMatchedCursorBoundary.selected_signature_scan_invocation
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEMatchedCursorBoundary.typed_scan_origin
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEMatchedCursorBoundary.pending_is_not_closed
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEMatchedCursorBoundary.Controls.selected_function_supplies_close_gate
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEMatchedCursorBoundary.Controls.unannotated_head_does_not_invent_declaration
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEMatchedCursorBoundary.Controls.duplicated_producers_close_with_both_occurrences
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEMatchedCursorBoundary.Controls.matching_empty_producer_is_complete
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEMatchedCursorBoundary.Controls.unmatched_typed_hands_off
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEMatchedCursorBoundary.Controls.source_derived_typed_handoff
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEMatchedCursorBoundary.Controls.unmatched_untyped_restores_ready_call
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEMatchedCursorBoundary.Controls.matched_refusal_remains_a_call_value
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEMatchedCursorBoundary.Controls.output_count_cannot_replace_match_flag
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEMatchedCursorBoundary.Controls.a_pending_empty_batch_is_not_exhaustion
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEMatchedCursorBoundary.Controls.fails_mode_preserves_arity_distinction
+

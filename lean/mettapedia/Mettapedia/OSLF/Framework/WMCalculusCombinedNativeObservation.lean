@@ -4,7 +4,7 @@ import Mettapedia.OSLF.PresheafNativeType.InternalLanguage
 import Mathlib.CategoryTheory.Limits.Shapes.FunctorToTypes
 
 /-!
-# Native observation over the guarded overlap-and-scope WM vertex
+# Native observation over the overlap-and-scope WM vertex
 
 The combined authored vertex has its own intrinsically sorted term presheaves.
 Overlap correction and forgetting are natural term operations under simultaneous
@@ -64,7 +64,7 @@ def overlapMergeNat : statePairs ⟶ stateTerms where
     rcases input with ⟨first, second⟩
     rfl
 
-/-- A guarded vertex's overlap factor has a separate sort and respects
+/-- An overlap/scope vertex's overlap factor has a separate sort and respects
 simultaneous substitution in all three arguments. -/
 def overlapFactorNat : overlapInputs ⟶ overlapTerms where
   app X := TypeCat.ofHom (fun input =>
@@ -152,7 +152,7 @@ operations at every syntactic context. -/
 theorem overlap_computes_pointwise (X : (CombinedCtxt)ᵒᵖ)
     (input : overlapInputs.obj X) :
     Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReduces
-      (Mettapedia.OSLF.Framework.WMCalculusLanguageDef.wmExtVertexLanguageDefGuarded
+      (Mettapedia.OSLF.Framework.WMCalculusLanguageDef.wmExtVertexLanguageDef
         Mettapedia.OSLF.Framework.WMCalculusCombinedSortedBoundary.combinedVertex)
       (Mettapedia.GSLT.LanguageDef.BindingSyntax.erase
         (overlapRedexNat.app X input))
@@ -166,7 +166,7 @@ the authored overlap step. -/
 theorem overlap_computes_after_reindexing {X Y : (CombinedCtxt)ᵒᵖ}
     (f : X ⟶ Y) (input : overlapInputs.obj X) :
     Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReduces
-      (Mettapedia.OSLF.Framework.WMCalculusLanguageDef.wmExtVertexLanguageDefGuarded
+      (Mettapedia.OSLF.Framework.WMCalculusLanguageDef.wmExtVertexLanguageDef
         Mettapedia.OSLF.Framework.WMCalculusCombinedSortedBoundary.combinedVertex)
       (Mettapedia.GSLT.LanguageDef.BindingSyntax.erase
         ((evidenceTerms.map f) (overlapRedexNat.app X input)))
@@ -181,7 +181,7 @@ context. It does not require an outside-scope answer. -/
 theorem forget_idempotence_pointwise (X : (CombinedCtxt)ᵒᵖ)
     (input : forgetInputs.obj X) :
     Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReduces
-      (Mettapedia.OSLF.Framework.WMCalculusLanguageDef.wmExtVertexLanguageDefGuarded
+      (Mettapedia.OSLF.Framework.WMCalculusLanguageDef.wmExtVertexLanguageDef
         Mettapedia.OSLF.Framework.WMCalculusCombinedSortedBoundary.combinedVertex)
       (Mettapedia.GSLT.LanguageDef.BindingSyntax.erase
         (forgetIdempotenceRedexNat.app X input))
@@ -189,7 +189,7 @@ theorem forget_idempotence_pointwise (X : (CombinedCtxt)ᵒᵖ)
         (forgetNat.app X input)) := by
   rcases input with ⟨scope, world⟩
   change Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReduces
-    (Mettapedia.OSLF.Framework.WMCalculusLanguageDef.wmExtVertexLanguageDefGuarded
+    (Mettapedia.OSLF.Framework.WMCalculusLanguageDef.wmExtVertexLanguageDef
       Mettapedia.OSLF.Framework.WMCalculusCombinedSortedBoundary.combinedVertex)
     (Mettapedia.OSLF.Framework.WMCalculusLanguageDef.pForget
       (Mettapedia.GSLT.LanguageDef.BindingSyntax.erase scope)
@@ -207,7 +207,7 @@ theorem forget_idempotence_pointwise (X : (CombinedCtxt)ᵒᵖ)
 theorem forget_idempotence_after_reindexing {X Y : (CombinedCtxt)ᵒᵖ}
     (f : X ⟶ Y) (input : forgetInputs.obj X) :
     Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReduces
-      (Mettapedia.OSLF.Framework.WMCalculusLanguageDef.wmExtVertexLanguageDefGuarded
+      (Mettapedia.OSLF.Framework.WMCalculusLanguageDef.wmExtVertexLanguageDef
         Mettapedia.OSLF.Framework.WMCalculusCombinedSortedBoundary.combinedVertex)
       (Mettapedia.GSLT.LanguageDef.BindingSyntax.erase
         ((stateTerms.map f) (forgetIdempotenceRedexNat.app X input)))

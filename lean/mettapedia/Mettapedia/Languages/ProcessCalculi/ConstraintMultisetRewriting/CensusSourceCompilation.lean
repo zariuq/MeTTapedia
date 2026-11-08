@@ -1,4 +1,4 @@
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.CensusAdmission
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.PredicateQueryAdmission
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits.SourceQueries
 
 /-!
@@ -63,9 +63,9 @@ theorem realize_commit (A : SubstitutionAction T S) (label : O → T) (commit : 
     (tells : EquationStore T) (before : Configuration T O)
     (enabled : Enabled label before.present commit)
     (consistent : A.Consistent (before.equations ++ tells)) :
-    CensusAdmission.Valid A label (rule label commit tells)
-        (commit.queries.map CensusAdmission.Query.fixed) before (selection commit) := by
-  apply (CensusAdmission.valid_fixed_iff A label _ _ _ _).mpr
+    PredicateQueryAdmission.Valid A label (rule label commit tells)
+        (commit.queries.map PredicateQueryAdmission.Query.fixed) before (selection commit) := by
+  apply (PredicateQueryAdmission.valid_fixed_iff A label _ _ _ _).mpr
   refine ⟨?_, enabled.queries_hold⟩
   refine ⟨Finset.nodup_toList _, Finset.nodup_toList _, by simp [rule, selection],
     by simp [rule, selection], rfl, ?_, ?_, ?_⟩
@@ -108,8 +108,8 @@ theorem realize_query_row {V : Type uV} {P : Type uP}
     (supply : ∀ (avoid : Finset O) (term : T), ∃ occurrence, occurrence ∉ avoid ∧ label occurrence = term) :
     ∃ commit : Commit O T,
       Sources.IsCommitOf label before.present (Sources.footprintOf row.2) commit ∧
-      CensusAdmission.Valid A label (rule label commit tells)
-        (commit.queries.map CensusAdmission.Query.fixed) before (selection commit) ∧
+      PredicateQueryAdmission.Valid A label (rule label commit tells)
+        (commit.queries.map PredicateQueryAdmission.Query.fixed) before (selection commit) ∧
       ((selection commit).result label (rule label commit tells) before).present = fire before.present commit ∧
       ((rule label commit tells).produce : Multiset T) = (Sources.footprintOf row.2).makes := by
   have scanned : Sources.Query.Complete label before.present (Sources.Query.scanList label contents) := by
@@ -159,8 +159,8 @@ theorem realize_declarative_row {V : Type uV} [DecidableEq V] {P : Type uP}
     (supply : ∀ (avoid : Finset O) (term : T), ∃ occurrence, occurrence ∉ avoid ∧ label occurrence = term) :
     ∃ commit : Commit O T,
       Sources.Fires layer matcher label before.present transform commit ∧
-      CensusAdmission.Valid A label (rule label commit tells)
-        (commit.queries.map CensusAdmission.Query.fixed) before (selection commit) ∧
+      PredicateQueryAdmission.Valid A label (rule label commit tells)
+        (commit.queries.map PredicateQueryAdmission.Query.fixed) before (selection commit) ∧
       commit.taken = (Sources.footprintOf row.2).takes.toFinset ∧
       commit.kept = (Sources.footprintOf row.2).keeps.toFinset ∧
       (∀ query, query ∈ commit.queries ↔ query ∈ (Sources.footprintOf row.2).queries) ∧

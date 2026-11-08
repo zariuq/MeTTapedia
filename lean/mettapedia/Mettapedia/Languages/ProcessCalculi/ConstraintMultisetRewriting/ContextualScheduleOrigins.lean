@@ -4,11 +4,11 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 # Compiled origins for every final conditional row
 
 An origin is retained input data with its capture transport, an ordinary
-schema with its own saved problem, or a live expression. Compilation reads
+schema with its own saved problem, or a shared expression. Compilation reads
 the initial rows and authored production ports; it does not obtain rows
 from the final source world or invoke a source evaluator.
 
-Later information changes a retained or live capture through its explicit
+Later information changes a retained or shared capture through its explicit
 transport. An ordinary schema retains its own problem and declaration
 family. The observation theorem compares the compiled origins with the
 independently updated source rows across an arbitrary admitted body.
@@ -30,18 +30,18 @@ inductive Origin (declaration : V → MetaArity S) (context : Ctx S) (sort : S.S
       (row : Row locals saved context sort) (transport : Assignment saved declaration) : Origin declaration context sort
   | schema {Saved : Type} (saved : Saved → MetaArity S) (problem : ContextualResidual.Problem saved)
       (value : Term (signature S saved) context sort) : Origin declaration context sort
-  | live (value : Term (signature S declaration) context sort) : Origin declaration context sort
+  | shared (value : Term (signature S declaration) context sort) : Origin declaration context sort
 
 def Origin.Instances (candidate : Assignment declaration next) (pattern : Term (signature S next) Γ sort) :
     Origin declaration Γ sort → Prop
   | .retained locals saved row transport => Matches locals saved (Assignment.compose candidate transport) pattern row
   | .schema _ problem value => ContextualPublication.SourceInstances problem value next pattern
-  | .live value => pattern = instantiate candidate value
+  | .shared value => pattern = instantiate candidate value
 
 def Origin.map (change : Assignment declaration later) : Origin declaration Γ sort → Origin later Γ sort
   | .retained locals saved row transport => .retained locals saved row (Assignment.compose change transport)
   | .schema saved problem value => .schema saved problem value
-  | .live value => .live (instantiate change value)
+  | .shared value => .shared (instantiate change value)
 
 theorem Origin.map_instances (origin : Origin declaration Γ sort) (change : Assignment declaration later)
     (candidate : Assignment later next) (pattern : Term (signature S next) Γ sort) :
@@ -52,7 +52,7 @@ theorem Origin.map_instances (origin : Origin declaration Γ sort) (change : Ass
       rw [Assignment.compose_associative]
       rfl
   | schema _ _ _ => rfl
-  | live value =>
+  | shared value =>
       simp only [Origin.map, Origin.Instances, Assignment.instantiate_compose]
 
 theorem retained_origin_instances {Local : Type} (locals : Local → MetaArity S)
@@ -74,7 +74,7 @@ def producedOrigin {Local Query : Type} (locals : Local → MetaArity S)
   if plan.reusable.get ⟨port.val, plan.shape.symm ▸ port.isLt⟩ then
     .schema (family queries locals before.declarations)
       (ContextualClauseSourceState.information queries locals before plan picked) value
-  else .live value
+  else .shared value
 
 theorem produced_origin_instances_of_shape {Local Query : Type} [DecidableEq O] [DecidableEq Local] [DecidableEq Query]
     (locals : Local → MetaArity S) (before : ContextualClauseSourceState.World locals O Γ sort)
@@ -96,7 +96,7 @@ theorem produced_origin_instances_of_shape {Local Query : Type} [DecidableEq O] 
       ⟨ContextualClauseSourceState.information queries locals before plan picked,
         queryView queries locals before.declarations
           (plan.rule.produce.get ⟨port.val, outputs ▸ port.isLt⟩)⟩ pattern).symm
-  · rw [ofStored_matches_iff, ContextualGuardMatching.live_matches_iff]
+  · rw [ofStored_matches_iff, ContextualGuardMatching.shared_matches_iff]
     rfl
 
 theorem produced_origin_instances {Local Query : Type} [DecidableEq O] [DecidableEq Local] [DecidableEq Query]

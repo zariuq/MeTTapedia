@@ -1,0 +1,48 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeScopeRenaming
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeFreshReadEquivalence
+
+/-! # Exact chosen-unifier and type-scope renaming dependencies -/
+
+#print axioms Mettapedia.Logic.LP.UnificationPermutation.transport_apply
+#print axioms Mettapedia.Logic.LP.UnificationPermutation.transport_id
+#print axioms Mettapedia.Logic.LP.UnificationPermutation.transport_comp
+#print axioms Mettapedia.Logic.LP.UnificationPermutation.transport_single
+#print axioms Mettapedia.Logic.LP.UnificationPermutation.occurs_rename
+#print axioms Mettapedia.Logic.LP.UnificationPermutation.equations_apply
+#print axioms Mettapedia.Logic.LP.UnificationPermutation.equations_pairs
+#print axioms Mettapedia.Logic.LP.UnificationPermutation.equations_cons
+#print axioms Mettapedia.Logic.LP.UnificationPermutation.equations_single
+#print axioms Mettapedia.Logic.LP.UnificationPermutation.unifyTotal_transport
+#print axioms Mettapedia.Logic.LP.UnificationPermutation.selected_substitution
+#print axioms Mettapedia.Logic.LP.UnificationPermutation.selected_instance
+#print axioms Mettapedia.Logic.LP.UnificationPermutation.Controls.ordered_elimination_keeps_orientation
+#print axioms Mettapedia.Logic.LP.UnificationPermutation.Controls.renaming_changes_coordinates_not_shared_constraints
+#print axioms Mettapedia.Logic.LP.UnificationPermutation.Controls.noninjective_substitution_is_not_coordinate_change
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeScopeRenaming.encode_decode
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeScopeRenaming.decode_injective
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeScopeRenaming.decode_rename
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeScopeRenaming.encode_rename
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeScopeRenaming.readBack_transport
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeScopeRenaming.atom_unify_rename
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeScopeRenaming.substitute
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeScopeRenaming.substituteList
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeScopeRenaming.compose_transport
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeScopeRenaming.state_safe
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeScopeRenaming.wildcard_rename
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeScopeRenaming.unify_rename
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeScopeRenaming.firstChoice_rename
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeScopeRenaming.firstChoice_range
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeScopeRenaming.Controls.shared_expected_variable_is_carried
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeScopeRenaming.Controls.renaming_cannot_split_a_shared_variable
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeScopeRenaming.Controls.first_success_still_selects_the_first_instance
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeFreshReadEquivalence.atom_rename_presentation
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeFreshReadEquivalence.list_rename_presentation
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeFreshReadEquivalence.initial_state_fixed
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeFreshReadEquivalence.expected_fixed
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeFreshReadEquivalence.firstChoice_private_allocators
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeFreshReadEquivalence.private_allocation_preserves_admission
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeFreshReadEquivalence.chosen_range_private_allocators
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeFreshReadEquivalence.generated_supplies_preserve_admission
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeFreshReadEquivalence.Controls.independent_supplies_keep_public_return
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeFreshReadEquivalence.Controls.public_capture_changes_admission
+

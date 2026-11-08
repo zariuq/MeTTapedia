@@ -23,28 +23,28 @@ open Mettapedia.GSLT.LanguageDef
 open Mettapedia.OSLF.Framework.WMCalculusLanguageDef
 open Mettapedia.OSLF.Framework.RedexPosition
 
-/-- The first guarded vertex whose grammar adds a genuinely new sort and
+/-- The first vertex whose grammar adds a genuinely new sort and
 three constructors to the four-constructor core. -/
 def overlapOnlyVertex : WMExtVertex :=
   {wmExtVertexMinimal with overlap := .overlapAware}
 
 theorem overlapOnly_types :
-    (wmExtVertexLanguageDefGuarded overlapOnlyVertex).types =
+    (wmExtVertexLanguageDef overlapOnlyVertex).types =
       ["State", "Query", "BinaryEvidence", "Overlap"] := rfl
 
 theorem overlapOnly_terms :
-    (wmExtVertexLanguageDefGuarded overlapOnlyVertex).terms =
+    (wmExtVertexLanguageDef overlapOnlyVertex).terms =
       coreTerms ++ [overlapMergeDecl, overlapFactorDecl,
         overlapCorrectDecl] := rfl
 
 private def checkedLanguage : LanguageDef :=
-  LanguageDef.ofCore "WMCalculusGuarded"
+  LanguageDef.ofCore "WMCalculus"
     ["State", "Query", "BinaryEvidence", "Overlap"]
     (coreTerms ++ [overlapMergeDecl, overlapFactorDecl, overlapCorrectDecl])
     [] (coreRules ++ [ruleOverlapExtract])
 
 private theorem checkedLanguage_eq :
-    wmExtVertexLanguageDefGuarded overlapOnlyVertex = checkedLanguage := rfl
+    wmExtVertexLanguageDef overlapOnlyVertex = checkedLanguage := rfl
 
 set_option maxHeartbeats 2000000
 
@@ -91,7 +91,7 @@ private theorem checked_overlapExtract :
   decide +kernel
 
 theorem overlapOnly_validation :
-    (wmExtVertexLanguageDefGuarded overlapOnlyVertex).validate = [] := by
+    (wmExtVertexLanguageDef overlapOnlyVertex).validate = [] := by
   rw [checkedLanguage_eq]
   have coreRows : coreRules.flatMap (LanguageDef.validateRewrite checkedLanguage) = [] := by
     simp only [coreRules, List.flatMap_cons, List.flatMap_nil,
@@ -108,19 +108,19 @@ theorem overlapOnly_validation :
 
 set_option maxHeartbeats 2000000 in
 theorem overlapOnly_rewrites_checked :
-    (wmExtVertexLanguageDefGuarded overlapOnlyVertex).rewrites.all
+    (wmExtVertexLanguageDef overlapOnlyVertex).rewrites.all
       (checkRewriteWellSorted
-        (wmExtVertexLanguageDefGuarded overlapOnlyVertex)) = true := by
+        (wmExtVertexLanguageDef overlapOnlyVertex)) = true := by
   decide +kernel
 
 /-- The overlap rule's source and target share the authored evidence sort;
 its correction subterm is separately typed as `Overlap`. -/
 theorem overlapExtract_sorted :
-    RewriteWellSorted (wmExtVertexLanguageDefGuarded overlapOnlyVertex)
+    RewriteWellSorted (wmExtVertexLanguageDef overlapOnlyVertex)
       ruleOverlapExtract := by
   apply checkRewriteWellSorted_sound
   exact (List.all_eq_true.mp overlapOnly_rewrites_checked) _
-    (by simp [wmExtVertexLanguageDefGuarded, overlapOnlyVertex,
+    (by simp [wmExtVertexLanguageDef, overlapOnlyVertex,
       overlapRules])
 
 private def overlapFree : FreeTypeContext :=
@@ -130,7 +130,7 @@ private def overlapFree : FreeTypeContext :=
 /-- Treating the correction factor itself as evidence is rejected by the
 declaration-derived checker; the `Ov = Ev` specialization is not forced. -/
 theorem overlapFactor_not_evidence :
-    ¬ HasType (wmExtVertexLanguageDefGuarded overlapOnlyVertex)
+    ¬ HasType (wmExtVertexLanguageDef overlapOnlyVertex)
       overlapFree
       []
       (pOverlapFactor (.fvar "w1") (.fvar "w2") (.fvar "q"))
@@ -138,7 +138,7 @@ theorem overlapFactor_not_evidence :
   intro typed
   have accepted := (checkHasType_eq_true_iff (by decide +kernel)).2 typed
   have rejected :
-      checkHasType (wmExtVertexLanguageDefGuarded overlapOnlyVertex)
+      checkHasType (wmExtVertexLanguageDef overlapOnlyVertex)
         overlapFree
         [] (pOverlapFactor (.fvar "w1") (.fvar "w2") (.fvar "q"))
         (.base "BinaryEvidence") = false := by
@@ -148,7 +148,7 @@ theorem overlapFactor_not_evidence :
 
 /-- The additive vertex does not silently acquire an overlap constructor. -/
 theorem additive_vertex_has_no_overlapFactor :
-    overlapFactorDecl ∉ (wmExtVertexLanguageDefGuarded wmExtVertexMinimal).terms := by
+    overlapFactorDecl ∉ (wmExtVertexLanguageDef wmExtVertexMinimal).terms := by
   decide +kernel
 
 #print axioms overlapOnly_validation

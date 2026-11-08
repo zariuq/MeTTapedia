@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 
 An originally present occurrence that is never consumed remains present.
 Fresh-output admission then prevents reusing its identity, and its original
-schema/live metadata follows the pure composed capture inclusion. Consumed
+schema/shared metadata follows the pure composed capture inclusion. Consumed
 and later reused identities are deliberately outside this theorem.
 -/
 
@@ -45,18 +45,18 @@ theorem persistent_row_along_path {source target : Endpoint locals O Γ sort} (p
       exact congrArg (fun change => (source.inventory.rows occurrence).map locals change)
         (pathAssignment_comp past (Quiver.Hom.toPath edge)).symm
 
-theorem persistent_live_views_keep_shared_values {source target : Endpoint locals O Γ sort}
+theorem persistent_shared_views_keep_shared_values {source target : Endpoint locals O Γ sort}
     (path : Quiver.Path source target) {occurrence : O}
     (present : occurrence ∈ source.inventory.configuration.present) (untaken : NeverTaken path occurrence)
     (value : Term (signature S source.declarations) Γ sort)
-    (live : source.inventory.rows occurrence = .live value) (futureScope : Nat) :
+    (isShared : source.inventory.rows occurrence = .shared value) (futureScope : Nat) :
     occurrence ∈ target.inventory.configuration.present ∧
       ContextualStoredRows.viewAt locals target.declarations futureScope (target.inventory.rows occurrence) =
         instantiate (ContextualSelectionViews.capturedTarget locals target.declarations)
           (instantiate (pathAssignment path) value) := by
   have transported := persistent_row_along_path path present untaken
   refine ⟨transported.1, ?_⟩
-  rw [transported.2, live]
+  rw [transported.2, isShared]
   rfl
 
 theorem persistent_schema_views_only_share_captures {source target : Endpoint locals O Γ sort}

@@ -45,9 +45,9 @@ theorem old_match_gives_singleton (candidate : Assignment captures next) {Γ : C
       have only : port = 0 := Fin.ext (by change port.val = 0; have bound : port.val < 1 := port.isLt; omega)
       subst port
       rw [rowCase]
-      exact same.trans (instance_on_live_value noQueries (queryBodies extension.declarations)
+      exact same.trans (instance_on_shared_value noQueries (queryBodies extension.declarations)
         extension.assignment candidate value).symm
-  | live body =>
+  | shared body =>
       rw [rowCase] at matched
       change instantiate candidate value = instantiate candidate body at matched
       let extension := Extension.withLocals locals next
@@ -58,9 +58,9 @@ theorem old_match_gives_singleton (candidate : Assignment captures next) {Γ : C
       have only : port = 0 := Fin.ext (by change port.val = 0; have bound : port.val < 1 := port.isLt; omega)
       subst port
       rw [rowCase]
-      exact (instance_on_live_value locals (fun name => bodies (ScopedVar.at 2 name)) extension.assignment candidate body).trans
+      exact (instance_on_shared_value locals (fun name => bodies (ScopedVar.at 2 name)) extension.assignment candidate body).trans
         ((congrArg (instantiate extension.assignment) matched.symm).trans
-          (instance_on_live_value noQueries (queryBodies extension.declarations) extension.assignment candidate value).symm)
+          (instance_on_shared_value noQueries (queryBodies extension.declarations) extension.assignment candidate value).symm)
 
 theorem ask_iff_existing_absence {Γ : Ctx S} {sort : S.Srt}
     (problem : EquationStore (Term (signature S captures) Γ sort))
@@ -77,7 +77,7 @@ theorem ask_iff_existing_absence {Γ : Ctx S} {sort : S.Srt}
     let changed := Assignment.compose extension.assignment candidate
     have changedModels := ContextualFrameUnifier.models_compose solved extension.assignment
     have same := agrees 0
-    have patternLaw := instance_on_live_value noQueries queryBodies extension.assignment candidate value
+    have patternLaw := instance_on_shared_value noQueries queryBodies extension.assignment candidate value
     have samePattern :
         instantiate (instanceAssignment noQueries queryBodies extension.assignment candidate) (pattern captures value) =
           instantiate changed value := patternLaw.trans (Assignment.instantiate_compose extension.assignment candidate value).symm
@@ -100,8 +100,8 @@ theorem ask_iff_existing_absence {Γ : Ctx S} {sort : S.Srt}
           (ContextualStoredRows.asTemplate locals captures (rows (chosen 0))) = _ at same
         rw [rowCase] at same
         exact same.trans samePattern
-    | live body =>
-        have valueLaw := instance_on_live_value locals (fun name => rowBodies (ScopedVar.at 2 name))
+    | shared body =>
+        have valueLaw := instance_on_shared_value locals (fun name => rowBodies (ScopedVar.at 2 name))
           extension.assignment candidate body
         rw [rowCase] at same
         exact (Assignment.instantiate_compose extension.assignment candidate value).trans

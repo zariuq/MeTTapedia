@@ -119,8 +119,17 @@ abbrev SecondAction := ContextualFamilies.action laterTarget [] ()
 theorem the_second_firing_is_enabled :
     ContextualGuardedStep.Valid locals active publishedLedger laterSelection laterRule
       published.rows published.configuration laterOutputs := by
-  refine ⟨by decide, by decide, rfl, rfl, rfl, by decide, ?_, ?_⟩
-  · refine ⟨secondSolution, ?_⟩
+  refine { take_distinct := by decide
+           output_distinct := by decide
+           take_length := rfl
+           read_length := rfl
+           outputs := rfl
+           occurrences := by decide
+           solvable := ?_
+           checks := ?_ }
+  swap
+  · apply ContextualFrameUnifier.solvable_of_consistent
+    refine ⟨secondSolution, ?_⟩
     change SecondAction.Models secondSolution
       [(generator laterTarget (.inr (.inr 0)), atom laterTarget),
        (p (atom laterTarget), p (generator laterTarget (.inr (.inl (ScopedVar.at 9 0))))),
@@ -196,8 +205,17 @@ theorem a_check_only_variable_is_not_lost_from_the_scope_inventory :
 theorem the_check_only_rule_is_an_actual_guarded_firing :
     ContextualGuardedStep.Valid locals captures occupied guardOnlySelection guardOnlyRule
       initial.rows initial.configuration outputs := by
-  refine ⟨by decide, by decide, rfl, rfl, rfl, by decide, ?_, ?_⟩
-  · refine ⟨split, ?_⟩
+  refine { take_distinct := by decide
+           output_distinct := by decide
+           take_length := rfl
+           read_length := rfl
+           outputs := rfl
+           occurrences := by decide
+           solvable := ?_
+           checks := ?_ }
+  swap
+  · apply ContextualFrameUnifier.solvable_of_consistent
+    refine ⟨split, ?_⟩
     change (ContextualFamilies.action active [] ()).Models split
       [(generator active (.inr 0), atom active)]
     refine ((ContextualFamilies.action active [] ()).models_cons split _ _).mpr ⟨?_,

@@ -98,7 +98,7 @@ theorem actual_worklist_returns_closed :
     active (generator active) independent_model]
   decide +kernel
 
-theorem physical_admission : ContextualTransportedActivation.Admission locals captures
+theorem physical_admission : ContextualGuardedStep.Requirements locals captures
     occupied selection nativeRule nativeRows nativeBefore nativeOutputs := by
   refine ⟨by decide, by decide, rfl, rfl, ?_, ?_, ?_⟩
   · unfold nativeRule nativeRows

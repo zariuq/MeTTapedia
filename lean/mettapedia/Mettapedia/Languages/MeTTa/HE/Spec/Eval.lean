@@ -495,6 +495,7 @@ theorem Rel.interpret_shape {policy : ReentryPolicy} {status : Status} {atom exp
 inductive MarkPolicy where
   | successes
   | unchanged
+  | unchangedPreserving
   | none
   deriving DecidableEq, Repr
 
@@ -505,19 +506,22 @@ structure Occurrence where
   status : Status
 
 /-- Publication changes only the permission to reinterpret an occurrence.
-All policies retain errors as active stopped results. -/
-def publish (policy : MarkPolicy) (original : Atom) (result : FrameResult) : Occurrence :=
+Historical policies clear error marks. The preserving policy keeps inherited
+expression marks unless an unchanged successful expression is newly marked. -/
+def publish (policy : MarkPolicy) (original : Atom) (result : FrameResult)
+    (inherited : Status := .active) : Occurrence :=
   ⟨result, match result.1 with
     | .expression _ =>
-        if isErrorAtom result.1 then .active else
-          match policy with
-          | .successes => .held
-          | .unchanged => if result.1 == original then .held else .active
-          | .none => .active
+        match policy with
+        | .successes => if isErrorAtom result.1 then .active else .held
+        | .unchanged => if isErrorAtom result.1 then .active else if result.1 == original then .held else .active
+        | .unchangedPreserving => if isErrorAtom result.1 then inherited else if result.1 == original then .held else inherited
+        | .none => .active
     | _ => .active⟩
 
-@[simp] theorem publish_result (policy : MarkPolicy) (original : Atom) (result : FrameResult) :
-    (publish policy original result).result = result := rfl
+@[simp] theorem publish_result (policy : MarkPolicy) (original : Atom) (result : FrameResult)
+    (inherited : Status := .active) :
+    (publish policy original result inherited).result = result := rfl
 
 /-- Successful expression publication followed by reuse delivers the value
 under every demand. Reentry does not require the expression to be normal in
@@ -535,7 +539,7 @@ theorem successes_publish_no_reentry (original expected : Atom) (atoms : List At
 /-- Erasing entry status preserves every result occurrence and its binding
 frame, including duplicate atoms and distinct frames for the same atom. -/
 theorem publish_readout (policy : MarkPolicy) (original : Atom) (results : List FrameResult) :
-    (results.map (publish policy original)).map Occurrence.result = results := by
+    (results.map (fun result => publish policy original result)).map Occurrence.result = results := by
   simp [Function.comp_def]
 
 /-- Success-priority classification transports across publication. This law
@@ -544,8 +548,8 @@ theorem publish_priority {raw selected : List FrameResult}
     (priority : Mettapedia.Machines.OrderedProtocol.Completion.SuccessPriorityRel (fun row : FrameResult => isErrorAtom row.1)
       raw selected) (policy : MarkPolicy) (original : Atom) :
     Mettapedia.Machines.OrderedProtocol.Completion.SuccessPriorityRel (fun row : Occurrence => isErrorAtom row.result.1)
-      (raw.map (publish policy original)) (selected.map (publish policy original)) :=
-  priority.map (publish policy original) (fun _ => rfl)
+      (raw.map (fun result => publish policy original result)) (selected.map (fun result => publish policy original result)) :=
+  priority.map (fun result => publish policy original result) (fun _ => rfl)
 
 private def pending : Atom := .expression [.symbol "pending"]
 
@@ -975,7 +979,7 @@ theorem rename_cancel (names : Equiv.Perm String) (value : Value) :
 
 /-- Publication changes only the selected parent's status. -/
 def publish (policy : MarkPolicy) (original : Atom) (frame : BindingFrame) (value : Value) : Value :=
-  value.withStatus (Entry.publish policy original (value.erase,frame)).status
+  value.withStatus (Entry.publish policy original (value.erase,frame) value.status).status
 
 @[simp] theorem erase_publish (policy : MarkPolicy) (original : Atom)
     (frame : BindingFrame) (value : Value) :
@@ -985,7 +989,7 @@ theorem publish_children (policy : MarkPolicy) (original : Atom) (frame : Bindin
     (previous : Status) (children : List Value) :
     publish policy original frame (.expression previous children) =
       .expression (Entry.publish policy original
-        ((.expression previous children : Value).erase,frame)).status children := rfl
+        ((.expression previous children : Value).erase,frame) previous).status children := rfl
 
 /-! ## Ordinary unification with contextual values
 
@@ -5809,23 +5813,37 @@ theorem TypeMatchingPolicy.raw_finite_cast_iff
   exact ⟨fun matched => ⟨matched,admissible types queried actual present output matched⟩,
     fun matched => matched.1⟩
 
-/-- Local evaluation choices. The unmarked intermediate profile remains
-explicit; ready-value profiles reuse the same recursive source rules. -/
+/-- Explicit full-versus-raw type readout. This choice alone does not model
+HE's scoped publication of pending instructions. -/
+inductive OperandDemandPolicy where
+  | raw
+  | retained
+  deriving DecidableEq
+
+/-- Local evaluation choices. Raw argument requests remain explicit;
+scoped instruction publication is distinct from full type readout. -/
 structure Policy where
   reentry : Entry.ReentryPolicy
   marking : Entry.MarkPolicy
   rebuilding : Entry.RebuildPolicy
   matching : TypeMatchingPolicy
+  operandDemand : OperandDemandPolicy := .raw
 
 namespace Policy
 
-def unmarked : Policy := ⟨.reinterpret,.none,.preserve,.raw⟩
-def ready : Policy := ⟨.reuse,.successes,.preserve,.raw⟩
+def unmarked : Policy := ⟨.reinterpret,.none,.preserve,.raw,.raw⟩
+def ready : Policy := ⟨.reuse,.successes,.preserve,.raw,.raw⟩
 
 /-- Reuse unchanged successful expressions; substitution reopens an ancestor
 whose erased syntax changes. This names the local rules, not an assertion of
 whole-engine compatibility. -/
-def unchangedReady : Policy := ⟨.reuse,.unchanged,.reopenChanged,.raw⟩
+def unchangedReady : Policy := ⟨.reuse,.unchanged,.reopenChanged,.raw,.raw⟩
+
+/-- Mark unchanged successful expressions and preserve inherited marks.
+Rebuilding remains an explicit choice. This does not prescribe a blanket
+materialization of authored operand demands or whole-engine correspondence. -/
+def unchangedPreservingReady (rebuilding : Entry.RebuildPolicy) : Policy :=
+  ⟨.reuse,.unchangedPreserving,rebuilding,.raw,.raw⟩
 
 /-- Explicit finite-type candidate; reentry, marking and rebuilding remain
 those of the ready-value profile. This is not an HE compatibility default. -/
@@ -5847,6 +5865,91 @@ def source (frame : Frame) : BindingFrame :=
 
 def read (policy : Policy) (frame : Frame) (value : Entry.Value) : Entry.Value :=
   Entry.Value.substitute policy.rebuilding (Entry.Value.resolve frame.environment) value
+
+/-- An explicit full type-readout projection, not the scoped materialization
+of emitted instructions. Closed Symbol demands are definitionally unchanged.
+The argument execution rules do not apply this indiscriminately. -/
+def argumentDemand (policy : Policy) (frame : Frame) (formal : Atom) : Atom :=
+  match formal with
+  | .symbol name => .symbol name
+  | .grounded value => .grounded value
+  | .var name => match policy.operandDemand with
+      | .raw => .var name
+      | .retained => (Entry.Value.resolve frame.environment name).erase
+  | .expression children =>
+      Spec.Type.RuntimeRefinement.applyTypeValuation (fun name => match policy.operandDemand with
+        | .raw => .var name
+        | .retained => (Entry.Value.resolve frame.environment name).erase) (.expression children)
+
+theorem argumentDemand_eq_valuation (policy : Policy) (frame : Frame) (formal : Atom) :
+    frame.argumentDemand policy formal = Spec.Type.RuntimeRefinement.applyTypeValuation
+      (fun name => match policy.operandDemand with
+        | .raw => .var name
+        | .retained => (Entry.Value.resolve frame.environment name).erase) formal := by
+  cases formal <;> simp only [argumentDemand, Spec.Type.RuntimeRefinement.applyTypeValuation]
+
+@[simp] theorem argumentDemand_symbol (policy : Policy) (frame : Frame) (name : String) :
+    frame.argumentDemand policy (.symbol name) = .symbol name := rfl
+
+@[simp] theorem argumentDemand_grounded (policy : Policy) (frame : Frame) (value : OSLFCore.GroundedValue) :
+    frame.argumentDemand policy (.grounded value) = .grounded value := rfl
+
+@[simp] theorem argumentDemand_var (policy : Policy) (frame : Frame) (name : String) :
+    frame.argumentDemand policy (.var name) = match policy.operandDemand with
+      | .raw => .var name
+      | .retained => (Entry.Value.resolve frame.environment name).erase := rfl
+
+theorem argumentDemand_raw (policy : Policy) (frame : Frame) (formal : Atom)
+    (raw : policy.operandDemand = .raw) : frame.argumentDemand policy formal = formal := by
+  have unchanged := congrArg Entry.Value.erase (Entry.Value.substitute_identity policy.rebuilding (Entry.Value.ofAtom formal))
+  rw [Entry.Value.erase_substitute, Entry.Value.erase_ofAtom] at unchanged
+  simpa only [argumentDemand_eq_valuation, raw, Entry.Value.erase] using unchanged
+
+theorem argumentDemand_retained (policy : Policy) (frame : Frame) (formal : Atom)
+    (retained : policy.operandDemand = .retained) :
+    frame.argumentDemand policy formal = (frame.read policy (Entry.Value.ofAtom formal)).erase := by
+  simp only [argumentDemand_eq_valuation, retained, read, Entry.Value.erase_substitute, Entry.Value.erase_ofAtom]
+
+theorem argumentDemand_retained_table (policy : Policy) (frame : Frame) (formal : Atom)
+    (retained : policy.operandDemand = .retained) :
+    frame.argumentDemand policy formal = (Entry.Value.eraseEnvironment frame.environment).apply formal := by
+  rw [argumentDemand_retained policy frame formal retained]
+  simp only [read, Entry.Value.erase_substitute_environment, Entry.Value.erase_ofAtom]
+
+theorem argumentDemand_closed (policy : Policy) (frame : Frame) (formal : Atom)
+    (closed : Spec.Type.Presentation.TypeSubst.typeVars formal = []) :
+    frame.argumentDemand policy formal = formal := by
+  cases mode : policy.operandDemand with
+  | raw => exact argumentDemand_raw policy frame formal mode
+  | retained =>
+      rw [argumentDemand_retained policy frame formal mode]
+      have fixed := Entry.Value.substitute_of_fixed_variables policy.rebuilding (Entry.Value.resolve frame.environment)
+        (Entry.Value.ofAtom formal) (by
+          intro name present
+          simp only [Entry.Value.erase_ofAtom, closed, List.not_mem_nil] at present)
+      simp only [read, fixed, Entry.Value.erase_ofAtom]
+
+/-- Resolved-away formal variables remain protected by the incoming binding
+support. Demand interpretation does not shrink the fresh-name inventory. -/
+theorem argumentDemand_support (policy : Policy) (frame : Frame) (formal : Atom) (name : String) :
+    (name ∈ Spec.Bindings.ScopeObservation.specBindingVars frame.bindings ∨
+      name ∈ Spec.Type.Presentation.TypeSubst.typeVars (frame.argumentDemand policy formal)) ↔
+    name ∈ Spec.Bindings.ScopeObservation.specBindingVars frame.bindings ∨
+      name ∈ Spec.Type.Presentation.TypeSubst.typeVars formal := by
+  cases mode : policy.operandDemand with
+  | raw => rw [argumentDemand_raw policy frame formal mode]
+  | retained =>
+      rw [argumentDemand_retained_table policy frame formal mode]
+      exact frame.certified.support_union_apply formal name
+
+theorem argumentDemand_scope (policy : Policy) (frame : Frame) (formal subject : Atom)
+    (live : List Atom) (scope : List String) (name : String) :
+    name ∈ invocationTypeScope scope live subject (frame.argumentDemand policy formal) frame.bindings ↔
+      name ∈ invocationTypeScope scope live subject formal frame.bindings := by
+  have supported := argumentDemand_support policy frame formal name
+  simp only [invocationTypeScope, Spec.Type.Presentation.TypeSubst.typeVarsList_append,
+    Spec.Type.Presentation.TypeSubst.typeVarsList, List.mem_append, List.not_mem_nil, or_false] at ⊢
+  tauto
 
 /-- Change the constraint-record presentation while retaining the exact
 annotated environment. Its new certificate follows from the complete model
@@ -5873,6 +5976,10 @@ survives this representation change for every rebuilding policy. -/
     (agreement : BindingSourceAgreement frame.bindings bindings)
     (policy : Policy) (value : Entry.Value) :
     (frame.represent bindings agreement).read policy value = frame.read policy value := rfl
+
+@[simp] theorem argumentDemand_represent (frame : Frame) (bindings : Bindings)
+    (agreement : BindingSourceAgreement frame.bindings bindings) (policy : Policy) (formal : Atom) :
+    (frame.represent bindings agreement).argumentDemand policy formal = frame.argumentDemand policy formal := rfl
 
 theorem represent_self (frame : Frame) :
     frame.represent frame.bindings (.refl _) = frame := by
@@ -9158,6 +9265,20 @@ structure WorldServices (Context World : Type) where
   function completion and caller return remain language work. -/
   groundedCall : Context → World → Entry.Value → GroundedResult Entry.Value → World → Prop :=
     fun _ _ _ _ _ => False
+  /-- A generative local host may additionally use the logical activation
+  and protected syntax to earn freshness of emitted code. It receives no
+  caller stack, expected return type, or recursive evaluator. -/
+  scopedGroundedCall : Option (Context → World → List Atom → List String → Frame →
+    Entry.Value → GroundedResult Entry.Value → World → Prop) := none
+
+/-- Late method fallback preserves record updates to the original service.
+No default callback captures a prior value of groundedCall. -/
+abbrev WorldServices.groundedAt {Context World : Type} (services : WorldServices Context World)
+    (label : Context) (world : World) (live : List Atom) (scope : List String) (frame : Frame)
+    (call : Entry.Value) (outcome : GroundedResult Entry.Value) (after : World) : Prop :=
+  match services.scopedGroundedCall with
+  | none => services.groundedCall label world call outcome after
+  | some scopedCall => scopedCall label world live scope frame call outcome after
 
 /-- The old read-only profile has no completed native-operation rule. Its
 context payload still uses the supplied snapshot service. -/
@@ -9191,6 +9312,97 @@ theorem WorldServices.readOnlyGrounded_erasure {services : Minimal.Services} {di
   obtain ⟨operator,arguments,raw,shaped,executed,rfl⟩ := produced
   exact ⟨operator,arguments,shaped,by simpa only [groundedResult_erase_ofAtom] using executed⟩
 
+/-- One applicability operand is checked without evaluating it. The role
+receives the reached frame and the independent inferred-type lookup; it may
+earn a kind cut without demanding that lookup. This is not a value cast. -/
+abbrev ArgumentAdmission := Space → TypeLookupRel → Policy →
+  Atom → Atom → Atom → Nat → Frame → List Frame → List Atom → Prop
+
+/-- Visit every incoming occurrence, retaining its admission/error block. -/
+inductive AdmissionFramesRel (admit : ArgumentAdmission) (space : Space)
+    (lookup : TypeLookupRel) (policy : Policy) (expression argument expected : Atom)
+    (position : Nat) : List Frame → List Frame → List Atom → Prop where
+  | nil : AdmissionFramesRel admit space lookup policy expression argument expected position [] [] []
+  | cons {before rest selected outputs errors later} :
+      admit space lookup policy expression argument expected position before selected errors →
+      AdmissionFramesRel admit space lookup policy expression argument expected position rest outputs later →
+      AdmissionFramesRel admit space lookup policy expression argument expected position (before :: rest)
+        (selected ++ outputs) (errors ++ later)
+
+inductive AdmissionArgumentsRel (admit : ArgumentAdmission) (space : Space)
+    (lookup : TypeLookupRel) (policy : Policy) :
+    Atom → Nat → List Atom → List Atom → List Frame → List Frame → List Atom → Prop where
+  | nil {expression position frames} :
+      AdmissionArgumentsRel admit space lookup policy expression position [] [] frames frames []
+  | cons {expression position argument arguments expected expecteds before next after errors later} :
+      AdmissionFramesRel admit space lookup policy expression argument expected position before next errors →
+      AdmissionArgumentsRel admit space lookup policy expression (position + 1) arguments expecteds next after later →
+      AdmissionArgumentsRel admit space lookup policy expression position
+        (argument :: arguments) (expected :: expecteds) before after (errors ++ later)
+
+/-- Argument admission is replaceable; the reached return-type check is the
+same contextual check as in the historical source profile. -/
+inductive AdmissionApplicationRel (admit : ArgumentAdmission) (space : Space)
+    (lookup : TypeLookupRel) (policy : Policy) (expression expected : Atom)
+    (selected : SelectedTypePolicy) (before : Frame) : List Frame → List Atom → Prop where
+  | wrongArity {operator arguments} :
+      expression = .expression (operator :: arguments) →
+      arguments.length ≠ selected.argumentTypes.length →
+      AdmissionApplicationRel admit space lookup policy expression expected selected before []
+        [mkError expression .incorrectNumberOfArguments]
+  | checked {operator arguments afterArguments errors returnChecks} :
+      expression = .expression (operator :: arguments) →
+      AdmissionArgumentsRel admit space lookup policy expression 1 arguments selected.argumentTypes
+        [before] afterArguments errors →
+      List.Forall₂ (fun frame check => TypeCheckRel policy expected frame selected.returnType check)
+        afterArguments returnChecks →
+      AdmissionApplicationRel admit space lookup policy expression expected selected before
+        (checkedFrames returnChecks)
+        (errors ++ (checkedFailures returnChecks).map (fun actual => mkError expression (.badType expected actual)))
+
+inductive AdmissionScanRel (admit : ArgumentAdmission) (space : Space)
+    (lookup : TypeLookupRel) (policy : Policy) (expression expected : Atom)
+    (before : Frame) : List Atom → InvocationSelection → Prop where
+  | nil : AdmissionScanRel admit space lookup policy expression expected before [] (.exhausted [] false)
+  | nonFunction {candidate candidates outcome} :
+      (¬∃ domains returned, FunctionTypeRel candidate domains returned) →
+      AdmissionScanRel admit space lookup policy expression expected before candidates outcome →
+      AdmissionScanRel admit space lookup policy expression expected before (candidate :: candidates)
+        (match outcome with
+          | .selected signature frames => .selected signature frames
+          | .exhausted errors _ => .exhausted errors true)
+  | selected {signature : SelectedTypePolicy} {candidates frames errors} :
+      AdmissionApplicationRel admit space lookup policy expression expected signature before frames errors →
+      frames ≠ [] →
+      AdmissionScanRel admit space lookup policy expression expected before (signature.functionType :: candidates)
+        (.selected signature frames)
+  | rejected {signature : SelectedTypePolicy} {candidates errors outcome} :
+      AdmissionApplicationRel admit space lookup policy expression expected signature before [] errors →
+      AdmissionScanRel admit space lookup policy expression expected before candidates outcome →
+      AdmissionScanRel admit space lookup policy expression expected before (signature.functionType :: candidates)
+        (match outcome with
+          | .selected signature frames => .selected signature frames
+          | .exhausted later tupleEligible => .exhausted (errors ++ later) tupleEligible)
+
+/-- The historical complete-query profile remains an explicit instance.
+An operand-role profile changes only static applicability, not value casts,
+operator queries, recursive evaluation, or the continuation machine. -/
+inductive ArgumentService where
+  | historical
+  | role (admit : ArgumentAdmission)
+
+abbrev ArgumentService.selection (service : ArgumentService) (space : Space)
+    (lookup : CastLookup) (policy : Policy) (live : List Atom) (scope : List String)
+    (expression operator expected : Atom) (before : Frame) (outcome : InvocationSelection) : Prop :=
+  match service with
+  | .historical => InvocationSelectionRel space lookup policy live scope expression operator expected before outcome
+  | .role admit => ∃ candidates,
+      lookup (invocationTypeScope scope live expression expected before.bindings) space
+        before.bindings operator Atom.undefinedType candidates ∧
+      AdmissionScanRel admit space
+        (lookup (invocationTypeScope scope live expression expected before.bindings) space)
+        policy expression expected before candidates outcome
+
 /-- A context identifies a mutable space. Its current contents come from the
 reached world. Only local host operations may change that world; neither
 bindings nor saved alternatives contain a private copy of it. -/
@@ -9199,6 +9411,7 @@ structure WorldEnvironment (Context World : Type) where
   services : WorldServices Context World
   dispatch : GroundedDispatch
   lookup : CastLookup
+  arguments : ArgumentService := .historical
 
 /-- The existing read-only source profile is a world instance with no
 native operation and with space values as context labels. -/
@@ -9255,7 +9468,7 @@ inductive AtomRel (environment : WorldEnvironment Context World) : Context → W
       Entry.Rel policy.reentry (frame.read policy value).status
         (frame.read policy value).erase expected .interpret →
       frame.read policy value = .expression readiness (operator :: arguments) →
-      InvocationSelectionRel (environment.view world0 label) environment.lookup policy live scope (frame.read policy value).erase operator.erase
+      environment.arguments.selection (environment.view world0 label) environment.lookup policy live scope (frame.read policy value).erase operator.erase
         expected frame (.selected signature frames) →
       InvocationsRel environment label world0 live scope expected signature operator arguments frames raw world1 (policy := policy) →
       SuccessPriorityRel (fun result : Result => isErrorAtom result.1.erase)
@@ -9266,7 +9479,7 @@ inductive AtomRel (environment : WorldEnvironment Context World) : Context → W
       Entry.Rel policy.reentry (frame.read policy value).status
         (frame.read policy value).erase expected .interpret →
       frame.read policy value = .expression readiness (operator :: arguments) →
-      InvocationSelectionRel (environment.view world0 label) environment.lookup policy live scope (frame.read policy value).erase operator.erase
+      environment.arguments.selection (environment.view world0 label) environment.lookup policy live scope (frame.read policy value).erase operator.erase
         expected frame (.exhausted errors true) →
       TupleRel environment label world0 (expected :: live) scope (operator :: arguments) frame rows world1 (policy := policy) →
       CallsRel environment label world1 live scope expected rows raw world2 (policy := policy) →
@@ -9278,7 +9491,7 @@ inductive AtomRel (environment : WorldEnvironment Context World) : Context → W
       Entry.Rel policy.reentry (frame.read policy value).status
         (frame.read policy value).erase expected .interpret →
       frame.read policy value = .expression readiness (operator :: arguments) →
-      InvocationSelectionRel (environment.view world0 label) environment.lookup policy live scope (frame.read policy value).erase operator.erase
+      environment.arguments.selection (environment.view world0 label) environment.lookup policy live scope (frame.read policy value).erase operator.erase
         expected frame (.exhausted errors false) →
       SuccessPriorityRel (fun result : Result => isErrorAtom result.1.erase)
         ((diagnosticResults errors frame).map (readResult policy)) selected →
@@ -9426,13 +9639,13 @@ inductive CallRel (environment : WorldEnvironment Context World) : Context → W
   | groundedDone {label world0 world1 live scope value expected frame operator arguments outcome results policy} :
       value.erase = .expression (operator :: arguments) → environment.dispatch.executable operator →
       ¬IsErrorRel value.erase →
-      environment.services.groundedCall label world0 value outcome world1 →
+      environment.services.groundedAt label world0 live scope frame value outcome world1 →
       NativeOutcomeRel policy environment.dispatch operator arguments value (some expected) frame outcome (.done results) →
       CallRel environment label world0 live scope value expected frame results world1 (policy := policy)
   | groundedResume {label world0 world1 world2 live scope value expected frame operator arguments outcome rows results policy} :
       value.erase = .expression (operator :: arguments) → environment.dispatch.executable operator →
       ¬IsErrorRel value.erase →
-      environment.services.groundedCall label world0 value outcome world1 →
+      environment.services.groundedAt label world0 live scope frame value outcome world1 →
       NativeOutcomeRel policy environment.dispatch operator arguments value (some expected) frame outcome (.resume rows) →
       BoundaryBatchRel environment label world1 live scope none
         (.native value (some expected) (environment.dispatch.valueProvenance operator arguments)) rows results world2 (policy := policy) →
@@ -9569,12 +9782,12 @@ inductive InvocationRel (environment : WorldEnvironment Context World) : Context
       InvocationRel environment label world0 live scope caller value frame results world1 (policy := policy)
   | groundedDone {label world0 world1 live scope caller value frame operator arguments outcome results policy} :
       value.erase = .expression (operator :: arguments) → environment.dispatch.executable operator →
-      environment.services.groundedCall label world0 value outcome world1 →
+      environment.services.groundedAt label world0 live scope frame value outcome world1 →
       NativeOutcomeRel policy environment.dispatch operator arguments value none frame outcome (.done results) →
       InvocationRel environment label world0 live scope caller value frame results world1 (policy := policy)
   | groundedResume {label world0 world1 world2 live scope caller value frame operator arguments outcome rows results policy} :
       value.erase = .expression (operator :: arguments) → environment.dispatch.executable operator →
-      environment.services.groundedCall label world0 value outcome world1 →
+      environment.services.groundedAt label world0 live scope frame value outcome world1 →
       NativeOutcomeRel policy environment.dispatch operator arguments value none frame outcome (.resume rows) →
       BoundaryBatchRel environment label world1 live scope caller
         (.native value none (environment.dispatch.valueProvenance operator arguments)) rows results world2 (policy := policy) →
@@ -9701,7 +9914,7 @@ def snapshotRowsServices (rows : List Result) : WorldServices Unit (Nat × List 
   snapshots := some (SnapshotServices.appendModel Unit Nat)
 
 def snapshotRowsEnvironment (rows : List Result) : WorldEnvironment Unit (Nat × List Frame) :=
-  ⟨fun _ _ => Space.empty,snapshotRowsServices rows,typedDispatch,rawLookup⟩
+  ⟨fun _ _ => Space.empty,snapshotRowsServices rows,typedDispatch,rawLookup,.historical⟩
 
 def snapshotRowsCall : Entry.Value :=
   .expression .active [.symbol "call-native",.symbol "rows",.symbol "emit",.expression .active []]
@@ -9751,7 +9964,7 @@ def nativeDispatch (outcome : GroundedResult Entry.Value) (provenance : NativeVa
 
 def nativeEnvironment (outcome : GroundedResult Entry.Value) (provenance : NativeValueProvenance) :
     WorldEnvironment Unit Nat :=
-  ⟨fun _ _ => Space.empty,nativeServices outcome,nativeDispatch outcome provenance,rawLookup⟩
+  ⟨fun _ _ => Space.empty,nativeServices outcome,nativeDispatch outcome provenance,rawLookup,.historical⟩
 
 def nativeCallValue : Entry.Value := .expression .active [.symbol "host"]
 def nativeFunctionBody : Entry.Value := .expression .active [.symbol "return",.symbol "Kept"]
@@ -10000,9 +10213,9 @@ theorem Rel.rename_iff (p : Equiv.Perm String) {policy : ReentryPolicy} {status 
   · exact Rel.rename p
 
 @[simp] theorem publish_status_rename (p : Equiv.Perm String) (policy : MarkPolicy)
-    (original : Atom) (result : FrameResult) :
-    (publish policy (renameTypeVars p original) (Renaming.frameResult p result)).status =
-      (publish policy original result).status := by
+    (original : Atom) (result : FrameResult) (inherited : Status := .active) :
+    (publish policy (renameTypeVars p original) (Renaming.frameResult p result) inherited).status =
+      (publish policy original result inherited).status := by
   rcases result with ⟨atom, frame⟩
   cases atom with
   | symbol | var | grounded =>
@@ -10311,8 +10524,8 @@ theorem UnifyListRel.rename (p : Equiv.Perm String) {policy environment output l
       publish policy (renameTypeVars p original) (frame.rename p) (rename p value) := by
   unfold publish
   rw [rename_withStatus]
-  have sameStatus := Entry.publish_status_rename p policy original (value.erase, frame)
-  simpa only [Renaming.frameResult, rename_erase] using
+  have sameStatus := Entry.publish_status_rename p policy original (value.erase, frame) value.status
+  simpa only [Renaming.frameResult, rename_erase, rename_status] using
     congrArg (withStatus (rename p value)) sameStatus.symm
 
 @[simp] theorem rename_argumentPacket (names : String → String) (values : List Value) :
@@ -10653,6 +10866,14 @@ theorem rename_comp (p q : Equiv.Perm String) (frame : Frame) :
     (frame.rename p).read policy (Entry.Value.rename p value) =
       Entry.Value.rename p (frame.read policy value) :=
   Entry.Value.substitute_resolve_renameEnvironment p policy.rebuilding frame.environment value
+
+@[simp] theorem argumentDemand_rename (p : Equiv.Perm String) (policy : Policy) (frame : Frame) (formal : Atom) :
+    (frame.rename p).argumentDemand policy (renameTypeVars p formal) = renameTypeVars p (frame.argumentDemand policy formal) := by
+  cases mode : policy.operandDemand with
+  | raw => rw [argumentDemand_raw policy (frame.rename p) _ mode, argumentDemand_raw policy frame formal mode]
+  | retained =>
+      rw [argumentDemand_retained policy (frame.rename p) _ mode, argumentDemand_retained policy frame formal mode,
+        ← Entry.Value.rename_ofAtom, read_rename, Entry.Value.rename_erase]
 
 @[simp] theorem empty_rename (p : Equiv.Perm String) :
     empty.rename p = empty := by

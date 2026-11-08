@@ -1,0 +1,70 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeCurrentReader
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeCurrentWorld
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HERangeCurrentTypeReads
+
+/-! # Current annotation-policy principal theorem audit -/
+
+namespace Mettapedia.GSLT.LanguageDef.Collections.TypedCalls
+
+#print axioms NativeTypeAnnotationPolicy.sourceArgs_policy
+#print axioms NativeTypeAnnotationPolicy.sourceRows_policy
+#print axioms NativeTypeAnnotationPolicy.sourceNode_without_annotations
+#print axioms NativeTypeAnnotationPolicy.structural_question_unchanged
+#print axioms NativeTypeAnnotationPolicy.argsPlan_policy
+#print axioms NativeTypeAnnotationPolicy.rowsPlan_policy
+#print axioms NativeTypeAnnotationPolicy.ordinary_policy
+#print axioms NativeTypeAnnotationPolicy.prefix_retained
+#print axioms NativeTypeAnnotationPolicy.derived_occurrence_kept
+#print axioms NativeTypeAnnotationPolicy.Controls.current_keeps_prefix_and_duplicate_derived_answers
+#print axioms NativeTypeAnnotationPolicy.Controls.historical_override_is_different
+#print axioms NativeTypeAnnotationPolicy.Controls.overlap_checks_only_the_annotation_prefix
+#print axioms NativeTypeAnnotationPolicy.Controls.nominal_row_does_not_repair_structural_fields
+#print axioms NativeTypeAnnotationPolicy.Controls.current_does_not_invent_missing_operator_observation
+
+#print axioms NativeTypePolicyAgreement.node_run
+#print axioms NativeTypePolicyAgreement.body_run
+#print axioms NativeTypePolicyAgreement.annotated_empty
+#print axioms NativeTypePolicyAgreement.raw_empty
+#print axioms NativeTypePolicyAgreement.evaluate_policy
+#print axioms NativeTypePolicyAgreement.evaluate_policy_of_rows
+
+#print axioms NativeTypePolicySafety.supplement_safe
+#print axioms NativeTypePolicySafety.annotated
+#print axioms NativeTypePolicySafety.node
+#print axioms NativeTypePolicySafety.body
+
+#print axioms NativeTypeCurrentWorld.any_observe
+#print axioms NativeTypeCurrentWorld.supplement_observe
+#print axioms NativeTypeCurrentWorld.annotated
+#print axioms NativeTypeCurrentWorld.node
+#print axioms NativeTypeCurrentWorld.body
+#print axioms NativeTypeCurrentWorld.returned_safe
+#print axioms NativeTypeCurrentWorld.evaluate_world
+
+#print axioms NativeTypeCurrentReader.annotation_closure_precedes_derived_answers
+#print axioms NativeTypeCurrentReader.historical_override_omits_the_arrow_answer
+#print axioms NativeTypeCurrentReader.different_arrows_keep_duplicate_derived_answers
+#print axioms NativeTypeCurrentReader.prefix_overlap_drops_only_covered_derivations
+#print axioms NativeTypeCurrentReader.bad_fields_keep_nominal_information_but_fail_structural_question
+#print axioms NativeTypeCurrentReader.current_reader_does_not_publish_unfinished_annotation_closure
+#print axioms NativeTypeCurrentReader.structural_reader_does_not_request_unused_annotation_closure
+#print axioms NativeTypeCurrentReader.annotated_source_is_outside_policy_agreement
+#print axioms NativeTypeCurrentReader.resource_annotation_changes_current_reader
+#print axioms NativeTypeCurrentReader.resource_source_fails_admission
+
+#print axioms HERangeCurrentTypeReads.policy_agreement
+#print axioms HERangeCurrentTypeReads.current_reader_agrees
+#print axioms HERangeCurrentTypeReads.comparison_type
+#print axioms HERangeCurrentTypeReads.shallow_comparison_still_declines
+
+#print axioms NativeTypeScopedWorld.returned_safe_of_body
+#print axioms NativeTypeScopedWorld.evaluate_world_of_body
+
+#print axioms NativeTypeViews.node_factor
+
+#print axioms NativeTypeDemand.nodePlan_exact
+
+#print axioms NativeTypeCallGraph.node_exact
+
+end Mettapedia.GSLT.LanguageDef.Collections.TypedCalls
+

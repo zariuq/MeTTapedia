@@ -1,0 +1,22 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HENormalFormMetatype
+
+namespace Mettapedia.GSLT.LanguageDef.Collections.TypedCalls
+
+#print axioms HENormalFormMetatype.declarations_eq
+#print axioms HENormalFormMetatype.first_query_completed
+#print axioms HENormalFormMetatype.second_query_completed
+#print axioms HENormalFormMetatype.first_source_match
+#print axioms HENormalFormMetatype.second_source_match
+#print axioms HENormalFormMetatype.applicability_rejects
+#print axioms HENormalFormMetatype.no_subtypes
+#print axioms HENormalFormMetatype.closure_finished
+#print axioms HENormalFormMetatype.operator_closed
+#print axioms HENormalFormMetatype.symbol_closed
+#print axioms HENormalFormMetatype.number_constructor
+#print axioms HENormalFormMetatype.expression_state_selected
+#print axioms HENormalFormMetatype.expression_state_value
+#print axioms HENormalFormMetatype.local_inference_accepts
+#print axioms HENormalFormMetatype.original_and_instantiated_kind_cuts_differ
+#print axioms HENormalFormMetatype.local_inference_does_not_certify_applicability
+
+end Mettapedia.GSLT.LanguageDef.Collections.TypedCalls

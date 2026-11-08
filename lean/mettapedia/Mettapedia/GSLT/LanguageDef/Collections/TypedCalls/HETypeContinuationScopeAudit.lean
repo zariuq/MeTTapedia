@@ -1,0 +1,23 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HETypeContinuationScope
+
+/-! # Emitted type-control retention audit -/
+
+namespace Mettapedia.GSLT.LanguageDef.Collections.TypedCalls
+
+#print axioms HETypeContinuationScope.kept_mem
+#print axioms HETypeContinuationScope.returnDemand_vars
+#print axioms HETypeContinuationScope.type_name_kept_iff_range
+#print axioms HETypeContinuationScope.expose_kept
+#print axioms HETypeContinuationScope.expose_removed
+#print axioms HETypeContinuationScope.exposed_payload_keeps_parent_mark
+#print axioms HETypeContinuationScope.expression_instance
+#print axioms HETypeContinuationScope.raw_variable_interprets
+#print axioms HETypeContinuationScope.exposed_expression_holds
+#print axioms HETypeContinuationScope.retained_and_private_demands_differ
+#print axioms HETypeContinuationScope.Controls.shared_kept_private_materialized
+#print axioms HETypeContinuationScope.Controls.return_rewrite_does_not_remove_a_type_variable
+#print axioms HETypeContinuationScope.Controls.actual_control_scopes_choose_the_demands
+#print axioms HETypeContinuationScope.Controls.freshness_avoidance_is_not_retention
+#print axioms HETypeContinuationScope.Controls.retained_name_does_not_keep_every_alias
+
+end Mettapedia.GSLT.LanguageDef.Collections.TypedCalls

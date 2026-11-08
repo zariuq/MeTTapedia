@@ -7,7 +7,8 @@ A compiled tier that admits programs by spelling refuses forms the language defi
 equal to forms it accepts: the two-armed `if`, `let*`, a single-branch `case`, `id`, a
 singleton `superpose`, the callable spellings of the list iterators, a size observer
 applied to a computation, a bare `once`, and `min`.  This file orients those equalities
-as rewrite rules into the spellings the tier admits.
+as rewrite rules into the spellings the tier admits.  Each rule keeps its call's
+protocol: what is evaluated, in which order, how often, and how alternatives combine.
 
 **The fragment.**  `Tm` is the admission fragment of MeTTa, with variables as de Bruijn
 indices: `let_ e b` binds index 0 in `b`; `letStar es b` binds one index per source, the
@@ -15,13 +16,17 @@ indices: `let_ e b` binds index 0 in `b`; `letStar es b` binds one index per sou
 whose pattern is `bind` binds index 0 in its body; an iteration body form binds one index
 per variable it names (`foldl` two: index 1 the accumulator, index 0 the element).  A
 `quote` is a held position: its term is data, and no rule rewrites inside it.  Strict calls
-`call f args` cover library heads (`id`, `size-atom`, `min`, `<`) and user functions.  An
+`call f args` cover library heads (`id`, `size-atom`, `min`, `<`, `<=`) and user functions.  An
 elaborator maps a dialect's surface syntax to this fragment; in particular, a dialect that
 holds an argument (an `Atom`-typed parameter, or the `Expression` argument of `size-atom`
 in HE) elaborates it as a `quote`.
 
 **Facts.**  `Facts` records which indices are known to hold integers; a binder pushes an
-index without facts.  Only the `min` rule reads facts.
+index without facts.  No rule reads them now; they remain the hook of analyses over the
+fragment (`LocalDeclines.intCalls`).
+
+**Shifting.**  `shift c` lifts the free indices at or above `c` by one, under binders at
+their depths, and leaves held positions as written: a term moved under one more binder.
 
 **Rules** (`Rule`), and the context condition of `once`:
 * `if2`: `(if c t)` → `(if c t (empty))`;
@@ -32,7 +37,11 @@ index without facts.  Only the `min` rule reads facts.
 * `callable`: a callable iterator → its body form, the body calling the callable on the
   bound variables;
 * `size`: `(size-atom e)` → `(let $v e (size-atom $v))`, for `e` not a variable;
-* `min`: `(min a b)` → `(if (< a b) a b)`, for integer atoms `a`, `b`;
+* `min`: `(min a b)` → `(let $x a (let $y b (if (<= $x $y) $x $y)))`: `a` once, then `b`
+  once for each answer of `a`, as `min`'s arguments are evaluated, then the first argument
+  unless it is not `<=` the second.  The rule is sound on a dialect whose `min` is that
+  test on every pair of values (`Semantics.Ready.min`); it replaces the rule that rewrote
+  integer atoms to `(if (< a b) a b)`, which answers the second argument on ties;
 * `sizeVar`: `(let $v $x (size-atom $v))` → `(size-atom $x)`;
 * `letEta`: `(let $x (let $y e $y) b)` → `(let $x e b)`;
 * `wrap` (a `Step` constructor): `(once b)` → `(let $y (once b) $y)`, except where the
@@ -47,7 +56,8 @@ index without facts.  Only the `min` rule reads facts.
   reaches `(let $x (once b) B)` one way and `(let $x (let $y (once b) $y) B)` the other;
   `letEta` joins them.
 The other overlaps are variable overlaps of left-linear rules that neither duplicate
-nor erase a reducible subterm (`min` duplicates only atoms).  `Normalizer` proves the
+nor erase a reducible subterm (`min` moves its second argument under one binder, by
+`shift`, which the normalizer commutes with).  `Normalizer` proves the
 joins: the normalizer is invariant under every step, which gives confluence.
 
 **Steps.**  `Step top Γ` is the closure of the rules under every position except held
@@ -87,6 +97,7 @@ inductive Name
   | size
   | min
   | lt
+  | le
   | user (n : ℕ)
   deriving DecidableEq, Repr
 
@@ -146,6 +157,51 @@ def Pat.scope : Pat → Facts → Facts
   | .bind, Γ => push Γ
   | .lit _, Γ => Γ
 
+/-- The binders a branch pattern introduces. -/
+def Pat.binders : Pat → ℕ
+  | .bind => 1
+  | .lit _ => 0
+
+mutual
+/-- Lift the free indices at or above `c` by one.  A held position is data: its term stays
+as written. -/
+def shift (c : ℕ) : Tm → Tm
+  | .var k => .var (if k < c then k else k + 1)
+  | .lit l => .lit l
+  | .quote t => .quote t
+  | .tup xs => .tup (shifts c xs)
+  | .empty => .empty
+  | .if3 a b d => .if3 (shift c a) (shift c b) (shift c d)
+  | .if2 a b => .if2 (shift c a) (shift c b)
+  | .let_ e b => .let_ (shift c e) (shift (c + 1) b)
+  | .letStar es b => .letStar (shiftLS c es) (shift (c + es.length) b)
+  | .case_ e alts => .case_ (shift c e) (shiftAlts c alts)
+  | .sup xs => .sup (shifts c xs)
+  | .once b => .once (shift c b)
+  | .call f args => .call f (shifts c args)
+  | .iterC k ops f => .iterC k (shifts c ops) f
+  | .iterB k ops b => .iterB k (shifts c ops) (shift (c + k.binders) b)
+/-- Terms at one depth. -/
+def shifts (c : ℕ) : List Tm → List Tm
+  | [] => []
+  | x :: xs => shift c x :: shifts c xs
+/-- `let*` sources, each one binder deeper. -/
+def shiftLS (c : ℕ) : List Tm → List Tm
+  | [] => []
+  | e :: es => shift c e :: shiftLS (c + 1) es
+/-- Branches: a binding pattern's body one binder deeper. -/
+def shiftAlts (c : ℕ) : List (Pat × Tm) → List (Pat × Tm)
+  | [] => []
+  | (p, b) :: rest => (p, shift (c + p.binders) b) :: shiftAlts c rest
+end
+
+/-- The test of `min`'s protocol form: the first argument (index 1) unless it is not `<=`
+the second (index 0). -/
+def minIf : Tm := .if3 (.call .le [.var 1, .var 0]) (.var 1) (.var 0)
+
+/-- `(let $x a (let $y b (if (<= $x $y) $x $y)))`: `b` moved under the binder of `$x`. -/
+def minForm (a b : Tm) : Tm := .let_ a (.let_ (shift 0 b) minIf)
+
 /-- An integer atom: an integer literal, or a variable known to hold an integer. -/
 def IntAtom (Γ : Facts) : Tm → Bool
   | .lit (.int _) => true
@@ -168,8 +224,7 @@ inductive Rule (Γ : Facts) : Tm → Tm → Prop
       Rule Γ (.iterC k ops f) (.iterB k ops (.call f k.vars))
   | size (e : Tm) (h : ∀ j, e ≠ .var j) :
       Rule Γ (.call .size [e]) (.let_ e (.call .size [.var 0]))
-  | min (a b : Tm) (ha : IntAtom Γ a = true) (hb : IntAtom Γ b = true) :
-      Rule Γ (.call .min [a, b]) (.if3 (.call .lt [a, b]) a b)
+  | min (a b : Tm) : Rule Γ (.call .min [a, b]) (minForm a b)
   | sizeVar (j : ℕ) : Rule Γ (.let_ (.var j) (.call .size [.var 0])) (.call .size [.var j])
   | letEta (e b : Tm) : Rule Γ (.let_ (.let_ e (.var 0)) b) (.let_ e b)
 
@@ -252,7 +307,7 @@ than the spellings they rewrite to. -/
 def callWeight : Name → List Tm → ℕ
   | .size, [.var _] => 1
   | .size, _ => 5
-  | .min, _ => 5
+  | .min, _ => 9
   | _, _ => 1
 
 mutual
@@ -321,6 +376,51 @@ theorem μ_of_intAtom {Γ : Facts} {a : Tm} (h : IntAtom Γ a = true) (top : Boo
 theorem μ_lt_one_add (top : Bool) (x : Tm) : μ top x < 1 + μ true x := by
   have := μ_le_true top x; omega
 
+theorem callWeight_shifts (f : Name) (c : ℕ) (args : List Tm) :
+    callWeight f (shifts c args) = callWeight f args := by
+  cases f with
+  | size =>
+    rcases args with _ | ⟨x, _ | ⟨y, rest⟩⟩
+    · rfl
+    · cases x <;> simp [shifts, shift, callWeight]
+    · simp [shifts, callWeight]
+  | _ => simp [callWeight]
+
+mutual
+/-- Shifting leaves the measure alone. -/
+theorem μ_shift : ∀ (top : Bool) (c : ℕ) (t : Tm), μ top (shift c t) = μ top t
+  | _, _, .var _ => rfl
+  | _, _, .lit _ => rfl
+  | _, _, .quote _ => rfl
+  | _, c, .tup xs => by simp only [shift, μ, μs_shifts c xs]
+  | _, _, .empty => rfl
+  | _, c, .if3 a b d => by simp only [shift, μ, μ_shift true c a, μ_shift true c b, μ_shift true c d]
+  | _, c, .if2 a b => by simp only [shift, μ, μ_shift true c a, μ_shift true c b]
+  | _, c, .let_ e b => by simp only [shift, μ, μ_shift false c e, μ_shift true (c + 1) b]
+  | _, c, .letStar es b => by
+    simp only [shift, μ, μs_shiftLS c es, shiftLS_length c es, μ_shift true (c + es.length) b]
+  | _, c, .case_ e alts => by simp only [shift, μ, μ_shift true c e, μAlts_shiftAlts c alts]
+  | _, c, .sup xs => by simp only [shift, μ, μs_shifts c xs]
+  | top, c, .once b => by simp only [shift, μ, μ_shift true c b]
+  | _, c, .call f args => by simp only [shift, μ, μs_shifts c args, callWeight_shifts]
+  | _, c, .iterC k ops f => by simp only [shift, μ, μs_shifts c ops]
+  | _, c, .iterB k ops b => by
+    simp only [shift, μ, μs_shifts c ops, μ_shift true (c + k.binders) b]
+theorem μs_shifts : ∀ (c : ℕ) (xs : List Tm), μs (shifts c xs) = μs xs
+  | _, [] => rfl
+  | c, x :: xs => by simp only [shifts, μs, μ_shift true c x, μs_shifts c xs]
+theorem μs_shiftLS : ∀ (c : ℕ) (es : List Tm), μs (shiftLS c es) = μs es
+  | _, [] => rfl
+  | c, e :: es => by simp only [shiftLS, μs, μ_shift true c e, μs_shiftLS (c + 1) es]
+theorem μAlts_shiftAlts : ∀ (c : ℕ) (alts : List (Pat × Tm)), μAlts (shiftAlts c alts) = μAlts alts
+  | _, [] => rfl
+  | c, (p, b) :: rest => by
+    simp only [shiftAlts, μAlts, μ_shift true (c + p.binders) b, μAlts_shiftAlts c rest]
+theorem shiftLS_length : ∀ (c : ℕ) (es : List Tm), (shiftLS c es).length = es.length
+  | _, [] => rfl
+  | c, _ :: es => by simp only [shiftLS, List.length_cons, shiftLS_length (c + 1) es]
+end
+
 theorem rule_decreases {Γ : Facts} {t t' : Tm} (h : Rule Γ t t') (top : Bool) :
     μ top t' < μ top t := by
   cases h with
@@ -331,7 +431,7 @@ theorem rule_decreases {Γ : Facts} {t t' : Tm} (h : Rule Γ t t') (top : Bool) 
   | sup1 => simpa [μ, μs] using μ_lt_one_add top _
   | callable k ops f =>
     cases k <;> simp only [μ, Iter.vars, μs] <;>
-      (rcases f with _ | _ | _ | _ | _ <;> simp [callWeight] <;> omega)
+      (rcases f with _ | _ | _ | _ | _ | _ <;> simp [callWeight] <;> omega)
   | size e he =>
     have h2 := μ_false_le e
     have hw : callWeight .size [e] = 5 := by
@@ -339,9 +439,12 @@ theorem rule_decreases {Γ : Facts} {t t' : Tm} (h : Rule Γ t t') (top : Bool) 
       | var j => exact absurd rfl (he j)
       | _ => rfl
     simp only [μ, μs, hw, show callWeight .size [.var 0] = 1 from rfl]; omega
-  | min a b ha hb =>
-    simp only [μ, μs, μ_of_intAtom ha, μ_of_intAtom hb,
-      show callWeight .min [a, b] = 5 from rfl, show callWeight .lt [a, b] = 1 from rfl]
+  | min a b =>
+    have ha := μ_false_le a
+    have hb := μ_false_le b
+    simp only [minForm, minIf, μ, μs, μ_shift,
+      show callWeight .min [a, b] = 9 from rfl,
+      show callWeight .le [Tm.var 1, Tm.var 0] = 1 from rfl]
     omega
   | sizeVar j => simp [μ, μs, callWeight]
   | letEta e b => simp only [μ]; omega
@@ -370,19 +473,17 @@ theorem step_decreases {top : Bool} {Γ : Facts} {t t' : Tm} (h : Step top Γ t 
   | @call top Γ f pre post x x' hx ih =>
     simp only [μ, μs_append, μs]
     have hw : callWeight f (pre ++ x' :: post) ≤ callWeight f (pre ++ x :: post) := by
-      rcases f with _ | _ | _ | _ | _
-      · simp [callWeight]
-      · rcases pre with _ | ⟨p, pre⟩
+      cases f with
+      | size =>
+        rcases pre with _ | ⟨p, pre⟩
         · rcases post with _ | ⟨q, post⟩
           · cases x with
             | var j => cases hx with
               | rule r => cases r
-            | _ => simp only [List.nil_append, callWeight]; split <;> omega
+            | _ => simp only [List.nil_append]; cases x' <;> simp [callWeight]
           · simp [callWeight]
         · simp [callWeight]
-      · simp [callWeight]
-      · simp [callWeight]
-      · simp [callWeight]
+      | _ => simp [callWeight]
     omega
   | iterCOps k pre post f _ ih => simp only [μ, μs_append, μs]; omega
   | iterBOps k pre post b _ ih => simp only [μ, μs_append, μs]; omega

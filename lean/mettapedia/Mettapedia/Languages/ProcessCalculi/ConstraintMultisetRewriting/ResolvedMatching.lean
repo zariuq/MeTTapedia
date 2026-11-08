@@ -54,7 +54,7 @@ noncomputable def receipt (A : SubstitutionAction T S) (σ : S) (label : O → T
     (before : Configuration T O) (rule : RuleInstance T) (selection : Selection O) :
     Mettapedia.Languages.ProcessCalculi.GuardedMultisetRewriting.FiringReceipt O Empty T :=
   ⟨assignment, selection.taken, selection.read, selection.made,
-    rule.checks.map fun check => Check.region A σ label before.present check.pattern⟩
+    rule.checks.map fun check => Check.matches A σ label before.present check.pattern⟩
 
 private theorem literal_covers (A : SubstitutionAction T S) (pattern value : T) :
     (literalLayer A).Covers assignment pattern value ↔ A.E pattern value := by
@@ -75,19 +75,19 @@ theorem resolved_region (A : SubstitutionAction T S) (σ : S) (label : O → T)
     (store : Finset O) (pattern : T) :
     regionOf (fun o => A.apply σ (label o)) store
       (semRegion (literalLayer A) assignment (A.apply σ pattern)) =
-      Check.region A σ label store pattern := by
+      Check.matches A σ label store pattern := by
   classical
   ext o
-  simp only [mem_regionOf, semRegion_eq_true, literal_covers, Check.region, Finset.mem_filter]
+  simp only [mem_regionOf, semRegion_eq_true, literal_covers, Check.matches, Finset.mem_filter]
 
 omit [DecidableEq O] in
 private theorem check_observation (A : SubstitutionAction T S) (σ : S) (label : O → T)
     (store : Finset O) (check : Check T) (holds : check.Holds A σ label store) :
     (⟨semRegion (literalLayer A) assignment (resolvedCheck A σ check).pattern,
-      Check.region A σ label store check.pattern⟩ : PredicateQuery O T).Holds
+      Check.matches A σ label store check.pattern⟩ : PredicateQuery O T).Holds
         (fun o => A.apply σ (label o)) store ∧
       (resolvedCheck A σ check).holds assignment
-        (labels (fun o => A.apply σ (label o)) (Check.region A σ label store check.pattern)) := by
+        (labels (fun o => A.apply σ (label o)) (Check.matches A σ label store check.pattern)) := by
   classical
   constructor
   · change regionOf _ _ _ = _
@@ -97,18 +97,18 @@ private theorem check_observation (A : SubstitutionAction T S) (σ : S) (label :
   · cases check with
     | equal _ _ => exact holds
     | absent pattern =>
-      have empty : Check.region A σ label store pattern = ∅ := by
+      have empty : Check.matches A σ label store pattern = ∅ := by
         ext o
         simp only [Finset.notMem_empty, iff_false]
         intro member
         have split := Finset.mem_filter.mp member
         exact holds o split.1 split.2
-      change labels _ (Check.region A σ label store pattern) = 0
+      change labels _ (Check.matches A σ label store pattern) = 0
       rw [empty]
       rfl
     | count pattern n =>
-      change Multiset.card (labels _ (Check.region A σ label store pattern)) = n
-      change (Check.region A σ label store pattern).card = n at holds
+      change Multiset.card (labels _ (Check.matches A σ label store pattern)) = n
+      change (Check.matches A σ label store pattern).card = n at holds
       simpa only [labels, Multiset.card_map, Finset.card_def] using holds
 
 omit [DecidableEq O] in
@@ -120,7 +120,7 @@ private theorem check_observations (A : SubstitutionAction T S) (σ : S) (label 
         (fun o => A.apply σ (label o)) store ∧
         check.holds assignment (labels (fun o => A.apply σ (label o)) seen))
       (checks.map (resolvedCheck A σ))
-      (checks.map fun check => Check.region A σ label store check.pattern) := by
+      (checks.map fun check => Check.matches A σ label store check.pattern) := by
   induction checks with
   | nil => exact .nil
   | cons check rest ih =>

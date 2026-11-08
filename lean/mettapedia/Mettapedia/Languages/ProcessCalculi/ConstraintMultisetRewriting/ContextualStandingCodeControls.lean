@@ -79,7 +79,7 @@ def storedBody : RuleInstance (Tm raw) := ⟨[request privateValue], [], [], [],
 def queryBody (left right : Nat) : RuleInstance (Tm actor) := ⟨[q left], [], [], [], [q right]⟩
 def plainRows (occurrence : Nat) : ContextualStoredRows.Row locals captures [] () :=
   if occurrence = 7 then .schema (encode storedBody)
-  else .live (request (symbol (if occurrence = 0 then 1 else 2)))
+  else .shared (request (symbol (if occurrence = 0 then 1 else 2)))
 def rows (occurrence : Nat) : Row locals captures [] () := ofStored locals captures (plainRows occurrence)
 def before : ContextualConditionalExecution.State locals Nat [] () where
   Names := Nat
@@ -244,34 +244,34 @@ theorem code_reads_have_no_single_shared_view :
 
 def sharedValue : Tm captures := generator captures 0
 def sharedBody : RuleInstance (Tm captures) := ⟨[request sharedValue], [], [], [], [result sharedValue]⟩
-def liveRows (occurrence : Nat) : Row locals captures [] () :=
-  if occurrence = 7 then ofStored locals captures (.live (encode sharedBody)) else rows occurrence
-def liveProblem := problem queries locals captures selected code liveRows before.equations
+def sharedRows (occurrence : Nat) : Row locals captures [] () :=
+  if occurrence = 7 then ofStored locals captures (.shared (encode sharedBody)) else rows occurrence
+def sharedProblem := problem queries locals captures selected code sharedRows before.equations
 def capturedValue : Tm origin := generator origin (.inr (.inr 0))
-def sourceLiveBody : RuleInstance (Tm origin) := ⟨[request capturedValue], [], [], [], [result capturedValue]⟩
+def sourceSharedBody : RuleInstance (Tm origin) := ⟨[request capturedValue], [], [], [], [result capturedValue]⟩
 
-theorem live_problem_explicit : liveProblem =
+theorem shared_problem_explicit : sharedProblem =
     [(observe (queryValue 0), observe (request (symbol 1))),
      (observe (queryValue 2), observe (request (symbol 2))),
-     (observe (encode (sourceQueryBody 0 1)), observe (encode sourceLiveBody)),
-     (observe (encode (sourceQueryBody 2 3)), observe (encode sourceLiveBody))] := by
+     (observe (encode (sourceQueryBody 0 1)), observe (encode sourceSharedBody)),
+     (observe (encode (sourceQueryBody 2 3)), observe (encode sourceSharedBody))] := by
   with_unfolding_all rfl
 
-theorem explicitly_live_code_cannot_serve_the_two_incompatible_requests
+theorem explicitly_shared_code_cannot_serve_the_two_incompatible_requests
     {Next : Type} {next : Next → MetaArity base} (candidate : Assignment origin next) :
-    ¬ ContextualResidual.Models candidate liveProblem := by
+    ¬ ContextualResidual.Models candidate sharedProblem := by
   intro solved
-  rw [live_problem_explicit] at solved
+  rw [shared_problem_explicit] at solved
   let equations : EquationStore (Tm origin) :=
     [(queryValue 0, request (symbol 1)), (queryValue 2, request (symbol 2)),
-     (encode (sourceQueryBody 0 1), encode sourceLiveBody), (encode (sourceQueryBody 2 3), encode sourceLiveBody)]
+     (encode (sourceQueryBody 0 1), encode sourceSharedBody), (encode (sourceQueryBody 2 3), encode sourceSharedBody)]
   have ordinary := (ContextualResidual.models_observeProblem candidate equations).mp solved
   have firstInput := ordinary (queryValue 0, request (symbol 1)) (by simp [equations])
   have secondInput := ordinary (queryValue 2, request (symbol 2)) (by simp [equations])
-  have firstCode := (instantiated_codes_iff candidate (sourceQueryBody 0 1) sourceLiveBody).mp
-    (ordinary (encode (sourceQueryBody 0 1), encode sourceLiveBody) (by simp [equations]))
-  have secondCode := (instantiated_codes_iff candidate (sourceQueryBody 2 3) sourceLiveBody).mp
-    (ordinary (encode (sourceQueryBody 2 3), encode sourceLiveBody) (by simp [equations]))
+  have firstCode := (instantiated_codes_iff candidate (sourceQueryBody 0 1) sourceSharedBody).mp
+    (ordinary (encode (sourceQueryBody 0 1), encode sourceSharedBody) (by simp [equations]))
+  have secondCode := (instantiated_codes_iff candidate (sourceQueryBody 2 3) sourceSharedBody).mp
+    (ordinary (encode (sourceQueryBody 2 3), encode sourceSharedBody) (by simp [equations]))
   have firstUse := (List.cons.inj (congrArg (fun body => body.take) firstCode)).1
   have secondUse := (List.cons.inj (congrArg (fun body => body.take) secondCode)).1
   have wrong : request (symbol 1) = request (symbol 2) :=
@@ -279,11 +279,11 @@ theorem explicitly_live_code_cannot_serve_the_two_incompatible_requests
   have impossible : (1 : Nat) = 2 := symbol_injective (request_injective wrong)
   omega
 
-theorem the_live_version_has_no_source_firing :
-    ¬ Admitted queries locals captures selected code liveRows before.equations before.present := by
+theorem the_shared_version_has_no_source_firing :
+    ¬ Admitted queries locals captures selected code sharedRows before.equations before.present := by
   intro admitted
   obtain ⟨Future, future, candidate, solved⟩ := admitted.solvable
-  exact explicitly_live_code_cannot_serve_the_two_incompatible_requests candidate solved
+  exact explicitly_shared_code_cannot_serve_the_two_incompatible_requests candidate solved
 
 def declaration : Declaration (Tm raw) := ⟨.perSelection, ⟨storedBody, [true], rfl⟩⟩
 def declarationRows (occurrence : Nat) : Row locals captures [] () :=

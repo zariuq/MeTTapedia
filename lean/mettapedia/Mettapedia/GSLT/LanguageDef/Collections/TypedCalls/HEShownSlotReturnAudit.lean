@@ -1,0 +1,32 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEShownSlotReturnControls
+
+/-! # Compact slot provenance and retained return audit -/
+
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEShownSlotReturn.emitted_entries
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEShownSlotReturn.compact_writes
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEShownSlotReturn.emitted_not_seen
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEShownSlotReturn.emitted_unique
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEShownSlotReturn.compact_occurrences_unique
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEShownSlotReturn.repeated_refuses_compact
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEShownSlotReturn.fieldFirst_perm
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEShownSlotReturn.fieldFirst_unique
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEShownSlotReturn.install_preserves_other
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEShownSlotReturn.install_member
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEShownSlotReturn.emitted_lookup_read
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEShownSlotReturn.compact_lookup_read
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEShownSlotReturn.field_read
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEShownSlotReturn.slot_code_returns
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEShownSlotReturn.compact_slot_completed
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEShownSlotReturn.captured_slot_completed
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEShownSlotReturn.Controls.fresh_occurrences_are_compact
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEShownSlotReturn.Controls.field_first_is_a_real_reordering
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEShownSlotReturn.Controls.exact_compact_entry
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEShownSlotReturn.Controls.both_values_and_marks_survive
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEShownSlotReturn.Controls.repeated_variable_emits_same_not_write
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEShownSlotReturn.Controls.duplicate_write_breaks_static_lookup
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEShownSlotReturn.Controls.metadata_does_not_make_a_scalar_have_fields
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEShownSlotReturn.Controls.field_zero_is_the_constructor_head
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEShownSlotReturn.Controls.actual_return_reader
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEShownSlotReturn.Controls.lowered_slot_and_actual_gate
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEShownSlotReturn.Controls.replacing_marked_field_with_raw_syntax_changes_it
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEShownSlotReturn.Controls.pending_source_is_not_completed_data

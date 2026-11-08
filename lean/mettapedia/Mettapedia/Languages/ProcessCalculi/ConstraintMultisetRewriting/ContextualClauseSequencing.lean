@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 # A subsequent resolved clause sees the same source and compiled state
 
 The next rule may join conditional schemas, tell shared equations, retain
-live references and test absence or counts. Its selected occurrences and
+shared references and test absence or counts. Its selected occurrences and
 guard world are preserved. The rule's captured variables travel through
 the actual previous compiler frame; its query variables remain private.
 -/

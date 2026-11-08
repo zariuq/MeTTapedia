@@ -1,0 +1,5 @@
+let s. assume Hs: s :e Lean_CEK_St. let f1. assume Hf1: f1 :e Lean_CEK_St. let f2. assume Hf2: f2 :e Lean_CEK_St.
+assume H1. assume H2. assume F1: 0 :e Lean_CEK_Final f1. assume F2: 0 :e Lean_CEK_Final f2.
+exact Lean_Machine_final_unique Lean_CEK_St Lean_CEK_step s Hs f1 Hf1 f2 Hf2 H1 H2
+  (LeanEq_sound (Lean_Option Lean_CEK_St) (Lean_CEK_step f1) (Lean_Option_none_node Lean_CEK_St) 0 F1)
+  (LeanEq_sound (Lean_Option Lean_CEK_St) (Lean_CEK_step f2) (Lean_Option_none_node Lean_CEK_St) 0 F2).

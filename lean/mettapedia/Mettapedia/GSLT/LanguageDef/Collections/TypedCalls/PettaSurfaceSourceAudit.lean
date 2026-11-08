@@ -1,0 +1,64 @@
+import Mettapedia.Languages.MeTTa.PeTTa.DestinationSequenceSource
+import Mettapedia.Languages.MeTTa.PeTTa.Bridges.ScopedQuerySourceControls
+import Mettapedia.Languages.MeTTa.PeTTa.Bridges.ScopedUnifyingQueryContinuation
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaSurfaceReturnControls
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaOccurrenceSourceLink
+
+/-! Kernel audit of the owned surface/typed occurrence source connection. -/
+
+open Mettapedia.Languages.MeTTa.PeTTa
+open Mettapedia.GSLT.LanguageDef.Collections.TypedCalls
+
+#print axioms EagerDFS.Destination.SequenceSource.bindingPairs_iff_lowering
+#print axioms EagerDFS.Destination.SequenceSource.malformed_binding_list_has_no_lowering
+#print axioms EagerDFS.Destination.SequenceSource.admitted_sequence_entry
+#print axioms EagerDFS.Destination.SequenceSource.missing_else_entry
+#print axioms EagerDFS.Destination.SequenceSource.Controls.ordered_binding_lowering
+#print axioms EagerDFS.Destination.SequenceSource.Controls.malformed_pair_is_not_an_admitted_sequence
+#print axioms EagerDFS.Destination.MatchSource.queryChoices_iff_frontier
+#print axioms EagerDFS.Destination.MatchSource.query_row_avoids_caller
+#print axioms EagerDFS.Destination.MatchSource.selected_template_is_original_recipe
+#print axioms EagerDFS.Destination.MatchSource.selected_records_refine_caller
+#print axioms EagerDFS.Destination.MatchSource.Controls.loaded_rows_keep_both_occurrences
+#print axioms EagerDFS.Destination.MatchSource.Controls.primitive_match_entry_remains_distinct
+#print axioms EagerDFS.Destination.MatchSource.Controls.authored_match_is_not_intrinsically_owned
+#print axioms Bridges.ScopedQuerySource.owned_keeps_completed_step
+#print axioms Bridges.ScopedQuerySource.owned_keeps_publication
+#print axioms Bridges.ScopedQuerySource.unifying_entry
+#print axioms Bridges.ScopedQuerySource.ownership_source_stage_retained
+#print axioms Bridges.ScopedQuerySource.ownership_ready_stage_retained
+#print axioms Bridges.ScopedQueryBinding.Local.safe
+#print axioms Bridges.ScopedQueryBinding.Local.not_publish
+#print axioms Bridges.ScopedQueryBinding.syntax_local
+#print axioms Bridges.ScopedQueryBinding.constrained_local
+#print axioms Bridges.ScopedQueryBinding.mutation_local
+#print axioms Bridges.ScopedQueryBinding.ownership_local
+#print axioms Bridges.ScopedQueryBinding.unifying_local
+#print axioms Bridges.ScopedQueryBinding.captured_work_records
+#print axioms Bridges.ScopedQueryBinding.query_local
+#print axioms Bridges.ScopedQueryBinding.base_step_safe
+#print axioms Bridges.ScopedQueryBinding.owned_step_safe
+#print axioms Bridges.ScopedQueryBinding.base_publication_is_raw
+#print axioms Bridges.ScopedQueryBinding.owned_publication_is_raw
+#print axioms Bridges.ScopedQuerySource.Controls.open_row_is_not_a_closed_capture
+#print axioms Bridges.ScopedQuerySource.Controls.open_row_has_two_way_admission
+#print axioms Bridges.ScopedQuerySource.Controls.duplicate_rows_keep_ordered_origins
+#print axioms Bridges.ScopedQuerySource.Controls.shadowed_source_retains_unstarted_operand
+#print axioms Bridges.ScopedQueryReturn.refinement_fixes_destination
+#print axioms Bridges.ScopedQueryReturn.selected_keeps_protected_slot
+#print axioms Bridges.ScopedQueryReturn.variable_body_two_steps
+#print axioms Bridges.ScopedQueryReturn.variable_body_refuses_only_current
+#print axioms Bridges.ScopedQueryReturn.selected_variable_delivery
+#print axioms Bridges.ScopedQuerySource.Caller.queryRow_attach
+#print axioms Bridges.ScopedQuerySource.Caller.query_frontier_attach
+#print axioms Bridges.ScopedQuerySource.Caller.query_choices_attach
+#print axioms Bridges.ScopedQuerySource.Caller.query_work_attach
+#print axioms Bridges.ScopedQuerySource.Caller.query_selected_protected
+#print axioms Bridges.ScopedQuerySource.Caller.owned_query_step
+#print axioms Bridges.ScopedQuerySource.Caller.owned_query_step_attach
+#print axioms PettaSurfaceReturn.typed_variable_body_two_steps
+#print axioms PettaSurfaceReturn.source_variable_then_guard
+#print axioms PettaOccurrenceOverlay.surface_published_is_source
+#print axioms PettaOccurrenceBinding.step_safe
+#print axioms PettaOccurrenceBinding.path_safe
+

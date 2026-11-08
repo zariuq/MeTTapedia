@@ -1,0 +1,54 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFunctionClassPublication
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEPublicationProvenance
+
+/-! Checks for the source-earned closed-class publication fragment. -/
+
+namespace Mettapedia.GSLT.LanguageDef.Collections.TypedCalls
+
+#print axioms HEPrivateTypePublication.environment_avoids
+#print axioms HEPrivateTypePublication.substitute_one_away
+#print axioms HEPrivateTypePublication.fresh_environment
+#print axioms HEPrivateTypePublication.drop_fresh_assignment
+#print axioms HEPrivateTypePublication.drop_fresh_environment
+#print axioms HEPrivateTypePublication.retained_cells_unchanged
+#print axioms HEPrivateTypePublication.exposed_fresh_binding
+#print axioms HEPrivateTypePublication.fresh_closed_type_publication
+#print axioms HEPrivateTypePublication.Controls.arbitrary_caller_expression_instance
+#print axioms HEPrivateTypePublication.Controls.alias_assignment_cannot_be_dropped
+#print axioms HEExpectedPrivateTypePublication.source_match
+#print axioms HEExpectedPrivateTypePublication.fresh_formal
+#print axioms HEScopedFunctionPublication.nativeCall_erase
+#print axioms HEScopedFunctionPublication.substitute_nativeCall
+#print axioms HEScopedFunctionPublication.substitute_pending
+#print axioms HEScopedFunctionPublication.substitute_functionBody
+#print axioms HEScopedFunctionPublication.publish_kept
+#print axioms HEScopedFunctionPublication.publish_fresh_pending
+#print axioms HEScopedFunctionPublication.Controls.private_two_argument_packet
+#print axioms HEClosedAliasRetirement.outsidePair_of_fresh_row
+#print axioms HEClosedAliasRetirement.outsidePair_of_fresh_equality
+#print axioms HEClosedAliasRetirement.removePair_fresh_class
+#print axioms HEClosedAliasRetirement.project_fresh_class
+#print axioms HEClosedAliasRetirement.project_fresh_environment
+#print axioms HEClosedAliasRetirement.expose_kept
+#print axioms HEClosedAliasRetirement.expose_removed_left
+#print axioms HEClosedAliasRetirement.expose_removed_right
+#print axioms HEClosedAliasRetirement.retained_left_packet_unchanged
+#print axioms HEClosedAliasRetirement.projected_frame
+#print axioms HEClosedAliasRetirement.class_read
+#print axioms HEClosedAliasRetirement.expose_class
+#print axioms HEClosedAliasRetirement.classValuation_fixes_outside
+#print axioms HEClosedAliasRetirement.classValuation_fixes_payload
+#print axioms HEClosedAliasRetirement.complete_environment_filter
+#print axioms HEClosedAliasRetirement.Controls.retained_alias_gets_value
+#print axioms HEClosedAliasRetirement.Controls.both_private_restore_caller
+#print axioms HEClosedAliasRetirement.Controls.unresolved_class_is_not_closed_publication
+#print axioms HEClosedAliasRetirement.Controls.omitted_caller_changes_full_filter
+#print axioms HEFunctionClassPublication.source_operator_publication
+#print axioms HEFunctionClassPublication.pending_packet
+#print axioms HEFunctionClassPublication.expression_argument
+#print axioms HEFunctionClassPublication.expression_arguments
+#print axioms HEPublicationProvenance.same_resolved_value
+#print axioms HEPublicationProvenance.different_retained_cell_updates
+#print axioms HEPublicationProvenance.no_resolved_value_only_update
+
+end Mettapedia.GSLT.LanguageDef.Collections.TypedCalls

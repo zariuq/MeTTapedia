@@ -28,7 +28,7 @@ abbrev inners := ContextualConditionalTemplateControls.inners
 abbrev captures := ContextualConditionalTemplateControls.captures
 
 def incomingRow (number : Nat) : Row locals captures [] () :=
-  ⟨.live (literal 7), [(observe (generator (ContextualSelectionViews.source locals captures) (.inr ())),
+  ⟨.shared (literal 7), [(observe (generator (ContextualSelectionViews.source locals captures) (.inr ())),
     observe (literal (Γ := []) number))]⟩
 
 def before : ContextualClauseSourceState.World locals Nat [] () :=

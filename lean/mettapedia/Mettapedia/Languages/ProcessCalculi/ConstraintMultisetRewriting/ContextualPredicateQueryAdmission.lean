@@ -1,11 +1,11 @@
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.CensusAdmission
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.PredicateQueryAdmission
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualGuardEntryViews
 
 /-!
 # Existing predicate queries at a contextual firing's information cut
 
 A typed candidate packages one future declaration family and its assignment.
-Queries are the existing CensusAdmission.Query. Native labels retain both
+Queries are the existing PredicateQueryAdmission.Query. Native labels retain both
 occurrence identities and the actual conditional row data. Contextual admission
 quantifies over all future models of the actual firing information. Query observations refine an existing firing;
 they do not change its solver return, resource update or published rows.
@@ -35,8 +35,8 @@ structure Candidate (declaration : V → MetaArity S) : Type 1 where
   declarations : Variables → MetaArity S
   assignment : Assignment declaration declarations
 
-abbrev Query (declaration : V → MetaArity S) (O : Type) := CensusAdmission.Query O (Candidate declaration) O
-abbrev DataQuery (declaration : V → MetaArity S) (Label O : Type) := CensusAdmission.Query Label (Candidate declaration) O
+abbrev Query (declaration : V → MetaArity S) (O : Type) := PredicateQueryAdmission.Query O (Candidate declaration) O
+abbrev DataQuery (declaration : V → MetaArity S) (Label O : Type) := PredicateQueryAdmission.Query Label (Candidate declaration) O
 
 def Holds (query : Query declaration O) (world : Finset O) (candidate : Candidate declaration) : Prop :=
   (query.atSolution candidate).Holds id world
@@ -151,7 +151,7 @@ theorem condition_holds_iff [DecidableEq O] (condition : Candidate declaration �
     exact (of_decide_eq_true picked).2
   · intro accepted
     ext occurrence
-    simp only [mem_regionOf, ofCondition, CensusAdmission.Query.atSolution, Finset.mem_singleton, id_eq,
+    simp only [mem_regionOf, ofCondition, PredicateQueryAdmission.Query.atSolution, Finset.mem_singleton, id_eq,
       decide_eq_true_eq]
     constructor
     · exact fun member => member.2.1

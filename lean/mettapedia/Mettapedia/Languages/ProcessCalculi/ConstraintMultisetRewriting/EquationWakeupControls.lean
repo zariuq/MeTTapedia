@@ -3,7 +3,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.CheckStab
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Controls
 
 /-!
-# A live row wakes a ground absence query through bindings alone
+# A shared row wakes a ground absence query through bindings alone
 
 The one physical row remains present. Its shared variable is constrained by
 an actual tell-only step. Every physical region has no write event, while

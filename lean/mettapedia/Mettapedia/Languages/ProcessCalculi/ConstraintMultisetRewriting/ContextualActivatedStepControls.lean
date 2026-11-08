@@ -5,9 +5,9 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 # Computed occurrence firings across contextual declaration frames
 
 The same stored schema occurrence supplies incompatible private instances
-to two read ports, without duplicating the physical row. A retained live
+to two read ports, without duplicating the physical row. A retained shared
 capture follows the old equation store into the extended frame. Replacing
-the schema by a shared live value refuses that firing. Further controls
+the schema by a shared shared value refuses that firing. Further controls
 retain repeated aliases, reject duplicate consumption and keep guards outside
 the declared positive profile.
 -/
@@ -33,8 +33,8 @@ def before : Configuration CapturedTerm Nat := ⟨[(sharedValue, capturedAtom)],
 
 def rows : Nat → Stored
   | 7 => .schema universalRow
-  | 8 => .live (p sharedValue)
-  | _ => .live capturedAtom
+  | 8 => .shared (p sharedValue)
+  | _ => .shared capturedAtom
 
 def rule : RuleInstance RawTerm :=
   ⟨[], [p rawA, p rawB], [(privateVariable, rawA)], [], [universalRow]⟩
@@ -64,7 +64,7 @@ theorem the_shared_physical_schema_read_is_a_valid_firing :
     Valid locals captures occupied selection rule rows before outputs := by
   refine ⟨rfl, by decide, by decide, rfl, rfl, ?_, by decide, ?_⟩
   · with_unfolding_all rfl
-  · exact ⟨split, the_computed_two_read_problem_has_a_model⟩
+  · exact ContextualFrameUnifier.solvable_of_consistent ⟨split, the_computed_two_read_problem_has_a_model⟩
 
 theorem the_schema_uses_an_actual_positive_step :
     Step locals captures occupied rule rows before outputs after afterRows afterOccupied :=
@@ -76,8 +76,8 @@ theorem shared_reads_do_not_manufacture_extra_physical_occurrences :
 theorem the_chosen_read_occurrence_survives : 7 ∈ after.present :=
   the_shared_physical_schema_read_is_a_valid_firing.kept_survive locals captures (by decide)
 
-theorem the_retained_live_row_keeps_its_old_capture :
-    afterRows 8 = .live (instantiate (ContextualSelectionViews.capturedTarget locals captures) (p sharedValue)) := by
+theorem the_retained_shared_row_keeps_its_old_capture :
+    afterRows 8 = .shared (instantiate (ContextualSelectionViews.capturedTarget locals captures) (p sharedValue)) := by
   have transported :=
     the_shared_physical_schema_read_is_a_valid_firing.retained_row_transports_captures locals captures
       (occurrence := 8) (by decide)
@@ -94,20 +94,20 @@ theorem every_future_model_still_satisfies_the_old_capture_equation
       (Assignment.compose candidate (ContextualSelectionViews.capturedTarget locals captures)) before.equations :=
   models_refine_old_frame locals captures next occupied selection rule rows before candidate solved
 
-def liveRows : Nat → Stored := fun _ => .live (p sharedValue)
+def sharedRows : Nat → Stored := fun _ => .shared (p sharedValue)
 
-theorem live_row_use_views_remain_identical :
-    (prepared locals captures occupied selection rule liveRows).read first =
-      (prepared locals captures occupied selection rule liveRows).read second := by
-  exact ContextualSelectionViews.live_value_does_not_change_between_ports locals captures occupied
+theorem shared_row_use_views_remain_identical :
+    (prepared locals captures occupied selection rule sharedRows).read first =
+      (prepared locals captures occupied selection rule sharedRows).read second := by
+  exact ContextualSelectionViews.shared_value_does_not_change_between_ports locals captures occupied
     (ContextualActivationScopes.readPort selection first) (ContextualActivationScopes.readPort selection second)
     (p sharedValue)
 
-theorem replacing_the_schema_by_one_live_shared_row_refuses_the_firing :
-    ¬ Valid locals captures occupied selection rule liveRows before outputs := by
+theorem replacing_the_schema_by_one_shared_row_refuses_the_firing :
+    ¬ Valid locals captures occupied selection rule sharedRows before outputs := by
   intro valid
-  obtain ⟨candidate, solved⟩ := valid.consistent
-  have inputs := valid.models_inputs locals captures active candidate solved
+  obtain ⟨Future, future, candidate, solved⟩ := valid.solvable
+  have inputs := valid.models_inputs locals captures future candidate solved
   have reads : List.Forall₂
       (fun pattern value => instantiate candidate pattern = instantiate candidate value)
       [p a, p b]
@@ -115,11 +115,9 @@ theorem replacing_the_schema_by_one_live_shared_row_refuses_the_firing :
        instantiate (ContextualSelectionViews.capturedTarget locals captures) (p sharedValue)] := inputs.2.2.1
   have one := (List.forall₂_cons.mp reads).1
   have two := (List.forall₂_cons.mp (List.forall₂_cons.mp reads).2).1
-  change p a = instantiate candidate
-    (instantiate (ContextualSelectionViews.capturedTarget locals captures) (p sharedValue)) at one
-  change p b = instantiate candidate
-    (instantiate (ContextualSelectionViews.capturedTarget locals captures) (p sharedValue)) at two
-  exact ContextualSelectionViews.Controls.distinct_ground_instances_are_unequal (one.trans two.symm)
+  have sizes := congrArg termSize (one.trans two.symm)
+  change (3 : Nat) = 5 at sizes
+  omega
 
 def duplicateSelection : Selection Nat := ⟨[7, 7], [], [99]⟩
 def duplicateRule : RuleInstance RawTerm := ⟨[p rawA, p rawB], [], [], [], [universalRow]⟩
@@ -139,7 +137,8 @@ theorem two_equal_valued_occurrences_can_be_consumed_distinctly :
     Valid locals captures occupied takeSelection takeRule duplicateValuedRows before outputs := by
   refine ⟨rfl, by decide, by decide, rfl, rfl, ?_, by decide, ?_⟩
   · with_unfolding_all rfl
-  · refine ⟨split, ?_⟩
+  · apply ContextualFrameUnifier.solvable_of_consistent
+    refine ⟨split, ?_⟩
     rw [distinct_takes_build_the_same_value_equations_as_the_two_reads]
     exact the_computed_two_read_problem_has_a_model
 
@@ -191,16 +190,16 @@ theorem a_later_schema_can_capture_an_earlier_rule_local :
 
 theorem the_scope_ledger_is_advanced_with_the_firing : afterOccupied = {0, 2, 7, 8, 9, 10} := by decide
 
-def liveLabel (_ : Nat) : CapturedTerm := p sharedValue
-def liveRule : RuleInstance CapturedTerm := ⟨[p sharedValue], [], [], [], [p sharedValue]⟩
-def liveSelection : Selection Nat := ⟨[7], [], [99]⟩
-def transportedLabel := ContextualActiveStepProfile.targetLabel locals captures liveLabel
-def transportedRule := ContextualActiveStepProfile.targetRule locals captures liveRule
+def sharedLabel (_ : Nat) : CapturedTerm := p sharedValue
+def sharedRule : RuleInstance CapturedTerm := ⟨[p sharedValue], [], [], [], [p sharedValue]⟩
+def sharedSelection : Selection Nat := ⟨[7], [], [99]⟩
+def transportedLabel := ContextualActiveStepProfile.targetLabel locals captures sharedLabel
+def transportedRule := ContextualActiveStepProfile.targetRule locals captures sharedRule
 def transportedBefore := frame locals captures before
-def liveAfter := liveSelection.result transportedLabel transportedRule transportedBefore
+def sharedAfter := sharedSelection.result transportedLabel transportedRule transportedBefore
 
 theorem the_already_active_profile_has_an_ordinary_firing :
-    liveSelection.Valid A transportedLabel transportedRule transportedBefore := by
+    sharedSelection.Valid A transportedLabel transportedRule transportedBefore := by
   refine ⟨by decide, by decide, rfl, rfl, rfl, by decide, ?_, ?_⟩
   · refine ⟨split, ?_⟩
     change A.Models split [(generator active (.inr 0), a),
@@ -208,16 +207,16 @@ theorem the_already_active_profile_has_an_ordinary_firing :
     refine (A.models_cons split _ _).mpr ⟨?_, (A.models_cons split _ _).mpr ⟨?_, A.models_nil split⟩⟩
     · with_unfolding_all rfl
     · rfl
-  · simp [transportedRule, ContextualActiveStepProfile.targetRule, liveRule, RuleInstance.map]
+  · simp [transportedRule, ContextualActiveStepProfile.targetRule, sharedRule, RuleInstance.map]
 
 theorem the_already_active_step_is_recovered_with_its_ledger :
-    ∃ ledger, Step locals captures occupied (ContextualActiveStepProfile.rawRule locals captures liveRule)
-      (ContextualActiveStepProfile.liveRows locals captures liveLabel) before transportedLabel liveAfter
-      (ContextualActiveStepProfile.liveRows locals active transportedLabel) ledger :=
-  (ContextualActiveStepProfile.step_iff locals captures occupied liveRule rfl liveLabel before liveAfter).mpr
-    ⟨liveSelection, the_already_active_profile_has_an_ordinary_firing, rfl⟩
+    ∃ ledger, Step locals captures occupied (ContextualActiveStepProfile.rawRule locals captures sharedRule)
+      (ContextualActiveStepProfile.sharedRows locals captures sharedLabel) before transportedLabel sharedAfter
+      (ContextualActiveStepProfile.sharedRows locals active transportedLabel) ledger :=
+  (ContextualActiveStepProfile.step_iff locals captures occupied (fun () => atom active) sharedRule rfl sharedLabel before sharedAfter).mpr
+    ⟨sharedSelection, the_already_active_profile_has_an_ordinary_firing, rfl⟩
 
 theorem the_recovered_consuming_profile_removes_the_taken_occurrence :
-    7 ∉ liveAfter.present ∧ 8 ∈ liveAfter.present ∧ 99 ∈ liveAfter.present := by decide
+    7 ∉ sharedAfter.present ∧ 8 ∈ sharedAfter.present ∧ 99 ∈ sharedAfter.present := by decide
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualActivatedStep.Controls

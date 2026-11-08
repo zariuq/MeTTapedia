@@ -1,0 +1,92 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFiniteSourceCollector
+
+/-! # Axiom audit for the finite source producer and retained collector -/
+
+namespace Mettapedia.GSLT.LanguageDef.Collections.TypedCalls
+
+#print axioms HEFiniteSuperposeSource.superpose_emits_children
+#print axioms HEFiniteSuperposeSource.multiplication_unchanged
+#print axioms HEFiniteSuperposeSource.closed_annotations
+#print axioms HEFiniteSuperposeSource.worker_raw
+#print axioms HEFiniteSuperposeSource.square_declared
+#print axioms HEFiniteSuperposeSource.superpose_declared
+#print axioms HEFiniteSuperposeSource.source_argument_lookup
+#print axioms HEFiniteSuperposeSource.source_square_applicable
+#print axioms HEFiniteSuperposeSource.source_superpose_applicable
+#print axioms HEFiniteSuperposeSource.source_square_selection
+#print axioms HEFiniteSuperposeSource.source_superpose_selection
+#print axioms HEFiniteSuperposeSource.atom_self_equal
+#print axioms HEFiniteSuperposeSource.held_expression_step
+#print axioms HEFiniteSuperposeSource.held_expression_argument
+#print axioms HEFiniteSuperposeSource.grounded_number_step
+#print axioms HEFiniteSuperposeSource.grounded_numbers
+#print axioms HEFiniteSuperposeSource.produced_numbers
+#print axioms HEFiniteSuperposeSource.returned_numbers
+#print axioms HEFiniteSuperposeSource.superpose_host_step
+#print axioms HEFiniteSuperposeSource.superpose_invocation
+#print axioms HEFiniteSuperposeSource.empty_superpose_invocation
+#print axioms HEFiniteSuperposeSource.superpose_head_entry
+#print axioms HEFiniteSuperposeSource.superpose_head_step
+#print axioms HEFiniteSuperposeSource.superpose_head_tail
+#print axioms HEFiniteSuperposeSource.superpose_arguments
+#print axioms HEFiniteSuperposeSource.superpose_arguments_tail
+#print axioms HEFiniteSuperposeSource.superpose_source_prefix
+#print axioms HEFiniteSuperposeSource.rows_success_priority
+#print axioms HEFiniteSuperposeSource.superpose_drain
+#print axioms HEFiniteSuperposeSource.superpose_source_returns
+#print axioms HEFiniteSuperposeSource.empty_superpose_source_returns
+#print axioms HEFiniteSuperposeSource.source_not_delivered_integer
+#print axioms HEFiniteSuperposeSource.superpose_duplicates_retained
+#print axioms HEFiniteSuperposeSource.surface_not_supported_by_plain_worker
+#print axioms HEFiniteSuperposeSquare.query_block
+#print axioms HEFiniteSuperposeSquare.producer_block
+#print axioms HEFiniteSuperposeSquare.head_entry
+#print axioms HEFiniteSuperposeSquare.head_step
+#print axioms HEFiniteSuperposeSquare.head_tail
+#print axioms HEFiniteSuperposeSquare.arguments_block
+#print axioms HEFiniteSuperposeSquare.arithmetic_block
+#print axioms HEFiniteSuperposeSquare.return_block
+#print axioms HEFiniteSuperposeSquare.ordinary_square
+#print axioms HEFiniteSuperposeSquare.ordinary_squares
+#print axioms HEFiniteSuperposeSquare.argument_alternatives
+#print axioms HEFiniteSuperposeSquare.source_arguments
+#print axioms HEFiniteSuperposeSquare.outer_head_entry
+#print axioms HEFiniteSuperposeSquare.outer_head_step
+#print axioms HEFiniteSuperposeSquare.outer_head_tail
+#print axioms HEFiniteSuperposeSquare.source_arguments_prefix
+#print axioms HEFiniteSuperposeSquare.assembled_calls
+#print axioms HEFiniteSuperposeSquare.source_arguments_tail
+#print axioms HEFiniteSuperposeSquare.square_results_clean
+#print axioms HEFiniteSuperposeSquare.source_drain
+#print axioms HEFiniteSuperposeSquare.source_calls_complete
+#print axioms HEFiniteSuperposeSquare.source_returns
+#print axioms HEFiniteSuperposeSquare.source_preselection
+#print axioms HEFiniteSuperposeSquare.source_selection_native
+#print axioms HEFiniteSuperposeSquare.source_finishes
+#print axioms HEFiniteSuperposeSquare.empty_arguments
+#print axioms HEFiniteSuperposeSquare.empty_calls
+#print axioms HEFiniteSuperposeSquare.empty_close
+#print axioms HEFiniteSuperposeSquare.empty_source_finishes
+#print axioms HEFiniteSuperposeSquare.finite_source_finishes
+#print axioms HEFiniteSuperposeSquare.source_residual_completes
+#print axioms HEFiniteSourceCollector.read_source
+#print axioms HEFiniteSourceCollector.read_request_sound
+#print axioms HEFiniteSourceCollector.child_finishes
+#print axioms HEFiniteSourceCollector.completed_rows_exact
+#print axioms HEFiniteSourceCollector.completed_pack_exact
+#print axioms HEFiniteSourceCollector.collector_finishes_active
+#print axioms HEFiniteSourceCollector.collector_enters
+#print axioms HEFiniteSourceCollector.collector_finishes
+#print axioms HEFiniteSourceCollector.collector_paused
+#print axioms HEFiniteSourceCollector.returned_frontier_not_aggregate
+#print axioms HEFiniteSourceCollector.surface_values_readback
+#print axioms HEFiniteSourceCollector.Controls.empty_completed_is_empty_collection
+#print axioms HEFiniteSourceCollector.Controls.three_class_readback
+#print axioms HEFiniteSourceCollector.Controls.earlier_binary_selection_not_repaired
+#print axioms HEFiniteSourceCollector.Controls.duplicate_occurrences_and_records
+#print axioms HEFiniteSourceCollector.Controls.equal_values_different_snapshots
+#print axioms HEFiniteSourceCollector.Controls.malformed_surface_declined
+#print axioms HEFiniteSourceCollector.Controls.cancelled_no_aggregate
+
+end Mettapedia.GSLT.LanguageDef.Collections.TypedCalls
+

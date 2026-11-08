@@ -34,6 +34,7 @@ import Mettapedia.GSLT.LanguageDef.Collections.Presentations
 import Mettapedia.GSLT.LanguageDef.Collections.NodeFamilies
 import Mettapedia.GSLT.LanguageDef.Collections.TypedCertificates
 import Mettapedia.GSLT.LanguageDef.Collections.StructureByProof
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls
 import Mettapedia.Languages.MeTTa.SpaceQueryPolicy
 import Mettapedia.Languages.MeTTa.CollectionPatternQuery
 
@@ -192,6 +193,32 @@ laws do not assert unrestricted text injectivity or a parser round trip.
   included (`Collections.StructureByProof.Recognized.answers_spine`); no rule
   that sees only constructors and operations decides when a quotient is sound
   (`Collections.StructureByProof.no_shape_only_admission`).
+
+## Typed calls
+
+PeTTa's `get-type` is a relation with multiplicity, and a typed call continues
+once for every answer that meets its formal
+(`Collections.TypedCalls.guard`). Under functional declarations every guard
+succeeds at most once, and exactly once at a type variable nothing else names
+(`Collections.TypedCalls.card_guard_fresh`). A constructor application typed at
+a closed named type inverts through one-way matching of the declared result
+(`Collections.TypedCalls.ctor_inversion`), its fields build it back
+(`Collections.TypedCalls.ctor_construction`), and at a metatype name the guard
+is not the relation (`Collections.TypedCalls.Controls.metatype_guard_without_relation`).
+A trusted version, whose calls to itself skip the protocol, has the protocol's
+answers at every fuel for every relation the analysis accepts
+(`Collections.TypedCalls.accepted_version_eq_protocol`). Alpha-equivalent
+declaration rows are one row in every observation
+(`Collections.TypedCalls.idemAlpha_addRow`, `Collections.TypedCalls.typedCall_repeat`),
+and the inline protocol of a declared builtin is the row's protocol on values
+and variables (`Collections.TypedCalls.inline_eq_protocol`). With shared type
+variables a call's store is a common instance of them
+(`Collections.TypedCalls.chainCall_shared`); a call through a variable runs
+natively for every callee without an `Atom` parameter
+(`Collections.TypedCalls.nativeRoute_eq_hostRoute`); and a fold certified by a
+recorded judgment answers as the recognized recursion and costs less than the
+untyped fold (`Collections.TypedCalls.TypedFolds.certified_list_answers`,
+`Collections.TypedCalls.TypedFolds.certifiedPass_lt_untypedPass`).
 
 ## Evaluation
 

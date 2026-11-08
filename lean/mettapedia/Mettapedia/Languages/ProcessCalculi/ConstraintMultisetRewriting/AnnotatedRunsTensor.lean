@@ -134,21 +134,21 @@ theorem check_holds_union {σ : S} {store frame : Finset O} {check : Check T}
       · exact holds o inStore
       · exact blind pattern rfl o inFrame
   | count pattern number =>
-      have same : Check.region A σ label (store ∪ frame) pattern =
-          Check.region A σ label store pattern := by
+      have same : Check.matches A σ label (store ∪ frame) pattern =
+          Check.matches A σ label store pattern := by
         ext o
-        simp only [Check.region, Finset.mem_filter, Finset.mem_union]
+        simp only [Check.matches, Finset.mem_filter, Finset.mem_union]
         constructor
         · rintro ⟨inStore | inFrame, matched⟩
           · exact ⟨inStore, matched⟩
           · exact absurd matched (blind pattern rfl o inFrame)
         · rintro ⟨inStore, matched⟩
           exact ⟨Or.inl inStore, matched⟩
-      change (Check.region A σ label (store ∪ frame) pattern).card = number
+      change (Check.matches A σ label (store ∪ frame) pattern).card = number
       rw [same]
       exact holds
 
-theorem query_holds_union {σ : S} {store frame : Finset O} {query : CensusAdmission.Query T S O}
+theorem query_holds_union {σ : S} {store frame : Finset O} {query : PredicateQueryAdmission.Query T S O}
     (blind : ∀ o ∈ frame, query.region σ (label o) = false)
     (holds : regionOf label store (query.region σ) = query.seen) :
     regionOf label (store ∪ frame) (query.region σ) = query.seen := by

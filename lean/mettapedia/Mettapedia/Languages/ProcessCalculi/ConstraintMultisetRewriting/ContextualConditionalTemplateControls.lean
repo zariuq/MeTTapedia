@@ -56,7 +56,7 @@ def conditions (number : Nat) : ContextualResidual.Problem blueprint :=
   [(observe capturedX, observe (literal (Γ := []) number))]
 
 def code : ContextualTemplateSource.Rule locals inners captures [] () :=
-  ⟨[], [], [(actorX, literal 0)], [], [.schema body, .schema body, .live actorX, .ordinary actorX]⟩
+  ⟨[], [], [(actorX, literal 0)], [], [.schema body, .schema body, .shared actorX, .ordinary actorX]⟩
 
 def sourceRule : ContextualConditionalTemplateSource.Rule locals inners captures [] () where
   code := code
@@ -64,7 +64,7 @@ def sourceRule : ContextualConditionalTemplateSource.Rule locals inners captures
     (Fin.cases (conditions 1) (Fin.cases PUnit.unit (Fin.cases PUnit.unit (fun impossible => Fin.elim0 impossible))))
 
 abbrev before : ContextualConditionalExecution.State bank Nat [] () :=
-  ⟨Unit, inferInstance, captures, ∅, [], ∅, fun _ => ofStored bank captures (.live (literal 0))⟩
+  ⟨Unit, inferInstance, captures, ∅, [], ∅, fun _ => ofStored bank captures (.shared (literal 0))⟩
 
 def chosen : Selection Nat := ⟨[], [], [10, 11, 12, 13]⟩
 def rawRule := code.lower locals inners captures
@@ -100,9 +100,9 @@ theorem admitted : ContextualConditionalExecution.Admitted bank before rawRule c
     cases member
 
 theorem an_actual_mixed_firing_exists (fuel : Nat) :
-    ∃ firing : ContextualConditionalTemplateExecution.Firing locals inners before,
-      firing.sourceRule = sourceRule ∧ firing.selection = chosen ∧ firing.execution.outputs = outputs ∧
-        firing.execution.fuel = fuel ∧ firing.target.present = {10, 11, 12, 13} ∧
+    ∃ firing : ContextualConditionalTemplateExecution.CompiledTemplate locals inners before,
+      firing.sourceRule = sourceRule ∧ firing.selection = chosen ∧ firing.publication.firing.outputs = outputs ∧
+        firing.publication.firing.fuel = fuel ∧ firing.target.present = {10, 11, 12, 13} ∧
         ContextualConditionalExecution.Solvable firing.target.equations := by
   obtain ⟨firing, authored, selected, values, budget⟩ :=
     ContextualConditionalTemplateExecution.realize locals inners before sourceRule chosen outputs admitted fuel
@@ -180,7 +180,7 @@ theorem dropping_the_row_condition_invents_an_answer {V : Type} (declaration : V
 
 section Actual
 
-variable (firing : ContextualConditionalTemplateExecution.Firing locals inners before)
+variable (firing : ContextualConditionalTemplateExecution.CompiledTemplate locals inners before)
     (authored : firing.sourceRule = sourceRule) (selected : firing.selection = chosen)
 
 include authored selected
@@ -201,9 +201,14 @@ theorem captured_actor_is_zero {V : Type} (declaration : V → MetaArity base)
     Assignment.compose candidate (ContextualTemplatePublication.captureValues locals inners captures firing.update firing.scope) =
       reading declaration 0 := by
   have inherited := (ContextualResidual.models_mapProblem _ _ _).mp model
-  have sameInformation : ContextualConditionalExecution.information bank captures ∅ firing.selection firing.execution.rule
+  have sameInformation : ContextualConditionalExecution.information bank captures ∅ firing.selection firing.publication.firing.rule
       before.rows before.equations = information := by
-    rw [firing.compiled, authored, selected]
+    have lowered := congrArg
+      (fun rule : ContextualConditionalTemplateSource.Rule locals inners captures [] () =>
+        rule.code.lower locals inners captures) authored
+    have pinned : firing.publication.firing.rule = sourceRule.code.lower locals inners captures :=
+      firing.publication.authored.trans lowered
+    rw [pinned, selected]
     rfl
   have equation := inherited (observe activeX, observe (literal (Γ := []) 0)) (by
     erw [sameInformation, information_explicit]
@@ -267,5 +272,174 @@ theorem published_capture_cannot_be_rechosen {V : Type} (declaration : V → Met
   exact shared_capture_cannot_become_a_private_choice declaration number source
 
 end Actual
+
+namespace ReuseContracts
+
+/-- An actual nonempty computation witnesses the observer distinction:
+changing an off-output flag preserves all returned rows and the produced-port
+contract, but violates the original exact-function contract. -/
+theorem actual_port_contract_forgets_off_output_flags (fuel : Nat) :
+    ∃ firing : ContextualConditionalExecution.Firing bank before,
+      firing.fuel = fuel ∧
+        ∃ published : ContextualConditionalExecution.Published bank before firing.rule firing.selection firing.outputs
+          (.made (firing.selection.made.map firing.reusable)),
+          HEq published.firing.target.rows firing.target.rows ∧
+            ¬ (ContextualConditionalExecution.ReuseIntent.all firing.reusable).Holds
+              firing.selection.made published.firing.reusable := by
+  obtain ⟨compiled, _authored, selected, _values, budget, _present, _solvable⟩ := an_actual_mixed_firing_exists fuel
+  let firing := compiled.publication.firing
+  let reuse : Nat → Bool := fun occurrence => if occurrence = 0 then !firing.reusable occurrence else firing.reusable occurrence
+  have outside : 0 ∉ firing.selection.made := by
+    change 0 ∉ compiled.selection.made
+    rw [selected]
+    decide +kernel
+  have same : ∀ occurrence ∈ firing.selection.made, reuse occurrence = firing.reusable occurrence := by
+    intro occurrence made
+    have different : occurrence ≠ 0 := by
+      intro equal
+      exact outside (equal ▸ made)
+    exact if_neg different
+  let published : ContextualConditionalExecution.Published bank before firing.rule firing.selection firing.outputs
+      (.made (firing.selection.made.map firing.reusable)) :=
+    ⟨firing.withReuse reuse, rfl, rfl, rfl, List.map_congr_left same⟩
+  refine ⟨firing, budget, published, heq_of_eq (firing.withReuse_rows reuse same), ?_⟩
+  intro exactFlags
+  have atZero := congrFun exactFlags 0
+  change (if (0 : Nat) = 0 then !firing.reusable 0 else firing.reusable 0) = firing.reusable 0 at atZero
+  rw [if_pos rfl] at atZero
+  cases value : firing.reusable 0 <;> simp [value] at atZero
+
+end ReuseContracts
+
+namespace PublicationBoundary
+
+variable (compiled : ContextualConditionalTemplateExecution.CompiledTemplate locals inners before)
+    (authored : compiled.sourceRule = sourceRule) (selected : compiled.selection = chosen)
+
+include authored selected in
+/-- The raw solver-backed target stores this schema-shaped output as a shared
+value. Its row has an instance at every model, whereas the declared
+conditional publication retains the incompatible local condition. -/
+theorem raw_target_and_publication_disagree {V : Type} (declaration : V → MetaArity base)
+    (candidate : Assignment compiled.target.declarations declaration)
+    (model : ContextualResidual.Models candidate compiled.target.equations) :
+    ∃ value : Term (signature base declaration) [] (),
+      Matches (ContextualPublication.privateFamily bank compiled.update.declaration)
+        compiled.target.declarations candidate value (compiled.publication.firing.target.rows 11) ∧
+      ¬ Matches (ContextualPublication.privateFamily bank compiled.update.declaration)
+        compiled.target.declarations candidate value (compiled.target.rows 11) := by
+  have made : 11 ∈ compiled.publication.firing.selection.made := by
+    change 11 ∈ compiled.selection.made
+    rw [selected]
+    decide +kernel
+  have isShared : compiled.publication.firing.reusable 11 = false := by
+    rw [compiled.reuse_intent]
+    change compiled.sourceRule.ordinaryFlags compiled.selection.made 11 = false
+    rw [authored, selected]
+    rfl
+  refine ⟨instantiate candidate
+    (instantiate (ContextualComputedFreshFrame.includeSource compiled.update)
+      (compiled.publication.firing.outputs 11)), ?_, ?_⟩
+  · rw [compiled.publication.firing.shared_row 11 made isShared]
+    erw [ofStored_matches_iff, ContextualGuardMatching.shared_matches_iff]
+  · exact bad_template_stays_latent_and_unmatched compiled authored selected declaration candidate model _
+
+/-- This is an actual finite-budget execution with a model, not an
+uninhabited interface or a hypothetical row overlay. -/
+theorem an_actual_publication_differs_from_its_raw_target (fuel : Nat) :
+    ∃ compiled : ContextualConditionalTemplateExecution.CompiledTemplate locals inners before,
+      compiled.publication.firing.fuel = fuel ∧
+      compiled.target.rows ≠ compiled.publication.firing.target.rows := by
+  obtain ⟨compiled, authored, selected, _outputs, budget, _present, consistent⟩ := an_actual_mixed_firing_exists fuel
+  refine ⟨compiled, budget, ?_⟩
+  intro same
+  obtain ⟨V, declaration, candidate, model⟩ := consistent
+  obtain ⟨value, raw, rejected⟩ := raw_target_and_publication_disagree compiled authored selected declaration candidate model
+  exact rejected (same.symm ▸ raw)
+
+def swappedRule : ContextualConditionalTemplateSource.Rule locals inners captures [] () where
+  code := code
+  conditions := Fin.cases (conditions 1)
+    (Fin.cases (conditions 0) (Fin.cases PUnit.unit (Fin.cases PUnit.unit (fun impossible => Fin.elim0 impossible))))
+
+/-- Changing only the saved row conditions leaves all raw execution data,
+including the actual worklist return, unchanged. -/
+def swapConditions (compiled : ContextualConditionalTemplateExecution.CompiledTemplate locals inners before)
+    (authored : compiled.sourceRule = sourceRule) :
+    ContextualConditionalTemplateExecution.CompiledTemplate locals inners before := by
+  have lowered : compiled.publication.firing.rule = sourceRule.code.lower locals inners captures :=
+    compiled.publication.authored.trans
+      (congrArg (fun rule : ContextualConditionalTemplateSource.Rule locals inners captures [] () =>
+        rule.code.lower locals inners captures) authored)
+  have flags : compiled.publication.firing.reusable = sourceRule.ordinaryFlags compiled.1.selection.made :=
+    compiled.publication.intents.trans
+      (congrArg (fun rule : ContextualConditionalTemplateSource.Rule locals inners captures [] () =>
+        rule.ordinaryFlags compiled.1.selection.made) authored)
+  exact ⟨⟨swappedRule, compiled.1.selection, compiled.1.outputs⟩,
+    ⟨compiled.publication.firing, lowered, compiled.publication.selected, compiled.publication.values, flags⟩⟩
+
+include authored selected in
+theorem swapped_first_row_has_no_instance {V : Type} (declaration : V → MetaArity base)
+    (candidate : Assignment compiled.target.declarations declaration)
+    (model : ContextualResidual.Models candidate compiled.target.equations)
+    (value : Term (signature base declaration) [] ()) :
+    ¬ Matches (ContextualPublication.privateFamily bank compiled.update.declaration)
+      compiled.target.declarations candidate value ((swapConditions compiled authored).target.rows 10) := by
+  have descriptor : (swapConditions compiled authored).descriptor 10 =
+      some (0, ⟨.schema body, conditions 1⟩) := by
+    change swappedRule.outputsFor compiled.selection.made 10 = _
+    rw [selected]
+    rfl
+  intro matched
+  have source := ((swapConditions compiled authored).schema_matches_source 10 0 body (conditions 1)
+    descriptor declaration candidate value).mp matched
+  change Matches inners actor
+    (Assignment.compose candidate (ContextualTemplatePublication.captureValues locals inners captures compiled.update compiled.scope))
+    value ⟨.schema body, conditions 1⟩ at source
+  rw [captured_actor_is_zero compiled authored selected declaration candidate model] at source
+  exact incompatible_source_row_has_no_instance declaration value source
+
+theorem same_raw_execution_has_different_conditional_publications (fuel : Nat) :
+    ∃ first second : ContextualConditionalTemplateExecution.CompiledTemplate locals inners before,
+      first.publication.firing = second.publication.firing ∧ first.publication.firing.fuel = fuel ∧
+        ¬ HEq first.target.rows second.target.rows := by
+  obtain ⟨first, authored, selected, _outputs, budget, _present, consistent⟩ := an_actual_mixed_firing_exists fuel
+  refine ⟨first, swapConditions first authored, rfl, budget, ?_⟩
+  intro same
+  obtain ⟨V, declaration, candidate, model⟩ := consistent
+  have positive := good_template_has_independent_private_instances first authored selected declaration candidate model 0
+  have negative := swapped_first_row_has_no_instance first authored selected declaration candidate model (pattern 0 0 0)
+  have rows := eq_of_heq same
+  exact negative (rows ▸ positive)
+
+/-- Answer existence is a semantic observation, retaining the row's local
+conditions and quantifying over actual models of the resulting information. -/
+def HasFirstAnswer (compiled : ContextualConditionalTemplateExecution.CompiledTemplate locals inners before) : Prop :=
+  ∃ (V : Type) (declaration : V → MetaArity base),
+    ∃ candidate : Assignment compiled.target.declarations declaration,
+      ContextualResidual.Models candidate compiled.target.equations ∧
+        ∃ value : Term (signature base declaration) [] (),
+          Matches (ContextualPublication.privateFamily bank compiled.update.declaration)
+            compiled.target.declarations candidate value (compiled.target.rows 10)
+
+/-- No observation of the raw firing alone recovers conditional answer
+existence for every authored publication, even at a fixed finite budget. -/
+theorem answerability_does_not_factor_through_raw_execution (fuel : Nat) :
+    ¬ ∃ observeRaw : ContextualConditionalExecution.Firing bank before → Prop,
+      ∀ compiled : ContextualConditionalTemplateExecution.CompiledTemplate locals inners before,
+        compiled.publication.firing.fuel = fuel →
+          (observeRaw compiled.publication.firing ↔ HasFirstAnswer compiled) := by
+  rintro ⟨observeRaw, exactReadout⟩
+  obtain ⟨first, authored, selected, _outputs, budget, _present, consistent⟩ := an_actual_mixed_firing_exists fuel
+  have positive : HasFirstAnswer first := by
+    obtain ⟨V, declaration, candidate, model⟩ := consistent
+    exact ⟨V, declaration, candidate, model, pattern 0 0 0,
+      good_template_has_independent_private_instances first authored selected declaration candidate model 0⟩
+  have raw := (exactReadout first budget).mpr positive
+  have swapped := (exactReadout (swapConditions first authored) budget).mp raw
+  obtain ⟨V, declaration, candidate, model, value, matched⟩ := swapped
+  exact swapped_first_row_has_no_instance first authored selected declaration candidate model value matched
+
+end PublicationBoundary
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualConditionalTemplateControls

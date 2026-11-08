@@ -8,10 +8,11 @@ import Mettapedia.GSLT.Parsing.ExactDecimalLexeme
 # Rendering atoms so that the reader reads them back
 
 `render?` writes an atom as MeTTa source text, or refuses it. It writes symbols, variables,
-integers, plain strings and Booleans in spellings that the shared source reader keeps exactly, and
+integers, strings and Booleans in spellings that the shared source reader keeps exactly, and
 refuses everything else: symbols that would read as variables, commands, Booleans or numbers;
-the anonymous variable marker, whose source spelling allocates a fresh occurrence;
-strings that need escapes; foreign grounded values.
+the anonymous variable marker, whose source spelling allocates a fresh occurrence; foreign
+grounded values. Ordinary Unicode in strings is retained; characters requiring escaping
+use the shared literal codec (`StringLiteral.canonicalBody`).
 
 `Rendered atom characters expression` is the same rendering as a relation, together with the
 S-expression the reader's lexer and token parser must produce. Each layer of the reader is proved
@@ -34,10 +35,10 @@ open Mettapedia.GSLT.Parsing.SExprTokenRoundTrip (tokens childTokens safe childr
 
 /-! ## Spellings -/
 
-/-- A character that may occur in a symbol: printable ASCII, not a delimiter, quote, comment or
+/-- A character that may occur in a symbol: non-control Unicode, not a delimiter, quote, comment or
 escape character. -/
 def symbolChar (character : Char) : Bool :=
-  0x21 ≤ character.toNat && character.toNat < 0x7f && character != '(' && character != ')' &&
+  0x21 ≤ character.toNat && character.toNat != 0x7f && character != '(' && character != ')' &&
     character != '"' && character != ';' && character != '\\'
 
 /-- A symbol the reader keeps as that symbol. -/
@@ -79,9 +80,7 @@ mutual
     | .symbol symbol => if symbolSafe symbol then some symbol.toList else none
     | .var name => if variableSafe name then some ('$' :: name.toList) else none
     | .grounded (.int value) => some (intChars value)
-    | .grounded (.string value) =>
-        if value.toList.all SpaceSemantics.plainStringCharacter then some ('"' :: value.toList ++ ['"'])
-        else none
+    | .grounded (.string value) => some ('"' :: StringLiteral.canonicalBody value.toList ++ ['"'])
     | .grounded (.bool value) => some (if value then "True".toList else "False".toList)
     | .grounded (.custom _ _) => none
     | .expression items => (charsList? items).map fun parts => '(' :: joinSpace parts ++ [')']
@@ -109,9 +108,9 @@ mutual
         Rendered (.var name) ('$' :: name.toList) (.atom (String.ofList ('$' :: name.toList)))
     | int (value : Int) :
         Rendered (.grounded (.int value)) (intChars value) (.atom (String.ofList (intChars value)))
-    | string (value : String) : value.toList.all SpaceSemantics.plainStringCharacter = true →
-        Rendered (.grounded (.string value)) ('"' :: value.toList ++ ['"'])
-          (.atom (String.ofList ('"' :: value.toList ++ ['"'])))
+    | string (value : String) :
+        Rendered (.grounded (.string value)) ('"' :: StringLiteral.canonicalBody value.toList ++ ['"'])
+          (.atom (String.ofList ('"' :: StringLiteral.canonicalBody value.toList ++ ['"'])))
     | bool (value : Bool) :
         Rendered (.grounded (.bool value)) (if value then "True".toList else "False".toList)
           (.atom (String.ofList (if value then "True".toList else "False".toList)))
@@ -148,10 +147,8 @@ mutual
         exact ⟨_, .int value⟩
     | .grounded (.string value), characters, rendered => by
         unfold chars? at rendered
-        split at rendered
-        · cases rendered
-          exact ⟨_, .string value (by assumption)⟩
-        · cases rendered
+        cases rendered
+        exact ⟨_, .string value⟩
     | .grounded (.bool value), characters, rendered => by
         unfold chars? at rendered
         cases rendered
@@ -360,29 +357,33 @@ theorem lex_open : Agreement initialPoint initialPoint ['('] ["("] := by
   rw [if_pos trivial]
   simp [flushToken]
 
-theorem lex_string_body (characters : List Char)
-    (plain : characters.all SpaceSemantics.plainStringCharacter = true) (current : List Char) :
+theorem lex_escaped_body {characters : List Char} (body : StringLiteral.EscapedBody characters)
+    (current : List Char) :
     Agreement ⟨true, false, current⟩ ⟨true, false, characters.reverse ++ current⟩ characters [] := by
-  induction characters generalizing current with
+  induction body generalizing current with
   | nil => intro rest emitted; rfl
-  | cons character rest ih =>
+  | @plain character rest notEscape notQuote _ _ ih =>
     intro remaining emitted
-    simp only [List.all_cons, Bool.and_eq_true] at plain
-    have notEscape : character ≠ '\\' := by
-      intro same; subst same; simp [SpaceSemantics.plainStringCharacter] at plain
-    have notQuote : character ≠ '"' := by
-      intro same; subst same; simp [SpaceSemantics.plainStringCharacter] at plain
-    have later := ih plain.2 (character :: current) remaining emitted
+    have later := ih (character :: current) remaining emitted
     simp only [SourceAccumulatorLex.run, List.cons_append] at later ⊢
     rw [tokenizeAux]
     simp only [Bool.false_eq_true, if_false]
     rw [if_neg notEscape, if_neg notQuote]
     simpa [List.reverse_cons, List.append_assoc] using later
+  | @escape character rest _ _ ih =>
+    intro remaining emitted
+    have later := ih (character :: '\\' :: current) remaining emitted
+    simp only [SourceAccumulatorLex.run, List.cons_append] at later ⊢
+    rw [tokenizeAux]
+    simp only [Bool.false_eq_true, if_false]
+    rw [if_pos trivial]
+    rw [tokenizeAux]
+    simp only [↓reduceIte]
+    simpa [List.reverse_cons, List.append_assoc] using later
 
-theorem lex_string (value : String)
-    (plain : value.toList.all SpaceSemantics.plainStringCharacter = true) :
-    Agreement initialPoint initialPoint ('"' :: value.toList ++ ['"'])
-      [String.ofList ('"' :: value.toList ++ ['"'])] := by
+theorem lex_string (value : String) :
+    Agreement initialPoint initialPoint ('"' :: StringLiteral.canonicalBody value.toList ++ ['"'])
+      [String.ofList ('"' :: StringLiteral.canonicalBody value.toList ++ ['"'])] := by
   have opening : Agreement initialPoint ⟨true, false, ['"']⟩ ['"'] [] := by
     intro rest emitted
     simp only [SourceAccumulatorLex.run, initialPoint, List.cons_append, List.nil_append]
@@ -401,8 +402,9 @@ theorem lex_string (value : String)
     rw [if_neg (by decide), if_pos trivial]
     simp [flushToken]
   have whole := agreement_append _ _ _ _ _ _ _
-    (agreement_append _ _ _ _ _ _ _ opening (lex_string_body value.toList plain ['"']))
-    (closing (value.toList.reverse ++ ['"']))
+    (agreement_append _ _ _ _ _ _ _ opening
+      (lex_escaped_body (StringLiteral.canonicalBody_escaped value.toList) ['"']))
+    (closing ((StringLiteral.canonicalBody value.toList).reverse ++ ['"']))
   simpa [List.reverse_append, List.append_assoc] using whole
 
 /-- A token atom's characters are accumulated without delimiters. -/
@@ -473,8 +475,8 @@ theorem lex_rendered_cases {atom : Atom} {characters : List Char} {expression : 
         show decimal natural ≠ []
         rw [shape]; simp
       | negSucc natural => simp [intChars]
-  | string value plain =>
-    exact .inl (lex_string value plain)
+  | string value =>
+    exact .inl (lex_string value)
   | bool value =>
     refine .inr ⟨?_, by cases value <;> decide, rfl⟩
     have token : ∀ character ∈ (if value then "True".toList else "False".toList), tokenChar character := by
@@ -598,7 +600,7 @@ mutual
               rcases List.mem_cons.mp member with same | rest
               · cases same
               · exact decimal_not_delimiter (by decide) rest
-    | _, _, _, .string value plain => by
+    | _, _, _, .string value => by
         exact ⟨ofList_ne_short (delimiter := '(') (by rfl) (by simp), ofList_ne_short (delimiter := ')') (by rfl) (by simp)⟩
     | _, _, _, .bool value => by
         cases value <;> exact ⟨by decide, by decide⟩
@@ -698,10 +700,57 @@ theorem read_int (value : Int) :
   simp [notWord "True" (by decide), notWord "true" (by decide), notWord "False" (by decide),
     notWord "false" (by decide), parsed]
 
-theorem read_string (value : String) (plain : value.toList.all SpaceSemantics.plainStringCharacter = true) :
-    readToken (String.ofList ('"' :: value.toList ++ ['"'])) = .ok (.grounded (.string value)) := by
-  have read := SpaceSemantics.readToken_plain_string value.toList plain
-  simpa [String.ofList_toList] using read
+theorem plainStringCharacter_eq : SpaceSemantics.plainStringCharacter = StringLiteral.plainCharacter := by
+  funext character
+  rfl
+
+private theorem startsWith_true {token : String} {first : Char} {rest : List Char}
+    (shape : token.toList = first :: rest) : token.startsWith (String.singleton first) = true := by
+  cases starts : token.startsWith (String.singleton first)
+  · rw [String.startsWith_string_eq_false_iff, shape] at starts
+    simp at starts
+  · rfl
+
+/-- **Every string reads back.** -/
+theorem read_string (value : String) :
+    readToken (String.ofList ('"' :: StringLiteral.canonicalBody value.toList ++ ['"'])) =
+      .ok (.grounded (.string value)) := by
+  by_cases plain : value.toList.all SpaceSemantics.plainStringCharacter = true
+  · have same : StringLiteral.canonicalBody value.toList = value.toList :=
+      StringLiteral.canonicalBody_of_plain (by rw [← plainStringCharacter_eq]; exact plain)
+    rw [same]
+    have read := SpaceSemantics.readToken_plain_string value.toList plain
+    simpa [String.ofList_toList] using read
+  · have token : (String.ofList ('"' :: StringLiteral.canonicalBody value.toList ++ ['"'])).toList =
+        '"' :: (StringLiteral.canonicalBody value.toList ++ ['"']) := by
+      rw [String.toList_ofList, List.cons_append]
+    have notPlain : readPlainString (String.ofList ('"' :: StringLiteral.canonicalBody value.toList ++ ['"'])) =
+        none := by
+      unfold readPlainString
+      rw [token]
+      have bodyPlain : (StringLiteral.canonicalBody value.toList).all SpaceSemantics.plainStringCharacter = false := by
+        rw [plainStringCharacter_eq, StringLiteral.canonicalBody_all_plain, ← plainStringCharacter_eq]
+        simpa using plain
+      simp [bodyPlain]
+    have notWord (word : String) (wordStart : word.toList.head? ≠ some '"') :
+        String.ofList ('"' :: StringLiteral.canonicalBody value.toList ++ ['"']) ≠ word := by
+      intro same
+      have heads := congrArg (fun text : String => text.toList.head?) same
+      simp only [token, List.head?_cons] at heads
+      exact wordStart heads.symm
+    have quoted : SpaceSemantics.readQuoted? (String.ofList ('"' :: StringLiteral.canonicalBody value.toList ++ ['"'])) =
+        some value := by
+      unfold SpaceSemantics.readQuoted?
+      rw [token]
+      simp [StringLiteral.decodeBody_canonicalBody]
+    unfold readToken
+    rw [notPlain]
+    simp only
+    rw [show "$" = String.singleton '$' from rfl, startsWith_false token (by decide),
+      show "\"" = String.singleton '"' from rfl, startsWith_true token]
+    rw [decide_eq_false (notWord "True" (by decide)), decide_eq_false (notWord "true" (by decide)),
+      decide_eq_false (notWord "False" (by decide)), decide_eq_false (notWord "false" (by decide)), quoted]
+    rfl
 
 theorem read_bool (value : Bool) :
     readToken (String.ofList (if value then "True".toList else "False".toList)) = .ok (.grounded (.bool value)) := by
@@ -718,8 +767,8 @@ mutual
         rw [readRawExpression]; exact read_var (variableSafe_parts safeName).1
     | _, _, _, .int value => by
         rw [readRawExpression]; exact read_int value
-    | _, _, _, .string value plain => by
-        rw [readRawExpression]; exact read_string value plain
+    | _, _, _, .string value => by
+        rw [readRawExpression]; exact read_string value
     | _, _, _, .bool value => by
         rw [readRawExpression]; exact read_bool value
     | _, _, _, .expression children => by
@@ -743,7 +792,7 @@ mutual
     | _, _, _, .var name safeName => by
         simpa only [MORK.atomFreeVars, List.mem_singleton] using Ne.symm (variableSafe_parts safeName).2
     | _, _, _, .int _ => by simp only [MORK.atomFreeVars, List.not_mem_nil, not_false_eq_true]
-    | _, _, _, .string _ _ => by simp only [MORK.atomFreeVars, List.not_mem_nil, not_false_eq_true]
+    | _, _, _, .string _ => by simp only [MORK.atomFreeVars, List.not_mem_nil, not_false_eq_true]
     | _, _, _, .bool _ => by simp only [MORK.atomFreeVars, List.not_mem_nil, not_false_eq_true]
     | _, _, _, .expression children => renderedList_named children
 
@@ -854,15 +903,30 @@ private theorem step_close_quote (line depth start : Nat) :
     pushChar, markStarted, Option.isSome_none, Bool.false_eq_true, if_false]
   simp
 
-private theorem step_quoted_plain {character : Char} (plain : SpaceSemantics.plainStringCharacter character = true)
-    (line depth start : Nat) :
+/-- Inside a string within a form, after an escape character. -/
+def quotedEscaped (line depth start : Nat) : SourceAccumulatorScan.Point := ⟨line, depth, false, true, true, true, start⟩
+
+private theorem step_quoted_escape (line depth start : Nat) :
+    SourceAccumulatorScan.Agreement (quoted line depth start) (quotedEscaped line depth start) ['\\'] ['\\'] := by
+  intro current forms
+  simp only [List.foldl_cons, List.foldl_nil, quoted, quotedEscaped, SourceAccumulatorScan.Point.state,
+    SourceScanSegments.step]
+  simp only [stepScan, makeScanState, dialect_comment, dialect_open, dialect_close, dialect_quote, dialect_escape,
+    pushChar, markStarted, Option.isSome_none, Bool.false_eq_true, if_false]
+  simp
+
+private theorem step_escaped {character : Char} (newline : character ≠ '\n') (line depth start : Nat) :
+    SourceAccumulatorScan.Agreement (quotedEscaped line depth start) (quoted line depth start) [character] [character] := by
+  intro current forms
+  simp only [List.foldl_cons, List.foldl_nil, quoted, quotedEscaped, SourceAccumulatorScan.Point.state,
+    SourceScanSegments.step]
+  simp only [stepScan, makeScanState, dialect_comment, dialect_open, dialect_close, dialect_quote, dialect_escape,
+    pushChar, markStarted, Option.isSome_none, Bool.false_eq_true, if_false]
+  simp [newline]
+
+private theorem step_quoted_plain {character : Char} (notEscape : character ≠ '\\') (notQuote : character ≠ '"')
+    (newline : character ≠ '\n') (line depth start : Nat) :
     SourceAccumulatorScan.Agreement (quoted line depth start) (quoted line depth start) [character] [character] := by
-  have notEscape : character ≠ '\\' := by
-    intro same; subst same; simp [SpaceSemantics.plainStringCharacter] at plain
-  have notQuote : character ≠ '"' := by
-    intro same; subst same; simp [SpaceSemantics.plainStringCharacter] at plain
-  have newline : character ≠ '\n' := by
-    intro same; subst same; simp [SpaceSemantics.plainStringCharacter] at plain
   intro current forms
   simp only [List.foldl_cons, List.foldl_nil, quoted, SourceAccumulatorScan.Point.state, SourceScanSegments.step]
   simp only [stepScan, makeScanState, dialect_comment, dialect_open, dialect_close, dialect_quote, dialect_escape,
@@ -880,15 +944,20 @@ private theorem scan_token_chars (characters : List Char) (allToken : ∀ charac
       (ih fun other member => allToken other (List.mem_cons_of_mem _ member))
     simpa using whole
 
-private theorem scan_quoted_chars (characters : List Char)
-    (plain : characters.all SpaceSemantics.plainStringCharacter = true) (line depth start : Nat) :
+private theorem scan_escaped_chars {characters : List Char} (body : StringLiteral.EscapedBody characters)
+    (line depth start : Nat) :
     SourceAccumulatorScan.Agreement (quoted line depth start) (quoted line depth start) characters characters := by
-  induction characters with
+  induction body with
   | nil => exact SourceAccumulatorScan.agreement_empty _
-  | cons character rest ih =>
-    simp only [List.all_cons, Bool.and_eq_true] at plain
+  | @plain character rest notEscape notQuote newline _ ih =>
     have whole := SourceAccumulatorScan.agreement_append _ _ _ [character] rest [character] rest
-      (step_quoted_plain plain.1 line depth start) (ih plain.2)
+      (step_quoted_plain notEscape notQuote newline line depth start) ih
+    simpa using whole
+  | @escape character rest newline _ ih =>
+    have pair := SourceAccumulatorScan.agreement_append _ _ _ ['\\'] [character] ['\\'] [character]
+      (step_quoted_escape line depth start) (step_escaped newline line depth start)
+    have whole := SourceAccumulatorScan.agreement_append _ _ _ ['\\', character] rest ['\\', character] rest
+      (by simpa using pair) ih
     simpa using whole
 
 private theorem var_token_chars {name : String} (safeName : symbolSafe name = true) :
@@ -922,10 +991,10 @@ mutual
           (scan_items children line (depth + 1) start (by omega)))
         (step_inner_close line depth start positive)
       simpa using whole
-    | _, _, _, .string value plain, line, depth, start, _ => by
+    | _, _, _, .string value, line, depth, start, _ => by
       have whole := SourceAccumulatorScan.agreement_append _ _ _ _ _ _ _
         (SourceAccumulatorScan.agreement_append _ _ _ _ _ _ _ (step_open_quote line depth start)
-          (scan_quoted_chars value.toList plain line depth start))
+          (scan_escaped_chars (StringLiteral.canonicalBody_escaped value.toList) line depth start))
         (step_close_quote line depth start)
       simpa using whole
     | _, _, _, .symbol symbol safeSymbol, line, depth, start, _ =>
@@ -1295,5 +1364,9 @@ theorem underscore_symbol_rendered : render? (.symbol "_") = some "_" := by
 #print axioms named_variable_roundtrip
 #print axioms anonymous_variable_refused
 #print axioms underscore_symbol_rendered
+
+example : render? (.symbol "λ") = some "λ" := by decide +kernel
+example : render? (.var "変数") = some "$変数" := by decide +kernel
+example : render? (.symbol "two words") = none := by decide +kernel
 
 end Mettapedia.Languages.MeTTa.PeTTa.ReadAfterRender

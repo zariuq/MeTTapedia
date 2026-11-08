@@ -75,21 +75,21 @@ theorem two_target_rows (first second : Interaction before) (prior : List (Term 
     (incoming : before.inventory.configuration.equations = diagonals before.declarations prior)
     (survives : first.CanFollow second) (occurrence : O) :
     (first.twoTarget second prior incoming survives).inventory.rows occurrence =
-      if occurrence ∈ second.made then .live (first.laterValue second occurrence)
-      else if occurrence ∈ first.made then .live (first.earlierValue occurrence)
+      if occurrence ∈ second.made then .shared (first.laterValue second occurrence)
+      else if occurrence ∈ first.made then .shared (first.earlierValue occurrence)
       else (before.inventory.rows occurrence).map locals (intoOldCaptures locals before.declarations) := by
   dsimp only [twoTarget]
   rw [target_rows]
   simp only [after]
   split_ifs with inSecond inFirst
-  · change ContextualStoredRows.Row.live (instantiate _ (instantiate _ _)) = _
+  · change ContextualStoredRows.Row.shared (instantiate _ (instantiate _ _)) = _
     rw [← Assignment.instantiate_compose]
-    exact congrArg (fun change => ContextualStoredRows.Row.live (locals := locals)
+    exact congrArg (fun change => ContextualStoredRows.Row.shared (locals := locals)
       (instantiate change (second.value occurrence))) (captured_then_created locals before.declarations _)
   · rw [target_rows, if_pos inFirst]
-    change ContextualStoredRows.Row.live (instantiate _ (instantiate _ _)) = _
+    change ContextualStoredRows.Row.shared (instantiate _ (instantiate _ _)) = _
     rw [← Assignment.instantiate_compose]
-    exact congrArg (fun change => ContextualStoredRows.Row.live (locals := locals)
+    exact congrArg (fun change => ContextualStoredRows.Row.shared (locals := locals)
       (instantiate change (first.value occurrence))) (created_then_captured locals before.declarations _)
   · rw [target_rows, if_neg inFirst, ContextualStoredRows.Row.map_compose]
     exact congrArg (fun change => (before.inventory.rows occurrence).map locals change)

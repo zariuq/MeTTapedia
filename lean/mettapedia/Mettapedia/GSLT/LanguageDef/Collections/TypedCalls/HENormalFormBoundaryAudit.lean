@@ -1,0 +1,21 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HENormalFormWildcard
+
+/-! # Independent normal-form source controls -/
+
+namespace Mettapedia.GSLT.LanguageDef.Collections.TypedCalls
+
+#print axioms HENormalFormInnerRow.child_structural_accepts
+#print axioms HENormalFormInnerRow.parent_structural_accepts
+#print axioms HENormalFormInnerRow.heads_have_no_equations
+#print axioms HENormalFormInnerRow.independent_child_execution_succeeds
+#print axioms HENormalFormInnerRow.parent_source_rejects
+#print axioms HENormalFormInnerRow.without_annotation_succeeds
+#print axioms HENormalFormInnerRow.independent_checks_do_not_certify_source_normality
+#print axioms HENormalFormWildcard.source_rejects_nested_actual
+#print axioms HENormalFormWildcard.source_rejects_nested_formal
+#print axioms HENormalFormWildcard.source_accepts_top_undefined
+#print axioms HENormalFormWildcard.scoped_model_rejects_nested_actual
+#print axioms HENormalFormWildcard.scoped_model_rejects_nested_formal
+#print axioms HENormalFormWildcard.scoped_model_accepts_top_undefined
+
+end Mettapedia.GSLT.LanguageDef.Collections.TypedCalls

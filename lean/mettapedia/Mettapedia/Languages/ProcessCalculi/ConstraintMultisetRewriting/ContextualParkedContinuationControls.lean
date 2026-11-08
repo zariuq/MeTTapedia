@@ -28,7 +28,7 @@ local instance (sort : dataSignature.Srt) : DecidableEq (dataSignature.Op sort) 
 
 def code : Declaration (Tm raw) := arm (symbol 99) declaration
 def store (occurrence : Nat) : Row locals captures [] () :=
-  if occurrence = 3 then ofStored locals captures (.live (symbol 99))
+  if occurrence = 3 then ofStored locals captures (.shared (symbol 99))
   else if occurrence = 7 ∨ occurrence = 8 then ofStored locals captures (.schema (encodeDeclaration code))
   else rows occurrence
 def sourceWorld : ContextualConditionalExecution.State locals Nat [] () :=

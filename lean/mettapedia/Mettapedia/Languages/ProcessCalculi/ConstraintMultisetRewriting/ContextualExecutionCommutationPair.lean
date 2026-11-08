@@ -35,22 +35,22 @@ def laterTerm (producer : Producer before) (occurrence : O) :
 theorem two_target_rows (first second : Producer before) (empty : before.inventory.configuration.equations = [])
     (separate : Disjoint second.made.toFinset first.made.toFinset) (occurrence : O) :
     (first.twoTarget second empty separate).inventory.rows occurrence =
-      if occurrence ∈ second.made then .live (second.laterTerm occurrence)
-      else if occurrence ∈ first.made then .live (first.earlierTerm occurrence)
+      if occurrence ∈ second.made then .shared (second.laterTerm occurrence)
+      else if occurrence ∈ first.made then .shared (first.earlierTerm occurrence)
       else (before.inventory.rows occurrence).map locals (intoOldCaptures locals before.declarations) := by
   dsimp only [twoTarget]
   rw [target_rows]
   simp only [after]
   split_ifs with inSecond inFirst
-  · change ContextualStoredRows.Row.live (instantiate _ (instantiate _ _)) = _
+  · change ContextualStoredRows.Row.shared (instantiate _ (instantiate _ _)) = _
     rw [← Assignment.instantiate_compose]
-    exact congrArg (fun change => ContextualStoredRows.Row.live (locals := locals)
+    exact congrArg (fun change => ContextualStoredRows.Row.shared (locals := locals)
       (instantiate change (second.value occurrence)))
       (captured_then_created locals before.declarations (ContextualActivationScopes.start (nextLedger before.occupied)))
   · rw [target_rows, if_pos inFirst]
-    change ContextualStoredRows.Row.live (instantiate _ (instantiate _ _)) = _
+    change ContextualStoredRows.Row.shared (instantiate _ (instantiate _ _)) = _
     rw [← Assignment.instantiate_compose]
-    exact congrArg (fun change => ContextualStoredRows.Row.live (locals := locals)
+    exact congrArg (fun change => ContextualStoredRows.Row.shared (locals := locals)
       (instantiate change (first.value occurrence)))
       (created_then_captured locals before.declarations (ContextualActivationScopes.start before.occupied))
   · rw [target_rows, if_neg inFirst, ContextualStoredRows.Row.map_compose]

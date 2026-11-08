@@ -4,7 +4,7 @@ import Mettapedia.OSLF.Syntax.ContextualFamilyReindex
 /-!
 # Local instantiation of stored schemas in a nonbinding guard
 
-A live row is compared under the supplied assignment. A schema may instantiate
+A shared row is compared under the supplied assignment. A schema may instantiate
 its private locals in a later declaration family. The supplied model's names
 enter that family by an injective, arity-preserving renaming; captured values
 are fixed through that renaming. Local witnesses create no caller binding.
@@ -57,16 +57,16 @@ theorem instance_fixes_captures (localBodies : Assignment locals future)
 
 def Matches (candidate : Assignment captures next) {Γ : Ctx S} {sort : S.Srt}
     (pattern : Term (signature S next) Γ sort) : ContextualStoredRows.Row locals captures Γ sort → Prop
-  | .live value => pattern = instantiate candidate value
+  | .shared value => pattern = instantiate candidate value
   | .schema body => ∃ extension : Extension next, ∃ localBodies : Assignment locals extension.declarations,
       instantiate (instanceAssignment locals localBodies extension.assignment candidate) body =
         instantiate extension.assignment pattern
 
-theorem live_matches_iff (candidate : Assignment captures next) {Γ : Ctx S} {sort : S.Srt}
+theorem shared_matches_iff (candidate : Assignment captures next) {Γ : Ctx S} {sort : S.Srt}
     (pattern : Term (signature S next) Γ sort) (value : Term (signature S captures) Γ sort) :
-    Matches locals candidate pattern (.live value) ↔ pattern = instantiate candidate value := Iff.rfl
+    Matches locals candidate pattern (.shared value) ↔ pattern = instantiate candidate value := Iff.rfl
 
-theorem instance_on_live_value (localBodies : Assignment locals future)
+theorem instance_on_shared_value (localBodies : Assignment locals future)
     (embedding : Assignment next future) (candidate : Assignment captures next)
     {Γ : Ctx S} {sort : S.Srt} (value : Term (signature S captures) Γ sort) :
     instantiate (instanceAssignment locals localBodies embedding candidate)
@@ -86,7 +86,7 @@ theorem instance_after_capture_transport (localBodies : Assignment locals future
   funext identity
   cases identity with
   | inl identity => exact instantiate_generator (instanceAssignment locals localBodies embedding candidate) (.inl identity)
-  | inr identity => exact instance_on_live_value locals localBodies embedding candidate (change identity)
+  | inr identity => exact instance_on_shared_value locals localBodies embedding candidate (change identity)
 
 theorem instantiated_transported_body (localBodies : Assignment locals future)
     (embedding : Assignment next future) (candidate : Assignment later next)
@@ -105,7 +105,7 @@ theorem matches_after_capture_transport (change : Assignment captures later)
     Matches locals candidate pattern (row.map locals change) ↔
       Matches locals (Assignment.compose candidate change) pattern row := by
   cases row with
-  | live value => simp only [ContextualStoredRows.Row.map, Matches, Assignment.instantiate_compose]
+  | shared value => simp only [ContextualStoredRows.Row.map, Matches, Assignment.instantiate_compose]
   | schema body =>
       constructor
       · rintro ⟨extension, localBodies, same⟩

@@ -3,7 +3,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 /-!
 # Actual selected reads and takes commute under exact resource independence
 
-The two source paths are built from their live-input evidence and the actual
+The two source paths are built from their shared-input evidence and the actual
 one-fuel solver returns. Different port counts use different scope maps.
 The endpoint relation keeps all rows and roots, and the full joint equation
 list up to permutation, including every duplicate equation from aliased reads.

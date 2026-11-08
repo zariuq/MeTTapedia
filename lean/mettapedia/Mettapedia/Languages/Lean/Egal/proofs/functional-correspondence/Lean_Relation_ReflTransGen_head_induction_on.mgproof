@@ -1,0 +1,10 @@
+let l. assume Hl: nat_p l. let A. assume HA: A :e LeanUniv l. let r. assume Hr.
+let b. assume Hb: b :e A. let motive. assume Hmo.
+let a. assume Ha: a :e A. let h. assume Hh: h :e Lean_Relation_ReflTransGen_Prop A r a b.
+assume Hrefl: 0 :e motive b 0.
+assume Hstep: forall x :e A, forall c :e A, forall h1 :e r x c, forall h2 :e Lean_Relation_ReflTransGen_Prop A r c b,
+  0 :e motive c 0 -> 0 :e motive x 0.
+claim Hab: 0 :e Lean_Relation_ReflTransGen_Prop A r a b.
+{ rewrite <- In_1_eq_0 h (SepE1 1 (fun x => exists w, w :e Lean_Relation_ReflTransGen A r a b) h Hh). exact Hh. }
+exact Lean_RTG_head_ind A r b (fun x => 0 :e motive x 0) Hrefl
+  (fun x Hx y Hy Hxy Hyb Py => Hstep x Hx y Hy 0 Hxy 0 Hyb Py) a Ha Hab.

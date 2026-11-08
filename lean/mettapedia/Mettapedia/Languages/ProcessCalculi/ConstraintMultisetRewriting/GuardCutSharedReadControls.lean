@@ -54,10 +54,10 @@ theorem asks : GuardedCutSemantics.Asks A lab before events cuts := by
   change Check.Holds A assignment lab (GuardedCutSemantics.cutWorld before events (cuts 0))
     (.count pTok 1)
   rw [guard_world]
-  change (Check.region A assignment lab {4} pTok).card = 1
-  have region : Check.region A assignment lab {4} pTok = {4} := by
+  change (Check.matches A assignment lab {4} pTok).card = 1
+  have region : Check.matches A assignment lab {4} pTok = {4} := by
     ext occurrence
-    simp only [Check.region, Finset.mem_filter]
+    simp only [Check.matches, Finset.mem_filter]
     constructor
     · exact And.left
     · intro member

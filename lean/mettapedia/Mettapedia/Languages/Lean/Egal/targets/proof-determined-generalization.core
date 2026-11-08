@@ -1,0 +1,4 @@
+# Equality and decidable propositions; no Nat.le, so no decisions about numerals.
+Library/EqFacts.mg
+Numerals.mg
+Decidable.mg

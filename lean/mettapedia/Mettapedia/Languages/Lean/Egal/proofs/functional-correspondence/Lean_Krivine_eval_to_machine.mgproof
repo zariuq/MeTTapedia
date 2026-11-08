@@ -1,0 +1,226 @@
+claim Main: forall n :e Lean_Nat, forall r :e (Lean_List Lean_Krivine_NThunk), forall t :e Lean_Tm, forall w :e Lean_Krivine_NVal,
+  Lean_Krivine_evalN n r t = Lean_Option_some_node Lean_Krivine_NVal w -> forall s :e (Lean_List Lean_Krivine_NThunk),
+  exists st :e Lean_Krivine_KSt,
+    (0 :e Lean_Relation_ReflTransGen_Prop Lean_Krivine_KSt (Lean_StepRel Lean_Krivine_KSt Lean_Krivine_kstep)
+      (Lean_Krivine_KSt_mk_node t r s) st) /\ (0 :e Lean_Krivine_Presents w s st).
+{ apply Lean_Nat_ind.
+  - let r. assume Hr: r :e (Lean_List Lean_Krivine_NThunk). let t. assume Ht: t :e Lean_Tm.
+    let w. assume Hw: w :e Lean_Krivine_NVal.
+    assume H: Lean_Krivine_evalN Lean_Nat_zero_node r t = Lean_Option_some_node Lean_Krivine_NVal w.
+    let s. assume Hs: s :e (Lean_List Lean_Krivine_NThunk).
+    claim E0: Lean_Krivine_evalN Lean_Nat_zero_node r t = Lean_Option_none_node Lean_Krivine_NVal.
+    { rewrite <- LeanNum_0. exact Lean_Krivine_evalN_eq_1 r Hr t Ht. }
+    apply FalseE. apply Lean_Option_noconf0_1 Lean_Krivine_NVal w.
+    rewrite <- H. rewrite E0. reflexivity.
+  - let n. assume Hn: n :e Lean_Nat.
+    assume IH: forall r :e (Lean_List Lean_Krivine_NThunk), forall t :e Lean_Tm, forall w :e Lean_Krivine_NVal,
+      Lean_Krivine_evalN n r t = Lean_Option_some_node Lean_Krivine_NVal w -> forall s :e (Lean_List Lean_Krivine_NThunk),
+      exists st :e Lean_Krivine_KSt,
+        (0 :e Lean_Relation_ReflTransGen_Prop Lean_Krivine_KSt (Lean_StepRel Lean_Krivine_KSt Lean_Krivine_kstep)
+          (Lean_Krivine_KSt_mk_node t r s) st) /\ (0 :e Lean_Krivine_Presents w s st).
+    let r. assume Hr: r :e (Lean_List Lean_Krivine_NThunk).
+    apply Lean_Tm_ind.
+    + let i. assume Hi: i :e Lean_Nat. let w. assume Hw: w :e Lean_Krivine_NVal.
+      assume H: Lean_Krivine_evalN (Lean_Nat_succ_node n) r (Lean_Tm_var_node i) = Lean_Option_some_node Lean_Krivine_NVal w.
+      let s. assume Hs: s :e (Lean_List Lean_Krivine_NThunk).
+      apply Lean_Option_inv Lean_Krivine_NThunk (Lean_List_getu63Internal Lean_Krivine_NThunk r i)
+        (Lean_List_getu63Internal_In Lean_Krivine_NThunk r Hr i Hi).
+      * assume Eg: Lean_List_getu63Internal Lean_Krivine_NThunk r i = Lean_Option_none_node Lean_Krivine_NThunk.
+        apply FalseE. apply Lean_Option_noconf0_1 Lean_Krivine_NVal w.
+        rewrite <- H. rewrite Lean_Krivine_evalN_eq_2 r Hr n Hn i Hi. rewrite Eg. rewrite Lean_Option_iota0.
+        reflexivity.
+      * assume Eg: exists th :e Lean_Krivine_NThunk,
+          Lean_List_getu63Internal Lean_Krivine_NThunk r i = Lean_Option_some_node Lean_Krivine_NThunk th.
+        apply Eg. let th. assume Hth. apply Hth.
+        assume Hth1: th :e Lean_Krivine_NThunk.
+        assume Eth: Lean_List_getu63Internal Lean_Krivine_NThunk r i = Lean_Option_some_node Lean_Krivine_NThunk th.
+        claim Cth: forall x :e Lean_Krivine_NThunk, th = x ->
+          exists st :e Lean_Krivine_KSt,
+            (0 :e Lean_Relation_ReflTransGen_Prop Lean_Krivine_KSt (Lean_StepRel Lean_Krivine_KSt Lean_Krivine_kstep)
+              (Lean_Krivine_KSt_mk_node (Lean_Tm_var_node i) r s) st) /\ (0 :e Lean_Krivine_Presents w s st).
+        { apply Lean_Krivine_NThunk_cases.
+          let t2. assume Ht2: t2 :e Lean_Tm. let r2. assume Hr2: r2 :e (Lean_List Lean_Krivine_NThunk).
+          assume E: th = Lean_Krivine_NThunk_mk_node t2 r2.
+          claim Hev: Lean_Krivine_evalN n r2 t2 = Lean_Option_some_node Lean_Krivine_NVal w.
+          { rewrite <- H. rewrite Lean_Krivine_evalN_eq_2 r Hr n Hn i Hi. rewrite Eth. rewrite Lean_Option_iota1. rewrite beta.
+            prove Lean_Krivine_evalN n r2 t2
+              = Lean_Krivine_NThunk_rec (fun v_a :e Lean_Tm => fun v_x6 :e (Lean_List Lean_Krivine_NThunk) => Lean_Krivine_evalN n v_x6 v_a) th.
+            rewrite E. rewrite Lean_Krivine_NThunk_iota0. rewrite beta.
+            prove Lean_Krivine_evalN n r2 t2 = (fun v_x6 :e (Lean_List Lean_Krivine_NThunk) => Lean_Krivine_evalN n v_x6 t2) r2.
+            rewrite beta. reflexivity.
+            exact Hr2. exact Ht2. exact Ht2. exact Hr2. exact Hth1. exact Hth1. }
+          claim Hst0: Lean_Krivine_KSt_mk_node (Lean_Tm_var_node i) r s :e Lean_Krivine_KSt.
+          { exact Lean_Krivine_KSt_mk_typed (Lean_Tm_var_node i) (Lean_Tm_var_typed i Hi) r Hr s Hs. }
+          claim Hst1: Lean_Krivine_KSt_mk_node t2 r2 s :e Lean_Krivine_KSt.
+          { exact Lean_Krivine_KSt_mk_typed t2 Ht2 r2 Hr2 s Hs. }
+          claim Hh0: (fun v_a :e Lean_Tm => fun v_x4 :e (Lean_List Lean_Krivine_NThunk) => Lean_Krivine_KSt_mk_node v_a v_x4 s)
+            :e (Pi_ x0 :e Lean_Tm, (Pi_ x1 :e (Lean_List Lean_Krivine_NThunk), Lean_Krivine_KSt)).
+          { apply lam_Pi Lean_Tm (fun x0 => Pi_ x1 :e (Lean_List Lean_Krivine_NThunk), Lean_Krivine_KSt)
+              (fun v_a => fun v_x4 :e (Lean_List Lean_Krivine_NThunk) => Lean_Krivine_KSt_mk_node v_a v_x4 s).
+            let v_a. assume Ha: v_a :e Lean_Tm.
+            exact lam_Pi (Lean_List Lean_Krivine_NThunk) (fun x1 => Lean_Krivine_KSt)
+              (fun v_x4 => Lean_Krivine_KSt_mk_node v_a v_x4 s)
+              (fun v_x4 Hx4 => Lean_Krivine_KSt_mk_typed v_a Ha v_x4 Hx4 s Hs). }
+          claim Hstep: Lean_Krivine_kstep (Lean_Krivine_KSt_mk_node (Lean_Tm_var_node i) r s)
+            = Lean_Option_some_node Lean_Krivine_KSt (Lean_Krivine_KSt_mk_node t2 r2 s).
+          { rewrite Lean_Krivine_kstep_eq_1 i Hi r Hr s Hs. rewrite Eth.
+            rewrite Lean_Option_map_eq_1 0 nat_0 Lean_Krivine_NThunk (Lean_Krivine_NThunk_type_In 0 nat_0) 0 nat_0
+              Lean_Krivine_KSt (Lean_Krivine_KSt_type_In 0 nat_0)
+              (fun v_th :e Lean_Krivine_NThunk => Lean_Krivine_NThunk_rec
+                (fun v_a :e Lean_Tm => fun v_x4 :e (Lean_List Lean_Krivine_NThunk) => Lean_Krivine_KSt_mk_node v_a v_x4 s) v_th)
+              (lam_Pi Lean_Krivine_NThunk (fun x => Lean_Krivine_KSt)
+                (fun v_th => Lean_Krivine_NThunk_rec
+                  (fun v_a :e Lean_Tm => fun v_x4 :e (Lean_List Lean_Krivine_NThunk) => Lean_Krivine_KSt_mk_node v_a v_x4 s) v_th)
+                (fun v_th Hv => Lean_Krivine_NThunk_rec_type (fun x => Lean_Krivine_KSt)
+                  (fun v_a :e Lean_Tm => fun v_x4 :e (Lean_List Lean_Krivine_NThunk) => Lean_Krivine_KSt_mk_node v_a v_x4 s) Hh0
+                  v_th Hv)) th Hth1.
+            rewrite beta Lean_Krivine_NThunk (fun v_th => Lean_Krivine_NThunk_rec
+                (fun v_a :e Lean_Tm => fun v_x4 :e (Lean_List Lean_Krivine_NThunk) => Lean_Krivine_KSt_mk_node v_a v_x4 s) v_th) th Hth1.
+            rewrite E. rewrite Lean_Krivine_NThunk_iota0. rewrite beta.
+            prove Lean_Option_some_node Lean_Krivine_KSt
+                ((fun v_x4 :e (Lean_List Lean_Krivine_NThunk) => Lean_Krivine_KSt_mk_node t2 v_x4 s) r2)
+              = Lean_Option_some_node Lean_Krivine_KSt (Lean_Krivine_KSt_mk_node t2 r2 s).
+            rewrite beta. reflexivity.
+            exact Hr2. exact Ht2. exact Ht2. exact Hr2. }
+          apply IH r2 Hr2 t2 Ht2 w Hw Hev s Hs.
+          let st. assume Hst. apply Hst. assume Hst2: st :e Lean_Krivine_KSt. assume Hrp. apply Hrp.
+          assume Run. assume Pres.
+          witness st. apply andI.
+          - exact Hst2.
+          - apply andI.
+            + exact Lean_Machine_head Lean_Krivine_KSt Lean_Krivine_kstep
+                (Lean_Krivine_KSt_mk_node (Lean_Tm_var_node i) r s) Hst0 (Lean_Krivine_KSt_mk_node t2 r2 s) Hst1 st Hstep Run.
+            + exact Pres. }
+        apply Cth th Hth1. reflexivity.
+    + let b. assume Hb: b :e Lean_Tm. assume IHb. let w. assume Hw: w :e Lean_Krivine_NVal.
+      assume H: Lean_Krivine_evalN (Lean_Nat_succ_node n) r (Lean_Tm_lam_node b) = Lean_Option_some_node Lean_Krivine_NVal w.
+      let s. assume Hs: s :e (Lean_List Lean_Krivine_NThunk).
+      claim Ew: Lean_Krivine_NVal_clo_node b r = w.
+      { apply Lean_Option_some_inj0 Lean_Krivine_NVal. rewrite <- Lean_Krivine_evalN_eq_4 r Hr n Hn b Hb. exact H. }
+      rewrite <- Ew.
+      claim Hst: Lean_Krivine_KSt_mk_node (Lean_Tm_lam_node b) r s :e Lean_Krivine_KSt.
+      { exact Lean_Krivine_KSt_mk_typed (Lean_Tm_lam_node b) (Lean_Tm_lam_typed b Hb) r Hr s Hs. }
+      witness (Lean_Krivine_KSt_mk_node (Lean_Tm_lam_node b) r s). apply andI.
+      * exact Hst.
+      * apply andI.
+        { exact Lean_RTG_refl Lean_Krivine_KSt (Lean_StepRel Lean_Krivine_KSt Lean_Krivine_kstep)
+            (Lean_Krivine_KSt_mk_node (Lean_Tm_lam_node b) r s). }
+        { rewrite Lean_Krivine_Presents_eq_1 s Hs (Lean_Krivine_KSt_mk_node (Lean_Tm_lam_node b) r s) Hst b Hb r Hr.
+          exact Lean_Eq_refl_proof_ok Lean_Krivine_KSt (Lean_Krivine_KSt_mk_node (Lean_Tm_lam_node b) r s). }
+    + let f. assume Hf: f :e Lean_Tm. let a. assume Ha: a :e Lean_Tm. assume IHf. assume IHa.
+      let w. assume Hw: w :e Lean_Krivine_NVal.
+      assume H: Lean_Krivine_evalN (Lean_Nat_succ_node n) r (Lean_Tm_app_node f a) = Lean_Option_some_node Lean_Krivine_NVal w.
+      let s. assume Hs: s :e (Lean_List Lean_Krivine_NThunk).
+      apply Lean_Option_inv Lean_Krivine_NVal (Lean_Krivine_evalN n r f) (Lean_Krivine_evalN_In n Hn r Hr f Hf).
+      * assume Ef: Lean_Krivine_evalN n r f = Lean_Option_none_node Lean_Krivine_NVal.
+        apply FalseE. apply Lean_Option_noconf0_1 Lean_Krivine_NVal w.
+        rewrite <- H. rewrite Lean_Krivine_evalN_eq_5 r Hr n Hn f Hf a Ha. rewrite Ef. rewrite Lean_Option_iota0.
+        reflexivity.
+      * assume Ef: exists fw :e Lean_Krivine_NVal, Lean_Krivine_evalN n r f = Lean_Option_some_node Lean_Krivine_NVal fw.
+        apply Ef. let fw. assume Hfw. apply Hfw.
+        assume Hfw1: fw :e Lean_Krivine_NVal. assume Efw: Lean_Krivine_evalN n r f = Lean_Option_some_node Lean_Krivine_NVal fw.
+        claim Unf: Lean_Krivine_evalN (Lean_Nat_succ_node n) r (Lean_Tm_app_node f a)
+          = Lean_Krivine_NVal_rec (fun x :e Lean_Nat => Lean_Option_none_node Lean_Krivine_NVal)
+              (fun x :e Lean_Tm => fun y :e (Lean_List Lean_Krivine_NThunk) =>
+                Lean_Krivine_evalN n (Lean_List_cons_node Lean_Krivine_NThunk (Lean_Krivine_NThunk_mk_node a r) y) x) fw.
+        { rewrite Lean_Krivine_evalN_eq_5 r Hr n Hn f Hf a Ha. rewrite Efw. rewrite Lean_Option_iota1. rewrite beta.
+          reflexivity. exact Hfw1. exact Hfw1. }
+        claim Cw: forall x :e Lean_Krivine_NVal, fw = x ->
+          exists st :e Lean_Krivine_KSt,
+            (0 :e Lean_Relation_ReflTransGen_Prop Lean_Krivine_KSt (Lean_StepRel Lean_Krivine_KSt Lean_Krivine_kstep)
+              (Lean_Krivine_KSt_mk_node (Lean_Tm_app_node f a) r s) st) /\ (0 :e Lean_Krivine_Presents w s st).
+        { apply Lean_Krivine_NVal_ind.
+          { let m. assume Hm: m :e Lean_Nat. assume E: fw = Lean_Krivine_NVal_lit_node m.
+            apply FalseE. apply Lean_Option_noconf0_1 Lean_Krivine_NVal w.
+            rewrite <- H. rewrite Unf. rewrite E. rewrite Lean_Krivine_NVal_iota0. rewrite beta.
+            reflexivity. exact Hm. exact Hm. }
+          { let b. assume Hb: b :e Lean_Tm. let r2. assume Hr2: r2 :e (Lean_List Lean_Krivine_NThunk).
+            assume E: fw = Lean_Krivine_NVal_clo_node b r2.
+            claim Hth: Lean_Krivine_NThunk_mk_node a r :e Lean_Krivine_NThunk.
+            { exact Lean_Krivine_NThunk_mk_typed a Ha r Hr. }
+            claim Hs1: Lean_List_cons_node Lean_Krivine_NThunk (Lean_Krivine_NThunk_mk_node a r) s :e Lean_List Lean_Krivine_NThunk.
+            { exact Lean_List_cons_typed Lean_Krivine_NThunk (Lean_Krivine_NThunk_mk_node a r) Hth s Hs. }
+            claim Hr3: Lean_List_cons_node Lean_Krivine_NThunk (Lean_Krivine_NThunk_mk_node a r) r2 :e Lean_List Lean_Krivine_NThunk.
+            { exact Lean_List_cons_typed Lean_Krivine_NThunk (Lean_Krivine_NThunk_mk_node a r) Hth r2 Hr2. }
+            claim Hbw: Lean_Krivine_evalN n (Lean_List_cons_node Lean_Krivine_NThunk (Lean_Krivine_NThunk_mk_node a r) r2) b
+              = Lean_Option_some_node Lean_Krivine_NVal w.
+            { rewrite <- H. rewrite Unf. rewrite E. rewrite Lean_Krivine_NVal_iota1. rewrite beta.
+              prove Lean_Krivine_evalN n (Lean_List_cons_node Lean_Krivine_NThunk (Lean_Krivine_NThunk_mk_node a r) r2) b
+                = (fun y :e (Lean_List Lean_Krivine_NThunk) =>
+                    Lean_Krivine_evalN n (Lean_List_cons_node Lean_Krivine_NThunk (Lean_Krivine_NThunk_mk_node a r) y) b) r2.
+              rewrite beta.
+              reflexivity. exact Hr2. exact Hb. exact Hb. exact Hr2. }
+            claim Efc: Lean_Krivine_evalN n r f = Lean_Option_some_node Lean_Krivine_NVal (Lean_Krivine_NVal_clo_node b r2).
+            { rewrite <- E. exact Efw. }
+            claim Hst0: Lean_Krivine_KSt_mk_node (Lean_Tm_app_node f a) r s :e Lean_Krivine_KSt.
+            { exact Lean_Krivine_KSt_mk_typed (Lean_Tm_app_node f a) (Lean_Tm_app_typed f Hf a Ha) r Hr s Hs. }
+            claim Hst1: Lean_Krivine_KSt_mk_node f r (Lean_List_cons_node Lean_Krivine_NThunk (Lean_Krivine_NThunk_mk_node a r) s)
+              :e Lean_Krivine_KSt.
+            { exact Lean_Krivine_KSt_mk_typed f Hf r Hr
+                (Lean_List_cons_node Lean_Krivine_NThunk (Lean_Krivine_NThunk_mk_node a r) s) Hs1. }
+            claim Hst2: Lean_Krivine_KSt_mk_node (Lean_Tm_lam_node b) r2
+                (Lean_List_cons_node Lean_Krivine_NThunk (Lean_Krivine_NThunk_mk_node a r) s) :e Lean_Krivine_KSt.
+            { exact Lean_Krivine_KSt_mk_typed (Lean_Tm_lam_node b) (Lean_Tm_lam_typed b Hb) r2 Hr2
+                (Lean_List_cons_node Lean_Krivine_NThunk (Lean_Krivine_NThunk_mk_node a r) s) Hs1. }
+            claim Hst3: Lean_Krivine_KSt_mk_node b (Lean_List_cons_node Lean_Krivine_NThunk (Lean_Krivine_NThunk_mk_node a r) r2) s
+              :e Lean_Krivine_KSt.
+            { exact Lean_Krivine_KSt_mk_typed b Hb
+                (Lean_List_cons_node Lean_Krivine_NThunk (Lean_Krivine_NThunk_mk_node a r) r2) Hr3 s Hs. }
+            apply IH r Hr f Hf (Lean_Krivine_NVal_clo_node b r2) (Lean_Krivine_NVal_clo_typed b Hb r2 Hr2) Efc
+              (Lean_List_cons_node Lean_Krivine_NThunk (Lean_Krivine_NThunk_mk_node a r) s) Hs1.
+            let stf. assume Hstf. apply Hstf. assume Hstf1: stf :e Lean_Krivine_KSt. assume Hrpf. apply Hrpf.
+            assume Runf. assume Presf: 0 :e Lean_Krivine_Presents (Lean_Krivine_NVal_clo_node b r2)
+              (Lean_List_cons_node Lean_Krivine_NThunk (Lean_Krivine_NThunk_mk_node a r) s) stf.
+            claim Estf: stf = Lean_Krivine_KSt_mk_node (Lean_Tm_lam_node b) r2
+                (Lean_List_cons_node Lean_Krivine_NThunk (Lean_Krivine_NThunk_mk_node a r) s).
+            { apply LeanEq_sound Lean_Krivine_KSt stf (Lean_Krivine_KSt_mk_node (Lean_Tm_lam_node b) r2
+                (Lean_List_cons_node Lean_Krivine_NThunk (Lean_Krivine_NThunk_mk_node a r) s)) 0.
+              rewrite <- Lean_Krivine_Presents_eq_1 (Lean_List_cons_node Lean_Krivine_NThunk (Lean_Krivine_NThunk_mk_node a r) s) Hs1
+                stf Hstf1 b Hb r2 Hr2.
+              exact Presf. }
+            apply IH (Lean_List_cons_node Lean_Krivine_NThunk (Lean_Krivine_NThunk_mk_node a r) r2) Hr3 b Hb w Hw Hbw s Hs.
+            let st. assume Hst. apply Hst. assume Hst4: st :e Lean_Krivine_KSt. assume Hrp. apply Hrp.
+            assume Run. assume Pres.
+            witness st. apply andI.
+            - exact Hst4.
+            - apply andI.
+              + apply Lean_Machine_head Lean_Krivine_KSt Lean_Krivine_kstep
+                  (Lean_Krivine_KSt_mk_node (Lean_Tm_app_node f a) r s) Hst0
+                  (Lean_Krivine_KSt_mk_node f r (Lean_List_cons_node Lean_Krivine_NThunk (Lean_Krivine_NThunk_mk_node a r) s)) Hst1 st
+                  (Lean_Krivine_kstep_eq_2 f Hf a Ha r Hr s Hs).
+                apply Lean_RTG_trans Lean_Krivine_KSt (Lean_StepRel Lean_Krivine_KSt Lean_Krivine_kstep)
+                  (Lean_Krivine_KSt_mk_node f r (Lean_List_cons_node Lean_Krivine_NThunk (Lean_Krivine_NThunk_mk_node a r) s))
+                  stf st Runf.
+                rewrite Estf.
+                exact Lean_Machine_head Lean_Krivine_KSt Lean_Krivine_kstep
+                  (Lean_Krivine_KSt_mk_node (Lean_Tm_lam_node b) r2
+                    (Lean_List_cons_node Lean_Krivine_NThunk (Lean_Krivine_NThunk_mk_node a r) s)) Hst2
+                  (Lean_Krivine_KSt_mk_node b (Lean_List_cons_node Lean_Krivine_NThunk (Lean_Krivine_NThunk_mk_node a r) r2) s) Hst3 st
+                  (Lean_Krivine_kstep_eq_3 b Hb r2 Hr2 (Lean_Krivine_NThunk_mk_node a r) Hth s Hs) Run.
+              + exact Pres. } }
+        apply Cw fw Hfw1. reflexivity.
+    + let k. assume Hk: k :e Lean_Nat. let w. assume Hw: w :e Lean_Krivine_NVal.
+      assume H: Lean_Krivine_evalN (Lean_Nat_succ_node n) r (Lean_Tm_lit_node k) = Lean_Option_some_node Lean_Krivine_NVal w.
+      let s. assume Hs: s :e (Lean_List Lean_Krivine_NThunk).
+      claim Ew: Lean_Krivine_NVal_lit_node k = w.
+      { apply Lean_Option_some_inj0 Lean_Krivine_NVal. rewrite <- Lean_Krivine_evalN_eq_3 r Hr n Hn k Hk. exact H. }
+      rewrite <- Ew.
+      claim Hst: Lean_Krivine_KSt_mk_node (Lean_Tm_lit_node k) r s :e Lean_Krivine_KSt.
+      { exact Lean_Krivine_KSt_mk_typed (Lean_Tm_lit_node k) (Lean_Tm_lit_typed k Hk) r Hr s Hs. }
+      witness (Lean_Krivine_KSt_mk_node (Lean_Tm_lit_node k) r s). apply andI.
+      * exact Hst.
+      * apply andI.
+        { exact Lean_RTG_refl Lean_Krivine_KSt (Lean_StepRel Lean_Krivine_KSt Lean_Krivine_kstep)
+            (Lean_Krivine_KSt_mk_node (Lean_Tm_lit_node k) r s). }
+        { rewrite Lean_Krivine_Presents_eq_2 s Hs (Lean_Krivine_KSt_mk_node (Lean_Tm_lit_node k) r s) Hst k Hk.
+          claim G: 0 :e (fun v :e (Lean_List Lean_Krivine_NThunk) =>
+              Lean_Eq_Prop Lean_Krivine_KSt (Lean_Krivine_KSt_mk_node (Lean_Tm_lit_node k) r s) (Lean_Krivine_KSt_mk_node (Lean_Tm_lit_node k) v s)) r.
+          { rewrite beta (Lean_List Lean_Krivine_NThunk) (fun v =>
+              Lean_Eq_Prop Lean_Krivine_KSt (Lean_Krivine_KSt_mk_node (Lean_Tm_lit_node k) r s) (Lean_Krivine_KSt_mk_node (Lean_Tm_lit_node k) v s)) r Hr.
+            exact Lean_Eq_refl_proof_ok Lean_Krivine_KSt (Lean_Krivine_KSt_mk_node (Lean_Tm_lit_node k) r s). }
+          exact Lean_Exists_intro_proof_ok (Lean_List Lean_Krivine_NThunk)
+            (fun v :e (Lean_List Lean_Krivine_NThunk) =>
+              Lean_Eq_Prop Lean_Krivine_KSt (Lean_Krivine_KSt_mk_node (Lean_Tm_lit_node k) r s) (Lean_Krivine_KSt_mk_node (Lean_Tm_lit_node k) v s))
+            r Hr 0 (Lean_guard_of ((fun v :e (Lean_List Lean_Krivine_NThunk) =>
+              Lean_Eq_Prop Lean_Krivine_KSt (Lean_Krivine_KSt_mk_node (Lean_Tm_lit_node k) r s) (Lean_Krivine_KSt_mk_node (Lean_Tm_lit_node k) v s)) r) G). } }
+exact Main.

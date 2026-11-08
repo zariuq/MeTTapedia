@@ -722,7 +722,7 @@ private theorem core_source_back
     {label : Context} {world childWorld finalWorld : World}
     {before after : Control Context} {flatBefore flatAfter : Control}
     {stack remaining : List Continuation} {current pending : List Result}
-    (advanced : LocalStep (environment.view world label) environment.dispatch environment.lookup policy
+    (advanced : LocalStep (admission := environment.arguments) (environment.view world label) environment.dispatch environment.lookup policy
       (flatBefore,stack) (flatAfter,remaining))
     (first : UnscopedControl before flatBefore) (managed : managedContextControl before = false)
     (last : UnscopedControl after flatAfter)
@@ -1252,7 +1252,7 @@ reply changes the world once; nested contexts return that actual world. -/
 theorem local_source_back
     {label : Context} {world afterWorld childWorld finalWorld : World}
     {before after : Control Context × List Continuation} {current pending : List Result}
-    (advanced : WorldLocalStep environment.view environment.services environment.dispatch environment.lookup policy
+    (advanced : WorldLocalStep (admission := environment.arguments) environment.view environment.services environment.dispatch environment.lookup policy
       world label before afterWorld after)
     (controlled : after.1.WorldSourceRel environment policy label afterWorld current childWorld)
     (continued : WorldStackRel environment policy label childWorld after.2 current pending finalWorld) :
@@ -1358,7 +1358,7 @@ theorem local_source_back
 
 theorem step_source_back
     {before after : WorldConfiguration Context World} {answers : List Result} {finalWorld : World}
-    (advanced : WorldStep environment.view environment.services environment.dispatch environment.lookup policy before after)
+    (advanced : WorldStep (admission := environment.arguments) environment.view environment.services environment.dispatch environment.lookup policy before after)
     (source : after.SourceRel environment policy answers finalWorld) :
     before.SourceRel environment policy answers finalWorld := by
   obtain ⟨current,pending,childWorld,controlled,continued,same⟩ := source
@@ -1374,7 +1374,7 @@ theorem step_source_back
 
 theorem steps_source_back
     {before after : WorldConfiguration Context World} {answers : List Result} {finalWorld : World}
-    (path : WorldSteps environment.view environment.services environment.dispatch environment.lookup policy before after)
+    (path : WorldSteps (admission := environment.arguments) environment.view environment.services environment.dispatch environment.lookup policy before after)
     (source : after.SourceRel environment policy answers finalWorld) :
     before.SourceRel environment policy answers finalWorld := by
   revert source

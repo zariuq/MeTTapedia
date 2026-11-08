@@ -115,9 +115,9 @@ theorem actual_count_query_publishes_the_new_value :
     exact queries
   · rw [same]
     intro Future future candidate value
-    rw [zero.live_row 2 (by decide +kernel) rfl]
-    change Matches _ _ candidate value (ofStored _ _ (.live (symbol 7))) ↔ _
-    rw [ofStored_matches_iff, ContextualGuardMatching.live_matches_iff]
+    rw [zero.shared_row 2 (by decide +kernel) rfl]
+    change Matches _ _ candidate value (ofStored _ _ (.shared (symbol 7))) ↔ _
+    rw [ofStored_matches_iff, ContextualGuardMatching.shared_matches_iff]
     rfl
 
 end ConditionalDuplicates
@@ -125,7 +125,7 @@ end ConditionalDuplicates
 namespace OpenCaller
 
 def pattern : Term (signature base captures) [] () := generator captures ()
-def rows (_ : Nat) : Row none captures [] () := ofStored none captures (.live (symbol 1))
+def rows (_ : Nat) : Row none captures [] () := ofStored none captures (.shared (symbol 1))
 def update : ContextualFrameUpdate.Update ([] : ContextualResidual.Problem captures) := ContextualFrameWorklist.identity []
 theorem finished : update.remaining = [] := rfl
 
@@ -133,8 +133,8 @@ theorem principal_table_is_empty : table none update rows {0} pattern = ∅ := b
   apply Finset.eq_empty_iff_forall_notMem.mpr
   intro occurrence member
   obtain ⟨_present, matched⟩ := (mem_region _ _ _ _ _ _).mp member
-  change Matches none captures (generator captures) _ (ofStored none captures (.live (symbol 1))) at matched
-  erw [ofStored_matches_iff, ContextualGuardMatching.live_matches_iff] at matched
+  change Matches none captures (generator captures) _ (ofStored none captures (.shared (symbol 1))) at matched
+  erw [ofStored_matches_iff, ContextualGuardMatching.shared_matches_iff] at matched
   dsimp only [update, pattern] at matched
   simp only [instantiate_identity] at matched
   change generator captures () = symbol 1 at matched
@@ -152,7 +152,7 @@ theorem completed_unification_does_not_complete_the_count_query :
     apply (mem_region _ _ _ _ _ _).mpr
     refine ⟨Finset.mem_singleton_self _, ?_⟩
     dsimp only [rows]
-    rw [ofStored_matches_iff, ContextualGuardMatching.live_matches_iff]
+    rw [ofStored_matches_iff, ContextualGuardMatching.shared_matches_iff]
     rfl
   rw [equal] at member
   exact Finset.notMem_empty 0 member

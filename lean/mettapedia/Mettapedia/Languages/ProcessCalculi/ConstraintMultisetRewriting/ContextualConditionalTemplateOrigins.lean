@@ -40,7 +40,7 @@ theorem Birth.ofOrdinary_instances (birth : ContextualSourceSchedules.Birth decl
     exact ContextualConditionalPublication.store_matches_iff birth.saved birth.saved _ _ pattern
   · simp only [Birth.ofOrdinary, Birth.origin, ContextualSourceSchedules.Birth.origin,
       ordinary, Bool.false_eq_true, if_false, Origin.Instances]
-    rw [ofStored_matches_iff, ContextualGuardMatching.live_matches_iff, Assignment.instantiate_compose]
+    rw [ofStored_matches_iff, ContextualGuardMatching.shared_matches_iff, Assignment.instantiate_compose]
 
 namespace Schedule
 

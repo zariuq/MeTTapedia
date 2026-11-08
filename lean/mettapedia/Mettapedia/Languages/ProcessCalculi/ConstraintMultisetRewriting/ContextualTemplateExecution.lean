@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 
 The record retains the existing checked execution and its authored source
 rule. Production metadata is selected by source port. Ordinary values use
-the existing normalized reusable publication; live values keep source
+the existing normalized reusable publication; shared values keep source
 references; constructed templates install their private keys and explicit
 captures in that same final inventory. No second resource transition is
 introduced by installing the row metadata.
@@ -125,7 +125,7 @@ theorem publishedRows_covered (firing : Firing locals inners before) (occurrence
       cases production with
       | ordinary value =>
           simpa only [publishedRows, selected] using unchanged
-      | live value =>
+      | shared value =>
           simpa only [publishedRows, selected] using unchanged
       | schema body =>
           have extended := ContextualPublication.row_extendPrivate_covered (Expanded locals inners) firing.update.declaration
@@ -167,16 +167,16 @@ theorem ordinary_row (firing : Firing locals inners before) (occurrence : O) (or
   change ordinaryFlag firing occurrence = true
   simp only [ordinaryFlag, selected]
 
-theorem live_row (firing : Firing locals inners before) (occurrence : O) (origin : Nat)
+theorem shared_row (firing : Firing locals inners before) (occurrence : O) (origin : Nat)
     (value : Term (signature S (Actor locals before.declarations)) Γ sort)
-    (selected : firing.descriptor occurrence = some (origin, .live value)) :
-    firing.target.inventory.rows occurrence = ContextualStoredRows.Row.live
+    (selected : firing.descriptor occurrence = some (origin, .shared value)) :
+    firing.target.inventory.rows occurrence = ContextualStoredRows.Row.shared
       (instantiate (ContextualComputedFreshFrame.includeSource firing.update) (firing.execution.outputs occurrence)) := by
   have made := assign_mem firing.selection.made (firing.sourceRule.descriptors locals inners before.declarations)
-    occurrence (origin, .live value) selected
+    occurrence (origin, .shared value) selected
   change firing.publishedRows occurrence = _
   rw [publishedRows, selected]
-  apply (defaultPublication firing).live_row made
+  apply (defaultPublication firing).shared_row made
   change ordinaryFlag firing occurrence = false
   simp only [ordinaryFlag, selected]
 
@@ -233,7 +233,7 @@ theorem realize_source_publication
     (selection : Selection O)
     (outputs : O → Term (signature S (Active locals inners before.declarations)) Γ sort)
     (covered : RuleCovered (privateScopes before.scopes) before.occupied (rule.lower locals inners before.declarations))
-    (admitted : ContextualTransportedActivation.SemanticAdmission (Expanded locals inners) before.declarations
+    (admitted : ContextualGuardedStep.Valid (Expanded locals inners) before.declarations
       before.occupied selection (rule.lower locals inners before.declarations) before.inventory.rows
       before.inventory.configuration outputs)
     (patterned : ContextualPatternFragment.ProblemPattern (ContextualResidual.observeProblem

@@ -9,7 +9,7 @@ the existing relational internal language. The receipt retains both the scope
 certificate and the exact extracted answer. Rejected in-scope requests have no
 receipt, so this partial interface cannot be represented by a total answer
 function. The connection is through decoded semantic values; it does not
-identify the guarded WM language with the core WM language.
+identify the forgetting WM language with the core WM language.
 -/
 
 
@@ -60,7 +60,7 @@ theorem counting_outside_receipt :
         (countingCore.world "x", "y")
         (countingCombined.core.extract (countingCore.world "x") "y")) := by
   apply checked_premise_receipt countingCombined (checkedProvider demoTable)
-    (wmExtVertexLanguageDefGuarded combinedVertex)
+    (wmExtVertexLanguageDef combinedVertex)
     scopeHandle worldHandle outsideHandle singletonX "y"
     (countingCore.world "x")
   · rfl

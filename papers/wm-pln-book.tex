@@ -1297,27 +1297,17 @@ of revision follow from commutativity and associativity of addition in the
 evidence monoid (\texttt{wmCore\_sound\_of\_addCommMonoidHom},
 kernel-checked; full development in Chapter~\ref{ch:wm-gslt}).
 
-\paragraph{The 2\texttimes 2 calculus square.}
+\paragraph{One calculus, with and without context descent.}
 The core rules encode as a \texttt{LanguageDef}---a typed list of
-rewrite rules with pattern-matching and optional side conditions.  Two
-orthogonal refinements produce four calculi:
-
-\begin{center}
-\begin{tabular}{lll}
-\toprule
-& \textbf{Plain} & \textbf{+Congruence} \\
-\midrule
-\textbf{Raw} (schematic) & all rules fire & + context descent \\
-\textbf{Guarded} (faithful) & side-condition oracle & + context descent \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-\noindent
-The raw calculus overapproximates the guarded one (dropping side conditions
-only enables more reductions).  The congruence extension adds explicit rules
-for descending into subterms.  All four corners carry a Galois connection
-$\Diamond \dashv \Box$ derived automatically by the OSLF pipeline.
+rewrite rules with pattern-matching and relation premises.  Every rule with
+a side condition carries it as a premise, which fires only on a row that a
+relation environment returns, so each vertex has one calculus.  A congruence
+extension adds explicit rules for descending into subterms.  Every step of
+the calculus is a step of its extension, under every relation environment,
+and both carry a Galois connection $\Diamond \dashv \Box$ derived
+automatically by the OSLF pipeline.  Under an environment whose rows denote
+related values, every step and every run of either calculus preserves the
+denotation of the term it rewrites (Section~\ref{sec:wm-one-calculus}).
 
 \paragraph{Adequacy.}
 The calculus terms are given by an intrinsically sorted type
@@ -9215,8 +9205,9 @@ structure.  The story proceeds in five layers:
 \begin{enumerate}
 \item \textbf{Algebraic core} (\S\ref{sec:wm-algebraic-core}): the 5~core
   rules are derived from a single universal property ($\mathsf{extract}$ is
-  an $\mathsf{AddCommMonoid}$ homomorphism), and the 2\texttimes 2 calculus
-  square (raw/guarded $\times$ plain/+cong) organizes all variants.
+  an $\mathsf{AddCommMonoid}$ homomorphism); each vertex has one calculus,
+  which its congruence extension closes under contexts, and both are sound
+  for a world model of every axis.
 \item \textbf{Intrinsic encoding} (\S\ref{sec:wm-encoding}): the
   sort-indexed $\mathsf{WMTerm}$ type embeds bijectively into patterns, with
   biconditional single-step and star adequacy, and image-restricted backward
@@ -9311,62 +9302,73 @@ $(\mathsf{Evidence}, +, 0)$.
 Each rule is encoded as a \texttt{RewriteRule} structure with a
 \texttt{typeContext} (typed metavariables), \texttt{premises} (side
 conditions), \texttt{left} and \texttt{right} patterns.  The core rules
-have empty premises.  Eighteen step
+have empty premises.  Twenty-four step
 lemmas are kernel-checked: 3~core (evidence-add, revision-comm,
-revision-assoc) at both extended and full vertices, plus 12~extension-axis
-lemmas (overlap, forgetting, support-tracked absorption and clean-base
-identity, provenance-symmetry, closure-fixpoint, swap-anomaly,
+revision-assoc) at both extended and full vertices, 12~extension-axis
+lemmas at full vertices (overlap, forgetting, support-tracked absorption and
+clean-base identity, provenance-symmetry, closure-fixpoint, swap-anomaly,
 anti-hallucination, Noether conservation, experiment, Kripke, generic
-carrier).  The forgetting, support-tracked and conservation lemmas hold for a
-relation environment that supplies their premise rows.
+carrier), and 6~that hold in every language containing their rule
+(forgetting, absorption, clean-base identity, anti-hallucination, Noether
+conservation, zero leakage).  The forgetting, support-tracked and
+conservation lemmas hold for a relation environment that supplies their
+premise rows.
 
-\subsection{The 2\texttimes 2 Calculus Square}
-\label{sec:wm-guarded}
+\subsection{One Calculus and Its Congruence Closure}
+\label{sec:wm-one-calculus}
 \label{sec:wm-context-closure}
 
-In the \emph{raw} (schematic) calculus, all extension rules fire
-unconditionally, except the outside-scope forgetting rule, the two
-support-tracked forgetting rules and the two conservation rules, which keep
-their premises in both calculi.  The \emph{guarded} (faithful) calculus makes
-the remaining side conditions explicit as \texttt{Premise.relationQuery}
-entries---for example, fallback revision decomposes additively only under
-$\mathsf{sourceCompatible}(W_1, W_2)$.
+Every rule with a side condition states it as a
+\texttt{Premise.relationQuery}, and fires only on a row that the relation
+environment returns.  Fallback revision decomposes additively only under
+$\mathsf{sourceCompatible}(W_1, W_2)$; a singleton Kripke state reads
+$\mathsf{EvidenceOne}$, the evidence $\langle 1, 0\rangle$, under
+$\mathsf{kripkeSat}(pk, \varphi)$ and $\mathsf{EvidenceOneNegative}$, the
+evidence $\langle 0, 1\rangle$, under $\mathsf{kripkeNotSat}(pk, \varphi)$;
+a vanishing swap anomaly is the cost $\mathsf{CostZero}$; the cascade bound
+applies under $\mathsf{querySpaceOf}(R, Q)$, which says that $Q$ enumerates
+the query space of~$R$; the Blackwell pullback names its strong channel,
+$\mathsf{BlackwellPullback}(\mathit{Strong}, \kappa, q)$.  A premise may bind
+a metavariable that the left side leaves free: the strong channel and the
+garbling of utility transport, the target query of query transport and the
+erasing scope of the conservation rules come from the returned row.  So each
+vertex has one calculus, with 37~rules at the maximal vertex, 17 of them with
+premises; under the empty relation environment only the 20 premise-free
+rules can fire.
 
 The core WM patterns use \texttt{.apply} constructors.  The shared pattern
 representation grants them no implicit subterm reduction.  The
-\emph{congruence extension} therefore adds 15~explicit authored rewrite rules
-(one per argument position), each carrying the contextual premise that enables
-reduction to propagate into that subterm.
-
-These two orthogonal dimensions give four calculi:
+\emph{congruence extension} therefore adds explicit authored rewrite rules,
+one per argument position, each carrying the contextual premise that enables
+reduction to propagate into that subterm: 6 for the core constructors at
+six-axis vertices and 14 at full vertices; the overlap and scope
+constructors have 10, three of which the full vertices already use, so 21 in
+all.
 
 \begin{center}
 \begin{tabular}{ll}
 \toprule
 \textbf{Calculus} & \textbf{Description} \\
 \midrule
-Raw (\texttt{wmExtVertexLanguageDef}) & schematic, no context descent \\
-Raw+Cong (\texttt{wmExtVertexLanguageDefWithCong}) & schematic, congruence closure \\
-Guarded (\texttt{wmExtVertexLanguageDefGuarded}) & faithful, no context descent \\
-Guarded+Cong (\texttt{wmExtVertexLanguageDefGuardedWithCong}) & faithful, congruence closure \\
+\texttt{wmExtVertexLanguageDef} & six-axis vertex, root steps \\
+\texttt{wmExtVertexLanguageDefWithCong} & six-axis vertex, congruence closure \\
+\texttt{wmFullVertexLanguageDef} & full vertex, root steps \\
+\texttt{wmFullVertexLanguageDefWithCong} & full vertex, congruence closure \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-The raw calculus is an overapproximation of the guarded one---every guarded
-reduction is also a raw reduction (dropping premises only enables more
-reductions).  All four horizontal and vertical inclusion arrows are
-kernel-checked, and Galois connections $\Diamond \dashv \Box$ hold at every
-corner:
+Every step of a calculus is a step of its congruence closure, under every
+relation environment, and Galois connections $\Diamond \dashv \Box$ hold for
+both:
 
-\begin{theorem}[\texttt{wmGuardedCalc\_galois}, kernel-checked]
-For any \texttt{RelationEnv} and extended vertex~$v$:
-$\Diamond_{\mathit{guarded}} \dashv \Box_{\mathit{guarded}}$.
+\begin{theorem}[\texttt{wmCalcUsing\_galois}, kernel-checked]
+For any \texttt{RelationEnv} and extended vertex~$v$: $\Diamond \dashv \Box$.
 \end{theorem}
 
-\begin{theorem}[\texttt{congReduces\_of\_rawReduces\_ext}, kernel-checked]
-Every raw reduction is also a congruence-extended reduction (rule-set
-inclusion).
+\begin{theorem}[\texttt{congReducesUsing\_of\_reducesUsing\_ext}, kernel-checked]
+Under any \texttt{RelationEnv}, every step is also a congruence-extended step
+(rule-set inclusion).
 \end{theorem}
 
 The congruence infrastructure enables multi-step decomposition under context:
@@ -9382,13 +9384,77 @@ Step~2 uses \texttt{ruleCombineCongLeft} to apply evidence-add
 \emph{inside} the left $\mathsf{Combine}$ argument.
 \end{theorem}
 
+\paragraph{Denotational soundness.}
+A world model for every axis of the maximal vertex (\texttt{WMModel})
+assembles the PLN layers: an additive world model whose evidence carrier
+counts observations, a support-tracked forgetting layer with zero
+preservation, an overlap layer whose merge also drives the order costs,
+source compatibility with trust policies (partial and fallback revision are
+defined from compatibility), rule closure over its own queries, deterministic
+and stochastic experiment channels, a crisp Kripke reading of the points of a
+state, and an additive embedding of binary evidence into the carrier.  Every
+constructor of the calculus denotes the corresponding operation, except the
+truth-value views $\mathsf{Strength}$, $\mathsf{LowerBound}$ and
+$\mathsf{UpperBound}$ and source forgetting $\mathsf{ForgetSources}$, which
+no rule uses.  A relation environment is \emph{certified} when every row it
+returns denotes values that its relation relates.
+
+\begin{theorem}[\texttt{wmFullWithCong\_step\_sound},
+  \texttt{wmFullWithCong\_run\_sound}, kernel-checked]
+Under a certified relation environment, every step of the congruence closure
+of every full vertex, at any contextual depth, and every finite run of it
+preserve the denotation of the source; so do the six-axis calculi.
+\end{theorem}
+
+\noindent
+The proof checks each of the 37~rules of the maximal vertex and each of the
+21~congruence rules against the model, and lifts validity through matching,
+premise rows and contexts once, for any first-order rewriting language.  A
+checked provider, whose Boolean decisions carry proofs, certifies every
+relation the premises query, and a classical provider returns exactly the
+true rows over its handles; soundness is relative to the provider's handle
+table.  The denotation forgets evidence identity, the order and grouping of
+revisions, provenance beyond what compatibility reads, and the run that
+reached a term.  Every right-side metavariable of every rule is bound by its
+left side or by a premise row, and every relation is queried with one arity.
+
+The rules as they stood before their premises are kept as negative controls:
+in a ledger model each is invalid.  Singleton refutation with right side
+$\mathsf{EvidenceZero}$ gives $\langle 0, 0\rangle$ where the law gives
+$\langle 0, 1\rangle$, and it fires on a certified row; without premises the
+two singleton rules both fire on one term; without the compatibility premise
+the fallback pair, additive fallback evidence and the all-trusting policy fire
+and give the wrong value, and partial revision fires and assigns a state to a
+revision the law leaves undefined;
+under the premise that $Q$ is finite, the empty space bounds the cascade at
+the seed while the closure grows; a vanishing swap anomaly is a cost, not
+evidence; query transport without its premise leaks its right-side-only
+metavariable as a free name; and a pullback that names no strong channel has
+no denotation.  A certified run shows the theorem at work: under a checked
+provider, $\mathsf{KripkeEvidence}(\mathsf{Revise}(\mathsf{Singleton}(0),
+\mathsf{Singleton}(1)), 0)$ reaches
+$\mathsf{Combine}(\mathsf{EvidenceOne}, \mathsf{EvidenceOneNegative})$ in
+three steps, two of them under $\mathsf{Combine}$, and soundness certifies
+that the two-point state has evidence $\langle 1, 0\rangle + \langle 0,
+1\rangle$.
+
+\paragraph{Completeness.}
+Two closed evidence terms of the core agree in every lawful reading exactly
+when their normal forms agree, but rewriting does not realize that equality:
+the core has no associativity rule for $\mathsf{Combine}$, and its contextual
+steps keep the root partition of a pure evidence term.  The two associations
+of three observations are denotationally equal and have no common reduct
+(\texttt{semantic\_assoc\_not\_joinable}).
+
 \noindent
 See \codepath{Mettapedia/OSLF/Framework/WMCalculusLanguageDef.lean}
-(12~guarded rules),
+(37~rules),
 \codepath{Mettapedia/OSLF/Framework/WMCalculusContextClosure.lean}
-(463~lines, 0~sorry), and
+(462~lines, 0~sorry),
 \codepath{Mettapedia/OSLF/Framework/WMCalculusOSLFBridge.lean}
-(784~lines, 0~sorry).
+(870~lines, 0~sorry),
+\codepath{Mettapedia/OSLF/Framework/WMCalculusDenotationalSoundness.lean}
+and \codepath{Mettapedia/OSLF/Framework/WMCalculusCounterexamples.lean}.
 
 %% ---------------------------------------------------------------
 \section{Intrinsic Encoding and Adequacy}
@@ -9882,8 +9948,7 @@ interpretation).
 
 The forgetting rule
 $\mathsf{Extract}(\mathsf{Forget}(S,W), q) \leadsto \mathsf{Extract}(W, q)$
-requires, in the raw and the guarded calculus alike, a side-condition oracle
-answering $\mathsf{outsideScope}(S, q)$.
+requires a side-condition oracle answering $\mathsf{outsideScope}(S, q)$.
 This oracle encodes d-separation: a BN topology determines which
 scope/query pairs are outside scope.
 
@@ -9891,7 +9956,7 @@ scope/query pairs are outside scope.
 Given \emph{any} \texttt{RelationEnv} that satisfies the
 $\mathsf{outsideScope}$ premise, the rule fires:
 
-\begin{theorem}[\texttt{guarded\_forget\_of\_dsep}, kernel-checked]
+\begin{theorem}[\texttt{forget\_of\_dsep}, kernel-checked]
 If $\mathsf{OutsideScope}(\rho, L, S, q)$ holds for a
 \texttt{RelationEnv}~$\rho$, then
 $\mathsf{langReducesUsing}\;\rho\;L\;
@@ -9924,8 +9989,7 @@ implies $r = \mathsf{ruleForgetOutside}$.
 
 \noindent
 Combined with the negative theorem: under the empty oracle,
-$\mathsf{Extract}(\mathsf{Forget}(S,W), q)$ is \emph{irreducible} in
-the raw and the guarded calculus alike.
+$\mathsf{Extract}(\mathsf{Forget}(S,W), q)$ is \emph{irreducible}.
 
 %% ---------------------------------------------------------------
 \section{Formalization Inventory and Future Work}
@@ -9940,8 +10004,8 @@ All results in this chapter are kernel-checked in Lean~4.28 (0~sorry):
 \textbf{File} & \textbf{Contents} & \textbf{Status} \\
 \midrule
 \texttt{WMCalculusLanguageDef.lean}
-  & 37 raw + 12 guarded rewrite rules, 7 axis types,
-    \texttt{WMFullVertex}, 18 step lemmas, guarded LanguageDefs
+  & 37 rewrite rules (17 with relation premises), 7 axis types,
+    \texttt{WMFullVertex}, 24 step lemmas, one LanguageDef per vertex
   & proved \\
 \texttt{WMCalculusGSLTVertex.lean}
   & fiber, transport, rule counts, OSLF per vertex, NTT scope
@@ -9955,11 +10019,30 @@ All results in this chapter are kernel-checked in Lean~4.28 (0~sorry):
 \texttt{WMCalculusOSLFBridge.lean}
   & semantic bridge: $\Diamond$ theorems, Galois corollaries,
     \texttt{WMTermEncodes}, barbs, chaining,
-    guarded Galois connections
+    Galois connections under a relation environment
   & proved \\
 \texttt{WMCalculusContextClosure.lean}
-  & 15 congruence rules, context closure LanguageDefs,
-    raw $\subseteq$ cong-extended, Galois for extended calculi
+  & 21 congruence rules, context closure LanguageDefs,
+    rules $\subseteq$ cong-extended under every relation environment,
+    Galois for extended calculi
+  & proved \\
+\texttt{WMCalculusPatternDenotation.lean}
+  & denotation of first-order patterns; soundness of authored rewriting
+    through premise rows, contexts and runs
+  & proved \\
+\texttt{WMCalculusDenotationalSoundness.lean}
+  & world model for every axis, all 37 rules and 21 congruence rules valid,
+    soundness at every vertex
+  & proved \\
+\texttt{WMCalculusSideConditionProvider.lean}
+  & checked providers, certified relation environments
+  & proved \\
+\texttt{WMCalculusRuleShape.lean}
+  & bound right-side metavariables, one arity per relation
+  & proved \\
+\texttt{WMCalculusCounterexamples.lean}
+  & negative controls for the rules as they stood, a certified run,
+    non-joinability in the core
   & proved \\
 \texttt{WMCalculusEncoding.lean}
   & \texttt{encodeWM}, roundtrip, injectivity,

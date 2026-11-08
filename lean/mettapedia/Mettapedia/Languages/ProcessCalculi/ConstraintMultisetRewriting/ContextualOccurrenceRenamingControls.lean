@@ -28,7 +28,7 @@ open ContextualPrefixPublicationControls (DataOperator base captures symbol)
 abbrev localDecl (_ : Unit) : MetaArity base := ([], ())
 def hole : Term (signature base localDecl) [] () := generator localDecl ()
 def conditions : ContextualResidual.Problem localDecl := [(observe hole, observe (symbol 7))]
-def answer : ContextualResidualAnswers.Answer localDecl [] () := ⟨conditions, hole⟩
+def answer : ContextualConditionalAnswers.Answer localDecl [] () := ⟨conditions, hole⟩
 def row : Row localDecl captures [] () := ContextualConditionalPublication.store localDecl captures answer
 
 theorem matches_iff {V : Type} (decl : V → MetaArity base) (candidate : Assignment captures decl)

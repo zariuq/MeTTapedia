@@ -100,22 +100,24 @@ def wmFullPredicate (v : WMFullVertex) (predicate : Pattern → Prop) :
       conservation, experiment, kripke, carrier⟩
     cases overlap <;> cases forgetting <;> rfl) predicate
 
-/-- Equation-respecting observation for a guarded six-axis WM vertex. -/
-def wmExtGuardedPredicateUsing
+/-- Equation-respecting observation for a six-axis WM vertex under a relation
+environment. -/
+def wmExtPredicateUsing
     (relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv) (v : WMExtVertex)
     (predicate : Pattern → Prop) :
     GSLTTypeSynthesis.EquationPredicate
-      (langGSLTUsing relEnv (wmExtVertexLanguageDefGuarded v)) :=
+      (langGSLTUsing relEnv (wmExtVertexLanguageDef v)) :=
   equationPredicateUsingOfEquationFree relEnv (by
     rcases v with ⟨base, overlap, forgetting⟩
     cases overlap <;> cases forgetting <;> rfl) predicate
 
-/-- Equation-respecting observation for a guarded full WM vertex. -/
-def wmFullGuardedPredicateUsing
+/-- Equation-respecting observation for a full WM vertex under a relation
+environment. -/
+def wmFullPredicateUsing
     (relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv) (v : WMFullVertex)
     (predicate : Pattern → Prop) :
     GSLTTypeSynthesis.EquationPredicate
-      (langGSLTUsing relEnv (wmFullVertexLanguageDefGuarded v)) :=
+      (langGSLTUsing relEnv (wmFullVertexLanguageDef v)) :=
   equationPredicateUsingOfEquationFree relEnv (by
     rcases v with ⟨base, overlap, forgetting, provenance, fixpoint, cost,
       conservation, experiment, kripke, carrier⟩
@@ -435,22 +437,22 @@ theorem full_diamond_closureFixpoint (v : WMFullVertex)
   exact ⟨_, langReduces_to_semantic _
     (wmFullLangReduces_closureFixpoint v hfp pR pw pseed), ⟨_, _, _, rfl⟩⟩
 
-/-- ◇(isZeroEvidence) at conserving guarded vertices: anti-hallucination, when
+/-- ◇(isZeroEvidence) at conserving vertices: anti-hallucination, when
 the relation environment certifies that forgetting a scope erases the revision
 and that the query lies outside that scope. -/
-theorem full_guarded_diamond_antiHallucination
+theorem full_diamond_antiHallucination_of_rows
     (relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv) (v : WMFullVertex)
     (hcons : v.conservation = .conserving) (pS pD pq : Pattern)
     (erases : [pS, pD] ∈ relEnv.tuples "erasesInScope" [.fvar "S", pD])
     (outside : [pS, pq] ∈ relEnv.tuples "outsideScope" [pS, pq]) :
-    langDiamondUsing relEnv (wmFullVertexLanguageDefGuarded v)
-      (wmFullGuardedPredicateUsing relEnv v isZeroEvidence)
+    langDiamondUsing relEnv (wmFullVertexLanguageDef v)
+      (wmFullPredicateUsing relEnv v isZeroEvidence)
       (pExtract pD pq) := by
   rw [langDiamondUsing_spec]
   exact ⟨_, langReducesUsing_to_semantic relEnv _
-    (wmFullGuardedReduces_antiHallucination relEnv v hcons pS pD pq erases outside), rfl⟩
+    (wmFullLangReducesUsing_antiHallucination relEnv v hcons pS pD pq erases outside), rfl⟩
 
-#print axioms full_guarded_diamond_antiHallucination
+#print axioms full_diamond_antiHallucination_of_rows
 
 /-- ◇(isCombined) for experiment evidence at experiment-enabled vertices. -/
 theorem full_diamond_experimentDecomposable (v : WMFullVertex)
@@ -537,12 +539,12 @@ open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.ContextualStep
 
-/-- BinaryEvidence-add fires in the cong-extended calculus (lifting raw step). -/
+/-- BinaryEvidence-add fires in the cong-extended calculus (lifting a root step). -/
 theorem wmCongLangReduces_evidenceAdd (v : WMExtVertex) (pw₁ pw₂ pq : Pattern) :
     langReduces (wmExtVertexLanguageDefWithCong v)
       (pExtract (pRevise pw₁ pw₂) pq)
       (pCombine (pExtract pw₁ pq) (pExtract pw₂ pq)) :=
-  congReduces_of_rawReduces_ext v _ _ (wmLangReduces_evidenceAdd v pw₁ pw₂ pq)
+  congReduces_of_reduces_ext v _ _ (wmLangReduces_evidenceAdd v pw₁ pw₂ pq)
 
 set_option backward.isDefEq.respectTransparency false in
 /-- Congruence on left Combine argument using `ruleCombineCongLeft`.
@@ -588,7 +590,7 @@ theorem wmLangReduces_combineCongLeft_evidenceAdd (v : WMExtVertex)
     `Combine(Combine(Extract(W₁,q), Extract(W₂,q)), Extract(W₃,q))`
     in the cong-extended calculus.
 
-    Step 1: evidence-add on outer Revise (raw rule, lifted).
+    Step 1: evidence-add on outer Revise (a root step, lifted).
     Step 2: `ruleCombineCongLeft` with inner evidence-add as witness. -/
 theorem chain_evidence_add_fully_nested (v : WMExtVertex) (pw₁ pw₂ pw₃ pq : Pattern) :
     LangReducesStar (wmExtVertexLanguageDefWithCong v)
@@ -606,7 +608,7 @@ theorem wmCongFullLangReduces_evidenceAdd (v : WMFullVertex) (pw₁ pw₂ pq : P
     langReduces (wmFullVertexLanguageDefWithCong v)
       (pExtract (pRevise pw₁ pw₂) pq)
       (pCombine (pExtract pw₁ pq) (pExtract pw₂ pq)) :=
-  congReduces_of_rawReduces_full v _ _ (wmFullLangReduces_evidenceAdd v pw₁ pw₂ pq)
+  congReduces_of_reduces_full v _ _ (wmFullLangReduces_evidenceAdd v pw₁ pw₂ pq)
 
 set_option backward.isDefEq.respectTransparency false in
 /-- Full-vertex: congruence on left Combine via evidence-add. -/
@@ -655,20 +657,20 @@ theorem full_chain_evidence_add_fully_nested (v : WMFullVertex) (pw₁ pw₂ pw�
         (wmFullLangReduces_combineCongLeft_evidenceAdd v pw₁ pw₂ pw₃ pq)))
 
 set_option backward.isDefEq.respectTransparency false in
-/-- Guarded+cong: evidence-add fires (core rule, premises = []). -/
-theorem wmGuardedCongLangReduces_evidenceAdd (relEnv : RelationEnv)
+/-- With congruence, under any relation environment: evidence-add fires (core rule, premises = []). -/
+theorem wmCongLangReducesUsing_evidenceAdd (relEnv : RelationEnv)
     (v : WMExtVertex) (pw₁ pw₂ pq : Pattern) :
-    langReducesUsing relEnv (wmExtVertexLanguageDefGuardedWithCong v)
+    langReducesUsing relEnv (wmExtVertexLanguageDefWithCong v)
       (pExtract (pRevise pw₁ pw₂) pq)
       (pCombine (pExtract pw₁ pq) (pExtract pw₂ pq)) := by
   unfold langReducesUsing
   let bs : Bindings := [("q", pq), ("W2", pw₂), ("W1", pw₁)]
   refine step_of_rule
-    (relEnv := relEnv) (lang := wmExtVertexLanguageDefGuardedWithCong v)
+    (relEnv := relEnv) (lang := wmExtVertexLanguageDefWithCong v)
     (rule := ruleEvidenceAdd) (initialBindings := bs) (finalBindings := bs)
     ?hr ?hmatch (by exact .nil) ?hprem ?happly
-  · exact guardedRules_subset_guardedCongRules_ext v _
-      (coreRules_subset_wmExtVertexGuarded v _ (by simp [coreRules]))
+  · exact rules_subset_congRules_ext v _
+      (coreRules_subset_wmExtVertex v _ (by simp [coreRules]))
   · simp [bs, ruleEvidenceAdd, pExtract, pRevise,
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule,
       matchPattern, matchArgs, mergeBindings]
@@ -678,10 +680,10 @@ theorem wmGuardedCongLangReduces_evidenceAdd (relEnv : RelationEnv)
     simp [bs, ruleEvidenceAdd, pExtract, pCombine, applyBindings]
 
 set_option backward.isDefEq.respectTransparency false in
-/-- Guarded+cong: congruence on left Combine via evidence-add. -/
-theorem wmGuardedCongLangReduces_combineCongLeft_evidenceAdd (relEnv : RelationEnv)
+/-- With congruence, under any relation environment: congruence on left Combine via evidence-add. -/
+theorem wmCongLangReducesUsing_combineCongLeft_evidenceAdd (relEnv : RelationEnv)
     (v : WMExtVertex) (pw₁ pw₂ pw₃ pq : Pattern) :
-    langReducesUsing relEnv (wmExtVertexLanguageDefGuardedWithCong v)
+    langReducesUsing relEnv (wmExtVertexLanguageDefWithCong v)
       (pCombine (pExtract (pRevise pw₁ pw₂) pq) (pExtract pw₃ pq))
       (pCombine (pCombine (pExtract pw₁ pq) (pExtract pw₂ pq)) (pExtract pw₃ pq)) := by
   unfold langReducesUsing
@@ -690,7 +692,7 @@ theorem wmGuardedCongLangReduces_combineCongLeft_evidenceAdd (relEnv : RelationE
                          ("e2", pExtract pw₃ pq),
                          ("e1", pExtract (pRevise pw₁ pw₂) pq)]
   refine step_of_single_congruence_rule
-    (lang := wmExtVertexLanguageDefGuardedWithCong v)
+    (lang := wmExtVertexLanguageDefWithCong v)
     (rule := ruleCombineCongLeft)
     (initialBindings := bs0) (finalBindings := bs)
     (premiseBindings :=
@@ -698,36 +700,36 @@ theorem wmGuardedCongLangReduces_combineCongLeft_evidenceAdd (relEnv : RelationE
     (premiseSource := .fvar "e1") (premiseTarget := .fvar "e1p")
     (candidate := pCombine (pExtract pw₁ pq) (pExtract pw₂ pq))
     ?hr ?hmatch rfl ?hrecursive ?hpremiseMatch ?hmerge ?happly
-  · simp only [wmExtVertexLanguageDefGuardedWithCong, List.mem_append]
+  · simp only [wmExtVertexLanguageDefWithCong, List.mem_append]
     right; simp [coreCongruenceRules]
   · simp [bs0, ruleCombineCongLeft, pCombine,
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule,
       matchPattern, matchArgs, mergeBindings]
   · simpa [bs0, applyBindings, langReducesUsing] using
-      (wmGuardedCongLangReduces_evidenceAdd relEnv v pw₁ pw₂ pq)
+      (wmCongLangReducesUsing_evidenceAdd relEnv v pw₁ pw₂ pq)
   · simp [matchPattern]
   · simp [bs, bs0, mergeBindings]
   · rw [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_applyBindings
       _ ruleCombineCongLeft bs (by decide +kernel)]
     simp [bs, ruleCombineCongLeft, pCombine, applyBindings]
 
-/-- Guarded+cong: fully nested two-step chain via context closure.
+/-- With congruence: fully nested two-step chain via context closure.
     Both evidence-add (core rule, empty premises) and the congruence premise
     are `relEnv`-independent, so the chain fires at `RelationEnv.empty` too.
-    This gives a `LangReducesStar` (plain multi-step) in the guarded+cong
+    This gives a `LangReducesStar` (plain multi-step) in the congruence-extended
     calculus. -/
-theorem guarded_chain_evidence_add_fully_nested
+theorem chain_evidence_add_fully_nested_using
     (v : WMExtVertex) (pw₁ pw₂ pw₃ pq : Pattern) :
-    LangReducesStar (wmExtVertexLanguageDefGuardedWithCong v)
+    LangReducesStar (wmExtVertexLanguageDefWithCong v)
       (pExtract (pRevise (pRevise pw₁ pw₂) pw₃) pq)
       (pCombine (pCombine (pExtract pw₁ pq) (pExtract pw₂ pq)) (pExtract pw₃ pq)) :=
   LangReducesStar.step
     (langReducesUsing_to_semantic RelationEnv.empty _
-      (wmGuardedCongLangReduces_evidenceAdd
+      (wmCongLangReducesUsing_evidenceAdd
         RelationEnv.empty v (pRevise pw₁ pw₂) pw₃ pq))
     (LangReducesStar.single
       (langReducesUsing_to_semantic RelationEnv.empty _
-        (wmGuardedCongLangReduces_combineCongLeft_evidenceAdd
+        (wmCongLangReducesUsing_combineCongLeft_evidenceAdd
           RelationEnv.empty v pw₁ pw₂ pw₃ pq)))
 
 /-! ## Section 11: WM Barbs (Process-Algebraic Observables)
@@ -800,52 +802,52 @@ theorem wmFullCalc_decomposability_safety (v : WMFullVertex)
       ψ p) :=
   (wmFullCalc_galois v).le_iff_le
 
-/-! ## Section 13: Guarded Calculus — Galois Connections
+/-! ## Section 13: Galois Connections under a Relation Environment
 
-The guarded calculus uses the modulo-equations semantic relation generated
+Under a relation environment the calculus uses the modulo-equations semantic relation generated
 from `langReducesUsing relEnv`. The Galois connection
 ◇ ⊣ □ holds automatically at any RelationEnv via `langGaloisUsing`. -/
 
 open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.MeTTaIL.Match
 
-/-- Galois connection for the guarded 6-axis WM calculus. -/
-theorem wmGuardedCalc_galois (relEnv : RelationEnv) (v : WMExtVertex) :
+/-- Galois connection for the 6-axis WM calculus under a relation environment. -/
+theorem wmCalcUsing_galois (relEnv : RelationEnv) (v : WMExtVertex) :
     GaloisConnection
-      (langDiamondUsing relEnv (wmExtVertexLanguageDefGuarded v))
-      (langBoxUsing relEnv (wmExtVertexLanguageDefGuarded v)) :=
-  langGaloisUsing relEnv (wmExtVertexLanguageDefGuarded v)
+      (langDiamondUsing relEnv (wmExtVertexLanguageDef v))
+      (langBoxUsing relEnv (wmExtVertexLanguageDef v)) :=
+  langGaloisUsing relEnv (wmExtVertexLanguageDef v)
 
-/-- Galois connection for the guarded 13-axis WM calculus. -/
-theorem wmGuardedFullCalc_galois (relEnv : RelationEnv) (v : WMFullVertex) :
+/-- Galois connection for the 13-axis WM calculus under a relation environment. -/
+theorem wmFullCalcUsing_galois (relEnv : RelationEnv) (v : WMFullVertex) :
     GaloisConnection
-      (langDiamondUsing relEnv (wmFullVertexLanguageDefGuarded v))
-      (langBoxUsing relEnv (wmFullVertexLanguageDefGuarded v)) :=
-  langGaloisUsing relEnv (wmFullVertexLanguageDefGuarded v)
+      (langDiamondUsing relEnv (wmFullVertexLanguageDef v))
+      (langBoxUsing relEnv (wmFullVertexLanguageDef v)) :=
+  langGaloisUsing relEnv (wmFullVertexLanguageDef v)
 
-/-- OSLF type system for guarded 6-axis WM vertex. -/
-noncomputable def wmExtVertexOSLFGuarded (relEnv : RelationEnv) (v : WMExtVertex) :=
-  langOSLFUsing relEnv (wmExtVertexLanguageDefGuarded v)
+/-- OSLF type system for a 6-axis WM vertex under a relation environment. -/
+noncomputable def wmExtVertexOSLFUsing (relEnv : RelationEnv) (v : WMExtVertex) :=
+  langOSLFUsing relEnv (wmExtVertexLanguageDef v)
 
-/-- OSLF type system for guarded 13-axis WM vertex. -/
-noncomputable def wmFullVertexOSLFGuarded (relEnv : RelationEnv) (v : WMFullVertex) :=
-  langOSLFUsing relEnv (wmFullVertexLanguageDefGuarded v)
+/-- OSLF type system for a 13-axis WM vertex under a relation environment. -/
+noncomputable def wmFullVertexOSLFUsing (relEnv : RelationEnv) (v : WMFullVertex) :=
+  langOSLFUsing relEnv (wmFullVertexLanguageDef v)
 
 set_option backward.isDefEq.respectTransparency false in
-/-- Core rules fire in the guarded calculus (at any RelationEnv),
+/-- Core rules fire under any RelationEnv,
     since core rules have `premises = []`. -/
-theorem wmGuardedLangReduces_evidenceAdd (relEnv : RelationEnv)
+theorem wmLangReducesUsing_evidenceAdd (relEnv : RelationEnv)
     (v : WMExtVertex) (pw₁ pw₂ pq : Pattern) :
-    langReducesUsing relEnv (wmExtVertexLanguageDefGuarded v)
+    langReducesUsing relEnv (wmExtVertexLanguageDef v)
       (pExtract (pRevise pw₁ pw₂) pq)
       (pCombine (pExtract pw₁ pq) (pExtract pw₂ pq)) := by
   unfold langReducesUsing
   let bs : Bindings := [("q", pq), ("W2", pw₂), ("W1", pw₁)]
   refine step_of_rule
-    (relEnv := relEnv) (lang := wmExtVertexLanguageDefGuarded v)
+    (relEnv := relEnv) (lang := wmExtVertexLanguageDef v)
     (rule := ruleEvidenceAdd) (initialBindings := bs) (finalBindings := bs)
     ?hr ?hmatch (by exact .nil) ?hprem ?happly
-  · exact coreRules_subset_wmExtVertexGuarded v _ (by simp [coreRules])
+  · exact coreRules_subset_wmExtVertex v _ (by simp [coreRules])
   · simp [bs, ruleEvidenceAdd, pExtract, pRevise,
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule,
       matchPattern, matchArgs, mergeBindings]
@@ -854,15 +856,15 @@ theorem wmGuardedLangReduces_evidenceAdd (relEnv : RelationEnv)
       _ ruleEvidenceAdd bs (by decide +kernel)]
     simp [bs, ruleEvidenceAdd, pExtract, pCombine, applyBindings]
 
-/-- Guarded decomposability adjunction. -/
-theorem wmGuardedCalc_decomposability_safety (relEnv : RelationEnv)
+/-- Decomposability adjunction under a relation environment. -/
+theorem wmCalcUsing_decomposability_safety (relEnv : RelationEnv)
     (v : WMExtVertex)
     (ψ : GSLTTypeSynthesis.EquationPredicate
-      (langGSLTUsing relEnv (wmExtVertexLanguageDefGuarded v))) :
-    (∀ p, langDiamondUsing relEnv (wmExtVertexLanguageDefGuarded v)
-      (wmExtGuardedPredicateUsing relEnv v isCombined) p → ψ p) ↔
-    (∀ p, isCombined p → langBoxUsing relEnv (wmExtVertexLanguageDefGuarded v)
+      (langGSLTUsing relEnv (wmExtVertexLanguageDef v))) :
+    (∀ p, langDiamondUsing relEnv (wmExtVertexLanguageDef v)
+      (wmExtPredicateUsing relEnv v isCombined) p → ψ p) ↔
+    (∀ p, isCombined p → langBoxUsing relEnv (wmExtVertexLanguageDef v)
       ψ p) :=
-  (wmGuardedCalc_galois relEnv v).le_iff_le
+  (wmCalcUsing_galois relEnv v).le_iff_le
 
 end Mettapedia.OSLF.Framework.WMCalculusOSLFBridge

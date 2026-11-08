@@ -1,5 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualCensusPublication
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualQueryCensusControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualQueryAnswersControls
 
 /-! # Actual complete tables publish duplicate values and invalidate on arrivals -/
 
@@ -10,7 +10,7 @@ namespace Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contex
 open Mettapedia.OSLF.Binding hiding instantiate instantiateArgs
 open Mettapedia.OSLF.Binding.ContextualFamily
 open ContextualConjunctiveQueries ContextualConjunctiveControls
-open ContextualQueryCensusControls
+open ContextualQueryAnswersControls
 open ContextualSelectionViews.Controls (base)
 open ContextualWorldScopeLedger
 

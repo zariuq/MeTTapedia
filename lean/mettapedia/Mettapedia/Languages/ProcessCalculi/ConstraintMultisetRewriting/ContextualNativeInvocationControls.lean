@@ -1,4 +1,4 @@
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualNativeInvocation
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualNativeProgramResult
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualPrefixPublicationControls
 
 /-!
@@ -58,32 +58,32 @@ theorem source_admitted : body.Admitted := by
   cases member
 
 theorem the_actual_empty_body_finishes_once (fuel : Nat) :
-    ∃ observed : WithQueries body.guardNativeBank (body.nativeBindingState ∅),
-      observed.firing.rule = body.producerRule ∧ observed.firing.selection = body.bindingSelection ∧
-        observed.firing.outputs = body.producerOutputs ∅ ∧ observed.firing.reusable = body.producerReusable ∧
-        observed.firing.fuel = fuel ∧ observed.queries = body.producerQueries ∅ ∧
+    ∃ observed : WithQueries body.native.guardNativeBank (body.native.nativeBindingState ∅),
+      observed.firing.rule = body.producer.rule ∧ observed.firing.selection = body.native.bindingSelection ∧
+        observed.firing.outputs = body.producer.outputs ∅ ∧ observed.firing.reusable = body.producerReusable ∧
+        observed.firing.fuel = fuel ∧ observed.queries = body.producer.queries ∅ ∧
         ContextualWorldComparison.Equivalent initial (generator initial.declarations)
-          (body.producerProjection ∅ observed.firing) (body.producerCaller ∅ observed.firing) ∧
+          (body.native.producerProjection ∅ observed.firing) (body.native.producerCaller ∅ observed.firing) ∧
         observed.firing.target.present = ∅ ∧
-        (body.nativeBindingState ∅).present = {Option.none} ∧
-        ContextualSourceSchedules.Schedule.invocationPending observed.firing.target.present = 0 ∧
-        ¬ Enabled (fun _ => ()) observed.firing.target.present (body.bindingSelection.commit (T := Unit)) := by
+        (body.native.nativeBindingState ∅).present = {Option.none} ∧
+        ContextualNativeBodies.invocationPending observed.firing.target.present = 0 ∧
+        ¬ Enabled (fun _ => ()) observed.firing.target.present (body.native.bindingSelection.commit (T := Unit)) := by
   obtain ⟨observed, rule, selection, outputs, flags, budget, queries, equivalent⟩ :=
     (body.source_iff_native_body ∅ fuel).mp source_admitted
   refine ⟨observed, rule, selection, outputs, flags, budget, queries, equivalent, ?_, rfl, ?_, ?_⟩
-  · rw [body.producer_result_physical ∅ observed.firing (.nil _) selection]
+  · rw [body.native.producer_result_physical ∅ observed.firing (.nil _) selection]
     rfl
-  · have missing := body.completed_control_absent ∅ observed.firing selection
+  · have missing := body.native.completed_control_absent ∅ observed.firing selection
     exact if_neg missing
-  · exact body.no_immediate_resource_replay ∅ observed.firing selection body.bindingSelection body.invocation_control_taken
+  · exact body.native.no_immediate_resource_replay ∅ observed.firing selection body.native.bindingSelection body.native.invocation_control_taken
 
 theorem completed_empty_body_cannot_replay_after_data
-    (firing : ContextualConditionalExecution.Firing body.guardNativeBank (body.nativeBindingState ∅))
-    (selection : firing.selection = body.bindingSelection)
-    (dataSteps : List (Commit (Schedule.GuardPhysical Nat) Unit))
+    (firing : ContextualConditionalExecution.Firing body.native.guardNativeBank (body.native.nativeBindingState ∅))
+    (selection : firing.selection = body.native.bindingSelection)
+    (dataSteps : List (Commit (ContextualNativeBodies.GuardPhysical Nat) Unit))
     (quiet : ∀ commit ∈ dataSteps, Option.none ∉ commit.made) :
-    ¬ Enabled (fun _ => ()) (fireList firing.target.present dataSteps) (body.bindingSelection.commit (T := Unit)) :=
-  body.no_resource_replay_after_data ∅ firing selection dataSteps quiet body.bindingSelection body.invocation_control_taken
+    ¬ Enabled (fun _ => ()) (fireList firing.target.present dataSteps) (body.native.bindingSelection.commit (T := Unit)) :=
+  body.native.no_resource_replay_after_data ∅ firing selection dataSteps quiet body.native.bindingSelection body.native.invocation_control_taken
 
 end EmptyBody
 

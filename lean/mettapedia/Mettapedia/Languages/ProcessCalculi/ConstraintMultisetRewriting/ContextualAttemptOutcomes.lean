@@ -1,4 +1,4 @@
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualQueryCensus
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualQueryAnswers
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.StagedSourceEffects
 
 /-!
@@ -42,10 +42,10 @@ variable {queries locals captures}
     [DecidableEq S.Srt] [∀ sort, DecidableEq (S.Op sort)]
 
 def complete (search : Search queries locals captures (O := O) (Γ := Γ) (sort := sort)) : Bool :=
-  ContextualQueryCensus.certifies queries locals captures search.equations search.patterns search.rows search.world search.budget
+  ContextualQueryAnswers.certifies queries locals captures search.equations search.patterns search.rows search.world search.budget
 
 def entries (search : Search queries locals captures (O := O) (Γ := Γ) (sort := sort)) :=
-  ContextualQueryCensus.answers queries locals captures search.equations search.patterns search.rows search.world search.budget
+  ContextualQueryAnswers.answers queries locals captures search.equations search.patterns search.rows search.world search.budget
 
 def SourceMatch (search : Search queries locals captures (O := O) (Γ := Γ) (sort := sort))
     (chosen : Fin search.patterns.length → O) : Prop :=
@@ -57,7 +57,7 @@ def SourceMatch (search : Search queries locals captures (O := O) (Γ := Γ) (so
 theorem entries_exact (search : Search queries locals captures (O := O) (Γ := Γ) (sort := sort))
     (complete : search.complete = true) (chosen : Fin search.patterns.length → O) :
     chosen ∈ search.entries ↔ search.SourceMatch chosen :=
-  ContextualQueryCensus.actual_answer_iff queries locals captures search.equations search.patterns search.rows
+  ContextualQueryAnswers.actual_answer_iff queries locals captures search.equations search.patterns search.rows
     search.world search.budget complete chosen
 
 /-- A completed answer is usable without waiting for unrelated search jobs.
@@ -66,7 +66,7 @@ theorem entry_sound (search : Search queries locals captures (O := O) (Γ := Γ)
     (chosen : Fin search.patterns.length → O) (member : chosen ∈ search.entries) : search.SourceMatch chosen := by
   have present := (ContextualConjunctiveAbsence.mem_candidates search.world chosen).mp
     (Finset.mem_filter.mp member).1
-  obtain ⟨update, _, empty, _⟩ := ContextualQueryCensus.answer_factors queries locals captures search.equations
+  obtain ⟨update, _, empty, _⟩ := ContextualQueryAnswers.answer_factors queries locals captures search.equations
     search.patterns search.rows search.world search.budget chosen member
   have solved := (ContextualResidual.models_observeProblem update.answer _).mp (update.completed empty)
   have split := ContextualConjunctiveModels.joint_model_gives_caller_and_match queries locals captures update.answer
@@ -93,25 +93,25 @@ theorem unfinished_job (search : Search queries locals captures (O := O) (Γ := 
     (unfinished : search.complete = false) :
     ∃ chosen ∈ ContextualConjunctiveAbsence.candidates search.world search.patterns.length,
       ∃ update : ContextualFrameUpdate.Update
-        (ContextualQueryCensus.problemAt queries locals captures search.equations search.patterns search.rows chosen),
-        ContextualQueryCensus.scan queries locals captures search.equations search.patterns search.rows search.budget chosen =
+        (ContextualQueryAnswers.problemAt queries locals captures search.equations search.patterns search.rows chosen),
+        ContextualQueryAnswers.scan queries locals captures search.equations search.patterns search.rows search.budget chosen =
           .residual update ∧ update.remaining ≠ [] := by
   have missing : ¬ ∀ chosen ∈ ContextualConjunctiveAbsence.candidates search.world search.patterns.length,
-      ContextualQueryCensus.closed
-        (ContextualQueryCensus.scan queries locals captures search.equations search.patterns search.rows search.budget chosen) = true := by
+      ContextualQueryAnswers.closed
+        (ContextualQueryAnswers.scan queries locals captures search.equations search.patterns search.rows search.budget chosen) = true := by
     intro all
     have complete : search.complete = true := by exact decide_eq_true all
     rw [unfinished] at complete
     cases complete
   push Not at missing
   obtain ⟨chosen, present, notClosed⟩ := missing
-  cases computed : ContextualQueryCensus.scan queries locals captures search.equations search.patterns search.rows
+  cases computed : ContextualQueryAnswers.scan queries locals captures search.equations search.patterns search.rows
       search.budget chosen with
   | refuted impossible => exact False.elim (notClosed (by rw [computed]; rfl))
   | residual update =>
       refine ⟨chosen, present, update, computed, ?_⟩
       intro empty
-      exact notClosed (by simp only [computed, ContextualQueryCensus.closed, empty, List.isEmpty_nil])
+      exact notClosed (by simp only [computed, ContextualQueryAnswers.closed, empty, List.isEmpty_nil])
 
 end Search
 
@@ -208,7 +208,7 @@ theorem fired_has_one_atomic_realization (attempt : Attempt search mode action l
     let plan := (StagedSourceEffects.compile label code).raw
     let selected := CensusSourceCompilation.selection plan.effect
     let rule := CensusSourceCompilation.rule label plan.effect plan.equations
-    CensusAdmission.Valid action label rule (plan.effect.queries.map CensusAdmission.Query.fixed) before selected ∧
+    PredicateQueryAdmission.Valid action label rule (plan.effect.queries.map PredicateQueryAdmission.Query.fixed) before selected ∧
       action.Equivalent (selected.result label rule before).equations after.equations ∧
       (selected.result label rule before).present = after.present := by
   have ready := attempt.fired_retains_admission

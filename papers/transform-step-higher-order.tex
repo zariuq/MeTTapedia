@@ -1,0 +1,1558 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=2.4cm]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\setlist{nosep,leftmargin=1.6em}
+
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newtheorem{example}{Example}
+
+\newcommand{\lean}[1]{{\ttfamily\def\_{\textunderscore\allowbreak}#1}}
+\newcommand{\inmod}[1]{in~{\ttfamily\def\_{\textunderscore\allowbreak}#1}}
+\emergencystretch=3em
+\newcommand{\Solv}{\mathsf{Solvable}}
+\newcommand{\Ent}{\mathsf{Entails}}
+\newcommand{\Mod}{\models}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\title{The candidate step, higher order:\\ one step over a category of frames,\\ its transport, observers, models and calculi}
+\date{November 2026}
+\author{}
+
+\begin{document}
+\sloppy
+\maketitle
+
+\begin{abstract}
+The transform calculus has one candidate step. Its states live at declaration frames; a firing moves
+a state along a morphism of frames; admission is semantic solvability over every later frame, with
+guards and predicate queries asked at every solution. This note states the step once, as an
+interface, and records what is proved about it. Frames may be dependently typed: formed telescopes
+with conversion as their equivalence are an instance whose action laws hold as equalities, the
+second-order frames translate into them by raising, and the one defect of that translation is
+$\eta$, which typed $\eta$ restores. Symbolic solvability cannot see empty types; a separate ask over
+closed solutions can. Firings move along isomorphisms of states up to an equivalence of firings, so
+transport works up to conversion, and lawful residuals make independence a property of the step.
+Independence is a diamond that closes up to isomorphism; trace equivalence of dependent runs is a
+congruence whose quotient is a category, and cells keep what pairs lose. Observation is relative to
+what observers recorded: equivalence modulo the knowledge is fully abstract under a principal
+answer, the renamings an observer cannot see are the automorphisms of its record, no deterministic
+equivariant rule resolves a symmetric choice, and races separate the step's branching identity from
+its traces. The step has an independent set model, a sound and complete proof logic for its
+first-order guards and predicate queries, and consistency by a model. Typing contracts, SLD
+resolution, ground superposition with a complete given-clause loop, bounded search with three
+outcomes, rational trees, conserved charges with symmetry-quotiented folding, and transfinite runs
+are instances or readings of the same step. Every result stated as proved names its Lean declaration
+and module; what is not proved is marked open.
+\end{abstract}
+
+\begingroup\raggedright
+\paragraph{Conventions.} Declarations are cited by name together with the module that holds them.
+Module names are relative to the namespace
+\lean{Mettapedia.Languages.ProcessCalculi.\allowbreak ConstraintMultisetRewriting}; the step's own
+modules lie under \lean{Step}, and modules whose names begin with \lean{OSLF} or \lean{TypeTheory} are
+relative to \lean{Mettapedia}. A state's present occurrences form its \emph{space}; a rule's
+\emph{patterns} say what a firing takes, reads and makes, what it tells the knowledge, and what it
+guards. Where a result needs a hypothesis beyond the standard axioms, the hypothesis is named with the
+result.\par
+\endgroup
+
+\tableofcontents
+
+\section{Frames and their solutions}
+
+\begin{definition}[Category of frames acting on terms; \lean{Frames} \inmod{Step.Interface}]\label{def:frames}
+A \emph{frame action} consists of frames $a,b,\dots$, terms $T_a$ at each frame, morphisms
+$f : a \to b$, an equivalence $\approx_a$ on each $T_a$, an action $f_* : T_a \to T_b$, identities and
+composites, with $(\mathrm{id}_a)_* t = t$, $(g\circ f)_* t = g_*(f_* t)$, and $s \approx t \Rightarrow f_* s \approx f_* t$.
+\end{definition}
+
+For an equation store $P$ at $a$ and $f : a \to b$, write $f \Mod P$ when $f_* s \approx f_* t$ for every
+$(s,t)\in P$. $\Solv(P)$ holds when some $f : a \to b$ into some later frame satisfies $f\Mod P$; an
+observation $\varphi$ is \emph{asked} by $P$, $\Ent(P,\varphi)$, when $\varphi(b,f)$ holds at every such solution;
+$u : a\to m$ is \emph{principal} for $P$ when $u\Mod P$ and every solution factors through $u$ on the terms of
+$a$.
+
+\paragraph{The canonical instance (\lean{Frames.contextual}).} Frames are declaration families
+(identities with metavariable arities over a binding signature); morphisms are contextual
+assignments; terms are observations; the action is capture-avoiding instantiation.
+\paragraph{The one-frame case (\lean{Frames.ofSubstitution}).} A substitution action is the category
+with one frame; solvability, asks and principality are its consistency, entailment and principality
+(\lean{ofSubstitution\_solvable\_iff}, \lean{ofSubstitution\_entails\_iff}, \lean{ofSubstitution\_principal\_iff}).
+
+\begin{theorem}[\lean{solvable\_iff\_into}, \lean{firstOrderFrame\_weaklyTerminal}, \lean{contextual\_solvable\_iff\_consistent} \inmod{Step.Interface}]
+Existence is witnessed at a weakly terminal frame, and the family with one parameterless metavariable
+per sort is weakly terminal: existence never needs a higher-order helper.
+\end{theorem}
+
+\begin{definition}[Isomorphism of frames; \lean{Frames.Iso} \inmod{Step.Transport}]
+Morphisms $f : a\to b$ and $g : b\to a$ such that $g_*f_*t \approx t$ and $f_*g_*t\approx t$ for all terms.
+They form a groupoid (\lean{Iso.refl}, \lean{Iso.symm}, \lean{Iso.trans}).
+\end{definition}
+
+\begin{proposition}[\lean{Iso.solvable\_applyStore\_iff}, \lean{Iso.equivalent\_symm}, \lean{Iso.equivalent\_trans} \inmod{Step.Transport}]
+Isomorphisms keep solvability, and stores with the same solutions along an isomorphism stay so along
+its inverse and along composites. Renaming fresh helpers is such an isomorphism.
+\end{proposition}
+
+\begin{definition}[Closed asks; \lean{Frames.ClosedSolvable}, \lean{Frames.ClosedEntails}, \lean{Step.ClosedAdmits} \inmod{Step.DependentClosed}]\label{def:closed}
+Given a designated closed frame, a store is \emph{closed-solvable} when it has a solution into the
+closed frame; a \emph{closed ask} holds at every such solution; \emph{closed admission} asks both over
+closed solutions. Closed and symbolic solvability agree when a principal answer lands at a frame with
+a closed point, and on every store when the closed frame is weakly terminal
+(\lean{closedSolvable\_iff\_of\_principal}, \lean{closedSolvable\_iff\_of\_weaklyTerminal}).
+\end{definition}
+
+\section{The step}
+
+\begin{definition}[Candidate step; \lean{Interface.Step} \inmod{Step.Interface}]\label{def:step}
+A state $s$ has a frame, knowledge $K_s$ (an equation store there) and a space $W_s$ of present
+occurrences. A firing $f$ at $s$ has a selection (taken, read and made occurrences), a target frame with
+an extension $e_f$ from the state's frame, information $I_f$ containing $(e_f)_*K_s$, shapes, and guards
+and queries $H_f(b,\sigma)$ at each solution. Admission is characterized once (\lean{admits\_iff}):
+\[
+\mathrm{Admits}(f) \iff \mathrm{Shapes}(f) \wedge \mathrm{Enabled}(W_s,f) \wedge \Solv(I_f) \wedge \Ent(I_f,H_f).
+\]
+An admitted firing has a result with space $(W_s\setminus\text{taken})\cup\text{made}$ and
+knowledge $(c_f)_* I_f$ along a settling morphism $c_f$.
+\end{definition}
+
+Runs are dependent words of admitted firings (\lean{Step.Run}); knowledge only refines along them
+(\lean{Run.models\_start}); they concatenate (\lean{Run.append}); site accounts are functors out of them
+(\lean{Run.account\_append}). The interface itself leaves the settling morphism and the reading of
+guards unconstrained, and a transport's residual (Section~\ref{sec:transport}) has only selection and
+naturality laws; Section~\ref{sec:lawful} gives the laws that constrain all three.
+
+\section{Fibres}\label{sec:fibres}
+
+\begin{enumerate}
+\item \textbf{The first-order fibre.} Every metavariable is parameterless. Unification decides
+  consistency and returns principal answers (\lean{FirstOrder.accepted\_iff\_consistent},
+  \lean{FirstOrder.accepted\_principal} \inmod{FirstOrder}).
+\item \textbf{The pattern fibre.} Every metavariable occurrence is applied to distinct bound variables.
+  The structural pattern driver always finishes with a principal answer or a certified refutation
+  (\lean{ContextualPatternTermination.finishes}, \lean{solves\_or\_refutes}, \lean{refutes\_of\_no\_model}
+  \inmod{ContextualPatternTermination}).
+\item \textbf{Deferred residuals elsewhere.} A non-pattern equation stays a residual constraint; every
+  solution survives each bounded run of the driver (\lean{ContextualFrameWorklist.preserves\_every\_solution} \inmod{ContextualFrameWorklist}),
+  and a reduction presents exactly the original solutions (\lean{ContextualResidual.Reduction} \inmod{ContextualResidual}). Latent
+  obligations of conditional rows enter the information of the firing that selects them. A solvable
+  flex--flex equation is never refuted by any run of the driver (\lean{FlexFlex.never\_refuted}
+  \inmod{Step.BetaEtaReadings}), so refusing it would be unsound; general second-order unification is
+  undecidable~\cite{goldfarb81}.
+\item \textbf{Beyond second order.} The second-order frames translate into the dependent instance of
+  Section~\ref{sec:dependent}. The rational-tree fibre of Section~\ref{sec:rational} is a sibling of
+  the first-order fibre, not a fibre of the dependent instance.
+\end{enumerate}
+\emph{Canonical forms.} The framework is second order: metavariable parameters have sorts, so
+instantiation is hereditary substitution and never creates a framework redex. Instantiation equals the
+evaluation of the explicit redexes that lazy instantiation writes (\lean{evaluate\_lazy}), canonical forms
+represent framework conversion uniquely (\lean{convertible\_iff}, both \inmod{OSLF.Syntax.HereditaryBetaEtaFramework}),
+and the pattern driver therefore unifies modulo framework $\beta\eta$
+(\lean{models\_iff\_framework\_convertible} \inmod{Step.BetaEtaReadings}). Object-level $\beta\eta$ is a step
+unless a conversion theory is admitted. An admitted theory is its own frame category, in which the
+syntactic driver's refutation is unsound (\lean{refutation\_not\_admitted}) and reading the head of stored
+data is not well defined (\lean{head\_readout\_not\_invariant}). A metavariable whose parameter binds would
+make the framework third order, where hereditary substitution cascades; metavariable arities exclude
+it. \emph{Open:} solvers for admitted object theories. Models of these fibres are in
+Section~\ref{sec:models}.
+
+\section{Dependent and \texorpdfstring{$\eta$}{eta} frames}\label{sec:dependent}
+
+The interface asks of frames only objects, terms, morphisms, an equivalence and action laws. A
+dependently typed instance therefore needs no change to it, and the smaller settings it was built to
+contain are fibres of it: the non-dependent part is a full sub-instance on the frames that satisfy a
+predicate, and the second-order frames are the image of a frame map.
+
+\subsection{The instance}
+
+\begin{theorem}[Dependent frames; \lean{Dependent.frames}, \lean{frames\_models\_iff}, \lean{pointwise\_iff}, \lean{solvable\_empty\_iff} \inmod{Step.DependentFrames}]
+Over a rule package of a formation-sensitive calculus with dependent function, pair and identity
+types and a universe tower, frames are formed telescopes, morphisms are formed substitutions, terms are
+judged terms (a formed type with a term of it), the action is substitution on both components and the
+equivalence is conversion of both. The action laws hold as equalities. Two solutions act alike exactly
+when they are pointwise convertible, and at the empty frame a store is solvable exactly when every
+equation already converts.
+\end{theorem}
+
+A metavariable $M : (\Psi \vdash A)$ is reached by raising~\cite{miller92}: it is a telescope variable of type
+$\Pi\Psi.\,A$. A definition $x \doteq v$ has the principal answer $x := v$, principal answers extend along
+definitions, and asks of equality guards are decided there (\lean{principal\_definition},
+\lean{definition\_principal}, \lean{definition\_entails\_iff} \inmod{Step.DependentFrames}). An ill-typed equation has no solution in any
+later frame, because solutions convert types too (\lean{Consumer.illTyped\_unsolvable} \inmod{Step.DependentControls}).
+
+\subsection{Helpers and their diamond}
+
+\begin{theorem}[\lean{Dependent.helperStep}, \lean{admits\_iff}, \lean{helper\_closes}, \lean{independent\_iff}, \lean{swap\_fixes}, \lean{swap\_exists\_iff\_fixed}, \lean{no\_swap\_of\_not\_weakened} \inmod{Step.DependentHelpers}]
+A helper firing makes one occurrence and one variable $x : A$, with $A$ formed over its frame, and tells
+$x \doteq v$. It is admitted exactly when the knowledge is solvable, its occurrence is fresh and the
+knowledge asks its guards. Two helper firings close up to the swap $\Gamma.B.A \cong \Gamma.A.B$, which
+fixes every old variable, and independence is solvable knowledge, fresh and distinct occurrences, and
+both guards asked. A run $f;g_1$ swaps exactly when substituting $f$'s value for its helper leaves $g_1$
+unchanged; if $g_1$'s type is not a weakening, no swap exists.
+\end{theorem}
+
+The helpers $x : g\to g := \lambda x.x$ and $y : \mathrm{Id}\,(g\to g)\,(\lambda x.x)\,(\lambda x.x) :=
+\mathsf{refl}$ are independent, and their composites differ and are isomorphic
+(\lean{Consumer.independent}, \lean{Consumer.composites\_differ} \inmod{Step.DependentHelpers}). The helper
+$y : \mathrm{Id}\,(g\to g)\,x\,x$ after $x$ forms a run with no swap (\lean{Consumer.dependent\_run\_has\_no\_swap}
+\inmod{Step.DependentControls}). A helper whose type is formed only through conversion is admitted
+(\lean{Consumer.converted\_admitted}).
+
+\subsection{Symbolic solvability does not see empty types}
+
+\begin{theorem}[\lean{solvable\_extend\_iff}, \lean{closedSolvable\_extend\_iff}, \lean{obligation\_trap}, \lean{closedAdmits\_iff\_admits}, \lean{trap\_helper} \inmod{Step.DependentClosed}]
+Knowledge read at $\Gamma.A$ is solvable exactly when it is solvable at $\Gamma$, for every type $A$, empty
+or not; closed solvability at $\Gamma.A$ needs a closed term of $A$ at some closed solution. At an
+obligation $x : A$ the empty store is always solvable, and closed-solvable exactly when $A$ has a closed
+term. For guard-free firings, closed and symbolic admission agree when the knowledge has a principal
+answer at a closed-inhabited frame; at an obligation of a type with no closed term, every fresh
+guard-free helper firing is admitted and none is closed-admitted.
+\end{theorem}
+
+Over the universe tower, $\bot := \Pi(X:U_0).\,X$ is formed, and at the frame $x : \bot$ the helper $y : \bot :=
+x$ is admitted and not closed-admitted (\lean{TowerTrap.trap} \inmod{Step.DependentClosedTower}). Emptiness of
+$\bot$ is proved from an explicit hypothesis, cofinally many inaccessible cardinals, so this control is a
+relative-consistency statement. At $x : g\to g$, which $\lambda x.x$ inhabits, a helper is both admitted
+and closed-admitted (\lean{Consumer.copy\_admitted} \inmod{Step.DependentClosed}). Consistency of constraints
+and inhabitation are therefore two asks. In a dependent foundation a metavariable is a proof
+obligation, and symbolic admission alone would accept a hole of an empty type.
+
+\subsection{The non-dependent part is a fibre}
+
+\begin{theorem}[\lean{Frames.restrict}, \lean{simpleStep\_admits\_iff}, \lean{principalInside\_after}, \lean{admits\_iff\_along} \inmod{Step.DependentFibre}; \lean{packing}, \lean{simple\_retracts}, \lean{simpleStep\_admits\_iff\_of\_joins}, \lean{tower\_fibre} \inmod{Step.DependentPacking}]
+On the full sub-instance of telescopes none of whose entries mentions a variable, admission computed in
+the sub-instance equals admission in the full instance whenever the knowledge has a principal answer
+at such a frame. That holds from empty knowledge and is kept by every firing, so the fibre decides
+admission exactly along every run from empty knowledge. Every formed telescope is a retract, up to
+$\beta$ for pairs, of a frame with at most one variable of a closed $\Sigma$-type; when universe levels
+have joins, as in the universe tower, the fibre theorem holds for every store.
+\end{theorem}
+
+\subsection{The second-order frames translate by raising}
+
+\begin{theorem}[\lean{instantiate\_beta}, \lean{action\_beta} \inmod{Step.TranslationSyntax}; \lean{Translation.translation}, \lean{translation\_comp} \inmod{Step.TranslationFrames}; \lean{translation\_models\_iff}, \lean{translation\_reflects}, \lean{translation\_entails\_reflect} \inmod{Step.TranslationReflection}]
+The translation sends a metavariable of arity $(\Gamma,s)$ to a variable of type $\Pi\Gamma.\,s$, an
+occurrence $m(\bar a)$ to that variable applied to $\bar a$, and an assignment to a substitution of
+closed abstractions. It is a frame map from the second-order instance on finite ordered frames into the
+dependent frames; contextual instantiation is $\beta$ on these applications, and composition is
+preserved on every judged term. Over a rule package with no root computation, symmetric head equality
+and injective sort and operator names, translated terms are normal and the encoding is injective;
+dependent solutions of a translated store are exactly the translations of second-order solutions, and
+asks over all dependent solutions reflect to second-order asks.
+\end{theorem}
+
+Admission transfers when the information has a second-order principal answer whose translation
+factors every dependent solution on translated terms (\lean{admission\_transfer}), and that hypothesis
+holds for every definition $m(\bar x)\doteq t$ with $m$ outside the support of $t$
+(\lean{definition\_admission\_transfer} \inmod{Step.TranslationAdmission}). For arbitrary stores it needs
+adequacy: every dependent solution of a translated store must factor through a second-order one on
+translated terms. That is open.
+
+\subsection{The \texorpdfstring{$\eta$}{eta} verdict}
+
+\begin{theorem}[\lean{identity\_code\_not\_variable} \inmod{Step.TranslationReflection}; \lean{pattern\_no\_principal}, \lean{pattern\_principal}, \lean{translation\_not\_preservesPrincipal} \inmod{Step.TranslationPrincipal}; \lean{pattern\_entails\_iff} \inmod{Step.TranslationImage}; \lean{EtaFrames.etaFrames}, \lean{EtaFrames.eta\_pattern\_principal} \inmod{Step.TranslationEta}]
+Without $\eta$ the translation has exactly one defect. The code $\lambda\bar x.\,m\,\bar x$ is not convertible
+to $m$, and over every root-free, head-symmetric package the translated pattern equation $m(x)\doteq n(x)$
+has no principal answer in the dependent frames: the solutions $m\mapsto g$, $n\mapsto\lambda x.\,g\,x$ and
+$m\mapsto\lambda x.\,g\,x$, $n\mapsto g$ cannot both factor through one answer, while the second-order
+instance has a principal answer. On translated terms nothing is lost, since they observe a
+metavariable only through full applications, and asks transfer for the pattern equation. Over typed
+definitional equality with $\eta$ for $\Pi$ and $\Sigma$, the translated second-order answer is principal
+again.
+\end{theorem}
+
+\paragraph{The canonical $\eta$ instance.} It is \lean{ContextualDependentEta.frames}
+\inmod{ContextualDependentEta}: formed contexts of the typed contextual category with typed total terms,
+whose equivalence is typed equality with dependent function and pair $\eta$
+(\lean{ContextualDependentEta.function\_eta}, \lean{ContextualDependentEta.pair\_eta} \inmod{ContextualDependentEta}). Every solution of
+the dependent frames of a qualified computation package (constructor forms, root and head preservation,
+Church--Rosser for raw conversion) is an $\eta$-solution (\lean{BetaBridge.models}, \lean{BetaBridge.solvable}
+\inmod{ContextualDependentEtaBridge}). A function against its $\eta$-expansion and a pair against its
+projections have $\eta$-solutions and no solution in the dependent frames
+(\lean{Controls.function\_eta\_solved}, \lean{Controls.function\_requires\_eta}, \lean{Controls.pair\_requires\_eta}
+\inmod{ContextualDependentEtaControls}). An executable type-directed comparison scans equation stores
+while keeping every later solution and every ask (\lean{Conversion.scan\_models},
+\lean{Conversion.scan\_solvable\_iff}, \lean{Conversion.scan\_entails\_iff} \inmod{ContextualDependentEtaConversion}).
+The principal answer for $m(x)\doteq n(x)$ above is proved over a sibling $\eta$ instance on raw
+telescopes at one universe (\lean{EtaFrames.etaFrames} \inmod{Step.TranslationEta}); stating it over the canonical instance is open.
+
+\paragraph{Verdict.} The foundation is dependent frames whose equivalence is typed equality with
+$\eta$; the second-order step is their $\eta$-long fibre. The property that made the second-order base
+attractive, principal answers for patterns, comes from $\eta$, not from being second order. The
+opposite design is the awkward one: written as an object theory inside the second-order base,
+dependent function, pair and identity types make conversion a rewriting, and the equation
+$(\lambda x.x)\,y\doteq y$ then has no solution (\lean{ObjectTheory.object\_beta\_unsolvable}
+\inmod{Step.TranslationObjectTheory}).
+
+\paragraph{Native type theory as the semantics.} Every strict category with families is a frame
+instance (\lean{NativeUniverse.cwfFrames}), and the displayed-presheaf category with families gives one
+whose action laws hold by reflexivity (\lean{NativeUniverse.nativeFrames}, \inmod{Step.NativeUniverseFrames});
+its $\Pi$ validates $\beta$ and $\eta$ (\lean{pi\_beta}, \lean{pi\_eta} \inmod{TypeTheory.DisplayedPresheafPi}). This
+presheaf universe of native type theory~\cite{williamsstay21} is the semantics of the frames, not their
+checking base. A conversion-sound map from the dependent frames into it is open.
+
+\paragraph{Toward a dependent solver.} A bounded conversion scan keeps both endpoint types, leaves
+unresolved equations pending and preserves every later solution and guard
+(\lean{ContextualDependentConstraints.scan\_models}, \lean{scan\_solvable\_iff}, \lean{scan\_entails\_iff}
+\inmod{ContextualDependentConstraints}); eliminating the newest defined variable preserves and reflects
+solutions (\lean{eliminateDefinition\_models\_iff}, \lean{eliminateDefinition\_solvable\_iff}
+\inmod{ContextualDependentElimination}). A driver that finishes with a principal answer or a refutation on
+the dependent pattern fragment~\cite{pfenning91,abelpientka11} is open.
+
+\section{The two presentations are instances}
+
+\paragraph{The first-order run layer is the one-frame case (\lean{AnnotatedRuns.firstOrder} \inmod{AnnotatedRuns}).}
+Admission is the run layer's admission and executable words are runs (\lean{firstOrder\_admits\_iff},
+\lean{executable\_iff\_run}, \lean{follow\_eq\_last}). Admission, the update and runs are equivariant under
+label-preserving renamings of occurrence identities (\lean{Firing.valid\_rename}, \lean{executable\_rename}).
+
+\paragraph{Native firings are the canonical case, with published results (\lean{native} \inmod{Step.NativeInstance}).}
+A native firing's data are its rule, selection, outputs, reuse flags, queries, budget, and its
+publication \emph{recipes}: for each produced output, the private and captured roles of the names of
+its emitted term and its local conditions, fixed before execution and absent elsewhere. Admission is the
+interface's (\lean{native\_admits\_iff}). An admitted firing pins one execution in the published-execution
+record (\lean{NativeFiring.pinned}); the record has no row decoder. The published rows publish each
+recipe's output from the actual emitted term, and keep every other row (\lean{publishRows}); the published
+state keeps the execution's frame, information and occurrences (\lean{publishedState\_declarations},
+\lean{publishedState\_equations}, \lean{publishedState\_present}).
+
+\begin{theorem}[\lean{native\_published}, \lean{publishedState\_none}, \lean{native\_raw\_target}, \lean{publishedState\_eq\_rawTarget\_iff} \inmod{Step.NativeInstance}]
+The step's result is the published state of every record with the firing's data and budget. Without
+recipes it is the raw target. The published state is the raw target exactly when every recipe
+republishes its output's raw row.
+\end{theorem}
+
+\begin{example}[\lean{template\_published}, \lean{PublicationControls.published\_differs\_from\_raw\_target}, \lean{PublicationControls.native\_result\_depends\_on\_recipes} \inmod{Step.NativePublicationControls}]
+A direct template's recipes publish its execution as the template's own target. At an actual mixed
+template execution, at every budget, the published state differs from the raw target: an incompatible
+dormant schema stays unmatched where the raw target holds a matchable shared row. Two native firings with
+the same execution data, with and without the template's recipes, have different results, so the result
+is not a function of the raw execution.
+\end{example}
+\emph{Open:} native firings of mixed templates, which publish through producer recipes into a packed
+private family, are not yet recipe instances of the step; native firings have no transport yet.
+
+\section{Transport}\label{sec:transport}
+
+\begin{definition}[Isomorphism of states; \lean{Step.StateIso}, \lean{StateIso.rename} \inmod{Step.Transport}]
+An isomorphism of frames that carries the knowledge of one state to knowledge with the same solutions
+as the other's, together with a bijection of occurrence identities that carries the space of one onto
+the space of the other. Isomorphic states have solvable knowledge together (\lean{StateIso.solvable\_iff}).
+A term carried along a morphism that agrees with another at every solution of the target's knowledge
+is \emph{carried up to the knowledge} (\lean{Frames.Carried}); that clause relates what clients read,
+stored rows and public terms, and it is closed under inverses and composites (\lean{Carried.symm},
+\lean{Carried.trans}).
+\end{definition}
+
+The interface has no labels and no clients, so which identities a renaming must fix belongs to the
+layers that have them (Section~\ref{sec:observation}).
+
+\begin{definition}[Transport; \lean{Transport} \inmod{Step.Transport}]
+An instance chooses a groupoid of isomorphisms of states over the interface's and an equivalence of
+\emph{alike} firings at one state: firings whose data agree up to the frame equivalence once their
+frames are identified. Alike firings have one selection, are admitted together and have isomorphic
+results (\lean{selection\_alike}, \lean{admits\_alike}, \lean{result\_alike}). Firings move along isomorphisms
+by the functor laws up to alikeness (\lean{move\_refl}, \lean{move\_trans}, \lean{move\_symm}, \lean{move\_alike}),
+select the renamed occurrences, keep their admission, and their results stay isomorphic. The
+\emph{residual} of $f$ after an admitted $g$ is $f$ read at $g$'s result along $g$'s morphism of frames; it
+keeps its selection, and residuals are natural up to alikeness (\lean{move\_residual}). Where alike
+firings are equal, the laws are equations (\lean{strict\_laws}).
+\end{definition}
+
+\begin{theorem}[Transport up to conversion; \lean{Dependent.liftConv}, \lean{Dependent.extendIso}, \lean{Dependent.FiringAlike}, \lean{Dependent.conversionTransport}, \lean{conversion\_move\_strict}, \lean{Consumer.moved\_back\_ne}, \lean{Consumer.moved\_back\_alike}, \lean{Consumer.not\_alike} \inmod{Step.DependentConversion}]
+At dependent frames, a substitution lifts under a variable whose type converts, and an isomorphism of
+frames lifts under convertible types, with its inverse laws pointwise up to conversion. Alike helper
+firings make the same occurrence, with convertible type and value and guards convertible equation by
+equation. These give a transport along every isomorphism of states, which moves exactly as the strict
+helper transport on strict isomorphisms. Moving $y : \mathrm{Id}\,(g\to g)\,x\,x$ along $x\mapsto(\lambda
+y.y)\,x$ and back gives a firing that is not equal to the original and is alike to it; firings whose
+types do not convert are not alike.
+\end{theorem}
+
+Strict telescope isomorphisms alone do not give the functor laws at dependent frames, because a type
+moved along an isomorphism and back is convertible, not equal, to the original.
+
+States up to isomorphism form \emph{state classes} (\lean{Transport.StateClass} \inmod{Step.Transport}); the class relation is a
+congruence for the step: every admitted firing at one state of a class has a counterpart with the
+renamed selection at every other, and the results are again in one class (\lean{Transport.same\_step},
+\lean{Same.admits}). \emph{Similar} runs are, firing by firing, alike to transports of each other
+(\lean{Transport.Similar}); similarity is an equivalence, is compatible with concatenation
+(\lean{Similar.append}) and with alike prefixes (\lean{Similar.cons\_alike}), relates isomorphic starts and
+ends (\lean{Similar.same\_start}, \lean{Similar.same\_last}), includes every run's transport
+(\lean{Similar.moveRun}), and keeps every site account whose grades are invariant under transport and
+alikeness (\lean{Similar.account\_eq} \inmod{Step.Transport}).
+
+\subsection{Lawful transport}\label{sec:lawful}
+
+Three laws, stated over an existing transport, make independence a property of the step rather than
+of a chosen residual.
+
+\begin{definition}[\lean{Step.Guards}, \lean{Step.ConservativeSettlement}, \lean{Transport.Coherent}, \lean{Transport.Lawful} \inmod{Step.LawfulTransport}]
+\emph{Locality of guards}: the guard of a firing at a solution is a predicate of the space that respects
+the action and reads only a declared region; a firing that writes outside the region keeps the guard
+(\lean{Guards.guard\_fire}). \emph{Conservative settlement}: every solution of a firing's information agrees
+with one that factors through the settling morphism, so a result asks exactly what its information
+asks (\lean{entails\_result\_iff}, \lean{solvable\_result\_iff}). \emph{Residual coherence}: the residual $f/g$
+lives where $f$'s frame and $g$'s result meet, which is a pushout for solutions over the state's frame;
+its information is $f$'s carried there together with $g$'s result knowledge, its shapes are $f$'s, and its
+guards are $f$'s read along the carrying morphism. A transport is \emph{lawful} when it is coherent and
+conservative and \emph{canonical}: isomorphic firings at one state have results in one class.
+\end{definition}
+
+\begin{theorem}[\lean{Coherent.admits\_iff}, \lean{Coherent.firingIso}, \lean{Lawful.independent\_iff}, \lean{Lawful.independent\_withResidual\_iff} \inmod{Step.LawfulTransport}]
+A coherent residual is admitted exactly when a condition that names no residual holds; two coherent
+residuals are isomorphic firings; and two lawful transports with the same state classes have the same
+independent pairs, so replacing one lawful residual by another keeps independence.
+\end{theorem}
+
+The first-order transport is lawful when the action is faithful, and it is
+(\lean{firstOrderLawful}, \lean{firstOrder\_faithful} \inmod{Step.LawfulFirstOrder}); its region is the
+occurrences matched by absence and count queries together with the query regions. The helper transport
+is lawful with the empty region (\lean{Helpers.helperLawful} \inmod{Step.LawfulHelper}), and so is the
+rational-tree transport (Section~\ref{sec:rational}). Without the laws, independence depends on the
+residual chosen: the tells $X=1$ and $Y=2$ are independent under the lawful transport and not under a
+residual that drops tells, which is not lawful (\lean{LawfulControls.unlawful\_changes\_independence},
+\lean{LawfulControls.noTells\_not\_lawful}). Settling by the fixed substitution $X\mapsto 1$ satisfies every
+interface law, is not conservative, and its result asks $X=1$ where the information did not
+(\lean{LawfulControls.settledBy\_not\_conservative}, \lean{LawfulControls.settledBy\_asks\_more}). A non-faithful
+action has no guard structure at all (\lean{LawfulControls.blind\_no\_guards}, all \inmod{Step.LawfulFirstOrder}).
+
+\section{Independence, traces and cells}
+
+\begin{definition}[Independence; \lean{Transport.Independent} \inmod{Step.Independence}]
+Firings $f,g$ at $s$ are independent when both are admitted, the residual of each after the other is
+admitted, and the two composite results are in one state class: the diamond closes up to isomorphism.
+\end{definition}
+
+A \emph{swap} replaces $f$ then a firing alike to the residual of $g$ by $g$ then a firing alike to the
+residual of $f$, carrying the rest of the run along a similar run (\lean{SwapStep}); \emph{trace
+equivalence} is generated by swaps and similarity (\lean{TraceEquiv}).
+
+\begin{theorem}[\lean{swap\_independent}, \lean{Independent.swap}, \lean{TraceEquiv.same\_last} \inmod{Step.Independence}]
+Every swap swaps an independent pair, every independent pair swaps in front of every continuation, and
+trace-equivalent runs end in one state class.
+\end{theorem}
+
+\begin{theorem}[Congruence; \lean{TraceEquiv.append\_left}, \lean{TraceEquiv.append\_right}, \lean{TraceEquiv.moveRun}, \lean{TraceEquiv.comp} \inmod{Step.Independence}]
+Trace equivalence is kept by prefixing, by appending similar continuations, and by transport along an
+isomorphism of the start; composition (concatenation after transport) is well defined in both arguments.
+\end{theorem}
+
+\begin{theorem}[The category of dependent traces; \lean{traceCategory} \inmod{Step.TraceCategory}]
+State classes and runs between them, up to similarity and trace equivalence, form a category under
+concatenation after transport (\lean{Arrow.comp\_rel\_left}, \lean{Arrow.comp\_rel\_right},
+\lean{Similar.append\_assoc}, \lean{Similar.append\_nil}).
+\end{theorem}
+
+\begin{theorem}[Site accounts; \lean{TraceEquiv.account\_eq}, \lean{TraceEquiv.account\_eq\_comm} \inmod{Step.Independence}]
+A site account is a property of traces when its grades are invariant under transport, alikeness and
+residuals and commute on independent firings; in a commutative monoid, invariance suffices.
+\end{theorem}
+
+\paragraph{The one-frame instance (\lean{firstOrderTransport} \inmod{Step.FirstOrderIndependence}).}
+Isomorphisms are configurations with the same solutions and occurrences; firings move and have
+residuals as themselves.
+\begin{theorem}[\lean{firstOrder\_closes}, \lean{firstOrder\_independent\_iff}, \lean{firstOrder\_independent\_iff\_static}, \lean{firstOrder\_account\_eq} \inmod{Step.FirstOrderIndependence}]
+Diamonds close whenever both orders are admitted, so independence is the four admissions. For firings
+without guards whose query regions do not depend on the solution, once one order runs, independence is
+exactly the static independence of the run layer. Site accounts are properties of its traces in every
+commutative monoid.
+\end{theorem}
+\begin{theorem}[Static traces are traces; \lean{similar\_of\_firings}, \lean{swap\_traceEquiv}, \lean{traceEquiv\_of\_static} \inmod{Step.StaticTraces}]
+Runs with the same firings from configurations with the same solutions and occurrences are similar, a
+swap of statically independent firings in a run is a swap of runs, and runs whose words are statically
+trace equivalent are trace equivalent: the run layer's trace theory of words is an instance of the trace
+theory of dependent runs.
+\end{theorem}
+
+\paragraph{The smallest contextual instance (\lean{Helpers.helperStep} \inmod{Step.ContextualDiamond}).} A
+helper firing makes one occurrence and one fresh helper metavariable and tells the helper's value, a
+term over the frame it fires at; its guards are equations on the names of that frame, asked at every
+solution; its result lives at the frame with one more name. A firing moves by instantiating its value
+and renaming the occurrence it makes, and its result moves along the isomorphism lifted to the extended
+frames, fixing the helper (\lean{Helpers.liftIso}, \lean{Helpers.information\_move}); asks of guards are
+carried along isomorphisms (\lean{Frames.Iso.entails\_applyStore\_iff}).
+\begin{theorem}[\lean{Helpers.admits\_iff}, \lean{Helpers.helper\_closes}, \lean{Helpers.independent\_iff} \inmod{Step.ContextualDiamond}]
+A helper firing is admitted exactly when the knowledge is solvable, its occurrence is fresh, and the
+knowledge asks its guards: the helper's equation never constrains the old names
+(\lean{Helpers.entails\_information\_iff}). Firing $f$ then $g$ and $g$ then $f$ reach frames holding the
+two helpers in the two orders, and swapping them (\lean{Helpers.swapIso}) is an isomorphism of the
+results that fixes every name of the starting frame (\lean{Helpers.swap\_incl\_incl}) and renames no
+occurrence. Independence is exactly solvable knowledge, fresh and distinct occurrences, and the guards
+of both firings asked by the knowledge.
+\end{theorem}
+Since the closing isomorphism renames no occurrence and fixes the old names, a following firing that
+refers to occurrences or to old names finds a counterpart with the same selection, the same admission
+and an isomorphic result at the other composite (\lean{Transport.same\_step} \inmod{Step.Transport}); only the two fresh helpers
+are renamed.
+\begin{example}[A concrete diamond; \lean{Consumer.independent}, \lean{Consumer.residuals}, \lean{Consumer.composites\_differ} \inmod{Step.ContextualDiamond}]
+At the empty frame, a firing making occurrence $1$ and a parameterless helper valued $7$, and a firing
+making occurrence $2$ and a one-parameter helper valued $8$, are independent; each residual keeps its
+occurrence, helper and value in the frame the other made; the two composite states are different and
+isomorphic: the diamond commutes only up to renaming.
+\end{example}
+
+\subsection{Cells}
+
+Pairs lose what rounds keep: the tells $X=Y$, $X=1$ and $Y=2$ are pairwise independent but cannot all
+fire.
+
+\begin{definition}[\lean{Transport.Cell}, \lean{Transport.Closing}, \lean{Transport.CubeLaw} \inmod{Step.Cells}]
+A \emph{cell} at a state is a round of firings each of which is admitted and after which the residuals
+of the others form a cell. A \emph{closing} chooses an isomorphism for every admitted square, and the
+\emph{cube law} says that moving the double residual $(h/f)/(g/f)$ along the closing gives $(h/g)/(f/g)$.
+\end{definition}
+
+\begin{theorem}[\lean{cell\_pair\_iff}, \lean{cell\_pair\_iff\_independent} \inmod{Step.Cells}; \lean{firstOrder\_cubeLaw}, \lean{CellControls.hollow\_cube}, \lean{CellControls.no\_three\_cell} \inmod{Step.CellsFirstOrder}; \lean{Helpers.helper\_cube}, \lean{Helpers.helperCubeLaw}, \lean{Helpers.swap\_braid} \inmod{Step.CellsHelper}]
+Two firings form a 2-cell exactly when both orders are admitted; where diamonds close, 2-cells are the
+independent pairs. In the one-frame instance the cube law holds for every closing, and the three tells
+above are pairwise independent 2-cells that form no 3-cell. For helper firings, the double residuals of a
+third firing agree along the closing swap, the cube law
+holds for closings whose frame maps are the helper swaps and whose renamings are the identity, and the
+swaps satisfy the symmetric-group relations, including the braid relation for three helpers.
+\end{theorem}
+
+Conflict is therefore not binary: pairwise independence does not give joint consistency of a round.
+Lower faces as cells and a precubical set of rounds with face maps are open.
+
+\section{Footprints indexed by solutions}
+
+\begin{theorem}[Sufficient; \lean{round\_independent} \inmod{Step.FirstOrderIndependence}]
+In the one-frame instance, a round of two is independent: when the members' footprints are independent
+and each writes nothing into the other's guards and query regions at every solution of the pair's cut,
+the pair is independent.
+\end{theorem}
+
+\begin{example}[Overlap at one solution only; \lean{TransportControls.overlap\_at\_one\_solution\_only} \inmod{Step.FirstOrderIndependence}]
+A query whose region is the labels $1$ when the solution sets $X=1$, and nothing otherwise, and a writer of
+label $1$: the footprints are disjoint at $X=2$ and overlap at $X=1$. The pair is not compatible and not
+statically independent, and it is dependent; reasoning from the footprint at $X=2$ alone would accept it.
+A writer of label $0$ forms a round with the query and is independent
+(\lean{TransportControls.outsider\_watcher\_independent}).
+\end{example}
+
+\begin{theorem}[Grounded regions; \lean{principal\_entails\_iff}, \lean{ask\_matching\_iff}, \lean{ignoresWrites\_matching\_iff} \inmod{Step.GroundedRegions}]
+A query region that matches a pattern read at the solution is the same at every solution when a principal
+answer grounds the pattern. Then the universal ask is one evaluation at the answer, and a writer stays
+outside the region at every solution exactly when none of its labels is equivalent to the grounded
+instance. In the first-order fibre the unifier's answer serves (\lean{firstOrder\_ask\_matching\_iff});
+with the information $X=1$, a maker of $1$ writes into the region of $X$ and a maker of $0$ does not
+(\lean{GroundedControls.writer\_not\_ignored}, \lean{GroundedControls.outsider\_ignored}).
+\end{theorem}
+
+\section{Deciding independence}
+
+\begin{theorem}[\lean{independent\_iff\_admits}, \lean{decidableIndependent} \inmod{Step.Independence}; \lean{Frames.Principal.entails\_iff}, \lean{Principal.entails\_models\_iff} \inmod{Step.PrincipalAnswers}]
+Where diamonds close, independence is the four admissions and is decided wherever admission is. An ask
+of an observation that respects the action and survives further instantiation is decided at a principal
+answer; equality guards are such observations.
+\end{theorem}
+
+\begin{theorem}[First-order fibre; \lean{valid\_iff\_tests} \inmod{Step.FirstOrderIndependence}; \lean{firstOrder\_decidableConsistent}, \lean{firstOrder\_decidableIndependent} \inmod{Step.GroundedRegions}]
+For firings without guards whose query regions do not depend on the solution, admission is the shapes,
+the occurrences, one consistency test and one evaluation per query; unification decides consistency, so
+independence is decided.
+\end{theorem}
+
+\begin{theorem}[Pattern fibre; \lean{Helpers.pattern\_solvable\_iff}, \lean{Helpers.pattern\_unsolvable\_iff}, \lean{Helpers.helperCheck\_decides} \inmod{Step.ContextualDiamond}]
+Pattern knowledge is solvable exactly when the driver returns an empty residual at some budget, and
+unsolvable exactly when it refutes at some budget. The check of helper independence answers at some
+budget on pattern knowledge, for firings without guards.
+\end{theorem}
+
+\begin{definition}[Three-valued check; \lean{Transport.Check} \inmod{Step.Independence}]
+A check answers independent, dependent or unknown, and never answers either of the first two wrongly
+(\lean{Check.ofTests}). A check built from a decision never answers unknown
+(\lean{Check.ofDecidable\_ne\_unknown}).
+\end{definition}
+
+\begin{example}[Unknown outside the fragment; \lean{Helpers.helperCheck\_unknown}, \lean{NonPattern.independent}, \lean{NonPattern.unknown} \inmod{Step.ContextualDiamond}]
+The knowledge $M(3)=3$ applies a metavariable to a constant, outside the pattern fragment, and is solvable by
+$M\mapsto\lambda x.\,3$. Two helper firings with fresh, distinct occurrences are independent there, and the
+check answers unknown at every budget.
+\end{example}
+
+\paragraph{Why undecidable unification does not block the definition.} Independence is defined by
+admission, which asks over every solution in every later frame, and by state classes. No definition
+chooses a solution: the knowledge of a state is a store of residual equations, kept as it is. Where
+unification is undecidable, independence remains a proposition with the same meaning, and a sound check
+may answer unknown. Bounded searches give such checks at every budget (Section~\ref{sec:search}).
+
+\section{Typing as firings}\label{sec:typing}
+
+Typing contracts of a runtime type system, the reuse of typing evidence, an exit check, typing of
+states and bidirectional checking are all firings of the step.
+
+\paragraph{Contracts.} A typed call is a firing of the one-frame step over a constraint domain whose
+terms are program values, type expressions and membership atoms, two terms being equal when they mean
+the same in every ground model. Signature parameters are renamed to fresh type helpers that may take
+only proper types, which write no reserved improper name such as \lean{Atom}; program variables stay
+metavariables of the knowledge, so a call never binds them.
+
+\begin{theorem}[\lean{call\_admits\_iff}, \lean{closed\_call\_admits\_iff}, \lean{closed\_call\_admits\_iff\_accepted}, \lean{call\_admits\_iff\_residual}, \lean{runtime\_accepts\_of\_admits} \inmod{Step.TypingContracts}]
+A call firing is admitted exactly when some point satisfying the knowledge meets the joint membership
+judgment of its arguments and output. For closed values this is the declaration-based judgment, and,
+with no reserved names, a closed type and decidable equalities, it is exactly what the existing call
+checker accepts. For open values, admission is the existence of a binding that satisfies the
+compiled overloads, and an admitted call is accepted by the runtime's test of the type equations of
+that residual formula.
+\end{theorem}
+
+The runtime decides those type equations, and its refusals are refusals of the step; it does not
+decide whether a pending membership can still be met, which is inhabitation of the requested types.
+\emph{Controls} \inmod{Step.TypingContractsControls}: \lean{same\_mixed\_refused} and \lean{same\_numbers\_admitted}
+(a shared parameter refuses a number with a string and admits two numbers);
+\lean{atom\_solves\_shared\_parameter} (if helpers may take \lean{Atom}, the mixed call is admitted);
+\lean{open\_pending}, \lean{contradicting\_refused} and \lean{lifecycle\_run} (an open argument is admitted
+pending and a contradicting later equation is refused, in one run); \lean{void\_trap} (the runtime
+accepts a requirement at an empty type, which the step refuses: the gap of
+Section~\ref{sec:dependent} again); \lean{guard\_refuses\_shared\_parameter} (reading a closed membership as
+a guard refuses a call the contract admits, so memberships at shared parameters are told).
+
+\begin{theorem}[Evidence; \lean{guard\_run}, \lean{member\_inside}, \lean{reuse\_sound}, \lean{generation\_sound}, \lean{fine\_subset\_coarse} \inmod{Step.TypingEvidence}]
+For any step with local guards, a guard reads the same at the end of every run that writes nothing in
+its region. With declarations as rows, membership reads only the rows declaring a rule for a symbol of
+the value together with the fact rows, and checked membership stays valid along every run that writes
+nothing there. A generation counter that invalidates on every declaration edit is sound, because its
+region contains that one.
+\end{theorem}
+It is also coarse: an edit of an unrelated declaration writes the coarse region and not the fine one,
+and the membership still holds; retracting the number row writes the fine region, and it fails
+(\lean{EvidenceControls.unrelated\_edit}, \lean{EvidenceControls.related\_edit\_breaks}).
+
+\begin{theorem}[Exit check; \lean{sequential\_exit\_keeps\_effects}, \lean{staged\_exit\_no\_residue}, \lean{staged\_exit\_commits}, \lean{staged\_executable\_iff} \inmod{Step.TypingExit}]
+When a call's main firing is admitted and its exit check is refused at the result, the main firing
+alone is a run, no run has both, and everything the main firing made stays present. In a
+deferred-effects block with the main firing, a refused exit leaves the block's result at the start;
+when both are admitted the block publishes the composite; deferred and sequential executability agree.
+\end{theorem}
+
+\begin{theorem}[State typing; \lean{helper\_preserves}, \lean{run\_preserves}, \lean{compute\_preserves}, \lean{linear\_compute\_preserves} \inmod{Step.TypingStates}]
+A configuration at a dependent frame is typed when the label of every present occurrence is a judged
+term there. Every helper firing preserves typing, and so does every run of the helper step. Computation
+firings that take an occurrence and make one labelled by a computation step of its label preserve
+typing under the declaration-based preservation hypotheses, and with no hypotheses over the linearized
+rules of the certified transform program.
+\end{theorem}
+
+\begin{theorem}[Checking as firings; \lean{completed\_run\_derives}, \lean{Kernel.checking\_run\_sound} \inmod{Step.TypingChecking}; \lean{identity\_checked}, \lean{ground\_not\_function} \inmod{Step.TypingCheckingControls}]
+Goal firings take one goal, make its premise goals, ask guards, tell side conditions as obligations,
+and carry a local soundness certificate. A run from the root goal alone that ends with no goal present
+and solvable knowledge derives the root. With the kernel's rules for variables, application,
+abstraction and the subtype test as firings, a completed checking run gives a typing derivation, given
+the declaration facts, a formed context and a formed type. Three admitted firings check $\lambda x.x
+\Leftarrow g\to g$; checking $\lambda x.x\Leftarrow g$ is refused because the told reduction of $g$ to a
+$\Pi$-type has no solution.
+\end{theorem}
+These goal firings have no metavariables yet; postponement and completeness for fair runs are open.
+
+\section{Identity and observation}\label{sec:observation}
+
+A fresh name is bound: nothing outside the state can tell which fresh name was chosen. A name stops
+being private when it escapes: a client holds a reference to it, a predicate query sighted it, it was
+recorded as evidence, or a published row names it. Observation is therefore relative to what observers
+recorded.
+
+\subsection{Private renaming and escape}
+
+\begin{theorem}[\lean{privatelyEquivalent\_iff} \inmod{Step.ObservationViews}; \lean{Client.watch\_escaped}, \lean{PrivatelyEquivalent.firing}, \lean{Client.respects}, \lean{ObservationControls.forget\_all\_not\_respected} \inmod{Step.Observation}]
+Every identity that a watched run's predicate queries sighted has escaped. Two configurations are
+privately equivalent for an escaped set $E$ when a renaming that keeps labels and fixes $E$ carries one to
+a configuration with the same solutions as the other; this holds exactly when their knowledge has the
+same solutions, the same escaped names are present and the same bag of labels is present. Every
+firing has a renamed counterpart, admitted together and with equivalent results, and every client's
+probes respect the equivalence. Forgetting every identity is this equivalence for a client that has
+seen nothing, and only for such a client: a client holding one occurrence separates states that the
+empty client identifies.
+\end{theorem}
+
+The two readouts of fresh identity are the extreme cases: the nominal end, which ignores fresh
+identities (\lean{nominalEnd\_rename} \inmod{AnnotatedRunsQuantum}), is the empty escaped set
+(\lean{privatelyEquivalent\_empty\_iff} \inmod{Step.ObservationViews}), and the
+identity end is the case where every present name has escaped. Two superposed alternatives that make
+rows of one label under different identities interfere exactly when neither row has escaped, reading
+$0$ while both are private and $2$ once one has (\lean{Superposed.nominal\_interferes}
+\inmod{AnnotatedRunsQuantumAggregation}; \lean{Controls.superposed\_interferes\_iff},
+\lean{Controls.superposed\_private}, \lean{Controls.superposed\_escaped} \inmod{Step.ObservationCoherence}). On
+frames with an admitted conversion, a readout must give equal results on convertible data; reading the
+head of a stored redex fails that test (\lean{AdmittedControls.head\_not\_readout} \inmod{Step.ObservationFrames}).
+
+\subsection{Rows modulo the knowledge}
+
+Comparing bags of syntactic labels is not fully abstract, in two ways. A query whose region is an
+arbitrary function of the raw label separates the rows $20 : X$ and $21 : Y$ under the knowledge $X = Y$
+(\lean{ModuloControls.syntactic\_region\_separates}). And the run layer's probes cannot tell the rows $X, Y,
+X$ from $X, Y, Y$ under empty knowledge, although at the identity substitution one state has two $X$
+rows and the other one: a count is a single number that must hold at every solution
+(\lean{ModuloControls.existing\_probes\_agree}, \lean{uniform\_count\_iff} \inmod{Step.ObservationModuloControls}).
+The repair has two parts: regions read labels through the solution, and a client may \emph{tally} a
+region, obtaining its count as a function of the solution.
+
+\begin{theorem}[Full abstraction; \lean{pointwiseEquivalent\_iff\_observes}, \lean{moduloEquivalent\_iff\_observes\_of\_principal}, \lean{moduloEquivalent\_iff\_pointwise} \inmod{Step.ObservationModulo}; \lean{firstOrder\_moduloEquivalent\_iff\_observes} \inmod{Step.ObservationModuloControls}]
+Two configurations are \emph{pointwise equivalent} when they have the same solutions and the same
+escaped rows present and, at every solution, some renaming that fixes the escaped rows matches their
+rows; they are \emph{equivalent modulo the knowledge} when one such renaming matches labels at every
+solution. Pointwise equivalence holds exactly when every probe that names only escaped identities
+agrees, where probes are held references, equation guards and absence and count queries at every
+solution, asks over a region, and tallies of a region; completeness needs only held references,
+equation guards and tallies. Under a principal answer the two equivalences coincide, so equivalence
+modulo the knowledge is fully abstract there, and in the first-order profile it is fully abstract for
+consistent knowledge.
+\end{theorem}
+
+Without a principal answer the uniform equivalence is strictly finer
+(\lean{NonPrincipal.pointwise\_not\_modulo} \inmod{Step.ObservationModuloControls}), and uniform tallies are
+not fully abstract (\lean{ModuloControls.uniform\_not\_abstract}). Under $X = Y$ the rows $20 : X$ and $21 :
+Y$ are equivalent while nothing has escaped and not once one has (\lean{ModuloControls.c2\_equivalent},
+\lean{ModuloControls.c2\_escaped\_not\_equivalent}).
+
+\begin{theorem}[Congruence; \lean{ModuloEquivalent.firing}, \lean{ModuloEquivalent.bisimulation} \inmod{Step.ObservationModuloFirings}]
+A firing whose query regions read labels through solutions, and whose made identities are absent from
+both of two equivalent states, is admitted at one exactly when its renaming is admitted at the other,
+with equivalent results. With an unlimited supply of fresh identities per label, equivalence modulo the
+knowledge is a bisimulation for such firings.
+\end{theorem}
+
+Each hypothesis is needed: a syntactic query makes admission itself separate equivalent states
+(\lean{ModuloFiringControls.syntactic\_query\_collision}), and made identities that collide with present ones
+leave no counterpart (\lean{ModuloFiringControls.made\_collision}, both \inmod{Step.ObservationModuloFirings}). Ordinary query regions therefore read
+labels through solutions; syntactic observation of labels belongs to reflection on quoted data. Rows
+made under $X = Y$ interfere modulo the knowledge, reading $0$, and report a record with syntactic labels,
+reading $2$ (\lean{ModuloInterference.labelled\_rows} \inmod{Step.ObservationModuloCoherence}).
+
+\subsection{Observer records and escape-relative transport}
+
+\begin{definition}[\lean{Record}, \lean{Record.automorphisms} \inmod{Step.Observer}; \lean{Escaped.record}, \lean{EscapeIso}, \lean{Transport.escaping} \inmod{Step.EscapeTransport}]
+An observer's \emph{record} is a list of relations among names: held references, sets of names seen
+together, ordered tuples and recorded choices, each position its own handle. Renaming acts on records
+as a group, and the automorphisms of a record are its stabilizer. A state of the escape layer carries
+its public terms and its record; an \emph{escape isomorphism} is an isomorphism of states whose renaming
+carries one record onto the other and whose frame map carries the public terms up to the knowledge. The
+escape layer over a natural transport is a transport, and its isomorphisms of a state to itself are exactly the
+stabilizer of its record (\lean{escapeIso\_self\_mem} \inmod{Step.ObserverChoices}).
+\end{definition}
+
+\begin{theorem}[\lean{record\_last}, \lean{Escape.traceCategory}, \lean{traceEquiv\_record} \inmod{Step.EscapeTransport}; \lean{traceEquiv\_correspondence} \inmod{Step.ObserverChoices}]
+Records only grow along a run. The escape layer has its own category of dependent traces;
+trace-equivalent runs end with records related by the closing renaming, and that renaming restricts to
+a correspondence between the names the two runs exported, which keeps its old part and grows with
+later exports.
+\end{theorem}
+
+Firings valued $X$ and $Y$ at a frame of two parameterless holes are one trace while both holes are
+private and two once $X$ is public (\lean{EscapeControls.private\_identified},
+\lean{EscapeControls.public\_not\_identified} \inmod{Step.EscapeHelper}); making occurrence $1$ and making
+occurrence $2$ are one trace while private and two once a client holds $1$
+(\lean{EscapeControls.private\_made\_identified}, \lean{EscapeControls.escaped\_made\_not\_identified} \inmod{Step.EscapeHelper}). A
+renaming is invisible to an observer exactly when it maps the observer's whole record to itself:
+swapping $5$ and $6$ keeps the sighted set $\{5,6\}$, so taking $5$ and taking $6$ after sighting
+$\{5,6\}$ are one trace (\lean{ObserverControls.sighting\_dissolved} \inmod{Step.ObserverFirstOrder}), and
+they stay apart when the observer also holds $5$, saw the ordered pair $(5,6)$, or saw $\{5\}$ alone
+(\lean{ObserverControls.held\_distinguishes}, \lean{ObserverControls.pair\_distinguishes},
+\lean{ObserverControls.singleton\_distinguishes}, \inmod{Step.ObserverFirstOrder}). Observers inside the system are part of the state and
+are renamed with it; only what is revealed to the environment is fixed (\lean{InternalControls.internal\_renamed},
+\lean{InternalControls.external\_blocks} \inmod{Step.ObserverInternal}). Renaming internal records jointly with
+the state and renaming the state by the automorphisms of a fixed record are one action: pairs over the
+orbit of a record, up to joint renaming, are equivalent to states up to its stabilizer
+(\lean{orbitQuotientEquiv} \inmod{Step.ObserverOrbits}). Traces refine observation: in the first-order
+instance, trace-equivalent runs end in states equivalent modulo the knowledge
+(\lean{traceEquiv\_observes} \inmod{Step.EscapeObservation}; \lean{renaming\_traceEquiv\_observes}
+\inmod{Step.ObserverFirstOrder}). The converse is open.
+
+\paragraph{Probes shrink with the record.} An observer may use only probes that the automorphisms of
+its record leave unchanged. Naming only escaped identities is not enough: that permission admits a
+presence probe that breaks respect (\lean{permitted\_present\_breaks\_respect} \inmod{Step.ObserverChoices}).
+For records of references, the supported probes are exactly those that name references
+(\lean{supported\_references\_iff} \inmod{Step.ObserverRespect}); for sighted sets, equivalence is fully abstract once probes may also
+count inside the recorded sets, and not before (\lean{recordEquivalent\_sightings\_iff} \inmod{Step.ObserverSightings},
+\lean{supported\_not\_abstract} \inmod{Step.ObserverAbstraction}); for genuine relations, such as a directed
+four-cycle, even that is not enough (\lean{relation\_not\_abstract} \inmod{Step.ObserverSightings}).
+
+\paragraph{Local and global matchings.} The renamings that match labels at a set of solutions form a
+presheaf on sets of solutions (\lean{matching\_restrict} \inmod{Step.ObserverSections}). Pointwise
+equivalence is a non-empty matching at every solution separately, equivalence modulo the knowledge is
+one renaming that matches at every solution, and a principal answer, being an initial solution, turns a
+matching there into a global one (\lean{pointwiseEquivalent\_iff\_stalks}, \lean{moduloEquivalent\_iff\_global},
+\lean{global\_of\_principal}). Without a principal answer, non-empty local matchings need not have a
+common element (\lean{NonPrincipal.local\_sections\_do\_not\_glue} \inmod{Step.ObserverSections}). The gap is the order of quantifiers over
+the solutions, local against global. It is not contextuality in the sense of compatible local sections
+on overlapping measurement contexts that fail to glue~\cite{abramskybrandenburger11}: the two local
+renamings of the control are distinct, so they are not compatible even on the empty overlap.
+Per-solution renaming cannot move one firing to one firing (\lean{pointwise\_not\_congruence}
+\inmod{Step.ObserverPointwise}); a family of firings covers the solutions instead (\lean{counterparts\_cover}).
+
+\subsection{Symmetry}
+
+\begin{theorem}[\lean{AnnotatedRuns.no\_equivariant\_selection}, \lean{no\_selection\_from\_pair}, \lean{ChoiceControls.choice\_recorded\_identified} \inmod{Step.ObserverChoices}; \lean{no\_deterministic\_equivariant\_commit}, \lean{commitsWithRecord\_equivariant}, \lean{commitsWithRecord\_breaks\_symmetry} \inmod{Step.RaceCommit}; \lean{Twins.uniform\_commit} \inmod{Step.RaceProbability}]
+A selection that is a function of the observer's record and commutes with every renaming selects
+neither of two names that an automorphism of the record exchanges; lifted to firings, no deterministic
+equivariant rule resolves a race between two firings that such an automorphism exchanges. The scope is
+exactly this: the theorem excludes \emph{deterministic} equivariant selection only. A selection with
+extra state or an asymmetry may select. A uniform random choice can be equivariant in distribution
+while each of its outcomes breaks the symmetry. Recording the outcome is a separate contract, not a
+corollary: the record-carrying resolution, a relation from a record to outcomes each of which extends
+the record by what the winner took, is equivariant, and each of its outcomes breaks the symmetry.
+\end{theorem}
+
+\subsection{Races and the linear, branching and causal spectrum}
+
+A \emph{program} offers firings under labels (rules, rules with sites, or the names of a finite
+alphabet); a configuration moves under a label when an offered firing is admitted there, and the next
+configuration is its result. Everything in this subsection is in the first-order one-frame step
+\inmod{Step.RaceSpectrum} and the modules named below.
+
+\begin{theorem}[The race pair; \lean{traceEquivalent\_P\_Q}, \lean{collect\_P\_eq\_collect\_Q}, \lean{not\_bisimilar\_P\_Q}, \lean{traces\_and\_bags\_do\_not\_decide} \inmod{Step.RacePair}; \lean{bisimilar\_iff\_sat} \inmod{Step.RaceSpectrum}]
+Let rule $A$ take $a$ and $\mathit{go}$ and make $k$, and let rules $B$ and $C$ each take $k$. From $P$, $A$
+fires and leaves $B$ and $C$ racing for its $k$; from $Q$, two firings of $A$ race for $a$, after which only
+$B$ or only $C$ can fire. $P$ and $Q$ have the same traces and the same collected bags of answers at
+every budget of the step's bounded search, and they are not bisimilar: $\langle A\rangle(\langle
+B\rangle\top\wedge\langle C\rangle\top)$ separates them. For image-finite programs, bisimilarity is
+agreement on Hennessy--Milner formulas~\cite{hennessymilner85}. Equal traces and equal answer bags at
+every budget therefore do not determine the bisimulation class.
+\end{theorem}
+
+\begin{theorem}[The spectrum; \lean{bisimilar\_iff\_traceEquivalent}, \lean{Fragment.bisimilar\_iff\_traceEquivalent} \inmod{Step.RaceDeterminate}; \lean{bisimilar\_of\_stepBisimilar}, \lean{staticIndependent\_iff\_provenance}, \lean{stepBisimilar\_of\_hpBisimilar} \inmod{Step.RaceSteps}; \lean{step\_strictly\_finer}, \lean{hp\_strictly\_finer} \inmod{Step.RaceStepControls}]
+Where same-labelled successors are bisimilar, bisimilarity is trace equivalence~\cite{milner89}; the
+fragment of ground firings with one label each and pairwise statically independent offers is of this
+kind, and the race pair lies outside it. A \emph{step move} fires a nonempty word of pairwise
+statically independent firings, labelled by the multiset of their labels; step bisimilarity implies
+interleaving bisimilarity and is strictly finer ($a\,|\,b$ against $a.b + b.a$), so the expansion law
+fails. On pure firings without reuse, independence is provenance: neither firing takes what the other
+made. History-preserving bisimilarity~\cite{vanglabbeekgoltz01} implies step bisimilarity and is
+strictly finer ($a\,|\,b$ against $(a\,|\,b) + a.b$).
+\end{theorem}
+
+\begin{theorem}[Readouts and records; \lean{readout\_eq\_of\_openBisimilar}, \lean{Triggered.experimenter\_separates}, \lean{Triggered.not\_congruence} \inmod{Step.RaceExperiments}; \lean{Copying.readout\_strictly\_coarser} \inmod{Step.RaceCopying}; \lean{records\_blind\_to\_causality}, \lean{provenance\_record\_determines\_past} \inmod{Step.RaceRecords}; \lean{choiceEscape\_records}, \lean{commit\_timing} \inmod{Step.RaceCommit}; \lean{Die.not\_probBisimilar} \inmod{Step.RaceProbability}]
+An experimenter that adds atoms at the ports of an open system and watches which labelled firing
+occurs, or quiescence, is sound for open bisimilarity and separates a triggered race pair; closed
+bisimilarity is not a congruence for such interventions. Without copying a state, such readouts are
+strictly coarser than bisimilarity ($a.(b.c + b.d)$ against $a.b.c + a.b.d$), as testing
+characterizations of bisimulation lead one to expect~\cite{abramsky87}. For firings without predicate
+queries the escape's record is what was taken; records do not carry causality, and recording what was
+made as well would determine the causal past. When a race was resolved is invisible in the answer bag
+and visible to history-preserving identity. With weighted firings, the die pair has equal trace
+distributions for every weight and is not probabilistically bisimilar~\cite{larsenskou91} for weights
+strictly between $0$ and $1$.
+\end{theorem}
+
+Equivalence modulo the knowledge is strictly finer than rule-labelled bisimilarity
+(\lean{moduloEquivalent\_strictly\_finer} \inmod{Step.RaceRecords}). The weaknesses of this layer are listed
+with the open items in Section~\ref{sec:status}.
+
+\section{Models}\label{sec:models}
+
+\begin{theorem}[An independent set model; \lean{setModel}, \lean{firstOrder\_model\_transition}, \lean{fire\_val\_map}, \lean{firstOrder\_realized}, \lean{run\_conservation} \inmod{Step.ModelFirstOrder}; \lean{AnnotatedRuns.firstOrder\_set\_model} \inmod{Step.ModelConsistency}]
+Every first-order structure, in any universe, is a Henkin model of the one-frame first-order step:
+points are assignments and evaluation is the structure's. At every point that satisfies an admitted
+firing's result, the earlier knowledge holds, and the taken, read and made terms evaluate to the
+taken, read and made values, so the present values lose what was taken and gain what was made. With a
+nonempty carrier, every admitted firing has a point of its information, and along a run the end values
+plus everything taken equal the start values plus everything made, at every point; that flow is a site
+account.
+\end{theorem}
+
+\begin{theorem}[Contextual set models; \lean{contextualSetModel}, \lean{eval\_instantiate}, \lean{contextual\_realized} \inmod{Step.ModelContextual}]
+A set algebra of a binding signature reads an argument that binds variables as a function of their
+values. Contextual instantiation is evaluation at the pulled-back point, and with inhabited sorts every
+admitted firing of every step over contextual frames, the helper step and the native instance included,
+has a set point of its information.
+\end{theorem}
+
+\begin{theorem}[Proof logic; \lean{CertainChecks.Derives}, \lean{derives\_iff\_accepts}, \lean{derives\_iff\_entails}, \lean{derives\_sound\_free}, \lean{derives\_iff\_termModel}, \lean{derives\_herbrand\_sound}, \lean{admitsDerivably\_iff} \inmod{Step.ModelDerivation}]
+The equation guards and the absence and count queries of the first-order profile have a calculus of
+three rules: equality at the unifier's answer, absence by refuting each candidate, and count by both;
+it equals the existing executable procedure for them. A guard or query is derivable exactly when the
+store is consistent and it holds at every solution. A derived one holds at every satisfying point of
+every free model in every universe, and one set model, the free term algebra, is sound and complete
+for the calculus. The ground-term model is sound and not complete: with one constant $c$, $X = c$ holds at every
+ground point and is not derivable (\lean{oneConstant\_separates}). For
+query-free firings, admission is a derivable judgment.
+\end{theorem}
+
+\begin{theorem}[Consistency; \lean{certainChecks\_consistent} \inmod{Step.ModelConsistency}]
+For distinct constants $c\ne d$, the equation $c = d$ is derivable from no store, and no firing that tells
+$c = d$ is derivably admitted. The proof is by soundness into the free term algebra; it needs no
+universe, no inaccessible cardinal and no higher-order logic.
+\end{theorem}
+That such a firing is refused (\lean{tellClash\_refused} \inmod{Step.ModelConsistency}) is a separate, operational fact. Guard formulas
+with $\top$, $\bot$, equations, absence, count and the connectives are read at solutions through the
+solution's kernel (\lean{GuardFormula}, \lean{satisfies\_congr} \inmod{Step.ModelGuards}); query-free
+first-order firings lie in the fragment where admission is shapes, enabling and two asks over the solutions
+(\lean{Step.admits\_iff\_asks}, \lean{firstOrder\_valid\_iff\_asks}).
+
+\begin{theorem}[Presheaf and Henkin semantics; \lean{entails\_iff\_le\_interior}, \lean{principal\_iff\_generated}, \lean{entails\_iff\_forces} \inmod{Step.ModelPresheaf}; \lean{HenkinModel}, \lean{entails\_iff\_free}, \lean{solvable\_iff\_generic}, \lean{closedEvery\_iff\_stage} \inmod{Step.ModelHenkin}; \lean{closedAdmits\_iff\_stage}, \lean{HenkinModel.no\_point\_of\_unsolvable} \inmod{Step.ModelConsistency}]
+Knowledge denotes a cosieve of solutions, a guard the persistent interior of where it holds, and an ask
+is the inclusion of one in the other. An answer is principal exactly when it generates the cosieve of
+solutions. Asks coincide with Kripke forcing, with Cohen's clause for negation and no covers, on the
+flat fragment of guard formulas. A Henkin model~\cite{henkin50} of the frames is a presheaf of points
+with a natural evaluation that respects the frame equivalence; free models, whose points are realized
+by syntactic solutions, are a sound and complete class for asks; a store is solvable exactly when it has
+a generic point; closed asks and closed admission are validity in the closed stage; and a free model
+realizes no unsolvable store.
+\end{theorem}
+
+\emph{Controls} \inmod{Step.ModelControls}: the case split $X\in\{\mathsf{true},\mathsf{false}\}$ is not asked,
+holds at every ground point, and is forced on each branch; excluded middle is asked and not forced. If
+$f$ is constant in a set model, $f X = f Y$ holds there while $X = Y$ does not, although the syntax asks
+it, so plain set models are not sound for asks (\lean{constantModel\_not\_free}); set models also satisfy
+$X = f X$, which the occurs check refuses. A point here is an environment of a frame; no claim is made
+that set models are points of a topos. The case-split cover would force $X=\mathsf{true}\vee X=\mathsf{false}$, which is not asked, so the semantics uses no covers.
+
+\section{Calculi as firings}
+
+\subsection{Resolution}
+
+\begin{theorem}[\lean{resolve\_sld\_step}, \lean{resolve\_commits}, \lean{resolve\_refused\_iff} \inmod{Step.ResolutionFiring}; \lean{Controls.split\_leaves\_residue}, \lean{Controls.atomic\_refused} \inmod{Step.ResolutionControls}]
+A resolution firing takes a goal, makes the renamed subgoals of a clause and tells the equation
+between the goal and the renamed head. With $\theta$ the occurs-checked unifier's answer for the knowledge
+and a renaming fresh for it, the firing is admitted exactly when $\theta$ of the goal unifies with the
+renamed head, and with a most general unifier $\mu$ the result has the principal answer $\mu\circ\theta$:
+one firing is one SLD step~\cite{robinson65,lloyd87}. An admitted firing replaces the goal by all the
+subgoals, keeps everything else and adds exactly one equation; a refused one has a stated reason and
+starts no run. For the goal $r(X,f(X))$ and the clause $r(Y,Y)\leftarrow q,q$, a realization split into a
+take and a later tell is admitted halfway and then stuck with the goal consumed and one subgoal made,
+while the atomic firing is refused with no residue.
+\end{theorem}
+
+\begin{theorem}[Answers; \lean{Holds.least}, \lean{sound}, \lean{complete}, \lean{resolve\_independent\_iff}, \lean{resolve\_switch\_traceEquiv}, \lean{traceEquiv\_same\_answers} \inmod{Step.ResolutionAnswers}]
+The declarative semantics is the least set of atoms closed under clause instances; for ground atoms it
+is the least Herbrand model. Every run finds only true answers, with no freshness needed. If a solution
+of the knowledge makes every present goal true, then for every selection rule there is a run that
+follows the rule, resolves every goal and ends with a solution that agrees with the given one on the
+configuration's variables; the choice of goal is the choice of firing, so no fairness in choosing goals
+is needed. Two resolution firings are independent exactly when they resolve different goals and their
+unifications are jointly consistent; swapped runs are trace equivalent through the step's own swap, and
+trace-equivalent runs have the same answers.
+\end{theorem}
+
+\begin{theorem}[Variant tabling; \lean{variantStateIso}, \lean{VariantEquivalent.answers}, \lean{PrivatelyEquivalent.variant} \inmod{Step.ResolutionTabling}; \lean{ModuloVariant.answers} \inmod{Step.ResolutionModulo}]
+A permutation of variables is an automorphism of the one frame and, with a covering occurrence
+renaming, an isomorphism of states. Calls that are variants have the same answer instances, so one table
+serves both~\cite{tamakisato86}, and tabling modulo the knowledge is sound in the same way. Private
+equivalence alone renames occurrence identities, not variables, and cannot key a variant table.
+\end{theorem}
+\emph{Controls} \inmod{Step.ResolutionControls}: $p(X)$ and $p(Y)$ share answer instances and are not
+privately equivalent (\lean{Controls.variants\_not\_private}); $p(a)$ is not a variant of $p(X)$
+(\lean{Controls.instance\_not\_variant}); $p(X)$ under $X=a$ and $p(a)$ have the same answers and are not
+variants (\lean{Controls.modulo\_not\_variant}); two clauses for one goal are both admitted and not
+independent (\lean{Controls.two\_clauses\_dependent}).
+
+\paragraph{Clauses stored in the space.} In the read form a clause is a stored row that a firing reads,
+not takes; each read opens fresh copies of the clause's variables at a scope outside the occupied
+names, so two uses never interfere and a goal's variables are never captured
+(\lean{ReadPort.resolve\_valid\_iff}, \lean{ReadPort.resolve\_clause\_stays}, \lean{ReadPort.two\_reads\_apart}
+\inmod{Step.ResolutionReadPort}). The read form and the one-frame firing on the opened clause have the same
+solutions once the clause's own variables are forgotten (\lean{ReadPort.solvable\_iff\_builtIn} \inmod{Step.ResolutionReadPort}). Without
+renaming apart, $p(X)$ against an unrenamed $p(f(X))$ tells $X = f(X)$ and is refused; the read form
+admits it (\lean{Controls.capture\_refused} \inmod{Step.ResolutionControls};
+\lean{ReadPort.Controls.capture\_free\_admitted} \inmod{Step.ResolutionReadPortControls}). The run-level
+theorems above are proved for the one-frame form over first-order terms, which the read form reduces to
+firing by firing; carrying them to runs of the read form over growing frames is open.
+
+\subsection{Superposition}
+
+\begin{theorem}[Ground inferences; \lean{clauseLT\_wf}, \lean{Inference.sound}, \lean{Inference.concl\_lt} \inmod{Step.SuperpositionGround}; \lean{Lit.lt\_iff\_multiset} \inmod{Step.SuperpositionLiterals}; \lean{inferFiring\_admits\_iff}, \lean{simplify\_takes\_redundant} \inmod{Step.SuperpositionSaturation}]
+Over a linear, well-founded order on ground terms that is compatible with contexts and contains the
+strict subterm relation, literals are ordered as in Bachmair and Ganzinger~\cite{bachmairganzinger94} and
+clauses by the multiset extension~\cite{dershowitzmanna79}, which is well founded and total. Positive
+and negative superposition, equality resolution and equality factoring are sound and reductive. A ground
+inference firing reads its premises and makes its conclusion; it is admitted exactly when the premises
+are present, the made occurrence is fresh and carries the conclusion, and the clauses form an
+inference. Demodulation, subsumption, tautology deletion and the deletion of a literal $s\not\approx s$
+take only clauses that are redundant with respect to the remaining ones.
+\end{theorem}
+
+\begin{theorem}[Completeness and the given-clause loop; \lean{candidate\_models}, \lean{empty\_mem\_of\_unsatisfiable} \inmod{Step.SuperpositionCompleteness}; \lean{Derivation.saturated}, \lean{Derivation.complete}, \lean{Loop.fair} \inmod{Step.SuperpositionDerivation}; \lean{givenClause\_complete}, \lean{givenClause\_sound} \inmod{Step.SuperpositionGenerator}]
+A saturated set of ground clauses without the empty clause has a model, the candidate model built by
+well-founded recursion; so an unsatisfiable saturated set contains the empty clause. Fair derivations
+reach saturation and derive the empty clause from an unsatisfiable start, and every derived clause
+follows from the start. The given-clause loop that selects the oldest clause is fair, with a generator
+proved to list every inference, and it is sound and complete.
+\end{theorem}
+
+The loop's outcomes read in the outcome algebra of Section~\ref{sec:search}: the empty clause found
+means unsatisfiable; saturation without it means satisfiable, a reading that is sound only by the
+completeness theorem; a cut-off run claims nothing (\lean{readout\_cutOff} \inmod{Step.SuperpositionDerivation}). A loop that never selects a
+needed clause misses the refutation (\lean{Controls.fair\_refutes}, \lean{Controls.starving\_never\_refutes}
+\inmod{Step.SuperpositionControls}); in that control the starving policy never selects the clause by
+construction.
+
+\begin{theorem}[Non-ground firings on the shared store; \lean{unifyFiring\_admits\_iff}, \lean{unifyFiring\_principal}, \lean{sup\_admits\_iff}, \lean{eqRes\_admits\_iff}, \lean{eqFact\_admits\_iff}, \lean{resolution\_admits\_iff} \inmod{Step.SuperpositionFiring}; \lean{admits\_lift\_iff}, \lean{guarded\_closes}, \lean{guarded\_independent\_iff}, \lean{entails\_closure\_iff} \inmod{Step.SuperpositionGuarded}]
+A non-ground inference firing reads its stored premises, tells the unification between renamed-apart
+copies, makes the encoded conclusion and guards the closure of the side condition. At a principal answer
+$\theta$ it is admitted exactly when its premises are present, its made occurrence is fresh and carries the
+conclusion, and some most general unifier $\mu$ satisfies the side condition; its result has the
+principal answer $\mu\circ\theta$. Binary resolution is a special case, and resolution firings embed
+unchanged, so both calculi run on one store. Ordering side conditions survive generalization, not
+instantiation; their closure (some more general solution satisfies the condition) is stable, and asked
+at every solution it equals the condition at the principal answer. Diamonds close, and independence is
+the four admissions.
+\end{theorem}
+
+Two admitted inferences with different made occurrences are independent and their two orders are trace
+equivalent; a simplification that takes another inference's premise makes the two dependent
+(\lean{infer\_independent}, \lean{infer\_traceEquiv}, \lean{simplify\_takes\_premise\_dependent} \inmod{Step.SuperpositionSaturation}). Asking a
+co-stable guard at every solution is too strong, and its closure is admitted
+(\lean{ControlsFiring.notAbove\_every\_refused}, \lean{ControlsFiring.notAbove\_closure\_admitted}
+\inmod{Step.SuperpositionControlsFiring}). The completeness of $\lambda$-superposition~\cite{bentkamp21} rests on
+its own unifier, and the step records how a firing reads it: a bounded unifier
+enumeration that is cut off never reads ``no unifier'', and over a minimal complete set of unifiers the
+step's single firing is admitted exactly when the side condition holds at every member, the readings
+coinciding in the pattern fragment (\lean{UnifierEnumeration.not\_refuted\_of\_cutOff},
+\lean{readings\_complete}, \lean{readings\_principal} \inmod{Step.SuperpositionHigherOrder}).
+
+\begin{theorem}[Lifting to non-ground clauses; \lean{lift\_binary}, \lean{overlap\_redundant},
+\lean{SupLift.admitted}, \lean{NSaturated.satisfiable}, \lean{NDerivation.complete}
+\inmod{Step.SuperpositionLifting*}; \lean{KBOParams.grounded} \inmod{Step.SuperpositionKBO}]
+Let the non-ground ordering be stable and linked to a ground simplification ordering: $s\succ t$ implies
+$s\theta>t\theta$ for every grounding $\theta$. The Knuth--Bendix ordering is such an ordering.
+\begin{enumerate}
+\item Every ground inference among instances of stored clauses is either the instance of a non-ground
+  inference firing, admitted on the shared store at a most general unifier through which the grounding
+  factors, or an inference inside the value of a variable, which is redundant.
+\item The firing's guard is the closure of the side condition. The conditions hold at the unifier because
+  they hold at the ground instance and survive generalization; the bare condition asked at every
+  solution would refuse the firing.
+\item A non-ground set saturated up to redundancy and without the empty clause has a model of all its
+  ground instances; a fair non-ground derivation from an unsatisfiable start derives the empty clause.
+\end{enumerate}
+\end{theorem}
+
+A further admission theorem, \lean{unifyFiring\_admits\_of\_consistent}, admits inferences on derived
+clauses, whose variables the knowledge already binds, without renaming apart.
+
+\emph{Open:} the non-ground given-clause loop on the shared store, with its generator and fairness; a
+check that a firing's literal parameters are a renamed copy of the premise it reads; the full multiset
+extension of the ordering to literals. Sharing one step proves nothing about the completeness of a
+mixture of calculi: each calculus keeps its own inferences, redundancy and fairness.
+
+\section{Search}\label{sec:search}
+
+A bounded search returns a multiset of answers and a status: finished, or cut off by its budget.
+
+\begin{theorem}[The outcome algebra; \lean{Outcome.choice\_comm}, \lean{Outcome.choice\_assoc}, \lean{Outcome.bind\_assoc}, \lean{Outcome.add\_bind}, \lean{Outcome.bind\_add}, \lean{Outcome.unknown\_bind}, \lean{Outcome.collect\_unique}, \lean{Outcome.verdict\_ne\_refuted\_of\_cutOff}, \lean{Outcome.verdict\_eq\_of\_le} \inmod{Step.SearchOutcome}]
+Choice adds answer multisets and joins statuses: a commutative monoid whose unit is the refuted
+outcome, finished with no answers. Bind is a monad that distributes over choice on both sides, with the
+refuted outcome a left zero and the unknown outcome, cut off with no answers, left-absorbing. Collecting
+all answers into one value is possible only once a search is finished: on an inhabited type, sending
+cut-off outcomes to unknown is the only monotone map that collects finished outcomes. An outcome reads
+as one of three verdicts: \emph{answered}, \emph{refuted} (finished with no answers) or \emph{suspended}
+(cut off with no answers). Incomplete is never none: a cut-off outcome never reads refuted, and definite
+verdicts are stable as the budget grows.
+\end{theorem}
+
+The laws that fail are part of the algebra: there is no right zero, since a cut-off search whose answers
+all fail later stays cut off (\lean{Outcome.cutOff\_bind\_refuted\_ne\_refuted}); choice is not idempotent;
+collecting is not additive; and on lists, choice is not commutative (\lean{Outcome.list\_choice\_not\_comm}).
+Answers form a multiset because alternatives are unordered and two derivations of one answer are two
+answers.
+
+\begin{theorem}[Budgets and policies; \lean{mem\_run}, \lean{run\_eq\_of\_finished}, \lean{status\_run\_eq\_cutOff\_iff}, \lean{beyond\_cut}, \lean{refuted\_sound} \inmod{Step.SearchSpace}; \lean{covers\_search}, \lean{within\_refuted\_sound}, \lean{take\_finished\_contract}, \lean{bfs\_complete}, \lean{deepen\_complete} \inmod{Step.SearchPolicy}; \lean{within\_verdict\_ne\_refuted}, \lean{all\_dom\_iff}, \lean{collect\_eq\_all} \inmod{Step.SearchFinish}]
+For a space that unfolds each state into answers and states, the run at budget $n$ reports exactly the
+answer addresses of length at most $n$, each once; a finished run is stable; a run is cut off exactly
+when a state lies at depth at least $n$, and every answer below such a state is real and unreported, so a
+refuted readout is sound for the unbounded semantics. A frontier machine covers each address exactly
+once under every policy. Of the search combinators, $\mathtt{within}$'s refutations are sound and its
+cut-off results never read refuted; $\mathtt{take}$ finishes with its quota or with the whole search;
+and $\mathtt{all}$ is defined exactly when the tree is finite, is then the same under every policy, and
+equals the collected finished run. Breadth-first search and iterative deepening are complete.
+\end{theorem}
+
+Depth-first search is not fair: in a left-recursive space it is cut off with $\{0\}$ from budget $2$ on and
+never finds the answer $1$, which breadth-first search finds at budget $5$ and iterative deepening at depth
+$2$, and no policy finishes that space (\lean{Controls.dfs\_loses}, \lean{Controls.bfs\_finds},
+\lean{Controls.deepen\_finds}, \lean{Controls.never\_finishes} \inmod{Step.SearchControls}). At zero budget the
+outcome is suspended, not refuted, although answers exist (\lean{Controls.zero\_budget}).
+
+\begin{theorem}[Runs of the step as a search space; \lean{mem\_run\_space}, \lean{collect\_space}, \lean{checkOfSearch}, \lean{checkOfSearch\_unknown\_iff}, \lean{staged\_suspended\_not\_refusal} \inmod{Step.SearchStep}; \lean{Representatives.complete}, \lean{exists\_similar} \inmod{Step.SearchClasses}]
+With finitely many admitted firings per state, the runs of the step form a search space whose answers
+are complete runs: budget $n$ reports the complete runs shorter than $n$ by their final states, and
+collecting gives those states when the search is finished and unknown when it is cut off. Where a state
+admits infinitely many alike firings, finitely many representatives up to alikeness suffice: every run
+is similar to a run of representatives, and the space is sound and complete up to state classes. A
+search for independence certificates is a sound three-valued check at every budget, and it answers
+unknown exactly when the search is suspended. Reading a suspended deferred-effects block as a refusal
+contradicts the source contract of an executable block with a visible effect.
+\end{theorem}
+
+\begin{center}
+\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+Search outcome & Existence & Independence check & Deferred-effects block \\
+\midrule
+some answer, any status & answered & independent & publishes the composite \\
+finished, no answer & refuted & dependent & caller unchanged, non-admission proved \\
+cut off, no answer & suspended & unknown & caller unchanged, nothing claimed \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Memo tables are sound only when every stored outcome keeps its status: storing a run with its own status
+is sound, a state whose search never finishes has no sound finished record, and a cut-off record misread
+as finished refutes a state that has answers (\lean{soundMemo\_approx}, \lean{finished\_record\_unsound}
+\inmod{Step.SearchTabling}; \lean{Controls.misread\_refutes} \inmod{Step.SearchControls}). The search combinators
+follow the tradition of search combinators for constraint programming~\cite{schrijvers13}.
+
+\section{Rational trees and the occurs-check policy for types}\label{sec:rational}
+
+\begin{theorem}[Rational frames; \lean{rationalFrames}, \lean{eq\_of\_bisim}, \lean{rational\_iff\_unfold}, \lean{unfold\_eq\_iff}, \lean{solves\_unique} \inmod{Step.RationalTrees}]
+Possibly infinite trees with finitely many distinct subtrees form a substitution action with equality as
+its equivalence, hence a one-frame instance. Equality is equality of unfoldings, proved by coinduction;
+a tree is rational exactly when it unfolds from a node of a finite graph; two graphs present one tree
+exactly when they are bisimilar; and guarded systems have unique solutions.
+\end{theorem}
+The frames carry trees, not graphs, because grafting graphs is associative only up to bisimilarity while
+the interface asks its action laws as equalities.
+
+\begin{theorem}[Unitary unification; \lean{principal\_or\_refuted}, \lean{consistent\_iff\_not\_refuted}, \lean{mgu\_factors} \inmod{Step.RationalUnification}; \lean{unfold\_eq\_iff\_agree}, \lean{consistent\_rstore\_iff\_unifiable} \inmod{Step.RationalDecision}; \lean{solvedSubst\_principal} \inmod{Step.RationalSolvedForm}]
+Every finite store has a most general idempotent solution or a clash of two rigid labels, never both,
+and a clash is the only refutation: $X = f(X)$ is solved by $f(f(f(\cdots)))$, and together with $Y = f(Y)$
+it forces $X = Y$. On finite presentations equality is decided by agreement to a bounded depth,
+unifiability by a node closure within a bounded number of iterations, and the solved form is computed as
+a finite graph.
+\end{theorem}
+
+\begin{theorem}[The finite fibre; \lean{models\_ofStore\_iff}, \lean{consistent\_ofStore}, \lean{consistent\_iff\_acyclic} \inmod{Step.RationalFibre}; \lean{occurs\_not\_reflected} \inmod{Step.RationalControls}]
+Finite solutions are rational solutions and finite most general solutions stay most general. A finite
+problem is finitely solvable exactly when its rational solved form is finite, and $X = f(X)$ shows that
+solvability does not reflect in general.
+\end{theorem}
+
+The tree model is a free Henkin model in which asks are validity, and a three-rule calculus over the
+solved form, with no occurs check, is sound and complete for it and consistent
+(\lean{treeModel}, \lean{entails\_iff\_treeModel}, \lean{RationalChecks.derives\_iff\_treeModel} \inmod{Step.RationalModels},
+\lean{rationalChecks\_consistent} \inmod{Step.RationalAdmission}). The step over rational trees has a lawful
+transport (\lean{rationalStep}, \lean{rationalLawful} \inmod{Step.RationalStep}), and the firing that tells
+$X = f(X)$ is admitted there from no knowledge and refused over finite trees at every configuration
+(\lean{Controls.tellLoop\_admitted}, \lean{Controls.tellLoopFinite\_refused} \inmod{Step.RationalStep}). The two profiles are siblings, not
+a relaxation of one another: the finite calculus derives that no occurrence labelled $X$ matches $f(X)$,
+by the occurs check, which is false over rational trees and not derivable there
+(\lean{Controls.absence\_not\_transferred} \inmod{Step.RationalControls}). Rational trees are immutable data: a
+shared node and two copies unfold alike, and distinct variables stay distinct
+(\lean{Raw.sharing\_unobservable}, \lean{Raw.distinct\_variables\_unshared} \inmod{Step.RationalTrees}).
+
+\paragraph{Types keep the occurs check.} Over finite types $\lambda x.\,x\,x$ is untypable, while over
+rational types $\Omega$ is typable at $T = T\to T$ and has no normal form
+(\lean{Controls.selfApplication\_untypable}, \lean{Controls.omega\_typable}, \lean{Controls.omega\_no\_normal\_form},
+\lean{Controls.cyclic\_type\_breaks\_normalization} \inmod{Step.RationalTypeControl}). The rational profile is
+therefore stated for object terms only, and the dependent fibre keeps its occurs check.
+
+\section{Charges, folding and the affine pump}
+
+\begin{theorem}[Conserved charges; \lean{ConservedCharge}, \lean{run\_balance}, \lean{not\_fold\_of\_unbalanced}, \lean{traceEquiv\_net}, \lean{intCharge\_wrap}, \lean{weightCharge}, \lean{weightCharge\_invariant} \inmod{Step.Charge}; \lean{valueCharge\_totals}, \lean{place\_invariant} \inmod{Step.ChargeFirstOrder}]
+A conserved charge is a value on states with what each firing takes and makes, balanced at every
+admitted firing; summed along a run the books balance. For a charge invariant under transport with
+values in a left-cancellative monoid, a run that returns to its start up to isomorphism took exactly
+what it made (\lean{balanced\_of\_fold} \inmod{Step.Charge}), so an unbalanced run proves a state new without comparing
+states; net flux is a property of traces for invariant charges; and an integer charge read modulo
+$2^{64}$ remains a sound filter. Occurrence weights give a charge of every step, invariant whenever
+renamings keep the weights. In the first-order instance the value flow of the set model is such a
+charge, and weights that every rule of a run balances give a place invariant~\cite{murata89}.
+\end{theorem}
+Equal charges never prove two states the same: every place charge agrees on two states that the
+knowledge $X = 1$ separates (\lean{ChargeControls.charges\_blind\_to\_knowledge}
+\inmod{Step.ChargeFirstOrder}), and the length of a run is a trace property that no invariant charge
+measures (\lean{ChargeControls.length\_traced\_not\_conserved}).
+
+\begin{theorem}[Canonical interleavings; \lean{Inverted.swap}, \lean{exists\_canonical}, \lean{exists\_canonical\_of\_check}, \lean{exists\_canonical\_same\_last} \inmod{Step.Canonical}; \lean{firstOrderKeyLaws}, \lean{firstOrder\_exists\_canonical} \inmod{Step.CanonicalFirstOrder}]
+Give firings a key kept by moves, alikeness and residuals. A run is canonical when no adjacent pair
+inverts the key order while an oracle declares the pair independent. One swap removes exactly one
+inversion and keeps trace equivalence; every run is trace equivalent to a canonical one, with any sound
+three-valued check as the oracle and unknown read as dependent; and every end-state class is reached. In
+the first-order instance every key satisfies the laws.
+\end{theorem}
+Three independent producers are explored in one order instead of six, a pair that does not commute is
+kept in every order that runs, and three tells that commute pairwise are never fired together
+(\lean{CanonicalControls.clique\_explored\_once}, \lean{CanonicalControls.dependent\_pair\_kept},
+\lean{CanonicalControls.hollow\_cube\_never\_round} \inmod{Step.CanonicalFirstOrder}). This is partial-order
+reduction~\cite{godefroid96}; the rule is complete and not minimal, since a trace class can contain more
+than one canonical run.
+
+\begin{theorem}[Folding; \lean{Canonicalizer}, \lean{fold\_reach}, \lean{fold\_iterate}, \lean{escape\_fold\_quiet}, \lean{record\_automorphisms\_append} \inmod{Step.Fold}; \lean{renaming\_key\_iff}, \lean{renaming\_fold\_observes} \inmod{Step.FoldFirstOrder}]
+States with equal keys are matched run for run by similar runs, and a fold of a descendant onto its
+ancestor replays the loop any number of times. In the escape-relative transport, a run that ends in its
+start's class recorded nothing, and every closing isomorphism renames by an automorphism of the start's
+record; disclosure shrinks the folding group, since the automorphisms of a concatenated record are the
+intersection of the two groups. At a fixed record, two states share a key exactly when a label-keeping
+renaming in the record's automorphism group carries one to a configuration with the same solutions as
+the other, and folding under that relation keeps every supported probe modulo the knowledge.
+\end{theorem}
+A swap of a sighted set folds; a held reference blocks it; and canonicalizing each sighted set on its own
+is wrong when the sets overlap (\lean{FoldControls.sighting\_swap\_folds}, \lean{FoldControls.reference\_blocks\_fold},
+\lean{FoldControls.overlap\_blocks\_fold} \inmod{Step.FoldFirstOrder}). The key is specified, not computed;
+computing it is canonical labelling.
+
+\begin{theorem}[The affine pump; \lean{affine\_pump} \inmod{Step.FoldPump}]
+Suppose a word of query-free firings runs from a configuration $C$ and ends in $C\otimes\delta$ up to
+equivalence, where $\delta$ carries no knowledge and lies beside $C$, and suppose that for every finite set
+of identities a label-keeping renaming fixes the occurrences of $C$ and moves what the word makes off
+that set. Then for every $n$ an executable word ends in $C\otimes E$, where $E$ carries no knowledge, lies
+beside $C$ and has $n$ times the labels of $\delta$.
+\end{theorem}
+A producer from the empty configuration pumps to $n$ occurrences for every $n$, while a rule that makes $b$
+and requires $b$ absent fires once and is then refused under every renaming
+(\lean{PumpControls.producer\_pumps}, \lean{PumpControls.absent\_guard\_stops} \inmod{Step.FoldPump}): absence and count queries see what
+the cycle has made. The proof goes through the run layer's frame rule up to renaming
+(\lean{frame\_rule\_renamed} \inmod{AnnotatedRunsSeparationFrame}), whose side conditions are that made
+identities avoid the frame, that the knowledge is compatible and that no query region meets the frame.
+
+\paragraph{A Noether correspondence in the sense of Baez and Fong.} A state function commutes with a
+Markov generator exactly when its mean and its second moment are conserved~\cite{baezfong13}; for a finite
+step and a generator whose transitions between distinct states are exactly its firings, a potential
+commutes with the generator exactly when it is a zero-flux conserved charge (\lean{baez\_fong},
+\lean{step\_noether} \inmod{Step.ChargeNoether}). A permutation symmetry gives no such charge: the swap
+commutes with $\left(\begin{smallmatrix}-1&1\\1&-1\end{smallmatrix}\right)$, yet only constant diagonals
+do (\lean{NoetherControls.symmetry\_without\_charge}).
+
+\section{Transfinite runs}
+
+Two results take the step to infinite objects; their reading is developed in a companion working
+note~\cite{ultrainfinitism2}, and only the statements are recorded here.
+
+\begin{theorem}[$\omega$-limits; \lean{ConvergesTo.unique}, \lean{Productive.existsUnique\_fixed}, \lean{tellLoop\_unfolding\_limit} \inmod{Step.TransfiniteLimits}]
+A run of trees converges to a tree when at every depth it is eventually equal to it below that depth;
+limits are unique, and a productive transform of whole trees has exactly one fixed point, to which the
+run of its iterates converges from every start. The rational step solves $X = f(X)$ in one firing, the
+unfolding run $X, f(X), f(f(X)), \dots$ converges to that solution, and it is the only solution. A
+transform that flips the root between two constants has no convergent run, and the unguarded $X = X$ has
+more than one solution (\lean{not\_convergesTo\_rootFlip}, \lean{unguarded\_not\_unique}).
+\end{theorem}
+
+\begin{theorem}[Hyperfinite runs; \lean{HyperRun.balance}, \lean{HyperRun.balance\_weight}, \lean{germ\_ne\_iff}, \lean{HyperRun.eventually\_not\_fold}, \lean{HyperRun.taken\_eq\_made\_of\_eventually\_fold}, \lean{HyperRun.const\_lt\_length}, \lean{cofinite\_germ\_ne\_not\_eventually\_ne} \inmod{Step.TransfiniteUltrapower}]
+A family of runs read modulo an ultrafilter conserves every conserved charge in the ultrapower,
+occurrence weights included. For a charge invariant under transport with values in a left-cancellative
+monoid, a hyperfinite run that does not take what it makes has almost every coordinate run failing to
+fold back to its start; this direction uses that the filter is an ultrafilter, through {\L}o\'s's
+theorem for a negated equation, and over the cofinite filter, which is not one, germs can differ
+without differing eventually. Conversely, if almost every coordinate run folds, the hyperfinite run
+takes what it makes. Over a free ultrafilter, if for every $n$ only finitely many coordinate runs have
+length at most $n$, the hyperfinite length exceeds every standard number.
+\end{theorem}
+
+\section{Related work}
+
+\paragraph{Rewriting logic.} A rewrite theory has a signature, equational axioms and rewrite rules; its
+sequents are concurrent computations, and in its initial model the proof terms, up to the equations of
+categories and of functorial operators, form a category whose arrows are those computations. The
+interchange law identifies the serializations of independent rewrites, and parallel composition is
+functoriality of the operators~\cite{meseguer92}. The trace category above has the same role for firings
+that are constrained, guarded and frame changing: swaps of independent firings play the part of
+interchange. Transport has no counterpart there, because a rewrite theory's terms live over fixed
+variables. Several later developments meet constructions of this note:
+\begin{itemize}
+\item frozen arguments forbid rewriting below declared positions~\cite{brunimeseguer06}; dormant schema
+  rows, which are never matched as data, play that role;
+\item rewriting modulo SMT rewrites symbolic states carrying a constraint and keeps only satisfiable
+  states~\cite{rochameseguer17}; a firing's information and its solvability are the same idea over higher-order
+  patterns at frames, with asks quantified over every solution;
+\item narrowing computes over all instances of a symbolic state~\cite{meseguerthati07}; the pattern driver
+  and the three-valued check serve that purpose here;
+\item a multiset of objects and messages at the top of the state, matched modulo associativity,
+  commutativity and identity, is the state of a rewrite theory for object systems; the space of a state
+  is such a multiset, with identities.
+\end{itemize}
+Absence and count, asked at every solution with coverage certificates, are expressed in rewriting logic
+only through rule conditions.
+
+\paragraph{Constraint rewriting and logical frameworks.} Takes, reads, makes and tells are those of
+constraint handling rules with identified constraints~\cite{fruehwirth09}, whose linear-logic
+semantics~\cite{betzfruehwirth05} reads taken constraints linearly and kept ones persistently; ask and tell over a
+store are those of concurrent constraint programming~\cite{saraswat93} and its linear
+variant~\cite{fagesruetsoliman01}. Equivalence of states up to renaming of local constraints modulo the store is
+studied for constraint handling rules in~\cite{raiser09}; how it relates to the pointwise and uniform
+equivalences modulo the knowledge above is open. The concurrent logical framework
+CLF~\cite{clf02} and its implementation Celf~\cite{celf08} combine dependent types, linear and persistent
+contexts, fresh names and a concurrent equality of computations; substructural logical
+specifications~\cite{simmons12} make traces objects and type states by generative invariants.
+CLF's concurrent equality is syntactic, as is the static independence of the run layer; the
+step's independence is semantic and depends on the state.
+
+\paragraph{Residuals, concurrency and process equivalence.} Residuals and permutation equivalence go
+back to L\'evy~\cite{levy78}; concurrent transition systems~\cite{stark89} and axiomatic rewriting
+theory~\cite{mellies05} state the cube and standardization laws abstractly; traces of words are
+Mazurkiewicz's~\cite{mazurkiewicz87}; event structures~\cite{winskel87} and higher-dimensional
+automata~\cite{pratt91,vanglabbeek06} record which sets of events can occur together, not only pairs, as
+the cells above do. Graph rewriting with negative application conditions~\cite{habel96} is the nearest
+precedent for absence guards, and contextual nets~\cite{montanarirossi95} and their asymmetric event
+structures~\cite{baldancorradinimontanari01} for reads that do not consume. The races section places the
+step on the linear-time/branching-time spectrum~\cite{vanglabbeek01}: Milner's determinacy
+theorem~\cite{milner89}, the Hennessy--Milner characterization~\cite{hennessymilner85}, step and
+history-preserving bisimulation~\cite{vanglabbeekgoltz01}, testing with copying~\cite{abramsky87} and
+probabilistic bisimulation~\cite{larsenskou91} appear there as theorems about firings. Partial-order
+reduction~\cite{godefroid96}, place invariants~\cite{murata89} and the Noether theorem for Markov
+processes~\cite{baezfong13} are the precedents of the charges section.
+
+\paragraph{Logic programming and saturation.} Resolution~\cite{robinson65} and the SLD semantics, with its
+least Herbrand model and the independence of the selection rule, follow Lloyd~\cite{lloyd87}; tabling
+follows Tamaki and Sato~\cite{tamakisato86} and SLG resolution~\cite{chenwarren96}. Superposition with
+redundancy, saturation and candidate models is Bachmair and Ganzinger's~\cite{bachmairganzinger94}, over the
+multiset ordering of Dershowitz and Manna~\cite{dershowitzmanna79}; $\lambda$-superposition~\cite{bentkamp21}
+rests completeness on complete sets of unifiers, as the outcome readings above do.
+
+\paragraph{Infinite trees and non-well-founded sets.} Rational trees as the domain of a logic language
+are Colmerauer's~\cite{colmerauer82}; their fundamental properties are Courcelle's~\cite{courcelle83}, and the
+complete axiomatizations of finite, rational and infinite trees are Maher's~\cite{maher88}. Unique
+solutions of guarded systems correspond to the solution lemma of non-well-founded set
+theory~\cite{aczel88,barwisemoss96}.
+
+\paragraph{Names, binders, syntax and dependent types.} Fresh and escaped names are those of nominal
+sets~\cite{pitts13} and of the $\nu$-calculus~\cite{pittsstark93}. Declaration families with metavariable
+arities are the second-order fibre of contextual modal type theory~\cite{cmtt08}; the pattern fragment is
+Miller's~\cite{miller91}, raising is from unification under a mixed prefix~\cite{miller92}, and existence of
+solutions for flexible pairs is Huet's~\cite{huet75}. Dependent unification and its pattern fragment are
+Pfenning's and Abel and Pientka's~\cite{pfenning91,abelpientka11}; the dependent frames are built over a
+category with families~\cite{dybjer96}. Second-order abstract syntax is the initial algebra of a
+binding signature~\cite{fpt99} with a complete equational logic~\cite{fiorehur10}, and it extends to
+dependently sorted syntax~\cite{fiore08}. Native type theory~\cite{williamsstay21} derives a dependent internal
+language from a presented language through presheaves. Henkin models~\cite{henkin50} and Kripke forcing
+are the precedents of the model section, and the sheaf-theoretic account of
+contextuality~\cite{abramskybrandenburger11} marks what the local-global gap of observation is not.
+
+\paragraph{What is new here.} Asks quantified over every solution of a residual, non-ground store,
+with coverage certificates for absence and count; footprints indexed by solutions; diamonds that close up
+to isomorphism as frames grow; a sound three-valued check that keeps independence defined where
+unification is undecidable; escape of names by query sightings; publication recipes fixed before
+execution; and the combination of these in one step of which typing contracts, resolution,
+superposition and bounded search are instances.
+
+\section{What is proved and what is open}\label{sec:status}
+
+\subsection{Proved}
+
+{\small
+\begin{longtable}{@{}L{0.37\textwidth}L{0.58\textwidth}@{}}
+\toprule
+\textbf{Modules} & \textbf{What they prove} \\
+\midrule
+\endhead
+\lean{Step.Interface} & frame actions, solvability, asks, principality; the step; runs and site accounts \\
+\lean{Step.Transport}, \lean{Step.PrincipalAnswers} & isomorphisms of frames and of states with renamings; terms carried up to the knowledge; transport up to alikeness; strict laws; state classes; similar runs \\
+\lean{Step.LawfulTransport}, \lean{Step.LawfulFirstOrder}, \lean{Step.LawfulHelper} & local guards, conservative settlement, coherent residuals; independence independent of the lawful residual; first-order and helper instances; controls \\
+\lean{Step.Independence}, \lean{Step.TraceCategory} & independence; swaps; trace equivalence and its congruence; site accounts of traces; deciding by admissions; the three-valued check; the category of dependent traces \\
+\lean{Step.Cells}, \lean{Step.CellsFirstOrder}, \lean{Step.CellsHelper} & cells; 2-cells as independent pairs; first-order cube law; the hollow cube; helper cubes and swap coherence \\
+\lean{Step.FirstOrderIndependence}, \lean{Step.StaticTraces}, \lean{Step.GroundedRegions} & the one-frame transport; closing diamonds; static independence and static traces; the round condition; the overlap control; grounded regions; the first-order decision \\
+\lean{Step.ContextualDiamond} & the helper step; its transport; closing up to renaming; the concrete diamond; the pattern-fibre decision; the unknown control \\
+\lean{Step.Dependent*} (Frames, Helpers, Controls, Closed, ClosedTower, Fibre, Packing, Conversion) & the dependent instance; dependent helpers and the swap criterion; closed asks and the empty-type trap; the non-dependent fibre; transport up to conversion \\
+\lean{Step.Translation*}, \lean{Step.NativeUniverseFrames} & the raising translation; reflection of solutions and asks; admission transfer for definitions; the $\eta$ defect and its repair; the object-theory comparison; categories with families and the native universe as frames \\
+\lean{ContextualDependentEta*}, \lean{ContextualDependentConstraints}, \lean{ContextualDependentElimination} & the canonical typed $\eta$ instance; the bridge from the dependent frames; $\eta$ controls; conversion scans and elimination preserving solutions \\
+\lean{Step.BetaEtaReadings}, \lean{OSLF.Syntax.HereditaryBetaEta*} & canonical forms by hereditary substitution; framework $\beta\eta$ unification; the admitted object theory and its boundaries \\
+\lean{Step.NativeInstance}, \lean{Step.NativePublicationControls} & native firings as firings of the step; recipe-published results; the raw target without recipes; published and raw disagree \\
+\lean{Step.Typing*} & contracts as firings and their adequacy; evidence reuse by regions; exit check against deferred effects; state typing; checking runs \\
+\lean{Step.Observation*}, \lean{Step.Observer*}, \lean{Step.Escape*} & escape and private equivalence; rows modulo the knowledge, full abstraction and congruence; records, escape-relative transport and internal observers; supported probes; local and global matchings; no equivariant selection \\
+\lean{Step.Race*} & the race pair; determinacy; step and history-preserving bisimulation; experimenters, copying and records; resolution of races with records; probabilistic bisimulation \\
+\lean{Step.Model*} & first-order and contextual set models; the proof logic for first-order guards and predicate queries; consistency; guard formulas; cosieves, interiors and forcing; Henkin and free models; controls \\
+\lean{Step.Resolution*} & resolution as a firing; atomicity; soundness and completeness for every selection rule; independence and switching; variant and modulo tabling; the read form \\
+\lean{Step.Superposition*} (ground, firing, guarded, saturation, derivation, generator, higher order, controls) & ground inferences as firings; redundancy as takes; ground completeness; the complete given-clause loop; non-ground firings on the shared store; lifting and non-ground refutational completeness; the Knuth--Bendix ordering; $\lambda$-superposition readings \\
+\lean{Step.Search*} & the outcome algebra; budgets and policies; the search combinators; runs as a search space; representatives; the independence check from search; deferred effects; tabling \\
+\lean{Step.Rational*} & rational-tree frames; unitary unification and its computation; the finite fibre; tree model and calculus; the rational step; types keep the occurs check \\
+\lean{Step.Charge*}, \lean{Step.Canonical*}, \lean{Step.Fold*} & conserved charges; canonical interleavings; folding by record automorphisms; the affine pump; the Noether correspondence \\
+\lean{Step.TransfiniteLimits}, \lean{Step.TransfiniteUltrapower} & $\omega$-limits of productive transforms; hyperfinite runs \\
+\bottomrule
+\end{longtable}
+}
+
+The cited modules contain no \texttt{sorry} and no axiom declaration. The empty-type control at the universe tower assumes
+cofinally many inaccessible cardinals, as stated there.
+
+\subsection{Corrections to earlier statements}
+\begin{itemize}
+\item Comparing syntactic label bags is not fully abstract; the fully abstract notion compares rows modulo
+  the knowledge, pointwise in general and uniformly under a principal answer.
+\item The trace category of the base transport identifies runs that a public frame name separates
+  (\lean{EscapeControls.base\_identifies} \inmod{Step.EscapeHelper}); the escape-relative
+  transport keeps them apart.
+\item Residuals, settlement and the reading of guards were unconstrained by the interface; the laws of
+  lawful transport constrain them, and without them independence depends on the chosen residual.
+\item Pairwise independence does not give joint firing; cells record it.
+\item Symbolic solvability accepts holes of empty types; closed asks separate inhabitation from
+  consistency.
+\item Plain set models are not sound for asks; the free models are the sound and complete class.
+\item The failure of local matchings to glue without a principal answer is a gap in the order of
+  quantifiers, not contextuality.
+\item Isomorphisms of states carry a renaming of occurrence identities, and transport holds up to
+  alikeness; equal present sets and equal moved firings are the strict special case.
+\end{itemize}
+
+\subsection{Open}
+
+{\small
+\begin{longtable}{@{}L{0.30\textwidth}L{0.65\textwidth}@{}}
+\toprule
+\textbf{Item} & \textbf{What remains} \\
+\midrule
+\endhead
+Native transport & isomorphisms as arity-preserving bijections of private declaration names that fix captured and escaped names, acting on rules, outputs, queries, conditional rows and recipes; lawful, natural and escape structure; a diamond of two actual native firings whose clients observe equivalent results \\
+Mixed native templates & publication through producer recipes as recipe instances of the step \\
+Frame change meets conflict & no proved instance yet combines growing frames with takes, reads and predicate queries: the helper instances have none, and the one-frame instance does not grow frames; a dependent instance with them, with state typing \\
+Dependent solver & principal answers or refutation on the dependent pattern fragment; $\eta$-long reflection; postponement with twins; the principal pattern answer over the canonical $\eta$ instance; adequacy of the translation for arbitrary stores \\
+Admitted object theories & normalization by object-level hereditary substitution; an admitted pattern fibre; reduction of admitted models to canonical ones; an interface obligation that readouts and guards respect the equivalence \\
+Higher cells & lower faces as cells; a precubical set with face maps; coherence of closing isomorphisms for native solver returns \\
+Observation & frame-level full abstraction; interactive congruence relative to records; full abstraction for relational records; the converse of trace refinement of observation; transport indexed by covers of the solutions where no principal answer exists; one structure for escape and row isomorphisms; genuine contextuality with several observers of overlapping parts \\
+Races: readouts & answer bags and the search combinators read only traces: collecting counts runs, is not invariant under renaming and never sees independence \\
+Races: congruence & open bisimilarity depends on the ports of the open system, and closed bisimilarity is not a congruence; a context-labelled step for open bisimilarity \\
+Races: causality & reads, queries and guards: read-then-take is an asymmetric conflict, and guards make history-preserving bisimulation collapse to total order \\
+Races: scope & image-finiteness for writing programs and the Hennessy--Milner characterization of step bisimilarity; weak bisimilarity; probability beyond concrete pairs; the races layer covers only the first-order step \\
+Runtime faithfulness & a runtime must fire exactly the admitted firings, take atomically, run concurrently only what is independent, never reuse identities, and emit what each firing took and made; step bisimilarity of an occurrence-level protocol machine with the step on the independent fragment \\
+Models & a set model of the typed $\eta$ frames; a proof logic beyond first-order guards and predicate queries; completeness for an axiomatized class (Clark's equality theory~\cite{clark78}, Maher's for rational trees); higher-order logic encoded in the step, with soundness, completeness and provenance \\
+Typing & checking with metavariables and postponement; all kernel rules and completeness for fair runs; agreement of runtime acceptance with admission where pending types are inhabited; dependent signatures \\
+Resolution & run-level soundness, completeness, independence and tabling for the read form over growing frames; a metarule match that stays in the pattern fragment \\
+Superposition & the non-ground given-clause loop on the shared step; a premise-copy check in the firing; the full multiset extension of the ordering to literals; guard readings across frames \\
+Search & a finite-classes instance of a concrete step; completion of tables in progress; counting runs per class by groupoid cardinality \\
+Rational trees & substitution on graphs and canonical minimized presentations; soundness of the visited-pair unifier; rational frames with binders \\
+Charges and folding & a computable canonical labelling; uniqueness per trace class; productive folding; the pump for the contextual instance \\
+Transfinite & admission in an ultrapower step as admission at almost every coordinate \\
+Fresh identities & a supply of fresh identities per label as resource data, which would make the bisimulation and the frame rule unconditional; the frame rule lifted to the higher-order step with its side conditions \\
+\bottomrule
+\end{longtable}
+}
+
+\section*{Vocabulary}
+\begin{description}
+\item[frame] a declaration family, a formed telescope, or the one object of a substitution action;
+\item[solution] a morphism out of a frame into a later frame; \textbf{closed solution}: one into the closed frame;
+\item[space] the present occurrences of a state;
+\item[information] the equation store of a firing at its target frame;
+\item[residual] a firing read at another firing's result, along that firing's morphism of frames;
+\item[alike] firings at one state whose data agree up to the frame equivalence;
+\item[state class] a state up to isomorphism of states;
+\item[diamond] two firings, each still admitted after the other, with results in one class;
+\item[cell] a round of firings each admitted, after which the residuals of the others form a cell;
+\item[trace] a run up to similarity and swaps of independent firings;
+\item[record] what an observer holds: references, sighted sets, tuples and recorded choices;
+\item[recipe] publication data fixed before execution: name roles and local conditions of a produced output;
+\item[fibre] a restriction of the problems (one frame; first order; patterns; simple telescopes) with stronger guarantees;
+\item[outcome] a multiset of answers with a status, finished or cut off.
+\end{description}
+
+\begin{thebibliography}{99}
+\small
+\bibitem{abelpientka11} A. Abel and B. Pientka. Higher-order dynamic pattern unification for dependent
+  types and records. In \emph{TLCA 2011}, LNCS 6690, 2011.
+\bibitem{abramsky87} S. Abramsky. Observation equivalence as a testing equivalence. \emph{Theoretical
+  Computer Science} 53(2--3), 1987.
+\bibitem{abramskybrandenburger11} S. Abramsky and A. Brandenburger. The sheaf-theoretic structure of
+  non-locality and contextuality. \emph{New Journal of Physics} 13, 113036, 2011.
+\bibitem{aczel88} P. Aczel. \emph{Non-Well-Founded Sets}. CSLI Lecture Notes 14, 1988.
+\bibitem{baezfong13} J. C. Baez and B. Fong. A Noether theorem for Markov processes. \emph{Journal of
+  Mathematical Physics} 54, 013301, 2013.
+\bibitem{bachmairganzinger94} L. Bachmair and H. Ganzinger. Rewrite-based equational theorem proving with
+  selection and simplification. \emph{Journal of Logic and Computation} 4(3), 1994.
+\bibitem{baldancorradinimontanari01} P. Baldan, A. Corradini and U. Montanari. Contextual Petri nets,
+  asymmetric event structures, and processes. \emph{Information and Computation} 171(1), 2001.
+\bibitem{barwisemoss96} J. Barwise and L. Moss. \emph{Vicious Circles}. CSLI Publications, 1996.
+\bibitem{bentkamp21} A. Bentkamp, J. Blanchette, S. Tourret, P. Vukmirovi\'c and U. Waldmann. Superposition
+  with lambdas. \emph{Logical Methods in Computer Science} 17(2), 2021.
+\bibitem{betzfruehwirth05} H. Betz and T. Fr\"uhwirth. A linear-logic semantics for constraint handling
+  rules. In \emph{Principles and Practice of Constraint Programming (CP 2005)}, LNCS 3709, 2005.
+\bibitem{brunimeseguer06} R. Bruni and J. Meseguer. Semantic foundations for generalized rewrite theories.
+  \emph{Theoretical Computer Science} 360(1--3), 2006.
+\bibitem{celf08} A. Schack-Nielsen and C. Sch\"urmann. Celf -- a logical framework for deductive and
+  concurrent systems. In \emph{IJCAR 2008}, LNCS 5195, 2008.
+\bibitem{chenwarren96} W. Chen and D. S. Warren. Tabled evaluation with delays for general logic programs.
+  \emph{Journal of the ACM} 43(1), 1996.
+\bibitem{clark78} K. L. Clark. Negation as failure. In \emph{Logic and Data Bases}, H. Gallaire and J.
+  Minker (eds.), Plenum, 1978.
+\bibitem{clf02} K. Watkins, I. Cervesato, F. Pfenning and D. Walker. A concurrent logical framework I:
+  judgments and properties. Technical report CMU-CS-02-101, Carnegie Mellon University, 2002.
+\bibitem{cmtt08} A. Nanevski, F. Pfenning and B. Pientka. Contextual modal type theory. \emph{ACM
+  Transactions on Computational Logic} 9(3), 2008.
+\bibitem{colmerauer82} A. Colmerauer. Prolog and infinite trees. In \emph{Logic Programming}, K. L. Clark
+  and S.-{\AA}. T\"arnlund (eds.), Academic Press, 1982.
+\bibitem{courcelle83} B. Courcelle. Fundamental properties of infinite trees. \emph{Theoretical Computer
+  Science} 25(2), 1983.
+\bibitem{dershowitzmanna79} N. Dershowitz and Z. Manna. Proving termination with multiset orderings.
+  \emph{Communications of the ACM} 22(8), 1979.
+\bibitem{dybjer96} P. Dybjer. Internal type theory. In \emph{Types for Proofs and Programs (TYPES '95)},
+  LNCS 1158, 1996.
+\bibitem{fagesruetsoliman01} F. Fages, P. Ruet and S. Soliman. Linear concurrent constraint programming:
+  operational and phase semantics. \emph{Information and Computation} 165(1), 2001.
+\bibitem{fiore08} M. Fiore. Second-order and dependently-sorted abstract syntax. In \emph{LICS 2008}, 2008.
+\bibitem{fiorehur10} M. Fiore and C.-K. Hur. Second-order equational logic. In \emph{CSL 2010}, LNCS 6247,
+  2010.
+\bibitem{fpt99} M. Fiore, G. Plotkin and D. Turi. Abstract syntax and variable binding. In \emph{LICS 1999},
+  1999.
+\bibitem{fruehwirth09} T. Fr\"uhwirth. \emph{Constraint Handling Rules}. Cambridge University Press, 2009.
+\bibitem{godefroid96} P. Godefroid. \emph{Partial-Order Methods for the Verification of Concurrent Systems}.
+  LNCS 1032, Springer, 1996.
+\bibitem{goldfarb81} W. D. Goldfarb. The undecidability of the second-order unification problem.
+  \emph{Theoretical Computer Science} 13(2), 1981.
+\bibitem{habel96} A. Habel, R. Heckel and G. Taentzer. Graph grammars with negative application conditions.
+  \emph{Fundamenta Informaticae} 26(3--4), 1996.
+\bibitem{henkin50} L. Henkin. Completeness in the theory of types. \emph{Journal of Symbolic Logic} 15(2),
+  1950.
+\bibitem{hennessymilner85} M. Hennessy and R. Milner. Algebraic laws for nondeterminism and concurrency.
+  \emph{Journal of the ACM} 32(1), 1985.
+\bibitem{huet75} G. Huet. A unification algorithm for typed $\lambda$-calculus. \emph{Theoretical Computer
+  Science} 1(1), 1975.
+\bibitem{larsenskou91} K. G. Larsen and A. Skou. Bisimulation through probabilistic testing.
+  \emph{Information and Computation} 94(1), 1991.
+\bibitem{levy78} J.-J. L\'evy. \emph{R\'eductions correctes et optimales dans le $\lambda$-calcul}. Th\`ese
+  d'\'Etat, Universit\'e Paris 7, 1978.
+\bibitem{lloyd87} J. W. Lloyd. \emph{Foundations of Logic Programming}. Second edition, Springer, 1987.
+\bibitem{maher88} M. J. Maher. Complete axiomatizations of the algebras of finite, rational and infinite
+  trees. In \emph{LICS 1988}, 1988.
+\bibitem{mazurkiewicz87} A. Mazurkiewicz. Trace theory. In \emph{Advances in Petri Nets 1986}, LNCS 255,
+  1987.
+\bibitem{mellies05} P.-A. Melli\`es. Axiomatic rewriting theory I: a diagrammatic standardization theorem.
+  In \emph{Processes, Terms and Cycles}, LNCS 3838, 2005.
+\bibitem{meseguer92} J. Meseguer. Conditional rewriting logic as a unified model of concurrency.
+  \emph{Theoretical Computer Science} 96(1), 1992.
+\bibitem{meseguerthati07} J. Meseguer and P. Thati. Symbolic reachability analysis using narrowing and its
+  application to verification of cryptographic protocols. \emph{Higher-Order and Symbolic Computation}
+  20(1--2), 2007.
+\bibitem{miller91} D. Miller. A logic programming language with lambda-abstraction, function variables, and
+  simple unification. \emph{Journal of Logic and Computation} 1(4), 1991.
+\bibitem{miller92} D. Miller. Unification under a mixed prefix. \emph{Journal of Symbolic Computation}
+  14(4), 1992.
+\bibitem{milner89} R. Milner. \emph{Communication and Concurrency}. Prentice Hall, 1989.
+\bibitem{montanarirossi95} U. Montanari and F. Rossi. Contextual nets. \emph{Acta Informatica} 32(6), 1995.
+\bibitem{murata89} T. Murata. Petri nets: properties, analysis and applications. \emph{Proceedings of the
+  IEEE} 77(4), 1989.
+\bibitem{pfenning91} F. Pfenning. Unification and anti-unification in the calculus of constructions. In
+  \emph{LICS 1991}, 1991.
+\bibitem{pitts13} A. M. Pitts. \emph{Nominal Sets: Names and Symmetry in Computer Science}. Cambridge
+  University Press, 2013.
+\bibitem{pittsstark93} A. M. Pitts and I. D. B. Stark. Observable properties of higher order functions that
+  dynamically create local names, or: What's new? In \emph{MFCS 1993}, LNCS 711, 1993.
+\bibitem{pratt91} V. Pratt. Modeling concurrency with geometry. In \emph{POPL 1991}, 1991.
+\bibitem{raiser09} F. Raiser, H. Betz and T. Fr\"uhwirth. Equivalence of CHR states revisited. In
+  \emph{CHR 2009}, 2009.
+\bibitem{robinson65} J. A. Robinson. A machine-oriented logic based on the resolution principle.
+  \emph{Journal of the ACM} 12(1), 1965.
+\bibitem{rochameseguer17} C. Rocha, J. Meseguer and C. Mu\~noz. Rewriting modulo SMT and open system
+  analysis. \emph{Journal of Logical and Algebraic Methods in Programming} 86(1), 2017.
+\bibitem{saraswat93} V. A. Saraswat. \emph{Concurrent Constraint Programming}. MIT Press, 1993.
+\bibitem{schrijvers13} T. Schrijvers, G. Tack, P. Wuille, H. Samulowitz and P. J. Stuckey. Search
+  combinators. \emph{Constraints} 18(2), 2013.
+\bibitem{simmons12} R. J. Simmons. \emph{Substructural Logical Specifications}. PhD thesis, Carnegie Mellon
+  University, 2012.
+\bibitem{stark89} E. W. Stark. Concurrent transition systems. \emph{Theoretical Computer Science} 64(3),
+  1989.
+\bibitem{tamakisato86} H. Tamaki and T. Sato. OLD resolution with tabulation. In \emph{Third International
+  Conference on Logic Programming (ICLP 1986)}, LNCS 225, 1986.
+\bibitem{ultrainfinitism2} Ultrainfinitism II: infinite wholes and the boundary of effing. Mettapedia
+  Working Notes, 2026.
+\bibitem{vanglabbeek01} R. J. van Glabbeek. The linear time -- branching time spectrum I: the semantics of
+  concrete, sequential processes. In \emph{Handbook of Process Algebra}, J. A. Bergstra, A. Ponse and S.
+  A. Smolka (eds.), Elsevier, 2001.
+\bibitem{vanglabbeek06} R. J. van Glabbeek. On the expressiveness of higher dimensional automata.
+  \emph{Theoretical Computer Science} 356(3), 2006.
+\bibitem{vanglabbeekgoltz01} R. J. van Glabbeek and U. Goltz. Refinement of actions and equivalence notions
+  for concurrent systems. \emph{Acta Informatica} 37(4--5), 2001.
+\bibitem{williamsstay21} C. Williams and M. Stay. Native type theory. In \emph{Applied Category Theory 2021},
+  EPTCS 372, 2022.
+\bibitem{winskel87} G. Winskel. Event structures. In \emph{Advances in Petri Nets 1986}, LNCS 255, 1987.
+\end{thebibliography}
+
+\end{document}

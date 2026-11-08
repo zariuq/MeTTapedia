@@ -168,10 +168,10 @@ theorem Embedding.models_iff (h : Embedding B A φ) (σ : S) (store : EquationSt
 omit [DecidableEq O] in
 theorem Embedding.matching_map (h : Embedding B A φ) (σ : S) (label : O → U) (store : Finset O)
     (p : U) :
-    Check.region A σ (fun o => φ (label o)) store (φ p) = Check.region B σ label store p := by
+    Check.matches A σ (fun o => φ (label o)) store (φ p) = Check.matches B σ label store p := by
   classical
   ext o
-  simp only [Check.region, Finset.mem_filter, h.apply_comm, h.E_iff]
+  simp only [Check.matches, Finset.mem_filter, h.apply_comm, h.E_iff]
 
 omit [DecidableEq O] in
 theorem Embedding.holds_map (h : Embedding B A φ) (σ : S) (label : O → U) (store : Finset O) :
@@ -744,12 +744,12 @@ theorem valid_of_agree {C D : Configuration T O}
         exact holdsC o presentC matching
     | count s p k =>
         obtain ⟨n, checkAt⟩ := resolved s (check_space_mem checkMember rfl)
-        change (Check.region A σ (located sts space payload) D.present (sts.atSpace s p)).card = k
-        have matching : Check.region A σ (located sts space payload) D.present (sts.atSpace s p) =
-            Check.region A σ (located sts space payload) C.present (sts.atSpace s p) := by
+        change (Check.matches A σ (located sts space payload) D.present (sts.atSpace s p)).card = k
+        have matching : Check.matches A σ (located sts space payload) D.present (sts.atSpace s p) =
+            Check.matches A σ (located sts space payload) C.present (sts.atSpace s p) := by
           classical
           ext o
-          simp only [Check.region, Finset.mem_filter]
+          simp only [Check.matches, Finset.mem_filter]
           constructor
           · rintro ⟨presentD, matching⟩
             have atD : ResolvesTo sts D.equations (space o) n :=

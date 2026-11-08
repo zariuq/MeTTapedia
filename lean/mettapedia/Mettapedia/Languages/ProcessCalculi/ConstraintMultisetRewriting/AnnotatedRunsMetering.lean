@@ -88,10 +88,10 @@ theorem check_holds_frame {σ : S} {store frame : Finset O} {check : Check T}
       · rw [labelled o inFrame]
         exact blind pattern rfl
   | count pattern number =>
-      have same : Check.region A σ label (store ∪ frame) pattern =
-          Check.region A σ label store pattern := by
+      have same : Check.matches A σ label (store ∪ frame) pattern =
+          Check.matches A σ label store pattern := by
         ext o
-        simp only [Check.region, Finset.mem_filter, Finset.mem_union]
+        simp only [Check.matches, Finset.mem_filter, Finset.mem_union]
         constructor
         · rintro ⟨inStore | inFrame, matched⟩
           · exact ⟨inStore, matched⟩
@@ -99,12 +99,12 @@ theorem check_holds_frame {σ : S} {store frame : Finset O} {check : Check T}
             exact absurd matched (blind pattern rfl)
         · rintro ⟨inStore, matched⟩
           exact ⟨Or.inl inStore, matched⟩
-      change (Check.region A σ label (store ∪ frame) pattern).card = number
+      change (Check.matches A σ label (store ∪ frame) pattern).card = number
       rw [same]
       exact holds
 
 /-- A predicate query whose space excludes the fuel keeps its answer when fuel is added. -/
-theorem query_holds_frame {σ : S} {store frame : Finset O} {query : CensusAdmission.Query T S O}
+theorem query_holds_frame {σ : S} {store frame : Finset O} {query : PredicateQueryAdmission.Query T S O}
     (labelled : ∀ o ∈ frame, label o = fuelAtom) (blind : query.region σ fuelAtom = false)
     (holds : regionOf label store (query.region σ) = query.seen) :
     regionOf label (store ∪ frame) (query.region σ) = query.seen := by
@@ -376,7 +376,7 @@ theorem guard_sees_fuel :
 
 theorem metered_then_query_runs : Executable A label start [worker.metered fuel [9], observer] := by
   refine ⟨metered_worker_valid, ?_, ?_⟩
-  · refine (CensusAdmission.valid_fixed_iff A label observer.rule [⟨persistent, ∅⟩] _
+  · refine (PredicateQueryAdmission.valid_fixed_iff A label observer.rule [⟨persistent, ∅⟩] _
       observer.selection).mpr ⟨⟨by decide, by decide, rfl, rfl, rfl, by decide,
         ⟨Subst.id signature, ?_⟩, by simp [observer]⟩, ?_⟩
     · intro equation member

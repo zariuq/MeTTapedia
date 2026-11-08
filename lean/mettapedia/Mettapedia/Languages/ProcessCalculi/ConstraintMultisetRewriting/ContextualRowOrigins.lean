@@ -1,10 +1,10 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualPathModelRestriction
 
 /-!
-# Actual producer outputs become live captures; retained schemas keep private locals
+# Actual producer outputs become shared captures; retained schemas keep private locals
 
 The row interface follows the original computed output and capture maps.
-Future opening of a live row does not freshen producer identities. Retained
+Future opening of a shared row does not freshen producer identities. Retained
 schemas still open their own locals at each use. Physical survival is stated
 separately from the total row-metadata function.
 -/
@@ -55,21 +55,21 @@ private theorem row_from_computed (firing : Firing locals before after) (occurre
         firing.admitted firing.update).inventory.rows occurrence).map locals firing.relocation :=
   (Endpoint.row_map_equality firing.destination.symm occurrence).symm
 
-theorem produced_row_is_live (firing : Firing locals before after) {occurrence : O}
+theorem produced_row_is_shared (firing : Firing locals before after) {occurrence : O}
     (made : occurrence ∈ firing.selection.made) :
     after.inventory.rows occurrence =
-      .live (instantiate firing.outputAssignment (firing.outputs occurrence)) := by
+      .shared (instantiate firing.outputAssignment (firing.outputs occurrence)) := by
   rw [firing.row_from_computed occurrence]
-  have produced := ContextualTransportedActivation.produced_row_is_live locals before.declarations
+  have produced := ContextualTransportedActivation.produced_row_is_shared locals before.declarations
     (ContextualComputedFreshFrame.includeSource firing.update) firing.selection firing.outputs before.inventory.rows made
   change ((ContextualTransportedActivation.resultRows locals before.declarations
     (ContextualComputedFreshFrame.includeSource firing.update) firing.selection firing.outputs before.inventory.rows)
       occurrence).map locals firing.relocation = _
   rw [produced]
-  change ContextualStoredRows.Row.live
+  change ContextualStoredRows.Row.shared
       (instantiate firing.relocation (instantiate (ContextualComputedFreshFrame.includeSource firing.update)
         (firing.outputs occurrence))) = _
-  exact congrArg ContextualStoredRows.Row.live (Assignment.instantiate_compose _ _ _).symm
+  exact congrArg ContextualStoredRows.Row.shared (Assignment.instantiate_compose _ _ _).symm
 
 theorem produced_row_is_present (firing : Firing locals before after) {occurrence : O}
     (made : occurrence ∈ firing.selection.made) : occurrence ∈ after.inventory.configuration.present := by
@@ -104,20 +104,20 @@ theorem old_untaken_row_survives (firing : Firing locals before after) {occurren
   apply mem_fire.mpr
   exact Or.inl ⟨old, by simpa only [Selection.commit, List.mem_toFinset] using untaken⟩
 
-theorem produced_live_views_keep_the_producer_identities (firing : Firing locals before after) {occurrence : O}
+theorem produced_shared_views_keep_the_producer_identities (firing : Firing locals before after) {occurrence : O}
     (made : occurrence ∈ firing.selection.made) (futureScope : Nat) :
     ContextualStoredRows.viewAt locals after.declarations futureScope (after.inventory.rows occurrence) =
       instantiate (ContextualSelectionViews.capturedTarget locals after.declarations)
         (instantiate firing.outputAssignment (firing.outputs occurrence)) := by
-  rw [firing.produced_row_is_live made]
+  rw [firing.produced_row_is_shared made]
   rfl
 
-theorem produced_live_views_agree_at_any_two_future_scopes (firing : Firing locals before after) {occurrence : O}
+theorem produced_shared_views_agree_at_any_two_future_scopes (firing : Firing locals before after) {occurrence : O}
     (made : occurrence ∈ firing.selection.made) (first second : Nat) :
     ContextualStoredRows.viewAt locals after.declarations first (after.inventory.rows occurrence) =
       ContextualStoredRows.viewAt locals after.declarations second (after.inventory.rows occurrence) :=
-  (firing.produced_live_views_keep_the_producer_identities made first).trans
-    (firing.produced_live_views_keep_the_producer_identities made second).symm
+  (firing.produced_shared_views_keep_the_producer_identities made first).trans
+    (firing.produced_shared_views_keep_the_producer_identities made second).symm
 
 theorem retained_schema_uses_only_shared_names_between_fresh_views (firing : Firing locals before after)
     {occurrence : O} (old : occurrence ∈ before.inventory.configuration.present)

@@ -53,7 +53,7 @@ def Computed.row (locals : Local → MetaArity S) {Γ : Ctx S} {sort : S.Srt}
     (value : Term (signature S savedDecl) Γ sort) :
     Row (ContextualPublication.privateFamily locals result.update.declaration) result.targetFamily Γ sort :=
   ContextualConditionalPublication.ordinary locals result.update.declaration result.targetFamily
-    (ContextualResidualAnswers.ofUpdate result.update
+    (ContextualConditionalAnswers.ofUpdate result.update
       (instantiate (ContextualStoredRows.privateSource savedDecl ambient) value))
 
 theorem Computed.row_instances (locals : Local → MetaArity S) (currentConsistent : ContextualConditionalExecution.Solvable current)

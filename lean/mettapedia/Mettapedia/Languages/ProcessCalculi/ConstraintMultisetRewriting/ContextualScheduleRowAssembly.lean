@@ -30,19 +30,19 @@ variable {S : Signature} {V Next O : Type} {declaration : V → MetaArity S} {ne
 def Origin.Private : Origin declaration Γ sort → Type
   | .retained (Local := Local) _ _ _ _ => Local
   | .schema (Saved := Saved) _ _ _ => Saved
-  | .live _ => Empty
+  | .shared _ => Empty
 
 def Origin.privateDecl (origin : Origin declaration Γ sort) : origin.Private → MetaArity S :=
   match origin with
   | .retained locals _ _ _ => locals
   | .schema saved _ _ => saved
-  | .live _ => fun name => nomatch name
+  | .shared _ => fun name => nomatch name
 
 def Origin.asRow (origin : Origin declaration Γ sort) : Row origin.privateDecl declaration Γ sort :=
   match origin with
   | .retained locals saved row transport => row.map locals saved transport
   | .schema saved problem value => ContextualConditionalPublication.store saved declaration ⟨problem, value⟩
-  | .live value => ofStored _ _ (.live value)
+  | .shared value => ofStored _ _ (.shared value)
 
 theorem Origin.asRow_instances (origin : Origin declaration Γ sort) (candidate : Assignment declaration next)
     (pattern : Term (signature S next) Γ sort) :
@@ -51,8 +51,8 @@ theorem Origin.asRow_instances (origin : Origin declaration Γ sort) (candidate 
   | retained locals saved row transport => exact matches_map_iff locals _ transport candidate pattern row
   | schema saved problem value =>
       exact ContextualConditionalPublication.store_matches_iff saved declaration candidate ⟨problem, value⟩ pattern
-  | live value =>
-      rw [Origin.asRow, ofStored_matches_iff, ContextualGuardMatching.live_matches_iff]
+  | shared value =>
+      rw [Origin.asRow, ofStored_matches_iff, ContextualGuardMatching.shared_matches_iff]
       rfl
 
 namespace Schedule

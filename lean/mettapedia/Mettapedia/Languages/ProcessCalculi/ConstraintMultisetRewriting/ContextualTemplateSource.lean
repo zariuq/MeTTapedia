@@ -12,7 +12,7 @@ no transition or text-based ownership rule.
 
 This construction does not yet install its selectively captured schema in
 the publication endpoint. In particular its schema constructor must not be
-collapsed into the existing Boolean choice between ordinary and live output.
+collapsed into the existing Boolean choice between ordinary and shared output.
 -/
 
 set_option autoImplicit false
@@ -79,17 +79,17 @@ theorem templateAt_capture (scope port : Nat) (identity : Local ⊕ Shared) :
 
 inductive Production (context : Ctx S) (sort : S.Srt) where
   | ordinary : Term (signature S (Actor locals captures)) context sort → Production context sort
-  | live : Term (signature S (Actor locals captures)) context sort → Production context sort
+  | shared : Term (signature S (Actor locals captures)) context sort → Production context sort
   | schema : Term (signature S (Blueprint locals inners captures)) context sort → Production context sort
 
 def Production.lower {Γ : Ctx S} {sort : S.Srt} (port : Nat) :
     Production locals inners captures Γ sort → Term (signature S (Raw locals inners captures)) Γ sort
-  | .ordinary value | .live value => instantiate (actorInclusion locals inners captures) value
+  | .ordinary value | .shared value => instantiate (actorInclusion locals inners captures) value
   | .schema body => instantiate (templateInclusion locals inners captures port) body
 
 def Production.atScope {Γ : Ctx S} {sort : S.Srt} (scope port : Nat) :
     Production locals inners captures Γ sort → Term (signature S (Active locals inners captures)) Γ sort
-  | .ordinary value | .live value => instantiate (actorAt locals inners captures scope) value
+  | .ordinary value | .shared value => instantiate (actorAt locals inners captures scope) value
   | .schema body => instantiate (templateAt locals inners captures scope port) body
 
 theorem Production.freshened_lower {Γ : Ctx S} {sort : S.Srt} (scope port : Nat)
@@ -256,7 +256,7 @@ theorem stored_instance {Names Future Model : Type} {next : Names → MetaArity 
   cases identity with
   | inl identity => exact instantiate_generator _ _
   | inr identity =>
-      exact ContextualGuardMatching.instance_on_live_value (Expanded locals inners) images embedding candidate
+      exact ContextualGuardMatching.instance_on_shared_value (Expanded locals inners) images embedding candidate
         (captureValues identity)
 
 theorem stored_matches_iff {Names Future : Type} {next : Names → MetaArity S}

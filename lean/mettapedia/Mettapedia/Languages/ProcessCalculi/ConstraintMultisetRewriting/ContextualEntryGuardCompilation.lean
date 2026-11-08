@@ -1,11 +1,10 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualGuardEntryViews
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualGuardedScheduleProblem
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualCutRepresentation
 
 /-!
 # Finite entry and creation data for every authored guard cut
 
-An entry cut stores the prefix resource delta and row origins. Its physical
+The entry cuts of a schedule store the prefix resource delta and row origins. Its physical
 left summand reads the original input; the right summand reads authored
 creations. Later clauses transport its declarations without adding their
 equations to its information cut. Compilation requires no guard verdict.
@@ -26,33 +25,6 @@ open Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits
 variable {S : Signature} {O V Next Later : Type} [DecidableEq O]
     {declaration : V → MetaArity S} {next : Next → MetaArity S} {later : Later → MetaArity S}
     {Γ : Ctx S} {sort : S.Srt}
-
-structure EntryCut (declaration : V → MetaArity S) (O : Type) (context : Ctx S) (sort : S.Srt) : Type 1 where
-  view : Cut declaration (OccurrenceAllocationRenaming.Name O) context sort
-  taken : Finset (OccurrenceAllocationRenaming.Name O)
-  made : Finset (OccurrenceAllocationRenaming.Name O)
-
-def EntryCut.map (change : Assignment declaration later) (cut : EntryCut declaration O Γ sort) : EntryCut later O Γ sort :=
-  ⟨cut.view.map change, cut.taken, cut.made⟩
-
-def EntryCut.Holds (cut : EntryCut declaration O Γ sort) : Prop := cut.view.Holds
-
-omit [DecidableEq O] in
-theorem EntryCut.extension_iff (cut : EntryCut declaration O Γ sort)
-    (extension : ContextualGuardMatching.Extension declaration) :
-    (cut.map extension.assignment).Holds ↔ cut.Holds := cut.view.extension_iff extension
-
-omit [DecidableEq O] in
-theorem EntryCut.comparison_map (entry : EntryCut declaration O Γ sort) (source : Cut declaration O Γ sort)
-    (extension : ContextualGuardMatching.Extension declaration)
-    (compared : entry.view.problem = source.problem ∧ entry.view.checks = source.checks ∧
-      (entry.Holds ↔ source.Holds)) :
-    (entry.map extension.assignment).view.problem = (source.map extension.assignment).problem ∧
-      (entry.map extension.assignment).view.checks = (source.map extension.assignment).checks ∧
-      ((entry.map extension.assignment).Holds ↔ (source.map extension.assignment).Holds) := by
-  refine ⟨congrArg (ContextualResidual.mapProblem extension.assignment) compared.1,
-    congrArg (List.map (Check.map (instantiate extension.assignment))) compared.2.1, ?_⟩
-  exact ((entry.extension_iff extension).trans compared.2.2).trans (source.extension_iff extension).symm
 
 namespace Schedule
 
@@ -191,34 +163,6 @@ theorem entry_cut_created_not_initial (schedule : Schedule S O Γ sort before af
       · have same := List.mem_singleton.mp current
         subst cut
         exact past.net_made_not_inherited occurrence
-
-def entryCutAt (schedule : Schedule S O Γ sort before after) (index : schedule.CutIndex) :
-    EntryCut after.declarations O Γ sort :=
-  schedule.entryCuts.get ⟨index.val, by rw [schedule.entry_cuts_length]; exact index.isLt⟩
-
-theorem entry_cut_at_compare (schedule : Schedule S O Γ sort before after)
-    (shapes : schedule.ShapesHold) (resources : Executable unitLabel before.present schedule.commits)
-    (index : schedule.CutIndex) :
-    (schedule.entryCutAt index).view.problem = (schedule.cuts.get index).problem ∧
-      (schedule.entryCutAt index).view.checks = (schedule.cuts.get index).checks ∧
-      ((schedule.entryCutAt index).Holds ↔ (schedule.cuts.get index).Holds) := by
-  have compared := schedule.entry_cuts_compare shapes resources
-  have bound : index.val < schedule.entryCuts.length := by rw [schedule.entry_cuts_length]; exact index.isLt
-  exact compared.get bound index.isLt
-
-theorem entry_guards_iff (schedule : Schedule S O Γ sort before after)
-    (shapes : schedule.ShapesHold) (resources : Executable unitLabel before.present schedule.commits) :
-    (∀ cut ∈ schedule.entryCuts, cut.Holds) ↔ schedule.CutsHold := by
-  constructor
-  · intro compiled cut member
-    obtain ⟨index, rfl⟩ := List.mem_iff_get.mp member
-    exact (schedule.entry_cut_at_compare shapes resources index).2.2.mp
-      (compiled (schedule.entryCutAt index) (List.get_mem _ _))
-  · intro original cut member
-    obtain ⟨position, rfl⟩ := List.mem_iff_get.mp member
-    let index : schedule.CutIndex := ⟨position.val, by rw [← schedule.entry_cuts_length]; exact position.isLt⟩
-    exact (schedule.entry_cut_at_compare shapes resources index).2.2.mpr
-      (original _ (List.get_mem _ _))
 
 end Schedule
 

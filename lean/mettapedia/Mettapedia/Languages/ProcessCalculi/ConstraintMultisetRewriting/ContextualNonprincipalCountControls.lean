@@ -77,7 +77,7 @@ def problem : ContextualResidual.Problem functions :=
 
 abbrev before : ContextualConditionalExecution.State locals Nat [] () :=
   ⟨Unit, inferInstance, functions, ∅, problem, {0, 1}, fun occurrence =>
-    ofStored locals functions (.live (if occurrence = 0 then literal 0 else literal 1))⟩
+    ofStored locals functions (.shared (if occurrence = 0 then literal 0 else literal 1))⟩
 
 abbrev active := ContextualActivatedStep.target locals functions
 
@@ -140,7 +140,7 @@ theorem value_cases {V : Type} (declaration : V → MetaArity base)
     rfl
 
 private theorem row_at (occurrence : Nat) (present : occurrence ∈ before.present) :
-    rows occurrence = ofStored locals active (.live (literal occurrence)) := by
+    rows occurrence = ofStored locals active (.shared (literal occurrence)) := by
   rcases Finset.mem_insert.mp present with zero | one
   · subst occurrence
     rfl
@@ -157,7 +157,7 @@ theorem region_at_literal {V : Type} (declaration : V → MetaArity base) (candi
   constructor
   · intro member
     obtain ⟨inside, matched⟩ := (mem_region _ _ _ _ _ _).mp member
-    rw [row_at occurrence inside, ofStored_matches_iff, ContextualGuardMatching.live_matches_iff] at matched
+    rw [row_at occurrence inside, ofStored_matches_iff, ContextualGuardMatching.shared_matches_iff] at matched
     rw [value] at matched
     change literal (declaration := declaration) (Γ := []) number = literal occurrence at matched
     have same : number = occurrence := Sum.inl.inj (Term.op.inj matched).1
@@ -169,7 +169,7 @@ theorem region_at_literal {V : Type} (declaration : V → MetaArity base) (candi
       rcases present with rfl | rfl <;> decide +kernel
     apply (mem_region _ _ _ _ _ _).mpr
     refine ⟨inside, ?_⟩
-    rw [row_at number inside, ofStored_matches_iff, ContextualGuardMatching.live_matches_iff]
+    rw [row_at number inside, ofStored_matches_iff, ContextualGuardMatching.shared_matches_iff]
     exact value
 
 theorem count_guard : Ask locals information rows before.present (.count pattern 1) := by
@@ -238,7 +238,7 @@ theorem table_matching {V : Type} (declaration : V → MetaArity base)
   simp only [mem_regionOf, mem_region, predicate, decide_eq_true_eq]
 
 def changedRows (occurrence : Nat) : Row locals active [] () :=
-  if occurrence = 0 then ofStored locals active (.live (literal 1)) else rows occurrence
+  if occurrence = 0 then ofStored locals active (.shared (literal 1)) else rows occurrence
 
 /-- Keeping the occurrence identities while changing a relevant row does
 not validate the old table. -/
@@ -256,13 +256,13 @@ theorem changed_payload_is_refused :
     exact Finset.mem_singleton_self _
   have matched := of_decide_eq_true (mem_regionOf.mp selected).2
   change Matches locals active (model locals (literal 0)) (literal 0)
-    (ofStored locals active (.live (literal 1))) at matched
-  rw [ofStored_matches_iff, ContextualGuardMatching.live_matches_iff] at matched
+    (ofStored locals active (.shared (literal 1))) at matched
+  rw [ofStored_matches_iff, ContextualGuardMatching.shared_matches_iff] at matched
   have impossible : (0 : Nat) = 1 := Sum.inl.inj (Term.op.inj matched).1
   omega
 
 def duplicateRows (occurrence : Nat) : Row locals active [] () :=
-  if occurrence = 2 then ofStored locals active (.live (literal 0)) else rows occurrence
+  if occurrence = 2 then ofStored locals active (.shared (literal 0)) else rows occurrence
 
 /-- A second occurrence of the same value is a new match, even though
 its payload duplicates the first. -/
@@ -281,8 +281,8 @@ theorem matching_duplicate_is_refused :
     refine ⟨Finset.mem_insert_self _ _, ?_⟩
     apply decide_eq_true
     change Matches locals active (model locals (literal 0)) (literal 0)
-      (ofStored locals active (.live (literal 0)))
-    rw [ofStored_matches_iff, ContextualGuardMatching.live_matches_iff]
+      (ofStored locals active (.shared (literal 0)))
+    rw [ofStored_matches_iff, ContextualGuardMatching.shared_matches_iff]
     rfl
   rw [reconstructed] at selected
   have impossible : (2 : Nat) = 0 := Finset.mem_singleton.mp selected

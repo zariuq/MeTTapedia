@@ -21,24 +21,24 @@ open ContextualPrefixPublicationControls
 open Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits
 
 theorem source_count_is_one :
-    Ask (body.entryCutAt watched).view.locals (body.entryCutAt watched).view.problem
-      (body.entryCutAt watched).view.rows (body.entryCutAt watched).view.world (.count (box (symbol 1)) 1) := by
+    Ask (body.native.entryCutAt watched).view.locals (body.native.entryCutAt watched).view.problem
+      (body.native.entryCutAt watched).view.rows (body.native.entryCutAt watched).view.world (.count (box (symbol 1)) 1) := by
   intro Future future candidate model
-  rw [(body.entry_cut_at_compare shapes resources watched).1] at model
+  rw [(body.native.entry_cut_at_compare shapes resources watched).1] at model
   change ContextualResidual.Models candidate [(observe secondX, observe (symbol 1))] at model
   have equation := model _ (List.mem_singleton_self _)
   change observe (instantiate candidate secondX) = observe (symbol (decl := future) 1) at equation
   have same := observe_injective equation
   change (region _ _ _ _ (box (symbol 1))).card = 1
-  rw [body.entry_cut_count watched candidate (box (symbol 1))]
-  change (region none candidate body.sourceGuardInputs {9} (box (symbol 1))).card + 0 = 1
-  have matched : Matches none result.declarations candidate (box (symbol 1)) (body.sourceGuardInputs 9) := by
-    have row : body.sourceGuardInputs 9 = ofStored none result.declarations (.live (box secondX)) := by
+  rw [body.native.entry_cut_count watched candidate (box (symbol 1))]
+  change (region none candidate body.native.sourceGuardInputs {9} (box (symbol 1))).card + 0 = 1
+  have matched : Matches none result.declarations candidate (box (symbol 1)) (body.native.sourceGuardInputs 9) := by
+    have row : body.native.sourceGuardInputs 9 = ofStored none result.declarations (.shared (box secondX)) := by
       with_unfolding_all rfl
-    rw [row, ofStored_matches_iff, ContextualGuardMatching.live_matches_iff]
+    rw [row, ofStored_matches_iff, ContextualGuardMatching.shared_matches_iff]
     change box (symbol (decl := future) 1) = box (instantiate candidate secondX)
     rw [same]
-  have singleton : region none candidate body.sourceGuardInputs {9} (box (symbol 1)) = {9} := by
+  have singleton : region none candidate body.native.sourceGuardInputs {9} (box (symbol 1)) = {9} := by
     ext occurrence
     rw [mem_region]
     constructor
@@ -50,27 +50,27 @@ theorem source_count_is_one :
   rw [singleton]
   rfl
 
-noncomputable def table := body.nativeCountTable watched ∅ [] [] (box (symbol 1))
-  ((body.entryCutAt watched).taken.image some)
+noncomputable def table := body.native.nativeCountTable watched ∅ [] [] (box (symbol 1))
+  ((body.native.entryCutAt watched).taken.image some)
 
 theorem the_compiled_count_is_admitted :
-    AskData (body.nativeBindingInformation ∅ [] [])
-      (table.query (body.nativeCountPredicate watched (box (symbol 1)) ((body.entryCutAt watched).taken.image some)))
-      (nativeLabels body.guardNativeBank (body.nativeBindingState ∅)) (body.nativeBindingState ∅).present ∧
-    AskData (body.nativeBindingInformation ∅ [] [])
-      (body.nativeCountCheckQuery watched (box (symbol 1)) table 1)
-      (nativeLabels body.guardNativeBank (body.nativeBindingState ∅)) (body.nativeBindingState ∅).present :=
-  (body.native_entry_count_iff watched shapes resources consistent ∅ [] [] (box (symbol 1)) 1).mp source_count_is_one
+    AskData (body.native.nativeBindingInformation ∅ [] [])
+      (table.query (body.native.nativeCountPredicate watched (box (symbol 1)) ((body.native.entryCutAt watched).taken.image some)))
+      (nativeLabels body.native.guardNativeBank (body.native.nativeBindingState ∅)) (body.native.nativeBindingState ∅).present ∧
+    AskData (body.native.nativeBindingInformation ∅ [] [])
+      (body.native.nativeCountCheckQuery watched (box (symbol 1)) table 1)
+      (nativeLabels body.native.guardNativeBank (body.native.nativeBindingState ∅)) (body.native.nativeBindingState ∅).present :=
+  (body.native.native_entry_count_iff watched shapes resources consistent ∅ [] [] (box (symbol 1)) 1).mp source_count_is_one
 
 theorem the_wrong_compiled_count_is_refused :
-    ¬ AskData (body.nativeBindingInformation ∅ [] [])
-      (body.nativeCountCheckQuery watched (box (symbol 1)) table 0)
-      (nativeLabels body.guardNativeBank (body.nativeBindingState ∅)) (body.nativeBindingState ∅).present := by
+    ¬ AskData (body.native.nativeBindingInformation ∅ [] [])
+      (body.native.nativeCountCheckQuery watched (box (symbol 1)) table 0)
+      (nativeLabels body.native.guardNativeBank (body.native.nativeBindingState ∅)) (body.native.nativeBindingState ∅).present := by
   intro accepted
-  have source := (body.native_entry_count_from_table_iff watched shapes resources consistent ∅ [] []
+  have source := (body.native.native_entry_count_from_table_iff watched shapes resources consistent ∅ [] []
     (box (symbol 1)) table 0 the_compiled_count_is_admitted.1).mpr accepted
-  have model : ContextualResidual.Models (secondModel none) (body.entryCutAt watched).view.problem := by
-    rw [(body.entry_cut_at_compare shapes resources watched).1]
+  have model : ContextualResidual.Models (secondModel none) (body.native.entryCutAt watched).view.problem := by
+    rw [(body.native.entry_cut_at_compare shapes resources watched).1]
     change ContextualResidual.Models (secondModel none) [(observe secondX, observe (symbol 1))]
     intro equation member
     have only := List.mem_singleton.mp member

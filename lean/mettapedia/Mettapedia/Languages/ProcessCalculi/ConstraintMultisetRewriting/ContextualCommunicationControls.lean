@@ -47,7 +47,7 @@ def receiver : RawTerm := input (quote zero)
 def sender : Term (signature base captures) [] .pr := output sharedChannel sharedPayload
 def retained : Term (signature base captures) [] .pr := output sharedChannel (parallel sharedPayload zero)
 def rows (occurrence : Nat) : ContextualStoredRows.Row locals captures [] .pr :=
-  if occurrence = 10 then .schema receiver else if occurrence = 20 then .live sender else .live retained
+  if occurrence = 10 then .schema receiver else if occurrence = 20 then .shared sender else .shared retained
 
 def occupied : Finset Nat := {0, 2, 7}
 def selection : Selection Nat := ⟨[10, 20], [], [40]⟩
@@ -66,13 +66,13 @@ def dataProblem := ContextualActivatedStep.problem locals captures occupied sele
 theorem rule_and_receiver_locals_use_different_fresh_scopes : ruleScope = 8 ∧ receiverScope = 9 := by decide +kernel
 
 theorem pure_communication_has_physical_admission :
-    ContextualTransportedActivation.Admission locals captures occupied selection plainRule rows before outputs := by
+    ContextualGuardedStep.Requirements locals captures occupied selection plainRule rows before outputs := by
   refine ⟨by decide, by decide, rfl, rfl, rfl, by decide, ?_⟩
   intro check member
   exact False.elim (List.not_mem_nil member)
 
 theorem the_data_constraint_is_an_additional_admitted_equation :
-    ContextualTransportedActivation.Admission locals captures occupied selection dataRule rows before outputs := by
+    ContextualGuardedStep.Requirements locals captures occupied selection dataRule rows before outputs := by
   refine ⟨by decide, by decide, rfl, rfl, rfl, by decide, ?_⟩
   intro check member
   exact False.elim (List.not_mem_nil member)
@@ -253,7 +253,7 @@ theorem the_send_is_consumed_and_its_distinct_continuation_survives :
 def duplicateSelection : Selection Nat := ⟨[20, 20], [], [40]⟩
 
 theorem one_send_cannot_be_consumed_twice :
-    ¬ ContextualTransportedActivation.Admission locals captures occupied duplicateSelection plainRule rows before outputs := by
+    ¬ ContextualGuardedStep.Requirements locals captures occupied duplicateSelection plainRule rows before outputs := by
   intro admitted
   have distinct := admitted.take_distinct
   exact (by decide : ¬ ([20, 20] : List Nat).Nodup) distinct

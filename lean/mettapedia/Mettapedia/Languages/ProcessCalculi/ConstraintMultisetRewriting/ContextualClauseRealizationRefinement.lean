@@ -49,7 +49,7 @@ def nativeImages (candidate : Assignment compiled.firing.target.declarations nex
 
 private theorem answer_iff (port : Fin picked.made.length) (next : Next → MetaArity S)
     (pattern : Term (signature S next) Γ sort) :
-    AnswerRealizes (ContextualResidualAnswers.ofUpdate compiled.firing.update
+    AnswerRealizes (ContextualConditionalAnswers.ofUpdate compiled.firing.update
       (compiled.firing.outputs (picked.made.get port))) next pattern ↔
     AnswerRealizes ⟨ContextualClauseSourceState.information queries locals before plan picked,
       queryView queries locals before.declarations
@@ -86,7 +86,7 @@ theorem produced (port : Fin picked.made.length) (next : Next → MetaArity S)
       have nativeRow : compiled.firing.target.rows (picked.made.get port) =
           ContextualConditionalPublication.ordinary (ContextualClauseFrames.bank queries locals)
             compiled.firing.update.declaration compiled.firing.target.declarations
-            (ContextualResidualAnswers.ofUpdate compiled.firing.update (compiled.firing.outputs (picked.made.get port))) := by
+            (ContextualConditionalAnswers.ofUpdate compiled.firing.update (compiled.firing.outputs (picked.made.get port))) := by
         change (if _ then (if _ then _ else _) else _) = _
         rw [if_pos made, ordinary]
         rfl
@@ -97,10 +97,10 @@ theorem produced (port : Fin picked.made.length) (next : Next → MetaArity S)
           (bankImages compiled candidate) _ pattern).trans (answer_iff compiled port next pattern)).symm
   | false =>
       have sourceKind := (ContextualClauseStateRefinement.reusable_at compiled port).symm.trans ordinary
-      rw [ContextualClauseSourceState.live_output_row (ContextualClauseStateRefinement.source_is_admitted compiled) port sourceKind,
-        ContextualClauseStateRefinement.live_value compiled port ordinary]
-      rw [realizes_live_iff _ _ _ (sourceImages compiled candidate),
-        realizes_live_iff _ _ candidate (nativeImages compiled candidate)]
+      rw [ContextualClauseSourceState.shared_output_row (ContextualClauseStateRefinement.source_is_admitted compiled) port sourceKind,
+        ContextualClauseStateRefinement.shared_value compiled port ordinary]
+      rw [realizes_shared_iff _ _ _ (sourceImages compiled candidate),
+        realizes_shared_iff _ _ candidate (nativeImages compiled candidate)]
       erw [Assignment.instantiate_compose, ContextualClauseStateRefinement.returned_environment compiled]
 
 theorem retained (occurrence : O) (notMade : occurrence ∉ picked.made)

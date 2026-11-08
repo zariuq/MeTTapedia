@@ -28,7 +28,7 @@ theorem extendPrivate_map (change : Assignment captures next)
     (ContextualPublication.extendPrivate locals queries row).map (bank queries locals) change =
       ContextualPublication.extendPrivate locals queries (row.map locals change) := by
   cases row with
-  | live value => rfl
+  | shared value => rfl
   | schema body =>
       change ContextualStoredRows.Row.schema
         (instantiate (ContextualStoredRows.liftCaptures (bank queries locals) change)
@@ -138,7 +138,7 @@ theorem admitted_iff [DecidableEq O] (occupied : Finset Nat) (selection : Select
     (rows : O → ContextualStoredRows.Row locals captures Γ sort)
     (before : Configuration (Term (signature S captures) Γ sort) O) :
     Admitted queries locals captures selection code rows before ↔
-    ContextualTransportedActivation.SemanticAdmission (bank queries locals) captures occupied selection
+    ContextualGuardedStep.Valid (bank queries locals) captures occupied selection
       (nativeRule queries locals captures code) (nativeRows queries locals captures rows) before
       (outputs queries locals captures occupied selection code rows) := by
   constructor

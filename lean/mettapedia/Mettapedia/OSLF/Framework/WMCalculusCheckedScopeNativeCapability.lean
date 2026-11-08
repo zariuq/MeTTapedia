@@ -8,7 +8,7 @@ A semantic scope filters queries independently of the current state. This is
 an instance of the existing WM capability interface over the core reading.
 Successful checked `outsideScope` premises therefore select actual members
 of its dependent answer graph. The graph remains in the established core-WM
-presheaf category; this does not identify the combined guarded language with
+presheaf category; this does not identify the combined overlap/scope language with
 the core language or interpret arbitrary raw patterns.
 -/
 
@@ -140,7 +140,7 @@ theorem counting_provider_native_answer
       (supportedGraph (outsideCapability countingCombined singletonX)).obj X := by
   apply checked_premise_native_answer countingCombined
     (checkedProvider demoTable)
-    (wmExtVertexLanguageDefGuarded combinedVertex)
+    (wmExtVertexLanguageDef combinedVertex)
     scopeHandle worldHandle outsideHandle
     singletonX "y" (countingCore.world "x")
   · rfl
@@ -155,7 +155,7 @@ theorem counting_provider_sigma_support
         (supportedGraph (outsideCapability countingCombined singletonX))).obj X := by
   apply checked_premise_sigma_support countingCombined
     (checkedProvider demoTable)
-    (wmExtVertexLanguageDefGuarded combinedVertex)
+    (wmExtVertexLanguageDef combinedVertex)
     scopeHandle worldHandle outsideHandle
     singletonX "y" (countingCore.world "x")
   · rfl

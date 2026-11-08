@@ -31,9 +31,9 @@ theorem opened_view_matches (scope : Nat) (candidate : Assignment (target locals
         (ContextualStoredRows.asTemplate locals captures row)))
       (row.map locals (ContextualSelectionViews.capturedTarget locals captures)) := by
   cases row with
-  | live value =>
+  | shared value =>
       exact congrArg (instantiate candidate)
-        (ContextualStoredRows.viewAt_eq_freshening locals captures scope (.live value)).symm
+        (ContextualStoredRows.viewAt_eq_freshening locals captures scope (.shared value)).symm
   | schema body =>
       let localBodies : Assignment locals next :=
         fun identity => candidate (.inl (ScopedVar.at scope identity))

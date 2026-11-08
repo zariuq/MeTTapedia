@@ -3766,7 +3766,7 @@ theorem shifted_caller_suffix (suffix younger older : List Goal) :
     callerSuffix?_split (younger.map (shift suffix.length))
       (older.map (shift suffix.length) ++ suffix)
 
-private theorem shift_letGoals (extra : Nat) (policy : Policy)
+theorem shift_letGoals (extra : Nat) (policy : Policy)
     (program : SpaceSemantics.Program) (pattern producer body output joined : Atom) :
     (letGoals policy program pattern producer body output joined).map (shift extra) =
       letGoals policy program pattern producer body output joined := by
@@ -3774,14 +3774,14 @@ private theorem shift_letGoals (extra : Nat) (policy : Policy)
   | eagerValue => rfl
   | relational => simp only [letGoals]; split <;> rfl
 
-private theorem shift_dataGoals (extra : Nat) (policy : Policy)
+theorem shift_dataGoals (extra : Nat) (policy : Policy)
     (children slots : List Atom) (destination : Atom) :
     (dataGoals policy children slots destination).map (shift extra) =
       dataGoals policy children slots destination := by
   cases policy <;> simp only [dataGoals, List.map_cons, List.map_append, List.map_map,
     Function.comp_def, shift, List.map_nil]
 
-private theorem shift_callArguments (extra : Nat) (program : SpaceSemantics.Program)
+theorem shift_callArguments (extra : Nat) (program : SpaceSemantics.Program)
     (head : String) (arguments slots : List Atom) :
     ((callArguments program head arguments slots).1).map (shift extra) =
       (callArguments program head arguments slots).1 := by
@@ -3834,6 +3834,10 @@ theorem prepared_attach {policy : Policy} {program : SpaceSemantics.Program}
       simpa only [attach_replace, List.map_cons, shift, fresh, List.cons_append] using
         (Source.Prepared.conditional (policy := policy) (program := program) (control := attach suffix control)
           (destination := destination) (older := older.map (shift suffix.length) ++ suffix) condition yes no)
+  | conditionalWithoutElse condition yes =>
+      simpa only [attach_replace, List.map_cons, shift, fresh, List.cons_append] using
+        (Source.Prepared.conditionalWithoutElse (policy := policy) (program := program) (control := attach suffix control)
+          (destination := destination) (older := older.map (shift suffix.length) ++ suffix) condition yes)
   | application head arguments ordinary declared =>
       simpa only [attach_replace, List.map_append, shift_callArguments, List.map_cons,
         List.map_nil, shift, slots, List.append_assoc] using
@@ -4225,7 +4229,7 @@ theorem argumentReturn_scoped_iff {Context : Type} (policy : Policy)
           (.refused _ _ localSource)
     | invalid inconsistent =>
         exact .active supply world scope parents control context origins pending _ frontier
-          (.boundary .invalidEnvironment _ localSource (by intros; simp) (by simp) (by intros; simp))
+          (.boundary .invalidEnvironment _ localSource (by intros; simp) (by intros; simp) (by simp) (by intros; simp))
 
 /-- Crossing an earned continuing return consumes one step, then runs the
 saved siblings on the returned cursor. Finite execution reflects to source

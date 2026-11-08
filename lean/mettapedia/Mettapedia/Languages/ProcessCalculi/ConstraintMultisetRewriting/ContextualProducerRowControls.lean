@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 /-!
 # A produced variable is shared on later reads; an old schema remains schematic
 
-An actual empty-input producer publishes its fresh rule variable as live
+An actual empty-input producer publishes its fresh rule variable as shared
 data. Two later reads cannot instantiate that one identity independently.
 The original schematic row still admits independent instances. Raw payload
 visibility and application of the computed answer are tested separately.
@@ -42,7 +42,7 @@ theorem rule_covered : RuleCovered (privateScopes initial.scopes) initial.occupi
   change (∅ : Finset Nat) ⊆ initial.occupied
   exact Finset.empty_subset _
 
-theorem admitted : ContextualTransportedActivation.Admission locals captures initial.occupied selection rule
+theorem admitted : ContextualGuardedStep.Requirements locals captures initial.occupied selection rule
     initial.inventory.rows initial.inventory.configuration outputs := by
   refine ⟨by decide +kernel, by decide +kernel, rfl, rfl, ?_, by decide +kernel, fun _ member => by cases member⟩
   with_unfolding_all rfl
@@ -54,8 +54,8 @@ def stored : Term (signature base after.declarations) [] () :=
   generator after.declarations (.inl (.inl (ScopedVar.at 8 0)))
 def returned : after.Names := .inr (.inl (.inl (ScopedVar.at 8 0)))
 
-theorem the_actual_producer_stores_its_local_as_a_live_shared_value :
-    after.inventory.rows 99 = .live stored ∧ 99 ∈ after.inventory.configuration.present := by
+theorem the_actual_producer_stores_its_local_as_a_shared_value :
+    after.inventory.rows 99 = .shared stored ∧ 99 ∈ after.inventory.configuration.present := by
   constructor
   · with_unfolding_all rfl
   · exact firing.produced_row_is_present (by decide +kernel)
@@ -74,7 +74,7 @@ theorem applying_the_actual_answer_can_reference_a_returned_declaration :
 theorem two_future_views_share_the_producer_variable :
     ContextualStoredRows.viewAt locals after.declarations 20 (after.inventory.rows 99) =
       ContextualStoredRows.viewAt locals after.declarations 21 (after.inventory.rows 99) :=
-  firing.produced_live_views_agree_at_any_two_future_scopes (by decide +kernel) 20 21
+  firing.produced_shared_views_agree_at_any_two_future_scopes (by decide +kernel) 20 21
 
 abbrev next := ContextualActivatedStep.target locals after.declarations
 abbrev rawNext := ContextualActivatedStep.source locals after.declarations
@@ -90,14 +90,14 @@ def shared : Term (signature base next) [] () :=
 def local11 : Term (signature base next) [] () := generator next (.inl (ScopedVar.at 11 0))
 def local12 : Term (signature base next) [] () := generator next (.inl (ScopedVar.at 12 0))
 
-theorem actual_live_reads_use_one_shared_producer_identity :
+theorem actual_shared_reads_use_one_shared_producer_identity :
     readProblem 99 = [(p a, shared), (p b, shared)] := by with_unfolding_all rfl
 
-theorem the_actual_live_reads_cannot_choose_two_independent_instances
+theorem the_actual_shared_reads_cannot_choose_two_independent_instances
     {Future : Type} {future : Future → MetaArity base} (candidate : Assignment next future) :
     ¬ ContextualFrameUnifier.Models candidate (readProblem 99) := by
   intro solved
-  rw [actual_live_reads_use_one_shared_producer_identity] at solved
+  rw [actual_shared_reads_use_one_shared_producer_identity] at solved
   have first := solved (p a, shared) (by simp)
   have second := solved (p b, shared) (by simp)
   have same := first.trans second.symm

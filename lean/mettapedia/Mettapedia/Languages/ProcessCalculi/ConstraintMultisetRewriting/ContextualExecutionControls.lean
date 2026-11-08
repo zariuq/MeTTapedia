@@ -8,7 +8,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 # Actual contextual paths keep independent schema reads and original guards
 
 The positive driver binds two fresh uses of one physical schema independently.
-Its original shared caller equation and untouched live row remain present.
+Its original shared caller equation and untouched shared row remain present.
 The endpoint evidence comes from the actual returned update.
 -/
 
@@ -49,7 +49,7 @@ theorem rule_covered : RuleCovered (privateScopes scopes) occupied rule := by
   apply (ruleRoots_covered_iff (privateScopes scopes) occupied rule).mp
   decide +kernel
 
-theorem admitted : ContextualTransportedActivation.Admission locals captures occupied selection rule rows before outputs := by
+theorem admitted : ContextualGuardedStep.Requirements locals captures occupied selection rule rows before outputs := by
   have valid := the_shared_physical_schema_read_is_a_valid_firing
   exact ⟨valid.take_distinct, valid.output_distinct, valid.take_length, valid.read_length,
     valid.outputs, valid.occurrences, fun check member => by cases member⟩
@@ -110,7 +110,7 @@ def takeRule : RuleInstance ContextualTransportedActivationControls.RawTerm :=
     [.equal ContextualTransportedActivationControls.rawFormal ContextualTransportedActivationControls.rawSwapped],
     [ContextualTransportedActivationControls.rawFormal]⟩
 def stored (_ : Nat) : ContextualStoredRows.Row localDefs captureDefs [(), ()] () :=
-  .live (rename (S := signature helperBase captureDefs) ContextualTransportedActivationControls.swap
+  .shared (rename (S := signature helperBase captureDefs) ContextualTransportedActivationControls.swap
     (generator captureDefs ()))
 def beginning : Configuration (Term (signature helperBase captureDefs) [(), ()] ()) Nat := ⟨[], {7, 8}⟩
 def made (_ : Nat) : ContextualTransportedActivationControls.ActiveTerm := ContextualTransportedActivationControls.formal
@@ -134,7 +134,7 @@ theorem covered_rule : RuleCovered (privateScopes oldScopes) ledger takeRule := 
   apply (ruleRoots_covered_iff (privateScopes oldScopes) ledger takeRule).mp
   decide +kernel
 
-theorem semantically_admitted : ContextualTransportedActivation.SemanticAdmission
+theorem semantically_admitted : ContextualGuardedStep.Valid
     localDefs captureDefs ledger picked takeRule stored beginning made := by
   refine ⟨⟨by decide, by decide, rfl, rfl, rfl, by decide, ?_⟩, ?_⟩
   · intro check member
@@ -157,12 +157,11 @@ theorem supported_patterns : ContextualPatternFragment.ProblemPattern (Contextua
     (ContextualActivatedStep.problem localDefs captureDefs ledger picked takeRule stored beginning)) :=
   (ContextualPatternFragment.checkProblem_iff _).mp (by decide +kernel)
 
-theorem no_fixed_family_admission : ¬ ContextualGuardedStep.Valid
-    localDefs captureDefs ledger picked takeRule stored beginning made := by
-  intro fixed
-  apply ContextualTransportedActivationControls.the_original_small_frame_is_inconsistent
-  rw [← the_take_builds_the_nontrivial_swap_problem]
-  exact fixed.consistent
+theorem no_endomorphic_model :
+    ¬ (ContextualFamilies.action (ContextualActivatedStep.target localDefs captureDefs) [(), ()] ()).Consistent
+      (ContextualActivatedStep.problem localDefs captureDefs ledger picked takeRule stored beginning) := by
+  rw [the_take_builds_the_nontrivial_swap_problem]
+  exact ContextualTransportedActivationControls.the_original_small_frame_is_inconsistent
 
 /-- The generic semantic realization constructs this actual consuming and
 producing execution, despite the absence of an original endomorphic model. -/
@@ -171,11 +170,12 @@ theorem actual_consumption_and_production_require_the_fresh_family :
       ∃ firing : ContextualExecution.Firing localDefs start after,
         firing.selection = picked ∧ firing.rule = takeRule ∧
         after.inventory.configuration.present = {8, 99} ∧
-        ¬ ContextualGuardedStep.Valid localDefs captureDefs ledger picked takeRule stored beginning made := by
+        ¬ (ContextualFamilies.action (ContextualActivatedStep.target localDefs captureDefs) [(), ()] ()).Consistent
+          (ContextualActivatedStep.problem localDefs captureDefs ledger picked takeRule stored beginning) := by
   obtain ⟨after, firing, ruleEq, selectionEq, _⟩ :=
     ContextualExecution.realize_semantic_admission localDefs start takeRule picked made
       covered_rule semantically_admitted supported_patterns
-  refine ⟨after, firing, selectionEq, ruleEq, ?_, no_fixed_family_admission⟩
+  refine ⟨after, firing, selectionEq, ruleEq, ?_, no_endomorphic_model⟩
   rw [firing.physical_result, selectionEq]
   change fire beginning.present (picked.commit (T := Unit)) = {8, 99}
   decide +kernel
@@ -191,7 +191,7 @@ def extendedOutputs := fun occurrence =>
   instantiate (ContextualViewNaturality.activeLift localDefs extraDeclarations.assignment) (made occurrence)
 
 theorem unused_declarations_preserve_the_actual_semantic_admission :
-    ContextualTransportedActivation.SemanticAdmission localDefs extraDeclarations.declarations ledger picked
+    ContextualGuardedStep.Valid localDefs extraDeclarations.declarations ledger picked
       extendedRule extendedRows extendedBefore extendedOutputs :=
   (ContextualViewNaturality.semantic_admission_extension_iff localDefs extraDeclarations ledger picked
     takeRule stored beginning made).mpr semantically_admitted
@@ -224,17 +224,15 @@ theorem the_extended_family_now_has_an_endomorphic_model :
   subst equation
   with_unfolding_all rfl
 
-/-- Endomorphic admission can change merely because an unused helper arity
-is available; future-family semantic admission is invariant under that change. -/
-theorem fixed_family_admission_depends_on_unused_declarations :
-    ¬ ContextualGuardedStep.Valid localDefs captureDefs ledger picked takeRule stored beginning made ∧
-      ContextualGuardedStep.Valid localDefs extraDeclarations.declarations ledger picked
-        extendedRule extendedRows extendedBefore extendedOutputs := by
-  have admitted := unused_declarations_preserve_the_actual_semantic_admission
-  exact ⟨no_fixed_family_admission,
-    ⟨admitted.take_distinct, admitted.output_distinct, admitted.take_length, admitted.read_length,
-      admitted.outputs, admitted.occurrences,
-      ⟨extendedModel, the_extended_family_now_has_an_endomorphic_model⟩, admitted.checks⟩⟩
+/-- Same-frame consistency can change merely because an unused helper
+arity is available; contextual admission is invariant under that extension. -/
+theorem endomorphic_consistency_depends_on_unused_declarations :
+    ¬ (ContextualFamilies.action (ContextualActivatedStep.target localDefs captureDefs) [(), ()] ()).Consistent
+        (ContextualActivatedStep.problem localDefs captureDefs ledger picked takeRule stored beginning) ∧
+      (ContextualFamilies.action extendedActive [(), ()] ()).Consistent
+        (ContextualActivatedStep.problem localDefs extraDeclarations.declarations ledger picked
+          extendedRule extendedRows extendedBefore) :=
+  ⟨no_endomorphic_model, ⟨extendedModel, the_extended_family_now_has_an_endomorphic_model⟩⟩
 
 end HelperConsumption
 

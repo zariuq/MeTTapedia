@@ -1,5 +1,7 @@
 import Lean
 import Mettapedia.Languages.Lean.CodeEquations.Erased
+import Mettapedia.Languages.Lean.Declarations.Reader
+import Mettapedia.Languages.Lean.Declarations.ConstructorInventory
 
 /-!
 # Erasing Lean definitions to code equations
@@ -39,10 +41,13 @@ open Lean Meta
 
 namespace Mettapedia.Languages.Lean.CodeEquations
 
-/-- Whether a value of this type is erased: a proof, a type, or a type former. -/
-def erasedType (t : Expr) : MetaM Bool := do
-  if ← isProp t then return true
-  isTypeFormerType t
+/- Erasure is decided once, by the declaration reader: `erasedType` for
+every constant.  The fields of a constructor come from the declaration
+analysis: for a family the profile admits, from its `Description` inventory
+with guards or a tagged block (`ConstructorInventory.constructorFields`);
+otherwise from the source Reader without a model-admission claim. -/
+open Mettapedia.Languages.Lean.Declarations (erasedType)
+open Mettapedia.Languages.Lean.Declarations.ConstructorInventory (constructorFields)
 
 /-- For each parameter of a constant's type, whether it is kept by erasure.
 The telescope is read through definitions (`DecidableRel r` has two binders),
@@ -218,13 +223,13 @@ partial def eraseConstApp (e : Expr) (c : Name) (args : Array Expr) : EraseM ETe
     return applyMore (← saturate c false kept.size (kept.toList.count true) as)
       (← rest (min kept.size args.size))
   if let some ctor := env.find? c |>.bind (fun | .ctorInfo v => some v | _ => none) then
-    let kept ← keptParams c
+    let fieldsKept := (← constructorFields c).toArray
+    let total := ctor.numParams + fieldsKept.size
     let mut as : List ETerm := []
-    for i in [ctor.numParams:min kept.size args.size] do
-      if kept[i]! then as := as ++ [← erase args[i]!]
-    let keptFields := (kept.extract ctor.numParams kept.size).toList.count true
-    return applyMore (← saturate c true kept.size keptFields as)
-      (← rest (min kept.size args.size))
+    for i in [ctor.numParams:min total args.size] do
+      if fieldsKept[i - ctor.numParams]! then as := as ++ [← erase args[i]!]
+    return applyMore (← saturate c true total (fieldsKept.toList.count true) as)
+      (← rest (min total args.size))
   -- A function: kept arguments by its signature.
   noteConst c
   let kept ← keptParams c
@@ -279,10 +284,10 @@ partial def erasePat (e : Expr) : StateRefT (Std.HashSet FVarId) EraseM EPat := 
   let args := e.getAppArgs
   if let .const c _ := fn then
     if let some (.ctorInfo ctor) := (← getEnv).find? c then
-      let kept ← keptParams c
+      let fieldsKept := (← constructorFields c).toArray
       let mut ps : List EPat := []
       for i in [ctor.numParams:args.size] do
-        if kept[i]?.getD true then ps := ps ++ [← erasePat args[i]!]
+        if fieldsKept[i - ctor.numParams]?.getD true then ps := ps ++ [← erasePat args[i]!]
       let name := if c == ``Decidable.isTrue then ``Bool.true
         else if c == ``Decidable.isFalse then ``Bool.false else c
       return .ctor name ps
@@ -337,14 +342,14 @@ def projectionFunction (c : Name) : EraseM EFunction := do
   let some (.ctorInfo ctor) := (← getEnv).find? pinfo.ctorName
     | throwError "code equations: {pinfo.ctorName} is not a constructor"
   let kept ← keptParams c
-  let ctorKept ← keptParams pinfo.ctorName
+  let ctorKept := (← constructorFields pinfo.ctorName).toArray
   let mut pats : List EPat := []
   for i in [0:pinfo.numParams] do
     if kept[i]?.getD false then pats := pats ++ [.wild]
   let mut fields : List EPat := []
   let mut target : Option String := none
   for j in [0:ctor.numFields] do
-    if ctorKept[ctor.numParams + j]?.getD false then
+    if ctorKept[j]?.getD false then
       let v := s!"field_{j}"
       fields := fields ++ [.var v]
       if j == pinfo.i then target := some v

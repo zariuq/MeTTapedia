@@ -49,10 +49,10 @@ theorem the_schema_count_survives_the_nonsurjective_infinite_embedding :
     ContextualPrefixAskControls.old_schema_count
 
 def caller : Term (signature base captures) [] () := generator captures 0
-def liveRows (_ : Nat) : ContextualStoredRows.Row locals captures [] () := .live caller
+def sharedRows (_ : Nat) : ContextualStoredRows.Row locals captures [] () := .shared caller
 
 theorem the_source_caller_equality_is_not_entailed :
-    ¬ ContextualGuardSemantics.Ask locals [] liveRows ∅ (.equal caller a) := by
+    ¬ ContextualGuardSemantics.Ask locals [] sharedRows ∅ (.equal caller a) := by
   intro ask
   have same := ask Nat captures (generator captures) (fun _ member => by cases member)
   change caller = a at same
@@ -61,11 +61,11 @@ theorem the_source_caller_equality_is_not_entailed :
 
 theorem the_extra_names_cannot_discharge_the_caller_check :
     ¬ ContextualGuardSemantics.Ask locals (ContextualFrameUnifier.mapProblem oddNames.assignment [])
-      (fun occurrence => (liveRows occurrence).map locals oddNames.assignment) ∅
+      (fun occurrence => (sharedRows occurrence).map locals oddNames.assignment) ∅
       ((Check.equal caller a).map (instantiate oddNames.assignment)) := by
   intro extended
   exact the_source_caller_equality_is_not_entailed
-    ((ContextualGuardSemantics.Ask.extension_iff locals oddNames [] liveRows ∅ (.equal caller a)).mp extended)
+    ((ContextualGuardSemantics.Ask.extension_iff locals oddNames [] sharedRows ∅ (.equal caller a)).mp extended)
 
 def prior : EquationStore (Term (signature base captures) [] ()) := [(caller, a)]
 def sourceModel : Assignment captures captures := fun _ => a
@@ -113,7 +113,7 @@ open ContextualPrefixModelControls (emptySignature noDeclarations callers aliasC
 
 def first : Term (signature emptySignature callers) [] () := generator callers false
 def second : Term (signature emptySignature callers) [] () := generator callers true
-def rows (_ : Nat) : ContextualStoredRows.Row noDeclarations callers [] () := .live first
+def rows (_ : Nat) : ContextualStoredRows.Row noDeclarations callers [] () := .shared first
 
 theorem the_original_equality_is_not_entailed :
     ¬ ContextualGuardSemantics.Ask noDeclarations [] rows ∅ (.equal first second) := by

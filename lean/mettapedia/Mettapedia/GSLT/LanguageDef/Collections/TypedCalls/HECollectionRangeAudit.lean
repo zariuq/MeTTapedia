@@ -1,0 +1,70 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HECollectionRangeControls
+
+/-! Current inferred-reader range in the extended collection world. The
+outer square/collapse composition and native lowering remain separate. -/
+
+open Mettapedia.GSLT.LanguageDef.Collections.TypedCalls
+
+#print axioms HECollectionTypeReadPrimitives.safe
+#print axioms HECollectionTypeReadPrimitives.declarations_eq
+#print axioms HECollectionTypeReadPrimitives.no_expression_annotations
+#print axioms HECollectionTypeReadPrimitives.closure
+#print axioms HECollectionTypeReadPrimitives.symbol_singleton_read
+#print axioms HECollectionTypeReadPrimitives.closed_symbol
+#print axioms HECollectionTypeReadPrimitives.undeclared_symbol
+#print axioms HECollectionTypeReadPrimitives.operator_singleton
+#print axioms HECollectionTypeReadPrimitives.annotation_empty
+
+#print axioms HECollectionTypeReadApplications.current_policy_agrees
+#print axioms HECollectionTypeReadApplications.binary_numeric_type
+#print axioms HECollectionTypeReadApplications.comparison_type
+#print axioms HECollectionTypeReadApplications.if_head_type
+#print axioms HECollectionTypeReadApplications.undeclared_application_type
+#print axioms HECollectionTypeReadApplications.range_type
+
+#print axioms HECollectionInferredQueries.number_query
+#print axioms HECollectionInferredQueries.boolean_query
+#print axioms HECollectionInferredQueries.closed_head
+#print axioms HECollectionInferredQueries.undefined_head
+#print axioms HECollectionInferredQueries.if_query
+#print axioms HECollectionInferredQueries.comparison_query
+#print axioms HECollectionInferredQueries.range_query
+#print axioms HECollectionInferredQueries.wrong_space_refused
+
+#print axioms HECollectionWorld.ordinary
+#print axioms HECollectionWorld.primitive_keeps_world
+
+#print axioms HECollectionArithmetic.closed_operator
+#print axioms HECollectionArithmetic.number_source
+#print axioms HECollectionArithmetic.boolean_source
+#print axioms HECollectionArithmetic.number_undefined
+#print axioms HECollectionArithmetic.number_admission
+#print axioms HECollectionArithmetic.selection
+#print axioms HECollectionArithmetic.source_call
+#print axioms HECollectionArithmetic.primitive_call
+#print axioms HECollectionArithmetic.addition_source
+#print axioms HECollectionArithmetic.comparison_source
+#print axioms HECollectionArithmetic.multiplication_source
+
+#print axioms HECollectionIfActivation.comparison_admission
+#print axioms HECollectionIfActivation.selection_from_query
+#print axioms HECollectionIfActivation.arguments
+#print axioms HECollectionIfActivation.source_activation
+
+#print axioms HECollectionSuperpose.selection
+#print axioms HECollectionSuperpose.argument_source
+#print axioms HECollectionSuperpose.native_rows
+#print axioms HECollectionSuperpose.item_returns
+#print axioms HECollectionSuperpose.native_call
+#print axioms HECollectionSuperpose.source
+
+#print axioms HECollectionRange.ports
+#print axioms HECollectionRange.source
+#print axioms HECollectionRange.retained_run
+
+#print axioms HECollectionRangeControls.new_square_declaration_changes_read
+#print axioms HECollectionRangeControls.closure_is_not_known_empty
+#print axioms HECollectionRangeControls.cross_zero
+#print axioms HECollectionRangeControls.descending_is_terminal_empty
+#print axioms HECollectionRangeControls.duplicate_superpose
+

@@ -9,7 +9,7 @@ These controls permit refinement of an intentionally granted capture while
 retaining a different joint caller interface. They reject changes through
 compound dependency chains and keep the distinction between marginal and
 joint possibilities. Negative and count guards include variables in watched
-live rows even when their query has no variables.
+shared rows even when their query has no variables.
 -/
 
 set_option autoImplicit false
@@ -152,39 +152,39 @@ theorem the_unequal_joint_pair_was_previously_possible :
   intro _ member
   cases member
 
-open ContextualGuardSemantics.Controls (query liveRows world)
+open ContextualGuardSemantics.Controls (query sharedRows world)
 
 theorem closed_negative_and_count_queries_retain_hidden_row_names :
     support query = [] ∧
-      0 ∈ guardNames locals liveRows world (.absent query) ∧
-      0 ∈ guardNames locals liveRows world (.count query 1) := by
+      0 ∈ guardNames locals sharedRows world (.absent query) ∧
+      0 ∈ guardNames locals sharedRows world (.count query 1) := by
   refine ⟨rfl, ?_, ?_⟩ <;>
-    simp [guardNames, world, liveRows, rowNames, p, pair, atom,
+    simp [guardNames, world, sharedRows, rowNames, p, pair, atom,
       ContextualSelectionViews.Controls.sharedValue, support, supportArgs, support_generator]
 
 theorem granting_the_hidden_row_variable_is_rejected :
     ¬ Permitted grantX ([] : EquationStore Value) setX
-      (guardObservations locals liveRows world (.count query 1)) := by
+      (guardObservations locals sharedRows world (.count query 1)) := by
   intro permission
   have granted : 0 ∈ grantX := by simp [grantX]
   apply permission.separated 0 granted
   apply DependencyClosure.root
-  simpa using guard_name_is_observation_root locals liveRows world (.count query 1) []
+  simpa using guard_name_is_observation_root locals sharedRows world (.count query 1) []
     closed_negative_and_count_queries_retain_hidden_row_names.2.2
 
 theorem the_unprotected_hidden_binding_really_changes_the_count :
-    ¬ ContextualGuardSemantics.Ask locals ([] : EquationStore Value) liveRows world (.count query 1) ∧
-      ContextualGuardSemantics.Ask locals setX liveRows world (.count query 1) :=
+    ¬ ContextualGuardSemantics.Ask locals ([] : EquationStore Value) sharedRows world (.count query 1) ∧
+      ContextualGuardSemantics.Ask locals setX sharedRows world (.count query 1) :=
   ContextualProcessInterference.same_world_different_information_changes_the_guard
 
 theorem the_hidden_binding_changes_pointwise_absence :
-    ContextualGuardSemantics.Holds locals (generator captures) liveRows world (.absent query) ∧
+    ContextualGuardSemantics.Holds locals (generator captures) sharedRows world (.absent query) ∧
       ¬ ContextualGuardSemantics.Holds locals ContextualGuardSemantics.Controls.assignedA
-        liveRows world (.absent query) := by
-  refine ⟨ContextualGuardSemantics.Controls.identity_absence_of_a_live_unknown_is_only_pointwise, ?_⟩
+        sharedRows world (.absent query) := by
+  refine ⟨ContextualGuardSemantics.Controls.identity_absence_of_a_shared_unknown_is_only_pointwise, ?_⟩
   intro absent
   exact absent 7 (by decide +kernel)
-    ContextualGuardSemantics.Controls.later_binding_makes_the_live_row_match
+    ContextualGuardSemantics.Controls.later_binding_makes_the_shared_row_match
 
 def mixedSchema : Term (signature base (ContextualSelectionViews.source locals captures)) [] () :=
   pair (generator _ (Sum.inl 0)) (generator _ (Sum.inr 1))

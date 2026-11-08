@@ -1,0 +1,23 @@
+import Mettapedia.Machines.ReadOnlyQueryRelation
+
+/-! # Axiom dependencies of adaptive stateful query relations -/
+
+#print axioms Mettapedia.Machines.ReadOnlyQueryRelation.refl_of_guarantees
+#print axioms Mettapedia.Machines.ReadOnlyQueryRelation.left_guarantees
+#print axioms Mettapedia.Machines.ReadOnlyQueryRelation.symmetric
+#print axioms Mettapedia.Machines.ReadOnlyQueryRelation.right_guarantees
+#print axioms Mettapedia.Machines.ReadOnlyQueryRelation.bind_related
+#print axioms Mettapedia.Machines.ReadOnlyQueryRelation.map_related_of_agree
+#print axioms Mettapedia.Machines.ReadOnlyQueryRelation.map_related
+#print axioms Mettapedia.Machines.ReadOnlyQueryRelation.demand_run_eq
+#print axioms Mettapedia.Machines.ReadOnlyQueryRelation.completed_sound
+#print axioms Mettapedia.Machines.ReadOnlyQueryRelation.Controls.guarded_related
+#print axioms Mettapedia.Machines.ReadOnlyQueryRelation.Controls.services_agree_on_valid_keys
+#print axioms Mettapedia.Machines.ReadOnlyQueryRelation.Controls.service_reply_valid
+#print axioms Mettapedia.Machines.ReadOnlyQueryRelation.Controls.adaptive_programs_agree
+#print axioms Mettapedia.Machines.ReadOnlyQueryRelation.Controls.repeated_key_has_distinct_occurrences
+#print axioms Mettapedia.Machines.ReadOnlyQueryRelation.Controls.missing_stops_at_second_occurrence
+#print axioms Mettapedia.Machines.ReadOnlyQueryRelation.Controls.missing_does_not_run_suffix
+#print axioms Mettapedia.Machines.ReadOnlyQueryRelation.Controls.missing_is_not_a_completed_zero
+#print axioms Mettapedia.Machines.ReadOnlyQueryRelation.Controls.fixed_key_reuse_changes_answer
+

@@ -28,14 +28,12 @@ variable {S : Signature} {Query Local O : Type}
     [DecidableEq S.Srt] [∀ sort, DecidableEq (S.Op sort)]
     {Γ : Ctx S} {sort : S.Srt} {before : ContextualConditionalExecution.State locals O Γ sort}
 
-structure Compiled (plan : ContextualPublication.Plan
-    (Term (signature S (queryFamily queries before.declarations)) Γ sort)) (selection : Selection O) where
-  firing : ContextualConditionalExecution.Firing (bank queries locals)
-    (prepareState queries locals before)
-  authored : firing.rule = ContextualClauseProblem.nativeRule queries locals before.declarations plan.rule
-  selected : firing.selection = selection
-  values : firing.outputs = outputs queries locals before.declarations before.occupied selection plan.rule before.rows
-  intents : selection.made.map firing.reusable = plan.reusable
+abbrev Compiled (plan : ContextualPublication.Plan
+    (Term (signature S (queryFamily queries before.declarations)) Γ sort)) (selection : Selection O) :=
+  ContextualConditionalExecution.Published (bank queries locals) (prepareState queries locals before)
+    (ContextualClauseProblem.nativeRule queries locals before.declarations plan.rule) selection
+    (outputs queries locals before.declarations before.occupied selection plan.rule before.rows)
+    (.made plan.reusable)
 
 theorem realize (plan : ContextualPublication.Plan
     (Term (signature S (queryFamily queries before.declarations)) Γ sort)) (selection : Selection O)
@@ -86,29 +84,16 @@ theorem native_information (compiled : Compiled queries locals plan selection) :
   rw [compiled.authored, compiled.selected]
   exact actual_information queries locals before.declarations before.occupied selection plan.rule before.rows before.equations
 
-def resultFrame (compiled : Compiled queries locals plan selection) :
-    ContextualGuardMatching.Extension (nativeActive queries locals before.declarations) where
-  Names := compiled.firing.target.Names
-  declarations := compiled.firing.target.declarations
-  name := Sum.inl
-  injective := Sum.inl_injective
-  preserves _ := rfl
-
-theorem resultFrame_assignment (compiled : Compiled queries locals plan selection) :
-    compiled.resultFrame.assignment = ContextualComputedFreshFrame.includeSource compiled.firing.update := by
-  funext name
-  exact (ContextualFreshFrameScopeLedger.includeSource_image compiled.firing.update name).symm
-
 def sourceFrame (compiled : Compiled queries locals plan selection) :
     ContextualGuardMatching.Extension (family queries locals before.declarations) :=
-  (frame queries locals before.declarations before.occupied).trans compiled.resultFrame
+  (frame queries locals before.declarations before.occupied).trans compiled.firing.resultFrame
 
 theorem sourceFrame_assignment (compiled : Compiled queries locals plan selection) :
     compiled.sourceFrame.assignment = Assignment.compose (ContextualComputedFreshFrame.includeSource compiled.firing.update)
       (frame queries locals before.declarations before.occupied).assignment :=
-  ((frame queries locals before.declarations before.occupied).trans_assignment compiled.resultFrame).trans
+  ((frame queries locals before.declarations before.occupied).trans_assignment compiled.firing.resultFrame).trans
     (congrArg (fun assignment => Assignment.compose assignment
-      (frame queries locals before.declarations before.occupied).assignment) compiled.resultFrame_assignment)
+      (frame queries locals before.declarations before.occupied).assignment) compiled.firing.resultFrame_assignment)
 
 def continuationEnv (compiled : Compiled queries locals plan selection) :
     Assignment (queryFamily queries before.declarations) compiled.firing.target.declarations :=

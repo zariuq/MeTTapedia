@@ -148,7 +148,7 @@ theorem preparation {Context : Type} (policy : Policy) (program : SpaceSemantics
     (allocator : Allocator) (world : World) (scope : CollectionScope Context)
     (parents : List (CollectionScope Context)) (caller : Control) (context : Context)
     (origins : List Nat) (pending : List (CollectionWork Context)) (head left right : String) (destination : Atom)
-    (ordinary : head ≠ "let*") (declared : callable program head = true)
+    (ordinary : head ≠ "let*" ∧ head ≠ "if") (declared : callable program head = true)
     (leftEvaluated : Eval.argumentIsRaw program head 0 = false)
     (rightEvaluated : Eval.argumentIsRaw program head 1 = false)
     (consistent : ∃ environment, Solves environment caller.bindings) :
@@ -162,6 +162,6 @@ theorem preparation {Context : Type} (policy : Policy) (program : SpaceSemantics
     ScopedQuerySource.constrainedCall, ScopedQuerySource.mutationCall, ScopedQuerySource.queryStep,
     placed, entry, source, scopeStep, enterCollapse?, enterSuperpose?, EagerDFS.Destination.machine,
     prepare, replace, installChild, retainChild, callArguments, freshSlots, List.range_succ,
-    ordinary, declared, leftEvaluated, rightEvaluated, firstBindings, ready, slot, first, second]
+    ordinary.1, ordinary.2, declared, leftEvaluated, rightEvaluated, firstBindings, ready, slot, first, second]
 
 end Mettapedia.Languages.MeTTa.PeTTa.Bridges.ScopedCallOperands

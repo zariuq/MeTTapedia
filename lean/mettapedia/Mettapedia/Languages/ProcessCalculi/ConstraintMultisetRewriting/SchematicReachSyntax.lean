@@ -173,7 +173,7 @@ def Row.mapNames {Local Shared : Type} {locals : Local → MetaArity (base S poi
     {Γ : Ctx S} {sort : S.Srt} :
     ContextualStoredRows.Row locals captures Γ sort → ContextualStoredRows.Row locals captures Γ sort
   | .schema body => .schema (SchematicReach.mapNames change body)
-  | .live value => .live (SchematicReach.mapNames change value)
+  | .shared value => .shared (SchematicReach.mapNames change value)
 
 theorem mapNames_view {Local Shared : Type} (locals : Local → MetaArity (base S point Name))
     (captures : Shared → MetaArity (base S point Name)) (change : Name → Name) (scope : Nat)
@@ -187,7 +187,7 @@ theorem mapNames_view {Local Shared : Type} (locals : Local → MetaArity (base 
       congr 1
       funext identity
       cases identity <;> exact mapNames_generator change _
-  | live value =>
+  | shared value =>
       dsimp only [ContextualStoredRows.viewAt,Row.mapNames]
       rw [mapNames_instantiate]
       congr 1
@@ -230,7 +230,7 @@ def locatedRow {Local Shared : Type} (locals : Local → MetaArity (base S point
     (address : Term (signature (base S point Name) captures) Γ point) :
     ContextualStoredRows.Row locals captures Γ point → ContextualStoredRows.Row locals captures Γ point
   | .schema body => .schema (place (instantiate (ContextualSelectionViews.capturedSource locals captures) address) body)
-  | .live value => .live (place address value)
+  | .shared value => .shared (place address value)
 
 theorem view_locatedRow {Local Shared : Type} (locals : Local → MetaArity (base S point Name))
     (captures : Shared → MetaArity (base S point Name)) {Γ : Ctx S} (scope : Nat)
@@ -240,7 +240,7 @@ theorem view_locatedRow {Local Shared : Type} (locals : Local → MetaArity (bas
       place (instantiate (ContextualSelectionViews.capturedTarget locals captures) address)
         (ContextualStoredRows.viewAt locals captures scope row) := by
   cases row with
-  | live value => rfl
+  | shared value => rfl
   | schema body =>
       dsimp only [locatedRow,ContextualStoredRows.viewAt,ContextualFreshening.termAt]
       rw [instantiate_place,instantiate_comp]

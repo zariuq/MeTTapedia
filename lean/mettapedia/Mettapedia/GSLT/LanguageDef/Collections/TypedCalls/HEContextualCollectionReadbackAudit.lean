@@ -1,0 +1,26 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEContextualCollectionReadback
+
+/-! Retained-caller collection replay and exact annotated readback audit. -/
+
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEContextualCollectionReadback.snapshot_absorbs
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEContextualCollectionReadback.unifier_keys_mono
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEContextualCollectionReadback.caller_read_of_child_normalized
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEContextualCollectionReadback.caller_read_of_actual_unification
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEContextualCollectionReadback.snapshot_absorbs_source_merge
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEContextualCollectionReadback.erased_read_absorbs
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEContextualCollectionReadback.restore_stored_caller
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEContextualCollectionReadback.stored_pair_read
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEContextualCollectionReadback.captured_read
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEContextualCollectionReadback.capture_roundtrip
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEContextualCollectionReadback.collection_roundtrip
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEContextualCollectionReadback.held_source_roundtrip
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEContextualCollectionReadback.held_source_retained_run
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEContextualCollectionReadback.Controls.value_fixed
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEContextualCollectionReadback.Controls.actual_child
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEContextualCollectionReadback.Controls.actual_capture
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEContextualCollectionReadback.Controls.aliased_caller_replay
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEContextualCollectionReadback.Controls.stored_literals
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEContextualCollectionReadback.Controls.literal_child
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEContextualCollectionReadback.Controls.finite_source_replay
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEContextualCollectionReadback.Controls.duplicate_error_empty_control
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEContextualCollectionReadback.Controls.erased_theory_does_not_supply_annotated_absorption

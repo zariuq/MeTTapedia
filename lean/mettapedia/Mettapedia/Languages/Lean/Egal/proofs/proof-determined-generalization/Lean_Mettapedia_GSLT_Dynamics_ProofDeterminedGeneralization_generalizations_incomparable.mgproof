@@ -1,0 +1,130 @@
+claim HL: (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)) :e
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm.
+{ exact Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_typed (LeanNum 0) (LeanNum_In 0
+    nat_0). }
+claim HM: (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0))
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0))) :e
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm.
+{ exact Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_typed
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)) HL
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)) HL. }
+claim HV: (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node (LeanNum 0)) :e
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm.
+{ exact Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_typed (LeanNum 0) (LeanNum_In 0
+    nat_0). }
+claim Rx: forall x :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm,
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0))
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)))
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0))
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_exampleByRight x
+  = Lean_Prod_mk_node Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node x
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)))
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)).
+{ let x. assume Hx: x :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. rewrite
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_exampleByRight_eq_1.
+  exact Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize_eq_1
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)) HL x Hx
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0))
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0))) HM
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)) HL. }
+claim Lx: forall x :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm,
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0))
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)))
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0))
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_exampleByLeft x
+  = Lean_Prod_mk_node Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)) x)
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)).
+{ let x. assume Hx: x :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. rewrite
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_exampleByLeft_eq_1.
+  exact Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize_eq_2
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)) HL x Hx
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0))
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0))) HM
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)) HL. }
+apply andI.
+- witness (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node (LeanNum 0)). apply andI.
+  + exact HV.
+  + let y. assume Hy: y :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm.
+    rewrite Rx (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node (LeanNum 0)) HV.
+    rewrite Lx y Hy.
+    assume H: Lean_Prod_mk_node Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node (LeanNum 0))
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)))
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0))
+      = Lean_Prod_mk_node Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)) y)
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)).
+    claim H1: Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node (LeanNum 0))
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)) =
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)) y.
+    { exact Lean_Prod_mk_inj0 Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node (LeanNum 0))
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)))
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0))
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)) y)
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)) H. }
+    exact Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_noconf0_1 (LeanNum 0) (LeanNum 0)
+    (eq_sym_i (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node (LeanNum 0))
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0))
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_inj0
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node (LeanNum 0))
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0))
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)) y H1)).
+- witness (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node (LeanNum 0)). apply andI.
+  + exact HV.
+  + let y. assume Hy: y :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm.
+    rewrite Lx (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node (LeanNum 0)) HV.
+    rewrite Rx y Hy.
+    assume H: Lean_Prod_mk_node Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0))
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node (LeanNum 0)))
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0))
+      = Lean_Prod_mk_node Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node y
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)))
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)).
+    claim H1: Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0))
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node (LeanNum 0)) =
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node y
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)).
+    { exact Lean_Prod_mk_inj0 Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0))
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node (LeanNum 0)))
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0))
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node y
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)))
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)) H. }
+    exact Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_noconf0_1 (LeanNum 0) (LeanNum 0)
+    (eq_sym_i (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node (LeanNum 0))
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0))
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_inj1
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0))
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node (LeanNum 0)) y
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)) H1)).

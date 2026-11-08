@@ -2,11 +2,11 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NamedSpacesAuthority
 
 /-!
-# Private schema variables and explicit live references
+# Private schema variables and explicit shared references
 
-Ordinary storage and live storage give different variable identities even
+Ordinary storage and shared storage give different variable identities even
 when their displayed variable numbers coincide. In the existing named-space
-authority model, passing the same live reference passes a channel through
+authority model, passing the same shared reference passes a channel through
 which a later binding can communicate a name. Binding a fresh private copy
 does not communicate that name to the holder of another reference.
 
@@ -24,10 +24,10 @@ open Mettapedia.Logic.LP (ScopedVar)
 
 namespace Controls
 
-theorem an_ordinary_schema_variable_is_not_the_callers_live_reference (scope : Nat) :
+theorem an_ordinary_schema_variable_is_not_the_callers_shared_reference (scope : Nat) :
     ContextualStoredRows.viewAt locals captures scope
         (ContextualStoredRows.store locals captures (generator locals 0)) ≠
-      ContextualStoredRows.viewAt locals captures scope (.live (generator captures 0)) := by
+      ContextualStoredRows.viewAt locals captures scope (.shared (generator captures 0)) := by
   rw [ContextualStoredRows.view_store,instantiate_generator]
   change generator active (.inl (ScopedVar.at scope 0)) ≠
     instantiate (ContextualSelectionViews.capturedTarget locals captures) (generator captures 0)
@@ -44,7 +44,7 @@ open NamedSpaces
 open NamedSpaces.Controls (Tm names spaces)
 
 /-- A deliberately shared variable can carry any space name when bound. -/
-theorem passing_a_live_reference_passes_a_name_channel (reference name : Nat) :
+theorem passing_a_shared_reference_passes_a_name_channel (reference name : Nat) :
     NoNameFor names [] {.var reference} name ∧
       Possesses names [(.var reference,.nm name)] {.var reference} name := by
   constructor
@@ -60,7 +60,7 @@ theorem passing_a_live_reference_passes_a_name_channel (reference name : Nat) :
       simpa [SubstitutionAction.Solves,spaces,Tm.subst] using solved
 
 /-- Binding the reader's private instance cannot send the name through a
-different live reference retained by the owner. -/
+different shared reference retained by the owner. -/
 theorem binding_a_private_copy_gives_the_owner_no_name (privateReference ownerReference name : Nat)
     (apart : privateReference ≠ ownerReference) :
     NoNameFor names [(.var privateReference,.nm name)] {.var ownerReference} name := by

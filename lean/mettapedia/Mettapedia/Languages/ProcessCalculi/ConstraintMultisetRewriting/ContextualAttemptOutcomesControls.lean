@@ -1,5 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualAttemptOutcomes
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualQueryCensusControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualQueryAnswersControls
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.StagedSourceEffectsControls
 
 /-! # Complete none, refusal without residue, unfinished search and vacuous every -/
@@ -8,7 +8,7 @@ set_option autoImplicit false
 
 namespace Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualAttemptOutcomes.Controls
 
-open ContextualConjunctiveControls ContextualQueryCensusControls
+open ContextualConjunctiveControls ContextualQueryAnswersControls
 open ContextualSelectionViews.Controls (base)
 open ConstraintMultisetRewriting.Controls (A)
 
@@ -71,14 +71,14 @@ theorem partial_search_is_not_a_complete_table : partialSearch.complete = false 
   | false => rfl
   | true =>
       have all : ∀ chosen ∈ ContextualConjunctiveAbsence.candidates domain single.length,
-          ContextualQueryCensus.closed (ContextualQueryCensus.scan queries locals captures [] single alternatives
+          ContextualQueryAnswers.closed (ContextualQueryAnswers.scan queries locals captures [] single alternatives
             partialSearch.budget chosen) = true := of_decide_eq_true test
       have second := all (tuple 2) ((ContextualConjunctiveAbsence.mem_candidates domain _).mpr
         (fun _ => by change 2 ∈ domain; decide +kernel))
-      have unfinished : ContextualQueryCensus.closed (ContextualQueryCensus.scan queries locals captures [] single alternatives
+      have unfinished : ContextualQueryAnswers.closed (ContextualQueryAnswers.scan queries locals captures [] single alternatives
           partialSearch.budget (tuple 2)) = false := by
         obtain ⟨Next, next, candidate, model⟩ := job_has_a_model 2
-        unfold ContextualQueryCensus.scan
+        unfold ContextualQueryAnswers.scan
         rw [ContextualFrameWorklist.run_eq_local_on_model _ _ next candidate model]
         decide +kernel
       rw [unfinished] at second

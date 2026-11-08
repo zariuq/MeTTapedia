@@ -1,0 +1,20 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HELiteralWorkerDelivery
+
+/-! # Literal worker delivery theorem dependencies -/
+
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HELiteralWorkerDelivery.raw_numeric
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HELiteralWorkerDelivery.scoped_numeric
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HELiteralWorkerDelivery.numeric_cast_lookup
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HELiteralWorkerDelivery.numeric_covered_lookup
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HELiteralWorkerDelivery.numeric_step
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HELiteralWorkerDelivery.closed_head_step
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HELiteralWorkerDelivery.scoped_closed_head_step
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HELiteralWorkerDelivery.unary_number_arrow_covered
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HELiteralWorkerDelivery.binary_number_arrow_covered
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HELiteralWorkerDelivery.numeric_arguments
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HELiteralWorkerDelivery.numeric_arguments_at_depth
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HELiteralWorkerDelivery.one_argument
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HELiteralWorkerDelivery.two_arguments
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HELiteralWorkerDelivery.Controls.distinct_operands_keep_record_and_caller
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HELiteralWorkerDelivery.Controls.too_little_depth_suspends
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HELiteralWorkerDelivery.Controls.wrong_formal_keeps_type_error

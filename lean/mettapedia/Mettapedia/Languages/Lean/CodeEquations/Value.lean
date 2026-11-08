@@ -16,7 +16,8 @@ class PeTTaValue (α : Type u) where
 
 export PeTTaValue (render)
 
-private def ctorApp (c : Lean.Name) (fields : List String) : String :=
+/-- Render an erased constructor application for a value observer. -/
+def ctorApp (c : Lean.Name) (fields : List String) : String :=
   if fields.isEmpty then ctorSymbol c
   else "(" ++ " ".intercalate (ctorSymbol c :: fields) ++ ")"
 

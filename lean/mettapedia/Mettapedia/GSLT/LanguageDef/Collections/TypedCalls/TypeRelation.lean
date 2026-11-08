@@ -47,7 +47,14 @@ else names, the relation and the guard have exactly one answer
 (`card_getType_fresh`, `card_guard_fresh`).
 
 **Closed requests.** At a type without variables the store does not matter
-(`card_getType_closed`), and the number of answers is `count`.
+(`card_getType_closed`), and the number of answers is `count`. A number, a
+string or a truth value is typed at its class and nothing else, whatever the
+declarations (`count_class`), and a variable value at every type once
+(`count_var`).
+
+**Rows.** A symbol's rows are read as a bag (`info_agree`), and CeTTa's index
+keeps the first of each class of alpha-equivalent rows (`Decls.idemAlpha`), so
+a repeated row changes no observation (`idemAlpha_addRow`).
 
 The reading differs from SWI-PeTTa in two choices, both CeTTa's: terms are
 finite (SWI-Prolog unifies without the occurs check), and repeated identical
@@ -1153,6 +1160,28 @@ theorem dedupAlpha_aux_covers (l : List (Ty String)) :
           · exact ih (acc ++ [τ]) τ (List.mem_append_left _ (by simp))
           · exact ih (acc ++ [x]) τ (List.mem_append_right _ hτ)
 
+theorem dedupAlpha_aux_subset (l : List (Ty String)) :
+    ∀ acc : List (Ty String), ∀ τ ∈ l.foldl (fun acc τ =>
+      if acc.any fun σ => decide (AlphaEq σ τ) then acc else acc ++ [τ]) acc, τ ∈ acc ∨ τ ∈ l := by
+  induction l with
+  | nil => intro acc τ hτ; exact .inl hτ
+  | cons x xs ih =>
+      intro acc τ hτ
+      simp only [List.foldl_cons] at hτ
+      split_ifs at hτ
+      · rcases ih acc τ hτ with h | h
+        · exact .inl h
+        · exact .inr (List.mem_cons_of_mem _ h)
+      · rcases ih (acc ++ [x]) τ hτ with h | h
+        · rcases List.mem_append.mp h with h | h
+          · exact .inl h
+          · exact .inr (by simp at h; simp [h])
+        · exact .inr (List.mem_cons_of_mem _ h)
+
+/-- The index holds only written rows. -/
+theorem dedupAlpha_subset (l : List (Ty String)) : ∀ τ ∈ dedupAlpha l, τ ∈ l := fun τ hτ =>
+  (dedupAlpha_aux_subset l [] τ hτ).resolve_left (List.not_mem_nil)
+
 /-- Every row has an alpha-equivalent row in the index. -/
 theorem dedupAlpha_covers (l : List (Ty String)) :
     ∀ τ ∈ l, ∃ σ ∈ dedupAlpha l, AlphaEq σ τ := fun τ hτ =>
@@ -1191,6 +1220,418 @@ theorem AlphaEq.trans {τ σ ρ : Ty String} (h : AlphaEq τ σ) (h' : AlphaEq �
   Eq.trans h h'
 
 end Rows
+
+/-! ## Value classes and variables -/
+
+/-- The class of a grounded value: `Number`, `String` or `Bool`; spaces and other
+grounded values have none. -/
+def valueClass : GroundedValue → Option String
+  | .int _ => some "Number"
+  | .string _ => some "String"
+  | .bool _ => some "Bool"
+  | .custom _ _ => none
+
+/-- The value classes. -/
+def IsValueClass (c : String) : Prop := c = "Number" ∨ c = "String" ∨ c = "Bool"
+
+instance (c : String) : Decidable (IsValueClass c) := by
+  unfold IsValueClass
+  infer_instance
+
+theorem info_grounded_class (Γ : Decls) {g : GroundedValue} {c : String} (hg : valueClass g = some c) :
+    info Γ (.grounded g) = ⟨[], {classDeriv c}⟩ := by
+  cases g with
+  | int n => simp only [valueClass, Option.some.injEq] at hg; subst hg; exact info_int Γ n
+  | string s => simp only [valueClass, Option.some.injEq] at hg; subst hg; exact info_string Γ s
+  | bool b => simp only [valueClass, Option.some.injEq] at hg; subst hg; exact info_bool Γ b
+  | custom _ _ => cases hg
+
+theorem sat_classDeriv_iff (c : String) (T : Ty Empty) :
+    Sat ((classDeriv c).eqs ++ [((classDeriv c).ty, T.lift)]) ↔ T = .sym c := by
+  constructor
+  · rintro ⟨σ, hσ⟩
+    rw [solves_append, solves_singleton] at hσ
+    have := hσ.2
+    rw [Ty.lift_bind_ground] at this
+    exact this.symm
+  · rintro rfl
+    exact ⟨fun _ => default, (solves_append _ _ _).mpr ⟨by simp [classDeriv],
+      (solves_singleton _ _).mpr rfl⟩⟩
+
+/-- **A grounded value has its class and nothing else**, whatever the
+declarations. -/
+theorem count_class (Γ : Decls) {g : GroundedValue} {c : String} (hg : valueClass g = some c)
+    (T : Ty Empty) : count (info Γ (.grounded g)) T = if T = .sym c then 1 else 0 := by
+  classical
+  unfold count
+  rw [info_grounded_class Γ hg]
+  unfold eff
+  simp only [Multiset.card_singleton, one_ne_zero, if_false, Multiset.filter_singleton]
+  by_cases h : T = .sym c
+  · rw [if_pos ((sat_classDeriv_iff c T).mpr h), if_pos h]
+    rfl
+  · rw [if_neg (fun hs => h ((sat_classDeriv_iff c T).mp hs)), if_neg h]
+    rfl
+
+/-- **A variable value has every type once**, without binding it. -/
+theorem count_var (Γ : Decls) (x : String) (T : Ty Empty) : count (info Γ (.var x)) T = 1 := by
+  classical
+  unfold count
+  rw [info_var]
+  unfold eff
+  simp only [Multiset.card_singleton, one_ne_zero, if_false, Multiset.filter_singleton]
+  rw [if_pos ⟨fun _ => T, (solves_append _ _ _).mpr ⟨by simp, (solves_singleton _ _).mpr (by
+    rw [Ty.bind_var', Ty.lift_bind_ground])⟩⟩]
+  rfl
+
+/-- A symbol with one closed declared type is typed once at that type and at no other. -/
+theorem count_symbol_closed (Γ : Decls) (s : String) (τ : Ty Empty) (h : Γ s = [τ.lift])
+    (T : Ty Empty) : count (info Γ (.symbol s)) T = if T = τ then 1 else 0 := by
+  classical
+  unfold count
+  rw [info_symbol, h]
+  unfold eff
+  simp only [List.map_cons, List.map_nil, Multiset.coe_singleton, Multiset.card_singleton,
+    one_ne_zero, if_false, Multiset.filter_singleton]
+  have own : ((τ.lift : Ty String).map DVar.own) = (τ.lift : Ty DVar) := by
+    rw [Ty.lift, Ty.map_map]
+    congr 1
+    funext v
+    exact v.elim
+  rw [own]
+  by_cases hT : T = τ
+  · subst hT
+    rw [if_pos ⟨fun _ => default, (solves_append _ _ _).mpr ⟨by simp,
+      (solves_singleton _ _).mpr rfl⟩⟩, if_pos rfl]
+    rfl
+  · rw [if_neg, if_neg hT]
+    · rfl
+    · rintro ⟨σ, hσ⟩
+      rw [solves_append, solves_singleton, Ty.lift_bind_ground, Ty.lift_bind_ground] at hσ
+      exact hT hσ.2.symm
+
+/-! ## Renamed rows: no count changes
+
+A row may be replaced by a row that differs from it by an injective renaming of
+its type variables without changing any count (`count_renamed_rows`): every
+record is renamed derivation by derivation (`info_ren`), the renaming of a node
+renaming its own variables as the row does and each child's as the child's
+record does (`nodeRen`), and satisfiability does not see an injective renaming
+(`sat_map_injective`). So whichever of two such rows a declaration keeps, every
+count is the same. -/
+
+section Renaming
+
+theorem Ty.map_id' {V : Type} : ∀ t : Ty V, t.map id = t
+  | .var _ => rfl
+  | .sym _ => rfl
+  | .app ts => by
+      rw [Ty.map_app]
+      congr 1
+      conv_rhs => rw [← List.map_id ts]
+      exact List.map_congr_left fun t _ => Ty.map_id' t
+
+open Classical in
+/-- **Satisfiability does not see an injective renaming of the variables.** -/
+theorem sat_map_injective {V W : Type} {g : V → W} (hg : Function.Injective g) (E : List (Eqn V)) :
+    Sat (E.map (Eqn.map g)) ↔ Sat E := by
+  constructor
+  · rintro ⟨ρ, hρ⟩
+    exact ⟨ρ ∘ g, (solves_map ρ g E).mp hρ⟩
+  · rintro ⟨ρ, hρ⟩
+    refine ⟨fun w => if h : ∃ v, g v = w then ρ h.choose else default, (solves_map _ g E).mpr ?_⟩
+    have same : (fun w => if h : ∃ v, g v = w then ρ h.choose else default) ∘ g = ρ := by
+      funext v
+      have h : ∃ v', g v' = g v := ⟨v, rfl⟩
+      simp only [Function.comp, dif_pos h]
+      rw [hg h.choose_spec]
+    rw [same]
+    exact hρ
+
+/-- A derivation with its variables renamed. -/
+def Deriv.rename (g : DVar → DVar) (d : Deriv) : Deriv := ⟨d.ty.map g, d.eqs.map (Eqn.map g)⟩
+
+/-- Derivations that differ by an injective renaming of their variables. -/
+def Renamed (d d' : Deriv) : Prop := ∃ g : DVar → DVar, Function.Injective g ∧ d' = d.rename g
+
+theorem Renamed.refl (d : Deriv) : Renamed d d := by
+  refine ⟨id, Function.injective_id, ?_⟩
+  have eqn : ∀ e : Eqn DVar, Eqn.map id e = e := fun e => by
+    simp only [Eqn.map, Ty.map_id']
+  obtain ⟨ty, eqs⟩ := d
+  simp only [Deriv.rename, Ty.map_id', Deriv.mk.injEq, true_and]
+  conv_lhs => rw [← List.map_id eqs]
+  exact List.map_congr_left fun e _ => (eqn e).symm
+
+/-- Rows that differ by an injective renaming of their type variables. -/
+def RowRen (τ τ' : Ty String) : Prop := ∃ f : String → String, Function.Injective f ∧ τ' = τ.map f
+
+/-- Records that differ by renamings: rows of type variables, derivations of
+their variables. -/
+def InfoRen (j j' : Info) : Prop :=
+  List.Forall₂ RowRen j.rows j'.rows ∧ Multiset.Rel Renamed j.cands j'.cands
+
+theorem rel_coe_forall₂ {α β : Type} {r : α → β → Prop} :
+    ∀ {l : List α} {l' : List β}, List.Forall₂ r l l' → Multiset.Rel r (l : Multiset α) l'
+  | [], [], .nil => .zero
+  | _ :: _, _ :: _, .cons h hs => by
+      rw [← Multiset.cons_coe, ← Multiset.cons_coe]
+      exact .cons h (rel_coe_forall₂ hs)
+
+theorem rel_filter_iff {α β : Type} {r : α → β → Prop} {p : α → Prop} {q : β → Prop}
+    [DecidablePred p] [DecidablePred q] {s : Multiset α} {t : Multiset β} (h : Multiset.Rel r s t)
+    (hpq : ∀ a b, r a b → (p a ↔ q b)) : Multiset.Rel r (s.filter p) (t.filter q) := by
+  induction h with
+  | zero => exact .zero
+  | @cons a b as bs hab _ ih =>
+      by_cases ha : p a
+      · rw [Multiset.filter_cons_of_pos _ ha, Multiset.filter_cons_of_pos _ ((hpq a b hab).mp ha)]
+        exact .cons hab ih
+      · rw [Multiset.filter_cons_of_neg _ ha,
+          Multiset.filter_cons_of_neg _ fun hb => ha ((hpq a b hab).mpr hb)]
+        exact ih
+
+theorem eff_ren {j j' : Info} (h : Multiset.Rel Renamed j.cands j'.cands) :
+    Multiset.Rel Renamed (eff j) (eff j') := by
+  unfold eff
+  rw [Multiset.card_eq_card_of_rel h]
+  split_ifs
+  · exact .cons (Renamed.refl _) .zero
+  · exact h
+
+/-- The renaming of a node's variables: the own variables by `f`, a child's at
+position `k` by `G k`. -/
+def nodeRen (f : String → String) (G : ℕ → DVar → DVar) : DVar → DVar
+  | ([], o) => ([], o.map f)
+  | (k :: p, o) => DVar.push k (G k (p, o))
+
+theorem nodeRen_injective {f : String → String} (hf : Function.Injective f) {G : ℕ → DVar → DVar}
+    (hG : ∀ k, Function.Injective (G k)) : Function.Injective (nodeRen f G) := by
+  rintro ⟨_ | ⟨k, p⟩, o⟩ ⟨_ | ⟨k', p'⟩, o'⟩ h
+  · simp only [nodeRen, Prod.mk.injEq, true_and] at h
+    rw [Option.map_injective hf h]
+  · simp [nodeRen, DVar.push] at h
+  · simp [nodeRen, DVar.push] at h
+  · simp only [nodeRen, DVar.push, Prod.mk.injEq, List.cons.injEq] at h
+    obtain ⟨⟨rfl, h₁⟩, h₂⟩ := h
+    have := hG k (Prod.ext h₁ h₂)
+    simp only [Prod.mk.injEq] at this
+    rw [this.1, this.2]
+
+theorem nodeRen_own (f : String → String) (G : ℕ → DVar → DVar) (x : String) :
+    nodeRen f G (DVar.own x) = DVar.own (f x) := rfl
+
+theorem nodeRen_push (f : String → String) (G : ℕ → DVar → DVar) (k : ℕ) (u : DVar) :
+    nodeRen f G (DVar.push k u) = DVar.push k (G k u) := rfl
+
+/-- Equation lists of an application's arguments from position `i`, renamed at
+the node: one family of child renamings works whatever it is below `i`. -/
+def EqRen (f : String → String) (i : ℕ) (E E' : List (Eqn DVar)) : Prop :=
+  ∃ G : ℕ → DVar → DVar, (∀ k, Function.Injective (G k)) ∧
+    ∀ G' : ℕ → DVar → DVar, (∀ k, i ≤ k → G' k = G k) → E' = E.map (Eqn.map (nodeRen f G'))
+
+theorem map_map_own (f : String → String) (G : ℕ → DVar → DVar) (A : Ty String) :
+    (A.map DVar.own).map (nodeRen f G) = (A.map f).map DVar.own := by
+  rw [Ty.map_map, Ty.map_map]
+  rfl
+
+theorem map_push_ren (f : String → String) (G : ℕ → DVar → DVar) (k : ℕ) (g : DVar → DVar)
+    (hk : G k = g) (t : Ty DVar) :
+    (t.map (DVar.push k)).map (nodeRen f G) = (t.map g).map (DVar.push k) := by
+  rw [Ty.map_map, Ty.map_map]
+  congr 1
+  funext u
+  simp only [Function.comp, nodeRen_push, hk]
+
+theorem eqns_push_ren (f : String → String) (G : ℕ → DVar → DVar) (k : ℕ) (g : DVar → DVar)
+    (hk : G k = g) (E : List (Eqn DVar)) :
+    (E.map (Eqn.map (DVar.push k))).map (Eqn.map (nodeRen f G)) =
+      (E.map (Eqn.map g)).map (Eqn.map (DVar.push k)) := by
+  simp only [List.map_map]
+  refine List.map_congr_left fun e _ => ?_
+  simp only [Function.comp, Eqn.map, map_push_ren f G k g hk]
+
+open Classical in
+theorem argEqs_ren {f : String → String} : ∀ (i : ℕ) (As : List (Ty String)) (js js' : List Info),
+    List.Forall₂ (fun j j' => Multiset.Rel Renamed (eff j) (eff j')) js js' →
+      Multiset.Rel (EqRen f i) (argEqs i As js) (argEqs i (As.map (Ty.map f)) js')
+  | i, [], [], [], .nil =>
+      .cons ⟨fun _ => id, fun _ => Function.injective_id, fun _ _ => rfl⟩ .zero
+  | i, A :: As, j :: js, j' :: js', .cons hj hjs => by
+      have rest := argEqs_ren (f := f) (i + 1) As js js' hjs
+      have mono : ∀ E E', EqRen f (i + 1) E E' → EqRen f i E E' := fun E E' ⟨G, hG, h⟩ =>
+        ⟨G, hG, fun G' hG' => h G' fun k hk => hG' k (by omega)⟩
+      have unchecked : Unchecked (A.map f) ↔ Unchecked A := by
+        cases A <;> simp [Unchecked, Ty.map]
+      simp only [List.map_cons, argEqs]
+      by_cases hu : Unchecked A
+      · rw [if_pos hu, if_pos (unchecked.mpr hu)]
+        exact Multiset.Rel.mono rest fun E _ E' _ h => mono E E' h
+      · rw [if_neg hu, if_neg fun h => hu (unchecked.mp h)]
+        refine Multiset.rel_bind (fun d d' ⟨g, hg, hd'⟩ => ?_) hj
+        rw [Multiset.rel_map]
+        refine Multiset.Rel.mono rest fun E _ E' _ ⟨G, hG, hE⟩ => ?_
+        refine ⟨Function.update G i g, fun k => ?_, fun G' hG' => ?_⟩
+        · by_cases hk : k = i
+          · subst hk
+            rw [Function.update_self]
+            exact hg
+          · rw [Function.update_of_ne hk]
+            exact hG k
+        · have atI : G' i = g := by rw [hG' i le_rfl, Function.update_self]
+          have later : ∀ k, i + 1 ≤ k → G' k = G k := fun k hk => by
+            rw [hG' k (by omega), Function.update_of_ne (by omega)]
+          rw [hE G' later, hd']
+          simp only [Deriv.rename, Deriv.push, List.cons_append, List.map_cons, List.map_append,
+            Eqn.map, map_map_own f G' A, map_push_ren f G' i g atI, eqns_push_ren f G' i g atI]
+  | _, [], _ :: _, _ :: _, _ => by simp only [List.map_nil, argEqs]; exact .zero
+  | _, [], _ :: _, [], h => nomatch h
+  | _, [], [], _ :: _, h => nomatch h
+  | _, _ :: _, [], [], _ => by simp only [List.map_cons, argEqs]; exact .zero
+  | _, _ :: _, [], _ :: _, h => nomatch h
+  | _, _ :: _, _ :: _, [], h => nomatch h
+
+/-- Tuple parts from position `i`, renamed at the node. -/
+def PartsRen (i : ℕ) (p p' : List (Ty DVar) × List (Eqn DVar)) : Prop :=
+  ∃ G : ℕ → DVar → DVar, (∀ k, Function.Injective (G k)) ∧
+    ∀ G' : ℕ → DVar → DVar, (∀ k, i ≤ k → G' k = G k) →
+      p'.1 = p.1.map (Ty.map (nodeRen id G')) ∧ p'.2 = p.2.map (Eqn.map (nodeRen id G'))
+
+theorem tupleParts_ren : ∀ (i : ℕ) (js js' : List Info),
+    List.Forall₂ (fun j j' => Multiset.Rel Renamed (eff j) (eff j')) js js' →
+      Multiset.Rel (PartsRen i) (tupleParts i js) (tupleParts i js')
+  | i, [], [], .nil => .cons ⟨fun _ => id, fun _ => Function.injective_id, fun _ _ => ⟨rfl, rfl⟩⟩ .zero
+  | i, j :: js, j' :: js', .cons hj hjs => by
+      have rest := tupleParts_ren (i + 1) js js' hjs
+      simp only [tupleParts]
+      refine Multiset.rel_bind (fun d d' ⟨g, hg, hd'⟩ => ?_) hj
+      rw [Multiset.rel_map]
+      refine Multiset.Rel.mono rest fun p _ p' _ ⟨G, hG, hp⟩ => ?_
+      refine ⟨Function.update G i g, fun k => ?_, fun G' hG' => ?_⟩
+      · by_cases hk : k = i
+        · subst hk
+          rw [Function.update_self]
+          exact hg
+        · rw [Function.update_of_ne hk]
+          exact hG k
+      · have atI : G' i = g := by rw [hG' i le_rfl, Function.update_self]
+        have later : ∀ k, i + 1 ≤ k → G' k = G k := fun k hk => by
+          rw [hG' k (by omega), Function.update_of_ne (by omega)]
+        obtain ⟨h₁, h₂⟩ := hp G' later
+        rw [h₁, h₂, hd']
+        simp only [Deriv.rename, Deriv.push, List.map_cons, List.map_append,
+          map_push_ren id G' i g atI, eqns_push_ren id G' i g atI, and_self]
+
+theorem arrowSplit_map (f : String → String) : ∀ τ : Ty String,
+    arrowSplit (τ.map f) = (arrowSplit τ).map fun p => (p.1.map (Ty.map f), p.2.map f)
+  | .var _ => rfl
+  | .sym _ => rfl
+  | .app [] => rfl
+  | .app (.var _ :: _) => by simp [arrowSplit, Ty.map_app]
+  | .app (.app _ :: _) => by simp [arrowSplit, Ty.map_app]
+  | .app (.sym s :: ts) => by
+      simp only [Ty.map_app, List.map_cons, Ty.map_sym, arrowSplit]
+      split_ifs
+      · rw [List.getLast?_map, Option.map_map, Option.map_map]
+        congr 1
+        funext r
+        simp [List.map_dropLast]
+      · rfl
+
+open Classical in
+theorem funTrees_ren {head head' : Info} {args args' : List Info}
+    (rows : List.Forall₂ RowRen head.rows head'.rows)
+    (hargs : List.Forall₂ (fun j j' => Multiset.Rel Renamed (eff j) (eff j')) args args') :
+    Multiset.Rel Renamed (funTrees head args) (funTrees head' args') := by
+  unfold funTrees
+  refine Multiset.rel_bind (fun τ τ' ⟨f, hf, hτ'⟩ => ?_) (rel_coe_forall₂ rows)
+  subst hτ'
+  rw [arrowSplit_map]
+  cases arrowSplit τ with
+  | none => exact .zero
+  | some p =>
+      obtain ⟨As, R⟩ := p
+      simp only [Option.map_some, List.length_map, hargs.length_eq]
+      split_ifs
+      · refine rel_filter_iff ?_ fun d d' ⟨g, hg, hd'⟩ => by
+          rw [hd']
+          exact (sat_map_injective hg _).symm
+        rw [Multiset.rel_map]
+        refine Multiset.Rel.mono (argEqs_ren 1 As args args' hargs) fun E _ E' _ ⟨G, hG, hE⟩ => ?_
+        refine ⟨nodeRen f G, nodeRen_injective hf hG, ?_⟩
+        rw [hE G fun _ _ => rfl]
+        simp only [Deriv.rename, map_map_own]
+      · exact .zero
+
+open Classical in
+theorem nodeInfo_ren : ∀ {js js' : List Info}, List.Forall₂ InfoRen js js' →
+    InfoRen (nodeInfo js) (nodeInfo js')
+  | [], [], .nil => ⟨.nil, Multiset.rel_refl_of_refl_on fun d _ => Renamed.refl d⟩
+  | j :: js, j' :: js', .cons hj hjs => by
+      have effs : List.Forall₂ (fun j j' => Multiset.Rel Renamed (eff j) (eff j')) (j :: js) (j' :: js') :=
+        (List.Forall₂.cons hj hjs).imp fun _ _ h => eff_ren h.2
+      have ft := funTrees_ren hj.1 (hjs.imp fun _ _ h => eff_ren h.2)
+      refine ⟨.nil, ?_⟩
+      simp only [nodeInfo]
+      rw [Multiset.card_eq_card_of_rel ft]
+      split_ifs
+      · unfold tupleTrees
+        rw [Multiset.rel_map]
+        refine Multiset.Rel.mono (tupleParts_ren 0 _ _ effs) fun p _ p' _ ⟨G, hG, hp⟩ => ?_
+        obtain ⟨h₁, h₂⟩ := hp G fun _ _ => rfl
+        refine ⟨nodeRen id G, nodeRen_injective Function.injective_id hG, ?_⟩
+        rw [h₁, h₂]
+        simp only [Deriv.rename, Ty.map_app]
+      · exact ft
+
+theorem InfoRen.refl (j : Info) : InfoRen j j :=
+  ⟨List.forall₂_same.mpr fun τ _ => ⟨id, Function.injective_id, (Ty.map_id' τ).symm⟩,
+    Multiset.rel_refl_of_refl_on fun d _ => Renamed.refl d⟩
+
+variable {Γ Γ' : Decls}
+
+mutual
+/-- **Renamed rows give renamed records**: when every row of `Γ'` is a row of `Γ`
+with its type variables renamed injectively, in order, every value's record
+under `Γ'` is its record under `Γ` with each derivation's variables renamed. -/
+theorem info_ren (h : ∀ s, List.Forall₂ RowRen (Γ s) (Γ' s)) :
+    ∀ v : Atom, InfoRen (info Γ v) (info Γ' v)
+  | .symbol s => by
+      rw [info_symbol, info_symbol]
+      refine ⟨h s, rel_coe_forall₂ ?_⟩
+      rw [List.forall₂_map_left_iff, List.forall₂_map_right_iff]
+      refine (h s).imp fun τ τ' ⟨f, hf, hτ'⟩ => ⟨nodeRen f fun _ => id,
+        nodeRen_injective hf fun _ => Function.injective_id, ?_⟩
+      rw [hτ']
+      simp only [Deriv.rename, map_map_own, List.map_nil]
+  | .var x => InfoRen.refl _
+  | .grounded g => by cases g <;> exact InfoRen.refl _
+  | .expression es => by
+      rw [info_expression, info_expression]
+      exact nodeInfo_ren (infoAll_ren h es)
+
+/-- The list version. -/
+theorem infoAll_ren (h : ∀ s, List.Forall₂ RowRen (Γ s) (Γ' s)) :
+    ∀ es : List Atom, List.Forall₂ InfoRen (es.map (info Γ)) (es.map (info Γ'))
+  | [] => .nil
+  | e :: es => .cons (info_ren h e) (infoAll_ren h es)
+end
+
+/-- **No count changes when rows are renamed** (alpha-variant rows): every value
+has the same number of derivations at every closed type. -/
+theorem count_renamed_rows (h : ∀ s, List.Forall₂ RowRen (Γ s) (Γ' s)) (v : Atom) (T : Ty Empty) :
+    count (info Γ v) T = count (info Γ' v) T := by
+  classical
+  unfold count
+  refine Multiset.card_eq_card_of_rel (rel_filter_iff (eff_ren (info_ren h v).2) fun d d' ⟨g, hg, hd'⟩ => ?_)
+  rw [hd']
+  have : (d.rename g).eqs ++ [((d.rename g).ty, (T.lift : Ty DVar))] =
+      (d.eqs ++ [(d.ty, T.lift)]).map (Eqn.map g) := by
+    simp only [Deriv.rename, List.map_append, List.map_cons, List.map_nil, Eqn.map, lift_map]
+  rw [this, sat_map_injective hg]
+
+end Renaming
+
 
 /-! ## Controls -/
 

@@ -84,7 +84,7 @@ theorem query_covered (n : Nat) :
   change (∅ : Finset Nat) ⊆ occupied
   exact Finset.empty_subset _
 
-theorem first_admission : ContextualTransportedActivation.SemanticAdmission
+theorem first_admission : ContextualGuardedStep.Valid
     locals captures occupied first (query captures 1) rows before firstOutput := by
   refine ⟨⟨first_valid.take_distinct,first_valid.output_distinct,first_valid.take_length,
     first_valid.read_length,first_valid.outputs,first_valid.occurrences,?_⟩,

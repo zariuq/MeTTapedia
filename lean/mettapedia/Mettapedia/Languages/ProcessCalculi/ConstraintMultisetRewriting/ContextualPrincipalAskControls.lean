@@ -3,7 +3,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualPatternCompleteness
 
 /-!
-# A solved alias question preserves its live count, not an earlier empty ask
+# A solved alias question preserves its shared count, not an earlier empty ask
 
 The actual pattern driver solves a nonempty caller-alias problem in a signature
 with no ground operators. Its completed answer reflects every original guard.
@@ -26,9 +26,9 @@ local instance (sort : emptySignature.Srt) : DecidableEq (emptySignature.Op sort
 
 def first : Term (signature emptySignature callers) [] () := generator callers false
 def second : Term (signature emptySignature callers) [] () := generator callers true
-def rows (_ : Nat) : ContextualStoredRows.Row noDeclarations callers [] () := .live first
+def rows (_ : Nat) : ContextualStoredRows.Row noDeclarations callers [] () := .shared first
 
-theorem alias_question_has_one_live_match :
+theorem alias_question_has_one_shared_match :
     ContextualGuardSemantics.Ask noDeclarations oldCallerProblem rows {7} (.count second 1) := by
   intro Future future candidate solved
   have equal := solved (first, second) (List.mem_singleton_self _)
@@ -68,7 +68,7 @@ theorem actual_completed_driver_reflects_every_original_ask :
     exact ContextualGuardSemantics.Ask.completed_update_iff noDeclarations oldCallerProblem
       update empty rows {7} check
   · exact (ContextualGuardSemantics.Ask.completed_update_iff noDeclarations oldCallerProblem
-      update empty rows {7} (.count second 1)).mpr alias_question_has_one_live_match
+      update empty rows {7} (.count second 1)).mpr alias_question_has_one_shared_match
 
 theorem empty_prefix_does_not_entail_the_alias :
     ¬ ContextualGuardSemantics.Ask noDeclarations [] rows {7} (.equal first second) := by

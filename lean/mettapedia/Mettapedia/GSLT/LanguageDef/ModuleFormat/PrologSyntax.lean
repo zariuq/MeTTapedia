@@ -9,7 +9,8 @@ precedence constraints. A source loader must rebuild these rows after a
 read-time operator update. These are source constructors, not execution rules.
 
 The present lexical admission uses ASCII unquoted identifiers and named
-escapes. Full Unicode identifier classes, general numeric escapes, SWI dicts,
+escapes and numeric character escapes. Full Unicode identifier classes,
+SWI dicts,
 rationals and quasiquotations remain outside this declared sentence surface.
 -/
 
@@ -56,6 +57,9 @@ def commonRows : List GrammarRule := [
   row "single-empty" "PlSingleBody" [],
   row "single-more" "PlSingleBody" [n "PlSingleScalar", n "PlSingleBody"],
   row "single-escape" "PlSingleBody" [t "\\", n "PlEscape", n "PlSingleBody"],
+  row "escape-named" "PlEscape" [n "PlEscapeScalar"],
+  row "escape-hex-code" "PlEscape" [t "x", n "PlHexDigits", t "\\"],
+  row "escape-octal-code" "PlEscape" [n "PlOctDigits", t "\\"],
   row "single-double" "PlSingleBody" [t "''", n "PlSingleBody"],
   row "double-empty" "PlDoubleBody" [],
   row "double-more" "PlDoubleBody" [n "PlDoubleScalar", n "PlDoubleBody"],
@@ -92,6 +96,13 @@ def commonRows : List GrammarRule := [
   row "arguments-more" "PlArguments" [n "PlExpr999", n "PlLayout", t ",", n "PlLayout", n "PlArguments"] ]
 
 def extensionRows (profile : Profile) : List GrammarRule :=
+  (if profile.dialect == .swi then [
+    row "escape-hex-open" "PlEscape" [n "PlOpenHexEscape"],
+    row "open-hex-code" "PlOpenHexEscape" [t "x", n "PlHexDigits"],
+    row "escape-octal-open" "PlEscape" [n "PlOpenOctEscape"],
+    row "open-octal-code" "PlOpenOctEscape" [n "PlOctDigits"],
+    row "escape-unicode-four" "PlEscape" (t "u" :: List.replicate 4 (n "PlHex")),
+    row "escape-unicode-eight" "PlEscape" (t "U" :: List.replicate 8 (n "PlHex"))] else []) ++
   (if profile.zeroArityCompounds then
     [row "term-zero-arity" "PlExpr0" [n "PlAtom", t "(", n "PlLayout", t ")"]] else []) ++
   (if profile.backQuotes.isSome then [
@@ -155,7 +166,7 @@ def classes (profile : Profile) : List (String × LexicalClassKind) :=
    points "PlNameRest" "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789",
    points "PlGraphic" "#$&*+-./:<=>?@\\^~", points "PlDigit" "0123456789",
    points "PlHex" "0123456789abcdefABCDEF", points "PlOct" "01234567", points "PlBin" "01",
-   points "PlEscape" ("abfnrtv\\'\"`" ++ if profile.dialect == .swi then "es" else ""),
+   points "PlEscapeScalar" ("abfnrtv\\'\"`" ++ if profile.dialect == .swi then "es" else ""),
    ("PlLineScalar", .except [10]), ("PlCommentScalar", .except [42]),
    ("PlCommentAfterStar", .except [42,47]), ("PlCodeScalar", .except [92]),
    ("PlSingleScalar", .except (([39, 92] ++ forbidden).mergeSort (· ≤ ·))),
@@ -189,6 +200,9 @@ def selection (profile : Profile) : List SourceSyntax.FamilyFilter :=
   [.maximalToken "PlWord" rest [], .maximalToken "PlVariableName" rest [],
    .maximalToken "PlGraphicWord" graphics [], .maximalToken "PlNumber" rest [],
    .maximalToken "PlLayout" [9, 10, 11, 12, 13, 32] ["%","/*"]] ++
+  (if profile.dialect == .swi then [
+    .maximalToken "PlOpenHexEscape" ("0123456789abcdefABCDEF".toList.map Char.toNat) ["\\"],
+    .maximalToken "PlOpenOctEscape" ("01234567".toList.map Char.toNat) ["\\"]] else []) ++
   (profile.operators.zipIdx.map fun (op, index) =>
     .maximalToken ("PlOperator" ++ toString index)
       (if op.name.toList.all Char.isAlphanum then rest else graphics) [])

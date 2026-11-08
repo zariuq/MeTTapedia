@@ -1,0 +1,30 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEClosedFieldProjectionControls
+
+/-! # Closed field inference and contextual capture audit -/
+
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEClosedFieldProjection.encode_substitution
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEClosedFieldProjection.substitution_closed
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEClosedFieldProjection.substitution_list_closed
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEClosedFieldProjection.atom_closed_field
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEClosedFieldProjection.type_closed_field
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEClosedFieldProjection.inferred_field_fixed
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEClosedFieldProjection.constructor_field
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEClosedFieldProjection.inferred_constructor_field
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEClosedFieldProjection.literal_source_match
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEClosedFieldProjection.literal_source_matches
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEClosedFieldProjection.source_field_capture
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEClosedFieldProjection.captured_field_evidence
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEClosedFieldProjection.checked_constructor_capture
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEClosedFieldProjection.source_argument_step
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEClosedFieldProjection.source_argument_at
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEClosedFieldProjection.guarded_node_field
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEClosedFieldProjection.Controls.open_field_closes_from_the_range
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEClosedFieldProjection.Controls.open_recursive_field_closes_from_the_range
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEClosedFieldProjection.Controls.unmentioned_field_variable_is_not_invented
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEClosedFieldProjection.Controls.shared_range_variables_cannot_choose_two_types
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEClosedFieldProjection.Controls.all_refinements_keep_the_element
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEClosedFieldProjection.Controls.cons_tail_inferred
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEClosedFieldProjection.Controls.source_capture_retains_the_ready_field
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEClosedFieldProjection.Controls.erasing_before_capture_loses_the_mark
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEClosedFieldProjection.Controls.nominal_parent_annotation_does_not_check_its_fields
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEClosedFieldProjection.Controls.independent_fields_are_not_a_shared_constructor_check

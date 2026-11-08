@@ -71,7 +71,7 @@ theorem realize_publication
     ∃ firing : ContextualPublication.Firing (before := before),
       firing.rule = rule.toRule (spaceTerms (ContextualSelectionViews.source locals before.declarations)) ∧
         firing.selection = selection ∧ firing.outputs = outputs ∧ firing.reusable = reusable := by
-  have semantic : ContextualTransportedActivation.SemanticAdmission locals before.declarations before.occupied selection
+  have semantic : ContextualGuardedStep.Valid locals before.declarations before.occupied selection
       (rule.toRule (spaceTerms (ContextualSelectionViews.source locals before.declarations)))
       before.inventory.rows before.inventory.configuration outputs := by
     rw [located]

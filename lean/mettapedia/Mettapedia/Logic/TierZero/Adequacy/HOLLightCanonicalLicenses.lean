@@ -58,16 +58,16 @@ theorem matches_iff_key (assignment : ABTProtectedParameters.Assignment Inferenc
 
 theorem region_is_canonical_query (store : Store)
     (assignment : ABTProtectedParameters.Assignment InferenceSchemaActivation.Head 0) (key : Key) :
-    Check.region locatedAction assignment label store.rows (licenses, payload key) = store.query key := by
+    Check.matches locatedAction assignment label store.rows (licenses, payload key) = store.query key := by
   ext row
-  simp only [Check.region, CanonicalMetadataStore.Store.query, Finset.mem_filter]
+  simp only [Check.matches, CanonicalMetadataStore.Store.query, Finset.mem_filter]
   rw [matches_iff_key]
 
 theorem count_one_for_registered_key (store : Store)
     (assignment : ABTProtectedParameters.Assignment InferenceSchemaActivation.Head 0)
     (key : Key) (index : Nat) (found : store.lookup key = some index) :
     Check.Holds locatedAction assignment label store.rows (.count (licenses, payload key) 1) := by
-  change (Check.region locatedAction assignment label store.rows (licenses, payload key)).card = 1
+  change (Check.matches locatedAction assignment label store.rows (licenses, payload key)).card = 1
   rw [region_is_canonical_query]
   exact store.successful_read_has_one_witness key index found
 

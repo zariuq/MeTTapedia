@@ -34,7 +34,7 @@ theorem unique_read_iff_positive_presence (frame : Finset CoreOccurrence) (store
       · rintro ⟨occurrence, ⟨present, matched⟩, _⟩
         exact False.elim (missing_license_absent frame store assignment key known occurrence present matched)
       · intro guard
-        change (Check.region locatedAction assignment label (world frame store)
+        change (Check.matches locatedAction assignment label (world frame store)
           (licenses, HOLLightCanonicalLicenses.payload key)).card = 1 at guard
         rw [region_is_private_query, store.query_of_absent key known] at guard
         simp at guard
@@ -58,7 +58,7 @@ theorem presence_entailment_has_registered_witness (frame : Finset CoreOccurrenc
   | some index => exact ⟨index, rfl⟩
   | none =>
       have guard := entailed assignment solved
-      change (Check.region locatedAction assignment label (world frame store)
+      change (Check.matches locatedAction assignment label (world frame store)
         (licenses, HOLLightCanonicalLicenses.payload key)).card = 1 at guard
       rw [region_is_private_query, store.query_of_absent key known] at guard
       simp at guard

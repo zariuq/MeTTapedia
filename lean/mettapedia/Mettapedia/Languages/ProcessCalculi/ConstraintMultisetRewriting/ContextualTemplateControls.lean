@@ -3,11 +3,11 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Schematic
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualPublicationControls
 
 /-!
-# A constructed template keeps one live capture and freshens its holes
+# A constructed template keeps one shared capture and freshens its holes
 
-The producer reads a live value from a named space, constructs a reusable
+The producer reads a shared value from a named space, constructs a reusable
 template with a repeated private variable and an explicit actor capture, and
-publishes live and ordinary values in the same event. The actual solver run
+publishes shared and ordinary values in the same event. The actual solver run
 and final inventory are used throughout. These are full-owner source controls;
 no proof kernel or host evaluator performs the construction.
 -/
@@ -45,13 +45,13 @@ def body : SchematicReach.Closed blueprint :=
 
 def sourceRule : ContextualTemplateSource.Rule locals inners captures [] () :=
   ⟨[], [SchematicReach.place (SchematicReach.name 1) (actorVariable 0)], [], [],
-    [.schema body, .live (SchematicReach.place (SchematicReach.name 9) (actorVariable 0)),
+    [.schema body, .shared (SchematicReach.place (SchematicReach.name 9) (actorVariable 0)),
       .ordinary (SchematicReach.place (SchematicReach.name 9) (pair (actorVariable 0) (actorVariable 1)))]⟩
 def rule := sourceRule.lower locals inners captures
 def selected : Selection Nat := ⟨[], [7], [90, 91, 92]⟩
 def rows (occurrence : Nat) : ContextualStoredRows.Row bank captures [] () :=
-  if occurrence = 7 then .live (SchematicReach.place (SchematicReach.name 1) (generator captures 0))
-  else .live (SchematicReach.place (SchematicReach.name 2) (generator captures 9))
+  if occurrence = 7 then .shared (SchematicReach.place (SchematicReach.name 1) (generator captures 0))
+  else .shared (SchematicReach.place (SchematicReach.name 2) (generator captures 9))
 def initial : Configuration (SchematicReach.Closed captures) Nat := ⟨[], {7, 11}⟩
 def scopes (_ : Nat) : Finset Nat := ∅
 def inventory : Inventory bank captures (O := Nat) [] () := ⟨initial, rows, [], []⟩
@@ -66,7 +66,7 @@ def start : ContextualExecution.Endpoint bank Nat [] () where
 
 def outputs (occurrence : Nat) : SchematicReach.Closed active :=
   if occurrence = 90 then (Production.schema body).atScope locals inners captures 1 0
-  else if occurrence = 91 then (Production.live (SchematicReach.place (SchematicReach.name 9)
+  else if occurrence = 91 then (Production.shared (SchematicReach.place (SchematicReach.name 9)
     (actorVariable 0))).atScope locals inners captures 1 1
   else (Production.ordinary (SchematicReach.place (SchematicReach.name 9)
     (pair (actorVariable 0) (actorVariable 1)))).atScope locals inners captures 1 2
@@ -118,7 +118,7 @@ theorem finished : update.remaining = [] := by decide +kernel
 theorem covered_rule : RuleCovered (privateScopes scopes) ∅ rule := by
   apply (ruleRoots_covered_iff (privateScopes scopes) ∅ rule).mp
   decide +kernel
-theorem admission : ContextualTransportedActivation.Admission bank captures ∅ selected rule rows initial outputs := by
+theorem admission : ContextualGuardedStep.Requirements bank captures ∅ selected rule rows initial outputs := by
   refine ⟨by decide, by decide, rfl, rfl, ?_, by decide, ?_⟩
   · with_unfolding_all rfl
   · intro check member

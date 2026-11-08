@@ -41,7 +41,7 @@ def map {U : Type*} (f : T → U) : Check T → Check U
   | .absent p => .absent (f p)
   | .count p n => .count (f p) n
 
-noncomputable def region (A : SubstitutionAction T S) (σ : S)
+noncomputable def «matches» (A : SubstitutionAction T S) (σ : S)
     (label : O → T) (store : Finset O) (pattern : T) : Finset O := by
   classical
   exact store.filter fun o => A.E (A.apply σ pattern) (A.apply σ (label o))
@@ -51,7 +51,7 @@ def Holds (A : SubstitutionAction T S) (σ : S) (label : O → T)
   | .equal left right => A.Solves σ (left, right)
   | .absent pattern => ∀ o ∈ store,
       ¬ A.E (A.apply σ pattern) (A.apply σ (label o))
-  | .count pattern number => (region A σ label store pattern).card = number
+  | .count pattern number => («matches» A σ label store pattern).card = number
 
 end Check
 

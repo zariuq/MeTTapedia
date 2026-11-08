@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 /-!
 # Scoped guards distinguish private instances from future caller bindings
 
-A schematic row counts once under every model. A live unknown does not
+A schematic row counts once under every model. A shared unknown does not
 license absence from its identity instance. The bounded absence checker
 requires actual refutation and never treats exhausted fuel as absence.
 -/
@@ -30,7 +30,7 @@ def capturedAtom : CapturedTerm := atom captures
 def query : CapturedTerm := p capturedAtom
 def world : Finset Nat := {7}
 def schemaRows (_ : Nat) : Stored := .schema universalRow
-def liveRows (_ : Nat) : Stored := .live (p sharedValue)
+def sharedRows (_ : Nat) : Stored := .shared (p sharedValue)
 
 theorem schema_matches_every_supplied_model {Next : Type} (next : Next → MetaArity base)
     (candidate : Assignment captures next) :
@@ -94,45 +94,45 @@ private theorem query_ne_live_unknown : query ≠ p sharedValue := by
   have heads := (Term.op.inj first).1
   cases heads
 
-theorem identity_absence_of_a_live_unknown_is_only_pointwise :
-    Holds locals (generator captures) liveRows world (.absent query) := by
+theorem identity_absence_of_a_shared_unknown_is_only_pointwise :
+    Holds locals (generator captures) sharedRows world (.absent query) := by
   intro _ _ matched
   exact query_ne_live_unknown matched
 
 def assignedA : Assignment captures captures := fun _ => capturedAtom
 
-theorem later_binding_makes_the_live_row_match :
-    Matches locals assignedA (instantiate assignedA query) (liveRows 7) := by
+theorem later_binding_makes_the_shared_row_match :
+    Matches locals assignedA (instantiate assignedA query) (sharedRows 7) := by
   with_unfolding_all rfl
 
 theorem pointwise_identity_absence_does_not_admit_the_guard :
-    ¬ Ask locals ([] : EquationStore CapturedTerm) liveRows world (.absent query) := by
+    ¬ Ask locals ([] : EquationStore CapturedTerm) sharedRows world (.absent query) := by
   intro admitted
   have absent := admitted Nat captures assignedA (fun _ member => False.elim (List.not_mem_nil member))
-  exact absent 7 (by decide) later_binding_makes_the_live_row_match
+  exact absent 7 (by decide) later_binding_makes_the_shared_row_match
 
-theorem an_unknown_live_row_does_not_entail_count_zero :
-    ¬ Ask locals ([] : EquationStore CapturedTerm) liveRows world (.count query 0) := by
+theorem an_unknown_shared_row_does_not_entail_count_zero :
+    ¬ Ask locals ([] : EquationStore CapturedTerm) sharedRows world (.count query 0) := by
   intro admitted
   have zero := admitted Nat captures assignedA (fun _ member => False.elim (List.not_mem_nil member))
   have one := congrArg Finset.card
-    (singleton_region captures assignedA liveRows query later_binding_makes_the_live_row_match)
-  change (region locals assignedA liveRows world query).card = 0 at zero
-  have one' : (region locals assignedA liveRows world query).card = 1 := one.trans (by decide)
+    (singleton_region captures assignedA sharedRows query later_binding_makes_the_shared_row_match)
+  change (region locals assignedA sharedRows world query).card = 0 at zero
+  have one' : (region locals assignedA sharedRows world query).card = 1 := one.trans (by decide)
   omega
 
-theorem an_unknown_live_row_does_not_entail_count_one :
-    ¬ Ask locals ([] : EquationStore CapturedTerm) liveRows world (.count query 1) := by
+theorem an_unknown_shared_row_does_not_entail_count_one :
+    ¬ Ask locals ([] : EquationStore CapturedTerm) sharedRows world (.count query 1) := by
   intro admitted
   have one := admitted Nat captures (generator captures) (fun _ member => False.elim (List.not_mem_nil member))
-  have empty := (absent_iff_empty locals (generator captures) liveRows world query).mp
-    identity_absence_of_a_live_unknown_is_only_pointwise
-  have zero : (region locals (generator captures) liveRows world query).card = 0 :=
+  have empty := (absent_iff_empty locals (generator captures) sharedRows world query).mp
+    identity_absence_of_a_shared_unknown_is_only_pointwise
+  have zero : (region locals (generator captures) sharedRows world query).card = 0 :=
     (congrArg Finset.card empty).trans rfl
-  change (region locals (generator captures) liveRows world query).card = 1 at one
+  change (region locals (generator captures) sharedRows world query).card = 1 at one
   omega
 
-def rigidOtherRows (_ : Nat) : Stored := .live (p (pair capturedAtom capturedAtom))
+def rigidOtherRows (_ : Nat) : Stored := .shared (p (pair capturedAtom capturedAtom))
 
 theorem zero_fuel_is_not_an_absence_certificate :
     ContextualGuardRefutation.certifiesAbsence locals captures 0

@@ -41,7 +41,7 @@ theorem has_an_actual_principal_answer : ∃ answer, A.Principal problem answer 
 
 theorem matching_region_contains_two_equal_valued_occurrences (assignment : Subst signature)
     (solved : A.Models assignment problem) :
-    Check.region A assignment label initial.present (.var 0) = {1, 4} := by
+    Check.matches A assignment label initial.present (.var 0) = {1, 4} := by
   classical
   have bound := caller_binding_reaches_frame assignment ((problem_models_iff assignment).mp solved)
   change assignment 0 = Term.const (σ := signature) 0 at bound
@@ -64,7 +64,7 @@ theorem matching_region_contains_two_equal_valued_occurrences (assignment : Subs
 
 theorem count_two_holds (assignment : Subst signature) (solved : A.Models assignment problem) :
     (Check.count (.var 0) 2).Holds A assignment label initial.present := by
-  change (Check.region A assignment label initial.present (.var 0)).card = 2
+  change (Check.matches A assignment label initial.present (.var 0)).card = 2
   rw [matching_region_contains_two_equal_valued_occurrences assignment solved]
   decide
 
@@ -134,8 +134,8 @@ theorem the_wrong_multiplicity_is_rejected : ¬ selected.Valid A label wrongCoun
   obtain ⟨answer, principal⟩ := has_an_actual_principal_answer
   have one := valid.checks (.count (.var 0) 1) (by simp [wrongCount]) answer principal.sound
   have two := count_two_holds answer principal.sound
-  change (Check.region A answer label initial.present (.var 0)).card = 1 at one
-  change (Check.region A answer label initial.present (.var 0)).card = 2 at two
+  change (Check.matches A answer label initial.present (.var 0)).card = 1 at one
+  change (Check.matches A answer label initial.present (.var 0)).card = 2 at two
   omega
 
 theorem principal_transport_also_rejects_the_wrong_multiplicity

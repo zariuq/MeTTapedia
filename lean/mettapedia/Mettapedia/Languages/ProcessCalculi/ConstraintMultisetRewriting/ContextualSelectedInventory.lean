@@ -48,7 +48,7 @@ private theorem frame_output (interaction : Interaction before) (prior : List (T
 theorem target_rows (interaction : Interaction before) (prior : List (Term S Γ sort))
     (incoming : before.inventory.configuration.equations = diagonals before.declarations prior) (occurrence : O) :
     (interaction.target prior incoming).inventory.rows occurrence =
-      if occurrence ∈ interaction.made then .live (instantiate (intoCreated locals before.declarations interaction.scope)
+      if occurrence ∈ interaction.made then .shared (instantiate (intoCreated locals before.declarations interaction.scope)
         (interaction.value occurrence))
       else (before.inventory.rows occurrence).map locals (intoCapture locals before.declarations) := by
   change ((ContextualActivatedStep.resultRows locals before.declarations interaction.selection interaction.outputs
@@ -57,7 +57,7 @@ theorem target_rows (interaction : Interaction before) (prior : List (Term S Γ 
   unfold ContextualActivatedStep.resultRows
   simp only [selection]
   split_ifs with member
-  · change ContextualStoredRows.Row.live (instantiate _ (instantiate _ _)) = _
+  · change ContextualStoredRows.Row.shared (instantiate _ (instantiate _ _)) = _
     rw [← Assignment.instantiate_compose, frame_output interaction prior incoming]
   · rw [ContextualStoredRows.Row.map_compose, frame_capture]
 

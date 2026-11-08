@@ -37,7 +37,7 @@ def edge {V : Type} {decl : V → MetaArity base}
     (key value : SchematicReach.Closed decl) := located 2 (pair key value)
 
 def store (occurrence : Nat) : Row locals captures [] () :=
-  ofStored locals captures (.live
+  ofStored locals captures (.shared
     (if occurrence = 0 then located 1 (function captures)
      else if occurrence = 1 then edge (pair (symbol 1) (symbol 2)) (symbol 7)
      else if occurrence = 2 then edge (pair (symbol 2) (symbol 2)) (symbol 9)
@@ -169,25 +169,25 @@ theorem the_independent_source_result_agrees_with_the_actual_target
     (plan := plan) (picked := picked) compiled ⟨0, by decide +kernel⟩ next candidate pattern).trans
     (the_published_schema_has_exactly_the_source_answer compiled next candidate pattern)
 
-def livePlan : ContextualPublication.Plan (SchematicReach.Closed actor) := ⟨code, [false], rfl⟩
+def sharedPlan : ContextualPublication.Plan (SchematicReach.Closed actor) := ⟨code, [false], rfl⟩
 
-theorem the_live_case_has_an_actual_refinement (fuel : Nat) :
-    ∃ compiled : ContextualConditionalClauses.Compiled queries locals (before := before) livePlan picked,
+theorem the_shared_case_has_an_actual_refinement (fuel : Nat) :
+    ∃ compiled : ContextualConditionalClauses.Compiled queries locals (before := before) sharedPlan picked,
       compiled.firing.fuel = fuel ∧
       ∀ (Next : Type) (next : Next → MetaArity base)
         (candidate : Assignment compiled.firing.target.declarations next) (pattern : SchematicReach.Closed next),
         Matches (ContextualClauseSourceState.resultLocals queries locals world)
           (ContextualClauseSourceState.resultFamily queries locals world)
           (Assignment.compose candidate compiled.sourceFrame.assignment) pattern
-          ((ContextualClauseSourceState.target queries locals world livePlan picked).rows 4) ↔
+          ((ContextualClauseSourceState.target queries locals world sharedPlan picked).rows 4) ↔
         Matches (ContextualPublication.privateFamily (bank queries locals) compiled.firing.update.declaration)
           compiled.firing.target.declarations candidate pattern (compiled.firing.target.rows 4) := by
   obtain ⟨compiled, budget⟩ := ContextualConditionalClauses.realize queries locals
-    (before := before) livePlan picked source_admitted fuel
+    (before := before) sharedPlan picked source_admitted fuel
   refine ⟨compiled, budget, ?_⟩
   intro Next next candidate pattern
   exact ContextualClauseStateRefinement.produced_matches (before := world) (occupied := ∅)
-    (plan := livePlan) (picked := picked) compiled ⟨0, by decide +kernel⟩ next candidate pattern
+    (plan := sharedPlan) (picked := picked) compiled ⟨0, by decide +kernel⟩ next candidate pattern
 
 def wrongPicked : Selection Nat := ⟨[3], [0, 2], [4]⟩
 def wrongProblem := ContextualClauseSourceState.information queries locals world plan wrongPicked

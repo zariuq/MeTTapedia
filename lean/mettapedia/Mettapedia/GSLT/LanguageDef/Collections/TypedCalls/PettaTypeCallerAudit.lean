@@ -1,0 +1,57 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaTypeQueryReplies
+import Mettapedia.Languages.MeTTa.PeTTa.StableIntrinsicTypeQueryCompletion
+import Mettapedia.Languages.MeTTa.PeTTa.StableTypeCallerBindingControls
+import Mettapedia.Languages.MeTTa.PeTTa.StableTypeQueryAuthority
+
+/-! Audit of the corrected query boundary, reached caller record, and private reply schemes. -/
+
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaTypeQueryReplies.decode_substitution
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaTypeQueryReplies.closed_assignment_unifies
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaTypeQueryReplies.solution_instances_realize
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaTypeQueryReplies.realization_is_solution_instance
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaTypeQueryReplies.solve_exact
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaTypeQueryReplies.solve_exists
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaTypeQueryReplies.solveAll_exists
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaTypeQueryReplies.solveAll_order
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaTypeQueryReplies.solveAll_length
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaTypeQueryReplies.inferred_derivations_satisfiable
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaTypeQueryReplies.inferred_exists
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableIntrinsicTypeQuery.root_variable_is_fresh
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableIntrinsicTypeQuery.missing_fresh_query_not_empty
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableIntrinsicTypeQuery.completed_fresh_empty_has_undefined
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableIntrinsicTypeQuery.literal_unchecked_selected_before_refinement
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableIntrinsicTypeQuery.Completion.functions_extends
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableIntrinsicTypeQuery.Completion.candidates_extends
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableIntrinsicTypeQuery.Completion.step_extends
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableIntrinsicTypeQuery.Completion.run_succ_extends
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableIntrinsicTypeQuery.Completion.run_add_extends
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableIntrinsicTypeQuery.Controls.shared_subject_is_rejected
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableIntrinsicTypeQuery.Controls.fresh_then_late_match_is_different
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableIntrinsicTypeQuery.Controls.number_has_no_undefined_answer
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableIntrinsicTypeQuery.Controls.undeclared_symbol_has_undefined_answer
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableIntrinsicTypeQuery.Controls.incomplete_query_is_not_empty
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableIntrinsicTypeQuery.Controls.root_alias_requirement_still_uses_fresh_mode
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableIntrinsicTypeQuery.Controls.instantiated_undefined_does_not_remove_domain_guard
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableIntrinsicTypeQuery.Controls.literal_undefined_domain_skips_its_query
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableTypeCallerBinding.delivery_origin
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableTypeCallerBinding.delivery_keeps_caller
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableTypeCallerBinding.delivery_binds_original_expected
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableTypeCallerBinding.delivery_joint_refinements
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableTypeCallerBinding.failed_reply_keeps_sibling_record
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableTypeCallerBinding.pending_not_empty
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableTypeCallerBinding.complete_empty
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableTypeCallerBinding.completed_call_origin
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableTypeCallerBinding.delivery_keeps_ground_value
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableTypeCallerBinding.completed_call_keeps_ground_value
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableTypeCallerBinding.Controls.original_caller_aliases_are_retained
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableTypeCallerBinding.Controls.discarding_caller_record_loses_alias
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableTypeCallerBinding.Controls.every_reply_retains_the_same_caller
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableTypeCallerBinding.Controls.open_value_is_not_protected_from_refinement
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableTypeCallerBinding.Controls.bound_alias_query_does_not_become_late_filter
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableTypeCallerBinding.Controls.insufficient_query_budget_retains_pending
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableTypeQueryAuthority.committed_profile_is_distinct
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableTypeQueryAuthority.admits_current_rows
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableTypeQueryAuthority.authored_classifier_blocks
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableTypeQueryAuthority.subject_refining_annotation_blocks
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.StableTypeQueryAuthority.admitted_empty
+

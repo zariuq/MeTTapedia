@@ -1,0 +1,4 @@
+# Library files read after Decidable.mg, before the generated functions.
+Library/Relations.mg
+Library/Machines.mg
+Library/Options.mg

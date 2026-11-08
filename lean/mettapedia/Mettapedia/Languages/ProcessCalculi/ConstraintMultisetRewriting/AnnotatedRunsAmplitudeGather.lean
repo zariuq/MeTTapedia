@@ -226,7 +226,7 @@ def certifiedCancellationFiring (status bits : GuardBits A) (row : Amplitude →
     (region : T → Bool) (seen : Finset O) (s r : O) : Firing T S O :=
   ⟨⟨[], [status.yes], [], [bits.check (decide (Destructive (pathsOf label wave seen)))],
       [row (coherent (pathsOf label wave seen))]⟩,
-    [CensusAdmission.Query.fixed ⟨region, seen⟩], ⟨[], [s], [r]⟩⟩
+    [PredicateQueryAdmission.Query.fixed ⟨region, seen⟩], ⟨[], [s], [r]⟩⟩
 
 variable {status bits : GuardBits A} {collection : Collection Amplitude} {pathRow : Amplitude → T}
   {paths : List Amplitude} {rows : List O} {s : O} {row : Amplitude → T} {region : T → Bool}
@@ -273,12 +273,12 @@ theorem certified_valid_iff (seen : Finset O) (r : O) (C : Configuration T O) :
         [row (coherent (pathsOf label wave seen))]⟩ : RuleInstance T) C =
         C.equations ++ [(status.yes, label s)] := by
     simp [Selection.problem, Selection.equations]
-  change CensusAdmission.Valid A label
+  change PredicateQueryAdmission.Valid A label
       (⟨[], [status.yes], [], [bits.check (decide (Destructive (pathsOf label wave seen)))],
         [row (coherent (pathsOf label wave seen))]⟩ : RuleInstance T)
       ([(⟨region, seen⟩ : MeTTaCalculus.OccurrenceCommits.PredicateQuery O T)].map
-        CensusAdmission.Query.fixed) C (⟨[], [s], [r]⟩ : Selection O) ↔ _
-  rw [CensusAdmission.valid_fixed_iff]
+        PredicateQueryAdmission.Query.fixed) C (⟨[], [s], [r]⟩ : Selection O) ↔ _
+  rw [PredicateQueryAdmission.valid_fixed_iff]
   constructor
   · rintro ⟨firing, holds⟩
     have consistent := firing.consistent

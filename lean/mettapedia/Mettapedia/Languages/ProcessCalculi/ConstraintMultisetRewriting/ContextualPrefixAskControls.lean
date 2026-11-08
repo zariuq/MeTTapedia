@@ -3,10 +3,10 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualPrefixModelControls
 
 /-!
-# Schema counts and live caller bindings survive unused future scopes
+# Schema counts and shared caller bindings survive unused future scopes
 
 One schematic physical row still counts once, and a nonbinding check cannot
-instantiate an unbound live caller. An actual caller binding can change that
+instantiate an unbound shared caller. An actual caller binding can change that
 match later. Names-only extension preserves each observation separately.
 -/
 
@@ -44,10 +44,10 @@ theorem unused_scope_preserves_one_physical_schema_count :
   (ContextualGuardSemantics.Ask.unused_extension_iff locals unused [] schemaRows {7} (.count (p a) 1)).mpr
     old_schema_count
 
-def liveRow : ContextualStoredRows.Row locals captures [] () := .live (p (generator captures 0))
+def sharedRow : ContextualStoredRows.Row locals captures [] () := .shared (p (generator captures 0))
 
-theorem the_live_caller_is_not_instantiated_by_the_check :
-    ¬ Matches locals (generator captures) (p a) liveRow := by
+theorem the_shared_caller_is_not_instantiated_by_the_check :
+    ¬ Matches locals (generator captures) (p a) sharedRow := by
   intro matched
   change p a = instantiate (generator captures) (p (generator captures 0)) at matched
   have normalized : p a = p (generator captures 0) := matched.trans (instantiate_identity _)
@@ -58,20 +58,20 @@ theorem the_live_caller_is_not_instantiated_by_the_check :
 
 theorem adding_unused_names_cannot_manufacture_the_caller_binding :
     ¬ Matches locals (Assignment.compose (inclusion unused captures) (generator captures))
-      (instantiate (inclusion unused captures) (p a)) liveRow := by
+      (instantiate (inclusion unused captures) (p a)) sharedRow := by
   intro matched
-  exact the_live_caller_is_not_instantiated_by_the_check
-    ((matches_inclusion_iff locals unused (generator captures) (p a) liveRow).mp matched)
+  exact the_shared_caller_is_not_instantiated_by_the_check
+    ((matches_inclusion_iff locals unused (generator captures) (p a) sharedRow).mp matched)
 
 def boundCaller : Assignment captures captures := fun _ => a
 
-theorem an_actual_later_caller_binding_changes_the_live_match :
-    Matches locals boundCaller (p a) liveRow := by rfl
+theorem an_actual_later_caller_binding_changes_the_shared_match :
+    Matches locals boundCaller (p a) sharedRow := by rfl
 
 theorem the_later_binding_also_transports_to_unused_scope_frame :
     Matches locals (Assignment.compose (inclusion unused captures) boundCaller)
-      (instantiate (inclusion unused captures) (p a)) liveRow :=
-  (matches_inclusion_iff locals unused boundCaller (p a) liveRow).mpr
-    an_actual_later_caller_binding_changes_the_live_match
+      (instantiate (inclusion unused captures) (p a)) sharedRow :=
+  (matches_inclusion_iff locals unused boundCaller (p a) sharedRow).mpr
+    an_actual_later_caller_binding_changes_the_shared_match
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualPrefixAskControls

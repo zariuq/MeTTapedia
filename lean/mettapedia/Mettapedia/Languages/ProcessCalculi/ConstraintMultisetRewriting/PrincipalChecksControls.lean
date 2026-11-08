@@ -49,11 +49,11 @@ theorem closed_check_pattern_does_not_cover_the_occurrence_world :
       ¬ A.Entails [] (fun assignment => countOne.Holds A assignment label {0}) := by
   constructor
   · intro residual
-    simp [countOne, Check.Holds, Check.region, FirstOrder.action,
+    simp [countOne, Check.Holds, Check.matches, FirstOrder.action,
       Subst.comp, Subst.applyTerm, zero, Subst.single, label]
   · intro universal
     have impossible := universal one (A.models_nil one)
-    simp [countOne, Check.Holds, Check.region, FirstOrder.action,
+    simp [countOne, Check.Holds, Check.matches, FirstOrder.action,
       Subst.applyTerm, one, Subst.single, label] at impossible
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.PrincipalChecks.Controls

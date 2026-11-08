@@ -2,13 +2,13 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualPublicationExecution
 
 /-!
-# Publishing a constructed template with declared live captures
+# Publishing a constructed template with declared shared captures
 
 Template-private variables and actor references have different origins.
 The former become private row keys; the latter retain their original source
 identities in the actual post-solver declaration family. Constructor arguments,
 object binders and repeated occurrences are transported by contextual
-instantiation. Publication does not normalize a live capture into an unrelated
+instantiation. Publication does not normalize a shared capture into an unrelated
 returned helper or identify distinct production-port origins.
 -/
 

@@ -775,7 +775,7 @@ theorem regionPaths_arrival (region : T → Bool) (C : Configuration T O) {o : O
 verdict on the paths its query saw.** This is `argmax_iff_census` for any comparison of paths. -/
 theorem verdict_iff_query (verdict : Multiset Amplitude → Prop) {f : Firing T S O}
     {C : Configuration T O} (valid : f.Valid A label C) {query : PredicateQuery O T}
-    (member : CensusAdmission.Query.fixed query ∈ f.queries) :
+    (member : PredicateQueryAdmission.Query.fixed query ∈ f.queries) :
     verdict (regionPaths label wave query.region C) ↔ verdict (pathsOf label wave query.seen) := by
   obtain ⟨σ, solved⟩ := valid.firing.consistent
   have saw : regionOf label C.present query.region = query.seen :=
@@ -785,7 +785,7 @@ theorem verdict_iff_query (verdict : Multiset Amplitude → Prop) {f : Firing T 
 
 /-- **Cancellation with a predicate query of the region is a test of the paths the query saw.** -/
 theorem destructive_iff_query {f : Firing T S O} {C : Configuration T O} (valid : f.Valid A label C)
-    {query : PredicateQuery O T} (member : CensusAdmission.Query.fixed query ∈ f.queries) :
+    {query : PredicateQuery O T} (member : PredicateQueryAdmission.Query.fixed query ∈ f.queries) :
     Destructive (regionPaths label wave query.region C) ↔
       Destructive (pathsOf label wave query.seen) :=
   verdict_iff_query A label wave Destructive valid member
@@ -793,14 +793,14 @@ theorem destructive_iff_query {f : Firing T S O} {C : Configuration T O} (valid 
 /-- **Reinforcement with a predicate query of the region is a test of the paths the query saw.** -/
 theorem constructive_iff_query {f : Firing T S O} {C : Configuration T O}
     (valid : f.Valid A label C) {query : PredicateQuery O T}
-    (member : CensusAdmission.Query.fixed query ∈ f.queries) :
+    (member : PredicateQueryAdmission.Query.fixed query ∈ f.queries) :
     Constructive (regionPaths label wave query.region C) ↔
       Constructive (pathsOf label wave query.seen) :=
   verdict_iff_query A label wave Constructive valid member
 
 /-- **The regional amplitude at the cut is the coherent sum of the paths the query saw.** -/
 theorem coherent_query {f : Firing T S O} {C : Configuration T O} (valid : f.Valid A label C)
-    {query : PredicateQuery O T} (member : CensusAdmission.Query.fixed query ∈ f.queries) :
+    {query : PredicateQuery O T} (member : PredicateQueryAdmission.Query.fixed query ∈ f.queries) :
     coherent (regionPaths label wave query.region C) =
       coherent (pathsOf label wave query.seen) := by
   obtain ⟨σ, solved⟩ := valid.firing.consistent
@@ -813,7 +813,7 @@ theorem coherent_query {f : Firing T S O} {C : Configuration T O} (valid : f.Val
 admitted only where its query saw the whole region, so the guard is decided again at the new
 cut. -/
 theorem query_refuses_arrival {f : Firing T S O} {C : Configuration T O} (valid : f.Valid A label C)
-    {query : PredicateQuery O T} (member : CensusAdmission.Query.fixed query ∈ f.queries) {o : O}
+    {query : PredicateQuery O T} (member : PredicateQueryAdmission.Query.fixed query ∈ f.queries) {o : O}
     (absent : o ∉ C.present) (inRegion : query.region (label o) = true) :
     ¬ f.Valid A label ⟨C.equations, C.present ∪ {o}⟩ := by
   intro after
