@@ -54,7 +54,7 @@ def sameStateIso {C D : Configuration T O} (same : SameUpTo A C D) :
     exact same.2
 
 /-- **Transport in the one-frame instance.** -/
-def firstOrderTransport : Transport (firstOrder A label) where
+def firstOrderTransport : Transport (firstOrder A label).toStep where
   Iso C D := PLift (SameUpTo A C D)
   toStateIso i := sameStateIso A label i.down
   refl C := ⟨SameUpTo.refl A C⟩

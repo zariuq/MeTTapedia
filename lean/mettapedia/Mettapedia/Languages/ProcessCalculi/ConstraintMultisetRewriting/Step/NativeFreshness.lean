@@ -97,7 +97,7 @@ namespace NativeRun
 
 /-- Freshness from fewer born identities is weaker. -/
 theorem FreshFrom.mono :
-    ∀ {s : NativeState S O Γ sort} (r : Interface.Step.Run (native (S := S) (O := O) (Γ := Γ) (sort := sort)) s)
+    ∀ {s : NativeState S O Γ sort} (r : Interface.Step.Run (native (S := S) (O := O) (Γ := Γ) (sort := sort)).toStep s)
       {small big : Finset O}, small ⊆ big → FreshFrom r big → FreshFrom r small
   | _, .nil _, _, _, _, _ => trivial
   | _, .cons _ _ rest, _, _, inside, fresh =>
@@ -108,7 +108,7 @@ end NativeRun
 /-- **Freshness is forced**: a protocol run whose trace carries the commits of a native run makes the
 native run allocate fresh identities from the born identities of its start. -/
 theorem freshFrom_of_protocol (txn : ℕ → Commit O Unit) :
-    ∀ {s : NativeState S O Γ sort} (r : Interface.Step.Run (native (S := S) (O := O) (Γ := Γ) (sort := sort)) s)
+    ∀ {s : NativeState S O Γ sort} (r : Interface.Step.Run (native (S := S) (O := O) (Γ := Γ) (sort := sort)).toStep s)
       (k : ℕ) {σ σ' : ProtocolState O Unit ℕ}, NativeRun.Carries txn r k →
       Run (fun _ : O => ()) txn σ (NativeRun.trace txn r k) σ' → NativeRun.FreshFrom r σ.born
   | _, .nil _, _, _, _, _, _ => trivial
@@ -127,7 +127,7 @@ run carried by transactions `k`, `k + 1`, … is realized by a protocol run from
 protocol state whose store holds the present occurrences exactly when no firing makes an identity born
 before it. -/
 theorem native_run_protocol_iff (txn : ℕ → Commit O Unit) {s : NativeState S O Γ sort}
-    (r : Interface.Step.Run (native (S := S) (O := O) (Γ := Γ) (sort := sort)) s) (k : ℕ)
+    (r : Interface.Step.Run (native (S := S) (O := O) (Γ := Γ) (sort := sort)).toStep s) (k : ℕ)
     (σ : ProtocolState O Unit ℕ) (carries : NativeRun.Carries txn r k) (store : σ.store = s.state.present)
     (idle : ∀ i, k ≤ i → σ.phase i = .idle) (unclaimed : ∀ o, σ.claim o = none) :
     (∃ σ', Run (fun _ : O => ()) txn σ (NativeRun.trace txn r k) σ' ∧ σ'.store = r.last.state.present) ↔
@@ -138,7 +138,7 @@ theorem native_run_protocol_iff (txn : ℕ → Commit O Unit) {s : NativeState S
 /-- **Absent-only freshness is not enough**: a native run that makes an identity born before is
 realized by no protocol run. -/
 theorem not_realized_of_reborn (txn : ℕ → Commit O Unit) {s : NativeState S O Γ sort}
-    (r : Interface.Step.Run (native (S := S) (O := O) (Γ := Γ) (sort := sort)) s) (k : ℕ)
+    (r : Interface.Step.Run (native (S := S) (O := O) (Γ := Γ) (sort := sort)).toStep s) (k : ℕ)
     {σ : ProtocolState O Unit ℕ} (carries : NativeRun.Carries txn r k) (reborn : ¬ NativeRun.FreshFrom r σ.born) :
     ∀ σ', ¬ Run (fun _ : O => ()) txn σ (NativeRun.trace txn r k) σ' :=
   fun _ run => reborn (freshFrom_of_protocol txn r k carries run)
@@ -149,7 +149,7 @@ theorem not_realized_of_reborn (txn : ℕ → Commit O Unit) {s : NativeState S 
 firing is admitted when it is natively admitted and makes no born identity, and its result adds what
 it makes. -/
 noncomputable def nativeUnborn :
-    Interface.Step (Frames.contextual S) O (NativeState S O Γ sort × Finset O)
+    Interface.Step.Standard (Frames.contextual S) O (NativeState S O Γ sort × Finset O)
       (fun state => NativeFiring state.1) where
   frame state := (native (S := S) (O := O) (Γ := Γ) (sort := sort)).frame state.1
   knowledge state := native.knowledge state.1
@@ -170,37 +170,38 @@ noncomputable def nativeUnborn :
       exact ⟨⟨shapes, unborn⟩, enabled, solvable, asks⟩
     · rintro ⟨⟨shapes, unborn⟩, enabled, solvable, asks⟩
       exact ⟨(native_admits_iff f).mpr ⟨shapes, enabled, solvable, asks⟩, unborn⟩
-  result {state} f admitted := (native.result f admitted.1, state.2 ∪ f.selection.made.toFinset)
-  present_result f admitted := native.present_result f admitted.1
-  settle f admitted := native.settle f admitted.1
-  knowledge_result f admitted := native.knowledge_result f admitted.1
+  preparedResult {state} f p :=
+    (native.preparedResult f ⟨p.1.1, p.2.1, p.2.2⟩, state.2 ∪ f.selection.made.toFinset)
+  present_preparedResult f p := native.present_preparedResult f ⟨p.1.1, p.2.1, p.2.2⟩
+  preparedSettle f p := native.preparedSettle f ⟨p.1.1, p.2.1, p.2.2⟩
+  knowledge_preparedResult f p := native.knowledge_preparedResult f ⟨p.1.1, p.2.1, p.2.2⟩
 
 namespace UnbornRun
 
 /-- An unborn run, with its born identities forgotten. -/
 noncomputable def forget : {state : NativeState S O Γ sort × Finset O} →
-    Interface.Step.Run (nativeUnborn (S := S) (O := O) (Γ := Γ) (sort := sort)) state →
-      Interface.Step.Run (native (S := S) (O := O) (Γ := Γ) (sort := sort)) state.1
+    Interface.Step.Run (nativeUnborn (S := S) (O := O) (Γ := Γ) (sort := sort)).toStep state →
+      Interface.Step.Run (native (S := S) (O := O) (Γ := Γ) (sort := sort)).toStep state.1
   | _, .nil state => .nil state.1
   | _, .cons f admitted rest => .cons f admitted.1 (forget rest)
 
 /-- **An unborn run allocates fresh identities.** -/
 theorem freshFrom_forget : ∀ {state : NativeState S O Γ sort × Finset O}
-    (r : Interface.Step.Run (nativeUnborn (S := S) (O := O) (Γ := Γ) (sort := sort)) state),
+    (r : Interface.Step.Run (nativeUnborn (S := S) (O := O) (Γ := Γ) (sort := sort)).toStep state),
     NativeRun.FreshFrom (forget r) state.2
   | _, .nil _ => trivial
   | _, .cons _ admitted rest => And.intro admitted.2 (freshFrom_forget rest)
 
 /-- A native run that allocates fresh identities is an unborn run. -/
 noncomputable def ofFresh : {s : NativeState S O Γ sort} → (born : Finset O) →
-    (r : Interface.Step.Run (native (S := S) (O := O) (Γ := Γ) (sort := sort)) s) → NativeRun.FreshFrom r born →
-      Interface.Step.Run (nativeUnborn (S := S) (O := O) (Γ := Γ) (sort := sort)) (s, born)
+    (r : Interface.Step.Run (native (S := S) (O := O) (Γ := Γ) (sort := sort)).toStep s) → NativeRun.FreshFrom r born →
+      Interface.Step.Run (nativeUnborn (S := S) (O := O) (Γ := Γ) (sort := sort)).toStep (s, born)
   | _, _, .nil s, _ => .nil (s, _)
   | _, born, .cons f admitted rest, fresh =>
       .cons (s := (_, born)) f ⟨admitted, fresh.1⟩ (ofFresh (born ∪ f.selection.made.toFinset) rest fresh.2)
 
 theorem forget_ofFresh : ∀ {s : NativeState S O Γ sort} (born : Finset O)
-    (r : Interface.Step.Run (native (S := S) (O := O) (Γ := Γ) (sort := sort)) s) (fresh : NativeRun.FreshFrom r born),
+    (r : Interface.Step.Run (native (S := S) (O := O) (Γ := Γ) (sort := sort)).toStep s) (fresh : NativeRun.FreshFrom r born),
     forget (ofFresh born r fresh) = r
   | _, _, .nil _, _ => rfl
   | _, born, .cons f admitted rest, fresh =>
@@ -211,7 +212,7 @@ end UnbornRun
 /-- **Every run of the unborn reading is realized by the commit protocol**, from an idle, unclaimed
 protocol state holding the present occurrences with the run's born identities. -/
 theorem unborn_run_protocol (txn : ℕ → Commit O Unit) {state : NativeState S O Γ sort × Finset O}
-    (r : Interface.Step.Run (nativeUnborn (S := S) (O := O) (Γ := Γ) (sort := sort)) state) (k : ℕ)
+    (r : Interface.Step.Run (nativeUnborn (S := S) (O := O) (Γ := Γ) (sort := sort)).toStep state) (k : ℕ)
     (σ : ProtocolState O Unit ℕ) (carries : NativeRun.Carries txn (UnbornRun.forget r) k)
     (born : σ.born = state.2) (store : σ.store = state.1.state.present)
     (idle : ∀ i, k ≤ i → σ.phase i = .idle) (unclaimed : ∀ o, σ.claim o = none) :

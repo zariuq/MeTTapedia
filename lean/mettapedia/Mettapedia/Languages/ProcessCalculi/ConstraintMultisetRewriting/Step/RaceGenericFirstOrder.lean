@@ -57,13 +57,13 @@ variable {A label offers}
 /-! ## Moves -/
 
 theorem moves_lift_iff {C D : Configuration T O} {ℓ : L} :
-    Moves (firstOrder A label) (lift offers) C ℓ D ↔ Race.Moves A label offers C ℓ D :=
+    Moves (firstOrder A label).toStep (lift offers) C ℓ D ↔ Race.Moves A label offers C ℓ D :=
   ⟨fun ⟨f, admitted, offered, result⟩ => ⟨f, offered, admitted, result⟩,
     fun ⟨f, offered, valid, result⟩ => ⟨f, valid, offered, result⟩⟩
 
 /-- **Bisimilarity of the lift is bisimilarity of `RaceSpectrum`.** -/
 theorem bisimilar_lift_iff {C D : Configuration T O} :
-    Bisimilar (firstOrder A label) (lift offers) C D ↔ Race.Bisimilar A label offers C D := by
+    Bisimilar (firstOrder A label).toStep (lift offers) C D ↔ Race.Bisimilar A label offers C D := by
   constructor
   · rintro ⟨R, ⟨forward, backward, _⟩, related⟩
     refine ⟨R, ⟨fun a b rel ℓ a' moved => ?_, fun a b rel ℓ b' moved => ?_,
@@ -82,7 +82,7 @@ theorem bisimilar_lift_iff {C D : Configuration T O} :
 
 /-- **Satisfaction in the lift is satisfaction in `RaceSpectrum`.** -/
 theorem sat_lift_iff : ∀ (φ : Formula PEmpty.{1} L) (C : Configuration T O),
-    Sat (firstOrder A label) (lift offers) φ C ↔ Race.Sat A label offers φ C
+    Sat (firstOrder A label).toStep (lift offers) φ C ↔ Race.Sat A label offers φ C
   | .top, _ => Iff.rfl
   | .atom atom, _ => atom.elim
   | .conj φ ψ, C => and_congr (sat_lift_iff φ C) (sat_lift_iff ψ C)
@@ -97,11 +97,11 @@ variable (A label) in
 /-- **A pairwise statically independent executable word is a concurrent word.** -/
 theorem concurrent_of_pairwise : ∀ (w : List (Firing T S O)) {C : Configuration T O},
     w.Pairwise (StaticIndependent label) → Executable A label C w →
-      Concurrent (firstOrder A label) (firstOrderTransport A label) C w (follow label C w)
+      Concurrent (firstOrder A label).toStep (firstOrderTransport A label) C w (follow label C w)
   | [], C, _, _ => .nil C
   | f :: rest, C, pairwise, executable => by
       have later := concurrent_of_pairwise rest (List.pairwise_cons.mp pairwise).2 executable.2
-      refine Concurrent.cons (P := firstOrder A label) (T := firstOrderTransport A label) f rest
+      refine Concurrent.cons (P := (firstOrder A label).toStep) (T := firstOrderTransport A label) f rest
         executable.1 ?_ ?_
       · intro g member
         classical
@@ -120,7 +120,7 @@ theorem concurrent_of_pairwise : ∀ (w : List (Firing T S O)) {C : Configuratio
 variable (A label) in
 /-- **A concurrent word of static firings is pairwise statically independent and fires.** -/
 theorem fires_of_concurrent : ∀ {C : Configuration T O} {w : List (Firing T S O)} {D : Configuration T O},
-    Concurrent (firstOrder A label) (firstOrderTransport A label) C w D → (∀ f ∈ w, f.Static) →
+    Concurrent (firstOrder A label).toStep (firstOrderTransport A label) C w D → (∀ f ∈ w, f.Static) →
       w.Pairwise (StaticIndependent label) ∧ Fires A label C w ∧ D = follow label C w
   | C, [], D, concurrent, _ => by
       obtain rfl := concurrent_nil_iff.mp concurrent
@@ -141,14 +141,14 @@ theorem fires_of_concurrent : ∀ {C : Configuration T O} {w : List (Firing T S 
 /-- **Every step of `RaceSteps` is a step of the lift.** -/
 theorem stepMoves_lift_of_race {C D : Configuration T O} {M : Multiset L}
     (stepped : Race.StepMoves A label offers C M D) :
-    StepMoves (firstOrder A label) (firstOrderTransport A label) (lift offers) C M D := by
+    StepMoves (firstOrder A label).toStep (firstOrderTransport A label) (lift offers) C M D := by
   obtain ⟨w, nonempty, offered, pairwise, executable, rfl, rfl⟩ := stepped
   exact ⟨w, nonempty, offered, concurrent_of_pairwise A label _ pairwise executable, rfl⟩
 
 /-- **For static programs every step of the lift is a step of `RaceSteps`.** -/
 theorem race_of_stepMoves_lift (static : ∀ ℓ f, offers ℓ f → f.Static) {C D : Configuration T O}
     {M : Multiset L}
-    (stepped : StepMoves (firstOrder A label) (firstOrderTransport A label) (lift offers) C M D) :
+    (stepped : StepMoves (firstOrder A label).toStep (firstOrderTransport A label) (lift offers) C M D) :
     Race.StepMoves A label offers C M D := by
   obtain ⟨w, nonempty, offered, concurrent, rfl⟩ := stepped
   obtain ⟨pairwise, fires, rfl⟩ := fires_of_concurrent A label concurrent fun f member => by
@@ -159,7 +159,7 @@ theorem race_of_stepMoves_lift (static : ∀ ℓ f, offers ℓ f → f.Static) {
 
 /-- **For static programs, step bisimilarity of the lift is step bisimilarity of `RaceSteps`.** -/
 theorem stepBisimilar_lift_iff (static : ∀ ℓ f, offers ℓ f → f.Static) {C D : Configuration T O} :
-    StepBisimilar (firstOrder A label) (firstOrderTransport A label) (lift offers) C D ↔
+    StepBisimilar (firstOrder A label).toStep (firstOrderTransport A label) (lift offers) C D ↔
       Race.StepBisimilar A label offers C D := by
   constructor
   · rintro ⟨R, ⟨forward, backward, _⟩, related⟩
@@ -221,7 +221,7 @@ def image (x : Configuration T O × History (Configuration T O) (fun _ => Firing
   (x.1, forget x.2)
 
 theorem hmoves_toRace {x y : Configuration T O × History (Configuration T O) (fun _ => Firing T S O)}
-    {lab : L × Finset ℕ} (moved : HMoves (indepOf label) (firstOrder A label) (lift offers) x lab y) :
+    {lab : L × Finset ℕ} (moved : HMoves (indepOf label) (firstOrder A label).toStep (lift offers) x lab y) :
     Race.HMoves A label offers (image x) lab (image y) := by
   obtain ⟨f, admitted, offered, labelled, rfl⟩ := moved
   refine ⟨f, offered, admitted, labelled.trans (past_forget x.2 x.1 f), ?_⟩
@@ -230,7 +230,7 @@ theorem hmoves_toRace {x y : Configuration T O × History (Configuration T O) (f
 theorem hmoves_ofRace {x : Configuration T O × History (Configuration T O) (fun _ => Firing T S O)}
     {lab : L × Finset ℕ} {u : Configuration T O × Race.History T S O}
     (moved : Race.HMoves A label offers (image x) lab u) :
-    ∃ y, HMoves (indepOf label) (firstOrder A label) (lift offers) x lab y ∧ u = image y := by
+    ∃ y, HMoves (indepOf label) (firstOrder A label).toStep (lift offers) x lab y ∧ u = image y := by
   obtain ⟨f, offered, valid, labelled, rfl⟩ := moved
   refine ⟨(f.result label x.1, x.2 ++ [(⟨x.1, f⟩, lab.2)]),
     ⟨f, valid, offered, labelled.trans (past_forget x.2 x.1 f).symm, rfl⟩, ?_⟩
@@ -238,7 +238,7 @@ theorem hmoves_ofRace {x : Configuration T O × History (Configuration T O) (fun
 
 /-- **History-preserving bisimilarity of the lift is that of `RaceSteps`**, for every program. -/
 theorem hpBisimilar_lift_iff {C D : Configuration T O} :
-    HPBisimilar (indepOf label) (firstOrder A label) (lift offers) C D ↔
+    HPBisimilar (indepOf label) (firstOrder A label).toStep (lift offers) C D ↔
       Race.HPBisimilar A label offers C D := by
   constructor
   · rintro ⟨R, ⟨forward, backward, _⟩, related⟩
@@ -265,7 +265,7 @@ theorem hpBisimilar_lift_iff {C D : Configuration T O} :
 
 /-! ## What the lift gives the first-order layer -/
 
-theorem invariant_firstOrder : Invariant (firstOrder A label) (lift offers) (firstOrderTransport A label) :=
+theorem invariant_firstOrder : Invariant (firstOrder A label).toStep (lift offers) (firstOrderTransport A label) :=
   fun _ _ _ _ _ offered => offered
 
 theorem strict_firstOrder {C : Configuration T O} {f f' : Firing T S O} :
@@ -297,7 +297,7 @@ theorem hpBisimilar_of_sameUpTo {C D : Configuration T O} (same : SameUpTo A C D
 
 /-- **An equivariant program keeps its labels along the renaming transport.** -/
 theorem invariant_of_equivariant (equivariant : Race.Equivariant label offers) :
-    Invariant (firstOrder A label) (lift offers) (renamingTransport A label) :=
+    Invariant (firstOrder A label).toStep (lift offers) (renamingTransport A label) :=
   fun _ _ i ℓ f offered => equivariant i.rename i.keeps ℓ f offered
 
 /-- **Renaming-related configurations of an equivariant program are bisimilar.** -/
@@ -320,8 +320,8 @@ theorem independent_renaming_iff {C : Configuration T O} {f g : Firing T S O} :
     exact ⟨first, second, afterFirst, afterSecond, ⟨RenamingIso.ofSame same.down⟩⟩
 
 theorem concurrent_of_renaming : ∀ {C D : Configuration T O} {w : List (Firing T S O)},
-    Concurrent (firstOrder A label) (renamingTransport A label) C w D →
-      Concurrent (firstOrder A label) (firstOrderTransport A label) C w D
+    Concurrent (firstOrder A label).toStep (renamingTransport A label) C w D →
+      Concurrent (firstOrder A label).toStep (firstOrderTransport A label) C w D
   | _, _, [], concurrent => by
       obtain rfl := concurrent_nil_iff.mp concurrent
       exact .nil _
@@ -336,8 +336,8 @@ theorem concurrent_of_renaming : ∀ {C D : Configuration T O} {w : List (Firing
       exact concurrent_of_renaming later
 
 theorem renaming_of_concurrent : ∀ {C D : Configuration T O} {w : List (Firing T S O)},
-    Concurrent (firstOrder A label) (firstOrderTransport A label) C w D →
-      Concurrent (firstOrder A label) (renamingTransport A label) C w D
+    Concurrent (firstOrder A label).toStep (firstOrderTransport A label) C w D →
+      Concurrent (firstOrder A label).toStep (renamingTransport A label) C w D
   | _, _, [], concurrent => by
       obtain rfl := concurrent_nil_iff.mp concurrent
       exact .nil _
@@ -359,11 +359,11 @@ theorem stepBisimilar_of_renamingIso (equivariant : Race.Equivariant label offer
     stepBisimilar_of_same (T := renamingTransport A label) (offers := lift offers) Iff.rfl
       (invariant_of_equivariant equivariant) ⟨i⟩
   have toFirst : ∀ {a b : Configuration T O} {M : Multiset L},
-      StepMoves (firstOrder A label) (renamingTransport A label) (lift offers) a M b →
+      StepMoves (firstOrder A label).toStep (renamingTransport A label) (lift offers) a M b →
         Race.StepMoves A label offers a M b := fun ⟨w, nonempty, offered, concurrent, labels⟩ =>
     race_of_stepMoves_lift static ⟨w, nonempty, offered, concurrent_of_renaming concurrent, labels⟩
   have ofFirst : ∀ {a b : Configuration T O} {M : Multiset L}, Race.StepMoves A label offers a M b →
-      StepMoves (firstOrder A label) (renamingTransport A label) (lift offers) a M b := fun moved => by
+      StepMoves (firstOrder A label).toStep (renamingTransport A label) (lift offers) a M b := fun moved => by
     obtain ⟨w, nonempty, offered, concurrent, labels⟩ := stepMoves_lift_of_race moved
     exact ⟨w, nonempty, offered, renaming_of_concurrent concurrent, labels⟩
   refine ⟨R, ⟨fun a b rel M a' moved => ?_, fun a b rel M b' moved => ?_,

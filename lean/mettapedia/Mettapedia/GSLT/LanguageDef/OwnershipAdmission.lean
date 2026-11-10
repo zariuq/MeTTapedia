@@ -80,6 +80,10 @@ def shapeValid (parameters : List Parameter) (shape : ReturnShape) : Bool :=
   match shape with
   | .value | .static _ => true
   | .owned family _ => family != 0
+  | .wholeViewed index writing =>
+      match parameters[index]? with
+      | some (.viewed canWrite) => !writing || canWrite
+      | _ => false
   | .borrowed index offset count writing _ | .viewed index offset count writing =>
       match parameters[index]? with
       | some (.borrowed extent canWrite) | some (.optionalBorrowed extent canWrite) => offset + count ≤ extent && (!writing || canWrite)
@@ -93,6 +97,11 @@ def signatureValid (signature : Signature) : Bool :=
   shapeValid signature.parameters signature.result &&
   uniqueIds (signature.fields.map Prod.fst) &&
   signature.fields.all (fun (key, shape) => key < signature.parameters.length &&
+    shapeValid signature.parameters shape) &&
+  (signature.records.isEmpty || signature.result == .value) &&
+  uniqueIds (signature.records.map Prod.fst) &&
+  signature.records.all (fun (_, shape) =>
+    (match shape with | .borrowed .. | .viewed .. | .wholeViewed .. | .static .. | .owned .. => true | _ => false) &&
     shapeValid signature.parameters shape)
 
 def instantiateResult (inputs : List Nat) (shape : ReturnShape) : Option ResultSpec :=
@@ -106,6 +115,9 @@ def instantiateResult (inputs : List Nat) (shape : ReturnShape) : Option ResultS
   | .viewed index offset count writing => do
       let root ← inputs[index]?
       pure (.viewed ⟨root, offset, count⟩ writing)
+  | .wholeViewed index writing => do
+      let root ← inputs[index]?
+      pure (.viewed ⟨root, 0, 1⟩ writing)
 
 def expectedResult (f : Function) : Option ResultSpec := instantiateResult f.inputs f.signature.result
 
@@ -128,14 +140,25 @@ def fieldsAllowed (f : Function) (s : State) : Bool :=
     | some spec, some result => fieldAllowed spec result
     | _, _ => false)
 
+def recordsAllowed (f : Function) (s : State) : Bool :=
+  s.recordResults.length + s.recordOwners.length == f.signature.records.length &&
+  uniqueIds (s.recordResults.map FieldResult.key ++ s.recordOwners.map Prod.fst) &&
+  f.signature.records.all (fun (key, shape) =>
+    match instantiateResult f.inputs shape with
+    | some (.owned family nullable) =>
+        s.recordOwners.lookup key == some family ||
+        (nullable && (s.recordResults.find? (fun r => r.key == key)).any (fun r => r.region.isNone && !r.writing))
+    | some spec => (s.recordResults.find? (fun r => r.key == key)).any (fieldAllowed spec)
+    | none => false)
+
 def functionReturnAllowed (f : Function) (s : State) : Bool :=
-  returnAllowed f.result s && fieldsAllowed f s
+  returnAllowed f.result s && fieldsAllowed f s && recordsAllowed f s
 
 def inputsValid (f : Function) : Bool :=
   f.inputs.length == f.signature.parameters.length &&
   (f.signature.parameters.zip f.inputs).all (fun (p, id) => match p with
     | .value | .static _ => id == 0
-    | .released _ | .viewed _ => false
+    | .released _ => false
     | _ => id != 0) && uniqueIds (f.inputs.filter (· != 0)) &&
   uniqueIds (f.inputs.filter (· != 0) ++ f.ambient.map Prod.fst)
 
@@ -145,11 +168,40 @@ def inputRoot (f : Function) (id count : Nat) (mode : Mode) (origin : Origin) (f
     | .borrowed extent writing | .optionalBorrowed extent writing => count == extent && mode == (if writing then .exclusive else .shared) &&
         origin == .input && family == 0
     | .owned extent brand | .optionalOwned extent brand => count == extent && mode == .exclusive && origin == .heap && family == brand
+    | .viewed writing => count == 1 && mode == (if writing then .exclusive else .shared) && origin == .input && family == 0
     | _ => false) ||
   f.ambient.any (fun (root, extent) => root == id && count == extent && mode == .exclusive &&
     origin == .input && family == 0)
 
-def enabled (callables : List Callable) (f : Function) (s : State) (a : Action) : Option State :=
+def wholeInput (f : Function) (root : Nat) : Bool :=
+  (f.signature.parameters.zip f.inputs).any fun (p, id) =>
+    id == root && match p with | .viewed _ => true | _ => false
+
+/-- Abstract span units may be lent as a whole, but are never numeric byte
+extents. In particular a possibly empty view cannot satisfy a one-byte call. -/
+def wholeRegion (f : Function) (region : Region) : Bool :=
+  !wholeInput f region.root || (region.first == 0 && region.count == 1)
+
+def wholeArguments (f : Function) (s : State) (signature : Signature)
+    (arguments : List Argument) : Bool :=
+  arguments.zipIdx.all fun (arg, index) => match arg with
+    | .loan id | .maybe id => match findLoan s id with
+      | none => false
+      | some l => !wholeInput f l.region.root ||
+          match signature.parameters[index]? with | some (.viewed _) => true | _ => false
+    | _ => true
+
+def wholeAction (callables : List Callable) (f : Function) (s : State) : Action → Bool
+  | .borrow _ _ region _ | .access _ region _ | .restrict _ region
+  | .result _ region _ | .fieldResult _ _ region _ | .recordResult _ _ region _ =>
+      wholeRegion f region
+  | .view _ region bytes _ =>
+      wholeRegion f region && (!wholeInput f region.root || bytes == 1)
+  | .invoke name arguments =>
+      (callables.find? fun c => c.name == name).any fun c => wholeArguments f s c.signature arguments
+  | _ => true
+
+def enabledCore (callables : List Callable) (f : Function) (s : State) (a : Action) : Option State :=
   match a with
   | .invoke name arguments => do
       let callee ← callables.find? fun c => c.name == name
@@ -161,9 +213,14 @@ def enabled (callables : List Callable) (f : Function) (s : State) (a : Action) 
       else apply s a
   | _ => apply s a
 
+def enabled (callables : List Callable) (f : Function) (s : State) (a : Action) : Option State := do
+  require (wholeAction callables f s a)
+  enabledCore callables f s a
+
 theorem enabled_valid {callables : List Callable} {f : Function} {s after : State} {a : Action}
     (h : enabled callables f s a = some after) (valid : Valid s) : Valid after := by
-  cases a <;> simp only [enabled] at h <;> try exact apply_preserves_valid h valid
+  obtain ⟨_, _, h⟩ := Option.bind_eq_some_iff.mp h
+  cases a <;> simp only [enabledCore] at h <;> try exact apply_preserves_valid h valid
   case root id count mode origin family =>
     split at h
     · obtain ⟨_, _, rest⟩ := Option.bind_eq_some_iff.mp h
@@ -224,12 +281,23 @@ theorem admitted_return_contract {callables : List Callable} {f : Function}
   obtain ⟨outputs, checked⟩ := admitted_function_checked admitted
   have h := PermissionFlow.checked_returns checked outcome
     (PermissionFlow.covers_execution execution checked) returned
-  exact (Bool.and_eq_true_iff.mp h).1
+  exact (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp h).1).1
 
 theorem admitted_field_postconditions {callables : List Callable} {f : Function}
     (admitted : admitFunction callables f = true) {outcome : Exit State}
     (execution : Execution (enabled callables f) f.body initial outcome)
     (returned : outcome.kind = .returned) : fieldsAllowed f outcome.state = true := by
+  obtain ⟨outputs, checked⟩ := admitted_function_checked admitted
+  have h := PermissionFlow.checked_returns checked outcome
+    (PermissionFlow.covers_execution execution checked) returned
+  exact (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp h).1).2
+
+/-- A returned reference-bearing value has every declared field, with its
+original input lifetime and access rights. Cleanup alone cannot certify it. -/
+theorem admitted_record_postconditions {callables : List Callable} {f : Function}
+    (admitted : admitFunction callables f = true) {outcome : Exit State}
+    (execution : Execution (enabled callables f) f.body initial outcome)
+    (returned : outcome.kind = .returned) : recordsAllowed f outcome.state = true := by
   obtain ⟨outputs, checked⟩ := admitted_function_checked admitted
   have h := PermissionFlow.checked_returns checked outcome
     (PermissionFlow.covers_execution execution checked) returned
@@ -284,7 +352,7 @@ theorem admitted_view_return_exact {callables : List Callable} {f : Function}
 
 namespace Controls
 
-def scalarSignature : Signature := ⟨[], false, .value, []⟩
+def scalarSignature : Signature := ⟨[], false, .value, [], []⟩
 def scalar (name : String) (body : Plan Action) : Function :=
   ⟨name, scalarSignature, [], [], .value, body⟩
 def scalarCallables (name : String) : List Callable := [⟨name, scalarSignature⟩]
@@ -297,7 +365,7 @@ theorem ambient_global_write_refused :
     admitFunction (scalarCallables "ambient")
       { scalar "ambient" globalWriteBody with ambient := [(1, 4)] } = false := by decide
 
-def globalSignature : Signature := ⟨[.borrowed 4 true], false, .value, []⟩
+def globalSignature : Signature := ⟨[.borrowed 4 true], false, .value, [], []⟩
 
 theorem explicit_global_write_admitted :
     admitFunction [⟨"explicit", globalSignature⟩]

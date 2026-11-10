@@ -168,7 +168,7 @@ dead names. -/
 theorem composites_bisimilar {L : Type} {program : L → (t : NativeState S O Γ sort) → LiveFiring t → Prop}
     (invariant : DeadInvariant program) (first : f.toNative.Realized) (second : g.toNative.Realized)
     (clearF : Clear f g.selection g.rule g.outputs) (clearG : Clear g f.selection f.rule f.outputs) :
-    Race.Generic.Bisimilar native (liveOffers program)
+    Race.Generic.Bisimilar native.toStep (liveOffers program)
       (native.result (LiveFiring.residual second f) (LiveFiring.after first second clearF))
       (native.result (LiveFiring.residual first g) (LiveFiring.after second first clearG)) :=
   bisimilar_of_deadEquiv invariant (composites_deadEquiv first second clearF clearG)
@@ -177,16 +177,16 @@ theorem composites_sat_iff {L : Type} {program : L → (t : NativeState S O Γ s
     (invariant : DeadInvariant program) (first : f.toNative.Realized) (second : g.toNative.Realized)
     (clearF : Clear f g.selection g.rule g.outputs) (clearG : Clear g f.selection f.rule f.outputs)
     (φ : Formula PEmpty.{1} L) :
-    Race.Generic.Sat native (liveOffers program) φ
+    Race.Generic.Sat native.toStep (liveOffers program) φ
         (native.result (LiveFiring.residual second f) (LiveFiring.after first second clearF)) ↔
-      Race.Generic.Sat native (liveOffers program) φ
+      Race.Generic.Sat native.toStep (liveOffers program) φ
         (native.result (LiveFiring.residual first g) (LiveFiring.after second first clearG)) :=
   sat_iff_of_deadEquiv invariant (composites_deadEquiv first second clearF clearG) φ
 
 /-- **The concrete diamond of two makers**: its composites are bisimilar for every closed program. -/
 theorem makers_composites_bisimilar {L : Type}
     (program : L → ClosedFiring NativeResidualExample.tiny ℕ ([] : Ctx NativeResidualExample.tiny) () → Prop) :
-    Race.Generic.Bisimilar native (liveOffers (closedOffers program))
+    Race.Generic.Bisimilar native.toStep (liveOffers (closedOffers program))
       (native.result (LiveFiring.residual (NativeResidualExample.maker_realized 1 none) (NativeResidualExample.maker 0 none))
         (LiveFiring.after (NativeResidualExample.maker_realized 0 none) (NativeResidualExample.maker_realized 1 none)
           (NativeResidualExample.clear_makers 0 1 (by decide))))

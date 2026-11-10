@@ -169,7 +169,7 @@ variable {T : Type uT} {S : Type uS} {O : Type uO} [DecidableEq O]
   (A : SubstitutionAction T S) (label : O → T)
 
 /-- **The ordinary step**: the first-order step restricted to semantic firings. -/
-abbrev semanticStep := Race.restrict (firstOrder A label) (fun _ f => IsSemantic A f)
+abbrev semanticStep := Race.restrict (firstOrder A label).toStep (fun _ f => IsSemantic A f)
 
 /-- Admission in the ordinary step is admission of the raw firing. -/
 theorem semanticStep_admits_iff (C : Configuration T O) (f : SemanticFiring A O) :
@@ -195,21 +195,21 @@ def semanticRenamingTransport : Interface.Transport (semanticStep A label) :=
 variable {A label}
 
 /-- **A raw run of semantic firings is a run of the ordinary step.** -/
-def liftRun : {C : Configuration T O} → (r : (firstOrder A label).Run C) →
+def liftRun : {C : Configuration T O} → (r : (firstOrder A label).toStep.Run C) →
     (∀ x ∈ r.word, IsSemantic A x.2) → (semanticStep A label).Run C
   | _, .nil C, _ => .nil C
   | _, .cons f admitted rest, reads =>
       .cons ⟨f, reads _ List.mem_cons_self⟩ admitted
         (liftRun rest fun x member => reads x (List.mem_cons_of_mem _ member))
 
-theorem liftRun_last : ∀ {C : Configuration T O} (r : (firstOrder A label).Run C)
+theorem liftRun_last : ∀ {C : Configuration T O} (r : (firstOrder A label).toStep.Run C)
     (reads : ∀ x ∈ r.word, IsSemantic A x.2), (liftRun r reads).last = r.last
   | _, .nil _, _ => rfl
   | _, .cons _ _ rest, reads =>
       liftRun_last rest fun x member => reads x (List.mem_cons_of_mem _ member)
 
 /-- **Every run of the ordinary step is a raw run.** -/
-def forgetRun : {C : Configuration T O} → (semanticStep A label).Run C → (firstOrder A label).Run C
+def forgetRun : {C : Configuration T O} → (semanticStep A label).Run C → (firstOrder A label).toStep.Run C
   | _, .nil C => .nil C
   | _, .cons f admitted rest => .cons f.1 admitted (forgetRun rest)
 

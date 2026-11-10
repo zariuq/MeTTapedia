@@ -91,6 +91,7 @@ universe uO uT uH uOcc uS uF
 variable {Obj : Type uO} {Tm : Obj → Type uT} {Hom : Obj → Obj → Type uH}
   {X : Frames Tm Hom} {O : Type uOcc} [DecidableEq O] {State : Type uS} {Firing : State → Type uF}
   (P : Step X O State Firing)
+  [P.Guarded]
 
 /-- **Closed admission**: the firing's shapes, the physical enabling of its selection, a closed
 solution of its information, and its guards and queries at every closed solution. -/
@@ -182,7 +183,7 @@ variable {O : Type} [DecidableEq O]
 /-- **Closed admission of a dependent helper firing**: closed-solvable knowledge, a fresh
 occurrence, and guards at every closed solution of the knowledge. -/
 theorem closedAdmits_iff {s : State rules O} (f : Firing s) :
-    (helperStep (rules := rules)).ClosedAdmits (empty rules) f ↔
+    (helperStep (rules := rules) (O := O)).toStep.ClosedAdmits (empty rules) f ↔
       (frames rules).ClosedSolvable (empty rules) s.knowledge ∧ f.made ∉ s.present ∧
         (frames rules).ClosedEntails (empty rules) s.knowledge
           (fun c => (frames rules).Models c f.guards) := by
@@ -204,7 +205,7 @@ theorem closedAdmits_iff_admits {s : State rules O} (f : Firing s) (guardFree : 
     {M : Context rules} {m : M ⟶ s.frame}
     (principal : (frames rules).Principal (a := s.frame) (m := M) s.knowledge m)
     (inhabited : Nonempty (empty rules ⟶ M)) :
-    (helperStep (rules := rules)).ClosedAdmits (empty rules) f ↔ (helperStep (rules := rules)).Admits f := by
+    (helperStep (rules := rules) (O := O)).toStep.ClosedAdmits (empty rules) f ↔ (helperStep (rules := rules)).Admits f := by
   rw [closedAdmits_iff, admits_iff, guardFree,
     Frames.closedSolvable_iff_of_principal (X := frames rules) principal inhabited]
   exact ⟨fun ⟨solvable, absent, _⟩ => ⟨solvable, absent, fun _ _ _ => Frames.models_nil _⟩,
@@ -216,7 +217,7 @@ theorem trap_helper (A : TypeOver (empty rules)) (noTerm : IsEmpty (Term (empty 
     (present : Finset O) (f : Firing (⟨extend (empty rules) A, [], present⟩ : State rules O))
     (fresh : f.made ∉ present) (guardFree : f.guards = []) :
     (helperStep (rules := rules)).Admits f ∧
-      ¬ (helperStep (rules := rules)).ClosedAdmits (empty rules) f := by
+      ¬ (helperStep (rules := rules) (O := O)).toStep.ClosedAdmits (empty rules) f := by
   refine ⟨(admits_iff f).mpr ⟨(obligation_trap A).1, fresh, fun _ _ _ => ?_⟩, fun closed => ?_⟩
   · rw [guardFree]
     exact Frames.models_nil _
@@ -241,7 +242,7 @@ theorem arrowState_inhabited : Nonempty (empty tiny ⟶ arrowState.frame) :=
 /-- **At a closed-inhabited frame the two admissions agree**: the helper is admitted and
 closed-admitted. -/
 theorem copy_admitted :
-    (helperStep (rules := tiny)).Admits copy ∧ (helperStep (rules := tiny)).ClosedAdmits (empty tiny) copy := by
+    (helperStep (rules := tiny)).Admits copy ∧ (helperStep (rules := tiny) (O := Nat)).toStep.ClosedAdmits (empty tiny) copy := by
   have admitted : (helperStep (rules := tiny)).Admits copy :=
     (admits_iff copy).mpr ⟨⟨_, 𝟙 _, Frames.models_nil _⟩, by decide, fun _ _ _ => Frames.models_nil _⟩
   exact ⟨admitted, (closedAdmits_iff_admits copy rfl (principal_nil _) arrowState_inhabited).mpr admitted⟩

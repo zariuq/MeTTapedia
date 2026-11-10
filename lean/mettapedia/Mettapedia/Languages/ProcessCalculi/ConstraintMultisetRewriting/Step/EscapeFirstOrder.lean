@@ -79,7 +79,7 @@ def firstOrderEscape : (firstOrderTransport A label).Escape where
     exact .nil
 
 /-- **The record at the end of a run**: the start's record followed by the run's sightings. -/
-theorem record_last : ∀ {x : Escaped (firstOrder A label)} (r : (firstOrderEscape A label).step.Run x),
+theorem record_last : ∀ {x : Escaped (firstOrder A label).toStep} (r : (firstOrderEscape A label).step.Run x),
     r.last.record = x.record ++ runSightings (r.word.map fun e => (e.2 : Firing T S O))
   | x, .nil _ => (List.append_nil _).symm
   | x, .cons f admitted rest => by
@@ -90,7 +90,7 @@ theorem record_last : ∀ {x : Escaped (firstOrder A label)} (r : (firstOrderEsc
       rw [later, head, Observation.runSightings_cons, List.append_assoc]
 
 /-- **Flattened, the record at the end is the start's with the run's sightings.** -/
-theorem support_last {x : Escaped (firstOrder A label)} (r : (firstOrderEscape A label).step.Run x) :
+theorem support_last {x : Escaped (firstOrder A label).toStep} (r : (firstOrderEscape A label).step.Run x) :
     Record.support r.last.record =
       Record.support x.record ∪ runSighted (r.word.map fun e => (e.2 : Firing T S O)) := by
   rw [record_last A label r, Record.support_append, Observation.support_runSightings]
@@ -104,13 +104,13 @@ theorem escaped_watch (c : Client O) [DecidableEq O] (w : List (Firing T S O)) :
 
 /-- **For a client context of the client layer, the record at the end is what the client records
 watching the run** (`Observation.Client.watch`), flattened. -/
-theorem support_last_ofClient {x : Escaped (firstOrder A label)} {c : Client O}
+theorem support_last_ofClient {x : Escaped (firstOrder A label).toStep} {c : Client O}
     (held : x.record = Record.ofClient c) (r : (firstOrderEscape A label).step.Run x) :
     Record.support r.last.record = (c.watch (r.word.map fun e => (e.2 : Firing T S O))).escaped := by
   rw [support_last A label r, held, Record.support_ofClient, escaped_watch]
 
 /-- **Every identity a fired query sighted has escaped by the end of the run.** -/
-theorem sighted_escaped_last {x : Escaped (firstOrder A label)}
+theorem sighted_escaped_last {x : Escaped (firstOrder A label).toStep}
     (r : (firstOrderEscape A label).step.Run x) {f : Firing T S O}
     (inRun : f ∈ r.word.map fun e => (e.2 : Firing T S O))
     {query : PredicateQueryAdmission.Query T S O} (asked : query ∈ f.queries) :

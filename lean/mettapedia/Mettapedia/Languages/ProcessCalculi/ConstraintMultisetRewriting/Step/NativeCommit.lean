@@ -315,14 +315,14 @@ namespace NativeRun
 
 /-- The commits of a native run as a protocol trace, transaction `k` onward. -/
 noncomputable def trace (txn : ℕ → Commit O Unit) :
-    {s : NativeState S O Γ sort} → Interface.Step.Run (native (S := S) (O := O) (Γ := Γ) (sort := sort)) s →
+    {s : NativeState S O Γ sort} → Interface.Step.Run (native (S := S) (O := O) (Γ := Γ) (sort := sort)).toStep s →
       ℕ → List (ℕ × Commit O Unit)
   | _, .nil _, _ => []
   | _, .cons _ _ rest, k => (k, txn k) :: trace txn rest (k + 1)
 
 /-- Transactions from `k` on carry the commits of the run's firings, in order. -/
 def Carries (txn : ℕ → Commit O Unit) :
-    {s : NativeState S O Γ sort} → Interface.Step.Run (native (S := S) (O := O) (Γ := Γ) (sort := sort)) s →
+    {s : NativeState S O Γ sort} → Interface.Step.Run (native (S := S) (O := O) (Γ := Γ) (sort := sort)).toStep s →
       ℕ → Prop
   | _, .nil _, _ => True
   | _, .cons f _ rest, k => txn k = f.selection.commit (T := Unit) ∧ Carries txn rest (k + 1)
@@ -330,7 +330,7 @@ def Carries (txn : ℕ → Commit O Unit) :
 /-- **The run allocates fresh identities**: no firing makes an identity already born, nor one an
 earlier firing made. -/
 def FreshFrom :
-    {s : NativeState S O Γ sort} → Interface.Step.Run (native (S := S) (O := O) (Γ := Γ) (sort := sort)) s →
+    {s : NativeState S O Γ sort} → Interface.Step.Run (native (S := S) (O := O) (Γ := Γ) (sort := sort)).toStep s →
       Finset O → Prop
   | _, .nil _, _ => True
   | _, .cons f _ rest, born =>
@@ -342,7 +342,7 @@ end NativeRun
 `k + i` carries the `i`-th firing's commit; each begins, claims and commits in turn, and the
 protocol's store ends at the present occurrences of the run's last state. -/
 theorem native_run_protocol (txn : ℕ → Commit O Unit) :
-    ∀ {s : NativeState S O Γ sort} (r : Interface.Step.Run (native (S := S) (O := O) (Γ := Γ) (sort := sort)) s)
+    ∀ {s : NativeState S O Γ sort} (r : Interface.Step.Run (native (S := S) (O := O) (Γ := Γ) (sort := sort)).toStep s)
       (k : ℕ) (σ : ProtocolState O Unit ℕ), NativeRun.Carries txn r k → NativeRun.FreshFrom r σ.born →
       σ.store = s.state.present → (∀ i, k ≤ i → σ.phase i = .idle) → (∀ o, σ.claim o = none) →
       ∃ σ', Run (fun _ : O => ()) txn σ (NativeRun.trace txn r k) σ' ∧ σ'.store = r.last.state.present

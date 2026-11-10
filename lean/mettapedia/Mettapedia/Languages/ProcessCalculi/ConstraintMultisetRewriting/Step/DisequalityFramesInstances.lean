@@ -20,8 +20,8 @@ of `ContextualDiamond`, with the same admission and result (`Contextual.prestep_
 of `Frames.contextual S`.
 
 **A firing that tells nothing** along an extension that reflects the equivalence is a firing with
-disequations at every state (`Prestep.DFiring.silent`). A dependent firing without helpers moves along
-the identity, which does (`Dependent.toFiring_reflects`).
+disequations at every state (`Interface.Step.DFiring.silent`). A dependent firing without helpers moves
+along the identity, which does (`Dependent.toFiring_reflects`).
 -/
 
 set_option autoImplicit false
@@ -30,27 +30,6 @@ namespace Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Disequ
 
 open Interface (Frames)
 open Disequality (DisequationStore)
-
-universe uO uT uH uOcc uS uF
-
-/-! ## A firing that tells nothing -/
-
-section Silent
-
-variable {Obj : Type uO} {Tm : Obj → Type uT} {Hom : Obj → Obj → Type uH}
-  {X : Frames Tm Hom} {O : Type uOcc} [DecidableEq O] {State : Type uS} {Firing : State → Type uF}
-  {Q : Prestep X O State Firing}
-
-/-- **A firing that tells nothing**, along an extension that reflects the equivalence: the state's
-disequations stay separated at its target. -/
-def Prestep.DFiring.silent (s : Q.DState) (f : Firing s.state)
-    (reflects : ∀ {u v : Tm (Q.frame s.state)}, X.E (X.act (Q.extension f) u) (X.act (Q.extension f) v) → X.E u v) :
-    Q.DFiring s :=
-  ⟨f, [], separates_append.mpr ⟨(separates_applyStore _ _ _).mpr
-    ((separates_congr (fun t => by rw [X.act_comp, X.act_id]) _).mpr (separates_of_reflects reflects s.separated)),
-    separates_nil _⟩⟩
-
-end Silent
 
 /-! ## The dependent full step -/
 
@@ -96,11 +75,11 @@ theorem prestep_result {s : State rules O} (f : Firing levels s) (admitted : (pr
   rfl
 
 /-- Its settlement is the identity. -/
-theorem reflects : (prestep levels O).Reflects :=
+theorem reflects : (prestep levels O).step.Reflects :=
   fun _ _ _ _ same => id_reflects (X := ContextualDependentEta.frames levels) same
 
 /-- **The dependent full step with disequations.** -/
-abbrev withDisequations := (prestep levels O).withDisequations (reflects levels O)
+abbrev withDisequations := (prestep levels O).step.withDisequations (reflects levels O)
 
 variable {levels O}
 
@@ -155,16 +134,15 @@ theorem prestep_result {s : Interface.Helpers.State S O} (f : Interface.Helpers.
 
 variable (S O) in
 /-- Its settlement is the identity. -/
-theorem reflects : (prestep S O).Reflects :=
+theorem reflects : (prestep S O).step.Reflects :=
   fun _ _ _ _ same => id_reflects (X := Frames.contextual S) same
 
 variable (S O) in
 /-- **The helper step with disequations**, over disequation frames of declaration frames. -/
-abbrev withDisequations := (prestep S O).withDisequations (reflects S O)
+abbrev withDisequations := (prestep S O).step.withDisequations (reflects S O)
 
 end Contextual
 
-#print axioms Prestep.DFiring.silent
 #print axioms Dependent.prestep_admits_iff
 #print axioms Dependent.prestep_result
 #print axioms Dependent.reflects

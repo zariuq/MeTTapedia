@@ -283,7 +283,7 @@ variable [DecidableEq O]
 
 /-- **The dependent helper step**: firings that make fresh helpers of formed types, guarded by
 equations on the old frame; it has no predicate queries. -/
-abbrev helperStep : Interface.Step (frames rules) O (State rules O) Firing where
+abbrev helperStep : Interface.Step.Standard (frames rules) O (State rules O) Firing where
   frame s := s.frame
   knowledge s := s.knowledge
   present s := s.present
@@ -302,10 +302,13 @@ abbrev helperStep : Interface.Step (frames rules) O (State rules O) Firing where
     (frames rules).Entails f.information fun _ σ =>
       (frames rules).Models ((frames rules).comp σ (projectionHom s.frame f.helper)) f.guards
   admits_iff _ := Iff.rfl
-  result f _ := f.after
-  present_result _ _ := rfl
-  settle f _ := (frames rules).id (extend _ f.helper)
-  knowledge_result f _ := (Frames.applyStore_id (X := frames rules) f.information).symm
+  preparedResult f _ := f.after
+  present_preparedResult _ _ := rfl
+  preparedSettle f _ := (frames rules).id (extend _ f.helper)
+  knowledge_preparedResult f _ := (Frames.applyStore_id (X := frames rules) f.information).symm
+
+instance helperStep_guarded : (helperStep (rules := rules) (O := O)).toStep.Guarded :=
+  Interface.Step.standard_guarded _
 
 /-- The morphism a helper firing moves along is the projection off its helper. -/
 theorem along_eq {s : State rules O} (f : Firing s) (admitted : (helperStep (rules := rules)).Admits f) :
@@ -473,7 +476,7 @@ theorem move_along_lift {s t : State rules O} (π : O ≃ O) (σ : t.frame ⟶ s
     rw [lift_projection]
 
 /-- **Transport of dependent helper firings** along strict isomorphisms of states. -/
-def helperTransport : Transport (helperStep (rules := rules) (O := O)) where
+def helperTransport : Transport (helperStep (rules := rules) (O := O)).toStep where
   Iso s t := Strict s t
   toStateIso i := i.toStateIso
   refl s := ⟨Iso.refl s.frame, Frames.Iso.equivalent_refl (X := frames rules) s.knowledge, rfl⟩

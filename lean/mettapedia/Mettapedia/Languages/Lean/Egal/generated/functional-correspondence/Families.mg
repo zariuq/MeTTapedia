@@ -97,7 +97,7 @@ Qed.
 Definition Lean_Nat_succ_node : set -> set := fun x0 => IndNode Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B 1 (TupArgs 1 (SeqCons (x0) SeqNil)).
 Theorem Lean_Nat_succ_args : forall x0 :e Lean_Nat, (TupArgs 1 (SeqCons (x0) SeqNil)) :e IndArgs Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B Lean_Nat_All
     1.
-let x0. assume H0: x0 :e Lean_Nat. 
+let x0. assume H0: x0 :e Lean_Nat.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -133,7 +133,7 @@ apply SepI (Pi_ j :e 1, Lean_Nat_B :\/: Lean_Nat_All) (fun a => IndFits Lean_Nat
     (SeqCons (x0) SeqNil))))) D0) j (In_eq_r j (Lean_Nat_N 1) 1 Lean_Nat_N1 Hj).
 Qed.
 Theorem Lean_Nat_succ_typed : forall x0 :e Lean_Nat, Lean_Nat_succ_node x0 :e Lean_Nat.
-let x0. assume H0: x0 :e Lean_Nat. 
+let x0. assume H0: x0 :e Lean_Nat.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -146,7 +146,7 @@ claim Lo: Lean_Nat_O 1 (TupArgs 1 (SeqCons (x0) SeqNil)) = 0.
 exact In_fam_eq (IndFiber Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B) (Lean_Nat_O 1 (TupArgs 1 (SeqCons (x0) SeqNil))) 0 Lo (Lean_Nat_succ_node x0) L.
 Qed.
 Theorem Lean_Nat_succ_node_In : forall u, nat_p u -> forall x0 :e LeanUniv u, Lean_Nat_succ_node x0 :e LeanUniv u.
-let u. assume Hu: nat_p u. let x0. assume H0: x0 :e LeanUniv u. 
+let u. assume Hu: nat_p u. let x0. assume H0: x0 :e LeanUniv u.
 claim Ht: TransSet (LeanUniv u).
 { exact LeanUniv_TransSet u Hu. }
 claim Hz: ZF_closed (LeanUniv u).
@@ -170,7 +170,7 @@ Qed.
 Definition Lean_Nat_rec : set -> set -> set -> set := fun h0 h1 t => IndRec Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B (fun k a r:set => SeqAt (SeqCons
     (h0) (SeqCons ((h1 (a 0) (r 0))) SeqNil)) k) t.
 Theorem Lean_Nat_iota0 : forall h0 h1, Lean_Nat_rec h0 h1 (Lean_Nat_zero_node) = h0.
-let h0 h1. 
+let h0 h1.
 prove IndRec Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (r 0))) SeqNil)) k) (IndNode Lean_Nat_K
     Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B 0 (TupArgs 0 SeqNil)) = h0.
 rewrite IndRec_iota Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B Lean_Nat_distinct Lean_Nat_bounded Lean_Nat_arity (fun k a r:set => SeqAt (SeqCons (h0)
@@ -181,7 +181,7 @@ prove SeqAt (SeqCons (h0) (SeqCons ((h1 ((TupArgs 0 SeqNil) 0) ((IndRes Lean_Nat
 rewrite SeqAt_0. reflexivity.
 Qed.
 Theorem Lean_Nat_iota1 : forall h0 h1, forall x0 :e Lean_Nat, Lean_Nat_rec h0 h1 (Lean_Nat_succ_node x0) = (h1 x0 (Lean_Nat_rec h0 h1 x0)).
-let h0 h1. let x0. assume H0: x0 :e Lean_Nat. 
+let h0 h1. let x0. assume H0: x0 :e Lean_Nat.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -293,7 +293,7 @@ Qed.
 Definition Lean_Nat_casesOn : set -> set -> set -> set := fun h0 h1 t => IndRec Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B (fun k a r:set => SeqAt
     (SeqCons (h0) (SeqCons ((h1 (a 0))) SeqNil)) k) t.
 Theorem Lean_Nat_casesOn_iota0 : forall h0 h1, Lean_Nat_casesOn h0 h1 (Lean_Nat_zero_node) = h0.
-let h0 h1. 
+let h0 h1.
 prove IndRec Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0))) SeqNil)) k) (IndNode Lean_Nat_K
     Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B 0 (TupArgs 0 SeqNil)) = h0.
 rewrite IndRec_iota Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B Lean_Nat_distinct Lean_Nat_bounded Lean_Nat_arity (fun k a r:set => SeqAt (SeqCons (h0)
@@ -302,7 +302,7 @@ prove SeqAt (SeqCons (h0) (SeqCons ((h1 ((TupArgs 0 SeqNil) 0))) SeqNil)) 0 = h0
 rewrite SeqAt_0. reflexivity.
 Qed.
 Theorem Lean_Nat_casesOn_iota1 : forall h0 h1, forall x0 :e Lean_Nat, Lean_Nat_casesOn h0 h1 (Lean_Nat_succ_node x0) = (h1 x0).
-let h0 h1. let x0. assume H0: x0 :e Lean_Nat. 
+let h0 h1. let x0. assume H0: x0 :e Lean_Nat.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -413,6 +413,7 @@ exact SepE2 1 (fun z => P t) (Lean_Nat_rec 0 0 t) (Lean_Nat_rec_type (fun t => {
 Qed.
 
 
+
 Theorem Lean_Nat_noconf0_1 : forall y0, Lean_Nat_zero_node <> (Lean_Nat_succ_node y0).
 let y0. assume H: Lean_Nat_zero_node = (Lean_Nat_succ_node y0).
 apply IndNode_inj Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B Lean_Nat_distinct 0 (ordsuccI1 1 0 (ordsuccI2 0)) 1 (ordsuccI2 1) (TupArgs 0 SeqNil)
@@ -435,7 +436,7 @@ Qed.
 
 
 Theorem Lean_Nat_In : forall u, nat_p u -> Lean_Nat_All :e LeanUniv u.
-let u. assume Hu: nat_p u. 
+let u. assume Hu: nat_p u.
 claim Ht: TransSet (LeanUniv u).
 { exact LeanUniv_TransSet u Hu. }
 claim Hz: ZF_closed (LeanUniv u).
@@ -458,7 +459,7 @@ exact IndCarrier_In Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_
     (fun k => forall V :e LeanUniv u, forall a :e (Pi_ j :e Lean_Nat_N k, V), Lean_Nat_O k a :e LeanUniv u)) HO0) HO1) k Hk).
 Qed.
 Theorem Lean_Nat_type_In : forall u, nat_p u -> Lean_Nat :e LeanUniv u.
-let u. assume Hu: nat_p u. 
+let u. assume Hu: nat_p u.
 exact IndFiber_In Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B (LeanUniv u) (LeanUniv_TransSet u Hu) (LeanUniv_ZF_closed u Hu) (Lean_Nat_In u Hu ) 0.
 Qed.
 
@@ -632,7 +633,7 @@ Qed.
 Definition Lean_Bool_rec : set -> set -> set -> set := fun h0 h1 t => IndRec Lean_Bool_K Lean_Bool_T Lean_Bool_N Lean_Bool_R Lean_Bool_F Lean_Bool_Ix Lean_Bool_O Lean_Bool_B (fun k a r:set => SeqAt
     (SeqCons (h0) (SeqCons (h1) SeqNil)) k) t.
 Theorem Lean_Bool_iota0 : forall h0 h1, Lean_Bool_rec h0 h1 (Lean_Bool_false_node) = h0.
-let h0 h1. 
+let h0 h1.
 prove IndRec Lean_Bool_K Lean_Bool_T Lean_Bool_N Lean_Bool_R Lean_Bool_F Lean_Bool_Ix Lean_Bool_O Lean_Bool_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons (h1) SeqNil)) k) (IndNode Lean_Bool_K
     Lean_Bool_T Lean_Bool_N Lean_Bool_R Lean_Bool_F Lean_Bool_Ix Lean_Bool_O Lean_Bool_B 0 (TupArgs 0 SeqNil)) = h0.
 rewrite IndRec_iota Lean_Bool_K Lean_Bool_T Lean_Bool_N Lean_Bool_R Lean_Bool_F Lean_Bool_Ix Lean_Bool_O Lean_Bool_B Lean_Bool_distinct Lean_Bool_bounded Lean_Bool_arity (fun k a r:set => SeqAt
@@ -641,7 +642,7 @@ prove SeqAt (SeqCons (h0) (SeqCons (h1) SeqNil)) 0 = h0.
 rewrite SeqAt_0. reflexivity.
 Qed.
 Theorem Lean_Bool_iota1 : forall h0 h1, Lean_Bool_rec h0 h1 (Lean_Bool_true_node) = h1.
-let h0 h1. 
+let h0 h1.
 prove IndRec Lean_Bool_K Lean_Bool_T Lean_Bool_N Lean_Bool_R Lean_Bool_F Lean_Bool_Ix Lean_Bool_O Lean_Bool_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons (h1) SeqNil)) k) (IndNode Lean_Bool_K
     Lean_Bool_T Lean_Bool_N Lean_Bool_R Lean_Bool_F Lean_Bool_Ix Lean_Bool_O Lean_Bool_B 1 (TupArgs 0 SeqNil)) = h1.
 rewrite IndRec_iota Lean_Bool_K Lean_Bool_T Lean_Bool_N Lean_Bool_R Lean_Bool_F Lean_Bool_Ix Lean_Bool_O Lean_Bool_B Lean_Bool_distinct Lean_Bool_bounded Lean_Bool_arity (fun k a r:set => SeqAt
@@ -735,6 +736,7 @@ exact SepE2 1 (fun z => P t) (Lean_Bool_rec 0 0 t) (Lean_Bool_rec_type (fun t =>
 Qed.
 
 
+
 Theorem Lean_Bool_noconf0_1 : Lean_Bool_false_node <> Lean_Bool_true_node.
 assume H: Lean_Bool_false_node = Lean_Bool_true_node.
 apply IndNode_inj Lean_Bool_K Lean_Bool_T Lean_Bool_N Lean_Bool_R Lean_Bool_F Lean_Bool_Ix Lean_Bool_O Lean_Bool_B Lean_Bool_distinct 0 (ordsuccI1 1 0 (ordsuccI2 0)) 1 (ordsuccI2 1) (TupArgs 0
@@ -746,7 +748,7 @@ Qed.
 
 
 Theorem Lean_Bool_In : forall u, nat_p u -> Lean_Bool_All :e LeanUniv u.
-let u. assume Hu: nat_p u. 
+let u. assume Hu: nat_p u.
 claim Ht: TransSet (LeanUniv u).
 { exact LeanUniv_TransSet u Hu. }
 claim Hz: ZF_closed (LeanUniv u).
@@ -769,7 +771,7 @@ exact IndCarrier_In Lean_Bool_K Lean_Bool_T Lean_Bool_N Lean_Bool_R Lean_Bool_F 
     (Below_0 (fun k => forall V :e LeanUniv u, forall a :e (Pi_ j :e Lean_Bool_N k, V), Lean_Bool_O k a :e LeanUniv u)) HO0) HO1) k Hk).
 Qed.
 Theorem Lean_Bool_type_In : forall u, nat_p u -> Lean_Bool :e LeanUniv u.
-let u. assume Hu: nat_p u. 
+let u. assume Hu: nat_p u.
 exact IndFiber_In Lean_Bool_K Lean_Bool_T Lean_Bool_N Lean_Bool_R Lean_Bool_F Lean_Bool_Ix Lean_Bool_O Lean_Bool_B (LeanUniv u) (LeanUniv_TransSet u Hu) (LeanUniv_ZF_closed u Hu) (Lean_Bool_In u Hu )
     0.
 Qed.
@@ -852,7 +854,7 @@ Qed.
 Definition Lean_PUnit_rec : set -> set -> set := fun h0 t => IndRec Lean_PUnit_K Lean_PUnit_T Lean_PUnit_N Lean_PUnit_R Lean_PUnit_F Lean_PUnit_Ix Lean_PUnit_O Lean_PUnit_B (fun k a r:set => SeqAt
     (SeqCons (h0) SeqNil) k) t.
 Theorem Lean_PUnit_iota0 : forall h0, Lean_PUnit_rec h0 (Lean_PUnit_unit_node) = h0.
-let h0. 
+let h0.
 prove IndRec Lean_PUnit_K Lean_PUnit_T Lean_PUnit_N Lean_PUnit_R Lean_PUnit_F Lean_PUnit_Ix Lean_PUnit_O Lean_PUnit_B (fun k a r:set => SeqAt (SeqCons (h0) SeqNil) k) (IndNode Lean_PUnit_K
     Lean_PUnit_T Lean_PUnit_N Lean_PUnit_R Lean_PUnit_F Lean_PUnit_Ix Lean_PUnit_O Lean_PUnit_B 0 (TupArgs 0 SeqNil)) = h0.
 rewrite IndRec_iota Lean_PUnit_K Lean_PUnit_T Lean_PUnit_N Lean_PUnit_R Lean_PUnit_F Lean_PUnit_Ix Lean_PUnit_O Lean_PUnit_B Lean_PUnit_distinct Lean_PUnit_bounded Lean_PUnit_arity (fun k a r:set =>
@@ -919,8 +921,9 @@ Qed.
 
 
 
+
 Theorem Lean_PUnit_In : forall u, nat_p u -> Lean_PUnit_All :e LeanUniv u.
-let u. assume Hu: nat_p u. 
+let u. assume Hu: nat_p u.
 claim Ht: TransSet (LeanUniv u).
 { exact LeanUniv_TransSet u Hu. }
 claim Hz: ZF_closed (LeanUniv u).
@@ -937,7 +940,7 @@ exact IndCarrier_In Lean_PUnit_K Lean_PUnit_T Lean_PUnit_N Lean_PUnit_R Lean_PUn
     (Pi_ j :e Lean_PUnit_N k, V), Lean_PUnit_O k a :e LeanUniv u) (Below_0 (fun k => forall V :e LeanUniv u, forall a :e (Pi_ j :e Lean_PUnit_N k, V), Lean_PUnit_O k a :e LeanUniv u)) HO0) k Hk).
 Qed.
 Theorem Lean_PUnit_type_In : forall u, nat_p u -> Lean_PUnit :e LeanUniv u.
-let u. assume Hu: nat_p u. 
+let u. assume Hu: nat_p u.
 exact IndFiber_In Lean_PUnit_K Lean_PUnit_T Lean_PUnit_N Lean_PUnit_R Lean_PUnit_F Lean_PUnit_Ix Lean_PUnit_O Lean_PUnit_B (LeanUniv u) (LeanUniv_TransSet u Hu) (LeanUniv_ZF_closed u Hu)
     (Lean_PUnit_In u Hu ) 0.
 Qed.
@@ -1047,7 +1050,7 @@ Definition Lean_Option_some_node : set -> set := fun x0 => IndNode Lean_Option_K
     (SeqCons (x0) SeqNil)).
 Theorem Lean_Option_some_args : forall x0 :e P0, (TupArgs 1 (SeqCons (x0) SeqNil)) :e IndArgs Lean_Option_K Lean_Option_T Lean_Option_N Lean_Option_R Lean_Option_F Lean_Option_Ix Lean_Option_O
     Lean_Option_B Lean_Option_All 1.
-let x0. assume H0: x0 :e P0. 
+let x0. assume H0: x0 :e P0.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -1078,7 +1081,7 @@ apply SepI (Pi_ j :e 1, Lean_Option_B :\/: Lean_Option_All) (fun a => IndFits Le
     (~ Lean_Option_R 1 j -> (TupArgs 1 (SeqCons (x0) SeqNil)) j :e Lean_Option_F 1 j (TupArgs 1 (SeqCons (x0) SeqNil))))) D0) j (In_eq_r j (Lean_Option_N 1) 1 Lean_Option_N1 Hj).
 Qed.
 Theorem Lean_Option_some_typed : forall x0 :e P0, Lean_Option_some_node x0 :e Lean_Option.
-let x0. assume H0: x0 :e P0. 
+let x0. assume H0: x0 :e P0.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -1100,7 +1103,7 @@ Qed.
 Definition Lean_Option_rec : set -> set -> set -> set := fun h0 h1 t => IndRec Lean_Option_K Lean_Option_T Lean_Option_N Lean_Option_R Lean_Option_F Lean_Option_Ix Lean_Option_O Lean_Option_B (fun k
     a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0))) SeqNil)) k) t.
 Theorem Lean_Option_iota0 : forall h0 h1, Lean_Option_rec h0 h1 (Lean_Option_none_node) = h0.
-let h0 h1. 
+let h0 h1.
 prove IndRec Lean_Option_K Lean_Option_T Lean_Option_N Lean_Option_R Lean_Option_F Lean_Option_Ix Lean_Option_O Lean_Option_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0))) SeqNil)) k)
     (IndNode Lean_Option_K Lean_Option_T Lean_Option_N Lean_Option_R Lean_Option_F Lean_Option_Ix Lean_Option_O Lean_Option_B 0 (TupArgs 0 SeqNil)) = h0.
 rewrite IndRec_iota Lean_Option_K Lean_Option_T Lean_Option_N Lean_Option_R Lean_Option_F Lean_Option_Ix Lean_Option_O Lean_Option_B Lean_Option_distinct Lean_Option_bounded Lean_Option_arity (fun k
@@ -1109,7 +1112,7 @@ prove SeqAt (SeqCons (h0) (SeqCons ((h1 ((TupArgs 0 SeqNil) 0))) SeqNil)) 0 = h0
 rewrite SeqAt_0. reflexivity.
 Qed.
 Theorem Lean_Option_iota1 : forall h0 h1, forall x0 :e P0, Lean_Option_rec h0 h1 (Lean_Option_some_node x0) = (h1 x0).
-let h0 h1. let x0. assume H0: x0 :e P0. 
+let h0 h1. let x0. assume H0: x0 :e P0.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -1218,6 +1221,7 @@ exact SepE2 1 (fun z => P t) (Lean_Option_rec 0 0 t) (Lean_Option_rec_type (fun 
 Qed.
 
 
+
 Theorem Lean_Option_noconf0_1 : forall y0, Lean_Option_none_node <> (Lean_Option_some_node y0).
 let y0. assume H: Lean_Option_none_node = (Lean_Option_some_node y0).
 apply IndNode_inj Lean_Option_K Lean_Option_T Lean_Option_N Lean_Option_R Lean_Option_F Lean_Option_Ix Lean_Option_O Lean_Option_B Lean_Option_distinct 0 (ordsuccI1 1 0 (ordsuccI2 0)) 1 (ordsuccI2 1)
@@ -1240,7 +1244,7 @@ Qed.
 
 
 Theorem Lean_Option_In : forall u, nat_p u -> P0 :e LeanUniv u -> Lean_Option_All :e LeanUniv u.
-let u. assume Hu: nat_p u. assume HP0: P0 :e LeanUniv u. 
+let u. assume Hu: nat_p u. assume HP0: P0 :e LeanUniv u.
 claim Ht: TransSet (LeanUniv u).
 { exact LeanUniv_TransSet u Hu. }
 claim Hz: ZF_closed (LeanUniv u).
@@ -1263,7 +1267,7 @@ exact IndCarrier_In Lean_Option_K Lean_Option_T Lean_Option_N Lean_Option_R Lean
     Lean_Option_O k a :e LeanUniv u) (Below_0 (fun k => forall V :e LeanUniv u, forall a :e (Pi_ j :e Lean_Option_N k, V), Lean_Option_O k a :e LeanUniv u)) HO0) HO1) k Hk).
 Qed.
 Theorem Lean_Option_type_In : forall u, nat_p u -> P0 :e LeanUniv u -> Lean_Option :e LeanUniv u.
-let u. assume Hu: nat_p u. assume HP0: P0 :e LeanUniv u. 
+let u. assume Hu: nat_p u. assume HP0: P0 :e LeanUniv u.
 exact IndFiber_In Lean_Option_K Lean_Option_T Lean_Option_N Lean_Option_R Lean_Option_F Lean_Option_Ix Lean_Option_O Lean_Option_B (LeanUniv u) (LeanUniv_TransSet u Hu) (LeanUniv_ZF_closed u Hu)
     (Lean_Option_In u Hu HP0) 0.
 Qed.
@@ -1380,7 +1384,7 @@ Definition Lean_List_cons_node : set -> set -> set := fun x0 x1 => IndNode Lean_
     (SeqCons (x1) SeqNil))).
 Theorem Lean_List_cons_args : forall x0 :e P0, forall x1 :e Lean_List, (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) :e IndArgs Lean_List_K Lean_List_T Lean_List_N Lean_List_R Lean_List_F
     Lean_List_Ix Lean_List_O Lean_List_B Lean_List_All 1.
-let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e Lean_List. 
+let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e Lean_List.
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -1435,7 +1439,7 @@ apply SepI (Pi_ j :e 2, Lean_List_B :\/: Lean_List_All) (fun a => IndFits Lean_L
     (SeqCons (x1) SeqNil))) j :e Lean_List_F 1 j (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)))))) D0) D1) j (In_eq_r j (Lean_List_N 1) 2 Lean_List_N1 Hj).
 Qed.
 Theorem Lean_List_cons_typed : forall x0 :e P0, forall x1 :e Lean_List, Lean_List_cons_node x0 x1 :e Lean_List.
-let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e Lean_List. 
+let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e Lean_List.
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -1462,7 +1466,7 @@ Qed.
 Definition Lean_List_rec : set -> set -> set -> set := fun h0 h1 t => IndRec Lean_List_K Lean_List_T Lean_List_N Lean_List_R Lean_List_F Lean_List_Ix Lean_List_O Lean_List_B (fun k a r:set => SeqAt
     (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (r 1))) SeqNil)) k) t.
 Theorem Lean_List_iota0 : forall h0 h1, Lean_List_rec h0 h1 (Lean_List_nil_node) = h0.
-let h0 h1. 
+let h0 h1.
 prove IndRec Lean_List_K Lean_List_T Lean_List_N Lean_List_R Lean_List_F Lean_List_Ix Lean_List_O Lean_List_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (r 1))) SeqNil)) k)
     (IndNode Lean_List_K Lean_List_T Lean_List_N Lean_List_R Lean_List_F Lean_List_Ix Lean_List_O Lean_List_B 0 (TupArgs 0 SeqNil)) = h0.
 rewrite IndRec_iota Lean_List_K Lean_List_T Lean_List_N Lean_List_R Lean_List_F Lean_List_Ix Lean_List_O Lean_List_B Lean_List_distinct Lean_List_bounded Lean_List_arity (fun k a r:set => SeqAt
@@ -1473,7 +1477,7 @@ prove SeqAt (SeqCons (h0) (SeqCons ((h1 ((TupArgs 0 SeqNil) 0) ((TupArgs 0 SeqNi
 rewrite SeqAt_0. reflexivity.
 Qed.
 Theorem Lean_List_iota1 : forall h0 h1, forall x0 :e P0, forall x1 :e Lean_List, Lean_List_rec h0 h1 (Lean_List_cons_node x0 x1) = (h1 x0 x1 (Lean_List_rec h0 h1 x1)).
-let h0 h1. let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e Lean_List. 
+let h0 h1. let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e Lean_List.
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -1599,7 +1603,7 @@ Qed.
 Definition Lean_List_casesOn : set -> set -> set -> set := fun h0 h1 t => IndRec Lean_List_K Lean_List_T Lean_List_N Lean_List_R Lean_List_F Lean_List_Ix Lean_List_O Lean_List_B (fun k a r:set =>
     SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1))) SeqNil)) k) t.
 Theorem Lean_List_casesOn_iota0 : forall h0 h1, Lean_List_casesOn h0 h1 (Lean_List_nil_node) = h0.
-let h0 h1. 
+let h0 h1.
 prove IndRec Lean_List_K Lean_List_T Lean_List_N Lean_List_R Lean_List_F Lean_List_Ix Lean_List_O Lean_List_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1))) SeqNil)) k) (IndNode
     Lean_List_K Lean_List_T Lean_List_N Lean_List_R Lean_List_F Lean_List_Ix Lean_List_O Lean_List_B 0 (TupArgs 0 SeqNil)) = h0.
 rewrite IndRec_iota Lean_List_K Lean_List_T Lean_List_N Lean_List_R Lean_List_F Lean_List_Ix Lean_List_O Lean_List_B Lean_List_distinct Lean_List_bounded Lean_List_arity (fun k a r:set => SeqAt
@@ -1608,7 +1612,7 @@ prove SeqAt (SeqCons (h0) (SeqCons ((h1 ((TupArgs 0 SeqNil) 0) ((TupArgs 0 SeqNi
 rewrite SeqAt_0. reflexivity.
 Qed.
 Theorem Lean_List_casesOn_iota1 : forall h0 h1, forall x0 :e P0, forall x1 :e Lean_List, Lean_List_casesOn h0 h1 (Lean_List_cons_node x0 x1) = (h1 x0 x1).
-let h0 h1. let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e Lean_List. 
+let h0 h1. let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e Lean_List.
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -1733,6 +1737,7 @@ exact SepE2 1 (fun z => P t) (Lean_List_rec 0 0 t) (Lean_List_rec_type (fun t =>
 Qed.
 
 
+
 Theorem Lean_List_noconf0_1 : forall y0 y1, Lean_List_nil_node <> (Lean_List_cons_node y0 y1).
 let y0 y1. assume H: Lean_List_nil_node = (Lean_List_cons_node y0 y1).
 apply IndNode_inj Lean_List_K Lean_List_T Lean_List_N Lean_List_R Lean_List_F Lean_List_Ix Lean_List_O Lean_List_B Lean_List_distinct 0 (ordsuccI1 1 0 (ordsuccI2 0)) 1 (ordsuccI2 1) (TupArgs 0
@@ -1766,7 +1771,7 @@ Qed.
 
 
 Theorem Lean_List_In : forall u, nat_p u -> P0 :e LeanUniv u -> Lean_List_All :e LeanUniv u.
-let u. assume Hu: nat_p u. assume HP0: P0 :e LeanUniv u. 
+let u. assume Hu: nat_p u. assume HP0: P0 :e LeanUniv u.
 claim Ht: TransSet (LeanUniv u).
 { exact LeanUniv_TransSet u Hu. }
 claim Hz: ZF_closed (LeanUniv u).
@@ -1789,7 +1794,7 @@ exact IndCarrier_In Lean_List_K Lean_List_T Lean_List_N Lean_List_R Lean_List_F 
     (Below_0 (fun k => forall V :e LeanUniv u, forall a :e (Pi_ j :e Lean_List_N k, V), Lean_List_O k a :e LeanUniv u)) HO0) HO1) k Hk).
 Qed.
 Theorem Lean_List_type_In : forall u, nat_p u -> P0 :e LeanUniv u -> Lean_List :e LeanUniv u.
-let u. assume Hu: nat_p u. assume HP0: P0 :e LeanUniv u. 
+let u. assume Hu: nat_p u. assume HP0: P0 :e LeanUniv u.
 exact IndFiber_In Lean_List_K Lean_List_T Lean_List_N Lean_List_R Lean_List_F Lean_List_Ix Lean_List_O Lean_List_B (LeanUniv u) (LeanUniv_TransSet u Hu) (LeanUniv_ZF_closed u Hu) (Lean_List_In u Hu
     HP0) 0.
 Qed.
@@ -1945,7 +1950,7 @@ Qed.
 
 Definition Lean_Tm_var_node : set -> set := fun x0 => IndNode Lean_Tm_K Lean_Tm_T Lean_Tm_N Lean_Tm_R Lean_Tm_F Lean_Tm_Ix Lean_Tm_O Lean_Tm_B 0 (TupArgs 1 (SeqCons (x0) SeqNil)).
 Theorem Lean_Tm_var_args : forall x0 :e Lean_Nat, (TupArgs 1 (SeqCons (x0) SeqNil)) :e IndArgs Lean_Tm_K Lean_Tm_T Lean_Tm_N Lean_Tm_R Lean_Tm_F Lean_Tm_Ix Lean_Tm_O Lean_Tm_B Lean_Tm_All 0.
-let x0. assume H0: x0 :e Lean_Nat. 
+let x0. assume H0: x0 :e Lean_Nat.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -1975,7 +1980,7 @@ apply SepI (Pi_ j :e 1, Lean_Tm_B :\/: Lean_Tm_All) (fun a => IndFits Lean_Tm_K 
     j (In_eq_r j (Lean_Tm_N 0) 1 Lean_Tm_N0 Hj).
 Qed.
 Theorem Lean_Tm_var_typed : forall x0 :e Lean_Nat, Lean_Tm_var_node x0 :e Lean_Tm.
-let x0. assume H0: x0 :e Lean_Nat. 
+let x0. assume H0: x0 :e Lean_Nat.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -1993,7 +1998,7 @@ exact (lam_Pi Lean_Nat (fun x0 => Lean_Tm) (fun x0 => Lean_Tm_var_node x0) (fun 
 Qed.
 Definition Lean_Tm_lam_node : set -> set := fun x0 => IndNode Lean_Tm_K Lean_Tm_T Lean_Tm_N Lean_Tm_R Lean_Tm_F Lean_Tm_Ix Lean_Tm_O Lean_Tm_B 1 (TupArgs 1 (SeqCons (x0) SeqNil)).
 Theorem Lean_Tm_lam_args : forall x0 :e Lean_Tm, (TupArgs 1 (SeqCons (x0) SeqNil)) :e IndArgs Lean_Tm_K Lean_Tm_T Lean_Tm_N Lean_Tm_R Lean_Tm_F Lean_Tm_Ix Lean_Tm_O Lean_Tm_B Lean_Tm_All 1.
-let x0. assume H0: x0 :e Lean_Tm. 
+let x0. assume H0: x0 :e Lean_Tm.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -2029,7 +2034,7 @@ apply SepI (Pi_ j :e 1, Lean_Tm_B :\/: Lean_Tm_All) (fun a => IndFits Lean_Tm_K 
     j (In_eq_r j (Lean_Tm_N 1) 1 Lean_Tm_N1 Hj).
 Qed.
 Theorem Lean_Tm_lam_typed : forall x0 :e Lean_Tm, Lean_Tm_lam_node x0 :e Lean_Tm.
-let x0. assume H0: x0 :e Lean_Tm. 
+let x0. assume H0: x0 :e Lean_Tm.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -2049,7 +2054,7 @@ Definition Lean_Tm_app_node : set -> set -> set := fun x0 x1 => IndNode Lean_Tm_
     SeqNil))).
 Theorem Lean_Tm_app_args : forall x0 :e Lean_Tm, forall x1 :e Lean_Tm, (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) :e IndArgs Lean_Tm_K Lean_Tm_T Lean_Tm_N Lean_Tm_R Lean_Tm_F Lean_Tm_Ix
     Lean_Tm_O Lean_Tm_B Lean_Tm_All 2.
-let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e Lean_Tm. 
+let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e Lean_Tm.
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -2110,7 +2115,7 @@ apply SepI (Pi_ j :e 2, Lean_Tm_B :\/: Lean_Tm_All) (fun a => IndFits Lean_Tm_K 
     (x0) (SeqCons (x1) SeqNil)))))) D0) D1) j (In_eq_r j (Lean_Tm_N 2) 2 Lean_Tm_N2 Hj).
 Qed.
 Theorem Lean_Tm_app_typed : forall x0 :e Lean_Tm, forall x1 :e Lean_Tm, Lean_Tm_app_node x0 x1 :e Lean_Tm.
-let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e Lean_Tm. 
+let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e Lean_Tm.
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -2134,7 +2139,7 @@ exact (lam_Pi Lean_Tm (fun x0 => (Pi_ x1 :e Lean_Tm, Lean_Tm)) (fun x0 => (fun x
 Qed.
 Definition Lean_Tm_lit_node : set -> set := fun x0 => IndNode Lean_Tm_K Lean_Tm_T Lean_Tm_N Lean_Tm_R Lean_Tm_F Lean_Tm_Ix Lean_Tm_O Lean_Tm_B 3 (TupArgs 1 (SeqCons (x0) SeqNil)).
 Theorem Lean_Tm_lit_args : forall x0 :e Lean_Nat, (TupArgs 1 (SeqCons (x0) SeqNil)) :e IndArgs Lean_Tm_K Lean_Tm_T Lean_Tm_N Lean_Tm_R Lean_Tm_F Lean_Tm_Ix Lean_Tm_O Lean_Tm_B Lean_Tm_All 3.
-let x0. assume H0: x0 :e Lean_Nat. 
+let x0. assume H0: x0 :e Lean_Nat.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -2164,7 +2169,7 @@ apply SepI (Pi_ j :e 1, Lean_Tm_B :\/: Lean_Tm_All) (fun a => IndFits Lean_Tm_K 
     j (In_eq_r j (Lean_Tm_N 3) 1 Lean_Tm_N3 Hj).
 Qed.
 Theorem Lean_Tm_lit_typed : forall x0 :e Lean_Nat, Lean_Tm_lit_node x0 :e Lean_Tm.
-let x0. assume H0: x0 :e Lean_Nat. 
+let x0. assume H0: x0 :e Lean_Nat.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -2184,7 +2189,7 @@ Qed.
 Definition Lean_Tm_rec : set -> set -> set -> set -> set -> set := fun h0 h1 h2 h3 t => IndRec Lean_Tm_K Lean_Tm_T Lean_Tm_N Lean_Tm_R Lean_Tm_F Lean_Tm_Ix Lean_Tm_O Lean_Tm_B (fun k a r:set => SeqAt
     (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (r 0))) (SeqCons ((h2 (a 0) (a 1) (r 0) (r 1))) (SeqCons ((h3 (a 0))) SeqNil)))) k) t.
 Theorem Lean_Tm_iota0 : forall h0 h1 h2 h3, forall x0 :e Lean_Nat, Lean_Tm_rec h0 h1 h2 h3 (Lean_Tm_var_node x0) = (h0 x0).
-let h0 h1 h2 h3. let x0. assume H0: x0 :e Lean_Nat. 
+let h0 h1 h2 h3. let x0. assume H0: x0 :e Lean_Nat.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -2205,7 +2210,7 @@ prove SeqAt (SeqCons ((h0 ((TupArgs 1 (SeqCons (x0) SeqNil)) 0))) (SeqCons ((h1 
 rewrite SeqAt_0. rewrite T0. reflexivity.
 Qed.
 Theorem Lean_Tm_iota1 : forall h0 h1 h2 h3, forall x0 :e Lean_Tm, Lean_Tm_rec h0 h1 h2 h3 (Lean_Tm_lam_node x0) = (h1 x0 (Lean_Tm_rec h0 h1 h2 h3 x0)).
-let h0 h1 h2 h3. let x0. assume H0: x0 :e Lean_Tm. 
+let h0 h1 h2 h3. let x0. assume H0: x0 :e Lean_Tm.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -2237,7 +2242,7 @@ rewrite SeqAt_S. { rewrite SeqAt_0. rewrite R0. rewrite T0. reflexivity. } exact
 Qed.
 Theorem Lean_Tm_iota2 : forall h0 h1 h2 h3, forall x0 :e Lean_Tm, forall x1 :e Lean_Tm, Lean_Tm_rec h0 h1 h2 h3 (Lean_Tm_app_node x0 x1) = (h2 x0 x1 (Lean_Tm_rec h0 h1 h2 h3 x0) (Lean_Tm_rec h0 h1 h2
     h3 x1)).
-let h0 h1 h2 h3. let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e Lean_Tm. 
+let h0 h1 h2 h3. let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e Lean_Tm.
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -2282,7 +2287,7 @@ prove SeqAt (SeqCons ((h0 ((TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 0)))
 rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. rewrite R0. rewrite R1. rewrite T0. rewrite T1. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0).
 Qed.
 Theorem Lean_Tm_iota3 : forall h0 h1 h2 h3, forall x0 :e Lean_Nat, Lean_Tm_rec h0 h1 h2 h3 (Lean_Tm_lit_node x0) = (h3 x0).
-let h0 h1 h2 h3. let x0. assume H0: x0 :e Lean_Nat. 
+let h0 h1 h2 h3. let x0. assume H0: x0 :e Lean_Nat.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -2498,7 +2503,7 @@ Qed.
 Definition Lean_Tm_casesOn : set -> set -> set -> set -> set -> set := fun h0 h1 h2 h3 t => IndRec Lean_Tm_K Lean_Tm_T Lean_Tm_N Lean_Tm_R Lean_Tm_F Lean_Tm_Ix Lean_Tm_O Lean_Tm_B (fun k a r:set =>
     SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0))) (SeqCons ((h2 (a 0) (a 1))) (SeqCons ((h3 (a 0))) SeqNil)))) k) t.
 Theorem Lean_Tm_casesOn_iota0 : forall h0 h1 h2 h3, forall x0 :e Lean_Nat, Lean_Tm_casesOn h0 h1 h2 h3 (Lean_Tm_var_node x0) = (h0 x0).
-let h0 h1 h2 h3. let x0. assume H0: x0 :e Lean_Nat. 
+let h0 h1 h2 h3. let x0. assume H0: x0 :e Lean_Nat.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -2513,7 +2518,7 @@ prove SeqAt (SeqCons ((h0 ((TupArgs 1 (SeqCons (x0) SeqNil)) 0))) (SeqCons ((h1 
 rewrite SeqAt_0. rewrite T0. reflexivity.
 Qed.
 Theorem Lean_Tm_casesOn_iota1 : forall h0 h1 h2 h3, forall x0 :e Lean_Tm, Lean_Tm_casesOn h0 h1 h2 h3 (Lean_Tm_lam_node x0) = (h1 x0).
-let h0 h1 h2 h3. let x0. assume H0: x0 :e Lean_Tm. 
+let h0 h1 h2 h3. let x0. assume H0: x0 :e Lean_Tm.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -2527,7 +2532,7 @@ prove SeqAt (SeqCons ((h0 ((TupArgs 1 (SeqCons (x0) SeqNil)) 0))) (SeqCons ((h1 
 rewrite SeqAt_S. { rewrite SeqAt_0. rewrite T0. reflexivity. } exact nat_0.
 Qed.
 Theorem Lean_Tm_casesOn_iota2 : forall h0 h1 h2 h3, forall x0 :e Lean_Tm, forall x1 :e Lean_Tm, Lean_Tm_casesOn h0 h1 h2 h3 (Lean_Tm_app_node x0 x1) = (h2 x0 x1).
-let h0 h1 h2 h3. let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e Lean_Tm. 
+let h0 h1 h2 h3. let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e Lean_Tm.
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -2546,7 +2551,7 @@ prove SeqAt (SeqCons ((h0 ((TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 0)))
 rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. rewrite T0. rewrite T1. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0).
 Qed.
 Theorem Lean_Tm_casesOn_iota3 : forall h0 h1 h2 h3, forall x0 :e Lean_Nat, Lean_Tm_casesOn h0 h1 h2 h3 (Lean_Tm_lit_node x0) = (h3 x0).
-let h0 h1 h2 h3. let x0. assume H0: x0 :e Lean_Nat. 
+let h0 h1 h2 h3. let x0. assume H0: x0 :e Lean_Nat.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -2769,6 +2774,7 @@ exact SepE2 1 (fun z => P t) (Lean_Tm_rec 0 0 0 0 t) (Lean_Tm_rec_type (fun t =>
 Qed.
 
 
+
 Theorem Lean_Tm_noconf0_1 : forall x0, forall y0, (Lean_Tm_var_node x0) <> (Lean_Tm_lam_node y0).
 let x0 y0. assume H: (Lean_Tm_var_node x0) = (Lean_Tm_lam_node y0).
 apply IndNode_inj Lean_Tm_K Lean_Tm_T Lean_Tm_N Lean_Tm_R Lean_Tm_F Lean_Tm_Ix Lean_Tm_O Lean_Tm_B Lean_Tm_distinct 0 (ordsuccI1 3 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0)))) 1 (ordsuccI1 3 1
@@ -2870,7 +2876,7 @@ Qed.
 
 
 Theorem Lean_Tm_In : forall u, nat_p u -> Lean_Tm_All :e LeanUniv u.
-let u. assume Hu: nat_p u. 
+let u. assume Hu: nat_p u.
 claim Ht: TransSet (LeanUniv u).
 { exact LeanUniv_TransSet u Hu. }
 claim Hz: ZF_closed (LeanUniv u).
@@ -2905,7 +2911,7 @@ exact IndCarrier_In Lean_Tm_K Lean_Tm_T Lean_Tm_N Lean_Tm_R Lean_Tm_F Lean_Tm_Ix
     forall V :e LeanUniv u, forall a :e (Pi_ j :e Lean_Tm_N k, V), Lean_Tm_O k a :e LeanUniv u)) HO0) HO1) HO2) HO3) k Hk).
 Qed.
 Theorem Lean_Tm_type_In : forall u, nat_p u -> Lean_Tm :e LeanUniv u.
-let u. assume Hu: nat_p u. 
+let u. assume Hu: nat_p u.
 exact IndFiber_In Lean_Tm_K Lean_Tm_T Lean_Tm_N Lean_Tm_R Lean_Tm_F Lean_Tm_Ix Lean_Tm_O Lean_Tm_B (LeanUniv u) (LeanUniv_TransSet u Hu) (LeanUniv_ZF_closed u Hu) (Lean_Tm_In u Hu ) 0.
 Qed.
 
@@ -3099,7 +3105,7 @@ Definition Lean_CEK_Val__nested_1_cons_b_node : set -> set -> set := fun x0 x1 =
     Lean_CEK_Val_b_O Lean_CEK_Val_b_B 1 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))).
 Theorem Lean_CEK_Val__nested_1_cons_b_args : forall x0 :e (Lean_CEK_Val_b 1), forall x1 :e (Lean_CEK_Val_b 0), (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) :e IndArgs Lean_CEK_Val_b_K
     Lean_CEK_Val_b_T Lean_CEK_Val_b_N Lean_CEK_Val_b_R Lean_CEK_Val_b_F Lean_CEK_Val_b_Ix Lean_CEK_Val_b_O Lean_CEK_Val_b_B Lean_CEK_Val_b_All 1.
-let x0. assume H0: x0 :e (Lean_CEK_Val_b 1). let x1. assume H1: x1 :e (Lean_CEK_Val_b 0). 
+let x0. assume H0: x0 :e (Lean_CEK_Val_b 1). let x1. assume H1: x1 :e (Lean_CEK_Val_b 0).
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -3168,7 +3174,7 @@ apply SepI (Pi_ j :e 2, Lean_CEK_Val_b_B :\/: Lean_CEK_Val_b_All) (fun a => IndF
     (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) j :e Lean_CEK_Val_b_F 1 j (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)))))) D0) D1) j (In_eq_r j (Lean_CEK_Val_b_N 1) 2 Lean_CEK_Val_b_N1 Hj).
 Qed.
 Theorem Lean_CEK_Val__nested_1_cons_b_typed : forall x0 :e (Lean_CEK_Val_b 1), forall x1 :e (Lean_CEK_Val_b 0), Lean_CEK_Val__nested_1_cons_b_node x0 x1 :e (Lean_CEK_Val_b 0).
-let x0. assume H0: x0 :e (Lean_CEK_Val_b 1). let x1. assume H1: x1 :e (Lean_CEK_Val_b 0). 
+let x0. assume H0: x0 :e (Lean_CEK_Val_b 1). let x1. assume H1: x1 :e (Lean_CEK_Val_b 0).
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -3195,7 +3201,7 @@ Definition Lean_CEK_Val_lit_b_node : set -> set := fun x0 => IndNode Lean_CEK_Va
     Lean_CEK_Val_b_B 2 (TupArgs 1 (SeqCons (x0) SeqNil)).
 Theorem Lean_CEK_Val_lit_b_args : forall x0 :e Lean_Nat, (TupArgs 1 (SeqCons (x0) SeqNil)) :e IndArgs Lean_CEK_Val_b_K Lean_CEK_Val_b_T Lean_CEK_Val_b_N Lean_CEK_Val_b_R Lean_CEK_Val_b_F
     Lean_CEK_Val_b_Ix Lean_CEK_Val_b_O Lean_CEK_Val_b_B Lean_CEK_Val_b_All 2.
-let x0. assume H0: x0 :e Lean_Nat. 
+let x0. assume H0: x0 :e Lean_Nat.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -3228,7 +3234,7 @@ apply SepI (Pi_ j :e 1, Lean_CEK_Val_b_B :\/: Lean_CEK_Val_b_All) (fun a => IndF
     SeqNil))))) D0) j (In_eq_r j (Lean_CEK_Val_b_N 2) 1 Lean_CEK_Val_b_N2 Hj).
 Qed.
 Theorem Lean_CEK_Val_lit_b_typed : forall x0 :e Lean_Nat, Lean_CEK_Val_lit_b_node x0 :e (Lean_CEK_Val_b 1).
-let x0. assume H0: x0 :e Lean_Nat. 
+let x0. assume H0: x0 :e Lean_Nat.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -3250,7 +3256,7 @@ Definition Lean_CEK_Val_clo_b_node : set -> set -> set := fun x0 x1 => IndNode L
     Lean_CEK_Val_b_B 3 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))).
 Theorem Lean_CEK_Val_clo_b_args : forall x0 :e Lean_Tm, forall x1 :e (Lean_CEK_Val_b 0), (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) :e IndArgs Lean_CEK_Val_b_K Lean_CEK_Val_b_T Lean_CEK_Val_b_N
     Lean_CEK_Val_b_R Lean_CEK_Val_b_F Lean_CEK_Val_b_Ix Lean_CEK_Val_b_O Lean_CEK_Val_b_B Lean_CEK_Val_b_All 3.
-let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_CEK_Val_b 0). 
+let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_CEK_Val_b 0).
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -3311,7 +3317,7 @@ apply SepI (Pi_ j :e 2, Lean_CEK_Val_b_B :\/: Lean_CEK_Val_b_All) (fun a => IndF
     (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) j :e Lean_CEK_Val_b_F 3 j (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)))))) D0) D1) j (In_eq_r j (Lean_CEK_Val_b_N 3) 2 Lean_CEK_Val_b_N3 Hj).
 Qed.
 Theorem Lean_CEK_Val_clo_b_typed : forall x0 :e Lean_Tm, forall x1 :e (Lean_CEK_Val_b 0), Lean_CEK_Val_clo_b_node x0 x1 :e (Lean_CEK_Val_b 1).
-let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_CEK_Val_b 0). 
+let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_CEK_Val_b 0).
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -3339,7 +3345,7 @@ Definition Lean_CEK_Val_b_rec : set -> set -> set -> set -> set -> set := fun h0
     Lean_CEK_Val_b_Ix Lean_CEK_Val_b_O Lean_CEK_Val_b_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (r 0) (r 1))) (SeqCons ((h2 (a 0))) (SeqCons ((h3 (a 0) (a 1) (r 1)))
     SeqNil)))) k) t.
 Theorem Lean_CEK_Val_b_iota0 : forall h0 h1 h2 h3, Lean_CEK_Val_b_rec h0 h1 h2 h3 (Lean_CEK_Val__nested_1_nil_b_node) = h0.
-let h0 h1 h2 h3. 
+let h0 h1 h2 h3.
 prove IndRec Lean_CEK_Val_b_K Lean_CEK_Val_b_T Lean_CEK_Val_b_N Lean_CEK_Val_b_R Lean_CEK_Val_b_F Lean_CEK_Val_b_Ix Lean_CEK_Val_b_O Lean_CEK_Val_b_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons
     ((h1 (a 0) (a 1) (r 0) (r 1))) (SeqCons ((h2 (a 0))) (SeqCons ((h3 (a 0) (a 1) (r 1))) SeqNil)))) k) (IndNode Lean_CEK_Val_b_K Lean_CEK_Val_b_T Lean_CEK_Val_b_N Lean_CEK_Val_b_R Lean_CEK_Val_b_F
     Lean_CEK_Val_b_Ix Lean_CEK_Val_b_O Lean_CEK_Val_b_B 0 (TupArgs 0 SeqNil)) = h0.
@@ -3359,7 +3365,7 @@ rewrite SeqAt_0. reflexivity.
 Qed.
 Theorem Lean_CEK_Val_b_iota1 : forall h0 h1 h2 h3, forall x0 :e (Lean_CEK_Val_b 1), forall x1 :e (Lean_CEK_Val_b 0), Lean_CEK_Val_b_rec h0 h1 h2 h3 (Lean_CEK_Val__nested_1_cons_b_node x0 x1) = (h1 x0
     x1 (Lean_CEK_Val_b_rec h0 h1 h2 h3 x0) (Lean_CEK_Val_b_rec h0 h1 h2 h3 x1)).
-let h0 h1 h2 h3. let x0. assume H0: x0 :e (Lean_CEK_Val_b 1). let x1. assume H1: x1 :e (Lean_CEK_Val_b 0). 
+let h0 h1 h2 h3. let x0. assume H0: x0 :e (Lean_CEK_Val_b 1). let x1. assume H1: x1 :e (Lean_CEK_Val_b 0).
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -3408,7 +3414,7 @@ prove SeqAt (SeqCons (h0) (SeqCons ((h1 ((TupArgs 2 (SeqCons (x0) (SeqCons (x1) 
 rewrite SeqAt_S. { rewrite SeqAt_0. rewrite R0. rewrite R1. rewrite T0. rewrite T1. reflexivity. } exact nat_0.
 Qed.
 Theorem Lean_CEK_Val_b_iota2 : forall h0 h1 h2 h3, forall x0 :e Lean_Nat, Lean_CEK_Val_b_rec h0 h1 h2 h3 (Lean_CEK_Val_lit_b_node x0) = (h2 x0).
-let h0 h1 h2 h3. let x0. assume H0: x0 :e Lean_Nat. 
+let h0 h1 h2 h3. let x0. assume H0: x0 :e Lean_Nat.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -3433,7 +3439,7 @@ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. rewrite T0. reflexivity. 
 Qed.
 Theorem Lean_CEK_Val_b_iota3 : forall h0 h1 h2 h3, forall x0 :e Lean_Tm, forall x1 :e (Lean_CEK_Val_b 0), Lean_CEK_Val_b_rec h0 h1 h2 h3 (Lean_CEK_Val_clo_b_node x0 x1) = (h3 x0 x1
     (Lean_CEK_Val_b_rec h0 h1 h2 h3 x1)).
-let h0 h1 h2 h3. let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_CEK_Val_b 0). 
+let h0 h1 h2 h3. let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_CEK_Val_b 0).
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -3782,6 +3788,7 @@ Qed.
 
 
 
+
 Theorem Lean_CEK_Val_b_noconf0_1 : forall y0 y1, Lean_CEK_Val__nested_1_nil_b_node <> (Lean_CEK_Val__nested_1_cons_b_node y0 y1).
 let y0 y1. assume H: Lean_CEK_Val__nested_1_nil_b_node = (Lean_CEK_Val__nested_1_cons_b_node y0 y1).
 apply IndNode_inj Lean_CEK_Val_b_K Lean_CEK_Val_b_T Lean_CEK_Val_b_N Lean_CEK_Val_b_R Lean_CEK_Val_b_F Lean_CEK_Val_b_Ix Lean_CEK_Val_b_O Lean_CEK_Val_b_B Lean_CEK_Val_b_distinct 0 (ordsuccI1 3 0
@@ -3894,7 +3901,7 @@ exact eq_i_tra i (IndIdx Lean_CEK_Val_b_K Lean_CEK_Val_b_T Lean_CEK_Val_b_N Lean
 Qed.
 
 Theorem Lean_CEK_Val_b_In : forall u, nat_p u -> Lean_CEK_Val_b_All :e LeanUniv u.
-let u. assume Hu: nat_p u. 
+let u. assume Hu: nat_p u.
 claim Ht: TransSet (LeanUniv u).
 { exact LeanUniv_TransSet u Hu. }
 claim Hz: ZF_closed (LeanUniv u).
@@ -3930,7 +3937,7 @@ exact IndCarrier_In Lean_CEK_Val_b_K Lean_CEK_Val_b_T Lean_CEK_Val_b_N Lean_CEK_
     Lean_CEK_Val_b_N k, V), Lean_CEK_Val_b_O k a :e LeanUniv u)) HO0) HO1) HO2) HO3) k Hk).
 Qed.
 Theorem Lean_CEK_Val_b_type_In : forall u, nat_p u -> forall i, Lean_CEK_Val_b i :e LeanUniv u.
-let u. assume Hu: nat_p u. let i. 
+let u. assume Hu: nat_p u. let i.
 exact IndFiber_In Lean_CEK_Val_b_K Lean_CEK_Val_b_T Lean_CEK_Val_b_N Lean_CEK_Val_b_R Lean_CEK_Val_b_F Lean_CEK_Val_b_Ix Lean_CEK_Val_b_O Lean_CEK_Val_b_B (LeanUniv u) (LeanUniv_TransSet u Hu)
     (LeanUniv_ZF_closed u Hu) (Lean_CEK_Val_b_In u Hu ) i.
 Qed.
@@ -4072,7 +4079,7 @@ exact SepE2 1 (fun z => Lean_CEK_Val_b_rec 0 0 h2 h3 t = 0) (Lean_List_rec Lean_
 Qed.
 
 Theorem Lean_CEK_Val_iota0 : forall h0 h1, forall x0 :e Lean_Nat, Lean_CEK_Val_rec h0 h1 (Lean_CEK_Val_lit_node x0) = (h0 x0).
-let h0 h1. let x0. assume H0: x0 :e Lean_Nat. 
+let h0 h1. let x0. assume H0: x0 :e Lean_Nat.
 prove Lean_CEK_Val_b_rec 0 0 (fun x0 :e Lean_Nat => (h0 x0)) (fun x0 :e Lean_Tm => (fun x1 :e (Lean_CEK_Val_b 0) => (fun y1 :e 1 => (h1 x0 x1)))) (Lean_CEK_Val_lit_b_node x0) = (h0 x0).
 rewrite Lean_CEK_Val_b_iota2 0 0 (fun x0 :e Lean_Nat => (h0 x0)) (fun x0 :e Lean_Tm => (fun x1 :e (Lean_CEK_Val_b 0) => (fun y1 :e 1 => (h1 x0 x1)))) x0 H0.
 rewrite beta Lean_Nat (fun x0 => (h0 x0)) x0 H0.
@@ -4080,7 +4087,7 @@ reflexivity.
 Qed.
 
 Theorem Lean_CEK_Val_iota1 : forall h0 h1, forall x0 :e Lean_Tm, forall x1 :e (Lean_List Lean_CEK_Val), Lean_CEK_Val_rec h0 h1 (Lean_CEK_Val_clo_node x0 x1) = (h1 x0 x1).
-let h0 h1. let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_List Lean_CEK_Val). 
+let h0 h1. let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_List Lean_CEK_Val).
 claim L1: x1 :e Lean_CEK_Val_b 0. { exact Lean_CEK_Val_b_list_sub x1 H1. }
 prove Lean_CEK_Val_b_rec 0 0 (fun x0 :e Lean_Nat => (h0 x0)) (fun x0 :e Lean_Tm => (fun x1 :e (Lean_CEK_Val_b 0) => (fun y1 :e 1 => (h1 x0 x1)))) (Lean_CEK_Val_clo_b_node x0 x1) = (h1 x0 x1).
 rewrite Lean_CEK_Val_b_iota3 0 0 (fun x0 :e Lean_Nat => (h0 x0)) (fun x0 :e Lean_Tm => (fun x1 :e (Lean_CEK_Val_b 0) => (fun y1 :e 1 => (h1 x0 x1)))) x0 H0 x1 L1.
@@ -4257,7 +4264,7 @@ Definition Lean_CEK_Frame_argOf_node : set -> set -> set := fun x0 x1 => IndNode
     Lean_CEK_Frame_O Lean_CEK_Frame_B 0 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))).
 Theorem Lean_CEK_Frame_argOf_args : forall x0 :e Lean_Tm, forall x1 :e (Lean_List Lean_CEK_Val), (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) :e IndArgs Lean_CEK_Frame_K Lean_CEK_Frame_T
     Lean_CEK_Frame_N Lean_CEK_Frame_R Lean_CEK_Frame_F Lean_CEK_Frame_Ix Lean_CEK_Frame_O Lean_CEK_Frame_B Lean_CEK_Frame_All 0.
-let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_List Lean_CEK_Val). 
+let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_List Lean_CEK_Val).
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -4310,7 +4317,7 @@ apply SepI (Pi_ j :e 2, Lean_CEK_Frame_B :\/: Lean_CEK_Frame_All) (fun a => IndF
     (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) j :e Lean_CEK_Frame_F 0 j (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)))))) D0) D1) j (In_eq_r j (Lean_CEK_Frame_N 0) 2 Lean_CEK_Frame_N0 Hj).
 Qed.
 Theorem Lean_CEK_Frame_argOf_typed : forall x0 :e Lean_Tm, forall x1 :e (Lean_List Lean_CEK_Val), Lean_CEK_Frame_argOf_node x0 x1 :e Lean_CEK_Frame.
-let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_List Lean_CEK_Val). 
+let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_List Lean_CEK_Val).
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -4337,7 +4344,7 @@ Definition Lean_CEK_Frame_callWith_node : set -> set := fun x0 => IndNode Lean_C
     Lean_CEK_Frame_B 1 (TupArgs 1 (SeqCons (x0) SeqNil)).
 Theorem Lean_CEK_Frame_callWith_args : forall x0 :e Lean_CEK_Val, (TupArgs 1 (SeqCons (x0) SeqNil)) :e IndArgs Lean_CEK_Frame_K Lean_CEK_Frame_T Lean_CEK_Frame_N Lean_CEK_Frame_R Lean_CEK_Frame_F
     Lean_CEK_Frame_Ix Lean_CEK_Frame_O Lean_CEK_Frame_B Lean_CEK_Frame_All 1.
-let x0. assume H0: x0 :e Lean_CEK_Val. 
+let x0. assume H0: x0 :e Lean_CEK_Val.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -4371,7 +4378,7 @@ apply SepI (Pi_ j :e 1, Lean_CEK_Frame_B :\/: Lean_CEK_Frame_All) (fun a => IndF
     SeqNil))))) D0) j (In_eq_r j (Lean_CEK_Frame_N 1) 1 Lean_CEK_Frame_N1 Hj).
 Qed.
 Theorem Lean_CEK_Frame_callWith_typed : forall x0 :e Lean_CEK_Val, Lean_CEK_Frame_callWith_node x0 :e Lean_CEK_Frame.
-let x0. assume H0: x0 :e Lean_CEK_Val. 
+let x0. assume H0: x0 :e Lean_CEK_Val.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -4393,7 +4400,7 @@ Qed.
 Definition Lean_CEK_Frame_rec : set -> set -> set -> set := fun h0 h1 t => IndRec Lean_CEK_Frame_K Lean_CEK_Frame_T Lean_CEK_Frame_N Lean_CEK_Frame_R Lean_CEK_Frame_F Lean_CEK_Frame_Ix
     Lean_CEK_Frame_O Lean_CEK_Frame_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0) (a 1))) (SeqCons ((h1 (a 0))) SeqNil)) k) t.
 Theorem Lean_CEK_Frame_iota0 : forall h0 h1, forall x0 :e Lean_Tm, forall x1 :e (Lean_List Lean_CEK_Val), Lean_CEK_Frame_rec h0 h1 (Lean_CEK_Frame_argOf_node x0 x1) = (h0 x0 x1).
-let h0 h1. let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_List Lean_CEK_Val). 
+let h0 h1. let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_List Lean_CEK_Val).
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -4413,7 +4420,7 @@ prove SeqAt (SeqCons ((h0 ((TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 0) (
 rewrite SeqAt_0. rewrite T0. rewrite T1. reflexivity.
 Qed.
 Theorem Lean_CEK_Frame_iota1 : forall h0 h1, forall x0 :e Lean_CEK_Val, Lean_CEK_Frame_rec h0 h1 (Lean_CEK_Frame_callWith_node x0) = (h1 x0).
-let h0 h1. let x0. assume H0: x0 :e Lean_CEK_Val. 
+let h0 h1. let x0. assume H0: x0 :e Lean_CEK_Val.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -4549,6 +4556,7 @@ exact SepE2 1 (fun z => P t) (Lean_CEK_Frame_rec 0 0 t) (Lean_CEK_Frame_rec_type
 Qed.
 
 
+
 Theorem Lean_CEK_Frame_noconf0_1 : forall x0 x1, forall y0, (Lean_CEK_Frame_argOf_node x0 x1) <> (Lean_CEK_Frame_callWith_node y0).
 let x0 x1 y0. assume H: (Lean_CEK_Frame_argOf_node x0 x1) = (Lean_CEK_Frame_callWith_node y0).
 apply IndNode_inj Lean_CEK_Frame_K Lean_CEK_Frame_T Lean_CEK_Frame_N Lean_CEK_Frame_R Lean_CEK_Frame_F Lean_CEK_Frame_Ix Lean_CEK_Frame_O Lean_CEK_Frame_B Lean_CEK_Frame_distinct 0 (ordsuccI1 1 0
@@ -4593,7 +4601,7 @@ Qed.
 
 
 Theorem Lean_CEK_Frame_In : forall u, nat_p u -> Lean_CEK_Frame_All :e LeanUniv u.
-let u. assume Hu: nat_p u. 
+let u. assume Hu: nat_p u.
 claim Ht: TransSet (LeanUniv u).
 { exact LeanUniv_TransSet u Hu. }
 claim Hz: ZF_closed (LeanUniv u).
@@ -4618,7 +4626,7 @@ exact IndCarrier_In Lean_CEK_Frame_K Lean_CEK_Frame_T Lean_CEK_Frame_N Lean_CEK_
     LeanUniv u, forall a :e (Pi_ j :e Lean_CEK_Frame_N k, V), Lean_CEK_Frame_O k a :e LeanUniv u)) HO0) HO1) k Hk).
 Qed.
 Theorem Lean_CEK_Frame_type_In : forall u, nat_p u -> Lean_CEK_Frame :e LeanUniv u.
-let u. assume Hu: nat_p u. 
+let u. assume Hu: nat_p u.
 exact IndFiber_In Lean_CEK_Frame_K Lean_CEK_Frame_T Lean_CEK_Frame_N Lean_CEK_Frame_R Lean_CEK_Frame_F Lean_CEK_Frame_Ix Lean_CEK_Frame_O Lean_CEK_Frame_B (LeanUniv u) (LeanUniv_TransSet u Hu)
     (LeanUniv_ZF_closed u Hu) (Lean_CEK_Frame_In u Hu ) 0.
 Qed.
@@ -4723,7 +4731,7 @@ Definition Lean_CEK_Ctl_ev_node : set -> set -> set := fun x0 x1 => IndNode Lean
     (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))).
 Theorem Lean_CEK_Ctl_ev_args : forall x0 :e Lean_Tm, forall x1 :e (Lean_List Lean_CEK_Val), (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) :e IndArgs Lean_CEK_Ctl_K Lean_CEK_Ctl_T Lean_CEK_Ctl_N
     Lean_CEK_Ctl_R Lean_CEK_Ctl_F Lean_CEK_Ctl_Ix Lean_CEK_Ctl_O Lean_CEK_Ctl_B Lean_CEK_Ctl_All 0.
-let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_List Lean_CEK_Val). 
+let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_List Lean_CEK_Val).
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -4776,7 +4784,7 @@ apply SepI (Pi_ j :e 2, Lean_CEK_Ctl_B :\/: Lean_CEK_Ctl_All) (fun a => IndFits 
     2 (SeqCons (x0) (SeqCons (x1) SeqNil)))))) D0) D1) j (In_eq_r j (Lean_CEK_Ctl_N 0) 2 Lean_CEK_Ctl_N0 Hj).
 Qed.
 Theorem Lean_CEK_Ctl_ev_typed : forall x0 :e Lean_Tm, forall x1 :e (Lean_List Lean_CEK_Val), Lean_CEK_Ctl_ev_node x0 x1 :e Lean_CEK_Ctl.
-let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_List Lean_CEK_Val). 
+let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_List Lean_CEK_Val).
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -4803,7 +4811,7 @@ Definition Lean_CEK_Ctl_ret_node : set -> set := fun x0 => IndNode Lean_CEK_Ctl_
     1 (SeqCons (x0) SeqNil)).
 Theorem Lean_CEK_Ctl_ret_args : forall x0 :e Lean_CEK_Val, (TupArgs 1 (SeqCons (x0) SeqNil)) :e IndArgs Lean_CEK_Ctl_K Lean_CEK_Ctl_T Lean_CEK_Ctl_N Lean_CEK_Ctl_R Lean_CEK_Ctl_F Lean_CEK_Ctl_Ix
     Lean_CEK_Ctl_O Lean_CEK_Ctl_B Lean_CEK_Ctl_All 1.
-let x0. assume H0: x0 :e Lean_CEK_Val. 
+let x0. assume H0: x0 :e Lean_CEK_Val.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -4835,7 +4843,7 @@ apply SepI (Pi_ j :e 1, Lean_CEK_Ctl_B :\/: Lean_CEK_Ctl_All) (fun a => IndFits 
     SeqNil))) /\ (~ Lean_CEK_Ctl_R 1 j -> (TupArgs 1 (SeqCons (x0) SeqNil)) j :e Lean_CEK_Ctl_F 1 j (TupArgs 1 (SeqCons (x0) SeqNil))))) D0) j (In_eq_r j (Lean_CEK_Ctl_N 1) 1 Lean_CEK_Ctl_N1 Hj).
 Qed.
 Theorem Lean_CEK_Ctl_ret_typed : forall x0 :e Lean_CEK_Val, Lean_CEK_Ctl_ret_node x0 :e Lean_CEK_Ctl.
-let x0. assume H0: x0 :e Lean_CEK_Val. 
+let x0. assume H0: x0 :e Lean_CEK_Val.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -4857,7 +4865,7 @@ Qed.
 Definition Lean_CEK_Ctl_rec : set -> set -> set -> set := fun h0 h1 t => IndRec Lean_CEK_Ctl_K Lean_CEK_Ctl_T Lean_CEK_Ctl_N Lean_CEK_Ctl_R Lean_CEK_Ctl_F Lean_CEK_Ctl_Ix Lean_CEK_Ctl_O
     Lean_CEK_Ctl_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0) (a 1))) (SeqCons ((h1 (a 0))) SeqNil)) k) t.
 Theorem Lean_CEK_Ctl_iota0 : forall h0 h1, forall x0 :e Lean_Tm, forall x1 :e (Lean_List Lean_CEK_Val), Lean_CEK_Ctl_rec h0 h1 (Lean_CEK_Ctl_ev_node x0 x1) = (h0 x0 x1).
-let h0 h1. let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_List Lean_CEK_Val). 
+let h0 h1. let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_List Lean_CEK_Val).
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -4877,7 +4885,7 @@ prove SeqAt (SeqCons ((h0 ((TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 0) (
 rewrite SeqAt_0. rewrite T0. rewrite T1. reflexivity.
 Qed.
 Theorem Lean_CEK_Ctl_iota1 : forall h0 h1, forall x0 :e Lean_CEK_Val, Lean_CEK_Ctl_rec h0 h1 (Lean_CEK_Ctl_ret_node x0) = (h1 x0).
-let h0 h1. let x0. assume H0: x0 :e Lean_CEK_Val. 
+let h0 h1. let x0. assume H0: x0 :e Lean_CEK_Val.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -5009,6 +5017,7 @@ exact SepE2 1 (fun z => P t) (Lean_CEK_Ctl_rec 0 0 t) (Lean_CEK_Ctl_rec_type (fu
 Qed.
 
 
+
 Theorem Lean_CEK_Ctl_noconf0_1 : forall x0 x1, forall y0, (Lean_CEK_Ctl_ev_node x0 x1) <> (Lean_CEK_Ctl_ret_node y0).
 let x0 x1 y0. assume H: (Lean_CEK_Ctl_ev_node x0 x1) = (Lean_CEK_Ctl_ret_node y0).
 apply IndNode_inj Lean_CEK_Ctl_K Lean_CEK_Ctl_T Lean_CEK_Ctl_N Lean_CEK_Ctl_R Lean_CEK_Ctl_F Lean_CEK_Ctl_Ix Lean_CEK_Ctl_O Lean_CEK_Ctl_B Lean_CEK_Ctl_distinct 0 (ordsuccI1 1 0 (ordsuccI2 0)) 1
@@ -5053,7 +5062,7 @@ Qed.
 
 
 Theorem Lean_CEK_Ctl_In : forall u, nat_p u -> Lean_CEK_Ctl_All :e LeanUniv u.
-let u. assume Hu: nat_p u. 
+let u. assume Hu: nat_p u.
 claim Ht: TransSet (LeanUniv u).
 { exact LeanUniv_TransSet u Hu. }
 claim Hz: ZF_closed (LeanUniv u).
@@ -5078,7 +5087,7 @@ exact IndCarrier_In Lean_CEK_Ctl_K Lean_CEK_Ctl_T Lean_CEK_Ctl_N Lean_CEK_Ctl_R 
     LeanUniv u, forall a :e (Pi_ j :e Lean_CEK_Ctl_N k, V), Lean_CEK_Ctl_O k a :e LeanUniv u)) HO0) HO1) k Hk).
 Qed.
 Theorem Lean_CEK_Ctl_type_In : forall u, nat_p u -> Lean_CEK_Ctl :e LeanUniv u.
-let u. assume Hu: nat_p u. 
+let u. assume Hu: nat_p u.
 exact IndFiber_In Lean_CEK_Ctl_K Lean_CEK_Ctl_T Lean_CEK_Ctl_N Lean_CEK_Ctl_R Lean_CEK_Ctl_F Lean_CEK_Ctl_Ix Lean_CEK_Ctl_O Lean_CEK_Ctl_B (LeanUniv u) (LeanUniv_TransSet u Hu) (LeanUniv_ZF_closed u
     Hu) (Lean_CEK_Ctl_In u Hu ) 0.
 Qed.
@@ -5152,9 +5161,23 @@ Qed.
 
 Definition Lean_CEK_St_mk_node : set -> set -> set := fun x0 x1 => IndNode Lean_CEK_St_K Lean_CEK_St_T Lean_CEK_St_N Lean_CEK_St_R Lean_CEK_St_F Lean_CEK_St_Ix Lean_CEK_St_O Lean_CEK_St_B 0 (TupArgs
     2 (SeqCons (x0) (SeqCons (x1) SeqNil))).
+Theorem Lean_CEK_St_mk_field0 : forall x0 x1, (proj1 (Lean_CEK_St_mk_node x0 x1)) 0 = x0.
+let x0 x1.
+prove (proj1 (IndNode Lean_CEK_St_K Lean_CEK_St_T Lean_CEK_St_N Lean_CEK_St_R Lean_CEK_St_F Lean_CEK_St_Ix Lean_CEK_St_O Lean_CEK_St_B 0 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))))) 0 = x0.
+rewrite IndNode_fields Lean_CEK_St_K Lean_CEK_St_T Lean_CEK_St_N Lean_CEK_St_R Lean_CEK_St_F Lean_CEK_St_Ix Lean_CEK_St_O Lean_CEK_St_B 0 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 0.
+rewrite TupArgs_at 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 (ordsuccI1 1 0 (ordsuccI2 0)).
+rewrite SeqAt_0. reflexivity.
+Qed.
+Theorem Lean_CEK_St_mk_field1 : forall x0 x1, (proj1 (Lean_CEK_St_mk_node x0 x1)) 1 = x1.
+let x0 x1.
+prove (proj1 (IndNode Lean_CEK_St_K Lean_CEK_St_T Lean_CEK_St_N Lean_CEK_St_R Lean_CEK_St_F Lean_CEK_St_Ix Lean_CEK_St_O Lean_CEK_St_B 0 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))))) 1 = x1.
+rewrite IndNode_fields Lean_CEK_St_K Lean_CEK_St_T Lean_CEK_St_N Lean_CEK_St_R Lean_CEK_St_F Lean_CEK_St_Ix Lean_CEK_St_O Lean_CEK_St_B 0 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 1.
+rewrite TupArgs_at 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 1 (ordsuccI2 1).
+rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0.
+Qed.
 Theorem Lean_CEK_St_mk_args : forall x0 :e Lean_CEK_Ctl, forall x1 :e (Lean_List Lean_CEK_Frame), (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) :e IndArgs Lean_CEK_St_K Lean_CEK_St_T Lean_CEK_St_N
     Lean_CEK_St_R Lean_CEK_St_F Lean_CEK_St_Ix Lean_CEK_St_O Lean_CEK_St_B Lean_CEK_St_All 0.
-let x0. assume H0: x0 :e Lean_CEK_Ctl. let x1. assume H1: x1 :e (Lean_List Lean_CEK_Frame). 
+let x0. assume H0: x0 :e Lean_CEK_Ctl. let x1. assume H1: x1 :e (Lean_List Lean_CEK_Frame).
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -5206,7 +5229,7 @@ apply SepI (Pi_ j :e 2, Lean_CEK_St_B :\/: Lean_CEK_St_All) (fun a => IndFits Le
     D1) j (In_eq_r j (Lean_CEK_St_N 0) 2 Lean_CEK_St_N0 Hj).
 Qed.
 Theorem Lean_CEK_St_mk_typed : forall x0 :e Lean_CEK_Ctl, forall x1 :e (Lean_List Lean_CEK_Frame), Lean_CEK_St_mk_node x0 x1 :e Lean_CEK_St.
-let x0. assume H0: x0 :e Lean_CEK_Ctl. let x1. assume H1: x1 :e (Lean_List Lean_CEK_Frame). 
+let x0. assume H0: x0 :e Lean_CEK_Ctl. let x1. assume H1: x1 :e (Lean_List Lean_CEK_Frame).
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -5233,7 +5256,7 @@ Qed.
 Definition Lean_CEK_St_rec : set -> set -> set := fun h0 t => IndRec Lean_CEK_St_K Lean_CEK_St_T Lean_CEK_St_N Lean_CEK_St_R Lean_CEK_St_F Lean_CEK_St_Ix Lean_CEK_St_O Lean_CEK_St_B (fun k a r:set =>
     SeqAt (SeqCons ((h0 (a 0) (a 1))) SeqNil) k) t.
 Theorem Lean_CEK_St_iota0 : forall h0, forall x0 :e Lean_CEK_Ctl, forall x1 :e (Lean_List Lean_CEK_Frame), Lean_CEK_St_rec h0 (Lean_CEK_St_mk_node x0 x1) = (h0 x0 x1).
-let h0. let x0. assume H0: x0 :e Lean_CEK_Ctl. let x1. assume H1: x1 :e (Lean_List Lean_CEK_Frame). 
+let h0. let x0. assume H0: x0 :e Lean_CEK_Ctl. let x1. assume H1: x1 :e (Lean_List Lean_CEK_Frame).
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -5325,6 +5348,7 @@ Qed.
 
 
 
+
 Theorem Lean_CEK_St_mk_inj0 : forall x0 x1 y0 y1, (Lean_CEK_St_mk_node x0 x1) = (Lean_CEK_St_mk_node y0 y1) -> x0 = y0.
 let x0 x1 y0 y1. assume H: (Lean_CEK_St_mk_node x0 x1) = (Lean_CEK_St_mk_node y0 y1).
 claim L: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = SeqAt (SeqCons (y0) (SeqCons (y1) SeqNil)) 0.
@@ -5350,7 +5374,7 @@ Qed.
 
 
 Theorem Lean_CEK_St_In : forall u, nat_p u -> Lean_CEK_St_All :e LeanUniv u.
-let u. assume Hu: nat_p u. 
+let u. assume Hu: nat_p u.
 claim Ht: TransSet (LeanUniv u).
 { exact LeanUniv_TransSet u Hu. }
 claim Hz: ZF_closed (LeanUniv u).
@@ -5368,7 +5392,7 @@ exact IndCarrier_In Lean_CEK_St_K Lean_CEK_St_T Lean_CEK_St_N Lean_CEK_St_R Lean
     Lean_CEK_St_N k, V), Lean_CEK_St_O k a :e LeanUniv u) (Below_0 (fun k => forall V :e LeanUniv u, forall a :e (Pi_ j :e Lean_CEK_St_N k, V), Lean_CEK_St_O k a :e LeanUniv u)) HO0) k Hk).
 Qed.
 Theorem Lean_CEK_St_type_In : forall u, nat_p u -> Lean_CEK_St :e LeanUniv u.
-let u. assume Hu: nat_p u. 
+let u. assume Hu: nat_p u.
 exact IndFiber_In Lean_CEK_St_K Lean_CEK_St_T Lean_CEK_St_N Lean_CEK_St_R Lean_CEK_St_F Lean_CEK_St_Ix Lean_CEK_St_O Lean_CEK_St_B (LeanUniv u) (LeanUniv_TransSet u Hu) (LeanUniv_ZF_closed u Hu)
     (Lean_CEK_St_In u Hu ) 0.
 Qed.
@@ -5537,7 +5561,7 @@ Definition Lean_Krivine_NThunk__nested_1_cons_b_node : set -> set -> set := fun 
 Theorem Lean_Krivine_NThunk__nested_1_cons_b_args : forall x0 :e (Lean_Krivine_NThunk_b 1), forall x1 :e (Lean_Krivine_NThunk_b 0), (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) :e IndArgs
     Lean_Krivine_NThunk_b_K Lean_Krivine_NThunk_b_T Lean_Krivine_NThunk_b_N Lean_Krivine_NThunk_b_R Lean_Krivine_NThunk_b_F Lean_Krivine_NThunk_b_Ix Lean_Krivine_NThunk_b_O Lean_Krivine_NThunk_b_B
     Lean_Krivine_NThunk_b_All 1.
-let x0. assume H0: x0 :e (Lean_Krivine_NThunk_b 1). let x1. assume H1: x1 :e (Lean_Krivine_NThunk_b 0). 
+let x0. assume H0: x0 :e (Lean_Krivine_NThunk_b 1). let x1. assume H1: x1 :e (Lean_Krivine_NThunk_b 0).
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -5614,7 +5638,7 @@ apply SepI (Pi_ j :e 2, Lean_Krivine_NThunk_b_B :\/: Lean_Krivine_NThunk_b_All) 
 Qed.
 Theorem Lean_Krivine_NThunk__nested_1_cons_b_typed : forall x0 :e (Lean_Krivine_NThunk_b 1), forall x1 :e (Lean_Krivine_NThunk_b 0), Lean_Krivine_NThunk__nested_1_cons_b_node x0 x1 :e
     (Lean_Krivine_NThunk_b 0).
-let x0. assume H0: x0 :e (Lean_Krivine_NThunk_b 1). let x1. assume H1: x1 :e (Lean_Krivine_NThunk_b 0). 
+let x0. assume H0: x0 :e (Lean_Krivine_NThunk_b 1). let x1. assume H1: x1 :e (Lean_Krivine_NThunk_b 0).
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -5644,7 +5668,7 @@ Definition Lean_Krivine_NThunk_mk_b_node : set -> set -> set := fun x0 x1 => Ind
 Theorem Lean_Krivine_NThunk_mk_b_args : forall x0 :e Lean_Tm, forall x1 :e (Lean_Krivine_NThunk_b 0), (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) :e IndArgs Lean_Krivine_NThunk_b_K
     Lean_Krivine_NThunk_b_T Lean_Krivine_NThunk_b_N Lean_Krivine_NThunk_b_R Lean_Krivine_NThunk_b_F Lean_Krivine_NThunk_b_Ix Lean_Krivine_NThunk_b_O Lean_Krivine_NThunk_b_B Lean_Krivine_NThunk_b_All
     2.
-let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_Krivine_NThunk_b 0). 
+let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_Krivine_NThunk_b 0).
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -5710,7 +5734,7 @@ apply SepI (Pi_ j :e 2, Lean_Krivine_NThunk_b_B :\/: Lean_Krivine_NThunk_b_All) 
     j (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)))))) D0) D1) j (In_eq_r j (Lean_Krivine_NThunk_b_N 2) 2 Lean_Krivine_NThunk_b_N2 Hj).
 Qed.
 Theorem Lean_Krivine_NThunk_mk_b_typed : forall x0 :e Lean_Tm, forall x1 :e (Lean_Krivine_NThunk_b 0), Lean_Krivine_NThunk_mk_b_node x0 x1 :e (Lean_Krivine_NThunk_b 1).
-let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_Krivine_NThunk_b 0). 
+let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_Krivine_NThunk_b 0).
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -5738,7 +5762,7 @@ Definition Lean_Krivine_NThunk_b_rec : set -> set -> set -> set -> set := fun h0
     Lean_Krivine_NThunk_b_F Lean_Krivine_NThunk_b_Ix Lean_Krivine_NThunk_b_O Lean_Krivine_NThunk_b_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (r 0) (r 1))) (SeqCons ((h2 (a 0)
     (a 1) (r 1))) SeqNil))) k) t.
 Theorem Lean_Krivine_NThunk_b_iota0 : forall h0 h1 h2, Lean_Krivine_NThunk_b_rec h0 h1 h2 (Lean_Krivine_NThunk__nested_1_nil_b_node) = h0.
-let h0 h1 h2. 
+let h0 h1 h2.
 prove IndRec Lean_Krivine_NThunk_b_K Lean_Krivine_NThunk_b_T Lean_Krivine_NThunk_b_N Lean_Krivine_NThunk_b_R Lean_Krivine_NThunk_b_F Lean_Krivine_NThunk_b_Ix Lean_Krivine_NThunk_b_O
     Lean_Krivine_NThunk_b_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (r 0) (r 1))) (SeqCons ((h2 (a 0) (a 1) (r 1))) SeqNil))) k) (IndNode Lean_Krivine_NThunk_b_K
     Lean_Krivine_NThunk_b_T Lean_Krivine_NThunk_b_N Lean_Krivine_NThunk_b_R Lean_Krivine_NThunk_b_F Lean_Krivine_NThunk_b_Ix Lean_Krivine_NThunk_b_O Lean_Krivine_NThunk_b_B 0 (TupArgs 0 SeqNil)) = h0.
@@ -5759,7 +5783,7 @@ rewrite SeqAt_0. reflexivity.
 Qed.
 Theorem Lean_Krivine_NThunk_b_iota1 : forall h0 h1 h2, forall x0 :e (Lean_Krivine_NThunk_b 1), forall x1 :e (Lean_Krivine_NThunk_b 0), Lean_Krivine_NThunk_b_rec h0 h1 h2
     (Lean_Krivine_NThunk__nested_1_cons_b_node x0 x1) = (h1 x0 x1 (Lean_Krivine_NThunk_b_rec h0 h1 h2 x0) (Lean_Krivine_NThunk_b_rec h0 h1 h2 x1)).
-let h0 h1 h2. let x0. assume H0: x0 :e (Lean_Krivine_NThunk_b 1). let x1. assume H1: x1 :e (Lean_Krivine_NThunk_b 0). 
+let h0 h1 h2. let x0. assume H0: x0 :e (Lean_Krivine_NThunk_b 1). let x1. assume H1: x1 :e (Lean_Krivine_NThunk_b 0).
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -5815,7 +5839,7 @@ rewrite SeqAt_S. { rewrite SeqAt_0. rewrite R0. rewrite R1. rewrite T0. rewrite 
 Qed.
 Theorem Lean_Krivine_NThunk_b_iota2 : forall h0 h1 h2, forall x0 :e Lean_Tm, forall x1 :e (Lean_Krivine_NThunk_b 0), Lean_Krivine_NThunk_b_rec h0 h1 h2 (Lean_Krivine_NThunk_mk_b_node x0 x1) = (h2 x0
     x1 (Lean_Krivine_NThunk_b_rec h0 h1 h2 x1)).
-let h0 h1 h2. let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_Krivine_NThunk_b 0). 
+let h0 h1 h2. let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_Krivine_NThunk_b 0).
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -6171,6 +6195,7 @@ Qed.
 
 
 
+
 Theorem Lean_Krivine_NThunk_b_noconf0_1 : forall y0 y1, Lean_Krivine_NThunk__nested_1_nil_b_node <> (Lean_Krivine_NThunk__nested_1_cons_b_node y0 y1).
 let y0 y1. assume H: Lean_Krivine_NThunk__nested_1_nil_b_node = (Lean_Krivine_NThunk__nested_1_cons_b_node y0 y1).
 apply IndNode_inj Lean_Krivine_NThunk_b_K Lean_Krivine_NThunk_b_T Lean_Krivine_NThunk_b_N Lean_Krivine_NThunk_b_R Lean_Krivine_NThunk_b_F Lean_Krivine_NThunk_b_Ix Lean_Krivine_NThunk_b_O
@@ -6256,7 +6281,7 @@ exact eq_i_tra i (IndIdx Lean_Krivine_NThunk_b_K Lean_Krivine_NThunk_b_T Lean_Kr
 Qed.
 
 Theorem Lean_Krivine_NThunk_b_In : forall u, nat_p u -> Lean_Krivine_NThunk_b_All :e LeanUniv u.
-let u. assume Hu: nat_p u. 
+let u. assume Hu: nat_p u.
 claim Ht: TransSet (LeanUniv u).
 { exact LeanUniv_TransSet u Hu. }
 claim Hz: ZF_closed (LeanUniv u).
@@ -6286,7 +6311,7 @@ exact IndCarrier_In Lean_Krivine_NThunk_b_K Lean_Krivine_NThunk_b_T Lean_Krivine
     (Below_0 (fun k => forall V :e LeanUniv u, forall a :e (Pi_ j :e Lean_Krivine_NThunk_b_N k, V), Lean_Krivine_NThunk_b_O k a :e LeanUniv u)) HO0) HO1) HO2) k Hk).
 Qed.
 Theorem Lean_Krivine_NThunk_b_type_In : forall u, nat_p u -> forall i, Lean_Krivine_NThunk_b i :e LeanUniv u.
-let u. assume Hu: nat_p u. let i. 
+let u. assume Hu: nat_p u. let i.
 exact IndFiber_In Lean_Krivine_NThunk_b_K Lean_Krivine_NThunk_b_T Lean_Krivine_NThunk_b_N Lean_Krivine_NThunk_b_R Lean_Krivine_NThunk_b_F Lean_Krivine_NThunk_b_Ix Lean_Krivine_NThunk_b_O
     Lean_Krivine_NThunk_b_B (LeanUniv u) (LeanUniv_TransSet u Hu) (LeanUniv_ZF_closed u Hu) (Lean_Krivine_NThunk_b_In u Hu ) i.
 Qed.
@@ -6420,7 +6445,7 @@ exact SepE2 1 (fun z => Lean_Krivine_NThunk_b_rec 0 0 h2 t = 0) (Lean_List_rec L
 Qed.
 
 Theorem Lean_Krivine_NThunk_iota0 : forall h0, forall x0 :e Lean_Tm, forall x1 :e (Lean_List Lean_Krivine_NThunk), Lean_Krivine_NThunk_rec h0 (Lean_Krivine_NThunk_mk_node x0 x1) = (h0 x0 x1).
-let h0. let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_List Lean_Krivine_NThunk). 
+let h0. let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_List Lean_Krivine_NThunk).
 claim L1: x1 :e Lean_Krivine_NThunk_b 0. { exact Lean_Krivine_NThunk_b_list_sub x1 H1. }
 prove Lean_Krivine_NThunk_b_rec 0 0 (fun x0 :e Lean_Tm => (fun x1 :e (Lean_Krivine_NThunk_b 0) => (fun y1 :e 1 => (h0 x0 x1)))) (Lean_Krivine_NThunk_mk_b_node x0 x1) = (h0 x0 x1).
 rewrite Lean_Krivine_NThunk_b_iota2 0 0 (fun x0 :e Lean_Tm => (fun x1 :e (Lean_Krivine_NThunk_b 0) => (fun y1 :e 1 => (h0 x0 x1)))) x0 H0 x1 L1.
@@ -6595,7 +6620,7 @@ Definition Lean_Krivine_NVal_lit_node : set -> set := fun x0 => IndNode Lean_Kri
     Lean_Krivine_NVal_O Lean_Krivine_NVal_B 0 (TupArgs 1 (SeqCons (x0) SeqNil)).
 Theorem Lean_Krivine_NVal_lit_args : forall x0 :e Lean_Nat, (TupArgs 1 (SeqCons (x0) SeqNil)) :e IndArgs Lean_Krivine_NVal_K Lean_Krivine_NVal_T Lean_Krivine_NVal_N Lean_Krivine_NVal_R
     Lean_Krivine_NVal_F Lean_Krivine_NVal_Ix Lean_Krivine_NVal_O Lean_Krivine_NVal_B Lean_Krivine_NVal_All 0.
-let x0. assume H0: x0 :e Lean_Nat. 
+let x0. assume H0: x0 :e Lean_Nat.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -6629,7 +6654,7 @@ apply SepI (Pi_ j :e 1, Lean_Krivine_NVal_B :\/: Lean_Krivine_NVal_All) (fun a =
     (x0) SeqNil)) j :e Lean_Krivine_NVal_F 0 j (TupArgs 1 (SeqCons (x0) SeqNil))))) D0) j (In_eq_r j (Lean_Krivine_NVal_N 0) 1 Lean_Krivine_NVal_N0 Hj).
 Qed.
 Theorem Lean_Krivine_NVal_lit_typed : forall x0 :e Lean_Nat, Lean_Krivine_NVal_lit_node x0 :e Lean_Krivine_NVal.
-let x0. assume H0: x0 :e Lean_Nat. 
+let x0. assume H0: x0 :e Lean_Nat.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -6651,7 +6676,7 @@ Definition Lean_Krivine_NVal_clo_node : set -> set -> set := fun x0 x1 => IndNod
     Lean_Krivine_NVal_Ix Lean_Krivine_NVal_O Lean_Krivine_NVal_B 1 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))).
 Theorem Lean_Krivine_NVal_clo_args : forall x0 :e Lean_Tm, forall x1 :e (Lean_List Lean_Krivine_NThunk), (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) :e IndArgs Lean_Krivine_NVal_K
     Lean_Krivine_NVal_T Lean_Krivine_NVal_N Lean_Krivine_NVal_R Lean_Krivine_NVal_F Lean_Krivine_NVal_Ix Lean_Krivine_NVal_O Lean_Krivine_NVal_B Lean_Krivine_NVal_All 1.
-let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_List Lean_Krivine_NThunk). 
+let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_List Lean_Krivine_NThunk).
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -6708,7 +6733,7 @@ apply SepI (Pi_ j :e 2, Lean_Krivine_NVal_B :\/: Lean_Krivine_NVal_All) (fun a =
     (SeqCons (x1) SeqNil))) j :e Lean_Krivine_NVal_F 1 j (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)))))) D0) D1) j (In_eq_r j (Lean_Krivine_NVal_N 1) 2 Lean_Krivine_NVal_N1 Hj).
 Qed.
 Theorem Lean_Krivine_NVal_clo_typed : forall x0 :e Lean_Tm, forall x1 :e (Lean_List Lean_Krivine_NThunk), Lean_Krivine_NVal_clo_node x0 x1 :e Lean_Krivine_NVal.
-let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_List Lean_Krivine_NThunk). 
+let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_List Lean_Krivine_NThunk).
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -6735,7 +6760,7 @@ Qed.
 Definition Lean_Krivine_NVal_rec : set -> set -> set -> set := fun h0 h1 t => IndRec Lean_Krivine_NVal_K Lean_Krivine_NVal_T Lean_Krivine_NVal_N Lean_Krivine_NVal_R Lean_Krivine_NVal_F
     Lean_Krivine_NVal_Ix Lean_Krivine_NVal_O Lean_Krivine_NVal_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1))) SeqNil)) k) t.
 Theorem Lean_Krivine_NVal_iota0 : forall h0 h1, forall x0 :e Lean_Nat, Lean_Krivine_NVal_rec h0 h1 (Lean_Krivine_NVal_lit_node x0) = (h0 x0).
-let h0 h1. let x0. assume H0: x0 :e Lean_Nat. 
+let h0 h1. let x0. assume H0: x0 :e Lean_Nat.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -6750,7 +6775,7 @@ prove SeqAt (SeqCons ((h0 ((TupArgs 1 (SeqCons (x0) SeqNil)) 0))) (SeqCons ((h1 
 rewrite SeqAt_0. rewrite T0. reflexivity.
 Qed.
 Theorem Lean_Krivine_NVal_iota1 : forall h0 h1, forall x0 :e Lean_Tm, forall x1 :e (Lean_List Lean_Krivine_NThunk), Lean_Krivine_NVal_rec h0 h1 (Lean_Krivine_NVal_clo_node x0 x1) = (h1 x0 x1).
-let h0 h1. let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_List Lean_Krivine_NThunk). 
+let h0 h1. let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_List Lean_Krivine_NThunk).
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -6902,6 +6927,7 @@ exact SepE2 1 (fun z => P t) (Lean_Krivine_NVal_rec 0 0 t) (Lean_Krivine_NVal_re
 Qed.
 
 
+
 Theorem Lean_Krivine_NVal_noconf0_1 : forall x0, forall y0 y1, (Lean_Krivine_NVal_lit_node x0) <> (Lean_Krivine_NVal_clo_node y0 y1).
 let x0 y0 y1. assume H: (Lean_Krivine_NVal_lit_node x0) = (Lean_Krivine_NVal_clo_node y0 y1).
 apply IndNode_inj Lean_Krivine_NVal_K Lean_Krivine_NVal_T Lean_Krivine_NVal_N Lean_Krivine_NVal_R Lean_Krivine_NVal_F Lean_Krivine_NVal_Ix Lean_Krivine_NVal_O Lean_Krivine_NVal_B
@@ -6946,7 +6972,7 @@ Qed.
 
 
 Theorem Lean_Krivine_NVal_In : forall u, nat_p u -> Lean_Krivine_NVal_All :e LeanUniv u.
-let u. assume Hu: nat_p u. 
+let u. assume Hu: nat_p u.
 claim Ht: TransSet (LeanUniv u).
 { exact LeanUniv_TransSet u Hu. }
 claim Hz: ZF_closed (LeanUniv u).
@@ -6971,7 +6997,7 @@ exact IndCarrier_In Lean_Krivine_NVal_K Lean_Krivine_NVal_T Lean_Krivine_NVal_N 
     LeanUniv u) (Below_0 (fun k => forall V :e LeanUniv u, forall a :e (Pi_ j :e Lean_Krivine_NVal_N k, V), Lean_Krivine_NVal_O k a :e LeanUniv u)) HO0) HO1) k Hk).
 Qed.
 Theorem Lean_Krivine_NVal_type_In : forall u, nat_p u -> Lean_Krivine_NVal :e LeanUniv u.
-let u. assume Hu: nat_p u. 
+let u. assume Hu: nat_p u.
 exact IndFiber_In Lean_Krivine_NVal_K Lean_Krivine_NVal_T Lean_Krivine_NVal_N Lean_Krivine_NVal_R Lean_Krivine_NVal_F Lean_Krivine_NVal_Ix Lean_Krivine_NVal_O Lean_Krivine_NVal_B (LeanUniv u)
     (LeanUniv_TransSet u Hu) (LeanUniv_ZF_closed u Hu) (Lean_Krivine_NVal_In u Hu ) 0.
 Qed.
@@ -7066,10 +7092,37 @@ Qed.
 
 Definition Lean_Krivine_KSt_mk_node : set -> set -> set -> set := fun x0 x1 x2 => IndNode Lean_Krivine_KSt_K Lean_Krivine_KSt_T Lean_Krivine_KSt_N Lean_Krivine_KSt_R Lean_Krivine_KSt_F
     Lean_Krivine_KSt_Ix Lean_Krivine_KSt_O Lean_Krivine_KSt_B 0 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))).
+Theorem Lean_Krivine_KSt_mk_field0 : forall x0 x1 x2, (proj1 (Lean_Krivine_KSt_mk_node x0 x1 x2)) 0 = x0.
+let x0 x1 x2.
+prove (proj1 (IndNode Lean_Krivine_KSt_K Lean_Krivine_KSt_T Lean_Krivine_KSt_N Lean_Krivine_KSt_R Lean_Krivine_KSt_F Lean_Krivine_KSt_Ix Lean_Krivine_KSt_O Lean_Krivine_KSt_B 0 (TupArgs 3 (SeqCons
+    (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))))) 0 = x0.
+rewrite IndNode_fields Lean_Krivine_KSt_K Lean_Krivine_KSt_T Lean_Krivine_KSt_N Lean_Krivine_KSt_R Lean_Krivine_KSt_F Lean_Krivine_KSt_Ix Lean_Krivine_KSt_O Lean_Krivine_KSt_B 0 (TupArgs 3 (SeqCons
+    (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 0.
+rewrite TupArgs_at 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0))).
+rewrite SeqAt_0. reflexivity.
+Qed.
+Theorem Lean_Krivine_KSt_mk_field1 : forall x0 x1 x2, (proj1 (Lean_Krivine_KSt_mk_node x0 x1 x2)) 1 = x1.
+let x0 x1 x2.
+prove (proj1 (IndNode Lean_Krivine_KSt_K Lean_Krivine_KSt_T Lean_Krivine_KSt_N Lean_Krivine_KSt_R Lean_Krivine_KSt_F Lean_Krivine_KSt_Ix Lean_Krivine_KSt_O Lean_Krivine_KSt_B 0 (TupArgs 3 (SeqCons
+    (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))))) 1 = x1.
+rewrite IndNode_fields Lean_Krivine_KSt_K Lean_Krivine_KSt_T Lean_Krivine_KSt_N Lean_Krivine_KSt_R Lean_Krivine_KSt_F Lean_Krivine_KSt_Ix Lean_Krivine_KSt_O Lean_Krivine_KSt_B 0 (TupArgs 3 (SeqCons
+    (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 1.
+rewrite TupArgs_at 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1 (ordsuccI1 2 1 (ordsuccI2 1)).
+rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0.
+Qed.
+Theorem Lean_Krivine_KSt_mk_field2 : forall x0 x1 x2, (proj1 (Lean_Krivine_KSt_mk_node x0 x1 x2)) 2 = x2.
+let x0 x1 x2.
+prove (proj1 (IndNode Lean_Krivine_KSt_K Lean_Krivine_KSt_T Lean_Krivine_KSt_N Lean_Krivine_KSt_R Lean_Krivine_KSt_F Lean_Krivine_KSt_Ix Lean_Krivine_KSt_O Lean_Krivine_KSt_B 0 (TupArgs 3 (SeqCons
+    (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))))) 2 = x2.
+rewrite IndNode_fields Lean_Krivine_KSt_K Lean_Krivine_KSt_T Lean_Krivine_KSt_N Lean_Krivine_KSt_R Lean_Krivine_KSt_F Lean_Krivine_KSt_Ix Lean_Krivine_KSt_O Lean_Krivine_KSt_B 0 (TupArgs 3 (SeqCons
+    (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 2.
+rewrite TupArgs_at 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 2 (ordsuccI2 2).
+rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0).
+Qed.
 Theorem Lean_Krivine_KSt_mk_args : forall x0 :e Lean_Tm, forall x1 :e (Lean_List Lean_Krivine_NThunk), forall x2 :e (Lean_List Lean_Krivine_NThunk), (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons
     (x2) SeqNil)))) :e IndArgs Lean_Krivine_KSt_K Lean_Krivine_KSt_T Lean_Krivine_KSt_N Lean_Krivine_KSt_R Lean_Krivine_KSt_F Lean_Krivine_KSt_Ix Lean_Krivine_KSt_O Lean_Krivine_KSt_B
     Lean_Krivine_KSt_All 0.
-let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_List Lean_Krivine_NThunk). let x2. assume H2: x2 :e (Lean_List Lean_Krivine_NThunk). 
+let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_List Lean_Krivine_NThunk). let x2. assume H2: x2 :e (Lean_List Lean_Krivine_NThunk).
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 = x0.
@@ -7151,7 +7204,7 @@ apply SepI (Pi_ j :e 3, Lean_Krivine_KSt_B :\/: Lean_Krivine_KSt_All) (fun a => 
 Qed.
 Theorem Lean_Krivine_KSt_mk_typed : forall x0 :e Lean_Tm, forall x1 :e (Lean_List Lean_Krivine_NThunk), forall x2 :e (Lean_List Lean_Krivine_NThunk), Lean_Krivine_KSt_mk_node x0 x1 x2 :e
     Lean_Krivine_KSt.
-let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_List Lean_Krivine_NThunk). let x2. assume H2: x2 :e (Lean_List Lean_Krivine_NThunk). 
+let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_List Lean_Krivine_NThunk). let x2. assume H2: x2 :e (Lean_List Lean_Krivine_NThunk).
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 = x0.
@@ -7185,7 +7238,7 @@ Definition Lean_Krivine_KSt_rec : set -> set -> set := fun h0 t => IndRec Lean_K
     Lean_Krivine_KSt_O Lean_Krivine_KSt_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0) (a 1) (a 2))) SeqNil) k) t.
 Theorem Lean_Krivine_KSt_iota0 : forall h0, forall x0 :e Lean_Tm, forall x1 :e (Lean_List Lean_Krivine_NThunk), forall x2 :e (Lean_List Lean_Krivine_NThunk), Lean_Krivine_KSt_rec h0
     (Lean_Krivine_KSt_mk_node x0 x1 x2) = (h0 x0 x1 x2).
-let h0. let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_List Lean_Krivine_NThunk). let x2. assume H2: x2 :e (Lean_List Lean_Krivine_NThunk). 
+let h0. let x0. assume H0: x0 :e Lean_Tm. let x1. assume H1: x1 :e (Lean_List Lean_Krivine_NThunk). let x2. assume H2: x2 :e (Lean_List Lean_Krivine_NThunk).
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 = x0.
@@ -7301,6 +7354,7 @@ Qed.
 
 
 
+
 Theorem Lean_Krivine_KSt_mk_inj0 : forall x0 x1 x2 y0 y1 y2, (Lean_Krivine_KSt_mk_node x0 x1 x2) = (Lean_Krivine_KSt_mk_node y0 y1 y2) -> x0 = y0.
 let x0 x1 x2 y0 y1 y2. assume H: (Lean_Krivine_KSt_mk_node x0 x1 x2) = (Lean_Krivine_KSt_mk_node y0 y1 y2).
 claim L: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 = SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) SeqNil))) 0.
@@ -7338,7 +7392,7 @@ Qed.
 
 
 Theorem Lean_Krivine_KSt_In : forall u, nat_p u -> Lean_Krivine_KSt_All :e LeanUniv u.
-let u. assume Hu: nat_p u. 
+let u. assume Hu: nat_p u.
 claim Ht: TransSet (LeanUniv u).
 { exact LeanUniv_TransSet u Hu. }
 claim Hz: ZF_closed (LeanUniv u).
@@ -7358,7 +7412,7 @@ exact IndCarrier_In Lean_Krivine_KSt_K Lean_Krivine_KSt_T Lean_Krivine_KSt_N Lea
     :e Lean_Krivine_KSt_N k, V), Lean_Krivine_KSt_O k a :e LeanUniv u)) HO0) k Hk).
 Qed.
 Theorem Lean_Krivine_KSt_type_In : forall u, nat_p u -> Lean_Krivine_KSt :e LeanUniv u.
-let u. assume Hu: nat_p u. 
+let u. assume Hu: nat_p u.
 exact IndFiber_In Lean_Krivine_KSt_K Lean_Krivine_KSt_T Lean_Krivine_KSt_N Lean_Krivine_KSt_R Lean_Krivine_KSt_F Lean_Krivine_KSt_Ix Lean_Krivine_KSt_O Lean_Krivine_KSt_B (LeanUniv u)
     (LeanUniv_TransSet u Hu) (LeanUniv_ZF_closed u Hu) (Lean_Krivine_KSt_In u Hu ) 0.
 Qed.
@@ -7590,7 +7644,7 @@ Definition Lean_BoundedDeterministicRun_Outcome_rec : set -> set -> set -> set -
     Lean_BoundedDeterministicRun_Outcome_N Lean_BoundedDeterministicRun_Outcome_R Lean_BoundedDeterministicRun_Outcome_F Lean_BoundedDeterministicRun_Outcome_Ix Lean_BoundedDeterministicRun_Outcome_O
     Lean_BoundedDeterministicRun_Outcome_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons (h1) (SeqCons (h2) SeqNil))) k) t.
 Theorem Lean_BoundedDeterministicRun_Outcome_iota0 : forall h0 h1 h2, Lean_BoundedDeterministicRun_Outcome_rec h0 h1 h2 (Lean_BoundedDeterministicRun_Outcome_completed_node) = h0.
-let h0 h1 h2. 
+let h0 h1 h2.
 prove IndRec Lean_BoundedDeterministicRun_Outcome_K Lean_BoundedDeterministicRun_Outcome_T Lean_BoundedDeterministicRun_Outcome_N Lean_BoundedDeterministicRun_Outcome_R
     Lean_BoundedDeterministicRun_Outcome_F Lean_BoundedDeterministicRun_Outcome_Ix Lean_BoundedDeterministicRun_Outcome_O Lean_BoundedDeterministicRun_Outcome_B (fun k a r:set => SeqAt (SeqCons (h0)
     (SeqCons (h1) (SeqCons (h2) SeqNil))) k) (IndNode Lean_BoundedDeterministicRun_Outcome_K Lean_BoundedDeterministicRun_Outcome_T Lean_BoundedDeterministicRun_Outcome_N
@@ -7604,7 +7658,7 @@ prove SeqAt (SeqCons (h0) (SeqCons (h1) (SeqCons (h2) SeqNil))) 0 = h0.
 rewrite SeqAt_0. reflexivity.
 Qed.
 Theorem Lean_BoundedDeterministicRun_Outcome_iota1 : forall h0 h1 h2, Lean_BoundedDeterministicRun_Outcome_rec h0 h1 h2 (Lean_BoundedDeterministicRun_Outcome_stuck_node) = h1.
-let h0 h1 h2. 
+let h0 h1 h2.
 prove IndRec Lean_BoundedDeterministicRun_Outcome_K Lean_BoundedDeterministicRun_Outcome_T Lean_BoundedDeterministicRun_Outcome_N Lean_BoundedDeterministicRun_Outcome_R
     Lean_BoundedDeterministicRun_Outcome_F Lean_BoundedDeterministicRun_Outcome_Ix Lean_BoundedDeterministicRun_Outcome_O Lean_BoundedDeterministicRun_Outcome_B (fun k a r:set => SeqAt (SeqCons (h0)
     (SeqCons (h1) (SeqCons (h2) SeqNil))) k) (IndNode Lean_BoundedDeterministicRun_Outcome_K Lean_BoundedDeterministicRun_Outcome_T Lean_BoundedDeterministicRun_Outcome_N
@@ -7618,7 +7672,7 @@ prove SeqAt (SeqCons (h0) (SeqCons (h1) (SeqCons (h2) SeqNil))) 1 = h1.
 rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0.
 Qed.
 Theorem Lean_BoundedDeterministicRun_Outcome_iota2 : forall h0 h1 h2, Lean_BoundedDeterministicRun_Outcome_rec h0 h1 h2 (Lean_BoundedDeterministicRun_Outcome_exhausted_node) = h2.
-let h0 h1 h2. 
+let h0 h1 h2.
 prove IndRec Lean_BoundedDeterministicRun_Outcome_K Lean_BoundedDeterministicRun_Outcome_T Lean_BoundedDeterministicRun_Outcome_N Lean_BoundedDeterministicRun_Outcome_R
     Lean_BoundedDeterministicRun_Outcome_F Lean_BoundedDeterministicRun_Outcome_Ix Lean_BoundedDeterministicRun_Outcome_O Lean_BoundedDeterministicRun_Outcome_B (fun k a r:set => SeqAt (SeqCons (h0)
     (SeqCons (h1) (SeqCons (h2) SeqNil))) k) (IndNode Lean_BoundedDeterministicRun_Outcome_K Lean_BoundedDeterministicRun_Outcome_T Lean_BoundedDeterministicRun_Outcome_N
@@ -7840,6 +7894,7 @@ exact SepE2 1 (fun z => P t) (Lean_BoundedDeterministicRun_Outcome_rec 0 0 0 t) 
 Qed.
 
 
+
 Theorem Lean_BoundedDeterministicRun_Outcome_noconf0_1 : Lean_BoundedDeterministicRun_Outcome_completed_node <> Lean_BoundedDeterministicRun_Outcome_stuck_node.
 assume H: Lean_BoundedDeterministicRun_Outcome_completed_node = Lean_BoundedDeterministicRun_Outcome_stuck_node.
 apply IndNode_inj Lean_BoundedDeterministicRun_Outcome_K Lean_BoundedDeterministicRun_Outcome_T Lean_BoundedDeterministicRun_Outcome_N Lean_BoundedDeterministicRun_Outcome_R
@@ -7868,7 +7923,7 @@ Qed.
 
 
 Theorem Lean_BoundedDeterministicRun_Outcome_In : forall u, nat_p u -> Lean_BoundedDeterministicRun_Outcome_All :e LeanUniv u.
-let u. assume Hu: nat_p u. 
+let u. assume Hu: nat_p u.
 claim Ht: TransSet (LeanUniv u).
 { exact LeanUniv_TransSet u Hu. }
 claim Hz: ZF_closed (LeanUniv u).
@@ -7900,7 +7955,7 @@ exact IndCarrier_In Lean_BoundedDeterministicRun_Outcome_K Lean_BoundedDetermini
     Lean_BoundedDeterministicRun_Outcome_O k a :e LeanUniv u)) HO0) HO1) HO2) k Hk).
 Qed.
 Theorem Lean_BoundedDeterministicRun_Outcome_type_In : forall u, nat_p u -> Lean_BoundedDeterministicRun_Outcome :e LeanUniv u.
-let u. assume Hu: nat_p u. 
+let u. assume Hu: nat_p u.
 exact IndFiber_In Lean_BoundedDeterministicRun_Outcome_K Lean_BoundedDeterministicRun_Outcome_T Lean_BoundedDeterministicRun_Outcome_N Lean_BoundedDeterministicRun_Outcome_R
     Lean_BoundedDeterministicRun_Outcome_F Lean_BoundedDeterministicRun_Outcome_Ix Lean_BoundedDeterministicRun_Outcome_O Lean_BoundedDeterministicRun_Outcome_B (LeanUniv u) (LeanUniv_TransSet u Hu)
     (LeanUniv_ZF_closed u Hu) (Lean_BoundedDeterministicRun_Outcome_In u Hu ) 0.
@@ -8002,10 +8057,43 @@ Qed.
 Definition Lean_BoundedDeterministicRun_Result_mk_node : set -> set -> set -> set := fun x0 x1 x2 => IndNode Lean_BoundedDeterministicRun_Result_K Lean_BoundedDeterministicRun_Result_T
     Lean_BoundedDeterministicRun_Result_N Lean_BoundedDeterministicRun_Result_R Lean_BoundedDeterministicRun_Result_F Lean_BoundedDeterministicRun_Result_Ix Lean_BoundedDeterministicRun_Result_O
     Lean_BoundedDeterministicRun_Result_B 0 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))).
+Theorem Lean_BoundedDeterministicRun_Result_mk_field0 : forall x0 x1 x2, (proj1 (Lean_BoundedDeterministicRun_Result_mk_node x0 x1 x2)) 0 = x0.
+let x0 x1 x2.
+prove (proj1 (IndNode Lean_BoundedDeterministicRun_Result_K Lean_BoundedDeterministicRun_Result_T Lean_BoundedDeterministicRun_Result_N Lean_BoundedDeterministicRun_Result_R
+    Lean_BoundedDeterministicRun_Result_F Lean_BoundedDeterministicRun_Result_Ix Lean_BoundedDeterministicRun_Result_O Lean_BoundedDeterministicRun_Result_B 0 (TupArgs 3 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) SeqNil)))))) 0 = x0.
+rewrite IndNode_fields Lean_BoundedDeterministicRun_Result_K Lean_BoundedDeterministicRun_Result_T Lean_BoundedDeterministicRun_Result_N Lean_BoundedDeterministicRun_Result_R
+    Lean_BoundedDeterministicRun_Result_F Lean_BoundedDeterministicRun_Result_Ix Lean_BoundedDeterministicRun_Result_O Lean_BoundedDeterministicRun_Result_B 0 (TupArgs 3 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) SeqNil)))) 0.
+rewrite TupArgs_at 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0))).
+rewrite SeqAt_0. reflexivity.
+Qed.
+Theorem Lean_BoundedDeterministicRun_Result_mk_field1 : forall x0 x1 x2, (proj1 (Lean_BoundedDeterministicRun_Result_mk_node x0 x1 x2)) 1 = x1.
+let x0 x1 x2.
+prove (proj1 (IndNode Lean_BoundedDeterministicRun_Result_K Lean_BoundedDeterministicRun_Result_T Lean_BoundedDeterministicRun_Result_N Lean_BoundedDeterministicRun_Result_R
+    Lean_BoundedDeterministicRun_Result_F Lean_BoundedDeterministicRun_Result_Ix Lean_BoundedDeterministicRun_Result_O Lean_BoundedDeterministicRun_Result_B 0 (TupArgs 3 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) SeqNil)))))) 1 = x1.
+rewrite IndNode_fields Lean_BoundedDeterministicRun_Result_K Lean_BoundedDeterministicRun_Result_T Lean_BoundedDeterministicRun_Result_N Lean_BoundedDeterministicRun_Result_R
+    Lean_BoundedDeterministicRun_Result_F Lean_BoundedDeterministicRun_Result_Ix Lean_BoundedDeterministicRun_Result_O Lean_BoundedDeterministicRun_Result_B 0 (TupArgs 3 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) SeqNil)))) 1.
+rewrite TupArgs_at 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1 (ordsuccI1 2 1 (ordsuccI2 1)).
+rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0.
+Qed.
+Theorem Lean_BoundedDeterministicRun_Result_mk_field2 : forall x0 x1 x2, (proj1 (Lean_BoundedDeterministicRun_Result_mk_node x0 x1 x2)) 2 = x2.
+let x0 x1 x2.
+prove (proj1 (IndNode Lean_BoundedDeterministicRun_Result_K Lean_BoundedDeterministicRun_Result_T Lean_BoundedDeterministicRun_Result_N Lean_BoundedDeterministicRun_Result_R
+    Lean_BoundedDeterministicRun_Result_F Lean_BoundedDeterministicRun_Result_Ix Lean_BoundedDeterministicRun_Result_O Lean_BoundedDeterministicRun_Result_B 0 (TupArgs 3 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) SeqNil)))))) 2 = x2.
+rewrite IndNode_fields Lean_BoundedDeterministicRun_Result_K Lean_BoundedDeterministicRun_Result_T Lean_BoundedDeterministicRun_Result_N Lean_BoundedDeterministicRun_Result_R
+    Lean_BoundedDeterministicRun_Result_F Lean_BoundedDeterministicRun_Result_Ix Lean_BoundedDeterministicRun_Result_O Lean_BoundedDeterministicRun_Result_B 0 (TupArgs 3 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) SeqNil)))) 2.
+rewrite TupArgs_at 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 2 (ordsuccI2 2).
+rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0).
+Qed.
 Theorem Lean_BoundedDeterministicRun_Result_mk_args : forall x0 :e P0, forall x1 :e Lean_Nat, forall x2 :e Lean_BoundedDeterministicRun_Outcome, (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2)
     SeqNil)))) :e IndArgs Lean_BoundedDeterministicRun_Result_K Lean_BoundedDeterministicRun_Result_T Lean_BoundedDeterministicRun_Result_N Lean_BoundedDeterministicRun_Result_R
     Lean_BoundedDeterministicRun_Result_F Lean_BoundedDeterministicRun_Result_Ix Lean_BoundedDeterministicRun_Result_O Lean_BoundedDeterministicRun_Result_B Lean_BoundedDeterministicRun_Result_All 0.
-let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e Lean_Nat. let x2. assume H2: x2 :e Lean_BoundedDeterministicRun_Outcome. 
+let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e Lean_Nat. let x2. assume H2: x2 :e Lean_BoundedDeterministicRun_Outcome.
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 = x0.
@@ -8103,7 +8191,7 @@ apply SepI (Pi_ j :e 3, Lean_BoundedDeterministicRun_Result_B :\/: Lean_BoundedD
 Qed.
 Theorem Lean_BoundedDeterministicRun_Result_mk_typed : forall x0 :e P0, forall x1 :e Lean_Nat, forall x2 :e Lean_BoundedDeterministicRun_Outcome, Lean_BoundedDeterministicRun_Result_mk_node x0 x1 x2
     :e Lean_BoundedDeterministicRun_Result.
-let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e Lean_Nat. let x2. assume H2: x2 :e Lean_BoundedDeterministicRun_Outcome. 
+let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e Lean_Nat. let x2. assume H2: x2 :e Lean_BoundedDeterministicRun_Outcome.
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 = x0.
@@ -8145,7 +8233,7 @@ Definition Lean_BoundedDeterministicRun_Result_rec : set -> set -> set := fun h0
     Lean_BoundedDeterministicRun_Result_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0) (a 1) (a 2))) SeqNil) k) t.
 Theorem Lean_BoundedDeterministicRun_Result_iota0 : forall h0, forall x0 :e P0, forall x1 :e Lean_Nat, forall x2 :e Lean_BoundedDeterministicRun_Outcome, Lean_BoundedDeterministicRun_Result_rec h0
     (Lean_BoundedDeterministicRun_Result_mk_node x0 x1 x2) = (h0 x0 x1 x2).
-let h0. let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e Lean_Nat. let x2. assume H2: x2 :e Lean_BoundedDeterministicRun_Outcome. 
+let h0. let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e Lean_Nat. let x2. assume H2: x2 :e Lean_BoundedDeterministicRun_Outcome.
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 = x0.
@@ -8289,6 +8377,7 @@ Qed.
 
 
 
+
 Theorem Lean_BoundedDeterministicRun_Result_mk_inj0 : forall x0 x1 x2 y0 y1 y2, (Lean_BoundedDeterministicRun_Result_mk_node x0 x1 x2) = (Lean_BoundedDeterministicRun_Result_mk_node y0 y1 y2) -> x0 =
     y0.
 let x0 x1 x2 y0 y1 y2. assume H: (Lean_BoundedDeterministicRun_Result_mk_node x0 x1 x2) = (Lean_BoundedDeterministicRun_Result_mk_node y0 y1 y2).
@@ -8333,7 +8422,7 @@ Qed.
 
 
 Theorem Lean_BoundedDeterministicRun_Result_In : forall u, nat_p u -> P0 :e LeanUniv u -> Lean_BoundedDeterministicRun_Result_All :e LeanUniv u.
-let u. assume Hu: nat_p u. assume HP0: P0 :e LeanUniv u. 
+let u. assume Hu: nat_p u. assume HP0: P0 :e LeanUniv u.
 claim Ht: TransSet (LeanUniv u).
 { exact LeanUniv_TransSet u Hu. }
 claim Hz: ZF_closed (LeanUniv u).
@@ -8353,7 +8442,7 @@ exact IndCarrier_In Lean_BoundedDeterministicRun_Result_K Lean_BoundedDeterminis
     :e LeanUniv u) (Below_0 (fun k => forall V :e LeanUniv u, forall a :e (Pi_ j :e Lean_BoundedDeterministicRun_Result_N k, V), Lean_BoundedDeterministicRun_Result_O k a :e LeanUniv u)) HO0) k Hk).
 Qed.
 Theorem Lean_BoundedDeterministicRun_Result_type_In : forall u, nat_p u -> P0 :e LeanUniv u -> Lean_BoundedDeterministicRun_Result :e LeanUniv u.
-let u. assume Hu: nat_p u. assume HP0: P0 :e LeanUniv u. 
+let u. assume Hu: nat_p u. assume HP0: P0 :e LeanUniv u.
 exact IndFiber_In Lean_BoundedDeterministicRun_Result_K Lean_BoundedDeterministicRun_Result_T Lean_BoundedDeterministicRun_Result_N Lean_BoundedDeterministicRun_Result_R
     Lean_BoundedDeterministicRun_Result_F Lean_BoundedDeterministicRun_Result_Ix Lean_BoundedDeterministicRun_Result_O Lean_BoundedDeterministicRun_Result_B (LeanUniv u) (LeanUniv_TransSet u Hu)
     (LeanUniv_ZF_closed u Hu) (Lean_BoundedDeterministicRun_Result_In u Hu HP0) 0.
@@ -8435,7 +8524,7 @@ Qed.
 
 Definition Lean_Eq_rec : set -> set -> set := fun h0 t => IndRec Lean_Eq_K Lean_Eq_T Lean_Eq_N Lean_Eq_R Lean_Eq_F Lean_Eq_Ix Lean_Eq_O Lean_Eq_B (fun k a r:set => SeqAt (SeqCons (h0) SeqNil) k) t.
 Theorem Lean_Eq_iota0 : forall h0, Lean_Eq_rec h0 (Lean_Eq_refl_node) = h0.
-let h0. 
+let h0.
 prove IndRec Lean_Eq_K Lean_Eq_T Lean_Eq_N Lean_Eq_R Lean_Eq_F Lean_Eq_Ix Lean_Eq_O Lean_Eq_B (fun k a r:set => SeqAt (SeqCons (h0) SeqNil) k) (IndNode Lean_Eq_K Lean_Eq_T Lean_Eq_N Lean_Eq_R
     Lean_Eq_F Lean_Eq_Ix Lean_Eq_O Lean_Eq_B 0 (TupArgs 0 SeqNil)) = h0.
 rewrite IndRec_iota Lean_Eq_K Lean_Eq_T Lean_Eq_N Lean_Eq_R Lean_Eq_F Lean_Eq_Ix Lean_Eq_O Lean_Eq_B Lean_Eq_distinct Lean_Eq_bounded Lean_Eq_arity (fun k a r:set => SeqAt (SeqCons (h0) SeqNil) k) 0
@@ -8499,6 +8588,14 @@ Qed.
 
 
 
+
+Theorem Lean_Eq_ind : forall P:set -> set -> prop, (P P1 Lean_Eq_refl_node) -> forall i, forall t :e Lean_Eq i, P i t.
+let P. assume H0.
+claim M0: 0 :e {z :e 1 | P P1 Lean_Eq_refl_node}.
+{ exact SepI 1 (fun z => P P1 Lean_Eq_refl_node) 0 In_0_1 (H0). }
+let i t. assume Ht: t :e Lean_Eq i.
+exact SepE2 1 (fun z => P i t) (Lean_Eq_rec 0 t) (Lean_Eq_rec_type (fun i t => {z :e 1 | P i t}) 0 M0 i t Ht).
+Qed.
 
 
 
@@ -8740,7 +8837,7 @@ Definition Lean_Decidable_isFalse_node : set -> set := fun x0 => IndNode Lean_De
     Lean_Decidable_B 0 (TupArgs 1 (SeqCons (x0) SeqNil)).
 Theorem Lean_Decidable_isFalse_args : forall x0 :e (Pi_ ux :e P0, Lean_False_Prop), (TupArgs 1 (SeqCons (x0) SeqNil)) :e IndArgs Lean_Decidable_K Lean_Decidable_T Lean_Decidable_N Lean_Decidable_R
     Lean_Decidable_F Lean_Decidable_Ix Lean_Decidable_O Lean_Decidable_B Lean_Decidable_All 0.
-let x0. assume H0: x0 :e (Pi_ ux :e P0, Lean_False_Prop). 
+let x0. assume H0: x0 :e (Pi_ ux :e P0, Lean_False_Prop).
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -8774,7 +8871,7 @@ apply SepI (Pi_ j :e 1, Lean_Decidable_B :\/: Lean_Decidable_All) (fun a => IndF
     SeqNil))))) D0) j (In_eq_r j (Lean_Decidable_N 0) 1 Lean_Decidable_N0 Hj).
 Qed.
 Theorem Lean_Decidable_isFalse_typed : forall x0 :e (Pi_ ux :e P0, Lean_False_Prop), Lean_Decidable_isFalse_node x0 :e Lean_Decidable.
-let x0. assume H0: x0 :e (Pi_ ux :e P0, Lean_False_Prop). 
+let x0. assume H0: x0 :e (Pi_ ux :e P0, Lean_False_Prop).
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -8796,7 +8893,7 @@ Definition Lean_Decidable_isTrue_node : set -> set := fun x0 => IndNode Lean_Dec
     Lean_Decidable_B 1 (TupArgs 1 (SeqCons (x0) SeqNil)).
 Theorem Lean_Decidable_isTrue_args : forall x0 :e P0, (TupArgs 1 (SeqCons (x0) SeqNil)) :e IndArgs Lean_Decidable_K Lean_Decidable_T Lean_Decidable_N Lean_Decidable_R Lean_Decidable_F
     Lean_Decidable_Ix Lean_Decidable_O Lean_Decidable_B Lean_Decidable_All 1.
-let x0. assume H0: x0 :e P0. 
+let x0. assume H0: x0 :e P0.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -8830,7 +8927,7 @@ apply SepI (Pi_ j :e 1, Lean_Decidable_B :\/: Lean_Decidable_All) (fun a => IndF
     SeqNil))))) D0) j (In_eq_r j (Lean_Decidable_N 1) 1 Lean_Decidable_N1 Hj).
 Qed.
 Theorem Lean_Decidable_isTrue_typed : forall x0 :e P0, Lean_Decidable_isTrue_node x0 :e Lean_Decidable.
-let x0. assume H0: x0 :e P0. 
+let x0. assume H0: x0 :e P0.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -8852,7 +8949,7 @@ Qed.
 Definition Lean_Decidable_rec : set -> set -> set -> set := fun h0 h1 t => IndRec Lean_Decidable_K Lean_Decidable_T Lean_Decidable_N Lean_Decidable_R Lean_Decidable_F Lean_Decidable_Ix
     Lean_Decidable_O Lean_Decidable_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0))) SeqNil)) k) t.
 Theorem Lean_Decidable_iota0 : forall h0 h1, forall x0 :e (Pi_ ux :e P0, Lean_False_Prop), Lean_Decidable_rec h0 h1 (Lean_Decidable_isFalse_node x0) = (h0 x0).
-let h0 h1. let x0. assume H0: x0 :e (Pi_ ux :e P0, Lean_False_Prop). 
+let h0 h1. let x0. assume H0: x0 :e (Pi_ ux :e P0, Lean_False_Prop).
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -8867,7 +8964,7 @@ prove SeqAt (SeqCons ((h0 ((TupArgs 1 (SeqCons (x0) SeqNil)) 0))) (SeqCons ((h1 
 rewrite SeqAt_0. rewrite T0. reflexivity.
 Qed.
 Theorem Lean_Decidable_iota1 : forall h0 h1, forall x0 :e P0, Lean_Decidable_rec h0 h1 (Lean_Decidable_isTrue_node x0) = (h1 x0).
-let h0 h1. let x0. assume H0: x0 :e P0. 
+let h0 h1. let x0. assume H0: x0 :e P0.
 claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
@@ -8993,6 +9090,7 @@ exact SepE2 1 (fun z => P t) (Lean_Decidable_rec 0 0 t) (Lean_Decidable_rec_type
 Qed.
 
 
+
 Theorem Lean_Decidable_noconf0_1 : forall x0, forall y0, (Lean_Decidable_isFalse_node x0) <> (Lean_Decidable_isTrue_node y0).
 let x0 y0. assume H: (Lean_Decidable_isFalse_node x0) = (Lean_Decidable_isTrue_node y0).
 apply IndNode_inj Lean_Decidable_K Lean_Decidable_T Lean_Decidable_N Lean_Decidable_R Lean_Decidable_F Lean_Decidable_Ix Lean_Decidable_O Lean_Decidable_B Lean_Decidable_distinct 0 (ordsuccI1 1 0
@@ -9026,7 +9124,7 @@ Qed.
 
 
 Theorem Lean_Decidable_In : forall u, nat_p u -> P0 :e LeanUniv u -> Lean_Decidable_All :e LeanUniv u.
-let u. assume Hu: nat_p u. assume HP0: P0 :e LeanUniv u. 
+let u. assume Hu: nat_p u. assume HP0: P0 :e LeanUniv u.
 claim Ht: TransSet (LeanUniv u).
 { exact LeanUniv_TransSet u Hu. }
 claim Hz: ZF_closed (LeanUniv u).
@@ -9051,7 +9149,7 @@ exact IndCarrier_In Lean_Decidable_K Lean_Decidable_T Lean_Decidable_N Lean_Deci
     (Pi_ j :e Lean_Decidable_N k, V), Lean_Decidable_O k a :e LeanUniv u)) HO0) HO1) k Hk).
 Qed.
 Theorem Lean_Decidable_type_In : forall u, nat_p u -> P0 :e LeanUniv u -> Lean_Decidable :e LeanUniv u.
-let u. assume Hu: nat_p u. assume HP0: P0 :e LeanUniv u. 
+let u. assume Hu: nat_p u. assume HP0: P0 :e LeanUniv u.
 exact IndFiber_In Lean_Decidable_K Lean_Decidable_T Lean_Decidable_N Lean_Decidable_R Lean_Decidable_F Lean_Decidable_Ix Lean_Decidable_O Lean_Decidable_B (LeanUniv u) (LeanUniv_TransSet u Hu)
     (LeanUniv_ZF_closed u Hu) (Lean_Decidable_In u Hu HP0) 0.
 Qed.
@@ -9127,9 +9225,23 @@ Qed.
 
 Definition Lean_Exists_intro_node : set -> set -> set := fun x0 x1 => IndNode Lean_Exists_K Lean_Exists_T Lean_Exists_N Lean_Exists_R Lean_Exists_F Lean_Exists_Ix Lean_Exists_O Lean_Exists_B 0
     (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))).
+Theorem Lean_Exists_intro_field0 : forall x0 x1, (proj1 (Lean_Exists_intro_node x0 x1)) 0 = x0.
+let x0 x1.
+prove (proj1 (IndNode Lean_Exists_K Lean_Exists_T Lean_Exists_N Lean_Exists_R Lean_Exists_F Lean_Exists_Ix Lean_Exists_O Lean_Exists_B 0 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))))) 0 = x0.
+rewrite IndNode_fields Lean_Exists_K Lean_Exists_T Lean_Exists_N Lean_Exists_R Lean_Exists_F Lean_Exists_Ix Lean_Exists_O Lean_Exists_B 0 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 0.
+rewrite TupArgs_at 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 (ordsuccI1 1 0 (ordsuccI2 0)).
+rewrite SeqAt_0. reflexivity.
+Qed.
+Theorem Lean_Exists_intro_field1 : forall x0 x1, (proj1 (Lean_Exists_intro_node x0 x1)) 1 = x1.
+let x0 x1.
+prove (proj1 (IndNode Lean_Exists_K Lean_Exists_T Lean_Exists_N Lean_Exists_R Lean_Exists_F Lean_Exists_Ix Lean_Exists_O Lean_Exists_B 0 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))))) 1 = x1.
+rewrite IndNode_fields Lean_Exists_K Lean_Exists_T Lean_Exists_N Lean_Exists_R Lean_Exists_F Lean_Exists_Ix Lean_Exists_O Lean_Exists_B 0 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 1.
+rewrite TupArgs_at 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 1 (ordsuccI2 1).
+rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0.
+Qed.
 Theorem Lean_Exists_intro_args : forall x0 :e P0, forall x1 :e {z :e 1 | z :e (P1 x0)}, (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) :e IndArgs Lean_Exists_K Lean_Exists_T Lean_Exists_N
     Lean_Exists_R Lean_Exists_F Lean_Exists_Ix Lean_Exists_O Lean_Exists_B Lean_Exists_All 0.
-let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e {z :e 1 | z :e (P1 x0)}. 
+let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e {z :e 1 | z :e (P1 x0)}.
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -9182,7 +9294,7 @@ apply SepI (Pi_ j :e 2, Lean_Exists_B :\/: Lean_Exists_All) (fun a => IndFits Le
     D1) j (In_eq_r j (Lean_Exists_N 0) 2 Lean_Exists_N0 Hj).
 Qed.
 Theorem Lean_Exists_intro_typed : forall x0 :e P0, forall x1 :e {z :e 1 | z :e (P1 x0)}, Lean_Exists_intro_node x0 x1 :e Lean_Exists.
-let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e {z :e 1 | z :e (P1 x0)}. 
+let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e {z :e 1 | z :e (P1 x0)}.
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -9209,7 +9321,7 @@ Qed.
 Definition Lean_Exists_rec : set -> set -> set := fun h0 t => IndRec Lean_Exists_K Lean_Exists_T Lean_Exists_N Lean_Exists_R Lean_Exists_F Lean_Exists_Ix Lean_Exists_O Lean_Exists_B (fun k a r:set =>
     SeqAt (SeqCons ((h0 (a 0) (a 1))) SeqNil) k) t.
 Theorem Lean_Exists_iota0 : forall h0, forall x0 :e P0, forall x1 :e {z :e 1 | z :e (P1 x0)}, Lean_Exists_rec h0 (Lean_Exists_intro_node x0 x1) = (h0 x0 x1).
-let h0. let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e {z :e 1 | z :e (P1 x0)}. 
+let h0. let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e {z :e 1 | z :e (P1 x0)}.
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -9284,6 +9396,7 @@ exact IndRec_type Lean_Exists_K Lean_Exists_T Lean_Exists_N Lean_Exists_R Lean_E
     r:set => SeqAt (SeqCons ((h0 (a 0) (a 1))) SeqNil) k) C HM t (SepE1 Lean_Exists_All (fun x:set => IndIdx Lean_Exists_K Lean_Exists_T Lean_Exists_N Lean_Exists_R Lean_Exists_F Lean_Exists_Ix
     Lean_Exists_O Lean_Exists_B x = 0) t Ht).
 Qed.
+
 
 
 
@@ -9493,7 +9606,7 @@ Definition Lean_Nat_le_step_node : set -> set -> set := fun x0 x1 => IndNode Lea
     (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))).
 Theorem Lean_Nat_le_step_args : forall x0 :e Lean_Nat, forall x1 :e (Lean_Nat_le x0), (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) :e IndArgs Lean_Nat_le_K Lean_Nat_le_T Lean_Nat_le_N
     Lean_Nat_le_R Lean_Nat_le_F Lean_Nat_le_Ix Lean_Nat_le_O Lean_Nat_le_B Lean_Nat_le_All 1.
-let x0. assume H0: x0 :e Lean_Nat. let x1. assume H1: x1 :e (Lean_Nat_le x0). 
+let x0. assume H0: x0 :e Lean_Nat. let x1. assume H1: x1 :e (Lean_Nat_le x0).
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -9549,7 +9662,7 @@ apply SepI (Pi_ j :e 2, Lean_Nat_le_B :\/: Lean_Nat_le_All) (fun a => IndFits Le
     D1) j (In_eq_r j (Lean_Nat_le_N 1) 2 Lean_Nat_le_N1 Hj).
 Qed.
 Theorem Lean_Nat_le_step_typed : forall x0 :e Lean_Nat, forall x1 :e (Lean_Nat_le x0), Lean_Nat_le_step_node x0 x1 :e (Lean_Nat_le (Lean_Nat_succ_node x0)).
-let x0. assume H0: x0 :e Lean_Nat. let x1. assume H1: x1 :e (Lean_Nat_le x0). 
+let x0. assume H0: x0 :e Lean_Nat. let x1. assume H1: x1 :e (Lean_Nat_le x0).
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -9577,7 +9690,7 @@ Qed.
 Definition Lean_Nat_le_rec : set -> set -> set -> set := fun h0 h1 t => IndRec Lean_Nat_le_K Lean_Nat_le_T Lean_Nat_le_N Lean_Nat_le_R Lean_Nat_le_F Lean_Nat_le_Ix Lean_Nat_le_O Lean_Nat_le_B (fun k
     a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (r 1))) SeqNil)) k) t.
 Theorem Lean_Nat_le_iota0 : forall h0 h1, Lean_Nat_le_rec h0 h1 (Lean_Nat_le_refl_node) = h0.
-let h0 h1. 
+let h0 h1.
 prove IndRec Lean_Nat_le_K Lean_Nat_le_T Lean_Nat_le_N Lean_Nat_le_R Lean_Nat_le_F Lean_Nat_le_Ix Lean_Nat_le_O Lean_Nat_le_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (r 1)))
     SeqNil)) k) (IndNode Lean_Nat_le_K Lean_Nat_le_T Lean_Nat_le_N Lean_Nat_le_R Lean_Nat_le_F Lean_Nat_le_Ix Lean_Nat_le_O Lean_Nat_le_B 0 (TupArgs 0 SeqNil)) = h0.
 rewrite IndRec_iota Lean_Nat_le_K Lean_Nat_le_T Lean_Nat_le_N Lean_Nat_le_R Lean_Nat_le_F Lean_Nat_le_Ix Lean_Nat_le_O Lean_Nat_le_B Lean_Nat_le_distinct Lean_Nat_le_bounded Lean_Nat_le_arity (fun k
@@ -9588,7 +9701,7 @@ prove SeqAt (SeqCons (h0) (SeqCons ((h1 ((TupArgs 0 SeqNil) 0) ((TupArgs 0 SeqNi
 rewrite SeqAt_0. reflexivity.
 Qed.
 Theorem Lean_Nat_le_iota1 : forall h0 h1, forall x0 :e Lean_Nat, forall x1 :e (Lean_Nat_le x0), Lean_Nat_le_rec h0 h1 (Lean_Nat_le_step_node x0 x1) = (h1 x0 x1 (Lean_Nat_le_rec h0 h1 x1)).
-let h0 h1. let x0. assume H0: x0 :e Lean_Nat. let x1. assume H1: x1 :e (Lean_Nat_le x0). 
+let h0 h1. let x0. assume H0: x0 :e Lean_Nat. let x1. assume H1: x1 :e (Lean_Nat_le x0).
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
@@ -9757,6 +9870,23 @@ Qed.
 
 
 
+
+Theorem Lean_Nat_le_ind : forall P:set -> set -> prop, (P P0 Lean_Nat_le_refl_node) -> (forall x0 :e Lean_Nat, forall x1 :e (Lean_Nat_le x0), P x0 x1 -> P (Lean_Nat_succ_node x0)
+    (Lean_Nat_le_step_node x0 x1)) -> forall i, forall t :e Lean_Nat_le i, P i t.
+let P. assume H0. assume H1.
+claim M0: 0 :e {z :e 1 | P P0 Lean_Nat_le_refl_node}.
+{ exact SepI 1 (fun z => P P0 Lean_Nat_le_refl_node) 0 In_0_1 (H0). }
+claim M1: 0 :e (Pi_ x0 :e Lean_Nat, (Pi_ x1 :e (Lean_Nat_le x0), (Pi_ y1 :e {z :e 1 | P x0 x1}, {z :e 1 | P (Lean_Nat_succ_node x0) (Lean_Nat_le_step_node x0 x1)}))).
+{ apply Pi_0_In. let x0. assume Hx0: x0 :e Lean_Nat.
+  prove 0 :e (Pi_ x1 :e (Lean_Nat_le x0), (Pi_ y1 :e {z :e 1 | P x0 x1}, {z :e 1 | P (Lean_Nat_succ_node x0) (Lean_Nat_le_step_node x0 x1)})).
+apply Pi_0_In. let x1. assume Hx1: x1 :e (Lean_Nat_le x0).
+  prove 0 :e (Pi_ y1 :e {z :e 1 | P x0 x1}, {z :e 1 | P (Lean_Nat_succ_node x0) (Lean_Nat_le_step_node x0 x1)}).
+apply Pi_0_In. let y1. assume Hy1: y1 :e {z :e 1 | P x0 x1}.
+  prove 0 :e {z :e 1 | P (Lean_Nat_succ_node x0) (Lean_Nat_le_step_node x0 x1)}.
+exact SepI 1 (fun z => P (Lean_Nat_succ_node x0) (Lean_Nat_le_step_node x0 x1)) 0 In_0_1 (H1 x0 Hx0 x1 Hx1 (SepE2 1 (fun z => P x0 x1) y1 Hy1)). }
+let i t. assume Ht: t :e Lean_Nat_le i.
+exact SepE2 1 (fun z => P i t) (Lean_Nat_le_rec 0 0 t) (Lean_Nat_le_rec_type (fun i t => {z :e 1 | P i t}) 0 M0 0 M1 i t Ht).
+Qed.
 
 Theorem Lean_Nat_le_noconf0_1 : forall y0 y1, Lean_Nat_le_refl_node <> (Lean_Nat_le_step_node y0 y1).
 let y0 y1. assume H: Lean_Nat_le_refl_node = (Lean_Nat_le_step_node y0 y1).
@@ -10107,7 +10237,7 @@ Definition Lean_Relation_ReflTransGen_tail_node : set -> set -> set -> set -> se
 Theorem Lean_Relation_ReflTransGen_tail_args : forall x0 :e P0, forall x1 :e P0, forall x2 :e (Lean_Relation_ReflTransGen x0), forall x3 :e {z :e 1 | z :e ((P1 x0) x1)}, (TupArgs 4 (SeqCons (x0)
     (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) :e IndArgs Lean_Relation_ReflTransGen_K Lean_Relation_ReflTransGen_T Lean_Relation_ReflTransGen_N Lean_Relation_ReflTransGen_R
     Lean_Relation_ReflTransGen_F Lean_Relation_ReflTransGen_Ix Lean_Relation_ReflTransGen_O Lean_Relation_ReflTransGen_B Lean_Relation_ReflTransGen_All 1.
-let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e P0. let x2. assume H2: x2 :e (Lean_Relation_ReflTransGen x0). let x3. assume H3: x3 :e {z :e 1 | z :e ((P1 x0) x1)}. 
+let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e P0. let x2. assume H2: x2 :e (Lean_Relation_ReflTransGen x0). let x3. assume H3: x3 :e {z :e 1 | z :e ((P1 x0) x1)}.
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 = x0.
@@ -10237,7 +10367,7 @@ apply SepI (Pi_ j :e 4, Lean_Relation_ReflTransGen_B :\/: Lean_Relation_ReflTran
 Qed.
 Theorem Lean_Relation_ReflTransGen_tail_typed : forall x0 :e P0, forall x1 :e P0, forall x2 :e (Lean_Relation_ReflTransGen x0), forall x3 :e {z :e 1 | z :e ((P1 x0) x1)},
     Lean_Relation_ReflTransGen_tail_node x0 x1 x2 x3 :e (Lean_Relation_ReflTransGen x1).
-let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e P0. let x2. assume H2: x2 :e (Lean_Relation_ReflTransGen x0). let x3. assume H3: x3 :e {z :e 1 | z :e ((P1 x0) x1)}. 
+let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e P0. let x2. assume H2: x2 :e (Lean_Relation_ReflTransGen x0). let x3. assume H3: x3 :e {z :e 1 | z :e ((P1 x0) x1)}.
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 = x0.
@@ -10283,7 +10413,7 @@ Definition Lean_Relation_ReflTransGen_rec : set -> set -> set -> set := fun h0 h
     Lean_Relation_ReflTransGen_R Lean_Relation_ReflTransGen_F Lean_Relation_ReflTransGen_Ix Lean_Relation_ReflTransGen_O Lean_Relation_ReflTransGen_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons
     ((h1 (a 0) (a 1) (a 2) (a 3) (r 2))) SeqNil)) k) t.
 Theorem Lean_Relation_ReflTransGen_iota0 : forall h0 h1, Lean_Relation_ReflTransGen_rec h0 h1 (Lean_Relation_ReflTransGen_refl_node) = h0.
-let h0 h1. 
+let h0 h1.
 prove IndRec Lean_Relation_ReflTransGen_K Lean_Relation_ReflTransGen_T Lean_Relation_ReflTransGen_N Lean_Relation_ReflTransGen_R Lean_Relation_ReflTransGen_F Lean_Relation_ReflTransGen_Ix
     Lean_Relation_ReflTransGen_O Lean_Relation_ReflTransGen_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 2))) SeqNil)) k) (IndNode Lean_Relation_ReflTransGen_K
     Lean_Relation_ReflTransGen_T Lean_Relation_ReflTransGen_N Lean_Relation_ReflTransGen_R Lean_Relation_ReflTransGen_F Lean_Relation_ReflTransGen_Ix Lean_Relation_ReflTransGen_O
@@ -10300,7 +10430,7 @@ rewrite SeqAt_0. reflexivity.
 Qed.
 Theorem Lean_Relation_ReflTransGen_iota1 : forall h0 h1, forall x0 :e P0, forall x1 :e P0, forall x2 :e (Lean_Relation_ReflTransGen x0), forall x3 :e {z :e 1 | z :e ((P1 x0) x1)},
     Lean_Relation_ReflTransGen_rec h0 h1 (Lean_Relation_ReflTransGen_tail_node x0 x1 x2 x3) = (h1 x0 x1 x2 x3 (Lean_Relation_ReflTransGen_rec h0 h1 x2)).
-let h0 h1. let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e P0. let x2. assume H2: x2 :e (Lean_Relation_ReflTransGen x0). let x3. assume H3: x3 :e {z :e 1 | z :e ((P1 x0) x1)}. 
+let h0 h1. let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e P0. let x2. assume H2: x2 :e (Lean_Relation_ReflTransGen x0). let x3. assume H3: x3 :e {z :e 1 | z :e ((P1 x0) x1)}.
 claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 = x0.
 { rewrite SeqAt_0. reflexivity. }
 claim T0: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 = x0.
@@ -10573,6 +10703,29 @@ Qed.
 
 
 
+
+Theorem Lean_Relation_ReflTransGen_ind : forall P:set -> set -> prop, (P P2 Lean_Relation_ReflTransGen_refl_node) -> (forall x0 :e P0, forall x1 :e P0, forall x2 :e (Lean_Relation_ReflTransGen x0),
+    forall x3 :e {z :e 1 | z :e ((P1 x0) x1)}, P x0 x2 -> P x1 (Lean_Relation_ReflTransGen_tail_node x0 x1 x2 x3)) -> forall i, forall t :e Lean_Relation_ReflTransGen i, P i t.
+let P. assume H0. assume H1.
+claim M0: 0 :e {z :e 1 | P P2 Lean_Relation_ReflTransGen_refl_node}.
+{ exact SepI 1 (fun z => P P2 Lean_Relation_ReflTransGen_refl_node) 0 In_0_1 (H0). }
+claim M1: 0 :e (Pi_ x0 :e P0, (Pi_ x1 :e P0, (Pi_ x2 :e (Lean_Relation_ReflTransGen x0), (Pi_ x3 :e {z :e 1 | z :e ((P1 x0) x1)}, (Pi_ y2 :e {z :e 1 | P x0 x2}, {z :e 1 | P x1
+    (Lean_Relation_ReflTransGen_tail_node x0 x1 x2 x3)}))))).
+{ apply Pi_0_In. let x0. assume Hx0: x0 :e P0.
+  prove 0 :e (Pi_ x1 :e P0, (Pi_ x2 :e (Lean_Relation_ReflTransGen x0), (Pi_ x3 :e {z :e 1 | z :e ((P1 x0) x1)}, (Pi_ y2 :e {z :e 1 | P x0 x2}, {z :e 1 | P x1 (Lean_Relation_ReflTransGen_tail_node x0
+    x1 x2 x3)})))).
+apply Pi_0_In. let x1. assume Hx1: x1 :e P0.
+  prove 0 :e (Pi_ x2 :e (Lean_Relation_ReflTransGen x0), (Pi_ x3 :e {z :e 1 | z :e ((P1 x0) x1)}, (Pi_ y2 :e {z :e 1 | P x0 x2}, {z :e 1 | P x1 (Lean_Relation_ReflTransGen_tail_node x0 x1 x2 x3)}))).
+apply Pi_0_In. let x2. assume Hx2: x2 :e (Lean_Relation_ReflTransGen x0).
+  prove 0 :e (Pi_ x3 :e {z :e 1 | z :e ((P1 x0) x1)}, (Pi_ y2 :e {z :e 1 | P x0 x2}, {z :e 1 | P x1 (Lean_Relation_ReflTransGen_tail_node x0 x1 x2 x3)})).
+apply Pi_0_In. let x3. assume Hx3: x3 :e {z :e 1 | z :e ((P1 x0) x1)}.
+  prove 0 :e (Pi_ y2 :e {z :e 1 | P x0 x2}, {z :e 1 | P x1 (Lean_Relation_ReflTransGen_tail_node x0 x1 x2 x3)}).
+apply Pi_0_In. let y2. assume Hy2: y2 :e {z :e 1 | P x0 x2}.
+  prove 0 :e {z :e 1 | P x1 (Lean_Relation_ReflTransGen_tail_node x0 x1 x2 x3)}.
+exact SepI 1 (fun z => P x1 (Lean_Relation_ReflTransGen_tail_node x0 x1 x2 x3)) 0 In_0_1 (H1 x0 Hx0 x1 Hx1 x2 Hx2 x3 Hx3 (SepE2 1 (fun z => P x0 x2) y2 Hy2)). }
+let i t. assume Ht: t :e Lean_Relation_ReflTransGen i.
+exact SepE2 1 (fun z => P i t) (Lean_Relation_ReflTransGen_rec 0 0 t) (Lean_Relation_ReflTransGen_rec_type (fun i t => {z :e 1 | P i t}) 0 M0 0 M1 i t Ht).
+Qed.
 
 Theorem Lean_Relation_ReflTransGen_noconf0_1 : forall y0 y1 y2 y3, Lean_Relation_ReflTransGen_refl_node <> (Lean_Relation_ReflTransGen_tail_node y0 y1 y2 y3).
 let y0 y1 y2 y3. assume H: Lean_Relation_ReflTransGen_refl_node = (Lean_Relation_ReflTransGen_tail_node y0 y1 y2 y3).

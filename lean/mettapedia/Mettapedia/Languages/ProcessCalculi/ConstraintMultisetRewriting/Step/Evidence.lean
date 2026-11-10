@@ -251,7 +251,7 @@ where `weigh` runs. -/
 theorem both_tells_admit_nothing :
     (∀ f : Fir, ¬ P.Admits (s := bothTold) f) ∧ bothTold.present = withBoth.present ∧
       P.Admits (s := withBoth) weigh :=
-  ⟨not_admits_of_not_solvable P bothTold_inconsistent, rfl, weigh_admitted⟩
+  ⟨not_admits_of_not_solvable P.toStep (s := bothTold) bothTold_inconsistent, rfl, weigh_admitted⟩
 
 end Rows
 

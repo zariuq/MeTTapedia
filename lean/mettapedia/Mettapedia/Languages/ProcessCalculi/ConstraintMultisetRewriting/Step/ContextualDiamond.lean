@@ -308,7 +308,7 @@ end Firing
 
 /-- **The helper step**: firings that make fresh helpers, guarded by equations on the old names; it has
 no predicate queries. -/
-abbrev helperStep : Step (Frames.contextual S) O (State S O) Firing where
+abbrev helperStep : Step.Standard (Frames.contextual S) O (State S O) Firing where
   frame s := s.frame
   knowledge s := s.knowledge
   present s := s.present
@@ -327,10 +327,16 @@ abbrev helperStep : Step (Frames.contextual S) O (State S O) Firing where
     (Frames.contextual S).Entails f.information fun _ σ =>
       (Frames.contextual S).Models (Assignment.compose σ (incl s.frame f.helper)) f.guards
   admits_iff _ := Iff.rfl
-  result f _ := f.after
-  present_result _ _ := rfl
-  settle f _ := (Frames.contextual S).id (extend _ f.helper)
-  knowledge_result f _ := (Frames.applyStore_id (X := Frames.contextual S) f.information).symm
+  preparedResult f _ := f.after
+  present_preparedResult _ _ := rfl
+  preparedSettle f _ := (Frames.contextual S).id (extend _ f.helper)
+  knowledge_preparedResult f _ := (Frames.applyStore_id (X := Frames.contextual S) f.information).symm
+
+instance helperStep_guarded : (helperStep (S := S) (O := O)).toStep.Guarded :=
+  Step.standard_guarded _
+
+instance helperStep_exact : (helperStep (S := S) (O := O)).toStep.Exact :=
+  Step.standard_exact _
 
 /-- The morphism a helper firing moves along is the inclusion of the old names. -/
 theorem along_eq {s : State S O} (f : Firing s) (admitted : helperStep.Admits f) :
@@ -462,6 +468,7 @@ theorem information_move {s t : State S O} (i : helperStep.StateIso s t) (f : Fi
     (Frames.contextual S).Equivalent
       ((Frames.contextual S).applyStore (liftIso i.frame f.helper).hom f.information)
       (f.move i.frame.hom).information := by
+  dsimp only [helperStep] at i ⊢
   have carried : (Frames.contextual S).applyStore (liftIso i.frame f.helper).hom f.information =
       (Frames.contextual S).applyStore (incl t.frame f.helper)
           ((Frames.contextual S).applyStore i.frame.hom s.knowledge) ++
@@ -488,7 +495,7 @@ theorem information_move {s t : State S O} (i : helperStep.StateIso s t) (f : Fi
   exact Frames.Equivalent.append_right (Frames.Equivalent.applyStore _ i.knowledge) _
 
 /-- **Transport of helper firings** along isomorphisms of states. -/
-def helperTransport : Transport (helperStep (S := S) (O := O)) where
+def helperTransport : Transport (helperStep (S := S) (O := O)).toStep where
   Iso s t := helperStep.StateIso s t
   toStateIso i := i
   refl s := Step.StateIso.refl s

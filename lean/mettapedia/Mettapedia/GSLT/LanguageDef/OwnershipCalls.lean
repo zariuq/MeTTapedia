@@ -32,6 +32,9 @@ inductive ReturnShape where
   | static (nullable : Bool)
   | borrowed (input offset count : Nat) (writing nullable : Bool)
   | viewed (input offset count : Nat) (writing : Bool)
+  /-- A complete dynamic input span. Function admission uses its abstract unit;
+  OwnershipViewExtents interprets that unit at every caller byte extent. -/
+  | wholeViewed (input : Nat) (writing : Bool)
   | owned (family : Nat) (nullable : Bool)
   deriving DecidableEq, Repr, BEq, ReflBEq, LawfulBEq
 
@@ -40,6 +43,7 @@ structure Signature where
   variadicRead : Bool
   result : ReturnShape
   fields : List (Nat × ReturnShape) := []
+  records : List (Nat × ReturnShape) := []
   deriving DecidableEq, Repr, BEq, ReflBEq, LawfulBEq
 
 structure Callable where
@@ -254,10 +258,10 @@ theorem short_argument_refused : passArgument borrowedState (.borrowed 17 false)
 theorem wrong_argument_kind_refused : passArgument borrowedState (.borrowed 8 false) .value = none := by decide
 
 theorem scalar_variadic_arguments_admitted :
-    invoke ⟨[], false, .value, []⟩ initial [.value, .value] = some initial := by decide
+    invoke ⟨[], false, .value, [], []⟩ initial [.value, .value] = some initial := by decide
 
 theorem pointer_variadic_requires_read_contract :
-    invoke ⟨[], false, .value, []⟩ borrowedState [.loan 1] = none := by decide
+    invoke ⟨[], false, .value, [], []⟩ borrowedState [.loan 1] = none := by decide
 
 def transferred : State := { initial with transfers := [⟨3, 9, ⟨7, 0, 16⟩, .owned⟩] }
 theorem one_owner_one_call : (passArguments transferred [.owned 8 9] [.owned 3]).isSome = true := by decide

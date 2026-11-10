@@ -3,7 +3,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Evid
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.SpacesInterface
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PermissionsInterfaceControls
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DisequalityFramesRestriction
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DisequalityFramesUnguarded
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PreparedNative
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ProgramHosts
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DependentFullFibre
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DependentFullCount
@@ -30,7 +30,7 @@ names the restriction theorem, the separating control and the bridge.
 | predicate queries | `DependentFull.entails_absent_iff`, `Frames.Principal.entails_count_iff` | `absence_firstOrder`, `count_firstOrder` | `absence_contextual`, `count_contextual` (frames); the helper step has no queries; native: `admission_native` asks them | `absence_dependent`, `count_dependent` |
 | spaces | `Spaces.run_executable`, `present_result_spaces` (any instance); independence: restriction `quiet` | `located_independent`, `located_static_independent`; bridge `exact_independent`; control `Spaces.Controls.shared_variable_crosses_spaces` | `spaces_helper`: no restriction (helper tells constrain only fresh helpers) | `dependent_independent`; control `SpacesInterface.Controls.dependent_shared_variable_crosses_spaces`; gap: located labels for queries |
 | permissions | `refused_without_*`, `witness_present` (any instance); `absence_preserved` under `LabelLaw` | `old_owned_absence_preserved`, `old_owned_witness_present`; control `PermissionsInterface.Controls.relabel_spoils_absence` | `witness_helper`; absence: the helper step's rows carry no terms; native: gap | `dependent_absence_preserved`; controls `DependentControls.shared_absence_spoiled`, `owned_make_refused`, `owned_absence_survives` |
-| disequations | `DisequalityFrames.frames`; `Prestep.withDisequations` under `Reflects`; `Unguarded.withDisequations` for any instance, on firings without guards, under `SettleReflects` | `oneFrame_admits_iff`; R92 controls | `diseq_helper`, `ContextualTell.control`; native: `diseq_native` (firings without guards), guarded native firings: gap | `diseq_dependent`, `DependentTell.control` |
+| disequations | `DisequalityFrames.frames`; `Interface.Step.withDisequations` over every step under `Reflects`, guards kept and asked at separating solutions | `oneFrame_admits_iff`; R92 controls | `diseq_helper`, `ContextualTell.control`; native: `diseq_native` (guarded native firings, `PreparedStep.nativeGuarded`); control `PreparedStep.Controls.control` | `diseq_dependent`, `DependentTell.control` |
 | evidence rows | `not_admits_of_not_solvable`; `run_solvable` under `SettlesConservatively` (`RetractsSettlement` suffices) | `old_firstOrder_run_consistent`; `Evidence.Family.table` | `evidence_helper`, native `EvidenceInterface.Native.native_run_solvable`; four-way family: gap (the helper step has no reads or queries; native firings not built) | `dependent_run_solvable`; `EvidenceInterface.DependentFamily.table` |
 | races and identity | `Race.Generic.bisimilar_of_same` | `races_firstOrder` | `races_helper` | `DependentFull.plain_bisimilar_of_same` (no helpers) |
 | programs | gap: one core over the interface | R82, R89, R95 (first-order core) | R98, R100; joined by `step_join`, `absence_agrees`, `return_admitted_iff` | gap |
@@ -41,11 +41,11 @@ Restriction, separating control and bridge, for the features that do not hold on
   (a syntactic condition a program checks), and `Controls.quiet_read_exact`;
 * **absence under permissions**: restriction `LabelLaw` (`absence_preserved`); control
   `relabel_spoils_absence`; bridge `locatedLabels_law`, `dependentLabels_law`;
-* **disequations**: restriction `Prestep` with `Reflects` (`withDisequations`); control
+* **disequations**: restriction `Reflects` (`Interface.Step.withDisequations`, for every step); control
   `Restriction.guess_breaks_frame`, `guess_not_reflects`; bridge `firstOrder_reflects`,
-  `Dependent.reflects`, `Contextual.reflects`; for instances whose result needs its own admission,
-  the restriction to firings without guards (`Unguarded.withDisequations`, `DFiring.admits_base`),
-  with `Unguarded.native_settle_reflects` and `native_unguarded` for the native step;
+  `Dependent.reflects`, `Contextual.reflects`, and for the native step, whose result is the solver's
+  return, `PreparedStep.native_reflects` (`nativeGuarded`); control
+  `PreparedStep.Controls.disequation_restriction_changes_guard`;
 * **no run enters an inconsistent store**: restriction `SettlesConservatively` (`run_solvable`), with
   `RetractsSettlement` sufficient; control `EvidenceInterface.Controls.guess_enters_inconsistency`;
   bridge `firstOrder_retracts`, `dependent_retracts`, `helper_retracts`, `withDisequations_retracts`,
@@ -69,8 +69,8 @@ variable {Obj : Type uO} {Tm : Obj → Type uT} {Hom : Obj → Obj → Type uH}
   {X : Frames Tm Hom} {O : Type uOcc} [DecidableEq O] {State : Type uS} {Firing : State → Type uF}
   (P : Interface.Step X O State Firing)
 
-/-- The interface's admission condition. -/
-abbrev Admission {s : State} (f : Firing s) : Prop :=
+/-- The admission condition of an explicitly guarded profile. -/
+abbrev Admission [P.Guarded] {s : State} (f : Firing s) : Prop :=
   P.Shapes f ∧ Enabled (fun _ : O => ()) (P.present s) ((P.selection f).commit (T := Unit)) ∧
     X.Solvable (P.information f) ∧ X.Entails (P.information f) (P.Holds f)
 
@@ -81,19 +81,18 @@ abbrev Refines {s : State} (r : P.Run s) : Prop :=
 
 /-- **The guards and predicate queries of an admitted firing hold at every solution of its
 information.** -/
-theorem holds_of_admitted {s : State} {f : Firing s} (admitted : P.Admits f) :
+theorem holds_of_admitted [P.Guarded] {s : State} {f : Firing s} (admitted : P.Admits f) :
     X.Entails (P.information f) (P.Holds f) :=
   ((P.admits_iff f).mp admitted).2.2.2
 
 /-- **Cut preservation**: what an admitted firing's guards and predicate queries answered at its cut
 holds at every later solution. After any run from its result, every solution of the last knowledge,
 read back to the firing's target frame, satisfies them. -/
-theorem cut_preserved {s : State} {f : Firing s} (admitted : P.Admits f) (r : P.Run (P.result f admitted))
+theorem cut_preserved [P.Guarded] {s : State} {f : Firing s} (admitted : P.Admits f) (r : P.Run (P.result f admitted))
     {b : Obj} (τ : Hom (P.frame r.last) b) (solved : X.Models τ (P.knowledge r.last)) :
     P.Holds f b (X.comp (X.comp τ r.toLast) (P.settle f admitted)) := by
   have atResult := r.models_start τ solved
-  rw [P.knowledge_result f admitted] at atResult
-  exact holds_of_admitted P admitted b _ ((Frames.models_applyStore _ _ _).mp atResult)
+  exact holds_of_admitted P admitted b _ (P.result_refines f (P.prepares admitted) _ atResult)
 
 end Generic
 
@@ -112,26 +111,26 @@ theorem frames_firstOrder {store : EquationStore T} {answer : S}
   Frames.Principal.models_iff principal (b := PUnit.unit) σ
 
 theorem admission_firstOrder (C : Configuration T O) (f : AnnotatedRuns.Firing T S O) :
-    (AnnotatedRuns.firstOrder A label).Admits (s := C) f ↔
-      Admission (AnnotatedRuns.firstOrder A label) (s := C) f :=
-  (AnnotatedRuns.firstOrder A label).admits_iff f
+    (AnnotatedRuns.firstOrder A label).toStep.Admits (s := C) f ↔
+      Admission (AnnotatedRuns.firstOrder A label).toStep (s := C) f :=
+  (AnnotatedRuns.firstOrder A label).toStep.admits_iff f
 
-theorem runs_firstOrder {C : Configuration T O} (r : (AnnotatedRuns.firstOrder A label).Run C) :
-    Refines (AnnotatedRuns.firstOrder A label) r :=
+theorem runs_firstOrder {C : Configuration T O} (r : (AnnotatedRuns.firstOrder A label).toStep.Run C) :
+    Refines (AnnotatedRuns.firstOrder A label).toStep r :=
   fun _ σ solved => r.models_start σ solved
 
 theorem cut_firstOrder {C : Configuration T O} {f : AnnotatedRuns.Firing T S O}
-    (admitted : (AnnotatedRuns.firstOrder A label).Admits (s := C) f)
-    (r : (AnnotatedRuns.firstOrder A label).Run ((AnnotatedRuns.firstOrder A label).result f admitted))
+    (admitted : (AnnotatedRuns.firstOrder A label).toStep.Admits (s := C) f)
+    (r : (AnnotatedRuns.firstOrder A label).toStep.Run ((AnnotatedRuns.firstOrder A label).toStep.result f admitted))
     (σ : S) (solved : A.Models σ r.last.equations) :
-    (AnnotatedRuns.firstOrder A label).Holds (s := C) f PUnit.unit
+    (AnnotatedRuns.firstOrder A label).toStep.Holds (s := C) f PUnit.unit
       (A.compose (A.compose σ (Interface.Step.Run.toLast r)) A.identity) :=
-  cut_preserved (AnnotatedRuns.firstOrder A label) admitted r σ solved
+  cut_preserved (AnnotatedRuns.firstOrder A label).toStep admitted r σ solved
 
 theorem guards_firstOrder {C : Configuration T O} {f : AnnotatedRuns.Firing T S O}
-    (admitted : (AnnotatedRuns.firstOrder A label).Admits (s := C) f) :
-    (Frames.ofSubstitution A).Entails (a := PUnit.unit) ((AnnotatedRuns.firstOrder A label).information (s := C) f)
-      ((AnnotatedRuns.firstOrder A label).Holds (s := C) f) :=
+    (admitted : (AnnotatedRuns.firstOrder A label).toStep.Admits (s := C) f) :
+    (Frames.ofSubstitution A).Entails (a := PUnit.unit) ((AnnotatedRuns.firstOrder A label).toStep.information (s := C) f)
+      ((AnnotatedRuns.firstOrder A label).toStep.Holds (s := C) f) :=
   holds_of_admitted _ admitted
 
 omit [DecidableEq O] in
@@ -159,10 +158,10 @@ theorem count_firstOrder {K : EquationStore T} {answer : S}
 /-- Races: transport-equivalent configurations are bisimilar, for every program with invariant
 labels. -/
 theorem races_firstOrder {L : Type} (offers : L → (C : Configuration T O) → AnnotatedRuns.Firing T S O → Prop)
-    (invariant : Race.Generic.Invariant (AnnotatedRuns.firstOrder A label) offers
+    (invariant : Race.Generic.Invariant (AnnotatedRuns.firstOrder A label).toStep offers
       (AnnotatedRuns.firstOrderTransport A label))
     {C D : Configuration T O} (same : (AnnotatedRuns.firstOrderTransport A label).Same C D) :
-    Race.Generic.Bisimilar (AnnotatedRuns.firstOrder A label) offers C D :=
+    Race.Generic.Bisimilar (AnnotatedRuns.firstOrder A label).toStep offers C D :=
   Race.Generic.bisimilar_of_same _ invariant same
 
 end FirstOrder
@@ -186,11 +185,11 @@ theorem frames_contextual {F G M : Interface.Frames.Frame S}
   Frames.Principal.models_iff principal σ
 
 theorem admission_helper {s : Interface.Helpers.State S O} (f : Interface.Helpers.Firing s) :
-    helperStep.Admits f ↔ Admission helperStep f :=
+    helperStep.Admits f ↔ Admission helperStep.toStep f :=
   helperStep.admits_iff f
 
 theorem runs_helper {s : Interface.Helpers.State S O} (r : (helperStep (S := S) (O := O)).Run s) :
-    Refines helperStep r :=
+    Refines helperStep.toStep r :=
   fun _ σ solved => r.models_start σ solved
 
 theorem cut_helper {s : Interface.Helpers.State S O} {f : Interface.Helpers.Firing s}
@@ -199,7 +198,7 @@ theorem cut_helper {s : Interface.Helpers.State S O} {f : Interface.Helpers.Firi
     (solved : (Frames.contextual S).Models τ (helperStep.knowledge r.last)) :
     helperStep.Holds f b ((Frames.contextual S).comp ((Frames.contextual S).comp τ r.toLast)
       (helperStep.settle f admitted)) :=
-  cut_preserved helperStep admitted r τ solved
+  cut_preserved helperStep.toStep admitted r τ solved
 
 theorem guards_helper {s : Interface.Helpers.State S O} {f : Interface.Helpers.Firing s}
     (admitted : helperStep.Admits f) :
@@ -246,12 +245,12 @@ theorem spaces_helper {H : Type} (space : O → H) {s : Interface.Helpers.State 
 /-- Permissions at the helper step: a witness without `receive` survives every permitted firing. -/
 theorem witness_helper {H : Type} (space : O → H) (Γ : MeTTaCalculus.InteractionTypes.Rights H)
     {s : Interface.Helpers.State S O} {f : Interface.Helpers.Firing s} (admitted : helperStep.Admits f)
-    (formed : Permissions.Permitted helperStep space Γ f) {o : O} (present : o ∈ s.present)
+    (formed : Permissions.Permitted helperStep.toStep space Γ f) {o : O} (present : o ∈ s.present)
     (owned : Γ (space o) .receive = false) : o ∈ (helperStep.result f admitted).present :=
-  PermissionsInterface.witness_present helperStep space Γ admitted formed present owned
+  PermissionsInterface.witness_present helperStep.toStep space Γ admitted formed present owned
 
-theorem diseq_helper {s : (DisequalityFrames.Contextual.prestep S O).DState}
-    (f : (DisequalityFrames.Contextual.prestep S O).DFiring s) :
+theorem diseq_helper {s : (DisequalityFrames.Contextual.prestep S O).step.DState}
+    (f : (DisequalityFrames.Contextual.prestep S O).step.DFiring s) :
     (DisequalityFrames.Contextual.withDisequations S O).Admits f ↔
       Admission (DisequalityFrames.Contextual.withDisequations S O) f :=
   (DisequalityFrames.Contextual.withDisequations S O).admits_iff f
@@ -265,20 +264,20 @@ theorem evidence_helper {s : Interface.Helpers.State S O} (r : (helperStep (S :=
 
 theorem races_helper {L : Type}
     (offers : L → (s : Interface.Helpers.State S O) → Interface.Helpers.Firing s → Prop)
-    (invariant : Race.Generic.Invariant helperStep offers helperTransport)
+    (invariant : Race.Generic.Invariant helperStep.toStep offers helperTransport)
     {s t : Interface.Helpers.State S O} (same : (helperTransport (S := S) (O := O)).Same s t) :
-    Race.Generic.Bisimilar helperStep offers s t :=
+    Race.Generic.Bisimilar helperStep.toStep offers s t :=
   Race.Generic.bisimilar_of_same _ invariant same
 
 variable [DecidableEq S.Srt] [∀ result, DecidableEq (S.Op result)] {Γ : Ctx S} {sort : S.Srt}
 
 theorem admission_native {s : Interface.NativeState S O Γ sort} (f : Interface.NativeFiring s) :
-    (Interface.native (S := S) (O := O) (Γ := Γ) (sort := sort)).Admits f ↔ Admission Interface.native f :=
+    (Interface.native (S := S) (O := O) (Γ := Γ) (sort := sort)).Admits f ↔ Admission Interface.native.toStep f :=
   Interface.native.admits_iff f
 
 theorem runs_native {s : Interface.NativeState S O Γ sort}
     (r : (Interface.native (S := S) (O := O) (Γ := Γ) (sort := sort)).Run s) :
-    Refines Interface.native r :=
+    Refines Interface.native.toStep r :=
   fun _ σ solved => r.models_start σ solved
 
 theorem cut_native {s : Interface.NativeState S O Γ sort} {f : Interface.NativeFiring s}
@@ -288,13 +287,12 @@ theorem cut_native {s : Interface.NativeState S O Γ sort} {f : Interface.Native
     (solved : (Frames.contextual S).Models τ (Interface.native.knowledge r.last)) :
     Interface.native.Holds f b ((Frames.contextual S).comp ((Frames.contextual S).comp τ r.toLast)
       (Interface.native.settle f admitted)) :=
-  cut_preserved Interface.native admitted r τ solved
+  cut_preserved Interface.native.toStep admitted r τ solved
 
-theorem diseq_native {s : DisequalityFrames.Unguarded.DState (Interface.native (S := S) (O := O) (Γ := Γ) (sort := sort))}
-    (f : DisequalityFrames.Unguarded.DFiring Interface.native s) :
-    (DisequalityFrames.Unguarded.nativeWithDisequations (S := S) (O := O) (Γ := Γ) (sort := sort)).Admits f ↔
-      Admission DisequalityFrames.Unguarded.nativeWithDisequations f :=
-  DisequalityFrames.Unguarded.nativeWithDisequations.admits_iff f
+theorem diseq_native {s : (Interface.native (S := S) (O := O) (Γ := Γ) (sort := sort)).DState}
+    (f : Interface.native.DFiring s) :
+    (PreparedStep.nativeGuarded S O Γ sort).Admits f ↔ Admission (PreparedStep.nativeGuarded S O Γ sort) f :=
+  (PreparedStep.nativeGuarded S O Γ sort).admits_iff f
 
 theorem evidence_native {s : Interface.NativeState S O Γ sort}
     (r : (Interface.native (S := S) (O := O) (Γ := Γ) (sort := sort)).Run s)
@@ -325,22 +323,22 @@ theorem frames_dependent {Γ Δ M : Context rules} {store : EquationStore (Total
   Frames.Principal.models_iff principal σ
 
 theorem admission_dependent {s : State rules O} (f : Firing levels s) :
-    (step levels O).Admits f ↔ Admission (step levels O) f :=
-  (step levels O).admits_iff f
+    (step levels O).toStep.Admits f ↔ Admission (step levels O).toStep f :=
+  (step levels O).toStep.admits_iff f
 
-theorem runs_dependent {s : State rules O} (r : (step levels O).Run s) : Refines (step levels O) r :=
+theorem runs_dependent {s : State rules O} (r : (step levels O).toStep.Run s) : Refines (step levels O).toStep r :=
   fun _ σ solved => r.models_start σ solved
 
-theorem cut_dependent {s : State rules O} {f : Firing levels s} (admitted : (step levels O).Admits f)
-    (r : (step levels O).Run ((step levels O).result f admitted)) {b : Context rules}
+theorem cut_dependent {s : State rules O} {f : Firing levels s} (admitted : (step levels O).toStep.Admits f)
+    (r : (step levels O).toStep.Run ((step levels O).toStep.result f admitted)) {b : Context rules}
     (τ : b ⟶ r.last.frame) (solved : (ContextualDependentEta.frames levels).Models τ r.last.knowledge) :
-    (step levels O).Holds f b ((ContextualDependentEta.frames levels).comp
-      ((ContextualDependentEta.frames levels).comp τ r.toLast) ((step levels O).settle f admitted)) :=
-  cut_preserved (step levels O) admitted r τ solved
+    (step levels O).toStep.Holds f b ((ContextualDependentEta.frames levels).comp
+      ((ContextualDependentEta.frames levels).comp τ r.toLast) ((step levels O).toStep.settle f admitted)) :=
+  cut_preserved (step levels O).toStep admitted r τ solved
 
-theorem guards_dependent {s : State rules O} {f : Firing levels s} (admitted : (step levels O).Admits f) :
+theorem guards_dependent {s : State rules O} {f : Firing levels s} (admitted : (step levels O).toStep.Admits f) :
     (ContextualDependentEta.frames levels).Entails f.information (fun _ τ => f.Holds τ) :=
-  holds_of_admitted (step levels O) admitted
+  holds_of_admitted (step levels O).toStep admitted
 
 omit [DecidableEq O] in
 theorem absence_dependent {Δ : Context rules} (K : EquationStore (TotalTerm Δ)) (p : TotalTerm Δ)
@@ -361,8 +359,8 @@ theorem count_dependent {Δ M : Context rules} {K : EquationStore (TotalTerm Δ)
           ¬ (ContextualDependentEta.frames levels).Solvable (K ++ [(pattern, row o)]) :=
   Interface.Frames.Principal.entails_count_iff principal pattern present row number
 
-theorem diseq_dependent {s : (DisequalityFrames.Dependent.prestep levels O).DState}
-    (f : (DisequalityFrames.Dependent.prestep levels O).DFiring s) :
+theorem diseq_dependent {s : (DisequalityFrames.Dependent.prestep levels O).step.DState}
+    (f : (DisequalityFrames.Dependent.prestep levels O).step.DFiring s) :
     (DisequalityFrames.Dependent.withDisequations levels O).Admits f ↔
       Admission (DisequalityFrames.Dependent.withDisequations levels O) f :=
   (DisequalityFrames.Dependent.withDisequations levels O).admits_iff f

@@ -30,7 +30,7 @@ open AnnotatedRuns (Firing firstOrder)
 
 /-- **The step over the rational-tree frames**: the first-order step with the rational-tree action. -/
 abbrev rationalStep (σ : LPSignature) {O : Type*} [DecidableEq O] (label : O → RTree σ) :
-    Interface.Step (rationalFrames σ) O (Configuration (RTree σ) O) (fun _ => Firing (RTree σ) (RSubst σ) O) :=
+    Interface.Step.Standard (rationalFrames σ) O (Configuration (RTree σ) O) (fun _ => Firing (RTree σ) (RSubst σ) O) :=
   firstOrder (rationalAction σ) label
 
 /-- **The rational-tree action is faithful**: substitutions acting alike on every tree are equal. -/

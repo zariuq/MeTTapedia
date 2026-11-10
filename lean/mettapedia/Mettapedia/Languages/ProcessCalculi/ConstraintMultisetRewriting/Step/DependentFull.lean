@@ -297,7 +297,7 @@ end Firing
 variable (levels O) in
 /-- **The dependent full step**: firings with fresh helper telescopes, takes, reads, made rows,
 tells, guards and predicate queries, over the typed βη frames of the dependent unifier. -/
-abbrev step : Interface.Step (frames levels) O (State rules O) (Firing levels) where
+def step : Interface.Step.Standard (frames levels) O (State rules O) (Firing levels) where
   frame s := s.frame
   knowledge s := s.knowledge
   present s := s.present
@@ -313,10 +313,11 @@ abbrev step : Interface.Step (frames levels) O (State rules O) (Firing levels) w
   Holds f _ τ := f.Holds τ
   Admits f := f.Admits
   admits_iff _ := Iff.rfl
-  result f admitted := f.after admitted
-  present_result _ _ := rfl
-  settle f _ := (frames levels).id f.helpers.frame
-  knowledge_result f _ := (Frames.applyStore_id (X := frames levels) f.information).symm
+  preparedResult {s} f p := ⟨f.helpers.frame, f.information, fire s.present (f.selection.commit (T := Unit)),
+    relabel f.row f.makes p.1.2.2.2.2⟩
+  present_preparedResult _ _ := rfl
+  preparedSettle f _ := (frames levels).id f.helpers.frame
+  knowledge_preparedResult f _ := (Frames.applyStore_id (X := frames levels) f.information).symm
 
 /-! ## Admission -/
 

@@ -111,7 +111,7 @@ theorem Concurrent.bisimilar {L : Type} {program : L → (u : NativeState S O Γ
     (invariant : DeadInvariant program) {M : Multiset (LiveFiring s)} {t : NativeState S O Γ sort}
     (step : Concurrent s M t) {order : List (LiveFiring s)} (same : (order : Multiset (LiveFiring s)) = M)
     {t' : NativeState S O Γ sort} (run : Sequential s order t') :
-    Race.Generic.Bisimilar native (liveOffers program) t t' := by
+    Race.Generic.Bisimilar native.toStep (liveOffers program) t t' := by
   obtain ⟨t'', other, agree⟩ := step.agrees same
   rw [other.unique run] at agree
   exact bisimilar_of_deadEquiv invariant agree
@@ -154,7 +154,7 @@ inductive Chain {L : Type} (program : L → (u : NativeState S O Γ sort) → Li
     NativeState S O Γ sort → List L → NativeState S O Γ sort → Prop
   | nil (s : NativeState S O Γ sort) : Chain program s [] s
   | cons {s s' t : NativeState S O Γ sort} {ℓ : L} {labels : List L}
-      (moved : Race.Generic.Moves native (liveOffers program) s ℓ s') (rest : Chain program s' labels t) :
+      (moved : Race.Generic.Moves native.toStep (liveOffers program) s ℓ s') (rest : Chain program s' labels t) :
       Chain program s (ℓ :: labels) t
 
 /-- **For closed programs a sequential run is a word of labelled moves**, the labels in the order of
@@ -183,7 +183,7 @@ theorem Concurrent.chain {L : Type} (program : L → ClosedFiring S O Γ sort �
     (step : Concurrent s ((w.map fun x => x.2.atState s) : Multiset (LiveFiring s)) t)
     {w' : List (L × ClosedFiring S O Γ sort)} (perm : w'.Perm w) :
     ∃ t', Chain (closedOffers program) s (w'.map Prod.fst) t' ∧ DeadEquiv t t' ∧
-      Race.Generic.Bisimilar native (liveOffers (closedOffers program)) t t' := by
+      Race.Generic.Bisimilar native.toStep (liveOffers (closedOffers program)) t t' := by
   obtain ⟨t', run, agree⟩ := step.agrees (order := w'.map fun x => x.2.atState s)
     (Multiset.coe_eq_coe.mpr (perm.map _))
   exact ⟨t', sequential_chain program w' (fun x member => offered x (perm.subset member)) run, agree,

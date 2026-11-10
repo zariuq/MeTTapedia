@@ -1,5 +1,6 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.FirstOrderIndependence
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.SearchStep
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Reindex
 import Mettapedia.GSLT.Logic.HennessyMilnerAdequacy
 
 /-!
@@ -267,28 +268,13 @@ variable {Obj : Type uOb} {Tm : Obj → Type uTm} {Hom : Obj → Obj → Type uH
 /-- **The step restricted to the firings a program keeps.** Admission, results and knowledge are
 those of the step. -/
 def restrict (P : Interface.Step X O State Fir) (keep : ∀ s, Fir s → Prop) :
-    Interface.Step X O State (fun s => {f : Fir s // keep s f}) where
-  frame := P.frame
-  knowledge := P.knowledge
-  present := P.present
-  selection f := P.selection f.1
-  target f := P.target f.1
-  extension f := P.extension f.1
-  information f := P.information f.1
-  transported f := P.transported f.1
-  Shapes f := P.Shapes f.1
-  Holds f := P.Holds f.1
-  Admits f := P.Admits f.1
-  admits_iff f := P.admits_iff f.1
-  result f := P.result f.1
-  present_result f := P.present_result f.1
-  settle f := P.settle f.1
-  knowledge_result f := P.knowledge_result f.1
+    Interface.Step X O State (fun s => {f : Fir s // keep s f}) :=
+  P.reindex (fun f => f.val)
 
 variable (A : SubstitutionAction T S) (label : O → T) (alphabet : List (Firing T S O))
 
 /-- The first-order step under a finite alphabet of firings. -/
-abbrev program := restrict (AnnotatedRuns.firstOrder A label) (fun _ f => f ∈ alphabet)
+abbrev program := restrict (AnnotatedRuns.firstOrder A label).toStep (fun _ f => f ∈ alphabet)
 
 /-- **The alternatives of a program**: the admitted members of its alphabet, in alphabet order. -/
 noncomputable def alternatives : Search.Alternatives (program A label alphabet) := by

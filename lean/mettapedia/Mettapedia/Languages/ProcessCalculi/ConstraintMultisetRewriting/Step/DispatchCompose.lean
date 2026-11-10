@@ -96,7 +96,7 @@ variable {O : Type uOcc} [DecidableEq O] {State : Type uS} {Firing : State → T
 image of a store of the bottom `X` is decided by the bottom, through the middle's license on the
 translated store. -/
 theorem dispatch_admits_iff_comp (first : Φ.Reflects) (second : Ψ.Reflects)
-    (P : Step Z O State Firing) {s : State} {f : Firing s} (d : (FrameMap.comp Φ Ψ).Dispatched P f)
+    (P : Step Z O State Firing) [P.Guarded] {s : State} {f : Firing s} (d : (FrameMap.comp Φ Ψ).Dispatched P f)
     (licensedFirst : Φ.LicensedAt d.problem) (licensedSecond : Ψ.LicensedAt (Φ.store d.problem))
     (decides : X.Decides d.problem) :
     P.Admits f ↔ P.Shapes f ∧

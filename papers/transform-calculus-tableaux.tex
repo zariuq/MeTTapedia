@@ -45,9 +45,9 @@
 \newcommand{\doteqStore}{\;\doteq\;}
 \emergencystretch=3em
 
-\title{\textbf{The Transform Calculus: Birth-Cut Constraint Multiset Rewriting\\and the Certain-Check Proof Logic for MeTTa}}
+\title{\textbf{The Transform Calculus: Birth-Cut Constraint Multiset Rewriting,\\the Certain-Check Proof Logic, and the Tier-0 \texttt{tcalc} Kernel for MeTTa}}
 \author{Formalized in Lean~4\\(\lean{Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting})}
-\date{November 7, 2026}
+\date{November 8, 2026}
 
 \begin{document}
 \sloppy
@@ -56,7 +56,7 @@
 \begin{abstract}
 When a rewriting or logic engine combines multiset state, unification variables, and negative or cardinality guards (such as testing the absence of a pattern or counting its matches), operational engines routinely suffer from four pathologies: testing absence only at a principal unifier is unsound under later variable instantiation; collapsing spaces into sets destroys occurrence multiplicity while naive multiset counting explodes combinatorially; inspecting raw syntactic terms leaks across equated variables; and conflating symbolic consistency with closed inhabitation allows rules guarded by uninhabited types to fire vacuously.
 
-We present the \emph{Transform Calculus}, a formal model of transactional constraint multiset rewriting designed as the semantic kernel for MeTTa and mechanized in Lean~4 (over $215$ sorry-free modules). Rather than a monolithic machine, the calculus is structured around a single categorical step interface (\lean{Interface.Frames} and \lean{Interface.Step}) whose admission law (\lean{admits_iff}) separates physical occurrence commits from semantic constraint solving and universal model-theoretic guard entailment at the firing's birth cut. Its primary first-order instance (\lean{AnnotatedRuns.firstOrder} and \lean{Spaces.located}) is governed by the \emph{certain-check proof calculus} (\lean{CertainChecks.Derives}), a three-rule inference system that decides equality, absence, and exact cardinality over every solution of an equation store by refuting candidate extensions via occurs-checked unification. We prove soundness and completeness of \lean{CertainChecks.Derives} for free Henkin models and the free term algebra (\lean{derives_iff_termModel}), establish the incompleteness of the ground Herbrand model (\lean{oneConstant_separates}), and characterize query-free firing admission as formal derivability (\lean{admitsDerivably_iff}). We then show how SLD resolution, guarded superposition (via upward guard closure \lean{entails_closure_iff}), ground Knuth--Bendix completion, MeTTa space operations (\metta{match}, \metta{collapse}, equation calls, and MM2 \metta{exec}), and higher-order contextual and dependent instances inhabit the same step interface.
+We present the \emph{Transform Calculus}, a formal model of transactional constraint multiset rewriting designed as the semantic kernel for MeTTa and mechanized in Lean~4 (over $270$ sorry-free modules). Rather than a monolithic machine, the calculus is structured around a single categorical step interface (\lean{Interface.Frames} and \lean{Interface.Step}) whose admission law (\lean{admits_iff}) separates physical occurrence commits from semantic constraint solving and universal model-theoretic guard entailment at the firing's birth cut. Its primary first-order instance (\lean{AnnotatedRuns.firstOrder} and \lean{Spaces.located}) is governed by the \emph{certain-check proof calculus} (\lean{CertainChecks.Derives}), a three-rule inference system that decides equality, absence, and exact cardinality over every solution of an equation store by refuting candidate extensions via occurs-checked unification. We prove soundness and completeness of \lean{CertainChecks.Derives} for free Henkin models and the free term algebra (\lean{derives_iff_termModel}), establish the incompleteness of the ground Herbrand model (\lean{oneConstant_separates}), and characterize query-free firing admission as formal derivability (\lean{admitsDerivably_iff}). We then show how SLD resolution, guarded superposition (via upward guard closure \lean{entails_closure_iff}), ground Knuth--Bendix completion, MeTTa space operations (\metta{match}, \metta{collapse}, equation calls, and MM2 \metta{exec}), and higher-order contextual and dependent instances inhabit the same step interface. Finally, we present \texttt{tcalc}, a $1{,}630$-line C99 Tier-0 reference kernel implementing the Transform Calculus step interface, its modular prepared-step and candidate-cursor bridge to CeTTa (\texttt{TcPreparedStep}, \texttt{TcAdmissionReceipt}, \texttt{TcCandidateCursor}), and five foundational proof verifiers built directly as \texttt{tcalc} rule systems: Metamath (\texttt{micromath\_tcalc}), Metamath Zero (\texttt{mm0\_tcalc}/\texttt{mmb\_tcalc}), HOL Light (\texttt{hol\_tcalc}), Megalodon across all four foundational profiles (\texttt{mg\_tcalc}: Egal/HoTTG, HF, Mizar, HOAS), and Dedukti's $\lambda\Pi$-calculus modulo rewriting (\texttt{dk\_tcalc}).
 \end{abstract}
 
 \tableofcontents
@@ -99,6 +99,8 @@ Rather than inventing an ad-hoc operational patch for each pathology, the \emph{
   \end{enumerate}
   \item \textbf{Automated Reasoning, Programs, Concurrency, and Dependent Status (\S\ref{sec:atp}--\S\ref{sec:related}).}
   We show how first-order resolution (\lean{Step.ResolutionFiring}), guarded superposition via upward closure (\lean{entails_closure_iff}), ground Knuth--Bendix completion (\lean{Step.CompletionCorrectness}), fair search (\lean{Step.SearchPolicy}), MeTTa program compilation and interpretation (\lean{Step.Program*}), concurrency diamonds and Milner's race spectrum (\lean{Step.RacePair}, \lean{Step.RaceSpectrum}), and the contextual/dependent instances (\lean{Step.DependentFull}, \lean{Step.DependentClosed}, \lean{Step.DependentFullFibre}) fit together, accompanied by a transparent accounting of proved theorems versus open problems (\S\ref{sec:dependent}).
+  \item \textbf{The Tier-0 C Kernel (\texttt{tcalc}), CeTTa Cursor Bridge, and Five-Foundation Verifier Suite (\S\ref{sec:tcalc}).}
+  We describe the $1{,}630$-line C99 Tier-0 reference kernel (\texttt{tcalc}), its modular prepared-step and candidate-cursor interface (\texttt{TcPreparedStep}, \texttt{TcAdmissionReceipt}, \texttt{TcCandidateCursor}), its schema compiler (\texttt{tcalc\_compile}) and flat x86-64 leaf (\texttt{flat\_fire}), and five foundational proof verifiers hosted as \texttt{tcalc} rule systems: Metamath, Metamath Zero, HOL Light~\cite{Harrison2009HOLLight}, Megalodon~\cite{Brown2019Megalodon}, and Dedukti ($\lambda\Pi$-calculus modulo rewriting)~\cite{CousineauDowek2007LPModulo,Barendregt1992LambdaCalculi}. We analyze the 8-rule structural duality between Simple Type Theory with prenex polymorphism (\texttt{mg\_tcalc}) and Dependent Type Theory modulo rewriting (\texttt{dk\_tcalc}), and show how \texttt{coGSLT.module} and executable OSLF connect them functorially.
 \end{itemize}
 
 % =========================================================================
@@ -641,11 +643,120 @@ Existing MeTTa runtimes evaluate queries operationally along a search schedule, 
 CHR's simpagation rules~\cite{Fruhwirth2009CHR} inspired our separation of $\mathrm{read}$ (kept) and $\mathrm{take}$ (removed) ports, while $\text{CHR}^\neg$~\cite{VanWeert2006CHRneg} adds operational negation-as-absence under the refined semantics $\omega_r$. Our \lean{CertainChecks.Derives} calculus makes absence and exact counting \emph{model-theoretically sound and complete} with respect to free Henkin models (\lean{derives_iff_termModel}) and characterizes firing admission as formal derivability (\lean{admitsDerivably_iff}). Similarly, whereas CHAM~\cite{BerryBoudol1992CHAM}, Gamma~\cite{BanatreLeMetayer1990Gamma}, MSR~\cite{Cervesato2000MSR}, Lolli/LO~\cite{HodasMiller1994Lolli,AndreoliPareschi1991LO}, and CLF~\cite{Cervesato2002CLF} (which supports existential quantification $\exists x.\, A$ inside its concurrency monad) are monotone with respect to workspace extension, the Transform Calculus supports non-monotonic birth-cut absence and exact cardinality guards while maintaining explicit occurrence identities and formalizing the universal-closure problem familiar from free-variable tableaux~\cite{Fitting1996Tableaux,Hahnle2001Tableaux} and rigid $E$-unification~\cite{Gallier1992Rigid}.
 
 % =========================================================================
+\section{The C Runtime, Proof Checkers, and Verification Boundaries}
+\label{sec:tcalc}
+
+The standalone \texttt{tcalc} implementation supplies a common C engine for
+candidate rule firings. Its terms are sorted, interned nodes; its state combines
+constraint bindings with occurrence identities. Rule records supply take/read
+premises, equations, disequations, absence/count queries and conclusions.
+Named-space and birth operations are additional runtime facilities. These
+mechanisms are candidate implementations of the mathematical interfaces;
+a formal whole-runtime refinement of \lean{Interface.Step} is not yet established.
+
+\subsection{Preparation, admission and the host boundary}
+\texttt{TcPreparedStep} contains a rule identifier, borrowed take/read and
+instantiation arrays, an optional destination and reachability seeds.
+\texttt{TcCandidateCursor} proposes candidates through
+\texttt{bool (*next)(void *ctx, TcPreparedStep *out)}.
+The separate bridge computes a \texttt{TcPreparedEffect}, checks an explicit
+\texttt{TcAdmissionProfile}, and emits a \texttt{TcAdmittedEvent} and
+\texttt{TcAdmissionReceipt} on successful execution.
+
+A cursor need not be trusted for the validity of a candidate that is fully
+rechecked. Completeness, absence and counting nevertheless require qualified
+coverage or independent kernel checks. An exhausted budget is not a proof of
+refutation. Retained events require immutable, live payloads and profile data;
+the C interface currently borrows these objects. Its policy callbacks must be
+pure and calls must be externally serialized. A live CeTTa cursor integration
+and its state-correspondence theorem remain separate obligations.
+
+\subsection{Proof-system implementations and their residual trust}
+\begin{center}
+\begin{tabular}{@{}llp{8cm}@{}}
+\toprule
+Implementation & Input & Evidence and qualification \\
+\midrule
+Micromath & rule operations & Differential substitution/merge/lookup tests;
+these are not verification of Metamath's \texttt{set.mm}. \\
+MM0/MMB & \texttt{.mmu}, \texttt{.mmb} & Proof and specification fixtures,
+with malformed and false-proof controls. \\
+HOL & HOLR streams & Primitive inference replay and expected sequents;
+HOLR is the local binary format, not OpenTheory. \\
+Megalodon & \texttt{-sexprinfo} & Natural-deduction proof terms, inductive
+well-formedness/type checks, and declaration/import rules. \\
+Dedukti & \texttt{.dk} & Typing and conversion in the selected LF/CoC and
+beta/eta profile, compared with named reference checkers. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Protected theorem/signature spaces prevent ordinary external posting after
+sealing. Conversion, substitution and context operations still rely on named C
+helpers whose facts enter \texttt{SPACE\_HELPER}; these routines remain trusted.
+A ledger names that trust rather than eliminating it. The shell gates require
+reference executables before reporting reference agreement and distinguish
+Kontroli's shared-context article checks from separate modules. Kontroli's
+warnings about unannotated rewrite variables qualify the evidence from those
+inputs; successful replay alone does not certify their rewrite metatheory.
+
+The November 2026 review added controls for three acceptance gaps: eta was
+previously enabled silently in the Dedukti checker, an unproved Megalodon
+\texttt{THM} could be closed by \texttt{QED}, and a definition identifier could
+be restated with a different body of the same type. The default conversion now
+excludes eta; \texttt{--eta} is explicit. Proof articles require a checked proof
+before \texttt{QED}, and incompatible definition restatements are refused.
+
+LCF is a theorem-construction discipline, not a mutable tactic stack. It is
+compatible with natural-deduction proof terms and retained proof DAGs. The
+current Megalodon checker uses proof terms without a separate \texttt{--nd}
+mode. Equal counts of eight core proof constructors do not establish a duality
+between simple and dependent type theories; both implementations also perform
+formation, conversion, declaration and helper operations.
+
+\subsection{Translation and machine-code verification}
+The Megalodon-to-Dedukti exporter emits an STT encoding with type and proof
+decoding families. It tracks binding context and definition transparency.
+Corpus replay and mutated-proof rejection test this implementation. General
+typing, substitution, conversion, proof-preservation and conservativity
+statements require their own proofs. Selective opacity is a qualification of
+the exported artifact, not an unconditional equality-preserving translation
+for all subsequent uses.
+
+The reported source-Megalodon and proof-replay timings describe different
+workloads: source checking includes parsing, elaboration and possibly tactics.
+Removing one expensive file does not create a matched-input kernel benchmark.
+Aggregate time divided by firing count does not isolate the cost of a firing
+or prove that conversion work is constant.
+
+\texttt{FLAT\_FIRE\_CORRECT} proves the exact 211-byte reference function on
+s2n-bignum's x86-64 model, with no new axioms. It covers acceptance, refusal,
+empty lists, register restoration and the return address under explicit bounds
+and separation conditions. Scratch is disjoint from the inputs and destination;
+the destination may overlap inputs because input reads finish first. The
+excluded stack/return region is 56 bytes, of which 48 are writable. Descriptor
+offset addition is modulo $2^{32}$. A packing adapter using natural-number
+indices must separately discharge its nonwrapping and bounds obligations.
+This theorem is not yet a proof of the pointer-based tcalc adapter, the C
+checkers, their parsers, or arbitrary compiler output.
+
+The authored transform presentation and OSLF development provide a route to
+qualifying those implementations. Preservation of modalities, trace quotients
+and source proof judgments across the exported tower is a remaining integration
+goal, not a consequence of sharing the same C engine.
+
+% =========================================================================
 \section{Conclusion and Mechanization Summary}
 \label{sec:conclusion}
 % =========================================================================
 
-The Transform Calculus demonstrates that a single, small categorical step interface (\lean{Interface.Frames} and \lean{Interface.Step}) can unify multiset rewriting, logic programming with occurs-checked unification, Henkin-complete negative and cardinality guards (\lean{CertainChecks.Derives}), automated theorem proving calculi (resolution, guarded superposition, ground completion), and MeTTa program semantics without sacrificing mathematical rigor. Every theorem cited in this paper is machine-checked in Lean~4 under \lean{Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting} with zero \texttt{sorry}s, providing a rock-solid foundation for next-generation reflective languages and proof engines.
+The Transform Calculus supplies mathematical interfaces for constrained
+multiset transitions, knowledge transport, runs and observation. The Lean
+results cited by declaration name establish their stated hypotheses and
+conclusions. The C proof-system suite supplies executable examples and
+regression evidence; the HOL Light leaf proofs establish a separate
+machine-code boundary. Connecting the full authored presentation, the C
+implementations and those machine-code results remains essential work.
 
 \begin{thebibliography}{99}
 
@@ -664,10 +775,25 @@ J.-P.~Ban\^{a}tre and D.~Le~M\'{e}tayer.
 \newblock The Gamma model and its discipline of programming.
 \newblock \emph{Science of Computer Programming}, 15(1):55--77, 1990.
 
+\bibitem{Barendregt1992LambdaCalculi}
+H.~P.~Barendregt.
+\newblock Lambda calculi with types.
+\newblock In S.~Abramsky, D.~M.~Gabbay, and T.~S.~E.~Maibaum, editors, \emph{Handbook of Logic in Computer Science}, volume~2, pp.\ 117--309. Oxford University Press, 1992.
+
 \bibitem{BerryBoudol1992CHAM}
 G.~Berry and G.~Boudol.
 \newblock The chemical abstract machine.
 \newblock \emph{Theoretical Computer Science}, 96(1):217--248, 1992.
+
+\bibitem{Brown2019Megalodon}
+C.~E.~Brown.
+\newblock {Megalodon}: Proof checking and automated proving for higher-order {Tarski--Grothendieck} set theory.
+\newblock System documentation and formal library, Czech Technical University in Prague, 2019--2025.
+
+\bibitem{Carneiro2019MM0}
+M.~Carneiro.
+\newblock {Metamath Zero}: Designing a theorem prover prover.
+\newblock In \emph{Intelligent Computer Mathematics (CICM)}, LNCS 12236, pp.\ 71--88. Springer, 2020.
 
 \bibitem{Cervesato2000MSR}
 I.~Cervesato, N.~A.~Durgin, P.~D.~Lincoln, J.~C.~Mitchell, and A.~Scedrov.
@@ -678,6 +804,11 @@ I.~Cervesato, N.~A.~Durgin, P.~D.~Lincoln, J.~C.~Mitchell, and A.~Scedrov.
 I.~Cervesato, F.~Pfenning, D.~Walker, and K.~Watkins.
 \newblock A concurrent logical framework {I}: Judgments and properties.
 \newblock Technical Report CMU-CS-02-101, Carnegie Mellon University, 2002.
+
+\bibitem{CousineauDowek2007LPModulo}
+D.~Cousineau and G.~Dowek.
+\newblock Embedding pure type systems in the lambda-Pi-calculus modulo.
+\newblock In \emph{Typed Lambda Calculi and Applications (TLCA)}, LNCS 4583, pp.\ 102--117. Springer, 2007.
 
 \bibitem{Eder1985Properties}
 E.~Eder.
@@ -708,6 +839,11 @@ B.~Goertzel, S.~Bogdanov, A.~Potapov, et~al.
 R.~H\"{a}hnle.
 \newblock Tableaux and related methods.
 \newblock In A.~Robinson and A.~Voronkov, editors, \emph{Handbook of Automated Reasoning}, volume~I, chapter~3, pp.\ 100--178. Elsevier, 2001.
+
+\bibitem{Harrison2009HOLLight}
+J.~Harrison.
+\newblock {HOL Light}: An overview.
+\newblock In \emph{Theorem Proving in Higher Order Logics (TPHOLs)}, LNCS 5674, pp.\ 60--66. Springer, 2009.
 
 \bibitem{HodasMiller1994Lolli}
 J.~S.~Hodas and D.~Miller.

@@ -1,4 +1,5 @@
 import Mettapedia.Languages.Lean.Declarations.Reader
+import Mettapedia.Languages.Lean.Declarations.QuotientProfile
 
 /-!
 # Lean terms and equations as first-order data, types kept
@@ -14,8 +15,8 @@ as sets.
   (`unfoldProjInst?`), so `a + b` on naturals is `Nat.add a b`, as in the
   code-equation export.
 * A constant applied to arguments is `app c args`, its universe levels
-  dropped: the Egal reading of a family or a function does not depend on the
-  level.
+  dropped after profile checks. Quotient primitives require successor
+  universes: their Type-carrier interpretation does not cover Prop carriers.
 * A bound variable is `var x`; a variable or an abstraction applied to
   arguments is `apv f args`.
 * An abstraction `fun x : T => b` is `lam x T b`, and a non-dependent
@@ -163,7 +164,9 @@ partial def readTerm (names : Names) (e : Expr) : FReadM FTerm := do
     if e.getAppNumArgs == 0 then return .var name
     return .apv (.var name) (← e.getAppArgs.toList.mapM (readTerm names))
   | .lam .. => readTerm names e.headBeta
-  | .const c _ =>
+  | .const c levels =>
+    if let some reason ← QuotientProfile.refusal? c levels then
+      throwThe String reason
     -- A constant applied to fewer arguments than it takes: a function, a
     -- constructor, or a family of propositions used as a value (`Nat.le`).
     if (← whnfD (← inferType e)).isForall then
@@ -232,10 +235,31 @@ def typeLevel? : Level → Option String
   | .succ (.param u) => some u.toString
   | _ => none
 
-/-- Read the statement of an equation theorem. -/
-def readEquation (thm : Name) : FReadM FEquation := do
-  let info ← getConstInfo thm
-  let go : MetaM (Except String FEquation) := forallTelescope info.type fun xs body => do
+/-- Read a declaration's actual binders and result type. -/
+def readSignature (type : Expr) : FReadM (List FBinder × FTerm) := do
+  let go : MetaM (Except String (List FBinder × FTerm)) := forallTelescope type fun xs body => do
+    let (names, _) ← nameAll {} [] xs "x"
+    ExceptT.run do
+      let binders ← xs.toList.mapM fun x => do
+        let name := names[x.fvarId!]!
+        let ty ← inferType x
+        if let .sort u := ty then
+          if u.isZero then return FBinder.term name .prop
+          if let .param l := u then return FBinder.sort name l.toString
+          match typeLevel? u with
+          | some level => return FBinder.type name level
+          | none => throwThe String s!"a binder of sort {u}: {name}"
+        if ← isProp ty then return FBinder.hyp name (← readTerm names ty)
+        return FBinder.term name (← readTerm names ty)
+      return (binders, ← readTerm names body)
+  ExceptT.mk go
+
+/-- Read an equation, optionally at successor-universe instances of its
+actual declaration. The exporter records this specialization explicitly. -/
+def readEquation (thm : Name) (typeProfile : Bool := false) : FReadM FEquation := do
+  let statement ← if typeProfile then pure (← QuotientProfile.typeInstance thm).1
+    else pure (← getConstInfo thm).type
+  let go : MetaM (Except String FEquation) := forallTelescope statement fun xs body => do
     let (names, _) ← nameAll {} [] xs "x"
     ExceptT.run do
       let binders ← xs.toList.mapM fun x => do

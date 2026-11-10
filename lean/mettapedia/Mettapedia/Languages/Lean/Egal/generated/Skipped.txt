@@ -1,0 +1,27 @@
+function Subtype.val: a projection of Subtype, which is not admitted
+function Finset.val: a projection of Finset, which is not admitted
+function List.mergeSort: applies Mettapedia.Languages.Lean.Recursion.FuelCore.MergeSort.reading, which is not read
+function Nat.decidablePrime: erased proofs in the definition or its equations are not reconstructed
+function Finset.sum: applies Multiset.sum, which is not read
+function Finset.range: erased proofs in the definition or its equations are not reconstructed
+function Finset.card: applies Multiset.card, which is not read
+function Finset.filter: erased proofs in the definition or its equations are not reconstructed
+function List.MergeSort.Internal.splitInTwo: erased proofs in the definition or its equations are not reconstructed
+function Mettapedia.Languages.Lean.Recursion.FuelCore.MergeSort.reading: applies Mettapedia.Languages.Lean.Recursion.FuelCore.MergeSort.sourceFuel, which is not read
+function Nat.decidableLoHi: erased proofs in the definition or its equations are not reconstructed
+function Multiset.sum: erased proofs in the definition or its equations are not reconstructed
+function Multiset.map: erased proofs in the definition or its equations are not reconstructed
+function Multiset.range: applies Multiset.ofList, which is not read
+function Multiset.card: erased proofs in the definition or its equations are not reconstructed
+function Multiset.filter: erased proofs in the definition or its equations are not reconstructed
+function Unit.unit: applies PUnit.unit, which is not read
+function Mettapedia.Languages.Lean.Recursion.FuelCore.MergeSort.sourceFuel: erased proofs in the definition or its equations are not reconstructed
+function Nat.decidableBallLT: erased proofs in the definition or its equations are not reconstructed
+function Multiset.foldr: erased proofs in the definition or its equations are not reconstructed
+function Quot.liftOn: erased proofs in the definition or its equations are not reconstructed
+function Multiset.ofList: applies Quot.mk, which is not read
+test 10: List.mergeSort is not read: applies Mettapedia.Languages.Lean.Recursion.FuelCore.MergeSort.reading, which is not read
+test 27: Irreducible is not read: not exported with equations
+test 28: Irreducible is not read: not exported with equations
+test 29: Finset.range is not read: erased proofs in the definition or its equations are not reconstructed
+test 30: Finset.range is not read: erased proofs in the definition or its equations are not reconstructed

@@ -14,9 +14,9 @@ authoring forms.
 
 Terms keep Lean's global names. Natural literals have a proved compact
 arithmetic presentation. Zero, one and an offset `t + 1` keep their constructor
-forms, so an index such as `n + 1` is `Nat.succ n`. A dependent function type is outside the
-syntax and is refused; a nondependent one is kept as an arrow, so admission
-can refuse a function field explicitly.
+forms, so an index such as `n + 1` is `Nat.succ n`. Dependent function types
+retain their binders; a nondependent one is kept as an arrow. Admission is
+separate and may refuse a function field or a proposition outside its guard profile.
 
 Besides the syntax, a reading records two facts the consumers need:
 
@@ -101,16 +101,30 @@ def natLiteral? (e : Expr) : MetaM (Option Nat) := do
     return none
 
 /-- A Lean term as declaration syntax, in a context naming its variables. -/
-partial def toTerm (names : Names) (owner : String) (e : Expr) : ReadM STerm := do
+partial def toTerm (names : Names) (owner : String) (e : Expr)
+    (normalizeProjections : Bool := false) : ReadM STerm := do
   let e ← instantiateMVars e
   if let some n ← natLiteral? e then
     return NaturalSyntax.encode n
   if e.isAppOfArity ``HAdd.hAdd 6 then
     if (← whnfR (e.getArg! 0)).isConstOf ``Nat then
       if let some k ← natLiteral? (e.getArg! 5) then
-        let term ← toTerm names owner (e.getArg! 4)
+        let term ← toTerm names owner (e.getArg! 4) normalizeProjections
         if k ≤ 1 then return successors k term
         else return .app (.app (.name "Nat.add") term) (NaturalSyntax.encode k)
+  if normalizeProjections then
+    if let some name := e.getAppFn.constName? then
+      if let some projection ← getProjectionFnInfo? name then
+        if let some reduced ← unfoldProjInst? e then
+          if reduced != e then return ← toTerm names owner reduced true
+        let arguments := e.getAppArgs
+        if projection.numParams < arguments.size then
+          let constructor ← getConstInfoCtor projection.ctorName
+          let mut result : STerm := .project constructor.induct.toString projection.i
+            (← toTerm names owner arguments[projection.numParams]! true)
+          for argument in arguments.extract (projection.numParams + 1) arguments.size do
+            result := .app result (← toTerm names owner argument true)
+          return result
   match e with
   | .fvar id =>
     match names[id]? with
@@ -118,13 +132,28 @@ partial def toTerm (names : Names) (owner : String) (e : Expr) : ReadM STerm := 
     | none => throwThe Refusal (.unsupportedTerm owner (toString (← ppExpr e)))
   | .const c _ => return .name c.toString
   | .sort u => return .name (if u.isZero then "Prop" else "Type")
-  | .app f a => return .app (← toTerm names owner f) (← toTerm names owner a)
+  | .app f a =>
+      return .app (← toTerm names owner f normalizeProjections)
+        (← toTerm names owner a normalizeProjections)
+  | .proj structureName field record =>
+      return .project structureName.toString field (← toTerm names owner record normalizeProjections)
   | .forallE _ domain body _ =>
     if body.hasLooseBVars then
-      throwThe Refusal (.dependentFunctionType owner (toString (← ppExpr e)))
+      let taken := names.toList.map (·.2)
+      let environment ← getEnv
+      let mut serial := 0
+      let mut binder := s!"pi{serial}"
+      while taken.contains binder || environment.contains binder.toName do
+        serial := serial + 1
+        binder := s!"pi{serial}"
+      let domainTerm ← toTerm names owner domain normalizeProjections
+      withLocalDeclD binder.toName domain fun x => do
+        return .pi binder domainTerm
+          (← toTerm (names.insert x.fvarId! binder) owner (body.instantiate1 x) normalizeProjections)
     else
-      return .arrow (← toTerm names owner domain) (← toTerm names owner body)
-  | .mdata _ inner => toTerm names owner inner
+      return .arrow (← toTerm names owner domain normalizeProjections)
+        (← toTerm names owner body normalizeProjections)
+  | .mdata _ inner => toTerm names owner inner normalizeProjections
   | _ => throwThe Refusal (.unsupportedTerm owner (toString (← ppExpr e)))
 
 /-- A readable, distinct name for a bound variable. -/
@@ -177,7 +206,7 @@ def readConstructor (parameterNames : List String) (c : Name) (normalizeTypes : 
       let proofs ← fields.toList.mapM fun x => do
         let type ← inferType x
         if ← isProp type then
-          return some (← toTerm names c.toString (← whnfD type))
+          return some (← toTerm names c.toString (← whnfD type) true)
         else return none
       return (⟨c.toString, fieldBinders, ← toTerm names c.toString result⟩,
         ← keptConstructorFields c, proofs)

@@ -1,0 +1,15 @@
+claim MZero: forall x :e Lean_Nat,
+  Lean_Nat_mul x Lean_Nat_zero_node = Lean_Nat_zero_node.
+{ let x. assume Hx: x :e Lean_Nat.
+  rewrite <- LeanNum_0. exact Lean_Nat_mul_eq_1 x Hx. }
+claim PZero: forall x :e Lean_Nat,
+  Lean_Nat_pow x (LeanNum 0) = Lean_Nat_succ_node Lean_Nat_zero_node.
+{ let x. assume Hx: x :e Lean_Nat.
+  rewrite Lean_Nat_pow_eq_1 x Hx.
+  rewrite LeanNum_S 0 nat_0. rewrite LeanNum_0. reflexivity. }
+prove Lean_MonoidOf Lean_Nat (Lean_BinaryMap Lean_Nat Lean_Nat Lean_Nat_mul)
+  (Lean_Nat_succ_node Lean_Nat_zero_node)
+  (Lean_BinaryMap Lean_Nat Lean_Nat (fun n x => Lean_Nat_pow x n)) :e Lean_Monoid Lean_Nat.
+exact NatAlgebra_monoid Lean_Nat_add Lean_Nat_add_In Lean_Nat_add_eq_1 Lean_Nat_add_eq_2
+  Lean_Nat_mul Lean_Nat_mul_In MZero Lean_Nat_mul_eq_2
+  Lean_Nat_pow Lean_Nat_pow_In PZero Lean_Nat_pow_eq_2.

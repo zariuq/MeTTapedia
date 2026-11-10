@@ -84,7 +84,7 @@ theorem absence_preserved (label : (s : State) → O → Tm (P.frame s)) (law : 
     exact present
   rcases mem_fire.mp fired with ⟨old, _⟩ | made
   · have notMade : o ∉ (P.selection f).made := fun inside =>
-      Finset.disjoint_left.mp ((P.admits_iff f).mp admitted).2.1.fresh
+      Finset.disjoint_left.mp (P.prepares admitted).2.1.fresh
         (by simpa [Selection.commit] using inside) old
     rw [law f admitted o notMade] at same
     apply absent b (X.comp τ (P.along f admitted)) earlier o old atH
@@ -111,7 +111,7 @@ def locatedLabels : (C : Configuration (H × T) O) → O → H × T :=
 omit [DecidableEq H] in
 /-- **They move along firings.** -/
 theorem locatedLabels_law :
-    LabelLaw (Spaces.located A space payload) (locatedLabels space payload) := by
+    LabelLaw (Spaces.located A space payload).toStep (locatedLabels space payload) := by
   intro C f admitted o _
   show Spaces.label space payload o =
     (LocatedSubstitution.action (N := H) A).apply
@@ -125,7 +125,7 @@ omit [DecidableEq H] in
 handle: rows at other handles never match. -/
 theorem absent_iff_absentAt {C : Configuration (H × T) O} (p : H × T) (σ : S) :
     (Check.absent p).Holds (LocatedSubstitution.action (N := H) A) σ (Spaces.label space payload) C.present ↔
-      AbsentAt (Spaces.located A space payload) space (locatedLabels space payload) p.1 (s := C) p
+      AbsentAt (Spaces.located A space payload).toStep space (locatedLabels space payload) p.1 (s := C) p
         (b := PUnit.unit) σ := by
   constructor
   · intro holds o present _
@@ -136,25 +136,25 @@ theorem absent_iff_absentAt {C : Configuration (H × T) O} (p : H × T) (σ : S)
 omit [DecidableEq H] in
 /-- **`Permissions.owned_witness_present` is the first-order instance of `witness_present`.** -/
 theorem old_owned_witness_present {C : Configuration (H × T) O} {f : AnnotatedRuns.Firing (H × T) S O}
-    (admitted : (Spaces.located A space payload).Admits (s := C) f)
+    (admitted : (Spaces.located A space payload).toStep.Admits (s := C) f)
     (formed : Permissions.LocatedPermitted space Γ f) {o : O} (present : o ∈ C.present)
     (owned : Γ (space o) .receive = false) :
-    o ∈ ((Spaces.located A space payload).result f admitted).present :=
-  witness_present (Spaces.located A space payload) space Γ admitted formed present owned
+    o ∈ ((Spaces.located A space payload).toStep.result f admitted).present :=
+  witness_present (Spaces.located A space payload).toStep space Γ admitted formed present owned
 
 omit [DecidableEq H] in
 /-- **`Permissions.owned_absence_preserved` is the first-order instance of `absence_preserved`.** -/
 theorem old_owned_absence_preserved {C : Configuration (H × T) O} {f : AnnotatedRuns.Firing (H × T) S O}
-    (admitted : (Spaces.located A space payload).Admits (s := C) f)
+    (admitted : (Spaces.located A space payload).toStep.Admits (s := C) f)
     (formed : Permissions.LocatedPermitted space Γ f) {p : H × T} (owned : Γ p.1 .send = false)
     (absent : (LocatedSubstitution.action (N := H) A).Entails C.equations
       (fun σ => (Check.absent p).Holds (LocatedSubstitution.action (N := H) A) σ
         (Spaces.label space payload) C.present)) :
     (LocatedSubstitution.action (N := H) A).Entails
-      ((Spaces.located A space payload).result f admitted).equations
+      ((Spaces.located A space payload).toStep.result f admitted).equations
       (fun σ => (Check.absent p).Holds (LocatedSubstitution.action (N := H) A) σ
-        (Spaces.label space payload) ((Spaces.located A space payload).result f admitted).present) := by
-  have general := absence_preserved (Spaces.located A space payload) space Γ (locatedLabels space payload)
+        (Spaces.label space payload) ((Spaces.located A space payload).toStep.result f admitted).present) := by
+  have general := absence_preserved (Spaces.located A space payload).toStep space Γ (locatedLabels space payload)
     (locatedLabels_law A space payload) admitted formed owned (p := p)
     (fun _ σ solved => (absent_iff_absentAt A space payload p σ).mp (absent σ solved))
   intro σ solved
@@ -165,8 +165,8 @@ theorem old_owned_absence_preserved {C : Configuration (H × T) O} {f : Annotate
     rw [(LocatedSubstitution.action (N := H) A).apply_compose,
       (LocatedSubstitution.action (N := H) A).apply_identity,
       (LocatedSubstitution.action (N := H) A).apply_identity]
-  change AbsentAt (Spaces.located A space payload) space (locatedLabels space payload) p.1
-    (s := (Spaces.located A space payload).result f admitted)
+  change AbsentAt (Spaces.located A space payload).toStep space (locatedLabels space payload) p.1
+    (s := (Spaces.located A space payload).toStep.result f admitted)
     ((LocatedSubstitution.action (N := H) A).apply
       ((LocatedSubstitution.action (N := H) A).compose (LocatedSubstitution.action (N := H) A).identity
         (LocatedSubstitution.action (N := H) A).identity) p) (b := PUnit.unit) σ at holds
@@ -194,7 +194,7 @@ def dependentLabels : (s : State rules O) → O → TotalTerm s.frame := fun s =
 
 /-- **They move along firings**: a row the firing does not make is its old label read along the
 weakening. -/
-theorem dependentLabels_law : LabelLaw (step levels O) (dependentLabels O) := by
+theorem dependentLabels_law : LabelLaw (step levels O).toStep (dependentLabels O) := by
   intro s f admitted o notMade
   show (f.after admitted).label o =
     (frames levels).act ((frames levels).comp ((frames levels).id f.helpers.frame) f.helpers.weaken) (s.label o)
@@ -205,15 +205,15 @@ variable {levels O}
 
 /-- **Owned universal reads are stable at dependent frames.** -/
 theorem dependent_absence_preserved {H : Type} (space : O → H) (Γ : Rights H) {s : State rules O}
-    {f : Firing levels s} (admitted : (step levels O).Admits f)
-    (formed : Permitted (step levels O) space Γ f) {h : H} (owned : Γ h .send = false)
+    {f : Firing levels s} (admitted : (step levels O).toStep.Admits f)
+    (formed : Permitted (step levels O).toStep space Γ f) {h : H} (owned : Γ h .send = false)
     {p : TotalTerm s.frame}
     (absent : (frames levels).Entails s.knowledge
-      (fun _ σ => AbsentAt (step levels O) space (dependentLabels O) h p σ)) :
+      (fun _ σ => AbsentAt (step levels O).toStep space (dependentLabels O) h p σ)) :
     (frames levels).Entails (f.after admitted).knowledge
-      (fun _ τ => AbsentAt (step levels O) space (dependentLabels O) h
-        ((frames levels).act ((step levels O).along f admitted) p) τ) :=
-  absence_preserved (step levels O) space Γ (dependentLabels O) (dependentLabels_law levels O) admitted formed
+      (fun _ τ => AbsentAt (step levels O).toStep space (dependentLabels O) h
+        ((frames levels).act ((step levels O).toStep.along f admitted) p) τ) :=
+  absence_preserved (step levels O).toStep space Γ (dependentLabels O) (dependentLabels_law levels O) admitted formed
     owned absent
 
 end Dependent
@@ -259,7 +259,7 @@ def relabel : Prestep (Frames.ofSubstitution trivial) Nat RState (fun _ => Nat �
   settle _ _ := ()
   knowledge_result _ _ := rfl
 
-abbrev P := relabel.step
+abbrev P := relabel.step.toStep
 
 def start : RState := ⟨{0}, fun _ => 1⟩
 

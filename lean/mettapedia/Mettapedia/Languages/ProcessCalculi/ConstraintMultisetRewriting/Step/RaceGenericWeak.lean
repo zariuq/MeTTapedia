@@ -58,12 +58,12 @@ variable {T : Type*} {S : Type*} {O : Type*} [DecidableEq O] {L : Type*}
   {A : SubstitutionAction T S} {label : O → T} {offers : L → Firing T S O → Prop} {internal : L → Prop}
 
 theorem silent_lift_iff {C D : Configuration T O} :
-    Weak.Silent (system (firstOrder A label) (lift offers)) internal C D ↔
+    Weak.Silent (system (firstOrder A label).toStep (lift offers)) internal C D ↔
       Weak.Silent (Race.system A label offers) internal C D :=
   exists_congr fun _ => and_congr_right fun _ => moves_lift_iff
 
 theorem silently_lift_iff {C D : Configuration T O} :
-    Weak.Silently (system (firstOrder A label) (lift offers)) internal C D ↔
+    Weak.Silently (system (firstOrder A label).toStep (lift offers)) internal C D ↔
       Weak.Silently (Race.system A label offers) internal C D := by
   constructor
   · rintro ⟨z, chain, equiv⟩
@@ -73,7 +73,7 @@ theorem silently_lift_iff {C D : Configuration T O} :
 
 /-- **Weak moves of the lift are those of `RaceWeak`.** -/
 theorem weakMoves_lift_iff {C D : Configuration T O} {ℓ : L} :
-    Weak.Act (system (firstOrder A label) (lift offers)) internal ℓ C D ↔
+    Weak.Act (system (firstOrder A label).toStep (lift offers)) internal ℓ C D ↔
       WeakMoves A label offers internal C ℓ D :=
   or_congr (and_congr_right fun _ => silently_lift_iff)
     (and_congr_right fun _ => exists₂_congr fun _ _ =>
@@ -81,7 +81,7 @@ theorem weakMoves_lift_iff {C D : Configuration T O} {ℓ : L} :
 
 /-- **Weak bisimilarity of the lift is weak bisimilarity of `RaceWeak`.** -/
 theorem weakBisimilar_lift_iff {C D : Configuration T O} :
-    WeakBisimilar (firstOrder A label) (lift offers) internal C D ↔
+    WeakBisimilar (firstOrder A label).toStep (lift offers) internal C D ↔
       Race.WeakBisimilar A label offers internal C D := by
   constructor
   · rintro ⟨R, ⟨forward, backward, _⟩, related⟩

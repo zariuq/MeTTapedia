@@ -95,7 +95,7 @@ variable {T : Type uT} {S : Type uS} {O : Type uO}
 /-- **The ordinary guarded step**: the guarded step restricted to firings whose queries read through
 solutions. -/
 abbrev semanticGuarded [DecidableEq O] (A : SubstitutionAction T S) (label : O → T) :=
-  Race.restrict (guarded A label) (fun _ f => IsSemantic A f.firing)
+  Race.restrict (guarded A label).toStep (fun _ f => IsSemantic A f.firing)
 
 end Guarded
 

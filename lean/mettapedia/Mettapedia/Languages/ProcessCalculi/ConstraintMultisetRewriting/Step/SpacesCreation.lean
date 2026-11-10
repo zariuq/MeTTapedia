@@ -148,7 +148,7 @@ def marker : Nat → Bool
 
 abbrev L := located B space payload
 abbrev Fir := AnnotatedRuns.Firing (Nat × Term signature) (Subst signature) Nat
-abbrev Q := spaced L space marker
+abbrev Q := spaced L.toStep space marker
 
 /-- Space `1` is born; nothing else is present. -/
 def start : Configuration (Nat × Term signature) Nat := ⟨[], {0}⟩

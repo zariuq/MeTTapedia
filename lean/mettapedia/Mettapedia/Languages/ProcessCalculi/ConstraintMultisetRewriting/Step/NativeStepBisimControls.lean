@@ -63,7 +63,8 @@ theorem extended_not_renaming : ¬ Nonempty (initial.state.Names ≃ extended.st
   simp at sizes
 
 /-- The native step over the one-name signature. -/
-noncomputable abbrev tinyNative := native (S := tiny) (O := ℕ) (Γ := ([] : Ctx tiny)) (sort := ())
+noncomputable abbrev tinyNative :=
+  (native (S := tiny) (O := ℕ) (Γ := ([] : Ctx tiny)) (sort := ())).toStep
 
 /-- The closed maker: makes occurrence `0`, publishing `false`. -/
 def closedMaker : ClosedFiring tiny ℕ ([] : Ctx tiny) () where

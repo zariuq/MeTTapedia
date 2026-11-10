@@ -117,8 +117,8 @@ variable {offers : L → (s : NativeState S O Γ sort) → NativeFiring s → Pr
 
 /-- **A move of a state is a move of the renamed state**, by the renamed firing. -/
 theorem native_moves_rename (equivariant : NativeEquivariant offers) (π : O ≃ O)
-    {s s' : NativeState S O Γ sort} {ℓ : L} (moved : Moves native offers s ℓ s') :
-    Moves native offers (s.rename π) ℓ (s'.rename π) := by
+    {s s' : NativeState S O Γ sort} {ℓ : L} (moved : Moves native.toStep offers s ℓ s') :
+    Moves native.toStep offers (s.rename π) ℓ (s'.rename π) := by
   obtain ⟨f, realized, offered, rfl⟩ := moved
   have realized' := (NativeFiring.realized_rename_iff π f).mpr realized
   exact ⟨f.rename π, realized', (equivariant π ℓ s f).mpr offered,
@@ -126,8 +126,8 @@ theorem native_moves_rename (equivariant : NativeEquivariant offers) (π : O ≃
 
 /-- **A move of the renamed state comes from a move of the state**, by the firing carried back. -/
 theorem native_moves_unrename (equivariant : NativeEquivariant offers) (π : O ≃ O)
-    {s t' : NativeState S O Γ sort} {ℓ : L} (moved : Moves native offers (s.rename π) ℓ t') :
-    ∃ s', Moves native offers s ℓ s' ∧ s'.rename π = t' := by
+    {s t' : NativeState S O Γ sort} {ℓ : L} (moved : Moves native.toStep offers (s.rename π) ℓ t') :
+    ∃ s', Moves native.toStep offers s ℓ s' ∧ s'.rename π = t' := by
   obtain ⟨g, realized, offered, rfl⟩ := moved
   have realized' := (NativeFiring.realized_unrename_iff π g).mpr realized
   refine ⟨_, ⟨NativeFiring.unrename π g, realized', ?_, rfl⟩, native_result_unrename π g realized' realized⟩
@@ -135,7 +135,7 @@ theorem native_moves_unrename (equivariant : NativeEquivariant offers) (π : O �
 
 /-- **Renamed native states are bisimilar**, for every equivariant program. -/
 theorem native_bisimilar_of_renamed (equivariant : NativeEquivariant offers)
-    {s t : NativeState S O Γ sort} (renamed : NativeRenamed s t) : Bisimilar native offers s t := by
+    {s t : NativeState S O Γ sort} (renamed : NativeRenamed s t) : Bisimilar native.toStep offers s t := by
   refine ⟨NativeRenamed, ⟨?_, ?_, fun _ _ _ atom => atom.elim⟩, renamed⟩
   · rintro s t ⟨π, rfl⟩ ℓ s' moved
     exact ⟨_, native_moves_rename equivariant π moved, π, rfl⟩
@@ -146,19 +146,19 @@ theorem native_bisimilar_of_renamed (equivariant : NativeEquivariant offers)
 /-- **Renamed native states satisfy the same Hennessy–Milner formulas.** -/
 theorem native_sat_iff_of_renamed (equivariant : NativeEquivariant offers)
     {s t : NativeState S O Γ sort} (renamed : NativeRenamed s t) (φ : Formula PEmpty.{1} L) :
-    Sat native offers φ s ↔ Sat native offers φ t :=
-  (system native offers).logicallyEquivalent_of_bisimilar (native_bisimilar_of_renamed equivariant renamed) φ
+    Sat native.toStep offers φ s ↔ Sat native.toStep offers φ t :=
+  (system native.toStep offers).logicallyEquivalent_of_bisimilar (native_bisimilar_of_renamed equivariant renamed) φ
 
 /-- **Renamed native states are weakly bisimilar.** -/
 theorem native_weakBisimilar_of_renamed (equivariant : NativeEquivariant offers) (internal : L → Prop)
     {s t : NativeState S O Γ sort} (renamed : NativeRenamed s t) :
-    WeakBisimilar native offers internal s t :=
+    WeakBisimilar native.toStep offers internal s t :=
   Race.Weak.bisimilar_of_strong (native_bisimilar_of_renamed equivariant renamed)
 
 /-- **Renamed native states are branching bisimilar.** -/
 theorem native_branchingBisimilar_of_renamed (equivariant : NativeEquivariant offers) (internal : L → Prop)
     {s t : NativeState S O Γ sort} (renamed : NativeRenamed s t) :
-    BranchingBisimilar native offers internal s t :=
+    BranchingBisimilar native.toStep offers internal s t :=
   Race.Weak.branching_of_strong (native_bisimilar_of_renamed equivariant renamed)
 
 /-! ## Histories -/
@@ -199,7 +199,7 @@ every independence of events that respects renaming. -/
 theorem native_hpBisimilar_of_renamed (equivariant : NativeEquivariant offers)
     {indep : Event (NativeState S O Γ sort) NativeFiring → Event (NativeState S O Γ sort) NativeFiring → Prop}
     (indepEquivariant : NativeIndepEquivariant indep) {s t : NativeState S O Γ sort}
-    (renamed : NativeRenamed s t) : HPBisimilar indep native offers s t := by
+    (renamed : NativeRenamed s t) : HPBisimilar indep native.toStep offers s t := by
   refine ⟨fun x y => NativeRenamed x.1 y.1 ∧
       List.Forall₂ (fun a b => NativeEventRenamed a.1 b.1 ∧ a.2 = b.2) x.2 y.2,
     ⟨?_, ?_, fun _ _ _ atom => atom.elim⟩, renamed, .nil⟩

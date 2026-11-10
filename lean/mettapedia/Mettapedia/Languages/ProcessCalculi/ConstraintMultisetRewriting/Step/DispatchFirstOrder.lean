@@ -386,7 +386,8 @@ theorem firstOrderToSecond_reflects : (firstOrderToSecond σ).Reflects := by
 at a firing dispatched along the first-order edge, admission is the shapes, the enabling, and the
 guards at the unifier's answer; a refusal of the unifier refuses the firing. -/
 theorem dispatch_admits_iff_unify {O : Type} [DecidableEq O] {State : Type} {Firing : State → Type}
-    (P : Interface.Step (Frames.contextual (lpSig σ)) O State Firing) {s : State} {f : Firing s}
+    (P : Interface.Step (Frames.contextual (lpSig σ)) O State Firing) [P.Guarded]
+    {s : State} {f : Firing s}
     (d : (firstOrderToSecond σ).Dispatched P f) :
     P.Admits f ↔ P.Shapes f ∧
       Enabled (fun _ : O => ()) (P.present s) ((P.selection f).commit (T := Unit)) ∧

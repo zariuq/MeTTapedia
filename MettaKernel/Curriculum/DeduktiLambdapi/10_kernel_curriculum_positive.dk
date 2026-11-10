@@ -1,5 +1,5 @@
-(; Positive Dedukti differential for the live MeTTaKernel LF curriculum.
-   This is a checker artifact, not a kernel behavior change. ;)
+(; Positive Dedukti differential for the live MeTTaKernel LF curriculum (CoC profile: --pts cc / dk check --coc).
+   See 10_kernel_curriculum_lf_positive.dk for the strict Lambda-Pi (--pts lf / dk check) twin using universe codes. ;)
 
 o : Type.
 prf : o -> Type.

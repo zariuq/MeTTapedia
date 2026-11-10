@@ -181,7 +181,7 @@ Theorem Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize_e
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0))) (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0))).
 let v_t. assume H_v_t: v_t :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. let v_a. assume H_v_a: v_a :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. let
     v_forced0. assume H_v_forced0: v_forced0 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. let v_forced1. assume H_v_forced1: v_forced1 :e
-    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. 
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm.
 prove (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Deriv_rec (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize_method0_0 v_forced0 v_forced1 v_a)
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize_method1_0 v_forced0 v_forced1 v_a) (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Deriv_mulZeroR_node v_t)) =
     (Lean_Prod_mk_node Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm
@@ -200,7 +200,7 @@ Theorem Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize_e
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0)) v_a) (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0))).
 let v_t. assume H_v_t: v_t :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. let v_a. assume H_v_a: v_a :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. let
     v_forced0. assume H_v_forced0: v_forced0 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. let v_forced1. assume H_v_forced1: v_forced1 :e
-    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. 
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm.
 prove (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Deriv_rec (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize_method0_0 v_forced0 v_forced1 v_a)
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize_method1_0 v_forced0 v_forced1 v_a) (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Deriv_mulZeroL_node v_t)) =
     (Lean_Prod_mk_node Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm
@@ -227,7 +227,7 @@ Theorem Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize_u
     Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize a0 a1 a2 a3.
 let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. let a1. assume H1: a1 :e
     Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. let a2. assume H2: a2 :e (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Deriv a0 a1). let a3. assume H3: a3 :e
-    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. 
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm.
 claim L0: forall y0 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm, 0 :e {z :e 1 | g a0 a1 (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Deriv_mulZeroR_node y0) a3 =
     Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize a0 a1 (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Deriv_mulZeroR_node y0) a3}.
 { let y0. assume Hy0: y0 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. apply SepI 1 (fun z:set => g a0 a1
@@ -412,7 +412,7 @@ Theorem Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize_s
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Deriv_mulZeroR_node v_t) v_x) = (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Deriv_mulZeroR_node v_x).
 let v_x. assume H_v_x: v_x :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. let v_t. assume H_v_t: v_t :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. let
     v_forced0. assume H_v_forced0: v_forced0 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. let v_forced1. assume H_v_forced1: v_forced1 :e
-    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. 
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm.
 prove (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Deriv_rec (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize_sound_method0_0 v_forced0 v_forced1 v_x)
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize_sound_method1_0 v_forced0 v_forced1 v_x) (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Deriv_mulZeroR_node
     v_t)) = (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Deriv_mulZeroR_node v_x).
@@ -427,7 +427,7 @@ Theorem Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize_s
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Deriv_mulZeroL_node v_t) v_x) = (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Deriv_mulZeroL_node v_x).
 let v_x. assume H_v_x: v_x :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. let v_t. assume H_v_t: v_t :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. let
     v_forced0. assume H_v_forced0: v_forced0 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. let v_forced1. assume H_v_forced1: v_forced1 :e
-    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. 
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm.
 prove (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Deriv_rec (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize_sound_method0_0 v_forced0 v_forced1 v_x)
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize_sound_method1_0 v_forced0 v_forced1 v_x) (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Deriv_mulZeroL_node
     v_t)) = (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Deriv_mulZeroL_node v_x).
@@ -448,7 +448,7 @@ Theorem Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize_s
     Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize_sound a0 a1 a2 a3.
 let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. let a1. assume H1: a1 :e
     Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. let a2. assume H2: a2 :e (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Deriv a0 a1). let a3. assume H3: a3 :e
-    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. 
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm.
 claim L0: forall y0 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm, 0 :e {z :e 1 | g a0 a1 (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Deriv_mulZeroR_node y0) a3 =
     Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize_sound a0 a1 (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Deriv_mulZeroR_node y0) a3}.
 { let y0. assume Hy0: y0 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. apply SepI 1 (fun z:set => g a0 a1
@@ -490,7 +490,7 @@ Qed.
 Theorem Lean_dite_eq_1 : forall l_u, nat_p l_u -> forall v_u945 :e LeanSort l_u, forall v_c :e LeanProp, forall v_h :e (Lean_Decidable v_c), forall v_t :e (Pi_ ux :e v_c, v_u945), forall v_e :e (Pi_
     ux :e (Pi_ ux :e v_c, Lean_False_Prop), v_u945), (Lean_dite v_u945 v_c v_h v_t v_e) = (Lean_Decidable_rec v_c v_e v_t v_h).
 let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanSort l_u. let v_c. assume H_v_c: v_c :e LeanProp. let v_h. assume H_v_h: v_h :e (Lean_Decidable v_c). let v_t. assume
-    H_v_t: v_t :e (Pi_ ux :e v_c, v_u945). let v_e. assume H_v_e: v_e :e (Pi_ ux :e (Pi_ ux :e v_c, Lean_False_Prop), v_u945). 
+    H_v_t: v_t :e (Pi_ ux :e v_c, v_u945). let v_e. assume H_v_e: v_e :e (Pi_ ux :e (Pi_ ux :e v_c, Lean_False_Prop), v_u945).
 reflexivity.
 Qed.
 Theorem Lean_dite_unfold : forall a0 a1 a2 a3 a4, Lean_dite a0 a1 a2 a3 a4 = (Lean_Decidable_rec a1 a4 a3 a2).
@@ -503,7 +503,7 @@ Theorem Lean_Eq_ndrec_eq_1 : forall l_u1, nat_p l_u1 -> forall l_u2, nat_p l_u2 
     v_m :e (v_motive v_a), forall v_b :e v_u945, (v_a = v_b) -> (Lean_Eq_ndrec v_u945 v_a v_motive v_m v_b 0) = (Lean_Eq_elim v_u945 v_a (fun v_x :e v_u945 => (fun v_x7 :e (Lean_Eq_Prop v_u945 v_a
     v_x) => (v_motive v_x))) v_m v_b 0).
 let l_u1. assume H_l_u1: nat_p l_u1. let l_u2. assume H_l_u2: nat_p l_u2. let v_u945. assume H_v_u945: v_u945 :e LeanSort l_u2. let v_a. assume H_v_a: v_a :e v_u945. let v_motive. assume H_v_motive:
-    v_motive :e (Pi_ ux :e v_u945, LeanSort l_u1). let v_m. assume H_v_m: v_m :e (v_motive v_a). let v_b. assume H_v_b: v_b :e v_u945. assume v_h. 
+    v_motive :e (Pi_ ux :e v_u945, LeanSort l_u1). let v_m. assume H_v_m: v_m :e (v_motive v_a). let v_b. assume H_v_b: v_b :e v_u945. assume v_h.
 reflexivity.
 Qed.
 Theorem Lean_Eq_ndrec_unfold : forall a0 a1 a2 a3 a4 a5, Lean_Eq_ndrec a0 a1 a2 a3 a4 a5 = (Lean_Eq_elim a0 a1 (fun v_x :e a0 => (fun v_x7 :e (Lean_Eq_Prop a0 a1 v_x) => (a2 v_x))) a3 a4 0).
@@ -571,14 +571,14 @@ let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat. exact (ap_
     a0 H0) H1).
 Qed.
 Theorem Lean_Nat_beq_split0 : forall s1 :e Lean_Nat, (Lean_Nat_beq Lean_Nat_zero_node s1) = (Lean_Nat_casesOn Lean_Bool_true_node (fun c1_1_0 :e Lean_Nat => Lean_Bool_false_node) s1).
-let s1. assume H_s1: s1 :e Lean_Nat. 
+let s1. assume H_s1: s1 :e Lean_Nat.
 prove ((Lean_Nat_rec Lean_Nat_beq_method0_0 Lean_Nat_beq_method1_0 Lean_Nat_zero_node) s1) = (Lean_Nat_casesOn Lean_Bool_true_node (fun c1_1_0 :e Lean_Nat => Lean_Bool_false_node) s1).
 rewrite Lean_Nat_iota0 Lean_Nat_beq_method0_0 Lean_Nat_beq_method1_0.
 rewrite Lean_Nat_beq_method0_0_ap s1 H_s1.
 reflexivity.
 Qed.
 Theorem Lean_Nat_beq_split1 : forall t0 :e Lean_Nat, forall s1 :e Lean_Nat, (Lean_Nat_beq (Lean_Nat_succ_node t0) s1) = (Lean_Nat_casesOn Lean_Bool_false_node (Sigma Lean_Nat (Lean_Nat_beq t0)) s1).
-let t0. assume H_t0: t0 :e Lean_Nat. let s1. assume H_s1: s1 :e Lean_Nat. 
+let t0. assume H_t0: t0 :e Lean_Nat. let s1. assume H_s1: s1 :e Lean_Nat.
 prove ((Lean_Nat_rec Lean_Nat_beq_method0_0 Lean_Nat_beq_method1_0 (Lean_Nat_succ_node t0)) s1) = (Lean_Nat_casesOn Lean_Bool_false_node (fun c1_1_0 :e Lean_Nat => ((Lean_Nat_rec
     Lean_Nat_beq_method0_0 Lean_Nat_beq_method1_0 t0) c1_1_0)) s1).
 rewrite Lean_Nat_iota1 Lean_Nat_beq_method0_0 Lean_Nat_beq_method1_0 t0 H_t0.
@@ -594,7 +594,7 @@ rewrite Lean_Nat_casesOn_iota0 Lean_Bool_true_node (fun c1_1_0 :e Lean_Nat => Le
 reflexivity.
 Qed.
 Theorem Lean_Nat_beq_eq_2 : forall v_n :e Lean_Nat, (Lean_Nat_beq Lean_Nat_zero_node (Lean_Nat_succ_node v_n)) = Lean_Bool_false_node.
-let v_n. assume H_v_n: v_n :e Lean_Nat. 
+let v_n. assume H_v_n: v_n :e Lean_Nat.
 rewrite Lean_Nat_beq_split0 (Lean_Nat_succ_node v_n) (Lean_Nat_succ_typed v_n H_v_n).
 rewrite Lean_Nat_casesOn_iota1 Lean_Bool_true_node (fun c1_1_0 :e Lean_Nat => Lean_Bool_false_node) v_n H_v_n.
 rewrite (eq_i_tra ((fun c1_1_0 :e Lean_Nat => Lean_Bool_false_node) v_n) Lean_Bool_false_node Lean_Bool_false_node (beta Lean_Nat (fun c1_1_0 => Lean_Bool_false_node) v_n H_v_n) (Lean_eq_refl
@@ -602,13 +602,13 @@ rewrite (eq_i_tra ((fun c1_1_0 :e Lean_Nat => Lean_Bool_false_node) v_n) Lean_Bo
 reflexivity.
 Qed.
 Theorem Lean_Nat_beq_eq_3 : forall v_n :e Lean_Nat, (Lean_Nat_beq (Lean_Nat_succ_node v_n) Lean_Nat_zero_node) = Lean_Bool_false_node.
-let v_n. assume H_v_n: v_n :e Lean_Nat. 
+let v_n. assume H_v_n: v_n :e Lean_Nat.
 rewrite Lean_Nat_beq_split1 v_n H_v_n Lean_Nat_zero_node Lean_Nat_zero_typed.
 rewrite Lean_Nat_casesOn_iota0 Lean_Bool_false_node (Sigma Lean_Nat (Lean_Nat_beq v_n)).
 reflexivity.
 Qed.
 Theorem Lean_Nat_beq_eq_4 : forall v_n :e Lean_Nat, forall v_m :e Lean_Nat, (Lean_Nat_beq (Lean_Nat_succ_node v_n) (Lean_Nat_succ_node v_m)) = (Lean_Nat_beq v_n v_m).
-let v_n. assume H_v_n: v_n :e Lean_Nat. let v_m. assume H_v_m: v_m :e Lean_Nat. 
+let v_n. assume H_v_n: v_n :e Lean_Nat. let v_m. assume H_v_m: v_m :e Lean_Nat.
 rewrite Lean_Nat_beq_split1 v_n H_v_n (Lean_Nat_succ_node v_m) (Lean_Nat_succ_typed v_m H_v_m).
 rewrite Lean_Nat_casesOn_iota1 Lean_Bool_false_node (Sigma Lean_Nat (Lean_Nat_beq v_n)) v_m H_v_m.
 rewrite (eq_i_tra ((Sigma Lean_Nat (Lean_Nat_beq v_n)) v_m) (Lean_Nat_beq v_n v_m) (Lean_Nat_beq v_n v_m) (beta Lean_Nat (Lean_Nat_beq v_n) v_m H_v_m) (Lean_eq_refl (Lean_Nat_beq v_n v_m))).
@@ -622,7 +622,7 @@ Definition Lean_Nat_decEq : set -> set -> set := fun a0 a1 => ((Lean_Bool_rec (f
 Theorem Lean_Nat_decEq_eq_1 : forall v_n :e Lean_Nat, forall v_m :e Lean_Nat, (Lean_Nat_decEq v_n v_m) = ((Lean_Bool_rec (fun v_h :e (Lean_Eq_Prop Lean_Bool (Lean_Nat_beq v_n v_m)
     Lean_Bool_false_node) => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Nat v_n v_m) 0)) (fun v_h :e (Lean_Eq_Prop Lean_Bool (Lean_Nat_beq v_n v_m) Lean_Bool_true_node) =>
     (Lean_Decidable_isTrue_node (Lean_Eq_Prop Lean_Nat v_n v_m) 0)) (Lean_Nat_beq v_n v_m)) 0).
-let v_n. assume H_v_n: v_n :e Lean_Nat. let v_m. assume H_v_m: v_m :e Lean_Nat. 
+let v_n. assume H_v_n: v_n :e Lean_Nat. let v_m. assume H_v_m: v_m :e Lean_Nat.
 reflexivity.
 Qed.
 Theorem Lean_Nat_decEq_unfold : forall a0 a1, Lean_Nat_decEq a0 a1 = ((Lean_Bool_rec (fun v_h :e (Lean_Eq_Prop Lean_Bool (Lean_Nat_beq a0 a1) Lean_Bool_false_node) => (Lean_Decidable_isFalse_node
@@ -706,7 +706,7 @@ Theorem Lean_instDecidableEqNat_In : forall a0 :e Lean_Nat, forall a1 :e Lean_Na
 let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat. exact (Lean_Nat_decEq_In a0 H0 a1 H1).
 Qed.
 Theorem Lean_instDecidableEqNat_eq_1 : forall v_a :e Lean_Nat, forall v_b :e Lean_Nat, (Lean_instDecidableEqNat v_a v_b) = (Lean_Nat_decEq v_a v_b).
-let v_a. assume H_v_a: v_a :e Lean_Nat. let v_b. assume H_v_b: v_b :e Lean_Nat. 
+let v_a. assume H_v_a: v_a :e Lean_Nat. let v_b. assume H_v_b: v_b :e Lean_Nat.
 reflexivity.
 Qed.
 Theorem Lean_instDecidableEqNat_unfold : forall a0 a1, Lean_instDecidableEqNat a0 a1 = (Lean_Nat_decEq a0 a1).
@@ -1461,7 +1461,7 @@ Theorem Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidabl
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node c1_1_0)) 0)) (fun c1_2_0 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm => (fun c1_2_1 :e
     Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node t0) (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node c1_2_0 c1_2_1)) 0))) s1).
-let t0. assume H_t0: t0 :e Lean_Nat. let s1. assume H_s1: s1 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. 
+let t0. assume H_t0: t0 :e Lean_Nat. let s1. assume H_s1: s1 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm.
 prove ((Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_rec Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq_method0_0
     Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq_method1_0 Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq_method2_0
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node t0)) s1) = (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_casesOn (fun c1_0_0 :e Lean_Nat => (Lean_dite
@@ -1498,7 +1498,7 @@ Theorem Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidabl
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node c1_1_0)) 0)))) (fun c1_2_0 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm => (fun c1_2_1 :e
     Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node t0) (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node c1_2_0 c1_2_1)) 0))) s1).
-let t0. assume H_t0: t0 :e Lean_Nat. let s1. assume H_s1: s1 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. 
+let t0. assume H_t0: t0 :e Lean_Nat. let s1. assume H_s1: s1 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm.
 prove ((Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_rec Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq_method0_0
     Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq_method1_0 Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq_method2_0
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node t0)) s1) = (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_casesOn (fun c1_0_0 :e Lean_Nat =>
@@ -1548,7 +1548,7 @@ Theorem Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidabl
     Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node t0 t1)
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node c1_2_0 c1_2_1)) 0))))) s1).
 let t0. assume H_t0: t0 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. let t1. assume H_t1: t1 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. let s1. assume
-    H_s1: s1 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. 
+    H_s1: s1 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm.
 prove ((Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_rec Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq_method0_0
     Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq_method1_0 Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq_method2_0
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node t0 t1)) s1) = (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_casesOn (fun c1_0_0 :e Lean_Nat =>
@@ -1610,7 +1610,7 @@ Theorem Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidabl
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node v_a) (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node v_a)) 0) v_b 0)) (fun v_h :e (Pi_ ux :e
     (Lean_Eq_Prop Lean_Nat v_a v_b), Lean_False_Prop) => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node v_a) (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node v_b)) 0))).
-let v_a. assume H_v_a: v_a :e Lean_Nat. let v_b. assume H_v_b: v_b :e Lean_Nat. 
+let v_a. assume H_v_a: v_a :e Lean_Nat. let v_b. assume H_v_b: v_b :e Lean_Nat.
 rewrite Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq_split0 v_a H_v_a (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node v_b)
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_typed v_b H_v_b).
 rewrite Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_casesOn_iota0 (fun c1_0_0 :e Lean_Nat => (Lean_dite (Lean_Decidable (Lean_Eq_Prop
@@ -1671,7 +1671,7 @@ Theorem Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidabl
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node v_a)
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node v_a_1)) = (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node v_a) (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node v_a_1)) 0).
-let v_a. assume H_v_a: v_a :e Lean_Nat. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Nat. 
+let v_a. assume H_v_a: v_a :e Lean_Nat. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Nat.
 rewrite Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq_split0 v_a H_v_a (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node v_a_1)
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_typed v_a_1 H_v_a_1).
 rewrite Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_casesOn_iota1 (fun c1_0_0 :e Lean_Nat => (Lean_dite (Lean_Decidable (Lean_Eq_Prop
@@ -1704,7 +1704,7 @@ Theorem Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidabl
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node v_a_1 v_a_2)) = (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node v_a) (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node v_a_1 v_a_2)) 0).
 let v_a. assume H_v_a: v_a :e Lean_Nat. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. let v_a_2. assume H_v_a_2: v_a_2 :e
-    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. 
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm.
 rewrite Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq_split0 v_a H_v_a (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node v_a_1 v_a_2)
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_typed v_a_1 H_v_a_1 v_a_2 H_v_a_2).
 rewrite Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_casesOn_iota2 (fun c1_0_0 :e Lean_Nat => (Lean_dite (Lean_Decidable (Lean_Eq_Prop
@@ -1749,7 +1749,7 @@ Theorem Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidabl
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node v_a)
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node v_a_1)) = (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node v_a) (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node v_a_1)) 0).
-let v_a. assume H_v_a: v_a :e Lean_Nat. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Nat. 
+let v_a. assume H_v_a: v_a :e Lean_Nat. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Nat.
 rewrite Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq_split1 v_a H_v_a (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node v_a_1)
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_typed v_a_1 H_v_a_1).
 rewrite Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_casesOn_iota0 (fun c1_0_0 :e Lean_Nat => (Lean_Decidable_isFalse_node (Lean_Eq_Prop
@@ -1786,7 +1786,7 @@ Theorem Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidabl
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node v_a) (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node v_a)) 0) v_b 0)) (fun v_h :e (Pi_ ux :e
     (Lean_Eq_Prop Lean_Nat v_a v_b), Lean_False_Prop) => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node v_a) (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node v_b)) 0))).
-let v_a. assume H_v_a: v_a :e Lean_Nat. let v_b. assume H_v_b: v_b :e Lean_Nat. 
+let v_a. assume H_v_a: v_a :e Lean_Nat. let v_b. assume H_v_b: v_b :e Lean_Nat.
 rewrite Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq_split1 v_a H_v_a (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node v_b)
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_typed v_b H_v_b).
 rewrite Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_casesOn_iota1 (fun c1_0_0 :e Lean_Nat => (Lean_Decidable_isFalse_node (Lean_Eq_Prop
@@ -1849,7 +1849,7 @@ Theorem Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidabl
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node v_a_1 v_a_2)) = (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node v_a) (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node v_a_1 v_a_2)) 0).
 let v_a. assume H_v_a: v_a :e Lean_Nat. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. let v_a_2. assume H_v_a_2: v_a_2 :e
-    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. 
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm.
 rewrite Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq_split1 v_a H_v_a (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node v_a_1 v_a_2)
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_typed v_a_1 H_v_a_1 v_a_2 H_v_a_2).
 rewrite Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_casesOn_iota2 (fun c1_0_0 :e Lean_Nat => (Lean_Decidable_isFalse_node (Lean_Eq_Prop
@@ -1896,7 +1896,7 @@ Theorem Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidabl
     (Lean_Eq_Prop Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node v_a v_a_1)
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node v_a_2)) 0).
 let v_a. assume H_v_a: v_a :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. let
-    v_a_2. assume H_v_a_2: v_a_2 :e Lean_Nat. 
+    v_a_2. assume H_v_a_2: v_a_2 :e Lean_Nat.
 rewrite Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq_split2 v_a H_v_a v_a_1 H_v_a_1 (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node
     v_a_2) (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_typed v_a_2 H_v_a_2).
 rewrite Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_casesOn_iota0 (fun c1_0_0 :e Lean_Nat => (Lean_Decidable_isFalse_node (Lean_Eq_Prop
@@ -1940,7 +1940,7 @@ Theorem Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidabl
     (Lean_Eq_Prop Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node v_a v_a_1)
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node v_a_2)) 0).
 let v_a. assume H_v_a: v_a :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. let
-    v_a_2. assume H_v_a_2: v_a_2 :e Lean_Nat. 
+    v_a_2. assume H_v_a_2: v_a_2 :e Lean_Nat.
 rewrite Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq_split2 v_a H_v_a v_a_1 H_v_a_1 (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node
     v_a_2) (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_typed v_a_2 H_v_a_2).
 rewrite Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_casesOn_iota1 (fun c1_0_0 :e Lean_Nat => (Lean_Decidable_isFalse_node (Lean_Eq_Prop
@@ -2002,7 +2002,7 @@ Theorem Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidabl
     Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node v_a v_a_1)
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node v_b v_b_1)) 0))).
 let v_a. assume H_v_a: v_a :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. let
-    v_b. assume H_v_b: v_b :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. let v_b_1. assume H_v_b_1: v_b_1 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. 
+    v_b. assume H_v_b: v_b :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. let v_b_1. assume H_v_b_1: v_b_1 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm.
 rewrite Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq_split2 v_a H_v_a v_a_1 H_v_a_1 (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node v_b
     v_b_1) (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_typed v_b H_v_b v_b_1 H_v_b_1).
 rewrite Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_casesOn_iota2 (fun c1_0_0 :e Lean_Nat => (Lean_Decidable_isFalse_node (Lean_Eq_Prop
@@ -2243,11 +2243,12 @@ Qed.
 Theorem Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_eq_1 : forall v_a :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm, forall v_b :e
     Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm, (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm v_a v_b) =
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq v_a v_b).
-let v_a. assume H_v_a: v_a :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. let v_b. assume H_v_b: v_b :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. 
+let v_a. assume H_v_a: v_a :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. let v_b. assume H_v_b: v_b :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm.
 reflexivity.
 Qed.
 Theorem Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_unfold : forall a0 a1, Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm a0 a1 =
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq a0 a1).
 let a0 a1. reflexivity.
 Qed.
+
 

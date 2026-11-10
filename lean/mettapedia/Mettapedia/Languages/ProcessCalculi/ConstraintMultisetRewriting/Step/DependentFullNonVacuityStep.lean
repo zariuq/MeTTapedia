@@ -104,7 +104,7 @@ end Firing
 variable (X : Frames Tm Hom) (O : Type) [DecidableEq O]
 
 /-- **The frame-local equation step** over the frames instance `X`. -/
-def step : Step X O (State Tm O) (fun s => Firing Tm s) where
+def step : Step.Standard X O (State Tm O) (fun s => Firing Tm s) where
   frame s := s.frame
   knowledge s := s.knowledge
   present s := s.present
@@ -120,10 +120,10 @@ def step : Step X O (State Tm O) (fun s => Firing Tm s) where
   Holds f _ g := X.Models g f.guards
   Admits f := f.Admits X
   admits_iff _ := Iff.rfl
-  result f _ := f.after X
-  present_result _ _ := rfl
-  settle {s} _ _ := X.id s.frame
-  knowledge_result _ _ := rfl
+  preparedResult f _ := f.after X
+  present_preparedResult _ _ := rfl
+  preparedSettle {s} _ _ := X.id s.frame
+  knowledge_preparedResult _ _ := rfl
 
 variable {X O}
 

@@ -30,7 +30,7 @@ open Interface.DependentFull.IndependenceControls
 open MeTTaCalculus.InteractionTypes (Facet Rights FormedUnder)
 
 abbrev X := ContextualDependentEta.frames setting.levels
-abbrev P := step setting.levels Nat
+abbrev P := (step setting.levels Nat).toStep
 
 /-- Every occurrence is at space `2`. -/
 def space : Nat → Nat := fun _ => 2

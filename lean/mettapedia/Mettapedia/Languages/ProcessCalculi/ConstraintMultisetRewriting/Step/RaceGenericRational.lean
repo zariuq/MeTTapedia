@@ -39,11 +39,11 @@ abbrev offers := lift (Pair.offers (S := RSubst ctlSig) tags)
 `⟨A⟩(⟨B⟩⊤ ∧ ⟨C⟩⊤)`, not bisimilar. -/
 theorem rational_race :
     (∀ w : List (RuleInstance (RTree ctlSig)),
-      Sat (rationalStep ctlSig (Pair.label tags)) offers (Formula.after w .top) Pair.P ↔
-        Sat (rationalStep ctlSig (Pair.label tags)) offers (Formula.after w .top) Pair.Q) ∧
-      Sat (rationalStep ctlSig (Pair.label tags)) offers (Pair.separating tags) Pair.P ∧
-      ¬ Sat (rationalStep ctlSig (Pair.label tags)) offers (Pair.separating tags) Pair.Q ∧
-      ¬ Bisimilar (rationalStep ctlSig (Pair.label tags)) offers Pair.P Pair.Q :=
+      Sat (rationalStep ctlSig (Pair.label tags)).toStep offers (Formula.after w .top) Pair.P ↔
+        Sat (rationalStep ctlSig (Pair.label tags)).toStep offers (Formula.after w .top) Pair.Q) ∧
+      Sat (rationalStep ctlSig (Pair.label tags)).toStep offers (Pair.separating tags) Pair.P ∧
+      ¬ Sat (rationalStep ctlSig (Pair.label tags)).toStep offers (Pair.separating tags) Pair.Q ∧
+      ¬ Bisimilar (rationalStep ctlSig (Pair.label tags)).toStep offers Pair.P Pair.Q :=
   ⟨fun w => (sat_lift_iff _ _).trans
       ((Pair.traceEquivalent_P_Q tags (rationalAction ctlSig) w).trans (sat_lift_iff _ _).symm),
     (sat_lift_iff _ _).mpr (Pair.separating_holds_P tags (rationalAction ctlSig)),

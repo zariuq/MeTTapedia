@@ -93,7 +93,7 @@ variable [DecidableEq O]
 
 variable (levels O) in
 /-- **The dependent step on firings without helpers with natural queries.** -/
-abbrev plainStep : Interface.Step (frames levels) O (State rules O) (fun s => Natural levels O s.frame) where
+abbrev plainStep : Interface.Step.Standard (frames levels) O (State rules O) (fun s => Natural levels O s.frame) where
   frame s := s.frame
   knowledge s := s.knowledge
   present s := s.present
@@ -111,10 +111,10 @@ abbrev plainStep : Interface.Step (frames levels) O (State rules O) (fun s => Na
   Holds {s} f _ τ := f.toPlain.Holds s.toLocal τ
   Admits {s} f := f.toPlain.Admits s.toLocal
   admits_iff _ := Iff.rfl
-  result {s} f admitted := (f.toPlain.after s.toLocal admitted.1.2.2.2.2).toState
-  present_result _ _ := rfl
-  settle {s} _ _ := 𝟙 s.frame
-  knowledge_result _ _ := (Frames.applyStore_id (X := frames levels) _).symm
+  preparedResult {s} f p := (f.toPlain.after s.toLocal p.1.2.2.2.2).toState
+  present_preparedResult _ _ := rfl
+  preparedSettle {s} _ _ := 𝟙 s.frame
+  knowledge_preparedResult _ _ := (Frames.applyStore_id (X := frames levels) _).symm
 
 /-- **It is the dependent full step on these firings**: the same admission. -/
 theorem plainStep_admits_iff {s : State rules O} (f : Natural levels O s.frame) :
@@ -224,7 +224,7 @@ def resultMove {s t : State rules O} (i : PlainIso levels s t) (f : Natural leve
 
 variable (levels O) in
 /-- **The strict transport of firings without helpers.** -/
-def plainTransport : Transport (plainStep levels O) where
+def plainTransport : Transport (plainStep levels O).toStep where
   Iso s t := PlainIso levels s t
   toStateIso := PlainIso.toStateIso
   refl := PlainIso.refl
@@ -281,18 +281,18 @@ theorem independent_of_clauses {s : State rules O} {f g : Natural levels O s.fra
 
 /-- **Transport-equivalent states are bisimilar**, for every program with invariant labels. -/
 theorem plain_bisimilar_of_same {Lab : Type} (offers : Lab → (s : State rules O) → Natural levels O s.frame → Prop)
-    (invariant : Race.Generic.Invariant (plainStep levels O) offers (plainTransport levels O))
+    (invariant : Race.Generic.Invariant (plainStep levels O).toStep offers (plainTransport levels O))
     {s t : State rules O} (same : (plainTransport levels O).Same s t) :
-    Race.Generic.Bisimilar (plainStep levels O) offers s t :=
+    Race.Generic.Bisimilar (plainStep levels O).toStep offers s t :=
   Race.Generic.bisimilar_of_same (plainTransport levels O) invariant same
 
 /-- **Transport-equivalent states are step bisimilar**: steps are words of semantically independent
 firings at dependent frames. -/
 theorem plain_stepBisimilar_of_same {Lab : Type}
     (offers : Lab → (s : State rules O) → Natural levels O s.frame → Prop)
-    (invariant : Race.Generic.Invariant (plainStep levels O) offers (plainTransport levels O))
+    (invariant : Race.Generic.Invariant (plainStep levels O).toStep offers (plainTransport levels O))
     {s t : State rules O} (same : (plainTransport levels O).Same s t) :
-    Race.Generic.StepBisimilar (plainStep levels O) (plainTransport levels O) offers s t :=
+    Race.Generic.StepBisimilar (plainStep levels O).toStep (plainTransport levels O) offers s t :=
   Race.Generic.stepBisimilar_of_same (fun {_ _ _} => Iff.rfl) invariant same
 
 end DependentFull

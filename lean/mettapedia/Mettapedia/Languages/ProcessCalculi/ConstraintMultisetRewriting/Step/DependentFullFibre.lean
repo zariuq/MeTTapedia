@@ -61,7 +61,7 @@ variable {Obj : Type uO} {Tm : Obj → Type uT} {Hom : Obj → Obj → Type uH}
 equivalence, at a firing whose information has a principal answer kept principal on the image. -/
 theorem frameMap_admission_transfer (Φ : FrameMap X Y) (reflects : Φ.Reflects)
     {O : Type} [DecidableEq O] {State : Type uS} {Firing : State → Type uF}
-    (P : Step X O State Firing) (guards : ∀ {s : State} (f : Firing s), EquationStore (Tm (P.target f)))
+    (P : Step X O State Firing) [P.Guarded] (guards : ∀ {s : State} (f : Firing s), EquationStore (Tm (P.target f)))
     (holds : ∀ {s : State} (f : Firing s) (b : Obj) (g : Hom (P.target f) b),
       P.Holds f b g ↔ X.Models g (guards f))
     {s : State} (f : Firing s) {m : Obj} {answer : Hom (P.target f) m}
@@ -110,7 +110,7 @@ whose guards and predicate queries are equation guards, at a firing whose transl
 dependent unifier decides in the fibre, admission is the dependent admission condition on the
 translated data. -/
 theorem fibre_admission_transfer {O : Type} [DecidableEq O] {State : Type} {Firing : State → Type}
-    (P : Step (listFrames sig) O State Firing)
+    (P : Step (listFrames sig) O State Firing) [P.Guarded]
     (guards : ∀ {s : State} (f : Firing s),
       EquationStore (Binding.ContextualFamily.Observation sig (P.target f).get))
     (holds : ∀ {s : State} (f : Firing s) (N : List (Binding.MetaArity sig))

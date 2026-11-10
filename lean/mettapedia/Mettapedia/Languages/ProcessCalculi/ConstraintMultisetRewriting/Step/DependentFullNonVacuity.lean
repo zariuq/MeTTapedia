@@ -44,7 +44,7 @@ abbrev Obs : List (Binding.MetaArity pointSig) → Type :=
   fun M => Binding.ContextualFamily.Observation pointSig M.get
 
 /-- The frame-local second-order step at the list frames of the point signature. -/
-abbrev second : Step (listFrames pointSig) Nat (EquationStep.State Obs Nat) (fun s => EquationStep.Firing Obs s) :=
+abbrev second : Step.Standard (listFrames pointSig) Nat (EquationStep.State Obs Nat) (fun s => EquationStep.Firing Obs s) :=
   EquationStep.step (listFrames pointSig) Nat
 
 /-- A dependent principal answer at some telescope that equals a translated one gives one at the
@@ -155,7 +155,7 @@ theorem take_transfer :
         (fun _ g => (frames setting.levels).Models g (Ψ.store takeFiring.guards)) :=
   fibre_admission_transfer_of_full (S := setting) facts roots heads church names realization rigid complete
     algebra declared choices reducer (fun _ => none) point_normalizes certifyNormal headTypingUnique
-    sortInjective point_closed @operatorInjective second (fun f => f.guards) (fun _ _ _ => Iff.rfl)
+    sortInjective point_closed @operatorInjective second.toStep (fun f => f.guards) (fun _ _ _ => Iff.rfl)
     takeFiring 16 2 take_decided
 
 theorem take_shapes : second.Shapes takeFiring := ⟨by decide, by decide, rfl, rfl⟩
@@ -257,7 +257,7 @@ theorem refuted_case_refused :
       ¬ (frames setting.levels).Solvable (Ψ.store (second.information outsideFiring)) := by
   have transfer := fibre_admission_transfer_of_full (S := setting) facts roots heads church names realization
     rigid complete algebra declared choices reducer (fun _ => none) point_normalizes certifyNormal
-    headTypingUnique sortInjective point_closed @operatorInjective second (fun f => f.guards)
+    headTypingUnique sortInjective point_closed @operatorInjective second.toStep (fun f => f.guards)
     (fun _ _ _ => Iff.rfl) outsideFiring 16 2 outside_decided
   exact ⟨outside_refuted, fun admitted => outside_unsolvable (transfer.mp admitted).2.2.1, outside_unsolvable⟩
 

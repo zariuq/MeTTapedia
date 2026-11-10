@@ -39,7 +39,8 @@ noncomputable def toIncl {s u : NativeState S O Γ sort} (e : RenamingIncl s u) 
   e.2 ▸ (renameStateIso e.1 s).toIncl
 
 /-- **The renaming transport.** -/
-noncomputable def renamingTransport : DeadTransport (native (S := S) (O := O) (Γ := Γ) (sort := sort)) where
+noncomputable def renamingTransport :
+    DeadTransport (native (S := S) (O := O) (Γ := Γ) (sort := sort)).toStep where
   Incl := RenamingIncl
   toStateIncl := toIncl
   refl s := ⟨Equiv.refl O, NativeState.rename_refl s⟩
@@ -100,7 +101,7 @@ theorem invariant_of_equivariant {offers : L → (s : NativeState S O Γ sort) �
 the interface's theorem up to dead names. -/
 theorem renamed_bisimilar {offers : L → (s : NativeState S O Γ sort) → NativeFiring s → Prop}
     (equivariant : NativeEquivariant offers) {s t : NativeState S O Γ sort} (renamed : NativeRenamed s t) :
-    Race.Generic.Bisimilar native offers s t :=
+    Race.Generic.Bisimilar native.toStep offers s t :=
   DeadTransport.bisimilar_of_same (invariant_of_equivariant equivariant) (same_iff_renamed.mpr renamed)
 
 end NativeUpToDeadRenaming

@@ -12,6 +12,13 @@
 
 (= (width) 200)
 
+(= (trim-line-end $line)
+   (let $n (str:byte-length $line)
+     (if (== $n 0) $line
+         (let $last (str:byte-slice $line (- $n 1) $n)
+           (if (or (== $last " ") (or (== $last "\t") (== $last "\r")))
+               (trim-line-end (str:byte-slice $line 0 (- $n 1))) $line)))))
+
 (= (append-lists $xs $ys) (if (== $xs ()) $ys (cons-atom (car-atom $xs) (append-lists (cdr-atom $xs) $ys))))
 
 ; A break may follow a space at position i (from width - 1 down to 21) when
@@ -47,7 +54,8 @@
                        (append-lists $acc ((str:from-codepoints (take-of $cs $cut)))))))))
 
 (= (wrap-line $line)
-   (if (str:is-all-in ascii $line) (wrap-ascii $line ()) (wrap-cps (str:codepoints $line) ())))
+   (let $clean (trim-line-end $line)
+     (if (str:is-all-in ascii $clean) (wrap-ascii $clean ()) (wrap-cps (str:codepoints $clean) ()))))
 (= (wrap-lines $lines)
    (if (== $lines ()) () (append-lists (wrap-line (car-atom $lines)) (wrap-lines (cdr-atom $lines)))))
 (= (wrap-file $path)

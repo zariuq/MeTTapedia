@@ -40,11 +40,11 @@ open Interface.DependentFull
 open Interface.DependentFull.Controls
 open Interface.DependentFull.IndependenceControls
 open Interface (Frames)
-open DisequalityFrames (Prestep Separates separates_id_iff)
+open DisequalityFrames (Separates separates_id_iff)
 open Evidence.Family (Member Probe)
 
 abbrev X := ContextualDependentEta.frames setting.levels
-abbrev Q := DisequalityFrames.Dependent.prestep setting.levels Nat
+abbrev Q := (DisequalityFrames.Dependent.prestep setting.levels Nat).step
 abbrev P := DisequalityFrames.Dependent.withDisequations setting.levels Nat
 
 /-! ## Facts of the frame -/
@@ -94,13 +94,13 @@ def plainProbe : Probe → Plain setting.levels Nat triple
 
 /-- A probe at a member, telling no disequation. -/
 def probe : (m : Member) → Probe → Q.DFiring (state m)
-  | .covered, π => Prestep.DFiring.silent _ (Plain.toFiring (s := rowsAt ∅) (plainProbe π))
+  | .covered, π => Interface.Step.DFiring.silent _ (Plain.toFiring (s := rowsAt ∅) (plainProbe π))
       (DisequalityFrames.Dependent.toFiring_reflects _)
-  | .refuted, π => Prestep.DFiring.silent _ (Plain.toFiring (s := rowsAt {1}) (plainProbe π))
+  | .refuted, π => Interface.Step.DFiring.silent _ (Plain.toFiring (s := rowsAt {1}) (plainProbe π))
       (DisequalityFrames.Dependent.toFiring_reflects _)
-  | .incomplete, π => Prestep.DFiring.silent _ (Plain.toFiring (s := rowsAt {2}) (plainProbe π))
+  | .incomplete, π => Interface.Step.DFiring.silent _ (Plain.toFiring (s := rowsAt {2}) (plainProbe π))
       (DisequalityFrames.Dependent.toFiring_reflects _)
-  | .disequal, π => Prestep.DFiring.silent _ (Plain.toFiring (s := rowsAt {2}) (plainProbe π))
+  | .disequal, π => Interface.Step.DFiring.silent _ (Plain.toFiring (s := rowsAt {2}) (plainProbe π))
       (DisequalityFrames.Dependent.toFiring_reflects _)
 
 /-- **The outcome of a member**: which probes its state admits. -/
@@ -110,10 +110,10 @@ def profile (m : Member) (π : Probe) : Prop := P.Admits (probe m π)
 
 /-- At an equation-only member, a probe is admitted exactly when its firing without helpers is. -/
 theorem plain_profile_iff (present : Finset Nat) (π : Probe) :
-    P.Admits (Prestep.DFiring.silent (Q.plain (rowsAt present))
+    P.Admits (Interface.Step.DFiring.silent (Q.plain (rowsAt present))
         (Plain.toFiring (s := rowsAt present) (plainProbe π)) (DisequalityFrames.Dependent.toFiring_reflects _)) ↔
       (plainProbe π).Admits (rowsAt present).toLocal :=
-  (Prestep.conservative _ _ rfl rfl).trans (Plain.admits_toFiring _)
+  (Interface.Step.conservative _ _ rfl rfl).trans (Plain.admits_toFiring _)
 
 theorem shapes (π : Probe) : (plainProbe π).Shapes := by
   cases π <;> exact ⟨List.nodup_nil, List.nodup_nil, rfl, rfl, fun _ member => absurd member List.not_mem_nil⟩
@@ -206,7 +206,7 @@ theorem incomplete_profile :
 /-! ## The disequality member -/
 
 theorem disequal_absentP : profile .disequal .absentP := by
-  refine (Prestep.admits_iff_separating _ (probe .disequal .absentP)).mpr
+  refine (Interface.Step.admits_iff_separating _ (probe .disequal .absentP)).mpr
     ⟨shapes .absentP, enabled {2} .absentP (no_reads .absentP rfl {2}),
       ⟨point, toArrow, fun e member => absurd member List.not_mem_nil, ?_⟩, ?_⟩
   · intro d member equated
@@ -226,7 +226,7 @@ theorem disequal_absentP : profile .disequal .absentP := by
 
 theorem disequal_readOpp : ¬ profile .disequal .readOpp := by
   intro admitted
-  obtain ⟨-, enabledHere, -, -⟩ := (Prestep.admits_iff_separating _ (probe .disequal .readOpp)).mp admitted
+  obtain ⟨-, enabledHere, -, -⟩ := (Interface.Step.admits_iff_separating _ (probe .disequal .readOpp)).mp admitted
   have read := ((enabled_iff _).mp enabledHere).2.1 1 (List.mem_singleton_self 1)
   exact absurd read (by decide)
 
@@ -241,12 +241,12 @@ theorem read_apart {b : Context Tower.rules} (g : b ⟶ triple) :
   (congrArg₂ X.E (read_apart_eq g xUniverse) (read_apart_eq g groundUniverse)).to_iff
 
 theorem disequal_bindA : ¬ profile .disequal .bindA := by
-  refine Prestep.refused_of_carried _ (probe .disequal .bindA) (d := apartG) (List.mem_singleton_self _) ?_
+  refine Interface.Step.refused_of_carried _ (probe .disequal .bindA) (d := apartG) (List.mem_singleton_self _) ?_
   intro b g solved
   exact (read_apart g).mpr (solved _ (List.mem_append_right _ (List.mem_singleton_self _)))
 
 theorem disequal_findP : ¬ profile .disequal .findP := by
-  refine Prestep.refused_of_carried _ (probe .disequal .findP) (d := apartG) (List.mem_singleton_self _) ?_
+  refine Interface.Step.refused_of_carried _ (probe .disequal .findP) (d := apartG) (List.mem_singleton_self _) ?_
   intro b g solved
   have read : X.E (X.act g groundUniverse) (X.act g (X.act (𝟙 triple) xUniverse)) :=
     solved _ (Firing.read_mem (Plain.toFiring (s := rowsAt {2}) (plainProbe .findP)) (List.mem_singleton_self _))

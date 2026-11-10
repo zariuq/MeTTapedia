@@ -36,15 +36,62 @@ megalodon=${MEGALODON:-$root/megalodon/bin/megalodon}
 mgcheck=${MG_CHECK:-mg-check}
 cetta=${CETTA:-cetta}
 preamble=$root/megalodon/examples/egal/PfgEAug2022Preamble.mgs
+(cd "$root" && sha256sum --status --check "$here/Foundation.sha256") || {
+    echo "check: the imported Egal signature differs from Foundation.sha256" >&2; exit 1;
+}
 work=$(mktemp -d "${TMPDIR:-/tmp}/lean-in-egal.XXXXXX")
 cleanup() {
-    rm -f -- "$work/doc.mg" "$work/library.mg" "$work"/scaling-*.mg
+    rm -f -- "$work"/*.mg "$work"/*.tsv "$work"/evidence-*.txt "$work/Skipped.txt"
+    rm -f -- "$work/answers-control.metta" "$work/answers-control-binary.txt" "$work/answers-control.log"
     rmdir -- "$work"
 }
 library=$work/library.mg
-cat "$here/Library/Conversion.mg" "$here/LeanInEgal.mg" "$here/Library/Typing.mg" "$here/Library/Digits.mg" "$here/generated/LeanFamilies.mg" "$here/Library/EqFacts.mg" "$here/FamilyFacts.mg" \
-    "$here/Numerals.mg" "$here/Decidable.mg" "$here/Library/NumeralDecisions.mg" "$here/generated/LeanFunctions.mg" "$here/Library/DecideFacts.mg" \
-    "$here/Library/NatAdd.mg" "$here/Library/NatMul.mg" "$here/Library/NatSub.mg" "$here/Library/NatDecide.mg" "$here/Library/NatDiv.mg" \
+trap cleanup EXIT
+# Qualification is recomputed from the current source inventory and proof
+# references. A stale ledger cannot certify an otherwise checked document.
+cp "$here/generated/LeanFamilies.mg" "$work/Families.mg"
+cp "$here/generated/LeanFunctions.mg" "$work/Functions.mg"
+cp "$here/generated/LeanComputations.mg" "$work/Computations.mg"
+cp "$here/generated/Outcomes.tsv" "$work/Outcomes.tsv"
+cp "$here/generated/Skipped.txt" "$work/Skipped.txt"
+: > "$work/Theorems.mg"
+decls=$root/lean/mettapedia/artifacts/lean-declarations
+"$cetta" --lang petta --quiet "$decls/terms.metta" "$decls/families.metta" "$here/evidence.metta" \
+  "$work/Evidence.tsv" "$work/Qualification.tsv" "$work/evidence-summary.txt" "$decls" "$work" > /dev/null
+cmp "$work/Evidence.tsv" "$here/generated/Evidence.tsv"
+cmp "$work/Qualification.tsv" "$here/generated/Qualification.tsv"
+cmp "$work/evidence-summary.txt" "$here/generated/EvidenceSummary.txt"
+cat "$work/evidence-summary.txt"
+for control in answers-crash answers-missing; do
+    if "$cetta" --lang petta --quiet "$here/answers.metta" "$here/controls/$control.json" \
+        "$work/answers-control.metta" "$work/answers-control-binary.txt" without-source \
+        "$here/controls/answers-tests.tsv" > "$work/answers-control.log" 2>&1; then
+        echo "FAIL $control: invalid observation accepted"; exit 1
+    fi
+    grep -q '^answers:' "$work/answers-control.log" || { cat "$work/answers-control.log"; exit 1; }
+    echo "refused:   $control (runtime observation)"
+done
+# Guard substitution and projection templates share the term interpreter.
+# Keep their scope controls in the normal gate, before checking generated proofs.
+"$cetta" --lang petta --quiet "$here/../../../../artifacts/lean-declarations/families.metta" \
+  "$here/generate.metta" "$here/interpret.metta" "$here/guard-controls.metta"
+if "$cetta" --lang petta --quiet "$decls/families.metta" "$decls/terms.metta" \
+    "$here/generate.metta" "$here/interpret.metta" "$here/controls/unexported-source-equation.metta" \
+    > "$work/evidence-source-control.txt" 2>&1; then
+    echo "FAIL source control: an unexported equation accepted a target proof"; exit 1
+fi
+grep -q '^source-equation proof .* is not an exported obligation' "$work/evidence-source-control.txt"
+echo "refused:   unexported source equation"
+after_functions=()
+for relative in Library/DecideFacts.mg Library/NatAdd.mg Library/NatMul.mg Library/NatSub.mg Library/NatDecide.mg Library/NatDiv.mg; do
+    if ! grep -Fqx "(** Embedded proof support: $relative **)" "$here/generated/LeanFunctions.mg"; then
+        after_functions+=("$here/$relative")
+    fi
+done
+cat "$here/Library/Conversion.mg" "$here/Library/Quotients.mg" "$here/Library/EquivalenceClosure.mg" "$here/Library/RankedRecursion.mg" "$here/LeanInEgal.mg" "$here/Library/Typing.mg" "$here/Library/QuotientTyping.mg" "$here/Library/Digits.mg" "$here/generated/LeanFamilies.mg" "$here/Library/EqFacts.mg" "$here/Library/QuotientProofs.mg" "$here/FamilyFacts.mg" \
+    "$here/Numerals.mg" "$here/Decidable.mg" "$here/Library/NumeralDecisions.mg" \
+    "$here/Library/AlgebraicStructures.mg" "$here/Library/NatAlgebra.mg" "$here/Library/Propositions.mg" \
+    "$here/generated/LeanFunctions.mg" "${after_functions[@]}" \
     "$here/generated/LeanComputations.mg" > "$library"
 trap cleanup EXIT
 fail=0
@@ -72,8 +119,22 @@ else
     echo "FAIL seed: $seed not verified as the receipt's Egal theorem"; fail=1
 fi
 
+[[ $fail == 0 ]] || exit 1
+echo "receipts:  $(grep -c $'\tgenerated ' "$here/generated/ReceiptCoverage.tsv") generated candidates checked by both engines"
+
 offset=$(wc -l < "$library")
-for control in "$here"/controls/reject_*.mg; do
+"$cetta" --lang petta --quiet "$decls/families.metta" "$decls/terms.metta" \
+    "$here/generate.metta" "$here/interpret.metta" "$here/numeral-controls.metta" \
+    "$work/numeral-positive.mg" "$work/numeral-negative.mg" > /dev/null
+cat "$library" "$work/numeral-positive.mg" > "$work/doc.mg"
+for checker in "$megalodon" "$mgcheck"; do
+    if ! "$checker" -I "$preamble" "$work/doc.mg" > "$work/evidence-numerals.txt" 2>&1; then
+        cat "$work/evidence-numerals.txt"; exit 1
+    fi
+done
+echo "numerals:  eight divisibility branch proofs checked by both engines"
+
+for control in "$here"/controls/reject_*.mg "$work/numeral-negative.mg"; do
     name=$(basename "$control")
     cat "$library" "$control" > "$work/doc.mg"
     m=$("$megalodon" -I "$preamble" "$work/doc.mg" 2>&1) && { echo "FAIL $name: accepted by megalodon"; fail=1; continue; }

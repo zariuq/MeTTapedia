@@ -151,7 +151,7 @@ variable [DecidableEq O]
 
 /-- **The simple step**: the dependent helper step on simple frames with closed helper types, its
 solvability and asks taken over simple frames only. -/
-abbrev simpleStep : Interface.Step (simpleFrames rules) O (SimpleState rules O) SimpleFiring where
+abbrev simpleStep : Interface.Step.Standard (simpleFrames rules) O (SimpleState rules O) SimpleFiring where
   frame s := ⟨s.state.frame, s.simple⟩
   knowledge s := s.state.knowledge
   present s := s.state.present
@@ -172,10 +172,10 @@ abbrev simpleStep : Interface.Step (simpleFrames rules) O (SimpleState rules O) 
       fun _ σ => (frames rules).Models ((frames rules).comp σ (projectionHom s.state.frame f.firing.helper))
         f.firing.guards
   admits_iff _ := Iff.rfl
-  result f _ := ⟨f.firing.after, f.simple_after⟩
-  present_result _ _ := rfl
-  settle f _ := (frames rules).id (extend _ f.firing.helper)
-  knowledge_result f _ := (Frames.applyStore_id (X := frames rules) f.firing.information).symm
+  preparedResult f _ := ⟨f.firing.after, f.simple_after⟩
+  present_preparedResult _ _ := rfl
+  preparedSettle f _ := (frames rules).id (extend _ f.firing.helper)
+  knowledge_preparedResult f _ := (Frames.applyStore_id (X := frames rules) f.firing.information).symm
 
 omit [DecidableEq O] in
 /-- The knowledge has a principal answer at a simple frame. -/

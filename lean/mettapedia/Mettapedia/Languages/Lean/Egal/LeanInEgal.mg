@@ -333,6 +333,12 @@ rewrite proj0_pair_eq (setsum (T k) (O k a)) a.
 exact proj1_pair_eq (T k) (O k a).
 Qed.
 
+Theorem IndNode_fields : forall k a j, (proj1 (IndNode k a)) j = a j.
+let k a j.
+prove (proj1 (setsum (setsum (T k) (O k a)) a)) j = a j.
+rewrite proj1_pair_eq (setsum (T k) (O k a)) a. reflexivity.
+Qed.
+
 Theorem IndFits_mono : forall X Y, X c= Y -> forall k a, IndFits X k a -> IndFits Y k a.
 let X Y. assume HXY: X c= Y. let k a. assume H: IndFits X k a.
 let j. assume Hj: j :e N k.

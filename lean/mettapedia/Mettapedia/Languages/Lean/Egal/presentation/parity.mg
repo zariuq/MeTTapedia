@@ -14,9 +14,9 @@ claim E0: Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_zero_b_node 
 claim O1: Lean_Mettapedia_Languages_Lean_Declarations_Controls_Odd_succ_b_node (LeanNum 0) Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_zero_b_node
   :e Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b (setsum 2 (LeanNum 1)).
 { rewrite LeanNum_S 0 nat_0. exact Lean_Mettapedia_Languages_Lean_Declarations_Controls_Odd_succ_b_typed (LeanNum 0) Z Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_zero_b_node E0. }
-claim E2: 0 :e Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_Prop (setsum 1 (Lean_Nat_succ_node (LeanNum 1))).
+claim E2: 0 :e Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked (setsum 1 (Lean_Nat_succ_node (LeanNum 1))).
 { exact Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_succ_b_proof_ok (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0))
     (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Odd_succ_b_node (LeanNum 0) Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_zero_b_node) O1. }
-prove 0 :e Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_Prop (setsum 1 (LeanNum 2)).
+prove 0 :e Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked (setsum 1 (LeanNum 2)).
 rewrite LeanNum_S 1 (nat_ordsucc 0 nat_0). exact E2.
 Qed.

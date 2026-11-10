@@ -381,7 +381,7 @@ theorem fibre_admission_transfer_of_decided
     (closed : ClosedRealization (S := S) names)
     (operatorInjective : ∀ {s : sig.Srt}, Function.Injective (names.operator (sort := s)))
     {O : Type} [DecidableEq O] {State : Type} {Firing : State → Type}
-    (P : Step (listFrames sig) O State Firing)
+    (P : Step (listFrames sig) O State Firing) [P.Guarded]
     (guards : ∀ {s : State} (f : Firing s),
       EquationStore (Binding.ContextualFamily.Observation sig (P.target f).get))
     (holds : ∀ {s : State} (f : Firing s) (N : List (Binding.MetaArity sig))

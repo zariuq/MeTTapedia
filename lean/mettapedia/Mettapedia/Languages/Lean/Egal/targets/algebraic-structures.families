@@ -1,0 +1,14 @@
+# Parameters and parent structures precede their consumers.
+Nat
+Eq
+Mul
+One
+NPow
+Semigroup
+Monoid
+Add
+Zero
+NSMul
+AddSemigroup
+AddMonoid
+AddCommMonoid

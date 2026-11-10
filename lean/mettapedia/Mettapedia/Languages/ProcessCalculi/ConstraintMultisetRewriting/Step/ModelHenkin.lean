@@ -28,14 +28,18 @@ both sides evaluate alike (`HenkinModel.kernel`), and a guard formula is read th
 * **Stage models** (`Frames.stage`): the points are the solutions into one frame. At a designated
   closed frame they are the closed points: closed asks are validity in the stage
   (`closedEvery_iff_stage`, `closedSome_iff_stage`).
-* **The step** (`Step.model_transition`): an admitted firing gives a model transition. A point after
-  it, satisfying the result's knowledge, pulls back to a point of the firing's information and to a
-  point of the knowledge before it. In a free model the pulled-back point also satisfies the
+* **The step**: semantic refinement gives a transition in every free model
+  (`Step.model_transition_free`). Literal information transport and literal result knowledge give
+  the stronger all-model result (`Step.model_transition`). A point after the firing, satisfying
+  its knowledge, pulls back to a point of the firing's information and of the source knowledge.
+  The free-model hypothesis is necessary in general; `ModelRefinementControls` separates it even
+  for an exact step. In a free model the pulled-back point also satisfies the
   firing's guards when they are written in the guard syntax (`model_transition_guards`). With points
   at every frame, every admitted firing has a point of its information (`realized`), with its guards
   in a free model (`realized_guards`).
 * **Runs map functorially** (`Step.pullRun`): a run pulls a point at its end back to its start,
-  through the knowledge of every state (`models_pullRun`). The pullback evaluates as the run's
+  through the knowledge of every state (`models_pullRun_free` for free models,
+  `models_pullRun` for the literal profile). The pullback evaluates as the run's
   morphism (`eval_pullRun`), and the pullback along a concatenation is the composite of the
   pullbacks (`eval_pullRun_append`).
 -/
@@ -235,7 +239,8 @@ variable {Obj : Type uO} {Tm : Obj → Type uT} {Hom : Obj → Obj → Type uH}
 
 /-- **An admitted firing gives a model transition**: a point after it pulls back to a point of its
 information and to a point of the knowledge before it. -/
-theorem model_transition {s : State} {f : Firing s} (admitted : P.Admits f)
+theorem model_transition [P.LiteralInformation] [P.LiteralKnowledge]
+    {s : State} {f : Firing s} (admitted : P.Admits f)
     (q : Pt (P.frame (P.result f admitted))) (known : M.Models q (P.knowledge (P.result f admitted))) :
     M.Models (M.pull (P.settle f admitted) q) (P.information f) ∧
       M.Models (M.pull (P.along f admitted) q) (P.knowledge s) := by
@@ -251,16 +256,35 @@ theorem model_transition {s : State} {f : Firing s} (admitted : P.Admits f)
   rw [along, along]
   exact information _ (P.transported f e member)
 
+/-- Semantic refinement transfers to a free Henkin model without literal
+store transport or exactness. Freeness realizes the observed point by a frame
+morphism; arbitrary Henkin interpretations need a separate transfer contract. -/
+theorem model_transition_free (free : M.Free)
+    {s : State} {f : Firing s} (admitted : P.Admits f)
+    (q : Pt (P.frame (P.result f admitted))) (known : M.Models q (P.knowledge (P.result f admitted))) :
+    M.Models (M.pull (P.settle f admitted) q) (P.information f) ∧
+      M.Models (M.pull (P.along f admitted) q) (P.knowledge s) := by
+  obtain ⟨b, σ, realizes⟩ := free _ q
+  have solved := (M.models_iff_of_realizes realizes _).mp known
+  constructor
+  · apply (M.models_applyStore (P.settle f admitted) q _).mp
+    apply (M.models_iff_of_realizes realizes _).mpr
+    exact (Frames.models_applyStore _ _ _).mpr
+      (P.result_refines f (P.prepares admitted) σ solved)
+  · apply (M.models_applyStore (P.along f admitted) q _).mp
+    apply (M.models_iff_of_realizes realizes _).mpr
+    exact (Frames.models_applyStore _ _ _).mpr (P.models_along admitted σ solved)
+
 /-- **In a free model the transition also satisfies the firing's guards**, when they are written in
 the guard syntax. -/
-theorem model_transition_guards (free : M.Free)
+theorem model_transition_guards [P.Guarded] (free : M.Free)
     {guard : ∀ {s : State} (f : Firing s), GuardFormula (Tm (P.target f)) O} (guarded : P.GuardedBy guard)
     {s : State} {f : Firing s} (admitted : P.Admits f) (q : Pt (P.frame (P.result f admitted)))
     (known : M.Models q (P.knowledge (P.result f admitted))) :
     M.Satisfies (M.pull (P.settle f admitted) q) (guard f) := by
   have asked : X.Entails (P.information f) fun _ σ => X.Satisfies σ (guard f) :=
     fun b σ solved => (guarded f b σ).mp (((P.admits_iff f).mp admitted).2.2.2 b σ solved)
-  exact Frames.HenkinModel.sound free asked _ (P.model_transition M admitted q known).1
+  exact Frames.HenkinModel.sound free asked _ (P.model_transition_free M free admitted q known).1
 
 /-- **Every admitted firing is realized** in a model with points at every frame. -/
 theorem realized (inhabited : ∀ a : Obj, Nonempty (Pt a)) {s : State} {f : Firing s} (admitted : P.Admits f) :
@@ -269,7 +293,7 @@ theorem realized (inhabited : ∀ a : Obj, Nonempty (Pt a)) {s : State} {f : Fir
 
 /-- **In a free model with points at every frame, every admitted firing is realized with its
 guards.** -/
-theorem realized_guards (inhabited : ∀ a : Obj, Nonempty (Pt a)) (free : M.Free)
+theorem realized_guards [P.Guarded] (inhabited : ∀ a : Obj, Nonempty (Pt a)) (free : M.Free)
     {guard : ∀ {s : State} (f : Firing s), GuardFormula (Tm (P.target f)) O} (guarded : P.GuardedBy guard)
     {s : State} {f : Firing s} (admitted : P.Admits f) :
     ∃ q : Pt (P.target f), M.Models q (P.information f) ∧ M.Satisfies q (guard f) := by
@@ -295,11 +319,21 @@ theorem eval_pullRun : ∀ {s : State} (r : P.Run s) (q : Pt (P.frame r.last)) (
       rw [← M.eval_act, eval_pullRun rest q, X.act_comp]
 
 /-- **A run's pullback passes through the knowledge of its start.** -/
-theorem models_pullRun : ∀ {s : State} (r : P.Run s) (q : Pt (P.frame r.last)),
+theorem models_pullRun [P.LiteralInformation] [P.LiteralKnowledge] :
+    ∀ {s : State} (r : P.Run s) (q : Pt (P.frame r.last)),
     M.Models q (P.knowledge r.last) → M.Models (P.pullRun M r q) (P.knowledge s)
   | _, .nil _, _, known => known
   | _, .cons _ admitted rest, q, known =>
       (P.model_transition M admitted (P.pullRun M rest q) (models_pullRun rest q known)).2
+
+/-- Run preservation for the semantic core in any free Henkin model. -/
+theorem models_pullRun_free (free : M.Free) :
+    ∀ {s : State} (r : P.Run s) (q : Pt (P.frame r.last)),
+    M.Models q (P.knowledge r.last) → M.Models (P.pullRun M r q) (P.knowledge s)
+  | _, .nil _, _, known => known
+  | _, .cons _ admitted rest, q, known =>
+      (P.model_transition_free M free admitted (P.pullRun M rest q)
+        (models_pullRun_free free rest q known)).2
 
 /-- **Runs map functorially**: the pullback along a concatenation is the composite of the
 pullbacks. -/

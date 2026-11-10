@@ -80,9 +80,9 @@ def lowerFields (model : Model) (block : BlockReading) (owner : SFamily)
             | _ => throw (.unknownContainer constructor field.name)
           if recursive.any (Profile.mentions · field.type) then
             throw (.unsupportedField constructor field.name)
-          if scope.any (Profile.mentions · field.type) then
+          if scope.any (Profile.mentions · field.type) || proof.any Profile.hasDependentProduct then
             let some proposition := proof | throw (.unsupportedField constructor field.name)
-            let expression ← (Profile.resolve (Profile.header owner) constructor context.length
+            let expression ← (Profile.resolveGuard (Profile.header owner) constructor context.length
               scope recursive proposition).mapError Refusal.profile
             let (body, guards) ← lowerFields model block owner constructor result context scope recursive
               (position + 1) rest proofs remaining

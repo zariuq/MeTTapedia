@@ -1,4 +1,5 @@
 import Mettapedia.Languages.Lean.Declarations.BlockProfile
+import Mettapedia.Languages.Lean.Declarations.GuardData
 import Mettapedia.GSLT.LanguageDef.ModuleSource.InductiveMeTTaData
 
 /-!
@@ -25,6 +26,8 @@ def sourceData : STerm → Atom
   | .name name => node "const" [.symbol name]
   | .app function argument => node "app" [sourceData function, sourceData argument]
   | .arrow domain codomain => node "arrow" [sourceData domain, sourceData codomain]
+  | .pi binder domain codomain => node "pi" [.symbol binder, sourceData domain, sourceData codomain]
+  | .project owner field record => node "project" [.symbol owner, number field, sourceData record]
 
 def expressionData (positions : List Nat) : {depth : Nat} → IndexTerm depth → Atom
   | _, .var position => node "field" [number (positions.getD position.val 0)]
@@ -54,7 +57,7 @@ def mergeGuards (fields : List (Atom × Bool)) (slots : List Nat) (guards : List
     | fuel + 1, rest =>
         let position := total - (fuel + 1)
         match guards.find? (·.position == position) with
-        | some guard => node "guard" [expressionData (positions.take guard.depth).reverse guard.proposition] ::
+        | some guard => node "guard" [GuardData.termData (positions.take guard.depth).reverse guard.proposition] ::
             go fuel rest
         | none => (rest.headD (.expression [], false)).1 :: go fuel rest.tail
   go total fields

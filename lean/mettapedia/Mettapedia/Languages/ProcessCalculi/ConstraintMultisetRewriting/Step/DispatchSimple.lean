@@ -105,7 +105,7 @@ abbrev simpleInclusion := (frames rules).inclusion Simple
 
 /-- **A simple firing is a dispatched firing of the dependent helper step.** -/
 def simpleDispatched {s : SimpleState rules O} (f : SimpleFiring s) :
-    (simpleInclusion rules).Dispatched (helperStep (rules := rules) (O := O)) f.firing where
+    (simpleInclusion rules).Dispatched (helperStep (rules := rules) (O := O)).toStep f.firing where
   source := ⟨extend s.state.frame f.firing.helper, f.simple_after⟩
   frame := rfl
   problem := f.firing.information

@@ -23,12 +23,17 @@ here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 root=$(cd "$here/../../../../../.." && pwd)
 megalodon=${MEGALODON:-$root/megalodon/bin/megalodon}
 mgcheck=${MG_CHECK:-mg-check}
+cetta=${CETTA:-cetta}
 preamble=$root/megalodon/examples/egal/PfgEAug2022Preamble.mgs
+(cd "$root" && sha256sum --status --check "$here/Foundation.sha256") || {
+    echo "check: the imported Egal signature differs from Foundation.sha256" >&2; exit 1;
+}
 target=${1:?usage: check-target.sh TARGET}
 gen=$here/generated/$target
 work=$(mktemp -d "${TMPDIR:-/tmp}/lean-in-egal-target.XXXXXX")
 cleanup() {
     rm -f -- "$work/doc.mg" "$work/library.mg" "$work/reading.mg" "$work"/[mc].out "$work"/[mc].status
+    rm -f -- "$work"/evidence-*.tsv "$work"/evidence-*.txt "$work"/evidence-*.log
     rmdir -- "$work"
 }
 trap cleanup EXIT
@@ -45,9 +50,18 @@ else
     core=("$here/Library/EqFacts.mg" "$here/Numerals.mg" "$here/Decidable.mg" "$here/Library/NumeralDecisions.mg")
 fi
 mapfile -t extra < <(listed library)
+mapfile -t prelude < <(listed prelude)
 mapfile -t primitives < <(listed primitives)
+after_functions=()
+for file in "${primitives[@]}"; do
+    relative=${file#"$here/"}
+    if ! grep -Fqx "(** Embedded proof support: $relative **)" "$gen/Functions.mg"; then
+        after_functions+=("$file")
+    fi
+done
+mapfile -t extra_controls < <(listed controls)
 reading=$work/reading.mg
-cat "$here/Library/Conversion.mg" "$here/LeanInEgal.mg" "$here/Library/Typing.mg" "$here/Library/Digits.mg" "$gen/Families.mg" "${core[@]}" "${extra[@]}" "$gen/Functions.mg" "${primitives[@]}" \
+cat "$here/Library/Conversion.mg" "$here/LeanInEgal.mg" "$here/Library/Typing.mg" "$here/Library/Digits.mg" "${prelude[@]}" "$gen/Families.mg" "${core[@]}" "${extra[@]}" "$gen/Functions.mg" "${after_functions[@]}" \
     > "$reading"
 presentation=()
 [[ -e "$here/presentation/$target.mg" ]] && presentation=("$here/presentation/$target.mg")
@@ -72,7 +86,7 @@ else
 fi
 
 offset=$(wc -l < "$reading")
-for control in "$here"/controls/"$target"/reject_*.mg; do
+for control in "$here"/controls/"$target"/reject_*.mg "${extra_controls[@]}"; do
     [[ -e "$control" ]] || continue
     name=$(basename "$control")
     cat "$reading" "$control" > "$work/doc.mg"
@@ -89,4 +103,41 @@ for control in "$here"/controls/"$target"/reject_*.mg; do
         echo "FAIL $name: megalodon '$mline', mg-check '$cline' (the reading has $offset lines)"; fail=1
     fi
 done
+
+if [[ $fail == 0 && $target == quotient-profile ]]; then
+    decls=$root/lean/mettapedia/artifacts/lean-declarations/$target
+    for mode in positive negative; do
+        facts=()
+        [[ $mode == negative ]] && facts=("$here/controls/missing-primitive-law.metta")
+        "$cetta" --lang petta --quiet "$decls/terms.metta" \
+            "$root/lean/mettapedia/artifacts/lean-declarations/families.metta" "${facts[@]}" \
+            "$here/evidence.metta" "$work/evidence-$mode.tsv" "$work/evidence-$mode-q.tsv" \
+            "$work/evidence-$mode.txt" "$decls" "$gen" > "$work/evidence-$mode.log" 2>&1
+    done
+    "$cetta" --lang petta --quiet "$here/controls/primitive-qualification.metta" \
+        "$work/evidence-positive-q.tsv" "$work/evidence-negative-q.tsv"
+fi
+
+# A function's reading bridge does not replace its original equation
+# obligations. The fixture adds one missing obligation to CEK.evalV; only
+# the two runs that use that function must lose qualification.
+if [[ $fail == 0 && $target == functional-correspondence ]]; then
+    decls=$root/lean/mettapedia/artifacts/lean-declarations/$target
+    for mode in positive negative; do
+        facts=()
+        [[ $mode == negative ]] && facts=("$here/controls/missing-source-equation.metta")
+        "$cetta" --lang petta --quiet "$decls/terms.metta" "$decls/families.metta" "${facts[@]}" \
+            "$here/evidence.metta" "$work/evidence-$mode.tsv" "$work/evidence-$mode-q.tsv" \
+            "$work/evidence-$mode.txt" "$decls" "$gen" > "$work/evidence-$mode.log" 2>&1
+    done
+    if ! cmp -s "$gen/Qualification.tsv" "$work/evidence-positive-q.tsv"; then
+        echo "FAIL evidence: unchanged source obligations changed qualification"; fail=1
+    fi
+    affected=$(awk -F '\t' '$2 == "unqualified" {print $1}' "$work/evidence-negative-q.tsv" | paste -sd ' ' -)
+    if [[ $affected != '19 21' ]]; then
+        echo "FAIL evidence: missing source equation affected tests '$affected', expected '19 21'"; fail=1
+    else
+        echo "evidence: missing source equation leaves exactly tests 19 and 21 unqualified"
+    fi
+fi
 exit $fail

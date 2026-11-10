@@ -4,6 +4,8 @@
 ;   (LeanFamily (Family Name (parameters Ps) (indices Is) Sort (constructors ..)) ..)
 ;   (LeanAdmitted Name ((Ctor (fields F..) (result (I..))) ..))
 ;     F = (data Sort) | (rec (I..)) | (guard I);  I = (field p) | (const c) | (app I I)
+;   Guards also have (pi binder domain body) and (bound binder); those
+;   binders are distinct from the constructor's fields.
 ;   A guard is a proof field whose proposition reads earlier fields; its sort
 ;   is the proposition's truth value {z :e 1 | z :e P}, an inductive
 ;   proposition read as E_Prop.
@@ -132,6 +134,9 @@
                      ((tuple $m $S) (format-args "(TupArgs {} {} {})" ($m $S $p)))
                      ((mixed $j0) (if (< $p $j0) (format-args "(a {})" ($p)) (format-args "x{}" ($p)))))))
       ((const $c) (if (full-ctor-app $c 0) (format-args "{}_node" ((egal $c))) (symbol-text $c $params)))
+      ((bound $name) (format-args "{}" ($name)))
+      ((project $owner $field $record)
+       (format-args "((proj1 {}) {})" ((index-text $record $mode $params) $field)))
       ((code $n) (format-args "{}" ($n)))
       ((app $f $x)
        (let* (($h (index-head $i)) ($as (index-args $i)))
@@ -175,7 +180,9 @@
 ; the member's own indices, is one tuple: the members are Lean's families,
 ; the block is their encoding.
 (= (section-q $name)
-   (case $name (((bk $F) (if (== (index-count $name) 0) 0 1)) ($_ (index-count $name)))))
+   (case $name
+     (((bk $F) (if (== (index-count $name) 0) 0 1))
+      ($_ (if (is-prop $name) (if (== (index-count $name) 0) 0 1) (index-count $name))))))
 (= (ivar-list $q $p) (map-atom (range-from 0 $q) $j (format-args "{}{}" ($p $j))))
 (= (tuple-text $xs)
    (if (== (cdr-atom $xs) ()) (car-atom $xs) (format-args "(setsum {} {})" ((car-atom $xs) (tuple-text (cdr-atom $xs))))))
@@ -228,6 +235,9 @@
 (= (guard-text $i $mode $params)
    (case $i
      (((const $c) (if (is-prop $c) (format-args "{}_Prop" ((egal $c))) (index-text $i $mode $params)))
+      ((pi $binder $domain $body)
+       (format-args "(Pi_ {} :e {}, {})"
+         ($binder (guard-text $domain $mode $params) (guard-text $body $mode $params))))
       ((app $f $x) (format-args "({} {})" ((guard-text $f $mode $params) (index-text $x $mode $params))))
       ($_ (index-text $i $mode $params)))))
 
@@ -504,6 +514,7 @@ Qed." ($E "{" $E "}" $E $E $E $E $E $E $E $E $E $E $E))
             (if (has-cases-eliminator $name) (cases-text $name $cs $params $q) "")
             (if (has-cases-eliminator $name) (cases-type-text $name $cs $params $q) "")
             (if (and (== $q 0) (not (is-prop $name))) (ind-text $name $cs $params) "")
+            (if (and (== $q 1) (is-prop $name)) (indexed-ind-text $name $cs $params) "")
             (noconf-text $name $cs)
             (inj-text $name $cs)
             (fiber-text $name $q)
@@ -612,10 +623,26 @@ Qed.
 " ($C (sig $E) $k))
            (format-args "Definition {}_node : {} := fun {} => IndNode {} {} {}.
 " ($C (node-type $m) (join " " (xs-of $m)) (sig $E) $k $T)))
+       (if (== (length-of $cs) 1) (record-fields-text $E $C $k $m $S $T) "")
        (args-text $E $C $cs $params $q $k $fs $m $S $T $tmode)
        (typed-text $E $C $cs $params $q $k $fs $m $S $T $tmode $rt)
        (if (and (== $q 0) (in-index (ctor-name $c))) (node-in-text $E $C $cs $params $k $m $S $T) "")
        (term-text $E $C $params $q $fs $m $rt)))))
+
+; Field readback is proved once for each single-constructor family. The
+; equation holds on the full constructor tuple, including proof positions.
+(= (record-fields-text $E $C $k $m $S $T)
+   (join "" (map-atom (range-from 0 $m) $j
+     (format-args "Theorem {}_field{} : forall {}, (proj1 ({}_node {})) {} = x{}.
+let {}.
+prove (proj1 (IndNode {} {} {})) {} = x{}.
+rewrite IndNode_fields {} {} {} {}.
+rewrite TupArgs_at {} {} {} {}.
+{}
+Qed.
+" ($C $j (join " " (xs-of $m)) $C (join " " (xs-of $m)) $j $j
+     (join " " (xs-of $m)) (sig $E) $k $T $j $j
+     (sig $E) $k $T $j $m $S $j (inproof $j $m) (lookup $j "reflexivity."))))))
 
 ; A node of a family without indices lies in a universe that holds its
 ; fields: for the constructors read in some family's indices.
@@ -774,13 +801,22 @@ Qed.
 
 ; Rewrites T_p for every field p an index term reads.
 (= (index-rewrites $is $m)
-   (join "" (let $ps (fields-read-list $is) (map-atom $ps $p (format-args "rewrite T{}. " ($p))))))
+   (join "" (let $ps (distinct-fields (fields-read-list $is) ()) (map-atom $ps $p (format-args "rewrite T{}. " ($p))))))
+
+; One rewrite replaces every occurrence of a field, including under binders.
+(= (distinct-fields $xs $seen)
+   (if (== $xs ()) ()
+       (if (list-has (car-atom $xs) $seen) (distinct-fields (cdr-atom $xs) $seen)
+           (cons-atom (car-atom $xs) (distinct-fields (cdr-atom $xs) (cons-atom (car-atom $xs) $seen))))))
 
 (= (fields-read-list $is)
    (if (== $is ()) () (append-lists (fields-read (car-atom $is)) (fields-read-list (cdr-atom $is)))))
 
 (= (fields-read $i)
-   (case $i (((field $p) ($p)) ((const $c) ()) ((code $n) ()) ((app $f $x) (append-lists (fields-read $f) (fields-read $x))))))
+   (case $i (((field $p) ($p)) ((const $c) ()) ((code $n) ()) ((bound $name) ())
+            ((app $f $x) (append-lists (fields-read $f) (fields-read $x)))
+            ((project $owner $field $record) (fields-read $record))
+            ((pi $binder $domain $body) (append-lists (fields-read $domain) (fields-read $body))))))
 
 (= (typed-text $E $C $cs $params $q $k $fs $m $S $T $tmode $rt)
    (let $c (nth $cs $k)
@@ -1030,6 +1066,18 @@ Qed.
         (sig $E) $k $m $Sa (sig $E) $k
         (hm-final $E $q $c $C $params $k $m $M $am $ridx $nodeA)))))
 
+(= (hm-rec-evidence $E $q $f $params $k $j $m $idx)
+   (let $ih (format-args "Hr {} (In_eq_rs {} ({}_N {}) {} {}_N{} {}) {}_R{}_{}"
+              ($j $j $E $k $m $E $k (inproof $j $m) $E $k $j))
+     (if (== $q 0) $ih
+       (let $transport (format-args "In_fam_eq (fun z:set => C {} (a {})) (IndIdx {} (a {})) {} (SepE2 {}_All (fun x:set => IndIdx {} x = {}) (a {}) G{}) (r {}) ({})"
+              ((if (== $q 1) "z" (join " " (proj-texts $q z))) $j (sig $E) $j $idx
+               $E (sig $E) $idx $j $j $j $ih))
+         (if (== $q 1) $transport
+             (format-args "{} C {} (a {}) (r {}) ({})"
+               ((motive-unpair $q) (join " " (map-atom (rec-indices $f) $i (index-text $i a $params)))
+                $j $j $transport)))))))
+
 (= (hm-field-claim $E $q $c $params $k $j $m)
    (let $f (nth (ctor-fields $c) $j)
      (if (is-rec $f)
@@ -1049,14 +1097,7 @@ claim Y{}: r {} :e {}.
               (sig $E) $j $E $k $j $idx $E $k $j "}"
               $j $j (motive-at $q (rec-indices $f) (format-args "(a {})" ($j)) a $params)
               "{"
-              (if (== $q 0)
-                  (format-args "Hr {} (In_eq_rs {} ({}_N {}) {} {}_N{} {}) {}_R{}_{}" ($j $j $E $k $m $E $k (inproof $j $m) $E $k $j))
-                  (if (== $q 1)
-                  (format-args "In_fam_eq (fun z:set => C z (a {})) (IndIdx {} (a {})) {} (SepE2 {}_All (fun x:set => IndIdx {} x = {}) (a {}) G{}) (r {}) (Hr {} (In_eq_rs {} ({}_N {}) {} {}_N{} {}) {}_R{}_{})"
-                    ($j (sig $E) $j $idx $E (sig $E) $idx $j $j $j $j $j $E $k $m $E $k (inproof $j $m) $E $k $j))
-                  (format-args "{} C {} (a {}) (r {}) (In_fam_eq (fun z:set => C {} (a {})) (IndIdx {} (a {})) {} (SepE2 {}_All (fun x:set => IndIdx {} x = {}) (a {}) G{}) (r {}) (Hr {} (In_eq_rs {} ({}_N {}) {} {}_N{} {}) {}_R{}_{}))"
-                    ((motive-unpair $q) (join " " (map-atom (rec-indices $f) $i (index-text $i a $params))) $j $j
-                     (join " " (proj-texts $q z)) $j (sig $E) $j $idx $E (sig $E) $idx $j $j $j $j $E $k $m $E $k (inproof $j $m) $E $k $j))))
+              (hm-rec-evidence $E $q $f $params $k $j $m $idx)
               "}")))
          (format-args "claim G{}: (a {}) :e {}.
 {} apply Fi {} (In_eq_rs {} ({}_N {}) {} {}_N{} {}). assume H1. assume H2. exact In_eq_r (a {}) ({}_F {} {} a) {} ({}_F{}_{} a) (H2 {}_nR{}_{}). {}
@@ -1353,6 +1394,60 @@ Qed.
 
 ; ---- no confusion, and one index per value ----
 
+; Native logical induction on an indexed evidence fiber. The public
+; proposition may have several indices; the carrier stores their tuple.
+(= (indexed-pred $is $value $params)
+   (format-args "P {} {}" ((indices-text $is x $params) $value)))
+(= (indexed-pred-set $is $value $params)
+   (format-args "{}z :e 1 | {}{}" ("{" (indexed-pred $is $value $params) "}")))
+(= (indexed-ind-chain $E $c $params $j $t)
+   (let* (($fs (ctor-fields $c)) ($m (length-of $fs)) ($ps (rec-positions $fs 0))
+          ($C (egal (ctor-name $c))))
+     (if (< $j $m)
+         (format-args "(Pi_ x{} :e {}, {})"
+           ($j (field-type-m $E 1 (nth $fs $j) $params 0)
+            (indexed-ind-chain $E $c $params (+ $j 1) $t)))
+         (if (< $t (length-of $ps))
+             (let $p (nth $ps $t)
+               (format-args "(Pi_ y{} :e {}, {})"
+                 ($p (indexed-pred-set (rec-indices (nth $fs $p)) (format-args "x{}" ($p)) $params)
+                  (indexed-ind-chain $E $c $params $j (+ $t 1)))))
+             (indexed-pred-set (ctor-result $c) (node-m $C $m 0) $params)))))
+(= (indexed-ind-hyp $E $c $params)
+   (let* (($fs (ctor-fields $c)) ($m (length-of $fs)) ($ps (rec-positions $fs 0))
+          ($binders (join "" (map-atom (range-from 0 $m) $j
+             (format-args "forall x{} :e {}, " ($j (field-type-m $E 1 (nth $fs $j) $params 0))))))
+          ($ihs (join "" (map-atom $ps $p (format-args "{} -> "
+             ((indexed-pred (rec-indices (nth $fs $p)) (format-args "x{}" ($p)) $params)))))))
+     (format-args "({}{}{})" ($binders $ihs
+       (indexed-pred (ctor-result $c) (node-m (egal (ctor-name $c)) $m 0) $params)))))
+(= (indexed-ind-method $E $c $params $k)
+   (let* (($fs (ctor-fields $c)) ($m (length-of $fs)) ($ps (rec-positions $fs 0))
+          ($args (join "" (map-atom (range-from 0 $m) $j (format-args " x{} Hx{}" ($j $j)))))
+          ($ihs (join "" (map-atom $ps $p (format-args " (SepE2 1 (fun z => {}) y{} Hy{})"
+             ((indexed-pred (rec-indices (nth $fs $p)) (format-args "x{}" ($p)) $params) $p $p))))))
+     (format-args "claim M{}: 0 :e {}.\n{ {}{}exact SepI 1 (fun z => {}) 0 In_0_1 (H{}{}{}). }\n"
+       ($k (indexed-ind-chain $E $c $params 0 0)
+        (join "" (map-atom (range-from 0 $m) $j
+          (format-args "apply Pi_0_In. let x{}. assume Hx{}: x{} :e {}.\n  prove 0 :e {}.\n"
+            ($j $j $j (field-type-m $E 1 (nth $fs $j) $params 0)
+             (indexed-ind-chain $E $c $params (+ $j 1) 0)))))
+        (join "" (map-atom (range-from 0 (length-of $ps)) $t
+          (let $p (nth $ps $t)
+            (format-args "apply Pi_0_In. let y{}. assume Hy{}: y{} :e {}.\n  prove 0 :e {}.\n"
+              ($p $p $p (indexed-pred-set (rec-indices (nth $fs $p)) (format-args "x{}" ($p)) $params)
+               (indexed-ind-chain $E $c $params $m (+ $t 1)))))))
+        (indexed-pred (ctor-result $c) (node-m (egal (ctor-name $c)) $m 0) $params)
+        $k $args $ihs))))
+(= (indexed-ind-text $name $cs $params)
+   (let* (($E (egal $name)) ($ks (range-from 0 (length-of $cs))))
+     (format-args "Theorem {}_ind : forall P:set -> set -> prop, {}forall i, forall t :e {} i, P i t.\nlet P.{}\n{}let i t. assume Ht: t :e {} i.\nexact SepE2 1 (fun z => P i t) ({}_rec{} t) ({}_rec_type (fun i t => {}z :e 1 | P i t{}){} i t Ht).\nQed.\n"
+       ($E (join "" (map-atom $ks $k (format-args "{} -> " ((indexed-ind-hyp $E (nth $cs $k) $params))))) $E
+        (join "" (map-atom $ks $k (format-args " assume H{}." ($k))))
+        (join "" (map-atom $ks $k (indexed-ind-method $E (nth $cs $k) $params $k)))
+        $E $E (join "" (map-atom $ks $k " 0")) $E "{" "}"
+        (join "" (map-atom $ks $k (format-args " 0 M{}" ($k))))))))
+
 (= (nodes-binders $E $q $fs $params $var $body)
    (if (== $fs ()) $body
        (format-args "forall {}, {}" ((join " " (let $js (range-from 0 (length-of $fs)) (map-atom $js $j (format-args "{}{}" ($var $j))))) $body))))
@@ -1478,8 +1573,25 @@ Qed.
 
 (= (pmethod-type $E $q $c $params) (ppi-chain $E $q $c $params 0 0 0))
 
+(= (prop-type-name $name)
+   (format-args "{}_{}" ((egal $name) (if (> (index-count $name) 1) "PropPacked" "Prop"))))
+; The proof-irrelevant fiber has one encoded index, as does IndFiber. Its
+; public predicate keeps the source's separate indices for ordinary use.
 (= (prop-text $name $cs $params $q)
+   (format-args "{}{}" ((prop-text-core $name $cs $params $q) (prop-view-text $name))))
+(= (prop-view-text $name)
+   (let* (($n (index-count $name)) ($E (egal $name)) ($P (prop-type-name $name))
+          ($xs (ivar-list $n i)) ($args (join " " $xs)))
+     (if (> $n 1)
+       (format-args "Definition {}_Prop : {} := fun {} => {} {}.
+Theorem {}_Prop_prop : forall {}, {}_Prop {} :e LeanProp.
+let {}. exact {}_prop {}.
+Qed.
+" ($E (node-type $n) $args $P (tuple-text $xs) $E $args $E $args $args $P (tuple-text $xs))) "")))
+
+(= (prop-text-core $name $cs $params $q)
    (let* (($E (egal $name))
+          ($P (prop-type-name $name))
           ($n (length-of $cs))
           ($ks (range-from 0 $n))
           ($hs (join " " (hs-of $n)))
@@ -1489,16 +1601,16 @@ Qed.
           ($Cp (if (== $q 0) "(fun t:set => C 0)" (format-args "(fun t:set => C (IndIdx {} t) 0)" ((sig $E))))))
      (join "" (append-lists
        ((if (== $q 0)
-            (format-args "Definition {}_Prop : set := {}x :e 1 | exists w, w :e {}{}.
-Theorem {}_Prop_prop : {}_Prop :e LeanProp.
-exact PowerI 1 {}_Prop (Sep_Subq 1 (fun x:set => exists w, w :e {})).
+            (format-args "Definition {} : set := {}x :e 1 | exists w, w :e {}{}.
+Theorem {}_prop : {} :e LeanProp.
+exact PowerI 1 {} (Sep_Subq 1 (fun x:set => exists w, w :e {})).
 Qed.
-" ($E "{" $E "}" $E $E $E $E))
-            (format-args "Definition {}_Prop : set -> set := fun i => {}x :e 1 | exists w, w :e {} i{}.
-Theorem {}_Prop_prop : forall i, {}_Prop i :e LeanProp.
-let i. exact PowerI 1 ({}_Prop i) (Sep_Subq 1 (fun x:set => exists w, w :e {} i)).
+" ($P "{" $E "}" $P $P $P $E))
+            (format-args "Definition {} : set -> set := fun i => {}x :e 1 | exists w, w :e {} i{}.
+Theorem {}_prop : forall i, {} i :e LeanProp.
+let i. exact PowerI 1 ({} i) (Sep_Subq 1 (fun x:set => exists w, w :e {} i)).
 Qed.
-" ($E "{" $E "}" $E $E $E $E))))
+" ($P "{" $E "}" $P $P $P $E))))
        (append-lists
          (map-atom $ks $k (proof-ctor-text $name $cs $params $q $k))
          ((format-args "Definition {}_prec : {} := fun {} {}t => IndRec {} {} (Eps_i (fun w:set => w :e {})).
@@ -1509,11 +1621,12 @@ Qed.
 
 (= (proof-ctor-text $name $cs $params $q $k)
    (let* (($E (egal $name))
+          ($P (prop-type-name $name))
           ($c (nth $cs $k))
           ($C (egal (ctor-name $c)))
           ($fs (ctor-fields $c))
           ($m (length-of $fs))
-          ($pt (if (== $q 0) (format-args "{}_Prop" ($E)) (format-args "({}_Prop {})" ($E (indices-text (ctor-result $c) x $params))))))
+          ($pt (if (== $q 0) $P (format-args "({} {})" ($P (indices-text (ctor-result $c) x $params))))))
      (format-args "Definition {}_proof : set := {}.
 Theorem {}_proof_ok : {}.
 {}exact SepI 1 (fun x:set => exists w, w :e {}) 0 In_0_1 (fun p H => H ({}) ({}_typed {})).
@@ -1631,6 +1744,7 @@ exact In_eq_ls ({} {} a (IndRes {} {} r)) {} (C (IndIdx {} (IndNode {} {} a)) 0)
 
 (= (prec-type-text $name $cs $params $q)
    (let* (($E (egal $name))
+          ($P (prop-type-name $name))
           ($n (length-of $cs))
           ($hs (join " " (hs-of $n)))
           ($ks (range-from 0 $n))
@@ -1638,7 +1752,7 @@ exact In_eq_ls ({} {} a (IndRes {} {} r)) {} (C (IndIdx {} (IndNode {} {} a)) 0)
           ($Cp (if (== $q 0) "(fun t:set => C 0)" (format-args "(fun t:set => C (IndIdx {} t) 0)" ((sig $E)))))
           ($M (method-fun $cs))
           ($fib (if (== $q 0) $E (format-args "({} i)" ($E))))
-          ($prop (if (== $q 0) (format-args "{}_Prop" ($E)) (format-args "({}_Prop i)" ($E))))
+          ($prop (if (== $q 0) $P (format-args "({} i)" ($P))))
           ($hyps (join " " (map-atom $ks $k (format-args "forall h{} :e {}," ($k (pmethod-type $E $q (nth $cs $k) $params))))))
           ($HM (format-args "(fun k => forall a :e IndArgs {} {}_All k, forall r:set -> set, (forall j :e {}_N k, {}_R k j -> r j :e {} (a j)) -> {} k a (IndRes {} k r) :e {} (IndNode {} k a))"
                  ((sig $E) $E $E $E $Cp $M (sig $E) $Cp (sig $E))))
@@ -2386,18 +2500,19 @@ Qed.
    (let* (($B (egal (bk $F))) ($ms (block-members $F)))
      (join "" (map-atom $ms $m (mutual-member-text $F $B $m)))))
 (= (mutual-member-text $F $B $m)
-   (let* (($E (egal (member-head $m))) ($c (tag-code $F (member-tag $m))) ($n (length-of (member-indices $m))))
+   (let* (($E (egal (member-head $m))) ($P (prop-type-name (bk $F)))
+          ($c (tag-code $F (member-tag $m))) ($n (length-of (member-indices $m))))
      (if (== $n 0)
          (format-args "(** {}: the member of its mutual block at code {}. **)
 Definition {} : set := {} {}.
-Definition {}_Prop : set := {}_Prop {}.
+Definition {}_Prop : set := {} {}.
 
-" ((nm (member-head $m)) $c $E $B $c $E $B $c))
+" ((member-head $m) $c $E $B $c $E $P $c))
          (format-args "(** {}: the member of its mutual block at code {}, over its index. **)
 Definition {} : set -> set := fun a => {} (setsum {} a).
-Definition {}_Prop : set -> set := fun a => {}_Prop (setsum {} a).
+Definition {}_Prop : set -> set := fun a => {} (setsum {} a).
 
-" ((nm (member-head $m)) $c $E $B $c $E $B $c)))))
+" ((member-head $m) $c $E $B $c $E $P $c)))))
 (= (member-head $m) (case (member-type $m) (((const $c) $c) ($_ None))))
 
 (= (h-intros $m) (join " " (let $is (range-from 0 $m) (map-atom $is $i (format-args "let h{}. assume Hh{}." ($i $i))))))

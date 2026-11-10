@@ -15,6 +15,10 @@ inductive Term where
   | name (identifier : String)
   | app (function argument : Term)
   | arrow (domain codomain : Term)
+  /-- A dependent product; the name binds only in the codomain. -/
+  | pi (binder : String) (domain codomain : Term)
+  /-- A kernel structure projection, retaining the owner and field position. -/
+  | project (owner : String) (field : Nat) (record : Term)
   deriving DecidableEq, Repr
 
 structure Binder where
@@ -41,6 +45,10 @@ def Term.print : Term → String
   | .name identifier => identifier
   | .app function argument => "(" ++ function.print ++ " " ++ argument.print ++ ")"
   | .arrow domain codomain => "(" ++ domain.print ++ " -> " ++ codomain.print ++ ")"
+  | .pi binder domain codomain =>
+      "((" ++ binder ++ " : " ++ domain.print ++ ") -> " ++ codomain.print ++ ")"
+  | .project owner field record =>
+      "(field " ++ owner ++ " " ++ toString field ++ " " ++ record.print ++ ")"
 
 def Binder.print (binder : Binder) : String := binder.name ++ " : " ++ binder.type.print
 

@@ -1,0 +1,26 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DistinctionObserver
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DistinctionGraded
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DistinctionFinite
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DistinctionMachine
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DistinctionMinimization
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DistinctionControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DistinctionHistory
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DistinctionContracts
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DistinctionContractControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DistinctionWitnesses
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DistinctionSensitivity
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DistinctionControl
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DistinctionProbability
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DistinctionOpen
+
+/-!
+# Distinction calculus on the transform step
+
+Import surface for behavioural observers of arbitrary transform programs,
+certified finite refinement, exact machine lowering, and serial interpretation
+of the distinction-history grammar. Scoped predicate tests, independently
+failing witness axes, client interactions, choice ownership, consumer
+sensitivity and probabilistic mass preservation have explicit contracts.
+Independence-preserving distributed lowering remains a separate obligation;
+it is not implied by set-valued successor matching.
+-/

@@ -269,7 +269,7 @@ def weightCharge (P : Step X O State Firing) (w : O → A) : ConservedCharge P A
   taken _ f := ∑ o ∈ (P.selection f).taken.toFinset, w o
   made _ f := ∑ o ∈ (P.selection f).made.toFinset, w o
   balance {s} f admitted := by
-    have enabled := ((P.admits_iff f).mp admitted).2.1
+    have enabled := (P.prepares admitted).2.1
     have inside : (P.selection f).taken.toFinset ⊆ P.present s := enabled.taken_subset
     have fresh : Disjoint (P.selection f).made.toFinset (P.present s) := enabled.fresh
     have apart : Disjoint (P.present s \ (P.selection f).taken.toFinset) (P.selection f).made.toFinset :=

@@ -130,7 +130,7 @@ def Compute.after {s : LState rules O} (f : Compute s) : LState rules O :=
     fun o => if o = f.made then f.target else s.label o⟩
 
 /-- **The computation step at dependent frames.** -/
-def computeStep : Interface.Step (frames rules) O (LState rules O) Compute where
+def computeStep : Interface.Step.Standard (frames rules) O (LState rules O) Compute where
   frame s := s.frame
   knowledge s := s.knowledge
   present s := s.present
@@ -150,10 +150,10 @@ def computeStep : Interface.Step (frames rules) O (LState rules O) Compute where
     (frames rules).Solvable s.knowledge ∧
     (frames rules).Entails s.knowledge fun _ σ => (frames rules).Models (a := s.frame) σ f.guards
   admits_iff _ := Iff.rfl
-  result f _ := f.after
-  present_result _ _ := rfl
-  settle {s} _ _ := 𝟙 s.frame
-  knowledge_result {s} _ _ := (Interface.Frames.applyStore_id (X := frames rules) s.knowledge).symm
+  preparedResult f _ := f.after
+  present_preparedResult _ _ := rfl
+  preparedSettle {s} _ _ := 𝟙 s.frame
+  knowledge_preparedResult {s} _ _ := (Interface.Frames.applyStore_id (X := frames rules) s.knowledge).symm
 
 /-- **Computation firings preserve state typing whenever computation steps preserve judgments.** -/
 theorem compute_preserves_of

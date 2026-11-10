@@ -141,10 +141,10 @@ abbrev escaping : Transport (helperEscape (S := tiny) (O := Nat)).step :=
   helperTransport.escaping helperNatural helperEscape
 
 /-- Both holes private. -/
-abbrev bothPrivate : Escaped (helperStep (S := tiny) (O := Nat)) := ⟨start, [], []⟩
+abbrev bothPrivate : Escaped (helperStep (S := tiny) (O := Nat)).toStep := ⟨start, [], []⟩
 
 /-- `X` public. -/
-abbrev xPublic : Escaped (helperStep (S := tiny) (O := Nat)) := ⟨start, [observe (hole true)], []⟩
+abbrev xPublic : Escaped (helperStep (S := tiny) (O := Nat)).toStep := ⟨start, [observe (hole true)], []⟩
 
 /-- The one-firing run valued `b`, from the private start. -/
 abbrev privateRun (b : Bool) : (helperEscape (S := tiny) (O := Nat)).step.Run bothPrivate :=
@@ -213,7 +213,7 @@ theorem private_made_identified :
 def holder : Record Nat := Record.references [1]
 
 /-- Occurrence `1` escaped. -/
-abbrev heldOne : Escaped (helperStep (S := tiny) (O := Nat)) := ⟨start, [], holder⟩
+abbrev heldOne : Escaped (helperStep (S := tiny) (O := Nat)).toStep := ⟨start, [], holder⟩
 
 /-- **Once occurrence `1` has escaped, the two firings are not identified**: every isomorphism of the
 start renames by an automorphism of the record, which fixes `1`, so it carries the firing that

@@ -42,7 +42,7 @@ open Interface.DependentFull.IndependenceControls
 open MeTTaCalculus.OccurrenceCommits (Enabled fire)
 
 abbrev X := ContextualDependentEta.frames setting.levels
-abbrev Q := Dependent.prestep setting.levels Nat
+abbrev Q := (Dependent.prestep setting.levels Nat).step
 abbrev P := Dependent.withDisequations setting.levels Nat
 
 /-- The state at `triple` with no knowledge, no rows and no disequations. -/
@@ -74,7 +74,7 @@ theorem enabled_empty {s : State Tower.rules Nat} (f : Plain setting.levels Nat 
       fun o member => absurd member (taken o), fun o member => absurd member (made o)⟩
 
 theorem tellApart_admitted : P.Admits tellApart := by
-  refine (Prestep.admits_iff_separating _ tellApart).mpr
+  refine (Interface.Step.admits_iff_separating _ tellApart).mpr
     ⟨⟨List.nodup_nil, List.nodup_nil, rfl, rfl, fun _ member => absurd member List.not_mem_nil⟩,
       enabled_empty (s := stateAt [] ∅) quiet (fun _ => List.not_mem_nil) (fun _ => List.not_mem_nil)
         (fun _ => List.not_mem_nil), ⟨point, toGround, ?_, toGround_separates⟩, ?_⟩
@@ -90,13 +90,13 @@ def told : Q.DState := P.result tellApart tellApart_admitted
 
 /-- **Tell `X ≐ Ground → Ground` after the disequation.** -/
 def identify : Q.DFiring told :=
-  Prestep.DFiring.silent told (Plain.toFiring (s := told.state) tellArrow)
+  Interface.Step.DFiring.silent told (Plain.toFiring (s := told.state) tellArrow)
     (Dependent.toFiring_reflects (s := told.state) tellArrow)
 
 /-- **The disequation refuses the identifying tell.** -/
 theorem identify_refused : ¬ P.Admits identify := by
   intro admitted
-  obtain ⟨-, -, ⟨b, g, solved, separated⟩, -⟩ := (Prestep.admits_iff_separating _ identify).mp admitted
+  obtain ⟨-, -, ⟨b, g, solved, separated⟩, -⟩ := (Interface.Step.admits_iff_separating _ identify).mp admitted
   have equated : X.E (X.act g xUniverse) (X.act g arrowUniverse) :=
     solved (xUniverse, arrowUniverse) (List.mem_append_right _ (List.mem_singleton_self _))
   apply separated _ (List.mem_append_left _ (List.mem_singleton_self _))
@@ -106,11 +106,11 @@ theorem identify_refused : ¬ P.Admits identify := by
 
 /-- **Without the disequation, the same tell is admitted.** -/
 def identifyWithout : Q.DFiring start :=
-  Prestep.DFiring.silent start (Plain.toFiring (s := stateAt [] ∅) tellArrow)
+  Interface.Step.DFiring.silent start (Plain.toFiring (s := stateAt [] ∅) tellArrow)
     (Dependent.toFiring_reflects (s := stateAt [] ∅) tellArrow)
 
 theorem identify_admitted_without : P.Admits identifyWithout := by
-  refine (Prestep.admits_iff_separating _ identifyWithout).mpr
+  refine (Interface.Step.admits_iff_separating _ identifyWithout).mpr
     ⟨⟨List.nodup_nil, List.nodup_nil, rfl, rfl, fun _ member => absurd member List.not_mem_nil⟩,
       enabled_empty (s := stateAt [] ∅) tellArrow (fun _ => List.not_mem_nil) (fun _ => List.not_mem_nil)
         (fun _ => List.not_mem_nil), ⟨point, toArrow, ?_, ?_⟩, ?_⟩
@@ -128,13 +128,13 @@ theorem identify_admitted_without : P.Admits identifyWithout := by
 
 /-- **Tell `X ≐ Ground` after the disequation.** -/
 def compatible : Q.DFiring told :=
-  Prestep.DFiring.silent told (Plain.toFiring (s := told.state) tellGround)
+  Interface.Step.DFiring.silent told (Plain.toFiring (s := told.state) tellGround)
     (Dependent.toFiring_reflects (s := told.state) tellGround)
 
 /-- **A compatible tell is admitted**: `X ↦ Ground` solves it and keeps `X` apart from
 `Ground → Ground`. -/
 theorem compatible_admitted : P.Admits compatible := by
-  refine (Prestep.admits_iff_separating _ compatible).mpr
+  refine (Interface.Step.admits_iff_separating _ compatible).mpr
     ⟨⟨List.nodup_nil, List.nodup_nil, rfl, rfl, fun _ member => absurd member List.not_mem_nil⟩,
       enabled_empty (s := told.state) tellGround (fun _ => List.not_mem_nil) (fun _ => List.not_mem_nil)
         (fun _ => List.not_mem_nil), ⟨point, toGround, ?_, ?_⟩, ?_⟩
@@ -172,21 +172,21 @@ open Interface.Helpers (helperStep extend incl fresh)
 open Interface.Helpers.Consumer (tiny constant empty start first)
 
 abbrev X := Frames.contextual tiny
-abbrev Q := Contextual.prestep tiny Nat
+abbrev Q := (Contextual.prestep tiny Nat).step
 abbrev P := Contextual.withDisequations tiny Nat
 
 /-- The empty frame, with no disequations. -/
 def start' : Q.DState := Q.plain start
 
 /-- The helper firing that makes occurrence `1` and the helper `H` valued `7`. -/
-def makeHelper : Q.DFiring start' := Prestep.DFiring.ofBase start' first rfl
+def makeHelper : Q.DFiring start' := Interface.Step.DFiring.ofBase start' first rfl
 
 theorem first_admitted : helperStep.Admits first := by
   obtain ⟨admitted, -⟩ := Interface.Helpers.Consumer.independent
   exact admitted
 
 theorem makeHelper_admitted : P.Admits makeHelper :=
-  (Prestep.conservative _ makeHelper rfl rfl).mpr first_admitted
+  (Interface.Step.conservative _ makeHelper rfl rfl).mpr first_admitted
 
 /-- The state after it: the frame with `H`, and the knowledge `H ≐ 7`. -/
 def valued : Q.DState := P.result makeHelper makeHelper_admitted
@@ -246,7 +246,7 @@ theorem seven_known : (helperH, constantAt 7) ∈ Q.information (apartFrom 7).ba
 
 /-- **After `H ≐ 7`, telling `H ≠ 7` is refused.** -/
 theorem apartSeven_refused : ¬ P.Admits (apartFrom 7) :=
-  Prestep.refused_of_identified _ (apartFrom 7) (d := (helperH, constantAt 7))
+  Interface.Step.refused_of_identified _ (apartFrom 7) (d := (helperH, constantAt 7))
     (List.mem_append_right _ (List.mem_singleton_self _))
     fun _ _ solved => solved _ seven_known
 
@@ -275,7 +275,7 @@ theorem close_fresh :
 
 /-- **Telling `H ≠ 8` is admitted.** -/
 theorem apartEight_admitted : P.Admits (apartFrom 8) := by
-  refine (Prestep.admits_iff_separating _ (apartFrom 8)).mpr
+  refine (Interface.Step.admits_iff_separating _ (apartFrom 8)).mpr
     ⟨List.nodup_singleton _, (Interface.Helpers.enabled_iff next).mpr (by decide),
       ⟨empty, close, ?_, ?_⟩, ?_⟩
   · intro e member

@@ -30,6 +30,7 @@ variable {Head : Type} {S : Binding.Signature} (names : BindingSignatureEmbeddin
   {rules : Rules Head} (realization : BindingSignatureEmbedding.Realization names rules)
   {O : Type} [DecidableEq O] {State : Type} {Firing : State → Type}
   (P : Step (listFrames S) O State Firing)
+  [P.Guarded]
   (guards : ∀ {s : State} (f : Firing s),
     EquationStore (Binding.ContextualFamily.Observation S (P.target f).get))
 

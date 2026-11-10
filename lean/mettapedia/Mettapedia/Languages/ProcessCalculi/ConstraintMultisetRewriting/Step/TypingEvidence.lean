@@ -63,7 +63,7 @@ variable {Obj : Type uO} {Tm : Obj → Type uT} {Hom : Obj → Obj → Type uH} 
   {P : Interface.Step X O State Firing}
 
 /-- **A guard stays valid along every run that writes nothing in its region.** -/
-theorem guard_run (G : P.Guards) {s₀ : State} (f : Firing s₀) (b : Obj) (σ : Hom (P.target f) b) :
+theorem guard_run [P.Guarded] (G : P.Guards) {s₀ : State} (f : Firing s₀) (b : Obj) (σ : Hom (P.target f) b) :
     ∀ {t : State} (r : P.Run t),
       (∀ x ∈ r.word, ∀ o ∈ G.region f b σ, ¬ Interface.Step.Writes (P.selection x.2) o) →
         (G.Guard f b σ (P.present r.last) ↔ G.Guard f b σ (P.present t))
@@ -178,7 +178,7 @@ def Checked (f : RowFiring Q C Sym typeArity valueArity O T) (W : Finset O) : Pr
 
 /-- **The row step**, over the one-frame category of `A`. -/
 def rowStep :
-    Interface.Step (Frames.ofSubstitution A) O (Configuration T O)
+    Interface.Step.Standard (Frames.ofSubstitution A) O (Configuration T O)
       (fun _ => RowFiring Q C Sym typeArity valueArity O T) where
   frame _ := PUnit.unit
   knowledge C := C.equations
@@ -200,10 +200,10 @@ def rowStep :
     (Frames.ofSubstitution A).Entails (a := PUnit.unit) (C.equations ++ f.tells)
       (fun _ _ => Checked rows row f C.present)
   admits_iff _ := Iff.rfl
-  result {C} f _ := ⟨C.equations ++ f.tells, fire C.present (f.selection.commit (T := Unit))⟩
-  present_result _ _ := rfl
-  settle _ _ := A.identity
-  knowledge_result {C} f _ :=
+  preparedResult {C} f _ := ⟨C.equations ++ f.tells, fire C.present (f.selection.commit (T := Unit))⟩
+  present_preparedResult _ _ := rfl
+  preparedSettle _ _ := A.identity
+  knowledge_preparedResult {C} f _ :=
     (Frames.applyStore_id (X := Frames.ofSubstitution A) (C.equations ++ f.tells)).symm
 
 /-- **The guards of the row step, with fine regions.** -/

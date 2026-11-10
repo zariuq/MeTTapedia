@@ -111,19 +111,20 @@ structure Escape (T : Transport P) where
     Option.Rel (X.Carried (T.toStateIso i).frame.hom (P.knowledge t)) (row s o)
       (row t ((T.toStateIso i).rename o))
   records : {s : State} → Firing s → Record O
-  publishes : {s : State} → (f : Firing s) → (admitted : P.Admits f) →
-    List (Tm (P.frame (P.result f admitted)))
+  /-- The public terms a prepared firing publishes at its prepared result: part of its effect. -/
+  publishes : {s : State} → (f : Firing s) → (p : P.Prepares f) →
+    List (Tm (P.frame (P.preparedResult f p)))
   /-- A moved firing records the renamed relations: what it records is equivariant. -/
   records_move : ∀ {s t : State} (i : T.Iso s t) (f : Firing s),
     records (T.move i f) = Record.rename (T.toStateIso i).rename (records f)
   publishes_move : ∀ {s t : State} (i : T.Iso s t) (f : Firing s) (admitted : P.Admits f),
     List.Forall₂ (fun u v => X.E (X.act (T.toStateIso (T.result_move i f admitted)).frame.hom u) v)
-      (publishes f admitted) (publishes (T.move i f) ((T.admits_move i f).mpr admitted))
+      (publishes f (P.prepares admitted)) (publishes (T.move i f) (P.prepares ((T.admits_move i f).mpr admitted)))
   records_alike : ∀ {s : State} {f f' : Firing s}, T.Alike f f' → records f = records f'
   publishes_alike : ∀ {s : State} {f f' : Firing s} (alike : T.Alike f f') (admitted : P.Admits f)
       (admitted' : P.Admits f'),
     List.Forall₂ (fun u v => X.E (X.act (T.toStateIso (T.result_alike alike admitted admitted')).frame.hom u) v)
-      (publishes f admitted) (publishes f' admitted')
+      (publishes f (P.prepares admitted)) (publishes f' (P.prepares admitted'))
 
 /-- **The escape data that records nothing**: no rows, no relations, no public terms. -/
 def Escape.silent (T : Transport P) : T.Escape where
@@ -165,17 +166,29 @@ abbrev step : Step X O (Escaped P) (fun x => Firing x.state) where
   target f := P.target f
   extension f := P.extension f
   information f := P.information f
-  transported f e member := P.transported f e member
+  information_refines f := P.information_refines f
   Shapes f := P.Shapes f
-  Holds f := P.Holds f
   Admits f := P.Admits f
-  admits_iff f := P.admits_iff f
-  result {x} f admitted :=
-    ⟨P.result f admitted, x.names.map (X.act (P.along f admitted)) ++ D.publishes f admitted,
+  admitted_prepares _ admitted := P.prepares admitted
+  preparedResult {x} f p :=
+    ⟨P.preparedResult f p, x.names.map (X.act (X.comp (P.preparedSettle f p) (P.extension f))) ++ D.publishes f p,
       x.record ++ D.records f⟩
-  present_result f admitted := P.present_result f admitted
-  settle f admitted := P.settle f admitted
-  knowledge_result f admitted := P.knowledge_result f admitted
+  present_preparedResult f p := P.present_preparedResult f p
+  preparedSettle f p := P.preparedSettle f p
+  result_refines f p := P.result_refines f p
+
+instance step_guarded [P.Guarded] : D.step.Guarded where
+  holds f := P.Holds f
+  admission f := P.admits_iff_prepares f
+
+instance step_literalInformation [P.LiteralInformation] : D.step.LiteralInformation :=
+  ⟨fun f => P.transported f⟩
+
+instance step_literalKnowledge [P.LiteralKnowledge] : D.step.LiteralKnowledge :=
+  ⟨fun f p => P.knowledge_preparedResult f p⟩
+
+instance step_exact [P.Exact] : D.step.Exact :=
+  ⟨fun f p => Step.Exact.exactness (P := P) f p⟩
 
 /-- Forget what has escaped. -/
 def forget : {x : Escaped P} → D.step.Run x → P.Run x.state
@@ -219,11 +232,11 @@ theorem names_last : ∀ {x : Escaped P} (r : D.step.Run x),
       exact (map_act_id x.names).symm⟩
   | x, .cons f admitted rest => by
       obtain ⟨later, carried⟩ := names_last rest
-      refine ⟨(D.publishes f admitted).map (X.act rest.toLast) ++ later, ?_⟩
+      refine ⟨(D.publishes f (P.prepares admitted)).map (X.act rest.toLast) ++ later, ?_⟩
       have start : (D.step.result f admitted).names =
-          x.names.map (X.act (P.along f admitted)) ++ D.publishes f admitted := rfl
+          x.names.map (X.act (P.along f admitted)) ++ D.publishes f (P.prepares admitted) := rfl
       show rest.last.names = x.names.map (X.act (X.comp rest.toLast (P.along f admitted))) ++
-        ((D.publishes f admitted).map (X.act rest.toLast) ++ later)
+        ((D.publishes f (P.prepares admitted)).map (X.act rest.toLast) ++ later)
       rw [carried, start, List.map_append, List.map_map, List.append_assoc]
       congr 1
       exact List.map_congr_left fun u _ => (X.act_comp _ _ u).symm
@@ -272,8 +285,8 @@ def escaping (T : Transport P) (natural : T.Natural) (D : T.Escape) : Transport 
       show List.Forall₂
         (X.Carried (T.toStateIso (T.result_alike alike admitted admitted')).frame.hom
           (P.knowledge (P.result f' admitted')))
-        (x.names.map (X.act (P.along f admitted)) ++ D.publishes f admitted)
-        (x.names.map (X.act (P.along f' admitted')) ++ D.publishes f' admitted')
+        (x.names.map (X.act (P.along f admitted)) ++ D.publishes f (P.prepares admitted))
+        (x.names.map (X.act (P.along f' admitted')) ++ D.publishes f' (P.prepares admitted'))
       refine forall₂_append (forall₂_map (R := fun u v => u = v) (fun u v same => ?_)
         (List.forall₂_same.mpr fun _ _ => rfl))
         ((D.publishes_alike alike admitted admitted').imp fun _ _ same => Frames.Carried.of_E same)
@@ -296,9 +309,9 @@ def escaping (T : Transport P) (natural : T.Natural) (D : T.Escape) : Transport 
     ⟨T.result_move i.base f admitted, by
       show List.Forall₂ (X.Carried (T.toStateIso (T.result_move i.base f admitted)).frame.hom
           (P.knowledge (P.result (T.move i.base f) ((T.admits_move i.base f).mpr admitted))))
-        (x.names.map (X.act (P.along f admitted)) ++ D.publishes f admitted)
+        (x.names.map (X.act (P.along f admitted)) ++ D.publishes f (P.prepares admitted))
         (y.names.map (X.act (P.along (T.move i.base f) ((T.admits_move i.base f).mpr admitted))) ++
-          D.publishes (T.move i.base f) ((T.admits_move i.base f).mpr admitted))
+          D.publishes (T.move i.base f) (P.prepares ((T.admits_move i.base f).mpr admitted)))
       refine forall₂_append (forall₂_map (fun u v related => ?_) i.names)
         ((D.publishes_move i.base f admitted).imp fun _ _ same => Frames.Carried.of_E same)
       intro c g solved

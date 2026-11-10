@@ -29,3 +29,41 @@ Theorem In_fam_eq : forall F:set -> set, forall i i', i = i' -> forall x, x :e F
 let F i i'. assume H: i = i'.
 rewrite <- H. let x. assume Hx: x :e F i. exact Hx.
 Qed.
+
+Theorem Predicate2_pair : forall P:set -> set -> prop, forall x y,
+  P x y -> P (proj0 (setsum x y)) (proj1 (setsum x y)).
+let P x y. rewrite proj0_pair_eq x y. rewrite proj1_pair_eq x y.
+assume H: P x y. exact H.
+Qed.
+
+Theorem Predicate2_unpair : forall P:set -> set -> prop, forall x y,
+  P (proj0 (setsum x y)) (proj1 (setsum x y)) -> P x y.
+let P x y. rewrite proj0_pair_eq x y. rewrite proj1_pair_eq x y.
+assume H: P x y. exact H.
+Qed.
+
+(** Pointwise conversion under a bounded dependent-function binder. **)
+Theorem Pi_family_eq : forall X, forall Y Z : set -> set,
+  (forall x :e X, Y x = Z x) -> Pi X Y = Pi X Z.
+let X Y Z. assume H: forall x :e X, Y x = Z x.
+claim HYZ: forall x :e X, Y x c= Z x.
+{ let x. assume Hx: x :e X. rewrite H x Hx. exact Subq_ref (Z x). }
+claim HZY: forall x :e X, Z x c= Y x.
+{ let x. assume Hx: x :e X. rewrite H x Hx. exact Subq_ref (Z x). }
+apply set_ext.
+- exact Pi_cod_mon X Y Z HYZ.
+- exact Pi_cod_mon X Z Y HZY.
+Qed.
+
+(** Bounded set-valued lambdas are Sigma graphs in the interpretation. **)
+Theorem Sigma_family_eq : forall X, forall Y Z : set -> set,
+  (forall x :e X, Y x = Z x) -> Sigma X Y = Sigma X Z.
+let X Y Z. assume H: forall x :e X, Y x = Z x.
+claim HYZ: forall x :e X, Y x c= Z x.
+{ let x. assume Hx: x :e X. rewrite H x Hx. exact Subq_ref (Z x). }
+claim HZY: forall x :e X, Z x c= Y x.
+{ let x. assume Hx: x :e X. rewrite H x Hx. exact Subq_ref (Z x). }
+apply set_ext.
+- exact Sigma_mon1 X Y Z HYZ.
+- exact Sigma_mon1 X Z Y HZY.
+Qed.

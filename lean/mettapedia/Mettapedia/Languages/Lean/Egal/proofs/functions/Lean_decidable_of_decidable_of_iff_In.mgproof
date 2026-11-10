@@ -1,0 +1,17 @@
+let v_p. assume Hp: v_p :e LeanProp. let v_q. assume Hq: v_q :e LeanProp.
+let a2. assume Hd: a2 :e Lean_Decidable v_p.
+let a3. assume Hh: a3 :e Lean_Iff_Prop v_p v_q.
+claim Htrue: (fun hp :e v_p => Lean_Decidable_isTrue_node v_q 0)
+  :e (Pi_ hp :e v_p, Lean_Decidable v_q).
+{ exact lam_Pi v_p (fun _ => Lean_Decidable v_q) (fun _ => Lean_Decidable_isTrue_node v_q 0)
+    (fun hp Hhp => Lean_Decidable_isTrue_typed v_q 0
+      (LeanIff_forward v_p Hp v_q Hq a3 Hh (Lean_prop_0_of v_p Hp hp Hhp))). }
+claim Hfalse: (fun hp :e (Pi_ x :e v_p, Lean_False_Prop) => Lean_Decidable_isFalse_node v_q 0)
+  :e (Pi_ hp :e (Pi_ x :e v_p, Lean_False_Prop), Lean_Decidable v_q).
+{ exact lam_Pi (Pi_ x :e v_p, Lean_False_Prop) (fun _ => Lean_Decidable v_q)
+    (fun _ => Lean_Decidable_isFalse_node v_q 0)
+    (fun hp Hhp => Lean_Decidable_isFalse_typed v_q 0
+      (Lean_refute_by v_p Hp hp Hhp v_q Hq (LeanIff_backward v_p Hp v_q Hq a3 Hh))). }
+exact Lean_dite_In (Lean_Decidable v_q) v_p Hp a2 Hd
+  (fun hp :e v_p => Lean_Decidable_isTrue_node v_q 0) Htrue
+  (fun hp :e (Pi_ x :e v_p, Lean_False_Prop) => Lean_Decidable_isFalse_node v_q 0) Hfalse.

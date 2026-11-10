@@ -1,0 +1,372 @@
+constant	role	kind	evidence	egal	detail
+<internal-tag 10>	reading	definition	interpretation	Lean_id	function read from its equation theorems; Lean's equations proved
+Add	reading	inductive	interpretation	Lean_Add	family
+Add.add	reading	definition	interpretation	Lean_Add_add	projection
+Add.casesOn	reading	definition	interpretation	Lean_Add_rec	case analysis read as the recursor with the minors as methods
+Add.mk	reading	constructor	interpretation	Lean_Add_mk_node	constructor
+AddCommMonoid	reading	inductive	interpretation	Lean_AddCommMonoid	family
+AddCommMonoid.casesOn	reading	definition	interpretation	Lean_AddCommMonoid_rec	case analysis read as the recursor with the minors as methods
+AddCommMonoid.mk	reading	constructor	interpretation	Lean_AddCommMonoid_mk_node	constructor
+AddCommMonoid.toAddMonoid	reading	definition	interpretation	Lean_AddCommMonoid_toAddMonoid	projection
+AddMonoid	reading	inductive	interpretation	Lean_AddMonoid	family
+AddMonoid.mk	reading	constructor	interpretation	Lean_AddMonoid_mk_node	constructor
+AddMonoid.toAddSemigroup	reading	definition	interpretation	Lean_AddMonoid_toAddSemigroup	projection
+AddMonoid.toZero	reading	definition	interpretation	Lean_AddMonoid_toZero	projection
+AddSemigroup	reading	inductive	interpretation	Lean_AddSemigroup	family
+AddSemigroup.mk	reading	constructor	interpretation	Lean_AddSemigroup_mk_node	constructor
+AddSemigroup.toAdd	reading	definition	interpretation	Lean_AddSemigroup_toAdd	projection
+And	reading	inductive	interpretation		read as Egal's conjunction in statements
+And.casesOn	reading	definition	interpretation	Lean_And_rec	case analysis read as the recursor with the minors as methods
+And.intro	reading	constructor	interpretation	Lean_And_intro_node	constructor
+Bool	reading	inductive	interpretation	Lean_Bool	family
+Bool.casesOn	reading	definition	interpretation	Lean_Bool_rec	case analysis read as the recursor with the minors as methods
+Bool.decEq	reading	definition	interpretation	Lean_Bool_decEq	function read from its equation theorems; Lean's equations proved
+Bool.decEq.eq_1	reading	theorem	interpretation	Lean_Bool_decEq_eq_1	Lean's equation theorem, proved from the reading
+Bool.decEq.eq_2	reading	theorem	interpretation	Lean_Bool_decEq_eq_2	Lean's equation theorem, proved from the reading
+Bool.decEq.eq_3	reading	theorem	interpretation	Lean_Bool_decEq_eq_3	Lean's equation theorem, proved from the reading
+Bool.decEq.eq_4	reading	theorem	interpretation	Lean_Bool_decEq_eq_4	Lean's equation theorem, proved from the reading
+Bool.false	reading	constructor	interpretation	Lean_Bool_false_node	constructor
+Bool.true	reading	constructor	interpretation	Lean_Bool_true_node	constructor
+Decidable	reading	inductive	interpretation	Lean_Decidable	family
+Decidable.casesOn	reading	definition	interpretation	Lean_Decidable_rec	case analysis read as the recursor with the minors as methods
+Decidable.decide	reading	definition	interpretation	Lean_Decidable_decide	function read from its equation theorems; Lean's equations proved
+Decidable.decide.eq_1	reading	theorem	interpretation	Lean_Decidable_decide_eq_1	Lean's equation theorem, proved from the reading
+Decidable.isFalse	reading	constructor	interpretation	Lean_Decidable_isFalse_node	constructor
+Decidable.isTrue	reading	constructor	interpretation	Lean_Decidable_isTrue_node	constructor
+Eq	reading	inductive	interpretation	Lean_Eq	family
+Eq.casesOn	reading	definition	interpretation	Lean_Eq_rec	case analysis read as the recursor with the minors as methods
+Eq.refl	reading	constructor	interpretation	Lean_Eq_refl_node	constructor
+Exists	reading	inductive	interpretation	Lean_Exists	family
+Exists.casesOn	reading	definition	interpretation	Lean_Exists_rec	case analysis read as the recursor with the minors as methods
+Exists.intro	reading	constructor	interpretation	Lean_Exists_intro_node	constructor
+False	reading	inductive	interpretation	Lean_False	family
+False.casesOn	reading	definition	interpretation	Lean_False_b_rec	case analysis read as the recursor with the minors as methods
+Fin	reading	inductive	interpretation	Lean_Fin	family
+Fin.mk	reading	constructor	interpretation	Lean_Fin_mk_node	constructor
+Finset.card	reading	definition	refused	Lean_Finset_card	applies Multiset.card, which is not read
+Finset.card.eq_1	reading	theorem	refused	Lean_Finset_card_eq_1	equation theorem not proved from the reading
+Finset.casesOn	reading	definition	interpretation	_b_rec	case analysis read as the recursor with the minors as methods
+Finset.filter	reading	definition	refused	Lean_Finset_filter	erased proofs in the definition or its equations are not reconstructed
+Finset.filter.eq_1	reading	theorem	refused	Lean_Finset_filter_eq_1	equation theorem not proved from the reading
+Finset.range	reading	definition	refused	Lean_Finset_range	erased proofs in the definition or its equations are not reconstructed
+Finset.range.eq_1	reading	theorem	refused	Lean_Finset_range_eq_1	equation theorem not proved from the reading
+Finset.sum	reading	definition	refused	Lean_Finset_sum	applies Multiset.sum, which is not read
+Finset.sum.eq_1	reading	theorem	refused	Lean_Finset_sum_eq_1	equation theorem not proved from the reading
+Finset.val	reading	definition	refused	Lean_Finset_val	projection not read
+Iff	reading	inductive	interpretation	Lean_Iff	family
+Iff.casesOn	reading	definition	interpretation	Lean_Iff_rec	case analysis read as the recursor with the minors as methods
+Iff.intro	reading	constructor	interpretation	Lean_Iff_intro_node	constructor
+Irreducible.casesOn	reading	definition	interpretation	_b_rec	case analysis read as the recursor with the minors as methods
+LE	reading	inductive	interpretation	Lean_LE	family
+LE.casesOn	reading	definition	interpretation	Lean_LE_rec	case analysis read as the recursor with the minors as methods
+LE.le	reading	definition	interpretation	Lean_LE_le	projection
+LE.mk	reading	constructor	interpretation	Lean_LE_mk_node	constructor
+LT	reading	inductive	interpretation	Lean_LT	family
+LT.casesOn	reading	definition	interpretation	Lean_LT_rec	case analysis read as the recursor with the minors as methods
+LT.lt	reading	definition	interpretation	Lean_LT_lt	projection
+LT.mk	reading	constructor	interpretation	Lean_LT_mk_node	constructor
+LeftCommutative.casesOn	reading	definition	interpretation	_b_rec	case analysis read as the recursor with the minors as methods
+List	reading	inductive	interpretation	Lean_List	family
+List.MergeSort.Internal.splitInTwo	reading	definition	refused	Lean_List_MergeSort_Internal_splitInTwo	erased proofs in the definition or its equations are not reconstructed
+List.MergeSort.Internal.splitInTwo.eq_1	reading	theorem	refused	Lean_List_MergeSort_Internal_splitInTwo_eq_1	equation theorem not proved from the reading
+List.Perm.casesOn	reading	definition	interpretation	_b_rec	case analysis read as the recursor with the minors as methods
+List.append	reading	definition	interpretation	Lean_List_append	function read from its equation theorems; Lean's equations proved
+List.append.eq_1	reading	theorem	interpretation	Lean_List_append_eq_1	Lean's equation theorem, proved from the reading
+List.append.eq_2	reading	theorem	interpretation	Lean_List_append_eq_2	Lean's equation theorem, proved from the reading
+List.casesOn	reading	definition	interpretation	Lean_List_casesOn	case analysis read as the family's case eliminator
+List.cons	reading	constructor	interpretation	Lean_List_cons_node	constructor
+List.filter	reading	definition	interpretation	Lean_List_filter	function read from its equation theorems; Lean's equations proved
+List.filter.eq_1	reading	theorem	interpretation	Lean_List_filter_eq_1	Lean's equation theorem, proved from the reading
+List.filter.eq_2	reading	theorem	interpretation	Lean_List_filter_eq_2	Lean's equation theorem, proved from the reading
+List.filter.match_1	reading	definition	expanded		matcher, read by its definition at each use
+List.foldl	reading	definition	interpretation	Lean_List_foldl	function read from its equation theorems; Lean's equations proved
+List.foldl.eq_1	reading	theorem	interpretation	Lean_List_foldl_eq_1	Lean's equation theorem, proved from the reading
+List.foldl.eq_2	reading	theorem	interpretation	Lean_List_foldl_eq_2	Lean's equation theorem, proved from the reading
+List.foldr	reading	definition	interpretation	Lean_List_foldr	function read from its equation theorems; Lean's equations proved
+List.foldr.eq_1	reading	theorem	interpretation	Lean_List_foldr_eq_1	Lean's equation theorem, proved from the reading
+List.foldr.eq_2	reading	theorem	interpretation	Lean_List_foldr_eq_2	Lean's equation theorem, proved from the reading
+List.length	reading	definition	interpretation	Lean_List_length	function read from its equation theorems; Lean's equations proved
+List.length.eq_1	reading	theorem	interpretation	Lean_List_length_eq_1	Lean's equation theorem, proved from the reading
+List.length.eq_2	reading	theorem	interpretation	Lean_List_length_eq_2	Lean's equation theorem, proved from the reading
+List.map	reading	definition	interpretation	Lean_List_map	function read from its equation theorems; Lean's equations proved
+List.map.eq_1	reading	theorem	interpretation	Lean_List_map_eq_1	Lean's equation theorem, proved from the reading
+List.map.eq_2	reading	theorem	interpretation	Lean_List_map_eq_2	Lean's equation theorem, proved from the reading
+List.max?	reading	definition	interpretation	Lean_List_maxu63	function read from its equation theorems; Lean's equations proved
+List.max?.eq_1	reading	theorem	interpretation	Lean_List_maxu63_eq_1	Lean's equation theorem, proved from the reading
+List.max?.eq_2	reading	theorem	interpretation	Lean_List_maxu63_eq_2	Lean's equation theorem, proved from the reading
+List.merge	reading	definition	refused	Lean_List_merge	function read, but not all of Lean's equation theorems are proved from the reading: List.merge.eq_1, List.merge.eq_2, List.merge.eq_3
+List.merge.eq_1	reading	theorem	refused	Lean_List_merge_eq_1	equation theorem not proved from the reading
+List.merge.eq_2	reading	theorem	refused	Lean_List_merge_eq_2	equation theorem not proved from the reading
+List.merge.eq_3	reading	theorem	refused	Lean_List_merge_eq_3	equation theorem not proved from the reading
+List.mergeSort	reading	definition	refused	Lean_List_mergeSort	applies Mettapedia.Languages.Lean.Recursion.FuelCore.MergeSort.reading, which is not read
+List.mergeSort.eq_1	reading	theorem	refused	Lean_List_mergeSort_eq_1	equation theorem not proved from the reading
+List.mergeSort.eq_2	reading	theorem	refused	Lean_List_mergeSort_eq_2	equation theorem not proved from the reading
+List.mergeSort.eq_3	reading	theorem	refused	Lean_List_mergeSort_eq_3	equation theorem not proved from the reading
+List.nil	reading	constructor	interpretation	Lean_List_nil_node	constructor
+List.range	reading	definition	interpretation	Lean_List_range	function read from its equation theorems; Lean's equations proved
+List.range.eq_1	reading	theorem	interpretation	Lean_List_range_eq_1	Lean's equation theorem, proved from the reading
+List.range.loop	reading	definition	interpretation	Lean_List_range_loop	function read from its equation theorems; Lean's equations proved
+List.range.loop.eq_1	reading	theorem	interpretation	Lean_List_range_loop_eq_1	Lean's equation theorem, proved from the reading
+List.range.loop.eq_2	reading	theorem	interpretation	Lean_List_range_loop_eq_2	Lean's equation theorem, proved from the reading
+List.reverse	reading	definition	interpretation	Lean_List_reverse	function read from its equation theorems; Lean's equations proved
+List.reverse.eq_1	reading	theorem	interpretation	Lean_List_reverse_eq_1	Lean's equation theorem, proved from the reading
+List.reverseAux	reading	definition	interpretation	Lean_List_reverseAux	function read from its equation theorems; Lean's equations proved
+List.reverseAux.eq_1	reading	theorem	interpretation	Lean_List_reverseAux_eq_1	Lean's equation theorem, proved from the reading
+List.reverseAux.eq_2	reading	theorem	interpretation	Lean_List_reverseAux_eq_2	Lean's equation theorem, proved from the reading
+List.splitAt	reading	definition	interpretation	Lean_List_splitAt	function read from its equation theorems; Lean's equations proved
+List.splitAt.eq_1	reading	theorem	interpretation	Lean_List_splitAt_eq_1	Lean's equation theorem, proved from the reading
+List.splitAt.go	reading	definition	interpretation	Lean_List_splitAt_go	function read from its equation theorems; Lean's equations proved
+List.splitAt.go.eq_1	reading	theorem	interpretation	Lean_List_splitAt_go_eq_1	Lean's equation theorem, proved from the reading
+List.splitAt.go.eq_2	reading	theorem	interpretation	Lean_List_splitAt_go_eq_2	Lean's equation theorem, proved from the reading
+List.splitAt.go.eq_3	reading	theorem	interpretation	Lean_List_splitAt_go_eq_3	Lean's equation theorem, proved from the reading
+List.sum	reading	definition	interpretation	Lean_List_sum	function read from its equation theorems; Lean's equations proved
+List.sum.eq_1	reading	theorem	interpretation	Lean_List_sum_eq_1	Lean's equation theorem, proved from the reading
+List.zip	reading	definition	interpretation	Lean_List_zip	function read from its equation theorems; Lean's equations proved
+List.zip.eq_1	reading	theorem	interpretation	Lean_List_zip_eq_1	Lean's equation theorem, proved from the reading
+List.zipWith	reading	definition	interpretation	Lean_List_zipWith	function read from its equation theorems; Lean's equations proved
+List.zipWith.eq_1	reading	theorem	interpretation	Lean_List_zipWith_eq_1	Lean's equation theorem, proved from the reading
+List.zipWith.eq_2	reading	theorem	interpretation	Lean_List_zipWith_eq_2	Lean's equation theorem, proved from the reading
+Max	reading	inductive	interpretation	Lean_Max	family
+Max.casesOn	reading	definition	interpretation	Lean_Max_rec	case analysis read as the recursor with the minors as methods
+Max.max	reading	definition	interpretation	Lean_Max_max	projection
+Max.mk	reading	constructor	interpretation	Lean_Max_mk_node	constructor
+Mettapedia.Languages.Lean.Declarations.Controls.Rose	reading	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Mettapedia.Languages.Lean.Declarations.Controls.Rose.leaf	reading	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Mettapedia.Languages.Lean.Declarations.Controls.Rose.node	reading	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Mettapedia.Languages.Lean.Declarations.Controls.Vec	reading	inductive	interpretation	Lean_Mettapedia_Languages_Lean_Declarations_Controls_Vec	family
+Mettapedia.Languages.Lean.Declarations.Controls.Vec.cons	reading	constructor	interpretation	Lean_Mettapedia_Languages_Lean_Declarations_Controls_Vec_cons_node	constructor
+Mettapedia.Languages.Lean.Declarations.Controls.Vec.nil	reading	constructor	interpretation	Lean_Mettapedia_Languages_Lean_Declarations_Controls_Vec_nil_node	constructor
+Mettapedia.Languages.Lean.Recursion.FuelCore.Merge.bridge	reading	theorem	interpretation	Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_bridge	Lean's equation theorem, proved from the reading
+Mettapedia.Languages.Lean.Recursion.FuelCore.Merge.reading	reading	definition	interpretation	Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_reading	function read from its equation theorems; Lean's equations proved
+Mettapedia.Languages.Lean.Recursion.FuelCore.Merge.reading.eq_1	reading	theorem	interpretation	Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_reading_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.Languages.Lean.Recursion.FuelCore.Merge.sourceFuel	reading	definition	interpretation	Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel	function read from its equation theorems; Lean's equations proved
+Mettapedia.Languages.Lean.Recursion.FuelCore.Merge.sourceFuel_case0	reading	theorem	interpretation	Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_case0	Lean's equation theorem, proved from the reading
+Mettapedia.Languages.Lean.Recursion.FuelCore.Merge.sourceFuel_case1.branch0	reading	theorem	interpretation	Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_case1_branch0	Lean's equation theorem, proved from the reading
+Mettapedia.Languages.Lean.Recursion.FuelCore.Merge.sourceFuel_case1.branch1	reading	theorem	interpretation	Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_case1_branch1	Lean's equation theorem, proved from the reading
+Mettapedia.Languages.Lean.Recursion.FuelCore.Merge.sourceFuel_case3	reading	theorem	interpretation	Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_case3	Lean's equation theorem, proved from the reading
+Mettapedia.Languages.Lean.Recursion.FuelCore.Merge.sourceFuel_zero	reading	theorem	interpretation	Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_zero	Lean's equation theorem, proved from the reading
+Mettapedia.Languages.Lean.Recursion.FuelCore.MergeSort.bridge	reading	theorem	refused	Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_bridge	equation theorem not proved from the reading
+Mettapedia.Languages.Lean.Recursion.FuelCore.MergeSort.reading	reading	definition	refused	Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_reading	applies Mettapedia.Languages.Lean.Recursion.FuelCore.MergeSort.sourceFuel, which is not read
+Mettapedia.Languages.Lean.Recursion.FuelCore.MergeSort.reading.eq_1	reading	theorem	refused	Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_reading_eq_1	equation theorem not proved from the reading
+Mettapedia.Languages.Lean.Recursion.FuelCore.MergeSort.sourceFuel	reading	definition	refused	Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel	erased proofs in the definition or its equations are not reconstructed
+Mettapedia.Languages.Lean.Recursion.FuelCore.MergeSort.sourceFuel_case0	reading	theorem	refused	Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_case0	equation theorem not proved from the reading
+Mettapedia.Languages.Lean.Recursion.FuelCore.MergeSort.sourceFuel_case1	reading	theorem	refused	Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_case1	equation theorem not proved from the reading
+Mettapedia.Languages.Lean.Recursion.FuelCore.MergeSort.sourceFuel_case2	reading	theorem	refused	Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_case2	equation theorem not proved from the reading
+Mettapedia.Languages.Lean.Recursion.FuelCore.MergeSort.sourceFuel_zero	reading	theorem	refused	Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_zero	equation theorem not proved from the reading
+Mettapedia.Languages.Lean.Recursion.FuelCore.MinFacAux.bridge	reading	theorem	interpretation	Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_bridge	Lean's equation theorem, proved from the reading
+Mettapedia.Languages.Lean.Recursion.FuelCore.MinFacAux.reading	reading	definition	interpretation	Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_reading	function read from its equation theorems; Lean's equations proved
+Mettapedia.Languages.Lean.Recursion.FuelCore.MinFacAux.reading.eq_1	reading	theorem	interpretation	Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_reading_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.Languages.Lean.Recursion.FuelCore.MinFacAux.sourceFuel	reading	definition	interpretation	Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel	function read from its equation theorems; Lean's equations proved
+Mettapedia.Languages.Lean.Recursion.FuelCore.MinFacAux.sourceFuel_case0	reading	theorem	interpretation	Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_case0	Lean's equation theorem, proved from the reading
+Mettapedia.Languages.Lean.Recursion.FuelCore.MinFacAux.sourceFuel_zero	reading	theorem	interpretation	Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_zero	Lean's equation theorem, proved from the reading
+Mettapedia.Languages.Lean.Recursion.FuelCore.PrimeFactorsList.bridge	reading	theorem	interpretation	Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_bridge	Lean's equation theorem, proved from the reading
+Mettapedia.Languages.Lean.Recursion.FuelCore.PrimeFactorsList.reading	reading	definition	interpretation	Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_reading	function read from its equation theorems; Lean's equations proved
+Mettapedia.Languages.Lean.Recursion.FuelCore.PrimeFactorsList.reading.eq_1	reading	theorem	interpretation	Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_reading_eq_1	Lean's equation theorem, proved from the reading
+Mettapedia.Languages.Lean.Recursion.FuelCore.PrimeFactorsList.sourceFuel	reading	definition	interpretation	Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel	function read from its equation theorems; Lean's equations proved
+Mettapedia.Languages.Lean.Recursion.FuelCore.PrimeFactorsList.sourceFuel_case0	reading	theorem	interpretation	Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_case0	Lean's equation theorem, proved from the reading
+Mettapedia.Languages.Lean.Recursion.FuelCore.PrimeFactorsList.sourceFuel_case1	reading	theorem	interpretation	Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_case1	Lean's equation theorem, proved from the reading
+Mettapedia.Languages.Lean.Recursion.FuelCore.PrimeFactorsList.sourceFuel_case2	reading	theorem	interpretation	Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_case2	Lean's equation theorem, proved from the reading
+Mettapedia.Languages.Lean.Recursion.FuelCore.PrimeFactorsList.sourceFuel_zero	reading	theorem	interpretation	Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_zero	Lean's equation theorem, proved from the reading
+Monoid	reading	inductive	interpretation	Lean_Monoid	family
+Monoid.casesOn	reading	definition	interpretation	Lean_Monoid_rec	case analysis read as the recursor with the minors as methods
+Monoid.mk	reading	constructor	interpretation	Lean_Monoid_mk_node	constructor
+Mul	reading	inductive	interpretation	Lean_Mul	family
+Mul.mk	reading	constructor	interpretation	Lean_Mul_mk_node	constructor
+Multiset.card	reading	definition	refused	Lean_Multiset_card	erased proofs in the definition or its equations are not reconstructed
+Multiset.card.eq_1	reading	theorem	refused	Lean_Multiset_card_eq_1	equation theorem not proved from the reading
+Multiset.filter	reading	definition	refused	Lean_Multiset_filter	erased proofs in the definition or its equations are not reconstructed
+Multiset.filter.eq_1	reading	theorem	refused	Lean_Multiset_filter_eq_1	equation theorem not proved from the reading
+Multiset.foldr	reading	definition	refused	Lean_Multiset_foldr	erased proofs in the definition or its equations are not reconstructed
+Multiset.foldr.eq_1	reading	theorem	refused	Lean_Multiset_foldr_eq_1	equation theorem not proved from the reading
+Multiset.map	reading	definition	refused	Lean_Multiset_map	erased proofs in the definition or its equations are not reconstructed
+Multiset.map.eq_1	reading	theorem	refused	Lean_Multiset_map_eq_1	equation theorem not proved from the reading
+Multiset.ofList	reading	definition	refused	Lean_Multiset_ofList	applies Quot.mk, which is not read
+Multiset.ofList.eq_1	reading	theorem	refused	Lean_Multiset_ofList_eq_1	equation theorem not proved from the reading
+Multiset.range	reading	definition	refused	Lean_Multiset_range	applies Multiset.ofList, which is not read
+Multiset.range.eq_1	reading	theorem	refused	Lean_Multiset_range_eq_1	equation theorem not proved from the reading
+Multiset.sum	reading	definition	refused	Lean_Multiset_sum	erased proofs in the definition or its equations are not reconstructed
+Multiset.sum.eq_1	reading	theorem	refused	Lean_Multiset_sum_eq_1	equation theorem not proved from the reading
+NPow	reading	inductive	interpretation	Lean_NPow	family
+NPow.mk	reading	constructor	interpretation	Lean_NPow_mk_node	constructor
+NSMul	reading	inductive	interpretation	Lean_NSMul	family
+NSMul.mk	reading	constructor	interpretation	Lean_NSMul_mk_node	constructor
+Nat	reading	inductive	interpretation	Lean_Nat	family
+Nat.add	reading	definition	interpretation	Lean_Nat_add	function read from its equation theorems; Lean's equations proved
+Nat.add.eq_1	reading	theorem	interpretation	Lean_Nat_add_eq_1	Lean's equation theorem, proved from the reading
+Nat.add.eq_2	reading	theorem	interpretation	Lean_Nat_add_eq_2	Lean's equation theorem, proved from the reading
+Nat.beq	reading	definition	interpretation	Lean_Nat_beq	function read from its equation theorems; Lean's equations proved
+Nat.beq.eq_1	reading	theorem	interpretation	Lean_Nat_beq_eq_1	Lean's equation theorem, proved from the reading
+Nat.beq.eq_2	reading	theorem	interpretation	Lean_Nat_beq_eq_2	Lean's equation theorem, proved from the reading
+Nat.beq.eq_3	reading	theorem	interpretation	Lean_Nat_beq_eq_3	Lean's equation theorem, proved from the reading
+Nat.beq.eq_4	reading	theorem	interpretation	Lean_Nat_beq_eq_4	Lean's equation theorem, proved from the reading
+Nat.ble	reading	definition	interpretation	Lean_Nat_ble	function read from its equation theorems; Lean's equations proved
+Nat.ble.eq_1	reading	theorem	interpretation	Lean_Nat_ble_eq_1	Lean's equation theorem, proved from the reading
+Nat.ble.eq_2	reading	theorem	interpretation	Lean_Nat_ble_eq_2	Lean's equation theorem, proved from the reading
+Nat.ble.eq_3	reading	theorem	interpretation	Lean_Nat_ble_eq_3	Lean's equation theorem, proved from the reading
+Nat.casesOn	reading	definition	interpretation	Lean_Nat_casesOn	case analysis read as the family's case eliminator
+Nat.choose	reading	definition	interpretation	Lean_Nat_choose	function read from its equation theorems; Lean's equations proved
+Nat.choose.eq_1	reading	theorem	interpretation	Lean_Nat_choose_eq_1	Lean's equation theorem, proved from the reading
+Nat.choose.eq_2	reading	theorem	interpretation	Lean_Nat_choose_eq_2	Lean's equation theorem, proved from the reading
+Nat.choose.eq_3	reading	theorem	interpretation	Lean_Nat_choose_eq_3	Lean's equation theorem, proved from the reading
+Nat.decEq	reading	definition	interpretation	Lean_Nat_decEq	function read from its equation theorems; Lean's equations proved
+Nat.decEq.eq_1	reading	theorem	interpretation	Lean_Nat_decEq_eq_1	Lean's equation theorem, proved from the reading
+Nat.decEq.match_1	reading	definition	expanded		matcher, read by its definition at each use
+Nat.decLe	reading	definition	interpretation	Lean_Nat_decLe	function read from its equation theorems; Lean's equations proved
+Nat.decLe.eq_1	reading	theorem	interpretation	Lean_Nat_decLe_eq_1	Lean's equation theorem, proved from the reading
+Nat.decLt	reading	definition	interpretation	Lean_Nat_decLt	function read from its equation theorems; Lean's equations proved
+Nat.decLt.eq_1	reading	theorem	interpretation	Lean_Nat_decLt_eq_1	Lean's equation theorem, proved from the reading
+Nat.decidableBallLT	reading	definition	refused	Lean_Nat_decidableBallLT	erased proofs in the definition or its equations are not reconstructed
+Nat.decidableBallLT.eq_1	reading	theorem	refused	Lean_Nat_decidableBallLT_eq_1	equation theorem not proved from the reading
+Nat.decidableBallLT.eq_2	reading	theorem	refused	Lean_Nat_decidableBallLT_eq_2	equation theorem not proved from the reading
+Nat.decidableBallLT.match_1	reading	definition	expanded		matcher, read by its definition at each use
+Nat.decidableBallLT.match_3	reading	definition	expanded		matcher, read by its definition at each use
+Nat.decidableLoHi	reading	definition	refused	Lean_Nat_decidableLoHi	erased proofs in the definition or its equations are not reconstructed
+Nat.decidableLoHi.eq_1	reading	theorem	refused	Lean_Nat_decidableLoHi_eq_1	equation theorem not proved from the reading
+Nat.decidablePrime	reading	definition	refused	Lean_Nat_decidablePrime	erased proofs in the definition or its equations are not reconstructed
+Nat.decidablePrime.eq_1	reading	theorem	refused	Lean_Nat_decidablePrime_eq_1	equation theorem not proved from the reading
+Nat.decidable_dvd	reading	definition	interpretation	Lean_Nat_decidable_dvd	function read from its equation theorems; Lean's equations proved
+Nat.decidable_dvd.eq_1	reading	theorem	interpretation	Lean_Nat_decidable_dvd_eq_1	Lean's equation theorem, proved from the reading
+Nat.div	reading	definition	interpretation	Lean_Nat_div	function read from its equation theorems; Lean's equations proved
+Nat.div.eq_1	reading	theorem	interpretation	Lean_Nat_div_eq_1	Lean's equation theorem, proved from the reading
+Nat.div.go	reading	definition	interpretation	Lean_Nat_div_go	function read from its equation theorems; Lean's equations proved
+Nat.div.go.eq_1	reading	theorem	interpretation	Lean_Nat_div_go_eq_1	Lean's equation theorem, proved from the reading
+Nat.div.go.eq_absent	reading	theorem	interpretation	Lean_Nat_div_go_eq_absent	Lean's equation theorem, proved from the reading
+Nat.factorial	reading	definition	interpretation	Lean_Nat_factorial	function read from its equation theorems; Lean's equations proved
+Nat.factorial.eq_1	reading	theorem	interpretation	Lean_Nat_factorial_eq_1	Lean's equation theorem, proved from the reading
+Nat.factorial.eq_2	reading	theorem	interpretation	Lean_Nat_factorial_eq_2	Lean's equation theorem, proved from the reading
+Nat.fib	reading	definition	interpretation	Lean_Nat_fib	function read from its equation theorems; Lean's equations proved
+Nat.fib.eq_1	reading	theorem	interpretation	Lean_Nat_fib_eq_1	Lean's equation theorem, proved from the reading
+Nat.gcd	reading	definition	interpretation	Lean_Nat_gcd	function read from its equation theorems; Lean's equations proved
+Nat.gcd.eq_1	reading	theorem	interpretation	Lean_Nat_gcd_eq_1	Lean's equation theorem, proved from the reading
+Nat.gcd.eq_fuel	reading	theorem	interpretation	Lean_Nat_gcd_eq_fuel	Lean's equation theorem, proved from the reading
+Nat.gcdFuel	reading	definition	interpretation	Lean_Nat_gcdFuel	function read from its equation theorems; Lean's equations proved
+Nat.gcdFuel.eq_1	reading	theorem	interpretation	Lean_Nat_gcdFuel_eq_1	Lean's equation theorem, proved from the reading
+Nat.gcdFuel.eq_2	reading	theorem	interpretation	Lean_Nat_gcdFuel_eq_2	Lean's equation theorem, proved from the reading
+Nat.instAddCommMonoid	reading	definition	interpretation	Lean_Nat_instAddCommMonoid	function read from its equation theorems; Lean's equations proved
+Nat.instAddCommMonoid.eq_1	reading	theorem	interpretation	Lean_Nat_instAddCommMonoid_eq_1	Lean's equation theorem, proved from the reading
+Nat.instMax	reading	definition	interpretation	Lean_Nat_instMax	function read from its equation theorems; Lean's equations proved
+Nat.instMax.eq_1	reading	theorem	interpretation	Lean_Nat_instMax_eq_1	Lean's equation theorem, proved from the reading
+Nat.instMonoid	reading	definition	interpretation	Lean_Nat_instMonoid	function read from its equation theorems; Lean's equations proved
+Nat.instMonoid.eq_1	reading	theorem	interpretation	Lean_Nat_instMonoid_eq_1	Lean's equation theorem, proved from the reading
+Nat.iterate	reading	definition	interpretation	Lean_Nat_iterate	function read from its equation theorems; Lean's equations proved
+Nat.iterate.eq_1	reading	theorem	interpretation	Lean_Nat_iterate_eq_1	Lean's equation theorem, proved from the reading
+Nat.iterate.eq_2	reading	theorem	interpretation	Lean_Nat_iterate_eq_2	Lean's equation theorem, proved from the reading
+Nat.lcm	reading	definition	interpretation	Lean_Nat_lcm	function read from its equation theorems; Lean's equations proved
+Nat.lcm.eq_1	reading	theorem	interpretation	Lean_Nat_lcm_eq_1	Lean's equation theorem, proved from the reading
+Nat.le	reading	inductive	interpretation	Lean_Nat_le	family
+Nat.le.casesOn	reading	definition	interpretation	Lean_Nat_le_rec	case analysis read as the recursor with the minors as methods
+Nat.le.refl	reading	constructor	interpretation	Lean_Nat_le_refl_node	constructor
+Nat.le.step	reading	constructor	interpretation	Lean_Nat_le_step_node	constructor
+Nat.minFac	reading	definition	interpretation	Lean_Nat_minFac	function read from its equation theorems; Lean's equations proved
+Nat.minFac.eq_1	reading	theorem	interpretation	Lean_Nat_minFac_eq_1	Lean's equation theorem, proved from the reading
+Nat.minFacAux	reading	definition	refused	Lean_Nat_minFacAux	function read, but not all of Lean's equation theorems are proved from the reading: Nat.minFacAux.eq_1; leaves tests 26 unqualified
+Nat.minFacAux.eq_1	reading	theorem	refused	Lean_Nat_minFacAux_eq_1	equation theorem not proved from the reading
+Nat.mod	reading	definition	interpretation	Lean_Nat_mod	function read from its equation theorems; Lean's equations proved
+Nat.mod.eq_1	reading	theorem	interpretation	Lean_Nat_mod_eq_1	Lean's equation theorem, proved from the reading
+Nat.mod.eq_2	reading	theorem	interpretation	Lean_Nat_mod_eq_2	Lean's equation theorem, proved from the reading
+Nat.modCore	reading	definition	interpretation	Lean_Nat_modCore	function read from its equation theorems; Lean's equations proved
+Nat.modCore.eq_1	reading	theorem	interpretation	Lean_Nat_modCore_eq_1	Lean's equation theorem, proved from the reading
+Nat.modCore.go	reading	definition	interpretation	Lean_Nat_modCore_go	function read from its equation theorems; Lean's equations proved
+Nat.modCore.go.eq_1	reading	theorem	interpretation	Lean_Nat_modCore_go_eq_1	Lean's equation theorem, proved from the reading
+Nat.modCore.go.eq_absent	reading	theorem	interpretation	Lean_Nat_modCore_go_eq_absent	Lean's equation theorem, proved from the reading
+Nat.mul	reading	definition	interpretation	Lean_Nat_mul	function read from its equation theorems; Lean's equations proved
+Nat.mul.eq_1	reading	theorem	interpretation	Lean_Nat_mul_eq_1	Lean's equation theorem, proved from the reading
+Nat.mul.eq_2	reading	theorem	interpretation	Lean_Nat_mul_eq_2	Lean's equation theorem, proved from the reading
+Nat.pow	reading	definition	interpretation	Lean_Nat_pow	function read from its equation theorems; Lean's equations proved
+Nat.pow.eq_1	reading	theorem	interpretation	Lean_Nat_pow_eq_1	Lean's equation theorem, proved from the reading
+Nat.pow.eq_2	reading	theorem	interpretation	Lean_Nat_pow_eq_2	Lean's equation theorem, proved from the reading
+Nat.pred	reading	definition	interpretation	Lean_Nat_pred	function read from its equation theorems; Lean's equations proved
+Nat.pred.eq_1	reading	theorem	interpretation	Lean_Nat_pred_eq_1	Lean's equation theorem, proved from the reading
+Nat.pred.eq_2	reading	theorem	interpretation	Lean_Nat_pred_eq_2	Lean's equation theorem, proved from the reading
+Nat.primeFactorsList	reading	definition	refused	Lean_Nat_primeFactorsList	function read, but not all of Lean's equation theorems are proved from the reading: Nat.primeFactorsList.eq_1, Nat.primeFactorsList.eq_2, Nat.primeFactorsList.eq_3; leaves tests 26 unqualified
+Nat.primeFactorsList.eq_1	reading	theorem	refused	Lean_Nat_primeFactorsList_eq_1	equation theorem not proved from the reading
+Nat.primeFactorsList.eq_2	reading	theorem	refused	Lean_Nat_primeFactorsList_eq_2	equation theorem not proved from the reading
+Nat.primeFactorsList.eq_3	reading	theorem	refused	Lean_Nat_primeFactorsList_eq_3	equation theorem not proved from the reading
+Nat.sub	reading	definition	interpretation	Lean_Nat_sub	function read from its equation theorems; Lean's equations proved
+Nat.sub.eq_1	reading	theorem	interpretation	Lean_Nat_sub_eq_1	Lean's equation theorem, proved from the reading
+Nat.sub.eq_2	reading	theorem	interpretation	Lean_Nat_sub_eq_2	Lean's equation theorem, proved from the reading
+Nat.succ	reading	constructor	interpretation	Lean_Nat_succ_node	constructor
+Nat.zero	reading	constructor	interpretation	Lean_Nat_zero_node	constructor
+One	reading	inductive	interpretation	Lean_One	family
+One.mk	reading	constructor	interpretation	Lean_One_mk_node	constructor
+Option	reading	inductive	interpretation	Lean_Option	family
+Option.bind	reading	definition	interpretation	Lean_Option_bind	function read from its equation theorems; Lean's equations proved
+Option.bind.eq_1	reading	theorem	interpretation	Lean_Option_bind_eq_1	Lean's equation theorem, proved from the reading
+Option.bind.eq_2	reading	theorem	interpretation	Lean_Option_bind_eq_2	Lean's equation theorem, proved from the reading
+Option.casesOn	reading	definition	interpretation	Lean_Option_rec	case analysis read as the recursor with the minors as methods
+Option.getD	reading	definition	interpretation	Lean_Option_getD	function read from its equation theorems; Lean's equations proved
+Option.getD.eq_1	reading	theorem	interpretation	Lean_Option_getD_eq_1	Lean's equation theorem, proved from the reading
+Option.getD.eq_2	reading	theorem	interpretation	Lean_Option_getD_eq_2	Lean's equation theorem, proved from the reading
+Option.map	reading	definition	interpretation	Lean_Option_map	function read from its equation theorems; Lean's equations proved
+Option.map.eq_1	reading	theorem	interpretation	Lean_Option_map_eq_1	Lean's equation theorem, proved from the reading
+Option.map.eq_2	reading	theorem	interpretation	Lean_Option_map_eq_2	Lean's equation theorem, proved from the reading
+Option.none	reading	constructor	interpretation	Lean_Option_none_node	constructor
+Option.some	reading	constructor	interpretation	Lean_Option_some_node	constructor
+Or	reading	inductive	interpretation		read as Egal's disjunction in statements
+Or.inl	reading	constructor	interpretation	Lean_Or_inl_node	constructor
+Or.inr	reading	constructor	interpretation	Lean_Or_inr_node	constructor
+Ordering	reading	inductive	interpretation	Lean_Ordering	family
+Ordering.casesOn	reading	definition	interpretation	Lean_Ordering_rec	case analysis read as the recursor with the minors as methods
+Ordering.eq	reading	constructor	interpretation	Lean_Ordering_eq_node	constructor
+Ordering.gt	reading	constructor	interpretation	Lean_Ordering_gt_node	constructor
+Ordering.lt	reading	constructor	interpretation	Lean_Ordering_lt_node	constructor
+PUnit.casesOn	reading	definition	interpretation	_b_rec	case analysis read as the recursor with the minors as methods
+Prod	reading	inductive	interpretation	Lean_Prod	family
+Prod.casesOn	reading	definition	interpretation	Lean_Prod_rec	case analysis read as the recursor with the minors as methods
+Prod.fst	reading	definition	interpretation	Lean_Prod_fst	projection
+Prod.mk	reading	constructor	interpretation	Lean_Prod_mk_node	constructor
+Prod.snd	reading	definition	interpretation	Lean_Prod_snd	projection
+Quot	reading	definition	refused	Lean_Quot	no equation theorems
+Quot.lift	reading	definition	refused	Lean_Quot_lift	no equation theorems
+Quot.liftOn	reading	definition	refused	Lean_Quot_liftOn	erased proofs in the definition or its equations are not reconstructed
+Quot.liftOn.eq_1	reading	theorem	refused	Lean_Quot_liftOn_eq_1	equation theorem not proved from the reading
+Quot.mk	reading	definition	refused	Lean_Quot_mk	no equation theorems
+Semigroup	reading	inductive	interpretation	Lean_Semigroup	family
+Semigroup.mk	reading	constructor	interpretation	Lean_Semigroup_mk_node	constructor
+Sigma	reading	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Sigma.mk	reading	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Subtype.casesOn	reading	definition	interpretation	_b_rec	case analysis read as the recursor with the minors as methods
+Subtype.val	reading	definition	refused	Lean_Subtype_val	projection not read
+Sum	reading	inductive	interpretation	Lean_Sum	family
+Sum.inl	reading	constructor	interpretation	Lean_Sum_inl_node	constructor
+Sum.inr	reading	constructor	interpretation	Lean_Sum_inr_node	constructor
+Unit.unit	reading	definition	refused	Lean_Unit_unit	applies PUnit.unit, which is not read
+Unit.unit.eq_1	reading	theorem	refused	Lean_Unit_unit_eq_1	equation theorem not proved from the reading
+Zero	reading	inductive	interpretation	Lean_Zero	family
+Zero.casesOn	reading	definition	interpretation	Lean_Zero_rec	case analysis read as the recursor with the minors as methods
+Zero.mk	reading	constructor	interpretation	Lean_Zero_mk_node	constructor
+Zero.zero	reading	definition	interpretation	Lean_Zero_zero	projection
+compareOfLessAndEq	reading	definition	interpretation	Lean_compareOfLessAndEq	function read from its equation theorems; Lean's equations proved
+compareOfLessAndEq.eq_1	reading	theorem	interpretation	Lean_compareOfLessAndEq_eq_1	Lean's equation theorem, proved from the reading
+decidable_of_decidable_of_iff	reading	definition	interpretation	Lean_decidable_of_decidable_of_iff	function read from its equation theorems; Lean's equations proved
+decidable_of_decidable_of_iff.eq_1	reading	theorem	interpretation	Lean_decidable_of_decidable_of_iff_eq_1	Lean's equation theorem, proved from the reading
+decidable_of_iff	reading	definition	interpretation	Lean_decidable_of_iff	function read from its equation theorems; Lean's equations proved
+decidable_of_iff'	reading	definition	interpretation	Lean_decidable_of_iffu39	function read from its equation theorems; Lean's equations proved
+decidable_of_iff'.eq_1	reading	theorem	interpretation	Lean_decidable_of_iffu39_eq_1	Lean's equation theorem, proved from the reading
+decidable_of_iff.eq_1	reading	theorem	interpretation	Lean_decidable_of_iff_eq_1	Lean's equation theorem, proved from the reading
+dite	reading	definition	interpretation	Lean_dite	function read from its equation theorems; Lean's equations proved
+dite.eq_1	reading	theorem	interpretation	Lean_dite_eq_1	Lean's equation theorem, proved from the reading
+id.eq_1	reading	theorem	interpretation	Lean_id_eq_1	Lean's equation theorem, proved from the reading
+inferInstance	reading	definition	interpretation	Lean_inferInstance	function read from its equation theorems; Lean's equations proved
+inferInstance.eq_1	reading	theorem	interpretation	Lean_inferInstance_eq_1	Lean's equation theorem, proved from the reading
+instAddNat	reading	definition	interpretation	Lean_instAddNat	function read from its equation theorems; Lean's equations proved
+instAddNat.eq_1	reading	theorem	interpretation	Lean_instAddNat_eq_1	Lean's equation theorem, proved from the reading
+instDecidableAnd	reading	definition	interpretation	Lean_instDecidableAnd	function read from its equation theorems; Lean's equations proved
+instDecidableAnd.eq_1	reading	theorem	interpretation	Lean_instDecidableAnd_eq_1	Lean's equation theorem, proved from the reading
+instDecidableAnd.eq_2	reading	theorem	interpretation	Lean_instDecidableAnd_eq_2	Lean's equation theorem, proved from the reading
+instDecidableAnd.eq_3	reading	theorem	interpretation	Lean_instDecidableAnd_eq_3	Lean's equation theorem, proved from the reading
+instDecidableEqBool	reading	definition	interpretation	Lean_instDecidableEqBool	function read from its equation theorems; Lean's equations proved
+instDecidableEqBool.eq_1	reading	theorem	interpretation	Lean_instDecidableEqBool_eq_1	Lean's equation theorem, proved from the reading
+instDecidableEqNat	reading	definition	interpretation	Lean_instDecidableEqNat	function read from its equation theorems; Lean's equations proved
+instDecidableEqNat.eq_1	reading	theorem	interpretation	Lean_instDecidableEqNat_eq_1	Lean's equation theorem, proved from the reading
+instDecidableNot	reading	definition	interpretation	Lean_instDecidableNot	function read from its equation theorems; Lean's equations proved
+instDecidableNot.eq_1	reading	theorem	interpretation	Lean_instDecidableNot_eq_1	Lean's equation theorem, proved from the reading
+instDecidableNot.eq_2	reading	theorem	interpretation	Lean_instDecidableNot_eq_2	Lean's equation theorem, proved from the reading
+instLENat	reading	definition	interpretation	Lean_instLENat	function read from its equation theorems; Lean's equations proved
+instLENat.eq_1	reading	theorem	interpretation	Lean_instLENat_eq_1	Lean's equation theorem, proved from the reading
+instLTNat	reading	definition	interpretation	Lean_instLTNat	function read from its equation theorems; Lean's equations proved
+instLTNat.eq_1	reading	theorem	interpretation	Lean_instLTNat_eq_1	Lean's equation theorem, proved from the reading
+ite	reading	definition	interpretation	Lean_ite	function read from its equation theorems; Lean's equations proved
+ite.eq_1	reading	theorem	interpretation	Lean_ite_eq_1	Lean's equation theorem, proved from the reading
+maxOfLe	reading	definition	interpretation	Lean_maxOfLe	function read from its equation theorems; Lean's equations proved
+maxOfLe.eq_1	reading	theorem	interpretation	Lean_maxOfLe_eq_1	Lean's equation theorem, proved from the reading

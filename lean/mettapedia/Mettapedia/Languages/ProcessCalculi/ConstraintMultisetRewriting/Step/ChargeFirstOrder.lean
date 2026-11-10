@@ -47,16 +47,16 @@ variable {T : Type uT} {S : Type uS} {O : Type uO} [DecidableEq O]
   (A : SubstitutionAction T S) (label : O → T)
 
 /-- **A place charge**: a weight on labels, summed over the present occurrences. -/
-abbrev placeCharge {B : Type uB} [AddCommMonoid B] (y : T → B) : ConservedCharge (firstOrder A label) B :=
-  weightCharge (firstOrder A label) fun o => y (label o)
+abbrev placeCharge {B : Type uB} [AddCommMonoid B] (y : T → B) : ConservedCharge (firstOrder A label).toStep B :=
+  weightCharge (firstOrder A label).toStep fun o => y (label o)
 
 /-- **Label counts**: the multiset of the labels of the present occurrences. -/
-abbrev labelCharge : ConservedCharge (firstOrder A label) (Multiset T) :=
+abbrev labelCharge : ConservedCharge (firstOrder A label).toStep (Multiset T) :=
   placeCharge A label fun t => {t}
 
 theorem labelCharge_potential (C : Configuration T O) :
     (labelCharge A label).potential C = C.present.val.map label :=
-  Interface.weightCharge_singleton_potential (firstOrder A label) label C
+  Interface.weightCharge_singleton_potential (firstOrder A label).toStep label C
 
 /-- **Place charges are invariant under renamings that keep labels.** -/
 theorem placeCharge_invariant {B : Type uB} [AddCommMonoid B] (y : T → B) :
@@ -77,12 +77,12 @@ variable {Val : Type uV} {Pt : PUnit.{1} → Type uP}
 
 variable (label) in
 /-- **The value charge at a point**: the multiset of the values of the present occurrences. -/
-abbrev valueCharge : ConservedCharge (firstOrder A label) (Multiset Val) :=
+abbrev valueCharge : ConservedCharge (firstOrder A label).toStep (Multiset Val) :=
   placeCharge A label fun t => {M.eval t ρ}
 
 theorem valueCharge_potential (C : Configuration T O) :
     (valueCharge label M ρ).potential C = C.present.val.map fun o => M.eval (label o) ρ :=
-  Interface.weightCharge_singleton_potential (firstOrder A label) (fun o => M.eval (label o) ρ) C
+  Interface.weightCharge_singleton_potential (firstOrder A label).toStep (fun o => M.eval (label o) ρ) C
 
 theorem valueCharge_taken {C : Configuration T O} {f : Firing T S O} (valid : f.Valid A label C) :
     (valueCharge label M ρ).taken C f = (f.selection.taken : Multiset O).map fun o => M.eval (label o) ρ := by
@@ -95,7 +95,7 @@ theorem valueCharge_made {C : Configuration T O} {f : Firing T S O} (valid : f.V
   rw [Interface.sum_singleton_eq_map, List.toFinset_val, valid.firing.output_distinct.dedup]
 
 /-- **The totals of the value charge are the flow of `run_conservation`.** -/
-theorem valueCharge_totals : ∀ {C : Configuration T O} (r : (firstOrder A label).Run C),
+theorem valueCharge_totals : ∀ {C : Configuration T O} (r : (firstOrder A label).toStep.Run C),
     ((valueCharge label M ρ).runTaken r, (valueCharge label M ρ).runMade r) =
       Multiplicative.toAdd (r.account fun _ f => flow M label ρ f)
   | _, .nil _ => rfl
@@ -110,7 +110,7 @@ theorem valueCharge_totals : ∀ {C : Configuration T O} (r : (firstOrder A labe
 
 /-- **Values are conserved along runs, as the telescoping of the value charge**: the statement of
 `run_conservation`, derived from `ConservedCharge.run_balance`. -/
-theorem value_run_balance {C : Configuration T O} (r : (firstOrder A label).Run C) :
+theorem value_run_balance {C : Configuration T O} (r : (firstOrder A label).toStep.Run C) :
     r.last.present.val.map (fun o => M.eval (label o) ρ) +
         (Multiplicative.toAdd (r.account fun _ f => flow M label ρ f)).1 =
       C.present.val.map (fun o => M.eval (label o) ρ) +
@@ -121,7 +121,7 @@ theorem value_run_balance {C : Configuration T O} (r : (firstOrder A label).Run 
   exact balance
 
 /-- A point satisfying the knowledge at the end of a run satisfies the knowledge at its start. -/
-theorem models_start_of_last : ∀ {C : Configuration T O} (r : (firstOrder A label).Run C),
+theorem models_start_of_last : ∀ {C : Configuration T O} (r : (firstOrder A label).toStep.Run C),
     M.Models ρ r.last.equations → M.Models ρ C.equations
   | _, .nil _, known => known
   | C, .cons f _ rest, known => by
@@ -133,7 +133,7 @@ theorem models_start_of_last : ∀ {C : Configuration T O} (r : (firstOrder A la
 gives its taken patterns and its produced terms equal weight is constant along the run at that point,
 when the point satisfies the knowledge at the end. -/
 theorem place_invariant {B : Type uB} [AddCommMonoid B] [IsRightCancelAdd B] (y : Val → B) :
-    ∀ {C : Configuration T O} (r : (firstOrder A label).Run C), M.Models ρ r.last.equations →
+    ∀ {C : Configuration T O} (r : (firstOrder A label).toStep.Run C), M.Models ρ r.last.equations →
       (∀ x ∈ r.word, (x.2.rule.take.map fun p => y (M.eval p ρ)).sum =
         (x.2.rule.produce.map fun p => y (M.eval p ρ)).sum) →
       (placeCharge A label fun t => y (M.eval t ρ)).potential r.last =
@@ -212,10 +212,10 @@ theorem grow_valid : grow.Valid A blank single :=
     by simp [grow]⟩, by simp [grow]⟩
 
 /-- The run of the cycle. -/
-abbrev cycleRun : (firstOrder A blank).Run single := .cons cycle cycle_valid (.nil _)
+abbrev cycleRun : (firstOrder A blank).toStep.Run single := .cons cycle cycle_valid (.nil _)
 
 /-- The run of the growth. -/
-abbrev growRun : (firstOrder A blank).Run single := .cons grow grow_valid (.nil _)
+abbrev growRun : (firstOrder A blank).toStep.Run single := .cons grow grow_valid (.nil _)
 
 /-- The exchange of `5` and `6` carries the start to the end of the cycle. -/
 def cycleFold : (renamingTransport A blank).Iso single (cycle.result blank single) :=
@@ -262,10 +262,10 @@ theorem charges_blind_to_knowledge :
 /-- **Traced is not conserved**: the length of a run is a property of traces, and no charge
 invariant under the transport takes one per firing and makes nothing, since the cycle folds. -/
 theorem length_traced_not_conserved :
-    (∀ {C : Configuration (Term signature) ℕ} {r r' : (firstOrder A blank).Run C},
+    (∀ {C : Configuration (Term signature) ℕ} {r r' : (firstOrder A blank).toStep.Run C},
       (renamingTransport A blank).TraceEquiv C r r' →
         r.total (fun _ _ => (1 : ℕ)) = r'.total (fun _ _ => (1 : ℕ))) ∧
-      ¬ ∃ Q : ConservedCharge (firstOrder A blank) ℕ, Q.Invariant (renamingTransport A blank) ∧
+      ¬ ∃ Q : ConservedCharge (firstOrder A blank).toStep ℕ, Q.Invariant (renamingTransport A blank) ∧
         (∀ C f, Q.taken C f = 1) ∧ (∀ C f, Q.made C f = 0) := by
   refine ⟨fun equivalent => Interface.Step.Run.traceEquiv_total _ (fun _ _ => rfl) (fun _ => rfl)
     (fun _ _ _ => rfl) equivalent, ?_⟩

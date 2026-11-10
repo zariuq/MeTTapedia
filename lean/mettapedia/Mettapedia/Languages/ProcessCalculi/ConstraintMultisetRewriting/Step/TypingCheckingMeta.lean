@@ -267,7 +267,7 @@ end GoalFiring
 variable (Θ O) in
 /-- **The checking step with metavariables**, over the obligation frames at the frame `Θ`. -/
 def metaGoalStep :
-    Interface.Step (obligationFrames S) O (GoalState Θ O) (fun s => GoalFiring s) where
+    Interface.Step.Standard (obligationFrames S) O (GoalState Θ O) (fun s => GoalFiring s) where
   frame _ := Θ
   knowledge s := s.knowledge
   present s := s.present
@@ -287,10 +287,10 @@ def metaGoalStep :
     (obligationFrames S).Solvable (a := Θ) (s.knowledge ++ f.residuals.map tell) ∧
     (obligationFrames S).Entails (a := Θ) (s.knowledge ++ f.residuals.map tell) (fun _ _ => True)
   admits_iff _ := Iff.rfl
-  result f _ := f.after
-  present_result _ _ := rfl
-  settle _ _ := 𝟙 Θ
-  knowledge_result {s} f _ :=
+  preparedResult f _ := f.after
+  present_preparedResult _ _ := rfl
+  preparedSettle _ _ := 𝟙 Θ
+  knowledge_preparedResult {s} f _ :=
     (Frames.applyStore_id (X := obligationFrames S) (s.knowledge ++ f.residuals.map tell)).symm
 
 /-- A state **reaches** the root when, at every solution of its knowledge, its present goals give

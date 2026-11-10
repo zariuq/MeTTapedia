@@ -72,6 +72,8 @@ structure State where
   resultWriting : Bool := false
   transfers : List Transfer := []
   fieldResults : List FieldResult := []
+  recordResults : List FieldResult := []
+  recordOwners : List (Nat × Nat) := []
   deriving DecidableEq, Repr, BEq, ReflBEq, LawfulBEq
 
 def Compatible (a b : Loan) : Prop :=
@@ -175,6 +177,9 @@ inductive Action where
   | nullResult
   | fieldResult (key id : Nat) (region : Region) (writing : Bool)
   | nullFieldResult (key : Nat)
+  | recordResult (key id : Nat) (region : Region) (writing : Bool)
+  | nullRecordResult (key : Nat)
+  | recordGive (key holder family : Nat)
   | invoke (name : String) (arguments : List Argument)
   deriving DecidableEq, Repr, BEq, ReflBEq, LawfulBEq
 
@@ -267,12 +272,34 @@ def transition (s : State) : Action → Option State
   | .nullFieldResult key => do
       require (!(s.fieldResults.any fun r => r.key == key))
       pure { s with fieldResults := s.fieldResults ++ [⟨key, none, false⟩] }
+  | .recordResult key id region writing => do
+      require (!(s.recordResults.any fun r => r.key == key))
+      require (!(s.recordOwners.any fun r => r.1 == key))
+      require (decide (Access s.loans id region writing))
+      require (s.allocations.any fun a => a.root == region.root && (a.origin == .input || a.origin == .static))
+      pure { s with recordResults := s.recordResults ++ [⟨key, some region, writing⟩] }
+  | .nullRecordResult key => do
+      require (!(s.recordResults.any fun r => r.key == key))
+      require (!(s.recordOwners.any fun r => r.1 == key))
+      pure { s with recordResults := s.recordResults ++ [⟨key, none, false⟩] }
+  | .recordGive key holder family => do
+      require (!(s.recordResults.any fun r => r.key == key) && !(s.recordOwners.any fun r => r.1 == key))
+      let token ← s.authorities.find? (fun a => a.holder == holder)
+      require (token.family == family)
+      require (decide (MayEnd s.loans holder))
+      let l ← findLoan s holder
+      require (l.region.root == token.root && l.ancestors.isEmpty)
+      pure { s with loans := (eraseLoan s holder).loans
+                    authorities := s.authorities.filter fun a => a.holder != holder
+                    allocations := s.allocations.filter fun a => a.root != token.root
+                    recordOwners := s.recordOwners ++ [(key, family)] }
   | .invoke name _ => do
       require (!name.isEmpty)
       pure s
 
 def requiresValidation : Action → Bool
-  | .access .. | .view .. | .result .. | .nullResult | .fieldResult .. | .nullFieldResult .. | .invoke .. => false
+  | .access .. | .view .. | .result .. | .nullResult | .fieldResult .. | .nullFieldResult ..
+  | .recordResult .. | .nullRecordResult .. | .invoke .. => false
   | _ => true
 
 def apply (s : State) (action : Action) : Option State :=
@@ -336,6 +363,18 @@ theorem metadata_preserves_valid {s after : State} {a : Action}
     obtain ⟨_, _, same⟩ := Option.bind_eq_some_iff.mp h
     cases Option.some.inj same
     exact valid
+  case recordResult key id region writing =>
+    obtain ⟨_, _, rest⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨_, _, rest⟩ := Option.bind_eq_some_iff.mp rest
+    obtain ⟨_, _, rest⟩ := Option.bind_eq_some_iff.mp rest
+    obtain ⟨_, _, same⟩ := Option.bind_eq_some_iff.mp rest
+    cases Option.some.inj same
+    exact valid
+  case nullRecordResult key =>
+    obtain ⟨_, _, rest⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨_, _, same⟩ := Option.bind_eq_some_iff.mp rest
+    cases Option.some.inj same
+    exact valid
   case invoke name arguments =>
     obtain ⟨_, _, same⟩ := Option.bind_eq_some_iff.mp h
     have equal := Option.some.inj same
@@ -351,6 +390,48 @@ theorem apply_preserves_valid {s after : State} {a : Action}
     exact (validB_iff after).mp (require_some passed)
   · have metadata : requiresValidation a = false := by cases h : requiresValidation a <;> simp_all
     exact metadata_preserves_valid metadata step valid
+
+/-- Returning an owned field removes its sole release authority from the
+callee and records exactly one corresponding result token. -/
+theorem recordGive_consumes_authority {s after : State} {key holder family : Nat}
+    (step : apply s (.recordGive key holder family) = some after) :
+    (∀ token ∈ after.authorities, token.holder ≠ holder) ∧
+    after.recordOwners = s.recordOwners ++ [(key, family)] ∧
+    MayEnd s.loans holder := by
+  have execution := apply_transition step
+  obtain ⟨_, _, rest⟩ := Option.bind_eq_some_iff.mp execution
+  obtain ⟨token, _, rest⟩ := Option.bind_eq_some_iff.mp rest
+  obtain ⟨_, _, rest⟩ := Option.bind_eq_some_iff.mp rest
+  obtain ⟨_, ended, rest⟩ := Option.bind_eq_some_iff.mp rest
+  obtain ⟨loan, _, rest⟩ := Option.bind_eq_some_iff.mp rest
+  obtain ⟨_, _, same⟩ := Option.bind_eq_some_iff.mp rest
+  cases Option.some.inj same
+  refine ⟨?_, rfl, of_decide_eq_true (require_some ended)⟩
+  intro other present
+  simpa using (List.mem_filter.mp present).2
+
+theorem recordGive_duplicate_refused (s : State) (key holder family : Nat)
+    (present : (s.recordOwners.map Prod.fst).contains key = true) :
+    transition s (.recordGive key holder family) = none := by
+  have existing : s.recordOwners.any (fun r => r.1 == key) = true := by
+    simpa [List.contains_iff_mem, List.mem_map, List.any_eq_true] using present
+  simp [transition, require, existing]
+
+/-- A returned borrowed field must refer to an input or static allocation;
+ownership cleanup cannot turn local storage into a persistent lifetime. -/
+theorem recordResult_external_lifetime {s after : State} {key id : Nat}
+    {region : Region} {writing : Bool}
+    (step : apply s (.recordResult key id region writing) = some after) :
+    Access s.loans id region writing ∧
+    ∃ allocation ∈ s.allocations,
+      allocation.root = region.root ∧ (allocation.origin = .input ∨ allocation.origin = .static) := by
+  have execution := apply_transition step
+  obtain ⟨_, _, rest⟩ := Option.bind_eq_some_iff.mp execution
+  obtain ⟨_, _, rest⟩ := Option.bind_eq_some_iff.mp rest
+  obtain ⟨_, accessible, rest⟩ := Option.bind_eq_some_iff.mp rest
+  obtain ⟨_, external, _⟩ := Option.bind_eq_some_iff.mp rest
+  refine ⟨of_decide_eq_true (require_some accessible), ?_⟩
+  simpa using require_some external
 
 theorem apply_access_iff {s : State} {id : Nat} {r : Region} {w : Bool} :
     apply s (.access id r w) = some s ↔ Access s.loans id r w := by

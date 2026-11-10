@@ -21,6 +21,8 @@
 
 ; The text functions (str:...) are used from here on.
 !(import! &self str)
+!(import! &self fs)
+!(import! &self system)
 
 ; ---- terms ----
 
@@ -37,10 +39,18 @@
 (= (is-family $c)
    (let $found (collapse (match &self (LeanAdmitted $c $cs) $c)) (if (== $found ()) (is-block $c) True)))
 
+(= (library-head $c)
+   (case $c
+     (((EgalLibrary proof-field) "Lean_ProofField")
+      ((EgalLibrary record-field $owner $i) (format-args "(Lean_RecordField {})" ($i)))
+      ($_ None))))
+(= (is-library-head $c) (not (== (library-head $c) None)))
+
 (= (head-text $c)
+   (if (is-library-head $c) (library-head $c)
    (if (is-subsingleton-rec $c) (subsingleton-name $c)
    (if (is-ctor $c) (format-args "{}_node" ((egal $c)))
-       (if (prop-fam $c) (format-args "{}_Prop" ((egal $c))) (egal $c)))))
+       (if (prop-fam $c) (format-args "{}_Prop" ((egal $c))) (egal $c))))))
 ; The large eliminator of a subsingleton (Eq.rec at any sort): distinct from
 ; the family's own recursor over its proof nodes.
 (= (subsingleton-name $f) (format-args "{}_elim" ((egal (rec-family $f)))))
@@ -204,7 +214,16 @@
        (if (== (car-atom $xs) $x) (remove-name $x (cdr-atom $xs)) (cons-atom (car-atom $xs) (remove-name $x (cdr-atom $xs))))))
 (= (bind-fvs $bind)
    (if (== $bind ()) () (let ($k $v) (car-atom $bind) (union-names (fvs $v) (bind-fvs (cdr-atom $bind))))))
-(= (fresh-name $x $avoid) (if (member-term $x $avoid) (fresh-name (format-args "{}_c" ($x)) $avoid) $x))
+; Source names may be symbols and generated names strings. Both render as the
+; same target identifier, so freshness must compare their identifier spelling.
+; Internal field/parameter keys remain structured data, never identifiers.
+(= (same-identifier $x $y)
+   (if (or (== (get-metatype $x) Expression) (== (get-metatype $y) Expression))
+       (== $x $y) (== (nm $x) (nm $y))))
+(= (identifier-in $x $names)
+   (if (== $names ()) False
+       (if (same-identifier $x (car-atom $names)) True (identifier-in $x (cdr-atom $names)))))
+(= (fresh-name $x $avoid) (if (identifier-in $x $avoid) (fresh-name (format-args "{}_c" ($x)) $avoid) $x))
 
 ; Substitution that renames a binder rather than capture a variable.
 (= (csubst $t $bind)
@@ -221,7 +240,7 @@
 (= (csubst-all $ts $bind) (if (== $ts ()) () (cons-atom (csubst (car-atom $ts) $bind) (csubst-all (cdr-atom $ts) $bind))))
 (= (csubst-binder $x $b $bind)
    (let $bind2 (remove-key $x $bind)
-     (if (member-term $x (bind-fvs $bind2))
+     (if (identifier-in $x (bind-fvs $bind2))
          (let $y (fresh-name $x (union-names (bind-fvs $bind2) (fvs $b)))
            ($y (csubst $b (cons-atom ($x (var $y)) $bind2))))
          ($x (csubst $b $bind2)))))
@@ -588,9 +607,12 @@
 (= (is-cond-hyp $P)
    (case $P
      (((pi $y $T $B) (is-cond-hyp $B))
-      ((arrow $A $B) (is-cond-hyp $B))
-      ((app False ()) True)
+      ((arrow (app Eq ($T (var $x) $pattern)) $rest) (exclusion-tail $rest))
       ($_ False))))
+(= (exclusion-tail $P)
+   (case $P
+     (((arrow (app Eq ($T (var $x) $pattern)) $rest) (exclusion-tail $rest))
+      ((app False ()) True) ($_ False))))
 ; The proof of a proof argument's proposition at an instance.
 (= (hyp-proof $P)
    (case $P
@@ -598,26 +620,136 @@
       ($_ (prove-prop $P)))))
 
 (= (stmt-ctx $bs)
+   (let $base (stmt-value-ctx $bs) (append-lists (stmt-proof-ctx $bs $base) $base)))
+(= (stmt-value-ctx $bs)
    (if (== $bs ()) ()
-       (let $rest (stmt-ctx (cdr-atom $bs))
+       (let $rest (stmt-value-ctx (cdr-atom $bs))
          (case (car-atom $bs)
            (((term $x $T) (cons-atom ($x (format-args "H_{}" ($x))) (cons-atom ((ty $x) $T) $rest)))
             ((type $x $l) (cons-atom ($x (format-args "H_{}" ($x))) $rest))
             ((sort $x $l) (cons-atom ($x (format-args "H_{}" ($x))) $rest))
+            ((hyp $x $P) (cons-atom ((ReservedName $x) ()) $rest))
             ($_ $rest))))))
+(= (stmt-proof-ctx $bs $ctx)
+   (if (== $bs ()) ()
+       (let $rest (stmt-proof-ctx (cdr-atom $bs) $ctx)
+         (case (car-atom $bs)
+           (((hyp $x $P) (cons-atom ((ProofOf $P) (native-proof $P (nm $x) $ctx 0)) $rest))
+            ($_ $rest))))))
+(= (known-proof $P $ctx)
+   (if (== $ctx ()) None
+       (case (car-atom $ctx)
+         ((((ProofOf $Q) $proof) (if (alpha-eq $P $Q ()) $proof (known-proof $P (cdr-atom $ctx))))
+          ($_ (known-proof $P (cdr-atom $ctx)))))))
+
+; Names introduced by proof conversion avoid both free and bound source names.
+(= (all-term-names $t)
+   (case $t
+     (((var $x) ($x))
+      ((pi $x $A $B) (cons-atom $x (union-names (all-term-names $A) (all-term-names $B))))
+      ((lam $x $A $B) (cons-atom $x (union-names (all-term-names $A) (all-term-names $B))))
+      ((arrow $A $B) (union-names (all-term-names $A) (all-term-names $B)))
+      ((app $c $args) (all-term-names-list $args))
+      ((apv $f $args) (all-term-names-list (cons-atom $f $args))) ($_ ()))))
+(= (all-term-names-list $ts)
+   (if (== $ts ()) () (union-names (all-term-names (car-atom $ts)) (all-term-names-list (cdr-atom $ts)))))
+(= (ctx-names $ctx)
+   (if (== $ctx ()) ()
+       (let ($key $value) (car-atom $ctx)
+         (let $rest (ctx-names (cdr-atom $ctx))
+           (case $key
+             (((ReservedName $name) (cons-atom $name $rest))
+              ($_ (if (== (get-metatype $key) Expression) $rest (cons-atom $key $rest)))))))))
+(= (bridge-name $kind $n $P $ctx)
+   (fresh-name (format-args "bridge_{}_{}" ($kind $n)) (union-names (all-term-names $P) (ctx-names $ctx))))
+
+; A native statement hypothesis is converted to the proof value of its
+; proposition. Unsupported logical forms remain an explicit missing proof.
+(= (native-proof $P $h $ctx $n)
+   (case $P
+     (((app Eq ($T $a $b)) (format-args "(Lean_Eq_proof_of {} {} {} {})"
+        ((render $T ()) (render $a ()) (render $b ()) $h)))
+      ((app False ()) (format-args "(FalseE {} (0 :e Lean_False_Prop))" ($h)))
+      ((app And ($A $B))
+       (format-args "(Lean_And_intro_proof_ok {} {} 0 {} 0 {})"
+         ((render $A ()) (render $B ())
+          (native-proof $A (format-args "(andEL ({}) ({}) {})" ((stmt-native $A) (stmt-native $B) $h)) $ctx (+ $n 1))
+          (native-proof $B (format-args "(andER ({}) ({}) {})" ((stmt-native $A) (stmt-native $B) $h)) $ctx (+ $n 1)))))
+      ((arrow $A $B)
+       (let* (($x (bridge-name "x" $n $P $ctx)) ($hx (bridge-name "h" $n $P $ctx))
+              ($pa (format-args "(Lean_prop_0_of {} {} {} {})" ((render $A ()) (typ $A () $ctx) $x $hx)))
+              ($native (proof-native $A $pa $ctx (+ $n 1))))
+         (format-args "(Pi_0_In {} (fun _ => {}) (fun {} {} => {}))"
+           ((render $A ()) (render $B ()) $x $hx
+            (native-proof $B (format-args "({} {})" ($h $native)) $ctx (+ $n 1))))))
+      ((pi $x $A $B)
+       (let* (($hx (bridge-name "h" $n $P $ctx))
+              ($ctx2 (cons-atom ($x $hx) (cons-atom ((ty $x) $A) $ctx))))
+         (format-args "(Pi_0_In {} (fun {} => {}) (fun {} {} => {}))"
+           ((render $A ()) $x (render $B ()) $x $hx
+            (native-proof $B (format-args "({} {} {})" ($h $x $hx)) $ctx2 (+ $n 1))))))
+      ((app Or $args) "UNDECIDED_native_disjunction")
+      ((app Exists $args) "UNDECIDED_native_existential")
+      ($_ $h))))
+(= (proof-native $P $h $ctx $n)
+   (case $P
+     (((app Eq ($T $a $b)) (format-args "(LeanEq_sound {} {} {} 0 {})"
+        ((render $T ()) (render $a ()) (render $b ()) $h)))
+      ((app False ()) (format-args "(Lean_False_Prop_empty 0 {})" ($h)))
+      ((app And ($A $B))
+       (format-args "(andI ({}) ({}) {} {})"
+         ((stmt-native $A) (stmt-native $B)
+          (proof-native $A (format-args "(LeanAnd_left {} {} {} {} 0 {})"
+            ((render $A ()) (typ $A () $ctx) (render $B ()) (typ $B () $ctx) $h)) $ctx (+ $n 1))
+          (proof-native $B (format-args "(LeanAnd_right {} {} {} {} 0 {})"
+            ((render $A ()) (typ $A () $ctx) (render $B ()) (typ $B () $ctx) $h)) $ctx (+ $n 1)))))
+      ((arrow $A $B)
+       (let* (($ha (bridge-name "native" $n $P $ctx))
+              ($pa (native-proof $A $ha $ctx (+ $n 1)))
+              ($pb (format-args "(Lean_prop_0_of {} {} (0 0) (ap_Pi {} (fun _ => {}) 0 0 {} {}))"
+                ((render $B ()) (typ $B () $ctx) (render $A ()) (render $B ()) $h $pa))))
+         (format-args "(fun {} => {})" ($ha (proof-native $B $pb $ctx (+ $n 1))))))
+      ((pi $x $A $B)
+       (let* (($hx (bridge-name "h" $n $P $ctx))
+              ($ctx2 (cons-atom ($x $hx) (cons-atom ((ty $x) $A) $ctx)))
+              ($pb (format-args "(Lean_prop_0_of {} {} (0 {}) (ap_Pi {} (fun {} => {}) 0 {} {} {}))"
+                ((render $B ()) (typ $B () $ctx2) $x (render $A ()) $x (render $B ()) $x $h $hx))))
+         (format-args "(fun {} {} => {})" ($x $hx (proof-native $B $pb $ctx2 (+ $n 1))))))
+      ((app Or $args) "UNDECIDED_native_disjunction")
+      ((app Exists $args) "UNDECIDED_native_existential")
+      ($_ $h))))
 
 (= (lean-eqn-theorem $f $e)
    (if (has-hyp (eqn-binders $e)) (cond-eqn-theorem $f $e)
    (let* (($m (shape-m (shape-of $f))) ($ctx (stmt-ctx (eqn-binders $e)))
           ($pf (split-chain $f (lhs-args $e) (eqn-rhs $e) $ctx)))
      (case $pf
-       (((stuck $why) (format-args "(** {} not proved here: {} **)
-" ((nm (eqn-name $e)) $why)))
+       (((stuck $why) (equation-by-cases $f $e $why))
         ((proof $lines) (format-args "{}Theorem {} : {}.
 {}
 {}{}Qed.
 " ((receipt-comment (eqn-name $e) $f) (egal (eqn-name $e)) (statement-text $e) (eqn-intros $e)
    (literal-zero-line $e $m) $lines))))))))
+
+; A source equation may leave the compiler's chosen split argument general.
+; Prove it over all constructors, using the existing split equations in each
+; case. This retains the original source statement and its receipt.
+(= (equation-by-cases $f $e $why)
+   (let* (($bs (eqn-binders $e)) ($tbs (type-binders $bs))
+          ($patterns (case-equation-patterns (eqns-of $f) (lhs-args $e)))
+          ($pf (if (== (hyp-names $bs) ())
+                 (cases-proof equation $f (term-todo $bs) (lhs-args $e) (eqn-rhs $e)
+                   $patterns () (stmt-ctx $tbs)) (stuck $why))))
+     (case $pf
+       (((stuck $reason) (format-args "(** {} not proved here: {} **)\n" ((nm (eqn-name $e)) $reason)))
+        ((proof $lines) (format-args "{}Theorem {} : {}.\n{}\n{}Qed.\n"
+          ((receipt-comment (eqn-name $e) $f) (egal (eqn-name $e)) (statement-text $e)
+           (stmt-intros $tbs ()) $lines)))))))
+(= (case-equation-patterns $eqs $args)
+   (if (== $eqs ()) ()
+       (cons-atom (hy (eqn-name (car-atom $eqs))
+                     (excl () (zip-pairs $args (lhs-args (car-atom $eqs)))))
+         (case-equation-patterns (cdr-atom $eqs) $args))))
 
 ; The proof that f at args equals rhs: the split equation of the constructor
 ; at the split column, then the chain of case analyses' iota steps and betas.
@@ -876,6 +1008,8 @@ exact {}.
            (proof (format-args "{}apply FalseE. apply {}{}.
 {}" ($intro $h (join-sp (hyp-inst-args $ys $b $ctx)) (join "" (map-atom $pairs $pr (pair-goal $pr)))))))
           ($_ (prepend-proof $intro (split-chain $f $args $rhs $ctx))))))))
+(= (cases-leaf equation $f $args $rhs $patterns $hnames $ctx)
+   (split-chain $f $args $rhs $ctx))
 (= (first-match $hyps)
    (if (== $hyps ()) None
        (case (car-atom $hyps)
@@ -1032,7 +1166,27 @@ exact {}.
 (= (prop-fam $c)
    (let $found (collapse (match &self (LeanFamily (Family $c $ps $is Prop $cs) $u $e $k) True))
      (if (== $found ()) False True)))
-(= (is-function $f) (let $found (collapse (match &self (LeanFunction $f $thms) $f)) (if (== $found ()) False True)))
+(= (intrinsic $f)
+   (if (not (or (== $f Quot) (or (== $f Quot.mk) (== $f Quot.lift)))) None
+   (let $found (collapse (match &self (LeanIntrinsic $f $kind $binders $result) (primitive $kind $binders $result)))
+     (if (== (length-of $found) 1)
+         (let $entry (car-atom $found)
+           (case $entry
+             (((primitive $kind $bs $R)
+               (if (or (and (== $f Quot) (== $kind type))
+                       (or (and (== $f Quot.mk) (== $kind constructor))
+                           (and (== $f Quot.lift) (== $kind lift)))) $entry None))))) None))))
+(= (is-intrinsic $f) (not (== (intrinsic $f) None)))
+(= (intrinsic-value $f)
+   (case (intrinsic $f) (((primitive type $bs $R) True) ((primitive constructor $bs $R) True) ($_ False))))
+(= (intrinsic-binders $f) (case (intrinsic $f) (((primitive $kind $bs $R) $bs))))
+(= (intrinsic-params $f) (map-atom (intrinsic-binders $f) $b (var (binder-name $b))))
+(= (intrinsic-call-args $f)
+   (map-atom (intrinsic-binders $f) $b
+     (case $b (((hyp $x $P) (proof)) ($_ (var (binder-name $b)))))))
+(= (is-function $f)
+   (if (is-intrinsic $f) True
+       (let $found (collapse (match &self (LeanFunction $f $thms) $f)) (if (== $found ()) False True))))
 (= (eqn-of $thm)
    (case (car-atom (collapse (match &self (LeanEquation $thm $bs $ty $l $r) (eqn $thm $bs $ty $l $r))))
      (((eqn $n $bs $ty $l $r) (let $r2 (norm-term $r) (eqn $n $bs $ty $l $r2))))))
@@ -1129,7 +1283,8 @@ exact {}.
 (= (calls-self $t $f) (if (== (fns-in-all $t) ()) False (member-term $f (fns-in-all $t))))
 (= (fns-in-all $t)
    (case $t
-     (((app $c $args) (union-names (cons-atom $c ()) (fns-in-all-list $args)))
+     (((app $c $args) (if (is-library-head $c) (fns-in-all-list $args)
+                         (union-names (cons-atom $c ()) (fns-in-all-list $args))))
       ((apv $g $args) (fns-in-all-list (cons-atom $g $args)))
       ((lam $x $T $b) (fns-in-all-list ($T $b)))
       ((arrow $A $B) (fns-in-all-list ($A $B)))
@@ -1169,15 +1324,6 @@ exact {}.
            (eqn-for-ctor (cdr-atom $eqs) $m $c))))
 
 ; The shape of a function: (structural m fam eqs-in-ctor-order) | (direct eq) | (refused reason).
-(= (decision-prop $e) (case (eqn-type $e) (((app Decidable ($P)) $P) ($_ None))))
-; Conditions in nested ifs: and evaluates both of its arguments.
-(= (is-decision $f)
-   (if (is-function $f)
-       (let $e (car-atom (lean-eqns-of $f))
-         (if (== (decision-prop $e) None) False
-             (if (has-hyp-eqns (lean-eqns-of $f)) False
-                 (if (all-vars (lhs-args $e)) (not (decision-by-definition $f)) False))))
-       False))
 ; A decision procedure is read from its definition when its equations are
 ; closed (Bool.decEq: one per pair of constructors, with proofs of closed
 ; propositions), or when it is another name for one that is.
@@ -1197,6 +1343,7 @@ exact {}.
 ; lemma: proved by hand, by cases on closed equations, or as another name for
 ; one that has.
 (= (dep-has-typing $f)
+   (if (is-intrinsic $f) True
    (if (has-typing-proof $f) True
    (if (dep-structural $f) True
    (let $eqs (lean-eqns-of $f)
@@ -1205,7 +1352,7 @@ exact {}.
              (case (eqn-rhs (car-atom $eqs))
                (((app $g $as) (if (is-function $g) (if (dep-typed $g) (dep-has-typing $g) True) False))
                 ($_ False)))
-             False))))))
+             False)))))))
 ; A structural function whose result type depends on its arguments is typed
 ; by its recursor at the dependent motive (E_f_recIn).
 (= (dep-structural $f)
@@ -1221,15 +1368,43 @@ exact {}.
    (if (== $eqs ()) True (if (== (eqn-binders (car-atom $eqs)) ()) (all-closed (cdr-atom $eqs)) False)))
 
 (= (shape-of $f)
+   (if (is-intrinsic $f) (intrinsic $f)
    (if (is-subsingleton-rec $f) (subsingleton (rec-family $f))
    (if (is-projection $f) (projection-shape $f)
-   (if (is-decision $f) (decision (car-atom (eqns-of $f)))
    (if (not (is-function $f))
        (let $why (collapse (match &self (LeanFunctionRefused $f $r) $r))
          (refused (if (== $why ()) "not exported with equations" (car-atom $why))))
    (if (has-hyp-eqns (lean-eqns-of $f))
-       (if (is-split $f) (shape-of-eqns $f) (refused "equations stated under hypotheses that are not read as one split"))
+       (let $direct (proof-input-direct $f)
+         (if (not (== $direct None)) (direct $direct)
+           (if (is-split $f) (shape-of-eqns $f) (refused "equations stated under hypotheses that are not read as one split"))))
        (shape-of-eqns $f)))))))
+; A direct wrapper may have erased proof inputs. Its hypotheses must be
+; exactly supplied by those input positions, and its full typing needs a
+; checked proof file. Conditional equations without such inputs stay guarded.
+(= (proof-input-direct $f)
+   (if (not (has-typing-proof $f)) None
+       (let $eqs (lean-eqns-of $f)
+         (if (not (== (length-of $eqs) 1)) None
+             (let* (($e (car-atom $eqs)) ($args (lhs-args $e))
+                    ($types (inst-binder-types (type-binders-of (fn-type $f) 0) $args ())))
+               (if (and (plain-proof-args $args)
+                        (and (not (calls-self (eqn-rhs $e) $f))
+                             (hypotheses-from-inputs (eqn-binders $e) $args $types))) $e None))))))
+(= (plain-proof-args $args)
+   (if (== $args ()) True
+       (if (or (is-fvar (car-atom $args)) (== (car-atom $args) (proof)))
+           (plain-proof-args (cdr-atom $args)) False)))
+(= (proof-input-for $P $args $types)
+   (if (or (== $args ()) (== $types ())) False
+       (if (and (== (car-atom $args) (proof)) (alpha-eq $P (car-atom $types) ())) True
+           (proof-input-for $P (cdr-atom $args) (cdr-atom $types)))))
+(= (hypotheses-from-inputs $binders $args $types)
+   (if (== $binders ()) True
+       (case (car-atom $binders)
+         (((hyp $name $P) (if (proof-input-for $P $args $types)
+             (hypotheses-from-inputs (cdr-atom $binders) $args $types) False))
+          ($_ (hypotheses-from-inputs (cdr-atom $binders) $args $types))))))
 ; ---- the large eliminator of a subsingleton proposition ----
 ; Lean lets a proposition with one constructor whose fields are proofs
 ; (Eq, And) eliminate into any sort (Elimination anySort).  With proofs
@@ -1276,8 +1451,8 @@ Qed.
          (if (> (length-of $ps) 1) (refused "patterns at several arguments")
              (structural-shape $f $eqs (car-atom $ps))))))
 
-; A projection of an admitted structure: one constructor, no recursive
-; field, no guard.
+; A data projection of an admitted structure: one constructor and no
+; recursive fields. Proof fields retain their dependent guard types.
 (= (projection-shape $f)
    (case (proj-info $f)
      (((proj $S $ctor $i $np)
@@ -1285,10 +1460,14 @@ Qed.
            (let $cs (constructors-of $S)
              (if (not (== (length-of $cs) 1)) (refused "a projection of a family with several constructors")
                  (let $fs (ctor-fields (car-atom $cs))
-                   (if (not (all-plain-data $fs)) (refused "a projection of a structure with recursive fields or guards")
-                       (projection $S $ctor $i $np))))))))))
-(= (all-plain-data $fs)
-   (if (== $fs ()) True (case (car-atom $fs) (((data $t) (all-plain-data (cdr-atom $fs))) ($_ False)))))
+                   (if (not (all-record-fields $fs)) (refused "a projection of a structure with recursive fields")
+                       (if (is-guard (nth $fs $i)) (refused "a proof-field projection needs its guard elimination theorem")
+                           (projection $S $ctor $i $np)))))))))))
+(= (all-record-fields $fs)
+   (if (== $fs ()) True
+       (case (car-atom $fs)
+         (((data $t) (all-record-fields (cdr-atom $fs)))
+          ((guard $p) (all-record-fields (cdr-atom $fs))) ($_ False)))))
 
 (= (structural-shape $f $eqs $m)
    (let* (($pat (pattern-of (nth (lhs-args (car-atom $eqs)) $m))) ($c0 (app-head $pat)))
@@ -1426,11 +1605,11 @@ Qed.
 
 ; The functions a function's equations apply.
 (= (fn-deps $f)
+   (union-names (proof-library-deps $f)
    (if (is-projection $f) ()
        (case (shape-of $f)
-         (((decision $e) (fns-in (decision-prop $e) $f))
-          ((subsingleton $F) ())
-          ($_ (let $eqs (eqns-of $f) (deps-of-eqns $eqs $f)))))))
+         (((subsingleton $F) ())
+          ($_ (let $eqs (eqns-of $f) (deps-of-eqns $eqs $f))))))))
 ; Everything an equation's statement applies: its right side, its type and
 ; the types of its binders.
 (= (deps-of-eqns $eqs $f)
@@ -1441,7 +1620,7 @@ Qed.
              (union-names (binder-deps (eqn-binders $e) $f) (deps-of-eqns (cdr-atom $eqs) $f)))))))
 (= (binder-deps $bs $f)
    (if (== $bs ()) ()
-       (union-names (case (car-atom $bs) (((term $x $t) (fns-in $t $f)) ($_ ())))
+       (union-names (case (car-atom $bs) (((term $x $t) (fns-in $t $f)) ((hyp $x $P) (fns-in $P $f)) ($_ ())))
                     (binder-deps (cdr-atom $bs) $f))))
 (= (fns-in $t $f)
    (case $t
@@ -1455,7 +1634,7 @@ Qed.
       ((pi $y $A $B) (fns-in-list ($A $B) $f))
       ((app $c $as)
        (let $inner (fns-in-list $as $f)
-         (if (or (== $c $f) (or (is-ctor $c) (or (is-family $c) (is-cases-on $c)))) $inner (union-names (cons-atom $c ()) $inner))))
+         (if (or (is-library-head $c) (or (== $c $f) (or (is-ctor $c) (or (is-family $c) (is-cases-on $c))))) $inner (union-names (cons-atom $c ()) $inner))))
       ($_ ()))))
 (= (fns-in-list $ts $f) (if (== $ts ()) () (union-names (fns-in (car-atom $ts) $f) (fns-in-list (cdr-atom $ts) $f))))
 (= (union-names $xs $ys)
@@ -1733,9 +1912,10 @@ Qed.
 (= (map-names $ps) (if (== $ps ()) () (cons-atom (pos-name (car-atom $ps)) (map-names (cdr-atom $ps)))))
 
 (= (arity-of $f)
+   (if (is-intrinsic $f) (length-of (intrinsic-binders $f))
    (case (proj-info $f)
      (((proj $S $ctor $i $np) (+ $np 1))
-      ($_ (length-of (lhs-args (car-atom (eqns-of $f))))))))
+      ($_ (length-of (lhs-args (car-atom (eqns-of $f)))))))))
 (= (fun-type $n) (if (== $n 0) "set" (format-args "set -> {}" ((fun-type (- $n 1))))))
 
 (= (definition-text $f $s)
@@ -1768,7 +1948,11 @@ Qed.
 (= (is-family-type $T)
    (case $T (((arrow $A $B) (family-end $B)) ((pi $x $A $B) (family-end $B)) ($_ False))))
 (= (family-end $T)
-   (case $T (((arrow $A $B) (family-end $B)) ((pi $x $A $B) (family-end $B)) ($_ (is-sort-term $T)))))
+   (case $T
+     (((arrow $A $B) (family-end $B)) ((pi $x $A $B) (family-end $B))
+      ; A predicate computes truth values and remains an ordinary function
+      ; value. A family into Sort has a separate type-level meaning.
+      ((prop) False) ($_ (is-sort-term $T)))))
 (= (family-arity $T) (case $T (((arrow $A $B) (+ 1 (family-arity $B))) ((pi $x $A $B) (+ 1 (family-arity $B))) ($_ 0))))
 (= (meaning-name $x) (format-args "{}_F" ($x)))
 ; The meaning of a family given as a function: the meta-level function.
@@ -1785,9 +1969,11 @@ Qed.
                   (kinds-of (cdr-atom $args) $bs))))
 
 (= (pos-kinds $f)
+   (if (is-intrinsic $f)
+       (kinds-of (intrinsic-params $f) (intrinsic-binders $f))
    (case (proj-info $f)
      (((proj $S $ctor $i $np) (append-lists (repeat-kind type $np) (term)))
-      ($_ (let $e (car-atom (eqns-of $f)) (kinds-of (lhs-args $e) (eqn-binders $e)))))))
+      ($_ (let $e (car-atom (eqns-of $f)) (kinds-of (lhs-args $e) (eqn-binders $e))))))))
 (= (repeat-kind $k $n) (if (== $n 0) () (cons-atom $k (repeat-kind $k (- $n 1)))))
 
 ; A proof that the reading of t lies in the reading of its type; $ctx gives
@@ -1814,10 +2000,12 @@ Qed.
          (format-args "(lam_Pi {} (fun {} => {}) (fun {} => {}) (fun {} {} => {}))"
            ((render $T $sub) $x (render (type-of $b $ctx2) $sub2) $x (render $b $sub2) $x $hx (typ $b $sub2 $ctx2)))))
       ((app $c $args)
+       (if (== $c (EgalLibrary proof-field))
+           (format-args "(Lean_ProofField_prop {})" ((render (car-atom $args) $sub)))
        (if (is-ctor $c) (typ-ctor $c $args $sub $ctx)
            (if (prop-fam $c) (format-args "({}_Prop_prop {})" ((egal $c) (join " " (render-all $args $sub))))
                (if (is-cases-on $c) (typ-cases $c $args $sub $ctx)
-                   (typ-fn $c $args $sub $ctx))))))))
+                   (typ-fn $c $args $sub $ctx)))))))))
 
 ; Case analysis with a motive that does not depend on its value: the
 ; recursor's typing at that result, each minor typed at its Pi type.
@@ -1844,7 +2032,7 @@ Qed.
 
 ; A proof that t lies in T: a proof term proves its proposition.
 (= (typ-at $t $T $sub $ctx)
-   (case $t (((proof) (prove-prop-in $T $ctx))
+   (case $t (((proof) (proof-at $T $sub $ctx))
              ($_ (if (conv-worthy $T) (typ-at-conv $t $T $sub $ctx) (typ $t $sub $ctx))))))
 
 ; A proof of P where hypotheses are in scope (the branches of a dite): P is a
@@ -1852,12 +2040,35 @@ Qed.
 ; of constructors, by no confusion or by injectivity at a field a hypothesis
 ; refutes; otherwise P's proof by itself.
 (= (prove-prop-in $P $ctx)
+   (let $known (known-proof $P $ctx)
+     (if (not (== $known None)) $known
    (let $h (hyp-for $P $ctx $ctx)
      (if (== $h None)
          (case $P
-           (((arrow $A (app False ())) (refute-in $A $ctx))
+           (((app Iff
+                ((app Eq ((app Nat ()) (app Nat.mod ($n $d)) (num 0)))
+                 (app Exists ((app Nat ())
+                   (lam $x (app Nat ()) (app Eq ((app Nat ()) $n (app Nat.mul ($d (var $x))))))))))
+             (format-args "(Lean_mod_divisibility_iff {} {} {} {})"
+               ((render $d ()) (typ $d () $ctx) (render $n ()) (typ $n () $ctx))))
+            ((app And ($A $B))
+             (format-args "(Lean_And_intro_proof_ok {} {} 0 {} 0 {})"
+               ((render $A ()) (render $B ()) (prove-prop-in $A $ctx) (prove-prop-in $B $ctx))))
+            ((arrow $A (app False ())) (refute-in $A $ctx))
+            ((pi $x $A $B) (prove-pi-value $x $A $B $ctx))
+            ((arrow $A $B)
+             (prove-pi-value (bridge-name "intro" 0 $P $ctx) $A $B $ctx))
+            ((app (EgalLibrary proof-field) ($condition))
+             (format-args "(Lean_ProofField_intro {} {})"
+               ((render $condition ()) (prove-prop-in $condition $ctx))))
             ($_ (prove-prop $P))))
-         (let ($x $hx) $h (format-args "(Lean_prop_0_of {} {} {} {})" ((render $P ()) (typ $P () $ctx) $x $hx))))))
+         (let ($x $hx) $h (format-args "(Lean_prop_0_of {} {} {} {})" ((render $P ()) (typ $P () $ctx) $x $hx))))))))
+(= (prove-pi-value $x $A $B $ctx)
+   (let* (($hx (bridge-name "hyp" 0 (pi $x $A $B) $ctx))
+          ($next (cons-atom ((ReservedName $hx) True)
+            (cons-atom ($x $hx) (cons-atom ((ty $x) $A) $ctx)))))
+     (format-args "(Pi_0_In {} (fun {} => {}) (fun {} {} => {}))"
+       ((render $A ()) $x (render $B ()) $x $hx (prove-prop-in $B $next)))))
 (= (hyp-for $P $ctxs $ctx)
    (if (== $ctxs ()) None
        (case (car-atom $ctxs)
@@ -1865,13 +2076,29 @@ Qed.
           ($_ (hyp-for $P (cdr-atom $ctxs) $ctx))))))
 (= (refute-in $A $ctx)
    (case $A
-     (((app Eq ($T (app $c $xs) (app $d $ys)))
+     (((app And ($P $Q)) (refute-and $P $Q $ctx))
+      ((arrow $P (app False ()))
+       (case (hyp-for $P $ctx $ctx)
+         ((None (prove-prop (arrow $A (app False ()))))
+          (($x $hx) (format-args "(LeanNot_double {} {} {})"
+            ((render $P ()) (typ $P () $ctx) (prove-prop-in $P $ctx)))))))
+      ((app Eq ($T (app $c $xs) (app $d $ys)))
        (if (not (both-ctors-any $c $d)) (prove-prop (arrow $A (app False ())))
            (let $np (param-count (family-of-ctor $c))
              (if (== $c $d)
                  (inj-refute $T $c $np $xs $ys $A $ctx)
                  (format-args "(Lean_refute_0 {} {} {})" ((render $A ()) (typ $A () $ctx) (noconf-refute-args $T $c $d $np $xs $ys)))))))
       ($_ (prove-prop (arrow $A (app False ())))))))
+(= (refute-and $P $Q $ctx)
+   (let $left (hyp-for (arrow $P (app False ())) $ctx $ctx)
+     (if (== $left None)
+         (case (hyp-for (arrow $Q (app False ())) $ctx $ctx)
+           ((None (prove-prop (arrow (app And ($P $Q)) (app False ()))))
+            (($x $hx) (format-args "(LeanAnd_refute_right {} {} {} {} {} {})"
+              ((render $P ()) (typ $P () $ctx) (render $Q ()) (typ $Q () $ctx) $x $hx)))))
+         (case $left
+           ((($x $hx) (format-args "(LeanAnd_refute_left {} {} {} {} {} {})"
+             ((render $P ()) (typ $P () $ctx) (render $Q ()) (typ $Q () $ctx) $x $hx))))))))
 (= (both-ctors-any $c $d)
    (if (is-ctor $c) (if (is-ctor $d) (== (family-of-ctor $c) (family-of-ctor $d)) False) False))
 ; Distinct constructors with fields: the family's no-confusion at its
@@ -1931,7 +2158,7 @@ Qed.
        (let $B (type-of $b (cons-atom ((ty $x) $T) $ctx))
          (if (mentions $B $x) (pi $x $T $B) (arrow $T $B))))
       ((app $c $args)
-       (if (prop-fam $c) (prop)
+       (if (or (== $c (EgalLibrary proof-field)) (prop-fam $c)) (prop)
        (if (is-cases-on $c) (case (cases-parts $c $args) (((parts $F $ps $motive $major $minors) (motive-at (motive-of $motive) $major))))
        (if (is-ctor $c)
            (let $fam (family-of-ctor $c) (app $fam (take-n $args (param-count $fam))))
@@ -1949,10 +2176,13 @@ Qed.
 ; A function's result type at its arguments: its first equation's type with
 ; the variables of the left side's other arguments replaced.
 (= (fn-result-type $g $args)
+   (if (is-intrinsic $g)
+       (case (intrinsic $g)
+         (((primitive $kind $bs $R) (beta-norm (fsubst $R (var-binds (intrinsic-params $g) $args))))))
    (case (proj-info $g)
      (((proj $S $ctor $i $np)
        (field-fterm (nth (struct-fields $S) $i) (app $S (take-n $args $np)) (params-of $S) (take-n $args $np)))
-      ($_ (fn-result-type-eqn $g $args)))))
+      ($_ (fn-result-type-eqn $g $args))))))
 (= (struct-fields $S) (ctor-fields (car-atom (constructors-of $S))))
 (= (fn-result-type-eqn $g $args)
    (let* (($e (car-atom (eqns-of $g))) ($bind (var-binds (lhs-args $e) $args)))
@@ -1977,9 +2207,24 @@ Qed.
    (if (== $fs ()) ()
        (cons-atom (field-fterm (car-atom $fs) $T $params $targs) (ctor-field-types-list (cdr-atom $fs) $T $params $targs))))
 (= (typ-fields-at $args $Ts $sub $ctx)
+   (typ-instantiated-fields $args (instantiate-field-types $Ts $args) $sub $ctx))
+(= (typ-instantiated-fields $args $Ts $sub $ctx)
    (if (== $args ()) ()
        (cons-atom (render (car-atom $args) $sub)
-         (cons-atom (typ-at (car-atom $args) (car-atom $Ts) $sub $ctx) (typ-fields-at (cdr-atom $args) (cdr-atom $Ts) $sub $ctx)))))
+         (cons-atom (typ-at (car-atom $args) (car-atom $Ts) $sub $ctx) (typ-instantiated-fields (cdr-atom $args) (cdr-atom $Ts) $sub $ctx)))))
+
+(= (field-bindings $args $i)
+   (if (== $args ()) ()
+       (cons-atom ((GuardField $i) (car-atom $args)) (field-bindings (cdr-atom $args) (+ $i 1)))))
+(= (used-bindings $bindings $names)
+   (if (== $bindings ()) ()
+       (let ($name $value) (car-atom $bindings)
+         (if (member-term $name $names)
+             (cons-atom ($name $value) (used-bindings (cdr-atom $bindings) $names))
+             (used-bindings (cdr-atom $bindings) $names)))))
+(= (instantiate-field-types $types $args)
+   (let $bindings (field-bindings $args 0)
+     (map-atom $types $type (csubst $type (used-bindings $bindings (fvs $type))))))
 
 (= (typ-fields $args $sub $ctx)
    (if (== $args ()) ()
@@ -2032,10 +2277,11 @@ Qed.
          (if (== (car-atom $ks) type) (cons-atom (render $a $sub) $rest)
          (if (== (car-atom $ks) family) (cons-atom (render $a $sub) (cons-atom (meta-render $a $sub) $rest))
              (cons-atom (render $a $sub)
-               (cons-atom (if (== $T None) (typ $a $sub $ctx)
+               (cons-atom (if (== $a (proof)) (proof-at (if (== $TR None) $T $TR) $sub $ctx)
+                            (if (== $T None) (typ $a $sub $ctx)
                               (if (== $TR None) (typ-at $a $T $sub $ctx)
                                   (if (and (not (== $TR $T)) (conv-worthy $TR)) (typ-at-conv $a $TR $sub $ctx) (typ-at $a $T $sub $ctx))))
-                 $rest)))))))
+                 $rest))))))))
 
 ; Each argument at its declared type, the earlier arguments put in place: a
 ; proof argument is proved at it.
@@ -2442,9 +2688,11 @@ Qed.
    (let $found (collapse (match &self (LeanReceipt $thm $d) $d))
      (if (== $found ()) ""
          (let $pw (collapse (match &self (LeanPointwise $thm $k) $k))
-           (format-args "(** Receipt: {} is the source of the MeTTa rule for {}, statement digest {}.{} **)
+           (format-args "(** Receipt: {} is the source of the MeTTa rule for {}, statement digest {}.{}{} **)
 " ($thm $f (car-atom $found)
-   (if (== $pw ()) "" (format-args " Read pointwise: Lean states it between functions, here at {} more argument(s)." ((car-atom $pw))))))))))
+   (if (== $pw ()) "" (format-args " Read pointwise: Lean states it between functions, here at {} more argument(s)." ((car-atom $pw))))
+   (if (== (collapse (match &self (LeanUniverseProfile $f $kind $levels) $kind)) ()) ""
+       " At the declared Type universe profile.")))))))
 
 (= (pick-names $names $ps)
    (if (== $ps ()) () (cons-atom (nth $names (car-atom $ps)) (pick-names $names (cdr-atom $ps)))))
@@ -2483,7 +2731,8 @@ Qed.
 ; field's type, and on a constructor it is that field.
 (= (projection-text $f $S $ctor $i $np)
    (let* (($ps (vars-of $np "a")) ($targs (map-vars $ps)) ($fs (struct-fields $S))
-          ($Fs (field-fterms $fs (params-of $S) $targs)) ($m (length-of $fs))
+          ($m (length-of $fs))
+          ($Fs (instantiate-field-types (field-fterms $fs (params-of $S) $targs) (map-vars (vars-of $m "y"))))
           ($sub (pos-subst $ps 0))
           ($layers (proj-layers $Fs 0))
           ($M (lam-text $layers (var (field-name $i)) ()))
@@ -2534,36 +2783,10 @@ Qed.
          (format-args "rewrite beta {} (fun {} => {}) {} H{}.
 {}" ((render (ly-type $l) ()) $z (lam-text (cdr-atom $layers) $body ()) $z $z (beta-lines-plain (cdr-atom $layers) $body))))))
 
-; A decision procedure, read by its type: the canonical element of the
-; proposition it decides.
-(= (decision-text $f $e)
-   (let* (($n (arity-of $f)) ($ps (vars-of $n "a")) ($sub (pos-subst $ps 0))
-          ($ren (param-renames (lhs-args $e) -1 0))
-          ($P (fsubst (decision-prop $e) $ren)) ($ks (pos-kinds $f))
-          ($ctx (append-lists (pos-hyps $ks -1 0) (pos-tys $f $ks -1 0))))
-     (format-args "(** Decision: {}, read by its type. **)
-Definition {} : {} := fun {} => Lean_DecCanon {}.
-Theorem {}_canon : {}{} {} = Lean_DecCanon {}.
-{}reflexivity.
-Qed.
-Theorem {}_In : {}{} {} :e Lean_Decidable {}.
-{}exact Lean_DecCanon_In {} {}.
-Qed.
-"
-       ((nm $f) (egal $f) (fun-type $n) (join " " $ps) (render $P $sub)
-        (egal $f) (forall-plain $ps) (egal $f) (join " " $ps) (render $P $sub) (let-plain $ps)
-        (egal $f) (in-binders $f $ks -1 0 "" $sub) (egal $f) (join " " $ps) (render $P $sub)
-        (in-intros $f $ks -1 0 "" $sub) (render $P $sub) (typ $P $sub $ctx)))))
-
-(= (decision-step $g $e $args)
-   (step (canon (fsubst (decision-prop $e) (var-binds (lhs-args $e) $args)))
-     ((format-args "rewrite {}_canon{}." ((egal $g) (join-sp (render-all $args ())))))))
-
 (= (function-text $f)
    (let $s (shape-of $f)
      (case $s
        (((projection $S $ctor $i $np) (projection-text $f $S $ctor $i $np))
-        ((decision $e) (decision-text $f $e))
         ((subsingleton $F) (subsingleton-text $f $F))
        ((structural $m $fam $eqs)
          (if (is-split $f)
@@ -2596,8 +2819,9 @@ Qed.
              (format-args "(** {}, from its equation theorem **)
 {}{}{}" ((nm $f) (definition-text $f $s) (direct-in-theorem $f $e) (direct-theorem $f $e))))))))))
 ; The generated statement of f's typing, with its proof written in Egal.
-; Membership needs no universe levels: a type argument is any set, and a
-; family argument comes with its meaning, in which the statement is read.
+; Membership needs no universe levels: a type argument is any set, while a
+; proposition argument ranges over LeanProp. A family argument comes with
+; its meaning, in which the statement is read.
 (= (typing-proof-theorem $f)
    (let* (($T (fn-type $f)) ($bs (type-binders-of $T 0)) ($R (type-result-of $T))
           ($xs (map-atom $bs $b (car-atom $b))) ($mb (meaning-binds $bs)))
@@ -2614,10 +2838,11 @@ Qed.
 (= (typing-binders $bs $mb)
    (if (== $bs ()) ""
        (let* ((($x $A) (car-atom $bs)) ($rest (typing-binders (cdr-atom $bs) $mb)))
+         (if (== $A (prop)) (format-args "forall {} :e LeanProp, {}" ($x $rest))
          (if (is-sort-term $A) (format-args "forall {}, {}" ($x $rest))
          (if (is-family-type $A)
              (format-args "forall {}, forall {}:{}, {}" ($x (meaning-name $x) (fun-type (family-arity $A)) $rest))
-             (format-args "forall {} :e {}, {}" ($x (render (fsubst $A $mb) ()) $rest)))))))
+             (format-args "forall {} :e {}, {}" ($x (render (fsubst $A $mb) ()) $rest))))))))
 
 ; A direct definition lies in its result type: its right side does.  A
 ; type (RuleFamily := Tm -> Tm x Tm) lies in its universe.
@@ -2695,18 +2920,40 @@ Qed.
                    (collapse (match &self (LeanFunction $f $thms) $f)))))
 
 ; Why a function is not read, or ok.
+(= (prepared-readability $f)
+   (let $cached (collapse (match &self (EgalPreparedReadability $f $why) $why))
+     (if (== $cached ()) (why-not $f ()) (car-atom $cached))))
+; Batch drivers call this after loading their complete, immutable inventory.
+; Refreshing it discards the previous batch's answers; recursive checks still
+; use their own stack rather than borrowing a partially computed answer.
+(= (prepare-readability)
+   (let $_clear
+     (map-atom (collapse (match &self (EgalPreparedReadability $f $why) (prepared $f $why))) $entry
+       (let (prepared $f $why) $entry (remove-atom &self (EgalPreparedReadability $f $why))))
+     (map-atom (all-functions) $f
+       (let $why (why-not $f ()) (add-atom &self (EgalPreparedReadability $f $why))))))
+
 (= (why-not $f $stack)
+   (if (is-intrinsic $f) ok
    (if (member-term $f $stack) "recursion through other functions"
+   (if (unreconstructed-proofs $f) "erased proofs in the definition or its equations are not reconstructed"
    (if (split-with-proofs $f) "proofs inside a definition read through its patterns (not transported yet)"
    (if (proof-arg-untyped $f) "a proof argument, whose typing is not proved here (not transported yet)"
        (case (shape-of $f)
          (((refused $why) $why)
           ((subsingleton $F) ok)
-          ($s (why-not-deps (fn-deps $f) (cons-atom $f $stack)))))))))
+          ($s (why-not-deps (fn-deps $f) (cons-atom $f $stack)))))))))))
+(= (unreconstructed-proofs $f)
+   (if (is-function $f)
+       (if (has-typing-proof $f) False
+           (if (eqns-mention-proof (lean-eqns-of $f))
+               (not (automatic-proof-candidate $f)) False)) False))
 ; A function with a proof argument (h : a = b) is read only with a typing
 ; proof written in Egal: its typing needs the argument's proposition.
 (= (proof-arg-untyped $f)
-   (if (is-function $f) (if (has-proof-arg-hyp (lean-eqns-of $f)) (not (has-typing-proof $f)) False) False))
+   (if (is-function $f)
+       (if (has-proof-arg-hyp (lean-eqns-of $f))
+           (if (has-typing-proof $f) False (not (automatic-proof-candidate $f))) False) False))
 (= (has-proof-arg-hyp $eqs)
    (if (== $eqs ()) False (if (proof-hyp-in (eqn-binders (car-atom $eqs))) True (has-proof-arg-hyp (cdr-atom $eqs)))))
 (= (proof-hyp-in $bs)
@@ -2716,8 +2963,35 @@ Qed.
           ($_ (proof-hyp-in (cdr-atom $bs)))))))
 (= (split-with-proofs $f)
    (if (is-function $f)
-       (if (is-split $f) (if (decision-by-definition $f) False (eqns-mention-proof (lean-eqns-of $f))) False)
+       (if (is-split $f)
+           (if (decision-by-definition $f) False
+               (if (eqns-mention-proof (lean-eqns-of $f)) (not (automatic-proof-candidate $f)) False)) False)
        False))
+; Candidate generation does not establish a theorem. Both target checkers
+; must accept the emitted proofs before any computation is qualified. This
+; gate keeps missing typing proofs and source equations as named refusals.
+(= (text-has $text $part)
+   (case (str:find $text $part) (((TextNotFound $_) False) ($_ True))))
+(= (automatic-proof-candidate $f)
+   (case (shape-of $f)
+     (((structural $m $F $eqs) (generated-proof-candidate $f))
+      ((direct $e) (generated-proof-candidate $f))
+      ($_ False))))
+(= (generated-proof-candidate $f)
+   (let $candidates (collapse (function-text $f))
+     (if (== (length-of $candidates) 1)
+         (proof-candidate-text $f (car-atom $candidates)) False)))
+(= (proof-candidate-text $f $text)
+   (if (== (get-metatype $text) Grounded)
+       (if (text-has $text "UNDECIDED") False
+       (if (text-has $text "not proved here") False
+       (if (text-has $text "PROOF-FILE") False
+       (if (text-has $text (format-args "Theorem {}_In :" ((egal $f))))
+           (candidate-equations-present (lean-eqns-of $f) $text) False)))) False))
+(= (candidate-equations-present $eqs $text)
+   (if (== $eqs ()) True
+       (if (text-has $text (format-args "Theorem {} :" ((egal (eqn-name (car-atom $eqs))))))
+           (candidate-equations-present (cdr-atom $eqs) $text) False)))
 (= (eqns-mention-proof $eqs)
    (if (== $eqs ()) False (if (has-proof-term (eqn-rhs (car-atom $eqs))) True (eqns-mention-proof (cdr-atom $eqs)))))
 (= (has-proof-term $t)
@@ -2740,7 +3014,9 @@ Qed.
        (let $rest (read-functions (cdr-atom $fs))
          (if (== (why-not (car-atom $fs) ()) ok) (cons-atom (car-atom $fs) $rest) $rest))))
 
-(= (all-in $xs $ys) (if (== $xs ()) True (if (member-term (car-atom $xs) $ys) (all-in (cdr-atom $xs) $ys) False)))
+(= (all-in $xs $ys)
+   (if (== $xs ()) True
+       (if (or (is-intrinsic (car-atom $xs)) (member-term (car-atom $xs) $ys)) (all-in (cdr-atom $xs) $ys) False)))
 (= (remove-term $x $xs)
    (if (== $xs ()) () (if (== (car-atom $xs) $x) (cdr-atom $xs) (cons-atom (car-atom $xs) (remove-term $x (cdr-atom $xs))))))
 (= (first-ready $ps $done)
@@ -2757,9 +3033,118 @@ Qed.
        (let* (($f (car-atom $fs)) ($why (why-not $f ())) ($rest (refusal-lines (cdr-atom $fs))))
          (if (== $why ok) $rest (cons-atom (format-args "{}: {}" ((nm $f) $why)) $rest)))))
 
+(= (proof-library-uses $f) (collapse (match &self (EgalTypingUses $f $key) $key)))
+(= (proof-library-spec $key)
+   (let $found (collapse (match &self (EgalProofLibrary $key $deps $files) (ProofLibrary $deps $files)))
+     (if (== (length-of $found) 1) (car-atom $found)
+         (let $_err (system:write stderr (format-args "proof library {} has no unique declaration\n" ($key)))
+           (system:exit 1)))))
+(= (proof-library-deps $f) (proof-libraries-deps (proof-library-uses $f)))
+(= (proof-libraries-deps $keys)
+   (if (== $keys ()) ()
+       (let (ProofLibrary $deps $files) (proof-library-spec (car-atom $keys))
+         (union-names $deps (proof-libraries-deps (cdr-atom $keys))))))
+(= (proof-library-files $files)
+   (if (== $files ()) ""
+       (let* (($roots (collapse (match &self (EgalProofLibraryRoot $root) $root)))
+              ($path (car-atom $files)))
+         (if (== (length-of $roots) 1)
+             (format-args "(** Embedded proof support: {} **)\n{}\n{}"
+               ($path (fs:read-text (format-args "{}/{}" ((car-atom $roots) $path)))
+                (proof-library-files (cdr-atom $files))))
+             (let $_err (system:write stderr "proof library root is missing or ambiguous\n") (system:exit 1))))))
+(= (proof-libraries-before $keys $seen)
+   (if (== $keys ()) (ProofPreamble "" $seen)
+       (let $key (car-atom $keys)
+         (if (member-term $key $seen) (proof-libraries-before (cdr-atom $keys) $seen)
+             (let* (((ProofLibrary $deps $files) (proof-library-spec $key))
+                    ((ProofPreamble $tail $next) (proof-libraries-before (cdr-atom $keys) (cons-atom $key $seen))))
+               (ProofPreamble (str:concat (proof-library-files $files) $tail) $next))))))
+(= (ordered-function-sections $fs $seen)
+   (if (== $fs ()) ()
+       (let* (($f (car-atom $fs))
+              ((ProofPreamble $prefix $next) (proof-libraries-before (proof-library-uses $f) $seen)))
+         (cons-atom (str:concat $prefix (function-text $f))
+           (ordered-function-sections (cdr-atom $fs) $next)))))
+(= (source-equation-proof $owner $entry)
+   (let ($equation $lemma) $entry
+     (let $sources (collapse (match &self (LeanSourceEquations $owner $qs) $qs))
+       (if (and (== (length-of $sources) 1) (member-term $equation (car-atom $sources)))
+           (format-args "{}Theorem {} : {}.\nexact {}.\nQed.\n"
+             ((receipt-comment $equation $owner) (egal $equation) (statement-text (eqn-of $equation)) $lemma))
+           (let $_error (system:write stderr
+             (format-args "source-equation proof {} is not an exported obligation of {}\n" ($equation $owner)))
+             (system:exit 1))))))
+(= (source-equation-sections $order)
+   (collapse (match &self (EgalSourceEquationProofs $owner $files $entries)
+     (if (member-term $owner $order)
+         (str:concat (proof-library-files $files)
+           (join "\n" (map-atom $entries $entry (source-equation-proof $owner $entry)))) ""))))
+(= (source-hyp-names $bs)
+   (if (== $bs ()) ()
+       (case (car-atom $bs)
+         (((hyp $name $P) (cons-atom $name (source-hyp-names (cdr-atom $bs))))
+          ($_ (source-hyp-names (cdr-atom $bs)))))))
+(= (signature-intros $bs)
+   (str:concat (free-level-intros $bs) (stmt-intros $bs (free-levels $bs))))
+(= (signature-prefix $bs)
+   (let $free (free-levels $bs)
+     (str:concat (join "" (map-atom $free $l (format-args "forall {}, nat_p {} -> " ($l $l))))
+       (stmt-binders $bs $free))))
+(= (intrinsic-type-proof $f $kind $bs $args $ctx)
+   (case $kind
+     ((type
+       (case (car-atom $bs)
+         (((type $A $u)
+           (format-args "(Lean_Quot_type_In {} {} {} {} {})"
+             ((render (nth $args 0) ()) (render (nth $args 1) ()) $u
+              (if (== $u 0) "nat_0" (format-args "H_{}" ($u))) (typ (nth $args 0) () $ctx)))))))
+      (constructor
+       (format-args "(Lean_Quot_mk_In {} {} {} {} {})"
+         ((render (nth $args 0) ()) (render (nth $args 1) ()) (typ (nth $args 1) () $ctx)
+          (render (nth $args 2) ()) (typ (nth $args 2) () $ctx))))
+      (lift
+       (format-args "(Lean_Quot_lift_typed {} {} {} {} {} {} 0 {} {})"
+         ((render (nth $args 0) ()) (render (nth $args 1) ()) (render (nth $args 2) ())
+          (render (nth $args 3) ()) (typ (nth $args 3) () $ctx) (car-atom (source-hyp-names $bs))
+          (render (nth $args 5) ()) (typ (nth $args 5) () $ctx)))))))
+(= (intrinsic-type-contract $f)
+   (case (intrinsic $f)
+     (((primitive $kind $bs $R)
+       (let* (($args (intrinsic-call-args $f)) ($ctx (stmt-ctx $bs)))
+         (format-args "Theorem {}_source_type : {}{} :e {}.\n{}exact {}.\nQed.\n"
+           ((egal $f) (signature-prefix $bs) (render (app $f $args) ()) (render $R ())
+            (signature-intros $bs) (intrinsic-type-proof $f $kind $bs $args $ctx))))))))
+(= (intrinsic-law-proof $f $e)
+   (let* (($args (lhs-args $e)) ($ctx (stmt-ctx (eqn-binders $e)))
+          ($hyp (car-atom (source-hyp-names (eqn-binders $e)))))
+     (if (== $f Quot.mk)
+         (let $y (nth (app-args (eqn-rhs $e)) 2)
+           (format-args "(Lean_Quot_mk_sound {} {} {} {} {} {} {})"
+             ((render (nth $args 0) ()) (render (nth $args 1) ())
+              (render (nth $args 2) ()) (typ (nth $args 2) () $ctx) (render $y ()) (typ $y () $ctx) $hyp)))
+         (let $x (nth (app-args (nth $args 5)) 2)
+           (format-args "(Lean_Quot_lift_beta {} {} {} {} {} {} 0 {} {})"
+             ((render (nth $args 0) ()) (render (nth $args 1) ()) (render (nth $args 2) ())
+              (render (nth $args 3) ()) (typ (nth $args 3) () $ctx) $hyp (render $x ()) (typ $x () $ctx)))))))
+(= (intrinsic-law-contracts $f)
+   (join "\n" (collapse (match &self (LeanPrimitiveLaw $f $law)
+     (let $e (eqn-of $law)
+       (format-args "(** Kernel law: {} at the declared Type profile. **)\nTheorem {} : {}.\n{}exact {}.\nQed.\n"
+         ($law (egal $law) (statement-text $e) (eqn-intros $e) (intrinsic-law-proof $f $e))))))))
+(= (intrinsic-contracts)
+   (collapse (match &self (LeanIntrinsic $f $kind $bs $R)
+     (if (is-intrinsic $f)
+         (let $laws (collapse (match &self (LeanPrimitiveLaw $f $law) $law))
+           (if (== (length-of $laws) (if (== $kind type) 0 1))
+               (str:concat (intrinsic-type-contract $f) (intrinsic-law-contracts $f))
+               (let $_error (system:write stderr
+                 (format-args "primitive {} has an incomplete or ambiguous kernel-law inventory\n" ($f)))
+                 (system:exit 1)))) ""))))
 (= (functions-section)
    (let $order (function-order)
-     (map-atom $order $f (function-text $f))))
+     (append-lists (intrinsic-contracts)
+       (append-lists (ordered-function-sections $order ()) (source-equation-sections $order)))))
 
 ; ---- reading CeTTa's answers (Represents) ----
 ; A CeTTa value is read at the Lean type of the computation: an integer at
@@ -2778,7 +3163,37 @@ Qed.
    (if (== $ss ()) () (cons-atom (sort-fterm (car-atom $ss) $params $targs) (sort-fterms (cdr-atom $ss) $params $targs))))
 
 (= (field-fterm $fd $T $params $targs)
-   (case $fd (((data $s) (sort-fterm $s $params $targs)) ((rec $is) $T))))
+   (case $fd
+     (((data $s) (sort-fterm $s $params $targs)) ((rec $is) $T)
+      ((guard $p) (app (EgalLibrary proof-field) ((guard-fterm $p $params $targs)))))))
+
+; Guard expressions use ordinary applications, including calls to the proved
+; target library. Existing substitution and binder handling therefore apply.
+(= (guard-fterm $p $params $targs)
+   (let* (($template (guard-template $p $params)) ($bindings (guard-param-bindings $targs 0)))
+     (csubst $template (used-bindings $bindings (fvs $template)))))
+(= (guard-param-bindings $args $i)
+   (if (== $args ()) ()
+       (cons-atom ((GuardParam $i) (car-atom $args)) (guard-param-bindings (cdr-atom $args) (+ $i 1)))))
+(= (guard-template $p $params)
+   (let $number (closed-nat $p)
+     (if (== $number None) (guard-template-open $p $params) (num $number))))
+(= (guard-template-open $p $params)
+   (case $p
+     (((field $i) (var (GuardField $i)))
+      ((bound $name) (var $name))
+      ((const $name)
+       (let $i (param-index $name $params 0)
+         (if (>= $i 0) (var (GuardParam $i)) (sort-fterm $name () ()))))
+      ((pi $name $A $B) (pi $name (guard-template $A $params) (guard-template $B $params)))
+      ((project $owner $i $record)
+       (app (EgalLibrary record-field $owner $i) ((guard-template $record $params))))
+      ((app $f $x) (guard-apply (guard-template $f $params) (guard-template $x $params))))))
+(= (guard-apply $f $x)
+   (case $f
+     (((app $c $as) (app $c (append-lists $as ($x))))
+      ((apv $g $as) (apv $g (append-lists $as ($x))))
+      ($_ (apv $f ($x))))))
 
 (= (cetta-ctor-name $c)
    (if (== $c true) Bool.true (if (== $c false) Bool.false $c)))
@@ -2822,7 +3237,7 @@ Qed.
       ((arrow $A $B) True)
       ((pi $x $A $B) True)
       ((apv $f $args) False)
-      ((app $c $args) (if (or (is-ctor $c) (is-family $c)) (all-values $args) False)))))
+      ((app $c $args) (if (or (intrinsic-value $c) (or (is-ctor $c) (is-family $c))) (all-values $args) False)))))
 (= (all-values $ts) (if (== $ts ()) True (if (is-value (car-atom $ts)) (all-values (cdr-atom $ts)) False)))
 
 ; The leftmost innermost application of a function.
@@ -2843,7 +3258,7 @@ Qed.
        (if (is-cases-on $c) (find-cases-redex $t $c $args)
        (if (== $c ite) (find-ite-redex $t $args)
        (let $inner (find-redex-list $args)
-         (if (== $inner None) (if (or (is-ctor $c) (is-family $c)) None $t) $inner))))))))
+         (if (== $inner None) (if (or (intrinsic-value $c) (or (is-ctor $c) (is-family $c))) None $t) $inner))))))))
 ; A case analysis evaluates its major premise, then only the chosen minor:
 ; the minors are not evaluated before the iota step selects one.  So does
 ; ite (Lean inlines it, macro_inline): its decision first, then one branch.
@@ -3163,7 +3578,10 @@ rewrite Dq{}."
                  (format-args "(fun H => {} (In_eq_r 0 {} {} {} H))" ($pf (render $P ()) (render $V ()) $eq)))))))))
 (= (decide-prop-0 $P)
    (case $P
-     (((app Nat.le ((num $m) (num $n))) (if (small-nums $m $n) (if (<= $m $n) True False) None))
+     (((app Exists ((app Nat ())
+         (lam $x (app Nat ()) (app Eq ((app Nat ()) (num $n) (app Nat.mul ((num $d) (var $x))))))))
+       (divides-numerals $d $n))
+      ((app Nat.le ((num $m) (num $n))) (if (small-nums $m $n) (if (<= $m $n) True False) None))
       ((app Eq ((app Nat ()) (num $m) (num $n))) (if (small-nums $m $n) (if (== $m $n) True False) None))
       ((app Eq ($T (app $c ()) (app $d ()))) (if (both-ctors $c $d) (if (== $c $d) True False) None))
       ($_ None))))
@@ -3180,7 +3598,14 @@ rewrite Dq{}."
 
 (= (prove-prop-0 $P)
    (case $P
-     (((app Nat.le ((num $m) (num $n))) (le-chain $m $n))
+     (((app Exists ((app Nat ())
+         (lam $x (app Nat ()) (app Eq ((app Nat ()) (num $n) (app Nat.mul ((num $d) (var $x))))))))
+       (if (divides-numerals $d $n)
+           (let $q (if (== $d 0) 0 (idiv $n $d))
+             (format-args "(LeanNatDivides_num_intro {} {} {} {} {} {} {})"
+               ((num-arg $d) (num-natproof-d $d) (num-arg $n) (num-natproof-d $n)
+                (num-arg $q) (num-natproof-d $q) (mul-eq $d $q)))) "UNDECIDED"))
+      ((app Nat.le ((num $m) (num $n))) (le-chain $m $n))
       ((app Eq ((app Nat ()) (num $m) (num $n))) (format-args "(Lean_Eq_num_refl {})" ($m)))
       ((app Eq ($T $a $a)) (format-args "(Lean_Eq_refl_proof_ok {} {})" ((render $T ()) (render $a ()))))
       ((app Nat.le ($a $a)) (format-args "(Lean_Nat_le_refl_proof_ok {})" ((render $a ()))))
@@ -3189,7 +3614,14 @@ rewrite Dq{}."
 
 (= (refute-prop-0 $P)
    (case $P
-     (((app Nat.le ((num $m) (num $n)))
+     (((app Exists ((app Nat ())
+         (lam $x (app Nat ()) (app Eq ((app Nat ()) (num $n) (app Nat.mul ((num $d) (var $x))))))))
+       (if (divides-numerals $d $n) "UNDECIDED"
+           (let $r (if (== $d 0) $n (% $n $d))
+             (format-args "(LeanNatDivides_num_refute {} {} {} {} {} {} (neq_of_In_l {} 0 {}) {})"
+               ((num-arg $d) (num-natproof-d $d) (num-arg $n) (num-natproof-d $n)
+                (num-arg $r) (num-natproof-d $r) (num-arg $r) (pos-pf $r) (mod-eq $n $d))))))
+      ((app Nat.le ((num $m) (num $n)))
        (format-args "(Lean_Nat_le_num_not {} {} {} {} {})" ($m (natproof $m) $n (natproof $n) (inproof $n $m))))
       ((app Eq ((app Nat ()) (num $m) (num $n)))
        (if (small-nums $m $n)
@@ -3277,10 +3709,13 @@ rewrite Dq{}."
    (let* (($g (app-head $r)) ($args (app-args $r)))
      (if (and (== $g Nat.mul) (both-nums $args)) (mul-step $args $n)
      (if (and (== $g Nat.add) (both-nums $args)) (arith-step $args $n)
-     (if (not (== (why-not $g ()) ok)) (stuck (format-args "{} is not read: {}" ((nm $g) (why-not $g ()))))
+     (let $why (prepared-readability $g)
+     (if (not (== $why ok)) (stuck (format-args "{} is not read: {}" ((nm $g) $why)))
      (if (and (or (== $g Nat.div) (== $g Nat.mod)) (div-num-args $args)) (divmod-step $g $args $n)
          (case (shape-of $g)
-           (((structural $m $fam $eqs)
+           (((primitive lift $bs $R) (quotient-lift-step $args))
+            ((primitive $kind $bs $R) (stuck "a quotient primitive is not a reducible lift"))
+            ((structural $m $fam $eqs)
              (let $hit (if (is-split $g) (lean-eqn-hit $g (lean-eqns-of $g) $args) None)
              (if (not (== $hit None)) (eqn-step $hit $args)
              (let $major (nth $args $m)
@@ -3292,8 +3727,18 @@ rewrite Dq{}."
                                 (unfold (app Nat.zero ()) (num 0) ("rewrite <- LeanNum_0."))
                                 (eqn-step $e $args)))))))))))
             ((direct $e) (unfold-step $g $e $args))
-            ((decision $e) (decision-step $g $e $args))
-            ((subsingleton $F) (subsingleton-step $g $F $args))))))))))
+            ((subsingleton $F) (subsingleton-step $g $F $args)))))))))))
+
+(= (quotient-lift-step $args)
+   (case $args
+     ((($A $relation $B $function $respect (app Quot.mk ($sourceA $sourceRelation $value)))
+       (let $types (arg-types-raw Quot.lift $args)
+         (step (apv $function ($value))
+           ((format-args "rewrite Lean_Quot_lift_beta_value {} {} {} {} {} {} {} {} {} {}."
+             ((render $A ()) (render $relation ()) (typ $relation () ()) (render $B ())
+              (render $function ()) (typ $function () ()) (render $respect ())
+              (typ-at $respect (nth $types 4) () ()) (render $value ()) (typ $value () ())))))))
+      ($_ (stuck "a quotient lift requires a constructor representative")))))
 
 ; A split function at arguments one of Lean's own equations matches is
 ; rewritten by that equation at once (it is a proved theorem whatever the
@@ -3461,6 +3906,62 @@ rewrite Dq{}."
                       (format-args "(NumD_carry {} (add_nat_p {} {} {} {}) {} {})" ($Q $QA (num-natproof-d $qa) $QB (num-natproof-d $qb) $s1 (dnat $s1)))
                       (format-args "(NumD_cong {} {} {} {} {} {})" ($SQ (num-arg $q1) $s1 $s1 (addc-eq $qa $qb) (refl-pf $s1)))
                       (unview-pf $q1 $s1)))))))
+; Proof terms for arithmetic needed inside an erased branch hypothesis.
+; The ordinary replay still shares its larger calculations through claims.
+(= (divides-numerals $d $n) (if (== $d 0) (== $n 0) (== (% $n $d) 0)))
+(= (mul-eq $a $b)
+   (let $A (num-arg $a)
+     (if (== $b 0) (format-args "(mul_nat_0R {})" ($A))
+     (if (< $b (num-radix))
+         (let* (($m (- $b 1)) ($M (num-arg $m)) ($p (* $a $m)) ($P (num-arg $p)))
+           (chain-pf
+             ((format-args "(mul_nat {} {})" ($A (num-arg $b)))
+              (format-args "(add_nat {} (mul_nat {} {}))" ($A $A $M))
+              (format-args "(add_nat {} {})" ($A $P)) (num-arg (* $a $b)))
+             ((format-args "(mul_nat_SR {} {} {})" ($A $M (num-natproof-d $m)))
+              (format-args "(f_eq_i (fun z => add_nat {} z) (mul_nat {} {}) {} {})" ($A $A $M $P (mul-eq $a $m)))
+              (add-eq $a $p))))
+         (let* (($q (q-of $b)) ($d (d-of $b)) ($B (num-arg $b)) ($Q (num-arg $q))
+                ($x (* $a $q)) ($y (* $a $d)) ($x10 (* (num-radix) $x)))
+           (chain-pf
+             ((format-args "(mul_nat {} {})" ($A $B))
+              (format-args "(mul_nat {} {})" ($A (qd-text $q $d)))
+              (format-args "(add_nat (mul_nat {} {} :: 0) (mul_nat {} {}))" ($A $Q $A $d))
+              (format-args "(add_nat {} {})" ((qd-text $x 0) (num-arg $y)))
+              (format-args "(add_nat {} {})" ((num-arg $x10) (num-arg $y))) (num-arg (* $a $b)))
+             ((format-args "(f_eq_i (fun z => mul_nat {} z) {} {} {})" ($A $B (qd-text $q $d) (view-pf $b)))
+              (format-args "(mul_NumD {} {} {} {} {} {})" ($A (num-natproof-d $a) $Q (num-natproof-d $q) $d (dnat $d)))
+              (format-args "(add_nat_cong (mul_nat {} {} :: 0) {} (mul_nat {} {}) {} (NumD_cong (mul_nat {} {}) {} 0 0 {} (Lean_eq_refl 0)) {})"
+                ($A $Q (qd-text $x 0) $A $d (num-arg $y) $A $Q (num-arg $x) (mul-eq $a $q) (mul-eq $a $d)))
+              (format-args "(f_eq_i (fun z => add_nat z {}) {} {} {})" ((num-arg $y) (qd-text $x 0) (num-arg $x10) (unview-pf $x 0)))
+              (add-eq $x10 $y))))))))
+
+(= (mod-eq $n $d)
+   (if (== $d 0)
+       (format-args "(Lean_mod_zero (LeanNum {}) (LeanNum_In {} {}))" ((num-arg $n) (num-arg $n) (num-natproof-d $n)))
+       (let* (($q (idiv $n $d)) ($r (% $n $d)) ($p (* $q $d)) ($d1 (- $d 1)) ($gap (- $d1 $r))
+              ($N (num-arg $n)) ($D (num-arg $d)) ($Q (num-arg $q)) ($R (num-arg $r)) ($D1 (num-arg $d1))
+              ($DS (format-args "(ordsucc {})" ($D1)))
+              ($sum (format-args "(add_nat (mul_nat {} {}) {})" ($Q $DS $R)))
+              ($eq (chain-pf
+                     ($sum (format-args "(add_nat (mul_nat {} {}) {})" ($Q $D $R))
+                      (format-args "(add_nat {} {})" ((num-arg $p) $R)) $N)
+                     ((format-args "(f_eq_i (fun z => add_nat (mul_nat {} z) {}) {} {} {})" ($Q $R $DS $D (succ-eq $d1)))
+                      (format-args "(f_eq_i (fun z => add_nat z {}) (mul_nat {} {}) {} {})" ($R $Q $D (num-arg $p) (mul-eq $q $d)))
+                      (add-eq $p $r)))))
+         (chain-pf
+           ((format-args "(Lean_Nat_mod (LeanNum {}) (LeanNum {}))" ($N $D))
+            (format-args "(Lean_Nat_mod (LeanNum {}) (LeanNum {}))" ($N $DS))
+            (format-args "(Lean_Nat_mod (LeanNum {}) (LeanNum {}))" ($sum $DS))
+            (format-args "(LeanNum {})" ($R)))
+           ((format-args "(f_eq_i (fun z => Lean_Nat_mod (LeanNum {}) (LeanNum z)) {} {} {})"
+              ($N $D $DS (sym-pf $DS $D (succ-eq $d1))))
+            (format-args "(f_eq_i (fun z => Lean_Nat_mod (LeanNum z) (LeanNum {})) {} {} {})"
+              ($DS $N $sum (sym-pf $sum $N $eq)))
+            (format-args "(Lean_Nat_mod_num_add {} {} {} {} {} {} {} {} {})"
+              ($D1 (num-natproof-d $d1) $R (num-natproof-d $r) (num-arg $gap) (num-natproof-d $gap)
+               (add-eq $r $gap) $Q (num-natproof-d $q))))))))
+
 ; ---- arithmetic between numerals, as scripts ----
 ; An equation between numerals is proved by a script: each operand prefix's
 ; nat_p fact once, then one claim per digit, citing the claim of the digits
@@ -3748,6 +4249,123 @@ reflexivity.
                (cons-atom (if (not (== $nm None)) $nm (if (== $T None) (typ $a $sub $ctx) (typ-at $a $T $sub $ctx))) $rest)))))))
 
 ; ---- typing at a declared type, modulo its redexes ----
+; Beta conversion under binders carries its own domain hypotheses. Only
+; certified equations are used to transport the proof value back to the
+; source type; normalization alone never counts as conversion evidence.
+(= (beta-needed $t)
+   (case $t
+     (((apv $f $args)
+       (or (case $f (((lam $x $A $b) (not (== $args ()))) ($_ False)))
+           (beta-needed-list (cons-atom $f $args))))
+      ((app $f $args) (beta-needed-list $args))
+      ((lam $x $A $b) (or (beta-needed $A) (beta-needed $b)))
+      ((pi $x $A $b) (or (beta-needed $A) (beta-needed $b)))
+      ((arrow $A $B) (or (beta-needed $A) (beta-needed $B)))
+      ($_ False))))
+(= (beta-needed-list $xs)
+   (if (== $xs ()) False (or (beta-needed (car-atom $xs)) (beta-needed-list (cdr-atom $xs)))))
+(= (ceq-type $c) (case $c (((ceq $t $p) $t))))
+(= (ceq-proof $c) (case $c (((ceq $t $p) $p))))
+(= (ceq-chain $start $first $second)
+   (if (or (== $first None) (== $second None)) None
+       (let* (((ceq $middle $p) $first) ((ceq $end $q) $second))
+         (ceq $end
+           (if (== $p None) $q
+           (if (== $q None) $p
+               (format-args "(eq_i_tra {} {} {} {} {})"
+                 ((render $start ()) (render $middle ()) (render $end ()) $p $q))))))))
+(= (beta-children-of $t)
+   (case $t (((app $f $args) $args) ((apv $f $args) (cons-atom $f $args)))))
+(= (beta-rebuild $t $children)
+   (case $t (((app $f $args) (app $f $children))
+            ((apv $f $args) (apv (car-atom $children) (cdr-atom $children))))))
+(= (replace-position $xs $i $value)
+   (if (== $i 0) (cons-atom $value (cdr-atom $xs))
+       (cons-atom (car-atom $xs) (replace-position (cdr-atom $xs) (- $i 1) $value))))
+(= (beta-cert-children $start $acc $i $ctx $n)
+   (let* (($current (ceq-type $acc)) ($children (beta-children-of $current)))
+     (if (>= $i (length-of $children)) $acc
+         (let* (($old (nth $children $i)) ($child (beta-certificate $old $ctx (- $n 1))))
+           (if (== $child None) None
+               (let* (($new (ceq-type $child)) ($next (beta-rebuild $current (replace-position $children $i $new)))
+                      ($hole (bridge-name "hole" $n $current $ctx))
+                      ($proof (if (== (ceq-proof $child) None) None
+                        (format-args "(f_eq_i (fun {} => {}) {} {} {})"
+                          ($hole (render (beta-rebuild $current (replace-position $children $i (var $hole))) ())
+                           (render $old ()) (render $new ()) (ceq-proof $child))))))
+                 (beta-cert-children $start (ceq-chain $start $acc (ceq $next $proof)) (+ $i 1) $ctx $n)))))))
+(= (beta-binder-node $template $x $A $B)
+   (case $template (((lam $old $D $body) (lam $x $A $B))
+                   ((pi $old $D $body) (pi $x $A $B))
+                   ((arrow $D $body) (arrow $A $B)))))
+(= (beta-cert-binder $t $x $A $B $ctx $n)
+   (let* (($fresh (fresh-name $x (ctx-names $ctx))) ($body (csubst $B (($x (var $fresh)))))
+          ($hx (bridge-name "bound" $n $t $ctx))
+          ($bodyCtx (cons-atom ((ReservedName $hx) True)
+            (cons-atom ($fresh $hx) (cons-atom ((ty $fresh) $A) $ctx))))
+          ($domainCert (beta-certificate $A $ctx (- $n 1)))
+          ($bodyCert (beta-certificate $body $bodyCtx (- $n 1))))
+     (if (or (== $domainCert None) (== $bodyCert None)) None
+       (let* (($Anew (ceq-type $domainCert)) ($Bnew (ceq-type $bodyCert))
+              ($middle (beta-binder-node $t $fresh $A $Bnew))
+              ($end (beta-binder-node $t $fresh $Anew $Bnew))
+              ($family (case $t (((lam $a $b $c) "Sigma_family_eq") ($_ "Pi_family_eq"))))
+              ($bodyProof (if (== (ceq-proof $bodyCert) None) None
+                (format-args "({} {} (fun {} => {}) (fun {} => {}) (fun {} {} => {}))"
+                  ($family (render $A ()) $fresh (render $body ()) $fresh (render $Bnew ())
+                   $fresh $hx (ceq-proof $bodyCert)))))
+              ($hole (bridge-name "domain" $n $t $ctx))
+              ($domainProof (if (== (ceq-proof $domainCert) None) None
+                (format-args "(f_eq_i (fun {} => {}) {} {} {})"
+                  ($hole (render (beta-binder-node $t $fresh (var $hole) $Bnew) ())
+                   (render $A ()) (render $Anew ()) (ceq-proof $domainCert))))))
+         (ceq-chain $t (ceq $middle $bodyProof) (ceq $end $domainProof))))))
+(= (beta-root-certificate $t $ctx)
+   (case (beta-step-ctx $t $ctx)
+     (((step $new $lines)
+       (if (not (== (length-of $lines) 1)) None
+           (let $proof (eq-of-line (car-atom $lines))
+             (if (== $proof None) None
+                 (let* (($sides (step-eq-sides $t $new)) ($hole (bridge-name "beta" 0 $t $ctx))
+                        ($context (csubst (eq-hole $t) (("ZcZ" (var $hole))))))
+                   (ceq $new (format-args "(f_eq_i (fun {} => {}) {} {} ({}))"
+                     ($hole (render $context ()) (render (car-atom $sides) ())
+                      (render (nth $sides 1) ()) $proof))))))))
+      ($_ None))))
+(= (beta-cert-application $t $ctx $n)
+   (let $children (beta-cert-children $t (ceq $t None) 0 $ctx $n)
+     (if (== $children None) None
+       (let $middle (ceq-type $children)
+         (case $middle
+           (((apv (lam $x $A $body) $args)
+             (if (== $args ()) $children
+               (let $root (beta-root-certificate $middle $ctx)
+                 (if (== $root None) None
+                   (ceq-chain $t (ceq-chain $t $children $root)
+                     (beta-certificate (ceq-type $root) $ctx (- $n 1)))))))
+            ($_ $children)))))))
+(= (beta-certificate $t $ctx $n)
+   (if (not (beta-needed $t)) (ceq $t None)
+   (if (<= $n 0) None
+     (case $t
+       (((pi $x $A $B) (beta-cert-binder $t $x $A $B $ctx $n))
+        ((lam $x $A $B) (beta-cert-binder $t $x $A $B $ctx $n))
+        ((arrow $A $B) (beta-cert-binder $t (bridge-name "arrow" $n $t $ctx) $A $B $ctx $n))
+        ((app $f $args) (beta-cert-application $t $ctx $n))
+        ((apv $f $args) (beta-cert-application $t $ctx $n))
+        ($_ (ceq $t None)))))))
+(= (proof-at $P $sub $ctx)
+   (let $known (known-proof $P $ctx)
+     (if (not (== $known None)) $known
+     (if (or (not (== $sub ())) (not (beta-needed $P))) (prove-prop-in $P $ctx)
+       (case (beta-certificate $P $ctx 64)
+         (((ceq $normal $equation)
+           (if (== $equation None) (prove-prop-in $P $ctx)
+               (format-args "(In_eq_r 0 {} {} (eq_sym_i {} {} {}) {})"
+                 ((render $normal ()) (render $P ()) (render $P ()) (render $normal ()) $equation
+                  (prove-prop-in $normal $ctx)))))
+          ($_ "UNDECIDED_typed_beta_conversion")))))))
+
 ; An argument's declared type, instantiated, may hold a projection of a
 ; constructor or a beta redex outside any binder (ite's Decidable (LE.le Nat
 ; (LE.mk Nat le) x y)) where the argument's own type has the reduct.  The
@@ -3905,6 +4523,20 @@ reflexivity.
 
 ; (computation name text) or (stuck reason)
 (= (computation $i $answer $name)
+   (computation-candidate (computation-raw $i $answer $name)))
+
+; A computed value is not a proof if replay could not reconstruct a branch
+; hypothesis. Keep that failure visible before emitting a theorem candidate.
+(= (computation-candidate $result)
+   (case $result
+     (((computation $name $text)
+       (if (or (text-has $text "UNDECIDED")
+               (or (text-has $text "not proved here") (text-has $text "PROOF-FILE")))
+           (stuck "a proof required by computation replay is not reconstructed")
+           $result))
+      ($_ $result))))
+
+(= (computation-raw $i $answer $name)
    (if (not (has-comp $i)) (stuck "not a first-order term")
    (let* (($t (comp-term $i)) ($T (comp-type $i)) ($v (readback $answer $T)))
      (if (is-stuck $v) $v

@@ -313,7 +313,7 @@ theorem admits_move_iff {s t : State rules O} (i : (helperStep (rules := rules) 
 
 /-- **Transport of dependent helper firings up to conversion**: along every isomorphism of states of
 the interface, with alikeness up to conversion. -/
-def conversionTransport : Transport (helperStep (rules := rules) (O := O)) where
+def conversionTransport : Transport (helperStep (rules := rules) (O := O)).toStep where
   Iso s t := (helperStep (rules := rules) (O := O)).StateIso s t
   toStateIso i := i
   refl s := Step.StateIso.refl s

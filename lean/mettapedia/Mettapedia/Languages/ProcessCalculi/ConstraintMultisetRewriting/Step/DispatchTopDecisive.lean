@@ -85,7 +85,7 @@ include algebra complete rigid sortInjective closed operatorInjective in
 unifier's frames, at a firing dispatched along the fibre whose translated problem the unifier
 decides in the fibre, admission is the second-order solvability and ask of the guards. -/
 theorem dispatch_admits_iff_of_top_decisive {O : Type} [DecidableEq O] {State : Type}
-    {Firing : State → Type} (P : Step (ContextualDependentEta.frames S.levels) O State Firing)
+    {Firing : State → Type} (P : Step (ContextualDependentEta.frames S.levels) O State Firing) [P.Guarded]
     {s : State} {f : Firing s} (d : (fibre facts roots heads church names realization).Dispatched P f)
     (decided : DecidedInFibre facts roots heads church names realization d.problem) :
     P.Admits f ↔ P.Shapes f ∧

@@ -216,7 +216,7 @@ Qed.
 Theorem Lean_Krivine_Presents_eq_2 : forall v_s :e (Lean_List Lean_Krivine_NThunk), forall v_st :e Lean_Krivine_KSt, forall v_k :e Lean_Nat, (Lean_Krivine_Presents (Lean_Krivine_NVal_lit_node v_k)
     v_s v_st) = (Lean_Exists_Prop (Lean_List Lean_Krivine_NThunk) (fun v_u961u39 :e (Lean_List Lean_Krivine_NThunk) => (Lean_Eq_Prop Lean_Krivine_KSt v_st (Lean_Krivine_KSt_mk_node (Lean_Tm_lit_node
     v_k) v_u961u39 v_s)))).
-let v_s. assume H_v_s: v_s :e (Lean_List Lean_Krivine_NThunk). let v_st. assume H_v_st: v_st :e Lean_Krivine_KSt. let v_k. assume H_v_k: v_k :e Lean_Nat. 
+let v_s. assume H_v_s: v_s :e (Lean_List Lean_Krivine_NThunk). let v_st. assume H_v_st: v_st :e Lean_Krivine_KSt. let v_k. assume H_v_k: v_k :e Lean_Nat.
 prove (Lean_Krivine_NVal_rec (Lean_Krivine_Presents_method0_0 v_s v_st) (Lean_Krivine_Presents_method1_0 v_s v_st) (Lean_Krivine_NVal_lit_node v_k)) = (Lean_Exists_Prop (Lean_List
     Lean_Krivine_NThunk) (fun v_u961u39 :e (Lean_List Lean_Krivine_NThunk) => (Lean_Eq_Prop Lean_Krivine_KSt v_st (Lean_Krivine_KSt_mk_node (Lean_Tm_lit_node v_k) v_u961u39 v_s)))).
 rewrite Lean_Krivine_NVal_iota0 (Lean_Krivine_Presents_method0_0 v_s v_st) (Lean_Krivine_Presents_method1_0 v_s v_st) v_k H_v_k.
@@ -226,7 +226,7 @@ Qed.
 Theorem Lean_Krivine_Presents_eq_1 : forall v_s :e (Lean_List Lean_Krivine_NThunk), forall v_st :e Lean_Krivine_KSt, forall v_b :e Lean_Tm, forall v_u961w :e (Lean_List Lean_Krivine_NThunk),
     (Lean_Krivine_Presents (Lean_Krivine_NVal_clo_node v_b v_u961w) v_s v_st) = (Lean_Eq_Prop Lean_Krivine_KSt v_st (Lean_Krivine_KSt_mk_node (Lean_Tm_lam_node v_b) v_u961w v_s)).
 let v_s. assume H_v_s: v_s :e (Lean_List Lean_Krivine_NThunk). let v_st. assume H_v_st: v_st :e Lean_Krivine_KSt. let v_b. assume H_v_b: v_b :e Lean_Tm. let v_u961w. assume H_v_u961w: v_u961w :e
-    (Lean_List Lean_Krivine_NThunk). 
+    (Lean_List Lean_Krivine_NThunk).
 prove (Lean_Krivine_NVal_rec (Lean_Krivine_Presents_method0_0 v_s v_st) (Lean_Krivine_Presents_method1_0 v_s v_st) (Lean_Krivine_NVal_clo_node v_b v_u961w)) = (Lean_Eq_Prop Lean_Krivine_KSt v_st
     (Lean_Krivine_KSt_mk_node (Lean_Tm_lam_node v_b) v_u961w v_s)).
 rewrite Lean_Krivine_NVal_iota1 (Lean_Krivine_Presents_method0_0 v_s v_st) (Lean_Krivine_Presents_method1_0 v_s v_st) v_b H_v_b v_u961w H_v_u961w.
@@ -240,7 +240,7 @@ Theorem Lean_Krivine_Presents_unique : forall g:set -> set -> set -> set, (foral
     (Lean_List Lean_Krivine_NThunk), (g (Lean_Krivine_NVal_clo_node v_b v_u961w) v_s v_st) = (Lean_Eq_Prop Lean_Krivine_KSt v_st (Lean_Krivine_KSt_mk_node (Lean_Tm_lam_node v_b) v_u961w v_s))) ->
     forall u, nat_p u -> forall a0 :e Lean_Krivine_NVal, forall a1 :e (Lean_List Lean_Krivine_NThunk), forall a2 :e Lean_Krivine_KSt, g a0 a1 a2 = Lean_Krivine_Presents a0 a1 a2.
 let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e Lean_Krivine_NVal. let a1. assume H1: a1 :e (Lean_List Lean_Krivine_NThunk). let a2. assume H2: a2 :e
-    Lean_Krivine_KSt. 
+    Lean_Krivine_KSt.
 claim L0: forall y0 :e Lean_Nat, 0 :e {z :e 1 | g (Lean_Krivine_NVal_lit_node y0) a1 a2 = Lean_Krivine_Presents (Lean_Krivine_NVal_lit_node y0) a1 a2}.
 { let y0. assume Hy0: y0 :e Lean_Nat. apply SepI 1 (fun z:set => g (Lean_Krivine_NVal_lit_node y0) a1 a2 = Lean_Krivine_Presents (Lean_Krivine_NVal_lit_node y0) a1 a2) 0 In_0_1.
   prove g (Lean_Krivine_NVal_lit_node y0) a1 a2 = Lean_Krivine_Presents (Lean_Krivine_NVal_lit_node y0) a1 a2.
@@ -382,7 +382,7 @@ let a0. let a1. assume H1: a1 :e (Lean_List a0). let a2. assume H2: a2 :e Lean_N
 Qed.
 Theorem Lean_List_getu63Internal_split0 : forall l_u_1, nat_p l_u_1 -> forall s0 :e LeanUniv l_u_1, forall s2 :e Lean_Nat, (Lean_List_getu63Internal s0 (Lean_List_nil_node s0) s2) =
     (Lean_Option_none_node s0).
-let l_u_1. assume H_l_u_1: nat_p l_u_1. let s0. assume H_s0: s0 :e LeanUniv l_u_1. let s2. assume H_s2: s2 :e Lean_Nat. 
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let s0. assume H_s0: s0 :e LeanUniv l_u_1. let s2. assume H_s2: s2 :e Lean_Nat.
 prove ((Lean_List_rec s0 (Lean_List_getu63Internal_method0_0 s0) (Lean_List_getu63Internal_method1_0 s0) (Lean_List_nil_node s0)) s2) = (Lean_Option_none_node s0).
 rewrite Lean_List_iota0 s0 (Lean_List_getu63Internal_method0_0 s0) (Lean_List_getu63Internal_method1_0 s0).
 rewrite Lean_List_getu63Internal_method0_0_ap s0 s2 H_s2.
@@ -390,7 +390,7 @@ reflexivity.
 Qed.
 Theorem Lean_List_getu63Internal_split1 : forall l_u_1, nat_p l_u_1 -> forall s0 :e LeanUniv l_u_1, forall t0 :e s0, forall t1 :e (Lean_List s0), forall s2 :e Lean_Nat, (Lean_List_getu63Internal s0
     (Lean_List_cons_node s0 t0 t1) s2) = (Lean_Nat_casesOn (Lean_Option_some_node s0 t0) (Sigma Lean_Nat (Lean_List_getu63Internal s0 t1)) s2).
-let l_u_1. assume H_l_u_1: nat_p l_u_1. let s0. assume H_s0: s0 :e LeanUniv l_u_1. let t0. assume H_t0: t0 :e s0. let t1. assume H_t1: t1 :e (Lean_List s0). let s2. assume H_s2: s2 :e Lean_Nat. 
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let s0. assume H_s0: s0 :e LeanUniv l_u_1. let t0. assume H_t0: t0 :e s0. let t1. assume H_t1: t1 :e (Lean_List s0). let s2. assume H_s2: s2 :e Lean_Nat.
 prove ((Lean_List_rec s0 (Lean_List_getu63Internal_method0_0 s0) (Lean_List_getu63Internal_method1_0 s0) (Lean_List_cons_node s0 t0 t1)) s2) = (Lean_Nat_casesOn (Lean_Option_some_node s0 t0) (fun
     c1_1_0 :e Lean_Nat => ((Lean_List_rec s0 (Lean_List_getu63Internal_method0_0 s0) (Lean_List_getu63Internal_method1_0 s0) t1) c1_1_0)) s2).
 rewrite Lean_List_iota1 s0 (Lean_List_getu63Internal_method0_0 s0) (Lean_List_getu63Internal_method1_0 s0) t0 H_t0 t1 H_t1.
@@ -403,7 +403,7 @@ reflexivity.
 Qed.
 Theorem Lean_List_getu63Internal_eq_1 : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_a :e v_u945, forall v_tail :e (Lean_List v_u945), (Lean_List_getu63Internal v_u945
     (Lean_List_cons_node v_u945 v_a v_tail) (LeanNum 0)) = (Lean_Option_some_node v_u945 v_a).
-let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let v_a. assume H_v_a: v_a :e v_u945. let v_tail. assume H_v_tail: v_tail :e (Lean_List v_u945). 
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let v_a. assume H_v_a: v_a :e v_u945. let v_tail. assume H_v_tail: v_tail :e (Lean_List v_u945).
 rewrite Lean_List_getu63Internal_split1 l_u_1 H_l_u_1 v_u945 H_v_u945 v_a H_v_a v_tail H_v_tail (LeanNum 0) (LeanNum_In 0 nat_0).
 rewrite LeanNum_0.
 rewrite Lean_Nat_casesOn_iota0 (Lean_Option_some_node v_u945 v_a) (Sigma Lean_Nat (Lean_List_getu63Internal v_u945 v_tail)).
@@ -412,7 +412,7 @@ Qed.
 Theorem Lean_List_getu63Internal_eq_2 : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_head :e v_u945, forall v_as :e (Lean_List v_u945), forall v_n :e Lean_Nat,
     (Lean_List_getu63Internal v_u945 (Lean_List_cons_node v_u945 v_head v_as) (Lean_Nat_succ_node v_n)) = (Lean_List_getu63Internal v_u945 v_as v_n).
 let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let v_head. assume H_v_head: v_head :e v_u945. let v_as. assume H_v_as: v_as :e (Lean_List v_u945). let
-    v_n. assume H_v_n: v_n :e Lean_Nat. 
+    v_n. assume H_v_n: v_n :e Lean_Nat.
 rewrite Lean_List_getu63Internal_split1 l_u_1 H_l_u_1 v_u945 H_v_u945 v_head H_v_head v_as H_v_as (Lean_Nat_succ_node v_n) (Lean_Nat_succ_typed v_n H_v_n).
 rewrite Lean_Nat_casesOn_iota1 (Lean_Option_some_node v_u945 v_head) (Sigma Lean_Nat (Lean_List_getu63Internal v_u945 v_as)) v_n H_v_n.
 rewrite (eq_i_tra ((Sigma Lean_Nat (Lean_List_getu63Internal v_u945 v_as)) v_n) (Lean_List_getu63Internal v_u945 v_as v_n) (Lean_List_getu63Internal v_u945 v_as v_n) (beta Lean_Nat
@@ -423,7 +423,7 @@ Qed.
 Theorem Lean_List_getu63Internal_eq_3 : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_x :e (Lean_List v_u945), forall v_x2 :e Lean_Nat, (forall v_a :e v_u945, forall v_tail
     :e (Lean_List v_u945), (v_x = (Lean_List_cons_node v_u945 v_a v_tail)) -> (v_x2 = (LeanNum 0)) -> False) -> (forall v_head :e v_u945, forall v_as :e (Lean_List v_u945), forall v_n :e Lean_Nat,
     (v_x = (Lean_List_cons_node v_u945 v_head v_as)) -> (v_x2 = (Lean_Nat_succ_node v_n)) -> False) -> (Lean_List_getu63Internal v_u945 v_x v_x2) = (Lean_Option_none_node v_u945).
-let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. 
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1.
 apply Lean_List_ind v_u945.
 { let v_x2. assume H_v_x2: v_x2 :e Lean_Nat. assume v_x_4. assume v_x_5. rewrite Lean_List_getu63Internal_split0 l_u_1 H_l_u_1 v_u945 H_v_u945 v_x2 H_v_x2.
 reflexivity.
@@ -559,7 +559,7 @@ let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e (Lean_List Lean_CEK_
     Lean_CEK_evalV_method1_0 a0) a1 (Lean_CEK_evalV_recIn a0 H0) H1) H2).
 Qed.
 Theorem Lean_CEK_evalV_split0 : forall s1 :e (Lean_List Lean_CEK_Val), forall s2 :e Lean_Tm, (Lean_CEK_evalV Lean_Nat_zero_node s1 s2) = (Lean_Option_none_node Lean_CEK_Val).
-let s1. assume H_s1: s1 :e (Lean_List Lean_CEK_Val). let s2. assume H_s2: s2 :e Lean_Tm. 
+let s1. assume H_s1: s1 :e (Lean_List Lean_CEK_Val). let s2. assume H_s2: s2 :e Lean_Tm.
 prove ((Lean_Nat_rec Lean_CEK_evalV_method0_0 Lean_CEK_evalV_method1_0 Lean_Nat_zero_node) s1 s2) = (Lean_Option_none_node Lean_CEK_Val).
 rewrite Lean_Nat_iota0 Lean_CEK_evalV_method0_0 Lean_CEK_evalV_method1_0.
 rewrite Lean_CEK_evalV_method0_0_ap s1 H_s1.
@@ -572,7 +572,7 @@ Theorem Lean_CEK_evalV_split1 : forall t0 :e Lean_Nat, forall s1 :e (Lean_List L
     (Lean_CEK_Val_rec (fun v_a :e Lean_Nat => (Lean_Option_none_node Lean_CEK_Val)) (fun v_a :e Lean_Tm => (fun v_x5 :e (Lean_List Lean_CEK_Val) => (Lean_CEK_evalV t0 (Lean_List_cons_node
     Lean_CEK_Val v_val_c v_x5) v_a))) v_val)) (Lean_CEK_evalV t0 s1 c1_2_1))) (Lean_CEK_evalV t0 s1 c1_2_0)))) (fun c1_3_0 :e Lean_Nat => (Lean_Option_some_node Lean_CEK_Val (Lean_CEK_Val_lit_node
     c1_3_0))) s2).
-let t0. assume H_t0: t0 :e Lean_Nat. let s1. assume H_s1: s1 :e (Lean_List Lean_CEK_Val). let s2. assume H_s2: s2 :e Lean_Tm. 
+let t0. assume H_t0: t0 :e Lean_Nat. let s1. assume H_s1: s1 :e (Lean_List Lean_CEK_Val). let s2. assume H_s2: s2 :e Lean_Tm.
 prove ((Lean_Nat_rec Lean_CEK_evalV_method0_0 Lean_CEK_evalV_method1_0 (Lean_Nat_succ_node t0)) s1 s2) = (Lean_Tm_casesOn (Sigma Lean_Nat (Lean_List_getu63Internal Lean_CEK_Val s1)) (fun c1_1_0 :e
     Lean_Tm => (Lean_Option_some_node Lean_CEK_Val (Lean_CEK_Val_clo_node c1_1_0 s1))) (fun c1_2_0 :e Lean_Tm => (fun c1_2_1 :e Lean_Tm => (Lean_Option_rec Lean_CEK_Val (Lean_Option_none_node
     Lean_CEK_Val) (fun v_val :e Lean_CEK_Val => (Lean_Option_rec Lean_CEK_Val (Lean_Option_none_node Lean_CEK_Val) (fun v_val_c :e Lean_CEK_Val => (Lean_CEK_Val_rec (fun v_a :e Lean_Nat =>
@@ -587,14 +587,14 @@ rewrite Lean_CEK_evalV_method1_3_ap t0 (Lean_Nat_rec Lean_CEK_evalV_method0_0 Le
 reflexivity.
 Qed.
 Theorem Lean_CEK_evalV_eq_1 : forall v_x :e (Lean_List Lean_CEK_Val), forall v_x1 :e Lean_Tm, (Lean_CEK_evalV (LeanNum 0) v_x v_x1) = (Lean_Option_none_node Lean_CEK_Val).
-let v_x. assume H_v_x: v_x :e (Lean_List Lean_CEK_Val). let v_x1. assume H_v_x1: v_x1 :e Lean_Tm. 
+let v_x. assume H_v_x: v_x :e (Lean_List Lean_CEK_Val). let v_x1. assume H_v_x1: v_x1 :e Lean_Tm.
 apply LeanNum_0_at (fun zpat => (Lean_CEK_evalV zpat v_x v_x1)) (Lean_Option_none_node Lean_CEK_Val).
 rewrite Lean_CEK_evalV_split0 v_x H_v_x v_x1 H_v_x1.
 reflexivity.
 Qed.
 Theorem Lean_CEK_evalV_eq_2 : forall v_x :e (Lean_List Lean_CEK_Val), forall v_n :e Lean_Nat, forall v_i :e Lean_Nat, (Lean_CEK_evalV (Lean_Nat_succ_node v_n) v_x (Lean_Tm_var_node v_i)) =
     (Lean_List_getu63Internal Lean_CEK_Val v_x v_i).
-let v_x. assume H_v_x: v_x :e (Lean_List Lean_CEK_Val). let v_n. assume H_v_n: v_n :e Lean_Nat. let v_i. assume H_v_i: v_i :e Lean_Nat. 
+let v_x. assume H_v_x: v_x :e (Lean_List Lean_CEK_Val). let v_n. assume H_v_n: v_n :e Lean_Nat. let v_i. assume H_v_i: v_i :e Lean_Nat.
 rewrite Lean_CEK_evalV_split1 v_n H_v_n v_x H_v_x (Lean_Tm_var_node v_i) (Lean_Tm_var_typed v_i H_v_i).
 rewrite Lean_Tm_casesOn_iota0 (Sigma Lean_Nat (Lean_List_getu63Internal Lean_CEK_Val v_x)) (fun c1_1_0 :e Lean_Tm => (Lean_Option_some_node Lean_CEK_Val (Lean_CEK_Val_clo_node c1_1_0 v_x))) (fun
     c1_2_0 :e Lean_Tm => (fun c1_2_1 :e Lean_Tm => (Lean_Option_rec Lean_CEK_Val (Lean_Option_none_node Lean_CEK_Val) (fun v_val :e Lean_CEK_Val => (Lean_Option_rec Lean_CEK_Val
@@ -607,7 +607,7 @@ reflexivity.
 Qed.
 Theorem Lean_CEK_evalV_eq_3 : forall v_x :e (Lean_List Lean_CEK_Val), forall v_n :e Lean_Nat, forall v_k :e Lean_Nat, (Lean_CEK_evalV (Lean_Nat_succ_node v_n) v_x (Lean_Tm_lit_node v_k)) =
     (Lean_Option_some_node Lean_CEK_Val (Lean_CEK_Val_lit_node v_k)).
-let v_x. assume H_v_x: v_x :e (Lean_List Lean_CEK_Val). let v_n. assume H_v_n: v_n :e Lean_Nat. let v_k. assume H_v_k: v_k :e Lean_Nat. 
+let v_x. assume H_v_x: v_x :e (Lean_List Lean_CEK_Val). let v_n. assume H_v_n: v_n :e Lean_Nat. let v_k. assume H_v_k: v_k :e Lean_Nat.
 rewrite Lean_CEK_evalV_split1 v_n H_v_n v_x H_v_x (Lean_Tm_lit_node v_k) (Lean_Tm_lit_typed v_k H_v_k).
 rewrite Lean_Tm_casesOn_iota3 (Sigma Lean_Nat (Lean_List_getu63Internal Lean_CEK_Val v_x)) (fun c1_1_0 :e Lean_Tm => (Lean_Option_some_node Lean_CEK_Val (Lean_CEK_Val_clo_node c1_1_0 v_x))) (fun
     c1_2_0 :e Lean_Tm => (fun c1_2_1 :e Lean_Tm => (Lean_Option_rec Lean_CEK_Val (Lean_Option_none_node Lean_CEK_Val) (fun v_val :e Lean_CEK_Val => (Lean_Option_rec Lean_CEK_Val
@@ -621,7 +621,7 @@ reflexivity.
 Qed.
 Theorem Lean_CEK_evalV_eq_4 : forall v_x :e (Lean_List Lean_CEK_Val), forall v_n :e Lean_Nat, forall v_b :e Lean_Tm, (Lean_CEK_evalV (Lean_Nat_succ_node v_n) v_x (Lean_Tm_lam_node v_b)) =
     (Lean_Option_some_node Lean_CEK_Val (Lean_CEK_Val_clo_node v_b v_x)).
-let v_x. assume H_v_x: v_x :e (Lean_List Lean_CEK_Val). let v_n. assume H_v_n: v_n :e Lean_Nat. let v_b. assume H_v_b: v_b :e Lean_Tm. 
+let v_x. assume H_v_x: v_x :e (Lean_List Lean_CEK_Val). let v_n. assume H_v_n: v_n :e Lean_Nat. let v_b. assume H_v_b: v_b :e Lean_Tm.
 rewrite Lean_CEK_evalV_split1 v_n H_v_n v_x H_v_x (Lean_Tm_lam_node v_b) (Lean_Tm_lam_typed v_b H_v_b).
 rewrite Lean_Tm_casesOn_iota1 (Sigma Lean_Nat (Lean_List_getu63Internal Lean_CEK_Val v_x)) (fun c1_1_0 :e Lean_Tm => (Lean_Option_some_node Lean_CEK_Val (Lean_CEK_Val_clo_node c1_1_0 v_x))) (fun
     c1_2_0 :e Lean_Tm => (fun c1_2_1 :e Lean_Tm => (Lean_Option_rec Lean_CEK_Val (Lean_Option_none_node Lean_CEK_Val) (fun v_val :e Lean_CEK_Val => (Lean_Option_rec Lean_CEK_Val
@@ -637,7 +637,7 @@ Theorem Lean_CEK_evalV_eq_5 : forall v_x :e (Lean_List Lean_CEK_Val), forall v_n
     (Lean_Tm_app_node v_f v_a)) = (Lean_Option_rec Lean_CEK_Val (Lean_Option_none_node Lean_CEK_Val) (fun v_val :e Lean_CEK_Val => (Lean_Option_rec Lean_CEK_Val (Lean_Option_none_node Lean_CEK_Val)
     (fun v_val_c :e Lean_CEK_Val => (Lean_CEK_Val_rec (fun v_a :e Lean_Nat => (Lean_Option_none_node Lean_CEK_Val)) (fun v_a :e Lean_Tm => (fun v_x5 :e (Lean_List Lean_CEK_Val) => (Lean_CEK_evalV v_n
     (Lean_List_cons_node Lean_CEK_Val v_val_c v_x5) v_a))) v_val)) (Lean_CEK_evalV v_n v_x v_a))) (Lean_CEK_evalV v_n v_x v_f)).
-let v_x. assume H_v_x: v_x :e (Lean_List Lean_CEK_Val). let v_n. assume H_v_n: v_n :e Lean_Nat. let v_f. assume H_v_f: v_f :e Lean_Tm. let v_a. assume H_v_a: v_a :e Lean_Tm. 
+let v_x. assume H_v_x: v_x :e (Lean_List Lean_CEK_Val). let v_n. assume H_v_n: v_n :e Lean_Nat. let v_f. assume H_v_f: v_f :e Lean_Tm. let v_a. assume H_v_a: v_a :e Lean_Tm.
 rewrite Lean_CEK_evalV_split1 v_n H_v_n v_x H_v_x (Lean_Tm_app_node v_f v_a) (Lean_Tm_app_typed v_f H_v_f v_a H_v_a).
 rewrite Lean_Tm_casesOn_iota2 (Sigma Lean_Nat (Lean_List_getu63Internal Lean_CEK_Val v_x)) (fun c1_1_0 :e Lean_Tm => (Lean_Option_some_node Lean_CEK_Val (Lean_CEK_Val_clo_node c1_1_0 v_x))) (fun
     c1_2_0 :e Lean_Tm => (fun c1_2_1 :e Lean_Tm => (Lean_Option_rec Lean_CEK_Val (Lean_Option_none_node Lean_CEK_Val) (fun v_val :e Lean_CEK_Val => (Lean_Option_rec Lean_CEK_Val
@@ -809,7 +809,7 @@ let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e (Lean_List Lean_Kriv
     (Lean_Nat_rec Lean_Krivine_evalN_method0_0 Lean_Krivine_evalN_method1_0 a0) a1 (Lean_Krivine_evalN_recIn a0 H0) H1) H2).
 Qed.
 Theorem Lean_Krivine_evalN_split0 : forall s1 :e (Lean_List Lean_Krivine_NThunk), forall s2 :e Lean_Tm, (Lean_Krivine_evalN Lean_Nat_zero_node s1 s2) = (Lean_Option_none_node Lean_Krivine_NVal).
-let s1. assume H_s1: s1 :e (Lean_List Lean_Krivine_NThunk). let s2. assume H_s2: s2 :e Lean_Tm. 
+let s1. assume H_s1: s1 :e (Lean_List Lean_Krivine_NThunk). let s2. assume H_s2: s2 :e Lean_Tm.
 prove ((Lean_Nat_rec Lean_Krivine_evalN_method0_0 Lean_Krivine_evalN_method1_0 Lean_Nat_zero_node) s1 s2) = (Lean_Option_none_node Lean_Krivine_NVal).
 rewrite Lean_Nat_iota0 Lean_Krivine_evalN_method0_0 Lean_Krivine_evalN_method1_0.
 rewrite Lean_Krivine_evalN_method0_0_ap s1 H_s1.
@@ -823,7 +823,7 @@ Theorem Lean_Krivine_evalN_split1 : forall t0 :e Lean_Nat, forall s1 :e (Lean_Li
     Lean_Krivine_NVal (Lean_Krivine_NVal_rec (fun v_a_c :e Lean_Nat => (Lean_Option_none_node Lean_Krivine_NVal)) (fun v_a_c :e Lean_Tm => (fun v_x7 :e (Lean_List Lean_Krivine_NThunk) =>
     (Lean_Krivine_evalN t0 (Lean_List_cons_node Lean_Krivine_NThunk (Lean_Krivine_NThunk_mk_node c1_2_1 s1) v_x7) v_a_c))))) (Lean_Krivine_evalN t0 s1 c1_2_0)))) (fun c1_3_0 :e Lean_Nat =>
     (Lean_Option_some_node Lean_Krivine_NVal (Lean_Krivine_NVal_lit_node c1_3_0))) s2).
-let t0. assume H_t0: t0 :e Lean_Nat. let s1. assume H_s1: s1 :e (Lean_List Lean_Krivine_NThunk). let s2. assume H_s2: s2 :e Lean_Tm. 
+let t0. assume H_t0: t0 :e Lean_Nat. let s1. assume H_s1: s1 :e (Lean_List Lean_Krivine_NThunk). let s2. assume H_s2: s2 :e Lean_Tm.
 prove ((Lean_Nat_rec Lean_Krivine_evalN_method0_0 Lean_Krivine_evalN_method1_0 (Lean_Nat_succ_node t0)) s1 s2) = (Lean_Tm_casesOn (fun c1_0_0 :e Lean_Nat => (Lean_Option_rec Lean_Krivine_NThunk
     (Lean_Option_none_node Lean_Krivine_NVal) (Sigma Lean_Krivine_NThunk (Lean_Krivine_NThunk_rec (fun v_a :e Lean_Tm => (fun v_x6 :e (Lean_List Lean_Krivine_NThunk) => ((Lean_Nat_rec
     Lean_Krivine_evalN_method0_0 Lean_Krivine_evalN_method1_0 t0) v_x6 v_a))))) (Lean_List_getu63Internal Lean_Krivine_NThunk s1 c1_0_0))) (fun c1_1_0 :e Lean_Tm => (Lean_Option_some_node
@@ -839,7 +839,7 @@ rewrite Lean_Krivine_evalN_method1_3_ap t0 (Lean_Nat_rec Lean_Krivine_evalN_meth
 reflexivity.
 Qed.
 Theorem Lean_Krivine_evalN_eq_1 : forall v_x :e (Lean_List Lean_Krivine_NThunk), forall v_x1 :e Lean_Tm, (Lean_Krivine_evalN (LeanNum 0) v_x v_x1) = (Lean_Option_none_node Lean_Krivine_NVal).
-let v_x. assume H_v_x: v_x :e (Lean_List Lean_Krivine_NThunk). let v_x1. assume H_v_x1: v_x1 :e Lean_Tm. 
+let v_x. assume H_v_x: v_x :e (Lean_List Lean_Krivine_NThunk). let v_x1. assume H_v_x1: v_x1 :e Lean_Tm.
 apply LeanNum_0_at (fun zpat => (Lean_Krivine_evalN zpat v_x v_x1)) (Lean_Option_none_node Lean_Krivine_NVal).
 rewrite Lean_Krivine_evalN_split0 v_x H_v_x v_x1 H_v_x1.
 reflexivity.
@@ -847,7 +847,7 @@ Qed.
 Theorem Lean_Krivine_evalN_eq_2 : forall v_x :e (Lean_List Lean_Krivine_NThunk), forall v_n :e Lean_Nat, forall v_i :e Lean_Nat, (Lean_Krivine_evalN (Lean_Nat_succ_node v_n) v_x (Lean_Tm_var_node
     v_i)) = (Lean_Option_rec Lean_Krivine_NThunk (Lean_Option_none_node Lean_Krivine_NVal) (Sigma Lean_Krivine_NThunk (Lean_Krivine_NThunk_rec (fun v_a :e Lean_Tm => (fun v_x6 :e (Lean_List
     Lean_Krivine_NThunk) => (Lean_Krivine_evalN v_n v_x6 v_a))))) (Lean_List_getu63Internal Lean_Krivine_NThunk v_x v_i)).
-let v_x. assume H_v_x: v_x :e (Lean_List Lean_Krivine_NThunk). let v_n. assume H_v_n: v_n :e Lean_Nat. let v_i. assume H_v_i: v_i :e Lean_Nat. 
+let v_x. assume H_v_x: v_x :e (Lean_List Lean_Krivine_NThunk). let v_n. assume H_v_n: v_n :e Lean_Nat. let v_i. assume H_v_i: v_i :e Lean_Nat.
 rewrite Lean_Krivine_evalN_split1 v_n H_v_n v_x H_v_x (Lean_Tm_var_node v_i) (Lean_Tm_var_typed v_i H_v_i).
 rewrite Lean_Tm_casesOn_iota0 (fun c1_0_0 :e Lean_Nat => (Lean_Option_rec Lean_Krivine_NThunk (Lean_Option_none_node Lean_Krivine_NVal) (Sigma Lean_Krivine_NThunk (Lean_Krivine_NThunk_rec (fun v_a :e
     Lean_Tm => (fun v_x6 :e (Lean_List Lean_Krivine_NThunk) => (Lean_Krivine_evalN v_n v_x6 v_a))))) (Lean_List_getu63Internal Lean_Krivine_NThunk v_x c1_0_0))) (fun c1_1_0 :e Lean_Tm =>
@@ -868,7 +868,7 @@ reflexivity.
 Qed.
 Theorem Lean_Krivine_evalN_eq_3 : forall v_x :e (Lean_List Lean_Krivine_NThunk), forall v_n :e Lean_Nat, forall v_k :e Lean_Nat, (Lean_Krivine_evalN (Lean_Nat_succ_node v_n) v_x (Lean_Tm_lit_node
     v_k)) = (Lean_Option_some_node Lean_Krivine_NVal (Lean_Krivine_NVal_lit_node v_k)).
-let v_x. assume H_v_x: v_x :e (Lean_List Lean_Krivine_NThunk). let v_n. assume H_v_n: v_n :e Lean_Nat. let v_k. assume H_v_k: v_k :e Lean_Nat. 
+let v_x. assume H_v_x: v_x :e (Lean_List Lean_Krivine_NThunk). let v_n. assume H_v_n: v_n :e Lean_Nat. let v_k. assume H_v_k: v_k :e Lean_Nat.
 rewrite Lean_Krivine_evalN_split1 v_n H_v_n v_x H_v_x (Lean_Tm_lit_node v_k) (Lean_Tm_lit_typed v_k H_v_k).
 rewrite Lean_Tm_casesOn_iota3 (fun c1_0_0 :e Lean_Nat => (Lean_Option_rec Lean_Krivine_NThunk (Lean_Option_none_node Lean_Krivine_NVal) (Sigma Lean_Krivine_NThunk (Lean_Krivine_NThunk_rec (fun v_a :e
     Lean_Tm => (fun v_x6 :e (Lean_List Lean_Krivine_NThunk) => (Lean_Krivine_evalN v_n v_x6 v_a))))) (Lean_List_getu63Internal Lean_Krivine_NThunk v_x c1_0_0))) (fun c1_1_0 :e Lean_Tm =>
@@ -883,7 +883,7 @@ reflexivity.
 Qed.
 Theorem Lean_Krivine_evalN_eq_4 : forall v_x :e (Lean_List Lean_Krivine_NThunk), forall v_n :e Lean_Nat, forall v_b :e Lean_Tm, (Lean_Krivine_evalN (Lean_Nat_succ_node v_n) v_x (Lean_Tm_lam_node
     v_b)) = (Lean_Option_some_node Lean_Krivine_NVal (Lean_Krivine_NVal_clo_node v_b v_x)).
-let v_x. assume H_v_x: v_x :e (Lean_List Lean_Krivine_NThunk). let v_n. assume H_v_n: v_n :e Lean_Nat. let v_b. assume H_v_b: v_b :e Lean_Tm. 
+let v_x. assume H_v_x: v_x :e (Lean_List Lean_Krivine_NThunk). let v_n. assume H_v_n: v_n :e Lean_Nat. let v_b. assume H_v_b: v_b :e Lean_Tm.
 rewrite Lean_Krivine_evalN_split1 v_n H_v_n v_x H_v_x (Lean_Tm_lam_node v_b) (Lean_Tm_lam_typed v_b H_v_b).
 rewrite Lean_Tm_casesOn_iota1 (fun c1_0_0 :e Lean_Nat => (Lean_Option_rec Lean_Krivine_NThunk (Lean_Option_none_node Lean_Krivine_NVal) (Sigma Lean_Krivine_NThunk (Lean_Krivine_NThunk_rec (fun v_a :e
     Lean_Tm => (fun v_x6 :e (Lean_List Lean_Krivine_NThunk) => (Lean_Krivine_evalN v_n v_x6 v_a))))) (Lean_List_getu63Internal Lean_Krivine_NThunk v_x c1_0_0))) (fun c1_1_0 :e Lean_Tm =>
@@ -900,7 +900,7 @@ Theorem Lean_Krivine_evalN_eq_5 : forall v_x :e (Lean_List Lean_Krivine_NThunk),
     (Lean_Tm_app_node v_f v_a)) = (Lean_Option_rec Lean_Krivine_NVal (Lean_Option_none_node Lean_Krivine_NVal) (Sigma Lean_Krivine_NVal (Lean_Krivine_NVal_rec (fun v_a_c :e Lean_Nat =>
     (Lean_Option_none_node Lean_Krivine_NVal)) (fun v_a_c :e Lean_Tm => (fun v_x7 :e (Lean_List Lean_Krivine_NThunk) => (Lean_Krivine_evalN v_n (Lean_List_cons_node Lean_Krivine_NThunk
     (Lean_Krivine_NThunk_mk_node v_a v_x) v_x7) v_a_c))))) (Lean_Krivine_evalN v_n v_x v_f)).
-let v_x. assume H_v_x: v_x :e (Lean_List Lean_Krivine_NThunk). let v_n. assume H_v_n: v_n :e Lean_Nat. let v_f. assume H_v_f: v_f :e Lean_Tm. let v_a. assume H_v_a: v_a :e Lean_Tm. 
+let v_x. assume H_v_x: v_x :e (Lean_List Lean_Krivine_NThunk). let v_n. assume H_v_n: v_n :e Lean_Nat. let v_f. assume H_v_f: v_f :e Lean_Tm. let v_a. assume H_v_a: v_a :e Lean_Tm.
 rewrite Lean_Krivine_evalN_split1 v_n H_v_n v_x H_v_x (Lean_Tm_app_node v_f v_a) (Lean_Tm_app_typed v_f H_v_f v_a H_v_a).
 rewrite Lean_Tm_casesOn_iota2 (fun c1_0_0 :e Lean_Nat => (Lean_Option_rec Lean_Krivine_NThunk (Lean_Option_none_node Lean_Krivine_NVal) (Sigma Lean_Krivine_NThunk (Lean_Krivine_NThunk_rec (fun v_a_c
     :e Lean_Tm => (fun v_x6 :e (Lean_List Lean_Krivine_NThunk) => (Lean_Krivine_evalN v_n v_x6 v_a_c))))) (Lean_List_getu63Internal Lean_Krivine_NThunk v_x c1_0_0))) (fun c1_1_0 :e Lean_Tm =>
@@ -954,7 +954,7 @@ Qed.
 Theorem Lean_Option_map_eq_2 : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall l_u_2, nat_p l_u_2 -> forall v_u946 :e LeanUniv l_u_2, forall v_f :e (Pi_ ux :e v_u945, v_u946),
     (Lean_Option_map v_u945 v_u946 v_f (Lean_Option_none_node v_u945)) = (Lean_Option_none_node v_u946).
 let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let l_u_2. assume H_l_u_2: nat_p l_u_2. let v_u946. assume H_v_u946: v_u946 :e LeanUniv l_u_2. let v_f.
-    assume H_v_f: v_f :e (Pi_ ux :e v_u945, v_u946). 
+    assume H_v_f: v_f :e (Pi_ ux :e v_u945, v_u946).
 prove (Lean_Option_rec v_u945 (Lean_Option_none_node v_u946) (Lean_Option_map_method1_0 v_u945 v_u946 v_f) (Lean_Option_none_node v_u945)) = (Lean_Option_none_node v_u946).
 rewrite Lean_Option_iota0 v_u945 (Lean_Option_none_node v_u946) (Lean_Option_map_method1_0 v_u945 v_u946 v_f).
 reflexivity.
@@ -962,7 +962,7 @@ Qed.
 Theorem Lean_Option_map_eq_1 : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall l_u_2, nat_p l_u_2 -> forall v_u946 :e LeanUniv l_u_2, forall v_f :e (Pi_ ux :e v_u945, v_u946),
     forall v_x :e v_u945, (Lean_Option_map v_u945 v_u946 v_f (Lean_Option_some_node v_u945 v_x)) = (Lean_Option_some_node v_u946 (v_f v_x)).
 let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let l_u_2. assume H_l_u_2: nat_p l_u_2. let v_u946. assume H_v_u946: v_u946 :e LeanUniv l_u_2. let v_f.
-    assume H_v_f: v_f :e (Pi_ ux :e v_u945, v_u946). let v_x. assume H_v_x: v_x :e v_u945. 
+    assume H_v_f: v_f :e (Pi_ ux :e v_u945, v_u946). let v_x. assume H_v_x: v_x :e v_u945.
 prove (Lean_Option_rec v_u945 (Lean_Option_none_node v_u946) (Lean_Option_map_method1_0 v_u945 v_u946 v_f) (Lean_Option_some_node v_u945 v_x)) = (Lean_Option_some_node v_u946 (v_f v_x)).
 rewrite Lean_Option_iota1 v_u945 (Lean_Option_none_node v_u946) (Lean_Option_map_method1_0 v_u945 v_u946 v_f) v_x H_v_x.
 rewrite Lean_Option_map_method1_0_ap v_u945 v_u946 v_f v_x H_v_x.
@@ -974,7 +974,7 @@ Theorem Lean_Option_map_unique : forall g:set -> set -> set -> set -> set, (fora
     (Lean_Option_some_node v_u946 (v_f v_x))) -> forall u, nat_p u -> forall a0 :e LeanUniv u, forall a1 :e LeanUniv u, forall a2 :e (Pi_ ux :e a0, a1), forall a3 :e (Lean_Option a0), g a0 a1 a2 a3 =
     Lean_Option_map a0 a1 a2 a3.
 let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e LeanUniv u. let a1. assume H1: a1 :e LeanUniv u. let a2. assume H2: a2 :e (Pi_ ux :e a0, a1). let a3. assume H3: a3
-    :e (Lean_Option a0). 
+    :e (Lean_Option a0).
 claim L0: 0 :e {z :e 1 | g a0 a1 a2 (Lean_Option_none_node a0) = Lean_Option_map a0 a1 a2 (Lean_Option_none_node a0)}.
 { apply SepI 1 (fun z:set => g a0 a1 a2 (Lean_Option_none_node a0) = Lean_Option_map a0 a1 a2 (Lean_Option_none_node a0)) 0 In_0_1.
   prove g a0 a1 a2 (Lean_Option_none_node a0) = Lean_Option_map a0 a1 a2 (Lean_Option_none_node a0).
@@ -1129,7 +1129,7 @@ Theorem Lean_CEK_step_split0 : forall t0 :e Lean_CEK_Ctl, forall t1 :e (Lean_Lis
     c3_0_1) (Lean_List_cons_node Lean_CEK_Frame (Lean_CEK_Frame_callWith_node c1_1_0) c2_1_1))))) (Sigma Lean_CEK_Val (Lean_CEK_Val_rec (fun c4_0_0 :e Lean_Nat => (Lean_Option_none_node Lean_CEK_St))
     (fun c4_1_0 :e Lean_Tm => (fun c4_1_1 :e (Lean_List Lean_CEK_Val) => (Lean_Option_some_node Lean_CEK_St (Lean_CEK_St_mk_node (Lean_CEK_Ctl_ev_node c4_1_0 (Lean_List_cons_node Lean_CEK_Val c1_1_0
     c4_1_1)) c2_1_1)))))) c2_1_0))) t1)) t0).
-let t0. assume H_t0: t0 :e Lean_CEK_Ctl. let t1. assume H_t1: t1 :e (Lean_List Lean_CEK_Frame). 
+let t0. assume H_t0: t0 :e Lean_CEK_Ctl. let t1. assume H_t1: t1 :e (Lean_List Lean_CEK_Frame).
 prove (Lean_CEK_St_rec Lean_CEK_step_method0_0 (Lean_CEK_St_mk_node t0 t1)) = (Lean_CEK_Ctl_rec (fun c1_0_0 :e Lean_Tm => (fun c1_0_1 :e (Lean_List Lean_CEK_Val) => (Lean_Tm_casesOn (fun c2_0_0 :e
     Lean_Nat => (Lean_Option_map Lean_CEK_Val Lean_CEK_St (fun v_v :e Lean_CEK_Val => (Lean_CEK_St_mk_node (Lean_CEK_Ctl_ret_node v_v) t1)) (Lean_List_getu63Internal Lean_CEK_Val c1_0_1 c2_0_0)))
     (fun c2_1_0 :e Lean_Tm => (Lean_Option_some_node Lean_CEK_St (Lean_CEK_St_mk_node (Lean_CEK_Ctl_ret_node (Lean_CEK_Val_clo_node c2_1_0 c1_0_1)) t1))) (fun c2_2_0 :e Lean_Tm => (fun c2_2_1 :e
@@ -1147,7 +1147,7 @@ Qed.
 Theorem Lean_CEK_step_eq_1 : forall v_i :e Lean_Nat, forall v_u961 :e (Lean_List Lean_CEK_Val), forall v_k :e (Lean_List Lean_CEK_Frame), (Lean_CEK_step (Lean_CEK_St_mk_node (Lean_CEK_Ctl_ev_node
     (Lean_Tm_var_node v_i) v_u961) v_k)) = (Lean_Option_map Lean_CEK_Val Lean_CEK_St (fun v_v :e Lean_CEK_Val => (Lean_CEK_St_mk_node (Lean_CEK_Ctl_ret_node v_v) v_k)) (Lean_List_getu63Internal
     Lean_CEK_Val v_u961 v_i)).
-let v_i. assume H_v_i: v_i :e Lean_Nat. let v_u961. assume H_v_u961: v_u961 :e (Lean_List Lean_CEK_Val). let v_k. assume H_v_k: v_k :e (Lean_List Lean_CEK_Frame). 
+let v_i. assume H_v_i: v_i :e Lean_Nat. let v_u961. assume H_v_u961: v_u961 :e (Lean_List Lean_CEK_Val). let v_k. assume H_v_k: v_k :e (Lean_List Lean_CEK_Frame).
 rewrite Lean_CEK_step_split0 (Lean_CEK_Ctl_ev_node (Lean_Tm_var_node v_i) v_u961) (Lean_CEK_Ctl_ev_typed (Lean_Tm_var_node v_i) (Lean_Tm_var_typed v_i H_v_i) v_u961 H_v_u961) v_k H_v_k.
 rewrite Lean_CEK_Ctl_iota0 (fun c1_0_0 :e Lean_Tm => (fun c1_0_1 :e (Lean_List Lean_CEK_Val) => (Lean_Tm_casesOn (fun c2_0_0 :e Lean_Nat => (Lean_Option_map Lean_CEK_Val Lean_CEK_St (fun v_v :e
     Lean_CEK_Val => (Lean_CEK_St_mk_node (Lean_CEK_Ctl_ret_node v_v) v_k)) (Lean_List_getu63Internal Lean_CEK_Val c1_0_1 c2_0_0))) (fun c2_1_0 :e Lean_Tm => (Lean_Option_some_node Lean_CEK_St
@@ -1218,7 +1218,7 @@ reflexivity.
 Qed.
 Theorem Lean_CEK_step_eq_2 : forall v_m :e Lean_Nat, forall v_a :e (Lean_List Lean_CEK_Val), forall v_k :e (Lean_List Lean_CEK_Frame), (Lean_CEK_step (Lean_CEK_St_mk_node (Lean_CEK_Ctl_ev_node
     (Lean_Tm_lit_node v_m) v_a) v_k)) = (Lean_Option_some_node Lean_CEK_St (Lean_CEK_St_mk_node (Lean_CEK_Ctl_ret_node (Lean_CEK_Val_lit_node v_m)) v_k)).
-let v_m. assume H_v_m: v_m :e Lean_Nat. let v_a. assume H_v_a: v_a :e (Lean_List Lean_CEK_Val). let v_k. assume H_v_k: v_k :e (Lean_List Lean_CEK_Frame). 
+let v_m. assume H_v_m: v_m :e Lean_Nat. let v_a. assume H_v_a: v_a :e (Lean_List Lean_CEK_Val). let v_k. assume H_v_k: v_k :e (Lean_List Lean_CEK_Frame).
 rewrite Lean_CEK_step_split0 (Lean_CEK_Ctl_ev_node (Lean_Tm_lit_node v_m) v_a) (Lean_CEK_Ctl_ev_typed (Lean_Tm_lit_node v_m) (Lean_Tm_lit_typed v_m H_v_m) v_a H_v_a) v_k H_v_k.
 rewrite Lean_CEK_Ctl_iota0 (fun c1_0_0 :e Lean_Tm => (fun c1_0_1 :e (Lean_List Lean_CEK_Val) => (Lean_Tm_casesOn (fun c2_0_0 :e Lean_Nat => (Lean_Option_map Lean_CEK_Val Lean_CEK_St (fun v_v :e
     Lean_CEK_Val => (Lean_CEK_St_mk_node (Lean_CEK_Ctl_ret_node v_v) v_k)) (Lean_List_getu63Internal Lean_CEK_Val c1_0_1 c2_0_0))) (fun c2_1_0 :e Lean_Tm => (Lean_Option_some_node Lean_CEK_St
@@ -1287,7 +1287,7 @@ reflexivity.
 Qed.
 Theorem Lean_CEK_step_eq_3 : forall v_b :e Lean_Tm, forall v_u961 :e (Lean_List Lean_CEK_Val), forall v_k :e (Lean_List Lean_CEK_Frame), (Lean_CEK_step (Lean_CEK_St_mk_node (Lean_CEK_Ctl_ev_node
     (Lean_Tm_lam_node v_b) v_u961) v_k)) = (Lean_Option_some_node Lean_CEK_St (Lean_CEK_St_mk_node (Lean_CEK_Ctl_ret_node (Lean_CEK_Val_clo_node v_b v_u961)) v_k)).
-let v_b. assume H_v_b: v_b :e Lean_Tm. let v_u961. assume H_v_u961: v_u961 :e (Lean_List Lean_CEK_Val). let v_k. assume H_v_k: v_k :e (Lean_List Lean_CEK_Frame). 
+let v_b. assume H_v_b: v_b :e Lean_Tm. let v_u961. assume H_v_u961: v_u961 :e (Lean_List Lean_CEK_Val). let v_k. assume H_v_k: v_k :e (Lean_List Lean_CEK_Frame).
 rewrite Lean_CEK_step_split0 (Lean_CEK_Ctl_ev_node (Lean_Tm_lam_node v_b) v_u961) (Lean_CEK_Ctl_ev_typed (Lean_Tm_lam_node v_b) (Lean_Tm_lam_typed v_b H_v_b) v_u961 H_v_u961) v_k H_v_k.
 rewrite Lean_CEK_Ctl_iota0 (fun c1_0_0 :e Lean_Tm => (fun c1_0_1 :e (Lean_List Lean_CEK_Val) => (Lean_Tm_casesOn (fun c2_0_0 :e Lean_Nat => (Lean_Option_map Lean_CEK_Val Lean_CEK_St (fun v_v :e
     Lean_CEK_Val => (Lean_CEK_St_mk_node (Lean_CEK_Ctl_ret_node v_v) v_k)) (Lean_List_getu63Internal Lean_CEK_Val c1_0_1 c2_0_0))) (fun c2_1_0 :e Lean_Tm => (Lean_Option_some_node Lean_CEK_St
@@ -1358,7 +1358,7 @@ Theorem Lean_CEK_step_eq_4 : forall v_f :e Lean_Tm, forall v_a :e Lean_Tm, foral
     (Lean_CEK_Ctl_ev_node (Lean_Tm_app_node v_f v_a) v_u961) v_k)) = (Lean_Option_some_node Lean_CEK_St (Lean_CEK_St_mk_node (Lean_CEK_Ctl_ev_node v_f v_u961) (Lean_List_cons_node Lean_CEK_Frame
     (Lean_CEK_Frame_argOf_node v_a v_u961) v_k))).
 let v_f. assume H_v_f: v_f :e Lean_Tm. let v_a. assume H_v_a: v_a :e Lean_Tm. let v_u961. assume H_v_u961: v_u961 :e (Lean_List Lean_CEK_Val). let v_k. assume H_v_k: v_k :e (Lean_List
-    Lean_CEK_Frame). 
+    Lean_CEK_Frame).
 rewrite Lean_CEK_step_split0 (Lean_CEK_Ctl_ev_node (Lean_Tm_app_node v_f v_a) v_u961) (Lean_CEK_Ctl_ev_typed (Lean_Tm_app_node v_f v_a) (Lean_Tm_app_typed v_f H_v_f v_a H_v_a) v_u961 H_v_u961) v_k
     H_v_k.
 rewrite Lean_CEK_Ctl_iota0 (fun c1_0_0 :e Lean_Tm => (fun c1_0_1 :e (Lean_List Lean_CEK_Val) => (Lean_Tm_casesOn (fun c2_0_0 :e Lean_Nat => (Lean_Option_map Lean_CEK_Val Lean_CEK_St (fun v_v :e
@@ -1438,7 +1438,7 @@ Theorem Lean_CEK_step_eq_5 : forall v_v :e Lean_CEK_Val, forall v_a :e Lean_Tm, 
     (Lean_CEK_St_mk_node (Lean_CEK_Ctl_ret_node v_v) (Lean_List_cons_node Lean_CEK_Frame (Lean_CEK_Frame_argOf_node v_a v_u961) v_k))) = (Lean_Option_some_node Lean_CEK_St (Lean_CEK_St_mk_node
     (Lean_CEK_Ctl_ev_node v_a v_u961) (Lean_List_cons_node Lean_CEK_Frame (Lean_CEK_Frame_callWith_node v_v) v_k))).
 let v_v. assume H_v_v: v_v :e Lean_CEK_Val. let v_a. assume H_v_a: v_a :e Lean_Tm. let v_u961. assume H_v_u961: v_u961 :e (Lean_List Lean_CEK_Val). let v_k. assume H_v_k: v_k :e (Lean_List
-    Lean_CEK_Frame). 
+    Lean_CEK_Frame).
 rewrite Lean_CEK_step_split0 (Lean_CEK_Ctl_ret_node v_v) (Lean_CEK_Ctl_ret_typed v_v H_v_v) (Lean_List_cons_node Lean_CEK_Frame (Lean_CEK_Frame_argOf_node v_a v_u961) v_k) (Lean_List_cons_typed
     Lean_CEK_Frame (Lean_CEK_Frame_argOf_node v_a v_u961) (Lean_CEK_Frame_argOf_typed v_a H_v_a v_u961 H_v_u961) v_k H_v_k).
 rewrite Lean_CEK_Ctl_iota1 (fun c1_0_0 :e Lean_Tm => (fun c1_0_1 :e (Lean_List Lean_CEK_Val) => (Lean_Tm_casesOn (fun c2_0_0 :e Lean_Nat => (Lean_Option_map Lean_CEK_Val Lean_CEK_St (fun v_v_c :e
@@ -1540,7 +1540,7 @@ Theorem Lean_CEK_step_eq_6 : forall v_v :e Lean_CEK_Val, forall v_b :e Lean_Tm, 
     (Lean_CEK_St_mk_node (Lean_CEK_Ctl_ret_node v_v) (Lean_List_cons_node Lean_CEK_Frame (Lean_CEK_Frame_callWith_node (Lean_CEK_Val_clo_node v_b v_u961u39)) v_k))) = (Lean_Option_some_node
     Lean_CEK_St (Lean_CEK_St_mk_node (Lean_CEK_Ctl_ev_node v_b (Lean_List_cons_node Lean_CEK_Val v_v v_u961u39)) v_k)).
 let v_v. assume H_v_v: v_v :e Lean_CEK_Val. let v_b. assume H_v_b: v_b :e Lean_Tm. let v_u961u39. assume H_v_u961u39: v_u961u39 :e (Lean_List Lean_CEK_Val). let v_k. assume H_v_k: v_k :e (Lean_List
-    Lean_CEK_Frame). 
+    Lean_CEK_Frame).
 rewrite Lean_CEK_step_split0 (Lean_CEK_Ctl_ret_node v_v) (Lean_CEK_Ctl_ret_typed v_v H_v_v) (Lean_List_cons_node Lean_CEK_Frame (Lean_CEK_Frame_callWith_node (Lean_CEK_Val_clo_node v_b v_u961u39))
     v_k) (Lean_List_cons_typed Lean_CEK_Frame (Lean_CEK_Frame_callWith_node (Lean_CEK_Val_clo_node v_b v_u961u39)) (Lean_CEK_Frame_callWith_typed (Lean_CEK_Val_clo_node v_b v_u961u39)
     (Lean_CEK_Val_clo_typed v_b H_v_b v_u961u39 H_v_u961u39)) v_k H_v_k).
@@ -1655,7 +1655,7 @@ reflexivity.
 Qed.
 Theorem Lean_CEK_step_eq_7 : forall v_a :e Lean_CEK_Val, forall v_a_1 :e Lean_Nat, forall v_tail :e (Lean_List Lean_CEK_Frame), (Lean_CEK_step (Lean_CEK_St_mk_node (Lean_CEK_Ctl_ret_node v_a)
     (Lean_List_cons_node Lean_CEK_Frame (Lean_CEK_Frame_callWith_node (Lean_CEK_Val_lit_node v_a_1)) v_tail))) = (Lean_Option_none_node Lean_CEK_St).
-let v_a. assume H_v_a: v_a :e Lean_CEK_Val. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Nat. let v_tail. assume H_v_tail: v_tail :e (Lean_List Lean_CEK_Frame). 
+let v_a. assume H_v_a: v_a :e Lean_CEK_Val. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Nat. let v_tail. assume H_v_tail: v_tail :e (Lean_List Lean_CEK_Frame).
 rewrite Lean_CEK_step_split0 (Lean_CEK_Ctl_ret_node v_a) (Lean_CEK_Ctl_ret_typed v_a H_v_a) (Lean_List_cons_node Lean_CEK_Frame (Lean_CEK_Frame_callWith_node (Lean_CEK_Val_lit_node v_a_1)) v_tail)
     (Lean_List_cons_typed Lean_CEK_Frame (Lean_CEK_Frame_callWith_node (Lean_CEK_Val_lit_node v_a_1)) (Lean_CEK_Frame_callWith_typed (Lean_CEK_Val_lit_node v_a_1) (Lean_CEK_Val_lit_typed v_a_1
     H_v_a_1)) v_tail H_v_tail).
@@ -1759,7 +1759,7 @@ rewrite (eq_i_tra ((fun c4_0_0 :e Lean_Nat => (Lean_Option_none_node Lean_CEK_St
 reflexivity.
 Qed.
 Theorem Lean_CEK_step_eq_8 : forall v_a :e Lean_CEK_Val, (Lean_CEK_step (Lean_CEK_St_mk_node (Lean_CEK_Ctl_ret_node v_a) (Lean_List_nil_node Lean_CEK_Frame))) = (Lean_Option_none_node Lean_CEK_St).
-let v_a. assume H_v_a: v_a :e Lean_CEK_Val. 
+let v_a. assume H_v_a: v_a :e Lean_CEK_Val.
 rewrite Lean_CEK_step_split0 (Lean_CEK_Ctl_ret_node v_a) (Lean_CEK_Ctl_ret_typed v_a H_v_a) (Lean_List_nil_node Lean_CEK_Frame) (Lean_List_nil_typed Lean_CEK_Frame).
 rewrite Lean_CEK_Ctl_iota1 (fun c1_0_0 :e Lean_Tm => (fun c1_0_1 :e (Lean_List Lean_CEK_Val) => (Lean_Tm_casesOn (fun c2_0_0 :e Lean_Nat => (Lean_Option_map Lean_CEK_Val Lean_CEK_St (fun v_v :e
     Lean_CEK_Val => (Lean_CEK_St_mk_node (Lean_CEK_Ctl_ret_node v_v) (Lean_List_nil_node Lean_CEK_Frame))) (Lean_List_getu63Internal Lean_CEK_Val c1_0_1 c2_0_0))) (fun c2_1_0 :e Lean_Tm =>
@@ -1806,7 +1806,7 @@ Theorem Lean_CEK_Final_In : forall a0 :e Lean_CEK_St, Lean_CEK_Final a0 :e LeanP
 let a0. assume H0: a0 :e Lean_CEK_St. exact (Lean_Eq_Prop_prop (Lean_Option Lean_CEK_St) (Lean_CEK_step a0) (Lean_Option_none_node Lean_CEK_St)).
 Qed.
 Theorem Lean_CEK_Final_eq_1 : forall v_s :e Lean_CEK_St, (Lean_CEK_Final v_s) = (Lean_Eq_Prop (Lean_Option Lean_CEK_St) (Lean_CEK_step v_s) (Lean_Option_none_node Lean_CEK_St)).
-let v_s. assume H_v_s: v_s :e Lean_CEK_St. 
+let v_s. assume H_v_s: v_s :e Lean_CEK_St.
 reflexivity.
 Qed.
 Theorem Lean_CEK_Final_unfold : forall a0, Lean_CEK_Final a0 = (Lean_Eq_Prop (Lean_Option Lean_CEK_St) (Lean_CEK_step a0) (Lean_Option_none_node Lean_CEK_St)).
@@ -1903,7 +1903,7 @@ Theorem Lean_Krivine_kstep_split0 : forall t0 :e Lean_Tm, forall t1 :e (Lean_Lis
     (Lean_Krivine_KSt_mk_node c1_1_0 (Lean_List_cons_node Lean_Krivine_NThunk c2_1_0 t1) c2_1_1)))) t2)) (fun c1_2_0 :e Lean_Tm => (fun c1_2_1 :e Lean_Tm => (Lean_Option_some_node Lean_Krivine_KSt
     (Lean_Krivine_KSt_mk_node c1_2_0 t1 (Lean_List_cons_node Lean_Krivine_NThunk (Lean_Krivine_NThunk_mk_node c1_2_1 t1) t2))))) (fun c1_3_0 :e Lean_Nat => (Lean_Option_none_node Lean_Krivine_KSt))
     t0).
-let t0. assume H_t0: t0 :e Lean_Tm. let t1. assume H_t1: t1 :e (Lean_List Lean_Krivine_NThunk). let t2. assume H_t2: t2 :e (Lean_List Lean_Krivine_NThunk). 
+let t0. assume H_t0: t0 :e Lean_Tm. let t1. assume H_t1: t1 :e (Lean_List Lean_Krivine_NThunk). let t2. assume H_t2: t2 :e (Lean_List Lean_Krivine_NThunk).
 prove (Lean_Krivine_KSt_rec Lean_Krivine_kstep_method0_0 (Lean_Krivine_KSt_mk_node t0 t1 t2)) = (Lean_Tm_casesOn (fun c1_0_0 :e Lean_Nat => (Lean_Option_map Lean_Krivine_NThunk Lean_Krivine_KSt
     (Sigma Lean_Krivine_NThunk (Lean_Krivine_NThunk_rec (fun v_a :e Lean_Tm => (fun v_x4 :e (Lean_List Lean_Krivine_NThunk) => (Lean_Krivine_KSt_mk_node v_a v_x4 t2))))) (Lean_List_getu63Internal
     Lean_Krivine_NThunk t1 c1_0_0))) (fun c1_1_0 :e Lean_Tm => (Lean_List_casesOn Lean_Krivine_NThunk (Lean_Option_none_node Lean_Krivine_KSt) (fun c2_1_0 :e Lean_Krivine_NThunk => (fun c2_1_1 :e
@@ -1919,7 +1919,7 @@ Qed.
 Theorem Lean_Krivine_kstep_eq_1 : forall v_i :e Lean_Nat, forall v_u961 :e (Lean_List Lean_Krivine_NThunk), forall v_s :e (Lean_List Lean_Krivine_NThunk), (Lean_Krivine_kstep
     (Lean_Krivine_KSt_mk_node (Lean_Tm_var_node v_i) v_u961 v_s)) = (Lean_Option_map Lean_Krivine_NThunk Lean_Krivine_KSt (Sigma Lean_Krivine_NThunk (Lean_Krivine_NThunk_rec (fun v_a :e Lean_Tm =>
     (fun v_x4 :e (Lean_List Lean_Krivine_NThunk) => (Lean_Krivine_KSt_mk_node v_a v_x4 v_s))))) (Lean_List_getu63Internal Lean_Krivine_NThunk v_u961 v_i)).
-let v_i. assume H_v_i: v_i :e Lean_Nat. let v_u961. assume H_v_u961: v_u961 :e (Lean_List Lean_Krivine_NThunk). let v_s. assume H_v_s: v_s :e (Lean_List Lean_Krivine_NThunk). 
+let v_i. assume H_v_i: v_i :e Lean_Nat. let v_u961. assume H_v_u961: v_u961 :e (Lean_List Lean_Krivine_NThunk). let v_s. assume H_v_s: v_s :e (Lean_List Lean_Krivine_NThunk).
 rewrite Lean_Krivine_kstep_split0 (Lean_Tm_var_node v_i) (Lean_Tm_var_typed v_i H_v_i) v_u961 H_v_u961 v_s H_v_s.
 rewrite Lean_Tm_casesOn_iota0 (fun c1_0_0 :e Lean_Nat => (Lean_Option_map Lean_Krivine_NThunk Lean_Krivine_KSt (Sigma Lean_Krivine_NThunk (Lean_Krivine_NThunk_rec (fun v_a :e Lean_Tm => (fun v_x4 :e
     (Lean_List Lean_Krivine_NThunk) => (Lean_Krivine_KSt_mk_node v_a v_x4 v_s))))) (Lean_List_getu63Internal Lean_Krivine_NThunk v_u961 c1_0_0))) (fun c1_1_0 :e Lean_Tm => (Lean_List_casesOn
@@ -1941,7 +1941,7 @@ Theorem Lean_Krivine_kstep_eq_2 : forall v_f :e Lean_Tm, forall v_a :e Lean_Tm, 
     (Lean_Krivine_KSt_mk_node (Lean_Tm_app_node v_f v_a) v_u961 v_s)) = (Lean_Option_some_node Lean_Krivine_KSt (Lean_Krivine_KSt_mk_node v_f v_u961 (Lean_List_cons_node Lean_Krivine_NThunk
     (Lean_Krivine_NThunk_mk_node v_a v_u961) v_s))).
 let v_f. assume H_v_f: v_f :e Lean_Tm. let v_a. assume H_v_a: v_a :e Lean_Tm. let v_u961. assume H_v_u961: v_u961 :e (Lean_List Lean_Krivine_NThunk). let v_s. assume H_v_s: v_s :e (Lean_List
-    Lean_Krivine_NThunk). 
+    Lean_Krivine_NThunk).
 rewrite Lean_Krivine_kstep_split0 (Lean_Tm_app_node v_f v_a) (Lean_Tm_app_typed v_f H_v_f v_a H_v_a) v_u961 H_v_u961 v_s H_v_s.
 rewrite Lean_Tm_casesOn_iota2 (fun c1_0_0 :e Lean_Nat => (Lean_Option_map Lean_Krivine_NThunk Lean_Krivine_KSt (Sigma Lean_Krivine_NThunk (Lean_Krivine_NThunk_rec (fun v_a_c :e Lean_Tm => (fun v_x4
     :e (Lean_List Lean_Krivine_NThunk) => (Lean_Krivine_KSt_mk_node v_a_c v_x4 v_s))))) (Lean_List_getu63Internal Lean_Krivine_NThunk v_u961 c1_0_0))) (fun c1_1_0 :e Lean_Tm => (Lean_List_casesOn
@@ -1966,7 +1966,7 @@ Theorem Lean_Krivine_kstep_eq_3 : forall v_b :e Lean_Tm, forall v_u961 :e (Lean_
     (Lean_Krivine_kstep (Lean_Krivine_KSt_mk_node (Lean_Tm_lam_node v_b) v_u961 (Lean_List_cons_node Lean_Krivine_NThunk v_th v_s))) = (Lean_Option_some_node Lean_Krivine_KSt
     (Lean_Krivine_KSt_mk_node v_b (Lean_List_cons_node Lean_Krivine_NThunk v_th v_u961) v_s)).
 let v_b. assume H_v_b: v_b :e Lean_Tm. let v_u961. assume H_v_u961: v_u961 :e (Lean_List Lean_Krivine_NThunk). let v_th. assume H_v_th: v_th :e Lean_Krivine_NThunk. let v_s. assume H_v_s: v_s :e
-    (Lean_List Lean_Krivine_NThunk). 
+    (Lean_List Lean_Krivine_NThunk).
 rewrite Lean_Krivine_kstep_split0 (Lean_Tm_lam_node v_b) (Lean_Tm_lam_typed v_b H_v_b) v_u961 H_v_u961 (Lean_List_cons_node Lean_Krivine_NThunk v_th v_s) (Lean_List_cons_typed Lean_Krivine_NThunk
     v_th H_v_th v_s H_v_s).
 rewrite Lean_Tm_casesOn_iota1 (fun c1_0_0 :e Lean_Nat => (Lean_Option_map Lean_Krivine_NThunk Lean_Krivine_KSt (Sigma Lean_Krivine_NThunk (Lean_Krivine_NThunk_rec (fun v_a :e Lean_Tm => (fun v_x4 :e
@@ -2002,7 +2002,7 @@ reflexivity.
 Qed.
 Theorem Lean_Krivine_kstep_eq_4 : forall v_a :e Lean_Tm, forall v_u961 :e (Lean_List Lean_Krivine_NThunk), (Lean_Krivine_kstep (Lean_Krivine_KSt_mk_node (Lean_Tm_lam_node v_a) v_u961
     (Lean_List_nil_node Lean_Krivine_NThunk))) = (Lean_Option_none_node Lean_Krivine_KSt).
-let v_a. assume H_v_a: v_a :e Lean_Tm. let v_u961. assume H_v_u961: v_u961 :e (Lean_List Lean_Krivine_NThunk). 
+let v_a. assume H_v_a: v_a :e Lean_Tm. let v_u961. assume H_v_u961: v_u961 :e (Lean_List Lean_Krivine_NThunk).
 rewrite Lean_Krivine_kstep_split0 (Lean_Tm_lam_node v_a) (Lean_Tm_lam_typed v_a H_v_a) v_u961 H_v_u961 (Lean_List_nil_node Lean_Krivine_NThunk) (Lean_List_nil_typed Lean_Krivine_NThunk).
 rewrite Lean_Tm_casesOn_iota1 (fun c1_0_0 :e Lean_Nat => (Lean_Option_map Lean_Krivine_NThunk Lean_Krivine_KSt (Sigma Lean_Krivine_NThunk (Lean_Krivine_NThunk_rec (fun v_a_c :e Lean_Tm => (fun v_x4
     :e (Lean_List Lean_Krivine_NThunk) => (Lean_Krivine_KSt_mk_node v_a_c v_x4 (Lean_List_nil_node Lean_Krivine_NThunk)))))) (Lean_List_getu63Internal Lean_Krivine_NThunk v_u961 c1_0_0))) (fun c1_1_0
@@ -2026,7 +2026,7 @@ reflexivity.
 Qed.
 Theorem Lean_Krivine_kstep_eq_5 : forall v_a :e Lean_Nat, forall v_u961 :e (Lean_List Lean_Krivine_NThunk), forall v_s :e (Lean_List Lean_Krivine_NThunk), (Lean_Krivine_kstep
     (Lean_Krivine_KSt_mk_node (Lean_Tm_lit_node v_a) v_u961 v_s)) = (Lean_Option_none_node Lean_Krivine_KSt).
-let v_a. assume H_v_a: v_a :e Lean_Nat. let v_u961. assume H_v_u961: v_u961 :e (Lean_List Lean_Krivine_NThunk). let v_s. assume H_v_s: v_s :e (Lean_List Lean_Krivine_NThunk). 
+let v_a. assume H_v_a: v_a :e Lean_Nat. let v_u961. assume H_v_u961: v_u961 :e (Lean_List Lean_Krivine_NThunk). let v_s. assume H_v_s: v_s :e (Lean_List Lean_Krivine_NThunk).
 rewrite Lean_Krivine_kstep_split0 (Lean_Tm_lit_node v_a) (Lean_Tm_lit_typed v_a H_v_a) v_u961 H_v_u961 v_s H_v_s.
 rewrite Lean_Tm_casesOn_iota3 (fun c1_0_0 :e Lean_Nat => (Lean_Option_map Lean_Krivine_NThunk Lean_Krivine_KSt (Sigma Lean_Krivine_NThunk (Lean_Krivine_NThunk_rec (fun v_a_c :e Lean_Tm => (fun v_x4
     :e (Lean_List Lean_Krivine_NThunk) => (Lean_Krivine_KSt_mk_node v_a_c v_x4 v_s))))) (Lean_List_getu63Internal Lean_Krivine_NThunk v_u961 c1_0_0))) (fun c1_1_0 :e Lean_Tm => (Lean_List_casesOn
@@ -2049,7 +2049,7 @@ Qed.
 Theorem Lean_dite_eq_1 : forall l_u, nat_p l_u -> forall v_u945 :e LeanSort l_u, forall v_c :e LeanProp, forall v_h :e (Lean_Decidable v_c), forall v_t :e (Pi_ ux :e v_c, v_u945), forall v_e :e (Pi_
     ux :e (Pi_ ux :e v_c, Lean_False_Prop), v_u945), (Lean_dite v_u945 v_c v_h v_t v_e) = (Lean_Decidable_rec v_c v_e v_t v_h).
 let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanSort l_u. let v_c. assume H_v_c: v_c :e LeanProp. let v_h. assume H_v_h: v_h :e (Lean_Decidable v_c). let v_t. assume
-    H_v_t: v_t :e (Pi_ ux :e v_c, v_u945). let v_e. assume H_v_e: v_e :e (Pi_ ux :e (Pi_ ux :e v_c, Lean_False_Prop), v_u945). 
+    H_v_t: v_t :e (Pi_ ux :e v_c, v_u945). let v_e. assume H_v_e: v_e :e (Pi_ ux :e (Pi_ ux :e v_c, Lean_False_Prop), v_u945).
 reflexivity.
 Qed.
 Theorem Lean_dite_unfold : forall a0 a1 a2 a3 a4, Lean_dite a0 a1 a2 a3 a4 = (Lean_Decidable_rec a1 a4 a3 a2).
@@ -2062,7 +2062,7 @@ Theorem Lean_Eq_ndrec_eq_1 : forall l_u1, nat_p l_u1 -> forall l_u2, nat_p l_u2 
     v_m :e (v_motive v_a), forall v_b :e v_u945, (v_a = v_b) -> (Lean_Eq_ndrec v_u945 v_a v_motive v_m v_b 0) = (Lean_Eq_elim v_u945 v_a (fun v_x :e v_u945 => (fun v_x7 :e (Lean_Eq_Prop v_u945 v_a
     v_x) => (v_motive v_x))) v_m v_b 0).
 let l_u1. assume H_l_u1: nat_p l_u1. let l_u2. assume H_l_u2: nat_p l_u2. let v_u945. assume H_v_u945: v_u945 :e LeanSort l_u2. let v_a. assume H_v_a: v_a :e v_u945. let v_motive. assume H_v_motive:
-    v_motive :e (Pi_ ux :e v_u945, LeanSort l_u1). let v_m. assume H_v_m: v_m :e (v_motive v_a). let v_b. assume H_v_b: v_b :e v_u945. assume v_h. 
+    v_motive :e (Pi_ ux :e v_u945, LeanSort l_u1). let v_m. assume H_v_m: v_m :e (v_motive v_a). let v_b. assume H_v_b: v_b :e v_u945. assume v_h.
 reflexivity.
 Qed.
 Theorem Lean_Eq_ndrec_unfold : forall a0 a1 a2 a3 a4 a5, Lean_Eq_ndrec a0 a1 a2 a3 a4 a5 = (Lean_Eq_elim a0 a1 (fun v_x :e a0 => (fun v_x7 :e (Lean_Eq_Prop a0 a1 v_x) => (a2 v_x))) a3 a4 0).
@@ -2139,7 +2139,7 @@ Qed.
 Theorem Lean_BoundedDeterministicRun_run_eq_1 : forall l_u, nat_p l_u -> forall v_State :e LeanUniv l_u, forall v_step :e (Pi_ ux :e v_State, (Lean_Option v_State)), forall v_x :e v_State,
     (Lean_BoundedDeterministicRun_run v_State v_step (LeanNum 0) v_x) = v_x.
 let l_u. assume H_l_u: nat_p l_u. let v_State. assume H_v_State: v_State :e LeanUniv l_u. let v_step. assume H_v_step: v_step :e (Pi_ ux :e v_State, (Lean_Option v_State)). let v_x. assume H_v_x: v_x
-    :e v_State. 
+    :e v_State.
 apply LeanNum_0_at (fun zpat => (Lean_BoundedDeterministicRun_run v_State v_step zpat v_x)) v_x.
 prove ((Lean_Nat_rec (Lean_BoundedDeterministicRun_run_method0_0 v_State v_step) (Lean_BoundedDeterministicRun_run_method1_0 v_State v_step) Lean_Nat_zero_node) v_x) = v_x.
 rewrite Lean_Nat_iota0 (Lean_BoundedDeterministicRun_run_method0_0 v_State v_step) (Lean_BoundedDeterministicRun_run_method1_0 v_State v_step).
@@ -2150,7 +2150,7 @@ Theorem Lean_BoundedDeterministicRun_run_eq_2 : forall l_u, nat_p l_u -> forall 
     v_fuel :e Lean_Nat, (Lean_BoundedDeterministicRun_run v_State v_step (Lean_Nat_succ_node v_fuel) v_x) = (Lean_Option_rec v_State v_x (Sigma v_State (Lean_BoundedDeterministicRun_run v_State
     v_step v_fuel)) (v_step v_x)).
 let l_u. assume H_l_u: nat_p l_u. let v_State. assume H_v_State: v_State :e LeanUniv l_u. let v_step. assume H_v_step: v_step :e (Pi_ ux :e v_State, (Lean_Option v_State)). let v_x. assume H_v_x: v_x
-    :e v_State. let v_fuel. assume H_v_fuel: v_fuel :e Lean_Nat. 
+    :e v_State. let v_fuel. assume H_v_fuel: v_fuel :e Lean_Nat.
 prove ((Lean_Nat_rec (Lean_BoundedDeterministicRun_run_method0_0 v_State v_step) (Lean_BoundedDeterministicRun_run_method1_0 v_State v_step) (Lean_Nat_succ_node v_fuel)) v_x) = (Lean_Option_rec
     v_State v_x (fun v_val :e v_State => ((Lean_Nat_rec (Lean_BoundedDeterministicRun_run_method0_0 v_State v_step) (Lean_BoundedDeterministicRun_run_method1_0 v_State v_step) v_fuel) v_val)) (v_step
     v_x)).
@@ -2171,7 +2171,7 @@ let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_CEK_St. exact (
 Qed.
 Theorem Lean_CEK_run_eq_1 : forall v_fuel :e Lean_Nat, forall v_state :e Lean_CEK_St, (Lean_CEK_run v_fuel v_state) = (Lean_BoundedDeterministicRun_run Lean_CEK_St (Sigma Lean_CEK_St Lean_CEK_step)
     v_fuel v_state).
-let v_fuel. assume H_v_fuel: v_fuel :e Lean_Nat. let v_state. assume H_v_state: v_state :e Lean_CEK_St. 
+let v_fuel. assume H_v_fuel: v_fuel :e Lean_Nat. let v_state. assume H_v_state: v_state :e Lean_CEK_St.
 reflexivity.
 Qed.
 Theorem Lean_CEK_run_unfold : forall a0 a1, Lean_CEK_run a0 a1 = (Lean_BoundedDeterministicRun_run Lean_CEK_St (Sigma Lean_CEK_St Lean_CEK_step) a0 a1).
@@ -2186,7 +2186,7 @@ let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Krivine_KSt. ex
 Qed.
 Theorem Lean_Krivine_run_eq_1 : forall v_fuel :e Lean_Nat, forall v_state :e Lean_Krivine_KSt, (Lean_Krivine_run v_fuel v_state) = (Lean_BoundedDeterministicRun_run Lean_Krivine_KSt (Sigma
     Lean_Krivine_KSt Lean_Krivine_kstep) v_fuel v_state).
-let v_fuel. assume H_v_fuel: v_fuel :e Lean_Nat. let v_state. assume H_v_state: v_state :e Lean_Krivine_KSt. 
+let v_fuel. assume H_v_fuel: v_fuel :e Lean_Nat. let v_state. assume H_v_state: v_state :e Lean_Krivine_KSt.
 reflexivity.
 Qed.
 Theorem Lean_Krivine_run_unfold : forall a0 a1, Lean_Krivine_run a0 a1 = (Lean_BoundedDeterministicRun_run Lean_Krivine_KSt (Sigma Lean_Krivine_KSt Lean_Krivine_kstep) a0 a1).
@@ -2231,7 +2231,7 @@ Qed.
 Theorem Lean_CEK_answer_split0 : forall t0 :e Lean_CEK_Ctl, forall t1 :e (Lean_List Lean_CEK_Frame), (Lean_CEK_answer (Lean_CEK_St_mk_node t0 t1)) = (Lean_CEK_Ctl_rec (fun c1_0_0 :e Lean_Tm => (fun
     c1_0_1 :e (Lean_List Lean_CEK_Val) => Lean_Bool_false_node)) (fun c1_1_0 :e Lean_CEK_Val => (Lean_List_casesOn Lean_CEK_Frame Lean_Bool_true_node (fun c2_1_0 :e Lean_CEK_Frame => (fun c2_1_1 :e
     (Lean_List Lean_CEK_Frame) => Lean_Bool_false_node)) t1)) t0).
-let t0. assume H_t0: t0 :e Lean_CEK_Ctl. let t1. assume H_t1: t1 :e (Lean_List Lean_CEK_Frame). 
+let t0. assume H_t0: t0 :e Lean_CEK_Ctl. let t1. assume H_t1: t1 :e (Lean_List Lean_CEK_Frame).
 prove (Lean_CEK_St_rec Lean_CEK_answer_method0_0 (Lean_CEK_St_mk_node t0 t1)) = (Lean_CEK_Ctl_rec (fun c1_0_0 :e Lean_Tm => (fun c1_0_1 :e (Lean_List Lean_CEK_Val) => Lean_Bool_false_node)) (fun
     c1_1_0 :e Lean_CEK_Val => (Lean_List_casesOn Lean_CEK_Frame Lean_Bool_true_node (fun c2_1_0 :e Lean_CEK_Frame => (fun c2_1_1 :e (Lean_List Lean_CEK_Frame) => Lean_Bool_false_node)) t1)) t0).
 rewrite Lean_CEK_St_iota0 Lean_CEK_answer_method0_0 t0 H_t0 t1 H_t1.
@@ -2240,7 +2240,7 @@ rewrite Lean_CEK_answer_method0_1_ap t0 t1 H_t1.
 reflexivity.
 Qed.
 Theorem Lean_CEK_answer_eq_1 : forall v_a :e Lean_CEK_Val, (Lean_CEK_answer (Lean_CEK_St_mk_node (Lean_CEK_Ctl_ret_node v_a) (Lean_List_nil_node Lean_CEK_Frame))) = Lean_Bool_true_node.
-let v_a. assume H_v_a: v_a :e Lean_CEK_Val. 
+let v_a. assume H_v_a: v_a :e Lean_CEK_Val.
 rewrite Lean_CEK_answer_split0 (Lean_CEK_Ctl_ret_node v_a) (Lean_CEK_Ctl_ret_typed v_a H_v_a) (Lean_List_nil_node Lean_CEK_Frame) (Lean_List_nil_typed Lean_CEK_Frame).
 rewrite Lean_CEK_Ctl_iota1 (fun c1_0_0 :e Lean_Tm => (fun c1_0_1 :e (Lean_List Lean_CEK_Val) => Lean_Bool_false_node)) (fun c1_1_0 :e Lean_CEK_Val => (Lean_List_casesOn Lean_CEK_Frame
     Lean_Bool_true_node (fun c2_1_0 :e Lean_CEK_Frame => (fun c2_1_1 :e (Lean_List Lean_CEK_Frame) => Lean_Bool_false_node)) (Lean_List_nil_node Lean_CEK_Frame))) v_a H_v_a.
@@ -2362,7 +2362,7 @@ Theorem Lean_Krivine_answer_split0 : forall t0 :e Lean_Tm, forall t1 :e (Lean_Li
     t0 t1 t2)) = (Lean_Tm_casesOn (fun c1_0_0 :e Lean_Nat => Lean_Bool_false_node) (fun c1_1_0 :e Lean_Tm => (Lean_List_casesOn Lean_Krivine_NThunk Lean_Bool_true_node (fun c2_1_0 :e
     Lean_Krivine_NThunk => (fun c2_1_1 :e (Lean_List Lean_Krivine_NThunk) => Lean_Bool_false_node)) t2)) (fun c1_2_0 :e Lean_Tm => (fun c1_2_1 :e Lean_Tm => Lean_Bool_false_node)) (fun c1_3_0 :e
     Lean_Nat => (Lean_List_casesOn Lean_Krivine_NThunk Lean_Bool_true_node (fun c2_1_0 :e Lean_Krivine_NThunk => (fun c2_1_1 :e (Lean_List Lean_Krivine_NThunk) => Lean_Bool_false_node)) t2)) t0).
-let t0. assume H_t0: t0 :e Lean_Tm. let t1. assume H_t1: t1 :e (Lean_List Lean_Krivine_NThunk). let t2. assume H_t2: t2 :e (Lean_List Lean_Krivine_NThunk). 
+let t0. assume H_t0: t0 :e Lean_Tm. let t1. assume H_t1: t1 :e (Lean_List Lean_Krivine_NThunk). let t2. assume H_t2: t2 :e (Lean_List Lean_Krivine_NThunk).
 prove (Lean_Krivine_KSt_rec Lean_Krivine_answer_method0_0 (Lean_Krivine_KSt_mk_node t0 t1 t2)) = (Lean_Tm_casesOn (fun c1_0_0 :e Lean_Nat => Lean_Bool_false_node) (fun c1_1_0 :e Lean_Tm =>
     (Lean_List_casesOn Lean_Krivine_NThunk Lean_Bool_true_node (fun c2_1_0 :e Lean_Krivine_NThunk => (fun c2_1_1 :e (Lean_List Lean_Krivine_NThunk) => Lean_Bool_false_node)) t2)) (fun c1_2_0 :e
     Lean_Tm => (fun c1_2_1 :e Lean_Tm => Lean_Bool_false_node)) (fun c1_3_0 :e Lean_Nat => (Lean_List_casesOn Lean_Krivine_NThunk Lean_Bool_true_node (fun c2_1_0 :e Lean_Krivine_NThunk => (fun c2_1_1
@@ -2375,7 +2375,7 @@ reflexivity.
 Qed.
 Theorem Lean_Krivine_answer_eq_1 : forall v_a :e Lean_Tm, forall v_u961 :e (Lean_List Lean_Krivine_NThunk), (Lean_Krivine_answer (Lean_Krivine_KSt_mk_node (Lean_Tm_lam_node v_a) v_u961
     (Lean_List_nil_node Lean_Krivine_NThunk))) = Lean_Bool_true_node.
-let v_a. assume H_v_a: v_a :e Lean_Tm. let v_u961. assume H_v_u961: v_u961 :e (Lean_List Lean_Krivine_NThunk). 
+let v_a. assume H_v_a: v_a :e Lean_Tm. let v_u961. assume H_v_u961: v_u961 :e (Lean_List Lean_Krivine_NThunk).
 rewrite Lean_Krivine_answer_split0 (Lean_Tm_lam_node v_a) (Lean_Tm_lam_typed v_a H_v_a) v_u961 H_v_u961 (Lean_List_nil_node Lean_Krivine_NThunk) (Lean_List_nil_typed Lean_Krivine_NThunk).
 rewrite Lean_Tm_casesOn_iota1 (fun c1_0_0 :e Lean_Nat => Lean_Bool_false_node) (fun c1_1_0 :e Lean_Tm => (Lean_List_casesOn Lean_Krivine_NThunk Lean_Bool_true_node (fun c2_1_0 :e Lean_Krivine_NThunk
     => (fun c2_1_1 :e (Lean_List Lean_Krivine_NThunk) => Lean_Bool_false_node)) (Lean_List_nil_node Lean_Krivine_NThunk))) (fun c1_2_0 :e Lean_Tm => (fun c1_2_1 :e Lean_Tm => Lean_Bool_false_node))
@@ -2393,7 +2393,7 @@ reflexivity.
 Qed.
 Theorem Lean_Krivine_answer_eq_2 : forall v_a :e Lean_Nat, forall v_u961 :e (Lean_List Lean_Krivine_NThunk), (Lean_Krivine_answer (Lean_Krivine_KSt_mk_node (Lean_Tm_lit_node v_a) v_u961
     (Lean_List_nil_node Lean_Krivine_NThunk))) = Lean_Bool_true_node.
-let v_a. assume H_v_a: v_a :e Lean_Nat. let v_u961. assume H_v_u961: v_u961 :e (Lean_List Lean_Krivine_NThunk). 
+let v_a. assume H_v_a: v_a :e Lean_Nat. let v_u961. assume H_v_u961: v_u961 :e (Lean_List Lean_Krivine_NThunk).
 rewrite Lean_Krivine_answer_split0 (Lean_Tm_lit_node v_a) (Lean_Tm_lit_typed v_a H_v_a) v_u961 H_v_u961 (Lean_List_nil_node Lean_Krivine_NThunk) (Lean_List_nil_typed Lean_Krivine_NThunk).
 rewrite Lean_Tm_casesOn_iota3 (fun c1_0_0 :e Lean_Nat => Lean_Bool_false_node) (fun c1_1_0 :e Lean_Tm => (Lean_List_casesOn Lean_Krivine_NThunk Lean_Bool_true_node (fun c2_1_0 :e Lean_Krivine_NThunk
     => (fun c2_1_1 :e (Lean_List Lean_Krivine_NThunk) => Lean_Bool_false_node)) (Lean_List_nil_node Lean_Krivine_NThunk))) (fun c1_2_0 :e Lean_Tm => (fun c1_2_1 :e Lean_Tm => Lean_Bool_false_node))
@@ -2623,7 +2623,7 @@ Qed.
 Theorem Lean_ite_eq_1 : forall l_u, nat_p l_u -> forall v_u945 :e LeanSort l_u, forall v_c :e LeanProp, forall v_h :e (Lean_Decidable v_c), forall v_t :e v_u945, forall v_e :e v_u945, (Lean_ite
     v_u945 v_c v_h v_t v_e) = (Lean_Decidable_rec v_c (fun v_x :e (Pi_ ux :e v_c, Lean_False_Prop) => v_e) (fun v_x :e v_c => v_t) v_h).
 let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanSort l_u. let v_c. assume H_v_c: v_c :e LeanProp. let v_h. assume H_v_h: v_h :e (Lean_Decidable v_c). let v_t. assume
-    H_v_t: v_t :e v_u945. let v_e. assume H_v_e: v_e :e v_u945. 
+    H_v_t: v_t :e v_u945. let v_e. assume H_v_e: v_e :e v_u945.
 reflexivity.
 Qed.
 Theorem Lean_ite_unfold : forall a0 a1 a2 a3 a4, Lean_ite a0 a1 a2 a3 a4 = (Lean_Decidable_rec a1 (fun v_x :e (Pi_ ux :e a1, Lean_False_Prop) => a4) (fun v_x :e a1 => a3) a2).
@@ -2652,13 +2652,13 @@ Theorem Lean_Nat_add_In : forall a0 :e Lean_Nat, forall a1 :e Lean_Nat, Lean_Nat
 let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat. exact Lean_Nat_rec_type (fun _ => Lean_Nat) a0 H0 (Lean_Nat_add_method1_0 a0) (Lean_Nat_add_method1_0_In a0 H0) a1 H1.
 Qed.
 Theorem Lean_Nat_add_eq_1 : forall v_x :e Lean_Nat, (Lean_Nat_add v_x Lean_Nat_zero_node) = v_x.
-let v_x. assume H_v_x: v_x :e Lean_Nat. 
+let v_x. assume H_v_x: v_x :e Lean_Nat.
 prove (Lean_Nat_rec v_x (Lean_Nat_add_method1_0 v_x) Lean_Nat_zero_node) = v_x.
 rewrite Lean_Nat_iota0 v_x (Lean_Nat_add_method1_0 v_x).
 reflexivity.
 Qed.
 Theorem Lean_Nat_add_eq_2 : forall v_x :e Lean_Nat, forall v_b :e Lean_Nat, (Lean_Nat_add v_x (Lean_Nat_succ_node v_b)) = (Lean_Nat_succ_node (Lean_Nat_add v_x v_b)).
-let v_x. assume H_v_x: v_x :e Lean_Nat. let v_b. assume H_v_b: v_b :e Lean_Nat. 
+let v_x. assume H_v_x: v_x :e Lean_Nat. let v_b. assume H_v_b: v_b :e Lean_Nat.
 prove (Lean_Nat_rec v_x (Lean_Nat_add_method1_0 v_x) (Lean_Nat_succ_node v_b)) = (Lean_Nat_succ_node (Lean_Nat_rec v_x (Lean_Nat_add_method1_0 v_x) v_b)).
 rewrite Lean_Nat_iota1 v_x (Lean_Nat_add_method1_0 v_x) v_b H_v_b.
 rewrite Lean_Nat_add_method1_0_ap v_x v_b H_v_b.
@@ -2667,7 +2667,7 @@ reflexivity.
 Qed.
 Theorem Lean_Nat_add_unique : forall g:set -> set -> set, (forall v_x :e Lean_Nat, (g v_x Lean_Nat_zero_node) = v_x) -> (forall v_x :e Lean_Nat, forall v_b :e Lean_Nat, (g v_x (Lean_Nat_succ_node
     v_b)) = (Lean_Nat_succ_node (g v_x v_b))) -> forall u, nat_p u -> forall a0 :e Lean_Nat, forall a1 :e Lean_Nat, g a0 a1 = Lean_Nat_add a0 a1.
-let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat. 
+let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat.
 claim L0: 0 :e {z :e 1 | g a0 Lean_Nat_zero_node = Lean_Nat_add a0 Lean_Nat_zero_node}.
 { apply SepI 1 (fun z:set => g a0 Lean_Nat_zero_node = Lean_Nat_add a0 Lean_Nat_zero_node) 0 In_0_1.
   prove g a0 Lean_Nat_zero_node = Lean_Nat_add a0 Lean_Nat_zero_node.
@@ -2734,14 +2734,14 @@ let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat. exact (ap_
     a0 H0) H1).
 Qed.
 Theorem Lean_Nat_beq_split0 : forall s1 :e Lean_Nat, (Lean_Nat_beq Lean_Nat_zero_node s1) = (Lean_Nat_casesOn Lean_Bool_true_node (fun c1_1_0 :e Lean_Nat => Lean_Bool_false_node) s1).
-let s1. assume H_s1: s1 :e Lean_Nat. 
+let s1. assume H_s1: s1 :e Lean_Nat.
 prove ((Lean_Nat_rec Lean_Nat_beq_method0_0 Lean_Nat_beq_method1_0 Lean_Nat_zero_node) s1) = (Lean_Nat_casesOn Lean_Bool_true_node (fun c1_1_0 :e Lean_Nat => Lean_Bool_false_node) s1).
 rewrite Lean_Nat_iota0 Lean_Nat_beq_method0_0 Lean_Nat_beq_method1_0.
 rewrite Lean_Nat_beq_method0_0_ap s1 H_s1.
 reflexivity.
 Qed.
 Theorem Lean_Nat_beq_split1 : forall t0 :e Lean_Nat, forall s1 :e Lean_Nat, (Lean_Nat_beq (Lean_Nat_succ_node t0) s1) = (Lean_Nat_casesOn Lean_Bool_false_node (Sigma Lean_Nat (Lean_Nat_beq t0)) s1).
-let t0. assume H_t0: t0 :e Lean_Nat. let s1. assume H_s1: s1 :e Lean_Nat. 
+let t0. assume H_t0: t0 :e Lean_Nat. let s1. assume H_s1: s1 :e Lean_Nat.
 prove ((Lean_Nat_rec Lean_Nat_beq_method0_0 Lean_Nat_beq_method1_0 (Lean_Nat_succ_node t0)) s1) = (Lean_Nat_casesOn Lean_Bool_false_node (fun c1_1_0 :e Lean_Nat => ((Lean_Nat_rec
     Lean_Nat_beq_method0_0 Lean_Nat_beq_method1_0 t0) c1_1_0)) s1).
 rewrite Lean_Nat_iota1 Lean_Nat_beq_method0_0 Lean_Nat_beq_method1_0 t0 H_t0.
@@ -2757,7 +2757,7 @@ rewrite Lean_Nat_casesOn_iota0 Lean_Bool_true_node (fun c1_1_0 :e Lean_Nat => Le
 reflexivity.
 Qed.
 Theorem Lean_Nat_beq_eq_2 : forall v_n :e Lean_Nat, (Lean_Nat_beq Lean_Nat_zero_node (Lean_Nat_succ_node v_n)) = Lean_Bool_false_node.
-let v_n. assume H_v_n: v_n :e Lean_Nat. 
+let v_n. assume H_v_n: v_n :e Lean_Nat.
 rewrite Lean_Nat_beq_split0 (Lean_Nat_succ_node v_n) (Lean_Nat_succ_typed v_n H_v_n).
 rewrite Lean_Nat_casesOn_iota1 Lean_Bool_true_node (fun c1_1_0 :e Lean_Nat => Lean_Bool_false_node) v_n H_v_n.
 rewrite (eq_i_tra ((fun c1_1_0 :e Lean_Nat => Lean_Bool_false_node) v_n) Lean_Bool_false_node Lean_Bool_false_node (beta Lean_Nat (fun c1_1_0 => Lean_Bool_false_node) v_n H_v_n) (Lean_eq_refl
@@ -2765,13 +2765,13 @@ rewrite (eq_i_tra ((fun c1_1_0 :e Lean_Nat => Lean_Bool_false_node) v_n) Lean_Bo
 reflexivity.
 Qed.
 Theorem Lean_Nat_beq_eq_3 : forall v_n :e Lean_Nat, (Lean_Nat_beq (Lean_Nat_succ_node v_n) Lean_Nat_zero_node) = Lean_Bool_false_node.
-let v_n. assume H_v_n: v_n :e Lean_Nat. 
+let v_n. assume H_v_n: v_n :e Lean_Nat.
 rewrite Lean_Nat_beq_split1 v_n H_v_n Lean_Nat_zero_node Lean_Nat_zero_typed.
 rewrite Lean_Nat_casesOn_iota0 Lean_Bool_false_node (Sigma Lean_Nat (Lean_Nat_beq v_n)).
 reflexivity.
 Qed.
 Theorem Lean_Nat_beq_eq_4 : forall v_n :e Lean_Nat, forall v_m :e Lean_Nat, (Lean_Nat_beq (Lean_Nat_succ_node v_n) (Lean_Nat_succ_node v_m)) = (Lean_Nat_beq v_n v_m).
-let v_n. assume H_v_n: v_n :e Lean_Nat. let v_m. assume H_v_m: v_m :e Lean_Nat. 
+let v_n. assume H_v_n: v_n :e Lean_Nat. let v_m. assume H_v_m: v_m :e Lean_Nat.
 rewrite Lean_Nat_beq_split1 v_n H_v_n (Lean_Nat_succ_node v_m) (Lean_Nat_succ_typed v_m H_v_m).
 rewrite Lean_Nat_casesOn_iota1 Lean_Bool_false_node (Sigma Lean_Nat (Lean_Nat_beq v_n)) v_m H_v_m.
 rewrite (eq_i_tra ((Sigma Lean_Nat (Lean_Nat_beq v_n)) v_m) (Lean_Nat_beq v_n v_m) (Lean_Nat_beq v_n v_m) (beta Lean_Nat (Lean_Nat_beq v_n) v_m H_v_m) (Lean_eq_refl (Lean_Nat_beq v_n v_m))).
@@ -2785,7 +2785,7 @@ Definition Lean_Nat_decEq : set -> set -> set := fun a0 a1 => ((Lean_Bool_rec (f
 Theorem Lean_Nat_decEq_eq_1 : forall v_n :e Lean_Nat, forall v_m :e Lean_Nat, (Lean_Nat_decEq v_n v_m) = ((Lean_Bool_rec (fun v_h :e (Lean_Eq_Prop Lean_Bool (Lean_Nat_beq v_n v_m)
     Lean_Bool_false_node) => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Nat v_n v_m) 0)) (fun v_h :e (Lean_Eq_Prop Lean_Bool (Lean_Nat_beq v_n v_m) Lean_Bool_true_node) =>
     (Lean_Decidable_isTrue_node (Lean_Eq_Prop Lean_Nat v_n v_m) 0)) (Lean_Nat_beq v_n v_m)) 0).
-let v_n. assume H_v_n: v_n :e Lean_Nat. let v_m. assume H_v_m: v_m :e Lean_Nat. 
+let v_n. assume H_v_n: v_n :e Lean_Nat. let v_m. assume H_v_m: v_m :e Lean_Nat.
 reflexivity.
 Qed.
 Theorem Lean_Nat_decEq_unfold : forall a0 a1, Lean_Nat_decEq a0 a1 = ((Lean_Bool_rec (fun v_h :e (Lean_Eq_Prop Lean_Bool (Lean_Nat_beq a0 a1) Lean_Bool_false_node) => (Lean_Decidable_isFalse_node
@@ -2869,7 +2869,7 @@ Theorem Lean_instDecidableEqNat_In : forall a0 :e Lean_Nat, forall a1 :e Lean_Na
 let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat. exact (Lean_Nat_decEq_In a0 H0 a1 H1).
 Qed.
 Theorem Lean_instDecidableEqNat_eq_1 : forall v_a :e Lean_Nat, forall v_b :e Lean_Nat, (Lean_instDecidableEqNat v_a v_b) = (Lean_Nat_decEq v_a v_b).
-let v_a. assume H_v_a: v_a :e Lean_Nat. let v_b. assume H_v_b: v_b :e Lean_Nat. 
+let v_a. assume H_v_a: v_a :e Lean_Nat. let v_b. assume H_v_b: v_b :e Lean_Nat.
 reflexivity.
 Qed.
 Theorem Lean_instDecidableEqNat_unfold : forall a0 a1, Lean_instDecidableEqNat a0 a1 = (Lean_Nat_decEq a0 a1).
@@ -3318,7 +3318,7 @@ Theorem Lean_instDecidableEqTm_decEq_split0 : forall t0 :e Lean_Nat, forall s1 :
     (Lean_Eq_Prop Lean_Tm (Lean_Tm_var_node t0) (Lean_Tm_var_node c1_0_0)) 0)))) (fun c1_1_0 :e Lean_Tm => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_var_node t0) (Lean_Tm_lam_node
     c1_1_0)) 0)) (fun c1_2_0 :e Lean_Tm => (fun c1_2_1 :e Lean_Tm => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_var_node t0) (Lean_Tm_app_node c1_2_0 c1_2_1)) 0))) (fun c1_3_0 :e
     Lean_Nat => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_var_node t0) (Lean_Tm_lit_node c1_3_0)) 0)) s1).
-let t0. assume H_t0: t0 :e Lean_Nat. let s1. assume H_s1: s1 :e Lean_Tm. 
+let t0. assume H_t0: t0 :e Lean_Nat. let s1. assume H_s1: s1 :e Lean_Tm.
 prove ((Lean_Tm_rec Lean_instDecidableEqTm_decEq_method0_0 Lean_instDecidableEqTm_decEq_method1_0 Lean_instDecidableEqTm_decEq_method2_0 Lean_instDecidableEqTm_decEq_method3_0 (Lean_Tm_var_node t0))
     s1) = (Lean_Tm_casesOn (fun c1_0_0 :e Lean_Nat => (Lean_dite (Lean_Decidable (Lean_Eq_Prop Lean_Tm (Lean_Tm_var_node t0) (Lean_Tm_var_node c1_0_0))) (Lean_Eq_Prop Lean_Nat t0 c1_0_0)
     (Lean_instDecidableEqNat t0 c1_0_0) (fun v_h :e (Lean_Eq_Prop Lean_Nat t0 c1_0_0) => (Lean_Eq_ndrec Lean_Nat t0 (fun v_x3 :e Lean_Nat => (Lean_Decidable (Lean_Eq_Prop Lean_Tm (Lean_Tm_var_node
@@ -3338,7 +3338,7 @@ Theorem Lean_instDecidableEqTm_decEq_split1 : forall t0 :e Lean_Tm, forall s1 :e
     (Lean_Tm_lam_node t0)) 0) c1_1_0 0)) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Tm t0 c1_1_0), Lean_False_Prop) => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_lam_node t0)
     (Lean_Tm_lam_node c1_1_0)) 0)))) (fun c1_2_0 :e Lean_Tm => (fun c1_2_1 :e Lean_Tm => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_lam_node t0) (Lean_Tm_app_node c1_2_0 c1_2_1))
     0))) (fun c1_3_0 :e Lean_Nat => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_lam_node t0) (Lean_Tm_lit_node c1_3_0)) 0)) s1).
-let t0. assume H_t0: t0 :e Lean_Tm. let s1. assume H_s1: s1 :e Lean_Tm. 
+let t0. assume H_t0: t0 :e Lean_Tm. let s1. assume H_s1: s1 :e Lean_Tm.
 prove ((Lean_Tm_rec Lean_instDecidableEqTm_decEq_method0_0 Lean_instDecidableEqTm_decEq_method1_0 Lean_instDecidableEqTm_decEq_method2_0 Lean_instDecidableEqTm_decEq_method3_0 (Lean_Tm_lam_node t0))
     s1) = (Lean_Tm_casesOn (fun c1_0_0 :e Lean_Nat => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_lam_node t0) (Lean_Tm_var_node c1_0_0)) 0)) (fun c1_1_0 :e Lean_Tm => (Lean_dite
     (Lean_Decidable (Lean_Eq_Prop Lean_Tm (Lean_Tm_lam_node t0) (Lean_Tm_lam_node c1_1_0))) (Lean_Eq_Prop Lean_Tm t0 c1_1_0) ((Lean_Tm_rec Lean_instDecidableEqTm_decEq_method0_0
@@ -3366,7 +3366,7 @@ Theorem Lean_instDecidableEqTm_decEq_split2 : forall t0 :e Lean_Tm, forall t1 :e
     t0 t1) (Lean_Tm_app_node t0 c1_2_1)) 0))) c1_2_0 0)) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Tm t0 c1_2_0), Lean_False_Prop) => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm
     (Lean_Tm_app_node t0 t1) (Lean_Tm_app_node c1_2_0 c1_2_1)) 0))))) (fun c1_3_0 :e Lean_Nat => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_app_node t0 t1) (Lean_Tm_lit_node c1_3_0))
     0)) s1).
-let t0. assume H_t0: t0 :e Lean_Tm. let t1. assume H_t1: t1 :e Lean_Tm. let s1. assume H_s1: s1 :e Lean_Tm. 
+let t0. assume H_t0: t0 :e Lean_Tm. let t1. assume H_t1: t1 :e Lean_Tm. let s1. assume H_s1: s1 :e Lean_Tm.
 prove ((Lean_Tm_rec Lean_instDecidableEqTm_decEq_method0_0 Lean_instDecidableEqTm_decEq_method1_0 Lean_instDecidableEqTm_decEq_method2_0 Lean_instDecidableEqTm_decEq_method3_0 (Lean_Tm_app_node t0
     t1)) s1) = (Lean_Tm_casesOn (fun c1_0_0 :e Lean_Nat => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_app_node t0 t1) (Lean_Tm_var_node c1_0_0)) 0)) (fun c1_1_0 :e Lean_Tm =>
     (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_app_node t0 t1) (Lean_Tm_lam_node c1_1_0)) 0)) (fun c1_2_0 :e Lean_Tm => (fun c1_2_1 :e Lean_Tm => (Lean_dite (Lean_Decidable
@@ -3399,7 +3399,7 @@ Theorem Lean_instDecidableEqTm_decEq_split3 : forall t0 :e Lean_Nat, forall s1 :
     (Lean_instDecidableEqNat t0 c1_3_0) (fun v_h :e (Lean_Eq_Prop Lean_Nat t0 c1_3_0) => (Lean_Eq_ndrec Lean_Nat t0 (fun v_x3 :e Lean_Nat => (Lean_Decidable (Lean_Eq_Prop Lean_Tm (Lean_Tm_lit_node
     t0) (Lean_Tm_lit_node v_x3)))) (Lean_Decidable_isTrue_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_lit_node t0) (Lean_Tm_lit_node t0)) 0) c1_3_0 0)) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Nat t0
     c1_3_0), Lean_False_Prop) => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_lit_node t0) (Lean_Tm_lit_node c1_3_0)) 0)))) s1).
-let t0. assume H_t0: t0 :e Lean_Nat. let s1. assume H_s1: s1 :e Lean_Tm. 
+let t0. assume H_t0: t0 :e Lean_Nat. let s1. assume H_s1: s1 :e Lean_Tm.
 prove ((Lean_Tm_rec Lean_instDecidableEqTm_decEq_method0_0 Lean_instDecidableEqTm_decEq_method1_0 Lean_instDecidableEqTm_decEq_method2_0 Lean_instDecidableEqTm_decEq_method3_0 (Lean_Tm_lit_node t0))
     s1) = (Lean_Tm_casesOn (fun c1_0_0 :e Lean_Nat => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_lit_node t0) (Lean_Tm_var_node c1_0_0)) 0)) (fun c1_1_0 :e Lean_Tm =>
     (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_lit_node t0) (Lean_Tm_lam_node c1_1_0)) 0)) (fun c1_2_0 :e Lean_Tm => (fun c1_2_1 :e Lean_Tm => (Lean_Decidable_isFalse_node
@@ -3417,7 +3417,7 @@ Theorem Lean_instDecidableEqTm_decEq_eq_1 : forall v_a :e Lean_Nat, forall v_b :
     (Lean_Eq_ndrec Lean_Nat v_a (fun v_x3 :e Lean_Nat => (Lean_Decidable (Lean_Eq_Prop Lean_Tm (Lean_Tm_var_node v_a) (Lean_Tm_var_node v_x3)))) (Lean_Decidable_isTrue_node (Lean_Eq_Prop Lean_Tm
     (Lean_Tm_var_node v_a) (Lean_Tm_var_node v_a)) 0) v_b 0)) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Nat v_a v_b), Lean_False_Prop) => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm
     (Lean_Tm_var_node v_a) (Lean_Tm_var_node v_b)) 0))).
-let v_a. assume H_v_a: v_a :e Lean_Nat. let v_b. assume H_v_b: v_b :e Lean_Nat. 
+let v_a. assume H_v_a: v_a :e Lean_Nat. let v_b. assume H_v_b: v_b :e Lean_Nat.
 rewrite Lean_instDecidableEqTm_decEq_split0 v_a H_v_a (Lean_Tm_var_node v_b) (Lean_Tm_var_typed v_b H_v_b).
 rewrite Lean_Tm_casesOn_iota0 (fun c1_0_0 :e Lean_Nat => (Lean_dite (Lean_Decidable (Lean_Eq_Prop Lean_Tm (Lean_Tm_var_node v_a) (Lean_Tm_var_node c1_0_0))) (Lean_Eq_Prop Lean_Nat v_a c1_0_0)
     (Lean_instDecidableEqNat v_a c1_0_0) (fun v_h :e (Lean_Eq_Prop Lean_Nat v_a c1_0_0) => (Lean_Eq_ndrec Lean_Nat v_a (fun v_x3 :e Lean_Nat => (Lean_Decidable (Lean_Eq_Prop Lean_Tm (Lean_Tm_var_node
@@ -3448,7 +3448,7 @@ reflexivity.
 Qed.
 Theorem Lean_instDecidableEqTm_decEq_eq_2 : forall v_a :e Lean_Nat, forall v_a_1 :e Lean_Tm, (Lean_instDecidableEqTm_decEq (Lean_Tm_var_node v_a) (Lean_Tm_lam_node v_a_1)) =
     (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_var_node v_a) (Lean_Tm_lam_node v_a_1)) 0).
-let v_a. assume H_v_a: v_a :e Lean_Nat. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Tm. 
+let v_a. assume H_v_a: v_a :e Lean_Nat. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Tm.
 rewrite Lean_instDecidableEqTm_decEq_split0 v_a H_v_a (Lean_Tm_lam_node v_a_1) (Lean_Tm_lam_typed v_a_1 H_v_a_1).
 rewrite Lean_Tm_casesOn_iota1 (fun c1_0_0 :e Lean_Nat => (Lean_dite (Lean_Decidable (Lean_Eq_Prop Lean_Tm (Lean_Tm_var_node v_a) (Lean_Tm_var_node c1_0_0))) (Lean_Eq_Prop Lean_Nat v_a c1_0_0)
     (Lean_instDecidableEqNat v_a c1_0_0) (fun v_h :e (Lean_Eq_Prop Lean_Nat v_a c1_0_0) => (Lean_Eq_ndrec Lean_Nat v_a (fun v_x3 :e Lean_Nat => (Lean_Decidable (Lean_Eq_Prop Lean_Tm (Lean_Tm_var_node
@@ -3465,7 +3465,7 @@ reflexivity.
 Qed.
 Theorem Lean_instDecidableEqTm_decEq_eq_3 : forall v_a :e Lean_Nat, forall v_a_1 :e Lean_Tm, forall v_a_2 :e Lean_Tm, (Lean_instDecidableEqTm_decEq (Lean_Tm_var_node v_a) (Lean_Tm_app_node v_a_1
     v_a_2)) = (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_var_node v_a) (Lean_Tm_app_node v_a_1 v_a_2)) 0).
-let v_a. assume H_v_a: v_a :e Lean_Nat. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Tm. let v_a_2. assume H_v_a_2: v_a_2 :e Lean_Tm. 
+let v_a. assume H_v_a: v_a :e Lean_Nat. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Tm. let v_a_2. assume H_v_a_2: v_a_2 :e Lean_Tm.
 rewrite Lean_instDecidableEqTm_decEq_split0 v_a H_v_a (Lean_Tm_app_node v_a_1 v_a_2) (Lean_Tm_app_typed v_a_1 H_v_a_1 v_a_2 H_v_a_2).
 rewrite Lean_Tm_casesOn_iota2 (fun c1_0_0 :e Lean_Nat => (Lean_dite (Lean_Decidable (Lean_Eq_Prop Lean_Tm (Lean_Tm_var_node v_a) (Lean_Tm_var_node c1_0_0))) (Lean_Eq_Prop Lean_Nat v_a c1_0_0)
     (Lean_instDecidableEqNat v_a c1_0_0) (fun v_h :e (Lean_Eq_Prop Lean_Nat v_a c1_0_0) => (Lean_Eq_ndrec Lean_Nat v_a (fun v_x3 :e Lean_Nat => (Lean_Decidable (Lean_Eq_Prop Lean_Tm (Lean_Tm_var_node
@@ -3487,7 +3487,7 @@ reflexivity.
 Qed.
 Theorem Lean_instDecidableEqTm_decEq_eq_4 : forall v_a :e Lean_Nat, forall v_a_1 :e Lean_Nat, (Lean_instDecidableEqTm_decEq (Lean_Tm_var_node v_a) (Lean_Tm_lit_node v_a_1)) =
     (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_var_node v_a) (Lean_Tm_lit_node v_a_1)) 0).
-let v_a. assume H_v_a: v_a :e Lean_Nat. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Nat. 
+let v_a. assume H_v_a: v_a :e Lean_Nat. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Nat.
 rewrite Lean_instDecidableEqTm_decEq_split0 v_a H_v_a (Lean_Tm_lit_node v_a_1) (Lean_Tm_lit_typed v_a_1 H_v_a_1).
 rewrite Lean_Tm_casesOn_iota3 (fun c1_0_0 :e Lean_Nat => (Lean_dite (Lean_Decidable (Lean_Eq_Prop Lean_Tm (Lean_Tm_var_node v_a) (Lean_Tm_var_node c1_0_0))) (Lean_Eq_Prop Lean_Nat v_a c1_0_0)
     (Lean_instDecidableEqNat v_a c1_0_0) (fun v_h :e (Lean_Eq_Prop Lean_Nat v_a c1_0_0) => (Lean_Eq_ndrec Lean_Nat v_a (fun v_x3 :e Lean_Nat => (Lean_Decidable (Lean_Eq_Prop Lean_Tm (Lean_Tm_var_node
@@ -3504,7 +3504,7 @@ reflexivity.
 Qed.
 Theorem Lean_instDecidableEqTm_decEq_eq_5 : forall v_a :e Lean_Tm, forall v_a_1 :e Lean_Nat, (Lean_instDecidableEqTm_decEq (Lean_Tm_lam_node v_a) (Lean_Tm_var_node v_a_1)) =
     (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_lam_node v_a) (Lean_Tm_var_node v_a_1)) 0).
-let v_a. assume H_v_a: v_a :e Lean_Tm. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Nat. 
+let v_a. assume H_v_a: v_a :e Lean_Tm. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Nat.
 rewrite Lean_instDecidableEqTm_decEq_split1 v_a H_v_a (Lean_Tm_var_node v_a_1) (Lean_Tm_var_typed v_a_1 H_v_a_1).
 rewrite Lean_Tm_casesOn_iota0 (fun c1_0_0 :e Lean_Nat => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_lam_node v_a) (Lean_Tm_var_node c1_0_0)) 0)) (fun c1_1_0 :e Lean_Tm => (Lean_dite
     (Lean_Decidable (Lean_Eq_Prop Lean_Tm (Lean_Tm_lam_node v_a) (Lean_Tm_lam_node c1_1_0))) (Lean_Eq_Prop Lean_Tm v_a c1_1_0) (Lean_instDecidableEqTm_decEq v_a c1_1_0) (fun v_h :e (Lean_Eq_Prop
@@ -3524,7 +3524,7 @@ Theorem Lean_instDecidableEqTm_decEq_eq_6 : forall v_a :e Lean_Tm, forall v_b :e
     (Lean_Eq_ndrec Lean_Tm v_a (fun v_x3 :e Lean_Tm => (Lean_Decidable (Lean_Eq_Prop Lean_Tm (Lean_Tm_lam_node v_a) (Lean_Tm_lam_node v_x3)))) (Lean_Decidable_isTrue_node (Lean_Eq_Prop Lean_Tm
     (Lean_Tm_lam_node v_a) (Lean_Tm_lam_node v_a)) 0) v_b 0)) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Tm v_a v_b), Lean_False_Prop) => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm
     (Lean_Tm_lam_node v_a) (Lean_Tm_lam_node v_b)) 0))).
-let v_a. assume H_v_a: v_a :e Lean_Tm. let v_b. assume H_v_b: v_b :e Lean_Tm. 
+let v_a. assume H_v_a: v_a :e Lean_Tm. let v_b. assume H_v_b: v_b :e Lean_Tm.
 rewrite Lean_instDecidableEqTm_decEq_split1 v_a H_v_a (Lean_Tm_lam_node v_b) (Lean_Tm_lam_typed v_b H_v_b).
 rewrite Lean_Tm_casesOn_iota1 (fun c1_0_0 :e Lean_Nat => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_lam_node v_a) (Lean_Tm_var_node c1_0_0)) 0)) (fun c1_1_0 :e Lean_Tm => (Lean_dite
     (Lean_Decidable (Lean_Eq_Prop Lean_Tm (Lean_Tm_lam_node v_a) (Lean_Tm_lam_node c1_1_0))) (Lean_Eq_Prop Lean_Tm v_a c1_1_0) (Lean_instDecidableEqTm_decEq v_a c1_1_0) (fun v_h :e (Lean_Eq_Prop
@@ -3555,7 +3555,7 @@ reflexivity.
 Qed.
 Theorem Lean_instDecidableEqTm_decEq_eq_7 : forall v_a :e Lean_Tm, forall v_a_1 :e Lean_Tm, forall v_a_2 :e Lean_Tm, (Lean_instDecidableEqTm_decEq (Lean_Tm_lam_node v_a) (Lean_Tm_app_node v_a_1
     v_a_2)) = (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_lam_node v_a) (Lean_Tm_app_node v_a_1 v_a_2)) 0).
-let v_a. assume H_v_a: v_a :e Lean_Tm. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Tm. let v_a_2. assume H_v_a_2: v_a_2 :e Lean_Tm. 
+let v_a. assume H_v_a: v_a :e Lean_Tm. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Tm. let v_a_2. assume H_v_a_2: v_a_2 :e Lean_Tm.
 rewrite Lean_instDecidableEqTm_decEq_split1 v_a H_v_a (Lean_Tm_app_node v_a_1 v_a_2) (Lean_Tm_app_typed v_a_1 H_v_a_1 v_a_2 H_v_a_2).
 rewrite Lean_Tm_casesOn_iota2 (fun c1_0_0 :e Lean_Nat => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_lam_node v_a) (Lean_Tm_var_node c1_0_0)) 0)) (fun c1_1_0 :e Lean_Tm => (Lean_dite
     (Lean_Decidable (Lean_Eq_Prop Lean_Tm (Lean_Tm_lam_node v_a) (Lean_Tm_lam_node c1_1_0))) (Lean_Eq_Prop Lean_Tm v_a c1_1_0) (Lean_instDecidableEqTm_decEq v_a c1_1_0) (fun v_h :e (Lean_Eq_Prop
@@ -3577,7 +3577,7 @@ reflexivity.
 Qed.
 Theorem Lean_instDecidableEqTm_decEq_eq_8 : forall v_a :e Lean_Tm, forall v_a_1 :e Lean_Nat, (Lean_instDecidableEqTm_decEq (Lean_Tm_lam_node v_a) (Lean_Tm_lit_node v_a_1)) =
     (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_lam_node v_a) (Lean_Tm_lit_node v_a_1)) 0).
-let v_a. assume H_v_a: v_a :e Lean_Tm. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Nat. 
+let v_a. assume H_v_a: v_a :e Lean_Tm. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Nat.
 rewrite Lean_instDecidableEqTm_decEq_split1 v_a H_v_a (Lean_Tm_lit_node v_a_1) (Lean_Tm_lit_typed v_a_1 H_v_a_1).
 rewrite Lean_Tm_casesOn_iota3 (fun c1_0_0 :e Lean_Nat => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_lam_node v_a) (Lean_Tm_var_node c1_0_0)) 0)) (fun c1_1_0 :e Lean_Tm => (Lean_dite
     (Lean_Decidable (Lean_Eq_Prop Lean_Tm (Lean_Tm_lam_node v_a) (Lean_Tm_lam_node c1_1_0))) (Lean_Eq_Prop Lean_Tm v_a c1_1_0) (Lean_instDecidableEqTm_decEq v_a c1_1_0) (fun v_h :e (Lean_Eq_Prop
@@ -3594,7 +3594,7 @@ reflexivity.
 Qed.
 Theorem Lean_instDecidableEqTm_decEq_eq_9 : forall v_a :e Lean_Tm, forall v_a_1 :e Lean_Tm, forall v_a_2 :e Lean_Nat, (Lean_instDecidableEqTm_decEq (Lean_Tm_app_node v_a v_a_1) (Lean_Tm_var_node
     v_a_2)) = (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_app_node v_a v_a_1) (Lean_Tm_var_node v_a_2)) 0).
-let v_a. assume H_v_a: v_a :e Lean_Tm. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Tm. let v_a_2. assume H_v_a_2: v_a_2 :e Lean_Nat. 
+let v_a. assume H_v_a: v_a :e Lean_Tm. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Tm. let v_a_2. assume H_v_a_2: v_a_2 :e Lean_Nat.
 rewrite Lean_instDecidableEqTm_decEq_split2 v_a H_v_a v_a_1 H_v_a_1 (Lean_Tm_var_node v_a_2) (Lean_Tm_var_typed v_a_2 H_v_a_2).
 rewrite Lean_Tm_casesOn_iota0 (fun c1_0_0 :e Lean_Nat => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_app_node v_a v_a_1) (Lean_Tm_var_node c1_0_0)) 0)) (fun c1_1_0 :e Lean_Tm =>
     (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_app_node v_a v_a_1) (Lean_Tm_lam_node c1_1_0)) 0)) (fun c1_2_0 :e Lean_Tm => (fun c1_2_1 :e Lean_Tm => (Lean_dite (Lean_Decidable
@@ -3614,7 +3614,7 @@ reflexivity.
 Qed.
 Theorem Lean_instDecidableEqTm_decEq_eq_10 : forall v_a :e Lean_Tm, forall v_a_1 :e Lean_Tm, forall v_a_2 :e Lean_Tm, (Lean_instDecidableEqTm_decEq (Lean_Tm_app_node v_a v_a_1) (Lean_Tm_lam_node
     v_a_2)) = (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_app_node v_a v_a_1) (Lean_Tm_lam_node v_a_2)) 0).
-let v_a. assume H_v_a: v_a :e Lean_Tm. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Tm. let v_a_2. assume H_v_a_2: v_a_2 :e Lean_Tm. 
+let v_a. assume H_v_a: v_a :e Lean_Tm. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Tm. let v_a_2. assume H_v_a_2: v_a_2 :e Lean_Tm.
 rewrite Lean_instDecidableEqTm_decEq_split2 v_a H_v_a v_a_1 H_v_a_1 (Lean_Tm_lam_node v_a_2) (Lean_Tm_lam_typed v_a_2 H_v_a_2).
 rewrite Lean_Tm_casesOn_iota1 (fun c1_0_0 :e Lean_Nat => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_app_node v_a v_a_1) (Lean_Tm_var_node c1_0_0)) 0)) (fun c1_1_0 :e Lean_Tm =>
     (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_app_node v_a v_a_1) (Lean_Tm_lam_node c1_1_0)) 0)) (fun c1_2_0 :e Lean_Tm => (fun c1_2_1 :e Lean_Tm => (Lean_dite (Lean_Decidable
@@ -3640,7 +3640,7 @@ Theorem Lean_instDecidableEqTm_decEq_eq_11 : forall v_a :e Lean_Tm, forall v_a_1
     (Lean_Tm_app_node v_a v_a_1) (Lean_Tm_app_node v_a v_x8)))) (Lean_Decidable_isTrue_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_app_node v_a v_a_1) (Lean_Tm_app_node v_a v_a_1)) 0) v_b_1 0)) (fun v_x7 :e
     (Pi_ ux :e (Lean_Eq_Prop Lean_Tm v_a_1 v_b_1), Lean_False_Prop) => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_app_node v_a v_a_1) (Lean_Tm_app_node v_a v_b_1)) 0))) v_b 0)) (fun
     v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Tm v_a v_b), Lean_False_Prop) => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_app_node v_a v_a_1) (Lean_Tm_app_node v_b v_b_1)) 0))).
-let v_a. assume H_v_a: v_a :e Lean_Tm. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Tm. let v_b. assume H_v_b: v_b :e Lean_Tm. let v_b_1. assume H_v_b_1: v_b_1 :e Lean_Tm. 
+let v_a. assume H_v_a: v_a :e Lean_Tm. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Tm. let v_b. assume H_v_b: v_b :e Lean_Tm. let v_b_1. assume H_v_b_1: v_b_1 :e Lean_Tm.
 rewrite Lean_instDecidableEqTm_decEq_split2 v_a H_v_a v_a_1 H_v_a_1 (Lean_Tm_app_node v_b v_b_1) (Lean_Tm_app_typed v_b H_v_b v_b_1 H_v_b_1).
 rewrite Lean_Tm_casesOn_iota2 (fun c1_0_0 :e Lean_Nat => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_app_node v_a v_a_1) (Lean_Tm_var_node c1_0_0)) 0)) (fun c1_1_0 :e Lean_Tm =>
     (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_app_node v_a v_a_1) (Lean_Tm_lam_node c1_1_0)) 0)) (fun c1_2_0 :e Lean_Tm => (fun c1_2_1 :e Lean_Tm => (Lean_dite (Lean_Decidable
@@ -3727,7 +3727,7 @@ reflexivity.
 Qed.
 Theorem Lean_instDecidableEqTm_decEq_eq_12 : forall v_a :e Lean_Tm, forall v_a_1 :e Lean_Tm, forall v_a_2 :e Lean_Nat, (Lean_instDecidableEqTm_decEq (Lean_Tm_app_node v_a v_a_1) (Lean_Tm_lit_node
     v_a_2)) = (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_app_node v_a v_a_1) (Lean_Tm_lit_node v_a_2)) 0).
-let v_a. assume H_v_a: v_a :e Lean_Tm. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Tm. let v_a_2. assume H_v_a_2: v_a_2 :e Lean_Nat. 
+let v_a. assume H_v_a: v_a :e Lean_Tm. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Tm. let v_a_2. assume H_v_a_2: v_a_2 :e Lean_Nat.
 rewrite Lean_instDecidableEqTm_decEq_split2 v_a H_v_a v_a_1 H_v_a_1 (Lean_Tm_lit_node v_a_2) (Lean_Tm_lit_typed v_a_2 H_v_a_2).
 rewrite Lean_Tm_casesOn_iota3 (fun c1_0_0 :e Lean_Nat => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_app_node v_a v_a_1) (Lean_Tm_var_node c1_0_0)) 0)) (fun c1_1_0 :e Lean_Tm =>
     (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_app_node v_a v_a_1) (Lean_Tm_lam_node c1_1_0)) 0)) (fun c1_2_0 :e Lean_Tm => (fun c1_2_1 :e Lean_Tm => (Lean_dite (Lean_Decidable
@@ -3747,7 +3747,7 @@ reflexivity.
 Qed.
 Theorem Lean_instDecidableEqTm_decEq_eq_13 : forall v_a :e Lean_Nat, forall v_a_1 :e Lean_Nat, (Lean_instDecidableEqTm_decEq (Lean_Tm_lit_node v_a) (Lean_Tm_var_node v_a_1)) =
     (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_lit_node v_a) (Lean_Tm_var_node v_a_1)) 0).
-let v_a. assume H_v_a: v_a :e Lean_Nat. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Nat. 
+let v_a. assume H_v_a: v_a :e Lean_Nat. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Nat.
 rewrite Lean_instDecidableEqTm_decEq_split3 v_a H_v_a (Lean_Tm_var_node v_a_1) (Lean_Tm_var_typed v_a_1 H_v_a_1).
 rewrite Lean_Tm_casesOn_iota0 (fun c1_0_0 :e Lean_Nat => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_lit_node v_a) (Lean_Tm_var_node c1_0_0)) 0)) (fun c1_1_0 :e Lean_Tm =>
     (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_lit_node v_a) (Lean_Tm_lam_node c1_1_0)) 0)) (fun c1_2_0 :e Lean_Tm => (fun c1_2_1 :e Lean_Tm => (Lean_Decidable_isFalse_node
@@ -3764,7 +3764,7 @@ reflexivity.
 Qed.
 Theorem Lean_instDecidableEqTm_decEq_eq_14 : forall v_a :e Lean_Nat, forall v_a_1 :e Lean_Tm, (Lean_instDecidableEqTm_decEq (Lean_Tm_lit_node v_a) (Lean_Tm_lam_node v_a_1)) =
     (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_lit_node v_a) (Lean_Tm_lam_node v_a_1)) 0).
-let v_a. assume H_v_a: v_a :e Lean_Nat. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Tm. 
+let v_a. assume H_v_a: v_a :e Lean_Nat. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Tm.
 rewrite Lean_instDecidableEqTm_decEq_split3 v_a H_v_a (Lean_Tm_lam_node v_a_1) (Lean_Tm_lam_typed v_a_1 H_v_a_1).
 rewrite Lean_Tm_casesOn_iota1 (fun c1_0_0 :e Lean_Nat => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_lit_node v_a) (Lean_Tm_var_node c1_0_0)) 0)) (fun c1_1_0 :e Lean_Tm =>
     (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_lit_node v_a) (Lean_Tm_lam_node c1_1_0)) 0)) (fun c1_2_0 :e Lean_Tm => (fun c1_2_1 :e Lean_Tm => (Lean_Decidable_isFalse_node
@@ -3781,7 +3781,7 @@ reflexivity.
 Qed.
 Theorem Lean_instDecidableEqTm_decEq_eq_15 : forall v_a :e Lean_Nat, forall v_a_1 :e Lean_Tm, forall v_a_2 :e Lean_Tm, (Lean_instDecidableEqTm_decEq (Lean_Tm_lit_node v_a) (Lean_Tm_app_node v_a_1
     v_a_2)) = (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_lit_node v_a) (Lean_Tm_app_node v_a_1 v_a_2)) 0).
-let v_a. assume H_v_a: v_a :e Lean_Nat. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Tm. let v_a_2. assume H_v_a_2: v_a_2 :e Lean_Tm. 
+let v_a. assume H_v_a: v_a :e Lean_Nat. let v_a_1. assume H_v_a_1: v_a_1 :e Lean_Tm. let v_a_2. assume H_v_a_2: v_a_2 :e Lean_Tm.
 rewrite Lean_instDecidableEqTm_decEq_split3 v_a H_v_a (Lean_Tm_app_node v_a_1 v_a_2) (Lean_Tm_app_typed v_a_1 H_v_a_1 v_a_2 H_v_a_2).
 rewrite Lean_Tm_casesOn_iota2 (fun c1_0_0 :e Lean_Nat => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_lit_node v_a) (Lean_Tm_var_node c1_0_0)) 0)) (fun c1_1_0 :e Lean_Tm =>
     (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_lit_node v_a) (Lean_Tm_lam_node c1_1_0)) 0)) (fun c1_2_0 :e Lean_Tm => (fun c1_2_1 :e Lean_Tm => (Lean_Decidable_isFalse_node
@@ -3806,7 +3806,7 @@ Theorem Lean_instDecidableEqTm_decEq_eq_16 : forall v_a :e Lean_Nat, forall v_b 
     (Lean_Eq_ndrec Lean_Nat v_a (fun v_x3 :e Lean_Nat => (Lean_Decidable (Lean_Eq_Prop Lean_Tm (Lean_Tm_lit_node v_a) (Lean_Tm_lit_node v_x3)))) (Lean_Decidable_isTrue_node (Lean_Eq_Prop Lean_Tm
     (Lean_Tm_lit_node v_a) (Lean_Tm_lit_node v_a)) 0) v_b 0)) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Nat v_a v_b), Lean_False_Prop) => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm
     (Lean_Tm_lit_node v_a) (Lean_Tm_lit_node v_b)) 0))).
-let v_a. assume H_v_a: v_a :e Lean_Nat. let v_b. assume H_v_b: v_b :e Lean_Nat. 
+let v_a. assume H_v_a: v_a :e Lean_Nat. let v_b. assume H_v_b: v_b :e Lean_Nat.
 rewrite Lean_instDecidableEqTm_decEq_split3 v_a H_v_a (Lean_Tm_lit_node v_b) (Lean_Tm_lit_typed v_b H_v_b).
 rewrite Lean_Tm_casesOn_iota3 (fun c1_0_0 :e Lean_Nat => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_lit_node v_a) (Lean_Tm_var_node c1_0_0)) 0)) (fun c1_1_0 :e Lean_Tm =>
     (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Tm (Lean_Tm_lit_node v_a) (Lean_Tm_lam_node c1_1_0)) 0)) (fun c1_2_0 :e Lean_Tm => (fun c1_2_1 :e Lean_Tm => (Lean_Decidable_isFalse_node
@@ -3846,7 +3846,7 @@ Theorem Lean_instDecidableEqTm_In : forall a0 :e Lean_Tm, forall a1 :e Lean_Tm, 
 let a0. assume H0: a0 :e Lean_Tm. let a1. assume H1: a1 :e Lean_Tm. exact (Lean_instDecidableEqTm_decEq_In a0 H0 a1 H1).
 Qed.
 Theorem Lean_instDecidableEqTm_eq_1 : forall v_a :e Lean_Tm, forall v_b :e Lean_Tm, (Lean_instDecidableEqTm v_a v_b) = (Lean_instDecidableEqTm_decEq v_a v_b).
-let v_a. assume H_v_a: v_a :e Lean_Tm. let v_b. assume H_v_b: v_b :e Lean_Tm. 
+let v_a. assume H_v_a: v_a :e Lean_Tm. let v_b. assume H_v_b: v_b :e Lean_Tm.
 reflexivity.
 Qed.
 Theorem Lean_instDecidableEqTm_unfold : forall a0 a1, Lean_instDecidableEqTm a0 a1 = (Lean_instDecidableEqTm_decEq a0 a1).
@@ -3859,7 +3859,7 @@ Definition Lean_Bool_decEq : set -> set -> set := fun a0 a1 => Lean_Bool_rec (Le
     Lean_Bool_false_node) 0) (Lean_Decidable_isTrue_node (Lean_Eq_Prop Lean_Bool Lean_Bool_true_node Lean_Bool_true_node) 0) a1) a0.
 Theorem Lean_Bool_decEq_split0 : forall s1 :e Lean_Bool, (Lean_Bool_decEq Lean_Bool_false_node s1) = (Lean_Bool_rec (Lean_Decidable_isTrue_node (Lean_Eq_Prop Lean_Bool Lean_Bool_false_node
     Lean_Bool_false_node) 0) (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Bool Lean_Bool_false_node Lean_Bool_true_node) 0) s1).
-let s1. assume H_s1: s1 :e Lean_Bool. 
+let s1. assume H_s1: s1 :e Lean_Bool.
 prove (Lean_Bool_rec (Lean_Bool_rec (Lean_Decidable_isTrue_node (Lean_Eq_Prop Lean_Bool Lean_Bool_false_node Lean_Bool_false_node) 0) (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Bool
     Lean_Bool_false_node Lean_Bool_true_node) 0) s1) (Lean_Bool_rec (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Bool Lean_Bool_true_node Lean_Bool_false_node) 0) (Lean_Decidable_isTrue_node
     (Lean_Eq_Prop Lean_Bool Lean_Bool_true_node Lean_Bool_true_node) 0) s1) Lean_Bool_false_node) = (Lean_Bool_rec (Lean_Decidable_isTrue_node (Lean_Eq_Prop Lean_Bool Lean_Bool_false_node
@@ -3871,7 +3871,7 @@ reflexivity.
 Qed.
 Theorem Lean_Bool_decEq_split1 : forall s1 :e Lean_Bool, (Lean_Bool_decEq Lean_Bool_true_node s1) = (Lean_Bool_rec (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Bool Lean_Bool_true_node
     Lean_Bool_false_node) 0) (Lean_Decidable_isTrue_node (Lean_Eq_Prop Lean_Bool Lean_Bool_true_node Lean_Bool_true_node) 0) s1).
-let s1. assume H_s1: s1 :e Lean_Bool. 
+let s1. assume H_s1: s1 :e Lean_Bool.
 prove (Lean_Bool_rec (Lean_Bool_rec (Lean_Decidable_isTrue_node (Lean_Eq_Prop Lean_Bool Lean_Bool_false_node Lean_Bool_false_node) 0) (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Bool
     Lean_Bool_false_node Lean_Bool_true_node) 0) s1) (Lean_Bool_rec (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Bool Lean_Bool_true_node Lean_Bool_false_node) 0) (Lean_Decidable_isTrue_node
     (Lean_Eq_Prop Lean_Bool Lean_Bool_true_node Lean_Bool_true_node) 0) s1) Lean_Bool_true_node) = (Lean_Bool_rec (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Bool Lean_Bool_true_node
@@ -3942,7 +3942,7 @@ Theorem Lean_instDecidableEqBool_In : forall a0 :e Lean_Bool, forall a1 :e Lean_
 let a0. assume H0: a0 :e Lean_Bool. let a1. assume H1: a1 :e Lean_Bool. exact (Lean_Bool_decEq_In a0 H0 a1 H1).
 Qed.
 Theorem Lean_instDecidableEqBool_eq_1 : forall v_a :e Lean_Bool, forall v_b :e Lean_Bool, (Lean_instDecidableEqBool v_a v_b) = (Lean_Bool_decEq v_a v_b).
-let v_a. assume H_v_a: v_a :e Lean_Bool. let v_b. assume H_v_b: v_b :e Lean_Bool. 
+let v_a. assume H_v_a: v_a :e Lean_Bool. let v_b. assume H_v_b: v_b :e Lean_Bool.
 reflexivity.
 Qed.
 Theorem Lean_instDecidableEqBool_unfold : forall a0 a1, Lean_instDecidableEqBool a0 a1 = (Lean_Bool_decEq a0 a1).
@@ -4073,7 +4073,7 @@ Theorem Lean_BoundedDeterministicRun_execute_eq_1 : forall l_u, nat_p l_u -> for
     Lean_BoundedDeterministicRun_Outcome_completed_node Lean_BoundedDeterministicRun_Outcome_stuck_node)) (fun v_val :e v_State => (Lean_BoundedDeterministicRun_Result_mk_node v_State v_x (LeanNum 0)
     Lean_BoundedDeterministicRun_Outcome_exhausted_node)) (v_step v_x)).
 let l_u. assume H_l_u: nat_p l_u. let v_State. assume H_v_State: v_State :e LeanUniv l_u. let v_step. assume H_v_step: v_step :e (Pi_ ux :e v_State, (Lean_Option v_State)). let v_answer. assume
-    H_v_answer: v_answer :e (Pi_ ux :e v_State, Lean_Bool). let v_x. assume H_v_x: v_x :e v_State. 
+    H_v_answer: v_answer :e (Pi_ ux :e v_State, Lean_Bool). let v_x. assume H_v_x: v_x :e v_State.
 apply LeanNum_0_at (fun zpat => (Lean_BoundedDeterministicRun_execute v_State v_step v_answer zpat v_x)) (Lean_Option_rec v_State (Lean_BoundedDeterministicRun_Result_mk_node v_State v_x (LeanNum 0)
     (Lean_ite Lean_BoundedDeterministicRun_Outcome (Lean_Eq_Prop Lean_Bool (v_answer v_x) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_answer v_x) Lean_Bool_true_node)
     Lean_BoundedDeterministicRun_Outcome_completed_node Lean_BoundedDeterministicRun_Outcome_stuck_node)) (fun v_val :e v_State => (Lean_BoundedDeterministicRun_Result_mk_node v_State v_x (LeanNum 0)
@@ -4094,7 +4094,7 @@ Theorem Lean_BoundedDeterministicRun_execute_eq_2 : forall l_u, nat_p l_u -> for
     (Lean_BoundedDeterministicRun_Result_steps v_State v_result) (LeanNum 1)) (Lean_BoundedDeterministicRun_Result_outcome v_State v_result))) (Lean_BoundedDeterministicRun_execute v_State v_step
     v_answer v_fuel v_val))) (v_step v_x)).
 let l_u. assume H_l_u: nat_p l_u. let v_State. assume H_v_State: v_State :e LeanUniv l_u. let v_step. assume H_v_step: v_step :e (Pi_ ux :e v_State, (Lean_Option v_State)). let v_answer. assume
-    H_v_answer: v_answer :e (Pi_ ux :e v_State, Lean_Bool). let v_x. assume H_v_x: v_x :e v_State. let v_fuel. assume H_v_fuel: v_fuel :e Lean_Nat. 
+    H_v_answer: v_answer :e (Pi_ ux :e v_State, Lean_Bool). let v_x. assume H_v_x: v_x :e v_State. let v_fuel. assume H_v_fuel: v_fuel :e Lean_Nat.
 prove ((Lean_Nat_rec (Lean_BoundedDeterministicRun_execute_method0_0 v_State v_step v_answer) (Lean_BoundedDeterministicRun_execute_method1_0 v_State v_step v_answer) (Lean_Nat_succ_node v_fuel))
     v_x) = (Lean_Option_rec v_State (Lean_BoundedDeterministicRun_Result_mk_node v_State v_x (LeanNum 0) (Lean_ite Lean_BoundedDeterministicRun_Outcome (Lean_Eq_Prop Lean_Bool (v_answer v_x)
     Lean_Bool_true_node) (Lean_instDecidableEqBool (v_answer v_x) Lean_Bool_true_node) Lean_BoundedDeterministicRun_Outcome_completed_node Lean_BoundedDeterministicRun_Outcome_stuck_node)) (fun v_val
@@ -4119,7 +4119,7 @@ let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_CEK_St. exact (
 Qed.
 Theorem Lean_CEK_execute_eq_1 : forall v_fuel :e Lean_Nat, forall v_state :e Lean_CEK_St, (Lean_CEK_execute v_fuel v_state) = (Lean_BoundedDeterministicRun_execute Lean_CEK_St (Sigma Lean_CEK_St
     Lean_CEK_step) (Sigma Lean_CEK_St Lean_CEK_answer) v_fuel v_state).
-let v_fuel. assume H_v_fuel: v_fuel :e Lean_Nat. let v_state. assume H_v_state: v_state :e Lean_CEK_St. 
+let v_fuel. assume H_v_fuel: v_fuel :e Lean_Nat. let v_state. assume H_v_state: v_state :e Lean_CEK_St.
 reflexivity.
 Qed.
 Theorem Lean_CEK_execute_unfold : forall a0 a1, Lean_CEK_execute a0 a1 = (Lean_BoundedDeterministicRun_execute Lean_CEK_St (Sigma Lean_CEK_St Lean_CEK_step) (Sigma Lean_CEK_St Lean_CEK_answer) a0 a1).
@@ -4136,7 +4136,7 @@ let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Krivine_KSt. ex
 Qed.
 Theorem Lean_Krivine_execute_eq_1 : forall v_fuel :e Lean_Nat, forall v_state :e Lean_Krivine_KSt, (Lean_Krivine_execute v_fuel v_state) = (Lean_BoundedDeterministicRun_execute Lean_Krivine_KSt
     (Sigma Lean_Krivine_KSt Lean_Krivine_kstep) (Sigma Lean_Krivine_KSt Lean_Krivine_answer) v_fuel v_state).
-let v_fuel. assume H_v_fuel: v_fuel :e Lean_Nat. let v_state. assume H_v_state: v_state :e Lean_Krivine_KSt. 
+let v_fuel. assume H_v_fuel: v_fuel :e Lean_Nat. let v_state. assume H_v_state: v_state :e Lean_Krivine_KSt.
 reflexivity.
 Qed.
 Theorem Lean_Krivine_execute_unfold : forall a0 a1, Lean_Krivine_execute a0 a1 = (Lean_BoundedDeterministicRun_execute Lean_Krivine_KSt (Sigma Lean_Krivine_KSt Lean_Krivine_kstep) (Sigma
@@ -4154,7 +4154,7 @@ let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Tm. exact (Lean
 Qed.
 Theorem Lean_FunctionalCorrespondenceRuns_cek_eq_1 : forall v_fuel :e Lean_Nat, forall v_term :e Lean_Tm, (Lean_FunctionalCorrespondenceRuns_cek v_fuel v_term) = (Lean_CEK_execute v_fuel
     (Lean_CEK_St_mk_node (Lean_CEK_Ctl_ev_node v_term (Lean_List_nil_node Lean_CEK_Val)) (Lean_List_nil_node Lean_CEK_Frame))).
-let v_fuel. assume H_v_fuel: v_fuel :e Lean_Nat. let v_term. assume H_v_term: v_term :e Lean_Tm. 
+let v_fuel. assume H_v_fuel: v_fuel :e Lean_Nat. let v_term. assume H_v_term: v_term :e Lean_Tm.
 reflexivity.
 Qed.
 Theorem Lean_FunctionalCorrespondenceRuns_cek_unfold : forall a0 a1, Lean_FunctionalCorrespondenceRuns_cek a0 a1 = (Lean_CEK_execute a0 (Lean_CEK_St_mk_node (Lean_CEK_Ctl_ev_node a1
@@ -4173,11 +4173,12 @@ let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Tm. exact (Lean
 Qed.
 Theorem Lean_FunctionalCorrespondenceRuns_krivine_eq_1 : forall v_fuel :e Lean_Nat, forall v_term :e Lean_Tm, (Lean_FunctionalCorrespondenceRuns_krivine v_fuel v_term) = (Lean_Krivine_execute v_fuel
     (Lean_Krivine_KSt_mk_node v_term (Lean_List_nil_node Lean_Krivine_NThunk) (Lean_List_nil_node Lean_Krivine_NThunk))).
-let v_fuel. assume H_v_fuel: v_fuel :e Lean_Nat. let v_term. assume H_v_term: v_term :e Lean_Tm. 
+let v_fuel. assume H_v_fuel: v_fuel :e Lean_Nat. let v_term. assume H_v_term: v_term :e Lean_Tm.
 reflexivity.
 Qed.
 Theorem Lean_FunctionalCorrespondenceRuns_krivine_unfold : forall a0 a1, Lean_FunctionalCorrespondenceRuns_krivine a0 a1 = (Lean_Krivine_execute a0 (Lean_Krivine_KSt_mk_node a1 (Lean_List_nil_node
     Lean_Krivine_NThunk) (Lean_List_nil_node Lean_Krivine_NThunk))).
 let a0 a1. reflexivity.
 Qed.
+
 

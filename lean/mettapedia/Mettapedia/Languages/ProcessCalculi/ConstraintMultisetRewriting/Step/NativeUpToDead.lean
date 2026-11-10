@@ -47,7 +47,7 @@ namespace NativeUpToDead
 /-! ## The live step -/
 
 /-- **The live step**: the native step on its live fragment. -/
-noncomputable def live : Interface.Step (Frames.contextual S) O (NativeState S O Γ sort) LiveFiring where
+noncomputable def live : Interface.Step.Standard (Frames.contextual S) O (NativeState S O Γ sort) LiveFiring where
   frame s := native.frame s
   knowledge s := native.knowledge s
   present s := native.present s
@@ -60,17 +60,17 @@ noncomputable def live : Interface.Step (Frames.contextual S) O (NativeState S O
   Holds f := native.Holds f.toNative
   Admits f := f.toNative.Realized
   admits_iff f := native.admits_iff f.toNative
-  result f admitted := native.result f.toNative admitted
-  present_result f admitted := native.present_result f.toNative admitted
-  settle f admitted := native.settle f.toNative admitted
-  knowledge_result f admitted := native.knowledge_result f.toNative admitted
+  preparedResult f p := native.preparedResult f.toNative p
+  present_preparedResult f p := native.present_preparedResult f.toNative p
+  preparedSettle f p := native.preparedSettle f.toNative p
+  knowledge_preparedResult f p := native.knowledge_preparedResult f.toNative p
 
 variable {L : Type}
 
 /-- **A move of the live step is a move of the native step under the program's live offers.** -/
 theorem moves_live_iff (program : L → (s : NativeState S O Γ sort) → LiveFiring s → Prop)
     {s t : NativeState S O Γ sort} {ℓ : L} :
-    Race.Generic.Moves live program s ℓ t ↔ Race.Generic.Moves native (liveOffers program) s ℓ t := by
+    Race.Generic.Moves live.toStep program s ℓ t ↔ Race.Generic.Moves native.toStep (liveOffers program) s ℓ t := by
   constructor
   · rintro ⟨f, admitted, offered, rfl⟩
     exact ⟨f.toNative, admitted, ⟨f, offered, rfl⟩, rfl⟩
@@ -80,7 +80,7 @@ theorem moves_live_iff (program : L → (s : NativeState S O Γ sort) → LiveFi
 /-- **Bisimilarity of the live step is bisimilarity of the native step under live offers.** -/
 theorem bisimilar_live_iff (program : L → (s : NativeState S O Γ sort) → LiveFiring s → Prop)
     {s t : NativeState S O Γ sort} :
-    Race.Generic.Bisimilar live program s t ↔ Race.Generic.Bisimilar native (liveOffers program) s t := by
+    Race.Generic.Bisimilar live.toStep program s t ↔ Race.Generic.Bisimilar native.toStep (liveOffers program) s t := by
   constructor
   · rintro ⟨R, ⟨forward, backward, _⟩, related⟩
     refine ⟨R, ⟨?_, ?_, fun _ _ _ atom => atom.elim⟩, related⟩
@@ -130,7 +130,7 @@ end Comp
 /-! ## The transport -/
 
 /-- **The native transport up to dead names**: dead-name extensions, with live firings carried. -/
-noncomputable def deadTransport : DeadTransport (live (S := S) (O := O) (Γ := Γ) (sort := sort)) where
+noncomputable def deadTransport : DeadTransport (live (S := S) (O := O) (Γ := Γ) (sort := sort)).toStep where
   Incl := DeadExtension
   toStateIncl e := ⟨e.frame, Frames.equivalent_of_mem_iff fun _ => e.equations.mem_iff.symm, Equiv.refl O, by
     show _ = _
@@ -173,7 +173,7 @@ theorem invariant_iff (program : L → (s : NativeState S O Γ sort) → LiveFir
 an instance of the interface's. -/
 theorem bisimilar_of_deadEquiv' {program : L → (s : NativeState S O Γ sort) → LiveFiring s → Prop}
     (invariant : DeadInvariant program) {s t : NativeState S O Γ sort} (same : DeadEquiv s t) :
-    Race.Generic.Bisimilar native (liveOffers program) s t :=
+    Race.Generic.Bisimilar native.toStep (liveOffers program) s t :=
   (bisimilar_live_iff program).mp
     (DeadTransport.bisimilar_of_same ((invariant_iff program).mpr invariant) (same_iff.mpr same))
 

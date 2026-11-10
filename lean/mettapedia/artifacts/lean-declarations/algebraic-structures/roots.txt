@@ -1,0 +1,17 @@
+Monoid
+AddCommMonoid
+Mul.mul
+One.one
+NPow.npow
+Semigroup.toMul
+Monoid.toSemigroup
+Monoid.toOne
+Monoid.toNPow
+Add.add
+Zero.zero
+NSMul.nsmul
+AddSemigroup.toAdd
+AddMonoid.toAddSemigroup
+AddMonoid.toZero
+AddMonoid.toNSMul
+AddCommMonoid.toAddMonoid

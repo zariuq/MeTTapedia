@@ -62,15 +62,23 @@
    (if (fs:exists $path) (cdr-atom (nonempty (fs:read-lines $path))) ()))
 (= (nonempty $ls) (if (== $ls ()) () (if (== (car-atom $ls) "") (nonempty (cdr-atom $ls)) (cons-atom (car-atom $ls) (nonempty (cdr-atom $ls))))))
 (= (fields $line) (str:split "\t" $line))
-(= (join-comma $xs) (str:join "," $xs))
+(= (identifier-text $x)
+   (if (== (get-type $x) String) (str-of $x)
+       (let $_error (system:write stderr (format-args "evidence: non-text identifier {}\n" ($x)))
+         (system:exit 1))))
+(= (join-comma $xs) (str:join "," (map-atom $xs $x (identifier-text $x))))
 
 ; ---- the declarations, as string-keyed facts ----
 ; add-atom stores its argument as written: values are computed first.
+(= (source-obligations $c $thms)
+   (let $sources (collapse (match &self (LeanSourceEquations $c $qs) $qs))
+     (dedup (append-lists $thms (if (== $sources ()) () (car-atom $sources))) ())))
 (= (put2 $tag $a $b) (let* (($x (str-of $a)) ($y $b)) (add-atom &self ($tag $x $y))))
 (= (put1 $tag $a) (let $x (str-of $a) (add-atom &self ($tag $x))))
 (= (load-facts)
    (let* (($a (collapse (match &self (EgalName $c $e) (put2 EgalS $c (str-of $e)))))
-          ($b (collapse (match &self (LeanFunction $c $thms) (put2 FnS $c (map-atom $thms $q (str-of $q))))))
+          ($b (collapse (match &self (LeanFunction $c $thms)
+                (put2 FnS $c (map-atom (source-obligations $c $thms) $q (str-of $q))))))
           ($c1 (collapse (match &self (LeanEquation $c $bs $T $l $r) (put1 EqS $c))))
           ($d (collapse (match &self (LeanMatcher $c $bs $body) (put1 MatcherS $c))))
           ($f (collapse (match &self (LeanCasesOn $c $F) (put2 CasesS $c (str-of $F)))))
@@ -79,6 +87,11 @@
           ($i (collapse (match &self (LeanReducible $c) (put1 RedS $c))))
           ($j (collapse (match &self (LeanInstance $c) (put1 InstS $c))))
           ($k (collapse (match &self (LeanFunctionRefused $c $why) (put2 RefFnS $c (str-of $why)))))
+          ($primitives (collapse (match &self (LeanIntrinsic $c $kind $bs $R)
+            (let $_kind (put2 PrimS $c (str-of $kind))
+              (put2 PrimRequiredS $c (map-atom (source-obligations $c ()) $q (str-of $q)))))))
+          ($primitiveLaws (collapse (match &self (LeanPrimitiveLaw $c $law) (put2 PrimLawS $c (str-of $law)))))
+          ($profiles (collapse (match &self (LeanUniverseProfile $c $kind $levels) (put2 ProfileS $c (str-of $kind)))))
           ($l (collapse (match &self (LeanAdmitted $c $u) (put1 FamS $c))))
           ($m (collapse (match &self (LeanFamily (Family $F $ps $is $srt $cs) $u $el $n) (put1 FamS $F))))
           ($o (collapse (match &self (LeanFamily (Family $F $ps $is $srt (constructors $cs)) $u $el $n)
@@ -123,6 +136,31 @@
        (let $n (defined-name $l) (if (== $n "") () (add-atom &self (Defined $n)))))))
 (= (is-defined $e) (if (== $e "") False (has (Defined $e))))
 
+; External implementations remain reachable even when a source contract is
+; missing. Otherwise omitting a contract would erase the dependency itself.
+(= (load-primitive-names)
+   (collapse (match &self (PrimS $c $kind)
+     (let $name (egal-of $c)
+       (if (== $name "") () (if (is-defined $name) () (add-atom &self (Defined $name))))))))
+(= (load-primitive-refs)
+   (collapse (match &self (PrimS $c $kind)
+     (let* (($name (egal-of $c)) ($contract (str:concat $name "_source_type"))
+            ($_type (if (is-defined $contract) (add-atom &self (Ref $name $contract)) ())))
+       (collapse (match &self (PrimLawS $c $law)
+         (let $target (egal-of $law)
+           (if (is-defined $target) (add-atom &self (Ref $name $target)) ()))))))))
+(= (primitive-evidence $c)
+   (let* (($name (egal-of $c)) ($contract (str:concat $name "_source_type"))
+          ($kind (car-atom (collapse (match &self (PrimS $c $kind) $kind))))
+          ($laws (collapse (match &self (PrimLawS $c $law) $law)))
+          ($required (car-atom (collapse (match &self (PrimRequiredS $c $qs) $qs))))
+          ($unproved (unproved-list (append-lists $laws $required))))
+     (if (not (is-defined $contract)) (ev refused $name "quotient primitive source typing contract missing")
+     (if (not (== (len-of $laws) (if (== $kind "type") 0 1)))
+         (ev refused $name "quotient primitive kernel-law inventory incomplete or ambiguous")
+     (if (not (== $unproved ())) (ev refused $name "quotient primitive source law contract missing")
+         (ev interpretation $name "Type-carrier quotient profile; source typing and kernel-law contracts proved"))))))
+
 (= (load-skipped $gen)
    (map-atom (fs:read-lines (format-args "{}/Skipped.txt" ($gen))) $l
      (let $t (str:trim $l)
@@ -138,7 +176,7 @@
 
 ; The references of the document: each definition or theorem, from its line
 ; to the next one's, uses the defined names its text mentions.
-(= (ident-pattern) (re:compile "Lean_[A-Za-z0-9_]+"))
+(= (ident-pattern) (re:compile "[A-Za-z_][A-Za-z0-9_]*"))
 (= (spans-text $ms $text)
    (case $ms
      ((LNil ())
@@ -160,6 +198,15 @@
 (= (load-refs $gen)
    (map-atom ("Families.mg" "Functions.mg" "Theorems.mg" "Computations.mg") $f
      (scan-blocks (fs:read-lines (format-args "{}/{}" ($gen $f))) "" ())))
+; Required source equations are semantic dependencies of a fuel reading,
+; even when its computation proof only cites the fuel bridge.
+(= (load-source-obligation-refs)
+   (collapse (match &self (LeanSourceEquations $c $qs)
+     (let $owner (egal-of (str-of $c))
+       (map-atom $qs $q
+         (let $required (egal-of (str-of $q))
+           (if (and (is-defined $owner) (is-defined $required))
+               (if (has (Ref $owner $required)) () (add-atom &self (Ref $owner $required))) ())))))))
 (= (load-test-names $gen)
    (map-atom (fs:read-lines (format-args "{}/Computations.mg" ($gen))) $l
      (let $n (defined-name $l) (if (== $n "") () (add-atom &self (Defined $n))))))
@@ -212,12 +259,17 @@
    (if (== $qs ()) ()
        (let $rest (unproved-list (cdr-atom $qs))
          (if (is-defined (egal-of (car-atom $qs))) $rest (cons-atom (car-atom $qs) $rest)))))
+(= (profile-detail $c)
+   (if (has (ProfileS $c $kind)) "; restricted to the declared Type universe profile" ""))
 
 (= (classify $c $kind $role)
    (let $e (egal-of $c)
      (let $dw (collapse (match &self (DisplayS $c $w) $w))
      (if (not (== $dw ())) (ev display-excluded "" (car-atom $dw))
-     (if (and (== $kind "theorem") (has (ThmS $c)))
+     (if (has (PrimS $c $primitiveKind)) (primitive-evidence $c)
+     ; Source equations prove the function interpretation even when their
+     ; target proof was supplied through the theorem-reconstruction path.
+     (if (and (== $kind "theorem") (and (has (ThmS $c)) (not (has (EqS $c)))))
          (if (is-defined $e) (ev target-reconstruction $e "statement read from Lean, proved in Egal")
              (ev refused $e (skip-reason $c "statement read, not proved here yet")))
      (if (== $c "And") (ev interpretation "" "read as Egal's conjunction in statements")
@@ -249,12 +301,13 @@
      (if (has (FnS $c $any))
          (if (not (is-defined $e)) (ev refused $e (skip-reason $c "function not read"))
              (let $un (unproved-eqns $c)
-               (if (== $un ()) (ev interpretation $e "function read from its equation theorems; Lean's equations proved")
+               (if (== $un ()) (ev interpretation $e
+                 (str:concat "function read from its equation theorems; Lean's equations proved" (profile-detail $c)))
                    (ev refused $e (str:concat "function read, but not all of Lean's equation theorems are proved from the reading: "
                                     (str:join ", " (map-atom $un $q (short $q))))))))
      (let $rw (collapse (match &self (RefFnS $c $w) $w))
      (if (not (== $rw ())) (ev refused $e (car-atom $rw))
-     (if (and (== $kind "theorem") (has (EqS $c)))
+     (if (has (EqS $c))
          (if (is-defined $e) (ev interpretation $e "Lean's equation theorem, proved from the reading")
              (ev refused $e "equation theorem not proved from the reading"))
      (if (has (MatcherS $c)) (ev expanded "" "matcher, read by its definition at each use")
@@ -265,7 +318,7 @@
      (let $hv (helper-ev $c (helper-reasons))
        (if (not (== $hv None)) $hv
            (if (== $kind "theorem") (ev not-needed "" "a theorem Lean's proofs use; the theorems are reconstructed in Egal, not transported")
-               (ev not-needed "" "no read definition, equation, theorem or test uses it"))))))))))))))))))))))))))
+               (ev not-needed "" "no read definition, equation, theorem or test uses it")))))))))))))))))))))))))))
 
 (= (ev-kind $v) (case $v (((ev $k $e $d) $k))))
 (= (qualifying $k) (or (== $k interpretation) (or (== $k unfolded) (== $k expanded))))
@@ -318,7 +371,10 @@
    (let* (($f (load-facts)) ($r (load-read))
           ($dd (map-atom (tsv-rows (format-args "{}/display-exclusions.tsv" ($decls))) $l
                  (let* (($fs (fields $l)) ($c (nth-of $fs 0)) ($w (nth-of $fs 1))) (add-atom &self (DisplayS $c $w)))))
-          ($df (load-defined $gen)) ($tn (load-test-names $gen)) ($sk (load-skipped $gen)) ($rf (load-refs $gen))
+          ($df (load-defined $gen)) ($primitiveNames (load-primitive-names))
+          ($tn (load-test-names $gen)) ($sk (load-skipped $gen)) ($rf (load-refs $gen))
+          ($primitiveRefs (load-primitive-refs))
+          ($sourceRefs (load-source-obligation-refs))
           ($rows0 (if (fs:exists (format-args "{}/manifest.tsv" ($decls))) (manifest-rows $decls) ()))
           ($rows (append-lists $rows0 (extra-rows (map-atom $rows0 $x (row-c $x)))))
           ($evs (map-atom $rows $x (case $x (((row $c $role $kind) (let $v (classify $c $kind $role) (let $_a (add-atom &self (EvS $c $v)) ($c $v))))))))

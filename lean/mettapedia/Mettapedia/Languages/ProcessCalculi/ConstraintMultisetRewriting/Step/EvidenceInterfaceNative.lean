@@ -55,7 +55,7 @@ variable {O : Type} [DecidableEq O] {Γ : Ctx S} {sort : S.Srt}
 
 /-- **The native step settles conservatively.** -/
 theorem native_conservative :
-    SettlesConservatively (Interface.native (S := S) (O := O) (Γ := Γ) (sort := sort)) := by
+    SettlesConservatively (Interface.native (S := S) (O := O) (Γ := Γ) (sort := sort)).toStep := by
   intro s f realized solvable
   obtain ⟨σ, solved⟩ := (Frames.contextual_solvable_iff_firstOrder _).mp solvable
   refine ⟨firstOrderFrame S, extendFirst (returned := (f.pinned realized).firing.update.declaration) σ,

@@ -1,0 +1,31 @@
+test	status	constants	unresolved	reason
+1	qualified	12		
+2	qualified	12		
+3	qualified	9		
+4	qualified	10		
+5	qualified	9		
+6	qualified	12		
+7	qualified	61		
+8	qualified	15		
+9	qualified	20		
+10	refused	0		List.mergeSort is not read: applies Mettapedia.Languages.Lean.Recursion.FuelCore.MergeSort.reading, which is not read
+11	qualified	50		
+12	qualified	14		
+13	qualified	39		
+14	qualified	7		
+15	qualified	54		
+16	qualified	64		
+17	qualified	35		
+18	qualified	12		
+19	qualified	41		
+20	qualified	42		
+21	qualified	9		
+22	qualified	25		
+23	qualified	12		
+24	qualified	9		
+25	qualified	14		
+26	unqualified	76	Nat.minFacAux,Nat.primeFactorsList	
+27	refused	0		Irreducible is not read: not exported with equations
+28	refused	0		Irreducible is not read: not exported with equations
+29	refused	0		Finset.range is not read: erased proofs in the definition or its equations are not reconstructed
+30	refused	0		Finset.range is not read: erased proofs in the definition or its equations are not reconstructed

@@ -1,4 +1,5 @@
 import Mettapedia.Languages.Lean.Declarations.Reader
+import Mettapedia.Languages.Lean.Declarations.GuardSyntax
 import Mettapedia.GSLT.LanguageDef.IndexedInductive
 
 /-!
@@ -25,7 +26,9 @@ for every source.
 no data: Lean erases it, and its value is the proof.  The `Description` code
 keeps the constructor's data and recursive fields; each guard is recorded
 beside it, with its position among the fields and its proposition (read by the
-Reader in weak head normal form) as an index term over the data before it.
+Reader in weak head normal form) as a scoped guard over the data before it.
+Guard products bind variables locally; family indices retain the first-order
+index language.
 Without the Reader's proof information (`admit` with no `proofs`), such a field
 is a dependent data sort and is refused; a dependent field that is data, not a
 proof, is refused in every case.
@@ -125,6 +128,18 @@ def mentions (name : String) : STerm → Bool
   | .name identifier => identifier == name
   | .app function argument => mentions name function || mentions name argument
   | .arrow domain codomain => mentions name domain || mentions name codomain
+  | .pi binder domain codomain =>
+      mentions name domain || (binder != name && mentions name codomain)
+  | .project _ _ record => mentions name record
+
+/-- A dependent product in a proof field needs the scoped guard interpreter,
+even when the proposition mentions no earlier constructor field. -/
+def hasDependentProduct : STerm → Bool
+  | .name _ => false
+  | .app function argument => hasDependentProduct function || hasDependentProduct argument
+  | .arrow domain codomain => hasDependentProduct domain || hasDependentProduct codomain
+  | .pi _ _ _ => true
+  | .project _ _ record => hasDependentProduct record
 
 /-- A guard: a proof field whose proposition mentions earlier data fields. -/
 structure Guard where
@@ -133,7 +148,7 @@ structure Guard where
   position : Nat
   /-- The number of data fields before it: the scope of its proposition. -/
   depth : Nat
-  proposition : IndexTerm depth
+  proposition : GuardSyntax.Term depth
   deriving Repr
 
 /-- What lowering needs to know of the family. -/
@@ -158,6 +173,31 @@ def resolve (header : Header) (owner : String) (depth : Nat) (scope recursive : 
       return .app (← resolve header owner depth scope recursive function)
         (← resolve header owner depth scope recursive argument)
   | .arrow _ _ => .error (.unsupportedIndex owner)
+  | .pi _ _ _ => .error (.unsupportedIndex owner)
+  | .project _ _ _ => .error (.unsupportedIndex owner)
+
+/-- First-order index expressions embed in the richer syntax of proof fields. -/
+def guardOfIndex {depth : Nat} : IndexTerm depth → GuardSyntax.Term depth
+  | .var position => .var position
+  | .name identifier => .name identifier
+  | .app function argument => .app (guardOfIndex function) (guardOfIndex argument)
+
+/-- Quantified proof fields retain bound variables separately from their free
+field references. Nondependent arrows weaken the body under the new binder. -/
+def resolveGuard (header : Header) (owner : String) (depth : Nat)
+    (scope recursive : List String) : STerm → Except Refusal (GuardSyntax.Term depth)
+  | term@(.name _) => guardOfIndex <$> resolve header owner depth scope recursive term
+  | .app function argument => do
+      return .app (← resolveGuard header owner depth scope recursive function)
+        (← resolveGuard header owner depth scope recursive argument)
+  | .arrow domain codomain => do
+      return .pi (← resolveGuard header owner depth scope recursive domain)
+        ((← resolveGuard header owner depth scope recursive codomain).rename Fin.succ)
+  | .pi binder domain codomain => do
+      return .pi (← resolveGuard header owner depth scope recursive domain)
+        (← resolveGuard header owner (depth + 1) (binder :: scope) recursive codomain)
+  | .project structureName field record => do
+      return .project structureName field (← resolveGuard header owner depth scope recursive record)
 
 /-- The index arguments of an occurrence of the family with its own parameters. -/
 def familyIndices (header : Header) (owner : String) (term : STerm) :
@@ -219,11 +259,11 @@ def lowerFields (header : Header) (owner : String) (result : STerm) :
             | _ => throw (.nestedOccurrence owner field.name)
           else if recursive.any (mentions · field.type) then
             throw (.dependentDataSort owner field.name)
-          else if scope.any (mentions · field.type) then
+          else if scope.any (mentions · field.type) || proof.any hasDependentProduct then
             match proof with
             | some proposition =>
                 let guard : Guard := ⟨field.name, position, context.length,
-                  ← resolve header owner context.length scope recursive proposition⟩
+                  ← resolveGuard header owner context.length scope recursive proposition⟩
                 let (body, guards) ← lowerFields header owner result context scope recursive
                   (position + 1) rest proofs.tail kept.tail
                 return (body, guard :: guards)

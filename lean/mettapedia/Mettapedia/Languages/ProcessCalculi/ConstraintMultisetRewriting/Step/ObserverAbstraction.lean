@@ -266,7 +266,7 @@ variable {T : Type uT} {S : Type uS} {O : Type uO} [DecidableEq O]
 escape-relative transport that renames occurrences end in configurations equivalent relative to the
 record the environment held at the start. -/
 theorem renaming_traceEquiv_recordEquivalent (A : SubstitutionAction T S) (label : O → T)
-    {x : Escaped (firstOrder A label)} {r r' : (renamingEscape A label).step.Run x}
+    {x : Escaped (firstOrder A label).toStep} {r r' : (renamingEscape A label).step.Run x}
     (equivalent : (renamingEscaping A label).TraceEquiv x r r') :
     RecordEquivalent A label x.record r.last.state r'.last.state := by
   obtain ⟨i, aut, -⟩ := Transport.Escape.traceEquiv_past equivalent

@@ -314,7 +314,7 @@ theorem holds_lift_iff (label : O → Term σ) (f : Firing (Term σ) (Subst σ) 
 /-- **A lifted firing is a dispatched firing of the rational-tree step.** -/
 def dispatched (label : O → Term σ) (f : Firing (Term σ) (Subst σ) O) (C : Configuration (Term σ) O)
     (onlyEqual : ∀ c ∈ f.rule.checks, ∃ l r, c = .equal l r) :
-    (finiteToRational σ).Dispatched (rationalStep σ (fun o => RTree.ofTerm (label o)))
+    (finiteToRational σ).Dispatched (rationalStep σ (fun o => RTree.ofTerm (label o))).toStep
       (s := liftConfig C) (liftFiring f) where
   source := PUnit.unit
   frame := rfl

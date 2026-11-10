@@ -338,4 +338,49 @@ theorem Execution.invariant {property : State → Prop}
   | loopAbrupt iteration abrupt ih => exact ih initial
   | loopAgain iteration repeats rest ihiteration ihrest => exact ihrest (ihiteration initial)
 
+/-- A reachable intermediate state, before cleanup may discharge the last
+permission. Completed subplans use the same execution relation as admission;
+returned/faulted branches cannot resume their enclosing continuation. -/
+inductive Prefix (transition : State → Action → Option State) :
+    Plan Action → State → State → Prop where
+  | start (plan : Plan Action) (s : State) : Prefix transition plan s s
+  | step {s after reached : State} {action : Action} {next : Plan Action}
+      (enabled : transition s action = some after)
+      (rest : Prefix transition next after reached) :
+      Prefix transition (.step action next) s reached
+  | branchHere {yes no next : Plan Action} {s reached : State} (choice : Bool)
+      (inside : Prefix transition (if choice then yes else no) s reached) :
+      Prefix transition (.branch yes no next) s reached
+  | branchNext {yes no next : Plan Action} {s after reached : State} (choice : Bool)
+      (finished : Execution transition (if choice then yes else no) s ⟨.normal, after⟩)
+      (rest : Prefix transition next after reached) :
+      Prefix transition (.branch yes no next) s reached
+  | loopHere {body next : Plan Action} {s reached : State}
+      (inside : Prefix transition body s reached) : Prefix transition (.loop body next) s reached
+  | loopStop {body next : Plan Action} {s reached : State}
+      (rest : Prefix transition next s reached) : Prefix transition (.loop body next) s reached
+  | loopBreak {body next : Plan Action} {s after reached : State}
+      (finished : Execution transition body s ⟨.broke, after⟩)
+      (rest : Prefix transition next after reached) : Prefix transition (.loop body next) s reached
+  | loopAgain {body next : Plan Action} {s reached : State} {iteration : Exit State}
+      (finished : Execution transition body s iteration)
+      (repeats : iteration.kind = .normal ∨ iteration.kind = .continued)
+      (rest : Prefix transition (.loop body next) iteration.state reached) :
+      Prefix transition (.loop body next) s reached
+
+omit [BEq State] [LawfulBEq State] in
+theorem Prefix.invariant {property : State → Prop}
+    (preserved : ∀ s a after, transition s a = some after → property s → property after)
+    {plan : Plan Action} {state reached : State}
+    (path : Prefix transition plan state reached) (initial : property state) : property reached := by
+  induction path with
+  | start => exact initial
+  | step enabled rest ih => exact ih (preserved _ _ _ enabled initial)
+  | branchHere choice inside ih => exact ih initial
+  | branchNext choice finished rest ih => exact ih (finished.invariant preserved initial)
+  | loopHere inside ih => exact ih initial
+  | loopStop rest ih => exact ih initial
+  | loopBreak finished rest ih => exact ih (finished.invariant preserved initial)
+  | loopAgain finished repeats rest ih => exact ih (finished.invariant preserved initial)
+
 end Mettapedia.Machines.CMemory.PermissionFlow

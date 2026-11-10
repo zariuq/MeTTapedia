@@ -59,6 +59,8 @@ def nodes : Term → Nat
   | .name _ => 1
   | .app function argument => 1 + nodes function + nodes argument
   | .arrow domain codomain => 1 + nodes domain + nodes codomain
+  | .pi _ domain codomain => 1 + nodes domain + nodes codomain
+  | .project _ _ record => 1 + nodes record
 
 /-- The Unicode scalar upper bound is compact rather than a million successors. -/
 theorem unicode_bound_is_compact : nodes (encode 1114112) < 200 := by decide

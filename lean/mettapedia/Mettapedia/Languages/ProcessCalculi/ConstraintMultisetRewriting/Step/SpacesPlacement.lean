@@ -151,7 +151,7 @@ theorem observe_of_admitted {s : State} {f : Firing s} (admitted : P.Admits f) {
     (only : P.selection f = ⟨[], [o], []⟩) :
     LocatedStep .observe (space o) (payload o) (network space payload (P.present s))
       (network space payload (P.present (P.result f admitted))) := by
-  have enabled := ((P.admits_iff f).mp admitted).2.1
+  have enabled := (P.prepares admitted).2.1
   have present : o ∈ P.present s := enabled.kept_subset (by simp [only, Selection.commit])
   have same : P.present (P.result f admitted) = P.present s := by
     rw [P.present_result f admitted, only]
@@ -164,7 +164,7 @@ theorem consume_of_admitted {s : State} {f : Firing s} (admitted : P.Admits f) {
     (only : P.selection f = ⟨[o], [], []⟩) :
     LocatedStep .consume (space o) (payload o) (network space payload (P.present s))
       (network space payload (P.present (P.result f admitted))) := by
-  have enabled := ((P.admits_iff f).mp admitted).2.1
+  have enabled := (P.prepares admitted).2.1
   have present : o ∈ P.present s := enabled.taken_subset (by simp [only, Selection.commit])
   have erased : P.present (P.result f admitted) = (P.present s).erase o := by
     rw [P.present_result f admitted, only]

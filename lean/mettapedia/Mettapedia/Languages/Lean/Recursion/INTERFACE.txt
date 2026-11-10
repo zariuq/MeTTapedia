@@ -21,6 +21,20 @@ LeanRecursionTheorem carries a generated statement and its axiom dependencies.
 Statements are read from checked declarations, including the source equation
 theorems and the target equations transported through the function bridge.
 
+LeanFuelRecursion supplies a structural evaluator derived from the same source
+measure and recipe. Its zero and successor equations, measure-bound adequacy
+theorem, sufficient-fuel reading and source bridge are all named declarations
+checked by Lean. The default result at zero fuel is not an answer: the strict
+measure bound is required before a fuel run can be identified with the source.
+HOTG consumers still need to reconstruct these facts in their target theory.
+SourceFuelEquations expose the same evaluator with the source's argument
+layout, refining overlapping constructor patterns as needed. Budget and
+BudgetAdequate identify the emitted budget and its checked strict bound.
+A budget can be a simpler proved upper bound: minFacAux uses n+3 instead of
+evaluating the square root in its termination measure. For merge, locality
+of the actual recipe proves a length-sum rank for its observed calls; no
+claim is made that the whole source relation decreases that rank.
+
 A call names Current and Argument values, a ConditionsAndDecrease theorem and
 its Proof. Constructor-specialized states remain explicit in Current. All
 branch hypotheses are retained, including hypotheses not needed by the proof.

@@ -439,6 +439,14 @@ let a. assume Ha: a :e A. let b. assume Hb: b :e A. assume H.
 exact Lean_RTG_head_inv A r a b H.
 Qed.
 
+(** Relation.ReflTransGen.head: its statement read from Lean; proved in Egal. **)
+Theorem Lean_Relation_ReflTransGen_head : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_r :e (Pi_ ux :e v_u945, (Pi_ ux :e v_u945, LeanProp)), forall v_a :e v_u945, forall
+    v_b :e v_u945, forall v_c :e v_u945, (0 :e (v_r v_a v_b)) -> (0 :e (Lean_Relation_ReflTransGen_Prop v_u945 v_r v_b v_c)) -> 0 :e (Lean_Relation_ReflTransGen_Prop v_u945 v_r v_a v_c).
+let l. assume Hl: nat_p l. let A. assume HA: A :e LeanUniv l. let r. assume Hr.
+let a. assume Ha: a :e A. let b. assume Hb: b :e A. let c. assume Hc: c :e A. assume H1. assume H2.
+exact Lean_RTG_head A r a Ha b Hb c H1 H2.
+Qed.
+
 (** Relation.ReflTransGen.head_induction_on: its statement read from Lean; proved in Egal. **)
 Theorem Lean_Relation_ReflTransGen_head_induction_on : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_r :e (Pi_ ux :e v_u945, (Pi_ ux :e v_u945, LeanProp)), forall v_b :e
     v_u945, forall v_motive :e (Pi_ v_a :e v_u945, (Pi_ ux :e (Lean_Relation_ReflTransGen_Prop v_u945 v_r v_a v_b), LeanProp)), forall v_a :e v_u945, forall v_h :e (Lean_Relation_ReflTransGen_Prop
@@ -454,14 +462,6 @@ claim Hab: 0 :e Lean_Relation_ReflTransGen_Prop A r a b.
 { rewrite <- In_1_eq_0 h (SepE1 1 (fun x => exists w, w :e Lean_Relation_ReflTransGen A r a b) h Hh). exact Hh. }
 exact Lean_RTG_head_ind A r b (fun x => 0 :e motive x 0) Hrefl
   (fun x Hx y Hy Hxy Hyb Py => Hstep x Hx y Hy 0 Hxy 0 Hyb Py) a Ha Hab.
-Qed.
-
-(** Relation.ReflTransGen.head: its statement read from Lean; proved in Egal. **)
-Theorem Lean_Relation_ReflTransGen_head : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_r :e (Pi_ ux :e v_u945, (Pi_ ux :e v_u945, LeanProp)), forall v_a :e v_u945, forall
-    v_b :e v_u945, forall v_c :e v_u945, (0 :e (v_r v_a v_b)) -> (0 :e (Lean_Relation_ReflTransGen_Prop v_u945 v_r v_b v_c)) -> 0 :e (Lean_Relation_ReflTransGen_Prop v_u945 v_r v_a v_c).
-let l. assume Hl: nat_p l. let A. assume HA: A :e LeanUniv l. let r. assume Hr.
-let a. assume Ha: a :e A. let b. assume Hb: b :e A. let c. assume Hc: c :e A. assume H1. assume H2.
-exact Lean_RTG_head A r a Ha b Hb c H1 H2.
 Qed.
 
 (** Relation.ReflTransGen.single: its statement read from Lean; proved in Egal. **)

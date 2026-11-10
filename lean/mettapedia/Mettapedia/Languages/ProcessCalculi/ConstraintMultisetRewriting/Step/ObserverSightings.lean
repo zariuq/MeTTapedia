@@ -385,7 +385,7 @@ variable {T : Type*} {S : Type*} {O : Type*} [DecidableEq O]
 record, keeping labels, relates the ends of trace-equivalent runs of the transport that renames
 occurrences. -/
 theorem renaming_traceEquiv_recordModuloEquivalent (A : SubstitutionAction T S) (label : O → T)
-    {x : Escaped (firstOrder A label)} {r r' : (renamingEscape A label).step.Run x}
+    {x : Escaped (firstOrder A label).toStep} {r r' : (renamingEscape A label).step.Run x}
     (equivalent : (renamingEscaping A label).TraceEquiv x r r') :
     Observation.RecordModuloEquivalent A label x.record r.last.state r'.last.state := by
   obtain ⟨i, aut, -⟩ := Transport.Escape.traceEquiv_past equivalent

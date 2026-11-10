@@ -490,7 +490,7 @@ variable {O : Type uOcc} [DecidableEq O] {State : Type uS} {Firing : State → T
 /-- **A dispatched firing** of a step over the target frames: its information is, up to the target
 equivalence of stores, the image of a source store at a source frame, and its guards and predicate
 queries are the image of source equation guards. -/
-structure Dispatched (P : Step Y O State Firing) {s : State} (f : Firing s) where
+structure Dispatched (P : Step Y O State Firing) [P.Guarded] {s : State} (f : Firing s) where
   source : Obj
   frame : Φ.obj source = P.target f
   problem : EquationStore (Tm source)
@@ -504,7 +504,7 @@ variable {Φ}
 /-- **Dispatch.** At a dispatched firing of a step over the target frames, under a licensed map that
 reflects the equivalence, admission is the shapes, the enabling, source solvability and the source
 ask of the guards, whenever the source decides the firing's problem. -/
-theorem dispatch_admits_iff (reflects : Φ.Reflects) (P : Step Y O State Firing) {s : State}
+theorem dispatch_admits_iff (reflects : Φ.Reflects) (P : Step Y O State Firing) [P.Guarded] {s : State}
     {f : Firing s} (d : Φ.Dispatched P f) (licensed : Φ.LicensedAt d.problem)
     (decides : X.Decides d.problem) :
     P.Admits f ↔ P.Shapes f ∧
@@ -520,7 +520,7 @@ theorem dispatch_admits_iff (reflects : Φ.Reflects) (P : Step Y O State Firing)
     entails_storeAt, licensed.solvable_iff, licensed.entails_models_iff reflects decides]
 
 /-- **Dispatch along covering**: the same conclusion with no decision of the source. -/
-theorem dispatch_admits_iff_of_coversAt (reflects : Φ.Reflects) (P : Step Y O State Firing)
+theorem dispatch_admits_iff_of_coversAt (reflects : Φ.Reflects) (P : Step Y O State Firing) [P.Guarded]
     {s : State} {f : Firing s} (d : Φ.Dispatched P f) (covers : Φ.CoversAt d.problem) :
     P.Admits f ↔ P.Shapes f ∧
       Enabled (fun _ : O => ()) (P.present s) ((P.selection f).commit (T := Unit)) ∧
@@ -535,7 +535,7 @@ theorem dispatch_admits_iff_of_coversAt (reflects : Φ.Reflects) (P : Step Y O S
     entails_storeAt, covers.licensedAt.solvable_iff, covers.entails_models_iff reflects]
 
 /-- **A source refutation refuses the firing.** Only the refutation clause is used. -/
-theorem dispatch_refused (P : Step Y O State Firing) {s : State} {f : Firing s}
+theorem dispatch_refused (P : Step Y O State Firing) [P.Guarded] {s : State} {f : Firing s}
     (d : Φ.Dispatched P f) (licensed : Φ.LicensedAt d.problem) (refuted : ¬ X.Solvable d.problem) :
     ¬ P.Admits f := by
   intro admitted
@@ -544,7 +544,7 @@ theorem dispatch_refused (P : Step Y O State Firing) {s : State} {f : Firing s}
   exact refuted (licensed.reflects_solvable solvable)
 
 /-- **Dispatch at a source principal answer**: admission is the guards at the answer. -/
-theorem dispatch_admits_iff_of_principal (reflects : Φ.Reflects) (P : Step Y O State Firing)
+theorem dispatch_admits_iff_of_principal (reflects : Φ.Reflects) (P : Step Y O State Firing) [P.Guarded]
     {s : State} {f : Firing s} (d : Φ.Dispatched P f) (licensed : Φ.LicensedAt d.problem)
     {m : Obj} {answer : Hom d.source m} (principal : X.Principal d.problem answer) :
     P.Admits f ↔ P.Shapes f ∧
@@ -556,7 +556,7 @@ theorem dispatch_admits_iff_of_principal (reflects : Φ.Reflects) (P : Step Y O 
 
 /-- **Dispatch at a decision**: admission is the shapes, the enabling, and what the decision
 accepts. -/
-theorem dispatch_admits_iff_answer (reflects : Φ.Reflects) (P : Step Y O State Firing) {s : State}
+theorem dispatch_admits_iff_answer (reflects : Φ.Reflects) (P : Step Y O State Firing) [P.Guarded] {s : State}
     {f : Firing s} (d : Φ.Dispatched P f) (licensed : Φ.LicensedAt d.problem)
     (answer : X.Answer d.problem) :
     P.Admits f ↔ P.Shapes f ∧
@@ -567,7 +567,7 @@ theorem dispatch_admits_iff_answer (reflects : Φ.Reflects) (P : Step Y O State 
 /-- **Dispatch to a decision procedure of the source**: the top's admission is computed by running
 the source's decision procedure on the firing's problem and checking the guards at its answer. -/
 theorem dispatch_admits_iff_decider (reflects : Φ.Reflects) (decider : X.Decider)
-    (P : Step Y O State Firing) {s : State} {f : Firing s} (d : Φ.Dispatched P f)
+    (P : Step Y O State Firing) [P.Guarded] {s : State} {f : Firing s} (d : Φ.Dispatched P f)
     (licensed : Φ.LicensedAt d.problem) :
     P.Admits f ↔ P.Shapes f ∧
       Enabled (fun _ : O => ()) (P.present s) ((P.selection f).commit (T := Unit)) ∧

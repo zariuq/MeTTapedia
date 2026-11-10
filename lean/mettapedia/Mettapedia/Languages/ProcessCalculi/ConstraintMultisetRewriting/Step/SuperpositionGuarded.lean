@@ -204,7 +204,7 @@ def GuardedFiring.Holds (f : GuardedFiring T S O) (σ : S) : Prop := ∀ g ∈ f
 
 /-- **The guarded one-frame step**: the first-order step whose firings also carry guards. -/
 def guarded :
-    Interface.Step (Frames.ofSubstitution A) O (Configuration T O) (fun _ => GuardedFiring T S O) where
+    Interface.Step.Standard (Frames.ofSubstitution A) O (Configuration T O) (fun _ => GuardedFiring T S O) where
   frame _ := PUnit.unit
   knowledge C := C.equations
   present C := C.present
@@ -227,10 +227,10 @@ def guarded :
       exact ⟨(AnnotatedRuns.firstOrder_admits_iff A label C f.firing).mpr
           ⟨shapes, enabled, solvable, fun b σ solved => (entails b σ solved).1⟩,
         fun σ solved => (entails PUnit.unit σ solved).2⟩
-  result {C} f _ := f.firing.result label C
-  present_result _ _ := rfl
-  settle _ _ := A.identity
-  knowledge_result {C} f admitted := (firstOrder A label).knowledge_result (s := C) f.firing admitted.1
+  preparedResult {C} f _ := f.firing.result label C
+  present_preparedResult _ _ := rfl
+  preparedSettle _ _ := A.identity
+  knowledge_preparedResult {C} f p := (firstOrder A label).knowledge_preparedResult (s := C) f.firing p
 
 /-- **Guarded admission**: first-order admission and the ask of the guards. -/
 theorem guarded_admits_iff (C : Configuration T O) (f : GuardedFiring T S O) :
@@ -287,7 +287,7 @@ theorem guarded_admits_congr {C D : Configuration T O} (same : SameUpTo A C D) (
 
 /-- **Transport in the guarded step**: configurations with the same solutions and occurrences,
 firings moving and having residuals as themselves. -/
-def guardedTransport : Transport (guarded A label) where
+def guardedTransport : Transport (guarded A label).toStep where
   Iso C D := PLift (SameUpTo A C D)
   toStateIso {C D} i :=
     { frame := Frames.Iso.refl PUnit.unit

@@ -73,6 +73,7 @@ namespace Step
 variable {Obj : Type uO} {Tm : Obj → Type uT} {Hom : Obj → Obj → Type uH}
   {X : Frames Tm Hom} {O : Type uOcc} [DecidableEq O] {State : Type uS} {Firing : State → Type uF}
   (P : Step X O State Firing)
+  [P.Guarded]
 
 /-- **Every step whose guards are written in the guard syntax has a model of its rules, with no
 hypothesis**: in the generic model, every admitted firing has a point of its information that

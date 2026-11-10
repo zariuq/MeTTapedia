@@ -14,13 +14,20 @@ and queries at every solution.
 
 ## The result is the published state
 
-An admitted firing pins one actual execution in the one published-execution record,
-`ContextualConditionalExecution.Published` (`NativeFiring.pinned`). The record pins the authored
-rule, selection, output expressions and reuse contract; it has no row decoder. The published rows
-come from the structured recipes (`ContextualConditionalPublication.Recipe`): a produced port with a
-recipe publishes the actual emitted output through it, and every other row is the execution's own
-(`publishRows`). **The step's result is the published state** (`publishedState`, `native_published`)
-for every record with the firing's data and budget: the solver return is computed from the data
+The step's result is computed from the firing's data and the solver's return on its information
+(`nativePrepare`, a residual because the information is solvable), by the formulas of the
+execution's target and of its publication (`preparedTarget`, `preparedRows`, `preparedState`). No
+check and no predicate query is asked for it, and nothing is chosen.
+
+An admitted firing pins its execution in the one published-execution record,
+`ContextualConditionalExecution.Published` (`NativeFiring.pinned`): the firing's own rule, selection,
+outputs, publication flags and budget, its admission, and that same solver return. The record pins
+the authored rule, selection, output expressions and reuse contract; it has no row decoder. The
+published rows come from the structured recipes (`ContextualConditionalPublication.Recipe`): a
+produced port with a recipe publishes the actual emitted output through it, and every other row is
+the execution's own (`publishRows`). **The step's result is the published state** of the pinned
+execution (`native_result_pinned`, `native_settle_pinned`), and of every record with the firing's
+data and budget (`publishedState`, `native_published`): the solver return is computed from the data
 (`firing_eq_of_data`).
 
 * **The raw statement, under its honest name.** Without recipes the published state is the raw
@@ -186,15 +193,97 @@ theorem realized_ofNative (native : WithQueries s.locals s.state) (recipes : Rec
     (ofNative native recipes made).Realized :=
   ⟨native, rfl, rfl, rfl, rfl, rfl, rfl⟩
 
-/-- **The pinned execution of an admitted native firing**, in the one published-execution record. -/
-noncomputable def pinned (realized : f.Realized) :
+/-- **The admission record of a realized firing**, for its own data. -/
+theorem admitted_of_realized {f : NativeFiring s} (realized : f.Realized) :
+    ContextualConditionalExecution.Admitted s.locals s.state f.rule f.selection f.outputs := by
+  obtain ⟨native, rule, selection, outputs, -, -, -⟩ := realized
+  rw [← rule, ← selection, ← outputs]
+  exact native.firing.admitted
+
+/-- **A realized firing has solvable information.** -/
+theorem solvable_of_realized {f : NativeFiring s} (realized : f.Realized) :
+    (Frames.contextual S).Solvable (a := s.infoFrame) f.information :=
+  (Frames.contextual_solvable_iff _).mpr (admitted_of_realized realized).solvable
+
+end NativeFiring
+
+/-- **A native preparation**: the solver's residual return on the firing's information, at its
+budget. -/
+def NativePrep {s : NativeState S O Γ sort} (f : NativeFiring s) : Type 1 :=
+  { update : ContextualFrameUpdate.Update f.information //
+    letI := s.state.equality
+    ContextualFrameWorklist.run f.fuel (ContextualActivatedStep.target s.locals s.state.declarations)
+      f.information = .residual update }
+
+/-- **The native preparation of a firing with solvable information**: the solver does not refute
+solvable information, so it returns a residual. -/
+def nativePrepare {s : NativeState S O Γ sort} (f : NativeFiring s)
+    (solvable : (Frames.contextual S).Solvable (a := s.infoFrame) f.information) : NativePrep f :=
+  letI := s.state.equality
+  match computed : ContextualFrameWorklist.run f.fuel
+      (ContextualActivatedStep.target s.locals s.state.declarations) f.information with
+  | .residual update => ⟨update, computed⟩
+  | .refuted impossible => False.elim (by
+      obtain ⟨_, future, candidate, model⟩ := (Frames.contextual_solvable_iff _).mp solvable
+      exact impossible future candidate model)
+
+/-- **The state a prepared native firing reaches**: the formula of
+`ContextualConditionalExecution.Firing.target`, read from the firing's data and its preparation. -/
+abbrev preparedTarget {s : NativeState S O Γ sort} (f : NativeFiring s) (p : NativePrep f) :
+    ContextualConditionalExecution.State (ContextualPublication.privateFamily s.locals p.1.declaration)
+      O Γ sort where
+  Names := (Mettapedia.Logic.LP.ScopedVar s.Local ⊕ s.state.Names) ⊕ (p.1.Variables ⊕ Empty)
+  equality := by let _ := s.state.equality; let _ := p.1.equality; infer_instance
+  declarations := ContextualComputedFreshFrame.active
+    (ContextualActivatedStep.target s.locals s.state.declarations) p.1.declaration
+  occupied := ContextualFreshFrameScopeLedger.helperLedger
+    (ContextualActivationScopes.after s.state.occupied f.selection)
+  equations := ContextualResidual.mapProblem (ContextualComputedFreshFrame.includeSource p.1)
+    (ContextualConditionalExecution.information s.locals s.state.declarations s.state.occupied
+      f.selection f.rule s.state.rows s.state.equations)
+  present := fire s.state.present (f.selection.commit (T := Unit))
+  rows occurrence :=
+    if occurrence ∈ f.selection.made then
+      if f.reusable occurrence then
+        ContextualConditionalPublication.ordinary s.locals p.1.declaration _
+          (ContextualConditionalAnswers.ofUpdate p.1 (f.outputs occurrence))
+      else ContextualConditionalRows.ofStored _ _ (.shared (instantiate
+        (ContextualComputedFreshFrame.includeSource p.1) (f.outputs occurrence)))
+    else ContextualConditionalPublication.extendPrivate s.locals p.1.declaration _
+      ((s.state.rows occurrence).map s.locals s.state.declarations
+        (Assignment.compose (ContextualComputedFreshFrame.includeSource p.1)
+          (ContextualSelectionViews.capturedTarget s.locals s.state.declarations)))
+
+/-- **The rows a prepared native firing publishes**: the formula of `publishRows`. -/
+def preparedRows {s : NativeState S O Γ sort} (f : NativeFiring s) (p : NativePrep f) (occurrence : O) :
+    ContextualConditionalRows.Row (ContextualPublication.privateFamily s.locals p.1.declaration)
+      (preparedTarget f p).declarations Γ sort :=
+  match f.recipes occurrence with
+  | some recipe => ContextualConditionalPublication.extendPrivate s.locals p.1.declaration _
+      (recipe.publish (ContextualComputedFreshFrame.includeSource p.1) (f.outputs occurrence))
+  | none => (preparedTarget f p).rows occurrence
+
+/-- **The published state of a prepared native firing**: the formula of `publishedState`. -/
+def preparedState {s : NativeState S O Γ sort} (f : NativeFiring s) (p : NativePrep f) :
+    NativeState S O Γ sort :=
+  ⟨s.Local ⊕ p.1.Variables, by letI := p.1.equality; exact inferInstance,
+    ContextualPublication.privateFamily s.locals p.1.declaration,
+    (preparedTarget f p).withRows _ (preparedRows f p)⟩
+
+namespace NativeFiring
+
+variable {s : NativeState S O Γ sort} (f : NativeFiring s)
+
+/-- **The pinned execution of an admitted native firing**, in the one published-execution record:
+the firing's own data and admission, and the solver's return on its information. -/
+def pinned (realized : f.Realized) :
     ContextualConditionalExecution.Published s.locals s.state f.rule f.selection f.outputs (.all f.reusable) :=
-  ⟨(Classical.choose realized).firing, (Classical.choose_spec realized).1,
-    (Classical.choose_spec realized).2.1, (Classical.choose_spec realized).2.2.1,
-    (Classical.choose_spec realized).2.2.2.1⟩
+  ⟨⟨f.rule, f.selection, f.outputs, f.reusable, admitted_of_realized realized, f.fuel,
+      (nativePrepare f (solvable_of_realized realized)).1, (nativePrepare f (solvable_of_realized realized)).2⟩,
+    rfl, rfl, rfl, rfl⟩
 
 theorem pinned_fuel (realized : f.Realized) : (f.pinned realized).firing.fuel = f.fuel :=
-  (Classical.choose_spec realized).2.2.2.2.1
+  rfl
 
 end NativeFiring
 
@@ -212,10 +301,11 @@ theorem firing_eq_of_data {s : NativeState S O Γ sort}
   cases same
   rfl
 
-/-- **The native step**: native firings as firings of the candidate step. Its result is the
-published state of the pinned execution. -/
-noncomputable def native :
-    Interface.Step (Frames.contextual S) O (NativeState S O Γ sort) NativeFiring where
+/-- **The native step**: native firings as firings of the candidate step. Its result is computed from
+the firing's data and the solver's return on its information, before any check or predicate query
+is asked; it is the published state of the pinned execution (`native_result_pinned`). -/
+def native :
+    Interface.Step.Standard (Frames.contextual S) O (NativeState S O Γ sort) NativeFiring where
   frame s := ⟨s.state.Names, s.state.declarations⟩
   knowledge s := s.state.equations
   present s := s.state.present
@@ -274,25 +364,20 @@ noncomputable def native :
       intro query member Future future candidate model
       rw [selection, rule] at model
       exact (asks ⟨Future, future⟩ candidate model).2 query member
-  result f realized := publishedState f.recipes (f.pinned realized).firing
-  present_result := by
-    intro s f realized
-    change fire s.state.present ((f.pinned realized).firing.selection.commit (T := Unit)) = _
-    rw [(f.pinned realized).selected]
-  settle f realized := ContextualComputedFreshFrame.includeSource (f.pinned realized).firing.update
-  knowledge_result := by
-    intro s f realized
-    obtain ⟨rule, selection, -, -, -, -⟩ := Classical.choose_spec realized
-    show ContextualResidual.mapProblem
-        (ContextualComputedFreshFrame.includeSource (Classical.choose realized).firing.update)
-        (ContextualConditionalExecution.information s.locals s.state.declarations s.state.occupied
-          (Classical.choose realized).firing.selection (Classical.choose realized).firing.rule
-          s.state.rows s.state.equations) =
-      ContextualResidual.mapProblem
-        (ContextualComputedFreshFrame.includeSource (Classical.choose realized).firing.update)
-        f.information
-    congr 1
-    simp only [NativeFiring.information, rule, selection]
+  preparedResult f p := preparedState f (nativePrepare f p.2.2)
+  present_preparedResult _ _ := rfl
+  preparedSettle f p := ContextualComputedFreshFrame.includeSource (nativePrepare f p.2.2).1
+  knowledge_preparedResult _ _ := rfl
+
+/-- **The result is the published state of the pinned execution.** -/
+theorem native_result_pinned {s : NativeState S O Γ sort} (f : NativeFiring s) (realized : f.Realized) :
+    native.result f realized = publishedState f.recipes (f.pinned realized).firing :=
+  rfl
+
+/-- **The settlement is the inclusion of the pinned execution's information frame.** -/
+theorem native_settle_pinned {s : NativeState S O Γ sort} (f : NativeFiring s) (realized : f.Realized) :
+    native.settle f realized = ContextualComputedFreshFrame.includeSource (f.pinned realized).firing.update :=
+  rfl
 
 /-- **Admission of native firings is the interface's admission.** -/
 theorem native_admits_iff {s : NativeState S O Γ sort} (f : NativeFiring s) :
@@ -346,6 +431,12 @@ theorem native_raw_target {s : NativeState S O Γ sort} (firing : WithQueries s.
 end CandidateStep
 
 #print axioms NativeFiring.realized_ofNative
+#print axioms NativeFiring.admitted_of_realized
+#print axioms NativeFiring.solvable_of_realized
+#print axioms nativePrepare
+#print axioms NativeFiring.pinned_fuel
+#print axioms native_result_pinned
+#print axioms native_settle_pinned
 #print axioms firing_eq_of_data
 #print axioms native_admits_iff
 #print axioms native_published

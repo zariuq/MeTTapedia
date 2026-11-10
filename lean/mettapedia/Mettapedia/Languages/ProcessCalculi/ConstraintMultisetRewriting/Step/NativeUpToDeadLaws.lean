@@ -127,18 +127,16 @@ def ConservativeUpToDead : Prop :=
 
 /-- **Settlement chooses no solution, up to dead names**: the result's knowledge is solvable exactly
 when the information is. -/
-theorem solvable_result_iff (conservative : ConservativeUpToDead P) {s : State} (f : Fir s)
+theorem solvable_result_iff [P.Exact] (conservative : ConservativeUpToDead P) {s : State} (f : Fir s)
     (admitted : P.Admits f) :
     X.Solvable (P.knowledge (P.result f admitted)) ↔ X.Solvable (P.information f) := by
   constructor
   · rintro ⟨b, ρ, solved⟩
-    rw [P.knowledge_result f admitted] at solved
-    exact ⟨b, _, (Frames.models_applyStore (P.settle f admitted) ρ _).mp solved⟩
+    exact ⟨b, _, P.result_refines f (P.prepares admitted) ρ solved⟩
   · rintro ⟨b, σ, solved⟩
     obtain ⟨c, ι, ρ, agree⟩ := conservative f admitted b σ solved
     refine ⟨c, ρ, ?_⟩
-    rw [P.knowledge_result f admitted]
-    exact (Frames.models_applyStore (P.settle f admitted) ρ _).mpr
+    exact Step.Exact.exactness (P := P) f (P.prepares admitted) ρ
       ((agree.models_iff _).mp (Frames.models_comp solved ι))
 
 /-- **Lawful transport up to dead names**: coherent residuals and conservative settlement, both up to
@@ -349,7 +347,8 @@ noncomputable def coherent : DeadTransport.Coherent (residualsUnmade (S := S) (O
 
 /-- **Native settlement is conservative up to dead names**: the solver's helper names go to the
 first-order frame. -/
-theorem conservative : DeadTransport.ConservativeUpToDead (live (S := S) (O := O) (Γ := Γ) (sort := sort)) :=
+theorem conservative : DeadTransport.ConservativeUpToDead
+    (live (S := S) (O := O) (Γ := Γ) (sort := sort)).toStep :=
   fun _ admitted b σ _ => ⟨Frames.firstOrderFrame S, Frames.toFirstOrder b,
     settleLift (LiveFiring.execution admitted) σ,
     Frames.Agree.of_eq (settleLift_settle (LiveFiring.execution admitted) σ)⟩

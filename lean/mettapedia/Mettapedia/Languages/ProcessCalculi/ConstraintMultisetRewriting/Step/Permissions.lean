@@ -171,7 +171,7 @@ theorem tickets_after {s : State} {f : Firing s} (admitted : P.Admits f) (t : H)
     (noTicket : ∀ o ∈ ((P.selection f).commit (T := H)).made, space o ≠ t) :
     (fiber space t (P.present (P.result f admitted))).card + takenAt P space t f =
       (fiber space t (P.present s)).card := by
-  have enabled := Spaces.enabled_located space _ ((P.admits_iff f).mp admitted).2.1
+  have enabled := Spaces.enabled_located space _ (P.prepares admitted).2.1
   have fired : P.present (P.result f admitted) = fire (P.present s) ((P.selection f).commit (T := H)) :=
     P.present_result f admitted
   have noMade : fiber space t ((P.selection f).commit (T := H)).made = ∅ := by
@@ -277,7 +277,7 @@ def payload : Nat → Term signature
   | 0 => app 0 (.const 1)
   | _ => app 0 (.const 3)
 
-abbrev L := located B space payload
+abbrev L := (located B space payload).toStep
 abbrev Fir := AnnotatedRuns.Firing (Nat × Term signature) (Subst signature) Nat
 
 /-- The other party holds every right. -/

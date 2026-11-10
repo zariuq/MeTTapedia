@@ -70,30 +70,36 @@ variable {Obj : Type uO} {Tm : Obj → Type uT} {Hom : Obj → Obj → Type uH}
 /-- **The restriction of a step to the firings a predicate allows.** -/
 def restrict (P : Interface.Step X O State Firing) (allowed : ∀ {s : State}, Firing s → Prop) :
     Interface.Step X O State Firing where
-  frame := P.frame
-  knowledge := P.knowledge
-  present := P.present
-  selection := P.selection
-  target := P.target
-  extension := P.extension
-  information := P.information
-  transported := P.transported
-  Shapes f := P.Shapes f ∧ allowed f
-  Holds := P.Holds
+  toEffectCore := P.effectCore
   Admits f := P.Admits f ∧ allowed f
-  admits_iff f := by
-    rw [P.admits_iff f]
-    constructor
-    · rintro ⟨⟨shapes, enabled, solvable, asks⟩, permitted⟩
-      exact ⟨⟨shapes, permitted⟩, enabled, solvable, asks⟩
-    · rintro ⟨⟨shapes, permitted⟩, enabled, solvable, asks⟩
-      exact ⟨⟨shapes, enabled, solvable, asks⟩, permitted⟩
-  result f admitted := P.result f admitted.1
-  present_result f admitted := P.present_result f admitted.1
-  settle f admitted := P.settle f admitted.1
-  knowledge_result f admitted := P.knowledge_result f admitted.1
+  admitted_prepares _ admitted := P.prepares admitted.1
 
 variable (P : Interface.Step X O State Firing) (allowed : ∀ {s : State}, Firing s → Prop)
+
+/-- Restricting permission preserves the prepared effect and its domain. -/
+theorem restrict_prepares_iff {s : State} (f : Firing s) :
+    (restrict P allowed).Prepares f ↔ P.Prepares f := Iff.rfl
+
+instance restrict_guarded [P.Guarded] : (restrict P allowed).Guarded where
+  holds f b σ := P.Holds f b σ ∧ allowed f
+  admission f := by
+    constructor
+    · rintro ⟨admitted, permitted⟩
+      refine ⟨P.prepares admitted, fun b σ solved => ?_⟩
+      exact ⟨((P.admits_iff_prepares f).mp admitted).2 b σ solved, permitted⟩
+    · rintro ⟨prepared, asks⟩
+      refine ⟨(P.admits_iff_prepares f).mpr ⟨prepared, fun b σ solved => (asks b σ solved).1⟩, ?_⟩
+      obtain ⟨b, σ, solved⟩ := prepared.2.2
+      exact (asks b σ solved).2
+
+instance restrict_literalInformation [P.LiteralInformation] : (restrict P allowed).LiteralInformation :=
+  ⟨P.transported⟩
+
+instance restrict_literalKnowledge [P.LiteralKnowledge] : (restrict P allowed).LiteralKnowledge :=
+  ⟨P.knowledge_preparedResult⟩
+
+instance restrict_exact [P.Exact] : (restrict P allowed).Exact :=
+  ⟨Interface.Step.Exact.exactness (P := P)⟩
 
 theorem restrict_admits_iff {s : State} (f : Firing s) :
     (restrict P allowed).Admits f ↔ P.Admits f ∧ allowed f :=
@@ -156,7 +162,7 @@ theorem run_executable : ∀ {s : State} (r : P.Run s),
   | _, .nil _ => ⟨.nil _, rfl⟩
   | _, .cons f admitted rest => by
       obtain ⟨executable, last⟩ := run_executable rest
-      have enabled := ((P.admits_iff f).mp admitted).2.1
+      have enabled := (P.prepares admitted).2.1
       have fired : P.present (P.result f admitted) =
           fire (P.present _) ((P.selection f).commit (T := H)) :=
         P.present_result f admitted

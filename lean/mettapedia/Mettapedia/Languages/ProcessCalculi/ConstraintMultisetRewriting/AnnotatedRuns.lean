@@ -211,7 +211,7 @@ open Interface (Frames)
 frame is the one object of `Frames.ofSubstitution A`, its firings move along the identity, and its
 information is `Selection.problem`. -/
 def firstOrder :
-    Interface.Step (Frames.ofSubstitution A) O (Configuration T O) (fun _ => Firing T S O) where
+    Interface.Step.Standard (Frames.ofSubstitution A) O (Configuration T O) (fun _ => Firing T S O) where
   frame _ := PUnit.unit
   knowledge C := C.equations
   present C := C.present
@@ -254,10 +254,10 @@ def firstOrder :
         exact (asks PUnit.unit σ solved).1 check present
       · intro query present σ solved
         exact (asks PUnit.unit σ solved).2 query present
-  result {C} f _ := f.result label C
-  present_result _ _ := rfl
-  settle _ _ := A.identity
-  knowledge_result {C} f _ := (Frames.applyStore_id (X := Frames.ofSubstitution A)
+  preparedResult {C} f _ := f.result label C
+  present_preparedResult _ _ := rfl
+  preparedSettle _ _ := A.identity
+  knowledge_preparedResult {C} f _ := (Frames.applyStore_id (X := Frames.ofSubstitution A)
     (f.selection.problem label f.rule C)).symm
 
 /-- Admission of the one-frame instance is `Firing.Valid`: the interface's characterization. -/

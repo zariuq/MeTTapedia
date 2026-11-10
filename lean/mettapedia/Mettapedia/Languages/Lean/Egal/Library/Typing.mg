@@ -171,6 +171,60 @@ Theorem Lean_sep1_prop : forall P:prop, {z :e 1 | P} :e LeanProp.
 let P. exact PowerI 1 {z :e 1 | P} (Sep_Subq 1 (fun z => P)).
 Qed.
 
+(** Constructor proof fields keep their condition as a subset of the singleton. **)
+Definition Lean_ProofField : set -> set := fun P => {z :e 1 | z :e P}.
+
+Theorem Lean_ProofField_prop : forall P, Lean_ProofField P :e LeanProp.
+let P. exact PowerI 1 (Lean_ProofField P) (Sep_Subq 1 (fun z => z :e P)).
+Qed.
+
+Theorem Lean_ProofField_intro : forall P, 0 :e P -> 0 :e Lean_ProofField P.
+let P. assume HP: 0 :e P.
+exact SepI 1 (fun z => z :e P) 0 In_0_1 HP.
+Qed.
+
+Theorem Lean_ProofField_sound : forall P z, z :e Lean_ProofField P -> z :e P.
+let P z. assume Hz: z :e Lean_ProofField P.
+exact SepE2 1 (fun z => z :e P) z Hz.
+Qed.
+
+(** A constructor stores its full field tuple, including proof positions. **)
+Definition Lean_RecordField : set -> set -> set := fun j record => (proj1 record) j.
+
+Theorem Lean_RecordField_pair : forall tag index args j,
+  Lean_RecordField j (setsum (setsum tag index) args) = args j.
+let tag index args j.
+prove (proj1 (setsum (setsum tag index) args)) j = args j.
+rewrite proj1_pair_eq (setsum tag index) args. reflexivity.
+Qed.
+
+Theorem Lean_RecordField_tuple : forall tag index n s j, j :e n ->
+  Lean_RecordField j (setsum (setsum tag index) (TupArgs n s)) = SeqAt s j.
+let tag index n s j. assume Hj: j :e n.
+rewrite Lean_RecordField_pair tag index (TupArgs n s) j.
+exact TupArgs_at n s j Hj.
+Qed.
+
+(** A two-argument operation as a value of the interpreted function type. **)
+Definition Lean_BinaryMap : set -> set -> (set -> set -> set) -> set :=
+  fun X Y f => fun x :e X => fun y :e Y => f x y.
+
+Theorem Lean_BinaryMap_typed : forall X Y Z, forall f:set -> set -> set,
+  (forall x :e X, forall y :e Y, f x y :e Z) ->
+  Lean_BinaryMap X Y f :e (Pi_ x :e X, (Pi_ y :e Y, Z)).
+let X Y Z f. assume H: forall x :e X, forall y :e Y, f x y :e Z.
+exact lam_Pi X (fun _ => Pi_ y :e Y, Z) (fun x => fun y :e Y => f x y)
+  (fun x Hx => lam_Pi Y (fun _ => Z) (f x) (fun y Hy => H x Hx y Hy)).
+Qed.
+
+Theorem Lean_BinaryMap_apply : forall X Y, forall f:set -> set -> set,
+  forall x :e X, forall y :e Y, (Lean_BinaryMap X Y f) x y = f x y.
+let X Y f x. assume Hx: x :e X. let y. assume Hy: y :e Y.
+prove ((fun x :e X => fun y :e Y => f x y) x) y = f x y.
+rewrite beta X (fun x => fun y :e Y => f x y) x Hx.
+exact beta Y (f x) y Hy.
+Qed.
+
 (** A proposition lies in every universe: the universe is transitive and contains LeanProp. **)
 Theorem Lean_prop_In_LeanUniv : forall n, nat_p n -> forall p :e LeanProp, p :e LeanUniv n.
 let n. assume Hn: nat_p n. let p. assume Hp: p :e LeanProp.

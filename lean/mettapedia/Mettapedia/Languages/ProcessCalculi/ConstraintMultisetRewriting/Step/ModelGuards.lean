@@ -252,6 +252,7 @@ namespace Step
 variable {Obj : Type uO} {Tm : Obj → Type uT} {Hom : Obj → Obj → Type uH}
   {X : Frames Tm Hom} {O : Type uOcc} [DecidableEq O] {State : Type uS} {Firing : State → Type uF}
   (P : Step X O State Firing)
+  [P.Guarded]
 
 /-- **A step whose guards are written in the guard syntax**: each firing's `Holds` is its guard formula
 read at the solution. -/

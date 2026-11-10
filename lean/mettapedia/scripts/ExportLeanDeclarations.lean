@@ -111,7 +111,8 @@ def mergeGuards (fields : List (String × Bool)) (slots : List Nat) (guards : Li
       let position := total - (fuel + 1)
       match guards.find? (·.position == position) with
       | some guard =>
-          ("(guard " ++ indexText (dataPositions.take guard.depth).reverse guard.proposition ++ ")")
+          ("(guard " ++ atomString (GuardData.termData
+            (dataPositions.take guard.depth).reverse guard.proposition) ++ ")")
             :: go fuel rest
       | none => (rest.headD ("", false)).1 :: go fuel rest.tail
   go total fields

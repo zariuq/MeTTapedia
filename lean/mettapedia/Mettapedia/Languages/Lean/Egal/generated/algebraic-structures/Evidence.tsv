@@ -1,0 +1,299 @@
+constant	role	kind	evidence	egal	detail
+Add	dependency	inductive	interpretation	Lean_Add	family
+Add.add	declaration	definition	interpretation	Lean_Add_add	projection
+Add.mk	dependency	constructor	interpretation	Lean_Add_mk_node	constructor
+AddCommMonoid	declaration	inductive	interpretation	Lean_AddCommMonoid	family
+AddCommMonoid.mk	dependency	constructor	interpretation	Lean_AddCommMonoid_mk_node	constructor
+AddCommMonoid.toAddMonoid	declaration	definition	interpretation	Lean_AddCommMonoid_toAddMonoid	projection
+AddMonoid	dependency	inductive	interpretation	Lean_AddMonoid	family
+AddMonoid.mk	dependency	constructor	interpretation	Lean_AddMonoid_mk_node	constructor
+AddMonoid.nsmul_succ._autoParam	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+AddMonoid.nsmul_zero._autoParam	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+AddMonoid.toAddSemigroup	declaration	definition	interpretation	Lean_AddMonoid_toAddSemigroup	projection
+AddMonoid.toNSMul	declaration	definition	interpretation	Lean_AddMonoid_toNSMul	projection
+AddMonoid.toZero	declaration	definition	interpretation	Lean_AddMonoid_toZero	projection
+AddSemigroup	dependency	inductive	interpretation	Lean_AddSemigroup	family
+AddSemigroup.mk	dependency	constructor	interpretation	Lean_AddSemigroup_mk_node	constructor
+AddSemigroup.toAdd	declaration	definition	interpretation	Lean_AddSemigroup_toAdd	projection
+And	dependency	inductive	interpretation		read as Egal's conjunction in statements
+And.intro	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Array	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Array.empty	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Array.emptyWithCapacity	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Array.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Array.push	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Array.toList	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+BitVec	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+BitVec.ofFin	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+BitVec.ofNat	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+BitVec.ofNat._proof_1	generated-helper	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+BitVec.toFin	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+BitVec.toNat	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Bool	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Bool.casesOn	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Bool.decEq	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Bool.decEq.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Bool.false	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Bool.noConfusion	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Bool.noConfusionType	generated-helper	definition	replaced		no confusion and injectivity are proved for the family in Egal (_noconf, _inj)
+Bool.rec	generated-helper	recursor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Bool.true	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+ByteArray	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+ByteArray.IsValidUTF8	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+ByteArray.IsValidUTF8.intro	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+ByteArray.casesOn	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+ByteArray.empty	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+ByteArray.emptyWithCapacity	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+ByteArray.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+ByteArray.push	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+ByteArray.push.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+ByteArray.rec	generated-helper	recursor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Char	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Char.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Char.val	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Decidable	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Decidable.casesOn	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Decidable.isFalse	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Decidable.isTrue	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Decidable.rec	generated-helper	recursor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+DecidableEq	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Div	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Div.div	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Div.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Eq	dependency	inductive	interpretation	Lean_Eq	family
+Eq.ndrec	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Eq.rec	generated-helper	recursor	interpretation	Lean_Eq_prec	the recursor of a family of propositions
+Eq.refl	dependency	constructor	interpretation	Lean_Eq_refl_node	constructor
+False	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+False.elim	generated-helper	definition	not-needed		an eliminator Lean derives from the recursor; the reading uses the recursor
+False.rec	generated-helper	recursor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Fin	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Fin.Internal.ofNat	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Fin.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Fin.val	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+HAdd	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+HAdd.hAdd	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+HAdd.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+HDiv	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+HDiv.hDiv	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+HDiv.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+HEq	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+HEq.refl	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+HMod	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+HMod.hMod	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+HMod.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+HMul	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+HMul.hMul	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+HMul.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+HPow	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+HPow.hPow	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+HPow.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+HSMul	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+HSMul.hSMul	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+HSMul.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+HSub	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+HSub.hSub	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+HSub.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+LE	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+LE.le	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+LE.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+LT	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+LT.lt	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+LT.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Lean.Name	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Lean.Name.anonymous	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Lean.Name.mkStr1	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Lean.Name.mkStr4	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Lean.Name.num	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Lean.Name.str	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Lean.SourceInfo	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Lean.SourceInfo.none	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Lean.SourceInfo.original	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Lean.SourceInfo.synthetic	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Lean.Syntax	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Lean.Syntax.Preresolved	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Lean.Syntax.Preresolved.decl	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Lean.Syntax.Preresolved.namespace	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Lean.Syntax.atom	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Lean.Syntax.ident	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Lean.Syntax.missing	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Lean.Syntax.node	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Lean.SyntaxNodeKind	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Lean.mkAtom	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+List	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+List.append	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+List.append._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+List.append.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+List.below	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+List.brecOn	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+List.brecOn.go	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+List.casesOn	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+List.concat	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+List.concat._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+List.concat.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+List.cons	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+List.flatMap	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+List.flatten	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+List.flatten._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+List.flatten.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+List.map	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+List.map._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+List.nil	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+List.rec	generated-helper	recursor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+List.toByteArray	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+List.toByteArray.loop	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+List.toByteArray.loop._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+List.toByteArray.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+List.utf8Encode	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Mod	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Mod.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Mod.mod	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Monoid	declaration	inductive	interpretation	Lean_Monoid	family
+Monoid.mk	dependency	constructor	interpretation	Lean_Monoid_mk_node	constructor
+Monoid.npow_succ._autoParam	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Monoid.npow_zero._autoParam	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Monoid.toNPow	declaration	definition	interpretation	Lean_Monoid_toNPow	projection
+Monoid.toOne	declaration	definition	interpretation	Lean_Monoid_toOne	projection
+Monoid.toSemigroup	declaration	definition	interpretation	Lean_Monoid_toSemigroup	projection
+Mul	dependency	inductive	interpretation	Lean_Mul	family
+Mul.mk	dependency	constructor	interpretation	Lean_Mul_mk_node	constructor
+Mul.mul	declaration	definition	interpretation	Lean_Mul_mul	projection
+NPow	dependency	inductive	interpretation	Lean_NPow	family
+NPow.mk	dependency	constructor	interpretation	Lean_NPow_mk_node	constructor
+NPow.npow	declaration	definition	interpretation	Lean_NPow_npow	projection
+NPow.toPow	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+NSMul	dependency	inductive	interpretation	Lean_NSMul	family
+NSMul.mk	dependency	constructor	interpretation	Lean_NSMul_mk_node	constructor
+NSMul.nsmul	declaration	definition	interpretation	Lean_NSMul_nsmul	projection
+NSMul.toSMul	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+Nat	dependency	inductive	interpretation	Lean_Nat	family
+Nat.add	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.add._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.add.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.below	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.beq	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.beq._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.beq.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.ble	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.ble._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.ble.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.brecOn	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.brecOn.go	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.casesOn	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.ctorIdx	dependency	definition	not-needed		an eliminator Lean derives from the recursor; the reading uses the recursor
+Nat.decLe	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+Nat.decLt	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+Nat.div	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.div.go	dependency	definition	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+Nat.div.go._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.div.go.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.div_rec_fuel_lemma	dependency	theorem	not-needed		a theorem Lean's proofs use; the theorems are reconstructed in Egal, not transported
+Nat.instDiv	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+Nat.instMod	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+Nat.isValidChar	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.le	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Nat.le.casesOn	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.le.rec	generated-helper	recursor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Nat.le.refl	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Nat.le.step	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Nat.le_of_ble_eq_true	dependency	theorem	not-needed		a theorem Lean's proofs use; the theorems are reconstructed in Egal, not transported
+Nat.lt	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.lt_succ_self	dependency	theorem	not-needed		a theorem Lean's proofs use; the theorems are reconstructed in Egal, not transported
+Nat.mod	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.mod.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.modCore	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.modCore.go	dependency	definition	not-needed		Lean's compilation of recursion and matching; the reading takes each function from its equation theorems and each matcher from its definition
+Nat.modCore.go._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.mod_lt	dependency	theorem	not-needed		a theorem Lean's proofs use; the theorems are reconstructed in Egal, not transported
+Nat.mul	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.mul._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.mul.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.not_le_of_not_ble_eq_true	dependency	theorem	not-needed		a theorem Lean's proofs use; the theorems are reconstructed in Egal, not transported
+Nat.pow	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.pow._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.pow.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.pred	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.rec	generated-helper	recursor	interpretation	Lean_Nat_rec	the family's recursor, with its computation rules
+Nat.sub	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Nat.sub._f	generated-helper	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Nat.succ	dependency	constructor	interpretation	Lean_Nat_succ_node	constructor
+Nat.zero	dependency	constructor	interpretation	Lean_Nat_zero_node	constructor
+NatPow	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+NatPow.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+NatPow.pow	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Not	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+OfNat	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+OfNat.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+OfNat.ofNat	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+One	dependency	inductive	interpretation	Lean_One	family
+One.mk	dependency	constructor	interpretation	Lean_One_mk_node	constructor
+One.one	declaration	definition	interpretation	Lean_One_one	projection
+One.toOfNat1	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+Or	dependency	inductive	interpretation		read as Egal's disjunction in statements
+Or.inl	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Or.inr	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+PProd	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+PProd.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+PUnit	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+PUnit.unit	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Pow	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Pow.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Pow.pow	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+SMul	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+SMul.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+SMul.smul	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Semigroup	dependency	inductive	interpretation	Lean_Semigroup	family
+Semigroup.mk	dependency	constructor	interpretation	Lean_Semigroup_mk_node	constructor
+Semigroup.toMul	declaration	definition	interpretation	Lean_Semigroup_toMul	projection
+String	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+String.Pos.Raw	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+String.Pos.Raw.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+String.ofByteArray	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+String.utf8EncodeChar	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Sub	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Sub.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Sub.sub	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Substring.Raw	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+Substring.Raw.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+True	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+True.intro	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+UInt32	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+UInt32.isValidChar	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+UInt32.ofBitVec	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+UInt32.toBitVec	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+UInt32.toNat	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+UInt8	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+UInt8.ofBitVec	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
+UInt8.ofNat	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Unit	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Unit.unit	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+Zero	dependency	inductive	interpretation	Lean_Zero	family
+Zero.mk	dependency	constructor	interpretation	Lean_Zero_mk_node	constructor
+Zero.toOfNat0	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+Zero.zero	declaration	definition	interpretation	Lean_Zero_zero	projection
+autoParam	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+dite	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+instAddNat	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+instDecidableEqBool	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+instDecidableEqList.match_1	generated-helper	definition	not-needed		no read definition, equation, theorem or test uses it
+instHAdd	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+instHDiv	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+instHMod	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+instHMul	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+instHPow	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+instHSMul	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+instHSub	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+instLENat	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+instLTNat	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+instNatPowNat	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+instOfNatNat	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+instPowNat	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+instSubNat	dependency	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
+ite	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+namedPattern	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+noConfusion_of_Nat	dependency	theorem	not-needed		a theorem Lean's proofs use; the theorems are reconstructed in Egal, not transported
+optParam	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+outParam	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
+rfl	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+AddCommMonoid.casesOn	reading	definition	interpretation	Lean_AddCommMonoid_rec	case analysis read as the recursor with the minors as methods
+Monoid.casesOn	reading	definition	interpretation	Lean_Monoid_rec	case analysis read as the recursor with the minors as methods

@@ -101,7 +101,7 @@ variable (Derives : G → Prop)
 
 /-- **The goal step**, over the one-frame category of obligations. -/
 def goalStep :
-    Interface.Step (Frames.ofSubstitution obligations) O (GoalState G O) (GoalFiring Derives) where
+    Interface.Step.Standard (Frames.ofSubstitution obligations) O (GoalState G O) (GoalFiring Derives) where
   frame _ := PUnit.unit
   knowledge s := s.knowledge
   present s := s.present
@@ -119,10 +119,10 @@ def goalStep :
     (Frames.ofSubstitution obligations).Entails (a := PUnit.unit) (s.knowledge ++ f.residuals.map tell)
       (fun _ _ => ∀ p ∈ f.guards, p)
   admits_iff _ := Iff.rfl
-  result f _ := f.after
-  present_result _ _ := rfl
-  settle _ _ := ()
-  knowledge_result {s} f _ :=
+  preparedResult f _ := f.after
+  present_preparedResult _ _ := rfl
+  preparedSettle _ _ := ()
+  knowledge_preparedResult {s} f _ :=
     (Frames.applyStore_id (X := Frames.ofSubstitution obligations) (s.knowledge ++ f.residuals.map tell)).symm
 
 /-- A state **reaches** the root when its present goals and its knowledge give the root. -/

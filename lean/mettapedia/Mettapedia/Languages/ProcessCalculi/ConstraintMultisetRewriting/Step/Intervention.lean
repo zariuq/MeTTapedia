@@ -251,7 +251,7 @@ variable {A : SubstitutionAction T S} (Γ : Rights H)
 /-- **A do at `h` admits every firing that lacks `send` at `h`**: such a firing, permitted by the
 rights, makes nothing at `h`. -/
 theorem doAt_of_no_send {C : Configuration T O} {f : Firing T S O}
-    (permitted : Permissions.Permitted (AnnotatedRuns.firstOrder A label) space Γ (s := C) f)
+    (permitted : Permissions.Permitted (AnnotatedRuns.firstOrder A label).toStep space Γ (s := C) f)
     {h : H} (denied : Γ h .send = false) (φ : T → Prop) : DoAt space label h φ f := by
   intro o made atH
   have allowed := permitted.made o
@@ -260,7 +260,7 @@ theorem doAt_of_no_send {C : Configuration T O} {f : Firing T S O}
 
 /-- **A do at `h` leaves the weight of every firing without `send` at `h` unchanged.** -/
 theorem restrictWeight_doAt_of_no_send {C : Configuration T O} {f : Firing T S O}
-    (permitted : Permissions.Permitted (AnnotatedRuns.firstOrder A label) space Γ (s := C) f)
+    (permitted : Permissions.Permitted (AnnotatedRuns.firstOrder A label).toStep space Γ (s := C) f)
     {h : H} (denied : Γ h .send = false) (φ : T → Prop) (weight : Firing T S O → ℝ) :
     restrictWeight (DoAt space label h φ) weight f = weight f := by
   unfold restrictWeight

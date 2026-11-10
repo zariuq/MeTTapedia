@@ -1,9 +1,10 @@
-(** Decidable propositions, read by their type.
+(** Decidable propositions and canonical readouts.
 
    In the set model a proof is 0 and a proposition is a truth value, so
    Decidable p has one element for each truth value p: isTrue p 0 when p
-   holds, isFalse p 0 otherwise (Lean_DecCanon).  A Lean term of type
-   Decidable p, a decision procedure among them, is read as that element.
+   holds, isFalse p 0 otherwise (Lean_DecCanon). A decision procedure is
+   interpreted from its definition; its checked typing theorem then identifies
+   its result with that canonical element.
    Decisions about the naturals are proved here for numerals: Nat.le by
    its constructors and, negatively, by induction through its recursor; Eq
    by reflexivity and by the injectivity of numerals. **)

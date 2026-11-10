@@ -997,13 +997,43 @@ counterfactual (\lean{CausalReplay.replay\_likelihood}, \lean{CausalReplay.repla
 the network's graph is read off the step's independence
 (\lean{CausalSeparation.history\_staticIndependent\_iff}).
 
-The names cited in this addendum were audited separately, through the same memory gate: all use
+\subsection{The C runtime and proof-system integration evidence}
+The standalone \texttt{tcalc} runtime executes rule tables used by Micromath,
+MM0/MMB, HOL Light proof replay, Megalodon and Dedukti implementations.
+Micromath's differential operation suite is not a \texttt{set.mm} verification.
+HOLR records are primitive proof nodes in a local format; their counts are not
+counts of distinct exported mathematical theorems.
+
+The Megalodon implementation checks explicit natural-deduction proof terms,
+with additional typing and signature rules. The Dedukti implementation has
+explicit LF/CoC and beta/eta profiles. Named C conversion, substitution and
+context helpers remain in their trusted bases. Reference/corpus agreement and
+mutated-proof rejection are regression evidence, not general adequacy or
+conservativity theorems. Different source-elaboration and proof-replay timings
+are not matched-input kernel speed comparisons.
+
+The prepared-effect/admission/event C bridge follows the mathematical layering.
+Its source-state guard evidence and cursor-resumption controls are relevant
+realization tests, but the complete C-to-Lean correspondence and the live CeTTa
+cursor integration remain open. Runtime permission records must preserve the
+original event and observation contract; a new profile cannot manufacture
+missing evidence.
+
+The exact 211-byte \texttt{flat\_fire.S} reference function is proved by
+\texttt{FLAT\_FIRE\_CORRECT} in HOL Light over s2n-bignum's x86 model, with no
+new axioms. The theorem's memory/ABI assumptions include scratch separation,
+valid modular 32-bit offsets and the 56-byte stack/return exclusion. The
+pointer-based runtime packing adapter is not covered by that theorem.
+
+The Lean declarations cited in this addendum were audited separately: all use
 \lean{propext}, \lean{Classical.choice} and \lean{Quot.sound}, or fewer, and none uses
 \lean{sorryAx}.
 
 \section{Receipts}\label{sec:receipts}
 
-Every declaration cited here resolves in the current tree. Unqualified names in an example are in
+The recorded Lean audit covers the metatheory declarations; the C implementation
+and HOL machine-code theorem above have their separate evidence boundaries.
+Unqualified Lean names in an example are in
 the namespace in its title, and those in the instance columns of the feature table are in
 \lean{InterfaceTable}. One audit file imports 229 modules that own the cited declarations, with
 warnings as errors, and prints the axioms of all 492 of them: 429 use \lean{propext},

@@ -1,0 +1,37 @@
+import Mettapedia.Machines.OperatorChoice.EncodedQueryBounds
+import Mettapedia.Machines.OperatorChoice.ObserverContracts
+import Mettapedia.Machines.OperatorChoice.WorldProfiles
+
+#print axioms Mettapedia.Machines.OperatorChoice.EncodedQueryBounds.unencoded_output_position_was_read
+#print axioms Mettapedia.Machines.OperatorChoice.EncodedQueryBounds.unencoded_positions_query_lower_bound
+#print axioms Mettapedia.Machines.OperatorChoice.EncodedQueryBounds.encoded_prefix_query_lower_bound
+#print axioms Mettapedia.Machines.OperatorChoice.EncodedQueryBounds.prefix_encoding_local
+#print axioms Mettapedia.Machines.OperatorChoice.EncodedQueryBounds.cached_reader_correct
+#print axioms Mettapedia.Machines.OperatorChoice.EncodedQueryBounds.cached_reader_exact
+#print axioms Mettapedia.Machines.OperatorChoice.EncodedQueryBounds.cached_reader_is_query_optimal
+#print axioms Mettapedia.Machines.OperatorChoice.EncodedQueryBounds.prepared_exact
+#print axioms Mettapedia.Machines.OperatorChoice.EncodedQueryBounds.prepared_correct
+#print axioms Mettapedia.Machines.OperatorChoice.EncodedQueryBounds.prepared_avoids_new_queries
+#print axioms Mettapedia.Machines.OperatorChoice.EncodedQueryBounds.nonempty_prefix_not_empty_local
+#print axioms Mettapedia.Machines.OperatorChoice.EncodedQueryBounds.prepare_then_consume
+#print axioms Mettapedia.Machines.OperatorChoice.EncodedQueryBounds.prepared_reuse_of_agreement
+#print axioms Mettapedia.Machines.OperatorChoice.EncodedQueryBounds.stale_preparation_is_wrong
+#print axioms Mettapedia.Machines.OperatorChoice.ObserverContracts.run_erasure_on
+#print axioms Mettapedia.Machines.OperatorChoice.ObserverContracts.observed_run_factors_on
+#print axioms Mettapedia.Machines.OperatorChoice.ObserverContracts.step_of_single_request
+#print axioms Mettapedia.Machines.OperatorChoice.ObserverContracts.Residue.service_square
+#print axioms Mettapedia.Machines.OperatorChoice.ObserverContracts.Residue.adaptive_specialization
+#print axioms Mettapedia.Machines.OperatorChoice.ObserverContracts.Residue.noninjective
+#print axioms Mettapedia.Machines.OperatorChoice.ObserverContracts.Residue.exact_counter_not_retained
+#print axioms Mettapedia.Machines.OperatorChoice.ObserverContracts.HiddenState.current_agreement_loses_future_agreement
+#print axioms Mettapedia.Machines.OperatorChoice.ObserverContracts.HiddenState.no_erased_service
+#print axioms Mettapedia.Machines.OperatorChoice.WorldProfiles.shared_nil
+#print axioms Mettapedia.Machines.OperatorChoice.WorldProfiles.shared_cons
+#print axioms Mettapedia.Machines.OperatorChoice.WorldProfiles.shared_eq_isolated_of_readOnly
+#print axioms Mettapedia.Machines.OperatorChoice.WorldProfiles.shared_append
+#print axioms Mettapedia.Machines.OperatorChoice.WorldProfiles.independent_swap
+#print axioms Mettapedia.Machines.OperatorChoice.WorldProfiles.independent_swap_in_context
+#print axioms Mettapedia.Machines.OperatorChoice.WorldProfiles.Controls.shared_and_isolated_differ
+#print axioms Mettapedia.Machines.OperatorChoice.WorldProfiles.Controls.independent_coordinates
+#print axioms Mettapedia.Machines.OperatorChoice.WorldProfiles.Controls.independent_writes_change_first
+#print axioms Mettapedia.Machines.OperatorChoice.WorldProfiles.Controls.commuting_updates_do_not_preserve_replies

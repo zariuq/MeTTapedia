@@ -24,7 +24,7 @@ decls=$project/artifacts/lean-declarations/$target
 tests_tsv=$project/artifacts/lean-code-equations/$target/tests.tsv
 work=$(mktemp -d "${TMPDIR:-/tmp}/lean-egal-target.XXXXXX")
 cleanup() {
-  rm -f -- "$work"/*.metta "$work"/*.mg "$work"/*.txt "$work"/*.tsv
+    rm -f -- "$work"/*.metta "$work"/*.mg "$work"/*.txt "$work"/*.tsv "$work"/execution.json
   rmdir -- "$work"
 }
 trap cleanup EXIT
@@ -107,17 +107,18 @@ for line in sys.stdin:
   run_metta "$work/families.metta"
 } > "$work/Families.mg"
 
-# CeTTa's recorded answers.
-python3 - "$tests_tsv" "$work/answers.metta" <<'EOF'
-import os, sys
-rows = ([r.split("\t") for r in open(sys.argv[1]).read().split("\n")[1:] if r.strip()]
-        if os.path.exists(sys.argv[1]) else [])
-with open(sys.argv[2], "w") as out:
-    for r in rows:
-        out.write(f"(LeanTest {r[0]})\n")
-        if r[3].strip():
-            out.write(f"(CeTTaAnswer {r[0]} {r[3]})\n")
-EOF
+# Observe this build executing the exported program; expected values are
+# comparison inputs, not substitute observations.
+if [[ -e "$tests_tsv" ]]; then
+  if ! python3 "$project/scripts/lean_code_equations_diff.py" --cetta "$cetta" \
+      --slice "$target" --report "$work/execution.json" > "$work/execution.txt"; then
+    cat "$work/execution.txt"; exit 1
+  fi
+  "$cetta" --lang petta --quiet "$here/answers.metta" "$work/execution.json" \
+    "$work/answers.metta" "$work/binary.txt" without-source "$tests_tsv" > /dev/null
+else
+  : > "$work/answers.metta"
+fi
 # The expected tests: every row of tests.tsv, answered by CeTTa or not.
 ids=$(sed -n 's/^(LeanTest \([0-9]*\))$/\1/p' "$work/answers.metta")
 tests=$(wc -w <<< "$ids")
@@ -127,7 +128,8 @@ tests=$(wc -w <<< "$ids")
 
 reader() {
   cat "$work/families-in.metta" "$decls/terms.metta" "$work/answers.metta" "$work/typing.metta" \
-      "$here/generate.metta" "$here/interpret.metta"
+      "$here/support.metta" "$here/generate.metta" "$here/interpret.metta"
+  printf '(EgalProofLibraryRoot "%s")\n' "$here"
 }
 
 { reader
@@ -142,6 +144,7 @@ reader() {
 } > "$work/Functions.mg"
 
 { reader
+  [[ $tests == 0 ]] || echo '!(prepare-readability)'
   for i in $ids; do
     echo "!(case (computation-section $i) (((computation \$n \$t) (println! \$t)) ((stuck \$w) (println! (format-args \"SKIP test {}: {}\" ($i \$w))))))"
   done
@@ -243,7 +246,7 @@ PYEOF
 sort -u -o "$work/Skipped.txt" "$work/Skipped.txt"
 
 # The evidence of every manifest constant, and which tests it qualifies.
-"$cetta" --lang petta "$decls/terms.metta" "$decls/families.metta" "$here/evidence.metta" \
+"$cetta" --lang petta "$decls/terms.metta" "$work/families-in.metta" "$here/evidence.metta" \
   "$work/Evidence.tsv" "$work/Qualification.tsv" "$work/evidence.txt" "$decls" "$work" > /dev/null
 
 outputs=("generated/$target/Families.mg" "generated/$target/Functions.mg" "generated/$target/Computations.mg"

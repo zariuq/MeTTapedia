@@ -1,0 +1,5 @@
+let v_a. assume Ha: v_a :e LeanProp. let v_b. assume Hb: v_b :e LeanProp.
+let a2. assume Hh: a2 :e Lean_Iff_Prop v_a v_b.
+let a3. assume Hd: a3 :e Lean_Decidable v_b.
+exact Lean_decidable_of_decidable_of_iff_In v_b Hb v_a Ha a3 Hd 0
+  (LeanIff_symm v_a Ha v_b Hb a2 Hh).

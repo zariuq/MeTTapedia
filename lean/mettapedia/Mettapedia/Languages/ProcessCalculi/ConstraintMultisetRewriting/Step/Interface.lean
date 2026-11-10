@@ -1,479 +1,107 @@
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualObservationAction
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.OccurrenceStep
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EffectCore
 
-/-!
-# The candidate step: its interface
+/-! # Effects, independently admitted steps, and certified profiles
 
-The candidate step is the contextual higher-order step. A configuration lives at a
-declaration frame; a firing moves it along a morphism of frames; its solutions are morphisms
-out of a frame into any later frame, acting on terms by capture-avoiding instantiation.
-This module states that signature once. Both the first-order step of the run layer and the
-native contextual firings are instances of it.
-
-## Solutions: a category of frames acting on terms (`Frames`)
-
-* The canonical instance is `Frames.contextual S`: frames are declaration families, morphisms are
-  `ContextualFamily.Assignment`, terms are observations, and the action is
-  `instantiateObservation`.
-* **A substitution action is the one-frame case** (`Frames.ofSubstitution`): its solvability,
-  asks and principality are `SubstitutionAction.Consistent`, `Entails` and `Principal`.
-* Semantic solvability (`Solvable`), asks (`Entails`) and principality (`Principal`) quantify over
-  every later frame. Solvability is witnessed at a weakly terminal frame (`solvable_iff_into`); for
-  declaration families one parameterless metavariable per sort is such a frame
-  (`firstOrderFrame_weaklyTerminal`), so existence never needs a higher-order helper. Over a frame
-  that receives a morphism from it, solvability is consistency of the endomorphism monoid
-  (`solvable_iff_endo_consistent`, `contextual_solvable_iff_consistent`). Asks and principality do not
-  descend that way (`Entails.endo`, `Principal.endo` hold in one direction only).
-
-## The step (`Step`)
-
-A state has a frame, its knowledge (an equation store there) and its present occurrences. A
-firing has a selection, a target frame with an extension from the state's frame, and its
-information at the target, which contains the transported knowledge. **Admission** is
-characterized once (`admits_iff`): the firing's shapes, the physical enabling of its selection,
-semantic solvability of its information, and an ask of its guards and predicate queries at every
-solution. An admitted firing's result keeps the information along a settling morphism.
-
-Runs are dependent words of admitted firings (`Run`). Knowledge only refines along a run: every
-solution of the last knowledge pulls back to a solution of the first (`Run.models_start`). Runs
-form a free category under concatenation (`Run.append`), and a site account of grades in a monoid
-is a functor out of it (`Run.account_append`).
+A step combines a semantic effect core with permission that implies preparation.
+Guard semantics, literal store transport and semantic exactness are optional
+certificates. `Step.Standard` is the explicit guarded, literally exact builder;
+its certificates are inferred for consumers that require them. No evaluator,
+coverage law or recording obligation is imposed by the general step.
 -/
 
 set_option autoImplicit false
 
 namespace Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface
 
-open Mettapedia.OSLF.Binding hiding instantiate instantiateArgs
-open Mettapedia.OSLF.Binding.ContextualFamily
-open Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits (Enabled fire)
-
+open MeTTaCalculus.OccurrenceCommits (Enabled fire)
 universe uO uT uH
-
-/-- A category of frames acting on terms. A morphism `a ⟶ b` instantiates what the frame `a`
-declares by terms of the later frame `b`. Only the action laws are required, as for
-`SubstitutionAction`. -/
-structure Frames {Obj : Type uO} (Tm : Obj → Type uT) (Hom : Obj → Obj → Type uH) where
-  E : {a : Obj} → Tm a → Tm a → Prop
-  equivalence : ∀ a : Obj, Equivalence (@E a)
-  act : {a b : Obj} → Hom a b → Tm a → Tm b
-  id : (a : Obj) → Hom a a
-  comp : {a b c : Obj} → Hom b c → Hom a b → Hom a c
-  act_id : ∀ {a : Obj} (t : Tm a), act (id a) t = t
-  act_comp : ∀ {a b c : Obj} (g : Hom b c) (f : Hom a b) (t : Tm a),
-    act (comp g f) t = act g (act f t)
-  preserves : ∀ {a b : Obj} (f : Hom a b) {s t : Tm a}, E s t → E (act f s) (act f t)
-
-namespace Frames
-
-variable {Obj : Type uO} {Tm : Obj → Type uT} {Hom : Obj → Obj → Type uH}
-
-section Definitions
-
-variable (X : Frames Tm Hom)
-
-def Solves {a b : Obj} (f : Hom a b) (e : Equation (Tm a)) : Prop :=
-  X.E (X.act f e.1) (X.act f e.2)
-
-def Models {a b : Obj} (f : Hom a b) (store : EquationStore (Tm a)) : Prop :=
-  ∀ e ∈ store, X.Solves f e
-
-/-- **Semantic solvability**: a solution into some later frame. -/
-def Solvable {a : Obj} (store : EquationStore (Tm a)) : Prop :=
-  ∃ (b : Obj) (f : Hom a b), X.Models f store
-
-/-- An ask: the observation holds at every solution into every later frame. -/
-def Entails {a : Obj} (store : EquationStore (Tm a))
-    (observation : (b : Obj) → Hom a b → Prop) : Prop :=
-  ∀ (b : Obj) (f : Hom a b), X.Models f store → observation b f
-
-/-- Two stores with the same solutions in every later frame. -/
-def Equivalent {a : Obj} (one two : EquationStore (Tm a)) : Prop :=
-  ∀ (b : Obj) (f : Hom a b), X.Models f one ↔ X.Models f two
-
-/-- Transport a store along a morphism. -/
-def applyStore {a b : Obj} (f : Hom a b) (store : EquationStore (Tm a)) :
-    EquationStore (Tm b) :=
-  store.map fun e => (X.act f e.1, X.act f e.2)
-
-/-- A principal answer: a solution through which every solution factors, on the terms of the
-store's own frame. Terms of the answer's helpers are not constrained. -/
-structure Principal {a m : Obj} (store : EquationStore (Tm a)) (answer : Hom a m) :
-    Prop where
-  sound : X.Models answer store
-  factors : ∀ (b : Obj) (f : Hom a b), X.Models f store →
-    ∃ residual : Hom m b, ∀ t : Tm a, X.E (X.act f t) (X.act (X.comp residual answer) t)
-
-/-- The endomorphism monoid of one frame, as a substitution action. -/
-def endo (a : Obj) : SubstitutionAction (Tm a) (Hom a a) where
-  E := X.E
-  equivalence := X.equivalence a
-  apply := X.act
-  identity := X.id a
-  compose := X.comp
-  apply_identity := X.act_id
-  apply_compose := X.act_comp
-  preserves := X.preserves
-
-end Definitions
-
-variable (Hom) in
-/-- A frame that every frame maps to. -/
-def WeaklyTerminal (t : Obj) : Prop := ∀ b : Obj, Nonempty (Hom b t)
-
-variable (Hom) in
-/-- The solutions of a frame: a later frame with a morphism into it. Predicate queries are
-evaluated at a solution. -/
-abbrev Solution (a : Obj) : Type (max uO uH) := (b : Obj) × Hom a b
-
-variable {X : Frames Tm Hom}
-
-@[simp] theorem models_nil {a b : Obj} (f : Hom a b) : X.Models f [] := by
-  simp [Models]
-
-theorem models_append {a b : Obj} (f : Hom a b) (one two : EquationStore (Tm a)) :
-    X.Models f (one ++ two) ↔ X.Models f one ∧ X.Models f two := by
-  simp only [Models, List.forall_mem_append]
-
-theorem models_of_subset {a b : Obj} {f : Hom a b} {small big : EquationStore (Tm a)}
-    (inside : ∀ e ∈ small, e ∈ big) (solved : X.Models f big) : X.Models f small :=
-  fun e member => solved e (inside e member)
-
-/-- Models depend on a morphism only through its action. -/
-theorem models_congr {a b : Obj} {f g : Hom a b} (same : ∀ t : Tm a, X.act f t = X.act g t)
-    (store : EquationStore (Tm a)) : X.Models f store ↔ X.Models g store := by
-  constructor
-  · intro solved e member
-    have h : X.E (X.act f e.1) (X.act f e.2) := solved e member
-    rw [same, same] at h
-    exact h
-  · intro solved e member
-    have h : X.E (X.act g e.1) (X.act g e.2) := solved e member
-    rw [← same, ← same] at h
-    exact h
-
-/-- Later instantiation keeps a solution a solution. -/
-theorem models_comp {a b c : Obj} {f : Hom a b} {store : EquationStore (Tm a)}
-    (solved : X.Models f store) (g : Hom b c) : X.Models (X.comp g f) store := by
-  intro e member
-  have later : X.E (X.act g (X.act f e.1)) (X.act g (X.act f e.2)) :=
-    X.preserves g (solved e member)
-  show X.E (X.act (X.comp g f) e.1) (X.act (X.comp g f) e.2)
-  rw [X.act_comp, X.act_comp]
-  exact later
-
-/-- A transported store is solved exactly by the composites. -/
-theorem models_applyStore {a b c : Obj} (f : Hom a b) (g : Hom b c)
-    (store : EquationStore (Tm a)) :
-    X.Models g (X.applyStore f store) ↔ X.Models (X.comp g f) store := by
-  constructor
-  · intro solved e member
-    have transported : X.E (X.act g (X.act f e.1)) (X.act g (X.act f e.2)) :=
-      solved _ (List.mem_map.mpr ⟨e, member, rfl⟩)
-    show X.E (X.act (X.comp g f) e.1) (X.act (X.comp g f) e.2)
-    rw [X.act_comp, X.act_comp]
-    exact transported
-  · intro solved e member
-    obtain ⟨original, present, rfl⟩ := List.mem_map.mp member
-    have composite : X.E (X.act (X.comp g f) original.1) (X.act (X.comp g f) original.2) :=
-      solved original present
-    rw [X.act_comp, X.act_comp] at composite
-    exact composite
-
-theorem applyStore_id {a : Obj} (store : EquationStore (Tm a)) :
-    X.applyStore (X.id a) store = store := by
-  simp [applyStore, X.act_id]
-
-/-- Composites act the same however they are bracketed. -/
-theorem act_comp_assoc {a b c d : Obj} (h : Hom a b) (f : Hom b c) (g : Hom c d) (t : Tm a) :
-    X.act (X.comp (X.comp g f) h) t = X.act (X.comp g (X.comp f h)) t := by
-  rw [X.act_comp, X.act_comp, X.act_comp, X.act_comp]
-
-theorem act_comp_id {a b : Obj} (g : Hom a b) (t : Tm a) :
-    X.act g t = X.act (X.comp g (X.id a)) t := by
-  rw [X.act_comp, X.act_id]
-
-/-- Solvability is reflected along every morphism. -/
-theorem solvable_of_applyStore {a b : Obj} (f : Hom a b) {store : EquationStore (Tm a)}
-    (solvable : X.Solvable (X.applyStore f store)) : X.Solvable store := by
-  obtain ⟨c, g, solved⟩ := solvable
-  exact ⟨c, X.comp g f, (models_applyStore f g store).mp solved⟩
-
-theorem solvable_of_subset {a : Obj} {small big : EquationStore (Tm a)}
-    (inside : ∀ e ∈ small, e ∈ big) (solvable : X.Solvable big) : X.Solvable small := by
-  obtain ⟨b, f, solved⟩ := solvable
-  exact ⟨b, f, models_of_subset inside solved⟩
-
-theorem Equivalent.solvable_iff {a : Obj} {one two : EquationStore (Tm a)}
-    (same : X.Equivalent one two) : X.Solvable one ↔ X.Solvable two := by
-  constructor
-  · rintro ⟨b, f, solved⟩
-    exact ⟨b, f, (same b f).mp solved⟩
-  · rintro ⟨b, f, solved⟩
-    exact ⟨b, f, (same b f).mpr solved⟩
-
-theorem Equivalent.entails_iff {a : Obj} {one two : EquationStore (Tm a)}
-    (same : X.Equivalent one two) (observation : (b : Obj) → Hom a b → Prop) :
-    X.Entails one observation ↔ X.Entails two observation := by
-  constructor
-  · intro asked b f solved
-    exact asked b f ((same b f).mpr solved)
-  · intro asked b f solved
-    exact asked b f ((same b f).mp solved)
-
-theorem Entails.mono {a : Obj} {store : EquationStore (Tm a)}
-    {stronger weaker : (b : Obj) → Hom a b → Prop} (asked : X.Entails store stronger)
-    (implies : ∀ b f, stronger b f → weaker b f) : X.Entails store weaker :=
-  fun b f solved => implies b f (asked b f solved)
-
-theorem Entails.of_subset {a : Obj} {small big : EquationStore (Tm a)}
-    {observation : (b : Obj) → Hom a b → Prop} (inside : ∀ e ∈ small, e ∈ big)
-    (asked : X.Entails small observation) : X.Entails big observation :=
-  fun b f solved => asked b f (models_of_subset inside solved)
-
-theorem entails_and {a : Obj} {store : EquationStore (Tm a)}
-    {first second : (b : Obj) → Hom a b → Prop} :
-    X.Entails store (fun b f => first b f ∧ second b f) ↔
-      X.Entails store first ∧ X.Entails store second :=
-  ⟨fun asked => ⟨fun b f solved => (asked b f solved).1, fun b f solved => (asked b f solved).2⟩,
-    fun asked b f solved => ⟨asked.1 b f solved, asked.2 b f solved⟩⟩
-
-/-- A principal answer presents exactly the solutions: those that factor through it. -/
-theorem Principal.models_iff {a m : Obj} {store : EquationStore (Tm a)}
-    {answer : Hom a m} (principal : X.Principal store answer) {b : Obj} (f : Hom a b) :
-    X.Models f store ↔ ∃ residual : Hom m b,
-      ∀ t : Tm a, X.E (X.act f t) (X.act (X.comp residual answer) t) := by
-  constructor
-  · exact principal.factors b f
-  · rintro ⟨residual, through⟩ e member
-    have middle : X.E (X.act residual (X.act answer e.1)) (X.act residual (X.act answer e.2)) :=
-      X.preserves residual (principal.sound e member)
-    rw [← X.act_comp, ← X.act_comp] at middle
-    exact (X.equivalence b).trans (through e.1)
-      ((X.equivalence b).trans middle ((X.equivalence b).symm (through e.2)))
-
-theorem Principal.solvable {a m : Obj} {store : EquationStore (Tm a)}
-    {answer : Hom a m} (principal : X.Principal store answer) : X.Solvable store :=
-  ⟨m, answer, principal.sound⟩
-
-/-! ## Weakly terminal frames and the endomorphism fibre -/
-
-/-- **Existence is witnessed at a weakly terminal frame.** -/
-theorem solvable_iff_into {t : Obj} (terminal : WeaklyTerminal Hom t) {a : Obj}
-    (store : EquationStore (Tm a)) :
-    X.Solvable store ↔ ∃ f : Hom a t, X.Models f store := by
-  constructor
-  · rintro ⟨b, f, solved⟩
-    obtain ⟨g⟩ := terminal b
-    exact ⟨X.comp g f, models_comp solved g⟩
-  · rintro ⟨f, solved⟩
-    exact ⟨t, f, solved⟩
-
-/-- When the store's own frame receives a morphism from a weakly terminal frame, an
-endomorphism solves every solvable store. -/
-theorem solvable_iff_endo {t a : Obj} (terminal : WeaklyTerminal Hom t) (back : Hom t a)
-    (store : EquationStore (Tm a)) :
-    X.Solvable store ↔ ∃ f : Hom a a, X.Models f store := by
-  constructor
-  · intro solvable
-    obtain ⟨f, solved⟩ := (solvable_iff_into terminal store).mp solvable
-    exact ⟨X.comp back f, models_comp solved back⟩
-  · rintro ⟨f, solved⟩
-    exact ⟨a, f, solved⟩
-
-/-- **Solvability is the consistency of the endomorphism monoid**, under the same hypothesis. -/
-theorem solvable_iff_endo_consistent {t a : Obj} (terminal : WeaklyTerminal Hom t)
-    (back : Hom t a) (store : EquationStore (Tm a)) :
-    X.Solvable store ↔ (X.endo a).Consistent store :=
-  solvable_iff_endo terminal back store
-
-/-- A principal answer that is an endomorphism is principal for the endomorphism monoid. -/
-theorem Principal.endo {a : Obj} {store : EquationStore (Tm a)} {answer : Hom a a}
-    (principal : X.Principal store answer) : (X.endo a).Principal store answer :=
-  ⟨principal.sound, fun δ solved => principal.factors a δ solved⟩
-
-/-- An ask over every later frame is an ask over the endomorphisms. -/
-theorem Entails.endo {a : Obj} {store : EquationStore (Tm a)}
-    {observation : (b : Obj) → Hom a b → Prop} (asked : X.Entails store observation) :
-    (X.endo a).Entails store (observation a) :=
-  fun σ solved => asked a σ solved
-
-/-! ## A substitution action is the one-frame case -/
-
-section OneFrame
-
-universe uA uB
-
-variable {T : Type uA} {S : Type uB} (A : SubstitutionAction T S)
-
-/-- The one-frame category of a substitution action: its morphisms are its substitutions. -/
-def ofSubstitution : Frames (fun _ : PUnit.{1} => T) (fun _ _ => S) where
-  E := A.E
-  equivalence _ := A.equivalence
-  act := A.apply
-  id _ := A.identity
-  comp := A.compose
-  act_id := A.apply_identity
-  act_comp := A.apply_compose
-  preserves := A.preserves
-
-theorem ofSubstitution_models_iff (σ : S) (store : EquationStore T) :
-    (ofSubstitution A).Models (a := PUnit.unit) (b := PUnit.unit) σ store ↔ A.Models σ store :=
-  Iff.rfl
-
-theorem ofSubstitution_solvable_iff (store : EquationStore T) :
-    (ofSubstitution A).Solvable (a := PUnit.unit) store ↔ A.Consistent store := by
-  constructor
-  · rintro ⟨_, σ, solved⟩
-    exact ⟨σ, solved⟩
-  · rintro ⟨σ, solved⟩
-    exact ⟨PUnit.unit, σ, solved⟩
-
-theorem ofSubstitution_entails_iff (store : EquationStore T) (observation : S → Prop) :
-    (ofSubstitution A).Entails (a := PUnit.unit) store (fun _ σ => observation σ) ↔
-      A.Entails store observation := by
-  constructor
-  · intro asked σ solved
-    exact asked PUnit.unit σ solved
-  · intro asked _ σ solved
-    exact asked σ solved
-
-theorem ofSubstitution_principal_iff (store : EquationStore T) (answer : S) :
-    (ofSubstitution A).Principal (a := PUnit.unit) (m := PUnit.unit) store answer ↔
-      A.Principal store answer := by
-  constructor
-  · intro principal
-    exact ⟨principal.sound, fun δ solved => principal.factors PUnit.unit δ solved⟩
-  · intro principal
-    exact ⟨principal.sound, fun _ δ solved => principal.factors δ solved⟩
-
-end OneFrame
-
-/-! ## The canonical instance: declaration frames and contextual assignments -/
-
-section Contextual
-
-variable (S : Signature)
-
-/-- A declaration frame: identities with their metavariable arities. -/
-structure Frame where
-  Names : Type
-  arity : Names → MetaArity S
-
-/-- **The category of declaration frames.** Morphisms are contextual assignments and act on
-observations by capture-avoiding instantiation. -/
-def contextual : Frames (fun F : Frame S => Observation S F.arity)
-    (fun F G : Frame S => Assignment F.arity G.arity) where
-  E := fun s t => s = t
-  equivalence _ := ⟨Eq.refl, Eq.symm, Eq.trans⟩
-  act := fun f t => instantiateObservation f t
-  id F := generator F.arity
-  comp := fun g f => Assignment.compose g f
-  act_id := instantiateObservation_identity
-  act_comp := fun g f t => (instantiateObservation_comp f g t).symm
-  preserves := fun {_ _} f {_ _} same => congrArg (fun t => instantiateObservation f t) same
-
-/-- One parameterless metavariable per sort. -/
-def firstOrderFrame : Frame S := ⟨S.Srt, fun sort => ([], sort)⟩
-
-variable {S}
-
-/-- Every frame maps to `firstOrderFrame`: an identity goes to the parameterless metavariable of
-its sort, which ignores the parameters. -/
-def toFirstOrder (F : Frame S) : Assignment F.arity (firstOrderFrame S).arity :=
-  fun identity => .op (.inr (.mk (F.arity identity).2)) .nil
-
-theorem firstOrderFrame_weaklyTerminal :
-    WeaklyTerminal (fun F G : Frame S => Assignment F.arity G.arity) (firstOrderFrame S) :=
-  fun F => ⟨toFirstOrder F⟩
-
-theorem contextual_models_iff {F G : Frame S} (σ : Assignment F.arity G.arity)
-    (store : EquationStore (Observation S F.arity)) :
-    (contextual S).Models σ store ↔
-      ∀ e ∈ store, instantiateObservation σ e.1 = instantiateObservation σ e.2 :=
-  Iff.rfl
-
-/-- Contextual solvability, with the future frame unpacked. -/
-theorem contextual_solvable_iff {V : Type} {declaration : V → MetaArity S}
-    (store : EquationStore (Observation S declaration)) :
-    (contextual S).Solvable (a := ⟨V, declaration⟩) store ↔
-      ∃ (Future : Type) (future : Future → MetaArity S) (candidate : Assignment declaration future),
-        ∀ e ∈ store, instantiateObservation candidate e.1 = instantiateObservation candidate e.2 := by
-  constructor
-  · rintro ⟨⟨Future, future⟩, candidate, solved⟩
-    exact ⟨Future, future, candidate, solved⟩
-  · rintro ⟨Future, future, candidate, solved⟩
-    exact ⟨⟨Future, future⟩, candidate, solved⟩
-
-/-- **Existence never needs a higher-order helper**: every solvable store has a solution into
-`firstOrderFrame`. -/
-theorem contextual_solvable_iff_firstOrder {F : Frame S}
-    (store : EquationStore (Observation S F.arity)) :
-    (contextual S).Solvable store ↔
-      ∃ σ : Assignment F.arity (firstOrderFrame S).arity, (contextual S).Models σ store :=
-  solvable_iff_into (X := contextual S) firstOrderFrame_weaklyTerminal store
-
-/-- The endomorphism monoid of a frame is the existing observation action. -/
-theorem contextual_endo (F : Frame S) :
-    (contextual S).endo F = ContextualObservationAction.action F.arity := rfl
-
-/-- **The endomorphic profile is complete for existence on an inhabited frame**: when every sort
-has a term in `F`, a store at `F` is solvable exactly when the existing observation action is
-consistent on it. -/
-theorem contextual_solvable_iff_consistent {F : Frame S}
-    (inhabited : Assignment (firstOrderFrame S).arity F.arity)
-    (store : EquationStore (Observation S F.arity)) :
-    (contextual S).Solvable store ↔ (ContextualObservationAction.action F.arity).Consistent store := by
-  rw [← contextual_endo]
-  exact solvable_iff_endo_consistent (X := contextual S) firstOrderFrame_weaklyTerminal inhabited store
-
-end Contextual
-
-end Frames
-
-/-! ## The step -/
 
 universe uOcc uS uF
 
-/-- **The signature of the candidate step**, over its states and firings. -/
+/-- An effect core with an independently supplied permission predicate. -/
 structure Step {Obj : Type uO} {Tm : Obj → Type uT} {Hom : Obj → Obj → Type uH}
     (X : Frames Tm Hom) (O : Type uOcc) [DecidableEq O]
-    (State : Type uS) (Firing : State → Type uF) where
-  frame : State → Obj
-  /-- The equations a state knows, at its frame. -/
-  knowledge : (s : State) → EquationStore (Tm (frame s))
-  present : State → Finset O
-  selection : {s : State} → Firing s → Selection O
-  /-- The frame a firing's information lives at, and how the state's frame enters it. -/
-  target : {s : State} → Firing s → Obj
-  extension : {s : State} → (f : Firing s) → Hom (frame s) (target f)
-  information : {s : State} → (f : Firing s) → EquationStore (Tm (target f))
-  /-- The information contains the transported knowledge. -/
-  transported : ∀ {s : State} (f : Firing s) (e : Equation (Tm (frame s))), e ∈ knowledge s →
-    (X.act (extension f) e.1, X.act (extension f) e.2) ∈ information f
-  /-- Port counts, distinct takes and outputs, and the produced labels. -/
-  Shapes : {s : State} → Firing s → Prop
-  /-- The guards and predicate queries of a firing at one solution of its information. -/
-  Holds : {s : State} → (f : Firing s) → (b : Obj) → Hom (target f) b → Prop
+    (State : Type uS) (Firing : State → Type uF) extends EffectCore X O State Firing where
   Admits : {s : State} → Firing s → Prop
-  /-- **Admission**, characterized once for every instance. -/
-  admits_iff : ∀ {s : State} (f : Firing s), Admits f ↔ Shapes f ∧
-    Enabled (fun _ : O => ()) (present s) ((selection f).commit (T := Unit)) ∧
-    X.Solvable (information f) ∧ X.Entails (information f) (Holds f)
-  result : {s : State} → (f : Firing s) → Admits f → State
-  present_result : ∀ {s : State} (f : Firing s) (admitted : Admits f),
-    present (result f admitted) = fire (present s) ((selection f).commit (T := Unit))
-  /-- The result keeps the information along a settling morphism. -/
-  settle : {s : State} → (f : Firing s) → (admitted : Admits f) →
-    Hom (target f) (frame (result f admitted))
-  knowledge_result : ∀ {s : State} (f : Firing s) (admitted : Admits f),
-    knowledge (result f admitted) = X.applyStore (settle f admitted) (information f)
+  admitted_prepares : ∀ {s : State} (f : Firing s), Admits f → toEffectCore.Prepares f
 
 namespace Step
 
 variable {Obj : Type uO} {Tm : Obj → Type uT} {Hom : Obj → Obj → Type uH}
   {X : Frames Tm Hom} {O : Type uOcc} [DecidableEq O] {State : Type uS} {Firing : State → Type uF}
   (P : Step X O State Firing)
+
+/-- **Preparation**: everything admission asks except the guards and predicate queries. It and the
+derived `result` and `settle` are reducible, as the fields they replace were: tactics see through
+them to the prepared effect. -/
+abbrev Prepares {s : State} (f : Firing s) : Prop :=
+  P.Shapes f ∧ Enabled (fun _ : O => ()) (P.present s) ((P.selection f).commit (T := Unit)) ∧
+    X.Solvable (P.information f)
+
+/-- Optional guard semantics. This data is not determined by the admitted set alone. -/
+class Guarded where
+  holds : {s : State} → (f : Firing s) → (b : Obj) → Hom (P.target f) b → Prop
+  admission : ∀ {s : State} (f : Firing s),
+    P.Admits f ↔ P.Prepares f ∧ X.Entails (P.information f) (holds f)
+
+class LiteralInformation : Prop where
+  contains : ∀ {s : State} (f : Firing s) (e : Equation (Tm (P.frame s))), e ∈ P.knowledge s →
+    (X.act (P.extension f) e.1, X.act (P.extension f) e.2) ∈ P.information f
+
+class LiteralKnowledge : Prop where
+  knowledge : ∀ {s : State} (f : Firing s) (p : P.Prepares f),
+    P.knowledge (P.preparedResult f p) = X.applyStore (P.preparedSettle f p) (P.information f)
+
+abbrev ExactKnowledge : Prop := P.toEffectCore.ExactKnowledge
+
+class Exact : Prop where
+  exactness : P.ExactKnowledge
+
+abbrev Holds [P.Guarded] {s : State} (f : Firing s) := Guarded.holds (P := P) f
+
+abbrev transported [P.LiteralInformation] {s : State} (f : Firing s) :=
+  LiteralInformation.contains (P := P) f
+
+abbrev knowledge_preparedResult [P.LiteralKnowledge] {s : State}
+    (f : Firing s) (p : P.Prepares f) := LiteralKnowledge.knowledge (P := P) f p
+
+instance literal_exact [P.LiteralKnowledge] : P.Exact where
+  exactness f p := by
+    intro b σ solved
+    rw [P.knowledge_preparedResult f p]
+    exact (Frames.models_applyStore _ _ _).mpr solved
+
+/-- An admitted firing is prepared, independently of any guard profile. -/
+theorem prepares {s : State} {f : Firing s} (admitted : P.Admits f) : P.Prepares f :=
+  P.admitted_prepares f admitted
+
+theorem admits_iff_prepares [P.Guarded] {s : State} (f : Firing s) :
+    P.Admits f ↔ P.Prepares f ∧ X.Entails (P.information f) (P.Holds f) :=
+  Guarded.admission f
+
+theorem admits_iff [P.Guarded] {s : State} (f : Firing s) : P.Admits f ↔ P.Shapes f ∧
+    Enabled (fun _ : O => ()) (P.present s) ((P.selection f).commit (T := Unit)) ∧
+    X.Solvable (P.information f) ∧ X.Entails (P.information f) (P.Holds f) :=
+  (P.admits_iff_prepares f).trans
+    ⟨fun ⟨⟨a,b,c⟩,d⟩ => ⟨a,b,c,d⟩, fun ⟨a,b,c,d⟩ => ⟨⟨a,b,c⟩,d⟩⟩
+
+/-- **The result of an admitted firing**: its prepared result. -/
+abbrev result {s : State} (f : Firing s) (admitted : P.Admits f) : State :=
+  P.preparedResult f (P.prepares admitted)
+
+theorem present_result {s : State} (f : Firing s) (admitted : P.Admits f) :
+    P.present (P.result f admitted) = fire (P.present s) ((P.selection f).commit (T := Unit)) :=
+  P.present_preparedResult f _
+
+/-- **The settlement of an admitted firing**: its prepared settlement. The result keeps the
+information along it. -/
+abbrev settle {s : State} (f : Firing s) (admitted : P.Admits f) :
+    Hom (P.target f) (P.frame (P.result f admitted)) :=
+  P.preparedSettle f _
+
+theorem knowledge_result [P.LiteralKnowledge] {s : State} (f : Firing s) (admitted : P.Admits f) :
+    P.knowledge (P.result f admitted) = X.applyStore (P.settle f admitted) (P.information f) :=
+  P.knowledge_preparedResult f _
 
 /-- The morphism of frames a firing moves along: its extension, then its settlement. -/
 def along {s : State} (f : Firing s) (admitted : P.Admits f) :
@@ -483,17 +111,13 @@ def along {s : State} (f : Firing s) (admitted : P.Admits f) :
 /-- An admitted firing has solvable information. -/
 theorem solvable_information {s : State} {f : Firing s} (admitted : P.Admits f) :
     X.Solvable (P.information f) :=
-  ((P.admits_iff f).mp admitted).2.2.1
+  (P.prepares admitted).2.2
 
 /-- The information of a firing refines the knowledge it starts from. -/
 theorem models_knowledge {s : State} (f : Firing s) {b : Obj} (σ : Hom (P.target f) b)
     (solved : X.Models σ (P.information f)) :
-    X.Models (X.comp σ (P.extension f)) (P.knowledge s) := by
-  apply (Frames.models_applyStore (P.extension f) σ (P.knowledge s)).mp
-  apply Frames.models_of_subset _ solved
-  intro e member
-  obtain ⟨original, present, rfl⟩ := List.mem_map.mp member
-  exact P.transported f original present
+    X.Models (X.comp σ (P.extension f)) (P.knowledge s) :=
+  P.information_refines f σ solved
 
 /-- An admitted firing starts from solvable knowledge. -/
 theorem solvable_knowledge {s : State} {f : Firing s} (admitted : P.Admits f) :
@@ -505,11 +129,8 @@ theorem solvable_knowledge {s : State} {f : Firing s} (admitted : P.Admits f) :
 theorem models_along {s : State} {f : Firing s} (admitted : P.Admits f) {b : Obj}
     (σ : Hom (P.frame (P.result f admitted)) b)
     (solved : X.Models σ (P.knowledge (P.result f admitted))) :
-    X.Models (X.comp σ (P.along f admitted)) (P.knowledge s) := by
-  rw [P.knowledge_result f admitted] at solved
-  have information := (Frames.models_applyStore (P.settle f admitted) σ (P.information f)).mp solved
-  exact (Frames.models_congr (fun t => Frames.act_comp_assoc (P.extension f) (P.settle f admitted) σ t)
-    (P.knowledge s)).mp (P.models_knowledge f _ information)
+    X.Models (X.comp σ (P.along f admitted)) (P.knowledge s) :=
+  P.toEffectCore.models_along f (P.prepares admitted) σ solved
 
 /-- A run: a dependent word of admitted firings. -/
 inductive Run : State → Type (max uS uF)
@@ -582,6 +203,87 @@ theorem account_append {M : Type*} [Monoid M] (grade : (t : State) → Firing t 
 
 end Run
 
+/-- The profile's underlying shared effect. -/
+abbrev effectCore : EffectCore X O State Firing := P.toEffectCore
+
+theorem effectCore_exact [P.Exact] : P.effectCore.ExactKnowledge := Exact.exactness
+
+def eventAdmission : P.effectCore.Admission := fun f _ => P.Admits f
+
+theorem eventAdmission_iff {s : State} (f : Firing s) (p : P.Prepares f) :
+    P.eventAdmission f p ↔ P.Admits f := Iff.rfl
+
+def event {s : State} (f : Firing s) (a : P.Admits f) :
+    P.effectCore.Event P.eventAdmission s (P.result f a) :=
+  ⟨f, P.prepares a, (P.eventAdmission_iff f _).mpr a, rfl⟩
+
+structure Standard {Obj : Type uO} {Tm : Obj → Type uT} {Hom : Obj → Obj → Type uH}
+    (X : Frames Tm Hom) (O : Type uOcc) [DecidableEq O]
+    (State : Type uS) (Firing : State → Type uF) extends Step X O State Firing where
+  transported : ∀ {s : State} (f : Firing s) (e : Equation (Tm (frame s))), e ∈ knowledge s →
+    (X.act (extension f) e.1, X.act (extension f) e.2) ∈ information f
+  Holds : {s : State} → (f : Firing s) → (b : Obj) → Hom (target f) b → Prop
+  admits_iff : ∀ {s : State} (f : Firing s), Admits f ↔ Shapes f ∧
+    Enabled (fun _ : O => ()) (present s) ((selection f).commit (T := Unit)) ∧
+    X.Solvable (information f) ∧ X.Entails (information f) (Holds f)
+  knowledge_preparedResult : ∀ {s : State} (f : Firing s) (p : Shapes f ∧
+      Enabled (fun _ : O => ()) (present s) ((selection f).commit (T := Unit)) ∧ X.Solvable (information f)),
+    knowledge (preparedResult f p) = X.applyStore (preparedSettle f p) (information f)
+  information_refines := fun {s} f {_b} σ solved =>
+    Frames.models_of_transport X (knowledge s) (information f) (extension f) (transported f) σ solved
+  result_refines := fun {_s} f p {_b} σ solved =>
+    (Frames.models_applyStore _ _ _).mp
+      ((congrArg (X.Models σ) (knowledge_preparedResult f p)).mp solved)
+  admitted_prepares := fun f a =>
+    ⟨((admits_iff f).mp a).1, ((admits_iff f).mp a).2.1, ((admits_iff f).mp a).2.2.1⟩
+
+instance : CoeOut (Standard X O State Firing) (Step X O State Firing) := ⟨Standard.toStep⟩
+
+instance standard_guarded (Q : Standard X O State Firing) : Q.toStep.Guarded where
+  holds := Q.Holds
+  admission f := (Q.admits_iff f).trans
+    ⟨fun ⟨a,b,c,d⟩ => ⟨⟨a,b,c⟩,d⟩, fun ⟨⟨a,b,c⟩,d⟩ => ⟨a,b,c,d⟩⟩
+
+instance standard_literalKnowledge (Q : Standard X O State Firing) : Q.toStep.LiteralKnowledge :=
+  ⟨Q.knowledge_preparedResult⟩
+
+instance standard_literalInformation (Q : Standard X O State Firing) : Q.toStep.LiteralInformation :=
+  ⟨Q.transported⟩
+
+instance standard_exact (Q : Standard X O State Firing) : Q.toStep.Exact where
+  exactness f p := by
+    intro b σ solved
+    rw [Q.knowledge_preparedResult f p]
+    exact (Frames.models_applyStore _ _ _).mpr solved
+
+/-- Recover the explicit builder from a step carrying the three stronger certificates. -/
+def Standard.ofCertified (Q : Step X O State Firing)
+    [Q.Guarded] [Q.LiteralInformation] [Q.LiteralKnowledge] : Standard X O State Firing where
+  toStep := Q
+  Holds := Q.Holds
+  admits_iff := Q.admits_iff
+  transported := Q.transported
+  knowledge_preparedResult := Q.knowledge_preparedResult
+
+/-- An explicit permission policy over any effect core; no exactness is required. -/
+def ofEffect (E : EffectCore X O State Firing) (allow : E.Admission) : Step X O State Firing where
+  toEffectCore := E
+  Admits f := ∃ p : E.Prepares f, allow f p
+  admitted_prepares _ admitted := by rcases admitted with ⟨prepared, _⟩; exact prepared
+
+def guarded (E : EffectCore X O State Firing)
+    (holds : ∀ {s : State} (f : Firing s) (b : Obj), Hom (E.target f) b → Prop) : Step X O State Firing :=
+  ofEffect E (E.guardAdmission holds)
+
+instance guarded_profile (E : EffectCore X O State Firing)
+    (holds : ∀ {s : State} (f : Firing s) (b : Obj), Hom (E.target f) b → Prop) :
+    (guarded E holds).Guarded where
+  holds := holds
+  admission f := by
+    change (∃ p : E.Prepares f, X.Entails (E.information f) (holds f)) ↔
+      E.Prepares f ∧ X.Entails (E.information f) (holds f)
+    exact ⟨fun ⟨p,h⟩ => ⟨p,h⟩, fun ⟨p,h⟩ => ⟨p,h⟩⟩
+
 end Step
 
 #print axioms Frames.models_applyStore
@@ -607,5 +309,7 @@ end Step
 #print axioms Step.Run.last_append
 #print axioms Step.Run.word_append
 #print axioms Step.Run.account_append
+#print axioms Step.prepares
+#print axioms Step.admits_iff_prepares
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface

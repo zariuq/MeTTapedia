@@ -60,8 +60,8 @@ def DeadInvariant (program : L → (s : NativeState S O Γ sort) → LiveFiring 
 theorem match_move {program : L → (s : NativeState S O Γ sort) → LiveFiring s → Prop}
     (invariant : DeadInvariant program) {s t u : NativeState S O Γ sort} (e : DeadExtension s u)
     (e' : DeadExtension t u) {ℓ : L} {s' : NativeState S O Γ sort}
-    (moved : Race.Generic.Moves native (liveOffers program) s ℓ s') :
-    ∃ t', Race.Generic.Moves native (liveOffers program) t ℓ t' ∧ DeadEquiv s' t' := by
+    (moved : Race.Generic.Moves native.toStep (liveOffers program) s ℓ s') :
+    ∃ t', Race.Generic.Moves native.toStep (liveOffers program) t ℓ t' ∧ DeadEquiv s' t' := by
   obtain ⟨g, admitted, ⟨f, offered, rfl⟩, rfl⟩ := moved
   obtain ⟨f', offered', same⟩ := (invariant e' ℓ).2 _ ((invariant e ℓ).1 f offered)
   obtain ⟨admits, results⟩ := DeadEquiv.step e e' same.symm
@@ -71,7 +71,7 @@ theorem match_move {program : L → (s : NativeState S O Γ sort) → LiveFiring
 not see dead names. -/
 theorem bisimilar_of_deadEquiv {program : L → (s : NativeState S O Γ sort) → LiveFiring s → Prop}
     (invariant : DeadInvariant program) {s t : NativeState S O Γ sort} (same : DeadEquiv s t) :
-    Race.Generic.Bisimilar native (liveOffers program) s t := by
+    Race.Generic.Bisimilar native.toStep (liveOffers program) s t := by
   refine ⟨DeadEquiv, ⟨?_, ?_, fun _ _ _ atom => atom.elim⟩, same⟩
   · rintro s t ⟨u, ⟨e⟩, ⟨e'⟩⟩ ℓ s' moved
     exact match_move invariant e e' moved
@@ -83,8 +83,8 @@ theorem bisimilar_of_deadEquiv {program : L → (s : NativeState S O Γ sort) �
 theorem sat_iff_of_deadEquiv {program : L → (s : NativeState S O Γ sort) → LiveFiring s → Prop}
     (invariant : DeadInvariant program) {s t : NativeState S O Γ sort} (same : DeadEquiv s t)
     (φ : Formula PEmpty.{1} L) :
-    Race.Generic.Sat native (liveOffers program) φ s ↔ Race.Generic.Sat native (liveOffers program) φ t :=
-  (Race.Generic.system native (liveOffers program)).logicallyEquivalent_of_bisimilar
+    Race.Generic.Sat native.toStep (liveOffers program) φ s ↔ Race.Generic.Sat native.toStep (liveOffers program) φ t :=
+  (Race.Generic.system native.toStep (liveOffers program)).logicallyEquivalent_of_bisimilar
     (bisimilar_of_deadEquiv invariant same) φ
 
 /-- **Garbage-collecting dead helper names is sound**: a live firing's result is bisimilar to its
@@ -92,7 +92,7 @@ core, for every program that does not see dead names. -/
 theorem result_bisimilar_core {program : L → (s : NativeState S O Γ sort) → LiveFiring s → Prop}
     (invariant : DeadInvariant program) {s : NativeState S O Γ sort} (f : LiveFiring s)
     (admitted : f.toNative.Realized) :
-    Race.Generic.Bisimilar native (liveOffers program) (core f) (native.result f.toNative admitted) :=
+    Race.Generic.Bisimilar native.toStep (liveOffers program) (core f) (native.result f.toNative admitted) :=
   bisimilar_of_deadEquiv invariant (result_equiv_core f admitted)
 
 end Bisimulation

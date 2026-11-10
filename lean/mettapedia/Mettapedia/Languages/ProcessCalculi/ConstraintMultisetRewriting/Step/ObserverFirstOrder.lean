@@ -121,7 +121,7 @@ def ofSame {C D : Configuration T O} (same : SameUpTo A C D) : RenamingIso A lab
 end RenamingIso
 
 /-- **Transport in the one-frame instance, renaming occurrences.** -/
-def renamingTransport : Transport (firstOrder A label) where
+def renamingTransport : Transport (firstOrder A label).toStep where
   Iso C D := RenamingIso A label C D
   toStateIso i := i.toStateIso
   refl C := RenamingIso.refl A label C
@@ -211,7 +211,7 @@ def renamingIso_rowIsoModulo {C D : Configuration T O} (i : RenamingIso A label 
 
 /-- **Trace-equivalent runs end in states related by a renaming that carries one end's record to the
 other's, and every frame probe observes at one end what its renaming observes at the other.** -/
-theorem renaming_traceEquiv_equivariant {x : Escaped (firstOrder A label)}
+theorem renaming_traceEquiv_equivariant {x : Escaped (firstOrder A label).toStep}
     {r r' : (renamingEscape A label).step.Run x} (equivalent : (renamingEscaping A label).TraceEquiv x r r') :
     ∃ π : O ≃ O, Record.rename π r.last.record = r'.last.record ∧
       ∀ p : FrameProbe (Frames.ofSubstitution A) PUnit.unit O,
@@ -221,7 +221,7 @@ theorem renaming_traceEquiv_equivariant {x : Escaped (firstOrder A label)}
   exact ⟨i.rename, carried, (renamingIso_rowIsoModulo A label i).observes_rename_iff⟩
 
 /-- **Traces refine observation by every probe the start's record supports.** -/
-theorem renaming_traceEquiv_observes {x : Escaped (firstOrder A label)}
+theorem renaming_traceEquiv_observes {x : Escaped (firstOrder A label).toStep}
     {r r' : (renamingEscape A label).step.Run x} (equivalent : (renamingEscaping A label).TraceEquiv x r r')
     {p : FrameProbe (Frames.ofSubstitution A) PUnit.unit O} (supported : p.Supported x.record) :
     p.Observes (ofConfiguration A label r.last.state) ↔ p.Observes (ofConfiguration A label r'.last.state) := by
@@ -244,7 +244,7 @@ open Observation.Record (sighting reference tuple automorphisms)
 abbrev escaping := renamingEscaping ConstraintMultisetRewriting.Controls.A blank
 
 /-- The start `{5, 6}` with the environment's record `R`. -/
-abbrev start (R : Record ℕ) : Escaped (firstOrder ConstraintMultisetRewriting.Controls.A blank) :=
+abbrev start (R : Record ℕ) : Escaped (firstOrder ConstraintMultisetRewriting.Controls.A blank).toStep :=
   ⟨twins, [], R⟩
 
 /-- Take `5` and sight `{5, 6}`. -/

@@ -165,7 +165,7 @@ variable [DecidableEq O]
 
 variable (levels O) in
 /-- **The dependent full step on firings that make telescopes.** -/
-abbrev helperStep : Interface.Step (frames levels) O (State rules O) (HelperFiring levels O) where
+abbrev helperStep : Interface.Step.Standard (frames levels) O (State rules O) (HelperFiring levels O) where
   frame s := s.frame
   knowledge s := s.knowledge
   present s := s.present
@@ -178,10 +178,10 @@ abbrev helperStep : Interface.Step (frames levels) O (State rules O) (HelperFiri
   Holds f _ τ := f.toFiring.Holds τ
   Admits f := f.toFiring.Admits
   admits_iff _ := Iff.rfl
-  result f admitted := f.toFiring.after admitted
-  present_result _ _ := rfl
-  settle f _ := 𝟙 f.helpers.frame
-  knowledge_result _ _ := (Frames.applyStore_id (X := frames levels) _).symm
+  preparedResult f p := (step levels O).preparedResult f.toFiring p
+  present_preparedResult _ _ := rfl
+  preparedSettle f _ := 𝟙 f.helpers.frame
+  knowledge_preparedResult _ _ := (Frames.applyStore_id (X := frames levels) _).symm
 
 /-- **It is the dependent full step on these firings.** -/
 theorem helperStep_admits_iff {s : State rules O} (f : HelperFiring levels O s) :
@@ -455,7 +455,7 @@ theorem helper_move_residual {s t : State rules O} (i : PlainIso levels s t) (g 
 variable (levels O) in
 /-- **The transport of firings that make telescopes**, with alikeness up to an isomorphism of
 telescopes over the frame. -/
-noncomputable def helperTransport : Transport (helperStep levels O) where
+noncomputable def helperTransport : Transport (helperStep levels O).toStep where
   Iso s t := PlainIso levels s t
   toStateIso {s t} i := ⟨framesIso i.frame, i.knowledge, Equiv.refl O, by
     show s.present.map (Equiv.refl O).toEmbedding = t.present
@@ -572,25 +572,25 @@ theorem helper_independent_iff {s : State rules O} {f g : HelperFiring levels O 
 /-- **Transport-equivalent states are bisimilar**, for every program with invariant labels. -/
 theorem helper_bisimilar_of_same {Lab : Type}
     (offers : Lab → (s : State rules O) → HelperFiring levels O s → Prop)
-    (invariant : Race.Generic.Invariant (helperStep levels O) offers (helperTransport levels O))
+    (invariant : Race.Generic.Invariant (helperStep levels O).toStep offers (helperTransport levels O))
     {s t : State rules O} (same : (helperTransport levels O).Same s t) :
-    Race.Generic.Bisimilar (helperStep levels O) offers s t :=
+    Race.Generic.Bisimilar (helperStep levels O).toStep offers s t :=
   Race.Generic.bisimilar_of_same (helperTransport levels O) invariant same
 
 /-- **Transport-equivalent states are weakly bisimilar.** -/
 theorem helper_weakBisimilar_of_same {Lab : Type}
     (offers : Lab → (s : State rules O) → HelperFiring levels O s → Prop) (internal : Lab → Prop)
-    (invariant : Race.Generic.Invariant (helperStep levels O) offers (helperTransport levels O))
+    (invariant : Race.Generic.Invariant (helperStep levels O).toStep offers (helperTransport levels O))
     {s t : State rules O} (same : (helperTransport levels O).Same s t) :
-    Race.Generic.WeakBisimilar (helperStep levels O) offers internal s t :=
+    Race.Generic.WeakBisimilar (helperStep levels O).toStep offers internal s t :=
   Race.Generic.weakBisimilar_of_same (helperTransport levels O) invariant same
 
 /-- **Transport-equivalent states are branching bisimilar.** -/
 theorem helper_branchingBisimilar_of_same {Lab : Type}
     (offers : Lab → (s : State rules O) → HelperFiring levels O s → Prop) (internal : Lab → Prop)
-    (invariant : Race.Generic.Invariant (helperStep levels O) offers (helperTransport levels O))
+    (invariant : Race.Generic.Invariant (helperStep levels O).toStep offers (helperTransport levels O))
     {s t : State rules O} (same : (helperTransport levels O).Same s t) :
-    Race.Generic.BranchingBisimilar (helperStep levels O) offers internal s t :=
+    Race.Generic.BranchingBisimilar (helperStep levels O).toStep offers internal s t :=
   Race.Generic.branchingBisimilar_of_same (helperTransport levels O) invariant same
 
 end DependentFull

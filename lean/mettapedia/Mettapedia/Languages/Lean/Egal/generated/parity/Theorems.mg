@@ -4,7 +4,7 @@
 (** Mettapedia.Languages.Lean.Declarations.ParityBlockCorrespondence.odd_zero_false: its statement read from Lean; proved in Egal. **)
 Theorem Lean_Mettapedia_Languages_Lean_Declarations_ParityBlockCorrespondence_odd_zero_false : (0 :e (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Odd_Prop (LeanNum 0))) -> False.
 assume H: 0 :e Lean_Mettapedia_Languages_Lean_Declarations_Controls_Odd_Prop (LeanNum 0).
-claim Hb: 0 :e Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_Prop (setsum 2 (LeanNum 0)).
+claim Hb: 0 :e Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked (setsum 2 (LeanNum 0)).
 { exact H. }
 claim N12: forall x y, setsum 1 x <> setsum 2 y.
 { let x y. assume E: setsum 1 x = setsum 2 y.

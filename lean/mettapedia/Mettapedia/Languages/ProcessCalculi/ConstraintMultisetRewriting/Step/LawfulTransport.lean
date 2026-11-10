@@ -137,7 +137,7 @@ def Writes (selection : Selection O) (o : O) : Prop := o ∈ selection.taken ∨
 predicate of present occurrences; the interface's `Holds` is that predicate at the state's present
 occurrences; it respects the frame equivalence; and it reads present occurrences only inside its
 region. -/
-structure Guards where
+structure Guards [P.Guarded] where
   Guard : {s : State} → (f : Firing s) → (b : Obj) → Hom (P.target f) b → Finset O → Prop
   region : {s : State} → (f : Firing s) → (b : Obj) → Hom (P.target f) b → Set O
   holds_iff : ∀ {s : State} (f : Firing s) (b : Obj) (σ : Hom (P.target f) b),
@@ -158,6 +158,7 @@ variable {P}
 
 namespace Guards
 
+variable [P.Guarded]
 variable (G : P.Guards)
 include G
 
@@ -183,7 +184,7 @@ end Guards
 /-- **An isomorphism of firings at one state**: an isomorphism of their targets under the state's
 frame, carrying the information to information with the same solutions and the guards to the
 guards, with the same selection and shapes. -/
-structure FiringIso (G : P.Guards) {s : State} (f₁ f₂ : Firing s) where
+structure FiringIso [P.Guarded] (G : P.Guards) {s : State} (f₁ f₂ : Firing s) where
   frame : X.Iso (P.target f₁) (P.target f₂)
   extension : X.Agree (X.comp frame.hom (P.extension f₁)) (P.extension f₂)
   selection : P.selection f₁ = P.selection f₂
@@ -193,7 +194,7 @@ structure FiringIso (G : P.Guards) {s : State} (f₁ f₂ : Firing s) where
     G.Guard f₂ b ρ W ↔ G.Guard f₁ b (X.comp ρ frame.hom) W
 
 /-- **Isomorphic firings are admitted together.** -/
-theorem FiringIso.admits_iff {G : P.Guards} {s : State} {f₁ f₂ : Firing s} (i : FiringIso G f₁ f₂) :
+theorem FiringIso.admits_iff [P.Guarded] {G : P.Guards} {s : State} {f₁ f₂ : Firing s} (i : FiringIso G f₁ f₂) :
     P.Admits f₁ ↔ P.Admits f₂ := by
   rw [P.admits_iff, P.admits_iff, i.selection]
   refine and_congr i.shapes (and_congr Iff.rfl (and_congr ?_ ?_))
@@ -217,7 +218,7 @@ theorem FiringIso.admits_iff {G : P.Guards} {s : State} {f₁ f₂ : Firing s} (
 `g`'s result; a solution of `f`'s information that agrees on the state's frame with a solution of
 `g`'s result knowledge; and `f`'s guards, read at the occurrences present after `g`, at every such
 pair. -/
-def AdmitsAfter (G : P.Guards) {s : State} (g : Firing s) (admitted : P.Admits g) (f : Firing s) :
+def AdmitsAfter [P.Guarded] (G : P.Guards) {s : State} (g : Firing s) (admitted : P.Admits g) (f : Firing s) :
     Prop :=
   P.Shapes f ∧
     Enabled (fun _ : O => ()) (P.present (P.result g admitted)) ((P.selection f).commit (T := Unit)) ∧
@@ -231,7 +232,7 @@ def AdmitsAfter (G : P.Guards) {s : State} (g : Firing s) (admitted : P.Admits g
 
 /-- **Settlement chooses no solution**: under conservative settlement, the result asks exactly what
 the information asks. -/
-theorem entails_result_iff (conservative : P.ConservativeSettlement) {s : State} (f : Firing s)
+theorem entails_result_iff [P.Exact] (conservative : P.ConservativeSettlement) {s : State} (f : Firing s)
     (admitted : P.Admits f) (Q : (b : Obj) → Hom (P.target f) b → Prop)
     (respects : ∀ (b : Obj) (σ τ : Hom (P.target f) b), X.Agree σ τ → (Q b σ ↔ Q b τ)) :
     X.Entails (P.knowledge (P.result f admitted)) (fun b ρ => Q b (X.comp ρ (P.settle f admitted))) ↔
@@ -240,26 +241,22 @@ theorem entails_result_iff (conservative : P.ConservativeSettlement) {s : State}
   · intro asked b σ solved
     obtain ⟨ρ, agree⟩ := conservative f admitted b σ solved
     have result : X.Models ρ (P.knowledge (P.result f admitted)) := by
-      rw [P.knowledge_result f admitted]
-      exact (Frames.models_applyStore (P.settle f admitted) ρ _).mpr ((agree.models_iff _).mp solved)
+      exact Exact.exactness (P := P) f (P.prepares admitted) ρ ((agree.models_iff _).mp solved)
     exact (respects b _ _ agree).mpr (asked b ρ result)
   · intro asked b ρ solved
-    rw [P.knowledge_result f admitted] at solved
-    exact asked b _ ((Frames.models_applyStore (P.settle f admitted) ρ _).mp solved)
+    exact asked b _ (P.result_refines f (P.prepares admitted) ρ solved)
 
 /-- Under conservative settlement, the result is solvable exactly when the information is. -/
-theorem solvable_result_iff (conservative : P.ConservativeSettlement) {s : State} (f : Firing s)
+theorem solvable_result_iff [P.Exact] (conservative : P.ConservativeSettlement) {s : State} (f : Firing s)
     (admitted : P.Admits f) :
     X.Solvable (P.knowledge (P.result f admitted)) ↔ X.Solvable (P.information f) := by
   constructor
   · rintro ⟨b, ρ, solved⟩
-    rw [P.knowledge_result f admitted] at solved
-    exact ⟨b, _, (Frames.models_applyStore (P.settle f admitted) ρ _).mp solved⟩
+    exact ⟨b, _, P.result_refines f (P.prepares admitted) ρ solved⟩
   · rintro ⟨b, σ, solved⟩
     obtain ⟨ρ, agree⟩ := conservative f admitted b σ solved
     refine ⟨b, ρ, ?_⟩
-    rw [P.knowledge_result f admitted]
-    exact (Frames.models_applyStore (P.settle f admitted) ρ _).mpr ((agree.models_iff _).mp solved)
+    exact Exact.exactness (P := P) f (P.prepares admitted) ρ ((agree.models_iff _).mp solved)
 
 end Step
 
@@ -273,7 +270,7 @@ namespace Transport
 target amalgamates `f`'s target with `g`'s result over the state's frame, for solutions; its
 information is `f`'s carried, together with `g`'s result knowledge; its shapes are `f`'s; its guards
 are `f`'s pulled back. -/
-structure Coherent (T : Transport P) (G : P.Guards) where
+structure Coherent [P.Guarded] (T : Transport P) (G : P.Guards) where
   carry : {s : State} → (g : Firing s) → (admitted : P.Admits g) → (f : Firing s) →
     Hom (P.target f) (P.target (T.residual g admitted f))
   square : ∀ {s : State} (g : Firing s) (admitted : P.Admits g) (f : Firing s),
@@ -303,13 +300,13 @@ structure Coherent (T : Transport P) (G : P.Guards) where
 
 /-- **A lawful transport**: coherent residuals, conservative settlement, and results that respect
 isomorphism of firings. -/
-structure Lawful (T : Transport P) (G : P.Guards) where
+structure Lawful [P.Guarded] (T : Transport P) (G : P.Guards) where
   coherent : T.Coherent G
   conservative : P.ConservativeSettlement
   canonical : ∀ {s : State} {f₁ f₂ : Firing s}, Step.FiringIso G f₁ f₂ →
     ∀ (first : P.Admits f₁) (second : P.Admits f₂), T.Same (P.result f₁ first) (P.result f₂ second)
 
-variable {T T' : Transport P} {G : P.Guards}
+variable [P.Guarded] {T T' : Transport P} {G : P.Guards}
 
 namespace Coherent
 
@@ -440,6 +437,7 @@ theorem Lawful.admits_residual_iff (L : T.Lawful G) (L' : T'.Lawful G) {s : Stat
     P.Admits (T.residual g admitted f) ↔ P.Admits (T'.residual g admitted f) :=
   (L.coherent.admits_iff g admitted f).trans (L'.coherent.admits_iff g admitted f).symm
 
+omit [P.Guarded] in
 /-- **The same transport with another residual.** -/
 def withResidual (T : Transport P)
     (residual : {s : State} → (g : Firing s) → (admitted : P.Admits g) → Firing s →

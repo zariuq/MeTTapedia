@@ -19,6 +19,7 @@ open Mettapedia.Languages.Lean
   discard <| Declarations.TargetEnvironment.load directory
   let entries := Recursion.Derive.registry.getState (← getEnv)
   let wrappers := Recursion.Wrappers.registry.getState (← getEnv)
+  let fuels := Recursion.FuelDerive.registry.getState (← getEnv)
   let receipts : System.FilePath := (← IO.getEnv "LEAN_RECURSION_RECEIPTS").getD
     s!"artifacts/lean-code-equations/{target}/receipts.tsv"
   let rows ← IO.FS.lines receipts
@@ -29,7 +30,8 @@ open Mettapedia.Languages.Lean
   for name in roots do
     unless (← getEnv).contains name do throwError "recursion coverage root is not imported: {name}"
   let mut findings ← Recursion.Coverage.audit roots
-  let mut text := (← Recursion.Export.render entries) ++ (← Recursion.Export.wrappers wrappers)
+  let mut text := (← Recursion.Export.render entries) ++ (← Recursion.Export.wrappers wrappers) ++
+    (← Recursion.Export.fuelReadings fuels)
   for index in [:findings.size] do
     let finding := findings[index]!
     if finding.required && !finding.recorded && !finding.recursive then
@@ -52,4 +54,4 @@ open Mettapedia.Languages.Lean
   else
     IO.FS.createDirAll out
     for (file, value) in outputs do IO.FS.writeFile (out / file) value
-    IO.println s!"exported {entries.size} recursion interfaces and {wrappers.size} source wrappers"
+    IO.println s!"exported {entries.size} recursion interfaces, {wrappers.size} source wrappers and {fuels.size} fuel readings"

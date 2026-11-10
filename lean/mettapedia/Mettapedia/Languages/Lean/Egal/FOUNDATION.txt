@@ -1,0 +1,27 @@
+Trust boundary of the HOTG interpretation
+========================================
+
+The target theory is HOTG using Megalodon's Egal profile. Both checkers import
+megalodon/examples/egal/PfgEAug2022Preamble.mgs as a signature. Foundation.sha256
+pins the exact contents used by the qualification scripts.
+
+That signature contains 1,752 Axiom declarations, including upstream library
+facts. They are available assumptions of the imported signature; this pipeline
+does not replay their original proofs. An individual theorem may use only a
+subset. Zero document axioms means that the generated development adds no
+axioms to this context. It does not mean verification from only the primitive
+HOTG axioms, and agreement between two checkers does not remove their shared
+trust in the imported signature.
+
+Section hypotheses in the reusable libraries are discharged into theorem
+parameters. For example, NatAlgebra derives algebraic laws from operations and
+their typing and recursion equations. Concrete instances must supply checked
+proofs of those premises.
+
+The generated source interpretations and target reconstructions are distinct
+from validating Lean's original proof objects. General proof-object transport
+and a replay of the imported signature down to a smaller foundation are
+separate qualifications.
+
+A signature update requires reviewing its changed declarations and updating
+the pin deliberately before requalifying the targets.

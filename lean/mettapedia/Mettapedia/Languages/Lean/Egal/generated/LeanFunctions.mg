@@ -102,6 +102,253 @@ rewrite beta (Pi_ ux :e a0, (Pi_ ux :e a0, LeanProp)) (fun y0 => y0) y0 Hy0.
 reflexivity.
 Qed.
 
+(** Projection: AddSemigroup.toAdd, field 0 of AddSemigroup. **)
+Definition Lean_AddSemigroup_toAdd : set -> set -> set := fun a0 s => Lean_AddSemigroup_rec a0 (fun y0 :e (Lean_Add a0) => (fun y1 :e (Lean_ProofField (Pi_ q0 :e a0, (Pi_ q1 :e a0, (Pi_ q2 :e a0,
+    (Lean_Eq_Prop a0 ((Lean_RecordField 0) y0 ((Lean_RecordField 0) y0 q0 q1) q2) ((Lean_RecordField 0) y0 q0 ((Lean_RecordField 0) y0 q1 q2))))))) => y0)) s.
+Theorem Lean_AddSemigroup_toAdd_In : forall a0, forall s :e (Lean_AddSemigroup a0), Lean_AddSemigroup_toAdd a0 s :e (Lean_Add a0).
+let a0. let s. assume Hs: s :e (Lean_AddSemigroup a0).
+exact Lean_AddSemigroup_rec_type a0 (fun _ => (Lean_Add a0)) (fun y0 :e (Lean_Add a0) => (fun y1 :e (Lean_ProofField (Pi_ q0 :e a0, (Pi_ q1 :e a0, (Pi_ q2 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField
+    0) y0 ((Lean_RecordField 0) y0 q0 q1) q2) ((Lean_RecordField 0) y0 q0 ((Lean_RecordField 0) y0 q1 q2))))))) => y0)) (lam_Pi (Lean_Add a0) (fun y0 => (Pi_ y1 :e (Lean_ProofField (Pi_ q0 :e a0,
+    (Pi_ q1 :e a0, (Pi_ q2 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y0 ((Lean_RecordField 0) y0 q0 q1) q2) ((Lean_RecordField 0) y0 q0 ((Lean_RecordField 0) y0 q1 q2))))))), (Lean_Add a0))) (fun
+    y0 => (fun y1 :e (Lean_ProofField (Pi_ q0 :e a0, (Pi_ q1 :e a0, (Pi_ q2 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y0 ((Lean_RecordField 0) y0 q0 q1) q2) ((Lean_RecordField 0) y0 q0
+    ((Lean_RecordField 0) y0 q1 q2))))))) => y0)) (fun y0 Hy0 => (lam_Pi (Lean_ProofField (Pi_ q0 :e a0, (Pi_ q1 :e a0, (Pi_ q2 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y0 ((Lean_RecordField 0)
+    y0 q0 q1) q2) ((Lean_RecordField 0) y0 q0 ((Lean_RecordField 0) y0 q1 q2))))))) (fun y1 => (Lean_Add a0)) (fun y1 => y0) (fun y1 Hy1 => Hy0)))) s Hs.
+Qed.
+Theorem Lean_AddSemigroup_toAdd_mk : forall a0, forall y0 :e (Lean_Add a0), forall y1 :e (Lean_ProofField (Pi_ q0 :e a0, (Pi_ q1 :e a0, (Pi_ q2 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y0
+    ((Lean_RecordField 0) y0 q0 q1) q2) ((Lean_RecordField 0) y0 q0 ((Lean_RecordField 0) y0 q1 q2))))))), Lean_AddSemigroup_toAdd a0 (Lean_AddSemigroup_mk_node a0 y0 y1) = y0.
+let a0. let y0. assume Hy0: y0 :e (Lean_Add a0). let y1. assume Hy1: y1 :e (Lean_ProofField (Pi_ q0 :e a0, (Pi_ q1 :e a0, (Pi_ q2 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y0 ((Lean_RecordField
+    0) y0 q0 q1) q2) ((Lean_RecordField 0) y0 q0 ((Lean_RecordField 0) y0 q1 q2))))))). prove Lean_AddSemigroup_rec a0 (fun y0 :e (Lean_Add a0) => (fun y1 :e (Lean_ProofField (Pi_ q0 :e a0, (Pi_ q1
+    :e a0, (Pi_ q2 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y0 ((Lean_RecordField 0) y0 q0 q1) q2) ((Lean_RecordField 0) y0 q0 ((Lean_RecordField 0) y0 q1 q2))))))) => y0))
+    (Lean_AddSemigroup_mk_node a0 y0 y1) = y0.
+rewrite Lean_AddSemigroup_iota0 a0 (fun y0 :e (Lean_Add a0) => (fun y1 :e (Lean_ProofField (Pi_ q0 :e a0, (Pi_ q1 :e a0, (Pi_ q2 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y0 ((Lean_RecordField 0)
+    y0 q0 q1) q2) ((Lean_RecordField 0) y0 q0 ((Lean_RecordField 0) y0 q1 q2))))))) => y0)) y0 Hy0 y1 Hy1.
+rewrite beta (Lean_Add a0) (fun y0 => (fun y1 :e (Lean_ProofField (Pi_ q0 :e a0, (Pi_ q1 :e a0, (Pi_ q2 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y0 ((Lean_RecordField 0) y0 q0 q1) q2)
+    ((Lean_RecordField 0) y0 q0 ((Lean_RecordField 0) y0 q1 q2))))))) => y0)) y0 Hy0.
+rewrite beta (Lean_ProofField (Pi_ q0 :e a0, (Pi_ q1 :e a0, (Pi_ q2 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y0 ((Lean_RecordField 0) y0 q0 q1) q2) ((Lean_RecordField 0) y0 q0 ((Lean_RecordField
+    0) y0 q1 q2))))))) (fun y1 => y0) y1 Hy1.
+reflexivity.
+Qed.
+
+(** Projection: AddMonoid.toAddSemigroup, field 0 of AddMonoid. **)
+Definition Lean_AddMonoid_toAddSemigroup : set -> set -> set := fun a0 s => Lean_AddMonoid_rec a0 (fun y0 :e (Lean_AddSemigroup a0) => (fun y1 :e (Lean_Zero a0) => (fun y2 :e (Lean_ProofField (Pi_ q0
+    :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y1) q0) q0))) => (fun y3 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0)
+    ((Lean_RecordField 0) y0) q0 ((Lean_RecordField 0) y1)) q0))) => (fun y4 :e (Lean_NSMul a0) => (fun y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0)
+    ((Lean_RecordField 0) y1)))) => (fun y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0)
+    ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))) => y0))))))) s.
+Theorem Lean_AddMonoid_toAddSemigroup_In : forall a0, forall s :e (Lean_AddMonoid a0), Lean_AddMonoid_toAddSemigroup a0 s :e (Lean_AddSemigroup a0).
+let a0. let s. assume Hs: s :e (Lean_AddMonoid a0).
+exact Lean_AddMonoid_rec_type a0 (fun _ => (Lean_AddSemigroup a0)) (fun y0 :e (Lean_AddSemigroup a0) => (fun y1 :e (Lean_Zero a0) => (fun y2 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0
+    ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y1) q0) q0))) => (fun y3 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0)
+    q0 ((Lean_RecordField 0) y1)) q0))) => (fun y4 :e (Lean_NSMul a0) => (fun y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0)
+    y1)))) => (fun y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0)
+    ((Lean_RecordField 0) y4 q0 q1) q1))))) => y0))))))) (lam_Pi (Lean_AddSemigroup a0) (fun y0 => (Pi_ y1 :e (Lean_Zero a0), (Pi_ y2 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0
+    ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y1) q0) q0))), (Pi_ y3 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) q0
+    ((Lean_RecordField 0) y1)) q0))), (Pi_ y4 :e (Lean_NSMul a0), (Pi_ y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))),
+    (Pi_ y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0)
+    ((Lean_RecordField 0) y4 q0 q1) q1))))), (Lean_AddSemigroup a0)))))))) (fun y0 => (fun y1 :e (Lean_Zero a0) => (fun y2 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0)
+    ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y1) q0) q0))) => (fun y3 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) q0 ((Lean_RecordField
+    0) y1)) q0))) => (fun y4 :e (Lean_NSMul a0) => (fun y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))) => (fun y6 :e
+    (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4
+    q0 q1) q1))))) => y0))))))) (fun y0 Hy0 => (lam_Pi (Lean_Zero a0) (fun y1 => (Pi_ y2 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0)
+    ((Lean_RecordField 0) y1) q0) q0))), (Pi_ y3 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) q0 ((Lean_RecordField 0) y1)) q0))), (Pi_ y4 :e
+    (Lean_NSMul a0), (Pi_ y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))), (Pi_ y6 :e (Lean_ProofField (Pi_ q0 :e
+    Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))),
+    (Lean_AddSemigroup a0))))))) (fun y1 => (fun y2 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y1) q0) q0))) => (fun y3
+    :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) q0 ((Lean_RecordField 0) y1)) q0))) => (fun y4 :e (Lean_NSMul a0) => (fun y5 :e
+    (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))) => (fun y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0,
+    (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))) => y0)))))) (fun y1 Hy1 => (lam_Pi
+    (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y1) q0) q0))) (fun y2 => (Pi_ y3 :e (Lean_ProofField (Pi_ q0 :e a0,
+    (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) q0 ((Lean_RecordField 0) y1)) q0))), (Pi_ y4 :e (Lean_NSMul a0), (Pi_ y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0
+    ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))), (Pi_ y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4
+    (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))), (Lean_AddSemigroup a0)))))) (fun y2 => (fun y3 :e (Lean_ProofField (Pi_ q0 :e
+    a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) q0 ((Lean_RecordField 0) y1)) q0))) => (fun y4 :e (Lean_NSMul a0) => (fun y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop
+    a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))) => (fun y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4
+    (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))) => y0))))) (fun y2 Hy2 => (lam_Pi (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop
+    a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) q0 ((Lean_RecordField 0) y1)) q0))) (fun y3 => (Pi_ y4 :e (Lean_NSMul a0), (Pi_ y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0
+    ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))), (Pi_ y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4
+    (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))), (Lean_AddSemigroup a0))))) (fun y3 => (fun y4 :e (Lean_NSMul a0) => (fun y5 :e
+    (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))) => (fun y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0,
+    (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))) => y0)))) (fun y3 Hy3 => (lam_Pi
+    (Lean_NSMul a0) (fun y4 => (Pi_ y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))), (Pi_ y6 :e (Lean_ProofField (Pi_ q0
+    :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))),
+    (Lean_AddSemigroup a0)))) (fun y4 => (fun y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))) => (fun y6 :e
+    (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4
+    q0 q1) q1))))) => y0))) (fun y4 Hy4 => (lam_Pi (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))) (fun y5 => (Pi_ y6 :e
+    (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4
+    q0 q1) q1))))), (Lean_AddSemigroup a0))) (fun y5 => (fun y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1)
+    ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))) => y0)) (fun y5 Hy5 => (lam_Pi (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0
+    ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))) (fun y6 => (Lean_AddSemigroup a0)) (fun y6 => y0) (fun
+    y6 Hy6 => Hy0)))))))))))))) s Hs.
+Qed.
+Theorem Lean_AddMonoid_toAddSemigroup_mk : forall a0, forall y0 :e (Lean_AddSemigroup a0), forall y1 :e (Lean_Zero a0), forall y2 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0
+    ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y1) q0) q0))), forall y3 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0)
+    q0 ((Lean_RecordField 0) y1)) q0))), forall y4 :e (Lean_NSMul a0), forall y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0)
+    y1)))), forall y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0)
+    ((Lean_RecordField 0) y4 q0 q1) q1))))), Lean_AddMonoid_toAddSemigroup a0 (Lean_AddMonoid_mk_node a0 y0 y1 y2 y3 y4 y5 y6) = y0.
+let a0. let y0. assume Hy0: y0 :e (Lean_AddSemigroup a0). let y1. assume Hy1: y1 :e (Lean_Zero a0). let y2. assume Hy2: y2 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0)
+    ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y1) q0) q0))). let y3. assume Hy3: y3 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) q0
+    ((Lean_RecordField 0) y1)) q0))). let y4. assume Hy4: y4 :e (Lean_NSMul a0). let y5. assume Hy5: y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0)
+    ((Lean_RecordField 0) y1)))). let y6. assume Hy6: y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1)
+    ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))). prove Lean_AddMonoid_rec a0 (fun y0 :e (Lean_AddSemigroup a0) => (fun y1 :e (Lean_Zero a0) => (fun y2 :e
+    (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y1) q0) q0))) => (fun y3 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0
+    ((Lean_RecordField 0) ((Lean_RecordField 0) y0) q0 ((Lean_RecordField 0) y1)) q0))) => (fun y4 :e (Lean_NSMul a0) => (fun y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField
+    0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))) => (fun y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1)
+    ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))) => y0))))))) (Lean_AddMonoid_mk_node a0 y0 y1 y2 y3 y4 y5 y6) = y0.
+rewrite Lean_AddMonoid_iota0 a0 (fun y0 :e (Lean_AddSemigroup a0) => (fun y1 :e (Lean_Zero a0) => (fun y2 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField
+    0) y0) ((Lean_RecordField 0) y1) q0) q0))) => (fun y3 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) q0 ((Lean_RecordField 0) y1)) q0))) =>
+    (fun y4 :e (Lean_NSMul a0) => (fun y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))) => (fun y6 :e (Lean_ProofField (Pi_
+    q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))) =>
+    y0))))))) y0 Hy0 y1 Hy1 y2 Hy2 y3 Hy3 y4 Hy4 y5 Hy5 y6 Hy6.
+rewrite beta (Lean_AddSemigroup a0) (fun y0 => (fun y1 :e (Lean_Zero a0) => (fun y2 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0)
+    ((Lean_RecordField 0) y1) q0) q0))) => (fun y3 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) q0 ((Lean_RecordField 0) y1)) q0))) => (fun y4
+    :e (Lean_NSMul a0) => (fun y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))) => (fun y6 :e (Lean_ProofField (Pi_ q0 :e
+    Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))) => y0)))))))
+    y0 Hy0.
+rewrite beta (Lean_Zero a0) (fun y1 => (fun y2 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y1) q0) q0))) => (fun y3 :e
+    (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) q0 ((Lean_RecordField 0) y1)) q0))) => (fun y4 :e (Lean_NSMul a0) => (fun y5 :e (Lean_ProofField
+    (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))) => (fun y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0
+    ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))) => y0)))))) y1 Hy1.
+rewrite beta (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y1) q0) q0))) (fun y2 => (fun y3 :e (Lean_ProofField (Pi_ q0 :e a0,
+    (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) q0 ((Lean_RecordField 0) y1)) q0))) => (fun y4 :e (Lean_NSMul a0) => (fun y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0
+    ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))) => (fun y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4
+    (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))) => y0))))) y2 Hy2.
+rewrite beta (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) q0 ((Lean_RecordField 0) y1)) q0))) (fun y3 => (fun y4 :e (Lean_NSMul a0) => (fun y5 :e
+    (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))) => (fun y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0,
+    (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))) => y0)))) y3 Hy3.
+rewrite beta (Lean_NSMul a0) (fun y4 => (fun y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))) => (fun y6 :e
+    (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4
+    q0 q1) q1))))) => y0))) y4 Hy4.
+rewrite beta (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))) (fun y5 => (fun y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1
+    :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))) => y0)) y5 Hy5.
+rewrite beta (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0)
+    ((Lean_RecordField 0) y4 q0 q1) q1))))) (fun y6 => y0) y6 Hy6.
+reflexivity.
+Qed.
+
+(** Projection: AddCommMonoid.toAddMonoid, field 0 of AddCommMonoid. **)
+Definition Lean_AddCommMonoid_toAddMonoid : set -> set -> set := fun a0 s => Lean_AddCommMonoid_rec a0 (fun y0 :e (Lean_AddMonoid a0) => (fun y1 :e (Lean_ProofField (Pi_ q0 :e a0, (Pi_ q1 :e a0,
+    (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) ((Lean_RecordField 0) y0)) q0 q1) ((Lean_RecordField 0) ((Lean_RecordField 0) ((Lean_RecordField 0) y0)) q1 q0))))) => y0)) s.
+Theorem Lean_AddCommMonoid_toAddMonoid_In : forall a0, forall s :e (Lean_AddCommMonoid a0), Lean_AddCommMonoid_toAddMonoid a0 s :e (Lean_AddMonoid a0).
+let a0. let s. assume Hs: s :e (Lean_AddCommMonoid a0).
+exact Lean_AddCommMonoid_rec_type a0 (fun _ => (Lean_AddMonoid a0)) (fun y0 :e (Lean_AddMonoid a0) => (fun y1 :e (Lean_ProofField (Pi_ q0 :e a0, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0)
+    ((Lean_RecordField 0) ((Lean_RecordField 0) y0)) q0 q1) ((Lean_RecordField 0) ((Lean_RecordField 0) ((Lean_RecordField 0) y0)) q1 q0))))) => y0)) (lam_Pi (Lean_AddMonoid a0) (fun y0 => (Pi_ y1 :e
+    (Lean_ProofField (Pi_ q0 :e a0, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) ((Lean_RecordField 0) y0)) q0 q1) ((Lean_RecordField 0) ((Lean_RecordField 0)
+    ((Lean_RecordField 0) y0)) q1 q0))))), (Lean_AddMonoid a0))) (fun y0 => (fun y1 :e (Lean_ProofField (Pi_ q0 :e a0, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0)
+    ((Lean_RecordField 0) y0)) q0 q1) ((Lean_RecordField 0) ((Lean_RecordField 0) ((Lean_RecordField 0) y0)) q1 q0))))) => y0)) (fun y0 Hy0 => (lam_Pi (Lean_ProofField (Pi_ q0 :e a0, (Pi_ q1 :e a0,
+    (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) ((Lean_RecordField 0) y0)) q0 q1) ((Lean_RecordField 0) ((Lean_RecordField 0) ((Lean_RecordField 0) y0)) q1 q0))))) (fun y1 =>
+    (Lean_AddMonoid a0)) (fun y1 => y0) (fun y1 Hy1 => Hy0)))) s Hs.
+Qed.
+Theorem Lean_AddCommMonoid_toAddMonoid_mk : forall a0, forall y0 :e (Lean_AddMonoid a0), forall y1 :e (Lean_ProofField (Pi_ q0 :e a0, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0)
+    ((Lean_RecordField 0) ((Lean_RecordField 0) y0)) q0 q1) ((Lean_RecordField 0) ((Lean_RecordField 0) ((Lean_RecordField 0) y0)) q1 q0))))), Lean_AddCommMonoid_toAddMonoid a0
+    (Lean_AddCommMonoid_mk_node a0 y0 y1) = y0.
+let a0. let y0. assume Hy0: y0 :e (Lean_AddMonoid a0). let y1. assume Hy1: y1 :e (Lean_ProofField (Pi_ q0 :e a0, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0)
+    ((Lean_RecordField 0) y0)) q0 q1) ((Lean_RecordField 0) ((Lean_RecordField 0) ((Lean_RecordField 0) y0)) q1 q0))))). prove Lean_AddCommMonoid_rec a0 (fun y0 :e (Lean_AddMonoid a0) => (fun y1 :e
+    (Lean_ProofField (Pi_ q0 :e a0, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) ((Lean_RecordField 0) y0)) q0 q1) ((Lean_RecordField 0) ((Lean_RecordField 0)
+    ((Lean_RecordField 0) y0)) q1 q0))))) => y0)) (Lean_AddCommMonoid_mk_node a0 y0 y1) = y0.
+rewrite Lean_AddCommMonoid_iota0 a0 (fun y0 :e (Lean_AddMonoid a0) => (fun y1 :e (Lean_ProofField (Pi_ q0 :e a0, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0)
+    ((Lean_RecordField 0) y0)) q0 q1) ((Lean_RecordField 0) ((Lean_RecordField 0) ((Lean_RecordField 0) y0)) q1 q0))))) => y0)) y0 Hy0 y1 Hy1.
+rewrite beta (Lean_AddMonoid a0) (fun y0 => (fun y1 :e (Lean_ProofField (Pi_ q0 :e a0, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) ((Lean_RecordField 0) y0)) q0 q1)
+    ((Lean_RecordField 0) ((Lean_RecordField 0) ((Lean_RecordField 0) y0)) q1 q0))))) => y0)) y0 Hy0.
+rewrite beta (Lean_ProofField (Pi_ q0 :e a0, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) ((Lean_RecordField 0) y0)) q0 q1) ((Lean_RecordField 0) ((Lean_RecordField 0)
+    ((Lean_RecordField 0) y0)) q1 q0))))) (fun y1 => y0) y1 Hy1.
+reflexivity.
+Qed.
+
+(** Projection: AddMonoid.toZero, field 1 of AddMonoid. **)
+Definition Lean_AddMonoid_toZero : set -> set -> set := fun a0 s => Lean_AddMonoid_rec a0 (fun y0 :e (Lean_AddSemigroup a0) => (fun y1 :e (Lean_Zero a0) => (fun y2 :e (Lean_ProofField (Pi_ q0 :e a0,
+    (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y1) q0) q0))) => (fun y3 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0)
+    ((Lean_RecordField 0) y0) q0 ((Lean_RecordField 0) y1)) q0))) => (fun y4 :e (Lean_NSMul a0) => (fun y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0)
+    ((Lean_RecordField 0) y1)))) => (fun y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0)
+    ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))) => y1))))))) s.
+Theorem Lean_AddMonoid_toZero_In : forall a0, forall s :e (Lean_AddMonoid a0), Lean_AddMonoid_toZero a0 s :e (Lean_Zero a0).
+let a0. let s. assume Hs: s :e (Lean_AddMonoid a0).
+exact Lean_AddMonoid_rec_type a0 (fun _ => (Lean_Zero a0)) (fun y0 :e (Lean_AddSemigroup a0) => (fun y1 :e (Lean_Zero a0) => (fun y2 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0
+    ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y1) q0) q0))) => (fun y3 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0)
+    q0 ((Lean_RecordField 0) y1)) q0))) => (fun y4 :e (Lean_NSMul a0) => (fun y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0)
+    y1)))) => (fun y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0)
+    ((Lean_RecordField 0) y4 q0 q1) q1))))) => y1))))))) (lam_Pi (Lean_AddSemigroup a0) (fun y0 => (Pi_ y1 :e (Lean_Zero a0), (Pi_ y2 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0
+    ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y1) q0) q0))), (Pi_ y3 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) q0
+    ((Lean_RecordField 0) y1)) q0))), (Pi_ y4 :e (Lean_NSMul a0), (Pi_ y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))),
+    (Pi_ y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0)
+    ((Lean_RecordField 0) y4 q0 q1) q1))))), (Lean_Zero a0)))))))) (fun y0 => (fun y1 :e (Lean_Zero a0) => (fun y2 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0)
+    ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y1) q0) q0))) => (fun y3 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) q0 ((Lean_RecordField
+    0) y1)) q0))) => (fun y4 :e (Lean_NSMul a0) => (fun y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))) => (fun y6 :e
+    (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4
+    q0 q1) q1))))) => y1))))))) (fun y0 Hy0 => (lam_Pi (Lean_Zero a0) (fun y1 => (Pi_ y2 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0)
+    ((Lean_RecordField 0) y1) q0) q0))), (Pi_ y3 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) q0 ((Lean_RecordField 0) y1)) q0))), (Pi_ y4 :e
+    (Lean_NSMul a0), (Pi_ y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))), (Pi_ y6 :e (Lean_ProofField (Pi_ q0 :e
+    Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))), (Lean_Zero
+    a0))))))) (fun y1 => (fun y2 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y1) q0) q0))) => (fun y3 :e (Lean_ProofField
+    (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) q0 ((Lean_RecordField 0) y1)) q0))) => (fun y4 :e (Lean_NSMul a0) => (fun y5 :e (Lean_ProofField (Pi_ q0 :e a0,
+    (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))) => (fun y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4
+    (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))) => y1)))))) (fun y1 Hy1 => (lam_Pi (Lean_ProofField (Pi_ q0 :e a0,
+    (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y1) q0) q0))) (fun y2 => (Pi_ y3 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0)
+    ((Lean_RecordField 0) y0) q0 ((Lean_RecordField 0) y1)) q0))), (Pi_ y4 :e (Lean_NSMul a0), (Pi_ y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0)
+    ((Lean_RecordField 0) y1)))), (Pi_ y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0)
+    ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))), (Lean_Zero a0)))))) (fun y2 => (fun y3 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0)
+    ((Lean_RecordField 0) y0) q0 ((Lean_RecordField 0) y1)) q0))) => (fun y4 :e (Lean_NSMul a0) => (fun y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0)
+    ((Lean_RecordField 0) y1)))) => (fun y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0)
+    ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))) => y1))))) (fun y2 Hy2 => (lam_Pi (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0)
+    y0) q0 ((Lean_RecordField 0) y1)) q0))) (fun y3 => (Pi_ y4 :e (Lean_NSMul a0), (Pi_ y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0)
+    ((Lean_RecordField 0) y1)))), (Pi_ y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0)
+    ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))), (Lean_Zero a0))))) (fun y3 => (fun y4 :e (Lean_NSMul a0) => (fun y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0
+    ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))) => (fun y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4
+    (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))) => y1)))) (fun y3 Hy3 => (lam_Pi (Lean_NSMul a0) (fun y4 => (Pi_ y5 :e
+    (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))), (Pi_ y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0,
+    (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))), (Lean_Zero a0)))) (fun y4 => (fun y5
+    :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))) => (fun y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0,
+    (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))) => y1))) (fun y4 Hy4 => (lam_Pi
+    (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))) (fun y5 => (Pi_ y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0,
+    (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))), (Lean_Zero a0))) (fun y5 => (fun y6
+    :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0)
+    y4 q0 q1) q1))))) => y1)) (fun y5 Hy5 => (lam_Pi (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0)
+    ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))) (fun y6 => (Lean_Zero a0)) (fun y6 => y1) (fun y6 Hy6 => Hy1)))))))))))))) s Hs.
+Qed.
+Theorem Lean_AddMonoid_toZero_mk : forall a0, forall y0 :e (Lean_AddSemigroup a0), forall y1 :e (Lean_Zero a0), forall y2 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0)
+    ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y1) q0) q0))), forall y3 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) q0 ((Lean_RecordField
+    0) y1)) q0))), forall y4 :e (Lean_NSMul a0), forall y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))), forall y6 :e
+    (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4
+    q0 q1) q1))))), Lean_AddMonoid_toZero a0 (Lean_AddMonoid_mk_node a0 y0 y1 y2 y3 y4 y5 y6) = y1.
+let a0. let y0. assume Hy0: y0 :e (Lean_AddSemigroup a0). let y1. assume Hy1: y1 :e (Lean_Zero a0). let y2. assume Hy2: y2 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0)
+    ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y1) q0) q0))). let y3. assume Hy3: y3 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) q0
+    ((Lean_RecordField 0) y1)) q0))). let y4. assume Hy4: y4 :e (Lean_NSMul a0). let y5. assume Hy5: y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0)
+    ((Lean_RecordField 0) y1)))). let y6. assume Hy6: y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1)
+    ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))). prove Lean_AddMonoid_rec a0 (fun y0 :e (Lean_AddSemigroup a0) => (fun y1 :e (Lean_Zero a0) => (fun y2 :e
+    (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y1) q0) q0))) => (fun y3 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0
+    ((Lean_RecordField 0) ((Lean_RecordField 0) y0) q0 ((Lean_RecordField 0) y1)) q0))) => (fun y4 :e (Lean_NSMul a0) => (fun y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField
+    0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))) => (fun y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1)
+    ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))) => y1))))))) (Lean_AddMonoid_mk_node a0 y0 y1 y2 y3 y4 y5 y6) = y1.
+rewrite Lean_AddMonoid_iota0 a0 (fun y0 :e (Lean_AddSemigroup a0) => (fun y1 :e (Lean_Zero a0) => (fun y2 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField
+    0) y0) ((Lean_RecordField 0) y1) q0) q0))) => (fun y3 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) q0 ((Lean_RecordField 0) y1)) q0))) =>
+    (fun y4 :e (Lean_NSMul a0) => (fun y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))) => (fun y6 :e (Lean_ProofField (Pi_
+    q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))) =>
+    y1))))))) y0 Hy0 y1 Hy1 y2 Hy2 y3 Hy3 y4 Hy4 y5 Hy5 y6 Hy6.
+rewrite beta (Lean_AddSemigroup a0) (fun y0 => (fun y1 :e (Lean_Zero a0) => (fun y2 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0)
+    ((Lean_RecordField 0) y1) q0) q0))) => (fun y3 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) q0 ((Lean_RecordField 0) y1)) q0))) => (fun y4
+    :e (Lean_NSMul a0) => (fun y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))) => (fun y6 :e (Lean_ProofField (Pi_ q0 :e
+    Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))) => y1)))))))
+    y0 Hy0.
+rewrite beta (Lean_Zero a0) (fun y1 => (fun y2 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y1) q0) q0))) => (fun y3 :e
+    (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) q0 ((Lean_RecordField 0) y1)) q0))) => (fun y4 :e (Lean_NSMul a0) => (fun y5 :e (Lean_ProofField
+    (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))) => (fun y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0
+    ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))) => y1)))))) y1 Hy1.
+rewrite beta (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y1) q0) q0))) (fun y2 => (fun y3 :e (Lean_ProofField (Pi_ q0 :e a0,
+    (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) q0 ((Lean_RecordField 0) y1)) q0))) => (fun y4 :e (Lean_NSMul a0) => (fun y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0
+    ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))) => (fun y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4
+    (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))) => y1))))) y2 Hy2.
+rewrite beta (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) ((Lean_RecordField 0) y0) q0 ((Lean_RecordField 0) y1)) q0))) (fun y3 => (fun y4 :e (Lean_NSMul a0) => (fun y5 :e
+    (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))) => (fun y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0,
+    (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))) => y1)))) y3 Hy3.
+rewrite beta (Lean_NSMul a0) (fun y4 => (fun y5 :e (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))) => (fun y6 :e
+    (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4
+    q0 q1) q1))))) => y1))) y4 Hy4.
+rewrite beta (Lean_ProofField (Pi_ q0 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (LeanNum 0) q0) ((Lean_RecordField 0) y1)))) (fun y5 => (fun y6 :e (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1
+    :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0) ((Lean_RecordField 0) y4 q0 q1) q1))))) => y1)) y5 Hy5.
+rewrite beta (Lean_ProofField (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e a0, (Lean_Eq_Prop a0 ((Lean_RecordField 0) y4 (Lean_Nat_succ_node q0) q1) ((Lean_RecordField 0) ((Lean_RecordField 0) y0)
+    ((Lean_RecordField 0) y4 q0 q1) q1))))) (fun y6 => y1) y6 Hy6.
+reflexivity.
+Qed.
+
 (** List.map, from its equation theorems **)
 Definition Lean_List_map_method1_2 : set -> set -> set -> set -> set -> set := fun a0 a1 a2 y0 y1 => (fun r1 :e (Lean_List a1) => (Lean_List_cons_node a1 (a2 y0) r1)).
 Theorem Lean_List_map_method1_2_ap : forall a0 a1 a2 y0 y1, forall r1 :e (Lean_List a1), (Lean_List_map_method1_2 a0 a1 a2 y0 y1) r1 = (Lean_List_cons_node a1 (a2 y0) r1).
@@ -142,7 +389,7 @@ Qed.
 Theorem Lean_List_map_eq_1 : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall l_u_2, nat_p l_u_2 -> forall v_u946 :e LeanUniv l_u_2, forall v_f :e (Pi_ ux :e v_u945, v_u946),
     (Lean_List_map v_u945 v_u946 v_f (Lean_List_nil_node v_u945)) = (Lean_List_nil_node v_u946).
 let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let l_u_2. assume H_l_u_2: nat_p l_u_2. let v_u946. assume H_v_u946: v_u946 :e LeanUniv l_u_2. let v_f.
-    assume H_v_f: v_f :e (Pi_ ux :e v_u945, v_u946). 
+    assume H_v_f: v_f :e (Pi_ ux :e v_u945, v_u946).
 prove (Lean_List_rec v_u945 (Lean_List_nil_node v_u946) (Lean_List_map_method1_0 v_u945 v_u946 v_f) (Lean_List_nil_node v_u945)) = (Lean_List_nil_node v_u946).
 rewrite Lean_List_iota0 v_u945 (Lean_List_nil_node v_u946) (Lean_List_map_method1_0 v_u945 v_u946 v_f).
 reflexivity.
@@ -152,7 +399,7 @@ Theorem Lean_List_map_eq_2 : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanU
     forall v_head :e v_u945, forall v_tail :e (Lean_List v_u945), (Lean_List_map v_u945 v_u946 v_f (Lean_List_cons_node v_u945 v_head v_tail)) = (Lean_List_cons_node v_u946 (v_f v_head)
     (Lean_List_map v_u945 v_u946 v_f v_tail)).
 let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let l_u_2. assume H_l_u_2: nat_p l_u_2. let v_u946. assume H_v_u946: v_u946 :e LeanUniv l_u_2. let v_f.
-    assume H_v_f: v_f :e (Pi_ ux :e v_u945, v_u946). let v_head. assume H_v_head: v_head :e v_u945. let v_tail. assume H_v_tail: v_tail :e (Lean_List v_u945). 
+    assume H_v_f: v_f :e (Pi_ ux :e v_u945, v_u946). let v_head. assume H_v_head: v_head :e v_u945. let v_tail. assume H_v_tail: v_tail :e (Lean_List v_u945).
 prove (Lean_List_rec v_u945 (Lean_List_nil_node v_u946) (Lean_List_map_method1_0 v_u945 v_u946 v_f) (Lean_List_cons_node v_u945 v_head v_tail)) = (Lean_List_cons_node v_u946 (v_f v_head)
     (Lean_List_rec v_u945 (Lean_List_nil_node v_u946) (Lean_List_map_method1_0 v_u945 v_u946 v_f) v_tail)).
 rewrite Lean_List_iota1 v_u945 (Lean_List_nil_node v_u946) (Lean_List_map_method1_0 v_u945 v_u946 v_f) v_head H_v_head v_tail H_v_tail.
@@ -168,7 +415,7 @@ Theorem Lean_List_map_unique : forall g:set -> set -> set -> set -> set, (forall
     (Lean_List_cons_node v_u945 v_head v_tail)) = (Lean_List_cons_node v_u946 (v_f v_head) (g v_u945 v_u946 v_f v_tail))) -> forall u, nat_p u -> forall a0 :e LeanUniv u, forall a1 :e LeanUniv u,
     forall a2 :e (Pi_ ux :e a0, a1), forall a3 :e (Lean_List a0), g a0 a1 a2 a3 = Lean_List_map a0 a1 a2 a3.
 let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e LeanUniv u. let a1. assume H1: a1 :e LeanUniv u. let a2. assume H2: a2 :e (Pi_ ux :e a0, a1). let a3. assume H3: a3
-    :e (Lean_List a0). 
+    :e (Lean_List a0).
 claim L0: 0 :e {z :e 1 | g a0 a1 a2 (Lean_List_nil_node a0) = Lean_List_map a0 a1 a2 (Lean_List_nil_node a0)}.
 { apply SepI 1 (fun z:set => g a0 a1 a2 (Lean_List_nil_node a0) = Lean_List_map a0 a1 a2 (Lean_List_nil_node a0)) 0 In_0_1.
   prove g a0 a1 a2 (Lean_List_nil_node a0) = Lean_List_map a0 a1 a2 (Lean_List_nil_node a0).
@@ -214,13 +461,13 @@ Theorem Lean_Nat_add_In : forall a0 :e Lean_Nat, forall a1 :e Lean_Nat, Lean_Nat
 let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat. exact Lean_Nat_rec_type (fun _ => Lean_Nat) a0 H0 (Lean_Nat_add_method1_0 a0) (Lean_Nat_add_method1_0_In a0 H0) a1 H1.
 Qed.
 Theorem Lean_Nat_add_eq_1 : forall v_x :e Lean_Nat, (Lean_Nat_add v_x Lean_Nat_zero_node) = v_x.
-let v_x. assume H_v_x: v_x :e Lean_Nat. 
+let v_x. assume H_v_x: v_x :e Lean_Nat.
 prove (Lean_Nat_rec v_x (Lean_Nat_add_method1_0 v_x) Lean_Nat_zero_node) = v_x.
 rewrite Lean_Nat_iota0 v_x (Lean_Nat_add_method1_0 v_x).
 reflexivity.
 Qed.
 Theorem Lean_Nat_add_eq_2 : forall v_x :e Lean_Nat, forall v_b :e Lean_Nat, (Lean_Nat_add v_x (Lean_Nat_succ_node v_b)) = (Lean_Nat_succ_node (Lean_Nat_add v_x v_b)).
-let v_x. assume H_v_x: v_x :e Lean_Nat. let v_b. assume H_v_b: v_b :e Lean_Nat. 
+let v_x. assume H_v_x: v_x :e Lean_Nat. let v_b. assume H_v_b: v_b :e Lean_Nat.
 prove (Lean_Nat_rec v_x (Lean_Nat_add_method1_0 v_x) (Lean_Nat_succ_node v_b)) = (Lean_Nat_succ_node (Lean_Nat_rec v_x (Lean_Nat_add_method1_0 v_x) v_b)).
 rewrite Lean_Nat_iota1 v_x (Lean_Nat_add_method1_0 v_x) v_b H_v_b.
 rewrite Lean_Nat_add_method1_0_ap v_x v_b H_v_b.
@@ -229,7 +476,7 @@ reflexivity.
 Qed.
 Theorem Lean_Nat_add_unique : forall g:set -> set -> set, (forall v_x :e Lean_Nat, (g v_x Lean_Nat_zero_node) = v_x) -> (forall v_x :e Lean_Nat, forall v_b :e Lean_Nat, (g v_x (Lean_Nat_succ_node
     v_b)) = (Lean_Nat_succ_node (g v_x v_b))) -> forall u, nat_p u -> forall a0 :e Lean_Nat, forall a1 :e Lean_Nat, g a0 a1 = Lean_Nat_add a0 a1.
-let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat. 
+let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat.
 claim L0: 0 :e {z :e 1 | g a0 Lean_Nat_zero_node = Lean_Nat_add a0 Lean_Nat_zero_node}.
 { apply SepI 1 (fun z:set => g a0 Lean_Nat_zero_node = Lean_Nat_add a0 Lean_Nat_zero_node) 0 In_0_1.
   prove g a0 Lean_Nat_zero_node = Lean_Nat_add a0 Lean_Nat_zero_node.
@@ -312,7 +559,7 @@ Qed.
 Theorem Lean_List_foldl_eq_1 : forall l_u, nat_p l_u -> forall v_u945 :e LeanUniv l_u, forall l_v, nat_p l_v -> forall v_u946 :e LeanUniv l_v, forall v_f :e (Pi_ ux :e v_u945, (Pi_ ux :e v_u946,
     v_u945)), forall v_x :e v_u945, (Lean_List_foldl v_u945 v_u946 v_f v_x (Lean_List_nil_node v_u946)) = v_x.
 let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let l_v. assume H_l_v: nat_p l_v. let v_u946. assume H_v_u946: v_u946 :e LeanUniv l_v. let v_f. assume H_v_f:
-    v_f :e (Pi_ ux :e v_u945, (Pi_ ux :e v_u946, v_u945)). let v_x. assume H_v_x: v_x :e v_u945. 
+    v_f :e (Pi_ ux :e v_u945, (Pi_ ux :e v_u946, v_u945)). let v_x. assume H_v_x: v_x :e v_u945.
 prove ((Lean_List_rec v_u946 (Lean_List_foldl_method0_0 v_u945 v_u946 v_f) (Lean_List_foldl_method1_0 v_u945 v_u946 v_f) (Lean_List_nil_node v_u946)) v_x) = v_x.
 rewrite Lean_List_iota0 v_u946 (Lean_List_foldl_method0_0 v_u945 v_u946 v_f) (Lean_List_foldl_method1_0 v_u945 v_u946 v_f).
 rewrite Lean_List_foldl_method0_0_ap v_u945 v_u946 v_f v_x H_v_x.
@@ -323,7 +570,7 @@ Theorem Lean_List_foldl_eq_2 : forall l_u, nat_p l_u -> forall v_u945 :e LeanUni
     v_u945)), forall v_x :e v_u945, forall v_b :e v_u946, forall v_l :e (Lean_List v_u946), (Lean_List_foldl v_u945 v_u946 v_f v_x (Lean_List_cons_node v_u946 v_b v_l)) = (Lean_List_foldl v_u945
     v_u946 v_f (v_f v_x v_b) v_l).
 let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let l_v. assume H_l_v: nat_p l_v. let v_u946. assume H_v_u946: v_u946 :e LeanUniv l_v. let v_f. assume H_v_f:
-    v_f :e (Pi_ ux :e v_u945, (Pi_ ux :e v_u946, v_u945)). let v_x. assume H_v_x: v_x :e v_u945. let v_b. assume H_v_b: v_b :e v_u946. let v_l. assume H_v_l: v_l :e (Lean_List v_u946). 
+    v_f :e (Pi_ ux :e v_u945, (Pi_ ux :e v_u946, v_u945)). let v_x. assume H_v_x: v_x :e v_u945. let v_b. assume H_v_b: v_b :e v_u946. let v_l. assume H_v_l: v_l :e (Lean_List v_u946).
 prove ((Lean_List_rec v_u946 (Lean_List_foldl_method0_0 v_u945 v_u946 v_f) (Lean_List_foldl_method1_0 v_u945 v_u946 v_f) (Lean_List_cons_node v_u946 v_b v_l)) v_x) = ((Lean_List_rec v_u946
     (Lean_List_foldl_method0_0 v_u945 v_u946 v_f) (Lean_List_foldl_method1_0 v_u945 v_u946 v_f) v_l) (v_f v_x v_b)).
 rewrite Lean_List_iota1 v_u946 (Lean_List_foldl_method0_0 v_u945 v_u946 v_f) (Lean_List_foldl_method1_0 v_u945 v_u946 v_f) v_b H_v_b v_l H_v_l.
@@ -375,7 +622,7 @@ Qed.
 Theorem Lean_List_foldr_eq_1 : forall l_u, nat_p l_u -> forall v_u945 :e LeanUniv l_u, forall l_v, nat_p l_v -> forall v_u946 :e LeanUniv l_v, forall v_f :e (Pi_ ux :e v_u945, (Pi_ ux :e v_u946,
     v_u946)), forall v_init :e v_u946, (Lean_List_foldr v_u945 v_u946 v_f v_init (Lean_List_nil_node v_u945)) = v_init.
 let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let l_v. assume H_l_v: nat_p l_v. let v_u946. assume H_v_u946: v_u946 :e LeanUniv l_v. let v_f. assume H_v_f:
-    v_f :e (Pi_ ux :e v_u945, (Pi_ ux :e v_u946, v_u946)). let v_init. assume H_v_init: v_init :e v_u946. 
+    v_f :e (Pi_ ux :e v_u945, (Pi_ ux :e v_u946, v_u946)). let v_init. assume H_v_init: v_init :e v_u946.
 prove (Lean_List_rec v_u945 v_init (Lean_List_foldr_method1_0 v_u945 v_u946 v_f v_init) (Lean_List_nil_node v_u945)) = v_init.
 rewrite Lean_List_iota0 v_u945 v_init (Lean_List_foldr_method1_0 v_u945 v_u946 v_f v_init).
 reflexivity.
@@ -385,7 +632,7 @@ Theorem Lean_List_foldr_eq_2 : forall l_u, nat_p l_u -> forall v_u945 :e LeanUni
     v_u946)), forall v_init :e v_u946, forall v_a :e v_u945, forall v_as :e (Lean_List v_u945), (Lean_List_foldr v_u945 v_u946 v_f v_init (Lean_List_cons_node v_u945 v_a v_as)) = (v_f v_a
     (Lean_List_foldr v_u945 v_u946 v_f v_init v_as)).
 let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let l_v. assume H_l_v: nat_p l_v. let v_u946. assume H_v_u946: v_u946 :e LeanUniv l_v. let v_f. assume H_v_f:
-    v_f :e (Pi_ ux :e v_u945, (Pi_ ux :e v_u946, v_u946)). let v_init. assume H_v_init: v_init :e v_u946. let v_a. assume H_v_a: v_a :e v_u945. let v_as. assume H_v_as: v_as :e (Lean_List v_u945). 
+    v_f :e (Pi_ ux :e v_u945, (Pi_ ux :e v_u946, v_u946)). let v_init. assume H_v_init: v_init :e v_u946. let v_a. assume H_v_a: v_a :e v_u945. let v_as. assume H_v_as: v_as :e (Lean_List v_u945).
 prove (Lean_List_rec v_u945 v_init (Lean_List_foldr_method1_0 v_u945 v_u946 v_f v_init) (Lean_List_cons_node v_u945 v_a v_as)) = (v_f v_a (Lean_List_rec v_u945 v_init (Lean_List_foldr_method1_0
     v_u945 v_u946 v_f v_init) v_as)).
 rewrite Lean_List_iota1 v_u945 v_init (Lean_List_foldr_method1_0 v_u945 v_u946 v_f v_init) v_a H_v_a v_as H_v_as.
@@ -401,7 +648,7 @@ Theorem Lean_List_foldr_unique : forall g:set -> set -> set -> set -> set -> set
     v_as :e (Lean_List v_u945), (g v_u945 v_u946 v_f v_init (Lean_List_cons_node v_u945 v_a v_as)) = (v_f v_a (g v_u945 v_u946 v_f v_init v_as))) -> forall u, nat_p u -> forall a0 :e LeanUniv u,
     forall a1 :e LeanUniv u, forall a2 :e (Pi_ ux :e a0, (Pi_ ux :e a1, a1)), forall a3 :e a1, forall a4 :e (Lean_List a0), g a0 a1 a2 a3 a4 = Lean_List_foldr a0 a1 a2 a3 a4.
 let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e LeanUniv u. let a1. assume H1: a1 :e LeanUniv u. let a2. assume H2: a2 :e (Pi_ ux :e a0, (Pi_ ux :e a1, a1)). let
-    a3. assume H3: a3 :e a1. let a4. assume H4: a4 :e (Lean_List a0). 
+    a3. assume H3: a3 :e a1. let a4. assume H4: a4 :e (Lean_List a0).
 claim L0: 0 :e {z :e 1 | g a0 a1 a2 a3 (Lean_List_nil_node a0) = Lean_List_foldr a0 a1 a2 a3 (Lean_List_nil_node a0)}.
 { apply SepI 1 (fun z:set => g a0 a1 a2 a3 (Lean_List_nil_node a0) = Lean_List_foldr a0 a1 a2 a3 (Lean_List_nil_node a0)) 0 In_0_1.
   prove g a0 a1 a2 a3 (Lean_List_nil_node a0) = Lean_List_foldr a0 a1 a2 a3 (Lean_List_nil_node a0).
@@ -464,7 +711,7 @@ let a0. let a1. assume H1: a1 :e (Lean_List a0). let a2. assume H2: a2 :e (Lean_
 Qed.
 (** Receipt: List.append.eq_1 is the source of the MeTTa rule for List.append, statement digest 1794585983. **)
 Theorem Lean_List_append_eq_1 : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_x :e (Lean_List v_u945), (Lean_List_append v_u945 (Lean_List_nil_node v_u945) v_x) = v_x.
-let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let v_x. assume H_v_x: v_x :e (Lean_List v_u945). 
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let v_x. assume H_v_x: v_x :e (Lean_List v_u945).
 prove (Lean_List_rec v_u945 v_x (Lean_List_append_method1_0 v_u945 v_x) (Lean_List_nil_node v_u945)) = v_x.
 rewrite Lean_List_iota0 v_u945 v_x (Lean_List_append_method1_0 v_u945 v_x).
 reflexivity.
@@ -473,7 +720,7 @@ Qed.
 Theorem Lean_List_append_eq_2 : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_x :e (Lean_List v_u945), forall v_a :e v_u945, forall v_as :e (Lean_List v_u945),
     (Lean_List_append v_u945 (Lean_List_cons_node v_u945 v_a v_as) v_x) = (Lean_List_cons_node v_u945 v_a (Lean_List_append v_u945 v_as v_x)).
 let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let v_x. assume H_v_x: v_x :e (Lean_List v_u945). let v_a. assume H_v_a: v_a :e v_u945. let v_as. assume
-    H_v_as: v_as :e (Lean_List v_u945). 
+    H_v_as: v_as :e (Lean_List v_u945).
 prove (Lean_List_rec v_u945 v_x (Lean_List_append_method1_0 v_u945 v_x) (Lean_List_cons_node v_u945 v_a v_as)) = (Lean_List_cons_node v_u945 v_a (Lean_List_rec v_u945 v_x (Lean_List_append_method1_0
     v_u945 v_x) v_as)).
 rewrite Lean_List_iota1 v_u945 v_x (Lean_List_append_method1_0 v_u945 v_x) v_a H_v_a v_as H_v_as.
@@ -486,7 +733,7 @@ Theorem Lean_List_append_unique : forall g:set -> set -> set -> set, (forall l_u
     v_u945) v_x) = v_x) -> (forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_x :e (Lean_List v_u945), forall v_a :e v_u945, forall v_as :e (Lean_List v_u945), (g v_u945
     (Lean_List_cons_node v_u945 v_a v_as) v_x) = (Lean_List_cons_node v_u945 v_a (g v_u945 v_as v_x))) -> forall u, nat_p u -> forall a0 :e LeanUniv u, forall a1 :e (Lean_List a0), forall a2 :e
     (Lean_List a0), g a0 a1 a2 = Lean_List_append a0 a1 a2.
-let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e LeanUniv u. let a1. assume H1: a1 :e (Lean_List a0). let a2. assume H2: a2 :e (Lean_List a0). 
+let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e LeanUniv u. let a1. assume H1: a1 :e (Lean_List a0). let a2. assume H2: a2 :e (Lean_List a0).
 claim L0: 0 :e {z :e 1 | g a0 (Lean_List_nil_node a0) a2 = Lean_List_append a0 (Lean_List_nil_node a0) a2}.
 { apply SepI 1 (fun z:set => g a0 (Lean_List_nil_node a0) a2 = Lean_List_append a0 (Lean_List_nil_node a0) a2) 0 In_0_1.
   prove g a0 (Lean_List_nil_node a0) a2 = Lean_List_append a0 (Lean_List_nil_node a0) a2.
@@ -543,7 +790,7 @@ let a0. let a1. assume H1: a1 :e (Lean_List a0). exact Lean_List_rec_type a0 (fu
 Qed.
 (** Receipt: List.length.eq_1 is the source of the MeTTa rule for List.length, statement digest 1887323071. **)
 Theorem Lean_List_length_eq_1 : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, (Lean_List_length v_u945 (Lean_List_nil_node v_u945)) = (LeanNum 0).
-let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. 
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1.
 prove (Lean_List_rec v_u945 (LeanNum 0) (Lean_List_length_method1_0 v_u945) (Lean_List_nil_node v_u945)) = (LeanNum 0).
 rewrite Lean_List_iota0 v_u945 (LeanNum 0) (Lean_List_length_method1_0 v_u945).
 reflexivity.
@@ -552,7 +799,7 @@ Qed.
 Theorem Lean_List_length_eq_2 : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_head :e v_u945, forall v_tail :e (Lean_List v_u945), (Lean_List_length v_u945
     (Lean_List_cons_node v_u945 v_head v_tail)) = (Lean_Nat_add (Lean_List_length v_u945 v_tail) (LeanNum 1)).
 let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let v_head. assume H_v_head: v_head :e v_u945. let v_tail. assume H_v_tail: v_tail :e (Lean_List
-    v_u945). 
+    v_u945).
 prove (Lean_List_rec v_u945 (LeanNum 0) (Lean_List_length_method1_0 v_u945) (Lean_List_cons_node v_u945 v_head v_tail)) = (Lean_Nat_add (Lean_List_rec v_u945 (LeanNum 0) (Lean_List_length_method1_0
     v_u945) v_tail) (LeanNum 1)).
 rewrite Lean_List_iota1 v_u945 (LeanNum 0) (Lean_List_length_method1_0 v_u945) v_head H_v_head v_tail H_v_tail.
@@ -564,7 +811,7 @@ Qed.
 Theorem Lean_List_length_unique : forall g:set -> set -> set, (forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, (g v_u945 (Lean_List_nil_node v_u945)) = (LeanNum 0)) -> (forall l_u_1,
     nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_head :e v_u945, forall v_tail :e (Lean_List v_u945), (g v_u945 (Lean_List_cons_node v_u945 v_head v_tail)) = (Lean_Nat_add (g v_u945
     v_tail) (LeanNum 1))) -> forall u, nat_p u -> forall a0 :e LeanUniv u, forall a1 :e (Lean_List a0), g a0 a1 = Lean_List_length a0 a1.
-let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e LeanUniv u. let a1. assume H1: a1 :e (Lean_List a0). 
+let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e LeanUniv u. let a1. assume H1: a1 :e (Lean_List a0).
 claim L0: 0 :e {z :e 1 | g a0 (Lean_List_nil_node a0) = Lean_List_length a0 (Lean_List_nil_node a0)}.
 { apply SepI 1 (fun z:set => g a0 (Lean_List_nil_node a0) = Lean_List_length a0 (Lean_List_nil_node a0)) 0 In_0_1.
   prove g a0 (Lean_List_nil_node a0) = Lean_List_length a0 (Lean_List_nil_node a0).
@@ -626,7 +873,7 @@ Qed.
 (** Receipt: List.filter.eq_1 is the source of the MeTTa rule for List.filter, statement digest 1049409160. **)
 Theorem Lean_List_filter_eq_1 : forall l_u, nat_p l_u -> forall v_u945 :e LeanUniv l_u, forall v_p :e (Pi_ ux :e v_u945, Lean_Bool), (Lean_List_filter v_u945 v_p (Lean_List_nil_node v_u945)) =
     (Lean_List_nil_node v_u945).
-let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let v_p. assume H_v_p: v_p :e (Pi_ ux :e v_u945, Lean_Bool). 
+let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let v_p. assume H_v_p: v_p :e (Pi_ ux :e v_u945, Lean_Bool).
 prove (Lean_List_rec v_u945 (Lean_List_nil_node v_u945) (Lean_List_filter_method1_0 v_u945 v_p) (Lean_List_nil_node v_u945)) = (Lean_List_nil_node v_u945).
 rewrite Lean_List_iota0 v_u945 (Lean_List_nil_node v_u945) (Lean_List_filter_method1_0 v_u945 v_p).
 reflexivity.
@@ -636,7 +883,7 @@ Theorem Lean_List_filter_eq_2 : forall l_u, nat_p l_u -> forall v_u945 :e LeanUn
     (Lean_List_filter v_u945 v_p (Lean_List_cons_node v_u945 v_a v_as)) = (Lean_Bool_rec (Lean_List_filter v_u945 v_p v_as) (Lean_List_cons_node v_u945 v_a (Lean_List_filter v_u945 v_p v_as)) (v_p
     v_a)).
 let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let v_p. assume H_v_p: v_p :e (Pi_ ux :e v_u945, Lean_Bool). let v_a. assume H_v_a: v_a :e v_u945. let v_as.
-    assume H_v_as: v_as :e (Lean_List v_u945). 
+    assume H_v_as: v_as :e (Lean_List v_u945).
 prove (Lean_List_rec v_u945 (Lean_List_nil_node v_u945) (Lean_List_filter_method1_0 v_u945 v_p) (Lean_List_cons_node v_u945 v_a v_as)) = (Lean_Bool_rec (Lean_List_rec v_u945 (Lean_List_nil_node
     v_u945) (Lean_List_filter_method1_0 v_u945 v_p) v_as) (Lean_List_cons_node v_u945 v_a (Lean_List_rec v_u945 (Lean_List_nil_node v_u945) (Lean_List_filter_method1_0 v_u945 v_p) v_as)) (v_p v_a)).
 rewrite Lean_List_iota1 v_u945 (Lean_List_nil_node v_u945) (Lean_List_filter_method1_0 v_u945 v_p) v_a H_v_a v_as H_v_as.
@@ -650,7 +897,7 @@ Theorem Lean_List_filter_unique : forall g:set -> set -> set -> set, (forall l_u
     (Lean_List_nil_node v_u945)) = (Lean_List_nil_node v_u945)) -> (forall l_u, nat_p l_u -> forall v_u945 :e LeanUniv l_u, forall v_p :e (Pi_ ux :e v_u945, Lean_Bool), forall v_a :e v_u945, forall
     v_as :e (Lean_List v_u945), (g v_u945 v_p (Lean_List_cons_node v_u945 v_a v_as)) = (Lean_Bool_rec (g v_u945 v_p v_as) (Lean_List_cons_node v_u945 v_a (g v_u945 v_p v_as)) (v_p v_a))) -> forall u,
     nat_p u -> forall a0 :e LeanUniv u, forall a1 :e (Pi_ ux :e a0, Lean_Bool), forall a2 :e (Lean_List a0), g a0 a1 a2 = Lean_List_filter a0 a1 a2.
-let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e LeanUniv u. let a1. assume H1: a1 :e (Pi_ ux :e a0, Lean_Bool). let a2. assume H2: a2 :e (Lean_List a0). 
+let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e LeanUniv u. let a1. assume H1: a1 :e (Pi_ ux :e a0, Lean_Bool). let a2. assume H2: a2 :e (Lean_List a0).
 claim L0: 0 :e {z :e 1 | g a0 a1 (Lean_List_nil_node a0) = Lean_List_filter a0 a1 (Lean_List_nil_node a0)}.
 { apply SepI 1 (fun z:set => g a0 a1 (Lean_List_nil_node a0) = Lean_List_filter a0 a1 (Lean_List_nil_node a0)) 0 In_0_1.
   prove g a0 a1 (Lean_List_nil_node a0) = Lean_List_filter a0 a1 (Lean_List_nil_node a0).
@@ -683,7 +930,7 @@ let a0. assume H0: a0 :e LeanProp. let a1. assume H1: a1 :e (Lean_Decidable a0).
 Qed.
 Theorem Lean_Decidable_decide_eq_1 : forall v_p :e LeanProp, forall v_h :e (Lean_Decidable v_p), (Lean_Decidable_decide v_p v_h) = (Lean_Decidable_rec v_p (fun v_x :e (Pi_ ux :e v_p, Lean_False_Prop)
     => Lean_Bool_false_node) (fun v_x :e v_p => Lean_Bool_true_node) v_h).
-let v_p. assume H_v_p: v_p :e LeanProp. let v_h. assume H_v_h: v_h :e (Lean_Decidable v_p). 
+let v_p. assume H_v_p: v_p :e LeanProp. let v_h. assume H_v_h: v_h :e (Lean_Decidable v_p).
 reflexivity.
 Qed.
 Theorem Lean_Decidable_decide_unfold : forall a0 a1, Lean_Decidable_decide a0 a1 = (Lean_Decidable_rec a0 (fun v_x :e (Pi_ ux :e a0, Lean_False_Prop) => Lean_Bool_false_node) (fun v_x :e a0 =>
@@ -703,7 +950,7 @@ Qed.
 Theorem Lean_List_sum_eq_1 : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_inst :e (Lean_Add v_u945), forall v_x2 :e (Lean_Zero v_u945), forall v_a :e (Lean_List v_u945),
     (Lean_List_sum v_u945 v_inst v_x2 v_a) = (Lean_List_foldr v_u945 v_u945 (fun v_x1 :e v_u945 => (Sigma v_u945 (ap ((Lean_Add_add v_u945 v_inst) v_x1)))) (Lean_Zero_zero v_u945 v_x2) v_a).
 let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let v_inst. assume H_v_inst: v_inst :e (Lean_Add v_u945). let v_x2. assume H_v_x2: v_x2 :e (Lean_Zero
-    v_u945). let v_a. assume H_v_a: v_a :e (Lean_List v_u945). 
+    v_u945). let v_a. assume H_v_a: v_a :e (Lean_List v_u945).
 reflexivity.
 Qed.
 Theorem Lean_List_sum_unfold : forall a0 a1 a2 a3, Lean_List_sum a0 a1 a2 a3 = (Lean_List_foldr a0 a0 (fun v_x1 :e a0 => (Sigma a0 (ap ((Lean_Add_add a0 a1) v_x1)))) (Lean_Zero_zero a0 a2) a3).
@@ -769,7 +1016,7 @@ Qed.
 (** Receipt: List.max?.eq_1 is the source of the MeTTa rule for List.max?, statement digest 3928188317. **)
 Theorem Lean_List_maxu63_eq_1 : forall l_u, nat_p l_u -> forall v_u945 :e LeanUniv l_u, forall v_inst :e (Lean_Max v_u945), (Lean_List_maxu63 v_u945 v_inst (Lean_List_nil_node v_u945)) =
     (Lean_Option_none_node v_u945).
-let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let v_inst. assume H_v_inst: v_inst :e (Lean_Max v_u945). 
+let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let v_inst. assume H_v_inst: v_inst :e (Lean_Max v_u945).
 prove (Lean_List_rec v_u945 (Lean_Option_none_node v_u945) (Lean_List_maxu63_method1_0 v_u945 v_inst) (Lean_List_nil_node v_u945)) = (Lean_Option_none_node v_u945).
 rewrite Lean_List_iota0 v_u945 (Lean_Option_none_node v_u945) (Lean_List_maxu63_method1_0 v_u945 v_inst).
 reflexivity.
@@ -779,7 +1026,7 @@ Theorem Lean_List_maxu63_eq_2 : forall l_u, nat_p l_u -> forall v_u945 :e LeanUn
     v_u945 v_inst (Lean_List_cons_node v_u945 v_a v_as)) = (Lean_Option_some_node v_u945 (Lean_List_foldl v_u945 v_u945 (fun v_x4 :e v_u945 => (Sigma v_u945 (ap ((Lean_Max_max v_u945 v_inst) v_x4))))
     v_a v_as)).
 let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let v_inst. assume H_v_inst: v_inst :e (Lean_Max v_u945). let v_a. assume H_v_a: v_a :e v_u945. let v_as. assume
-    H_v_as: v_as :e (Lean_List v_u945). 
+    H_v_as: v_as :e (Lean_List v_u945).
 prove (Lean_List_rec v_u945 (Lean_Option_none_node v_u945) (Lean_List_maxu63_method1_0 v_u945 v_inst) (Lean_List_cons_node v_u945 v_a v_as)) = (Lean_Option_some_node v_u945 (Lean_List_foldl v_u945
     v_u945 (fun v_x4 :e v_u945 => (Sigma v_u945 (ap ((Lean_Max_max v_u945 v_inst) v_x4)))) v_a v_as)).
 rewrite Lean_List_iota1 v_u945 (Lean_Option_none_node v_u945) (Lean_List_maxu63_method1_0 v_u945 v_inst) v_a H_v_a v_as H_v_as.
@@ -793,7 +1040,7 @@ Theorem Lean_List_maxu63_unique : forall g:set -> set -> set -> set, (forall l_u
     v_u945)) = (Lean_Option_none_node v_u945)) -> (forall l_u, nat_p l_u -> forall v_u945 :e LeanUniv l_u, forall v_inst :e (Lean_Max v_u945), forall v_a :e v_u945, forall v_as :e (Lean_List v_u945),
     (g v_u945 v_inst (Lean_List_cons_node v_u945 v_a v_as)) = (Lean_Option_some_node v_u945 (Lean_List_foldl v_u945 v_u945 (fun v_x4 :e v_u945 => (Sigma v_u945 (ap ((Lean_Max_max v_u945 v_inst)
     v_x4)))) v_a v_as))) -> forall u, nat_p u -> forall a0 :e LeanUniv u, forall a1 :e (Lean_Max a0), forall a2 :e (Lean_List a0), g a0 a1 a2 = Lean_List_maxu63 a0 a1 a2.
-let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e LeanUniv u. let a1. assume H1: a1 :e (Lean_Max a0). let a2. assume H2: a2 :e (Lean_List a0). 
+let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e LeanUniv u. let a1. assume H1: a1 :e (Lean_Max a0). let a2. assume H2: a2 :e (Lean_List a0).
 claim L0: 0 :e {z :e 1 | g a0 a1 (Lean_List_nil_node a0) = Lean_List_maxu63 a0 a1 (Lean_List_nil_node a0)}.
 { apply SepI 1 (fun z:set => g a0 a1 (Lean_List_nil_node a0) = Lean_List_maxu63 a0 a1 (Lean_List_nil_node a0)) 0 In_0_1.
   prove g a0 a1 (Lean_List_nil_node a0) = Lean_List_maxu63 a0 a1 (Lean_List_nil_node a0).
@@ -835,7 +1082,7 @@ Qed.
 Theorem Lean_Option_map_eq_2 : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall l_u_2, nat_p l_u_2 -> forall v_u946 :e LeanUniv l_u_2, forall v_f :e (Pi_ ux :e v_u945, v_u946),
     (Lean_Option_map v_u945 v_u946 v_f (Lean_Option_none_node v_u945)) = (Lean_Option_none_node v_u946).
 let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let l_u_2. assume H_l_u_2: nat_p l_u_2. let v_u946. assume H_v_u946: v_u946 :e LeanUniv l_u_2. let v_f.
-    assume H_v_f: v_f :e (Pi_ ux :e v_u945, v_u946). 
+    assume H_v_f: v_f :e (Pi_ ux :e v_u945, v_u946).
 prove (Lean_Option_rec v_u945 (Lean_Option_none_node v_u946) (Lean_Option_map_method1_0 v_u945 v_u946 v_f) (Lean_Option_none_node v_u945)) = (Lean_Option_none_node v_u946).
 rewrite Lean_Option_iota0 v_u945 (Lean_Option_none_node v_u946) (Lean_Option_map_method1_0 v_u945 v_u946 v_f).
 reflexivity.
@@ -844,7 +1091,7 @@ Qed.
 Theorem Lean_Option_map_eq_1 : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall l_u_2, nat_p l_u_2 -> forall v_u946 :e LeanUniv l_u_2, forall v_f :e (Pi_ ux :e v_u945, v_u946),
     forall v_x :e v_u945, (Lean_Option_map v_u945 v_u946 v_f (Lean_Option_some_node v_u945 v_x)) = (Lean_Option_some_node v_u946 (v_f v_x)).
 let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let l_u_2. assume H_l_u_2: nat_p l_u_2. let v_u946. assume H_v_u946: v_u946 :e LeanUniv l_u_2. let v_f.
-    assume H_v_f: v_f :e (Pi_ ux :e v_u945, v_u946). let v_x. assume H_v_x: v_x :e v_u945. 
+    assume H_v_f: v_f :e (Pi_ ux :e v_u945, v_u946). let v_x. assume H_v_x: v_x :e v_u945.
 prove (Lean_Option_rec v_u945 (Lean_Option_none_node v_u946) (Lean_Option_map_method1_0 v_u945 v_u946 v_f) (Lean_Option_some_node v_u945 v_x)) = (Lean_Option_some_node v_u946 (v_f v_x)).
 rewrite Lean_Option_iota1 v_u945 (Lean_Option_none_node v_u946) (Lean_Option_map_method1_0 v_u945 v_u946 v_f) v_x H_v_x.
 rewrite Lean_Option_map_method1_0_ap v_u945 v_u946 v_f v_x H_v_x.
@@ -856,7 +1103,7 @@ Theorem Lean_Option_map_unique : forall g:set -> set -> set -> set -> set, (fora
     (Lean_Option_some_node v_u946 (v_f v_x))) -> forall u, nat_p u -> forall a0 :e LeanUniv u, forall a1 :e LeanUniv u, forall a2 :e (Pi_ ux :e a0, a1), forall a3 :e (Lean_Option a0), g a0 a1 a2 a3 =
     Lean_Option_map a0 a1 a2 a3.
 let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e LeanUniv u. let a1. assume H1: a1 :e LeanUniv u. let a2. assume H2: a2 :e (Pi_ ux :e a0, a1). let a3. assume H3: a3
-    :e (Lean_Option a0). 
+    :e (Lean_Option a0).
 claim L0: 0 :e {z :e 1 | g a0 a1 a2 (Lean_Option_none_node a0) = Lean_Option_map a0 a1 a2 (Lean_Option_none_node a0)}.
 { apply SepI 1 (fun z:set => g a0 a1 a2 (Lean_Option_none_node a0) = Lean_Option_map a0 a1 a2 (Lean_Option_none_node a0)) 0 In_0_1.
   prove g a0 a1 a2 (Lean_Option_none_node a0) = Lean_Option_map a0 a1 a2 (Lean_Option_none_node a0).
@@ -894,14 +1141,14 @@ let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat. exact Lean
     (Lean_Nat_mul_method1_0_In a0 H0) a1 H1.
 Qed.
 Theorem Lean_Nat_mul_eq_1 : forall v_x :e Lean_Nat, (Lean_Nat_mul v_x (LeanNum 0)) = (LeanNum 0).
-let v_x. assume H_v_x: v_x :e Lean_Nat. 
+let v_x. assume H_v_x: v_x :e Lean_Nat.
 apply LeanNum_0_at (fun zpat => (Lean_Nat_mul v_x zpat)) (LeanNum 0).
 prove (Lean_Nat_rec (LeanNum 0) (Lean_Nat_mul_method1_0 v_x) Lean_Nat_zero_node) = (LeanNum 0).
 rewrite Lean_Nat_iota0 (LeanNum 0) (Lean_Nat_mul_method1_0 v_x).
 reflexivity.
 Qed.
 Theorem Lean_Nat_mul_eq_2 : forall v_x :e Lean_Nat, forall v_b :e Lean_Nat, (Lean_Nat_mul v_x (Lean_Nat_succ_node v_b)) = (Lean_Nat_add (Lean_Nat_mul v_x v_b) v_x).
-let v_x. assume H_v_x: v_x :e Lean_Nat. let v_b. assume H_v_b: v_b :e Lean_Nat. 
+let v_x. assume H_v_x: v_x :e Lean_Nat. let v_b. assume H_v_b: v_b :e Lean_Nat.
 prove (Lean_Nat_rec (LeanNum 0) (Lean_Nat_mul_method1_0 v_x) (Lean_Nat_succ_node v_b)) = (Lean_Nat_add (Lean_Nat_rec (LeanNum 0) (Lean_Nat_mul_method1_0 v_x) v_b) v_x).
 rewrite Lean_Nat_iota1 (LeanNum 0) (Lean_Nat_mul_method1_0 v_x) v_b H_v_b.
 rewrite Lean_Nat_mul_method1_0_ap v_x v_b H_v_b.
@@ -910,7 +1157,7 @@ reflexivity.
 Qed.
 Theorem Lean_Nat_mul_unique : forall g:set -> set -> set, (forall v_x :e Lean_Nat, (g v_x (LeanNum 0)) = (LeanNum 0)) -> (forall v_x :e Lean_Nat, forall v_b :e Lean_Nat, (g v_x (Lean_Nat_succ_node
     v_b)) = (Lean_Nat_add (g v_x v_b) v_x)) -> forall u, nat_p u -> forall a0 :e Lean_Nat, forall a1 :e Lean_Nat, g a0 a1 = Lean_Nat_mul a0 a1.
-let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat. 
+let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat.
 claim L0: 0 :e {z :e 1 | g a0 Lean_Nat_zero_node = Lean_Nat_mul a0 Lean_Nat_zero_node}.
 { apply SepI 1 (fun z:set => g a0 Lean_Nat_zero_node = Lean_Nat_mul a0 Lean_Nat_zero_node) 0 In_0_1.
   prove g a0 Lean_Nat_zero_node = Lean_Nat_mul a0 Lean_Nat_zero_node.
@@ -947,7 +1194,7 @@ Qed.
 Theorem Lean_Option_bind_eq_1 : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall l_u_2, nat_p l_u_2 -> forall v_u946 :e LeanUniv l_u_2, forall v_x :e (Pi_ ux :e v_u945,
     (Lean_Option v_u946)), (Lean_Option_bind v_u945 v_u946 (Lean_Option_none_node v_u945) v_x) = (Lean_Option_none_node v_u946).
 let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let l_u_2. assume H_l_u_2: nat_p l_u_2. let v_u946. assume H_v_u946: v_u946 :e LeanUniv l_u_2. let v_x.
-    assume H_v_x: v_x :e (Pi_ ux :e v_u945, (Lean_Option v_u946)). 
+    assume H_v_x: v_x :e (Pi_ ux :e v_u945, (Lean_Option v_u946)).
 prove (Lean_Option_rec v_u945 (Lean_Option_none_node v_u946) (Lean_Option_bind_method1_0 v_u945 v_u946 v_x) (Lean_Option_none_node v_u945)) = (Lean_Option_none_node v_u946).
 rewrite Lean_Option_iota0 v_u945 (Lean_Option_none_node v_u946) (Lean_Option_bind_method1_0 v_u945 v_u946 v_x).
 reflexivity.
@@ -956,7 +1203,7 @@ Qed.
 Theorem Lean_Option_bind_eq_2 : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall l_u_2, nat_p l_u_2 -> forall v_u946 :e LeanUniv l_u_2, forall v_x :e (Pi_ ux :e v_u945,
     (Lean_Option v_u946)), forall v_a :e v_u945, (Lean_Option_bind v_u945 v_u946 (Lean_Option_some_node v_u945 v_a) v_x) = (v_x v_a).
 let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let l_u_2. assume H_l_u_2: nat_p l_u_2. let v_u946. assume H_v_u946: v_u946 :e LeanUniv l_u_2. let v_x.
-    assume H_v_x: v_x :e (Pi_ ux :e v_u945, (Lean_Option v_u946)). let v_a. assume H_v_a: v_a :e v_u945. 
+    assume H_v_x: v_x :e (Pi_ ux :e v_u945, (Lean_Option v_u946)). let v_a. assume H_v_a: v_a :e v_u945.
 prove (Lean_Option_rec v_u945 (Lean_Option_none_node v_u946) (Lean_Option_bind_method1_0 v_u945 v_u946 v_x) (Lean_Option_some_node v_u945 v_a)) = (v_x v_a).
 rewrite Lean_Option_iota1 v_u945 (Lean_Option_none_node v_u946) (Lean_Option_bind_method1_0 v_u945 v_u946 v_x) v_a H_v_a.
 rewrite Lean_Option_bind_method1_0_ap v_u945 v_u946 v_x v_a H_v_a.
@@ -968,7 +1215,7 @@ Theorem Lean_Option_bind_unique : forall g:set -> set -> set -> set -> set, (for
     (Lean_Option_some_node v_u945 v_a) v_x) = (v_x v_a)) -> forall u, nat_p u -> forall a0 :e LeanUniv u, forall a1 :e LeanUniv u, forall a2 :e (Lean_Option a0), forall a3 :e (Pi_ ux :e a0,
     (Lean_Option a1)), g a0 a1 a2 a3 = Lean_Option_bind a0 a1 a2 a3.
 let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e LeanUniv u. let a1. assume H1: a1 :e LeanUniv u. let a2. assume H2: a2 :e (Lean_Option a0). let a3. assume H3: a3 :e
-    (Pi_ ux :e a0, (Lean_Option a1)). 
+    (Pi_ ux :e a0, (Lean_Option a1)).
 claim L0: 0 :e {z :e 1 | g a0 a1 (Lean_Option_none_node a0) a3 = Lean_Option_bind a0 a1 (Lean_Option_none_node a0) a3}.
 { apply SepI 1 (fun z:set => g a0 a1 (Lean_Option_none_node a0) a3 = Lean_Option_bind a0 a1 (Lean_Option_none_node a0) a3) 0 In_0_1.
   prove g a0 a1 (Lean_Option_none_node a0) a3 = Lean_Option_bind a0 a1 (Lean_Option_none_node a0) a3.
@@ -993,7 +1240,7 @@ Qed.
 Theorem Lean_ite_eq_1 : forall l_u, nat_p l_u -> forall v_u945 :e LeanSort l_u, forall v_c :e LeanProp, forall v_h :e (Lean_Decidable v_c), forall v_t :e v_u945, forall v_e :e v_u945, (Lean_ite
     v_u945 v_c v_h v_t v_e) = (Lean_Decidable_rec v_c (fun v_x :e (Pi_ ux :e v_c, Lean_False_Prop) => v_e) (fun v_x :e v_c => v_t) v_h).
 let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanSort l_u. let v_c. assume H_v_c: v_c :e LeanProp. let v_h. assume H_v_h: v_h :e (Lean_Decidable v_c). let v_t. assume
-    H_v_t: v_t :e v_u945. let v_e. assume H_v_e: v_e :e v_u945. 
+    H_v_t: v_t :e v_u945. let v_e. assume H_v_e: v_e :e v_u945.
 reflexivity.
 Qed.
 Theorem Lean_ite_unfold : forall a0 a1 a2 a3 a4, Lean_ite a0 a1 a2 a3 a4 = (Lean_Decidable_rec a1 (fun v_x :e (Pi_ ux :e a1, Lean_False_Prop) => a4) (fun v_x :e a1 => a3) a2).
@@ -1016,7 +1263,7 @@ let a0. let a1. assume H1: a1 :e (Lean_Option a0). let a2. assume H2: a2 :e a0. 
 Qed.
 (** Receipt: Option.getD.eq_2 is the source of the MeTTa rule for Option.getD, statement digest 3656575078. **)
 Theorem Lean_Option_getD_eq_2 : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_dflt :e v_u945, (Lean_Option_getD v_u945 (Lean_Option_none_node v_u945) v_dflt) = v_dflt.
-let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let v_dflt. assume H_v_dflt: v_dflt :e v_u945. 
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let v_dflt. assume H_v_dflt: v_dflt :e v_u945.
 prove (Lean_Option_rec v_u945 v_dflt (Lean_Option_getD_method1_0 v_u945 v_dflt) (Lean_Option_none_node v_u945)) = v_dflt.
 rewrite Lean_Option_iota0 v_u945 v_dflt (Lean_Option_getD_method1_0 v_u945 v_dflt).
 reflexivity.
@@ -1024,7 +1271,7 @@ Qed.
 (** Receipt: Option.getD.eq_1 is the source of the MeTTa rule for Option.getD, statement digest 2162103739. **)
 Theorem Lean_Option_getD_eq_1 : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_dflt :e v_u945, forall v_x :e v_u945, (Lean_Option_getD v_u945 (Lean_Option_some_node v_u945
     v_x) v_dflt) = v_x.
-let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let v_dflt. assume H_v_dflt: v_dflt :e v_u945. let v_x. assume H_v_x: v_x :e v_u945. 
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let v_dflt. assume H_v_dflt: v_dflt :e v_u945. let v_x. assume H_v_x: v_x :e v_u945.
 prove (Lean_Option_rec v_u945 v_dflt (Lean_Option_getD_method1_0 v_u945 v_dflt) (Lean_Option_some_node v_u945 v_x)) = v_x.
 rewrite Lean_Option_iota1 v_u945 v_dflt (Lean_Option_getD_method1_0 v_u945 v_dflt) v_x H_v_x.
 rewrite Lean_Option_getD_method1_0_ap v_u945 v_dflt v_x H_v_x.
@@ -1033,7 +1280,7 @@ Qed.
 Theorem Lean_Option_getD_unique : forall g:set -> set -> set -> set, (forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_dflt :e v_u945, (g v_u945 (Lean_Option_none_node v_u945)
     v_dflt) = v_dflt) -> (forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_dflt :e v_u945, forall v_x :e v_u945, (g v_u945 (Lean_Option_some_node v_u945 v_x) v_dflt) = v_x) ->
     forall u, nat_p u -> forall a0 :e LeanUniv u, forall a1 :e (Lean_Option a0), forall a2 :e a0, g a0 a1 a2 = Lean_Option_getD a0 a1 a2.
-let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e LeanUniv u. let a1. assume H1: a1 :e (Lean_Option a0). let a2. assume H2: a2 :e a0. 
+let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e LeanUniv u. let a1. assume H1: a1 :e (Lean_Option a0). let a2. assume H2: a2 :e a0.
 claim L0: 0 :e {z :e 1 | g a0 (Lean_Option_none_node a0) a2 = Lean_Option_getD a0 (Lean_Option_none_node a0) a2}.
 { apply SepI 1 (fun z:set => g a0 (Lean_Option_none_node a0) a2 = Lean_Option_getD a0 (Lean_Option_none_node a0) a2) 0 In_0_1.
   prove g a0 (Lean_Option_none_node a0) a2 = Lean_Option_getD a0 (Lean_Option_none_node a0) a2.
@@ -1067,7 +1314,7 @@ Theorem Lean_compareOfLessAndEq_eq_1 : forall l_u_1, nat_p l_u_1 -> forall v_u94
     Lean_Ordering_eq_node Lean_Ordering_gt_node)).
 let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let v_x. assume H_v_x: v_x :e v_u945. let v_y. assume H_v_y: v_y :e v_u945. let v_inst. assume H_v_inst:
     v_inst :e (Lean_LT v_u945). let v_x4. assume H_v_x4: v_x4 :e (Lean_Decidable ((Lean_LT_lt v_u945 v_inst) v_x v_y)). let v_x5. assume H_v_x5: v_x5 :e (Pi_ v_a :e v_u945, (Pi_ v_b :e v_u945,
-    (Lean_Decidable (Lean_Eq_Prop v_u945 v_a v_b)))). 
+    (Lean_Decidable (Lean_Eq_Prop v_u945 v_a v_b)))).
 reflexivity.
 Qed.
 Theorem Lean_compareOfLessAndEq_unfold : forall a0 a1 a2 a3 a4 a5, Lean_compareOfLessAndEq a0 a1 a2 a3 a4 a5 = (Lean_ite Lean_Ordering ((Lean_LT_lt a0 a3) a1 a2) a4 Lean_Ordering_lt_node (Lean_ite
@@ -1114,14 +1361,14 @@ let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat. exact Lean
     (Lean_Nat_pow_method1_0_In a0 H0) a1 H1.
 Qed.
 Theorem Lean_Nat_pow_eq_1 : forall v_m :e Lean_Nat, (Lean_Nat_pow v_m (LeanNum 0)) = (LeanNum 1).
-let v_m. assume H_v_m: v_m :e Lean_Nat. 
+let v_m. assume H_v_m: v_m :e Lean_Nat.
 apply LeanNum_0_at (fun zpat => (Lean_Nat_pow v_m zpat)) (LeanNum 1).
 prove (Lean_Nat_rec (LeanNum 1) (Lean_Nat_pow_method1_0 v_m) Lean_Nat_zero_node) = (LeanNum 1).
 rewrite Lean_Nat_iota0 (LeanNum 1) (Lean_Nat_pow_method1_0 v_m).
 reflexivity.
 Qed.
 Theorem Lean_Nat_pow_eq_2 : forall v_m :e Lean_Nat, forall v_n :e Lean_Nat, (Lean_Nat_pow v_m (Lean_Nat_succ_node v_n)) = (Lean_Nat_mul (Lean_Nat_pow v_m v_n) v_m).
-let v_m. assume H_v_m: v_m :e Lean_Nat. let v_n. assume H_v_n: v_n :e Lean_Nat. 
+let v_m. assume H_v_m: v_m :e Lean_Nat. let v_n. assume H_v_n: v_n :e Lean_Nat.
 prove (Lean_Nat_rec (LeanNum 1) (Lean_Nat_pow_method1_0 v_m) (Lean_Nat_succ_node v_n)) = (Lean_Nat_mul (Lean_Nat_rec (LeanNum 1) (Lean_Nat_pow_method1_0 v_m) v_n) v_m).
 rewrite Lean_Nat_iota1 (LeanNum 1) (Lean_Nat_pow_method1_0 v_m) v_n H_v_n.
 rewrite Lean_Nat_pow_method1_0_ap v_m v_n H_v_n.
@@ -1130,7 +1377,7 @@ reflexivity.
 Qed.
 Theorem Lean_Nat_pow_unique : forall g:set -> set -> set, (forall v_m :e Lean_Nat, (g v_m (LeanNum 0)) = (LeanNum 1)) -> (forall v_m :e Lean_Nat, forall v_n :e Lean_Nat, (g v_m (Lean_Nat_succ_node
     v_n)) = (Lean_Nat_mul (g v_m v_n) v_m)) -> forall u, nat_p u -> forall a0 :e Lean_Nat, forall a1 :e Lean_Nat, g a0 a1 = Lean_Nat_pow a0 a1.
-let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat. 
+let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat.
 claim L0: 0 :e {z :e 1 | g a0 Lean_Nat_zero_node = Lean_Nat_pow a0 Lean_Nat_zero_node}.
 { apply SepI 1 (fun z:set => g a0 Lean_Nat_zero_node = Lean_Nat_pow a0 Lean_Nat_zero_node) 0 In_0_1.
   prove g a0 Lean_Nat_zero_node = Lean_Nat_pow a0 Lean_Nat_zero_node.
@@ -1180,7 +1427,7 @@ reflexivity.
 Qed.
 (** Receipt: Nat.factorial.eq_2 is the source of the MeTTa rule for Nat.factorial, statement digest 110719561. **)
 Theorem Lean_Nat_factorial_eq_2 : forall v_n :e Lean_Nat, (Lean_Nat_factorial (Lean_Nat_succ_node v_n)) = (Lean_Nat_mul (Lean_Nat_succ_node v_n) (Lean_Nat_factorial v_n)).
-let v_n. assume H_v_n: v_n :e Lean_Nat. 
+let v_n. assume H_v_n: v_n :e Lean_Nat.
 prove (Lean_Nat_rec (LeanNum 1) Lean_Nat_factorial_method1_0 (Lean_Nat_succ_node v_n)) = (Lean_Nat_mul (Lean_Nat_succ_node v_n) (Lean_Nat_rec (LeanNum 1) Lean_Nat_factorial_method1_0 v_n)).
 rewrite Lean_Nat_iota1 (LeanNum 1) Lean_Nat_factorial_method1_0 v_n H_v_n.
 rewrite Lean_Nat_factorial_method1_0_ap v_n H_v_n.
@@ -1189,7 +1436,7 @@ reflexivity.
 Qed.
 Theorem Lean_Nat_factorial_unique : forall g:set -> set, ((g (LeanNum 0)) = (LeanNum 1)) -> (forall v_n :e Lean_Nat, (g (Lean_Nat_succ_node v_n)) = (Lean_Nat_mul (Lean_Nat_succ_node v_n) (g v_n))) ->
     forall u, nat_p u -> forall a0 :e Lean_Nat, g a0 = Lean_Nat_factorial a0.
-let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e Lean_Nat. 
+let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e Lean_Nat.
 claim L0: 0 :e {z :e 1 | g Lean_Nat_zero_node = Lean_Nat_factorial Lean_Nat_zero_node}.
 { apply SepI 1 (fun z:set => g Lean_Nat_zero_node = Lean_Nat_factorial Lean_Nat_zero_node) 0 In_0_1.
   prove g Lean_Nat_zero_node = Lean_Nat_factorial Lean_Nat_zero_node.
@@ -1260,7 +1507,7 @@ let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat. exact (ap_
     (Lean_Nat_choose_recIn a0 H0) H1).
 Qed.
 Theorem Lean_Nat_choose_split0 : forall s1 :e Lean_Nat, (Lean_Nat_choose Lean_Nat_zero_node s1) = (Lean_Nat_casesOn (LeanNum 1) (fun c1_1_0 :e Lean_Nat => (LeanNum 0)) s1).
-let s1. assume H_s1: s1 :e Lean_Nat. 
+let s1. assume H_s1: s1 :e Lean_Nat.
 prove ((Lean_Nat_rec Lean_Nat_choose_method0_0 Lean_Nat_choose_method1_0 Lean_Nat_zero_node) s1) = (Lean_Nat_casesOn (LeanNum 1) (fun c1_1_0 :e Lean_Nat => (LeanNum 0)) s1).
 rewrite Lean_Nat_iota0 Lean_Nat_choose_method0_0 Lean_Nat_choose_method1_0.
 rewrite Lean_Nat_choose_method0_0_ap s1 H_s1.
@@ -1268,7 +1515,7 @@ reflexivity.
 Qed.
 Theorem Lean_Nat_choose_split1 : forall t0 :e Lean_Nat, forall s1 :e Lean_Nat, (Lean_Nat_choose (Lean_Nat_succ_node t0) s1) = (Lean_Nat_casesOn (LeanNum 1) (fun c1_1_0 :e Lean_Nat => (Lean_Nat_add
     (Lean_Nat_choose t0 c1_1_0) (Lean_Nat_choose t0 (Lean_Nat_add c1_1_0 (LeanNum 1))))) s1).
-let t0. assume H_t0: t0 :e Lean_Nat. let s1. assume H_s1: s1 :e Lean_Nat. 
+let t0. assume H_t0: t0 :e Lean_Nat. let s1. assume H_s1: s1 :e Lean_Nat.
 prove ((Lean_Nat_rec Lean_Nat_choose_method0_0 Lean_Nat_choose_method1_0 (Lean_Nat_succ_node t0)) s1) = (Lean_Nat_casesOn (LeanNum 1) (fun c1_1_0 :e Lean_Nat => (Lean_Nat_add ((Lean_Nat_rec
     Lean_Nat_choose_method0_0 Lean_Nat_choose_method1_0 t0) c1_1_0) ((Lean_Nat_rec Lean_Nat_choose_method0_0 Lean_Nat_choose_method1_0 t0) (Lean_Nat_add c1_1_0 (LeanNum 1))))) s1).
 rewrite Lean_Nat_iota1 Lean_Nat_choose_method0_0 Lean_Nat_choose_method1_0 t0 H_t0.
@@ -1277,10 +1524,24 @@ rewrite Lean_Nat_choose_method1_1_ap t0 (Lean_Nat_rec Lean_Nat_choose_method0_0 
 rewrite Lean_Nat_choose_method1_2_ap t0 (Lean_Nat_rec Lean_Nat_choose_method0_0 Lean_Nat_choose_method1_0 t0) s1 H_s1.
 reflexivity.
 Qed.
-(** Nat.choose.eq_1 not proved here: a variable where the split has a pattern, which needs a proof by cases **)
+(** Receipt: Nat.choose.eq_1 is the source of the MeTTa rule for Nat.choose, statement digest 2874669642. **)
+Theorem Lean_Nat_choose_eq_1 : forall v_x :e Lean_Nat, (Lean_Nat_choose v_x (LeanNum 0)) = (LeanNum 1).
+
+apply Lean_Nat_ind.
+{ rewrite Lean_Nat_choose_split0 (LeanNum 0) (LeanNum_In 0 nat_0).
+rewrite LeanNum_0.
+rewrite Lean_Nat_casesOn_iota0 (LeanNum 1) (fun c1_1_0 :e Lean_Nat => Lean_Nat_zero_node).
+reflexivity.
+}
+{ let v_x_0. assume H_v_x_0: v_x_0 :e Lean_Nat. assume IH_v_x_0. rewrite Lean_Nat_choose_split1 v_x_0 H_v_x_0 (LeanNum 0) (LeanNum_In 0 nat_0).
+rewrite LeanNum_0.
+rewrite Lean_Nat_casesOn_iota0 (LeanNum 1) (fun c1_1_0 :e Lean_Nat => (Lean_Nat_add (Lean_Nat_choose v_x_0 c1_1_0) (Lean_Nat_choose v_x_0 (Lean_Nat_add c1_1_0 (LeanNum 1))))).
+reflexivity.
+}
+Qed.
 (** Receipt: Nat.choose.eq_2 is the source of the MeTTa rule for Nat.choose, statement digest 173429890. **)
 Theorem Lean_Nat_choose_eq_2 : forall v_n :e Lean_Nat, (Lean_Nat_choose (LeanNum 0) (Lean_Nat_succ_node v_n)) = (LeanNum 0).
-let v_n. assume H_v_n: v_n :e Lean_Nat. 
+let v_n. assume H_v_n: v_n :e Lean_Nat.
 apply LeanNum_0_at (fun zpat => (Lean_Nat_choose zpat (Lean_Nat_succ_node v_n))) (LeanNum 0).
 rewrite Lean_Nat_choose_split0 (Lean_Nat_succ_node v_n) (Lean_Nat_succ_typed v_n H_v_n).
 rewrite Lean_Nat_casesOn_iota1 (LeanNum 1) (fun c1_1_0 :e Lean_Nat => (LeanNum 0)) v_n H_v_n.
@@ -1290,7 +1551,7 @@ Qed.
 (** Receipt: Nat.choose.eq_3 is the source of the MeTTa rule for Nat.choose, statement digest 927451254. **)
 Theorem Lean_Nat_choose_eq_3 : forall v_n :e Lean_Nat, forall v_k :e Lean_Nat, (Lean_Nat_choose (Lean_Nat_succ_node v_n) (Lean_Nat_succ_node v_k)) = (Lean_Nat_add (Lean_Nat_choose v_n v_k)
     (Lean_Nat_choose v_n (Lean_Nat_add v_k (LeanNum 1)))).
-let v_n. assume H_v_n: v_n :e Lean_Nat. let v_k. assume H_v_k: v_k :e Lean_Nat. 
+let v_n. assume H_v_n: v_n :e Lean_Nat. let v_k. assume H_v_k: v_k :e Lean_Nat.
 rewrite Lean_Nat_choose_split1 v_n H_v_n (Lean_Nat_succ_node v_k) (Lean_Nat_succ_typed v_k H_v_k).
 rewrite Lean_Nat_casesOn_iota1 (LeanNum 1) (fun c1_1_0 :e Lean_Nat => (Lean_Nat_add (Lean_Nat_choose v_n c1_1_0) (Lean_Nat_choose v_n (Lean_Nat_add c1_1_0 (LeanNum 1))))) v_k H_v_k.
 rewrite (eq_i_tra ((fun c1_1_0 :e Lean_Nat => (Lean_Nat_add (Lean_Nat_choose v_n c1_1_0) (Lean_Nat_choose v_n (Lean_Nat_add c1_1_0 (LeanNum 1))))) v_k) (Lean_Nat_add (Lean_Nat_choose v_n v_k)
@@ -1307,7 +1568,7 @@ let a0. let a1. assume H1: a1 :e a0. exact H1.
 Qed.
 (** Receipt: id.eq_1 is the source of the MeTTa rule for id, statement digest 3897527904. **)
 Theorem Lean_id_eq_1 : forall l_u, nat_p l_u -> forall v_u945 :e LeanSort l_u, forall v_a :e v_u945, (Lean_id v_u945 v_a) = v_a.
-let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanSort l_u. let v_a. assume H_v_a: v_a :e v_u945. 
+let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanSort l_u. let v_a. assume H_v_a: v_a :e v_u945.
 reflexivity.
 Qed.
 Theorem Lean_id_unfold : forall a0 a1, Lean_id a0 a1 = a1.
@@ -1377,7 +1638,7 @@ let a0. let a1. assume H1: a1 :e (Lean_List a0). let a2. assume H2: a2 :e (Lean_
 Qed.
 (** Receipt: List.reverseAux.eq_1 is the source of the MeTTa rule for List.reverseAux, statement digest 276107252. **)
 Theorem Lean_List_reverseAux_eq_1 : forall l_u, nat_p l_u -> forall v_u945 :e LeanUniv l_u, forall v_x :e (Lean_List v_u945), (Lean_List_reverseAux v_u945 (Lean_List_nil_node v_u945) v_x) = v_x.
-let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let v_x. assume H_v_x: v_x :e (Lean_List v_u945). 
+let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let v_x. assume H_v_x: v_x :e (Lean_List v_u945).
 prove ((Lean_List_rec v_u945 (Lean_List_reverseAux_method0_0 v_u945) (Lean_List_reverseAux_method1_0 v_u945) (Lean_List_nil_node v_u945)) v_x) = v_x.
 rewrite Lean_List_iota0 v_u945 (Lean_List_reverseAux_method0_0 v_u945) (Lean_List_reverseAux_method1_0 v_u945).
 rewrite Lean_List_reverseAux_method0_0_ap v_u945 v_x H_v_x.
@@ -1387,7 +1648,7 @@ Qed.
 Theorem Lean_List_reverseAux_eq_2 : forall l_u, nat_p l_u -> forall v_u945 :e LeanUniv l_u, forall v_x :e (Lean_List v_u945), forall v_a :e v_u945, forall v_l :e (Lean_List v_u945),
     (Lean_List_reverseAux v_u945 (Lean_List_cons_node v_u945 v_a v_l) v_x) = (Lean_List_reverseAux v_u945 v_l (Lean_List_cons_node v_u945 v_a v_x)).
 let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let v_x. assume H_v_x: v_x :e (Lean_List v_u945). let v_a. assume H_v_a: v_a :e v_u945. let v_l. assume H_v_l:
-    v_l :e (Lean_List v_u945). 
+    v_l :e (Lean_List v_u945).
 prove ((Lean_List_rec v_u945 (Lean_List_reverseAux_method0_0 v_u945) (Lean_List_reverseAux_method1_0 v_u945) (Lean_List_cons_node v_u945 v_a v_l)) v_x) = ((Lean_List_rec v_u945
     (Lean_List_reverseAux_method0_0 v_u945) (Lean_List_reverseAux_method1_0 v_u945) v_l) (Lean_List_cons_node v_u945 v_a v_x)).
 rewrite Lean_List_iota1 v_u945 (Lean_List_reverseAux_method0_0 v_u945) (Lean_List_reverseAux_method1_0 v_u945) v_a H_v_a v_l H_v_l.
@@ -1407,7 +1668,7 @@ Qed.
 (** Receipt: List.reverse.eq_1 is the source of the MeTTa rule for List.reverse, statement digest 1476222445. **)
 Theorem Lean_List_reverse_eq_1 : forall l_u, nat_p l_u -> forall v_u945 :e LeanUniv l_u, forall v_as :e (Lean_List v_u945), (Lean_List_reverse v_u945 v_as) = (Lean_List_reverseAux v_u945 v_as
     (Lean_List_nil_node v_u945)).
-let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let v_as. assume H_v_as: v_as :e (Lean_List v_u945). 
+let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let v_as. assume H_v_as: v_as :e (Lean_List v_u945).
 reflexivity.
 Qed.
 Theorem Lean_List_reverse_unfold : forall a0 a1, Lean_List_reverse a0 a1 = (Lean_List_reverseAux a0 a1 (Lean_List_nil_node a0)).
@@ -1467,7 +1728,7 @@ let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e (Lean_List Lean_Nat)
 Qed.
 (** Receipt: List.range.loop.eq_1 is the source of the MeTTa rule for List.range.loop, statement digest 1855936408. **)
 Theorem Lean_List_range_loop_eq_1 : forall v_a :e (Lean_List Lean_Nat), (Lean_List_range_loop (LeanNum 0) v_a) = v_a.
-let v_a. assume H_v_a: v_a :e (Lean_List Lean_Nat). 
+let v_a. assume H_v_a: v_a :e (Lean_List Lean_Nat).
 apply LeanNum_0_at (fun zpat => (Lean_List_range_loop zpat v_a)) v_a.
 prove ((Lean_Nat_rec Lean_List_range_loop_method0_0 Lean_List_range_loop_method1_0 Lean_Nat_zero_node) v_a) = v_a.
 rewrite Lean_Nat_iota0 Lean_List_range_loop_method0_0 Lean_List_range_loop_method1_0.
@@ -1477,7 +1738,7 @@ Qed.
 (** Receipt: List.range.loop.eq_2 is the source of the MeTTa rule for List.range.loop, statement digest 2728420983. **)
 Theorem Lean_List_range_loop_eq_2 : forall v_a :e (Lean_List Lean_Nat), forall v_n :e Lean_Nat, (Lean_List_range_loop (Lean_Nat_succ_node v_n) v_a) = (Lean_List_range_loop v_n (Lean_List_cons_node
     Lean_Nat v_n v_a)).
-let v_a. assume H_v_a: v_a :e (Lean_List Lean_Nat). let v_n. assume H_v_n: v_n :e Lean_Nat. 
+let v_a. assume H_v_a: v_a :e (Lean_List Lean_Nat). let v_n. assume H_v_n: v_n :e Lean_Nat.
 prove ((Lean_Nat_rec Lean_List_range_loop_method0_0 Lean_List_range_loop_method1_0 (Lean_Nat_succ_node v_n)) v_a) = ((Lean_Nat_rec Lean_List_range_loop_method0_0 Lean_List_range_loop_method1_0 v_n)
     (Lean_List_cons_node Lean_Nat v_n v_a)).
 rewrite Lean_Nat_iota1 Lean_List_range_loop_method0_0 Lean_List_range_loop_method1_0 v_n H_v_n.
@@ -1494,7 +1755,7 @@ let a0. assume H0: a0 :e Lean_Nat. exact (Lean_List_range_loop_In a0 H0 (Lean_Li
 Qed.
 (** Receipt: List.range.eq_1 is the source of the MeTTa rule for List.range, statement digest 248109846. **)
 Theorem Lean_List_range_eq_1 : forall v_n :e Lean_Nat, (Lean_List_range v_n) = (Lean_List_range_loop v_n (Lean_List_nil_node Lean_Nat)).
-let v_n. assume H_v_n: v_n :e Lean_Nat. 
+let v_n. assume H_v_n: v_n :e Lean_Nat.
 reflexivity.
 Qed.
 Theorem Lean_List_range_unfold : forall a0, Lean_List_range a0 = (Lean_List_range_loop a0 (Lean_List_nil_node Lean_Nat)).
@@ -1580,7 +1841,7 @@ Qed.
 Theorem Lean_List_zipWith_split0 : forall l_u, nat_p l_u -> forall s0 :e LeanUniv l_u, forall l_v, nat_p l_v -> forall s1 :e LeanUniv l_v, forall l_w, nat_p l_w -> forall s2 :e LeanUniv l_w, forall
     s3 :e (Pi_ ux :e s0, (Pi_ ux :e s1, s2)), forall s5 :e (Lean_List s1), (Lean_List_zipWith s0 s1 s2 s3 (Lean_List_nil_node s0) s5) = (Lean_List_nil_node s2).
 let l_u. assume H_l_u: nat_p l_u. let s0. assume H_s0: s0 :e LeanUniv l_u. let l_v. assume H_l_v: nat_p l_v. let s1. assume H_s1: s1 :e LeanUniv l_v. let l_w. assume H_l_w: nat_p l_w. let s2. assume
-    H_s2: s2 :e LeanUniv l_w. let s3. assume H_s3: s3 :e (Pi_ ux :e s0, (Pi_ ux :e s1, s2)). let s5. assume H_s5: s5 :e (Lean_List s1). 
+    H_s2: s2 :e LeanUniv l_w. let s3. assume H_s3: s3 :e (Pi_ ux :e s0, (Pi_ ux :e s1, s2)). let s5. assume H_s5: s5 :e (Lean_List s1).
 prove ((Lean_List_rec s0 (Lean_List_zipWith_method0_0 s0 s1 s2 s3) (Lean_List_zipWith_method1_0 s0 s1 s2 s3) (Lean_List_nil_node s0)) s5) = (Lean_List_nil_node s2).
 rewrite Lean_List_iota0 s0 (Lean_List_zipWith_method0_0 s0 s1 s2 s3) (Lean_List_zipWith_method1_0 s0 s1 s2 s3).
 rewrite Lean_List_zipWith_method0_0_ap s0 s1 s2 s3 s5 H_s5.
@@ -1591,7 +1852,7 @@ Theorem Lean_List_zipWith_split1 : forall l_u, nat_p l_u -> forall s0 :e LeanUni
     (Lean_List_casesOn s1 (Lean_List_nil_node s2) (fun c1_1_0 :e s1 => (fun c1_1_1 :e (Lean_List s1) => (Lean_List_cons_node s2 (s3 t0 c1_1_0) (Lean_List_zipWith s0 s1 s2 s3 t1 c1_1_1)))) s5).
 let l_u. assume H_l_u: nat_p l_u. let s0. assume H_s0: s0 :e LeanUniv l_u. let l_v. assume H_l_v: nat_p l_v. let s1. assume H_s1: s1 :e LeanUniv l_v. let l_w. assume H_l_w: nat_p l_w. let s2. assume
     H_s2: s2 :e LeanUniv l_w. let s3. assume H_s3: s3 :e (Pi_ ux :e s0, (Pi_ ux :e s1, s2)). let t0. assume H_t0: t0 :e s0. let t1. assume H_t1: t1 :e (Lean_List s0). let s5. assume H_s5: s5 :e
-    (Lean_List s1). 
+    (Lean_List s1).
 prove ((Lean_List_rec s0 (Lean_List_zipWith_method0_0 s0 s1 s2 s3) (Lean_List_zipWith_method1_0 s0 s1 s2 s3) (Lean_List_cons_node s0 t0 t1)) s5) = (Lean_List_casesOn s1 (Lean_List_nil_node s2) (fun
     c1_1_0 :e s1 => (fun c1_1_1 :e (Lean_List s1) => (Lean_List_cons_node s2 (s3 t0 c1_1_0) ((Lean_List_rec s0 (Lean_List_zipWith_method0_0 s0 s1 s2 s3) (Lean_List_zipWith_method1_0 s0 s1 s2 s3) t1)
     c1_1_1)))) s5).
@@ -1610,7 +1871,7 @@ Theorem Lean_List_zipWith_eq_1 : forall l_u, nat_p l_u -> forall v_u945 :e LeanU
     v_u946 v_u947 v_f v_xs v_ys)).
 let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let l_v. assume H_l_v: nat_p l_v. let v_u946. assume H_v_u946: v_u946 :e LeanUniv l_v. let l_w. assume H_l_w:
     nat_p l_w. let v_u947. assume H_v_u947: v_u947 :e LeanUniv l_w. let v_f. assume H_v_f: v_f :e (Pi_ ux :e v_u945, (Pi_ ux :e v_u946, v_u947)). let v_x_2. assume H_v_x_2: v_x_2 :e v_u945. let v_xs.
-    assume H_v_xs: v_xs :e (Lean_List v_u945). let v_y. assume H_v_y: v_y :e v_u946. let v_ys. assume H_v_ys: v_ys :e (Lean_List v_u946). 
+    assume H_v_xs: v_xs :e (Lean_List v_u945). let v_y. assume H_v_y: v_y :e v_u946. let v_ys. assume H_v_ys: v_ys :e (Lean_List v_u946).
 rewrite Lean_List_zipWith_split1 l_u H_l_u v_u945 H_v_u945 l_v H_l_v v_u946 H_v_u946 l_w H_l_w v_u947 H_v_u947 v_f H_v_f v_x_2 H_v_x_2 v_xs H_v_xs (Lean_List_cons_node v_u946 v_y v_ys)
     (Lean_List_cons_typed v_u946 v_y H_v_y v_ys H_v_ys).
 rewrite Lean_List_casesOn_iota1 v_u946 (Lean_List_nil_node v_u947) (fun c1_1_0 :e v_u946 => (fun c1_1_1 :e (Lean_List v_u946) => (Lean_List_cons_node v_u947 (v_f v_x_2 c1_1_0) (Lean_List_zipWith
@@ -1632,7 +1893,7 @@ Theorem Lean_List_zipWith_eq_2 : forall l_u, nat_p l_u -> forall v_u945 :e LeanU
     forall v_y :e v_u946, forall v_ys :e (Lean_List v_u946), (v_x = (Lean_List_cons_node v_u945 v_x7 v_xs)) -> (v_x5 = (Lean_List_cons_node v_u946 v_y v_ys)) -> False) -> (Lean_List_zipWith v_u945
     v_u946 v_u947 v_f v_x v_x5) = (Lean_List_nil_node v_u947).
 let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let l_v. assume H_l_v: nat_p l_v. let v_u946. assume H_v_u946: v_u946 :e LeanUniv l_v. let l_w. assume H_l_w:
-    nat_p l_w. let v_u947. assume H_v_u947: v_u947 :e LeanUniv l_w. 
+    nat_p l_w. let v_u947. assume H_v_u947: v_u947 :e LeanUniv l_w.
 let v_f. assume H_v_f: v_f :e (Pi_ ux :e v_u945, (Pi_ ux :e v_u946, v_u947)). apply Lean_List_ind v_u945.
 { let v_x5. assume H_v_x5: v_x5 :e (Lean_List v_u946). assume v_x_4. rewrite Lean_List_zipWith_split0 l_u H_l_u v_u945 H_v_u945 l_v H_l_v v_u946 H_v_u946 l_w H_l_w v_u947 H_v_u947 v_f H_v_f v_x5
     H_v_x5.
@@ -1665,7 +1926,7 @@ Theorem Lean_List_zip_eq_1 : forall l_u, nat_p l_u -> forall v_u945 :e LeanUniv 
     (Lean_List v_u946), (Lean_List_zip v_u945 v_u946 v_a v_y1) = (Lean_List_zipWith v_u945 v_u946 (Lean_Prod v_u945 v_u946) (fun v_fst :e v_u945 => (Sigma v_u946 (Lean_Prod_mk_node v_u945 v_u946
     v_fst))) v_a v_y1).
 let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let l_v. assume H_l_v: nat_p l_v. let v_u946. assume H_v_u946: v_u946 :e LeanUniv l_v. let v_a. assume H_v_a:
-    v_a :e (Lean_List v_u945). let v_y1. assume H_v_y1: v_y1 :e (Lean_List v_u946). 
+    v_a :e (Lean_List v_u945). let v_y1. assume H_v_y1: v_y1 :e (Lean_List v_u946).
 reflexivity.
 Qed.
 Theorem Lean_List_zip_unfold : forall a0 a1 a2 a3, Lean_List_zip a0 a1 a2 a3 = (Lean_List_zipWith a0 a1 (Lean_Prod a0 a1) (fun v_fst :e a0 => (Sigma a1 (Lean_Prod_mk_node a0 a1 v_fst))) a2 a3).
@@ -1682,7 +1943,7 @@ Qed.
 Theorem Lean_dite_eq_1 : forall l_u, nat_p l_u -> forall v_u945 :e LeanSort l_u, forall v_c :e LeanProp, forall v_h :e (Lean_Decidable v_c), forall v_t :e (Pi_ ux :e v_c, v_u945), forall v_e :e (Pi_
     ux :e (Pi_ ux :e v_c, Lean_False_Prop), v_u945), (Lean_dite v_u945 v_c v_h v_t v_e) = (Lean_Decidable_rec v_c v_e v_t v_h).
 let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanSort l_u. let v_c. assume H_v_c: v_c :e LeanProp. let v_h. assume H_v_h: v_h :e (Lean_Decidable v_c). let v_t. assume
-    H_v_t: v_t :e (Pi_ ux :e v_c, v_u945). let v_e. assume H_v_e: v_e :e (Pi_ ux :e (Pi_ ux :e v_c, Lean_False_Prop), v_u945). 
+    H_v_t: v_t :e (Pi_ ux :e v_c, v_u945). let v_e. assume H_v_e: v_e :e (Pi_ ux :e (Pi_ ux :e v_c, Lean_False_Prop), v_u945).
 reflexivity.
 Qed.
 Theorem Lean_dite_unfold : forall a0 a1 a2 a3 a4, Lean_dite a0 a1 a2 a3 a4 = (Lean_Decidable_rec a1 a4 a3 a2).
@@ -1736,14 +1997,14 @@ let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat. exact (ap_
     a0 H0) H1).
 Qed.
 Theorem Lean_Nat_ble_split0 : forall s1 :e Lean_Nat, (Lean_Nat_ble Lean_Nat_zero_node s1) = Lean_Bool_true_node.
-let s1. assume H_s1: s1 :e Lean_Nat. 
+let s1. assume H_s1: s1 :e Lean_Nat.
 prove ((Lean_Nat_rec Lean_Nat_ble_method0_0 Lean_Nat_ble_method1_0 Lean_Nat_zero_node) s1) = Lean_Bool_true_node.
 rewrite Lean_Nat_iota0 Lean_Nat_ble_method0_0 Lean_Nat_ble_method1_0.
 rewrite Lean_Nat_ble_method0_0_ap s1 H_s1.
 reflexivity.
 Qed.
 Theorem Lean_Nat_ble_split1 : forall t0 :e Lean_Nat, forall s1 :e Lean_Nat, (Lean_Nat_ble (Lean_Nat_succ_node t0) s1) = (Lean_Nat_casesOn Lean_Bool_false_node (Sigma Lean_Nat (Lean_Nat_ble t0)) s1).
-let t0. assume H_t0: t0 :e Lean_Nat. let s1. assume H_s1: s1 :e Lean_Nat. 
+let t0. assume H_t0: t0 :e Lean_Nat. let s1. assume H_s1: s1 :e Lean_Nat.
 prove ((Lean_Nat_rec Lean_Nat_ble_method0_0 Lean_Nat_ble_method1_0 (Lean_Nat_succ_node t0)) s1) = (Lean_Nat_casesOn Lean_Bool_false_node (fun c1_1_0 :e Lean_Nat => ((Lean_Nat_rec
     Lean_Nat_ble_method0_0 Lean_Nat_ble_method1_0 t0) c1_1_0)) s1).
 rewrite Lean_Nat_iota1 Lean_Nat_ble_method0_0 Lean_Nat_ble_method1_0 t0 H_t0.
@@ -1753,18 +2014,18 @@ rewrite Lean_Nat_ble_method1_2_ap t0 (Lean_Nat_rec Lean_Nat_ble_method0_0 Lean_N
 reflexivity.
 Qed.
 Theorem Lean_Nat_ble_eq_1 : forall v_x :e Lean_Nat, (Lean_Nat_ble Lean_Nat_zero_node v_x) = Lean_Bool_true_node.
-let v_x. assume H_v_x: v_x :e Lean_Nat. 
+let v_x. assume H_v_x: v_x :e Lean_Nat.
 rewrite Lean_Nat_ble_split0 v_x H_v_x.
 reflexivity.
 Qed.
 Theorem Lean_Nat_ble_eq_2 : forall v_n :e Lean_Nat, (Lean_Nat_ble (Lean_Nat_succ_node v_n) Lean_Nat_zero_node) = Lean_Bool_false_node.
-let v_n. assume H_v_n: v_n :e Lean_Nat. 
+let v_n. assume H_v_n: v_n :e Lean_Nat.
 rewrite Lean_Nat_ble_split1 v_n H_v_n Lean_Nat_zero_node Lean_Nat_zero_typed.
 rewrite Lean_Nat_casesOn_iota0 Lean_Bool_false_node (Sigma Lean_Nat (Lean_Nat_ble v_n)).
 reflexivity.
 Qed.
 Theorem Lean_Nat_ble_eq_3 : forall v_n :e Lean_Nat, forall v_m :e Lean_Nat, (Lean_Nat_ble (Lean_Nat_succ_node v_n) (Lean_Nat_succ_node v_m)) = (Lean_Nat_ble v_n v_m).
-let v_n. assume H_v_n: v_n :e Lean_Nat. let v_m. assume H_v_m: v_m :e Lean_Nat. 
+let v_n. assume H_v_n: v_n :e Lean_Nat. let v_m. assume H_v_m: v_m :e Lean_Nat.
 rewrite Lean_Nat_ble_split1 v_n H_v_n (Lean_Nat_succ_node v_m) (Lean_Nat_succ_typed v_m H_v_m).
 rewrite Lean_Nat_casesOn_iota1 Lean_Bool_false_node (Sigma Lean_Nat (Lean_Nat_ble v_n)) v_m H_v_m.
 rewrite (eq_i_tra ((Sigma Lean_Nat (Lean_Nat_ble v_n)) v_m) (Lean_Nat_ble v_n v_m) (Lean_Nat_ble v_n v_m) (beta Lean_Nat (Lean_Nat_ble v_n) v_m H_v_m) (Lean_eq_refl (Lean_Nat_ble v_n v_m))).
@@ -1786,7 +2047,7 @@ Theorem Lean_maxOfLe_eq_1 : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUn
     ((Lean_LE_le v_u945 v_inst) v_a v_b)))), (Lean_maxOfLe v_u945 v_inst v_x2) = (Lean_Max_mk_node v_u945 (fun v_x :e v_u945 => (fun v_y :e v_u945 => (Lean_ite v_u945 ((Lean_LE_le v_u945 v_inst) v_x
     v_y) (v_x2 v_x v_y) v_y v_x)))).
 let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let v_inst. assume H_v_inst: v_inst :e (Lean_LE v_u945). let v_x2. assume H_v_x2: v_x2 :e (Pi_ v_a :e
-    v_u945, (Pi_ v_b :e v_u945, (Lean_Decidable ((Lean_LE_le v_u945 v_inst) v_a v_b)))). 
+    v_u945, (Pi_ v_b :e v_u945, (Lean_Decidable ((Lean_LE_le v_u945 v_inst) v_a v_b)))).
 reflexivity.
 Qed.
 Theorem Lean_maxOfLe_unfold : forall a0 a1 a2, Lean_maxOfLe a0 a1 a2 = (Lean_Max_mk_node a0 (fun v_x :e a0 => (fun v_y :e a0 => (Lean_ite a0 ((Lean_LE_le a0 a1) v_x v_y) (a2 v_x v_y) v_y v_x)))).
@@ -1837,7 +2098,7 @@ rewrite Lean_Nat_iota0 (LeanNum 0) Lean_Nat_pred_method1_0.
 reflexivity.
 Qed.
 Theorem Lean_Nat_pred_eq_2 : forall v_n :e Lean_Nat, (Lean_Nat_pred (Lean_Nat_succ_node v_n)) = v_n.
-let v_n. assume H_v_n: v_n :e Lean_Nat. 
+let v_n. assume H_v_n: v_n :e Lean_Nat.
 prove (Lean_Nat_rec (LeanNum 0) Lean_Nat_pred_method1_0 (Lean_Nat_succ_node v_n)) = v_n.
 rewrite Lean_Nat_iota1 (LeanNum 0) Lean_Nat_pred_method1_0 v_n H_v_n.
 rewrite Lean_Nat_pred_method1_0_ap v_n H_v_n.
@@ -1846,7 +2107,7 @@ reflexivity.
 Qed.
 Theorem Lean_Nat_pred_unique : forall g:set -> set, ((g (LeanNum 0)) = (LeanNum 0)) -> (forall v_n :e Lean_Nat, (g (Lean_Nat_succ_node v_n)) = v_n) -> forall u, nat_p u -> forall a0 :e Lean_Nat, g a0
     = Lean_Nat_pred a0.
-let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e Lean_Nat. 
+let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e Lean_Nat.
 claim L0: 0 :e {z :e 1 | g Lean_Nat_zero_node = Lean_Nat_pred Lean_Nat_zero_node}.
 { apply SepI 1 (fun z:set => g Lean_Nat_zero_node = Lean_Nat_pred Lean_Nat_zero_node) 0 In_0_1.
   prove g Lean_Nat_zero_node = Lean_Nat_pred Lean_Nat_zero_node.
@@ -1885,14 +2146,14 @@ Theorem Lean_Nat_sub_In : forall a0 :e Lean_Nat, forall a1 :e Lean_Nat, Lean_Nat
 let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat. exact Lean_Nat_rec_type (fun _ => Lean_Nat) a0 H0 (Lean_Nat_sub_method1_0 a0) (Lean_Nat_sub_method1_0_In a0 H0) a1 H1.
 Qed.
 Theorem Lean_Nat_sub_eq_1 : forall v_x :e Lean_Nat, (Lean_Nat_sub v_x (LeanNum 0)) = v_x.
-let v_x. assume H_v_x: v_x :e Lean_Nat. 
+let v_x. assume H_v_x: v_x :e Lean_Nat.
 apply LeanNum_0_at (fun zpat => (Lean_Nat_sub v_x zpat)) v_x.
 prove (Lean_Nat_rec v_x (Lean_Nat_sub_method1_0 v_x) Lean_Nat_zero_node) = v_x.
 rewrite Lean_Nat_iota0 v_x (Lean_Nat_sub_method1_0 v_x).
 reflexivity.
 Qed.
 Theorem Lean_Nat_sub_eq_2 : forall v_x :e Lean_Nat, forall v_b :e Lean_Nat, (Lean_Nat_sub v_x (Lean_Nat_succ_node v_b)) = (Lean_Nat_pred (Lean_Nat_sub v_x v_b)).
-let v_x. assume H_v_x: v_x :e Lean_Nat. let v_b. assume H_v_b: v_b :e Lean_Nat. 
+let v_x. assume H_v_x: v_x :e Lean_Nat. let v_b. assume H_v_b: v_b :e Lean_Nat.
 prove (Lean_Nat_rec v_x (Lean_Nat_sub_method1_0 v_x) (Lean_Nat_succ_node v_b)) = (Lean_Nat_pred (Lean_Nat_rec v_x (Lean_Nat_sub_method1_0 v_x) v_b)).
 rewrite Lean_Nat_iota1 v_x (Lean_Nat_sub_method1_0 v_x) v_b H_v_b.
 rewrite Lean_Nat_sub_method1_0_ap v_x v_b H_v_b.
@@ -1901,7 +2162,7 @@ reflexivity.
 Qed.
 Theorem Lean_Nat_sub_unique : forall g:set -> set -> set, (forall v_x :e Lean_Nat, (g v_x (LeanNum 0)) = v_x) -> (forall v_x :e Lean_Nat, forall v_b :e Lean_Nat, (g v_x (Lean_Nat_succ_node v_b)) =
     (Lean_Nat_pred (g v_x v_b))) -> forall u, nat_p u -> forall a0 :e Lean_Nat, forall a1 :e Lean_Nat, g a0 a1 = Lean_Nat_sub a0 a1.
-let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat. 
+let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat.
 claim L0: 0 :e {z :e 1 | g a0 Lean_Nat_zero_node = Lean_Nat_sub a0 Lean_Nat_zero_node}.
 { apply SepI 1 (fun z:set => g a0 Lean_Nat_zero_node = Lean_Nat_sub a0 Lean_Nat_zero_node) 0 In_0_1.
   prove g a0 Lean_Nat_zero_node = Lean_Nat_sub a0 Lean_Nat_zero_node.
@@ -1970,7 +2231,7 @@ Qed.
 (** Receipt: Nat.iterate.eq_1 is the source of the MeTTa rule for Nat.iterate, statement digest 1303063392. **)
 Theorem Lean_Nat_iterate_eq_1 : forall l_u, nat_p l_u -> forall v_u945 :e LeanSort l_u, forall v_op :e (Pi_ ux :e v_u945, v_u945), forall v_x :e v_u945, (Lean_Nat_iterate v_u945 v_op (LeanNum 0) v_x)
     = v_x.
-let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanSort l_u. let v_op. assume H_v_op: v_op :e (Pi_ ux :e v_u945, v_u945). let v_x. assume H_v_x: v_x :e v_u945. 
+let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanSort l_u. let v_op. assume H_v_op: v_op :e (Pi_ ux :e v_u945, v_u945). let v_x. assume H_v_x: v_x :e v_u945.
 apply LeanNum_0_at (fun zpat => (Lean_Nat_iterate v_u945 v_op zpat v_x)) v_x.
 prove ((Lean_Nat_rec (Lean_Nat_iterate_method0_0 v_u945 v_op) (Lean_Nat_iterate_method1_0 v_u945 v_op) Lean_Nat_zero_node) v_x) = v_x.
 rewrite Lean_Nat_iota0 (Lean_Nat_iterate_method0_0 v_u945 v_op) (Lean_Nat_iterate_method1_0 v_u945 v_op).
@@ -1981,7 +2242,7 @@ Qed.
 Theorem Lean_Nat_iterate_eq_2 : forall l_u, nat_p l_u -> forall v_u945 :e LeanSort l_u, forall v_op :e (Pi_ ux :e v_u945, v_u945), forall v_x :e v_u945, forall v_k :e Lean_Nat, (Lean_Nat_iterate
     v_u945 v_op (Lean_Nat_succ_node v_k) v_x) = (Lean_Nat_iterate v_u945 v_op v_k (v_op v_x)).
 let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanSort l_u. let v_op. assume H_v_op: v_op :e (Pi_ ux :e v_u945, v_u945). let v_x. assume H_v_x: v_x :e v_u945. let v_k.
-    assume H_v_k: v_k :e Lean_Nat. 
+    assume H_v_k: v_k :e Lean_Nat.
 prove ((Lean_Nat_rec (Lean_Nat_iterate_method0_0 v_u945 v_op) (Lean_Nat_iterate_method1_0 v_u945 v_op) (Lean_Nat_succ_node v_k)) v_x) = ((Lean_Nat_rec (Lean_Nat_iterate_method0_0 v_u945 v_op)
     (Lean_Nat_iterate_method1_0 v_u945 v_op) v_k) (v_op v_x)).
 rewrite Lean_Nat_iota1 (Lean_Nat_iterate_method0_0 v_u945 v_op) (Lean_Nat_iterate_method1_0 v_u945 v_op) v_k H_v_k.
@@ -2011,7 +2272,7 @@ Qed.
 Theorem Lean_Nat_fib_eq_1 : forall v_n :e Lean_Nat, (Lean_Nat_fib v_n) = (Lean_Prod_fst Lean_Nat Lean_Nat (Lean_Nat_iterate (Lean_Prod Lean_Nat Lean_Nat) (fun v_p :e (Lean_Prod Lean_Nat Lean_Nat) =>
     (Lean_Prod_mk_node Lean_Nat Lean_Nat (Lean_Prod_snd Lean_Nat Lean_Nat v_p) (Lean_Nat_add (Lean_Prod_fst Lean_Nat Lean_Nat v_p) (Lean_Prod_snd Lean_Nat Lean_Nat v_p)))) v_n (Lean_Prod_mk_node
     Lean_Nat Lean_Nat (LeanNum 0) (LeanNum 1)))).
-let v_n. assume H_v_n: v_n :e Lean_Nat. 
+let v_n. assume H_v_n: v_n :e Lean_Nat.
 reflexivity.
 Qed.
 Theorem Lean_Nat_fib_unfold : forall a0, Lean_Nat_fib a0 = (Lean_Prod_fst Lean_Nat Lean_Nat (Lean_Nat_iterate (Lean_Prod Lean_Nat Lean_Nat) (fun v_p :e (Lean_Prod Lean_Nat Lean_Nat) =>
@@ -2027,11 +2288,225 @@ let a0. let a1. assume H1: a1 :e a0. exact H1.
 Qed.
 (** Receipt: inferInstance.eq_1 is the source of the MeTTa rule for inferInstance, statement digest 3624754066. **)
 Theorem Lean_inferInstance_eq_1 : forall l_u, nat_p l_u -> forall v_u945 :e LeanSort l_u, forall v_i :e v_u945, (Lean_inferInstance v_u945 v_i) = v_i.
-let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanSort l_u. let v_i. assume H_v_i: v_i :e v_u945. 
+let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanSort l_u. let v_i. assume H_v_i: v_i :e v_u945.
 reflexivity.
 Qed.
 Theorem Lean_inferInstance_unfold : forall a0 a1, Lean_inferInstance a0 a1 = a1.
 let a0 a1. reflexivity.
+Qed.
+
+(** Nat.instMonoid, from its equation theorem **)
+Definition Lean_Nat_instMonoid : set := (Lean_inferInstance (Lean_Monoid Lean_Nat) (Lean_Monoid_mk_node Lean_Nat (Lean_Semigroup_mk_node Lean_Nat (Lean_Mul_mk_node Lean_Nat (fun v_a :e Lean_Nat =>
+    (Sigma Lean_Nat (Lean_Nat_mul v_a)))) 0) (Lean_One_mk_node Lean_Nat (Lean_Nat_succ_node Lean_Nat_zero_node)) 0 0 (Lean_NPow_mk_node Lean_Nat (fun v_m :e Lean_Nat => (fun v_n :e Lean_Nat =>
+    (Lean_Nat_pow v_n v_m)))) 0 0)).
+Theorem Lean_Nat_instMonoid_eq_1 : Lean_Nat_instMonoid = (Lean_inferInstance (Lean_Monoid Lean_Nat) (Lean_Monoid_mk_node Lean_Nat (Lean_Semigroup_mk_node Lean_Nat (Lean_Mul_mk_node Lean_Nat (fun v_a
+    :e Lean_Nat => (Sigma Lean_Nat (Lean_Nat_mul v_a)))) 0) (Lean_One_mk_node Lean_Nat (Lean_Nat_succ_node Lean_Nat_zero_node)) 0 0 (Lean_NPow_mk_node Lean_Nat (fun v_m :e Lean_Nat => (fun v_n :e
+    Lean_Nat => (Lean_Nat_pow v_n v_m)))) 0 0)).
+
+reflexivity.
+Qed.
+Theorem Lean_Nat_instMonoid_unfold : Lean_Nat_instMonoid = (Lean_inferInstance (Lean_Monoid Lean_Nat) (Lean_Monoid_mk_node Lean_Nat (Lean_Semigroup_mk_node Lean_Nat (Lean_Mul_mk_node Lean_Nat (fun
+    v_a :e Lean_Nat => (Sigma Lean_Nat (Lean_Nat_mul v_a)))) 0) (Lean_One_mk_node Lean_Nat (Lean_Nat_succ_node Lean_Nat_zero_node)) 0 0 (Lean_NPow_mk_node Lean_Nat (fun v_m :e Lean_Nat => (fun v_n :e
+    Lean_Nat => (Lean_Nat_pow v_n v_m)))) 0 0)).
+reflexivity.
+Qed.
+(** Nat.instMonoid's type: the statement generated from Lean's, proved in Egal. **)
+Theorem Lean_Nat_instMonoid_In : Lean_Nat_instMonoid  :e (Lean_Monoid Lean_Nat).
+claim MZero: forall x :e Lean_Nat,
+  Lean_Nat_mul x Lean_Nat_zero_node = Lean_Nat_zero_node.
+{ let x. assume Hx: x :e Lean_Nat.
+  rewrite <- LeanNum_0. exact Lean_Nat_mul_eq_1 x Hx. }
+claim PZero: forall x :e Lean_Nat,
+  Lean_Nat_pow x (LeanNum 0) = Lean_Nat_succ_node Lean_Nat_zero_node.
+{ let x. assume Hx: x :e Lean_Nat.
+  rewrite Lean_Nat_pow_eq_1 x Hx.
+  rewrite LeanNum_S 0 nat_0. rewrite LeanNum_0. reflexivity. }
+prove Lean_MonoidOf Lean_Nat (Lean_BinaryMap Lean_Nat Lean_Nat Lean_Nat_mul)
+  (Lean_Nat_succ_node Lean_Nat_zero_node)
+  (Lean_BinaryMap Lean_Nat Lean_Nat (fun n x => Lean_Nat_pow x n)) :e Lean_Monoid Lean_Nat.
+exact NatAlgebra_monoid Lean_Nat_add Lean_Nat_add_In Lean_Nat_add_eq_1 Lean_Nat_add_eq_2
+  Lean_Nat_mul Lean_Nat_mul_In MZero Lean_Nat_mul_eq_2
+  Lean_Nat_pow Lean_Nat_pow_In PZero Lean_Nat_pow_eq_2.
+Qed.
+
+(** Nat.instAddCommMonoid, from its equation theorem **)
+Definition Lean_Nat_instAddCommMonoid : set := (Lean_inferInstance (Lean_AddCommMonoid Lean_Nat) (Lean_AddCommMonoid_mk_node Lean_Nat (Lean_AddMonoid_mk_node Lean_Nat (Lean_AddSemigroup_mk_node
+    Lean_Nat (Lean_Add_mk_node Lean_Nat (fun v_a :e Lean_Nat => (Sigma Lean_Nat (Lean_Nat_add v_a)))) 0) (Lean_Zero_mk_node Lean_Nat Lean_Nat_zero_node) 0 0 (Lean_NSMul_mk_node Lean_Nat (fun v_m :e
+    Lean_Nat => (Sigma Lean_Nat (Lean_Nat_mul v_m)))) 0 0) 0)).
+(** Receipt: Nat.instAddCommMonoid.eq_1 is the source of the MeTTa rule for Nat.instAddCommMonoid, statement digest 3623298314. **)
+Theorem Lean_Nat_instAddCommMonoid_eq_1 : Lean_Nat_instAddCommMonoid = (Lean_inferInstance (Lean_AddCommMonoid Lean_Nat) (Lean_AddCommMonoid_mk_node Lean_Nat (Lean_AddMonoid_mk_node Lean_Nat
+    (Lean_AddSemigroup_mk_node Lean_Nat (Lean_Add_mk_node Lean_Nat (fun v_a :e Lean_Nat => (Sigma Lean_Nat (Lean_Nat_add v_a)))) 0) (Lean_Zero_mk_node Lean_Nat Lean_Nat_zero_node) 0 0
+    (Lean_NSMul_mk_node Lean_Nat (fun v_m :e Lean_Nat => (Sigma Lean_Nat (Lean_Nat_mul v_m)))) 0 0) 0)).
+
+reflexivity.
+Qed.
+Theorem Lean_Nat_instAddCommMonoid_unfold : Lean_Nat_instAddCommMonoid = (Lean_inferInstance (Lean_AddCommMonoid Lean_Nat) (Lean_AddCommMonoid_mk_node Lean_Nat (Lean_AddMonoid_mk_node Lean_Nat
+    (Lean_AddSemigroup_mk_node Lean_Nat (Lean_Add_mk_node Lean_Nat (fun v_a :e Lean_Nat => (Sigma Lean_Nat (Lean_Nat_add v_a)))) 0) (Lean_Zero_mk_node Lean_Nat Lean_Nat_zero_node) 0 0
+    (Lean_NSMul_mk_node Lean_Nat (fun v_m :e Lean_Nat => (Sigma Lean_Nat (Lean_Nat_mul v_m)))) 0 0) 0)).
+reflexivity.
+Qed.
+(** Nat.instAddCommMonoid's type: the statement generated from Lean's, proved in Egal. **)
+Theorem Lean_Nat_instAddCommMonoid_In : Lean_Nat_instAddCommMonoid  :e (Lean_AddCommMonoid Lean_Nat).
+claim MZero: forall x :e Lean_Nat,
+  Lean_Nat_mul x Lean_Nat_zero_node = Lean_Nat_zero_node.
+{ let x. assume Hx: x :e Lean_Nat.
+  rewrite <- LeanNum_0. exact Lean_Nat_mul_eq_1 x Hx. }
+prove Lean_AddCommMonoidOf Lean_Nat (Lean_BinaryMap Lean_Nat Lean_Nat Lean_Nat_add)
+  Lean_Nat_zero_node (Lean_BinaryMap Lean_Nat Lean_Nat Lean_Nat_mul) :e Lean_AddCommMonoid Lean_Nat.
+exact NatAlgebra_additive Lean_Nat_add Lean_Nat_add_In Lean_Nat_add_eq_1 Lean_Nat_add_eq_2
+  Lean_Nat_mul Lean_Nat_mul_In MZero Lean_Nat_mul_eq_2.
+Qed.
+
+(** instDecidableAnd, from its equation theorems, split at argument 2 **)
+Definition Lean_instDecidableAnd_method0_0 : set -> set -> set -> set := fun a0 a1 a3 => (fun y0 :e (Pi_ ux :e a0, Lean_False_Prop) => (Lean_Decidable_isFalse_node (Lean_And_Prop a0 a1) 0)).
+Theorem Lean_instDecidableAnd_method0_0_ap : forall a0 a1 a3, forall y0 :e (Pi_ ux :e a0, Lean_False_Prop), (Lean_instDecidableAnd_method0_0 a0 a1 a3) y0 = (Lean_Decidable_isFalse_node (Lean_And_Prop
+    a0 a1) 0).
+let a0. let a1. let a3. let y0. assume H: y0 :e (Pi_ ux :e a0, Lean_False_Prop).
+exact beta (Pi_ ux :e a0, Lean_False_Prop) (fun y0 => (Lean_Decidable_isFalse_node (Lean_And_Prop a0 a1) 0)) y0 H.
+Qed.
+Theorem Lean_instDecidableAnd_method0_0_In : forall a0 :e LeanProp, forall a1 :e LeanProp, forall a3 :e (Lean_Decidable a1), (Lean_instDecidableAnd_method0_0 a0 a1 a3) :e (Pi_ y0 :e (Pi_ ux :e a0,
+    Lean_False_Prop), (Lean_Decidable (Lean_And_Prop a0 a1))).
+let a0. assume H0: a0 :e LeanProp. let a1. assume H1: a1 :e LeanProp. let a3. assume H3: a3 :e (Lean_Decidable a1). exact lam_Pi (Pi_ ux :e a0, Lean_False_Prop) (fun y0 => (Lean_Decidable
+    (Lean_And_Prop a0 a1))) (fun y0 => (Lean_Decidable_isFalse_node (Lean_And_Prop a0 a1) 0)) (fun y0 Hy0 => (Lean_Decidable_isFalse_typed (Lean_And_Prop a0 a1) 0 (LeanAnd_refute_left a0 H0 a1 H1 y0
+    Hy0))).
+Qed.
+Definition Lean_instDecidableAnd_method1_0 : set -> set -> set -> set := fun a0 a1 a3 => (fun y0 :e a0 => (Lean_Decidable_rec a1 (fun c1_0_0 :e (Pi_ ux :e a1, Lean_False_Prop) =>
+    (Lean_Decidable_isFalse_node (Lean_And_Prop a0 a1) 0)) (fun c1_1_0 :e a1 => (Lean_Decidable_isTrue_node (Lean_And_Prop a0 a1) 0)) a3)).
+Theorem Lean_instDecidableAnd_method1_0_ap : forall a0 a1 a3, forall y0 :e a0, (Lean_instDecidableAnd_method1_0 a0 a1 a3) y0 = (Lean_Decidable_rec a1 (fun c1_0_0 :e (Pi_ ux :e a1, Lean_False_Prop) =>
+    (Lean_Decidable_isFalse_node (Lean_And_Prop a0 a1) 0)) (fun c1_1_0 :e a1 => (Lean_Decidable_isTrue_node (Lean_And_Prop a0 a1) 0)) a3).
+let a0. let a1. let a3. let y0. assume H: y0 :e a0.
+exact beta a0 (fun y0 => (Lean_Decidable_rec a1 (fun c1_0_0 :e (Pi_ ux :e a1, Lean_False_Prop) => (Lean_Decidable_isFalse_node (Lean_And_Prop a0 a1) 0)) (fun c1_1_0 :e a1 =>
+    (Lean_Decidable_isTrue_node (Lean_And_Prop a0 a1) 0)) a3)) y0 H.
+Qed.
+Theorem Lean_instDecidableAnd_method1_0_In : forall a0 :e LeanProp, forall a1 :e LeanProp, forall a3 :e (Lean_Decidable a1), (Lean_instDecidableAnd_method1_0 a0 a1 a3) :e (Pi_ y0 :e a0,
+    (Lean_Decidable (Lean_And_Prop a0 a1))).
+let a0. assume H0: a0 :e LeanProp. let a1. assume H1: a1 :e LeanProp. let a3. assume H3: a3 :e (Lean_Decidable a1). exact lam_Pi a0 (fun y0 => (Lean_Decidable (Lean_And_Prop a0 a1))) (fun y0 =>
+    (Lean_Decidable_rec a1 (fun c1_0_0 :e (Pi_ ux :e a1, Lean_False_Prop) => (Lean_Decidable_isFalse_node (Lean_And_Prop a0 a1) 0)) (fun c1_1_0 :e a1 => (Lean_Decidable_isTrue_node (Lean_And_Prop a0
+    a1) 0)) a3)) (fun y0 Hy0 => (Lean_Decidable_rec_type a1 (fun _ => (Lean_Decidable (Lean_And_Prop a0 a1))) (fun c1_0_0 :e (Pi_ ux :e a1, Lean_False_Prop) => (Lean_Decidable_isFalse_node
+    (Lean_And_Prop a0 a1) 0)) (lam_Pi (Pi_ ux :e a1, Lean_False_Prop) (fun c1_0_0 => (Lean_Decidable (Lean_And_Prop a0 a1))) (fun c1_0_0 => (Lean_Decidable_isFalse_node (Lean_And_Prop a0 a1) 0)) (fun
+    c1_0_0 Hc1_0_0 => (Lean_Decidable_isFalse_typed (Lean_And_Prop a0 a1) 0 (LeanAnd_refute_right a0 H0 a1 H1 c1_0_0 Hc1_0_0)))) (fun c1_1_0 :e a1 => (Lean_Decidable_isTrue_node (Lean_And_Prop a0 a1)
+    0)) (lam_Pi a1 (fun c1_1_0 => (Lean_Decidable (Lean_And_Prop a0 a1))) (fun c1_1_0 => (Lean_Decidable_isTrue_node (Lean_And_Prop a0 a1) 0)) (fun c1_1_0 Hc1_1_0 => (Lean_Decidable_isTrue_typed
+    (Lean_And_Prop a0 a1) 0 (Lean_And_intro_proof_ok a0 a1 0 (Lean_prop_0_of a0 H0 y0 Hy0) 0 (Lean_prop_0_of a1 H1 c1_1_0 Hc1_1_0))))) a3 H3)).
+Qed.
+Definition Lean_instDecidableAnd : set -> set -> set -> set -> set := fun a0 a1 a2 a3 => Lean_Decidable_rec a0 (Lean_instDecidableAnd_method0_0 a0 a1 a3) (Lean_instDecidableAnd_method1_0 a0 a1 a3) a2.
+Theorem Lean_instDecidableAnd_In : forall a0 :e LeanProp, forall a1 :e LeanProp, forall a2 :e (Lean_Decidable a0), forall a3 :e (Lean_Decidable a1), Lean_instDecidableAnd a0 a1 a2 a3 :e
+    (Lean_Decidable (Lean_And_Prop a0 a1)).
+let a0. assume H0: a0 :e LeanProp. let a1. assume H1: a1 :e LeanProp. let a2. assume H2: a2 :e (Lean_Decidable a0). let a3. assume H3: a3 :e (Lean_Decidable a1). exact Lean_Decidable_rec_type a0 (fun
+    _ => (Lean_Decidable (Lean_And_Prop a0 a1))) (Lean_instDecidableAnd_method0_0 a0 a1 a3) (Lean_instDecidableAnd_method0_0_In a0 H0 a1 H1 a3 H3) (Lean_instDecidableAnd_method1_0 a0 a1 a3)
+    (Lean_instDecidableAnd_method1_0_In a0 H0 a1 H1 a3 H3) a2 H2.
+Qed.
+Theorem Lean_instDecidableAnd_split0 : forall s0 :e LeanProp, forall s1 :e LeanProp, forall t0 :e (Pi_ ux :e s0, Lean_False_Prop), forall s3 :e (Lean_Decidable s1), (Lean_instDecidableAnd s0 s1
+    (Lean_Decidable_isFalse_node s0 t0) s3) = (Lean_Decidable_isFalse_node (Lean_And_Prop s0 s1) 0).
+let s0. assume H_s0: s0 :e LeanProp. let s1. assume H_s1: s1 :e LeanProp. let t0. assume H_t0: t0 :e (Pi_ ux :e s0, Lean_False_Prop). let s3. assume H_s3: s3 :e (Lean_Decidable s1).
+prove (Lean_Decidable_rec s0 (Lean_instDecidableAnd_method0_0 s0 s1 s3) (Lean_instDecidableAnd_method1_0 s0 s1 s3) (Lean_Decidable_isFalse_node s0 t0)) = (Lean_Decidable_isFalse_node (Lean_And_Prop
+    s0 s1) 0).
+rewrite Lean_Decidable_iota0 s0 (Lean_instDecidableAnd_method0_0 s0 s1 s3) (Lean_instDecidableAnd_method1_0 s0 s1 s3) t0 H_t0.
+rewrite Lean_instDecidableAnd_method0_0_ap s0 s1 s3 t0 H_t0.
+reflexivity.
+Qed.
+Theorem Lean_instDecidableAnd_split1 : forall s0 :e LeanProp, forall s1 :e LeanProp, forall t0 :e s0, forall s3 :e (Lean_Decidable s1), (Lean_instDecidableAnd s0 s1 (Lean_Decidable_isTrue_node s0 t0)
+    s3) = (Lean_Decidable_rec s1 (fun c1_0_0 :e (Pi_ ux :e s1, Lean_False_Prop) => (Lean_Decidable_isFalse_node (Lean_And_Prop s0 s1) 0)) (fun c1_1_0 :e s1 => (Lean_Decidable_isTrue_node
+    (Lean_And_Prop s0 s1) 0)) s3).
+let s0. assume H_s0: s0 :e LeanProp. let s1. assume H_s1: s1 :e LeanProp. let t0. assume H_t0: t0 :e s0. let s3. assume H_s3: s3 :e (Lean_Decidable s1).
+prove (Lean_Decidable_rec s0 (Lean_instDecidableAnd_method0_0 s0 s1 s3) (Lean_instDecidableAnd_method1_0 s0 s1 s3) (Lean_Decidable_isTrue_node s0 t0)) = (Lean_Decidable_rec s1 (fun c1_0_0 :e (Pi_ ux
+    :e s1, Lean_False_Prop) => (Lean_Decidable_isFalse_node (Lean_And_Prop s0 s1) 0)) (fun c1_1_0 :e s1 => (Lean_Decidable_isTrue_node (Lean_And_Prop s0 s1) 0)) s3).
+rewrite Lean_Decidable_iota1 s0 (Lean_instDecidableAnd_method0_0 s0 s1 s3) (Lean_instDecidableAnd_method1_0 s0 s1 s3) t0 H_t0.
+rewrite Lean_instDecidableAnd_method1_0_ap s0 s1 s3 t0 H_t0.
+reflexivity.
+Qed.
+(** Receipt: instDecidableAnd.eq_1 is the source of the MeTTa rule for instDecidableAnd, statement digest 2877069531. **)
+Theorem Lean_instDecidableAnd_eq_1 : forall v_p :e LeanProp, forall v_q :e LeanProp, (0 :e v_p) -> (0 :e v_q) -> (Lean_instDecidableAnd v_p v_q (Lean_Decidable_isTrue_node v_p 0)
+    (Lean_Decidable_isTrue_node v_q 0)) = (Lean_Decidable_isTrue_node (Lean_And_Prop v_p v_q) 0).
+let v_p. assume H_v_p: v_p :e LeanProp. let v_q. assume H_v_q: v_q :e LeanProp. assume v_hq. assume v_hq_1.
+rewrite Lean_instDecidableAnd_split1 v_p H_v_p v_q H_v_q 0 v_hq (Lean_Decidable_isTrue_node v_q 0) (Lean_Decidable_isTrue_typed v_q 0 v_hq_1).
+rewrite Lean_Decidable_iota1 v_q (fun c1_0_0 :e (Pi_ ux :e v_q, Lean_False_Prop) => (Lean_Decidable_isFalse_node (Lean_And_Prop v_p v_q) 0)) (fun c1_1_0 :e v_q => (Lean_Decidable_isTrue_node
+    (Lean_And_Prop v_p v_q) 0)) 0 v_hq_1.
+rewrite (eq_i_tra ((fun c1_1_0 :e v_q => (Lean_Decidable_isTrue_node (Lean_And_Prop v_p v_q) 0)) 0) (Lean_Decidable_isTrue_node (Lean_And_Prop v_p v_q) 0) (Lean_Decidable_isTrue_node (Lean_And_Prop
+    v_p v_q) 0) (beta v_q (fun c1_1_0 => (Lean_Decidable_isTrue_node (Lean_And_Prop v_p v_q) 0)) 0 v_hq_1) (Lean_eq_refl (Lean_Decidable_isTrue_node (Lean_And_Prop v_p v_q) 0))).
+reflexivity.
+Qed.
+(** Receipt: instDecidableAnd.eq_2 is the source of the MeTTa rule for instDecidableAnd, statement digest 895030301. **)
+Theorem Lean_instDecidableAnd_eq_2 : forall v_p :e LeanProp, forall v_q :e LeanProp, (0 :e v_p) -> ((0 :e v_q) -> False) -> (Lean_instDecidableAnd v_p v_q (Lean_Decidable_isTrue_node v_p 0)
+    (Lean_Decidable_isFalse_node v_q 0)) = (Lean_Decidable_isFalse_node (Lean_And_Prop v_p v_q) 0).
+let v_p. assume H_v_p: v_p :e LeanProp. let v_q. assume H_v_q: v_q :e LeanProp. assume v_hq. assume v_hq_1.
+rewrite Lean_instDecidableAnd_split1 v_p H_v_p v_q H_v_q 0 v_hq (Lean_Decidable_isFalse_node v_q 0) (Lean_Decidable_isFalse_typed v_q 0 (Pi_0_In v_q (fun _ => Lean_False_Prop) (fun bridge_x_0
+    bridge_h_0 => (FalseE (v_hq_1 (Lean_prop_0_of v_q H_v_q bridge_x_0 bridge_h_0)) (0 :e Lean_False_Prop))))).
+rewrite Lean_Decidable_iota0 v_q (fun c1_0_0 :e (Pi_ ux :e v_q, Lean_False_Prop) => (Lean_Decidable_isFalse_node (Lean_And_Prop v_p v_q) 0)) (fun c1_1_0 :e v_q => (Lean_Decidable_isTrue_node
+    (Lean_And_Prop v_p v_q) 0)) 0 (Pi_0_In v_q (fun _ => Lean_False_Prop) (fun bridge_x_0 bridge_h_0 => (FalseE (v_hq_1 (Lean_prop_0_of v_q H_v_q bridge_x_0 bridge_h_0)) (0 :e Lean_False_Prop)))).
+rewrite (eq_i_tra ((fun c1_0_0 :e (Pi_ ux :e v_q, Lean_False_Prop) => (Lean_Decidable_isFalse_node (Lean_And_Prop v_p v_q) 0)) 0) (Lean_Decidable_isFalse_node (Lean_And_Prop v_p v_q) 0)
+    (Lean_Decidable_isFalse_node (Lean_And_Prop v_p v_q) 0) (beta (Pi_ ux :e v_q, Lean_False_Prop) (fun c1_0_0 => (Lean_Decidable_isFalse_node (Lean_And_Prop v_p v_q) 0)) 0 (Pi_0_In v_q (fun _ =>
+    Lean_False_Prop) (fun bridge_x_0 bridge_h_0 => (FalseE (v_hq_1 (Lean_prop_0_of v_q H_v_q bridge_x_0 bridge_h_0)) (0 :e Lean_False_Prop))))) (Lean_eq_refl (Lean_Decidable_isFalse_node
+    (Lean_And_Prop v_p v_q) 0))).
+reflexivity.
+Qed.
+(** Receipt: instDecidableAnd.eq_3 is the source of the MeTTa rule for instDecidableAnd, statement digest 2166950735. **)
+Theorem Lean_instDecidableAnd_eq_3 : forall v_p :e LeanProp, forall v_q :e LeanProp, forall v_dq :e (Lean_Decidable v_q), ((0 :e v_p) -> False) -> (Lean_instDecidableAnd v_p v_q
+    (Lean_Decidable_isFalse_node v_p 0) v_dq) = (Lean_Decidable_isFalse_node (Lean_And_Prop v_p v_q) 0).
+let v_p. assume H_v_p: v_p :e LeanProp. let v_q. assume H_v_q: v_q :e LeanProp. let v_dq. assume H_v_dq: v_dq :e (Lean_Decidable v_q). assume v_hq.
+rewrite Lean_instDecidableAnd_split0 v_p H_v_p v_q H_v_q 0 (Pi_0_In v_p (fun _ => Lean_False_Prop) (fun bridge_x_0 bridge_h_0 => (FalseE (v_hq (Lean_prop_0_of v_p H_v_p bridge_x_0 bridge_h_0)) (0 :e
+    Lean_False_Prop)))) v_dq H_v_dq.
+reflexivity.
+Qed.
+
+(** instDecidableNot, from its equation theorems, split at argument 1 **)
+Definition Lean_instDecidableNot_method0_0 : set -> set := fun a0 => (fun y0 :e (Pi_ ux :e a0, Lean_False_Prop) => (Lean_Decidable_isTrue_node (Pi_ ux :e a0, Lean_False_Prop) 0)).
+Theorem Lean_instDecidableNot_method0_0_ap : forall a0, forall y0 :e (Pi_ ux :e a0, Lean_False_Prop), (Lean_instDecidableNot_method0_0 a0) y0 = (Lean_Decidable_isTrue_node (Pi_ ux :e a0,
+    Lean_False_Prop) 0).
+let a0. let y0. assume H: y0 :e (Pi_ ux :e a0, Lean_False_Prop).
+exact beta (Pi_ ux :e a0, Lean_False_Prop) (fun y0 => (Lean_Decidable_isTrue_node (Pi_ ux :e a0, Lean_False_Prop) 0)) y0 H.
+Qed.
+Theorem Lean_instDecidableNot_method0_0_In : forall a0 :e LeanProp, (Lean_instDecidableNot_method0_0 a0) :e (Pi_ y0 :e (Pi_ ux :e a0, Lean_False_Prop), (Lean_Decidable (Pi_ ux :e a0,
+    Lean_False_Prop))).
+let a0. assume H0: a0 :e LeanProp. exact lam_Pi (Pi_ ux :e a0, Lean_False_Prop) (fun y0 => (Lean_Decidable (Pi_ ux :e a0, Lean_False_Prop))) (fun y0 => (Lean_Decidable_isTrue_node (Pi_ ux :e a0,
+    Lean_False_Prop) 0)) (fun y0 Hy0 => (Lean_Decidable_isTrue_typed (Pi_ ux :e a0, Lean_False_Prop) 0 (Lean_prop_0_of (Pi_ ux :e a0, Lean_False_Prop) (LeanPi_prop a0 (fun ux => Lean_False_Prop) (fun
+    ux Hux => (Lean_False_Prop_prop ))) y0 Hy0))).
+Qed.
+Definition Lean_instDecidableNot_method1_0 : set -> set := fun a0 => (fun y0 :e a0 => (Lean_Decidable_isFalse_node (Pi_ ux :e a0, Lean_False_Prop) 0)).
+Theorem Lean_instDecidableNot_method1_0_ap : forall a0, forall y0 :e a0, (Lean_instDecidableNot_method1_0 a0) y0 = (Lean_Decidable_isFalse_node (Pi_ ux :e a0, Lean_False_Prop) 0).
+let a0. let y0. assume H: y0 :e a0.
+exact beta a0 (fun y0 => (Lean_Decidable_isFalse_node (Pi_ ux :e a0, Lean_False_Prop) 0)) y0 H.
+Qed.
+Theorem Lean_instDecidableNot_method1_0_In : forall a0 :e LeanProp, (Lean_instDecidableNot_method1_0 a0) :e (Pi_ y0 :e a0, (Lean_Decidable (Pi_ ux :e a0, Lean_False_Prop))).
+let a0. assume H0: a0 :e LeanProp. exact lam_Pi a0 (fun y0 => (Lean_Decidable (Pi_ ux :e a0, Lean_False_Prop))) (fun y0 => (Lean_Decidable_isFalse_node (Pi_ ux :e a0, Lean_False_Prop) 0)) (fun y0 Hy0
+    => (Lean_Decidable_isFalse_typed (Pi_ ux :e a0, Lean_False_Prop) 0 (LeanNot_double a0 H0 (Lean_prop_0_of a0 H0 y0 Hy0)))).
+Qed.
+Definition Lean_instDecidableNot : set -> set -> set := fun a0 a1 => Lean_Decidable_rec a0 (Lean_instDecidableNot_method0_0 a0) (Lean_instDecidableNot_method1_0 a0) a1.
+Theorem Lean_instDecidableNot_In : forall a0 :e LeanProp, forall a1 :e (Lean_Decidable a0), Lean_instDecidableNot a0 a1 :e (Lean_Decidable (Pi_ ux :e a0, Lean_False_Prop)).
+let a0. assume H0: a0 :e LeanProp. let a1. assume H1: a1 :e (Lean_Decidable a0). exact Lean_Decidable_rec_type a0 (fun _ => (Lean_Decidable (Pi_ ux :e a0, Lean_False_Prop)))
+    (Lean_instDecidableNot_method0_0 a0) (Lean_instDecidableNot_method0_0_In a0 H0) (Lean_instDecidableNot_method1_0 a0) (Lean_instDecidableNot_method1_0_In a0 H0) a1 H1.
+Qed.
+Theorem Lean_instDecidableNot_split0 : forall s0 :e LeanProp, forall t0 :e (Pi_ ux :e s0, Lean_False_Prop), (Lean_instDecidableNot s0 (Lean_Decidable_isFalse_node s0 t0)) =
+    (Lean_Decidable_isTrue_node (Pi_ ux :e s0, Lean_False_Prop) 0).
+let s0. assume H_s0: s0 :e LeanProp. let t0. assume H_t0: t0 :e (Pi_ ux :e s0, Lean_False_Prop).
+prove (Lean_Decidable_rec s0 (Lean_instDecidableNot_method0_0 s0) (Lean_instDecidableNot_method1_0 s0) (Lean_Decidable_isFalse_node s0 t0)) = (Lean_Decidable_isTrue_node (Pi_ ux :e s0,
+    Lean_False_Prop) 0).
+rewrite Lean_Decidable_iota0 s0 (Lean_instDecidableNot_method0_0 s0) (Lean_instDecidableNot_method1_0 s0) t0 H_t0.
+rewrite Lean_instDecidableNot_method0_0_ap s0 t0 H_t0.
+reflexivity.
+Qed.
+Theorem Lean_instDecidableNot_split1 : forall s0 :e LeanProp, forall t0 :e s0, (Lean_instDecidableNot s0 (Lean_Decidable_isTrue_node s0 t0)) = (Lean_Decidable_isFalse_node (Pi_ ux :e s0,
+    Lean_False_Prop) 0).
+let s0. assume H_s0: s0 :e LeanProp. let t0. assume H_t0: t0 :e s0.
+prove (Lean_Decidable_rec s0 (Lean_instDecidableNot_method0_0 s0) (Lean_instDecidableNot_method1_0 s0) (Lean_Decidable_isTrue_node s0 t0)) = (Lean_Decidable_isFalse_node (Pi_ ux :e s0,
+    Lean_False_Prop) 0).
+rewrite Lean_Decidable_iota1 s0 (Lean_instDecidableNot_method0_0 s0) (Lean_instDecidableNot_method1_0 s0) t0 H_t0.
+rewrite Lean_instDecidableNot_method1_0_ap s0 t0 H_t0.
+reflexivity.
+Qed.
+(** Receipt: instDecidableNot.eq_1 is the source of the MeTTa rule for instDecidableNot, statement digest 1922689119. **)
+Theorem Lean_instDecidableNot_eq_1 : forall v_p :e LeanProp, (0 :e v_p) -> (Lean_instDecidableNot v_p (Lean_Decidable_isTrue_node v_p 0)) = (Lean_Decidable_isFalse_node (Pi_ ux :e v_p,
+    Lean_False_Prop) 0).
+let v_p. assume H_v_p: v_p :e LeanProp. assume v_hq.
+rewrite Lean_instDecidableNot_split1 v_p H_v_p 0 v_hq.
+reflexivity.
+Qed.
+(** Receipt: instDecidableNot.eq_2 is the source of the MeTTa rule for instDecidableNot, statement digest 645411312. **)
+Theorem Lean_instDecidableNot_eq_2 : forall v_p :e LeanProp, ((0 :e v_p) -> False) -> (Lean_instDecidableNot v_p (Lean_Decidable_isFalse_node v_p 0)) = (Lean_Decidable_isTrue_node (Pi_ ux :e v_p,
+    Lean_False_Prop) 0).
+let v_p. assume H_v_p: v_p :e LeanProp. assume v_hq.
+rewrite Lean_instDecidableNot_split0 v_p H_v_p 0 (Pi_0_In v_p (fun _ => Lean_False_Prop) (fun bridge_x_0 bridge_h_0 => (FalseE (v_hq (Lean_prop_0_of v_p H_v_p bridge_x_0 bridge_h_0)) (0 :e
+    Lean_False_Prop)))).
+reflexivity.
 Qed.
 
 (** Nat.beq, from its equation theorems, split at argument 0 **)
@@ -2083,14 +2558,14 @@ let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat. exact (ap_
     a0 H0) H1).
 Qed.
 Theorem Lean_Nat_beq_split0 : forall s1 :e Lean_Nat, (Lean_Nat_beq Lean_Nat_zero_node s1) = (Lean_Nat_casesOn Lean_Bool_true_node (fun c1_1_0 :e Lean_Nat => Lean_Bool_false_node) s1).
-let s1. assume H_s1: s1 :e Lean_Nat. 
+let s1. assume H_s1: s1 :e Lean_Nat.
 prove ((Lean_Nat_rec Lean_Nat_beq_method0_0 Lean_Nat_beq_method1_0 Lean_Nat_zero_node) s1) = (Lean_Nat_casesOn Lean_Bool_true_node (fun c1_1_0 :e Lean_Nat => Lean_Bool_false_node) s1).
 rewrite Lean_Nat_iota0 Lean_Nat_beq_method0_0 Lean_Nat_beq_method1_0.
 rewrite Lean_Nat_beq_method0_0_ap s1 H_s1.
 reflexivity.
 Qed.
 Theorem Lean_Nat_beq_split1 : forall t0 :e Lean_Nat, forall s1 :e Lean_Nat, (Lean_Nat_beq (Lean_Nat_succ_node t0) s1) = (Lean_Nat_casesOn Lean_Bool_false_node (Sigma Lean_Nat (Lean_Nat_beq t0)) s1).
-let t0. assume H_t0: t0 :e Lean_Nat. let s1. assume H_s1: s1 :e Lean_Nat. 
+let t0. assume H_t0: t0 :e Lean_Nat. let s1. assume H_s1: s1 :e Lean_Nat.
 prove ((Lean_Nat_rec Lean_Nat_beq_method0_0 Lean_Nat_beq_method1_0 (Lean_Nat_succ_node t0)) s1) = (Lean_Nat_casesOn Lean_Bool_false_node (fun c1_1_0 :e Lean_Nat => ((Lean_Nat_rec
     Lean_Nat_beq_method0_0 Lean_Nat_beq_method1_0 t0) c1_1_0)) s1).
 rewrite Lean_Nat_iota1 Lean_Nat_beq_method0_0 Lean_Nat_beq_method1_0 t0 H_t0.
@@ -2106,7 +2581,7 @@ rewrite Lean_Nat_casesOn_iota0 Lean_Bool_true_node (fun c1_1_0 :e Lean_Nat => Le
 reflexivity.
 Qed.
 Theorem Lean_Nat_beq_eq_2 : forall v_n :e Lean_Nat, (Lean_Nat_beq Lean_Nat_zero_node (Lean_Nat_succ_node v_n)) = Lean_Bool_false_node.
-let v_n. assume H_v_n: v_n :e Lean_Nat. 
+let v_n. assume H_v_n: v_n :e Lean_Nat.
 rewrite Lean_Nat_beq_split0 (Lean_Nat_succ_node v_n) (Lean_Nat_succ_typed v_n H_v_n).
 rewrite Lean_Nat_casesOn_iota1 Lean_Bool_true_node (fun c1_1_0 :e Lean_Nat => Lean_Bool_false_node) v_n H_v_n.
 rewrite (eq_i_tra ((fun c1_1_0 :e Lean_Nat => Lean_Bool_false_node) v_n) Lean_Bool_false_node Lean_Bool_false_node (beta Lean_Nat (fun c1_1_0 => Lean_Bool_false_node) v_n H_v_n) (Lean_eq_refl
@@ -2114,13 +2589,13 @@ rewrite (eq_i_tra ((fun c1_1_0 :e Lean_Nat => Lean_Bool_false_node) v_n) Lean_Bo
 reflexivity.
 Qed.
 Theorem Lean_Nat_beq_eq_3 : forall v_n :e Lean_Nat, (Lean_Nat_beq (Lean_Nat_succ_node v_n) Lean_Nat_zero_node) = Lean_Bool_false_node.
-let v_n. assume H_v_n: v_n :e Lean_Nat. 
+let v_n. assume H_v_n: v_n :e Lean_Nat.
 rewrite Lean_Nat_beq_split1 v_n H_v_n Lean_Nat_zero_node Lean_Nat_zero_typed.
 rewrite Lean_Nat_casesOn_iota0 Lean_Bool_false_node (Sigma Lean_Nat (Lean_Nat_beq v_n)).
 reflexivity.
 Qed.
 Theorem Lean_Nat_beq_eq_4 : forall v_n :e Lean_Nat, forall v_m :e Lean_Nat, (Lean_Nat_beq (Lean_Nat_succ_node v_n) (Lean_Nat_succ_node v_m)) = (Lean_Nat_beq v_n v_m).
-let v_n. assume H_v_n: v_n :e Lean_Nat. let v_m. assume H_v_m: v_m :e Lean_Nat. 
+let v_n. assume H_v_n: v_n :e Lean_Nat. let v_m. assume H_v_m: v_m :e Lean_Nat.
 rewrite Lean_Nat_beq_split1 v_n H_v_n (Lean_Nat_succ_node v_m) (Lean_Nat_succ_typed v_m H_v_m).
 rewrite Lean_Nat_casesOn_iota1 Lean_Bool_false_node (Sigma Lean_Nat (Lean_Nat_beq v_n)) v_m H_v_m.
 rewrite (eq_i_tra ((Sigma Lean_Nat (Lean_Nat_beq v_n)) v_m) (Lean_Nat_beq v_n v_m) (Lean_Nat_beq v_n v_m) (beta Lean_Nat (Lean_Nat_beq v_n) v_m H_v_m) (Lean_eq_refl (Lean_Nat_beq v_n v_m))).
@@ -2134,7 +2609,7 @@ Definition Lean_Nat_decEq : set -> set -> set := fun a0 a1 => ((Lean_Bool_rec (f
 Theorem Lean_Nat_decEq_eq_1 : forall v_n :e Lean_Nat, forall v_m :e Lean_Nat, (Lean_Nat_decEq v_n v_m) = ((Lean_Bool_rec (fun v_h :e (Lean_Eq_Prop Lean_Bool (Lean_Nat_beq v_n v_m)
     Lean_Bool_false_node) => (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Nat v_n v_m) 0)) (fun v_h :e (Lean_Eq_Prop Lean_Bool (Lean_Nat_beq v_n v_m) Lean_Bool_true_node) =>
     (Lean_Decidable_isTrue_node (Lean_Eq_Prop Lean_Nat v_n v_m) 0)) (Lean_Nat_beq v_n v_m)) 0).
-let v_n. assume H_v_n: v_n :e Lean_Nat. let v_m. assume H_v_m: v_m :e Lean_Nat. 
+let v_n. assume H_v_n: v_n :e Lean_Nat. let v_m. assume H_v_m: v_m :e Lean_Nat.
 reflexivity.
 Qed.
 Theorem Lean_Nat_decEq_unfold : forall a0 a1, Lean_Nat_decEq a0 a1 = ((Lean_Bool_rec (fun v_h :e (Lean_Eq_Prop Lean_Bool (Lean_Nat_beq a0 a1) Lean_Bool_false_node) => (Lean_Decidable_isFalse_node
@@ -2220,7 +2695,7 @@ Qed.
 (** Receipt: instDecidableEqNat.eq_1 is the source of the MeTTa rule for instDecidableEqNat, statement digest 1640768476. Read pointwise: Lean states it between functions, here at 2 more
     argument(s). **)
 Theorem Lean_instDecidableEqNat_eq_1 : forall v_a :e Lean_Nat, forall v_b :e Lean_Nat, (Lean_instDecidableEqNat v_a v_b) = (Lean_Nat_decEq v_a v_b).
-let v_a. assume H_v_a: v_a :e Lean_Nat. let v_b. assume H_v_b: v_b :e Lean_Nat. 
+let v_a. assume H_v_a: v_a :e Lean_Nat. let v_b. assume H_v_b: v_b :e Lean_Nat.
 reflexivity.
 Qed.
 Theorem Lean_instDecidableEqNat_unfold : forall a0 a1, Lean_instDecidableEqNat a0 a1 = (Lean_Nat_decEq a0 a1).
@@ -2233,7 +2708,7 @@ Definition Lean_Bool_decEq : set -> set -> set := fun a0 a1 => Lean_Bool_rec (Le
     Lean_Bool_false_node) 0) (Lean_Decidable_isTrue_node (Lean_Eq_Prop Lean_Bool Lean_Bool_true_node Lean_Bool_true_node) 0) a1) a0.
 Theorem Lean_Bool_decEq_split0 : forall s1 :e Lean_Bool, (Lean_Bool_decEq Lean_Bool_false_node s1) = (Lean_Bool_rec (Lean_Decidable_isTrue_node (Lean_Eq_Prop Lean_Bool Lean_Bool_false_node
     Lean_Bool_false_node) 0) (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Bool Lean_Bool_false_node Lean_Bool_true_node) 0) s1).
-let s1. assume H_s1: s1 :e Lean_Bool. 
+let s1. assume H_s1: s1 :e Lean_Bool.
 prove (Lean_Bool_rec (Lean_Bool_rec (Lean_Decidable_isTrue_node (Lean_Eq_Prop Lean_Bool Lean_Bool_false_node Lean_Bool_false_node) 0) (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Bool
     Lean_Bool_false_node Lean_Bool_true_node) 0) s1) (Lean_Bool_rec (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Bool Lean_Bool_true_node Lean_Bool_false_node) 0) (Lean_Decidable_isTrue_node
     (Lean_Eq_Prop Lean_Bool Lean_Bool_true_node Lean_Bool_true_node) 0) s1) Lean_Bool_false_node) = (Lean_Bool_rec (Lean_Decidable_isTrue_node (Lean_Eq_Prop Lean_Bool Lean_Bool_false_node
@@ -2245,7 +2720,7 @@ reflexivity.
 Qed.
 Theorem Lean_Bool_decEq_split1 : forall s1 :e Lean_Bool, (Lean_Bool_decEq Lean_Bool_true_node s1) = (Lean_Bool_rec (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Bool Lean_Bool_true_node
     Lean_Bool_false_node) 0) (Lean_Decidable_isTrue_node (Lean_Eq_Prop Lean_Bool Lean_Bool_true_node Lean_Bool_true_node) 0) s1).
-let s1. assume H_s1: s1 :e Lean_Bool. 
+let s1. assume H_s1: s1 :e Lean_Bool.
 prove (Lean_Bool_rec (Lean_Bool_rec (Lean_Decidable_isTrue_node (Lean_Eq_Prop Lean_Bool Lean_Bool_false_node Lean_Bool_false_node) 0) (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Bool
     Lean_Bool_false_node Lean_Bool_true_node) 0) s1) (Lean_Bool_rec (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Bool Lean_Bool_true_node Lean_Bool_false_node) 0) (Lean_Decidable_isTrue_node
     (Lean_Eq_Prop Lean_Bool Lean_Bool_true_node Lean_Bool_true_node) 0) s1) Lean_Bool_true_node) = (Lean_Bool_rec (Lean_Decidable_isFalse_node (Lean_Eq_Prop Lean_Bool Lean_Bool_true_node
@@ -2322,7 +2797,7 @@ Qed.
 (** Receipt: instDecidableEqBool.eq_1 is the source of the MeTTa rule for instDecidableEqBool, statement digest 2136972715. Read pointwise: Lean states it between functions, here at 2 more
     argument(s). **)
 Theorem Lean_instDecidableEqBool_eq_1 : forall v_a :e Lean_Bool, forall v_b :e Lean_Bool, (Lean_instDecidableEqBool v_a v_b) = (Lean_Bool_decEq v_a v_b).
-let v_a. assume H_v_a: v_a :e Lean_Bool. let v_b. assume H_v_b: v_b :e Lean_Bool. 
+let v_a. assume H_v_a: v_a :e Lean_Bool. let v_b. assume H_v_b: v_b :e Lean_Bool.
 reflexivity.
 Qed.
 Theorem Lean_instDecidableEqBool_unfold : forall a0 a1, Lean_instDecidableEqBool a0 a1 = (Lean_Bool_decEq a0 a1).
@@ -2337,7 +2812,7 @@ Theorem Lean_Nat_decLe_eq_1 : forall v_n :e Lean_Nat, forall v_m :e Lean_Nat, (L
     v_n v_m) Lean_Bool_true_node) (Lean_instDecidableEqBool (Lean_Nat_ble v_n v_m) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (Lean_Nat_ble v_n v_m) Lean_Bool_true_node) =>
     (Lean_Decidable_isTrue_node (Lean_Nat_le_Prop v_n v_m) 0)) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (Lean_Nat_ble v_n v_m) Lean_Bool_true_node), Lean_False_Prop) =>
     (Lean_Decidable_isFalse_node (Lean_Nat_le_Prop v_n v_m) 0))).
-let v_n. assume H_v_n: v_n :e Lean_Nat. let v_m. assume H_v_m: v_m :e Lean_Nat. 
+let v_n. assume H_v_n: v_n :e Lean_Nat. let v_m. assume H_v_m: v_m :e Lean_Nat.
 reflexivity.
 Qed.
 Theorem Lean_Nat_decLe_unfold : forall a0 a1, Lean_Nat_decLe a0 a1 = (Lean_dite (Lean_Decidable (Lean_Nat_le_Prop a0 a1)) (Lean_Eq_Prop Lean_Bool (Lean_Nat_ble a0 a1) Lean_Bool_true_node)
@@ -2518,7 +2993,7 @@ Theorem Lean_Nat_decLt_In : forall a0 :e Lean_Nat, forall a1 :e Lean_Nat, Lean_N
 let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat. exact (Lean_Nat_decLe_In (Lean_Nat_succ_node a0) (Lean_Nat_succ_typed a0 H0) a1 H1).
 Qed.
 Theorem Lean_Nat_decLt_eq_1 : forall v_n :e Lean_Nat, forall v_m :e Lean_Nat, (Lean_Nat_decLt v_n v_m) = (Lean_Nat_decLe (Lean_Nat_succ_node v_n) v_m).
-let v_n. assume H_v_n: v_n :e Lean_Nat. let v_m. assume H_v_m: v_m :e Lean_Nat. 
+let v_n. assume H_v_n: v_n :e Lean_Nat. let v_m. assume H_v_m: v_m :e Lean_Nat.
 reflexivity.
 Qed.
 Theorem Lean_Nat_decLt_unfold : forall a0 a1, Lean_Nat_decLt a0 a1 = (Lean_Nat_decLe (Lean_Nat_succ_node a0) a1).
@@ -2578,7 +3053,7 @@ exact Lean_Nat_rec_type (fun _ => (Pi_ ux :e Lean_Nat, Lean_Nat)) (Lean_Nat_div_
 Qed.
 Theorem Lean_Nat_div_go_eq_absent : forall v_y :e Lean_Nat, (0 :e (Lean_Nat_le_Prop (Lean_Nat_succ_node (LeanNum 0)) v_y)) -> forall v_x :e Lean_Nat, (0 :e (Lean_Nat_le_Prop (Lean_Nat_succ_node v_x)
     (LeanNum 0))) -> (Lean_Nat_div_go v_y 0 (LeanNum 0) v_x 0) = (LeanNum 0).
-let v_y. assume H_v_y: v_y :e Lean_Nat. assume v_hy. let v_x. assume H_v_x: v_x :e Lean_Nat. assume v_h. 
+let v_y. assume H_v_y: v_y :e Lean_Nat. assume v_hy. let v_x. assume H_v_x: v_x :e Lean_Nat. assume v_h.
 apply LeanNum_0_at (fun zpat => (Lean_Nat_div_go v_y 0 zpat v_x 0)) (LeanNum 0).
 prove ((Lean_Nat_rec (Lean_Nat_div_go_method0_0 v_y) (Lean_Nat_div_go_method1_0 v_y) Lean_Nat_zero_node) v_x) = (LeanNum 0).
 rewrite Lean_Nat_iota0 (Lean_Nat_div_go_method0_0 v_y) (Lean_Nat_div_go_method1_0 v_y).
@@ -2589,7 +3064,7 @@ Theorem Lean_Nat_div_go_eq_1 : forall v_y :e Lean_Nat, (0 :e (Lean_Nat_le_Prop (
     (Lean_Nat_succ_node v_x) (Lean_Nat_succ_node v_fuel_2))) -> (Lean_Nat_div_go v_y 0 (Lean_Nat_succ_node v_fuel_2) v_x 0) = (Lean_dite Lean_Nat (Lean_Nat_le_Prop v_y v_x) (Lean_Nat_decLe v_y v_x)
     (fun v_h :e (Lean_Nat_le_Prop v_y v_x) => (Lean_Nat_add (Lean_Nat_div_go v_y 0 v_fuel_2 (Lean_Nat_sub v_x v_y) 0) (LeanNum 1))) (fun v_x5 :e (Pi_ ux :e (Lean_Nat_le_Prop v_y v_x),
     Lean_False_Prop) => (LeanNum 0))).
-let v_y. assume H_v_y: v_y :e Lean_Nat. assume v_hy. let v_x. assume H_v_x: v_x :e Lean_Nat. let v_fuel_2. assume H_v_fuel_2: v_fuel_2 :e Lean_Nat. assume v_hfuel_2. 
+let v_y. assume H_v_y: v_y :e Lean_Nat. assume v_hy. let v_x. assume H_v_x: v_x :e Lean_Nat. let v_fuel_2. assume H_v_fuel_2: v_fuel_2 :e Lean_Nat. assume v_hfuel_2.
 prove ((Lean_Nat_rec (Lean_Nat_div_go_method0_0 v_y) (Lean_Nat_div_go_method1_0 v_y) (Lean_Nat_succ_node v_fuel_2)) v_x) = (Lean_dite Lean_Nat (Lean_Nat_le_Prop v_y v_x) (Lean_Nat_decLe v_y v_x) (fun
     v_h :e (Lean_Nat_le_Prop v_y v_x) => (Lean_Nat_add ((Lean_Nat_rec (Lean_Nat_div_go_method0_0 v_y) (Lean_Nat_div_go_method1_0 v_y) v_fuel_2) (Lean_Nat_sub v_x v_y)) (LeanNum 1))) (fun v_x5 :e (Pi_
     ux :e (Lean_Nat_le_Prop v_y v_x), Lean_False_Prop) => (LeanNum 0))).
@@ -2628,7 +3103,7 @@ Qed.
 Theorem Lean_Nat_div_eq_1 : forall v_x :e Lean_Nat, forall v_y :e Lean_Nat, (Lean_Nat_div v_x v_y) = (Lean_dite Lean_Nat (Lean_Nat_le_Prop (Lean_Nat_succ_node (LeanNum 0)) v_y) (Lean_Nat_decLt
     (LeanNum 0) v_y) (fun v_hy :e (Lean_Nat_le_Prop (Lean_Nat_succ_node (LeanNum 0)) v_y) => (Lean_Nat_div_go v_y 0 (Lean_Nat_succ_node v_x) v_x 0)) (fun v_x2 :e (Pi_ ux :e (Lean_Nat_le_Prop
     (Lean_Nat_succ_node (LeanNum 0)) v_y), Lean_False_Prop) => (LeanNum 0))).
-let v_x. assume H_v_x: v_x :e Lean_Nat. let v_y. assume H_v_y: v_y :e Lean_Nat. 
+let v_x. assume H_v_x: v_x :e Lean_Nat. let v_y. assume H_v_y: v_y :e Lean_Nat.
 reflexivity.
 Qed.
 Theorem Lean_Nat_div_unfold : forall a0 a1, Lean_Nat_div a0 a1 = (Lean_dite Lean_Nat (Lean_Nat_le_Prop (Lean_Nat_succ_node (LeanNum 0)) a1) (Lean_Nat_decLt (LeanNum 0) a1) (fun v_hy :e
@@ -2691,7 +3166,7 @@ exact Lean_Nat_rec_type (fun _ => (Pi_ ux :e Lean_Nat, Lean_Nat)) (Lean_Nat_modC
 Qed.
 Theorem Lean_Nat_modCore_go_eq_absent : forall v_y :e Lean_Nat, (0 :e (Lean_Nat_le_Prop (Lean_Nat_succ_node (LeanNum 0)) v_y)) -> forall v_x :e Lean_Nat, (0 :e (Lean_Nat_le_Prop (Lean_Nat_succ_node
     v_x) (LeanNum 0))) -> (Lean_Nat_modCore_go v_y 0 (LeanNum 0) v_x 0) = (LeanNum 0).
-let v_y. assume H_v_y: v_y :e Lean_Nat. assume v_hy. let v_x. assume H_v_x: v_x :e Lean_Nat. assume v_h. 
+let v_y. assume H_v_y: v_y :e Lean_Nat. assume v_hy. let v_x. assume H_v_x: v_x :e Lean_Nat. assume v_h.
 apply LeanNum_0_at (fun zpat => (Lean_Nat_modCore_go v_y 0 zpat v_x 0)) (LeanNum 0).
 prove ((Lean_Nat_rec (Lean_Nat_modCore_go_method0_0 v_y) (Lean_Nat_modCore_go_method1_0 v_y) Lean_Nat_zero_node) v_x) = (LeanNum 0).
 rewrite Lean_Nat_iota0 (Lean_Nat_modCore_go_method0_0 v_y) (Lean_Nat_modCore_go_method1_0 v_y).
@@ -2702,7 +3177,7 @@ Theorem Lean_Nat_modCore_go_eq_1 : forall v_y :e Lean_Nat, (0 :e (Lean_Nat_le_Pr
     (Lean_Nat_le_Prop (Lean_Nat_succ_node v_x) (Lean_Nat_succ_node v_fuel_2))) -> (Lean_Nat_modCore_go v_y 0 (Lean_Nat_succ_node v_fuel_2) v_x 0) = (Lean_dite Lean_Nat (Lean_Nat_le_Prop v_y v_x)
     (Lean_Nat_decLe v_y v_x) (fun v_h :e (Lean_Nat_le_Prop v_y v_x) => (Lean_Nat_modCore_go v_y 0 v_fuel_2 (Lean_Nat_sub v_x v_y) 0)) (fun v_x5 :e (Pi_ ux :e (Lean_Nat_le_Prop v_y v_x),
     Lean_False_Prop) => v_x)).
-let v_y. assume H_v_y: v_y :e Lean_Nat. assume v_hy. let v_x. assume H_v_x: v_x :e Lean_Nat. let v_fuel_2. assume H_v_fuel_2: v_fuel_2 :e Lean_Nat. assume v_hfuel_2. 
+let v_y. assume H_v_y: v_y :e Lean_Nat. assume v_hy. let v_x. assume H_v_x: v_x :e Lean_Nat. let v_fuel_2. assume H_v_fuel_2: v_fuel_2 :e Lean_Nat. assume v_hfuel_2.
 prove ((Lean_Nat_rec (Lean_Nat_modCore_go_method0_0 v_y) (Lean_Nat_modCore_go_method1_0 v_y) (Lean_Nat_succ_node v_fuel_2)) v_x) = (Lean_dite Lean_Nat (Lean_Nat_le_Prop v_y v_x) (Lean_Nat_decLe v_y
     v_x) (fun v_h :e (Lean_Nat_le_Prop v_y v_x) => ((Lean_Nat_rec (Lean_Nat_modCore_go_method0_0 v_y) (Lean_Nat_modCore_go_method1_0 v_y) v_fuel_2) (Lean_Nat_sub v_x v_y))) (fun v_x5 :e (Pi_ ux :e
     (Lean_Nat_le_Prop v_y v_x), Lean_False_Prop) => v_x)).
@@ -2742,7 +3217,7 @@ Qed.
 Theorem Lean_Nat_modCore_eq_1 : forall v_x :e Lean_Nat, forall v_y :e Lean_Nat, (Lean_Nat_modCore v_x v_y) = (Lean_dite Lean_Nat (Lean_Nat_le_Prop (Lean_Nat_succ_node (LeanNum 0)) v_y)
     (Lean_Nat_decLt (LeanNum 0) v_y) (fun v_hy :e (Lean_Nat_le_Prop (Lean_Nat_succ_node (LeanNum 0)) v_y) => (Lean_Nat_modCore_go v_y 0 (Lean_Nat_succ_node v_x) v_x 0)) (fun v_x2 :e (Pi_ ux :e
     (Lean_Nat_le_Prop (Lean_Nat_succ_node (LeanNum 0)) v_y), Lean_False_Prop) => v_x)).
-let v_x. assume H_v_x: v_x :e Lean_Nat. let v_y. assume H_v_y: v_y :e Lean_Nat. 
+let v_x. assume H_v_x: v_x :e Lean_Nat. let v_y. assume H_v_y: v_y :e Lean_Nat.
 reflexivity.
 Qed.
 Theorem Lean_Nat_modCore_unfold : forall a0 a1, Lean_Nat_modCore a0 a1 = (Lean_dite Lean_Nat (Lean_Nat_le_Prop (Lean_Nat_succ_node (LeanNum 0)) a1) (Lean_Nat_decLt (LeanNum 0) a1) (fun v_hy :e
@@ -2780,7 +3255,7 @@ let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat. exact Lean
     (Lean_Nat_mod_method1_0_In a1 H1) a0 H0.
 Qed.
 Theorem Lean_Nat_mod_eq_1 : forall v_x :e Lean_Nat, (Lean_Nat_mod (LeanNum 0) v_x) = (LeanNum 0).
-let v_x. assume H_v_x: v_x :e Lean_Nat. 
+let v_x. assume H_v_x: v_x :e Lean_Nat.
 apply LeanNum_0_at (fun zpat => (Lean_Nat_mod zpat v_x)) (LeanNum 0).
 prove (Lean_Nat_rec (LeanNum 0) (Lean_Nat_mod_method1_0 v_x) Lean_Nat_zero_node) = (LeanNum 0).
 rewrite Lean_Nat_iota0 (LeanNum 0) (Lean_Nat_mod_method1_0 v_x).
@@ -2788,7 +3263,7 @@ reflexivity.
 Qed.
 Theorem Lean_Nat_mod_eq_2 : forall v_x :e Lean_Nat, forall v_n :e Lean_Nat, (Lean_Nat_mod (Lean_Nat_succ_node v_n) v_x) = (Lean_ite Lean_Nat (Lean_Nat_le_Prop v_x (Lean_Nat_succ_node v_n))
     (Lean_Nat_decLe v_x (Lean_Nat_succ_node v_n)) (Lean_Nat_modCore (Lean_Nat_succ_node v_n) v_x) (Lean_Nat_succ_node v_n)).
-let v_x. assume H_v_x: v_x :e Lean_Nat. let v_n. assume H_v_n: v_n :e Lean_Nat. 
+let v_x. assume H_v_x: v_x :e Lean_Nat. let v_n. assume H_v_n: v_n :e Lean_Nat.
 prove (Lean_Nat_rec (LeanNum 0) (Lean_Nat_mod_method1_0 v_x) (Lean_Nat_succ_node v_n)) = (Lean_ite Lean_Nat (Lean_Nat_le_Prop v_x (Lean_Nat_succ_node v_n)) (Lean_Nat_decLe v_x (Lean_Nat_succ_node
     v_n)) (Lean_Nat_modCore (Lean_Nat_succ_node v_n) v_x) (Lean_Nat_succ_node v_n)).
 rewrite Lean_Nat_iota1 (LeanNum 0) (Lean_Nat_mod_method1_0 v_x) v_n H_v_n.
@@ -2799,7 +3274,7 @@ Qed.
 Theorem Lean_Nat_mod_unique : forall g:set -> set -> set, (forall v_x :e Lean_Nat, (g (LeanNum 0) v_x) = (LeanNum 0)) -> (forall v_x :e Lean_Nat, forall v_n :e Lean_Nat, (g (Lean_Nat_succ_node v_n)
     v_x) = (Lean_ite Lean_Nat (Lean_Nat_le_Prop v_x (Lean_Nat_succ_node v_n)) (Lean_Nat_decLe v_x (Lean_Nat_succ_node v_n)) (Lean_Nat_modCore (Lean_Nat_succ_node v_n) v_x) (Lean_Nat_succ_node
     v_n))) -> forall u, nat_p u -> forall a0 :e Lean_Nat, forall a1 :e Lean_Nat, g a0 a1 = Lean_Nat_mod a0 a1.
-let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat. 
+let g. assume Hg0. assume Hg1. let u. assume Hu: nat_p u. let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat.
 claim L0: 0 :e {z :e 1 | g Lean_Nat_zero_node a1 = Lean_Nat_mod Lean_Nat_zero_node a1}.
 { apply SepI 1 (fun z:set => g Lean_Nat_zero_node a1 = Lean_Nat_mod Lean_Nat_zero_node a1) 0 In_0_1.
   prove g Lean_Nat_zero_node a1 = Lean_Nat_mod Lean_Nat_zero_node a1.
@@ -2891,7 +3366,7 @@ let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat. let a2. as
     a0 H0) H1) H2).
 Qed.
 Theorem Lean_Nat_gcdFuel_eq_1 : forall v_x :e Lean_Nat, forall v_x1 :e Lean_Nat, (Lean_Nat_gcdFuel Lean_Nat_zero_node v_x v_x1) = v_x1.
-let v_x. assume H_v_x: v_x :e Lean_Nat. let v_x1. assume H_v_x1: v_x1 :e Lean_Nat. 
+let v_x. assume H_v_x: v_x :e Lean_Nat. let v_x1. assume H_v_x1: v_x1 :e Lean_Nat.
 prove ((Lean_Nat_rec Lean_Nat_gcdFuel_method0_0 Lean_Nat_gcdFuel_method1_0 Lean_Nat_zero_node) v_x v_x1) = v_x1.
 rewrite Lean_Nat_iota0 Lean_Nat_gcdFuel_method0_0 Lean_Nat_gcdFuel_method1_0.
 rewrite Lean_Nat_gcdFuel_method0_0_ap v_x H_v_x.
@@ -2900,7 +3375,7 @@ reflexivity.
 Qed.
 Theorem Lean_Nat_gcdFuel_eq_2 : forall v_x :e Lean_Nat, forall v_x1 :e Lean_Nat, forall v_k :e Lean_Nat, (Lean_Nat_gcdFuel (Lean_Nat_succ_node v_k) v_x v_x1) = (Lean_ite Lean_Nat (Lean_Eq_Prop
     Lean_Nat v_x (LeanNum 0)) (Lean_instDecidableEqNat v_x (LeanNum 0)) v_x1 (Lean_Nat_gcdFuel v_k (Lean_Nat_mod v_x1 v_x) v_x)).
-let v_x. assume H_v_x: v_x :e Lean_Nat. let v_x1. assume H_v_x1: v_x1 :e Lean_Nat. let v_k. assume H_v_k: v_k :e Lean_Nat. 
+let v_x. assume H_v_x: v_x :e Lean_Nat. let v_x1. assume H_v_x1: v_x1 :e Lean_Nat. let v_k. assume H_v_k: v_k :e Lean_Nat.
 prove ((Lean_Nat_rec Lean_Nat_gcdFuel_method0_0 Lean_Nat_gcdFuel_method1_0 (Lean_Nat_succ_node v_k)) v_x v_x1) = (Lean_ite Lean_Nat (Lean_Eq_Prop Lean_Nat v_x (LeanNum 0)) (Lean_instDecidableEqNat
     v_x (LeanNum 0)) v_x1 ((Lean_Nat_rec Lean_Nat_gcdFuel_method0_0 Lean_Nat_gcdFuel_method1_0 v_k) (Lean_Nat_mod v_x1 v_x) v_x)).
 rewrite Lean_Nat_iota1 Lean_Nat_gcdFuel_method0_0 Lean_Nat_gcdFuel_method1_0 v_k H_v_k.
@@ -2911,13 +3386,861 @@ rewrite Lean_Nat_gcdFuel_method1_3_ap v_k (Lean_Nat_rec Lean_Nat_gcdFuel_method0
 reflexivity.
 Qed.
 
+(** Embedded proof support: Library/NatAdd.mg **)
+(** Natural number operations that CeTTa computes natively.
+
+   CeTTa adds two integers directly; Lean's Nat.add is the function read
+   from its equation theorems (the generated functions).  The reading of
+   numerals carries Egal's own addition of ordinals to it:
+   LeanNum m + LeanNum n = LeanNum (m + n).  A computation that adds numerals
+   is therefore checked with ordinal arithmetic, as CeTTa computes it. **)
+
+Theorem LeanNum_add : forall m, nat_p m -> forall n, nat_p n ->
+  Lean_Nat_add (LeanNum m) (LeanNum n) = LeanNum (add_nat m n).
+let m. assume Hm: nat_p m.
+apply nat_ind.
+- prove Lean_Nat_add (LeanNum m) (LeanNum 0) = LeanNum (add_nat m 0).
+  rewrite add_nat_0R m.
+  rewrite LeanNum_0.
+  exact Lean_Nat_add_eq_1 (LeanNum m) (LeanNum_In m Hm).
+- let n. assume Hn: nat_p n.
+  assume IH: Lean_Nat_add (LeanNum m) (LeanNum n) = LeanNum (add_nat m n).
+  prove Lean_Nat_add (LeanNum m) (LeanNum (ordsucc n)) = LeanNum (add_nat m (ordsucc n)).
+  rewrite add_nat_SR m n Hn.
+  rewrite LeanNum_S n Hn.
+  rewrite LeanNum_S (add_nat m n) (add_nat_p m Hm n Hn).
+  rewrite Lean_Nat_add_eq_2 (LeanNum m) (LeanNum_In m Hm) (LeanNum n) (LeanNum_In n Hn).
+  rewrite IH.
+  reflexivity.
+Qed.
+
+(** The form used by computations: the sum k is given, with its ordinal
+    proof. **)
+Theorem LeanNum_add_eq : forall m, nat_p m -> forall n, nat_p n -> forall k,
+  add_nat m n = k -> Lean_Nat_add (LeanNum m) (LeanNum n) = LeanNum k.
+let m. assume Hm: nat_p m. let n. assume Hn: nat_p n. let k. assume Hk: add_nat m n = k.
+rewrite <- Hk.
+exact LeanNum_add m Hm n Hn.
+Qed.
+
+(** Embedded proof support: Library/NatMul.mg **)
+(** Multiplication: the product of LeanNum m and LeanNum n is LeanNum of
+    mul_nat m n.  Egal's
+    mul_nat adds on the left and Lean's Nat.mul on the right, so the step
+    uses commutativity of add_nat. **)
+Theorem LeanNum_mul : forall m, nat_p m -> forall n, nat_p n ->
+  Lean_Nat_mul (LeanNum m) (LeanNum n) = LeanNum (mul_nat m n).
+let m. assume Hm: nat_p m.
+apply nat_ind.
+- prove Lean_Nat_mul (LeanNum m) (LeanNum 0) = LeanNum (mul_nat m 0).
+  rewrite mul_nat_0R m.
+  exact Lean_Nat_mul_eq_1 (LeanNum m) (LeanNum_In m Hm).
+- let n. assume Hn: nat_p n.
+  assume IH: Lean_Nat_mul (LeanNum m) (LeanNum n) = LeanNum (mul_nat m n).
+  prove Lean_Nat_mul (LeanNum m) (LeanNum (ordsucc n)) = LeanNum (mul_nat m (ordsucc n)).
+  rewrite mul_nat_SR m n Hn.
+  rewrite add_nat_com m Hm (mul_nat m n) (mul_nat_p m Hm n Hn).
+  rewrite LeanNum_S n Hn.
+  rewrite Lean_Nat_mul_eq_2 (LeanNum m) (LeanNum_In m Hm) (LeanNum n) (LeanNum_In n Hn).
+  rewrite IH.
+  exact LeanNum_add (mul_nat m n) (mul_nat_p m Hm n Hn) m Hm.
+Qed.
+
+Theorem LeanNum_mul_eq : forall m, nat_p m -> forall n, nat_p n -> forall k,
+  mul_nat m n = k -> Lean_Nat_mul (LeanNum m) (LeanNum n) = LeanNum k.
+let m. assume Hm: nat_p m. let n. assume Hn: nat_p n. let k. assume Hk: mul_nat m n = k.
+rewrite <- Hk.
+exact LeanNum_mul m Hm n Hn.
+Qed.
+
+(** Embedded proof support: Library/NatSub.mg **)
+(** Subtraction of numerals.
+
+   Lean's Nat.sub is the function read from its equation theorems: it
+   subtracts by repeated predecessor.  On numerals it undoes Egal's own
+   addition of ordinals: LeanNum (m + n) - LeanNum n = LeanNum m. **)
+
+Theorem LeanNum_pred_S : forall m, nat_p m -> Lean_Nat_pred (LeanNum (ordsucc m)) = LeanNum m.
+let m. assume Hm: nat_p m.
+rewrite LeanNum_S m Hm.
+exact Lean_Nat_pred_eq_2 (LeanNum m) (LeanNum_In m Hm).
+Qed.
+
+Theorem LeanNum_sub_add : forall n, nat_p n -> forall m, nat_p m ->
+  Lean_Nat_sub (LeanNum (add_nat m n)) (LeanNum n) = LeanNum m.
+apply nat_ind.
+- let m. assume Hm: nat_p m.
+  prove Lean_Nat_sub (LeanNum (add_nat m 0)) (LeanNum 0) = LeanNum m.
+  rewrite add_nat_0R m.
+  exact Lean_Nat_sub_eq_1 (LeanNum m) (LeanNum_In m Hm).
+- let n. assume Hn: nat_p n.
+  assume IH: forall m, nat_p m -> Lean_Nat_sub (LeanNum (add_nat m n)) (LeanNum n) = LeanNum m.
+  let m. assume Hm: nat_p m.
+  prove Lean_Nat_sub (LeanNum (add_nat m (ordsucc n))) (LeanNum (ordsucc n)) = LeanNum m.
+  rewrite add_nat_SR m n Hn.
+  rewrite LeanNum_S n Hn.
+  rewrite Lean_Nat_sub_eq_2 (LeanNum (ordsucc (add_nat m n)))
+    (LeanNum_In (ordsucc (add_nat m n)) (nat_ordsucc (add_nat m n) (add_nat_p m Hm n Hn))) (LeanNum n) (LeanNum_In n Hn).
+  rewrite <- add_nat_SL m Hm n Hn.
+  rewrite IH (ordsucc m) (nat_ordsucc m Hm).
+  exact LeanNum_pred_S m Hm.
+Qed.
+
+(** The form used by computations: the difference m is given, with the
+    ordinal sum that it undoes. **)
+Theorem LeanNum_sub_eq : forall m, nat_p m -> forall n, nat_p n -> forall k,
+  add_nat m n = k -> Lean_Nat_sub (LeanNum k) (LeanNum n) = LeanNum m.
+let m. assume Hm: nat_p m. let n. assume Hn: nat_p n. let k. assume Hk: add_nat m n = k.
+rewrite <- Hk.
+exact LeanNum_sub_add n Hn m Hm.
+Qed.
+
+(** Positive and negative examples. **)
+Theorem LeanNum_sub_ex : Lean_Nat_sub (LeanNum 5) (LeanNum 2) = LeanNum 3.
+apply LeanNum_sub_eq 3 (nat_ordsucc 2 nat_2) 2 nat_2 5.
+prove add_nat 3 2 = 5.
+rewrite add_nat_SR 3 1 nat_1.
+rewrite add_nat_SR 3 0 nat_0.
+rewrite add_nat_0R 3.
+reflexivity.
+Qed.
+
+Theorem LeanNum_sub_ex_not : Lean_Nat_sub (LeanNum 5) (LeanNum 2) <> LeanNum 2.
+assume H: Lean_Nat_sub (LeanNum 5) (LeanNum 2) = LeanNum 2.
+claim E: 3 = 2.
+{ apply LeanNum_inj 3 (nat_ordsucc 2 nat_2) 2 nat_2.
+  exact eq_i_tra (LeanNum 3) (Lean_Nat_sub (LeanNum 5) (LeanNum 2)) (LeanNum 2)
+    (eq_sym_i (Lean_Nat_sub (LeanNum 5) (LeanNum 2)) (LeanNum 3) LeanNum_sub_ex) H. }
+exact In_irref 2 (In_eq_r 2 3 2 E (ordsuccI2 2)).
+Qed.
+
+(** Embedded proof support: Library/NatDecide.mg **)
+(** Lean's Nat.decLe between numerals at any distance.
+
+   The reading of Nat.decLe is the canonical element of the proposition it
+   decides (Lean_Nat_decLe_canonical), so between numerals it is isTrue
+   when m <= m + k and isFalse when n < m. **)
+
+Theorem Lean_Nat_decLe_num_true : forall m, nat_p m -> forall k, nat_p k ->
+  Lean_Nat_decLe (LeanNum m) (LeanNum (add_nat m k))
+    = Lean_Decidable_isTrue_node (Lean_Nat_le_Prop (LeanNum m) (LeanNum (add_nat m k))) 0.
+let m. assume Hm: nat_p m. let k. assume Hk: nat_p k.
+rewrite Lean_Nat_decLe_canonical (LeanNum m) (LeanNum_In m Hm) (LeanNum (add_nat m k)) (LeanNum_In (add_nat m k) (add_nat_p m Hm k Hk)).
+exact Lean_DecCanon_true (Lean_Nat_le_Prop (LeanNum m) (LeanNum (add_nat m k))) (Lean_Nat_le_add_num m Hm k Hk).
+Qed.
+
+Theorem Lean_Nat_decLe_num_le : forall m, nat_p m -> forall n, nat_p n -> 0 :e Lean_Nat_le_Prop (LeanNum m) (LeanNum n) ->
+  Lean_Nat_decLe (LeanNum m) (LeanNum n) = Lean_Decidable_isTrue_node (Lean_Nat_le_Prop (LeanNum m) (LeanNum n)) 0.
+let m. assume Hm: nat_p m. let n. assume Hn: nat_p n. assume H: 0 :e Lean_Nat_le_Prop (LeanNum m) (LeanNum n).
+rewrite Lean_Nat_decLe_canonical (LeanNum m) (LeanNum_In m Hm) (LeanNum n) (LeanNum_In n Hn).
+exact Lean_DecCanon_true (Lean_Nat_le_Prop (LeanNum m) (LeanNum n)) H.
+Qed.
+
+Theorem Lean_Nat_decLe_num_false : forall m, nat_p m -> forall n, nat_p n -> n :e m ->
+  Lean_Nat_decLe (LeanNum m) (LeanNum n) = Lean_Decidable_isFalse_node (Lean_Nat_le_Prop (LeanNum m) (LeanNum n)) 0.
+let m. assume Hm: nat_p m. let n. assume Hn: nat_p n. assume Hnm: n :e m.
+rewrite Lean_Nat_decLe_canonical (LeanNum m) (LeanNum_In m Hm) (LeanNum n) (LeanNum_In n Hn).
+exact Lean_DecCanon_false (Lean_Nat_le_Prop (LeanNum m) (LeanNum n)) (Lean_Nat_le_num_not m Hm n Hn Hnm).
+Qed.
+
+(** dite at a decided proposition: the branch at the erased proof.  The
+    branches are any lambdas over the proposition (and its refutations). **)
+Theorem Lean_dite_true_ap : forall T, forall P, 0 :e P -> forall F G:set -> set,
+  Lean_dite T P (Lean_Decidable_isTrue_node P 0) (fun h :e P => F h) (fun h :e (Pi_ ux :e P, Lean_False_Prop) => G h) = F 0.
+let T P. assume HP: 0 :e P. let F G.
+rewrite Lean_dite_unfold T P (Lean_Decidable_isTrue_node P 0) (fun h :e P => F h) (fun h :e (Pi_ ux :e P, Lean_False_Prop) => G h).
+rewrite Lean_Decidable_iota1 P (fun h :e (Pi_ ux :e P, Lean_False_Prop) => G h) (fun h :e P => F h) 0 HP.
+exact beta P F 0 HP.
+Qed.
+
+Theorem Lean_dite_false_ap : forall T, forall P :e LeanProp, 0 /:e P -> forall F G:set -> set,
+  Lean_dite T P (Lean_Decidable_isFalse_node P 0) (fun h :e P => F h) (fun h :e (Pi_ ux :e P, Lean_False_Prop) => G h) = G 0.
+let T P. assume HPp: P :e LeanProp. assume HP: 0 /:e P. let F G.
+rewrite Lean_dite_unfold T P (Lean_Decidable_isFalse_node P 0) (fun h :e P => F h) (fun h :e (Pi_ ux :e P, Lean_False_Prop) => G h).
+rewrite Lean_Decidable_iota0 P (fun h :e (Pi_ ux :e P, Lean_False_Prop) => G h) (fun h :e P => F h) 0 (Lean_refute_0 P HPp HP).
+exact beta (Pi_ ux :e P, Lean_False_Prop) G 0 (Lean_refute_0 P HPp HP).
+Qed.
+
+Theorem Lean_ite_true_ap : forall T, forall P, 0 :e P -> forall t e, Lean_ite T P (Lean_Decidable_isTrue_node P 0) t e = t.
+let T P. assume HP: 0 :e P. let t e.
+rewrite Lean_ite_unfold T P (Lean_Decidable_isTrue_node P 0) t e.
+rewrite Lean_Decidable_iota1 P (fun v_x :e (Pi_ ux :e P, Lean_False_Prop) => e) (fun v_x :e P => t) 0 HP.
+exact beta P (fun v_x => t) 0 HP.
+Qed.
+
+Theorem Lean_ite_false_ap : forall T, forall P :e LeanProp, 0 /:e P -> forall t e, Lean_ite T P (Lean_Decidable_isFalse_node P 0) t e = e.
+let T P. assume HPp: P :e LeanProp. assume HP: 0 /:e P. let t e.
+rewrite Lean_ite_unfold T P (Lean_Decidable_isFalse_node P 0) t e.
+rewrite Lean_Decidable_iota0 P (fun v_x :e (Pi_ ux :e P, Lean_False_Prop) => e) (fun v_x :e P => t) 0 (Lean_refute_0 P HPp HP).
+exact beta (Pi_ ux :e P, Lean_False_Prop) (fun v_x => e) 0 (Lean_refute_0 P HPp HP).
+Qed.
+
+(** Positive and negative examples. **)
+Theorem Lean_Nat_decLe_num_ex : Lean_Nat_decLe (LeanNum 2) (LeanNum (add_nat 2 3))
+  = Lean_Decidable_isTrue_node (Lean_Nat_le_Prop (LeanNum 2) (LeanNum (add_nat 2 3))) 0.
+exact Lean_Nat_decLe_num_true 2 nat_2 3 (nat_ordsucc 2 nat_2).
+Qed.
+
+Theorem Lean_Nat_decLe_num_ex_not : Lean_Nat_decLe (LeanNum 5) (LeanNum 2)
+  = Lean_Decidable_isFalse_node (Lean_Nat_le_Prop (LeanNum 5) (LeanNum 2)) 0.
+exact Lean_Nat_decLe_num_false 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 nat_2))) 2 nat_2
+  (ordsuccI1 4 2 (ordsuccI1 3 2 (ordsuccI2 2))).
+Qed.
+
+(** Embedded proof support: Library/NatDiv.mg **)
+(** Division of numerals.
+
+   Lean's Nat.div runs its helper Nat.div.go on a fuel argument above the
+   dividend.  On numerals the helper's value is the quotient: for a divisor
+   y1 + 1 and a remainder r below it, Nat.div.go at the dividend
+   q (y1 + 1) + r is q, for any fuel above the dividend.  The fuel is written
+   as the dividend plus e plus one, so each step is an equation between
+   ordinals. **)
+
+Theorem Lean_Nat_div_go_num : forall y1, nat_p y1 -> forall r, nat_p r -> r :e ordsucc y1 ->
+  forall q, nat_p q -> forall e, nat_p e ->
+  Lean_Nat_div_go (LeanNum (ordsucc y1)) 0 (LeanNum (ordsucc (add_nat (add_nat (mul_nat q (ordsucc y1)) r) e)))
+    (LeanNum (add_nat (mul_nat q (ordsucc y1)) r)) 0 = LeanNum q.
+let y1. assume Hy1: nat_p y1. let r. assume Hr: nat_p r. assume Hry: r :e ordsucc y1.
+claim HY: nat_p (ordsucc y1).
+{ exact nat_ordsucc y1 Hy1. }
+claim HYin: LeanNum (ordsucc y1) :e Lean_Nat.
+{ exact LeanNum_In (ordsucc y1) HY. }
+claim H1Y: 0 :e Lean_Nat_le_Prop (Lean_Nat_succ_node (LeanNum 0)) (LeanNum (ordsucc y1)).
+{ rewrite <- LeanNum_S 0 nat_0.
+  claim E1: add_nat 1 y1 = ordsucc y1.
+  { rewrite add_nat_SL 0 nat_0 y1 Hy1. rewrite add_nat_0L y1 Hy1. reflexivity. }
+  rewrite <- E1.
+  exact Lean_Nat_le_add_num 1 nat_1 y1 Hy1. }
+claim HF: forall X, nat_p X -> forall e, nat_p e ->
+  0 :e Lean_Nat_le_Prop (Lean_Nat_succ_node (LeanNum X)) (Lean_Nat_succ_node (LeanNum (add_nat X e))).
+{ let X. assume HX: nat_p X. let e. assume He: nat_p e.
+  rewrite <- LeanNum_S X HX.
+  rewrite <- LeanNum_S (add_nat X e) (add_nat_p X HX e He).
+  rewrite <- add_nat_SL X HX e He.
+  exact Lean_Nat_le_add_num (ordsucc X) (nat_ordsucc X HX) e He. }
+apply nat_ind.
+- let e. assume He: nat_p e.
+  prove Lean_Nat_div_go (LeanNum (ordsucc y1)) 0 (LeanNum (ordsucc (add_nat (add_nat (mul_nat 0 (ordsucc y1)) r) e)))
+    (LeanNum (add_nat (mul_nat 0 (ordsucc y1)) r)) 0 = LeanNum 0.
+  rewrite mul_nat_0L (ordsucc y1) HY.
+  rewrite add_nat_0L r Hr.
+  rewrite LeanNum_S (add_nat r e) (add_nat_p r Hr e He).
+  rewrite Lean_Nat_div_go_eq_1 (LeanNum (ordsucc y1)) HYin H1Y (LeanNum r) (LeanNum_In r Hr)
+    (LeanNum (add_nat r e)) (LeanNum_In (add_nat r e) (add_nat_p r Hr e He)) (HF r Hr e He).
+  rewrite Lean_Nat_decLe_num_false (ordsucc y1) HY r Hr Hry.
+  rewrite Lean_dite_false_ap Lean_Nat (Lean_Nat_le_Prop (LeanNum (ordsucc y1)) (LeanNum r))
+    (Lean_Nat_le_Prop_prop (LeanNum (ordsucc y1)) (LeanNum r)) (Lean_Nat_le_num_not (ordsucc y1) HY r Hr Hry).
+  reflexivity.
+- let q. assume Hq: nat_p q.
+  assume IH: forall e, nat_p e ->
+    Lean_Nat_div_go (LeanNum (ordsucc y1)) 0 (LeanNum (ordsucc (add_nat (add_nat (mul_nat q (ordsucc y1)) r) e)))
+      (LeanNum (add_nat (mul_nat q (ordsucc y1)) r)) 0 = LeanNum q.
+  let e. assume He: nat_p e.
+  claim HqY: nat_p (mul_nat q (ordsucc y1)).
+  { exact mul_nat_p q Hq (ordsucc y1) HY. }
+  claim HA: nat_p (add_nat (mul_nat q (ordsucc y1)) r).
+  { exact add_nat_p (mul_nat q (ordsucc y1)) HqY r Hr. }
+  claim HX: nat_p (add_nat (add_nat (mul_nat q (ordsucc y1)) r) (ordsucc y1)).
+  { exact add_nat_p (add_nat (mul_nat q (ordsucc y1)) r) HA (ordsucc y1) HY. }
+  claim EX: add_nat (mul_nat (ordsucc q) (ordsucc y1)) r = add_nat (add_nat (mul_nat q (ordsucc y1)) r) (ordsucc y1).
+  { rewrite mul_nat_SL q Hq (ordsucc y1) HY.
+    rewrite add_nat_asso (mul_nat q (ordsucc y1)) HqY (ordsucc y1) HY r Hr.
+    rewrite add_nat_asso (mul_nat q (ordsucc y1)) HqY r Hr (ordsucc y1) HY.
+    rewrite add_nat_com (ordsucc y1) HY r Hr.
+    reflexivity. }
+  claim EF: add_nat (add_nat (add_nat (mul_nat q (ordsucc y1)) r) (ordsucc y1)) e
+    = ordsucc (add_nat (add_nat (mul_nat q (ordsucc y1)) r) (add_nat y1 e)).
+  { rewrite add_nat_SR (add_nat (mul_nat q (ordsucc y1)) r) y1 Hy1.
+    rewrite add_nat_SL (add_nat (add_nat (mul_nat q (ordsucc y1)) r) y1) (add_nat_p (add_nat (mul_nat q (ordsucc y1)) r) HA y1 Hy1) e He.
+    rewrite add_nat_asso (add_nat (mul_nat q (ordsucc y1)) r) HA y1 Hy1 e He.
+    reflexivity. }
+  prove Lean_Nat_div_go (LeanNum (ordsucc y1)) 0 (LeanNum (ordsucc (add_nat (add_nat (mul_nat (ordsucc q) (ordsucc y1)) r) e)))
+    (LeanNum (add_nat (mul_nat (ordsucc q) (ordsucc y1)) r)) 0 = LeanNum (ordsucc q).
+  rewrite EX.
+  rewrite LeanNum_S (add_nat (add_nat (add_nat (mul_nat q (ordsucc y1)) r) (ordsucc y1)) e)
+    (add_nat_p (add_nat (add_nat (mul_nat q (ordsucc y1)) r) (ordsucc y1)) HX e He).
+  rewrite Lean_Nat_div_go_eq_1 (LeanNum (ordsucc y1)) HYin H1Y
+    (LeanNum (add_nat (add_nat (mul_nat q (ordsucc y1)) r) (ordsucc y1))) (LeanNum_In (add_nat (add_nat (mul_nat q (ordsucc y1)) r) (ordsucc y1)) HX)
+    (LeanNum (add_nat (add_nat (add_nat (mul_nat q (ordsucc y1)) r) (ordsucc y1)) e))
+    (LeanNum_In (add_nat (add_nat (add_nat (mul_nat q (ordsucc y1)) r) (ordsucc y1)) e) (add_nat_p (add_nat (add_nat (mul_nat q (ordsucc y1)) r) (ordsucc y1)) HX e He))
+    (HF (add_nat (add_nat (mul_nat q (ordsucc y1)) r) (ordsucc y1)) HX e He).
+  rewrite add_nat_com (add_nat (mul_nat q (ordsucc y1)) r) HA (ordsucc y1) HY.
+  rewrite Lean_Nat_decLe_num_true (ordsucc y1) HY (add_nat (mul_nat q (ordsucc y1)) r) HA.
+  rewrite Lean_dite_true_ap Lean_Nat (Lean_Nat_le_Prop (LeanNum (ordsucc y1)) (LeanNum (add_nat (ordsucc y1) (add_nat (mul_nat q (ordsucc y1)) r))))
+    (Lean_Nat_le_add_num (ordsucc y1) HY (add_nat (mul_nat q (ordsucc y1)) r) HA).
+  prove Lean_Nat_add (Lean_Nat_div_go (LeanNum (ordsucc y1)) 0 (LeanNum (add_nat (add_nat (ordsucc y1) (add_nat (mul_nat q (ordsucc y1)) r)) e))
+      (Lean_Nat_sub (LeanNum (add_nat (ordsucc y1) (add_nat (mul_nat q (ordsucc y1)) r))) (LeanNum (ordsucc y1))) 0) (LeanNum 1)
+    = LeanNum (ordsucc q).
+  rewrite add_nat_com (ordsucc y1) HY (add_nat (mul_nat q (ordsucc y1)) r) HA.
+  rewrite LeanNum_sub_add (ordsucc y1) HY (add_nat (mul_nat q (ordsucc y1)) r) HA.
+  rewrite EF.
+  rewrite IH (add_nat y1 e) (add_nat_p y1 Hy1 e He).
+  rewrite LeanNum_add q Hq 1 nat_1.
+  rewrite add_nat_SR q 0 nat_0.
+  rewrite add_nat_0R q.
+  reflexivity.
+Qed.
+
+(** Nat.div itself: the helper at fuel one above the dividend. **)
+Theorem Lean_Nat_div_num : forall y1, nat_p y1 -> forall r, nat_p r -> r :e ordsucc y1 -> forall q, nat_p q ->
+  Lean_Nat_div (LeanNum (add_nat (mul_nat q (ordsucc y1)) r)) (LeanNum (ordsucc y1)) = LeanNum q.
+let y1. assume Hy1: nat_p y1. let r. assume Hr: nat_p r. assume Hry: r :e ordsucc y1. let q. assume Hq: nat_p q.
+claim HY: nat_p (ordsucc y1).
+{ exact nat_ordsucc y1 Hy1. }
+claim HX: nat_p (add_nat (mul_nat q (ordsucc y1)) r).
+{ exact add_nat_p (mul_nat q (ordsucc y1)) (mul_nat_p q Hq (ordsucc y1) HY) r Hr. }
+claim H1Y: 0 :e Lean_Nat_le_Prop (LeanNum 1) (LeanNum (ordsucc y1)).
+{ claim E1: add_nat 1 y1 = ordsucc y1.
+  { rewrite add_nat_SL 0 nat_0 y1 Hy1. rewrite add_nat_0L y1 Hy1. reflexivity. }
+  rewrite <- E1.
+  exact Lean_Nat_le_add_num 1 nat_1 y1 Hy1. }
+claim T0: Lean_Nat_div_go (LeanNum (ordsucc y1)) 0 (LeanNum (ordsucc (add_nat (add_nat (mul_nat q (ordsucc y1)) r) 0)))
+  (LeanNum (add_nat (mul_nat q (ordsucc y1)) r)) 0 = LeanNum q.
+{ exact Lean_Nat_div_go_num y1 Hy1 r Hr Hry q Hq 0 nat_0. }
+rewrite Lean_Nat_div_unfold (LeanNum (add_nat (mul_nat q (ordsucc y1)) r)) (LeanNum (ordsucc y1)).
+rewrite Lean_Nat_decLt_unfold (LeanNum 0) (LeanNum (ordsucc y1)).
+rewrite <- LeanNum_S 0 nat_0.
+rewrite Lean_Nat_decLe_num_le 1 nat_1 (ordsucc y1) HY H1Y.
+rewrite Lean_dite_true_ap Lean_Nat (Lean_Nat_le_Prop (LeanNum 1) (LeanNum (ordsucc y1))) H1Y.
+prove Lean_Nat_div_go (LeanNum (ordsucc y1)) 0 (Lean_Nat_succ_node (LeanNum (add_nat (mul_nat q (ordsucc y1)) r)))
+  (LeanNum (add_nat (mul_nat q (ordsucc y1)) r)) 0 = LeanNum q.
+rewrite <- LeanNum_S (add_nat (mul_nat q (ordsucc y1)) r) HX.
+exact eq_i_tra (Lean_Nat_div_go (LeanNum (ordsucc y1)) 0 (LeanNum (ordsucc (add_nat (mul_nat q (ordsucc y1)) r)))
+    (LeanNum (add_nat (mul_nat q (ordsucc y1)) r)) 0)
+  (Lean_Nat_div_go (LeanNum (ordsucc y1)) 0 (LeanNum (ordsucc (add_nat (add_nat (mul_nat q (ordsucc y1)) r) 0)))
+    (LeanNum (add_nat (mul_nat q (ordsucc y1)) r)) 0)
+  (LeanNum q)
+  (f_eq_i (fun z => Lean_Nat_div_go (LeanNum (ordsucc y1)) 0 (LeanNum (ordsucc z)) (LeanNum (add_nat (mul_nat q (ordsucc y1)) r)) 0)
+    (add_nat (mul_nat q (ordsucc y1)) r) (add_nat (add_nat (mul_nat q (ordsucc y1)) r) 0)
+    (eq_sym_i (add_nat (add_nat (mul_nat q (ordsucc y1)) r) 0) (add_nat (mul_nat q (ordsucc y1)) r) (add_nat_0R (add_nat (mul_nat q (ordsucc y1)) r))))
+  T0.
+Qed.
+
+(** Positive and negative examples: 23 / 7 = 3, and not 2. **)
+Theorem Lean_Nat_div_num_ex : Lean_Nat_div (LeanNum (add_nat (mul_nat 3 7) 2)) (LeanNum 7) = LeanNum 3.
+exact Lean_Nat_div_num 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 nat_2)))) 2 nat_2
+  (ordsuccI1 6 2 (ordsuccI1 5 2 (ordsuccI1 4 2 (ordsuccI1 3 2 (ordsuccI2 2)))))
+  3 (nat_ordsucc 2 nat_2).
+Qed.
+
+Theorem Lean_Nat_div_num_ex_not : Lean_Nat_div (LeanNum (add_nat (mul_nat 3 7) 2)) (LeanNum 7) <> LeanNum 2.
+assume H: Lean_Nat_div (LeanNum (add_nat (mul_nat 3 7) 2)) (LeanNum 7) = LeanNum 2.
+claim E: 3 = 2.
+{ apply LeanNum_inj 3 (nat_ordsucc 2 nat_2) 2 nat_2.
+  exact eq_i_tra (LeanNum 3) (Lean_Nat_div (LeanNum (add_nat (mul_nat 3 7) 2)) (LeanNum 7)) (LeanNum 2)
+    (eq_sym_i (Lean_Nat_div (LeanNum (add_nat (mul_nat 3 7) 2)) (LeanNum 7)) (LeanNum 3) Lean_Nat_div_num_ex) H. }
+exact In_irref 2 (In_eq_r 2 3 2 E (ordsuccI2 2)).
+Qed.
+
+(** The remainder: the helper of Nat.modCore, then Nat.modCore. **)
+Theorem Lean_Nat_modCore_go_num : forall y1, nat_p y1 -> forall r, nat_p r -> r :e ordsucc y1 ->
+  forall q, nat_p q -> forall e, nat_p e ->
+  Lean_Nat_modCore_go (LeanNum (ordsucc y1)) 0 (LeanNum (ordsucc (add_nat (add_nat (mul_nat q (ordsucc y1)) r) e)))
+    (LeanNum (add_nat (mul_nat q (ordsucc y1)) r)) 0 = LeanNum r.
+let y1. assume Hy1: nat_p y1. let r. assume Hr: nat_p r. assume Hry: r :e ordsucc y1.
+claim HY: nat_p (ordsucc y1).
+{ exact nat_ordsucc y1 Hy1. }
+claim HYin: LeanNum (ordsucc y1) :e Lean_Nat.
+{ exact LeanNum_In (ordsucc y1) HY. }
+claim H1Y: 0 :e Lean_Nat_le_Prop (Lean_Nat_succ_node (LeanNum 0)) (LeanNum (ordsucc y1)).
+{ rewrite <- LeanNum_S 0 nat_0.
+  claim E1: add_nat 1 y1 = ordsucc y1.
+  { rewrite add_nat_SL 0 nat_0 y1 Hy1. rewrite add_nat_0L y1 Hy1. reflexivity. }
+  rewrite <- E1.
+  exact Lean_Nat_le_add_num 1 nat_1 y1 Hy1. }
+claim HF: forall X, nat_p X -> forall e, nat_p e ->
+  0 :e Lean_Nat_le_Prop (Lean_Nat_succ_node (LeanNum X)) (Lean_Nat_succ_node (LeanNum (add_nat X e))).
+{ let X. assume HX: nat_p X. let e. assume He: nat_p e.
+  rewrite <- LeanNum_S X HX.
+  rewrite <- LeanNum_S (add_nat X e) (add_nat_p X HX e He).
+  rewrite <- add_nat_SL X HX e He.
+  exact Lean_Nat_le_add_num (ordsucc X) (nat_ordsucc X HX) e He. }
+apply nat_ind.
+- let e. assume He: nat_p e.
+  prove Lean_Nat_modCore_go (LeanNum (ordsucc y1)) 0 (LeanNum (ordsucc (add_nat (add_nat (mul_nat 0 (ordsucc y1)) r) e)))
+    (LeanNum (add_nat (mul_nat 0 (ordsucc y1)) r)) 0 = LeanNum r.
+  rewrite mul_nat_0L (ordsucc y1) HY.
+  rewrite add_nat_0L r Hr.
+  rewrite LeanNum_S (add_nat r e) (add_nat_p r Hr e He).
+  rewrite Lean_Nat_modCore_go_eq_1 (LeanNum (ordsucc y1)) HYin H1Y (LeanNum r) (LeanNum_In r Hr)
+    (LeanNum (add_nat r e)) (LeanNum_In (add_nat r e) (add_nat_p r Hr e He)) (HF r Hr e He).
+  rewrite Lean_Nat_decLe_num_false (ordsucc y1) HY r Hr Hry.
+  rewrite Lean_dite_false_ap Lean_Nat (Lean_Nat_le_Prop (LeanNum (ordsucc y1)) (LeanNum r))
+    (Lean_Nat_le_Prop_prop (LeanNum (ordsucc y1)) (LeanNum r)) (Lean_Nat_le_num_not (ordsucc y1) HY r Hr Hry).
+  reflexivity.
+- let q. assume Hq: nat_p q.
+  assume IH: forall e, nat_p e ->
+    Lean_Nat_modCore_go (LeanNum (ordsucc y1)) 0 (LeanNum (ordsucc (add_nat (add_nat (mul_nat q (ordsucc y1)) r) e)))
+      (LeanNum (add_nat (mul_nat q (ordsucc y1)) r)) 0 = LeanNum r.
+  let e. assume He: nat_p e.
+  claim HqY: nat_p (mul_nat q (ordsucc y1)).
+  { exact mul_nat_p q Hq (ordsucc y1) HY. }
+  claim HA: nat_p (add_nat (mul_nat q (ordsucc y1)) r).
+  { exact add_nat_p (mul_nat q (ordsucc y1)) HqY r Hr. }
+  claim HX: nat_p (add_nat (add_nat (mul_nat q (ordsucc y1)) r) (ordsucc y1)).
+  { exact add_nat_p (add_nat (mul_nat q (ordsucc y1)) r) HA (ordsucc y1) HY. }
+  claim EX: add_nat (mul_nat (ordsucc q) (ordsucc y1)) r = add_nat (add_nat (mul_nat q (ordsucc y1)) r) (ordsucc y1).
+  { rewrite mul_nat_SL q Hq (ordsucc y1) HY.
+    rewrite add_nat_asso (mul_nat q (ordsucc y1)) HqY (ordsucc y1) HY r Hr.
+    rewrite add_nat_asso (mul_nat q (ordsucc y1)) HqY r Hr (ordsucc y1) HY.
+    rewrite add_nat_com (ordsucc y1) HY r Hr.
+    reflexivity. }
+  claim EF: add_nat (add_nat (add_nat (mul_nat q (ordsucc y1)) r) (ordsucc y1)) e
+    = ordsucc (add_nat (add_nat (mul_nat q (ordsucc y1)) r) (add_nat y1 e)).
+  { rewrite add_nat_SR (add_nat (mul_nat q (ordsucc y1)) r) y1 Hy1.
+    rewrite add_nat_SL (add_nat (add_nat (mul_nat q (ordsucc y1)) r) y1) (add_nat_p (add_nat (mul_nat q (ordsucc y1)) r) HA y1 Hy1) e He.
+    rewrite add_nat_asso (add_nat (mul_nat q (ordsucc y1)) r) HA y1 Hy1 e He.
+    reflexivity. }
+  prove Lean_Nat_modCore_go (LeanNum (ordsucc y1)) 0 (LeanNum (ordsucc (add_nat (add_nat (mul_nat (ordsucc q) (ordsucc y1)) r) e)))
+    (LeanNum (add_nat (mul_nat (ordsucc q) (ordsucc y1)) r)) 0 = LeanNum r.
+  rewrite EX.
+  rewrite LeanNum_S (add_nat (add_nat (add_nat (mul_nat q (ordsucc y1)) r) (ordsucc y1)) e)
+    (add_nat_p (add_nat (add_nat (mul_nat q (ordsucc y1)) r) (ordsucc y1)) HX e He).
+  rewrite Lean_Nat_modCore_go_eq_1 (LeanNum (ordsucc y1)) HYin H1Y
+    (LeanNum (add_nat (add_nat (mul_nat q (ordsucc y1)) r) (ordsucc y1))) (LeanNum_In (add_nat (add_nat (mul_nat q (ordsucc y1)) r) (ordsucc y1)) HX)
+    (LeanNum (add_nat (add_nat (add_nat (mul_nat q (ordsucc y1)) r) (ordsucc y1)) e))
+    (LeanNum_In (add_nat (add_nat (add_nat (mul_nat q (ordsucc y1)) r) (ordsucc y1)) e) (add_nat_p (add_nat (add_nat (mul_nat q (ordsucc y1)) r) (ordsucc y1)) HX e He))
+    (HF (add_nat (add_nat (mul_nat q (ordsucc y1)) r) (ordsucc y1)) HX e He).
+  rewrite add_nat_com (add_nat (mul_nat q (ordsucc y1)) r) HA (ordsucc y1) HY.
+  rewrite Lean_Nat_decLe_num_true (ordsucc y1) HY (add_nat (mul_nat q (ordsucc y1)) r) HA.
+  rewrite Lean_dite_true_ap Lean_Nat (Lean_Nat_le_Prop (LeanNum (ordsucc y1)) (LeanNum (add_nat (ordsucc y1) (add_nat (mul_nat q (ordsucc y1)) r))))
+    (Lean_Nat_le_add_num (ordsucc y1) HY (add_nat (mul_nat q (ordsucc y1)) r) HA).
+  prove Lean_Nat_modCore_go (LeanNum (ordsucc y1)) 0 (LeanNum (add_nat (add_nat (ordsucc y1) (add_nat (mul_nat q (ordsucc y1)) r)) e))
+      (Lean_Nat_sub (LeanNum (add_nat (ordsucc y1) (add_nat (mul_nat q (ordsucc y1)) r))) (LeanNum (ordsucc y1))) 0
+    = LeanNum r.
+  rewrite add_nat_com (ordsucc y1) HY (add_nat (mul_nat q (ordsucc y1)) r) HA.
+  rewrite LeanNum_sub_add (ordsucc y1) HY (add_nat (mul_nat q (ordsucc y1)) r) HA.
+  rewrite EF.
+  exact IH (add_nat y1 e) (add_nat_p y1 Hy1 e He).
+Qed.
+
+Theorem Lean_Nat_modCore_num : forall y1, nat_p y1 -> forall r, nat_p r -> r :e ordsucc y1 -> forall q, nat_p q ->
+  Lean_Nat_modCore (LeanNum (add_nat (mul_nat q (ordsucc y1)) r)) (LeanNum (ordsucc y1)) = LeanNum r.
+let y1. assume Hy1: nat_p y1. let r. assume Hr: nat_p r. assume Hry: r :e ordsucc y1. let q. assume Hq: nat_p q.
+claim HY: nat_p (ordsucc y1).
+{ exact nat_ordsucc y1 Hy1. }
+claim HX: nat_p (add_nat (mul_nat q (ordsucc y1)) r).
+{ exact add_nat_p (mul_nat q (ordsucc y1)) (mul_nat_p q Hq (ordsucc y1) HY) r Hr. }
+claim H1Y: 0 :e Lean_Nat_le_Prop (LeanNum 1) (LeanNum (ordsucc y1)).
+{ claim E1: add_nat 1 y1 = ordsucc y1.
+  { rewrite add_nat_SL 0 nat_0 y1 Hy1. rewrite add_nat_0L y1 Hy1. reflexivity. }
+  rewrite <- E1.
+  exact Lean_Nat_le_add_num 1 nat_1 y1 Hy1. }
+claim T0: Lean_Nat_modCore_go (LeanNum (ordsucc y1)) 0 (LeanNum (ordsucc (add_nat (add_nat (mul_nat q (ordsucc y1)) r) 0)))
+  (LeanNum (add_nat (mul_nat q (ordsucc y1)) r)) 0 = LeanNum r.
+{ exact Lean_Nat_modCore_go_num y1 Hy1 r Hr Hry q Hq 0 nat_0. }
+rewrite Lean_Nat_modCore_unfold (LeanNum (add_nat (mul_nat q (ordsucc y1)) r)) (LeanNum (ordsucc y1)).
+rewrite Lean_Nat_decLt_unfold (LeanNum 0) (LeanNum (ordsucc y1)).
+rewrite <- LeanNum_S 0 nat_0.
+rewrite Lean_Nat_decLe_num_le 1 nat_1 (ordsucc y1) HY H1Y.
+rewrite Lean_dite_true_ap Lean_Nat (Lean_Nat_le_Prop (LeanNum 1) (LeanNum (ordsucc y1))) H1Y.
+prove Lean_Nat_modCore_go (LeanNum (ordsucc y1)) 0 (Lean_Nat_succ_node (LeanNum (add_nat (mul_nat q (ordsucc y1)) r)))
+  (LeanNum (add_nat (mul_nat q (ordsucc y1)) r)) 0 = LeanNum r.
+rewrite <- LeanNum_S (add_nat (mul_nat q (ordsucc y1)) r) HX.
+exact eq_i_tra (Lean_Nat_modCore_go (LeanNum (ordsucc y1)) 0 (LeanNum (ordsucc (add_nat (mul_nat q (ordsucc y1)) r)))
+    (LeanNum (add_nat (mul_nat q (ordsucc y1)) r)) 0)
+  (Lean_Nat_modCore_go (LeanNum (ordsucc y1)) 0 (LeanNum (ordsucc (add_nat (add_nat (mul_nat q (ordsucc y1)) r) 0)))
+    (LeanNum (add_nat (mul_nat q (ordsucc y1)) r)) 0)
+  (LeanNum r)
+  (f_eq_i (fun z => Lean_Nat_modCore_go (LeanNum (ordsucc y1)) 0 (LeanNum (ordsucc z)) (LeanNum (add_nat (mul_nat q (ordsucc y1)) r)) 0)
+    (add_nat (mul_nat q (ordsucc y1)) r) (add_nat (add_nat (mul_nat q (ordsucc y1)) r) 0)
+    (eq_sym_i (add_nat (add_nat (mul_nat q (ordsucc y1)) r) 0) (add_nat (mul_nat q (ordsucc y1)) r) (add_nat_0R (add_nat (mul_nat q (ordsucc y1)) r))))
+  T0.
+Qed.
+
+(** Nat.mod itself: zero, or below the divisor, is its own remainder;
+    otherwise Nat.modCore. **)
+Theorem Lean_Nat_mod_num : forall y1, nat_p y1 -> forall r, nat_p r -> r :e ordsucc y1 -> forall q, nat_p q ->
+  Lean_Nat_mod (LeanNum (add_nat (mul_nat q (ordsucc y1)) r)) (LeanNum (ordsucc y1)) = LeanNum r.
+let y1. assume Hy1: nat_p y1. let r. assume Hr: nat_p r. assume Hry: r :e ordsucc y1. let q. assume Hq: nat_p q.
+claim HY: nat_p (ordsucc y1).
+{ exact nat_ordsucc y1 Hy1. }
+claim HYin: LeanNum (ordsucc y1) :e Lean_Nat.
+{ exact LeanNum_In (ordsucc y1) HY. }
+apply nat_inv q Hq.
+- assume Hq0: q = 0.
+  rewrite Hq0.
+  rewrite mul_nat_0L (ordsucc y1) HY.
+  rewrite add_nat_0L r Hr.
+  apply nat_inv r Hr.
+  + assume Hr0: r = 0.
+    rewrite Hr0.
+    exact Lean_Nat_mod_eq_1 (LeanNum (ordsucc y1)) HYin.
+  + assume Hr1: exists r1, nat_p r1 /\ r = ordsucc r1.
+    apply Hr1.
+    let r1. assume H: nat_p r1 /\ r = ordsucc r1.
+    apply H.
+    assume Hr1n: nat_p r1. assume Er: r = ordsucc r1.
+    claim Hry1: ordsucc r1 :e ordsucc y1.
+    { rewrite <- Er. exact Hry. }
+    rewrite Er.
+    rewrite LeanNum_S r1 Hr1n.
+    rewrite Lean_Nat_mod_eq_2 (LeanNum (ordsucc y1)) HYin (LeanNum r1) (LeanNum_In r1 Hr1n).
+    rewrite <- LeanNum_S r1 Hr1n.
+    rewrite Lean_Nat_decLe_num_false (ordsucc y1) HY (ordsucc r1) (nat_ordsucc r1 Hr1n) Hry1.
+    exact Lean_ite_false_ap Lean_Nat (Lean_Nat_le_Prop (LeanNum (ordsucc y1)) (LeanNum (ordsucc r1)))
+      (Lean_Nat_le_Prop_prop (LeanNum (ordsucc y1)) (LeanNum (ordsucc r1)))
+      (Lean_Nat_le_num_not (ordsucc y1) HY (ordsucc r1) (nat_ordsucc r1 Hr1n) Hry1)
+      (Lean_Nat_modCore (LeanNum (ordsucc r1)) (LeanNum (ordsucc y1))) (LeanNum (ordsucc r1)).
+- assume Hq1: exists q1, nat_p q1 /\ q = ordsucc q1.
+  apply Hq1.
+  let q1. assume H: nat_p q1 /\ q = ordsucc q1.
+  apply H.
+  assume Hq1n: nat_p q1. assume Eq: q = ordsucc q1.
+  claim Hq1Y: nat_p (mul_nat q1 (ordsucc y1)).
+  { exact mul_nat_p q1 Hq1n (ordsucc y1) HY. }
+  claim HK: nat_p (add_nat (mul_nat q1 (ordsucc y1)) r).
+  { exact add_nat_p (mul_nat q1 (ordsucc y1)) Hq1Y r Hr. }
+  claim HN: nat_p (add_nat (add_nat (mul_nat q1 (ordsucc y1)) y1) r).
+  { exact add_nat_p (add_nat (mul_nat q1 (ordsucc y1)) y1) (add_nat_p (mul_nat q1 (ordsucc y1)) Hq1Y y1 Hy1) r Hr. }
+  claim EN: add_nat (mul_nat (ordsucc q1) (ordsucc y1)) r = ordsucc (add_nat (add_nat (mul_nat q1 (ordsucc y1)) y1) r).
+  { rewrite mul_nat_SL q1 Hq1n (ordsucc y1) HY.
+    rewrite add_nat_SR (mul_nat q1 (ordsucc y1)) y1 Hy1.
+    exact add_nat_SL (add_nat (mul_nat q1 (ordsucc y1)) y1) (add_nat_p (mul_nat q1 (ordsucc y1)) Hq1Y y1 Hy1) r Hr. }
+  claim EK: add_nat (ordsucc y1) (add_nat (mul_nat q1 (ordsucc y1)) r) = add_nat (mul_nat (ordsucc q1) (ordsucc y1)) r.
+  { rewrite mul_nat_SL q1 Hq1n (ordsucc y1) HY.
+    rewrite add_nat_com (ordsucc y1) HY (add_nat (mul_nat q1 (ordsucc y1)) r) HK.
+    rewrite add_nat_asso (mul_nat q1 (ordsucc y1)) Hq1Y r Hr (ordsucc y1) HY.
+    rewrite add_nat_asso (mul_nat q1 (ordsucc y1)) Hq1Y (ordsucc y1) HY r Hr.
+    rewrite add_nat_com (ordsucc y1) HY r Hr.
+    reflexivity. }
+  claim HLe: 0 :e Lean_Nat_le_Prop (LeanNum (ordsucc y1)) (LeanNum (ordsucc (add_nat (add_nat (mul_nat q1 (ordsucc y1)) y1) r))).
+  { rewrite <- EN. rewrite <- EK.
+    exact Lean_Nat_le_add_num (ordsucc y1) HY (add_nat (mul_nat q1 (ordsucc y1)) r) HK. }
+  claim MC: Lean_Nat_modCore (LeanNum (ordsucc (add_nat (add_nat (mul_nat q1 (ordsucc y1)) y1) r))) (LeanNum (ordsucc y1)) = LeanNum r.
+  { rewrite <- EN. exact Lean_Nat_modCore_num y1 Hy1 r Hr Hry (ordsucc q1) (nat_ordsucc q1 Hq1n). }
+  rewrite Eq.
+  rewrite EN.
+  rewrite LeanNum_S (add_nat (add_nat (mul_nat q1 (ordsucc y1)) y1) r) HN.
+  rewrite Lean_Nat_mod_eq_2 (LeanNum (ordsucc y1)) HYin (LeanNum (add_nat (add_nat (mul_nat q1 (ordsucc y1)) y1) r))
+    (LeanNum_In (add_nat (add_nat (mul_nat q1 (ordsucc y1)) y1) r) HN).
+  rewrite <- LeanNum_S (add_nat (add_nat (mul_nat q1 (ordsucc y1)) y1) r) HN.
+  rewrite Lean_Nat_decLe_num_le (ordsucc y1) HY (ordsucc (add_nat (add_nat (mul_nat q1 (ordsucc y1)) y1) r)) (nat_ordsucc (add_nat (add_nat (mul_nat q1 (ordsucc y1)) y1) r) HN) HLe.
+  rewrite Lean_ite_true_ap Lean_Nat (Lean_Nat_le_Prop (LeanNum (ordsucc y1)) (LeanNum (ordsucc (add_nat (add_nat (mul_nat q1 (ordsucc y1)) y1) r)))) HLe.
+  exact MC.
+Qed.
+
+(** Every natural of the reading is a numeral, and Egal's own division with
+    remainder gives the numerals the theorems above need: on any naturals,
+    the read remainder by a positive divisor is a numeral below it. **)
+Theorem Lean_Nat_num : forall x :e Lean_Nat, exists k, nat_p k /\ x = LeanNum k.
+apply Lean_Nat_ind.
+- witness 0. apply andI.
+  + exact nat_0.
+  + exact eq_sym_i (LeanNum 0) Lean_Nat_zero_node LeanNum_0.
+- let x. assume Hx: x :e Lean_Nat. assume IH: exists k, nat_p k /\ x = LeanNum k.
+  apply IH. let k. assume Hk: nat_p k /\ x = LeanNum k.
+  apply Hk. assume Hkn: nat_p k. assume Ex: x = LeanNum k.
+  witness (ordsucc k). apply andI.
+  + exact nat_ordsucc k Hkn.
+  + rewrite LeanNum_S k Hkn. rewrite Ex. reflexivity.
+Qed.
+
+Theorem nat_euclid : forall a, nat_p a -> forall b, nat_p b ->
+  exists q, nat_p q /\ (exists r, nat_p r /\ (r :e ordsucc a /\ b = add_nat (mul_nat q (ordsucc a)) r)).
+let a. assume Ha: nat_p a.
+claim HY: nat_p (ordsucc a).
+{ exact nat_ordsucc a Ha. }
+apply nat_ind.
+- witness 0. apply andI.
+  + exact nat_0.
+  + witness 0. apply andI.
+    * exact nat_0.
+    * apply andI.
+      { exact nat_0_in_ordsucc a Ha. }
+      { rewrite mul_nat_0L (ordsucc a) HY. rewrite add_nat_0R 0. reflexivity. }
+- let b. assume Hb: nat_p b.
+  assume IH: exists q, nat_p q /\ (exists r, nat_p r /\ (r :e ordsucc a /\ b = add_nat (mul_nat q (ordsucc a)) r)).
+  apply IH. let q. assume Hq: nat_p q /\ (exists r, nat_p r /\ (r :e ordsucc a /\ b = add_nat (mul_nat q (ordsucc a)) r)).
+  apply Hq. assume Hqn: nat_p q. assume Hr: exists r, nat_p r /\ (r :e ordsucc a /\ b = add_nat (mul_nat q (ordsucc a)) r).
+  apply Hr. let r. assume Hr2: nat_p r /\ (r :e ordsucc a /\ b = add_nat (mul_nat q (ordsucc a)) r).
+  apply Hr2. assume Hrn: nat_p r. assume Hr3: r :e ordsucc a /\ b = add_nat (mul_nat q (ordsucc a)) r.
+  apply Hr3. assume Hra: r :e ordsucc a. assume Eb: b = add_nat (mul_nat q (ordsucc a)) r.
+  apply ordinal_ordsucc_In_eq (ordsucc a) r (nat_p_ordinal (ordsucc a) HY) Hra.
+  + assume Hs: ordsucc r :e ordsucc a.
+    witness q. apply andI.
+    * exact Hqn.
+    * witness (ordsucc r). apply andI.
+      { exact nat_ordsucc r Hrn. }
+      { apply andI.
+        - exact Hs.
+        - rewrite add_nat_SR (mul_nat q (ordsucc a)) r Hrn. rewrite Eb. reflexivity. }
+  + assume EY: ordsucc a = ordsucc r.
+    witness (ordsucc q). apply andI.
+    * exact nat_ordsucc q Hqn.
+    * witness 0. apply andI.
+      { exact nat_0. }
+      { apply andI.
+        - exact nat_0_in_ordsucc a Ha.
+        - rewrite add_nat_0R (mul_nat (ordsucc q) (ordsucc a)).
+          rewrite mul_nat_SL q Hqn (ordsucc a) HY.
+          rewrite Eb.
+          rewrite EY.
+          rewrite add_nat_SR (mul_nat q (ordsucc r)) r Hrn.
+          reflexivity. }
+Qed.
+
+Theorem Lean_Nat_mod_lt : forall n :e Lean_Nat, forall a, nat_p a ->
+  exists r, nat_p r /\ (r :e ordsucc a /\ Lean_Nat_mod n (LeanNum (ordsucc a)) = LeanNum r).
+let n. assume Hn: n :e Lean_Nat. let a. assume Ha: nat_p a.
+apply Lean_Nat_num n Hn. let b. assume Hb: nat_p b /\ n = LeanNum b.
+apply Hb. assume Hbn: nat_p b. assume En: n = LeanNum b.
+apply nat_euclid a Ha b Hbn. let q. assume Hq: nat_p q /\ (exists r, nat_p r /\ (r :e ordsucc a /\ b = add_nat (mul_nat q (ordsucc a)) r)).
+apply Hq. assume Hqn: nat_p q. assume Hr: exists r, nat_p r /\ (r :e ordsucc a /\ b = add_nat (mul_nat q (ordsucc a)) r).
+apply Hr. let r. assume Hr2: nat_p r /\ (r :e ordsucc a /\ b = add_nat (mul_nat q (ordsucc a)) r).
+apply Hr2. assume Hrn: nat_p r. assume Hr3: r :e ordsucc a /\ b = add_nat (mul_nat q (ordsucc a)) r.
+apply Hr3. assume Hra: r :e ordsucc a. assume Eb: b = add_nat (mul_nat q (ordsucc a)) r.
+witness r. apply andI.
+- exact Hrn.
+- apply andI.
+  + exact Hra.
+  + rewrite En. rewrite Eb. exact Lean_Nat_mod_num a Ha r Hrn Hra q Hqn.
+Qed.
+
+(** The remainder's bound as an addition, which digits can certify:
+    r + d = y1 puts r below y1 + 1. **)
+Theorem In_ordsucc_add : forall r, nat_p r -> forall d, nat_p d -> r :e ordsucc (add_nat r d).
+let r. assume Hr: nat_p r.
+apply nat_ind.
+- rewrite add_nat_0R r. exact ordsuccI2 r.
+- let d. assume Hd: nat_p d. assume IH: r :e ordsucc (add_nat r d).
+  rewrite add_nat_SR r d Hd.
+  exact ordsuccI1 (ordsucc (add_nat r d)) r IH.
+Qed.
+
+Theorem Lean_Nat_div_num_add : forall y1, nat_p y1 -> forall r, nat_p r -> forall d, nat_p d -> add_nat r d = y1 ->
+  forall q, nat_p q -> Lean_Nat_div (LeanNum (add_nat (mul_nat q (ordsucc y1)) r)) (LeanNum (ordsucc y1)) = LeanNum q.
+let y1. assume Hy1: nat_p y1. let r. assume Hr: nat_p r. let d. assume Hd: nat_p d. assume E: add_nat r d = y1.
+claim Hry: r :e ordsucc y1.
+{ rewrite <- E. exact In_ordsucc_add r Hr d Hd. }
+exact Lean_Nat_div_num y1 Hy1 r Hr Hry.
+Qed.
+
+Theorem Lean_Nat_mod_num_add : forall y1, nat_p y1 -> forall r, nat_p r -> forall d, nat_p d -> add_nat r d = y1 ->
+  forall q, nat_p q -> Lean_Nat_mod (LeanNum (add_nat (mul_nat q (ordsucc y1)) r)) (LeanNum (ordsucc y1)) = LeanNum r.
+let y1. assume Hy1: nat_p y1. let r. assume Hr: nat_p r. let d. assume Hd: nat_p d. assume E: add_nat r d = y1.
+claim Hry: r :e ordsucc y1.
+{ rewrite <- E. exact In_ordsucc_add r Hr d Hd. }
+exact Lean_Nat_mod_num y1 Hy1 r Hr Hry.
+Qed.
+
+(** Embedded proof support: Library/Divisibility.mg **)
+(** Divisibility reconstructed from the checked numeral division interface. **)
+
+Theorem Lean_ite_same : forall T p value, forall decision :e Lean_Decidable p,
+  Lean_ite T p decision value value = value.
+let T p value.
+claim Hfalse: forall h :e (Pi_ x :e p, Lean_False_Prop),
+  Lean_ite T p (Lean_Decidable_isFalse_node p h) value value = value.
+{ let h. assume Hh: h :e (Pi_ x :e p, Lean_False_Prop).
+  rewrite Lean_ite_unfold T p (Lean_Decidable_isFalse_node p h) value value.
+  rewrite Lean_Decidable_iota0 p (fun _ :e (Pi_ x :e p, Lean_False_Prop) => value)
+    (fun _ :e p => value) h Hh.
+  exact beta (Pi_ x :e p, Lean_False_Prop) (fun _ => value) h Hh. }
+claim Htrue: forall h :e p, Lean_ite T p (Lean_Decidable_isTrue_node p h) value value = value.
+{ let h. assume Hh: h :e p.
+  rewrite Lean_ite_unfold T p (Lean_Decidable_isTrue_node p h) value value.
+  rewrite Lean_Decidable_iota1 p (fun _ :e (Pi_ x :e p, Lean_False_Prop) => value)
+    (fun _ :e p => value) h Hh.
+  exact beta p (fun _ => value) h Hh. }
+exact Lean_Decidable_ind p (fun d => Lean_ite T p d value value = value) Hfalse Htrue.
+Qed.
+
+Theorem Lean_modCore_zero : forall n :e Lean_Nat, Lean_Nat_modCore n (LeanNum 0) = n.
+let n. assume Hn: n :e Lean_Nat.
+claim Hnot: 0 /:e Lean_Nat_le_Prop (Lean_Nat_succ_node (LeanNum 0)) (LeanNum 0).
+{ rewrite <- LeanNum_S 0 nat_0. exact Lean_Nat_le_num_not 1 nat_1 0 nat_0 In_0_1. }
+rewrite Lean_Nat_modCore_eq_1 n Hn (LeanNum 0) (LeanNum_In 0 nat_0).
+rewrite Lean_Nat_decLt_unfold (LeanNum 0) (LeanNum 0).
+rewrite Lean_Nat_decLe_canonical (Lean_Nat_succ_node (LeanNum 0))
+  (Lean_Nat_succ_typed (LeanNum 0) (LeanNum_In 0 nat_0)) (LeanNum 0) (LeanNum_In 0 nat_0).
+rewrite Lean_DecCanon_false (Lean_Nat_le_Prop (Lean_Nat_succ_node (LeanNum 0)) (LeanNum 0)) Hnot.
+exact Lean_dite_false_ap Lean_Nat (Lean_Nat_le_Prop (Lean_Nat_succ_node (LeanNum 0)) (LeanNum 0))
+  (Lean_Nat_le_Prop_prop (Lean_Nat_succ_node (LeanNum 0)) (LeanNum 0)) Hnot
+  (fun _ => Lean_Nat_modCore_go (LeanNum 0) 0 (Lean_Nat_succ_node n) n 0) (fun _ => n).
+Qed.
+
+Theorem Lean_mod_zero : forall n :e Lean_Nat, Lean_Nat_mod n (LeanNum 0) = n.
+apply Lean_Nat_ind.
+- rewrite <- LeanNum_0. exact Lean_Nat_mod_eq_1 (LeanNum 0) (LeanNum_In 0 nat_0).
+- let n. assume Hn: n :e Lean_Nat. assume IH: Lean_Nat_mod n (LeanNum 0) = n.
+  rewrite Lean_Nat_mod_eq_2 (LeanNum 0) (LeanNum_In 0 nat_0) n Hn.
+  rewrite Lean_modCore_zero (Lean_Nat_succ_node n) (Lean_Nat_succ_typed n Hn).
+  exact Lean_ite_same Lean_Nat (Lean_Nat_le_Prop (LeanNum 0) (Lean_Nat_succ_node n))
+    (Lean_Nat_succ_node n) (Lean_Nat_decLe (LeanNum 0) (Lean_Nat_succ_node n))
+    (Lean_Nat_decLe_In (LeanNum 0) (LeanNum_In 0 nat_0) (Lean_Nat_succ_node n) (Lean_Nat_succ_typed n Hn)).
+Qed.
+
+Theorem Lean_mod_zero_witness_positive : forall d, nat_p d -> forall n, nat_p n ->
+  Lean_Nat_mod (LeanNum n) (LeanNum (ordsucc d)) = LeanNum 0 ->
+  exists q :e Lean_Nat, LeanNum n = Lean_Nat_mul (LeanNum (ordsucc d)) q.
+let d. assume Hd: nat_p d. let n. assume Hn: nat_p n.
+assume Hzero: Lean_Nat_mod (LeanNum n) (LeanNum (ordsucc d)) = LeanNum 0.
+apply nat_euclid d Hd n Hn.
+let q. assume Hq: nat_p q /\ (exists r, nat_p r /\ (r :e ordsucc d /\ n = add_nat (mul_nat q (ordsucc d)) r)).
+apply Hq. assume Hqn: nat_p q.
+assume Hex: exists r, nat_p r /\ (r :e ordsucc d /\ n = add_nat (mul_nat q (ordsucc d)) r).
+apply Hex. let r. assume Hr: nat_p r /\ (r :e ordsucc d /\ n = add_nat (mul_nat q (ordsucc d)) r).
+apply Hr. assume Hrn: nat_p r. assume Hrest: r :e ordsucc d /\ n = add_nat (mul_nat q (ordsucc d)) r.
+apply Hrest. assume Hrd: r :e ordsucc d. assume En: n = add_nat (mul_nat q (ordsucc d)) r.
+claim Hrem: Lean_Nat_mod (LeanNum n) (LeanNum (ordsucc d)) = LeanNum r.
+{ rewrite En. exact Lean_Nat_mod_num d Hd r Hrn Hrd q Hqn. }
+claim Er: r = 0.
+{ apply LeanNum_inj r Hrn 0 nat_0.
+  exact eq_i_tra (LeanNum r) (Lean_Nat_mod (LeanNum n) (LeanNum (ordsucc d))) (LeanNum 0)
+    (eq_sym_i (Lean_Nat_mod (LeanNum n) (LeanNum (ordsucc d))) (LeanNum r) Hrem) Hzero. }
+claim En0: n = mul_nat q (ordsucc d).
+{ rewrite En. rewrite Er. exact add_nat_0R (mul_nat q (ordsucc d)). }
+witness (LeanNum q). apply andI.
+- exact LeanNum_In q Hqn.
+- rewrite LeanNum_mul (ordsucc d) (nat_ordsucc d Hd) q Hqn.
+  rewrite mul_nat_com (ordsucc d) (nat_ordsucc d Hd) q Hqn.
+  exact f_eq_i LeanNum n (mul_nat q (ordsucc d)) En0.
+Qed.
+
+Theorem Lean_mod_zero_witness_divisor : forall d, nat_p d -> forall n :e Lean_Nat,
+  Lean_Nat_mod n (LeanNum d) = LeanNum 0 -> exists q :e Lean_Nat, n = Lean_Nat_mul (LeanNum d) q.
+let d. assume Hd: nat_p d.
+apply nat_inv d Hd.
+- assume Ed: d = 0. rewrite Ed. let n. assume Hn: n :e Lean_Nat.
+  assume Hzero: Lean_Nat_mod n (LeanNum 0) = LeanNum 0.
+  witness (LeanNum 0). apply andI.
+  + exact LeanNum_In 0 nat_0.
+  + rewrite Lean_Nat_mul_eq_1 (LeanNum 0) (LeanNum_In 0 nat_0).
+    exact eq_i_tra n (Lean_Nat_mod n (LeanNum 0)) (LeanNum 0)
+      (eq_sym_i (Lean_Nat_mod n (LeanNum 0)) n (Lean_mod_zero n Hn)) Hzero.
+- assume Hex: exists predecessor, nat_p predecessor /\ d = ordsucc predecessor.
+  apply Hex. let predecessor. assume Hpre: nat_p predecessor /\ d = ordsucc predecessor.
+  apply Hpre. assume Hp: nat_p predecessor. assume Ed: d = ordsucc predecessor.
+  rewrite Ed. let n. assume Hn: n :e Lean_Nat.
+  apply Lean_Nat_num n Hn. let a. assume Ha: nat_p a /\ n = LeanNum a.
+  apply Ha. assume Han: nat_p a. assume En: n = LeanNum a.
+  rewrite En. exact Lean_mod_zero_witness_positive predecessor Hp a Han.
+Qed.
+
+Theorem Lean_mod_zero_witness : forall d n :e Lean_Nat,
+  Lean_Nat_mod n d = LeanNum 0 -> exists q :e Lean_Nat, n = Lean_Nat_mul d q.
+let d. assume Hd: d :e Lean_Nat.
+apply Lean_Nat_num d Hd. let b. assume Hb: nat_p b /\ d = LeanNum b.
+apply Hb. assume Hbn: nat_p b. assume Ed: d = LeanNum b.
+rewrite Ed. exact Lean_mod_zero_witness_divisor b Hbn.
+Qed.
+
+Theorem Lean_mod_multiple_zero : forall d q :e Lean_Nat,
+  Lean_Nat_mod (Lean_Nat_mul d q) d = LeanNum 0.
+let d. assume Hd: d :e Lean_Nat.
+apply Lean_Nat_num d Hd. let b. assume Hb: nat_p b /\ d = LeanNum b.
+apply Hb. assume Hbn: nat_p b. assume Ed: d = LeanNum b.
+rewrite Ed. let q. assume Hq: q :e Lean_Nat.
+apply Lean_Nat_num q Hq. let a. assume Ha: nat_p a /\ q = LeanNum a.
+apply Ha. assume Han: nat_p a. assume Eq: q = LeanNum a.
+rewrite Eq. apply nat_inv b Hbn.
+- assume Eb: b = 0. rewrite Eb.
+  rewrite LeanNum_mul 0 nat_0 a Han. rewrite mul_nat_0L a Han.
+  exact Lean_Nat_mod_eq_1 (LeanNum 0) (LeanNum_In 0 nat_0).
+- assume Hex: exists predecessor, nat_p predecessor /\ b = ordsucc predecessor.
+  apply Hex. let predecessor. assume Hpre: nat_p predecessor /\ b = ordsucc predecessor.
+  apply Hpre. assume Hp: nat_p predecessor. assume Eb: b = ordsucc predecessor.
+  rewrite Eb.
+  rewrite LeanNum_mul (ordsucc predecessor) (nat_ordsucc predecessor Hp) a Han.
+  rewrite mul_nat_com (ordsucc predecessor) (nat_ordsucc predecessor Hp) a Han.
+  rewrite <- add_nat_0R (mul_nat a (ordsucc predecessor)).
+  exact Lean_Nat_mod_num predecessor Hp 0 nat_0 (nat_0_in_ordsucc predecessor Hp) a Han.
+Qed.
+
+Definition LeanNatDivides : set -> set -> set := fun d n =>
+  Lean_Exists_Prop Lean_Nat (fun q :e Lean_Nat => Lean_Eq_Prop Lean_Nat n (Lean_Nat_mul d q)).
+
+Theorem LeanNatDivides_intro : forall d n q :e Lean_Nat,
+  n = Lean_Nat_mul d q -> 0 :e LeanNatDivides d n.
+let d. assume Hd: d :e Lean_Nat. let n. assume Hn: n :e Lean_Nat.
+let q. assume Hq: q :e Lean_Nat. assume Heq: n = Lean_Nat_mul d q.
+prove 0 :e Lean_Exists_Prop Lean_Nat (fun q :e Lean_Nat => Lean_Eq_Prop Lean_Nat n (Lean_Nat_mul d q)).
+apply LeanExists_intro Lean_Nat (fun q :e Lean_Nat => Lean_Eq_Prop Lean_Nat n (Lean_Nat_mul d q)) q Hq.
+rewrite beta Lean_Nat (fun q => Lean_Eq_Prop Lean_Nat n (Lean_Nat_mul d q)) q Hq.
+exact Lean_Eq_proof_of Lean_Nat n (Lean_Nat_mul d q) Heq.
+Qed.
+
+Theorem LeanNatDivides_num_intro : forall d, nat_p d -> forall n, nat_p n ->
+  forall q, nat_p q -> mul_nat d q = n ->
+  0 :e Lean_Exists_Prop Lean_Nat
+    (fun witness :e Lean_Nat => Lean_Eq_Prop Lean_Nat (LeanNum n) (Lean_Nat_mul (LeanNum d) witness)).
+let d. assume Hd: nat_p d. let n. assume Hn: nat_p n.
+let q. assume Hq: nat_p q. assume Heq: mul_nat d q = n.
+exact LeanNatDivides_intro (LeanNum d) (LeanNum_In d Hd) (LeanNum n) (LeanNum_In n Hn)
+  (LeanNum q) (LeanNum_In q Hq)
+  (eq_sym_i (Lean_Nat_mul (LeanNum d) (LeanNum q)) (LeanNum n) (LeanNum_mul_eq d Hd q Hq n Heq)).
+Qed.
+
+Theorem LeanNatDivides_elim : forall d n, forall Q:prop,
+  (forall q :e Lean_Nat, n = Lean_Nat_mul d q -> Q) -> 0 :e LeanNatDivides d n -> Q.
+let d n Q. assume H: forall q :e Lean_Nat, n = Lean_Nat_mul d q -> Q.
+assume Hdiv: 0 :e LeanNatDivides d n.
+apply LeanExists_elim Lean_Nat (fun q :e Lean_Nat => Lean_Eq_Prop Lean_Nat n (Lean_Nat_mul d q)) Q.
+- let q. assume Hq: q :e Lean_Nat.
+  assume Hp: 0 :e (fun q :e Lean_Nat => Lean_Eq_Prop Lean_Nat n (Lean_Nat_mul d q)) q.
+  exact H q Hq (LeanEq_sound Lean_Nat n (Lean_Nat_mul d q) 0
+    (In_eq_r 0 ((fun q :e Lean_Nat => Lean_Eq_Prop Lean_Nat n (Lean_Nat_mul d q)) q)
+      (Lean_Eq_Prop Lean_Nat n (Lean_Nat_mul d q))
+      (beta Lean_Nat (fun q => Lean_Eq_Prop Lean_Nat n (Lean_Nat_mul d q)) q Hq) Hp)).
+- exact Hdiv.
+Qed.
+
+Theorem Lean_mod_zero_divides : forall d n :e Lean_Nat,
+  Lean_Nat_mod n d = LeanNum 0 -> 0 :e LeanNatDivides d n.
+let d. assume Hd: d :e Lean_Nat. let n. assume Hn: n :e Lean_Nat.
+assume Hzero: Lean_Nat_mod n d = LeanNum 0.
+apply Lean_mod_zero_witness d Hd n Hn Hzero.
+let q. assume Hq: q :e Lean_Nat /\ n = Lean_Nat_mul d q.
+apply Hq. assume Hqn: q :e Lean_Nat. assume Heq: n = Lean_Nat_mul d q.
+exact LeanNatDivides_intro d Hd n Hn q Hqn Heq.
+Qed.
+
+Theorem Lean_divides_mod_zero : forall d n :e Lean_Nat,
+  0 :e LeanNatDivides d n -> Lean_Nat_mod n d = LeanNum 0.
+let d. assume Hd: d :e Lean_Nat. let n. assume Hn: n :e Lean_Nat.
+assume Hdiv: 0 :e LeanNatDivides d n.
+apply LeanNatDivides_elim d n (Lean_Nat_mod n d = LeanNum 0).
+- let q. assume Hq: q :e Lean_Nat. assume Heq: n = Lean_Nat_mul d q.
+  rewrite Heq. exact Lean_mod_multiple_zero d Hd q Hq.
+- exact Hdiv.
+Qed.
+
+Theorem LeanNatDivides_num_refute : forall d, nat_p d -> forall n, nat_p n ->
+  forall r, nat_p r -> r <> 0 ->
+  Lean_Nat_mod (LeanNum n) (LeanNum d) = LeanNum r ->
+  0 /:e Lean_Exists_Prop Lean_Nat
+    (fun witness :e Lean_Nat => Lean_Eq_Prop Lean_Nat (LeanNum n) (Lean_Nat_mul (LeanNum d) witness)).
+let d. assume Hd: nat_p d. let n. assume Hn: nat_p n.
+let r. assume Hr: nat_p r. assume Hnonzero: r <> 0.
+assume Hmod: Lean_Nat_mod (LeanNum n) (LeanNum d) = LeanNum r.
+assume Hdiv: 0 :e LeanNatDivides (LeanNum d) (LeanNum n).
+apply Hnonzero.
+apply LeanNum_inj r Hr 0 nat_0.
+rewrite <- Hmod.
+exact Lean_divides_mod_zero (LeanNum d) (LeanNum_In d Hd) (LeanNum n) (LeanNum_In n Hn) Hdiv.
+Qed.
+
+Theorem Lean_mod_divisibility_iff : forall d n :e Lean_Nat,
+  0 :e Lean_Iff_Prop (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod n d) (LeanNum 0)) (LeanNatDivides d n).
+let d. assume Hd: d :e Lean_Nat. let n. assume Hn: n :e Lean_Nat.
+exact LeanIff_intro
+  (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod n d) (LeanNum 0))
+  (Lean_Eq_Prop_prop Lean_Nat (Lean_Nat_mod n d) (LeanNum 0))
+  (LeanNatDivides d n)
+  (Lean_Exists_Prop_prop Lean_Nat (fun q :e Lean_Nat => Lean_Eq_Prop Lean_Nat n (Lean_Nat_mul d q)))
+  (fun H => Lean_mod_zero_divides d Hd n Hn (LeanEq_sound Lean_Nat (Lean_Nat_mod n d) (LeanNum 0) 0 H))
+  (fun H => Lean_Eq_proof_of Lean_Nat (Lean_Nat_mod n d) (LeanNum 0) (Lean_divides_mod_zero d Hd n Hn H)).
+Qed.
+
 (** Nat.gcd, from its equation theorem **)
 Definition Lean_Nat_gcd : set -> set -> set := fun a0 a1 => (Lean_Nat_gcdFuel (Lean_Nat_succ_node a0) a0 a1).
 Theorem Lean_Nat_gcd_In : forall a0 :e Lean_Nat, forall a1 :e Lean_Nat, Lean_Nat_gcd a0 a1 :e Lean_Nat.
 let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat. exact (Lean_Nat_gcdFuel_In (Lean_Nat_succ_node a0) (Lean_Nat_succ_typed a0 H0) a0 H0 a1 H1).
 Qed.
 Theorem Lean_Nat_gcd_eq_fuel : forall v_m :e Lean_Nat, forall v_n :e Lean_Nat, (Lean_Nat_gcd v_m v_n) = (Lean_Nat_gcdFuel (Lean_Nat_succ_node v_m) v_m v_n).
-let v_m. assume H_v_m: v_m :e Lean_Nat. let v_n. assume H_v_n: v_n :e Lean_Nat. 
+let v_m. assume H_v_m: v_m :e Lean_Nat. let v_n. assume H_v_n: v_n :e Lean_Nat.
 reflexivity.
 Qed.
 Theorem Lean_Nat_gcd_unfold : forall a0 a1, Lean_Nat_gcd a0 a1 = (Lean_Nat_gcdFuel (Lean_Nat_succ_node a0) a0 a1).
@@ -2931,11 +4254,571 @@ let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat. exact (Lea
 Qed.
 (** Receipt: Nat.lcm.eq_1 is the source of the MeTTa rule for Nat.lcm, statement digest 4180212064. **)
 Theorem Lean_Nat_lcm_eq_1 : forall v_m :e Lean_Nat, forall v_n :e Lean_Nat, (Lean_Nat_lcm v_m v_n) = (Lean_Nat_div (Lean_Nat_mul v_m v_n) (Lean_Nat_gcd v_m v_n)).
-let v_m. assume H_v_m: v_m :e Lean_Nat. let v_n. assume H_v_n: v_n :e Lean_Nat. 
+let v_m. assume H_v_m: v_m :e Lean_Nat. let v_n. assume H_v_n: v_n :e Lean_Nat.
 reflexivity.
 Qed.
 Theorem Lean_Nat_lcm_unfold : forall a0 a1, Lean_Nat_lcm a0 a1 = (Lean_Nat_div (Lean_Nat_mul a0 a1) (Lean_Nat_gcd a0 a1)).
 let a0 a1. reflexivity.
+Qed.
+
+(** decidable_of_decidable_of_iff, from its equation theorem **)
+Definition Lean_decidable_of_decidable_of_iff : set -> set -> set -> set -> set := fun a0 a1 a2 a3 => (Lean_dite (Lean_Decidable a1) a0 a2 (fun v_hp :e a0 => (Lean_Decidable_isTrue_node a1 0)) (fun
+    v_hp :e (Pi_ ux :e a0, Lean_False_Prop) => (Lean_Decidable_isFalse_node a1 0))).
+(** Receipt: decidable_of_decidable_of_iff.eq_1 is the source of the MeTTa rule for decidable_of_decidable_of_iff, statement digest 746476589. **)
+Theorem Lean_decidable_of_decidable_of_iff_eq_1 : forall v_p :e LeanProp, forall v_q :e LeanProp, forall v_inst :e (Lean_Decidable v_p), (0 :e (Lean_Iff_Prop v_p v_q)) ->
+    (Lean_decidable_of_decidable_of_iff v_p v_q v_inst 0) = (Lean_dite (Lean_Decidable v_q) v_p v_inst (fun v_hp :e v_p => (Lean_Decidable_isTrue_node v_q 0)) (fun v_hp :e (Pi_ ux :e v_p,
+    Lean_False_Prop) => (Lean_Decidable_isFalse_node v_q 0))).
+let v_p. assume H_v_p: v_p :e LeanProp. let v_q. assume H_v_q: v_q :e LeanProp. let v_inst. assume H_v_inst: v_inst :e (Lean_Decidable v_p). assume v_h.
+reflexivity.
+Qed.
+Theorem Lean_decidable_of_decidable_of_iff_unfold : forall a0 a1 a2 a3, Lean_decidable_of_decidable_of_iff a0 a1 a2 a3 = (Lean_dite (Lean_Decidable a1) a0 a2 (fun v_hp :e a0 =>
+    (Lean_Decidable_isTrue_node a1 0)) (fun v_hp :e (Pi_ ux :e a0, Lean_False_Prop) => (Lean_Decidable_isFalse_node a1 0))).
+let a0 a1 a2 a3. reflexivity.
+Qed.
+(** decidable_of_decidable_of_iff's type: the statement generated from Lean's, proved in Egal. **)
+Theorem Lean_decidable_of_decidable_of_iff_In : forall v_p :e LeanProp, forall v_q :e LeanProp, forall a2 :e (Lean_Decidable v_p), forall a3 :e (Lean_Iff_Prop v_p v_q),
+    Lean_decidable_of_decidable_of_iff v_p v_q a2 a3 :e (Lean_Decidable v_q).
+let v_p. assume Hp: v_p :e LeanProp. let v_q. assume Hq: v_q :e LeanProp.
+let a2. assume Hd: a2 :e Lean_Decidable v_p.
+let a3. assume Hh: a3 :e Lean_Iff_Prop v_p v_q.
+claim Htrue: (fun hp :e v_p => Lean_Decidable_isTrue_node v_q 0)
+  :e (Pi_ hp :e v_p, Lean_Decidable v_q).
+{ exact lam_Pi v_p (fun _ => Lean_Decidable v_q) (fun _ => Lean_Decidable_isTrue_node v_q 0)
+    (fun hp Hhp => Lean_Decidable_isTrue_typed v_q 0
+      (LeanIff_forward v_p Hp v_q Hq a3 Hh (Lean_prop_0_of v_p Hp hp Hhp))). }
+claim Hfalse: (fun hp :e (Pi_ x :e v_p, Lean_False_Prop) => Lean_Decidable_isFalse_node v_q 0)
+  :e (Pi_ hp :e (Pi_ x :e v_p, Lean_False_Prop), Lean_Decidable v_q).
+{ exact lam_Pi (Pi_ x :e v_p, Lean_False_Prop) (fun _ => Lean_Decidable v_q)
+    (fun _ => Lean_Decidable_isFalse_node v_q 0)
+    (fun hp Hhp => Lean_Decidable_isFalse_typed v_q 0
+      (Lean_refute_by v_p Hp hp Hhp v_q Hq (LeanIff_backward v_p Hp v_q Hq a3 Hh))). }
+exact Lean_dite_In (Lean_Decidable v_q) v_p Hp a2 Hd
+  (fun hp :e v_p => Lean_Decidable_isTrue_node v_q 0) Htrue
+  (fun hp :e (Pi_ x :e v_p, Lean_False_Prop) => Lean_Decidable_isFalse_node v_q 0) Hfalse.
+Qed.
+Theorem Lean_decidable_of_decidable_of_iff_canonical : forall v_p :e LeanProp, forall v_q :e LeanProp, forall a2 :e (Lean_Decidable v_p), forall a3 :e (Lean_Iff_Prop v_p v_q),
+    Lean_decidable_of_decidable_of_iff v_p v_q a2 a3 = Lean_DecCanon v_q.
+let v_p. assume H_v_p: v_p :e LeanProp. let v_q. assume H_v_q: v_q :e LeanProp. let a2. assume H_a2: a2 :e (Lean_Decidable v_p). let a3. assume H_a3: a3 :e (Lean_Iff_Prop v_p v_q). exact
+    Lean_Decidable_unique v_q H_v_q (Lean_decidable_of_decidable_of_iff v_p v_q a2 a3) (Lean_decidable_of_decidable_of_iff_In v_p H_v_p v_q H_v_q a2 H_a2 a3 H_a3).
+Qed.
+
+(** decidable_of_iff', from its equation theorem **)
+Definition Lean_decidable_of_iffu39 : set -> set -> set -> set -> set := fun a0 a1 a2 a3 => (Lean_decidable_of_decidable_of_iff a1 a0 a3 0).
+(** Receipt: decidable_of_iff'.eq_1 is the source of the MeTTa rule for decidable_of_iff', statement digest 2338311302. **)
+Theorem Lean_decidable_of_iffu39_eq_1 : forall v_a :e LeanProp, forall v_b :e LeanProp, (0 :e (Lean_Iff_Prop v_a v_b)) -> forall v_inst :e (Lean_Decidable v_b), (Lean_decidable_of_iffu39 v_a v_b 0
+    v_inst) = (Lean_decidable_of_decidable_of_iff v_b v_a v_inst 0).
+let v_a. assume H_v_a: v_a :e LeanProp. let v_b. assume H_v_b: v_b :e LeanProp. assume v_h. let v_inst. assume H_v_inst: v_inst :e (Lean_Decidable v_b).
+reflexivity.
+Qed.
+Theorem Lean_decidable_of_iffu39_unfold : forall a0 a1 a2 a3, Lean_decidable_of_iffu39 a0 a1 a2 a3 = (Lean_decidable_of_decidable_of_iff a1 a0 a3 0).
+let a0 a1 a2 a3. reflexivity.
+Qed.
+(** decidable_of_iff''s type: the statement generated from Lean's, proved in Egal. **)
+Theorem Lean_decidable_of_iffu39_In : forall v_a :e LeanProp, forall v_b :e LeanProp, forall a2 :e (Lean_Iff_Prop v_a v_b), forall a3 :e (Lean_Decidable v_b), Lean_decidable_of_iffu39 v_a v_b a2 a3
+    :e (Lean_Decidable v_a).
+let v_a. assume Ha: v_a :e LeanProp. let v_b. assume Hb: v_b :e LeanProp.
+let a2. assume Hh: a2 :e Lean_Iff_Prop v_a v_b.
+let a3. assume Hd: a3 :e Lean_Decidable v_b.
+exact Lean_decidable_of_decidable_of_iff_In v_b Hb v_a Ha a3 Hd 0
+  (LeanIff_symm v_a Ha v_b Hb a2 Hh).
+Qed.
+Theorem Lean_decidable_of_iffu39_canonical : forall v_a :e LeanProp, forall v_b :e LeanProp, forall a2 :e (Lean_Iff_Prop v_a v_b), forall a3 :e (Lean_Decidable v_b), Lean_decidable_of_iffu39 v_a v_b
+    a2 a3 = Lean_DecCanon v_a.
+let v_a. assume H_v_a: v_a :e LeanProp. let v_b. assume H_v_b: v_b :e LeanProp. let a2. assume H_a2: a2 :e (Lean_Iff_Prop v_a v_b). let a3. assume H_a3: a3 :e (Lean_Decidable v_b). exact
+    Lean_Decidable_unique v_a H_v_a (Lean_decidable_of_iffu39 v_a v_b a2 a3) (Lean_decidable_of_iffu39_In v_a H_v_a v_b H_v_b a2 H_a2 a3 H_a3).
+Qed.
+
+(** Nat.decidable_dvd, from its equation theorem **)
+Definition Lean_Nat_decidable_dvd : set -> set -> set := fun a0 a1 => (Lean_decidable_of_decidable_of_iff (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod a1 a0) (LeanNum 0)) (Lean_Exists_Prop Lean_Nat (fun v_c
+    :e Lean_Nat => (Lean_Eq_Prop Lean_Nat a1 (Lean_Nat_mul a0 v_c)))) (Lean_instDecidableEqNat (Lean_Nat_mod a1 a0) (LeanNum 0)) 0).
+Theorem Lean_Nat_decidable_dvd_In : forall a0 :e Lean_Nat, forall a1 :e Lean_Nat, Lean_Nat_decidable_dvd a0 a1 :e (Lean_Decidable (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop
+    Lean_Nat a1 (Lean_Nat_mul a0 v_c))))).
+let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat. exact (Lean_decidable_of_decidable_of_iff_In (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod a1 a0) (LeanNum 0)) (Lean_Eq_Prop_prop Lean_Nat
+    (Lean_Nat_mod a1 a0) (LeanNum 0)) (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat a1 (Lean_Nat_mul a0 v_c)))) (Lean_Exists_Prop_prop Lean_Nat (fun v_c :e Lean_Nat =>
+    (Lean_Eq_Prop Lean_Nat a1 (Lean_Nat_mul a0 v_c)))) (Lean_instDecidableEqNat (Lean_Nat_mod a1 a0) (LeanNum 0)) (Lean_instDecidableEqNat_In (Lean_Nat_mod a1 a0) (Lean_Nat_mod_In a1 H1 a0 H0)
+    (LeanNum 0) (LeanNum_In 0 nat_0)) 0 (Lean_mod_divisibility_iff a0 H0 a1 H1)).
+Qed.
+(** Receipt: Nat.decidable_dvd.eq_1 is the source of the MeTTa rule for Nat.decidable_dvd, statement digest 3986948929. **)
+Theorem Lean_Nat_decidable_dvd_eq_1 : forall v_x :e Lean_Nat, forall v_x1 :e Lean_Nat, (Lean_Nat_decidable_dvd v_x v_x1) = (Lean_decidable_of_decidable_of_iff (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod
+    v_x1 v_x) (LeanNum 0)) (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat v_x1 (Lean_Nat_mul v_x v_c)))) (Lean_instDecidableEqNat (Lean_Nat_mod v_x1 v_x) (LeanNum 0)) 0).
+let v_x. assume H_v_x: v_x :e Lean_Nat. let v_x1. assume H_v_x1: v_x1 :e Lean_Nat.
+reflexivity.
+Qed.
+Theorem Lean_Nat_decidable_dvd_unfold : forall a0 a1, Lean_Nat_decidable_dvd a0 a1 = (Lean_decidable_of_decidable_of_iff (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod a1 a0) (LeanNum 0)) (Lean_Exists_Prop
+    Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat a1 (Lean_Nat_mul a0 v_c)))) (Lean_instDecidableEqNat (Lean_Nat_mod a1 a0) (LeanNum 0)) 0).
+let a0 a1. reflexivity.
+Qed.
+
+(** decidable_of_iff, from its equation theorem **)
+Definition Lean_decidable_of_iff : set -> set -> set -> set -> set := fun a0 a1 a2 a3 => (Lean_decidable_of_decidable_of_iff a1 a0 a3 0).
+(** Receipt: decidable_of_iff.eq_1 is the source of the MeTTa rule for decidable_of_iff, statement digest 1513722794. **)
+Theorem Lean_decidable_of_iff_eq_1 : forall v_b :e LeanProp, forall v_a :e LeanProp, (0 :e (Lean_Iff_Prop v_a v_b)) -> forall v_inst :e (Lean_Decidable v_a), (Lean_decidable_of_iff v_b v_a 0 v_inst)
+    = (Lean_decidable_of_decidable_of_iff v_a v_b v_inst 0).
+let v_b. assume H_v_b: v_b :e LeanProp. let v_a. assume H_v_a: v_a :e LeanProp. assume v_h. let v_inst. assume H_v_inst: v_inst :e (Lean_Decidable v_a).
+reflexivity.
+Qed.
+Theorem Lean_decidable_of_iff_unfold : forall a0 a1 a2 a3, Lean_decidable_of_iff a0 a1 a2 a3 = (Lean_decidable_of_decidable_of_iff a1 a0 a3 0).
+let a0 a1 a2 a3. reflexivity.
+Qed.
+(** decidable_of_iff's type: the statement generated from Lean's, proved in Egal. **)
+Theorem Lean_decidable_of_iff_In : forall v_b :e LeanProp, forall v_a :e LeanProp, forall a2 :e (Lean_Iff_Prop v_a v_b), forall a3 :e (Lean_Decidable v_a), Lean_decidable_of_iff v_b v_a a2 a3 :e
+    (Lean_Decidable v_b).
+let v_b. assume Hb: v_b :e LeanProp. let v_a. assume Ha: v_a :e LeanProp.
+let a2. assume Hh: a2 :e Lean_Iff_Prop v_a v_b.
+let a3. assume Hd: a3 :e Lean_Decidable v_a.
+exact Lean_decidable_of_decidable_of_iff_In v_a Ha v_b Hb a3 Hd 0
+  (Lean_prop_0_of (Lean_Iff_Prop v_a v_b) (Lean_Iff_Prop_prop v_a v_b) a2 Hh).
+Qed.
+Theorem Lean_decidable_of_iff_canonical : forall v_b :e LeanProp, forall v_a :e LeanProp, forall a2 :e (Lean_Iff_Prop v_a v_b), forall a3 :e (Lean_Decidable v_a), Lean_decidable_of_iff v_b v_a a2 a3
+    = Lean_DecCanon v_b.
+let v_b. assume H_v_b: v_b :e LeanProp. let v_a. assume H_v_a: v_a :e LeanProp. let a2. assume H_a2: a2 :e (Lean_Iff_Prop v_a v_b). let a3. assume H_a3: a3 :e (Lean_Decidable v_a). exact
+    Lean_Decidable_unique v_b H_v_b (Lean_decidable_of_iff v_b v_a a2 a3) (Lean_decidable_of_iff_In v_b H_v_b v_a H_v_a a2 H_a2 a3 H_a3).
+Qed.
+
+(** Mettapedia.Languages.Lean.Recursion.FuelCore.Merge.sourceFuel, from its equation theorems, split at argument 0 **)
+Definition Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method0_1 : set -> set -> set -> set := fun a1 a4 a2 => (fun a3 :e (Lean_List a1) => (Lean_List_nil_node a1)).
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method0_1_ap : forall a1 a4 a2, forall a3 :e (Lean_List a1),
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method0_1 a1 a4 a2) a3 = (Lean_List_nil_node a1).
+let a1. let a4. let a2. let a3. assume H: a3 :e (Lean_List a1).
+exact beta (Lean_List a1) (fun a3 => (Lean_List_nil_node a1)) a3 H.
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method0_1_In : forall a1, forall a4 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)), forall a2 :e (Lean_List a1),
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method0_1 a1 a4 a2) :e (Pi_ a3 :e (Lean_List a1), (Lean_List a1)).
+let a1. let a4. assume H4: a4 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)). let a2. assume Ha2: a2 :e (Lean_List a1). exact lam_Pi (Lean_List a1) (fun a3 => (Lean_List a1)) (fun a3 =>
+    (Lean_List_nil_node a1)) (fun a3 Ha3 => (Lean_List_nil_typed a1)).
+Qed.
+Definition Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method0_0 : set -> set -> set := fun a1 a4 => (fun a2 :e (Lean_List a1) =>
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method0_1 a1 a4 a2)).
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method0_0_ap : forall a1 a4, forall a2 :e (Lean_List a1),
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method0_0 a1 a4) a2 = (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method0_1 a1 a4 a2).
+let a1. let a4. let a2. assume H: a2 :e (Lean_List a1).
+exact beta (Lean_List a1) (fun a2 => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method0_1 a1 a4 a2)) a2 H.
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method0_0_In : forall a1, forall a4 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)),
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method0_0 a1 a4) :e (Pi_ a2 :e (Lean_List a1), (Pi_ a3 :e (Lean_List a1), (Lean_List a1))).
+let a1. let a4. assume H4: a4 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)). exact lam_Pi (Lean_List a1) (fun a2 => (Pi_ a3 :e (Lean_List a1), (Lean_List a1))) (fun a2 =>
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method0_1 a1 a4 a2)) (fun a2 Ha2 => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method0_1_In a1 a4 H4
+    a2 Ha2)).
+Qed.
+Definition Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_3 : set -> set -> set -> set -> set -> set := fun a1 a4 y0 r0 a2 => (fun a3 :e (Lean_List a1) =>
+    (Lean_List_casesOn a1 a3 (fun c1_1_0 :e a1 => (fun c1_1_1 :e (Lean_List a1) => (Lean_List_casesOn a1 (Lean_List_cons_node a1 c1_1_0 c1_1_1) (fun c2_1_0 :e a1 => (fun c2_1_1 :e (Lean_List a1) =>
+    (Lean_dite (Lean_List a1) (Lean_Eq_Prop Lean_Bool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (a4
+    c1_1_0 c2_1_0) Lean_Bool_true_node) => (Lean_List_cons_node a1 c1_1_0 (r0 c1_1_1 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (a4 c1_1_0 c2_1_0)
+    Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node a1 c2_1_0 (r0 (Lean_List_cons_node a1 c1_1_0 c1_1_1) c2_1_1)))))) a3))) a2)).
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_3_ap : forall a1 a4 y0 r0 a2, forall a3 :e (Lean_List a1),
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_3 a1 a4 y0 r0 a2) a3 = (Lean_List_casesOn a1 a3 (fun c1_1_0 :e a1 => (fun c1_1_1 :e (Lean_List a1) =>
+    (Lean_List_casesOn a1 (Lean_List_cons_node a1 c1_1_0 c1_1_1) (fun c2_1_0 :e a1 => (fun c2_1_1 :e (Lean_List a1) => (Lean_dite (Lean_List a1) (Lean_Eq_Prop Lean_Bool (a4 c1_1_0 c2_1_0)
+    Lean_Bool_true_node) (Lean_instDecidableEqBool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node) => (Lean_List_cons_node a1
+    c1_1_0 (r0 c1_1_1 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node a1
+    c2_1_0 (r0 (Lean_List_cons_node a1 c1_1_0 c1_1_1) c2_1_1)))))) a3))) a2).
+let a1. let a4. let y0. let r0. let a2. let a3. assume H: a3 :e (Lean_List a1).
+exact beta (Lean_List a1) (fun a3 => (Lean_List_casesOn a1 a3 (fun c1_1_0 :e a1 => (fun c1_1_1 :e (Lean_List a1) => (Lean_List_casesOn a1 (Lean_List_cons_node a1 c1_1_0 c1_1_1) (fun c2_1_0 :e a1 =>
+    (fun c2_1_1 :e (Lean_List a1) => (Lean_dite (Lean_List a1) (Lean_Eq_Prop Lean_Bool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node) (fun
+    v_h :e (Lean_Eq_Prop Lean_Bool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node) => (Lean_List_cons_node a1 c1_1_0 (r0 c1_1_1 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop
+    Lean_Bool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node a1 c2_1_0 (r0 (Lean_List_cons_node a1 c1_1_0 c1_1_1) c2_1_1)))))) a3))) a2)) a3 H.
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_3_In : forall a1, forall a4 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)), forall y0 :e Lean_Nat, forall r0 :e (Pi_
+    ux :e (Lean_List a1), (Pi_ ux :e (Lean_List a1), (Lean_List a1))), forall a2 :e (Lean_List a1), (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_3 a1 a4 y0 r0 a2) :e
+    (Pi_ a3 :e (Lean_List a1), (Lean_List a1)).
+let a1. let a4. assume H4: a4 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)). let y0. assume Hy0: y0 :e Lean_Nat. let r0. assume Hr0: r0 :e (Pi_ ux :e (Lean_List a1), (Pi_ ux :e (Lean_List a1),
+    (Lean_List a1))). let a2. assume Ha2: a2 :e (Lean_List a1). exact lam_Pi (Lean_List a1) (fun a3 => (Lean_List a1)) (fun a3 => (Lean_List_casesOn a1 a3 (fun c1_1_0 :e a1 => (fun c1_1_1 :e
+    (Lean_List a1) => (Lean_List_casesOn a1 (Lean_List_cons_node a1 c1_1_0 c1_1_1) (fun c2_1_0 :e a1 => (fun c2_1_1 :e (Lean_List a1) => (Lean_dite (Lean_List a1) (Lean_Eq_Prop Lean_Bool (a4 c1_1_0
+    c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node) => (Lean_List_cons_node
+    a1 c1_1_0 (r0 c1_1_1 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node a1
+    c2_1_0 (r0 (Lean_List_cons_node a1 c1_1_0 c1_1_1) c2_1_1)))))) a3))) a2)) (fun a3 Ha3 => (Lean_List_casesOn_type a1 (fun _ => (Lean_List a1)) a3 Ha3 (fun c1_1_0 :e a1 => (fun c1_1_1 :e (Lean_List
+    a1) => (Lean_List_casesOn a1 (Lean_List_cons_node a1 c1_1_0 c1_1_1) (fun c2_1_0 :e a1 => (fun c2_1_1 :e (Lean_List a1) => (Lean_dite (Lean_List a1) (Lean_Eq_Prop Lean_Bool (a4 c1_1_0 c2_1_0)
+    Lean_Bool_true_node) (Lean_instDecidableEqBool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node) => (Lean_List_cons_node a1
+    c1_1_0 (r0 c1_1_1 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node a1
+    c2_1_0 (r0 (Lean_List_cons_node a1 c1_1_0 c1_1_1) c2_1_1)))))) a3))) (lam_Pi a1 (fun c1_1_0 => (Pi_ ux :e (Lean_List a1), (Lean_List a1))) (fun c1_1_0 => (fun c1_1_1 :e (Lean_List a1) =>
+    (Lean_List_casesOn a1 (Lean_List_cons_node a1 c1_1_0 c1_1_1) (fun c2_1_0 :e a1 => (fun c2_1_1 :e (Lean_List a1) => (Lean_dite (Lean_List a1) (Lean_Eq_Prop Lean_Bool (a4 c1_1_0 c2_1_0)
+    Lean_Bool_true_node) (Lean_instDecidableEqBool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node) => (Lean_List_cons_node a1
+    c1_1_0 (r0 c1_1_1 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node a1
+    c2_1_0 (r0 (Lean_List_cons_node a1 c1_1_0 c1_1_1) c2_1_1)))))) a3))) (fun c1_1_0 Hc1_1_0 => (lam_Pi (Lean_List a1) (fun c1_1_1 => (Lean_List a1)) (fun c1_1_1 => (Lean_List_casesOn a1
+    (Lean_List_cons_node a1 c1_1_0 c1_1_1) (fun c2_1_0 :e a1 => (fun c2_1_1 :e (Lean_List a1) => (Lean_dite (Lean_List a1) (Lean_Eq_Prop Lean_Bool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node)
+    (Lean_instDecidableEqBool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node) => (Lean_List_cons_node a1 c1_1_0 (r0 c1_1_1
+    (Lean_List_cons_node a1 c2_1_0 c2_1_1)))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node a1 c2_1_0 (r0
+    (Lean_List_cons_node a1 c1_1_0 c1_1_1) c2_1_1)))))) a3)) (fun c1_1_1 Hc1_1_1 => (Lean_List_casesOn_type a1 (fun _ => (Lean_List a1)) (Lean_List_cons_node a1 c1_1_0 c1_1_1) (Lean_List_cons_typed
+    a1 c1_1_0 Hc1_1_0 c1_1_1 Hc1_1_1) (fun c2_1_0 :e a1 => (fun c2_1_1 :e (Lean_List a1) => (Lean_dite (Lean_List a1) (Lean_Eq_Prop Lean_Bool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node)
+    (Lean_instDecidableEqBool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node) => (Lean_List_cons_node a1 c1_1_0 (r0 c1_1_1
+    (Lean_List_cons_node a1 c2_1_0 c2_1_1)))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node a1 c2_1_0 (r0
+    (Lean_List_cons_node a1 c1_1_0 c1_1_1) c2_1_1)))))) (lam_Pi a1 (fun c2_1_0 => (Pi_ ux :e (Lean_List a1), (Lean_List a1))) (fun c2_1_0 => (fun c2_1_1 :e (Lean_List a1) => (Lean_dite (Lean_List a1)
+    (Lean_Eq_Prop Lean_Bool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (a4 c1_1_0 c2_1_0)
+    Lean_Bool_true_node) => (Lean_List_cons_node a1 c1_1_0 (r0 c1_1_1 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node),
+    Lean_False_Prop) => (Lean_List_cons_node a1 c2_1_0 (r0 (Lean_List_cons_node a1 c1_1_0 c1_1_1) c2_1_1)))))) (fun c2_1_0 Hc2_1_0 => (lam_Pi (Lean_List a1) (fun c2_1_1 => (Lean_List a1)) (fun c2_1_1
+    => (Lean_dite (Lean_List a1) (Lean_Eq_Prop Lean_Bool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool
+    (a4 c1_1_0 c2_1_0) Lean_Bool_true_node) => (Lean_List_cons_node a1 c1_1_0 (r0 c1_1_1 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (a4 c1_1_0 c2_1_0)
+    Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node a1 c2_1_0 (r0 (Lean_List_cons_node a1 c1_1_0 c1_1_1) c2_1_1))))) (fun c2_1_1 Hc2_1_1 => (Lean_dite_In (Lean_List a1) (Lean_Eq_Prop
+    Lean_Bool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node) (Lean_Eq_Prop_prop Lean_Bool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node)
+    (Lean_instDecidableEqBool_In (a4 c1_1_0 c2_1_0) (ap_Pi a1 (fun _ => Lean_Bool) (a4 c1_1_0) c2_1_0 (ap_Pi a1 (fun _ => (Pi_ ux :e a1, Lean_Bool)) a4 c1_1_0 H4 Hc1_1_0) Hc2_1_0) Lean_Bool_true_node
+    Lean_Bool_true_typed) (fun v_h :e (Lean_Eq_Prop Lean_Bool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node) => (Lean_List_cons_node a1 c1_1_0 (r0 c1_1_1 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))) (lam_Pi
+    (Lean_Eq_Prop Lean_Bool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node) (fun v_h => (Lean_List a1)) (fun v_h => (Lean_List_cons_node a1 c1_1_0 (r0 c1_1_1 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))) (fun
+    v_h Hv_h => (Lean_List_cons_typed a1 c1_1_0 Hc1_1_0 (r0 c1_1_1 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) (ap_Pi (Lean_List a1) (fun _ => (Lean_List a1)) (r0 c1_1_1) (Lean_List_cons_node a1 c2_1_0
+    c2_1_1) (ap_Pi (Lean_List a1) (fun _ => (Pi_ ux :e (Lean_List a1), (Lean_List a1))) r0 c1_1_1 Hr0 Hc1_1_1) (Lean_List_cons_typed a1 c2_1_0 Hc2_1_0 c2_1_1 Hc2_1_1))))) (fun v_h :e (Pi_ ux :e
+    (Lean_Eq_Prop Lean_Bool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node a1 c2_1_0 (r0 (Lean_List_cons_node a1 c1_1_0 c1_1_1) c2_1_1))) (lam_Pi (Pi_ ux :e
+    (Lean_Eq_Prop Lean_Bool (a4 c1_1_0 c2_1_0) Lean_Bool_true_node), Lean_False_Prop) (fun v_h => (Lean_List a1)) (fun v_h => (Lean_List_cons_node a1 c2_1_0 (r0 (Lean_List_cons_node a1 c1_1_0 c1_1_1)
+    c2_1_1))) (fun v_h Hv_h => (Lean_List_cons_typed a1 c2_1_0 Hc2_1_0 (r0 (Lean_List_cons_node a1 c1_1_0 c1_1_1) c2_1_1) (ap_Pi (Lean_List a1) (fun _ => (Lean_List a1)) (r0 (Lean_List_cons_node a1
+    c1_1_0 c1_1_1)) c2_1_1 (ap_Pi (Lean_List a1) (fun _ => (Pi_ ux :e (Lean_List a1), (Lean_List a1))) r0 (Lean_List_cons_node a1 c1_1_0 c1_1_1) Hr0 (Lean_List_cons_typed a1 c1_1_0 Hc1_1_0 c1_1_1
+    Hc1_1_1)) Hc2_1_1))))))))) a3 Ha3))))) a2 Ha2)).
+Qed.
+Definition Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_2 : set -> set -> set -> set -> set := fun a1 a4 y0 r0 => (fun a2 :e (Lean_List a1) =>
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_3 a1 a4 y0 r0 a2)).
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_2_ap : forall a1 a4 y0 r0, forall a2 :e (Lean_List a1),
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_2 a1 a4 y0 r0) a2 = (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_3 a1 a4 y0 r0 a2).
+let a1. let a4. let y0. let r0. let a2. assume H: a2 :e (Lean_List a1).
+exact beta (Lean_List a1) (fun a2 => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_3 a1 a4 y0 r0 a2)) a2 H.
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_2_In : forall a1, forall a4 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)), forall y0 :e Lean_Nat, forall r0 :e (Pi_
+    ux :e (Lean_List a1), (Pi_ ux :e (Lean_List a1), (Lean_List a1))), (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_2 a1 a4 y0 r0) :e (Pi_ a2 :e (Lean_List a1), (Pi_ a3
+    :e (Lean_List a1), (Lean_List a1))).
+let a1. let a4. assume H4: a4 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)). let y0. assume Hy0: y0 :e Lean_Nat. let r0. assume Hr0: r0 :e (Pi_ ux :e (Lean_List a1), (Pi_ ux :e (Lean_List a1),
+    (Lean_List a1))). exact lam_Pi (Lean_List a1) (fun a2 => (Pi_ a3 :e (Lean_List a1), (Lean_List a1))) (fun a2 => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_3 a1 a4
+    y0 r0 a2)) (fun a2 Ha2 => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_3_In a1 a4 H4 y0 Hy0 r0 Hr0 a2 Ha2)).
+Qed.
+Definition Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_1 : set -> set -> set -> set := fun a1 a4 y0 => (fun r0 :e (Pi_ ux :e (Lean_List a1), (Pi_ ux :e (Lean_List a1),
+    (Lean_List a1))) => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_2 a1 a4 y0 r0)).
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_1_ap : forall a1 a4 y0, forall r0 :e (Pi_ ux :e (Lean_List a1), (Pi_ ux :e (Lean_List a1), (Lean_List a1))),
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_1 a1 a4 y0) r0 = (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_2 a1 a4 y0 r0).
+let a1. let a4. let y0. let r0. assume H: r0 :e (Pi_ ux :e (Lean_List a1), (Pi_ ux :e (Lean_List a1), (Lean_List a1))).
+exact beta (Pi_ ux :e (Lean_List a1), (Pi_ ux :e (Lean_List a1), (Lean_List a1))) (fun r0 => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_2 a1 a4 y0 r0)) r0 H.
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_1_In : forall a1, forall a4 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)), forall y0 :e Lean_Nat,
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_1 a1 a4 y0) :e (Pi_ r0 :e (Pi_ ux :e (Lean_List a1), (Pi_ ux :e (Lean_List a1), (Lean_List a1))), (Pi_ a2 :e (Lean_List
+    a1), (Pi_ a3 :e (Lean_List a1), (Lean_List a1)))).
+let a1. let a4. assume H4: a4 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)). let y0. assume Hy0: y0 :e Lean_Nat. exact lam_Pi (Pi_ ux :e (Lean_List a1), (Pi_ ux :e (Lean_List a1), (Lean_List a1)))
+    (fun r0 => (Pi_ a2 :e (Lean_List a1), (Pi_ a3 :e (Lean_List a1), (Lean_List a1)))) (fun r0 => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_2 a1 a4 y0 r0)) (fun r0
+    Hr0 => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_2_In a1 a4 H4 y0 Hy0 r0 Hr0)).
+Qed.
+Definition Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_0 : set -> set -> set := fun a1 a4 => (fun y0 :e Lean_Nat =>
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_1 a1 a4 y0)).
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_0_ap : forall a1 a4, forall y0 :e Lean_Nat,
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_0 a1 a4) y0 = (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_1 a1 a4 y0).
+let a1. let a4. let y0. assume H: y0 :e Lean_Nat.
+exact beta Lean_Nat (fun y0 => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_1 a1 a4 y0)) y0 H.
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_0_In : forall a1, forall a4 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)),
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_0 a1 a4) :e (Pi_ y0 :e Lean_Nat, (Pi_ r0 :e (Pi_ ux :e (Lean_List a1), (Pi_ ux :e (Lean_List a1), (Lean_List a1))),
+    (Pi_ a2 :e (Lean_List a1), (Pi_ a3 :e (Lean_List a1), (Lean_List a1))))).
+let a1. let a4. assume H4: a4 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)). exact lam_Pi Lean_Nat (fun y0 => (Pi_ r0 :e (Pi_ ux :e (Lean_List a1), (Pi_ ux :e (Lean_List a1), (Lean_List a1))), (Pi_ a2
+    :e (Lean_List a1), (Pi_ a3 :e (Lean_List a1), (Lean_List a1))))) (fun y0 => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_1 a1 a4 y0)) (fun y0 Hy0 =>
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_1_In a1 a4 H4 y0 Hy0)).
+Qed.
+Definition Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel : set -> set -> set -> set -> set -> set := fun a0 a1 a2 a3 a4 => (Lean_Nat_rec
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method0_0 a1 a4) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_0 a1 a4) a0 a2 a3).
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_recIn : forall a1, forall a4 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)), forall t :e Lean_Nat, Lean_Nat_rec
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method0_0 a1 a4) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_0 a1 a4) t :e (Pi_ ux :e
+    (Lean_List a1), (Pi_ ux :e (Lean_List a1), (Lean_List a1))).
+let a1. let a4. assume H4: a4 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)). let t. assume Ht: t :e Lean_Nat.
+exact Lean_Nat_rec_type (fun _ => (Pi_ ux :e (Lean_List a1), (Pi_ ux :e (Lean_List a1), (Lean_List a1)))) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method0_0 a1 a4)
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method0_0_In a1 a4 H4) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_0 a1 a4)
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_0_In a1 a4 H4) t Ht.
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_In : forall a0 :e Lean_Nat, forall a1, forall a2 :e (Lean_List a1), forall a3 :e (Lean_List a1), forall a4 :e (Pi_ ux :e a1,
+    (Pi_ ux :e a1, Lean_Bool)), Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel a0 a1 a2 a3 a4 :e (Lean_List a1).
+let a0. assume H0: a0 :e Lean_Nat. let a1. let a2. assume H2: a2 :e (Lean_List a1). let a3. assume H3: a3 :e (Lean_List a1). let a4. assume H4: a4 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)). exact
+    (ap_Pi (Lean_List a1) (fun _ => (Lean_List a1)) ((Lean_Nat_rec (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method0_0 a1 a4)
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_0 a1 a4) a0) a2) a3 (ap_Pi (Lean_List a1) (fun _ => (Pi_ ux :e (Lean_List a1), (Lean_List a1))) (Lean_Nat_rec
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method0_0 a1 a4) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_0 a1 a4) a0) a2
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_recIn a1 a4 H4 a0 H0) H2) H3).
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_split0 : forall l_u_1, nat_p l_u_1 -> forall s1 :e LeanUniv l_u_1, forall s2 :e (Lean_List s1), forall s3 :e (Lean_List s1),
+    forall s4 :e (Pi_ ux :e s1, (Pi_ ux :e s1, Lean_Bool)), (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel Lean_Nat_zero_node s1 s2 s3 s4) = (Lean_List_nil_node s1).
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let s1. assume H_s1: s1 :e LeanUniv l_u_1. let s2. assume H_s2: s2 :e (Lean_List s1). let s3. assume H_s3: s3 :e (Lean_List s1). let s4. assume H_s4: s4 :e
+    (Pi_ ux :e s1, (Pi_ ux :e s1, Lean_Bool)).
+prove ((Lean_Nat_rec (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method0_0 s1 s4) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_0 s1 s4)
+    Lean_Nat_zero_node) s2 s3) = (Lean_List_nil_node s1).
+rewrite Lean_Nat_iota0 (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method0_0 s1 s4) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_0 s1 s4).
+rewrite Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method0_0_ap s1 s4 s2 H_s2.
+rewrite Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method0_1_ap s1 s4 s2 s3 H_s3.
+reflexivity.
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_split1 : forall t0 :e Lean_Nat, forall l_u_1, nat_p l_u_1 -> forall s1 :e LeanUniv l_u_1, forall s2 :e (Lean_List s1),
+    forall s3 :e (Lean_List s1), forall s4 :e (Pi_ ux :e s1, (Pi_ ux :e s1, Lean_Bool)), (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel (Lean_Nat_succ_node t0) s1 s2 s3 s4) =
+    (Lean_List_casesOn s1 s3 (fun c1_1_0 :e s1 => (fun c1_1_1 :e (Lean_List s1) => (Lean_List_casesOn s1 (Lean_List_cons_node s1 c1_1_0 c1_1_1) (fun c2_1_0 :e s1 => (fun c2_1_1 :e (Lean_List s1) =>
+    (Lean_dite (Lean_List s1) (Lean_Eq_Prop Lean_Bool (s4 c1_1_0 c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (s4 c1_1_0 c2_1_0) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (s4
+    c1_1_0 c2_1_0) Lean_Bool_true_node) => (Lean_List_cons_node s1 c1_1_0 (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel t0 s1 c1_1_1 (Lean_List_cons_node s1 c2_1_0 c2_1_1) s4)))
+    (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (s4 c1_1_0 c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node s1 c2_1_0
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel t0 s1 (Lean_List_cons_node s1 c1_1_0 c1_1_1) c2_1_1 s4)))))) s3))) s2).
+let t0. assume H_t0: t0 :e Lean_Nat. let l_u_1. assume H_l_u_1: nat_p l_u_1. let s1. assume H_s1: s1 :e LeanUniv l_u_1. let s2. assume H_s2: s2 :e (Lean_List s1). let s3. assume H_s3: s3 :e
+    (Lean_List s1). let s4. assume H_s4: s4 :e (Pi_ ux :e s1, (Pi_ ux :e s1, Lean_Bool)).
+prove ((Lean_Nat_rec (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method0_0 s1 s4) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_0 s1 s4)
+    (Lean_Nat_succ_node t0)) s2 s3) = (Lean_List_casesOn s1 s3 (fun c1_1_0 :e s1 => (fun c1_1_1 :e (Lean_List s1) => (Lean_List_casesOn s1 (Lean_List_cons_node s1 c1_1_0 c1_1_1) (fun c2_1_0 :e s1 =>
+    (fun c2_1_1 :e (Lean_List s1) => (Lean_dite (Lean_List s1) (Lean_Eq_Prop Lean_Bool (s4 c1_1_0 c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (s4 c1_1_0 c2_1_0) Lean_Bool_true_node) (fun
+    v_h :e (Lean_Eq_Prop Lean_Bool (s4 c1_1_0 c2_1_0) Lean_Bool_true_node) => (Lean_List_cons_node s1 c1_1_0 ((Lean_Nat_rec
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method0_0 s1 s4) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_0 s1 s4) t0) c1_1_1
+    (Lean_List_cons_node s1 c2_1_0 c2_1_1)))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (s4 c1_1_0 c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node s1 c2_1_0 ((Lean_Nat_rec
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method0_0 s1 s4) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_0 s1 s4) t0) (Lean_List_cons_node
+    s1 c1_1_0 c1_1_1) c2_1_1)))))) s3))) s2).
+rewrite Lean_Nat_iota1 (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method0_0 s1 s4) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_0 s1 s4) t0
+    H_t0.
+rewrite Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_0_ap s1 s4 t0 H_t0.
+rewrite Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_1_ap s1 s4 t0 (Lean_Nat_rec (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method0_0 s1 s4)
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_0 s1 s4) t0) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_recIn s1 s4 H_s4 t0 H_t0).
+rewrite Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_2_ap s1 s4 t0 (Lean_Nat_rec (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method0_0 s1 s4)
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_0 s1 s4) t0) s2 H_s2.
+rewrite Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_3_ap s1 s4 t0 (Lean_Nat_rec (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method0_0 s1 s4)
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_method1_0 s1 s4) t0) s2 s3 H_s3.
+reflexivity.
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_zero : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_xs :e (Lean_List v_u945), forall v_ys :e
+    (Lean_List v_u945), forall v_le :e (Pi_ ux :e v_u945, (Pi_ ux :e v_u945, Lean_Bool)), (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel (LeanNum 0) v_u945 v_xs v_ys v_le) =
+    (Lean_List_nil_node v_u945).
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let v_xs. assume H_v_xs: v_xs :e (Lean_List v_u945). let v_ys. assume H_v_ys: v_ys :e (Lean_List
+    v_u945). let v_le. assume H_v_le: v_le :e (Pi_ ux :e v_u945, (Pi_ ux :e v_u945, Lean_Bool)).
+apply LeanNum_0_at (fun zpat => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel zpat v_u945 v_xs v_ys v_le)) (Lean_List_nil_node v_u945).
+rewrite Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_split0 l_u_1 H_l_u_1 v_u945 H_v_u945 v_xs H_v_xs v_ys H_v_ys v_le H_v_le.
+reflexivity.
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_case0 : forall v_fuel :e Lean_Nat, forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_ys :e (Lean_List
+    v_u945), forall v_le :e (Pi_ ux :e v_u945, (Pi_ ux :e v_u945, Lean_Bool)), (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel (Lean_Nat_succ_node v_fuel) v_u945
+    (Lean_List_nil_node v_u945) v_ys v_le) = v_ys.
+let v_fuel. assume H_v_fuel: v_fuel :e Lean_Nat. let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let v_ys. assume H_v_ys: v_ys :e (Lean_List v_u945).
+    let v_le. assume H_v_le: v_le :e (Pi_ ux :e v_u945, (Pi_ ux :e v_u945, Lean_Bool)).
+rewrite Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_split1 v_fuel H_v_fuel l_u_1 H_l_u_1 v_u945 H_v_u945 (Lean_List_nil_node v_u945) (Lean_List_nil_typed v_u945) v_ys H_v_ys
+    v_le H_v_le.
+rewrite Lean_List_casesOn_iota0 v_u945 v_ys (fun c1_1_0 :e v_u945 => (fun c1_1_1 :e (Lean_List v_u945) => (Lean_List_casesOn v_u945 (Lean_List_cons_node v_u945 c1_1_0 c1_1_1) (fun c2_1_0 :e v_u945 =>
+    (fun c2_1_1 :e (Lean_List v_u945) => (Lean_dite (Lean_List v_u945) (Lean_Eq_Prop Lean_Bool (v_le c1_1_0 c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le c1_1_0 c2_1_0)
+    Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (v_le c1_1_0 c2_1_0) Lean_Bool_true_node) => (Lean_List_cons_node v_u945 c1_1_0
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 c1_1_1 (Lean_List_cons_node v_u945 c2_1_0 c2_1_1) v_le))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (v_le
+    c1_1_0 c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 c2_1_0 (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 (Lean_List_cons_node
+    v_u945 c1_1_0 c1_1_1) c2_1_1 v_le)))))) v_ys))).
+reflexivity.
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_case1_branch0 : forall v_fuel :e Lean_Nat, forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_le :e (Pi_
+    ux :e v_u945, (Pi_ ux :e v_u945, Lean_Bool)), (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel (Lean_Nat_succ_node v_fuel) v_u945 (Lean_List_nil_node v_u945)
+    (Lean_List_nil_node v_u945) v_le) = (Lean_List_nil_node v_u945).
+let v_fuel. assume H_v_fuel: v_fuel :e Lean_Nat. let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let v_le. assume H_v_le: v_le :e (Pi_ ux :e v_u945,
+    (Pi_ ux :e v_u945, Lean_Bool)).
+rewrite Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_split1 v_fuel H_v_fuel l_u_1 H_l_u_1 v_u945 H_v_u945 (Lean_List_nil_node v_u945) (Lean_List_nil_typed v_u945)
+    (Lean_List_nil_node v_u945) (Lean_List_nil_typed v_u945) v_le H_v_le.
+rewrite Lean_List_casesOn_iota0 v_u945 (Lean_List_nil_node v_u945) (fun c1_1_0 :e v_u945 => (fun c1_1_1 :e (Lean_List v_u945) => (Lean_List_casesOn v_u945 (Lean_List_cons_node v_u945 c1_1_0 c1_1_1)
+    (fun c2_1_0 :e v_u945 => (fun c2_1_1 :e (Lean_List v_u945) => (Lean_dite (Lean_List v_u945) (Lean_Eq_Prop Lean_Bool (v_le c1_1_0 c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le
+    c1_1_0 c2_1_0) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (v_le c1_1_0 c2_1_0) Lean_Bool_true_node) => (Lean_List_cons_node v_u945 c1_1_0
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 c1_1_1 (Lean_List_cons_node v_u945 c2_1_0 c2_1_1) v_le))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (v_le
+    c1_1_0 c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 c2_1_0 (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 (Lean_List_cons_node
+    v_u945 c1_1_0 c1_1_1) c2_1_1 v_le)))))) (Lean_List_nil_node v_u945)))).
+reflexivity.
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_case1_branch1 : forall v_fuel :e Lean_Nat, forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_head :e
+    v_u945, forall v_tail :e (Lean_List v_u945), forall v_le :e (Pi_ ux :e v_u945, (Pi_ ux :e v_u945, Lean_Bool)), (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel
+    (Lean_Nat_succ_node v_fuel) v_u945 (Lean_List_cons_node v_u945 v_head v_tail) (Lean_List_nil_node v_u945) v_le) = (Lean_List_cons_node v_u945 v_head v_tail).
+let v_fuel. assume H_v_fuel: v_fuel :e Lean_Nat. let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let v_head. assume H_v_head: v_head :e v_u945. let
+    v_tail. assume H_v_tail: v_tail :e (Lean_List v_u945). let v_le. assume H_v_le: v_le :e (Pi_ ux :e v_u945, (Pi_ ux :e v_u945, Lean_Bool)).
+rewrite Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_split1 v_fuel H_v_fuel l_u_1 H_l_u_1 v_u945 H_v_u945 (Lean_List_cons_node v_u945 v_head v_tail) (Lean_List_cons_typed v_u945
+    v_head H_v_head v_tail H_v_tail) (Lean_List_nil_node v_u945) (Lean_List_nil_typed v_u945) v_le H_v_le.
+rewrite Lean_List_casesOn_iota1 v_u945 (Lean_List_nil_node v_u945) (fun c1_1_0 :e v_u945 => (fun c1_1_1 :e (Lean_List v_u945) => (Lean_List_casesOn v_u945 (Lean_List_cons_node v_u945 c1_1_0 c1_1_1)
+    (fun c2_1_0 :e v_u945 => (fun c2_1_1 :e (Lean_List v_u945) => (Lean_dite (Lean_List v_u945) (Lean_Eq_Prop Lean_Bool (v_le c1_1_0 c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le
+    c1_1_0 c2_1_0) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (v_le c1_1_0 c2_1_0) Lean_Bool_true_node) => (Lean_List_cons_node v_u945 c1_1_0
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 c1_1_1 (Lean_List_cons_node v_u945 c2_1_0 c2_1_1) v_le))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (v_le
+    c1_1_0 c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 c2_1_0 (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 (Lean_List_cons_node
+    v_u945 c1_1_0 c1_1_1) c2_1_1 v_le)))))) (Lean_List_nil_node v_u945)))) v_head H_v_head v_tail H_v_tail.
+rewrite (eq_i_tra ((fun c1_1_0 :e v_u945 => (fun c1_1_1 :e (Lean_List v_u945) => (Lean_List_casesOn v_u945 (Lean_List_cons_node v_u945 c1_1_0 c1_1_1) (fun c2_1_0 :e v_u945 => (fun c2_1_1 :e
+    (Lean_List v_u945) => (Lean_dite (Lean_List v_u945) (Lean_Eq_Prop Lean_Bool (v_le c1_1_0 c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le c1_1_0 c2_1_0) Lean_Bool_true_node) (fun v_h
+    :e (Lean_Eq_Prop Lean_Bool (v_le c1_1_0 c2_1_0) Lean_Bool_true_node) => (Lean_List_cons_node v_u945 c1_1_0 (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 c1_1_1
+    (Lean_List_cons_node v_u945 c2_1_0 c2_1_1) v_le))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (v_le c1_1_0 c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 c2_1_0
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 (Lean_List_cons_node v_u945 c1_1_0 c1_1_1) c2_1_1 v_le)))))) (Lean_List_nil_node v_u945)))) v_head) (fun c1_1_1
+    :e (Lean_List v_u945) => (Lean_List_casesOn v_u945 (Lean_List_cons_node v_u945 v_head c1_1_1) (fun c2_1_0 :e v_u945 => (fun c2_1_1 :e (Lean_List v_u945) => (Lean_dite (Lean_List v_u945)
+    (Lean_Eq_Prop Lean_Bool (v_le v_head c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le v_head c2_1_0) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (v_le v_head c2_1_0)
+    Lean_Bool_true_node) => (Lean_List_cons_node v_u945 v_head (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 c1_1_1 (Lean_List_cons_node v_u945 c2_1_0 c2_1_1)
+    v_le))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (v_le v_head c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 c2_1_0
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 (Lean_List_cons_node v_u945 v_head c1_1_1) c2_1_1 v_le)))))) (Lean_List_nil_node v_u945))) (fun c1_1_1 :e
+    (Lean_List v_u945) => (Lean_List_casesOn v_u945 (Lean_List_cons_node v_u945 v_head c1_1_1) (fun c2_1_0 :e v_u945 => (fun c2_1_1 :e (Lean_List v_u945) => (Lean_dite (Lean_List v_u945)
+    (Lean_Eq_Prop Lean_Bool (v_le v_head c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le v_head c2_1_0) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (v_le v_head c2_1_0)
+    Lean_Bool_true_node) => (Lean_List_cons_node v_u945 v_head (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 c1_1_1 (Lean_List_cons_node v_u945 c2_1_0 c2_1_1)
+    v_le))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (v_le v_head c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 c2_1_0
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 (Lean_List_cons_node v_u945 v_head c1_1_1) c2_1_1 v_le)))))) (Lean_List_nil_node v_u945))) (beta v_u945 (fun
+    c1_1_0 => (fun c1_1_1 :e (Lean_List v_u945) => (Lean_List_casesOn v_u945 (Lean_List_cons_node v_u945 c1_1_0 c1_1_1) (fun c2_1_0 :e v_u945 => (fun c2_1_1 :e (Lean_List v_u945) => (Lean_dite
+    (Lean_List v_u945) (Lean_Eq_Prop Lean_Bool (v_le c1_1_0 c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le c1_1_0 c2_1_0) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (v_le
+    c1_1_0 c2_1_0) Lean_Bool_true_node) => (Lean_List_cons_node v_u945 c1_1_0 (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 c1_1_1 (Lean_List_cons_node v_u945
+    c2_1_0 c2_1_1) v_le))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (v_le c1_1_0 c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 c2_1_0
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 (Lean_List_cons_node v_u945 c1_1_0 c1_1_1) c2_1_1 v_le)))))) (Lean_List_nil_node v_u945)))) v_head H_v_head)
+    (Lean_eq_refl (fun c1_1_1 :e (Lean_List v_u945) => (Lean_List_casesOn v_u945 (Lean_List_cons_node v_u945 v_head c1_1_1) (fun c2_1_0 :e v_u945 => (fun c2_1_1 :e (Lean_List v_u945) => (Lean_dite
+    (Lean_List v_u945) (Lean_Eq_Prop Lean_Bool (v_le v_head c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le v_head c2_1_0) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (v_le
+    v_head c2_1_0) Lean_Bool_true_node) => (Lean_List_cons_node v_u945 v_head (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 c1_1_1 (Lean_List_cons_node v_u945
+    c2_1_0 c2_1_1) v_le))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (v_le v_head c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 c2_1_0
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 (Lean_List_cons_node v_u945 v_head c1_1_1) c2_1_1 v_le)))))) (Lean_List_nil_node v_u945))))).
+rewrite (eq_i_tra ((fun c1_1_1 :e (Lean_List v_u945) => (Lean_List_casesOn v_u945 (Lean_List_cons_node v_u945 v_head c1_1_1) (fun c2_1_0 :e v_u945 => (fun c2_1_1 :e (Lean_List v_u945) => (Lean_dite
+    (Lean_List v_u945) (Lean_Eq_Prop Lean_Bool (v_le v_head c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le v_head c2_1_0) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (v_le
+    v_head c2_1_0) Lean_Bool_true_node) => (Lean_List_cons_node v_u945 v_head (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 c1_1_1 (Lean_List_cons_node v_u945
+    c2_1_0 c2_1_1) v_le))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (v_le v_head c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 c2_1_0
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 (Lean_List_cons_node v_u945 v_head c1_1_1) c2_1_1 v_le)))))) (Lean_List_nil_node v_u945))) v_tail)
+    (Lean_List_casesOn v_u945 (Lean_List_cons_node v_u945 v_head v_tail) (fun c2_1_0 :e v_u945 => (fun c2_1_1 :e (Lean_List v_u945) => (Lean_dite (Lean_List v_u945) (Lean_Eq_Prop Lean_Bool (v_le
+    v_head c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le v_head c2_1_0) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (v_le v_head c2_1_0) Lean_Bool_true_node) =>
+    (Lean_List_cons_node v_u945 v_head (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 v_tail (Lean_List_cons_node v_u945 c2_1_0 c2_1_1) v_le))) (fun v_h :e (Pi_ ux
+    :e (Lean_Eq_Prop Lean_Bool (v_le v_head c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 c2_1_0 (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel
+    v_fuel v_u945 (Lean_List_cons_node v_u945 v_head v_tail) c2_1_1 v_le)))))) (Lean_List_nil_node v_u945)) (Lean_List_casesOn v_u945 (Lean_List_cons_node v_u945 v_head v_tail) (fun c2_1_0 :e v_u945
+    => (fun c2_1_1 :e (Lean_List v_u945) => (Lean_dite (Lean_List v_u945) (Lean_Eq_Prop Lean_Bool (v_le v_head c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le v_head c2_1_0)
+    Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (v_le v_head c2_1_0) Lean_Bool_true_node) => (Lean_List_cons_node v_u945 v_head
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 v_tail (Lean_List_cons_node v_u945 c2_1_0 c2_1_1) v_le))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (v_le
+    v_head c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 c2_1_0 (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 (Lean_List_cons_node
+    v_u945 v_head v_tail) c2_1_1 v_le)))))) (Lean_List_nil_node v_u945)) (beta (Lean_List v_u945) (fun c1_1_1 => (Lean_List_casesOn v_u945 (Lean_List_cons_node v_u945 v_head c1_1_1) (fun c2_1_0 :e
+    v_u945 => (fun c2_1_1 :e (Lean_List v_u945) => (Lean_dite (Lean_List v_u945) (Lean_Eq_Prop Lean_Bool (v_le v_head c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le v_head c2_1_0)
+    Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (v_le v_head c2_1_0) Lean_Bool_true_node) => (Lean_List_cons_node v_u945 v_head
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 c1_1_1 (Lean_List_cons_node v_u945 c2_1_0 c2_1_1) v_le))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (v_le
+    v_head c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 c2_1_0 (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 (Lean_List_cons_node
+    v_u945 v_head c1_1_1) c2_1_1 v_le)))))) (Lean_List_nil_node v_u945))) v_tail H_v_tail) (Lean_eq_refl (Lean_List_casesOn v_u945 (Lean_List_cons_node v_u945 v_head v_tail) (fun c2_1_0 :e v_u945 =>
+    (fun c2_1_1 :e (Lean_List v_u945) => (Lean_dite (Lean_List v_u945) (Lean_Eq_Prop Lean_Bool (v_le v_head c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le v_head c2_1_0)
+    Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (v_le v_head c2_1_0) Lean_Bool_true_node) => (Lean_List_cons_node v_u945 v_head
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 v_tail (Lean_List_cons_node v_u945 c2_1_0 c2_1_1) v_le))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (v_le
+    v_head c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 c2_1_0 (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 (Lean_List_cons_node
+    v_u945 v_head v_tail) c2_1_1 v_le)))))) (Lean_List_nil_node v_u945)))).
+rewrite Lean_List_casesOn_iota0 v_u945 (Lean_List_cons_node v_u945 v_head v_tail) (fun c2_1_0 :e v_u945 => (fun c2_1_1 :e (Lean_List v_u945) => (Lean_dite (Lean_List v_u945) (Lean_Eq_Prop Lean_Bool
+    (v_le v_head c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le v_head c2_1_0) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (v_le v_head c2_1_0) Lean_Bool_true_node) =>
+    (Lean_List_cons_node v_u945 v_head (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 v_tail (Lean_List_cons_node v_u945 c2_1_0 c2_1_1) v_le))) (fun v_h :e (Pi_ ux
+    :e (Lean_Eq_Prop Lean_Bool (v_le v_head c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 c2_1_0 (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel
+    v_fuel v_u945 (Lean_List_cons_node v_u945 v_head v_tail) c2_1_1 v_le)))))).
+reflexivity.
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_case3 : forall v_fuel :e Lean_Nat, forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_le :e (Pi_ ux :e
+    v_u945, (Pi_ ux :e v_u945, Lean_Bool)), forall v_x :e v_u945, forall v_xs_2 :e (Lean_List v_u945), forall v_y :e v_u945, forall v_ys_2 :e (Lean_List v_u945),
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel (Lean_Nat_succ_node v_fuel) v_u945 (Lean_List_cons_node v_u945 v_x v_xs_2) (Lean_List_cons_node v_u945 v_y v_ys_2) v_le) =
+    (Lean_dite (Lean_List v_u945) (Lean_Eq_Prop Lean_Bool (v_le v_x v_y) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le v_x v_y) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (v_le
+    v_x v_y) Lean_Bool_true_node) => (Lean_List_cons_node v_u945 v_x (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 v_xs_2 (Lean_List_cons_node v_u945 v_y v_ys_2)
+    v_le))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (v_le v_x v_y) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 v_y
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 (Lean_List_cons_node v_u945 v_x v_xs_2) v_ys_2 v_le)))).
+let v_fuel. assume H_v_fuel: v_fuel :e Lean_Nat. let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let v_le. assume H_v_le: v_le :e (Pi_ ux :e v_u945,
+    (Pi_ ux :e v_u945, Lean_Bool)). let v_x. assume H_v_x: v_x :e v_u945. let v_xs_2. assume H_v_xs_2: v_xs_2 :e (Lean_List v_u945). let v_y. assume H_v_y: v_y :e v_u945. let v_ys_2. assume H_v_ys_2:
+    v_ys_2 :e (Lean_List v_u945).
+rewrite Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_split1 v_fuel H_v_fuel l_u_1 H_l_u_1 v_u945 H_v_u945 (Lean_List_cons_node v_u945 v_x v_xs_2) (Lean_List_cons_typed v_u945
+    v_x H_v_x v_xs_2 H_v_xs_2) (Lean_List_cons_node v_u945 v_y v_ys_2) (Lean_List_cons_typed v_u945 v_y H_v_y v_ys_2 H_v_ys_2) v_le H_v_le.
+rewrite Lean_List_casesOn_iota1 v_u945 (Lean_List_cons_node v_u945 v_y v_ys_2) (fun c1_1_0 :e v_u945 => (fun c1_1_1 :e (Lean_List v_u945) => (Lean_List_casesOn v_u945 (Lean_List_cons_node v_u945
+    c1_1_0 c1_1_1) (fun c2_1_0 :e v_u945 => (fun c2_1_1 :e (Lean_List v_u945) => (Lean_dite (Lean_List v_u945) (Lean_Eq_Prop Lean_Bool (v_le c1_1_0 c2_1_0) Lean_Bool_true_node)
+    (Lean_instDecidableEqBool (v_le c1_1_0 c2_1_0) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (v_le c1_1_0 c2_1_0) Lean_Bool_true_node) => (Lean_List_cons_node v_u945 c1_1_0
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 c1_1_1 (Lean_List_cons_node v_u945 c2_1_0 c2_1_1) v_le))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (v_le
+    c1_1_0 c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 c2_1_0 (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 (Lean_List_cons_node
+    v_u945 c1_1_0 c1_1_1) c2_1_1 v_le)))))) (Lean_List_cons_node v_u945 v_y v_ys_2)))) v_x H_v_x v_xs_2 H_v_xs_2.
+rewrite (eq_i_tra ((fun c1_1_0 :e v_u945 => (fun c1_1_1 :e (Lean_List v_u945) => (Lean_List_casesOn v_u945 (Lean_List_cons_node v_u945 c1_1_0 c1_1_1) (fun c2_1_0 :e v_u945 => (fun c2_1_1 :e
+    (Lean_List v_u945) => (Lean_dite (Lean_List v_u945) (Lean_Eq_Prop Lean_Bool (v_le c1_1_0 c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le c1_1_0 c2_1_0) Lean_Bool_true_node) (fun v_h
+    :e (Lean_Eq_Prop Lean_Bool (v_le c1_1_0 c2_1_0) Lean_Bool_true_node) => (Lean_List_cons_node v_u945 c1_1_0 (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 c1_1_1
+    (Lean_List_cons_node v_u945 c2_1_0 c2_1_1) v_le))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (v_le c1_1_0 c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 c2_1_0
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 (Lean_List_cons_node v_u945 c1_1_0 c1_1_1) c2_1_1 v_le)))))) (Lean_List_cons_node v_u945 v_y v_ys_2)))) v_x) (fun
+    c1_1_1 :e (Lean_List v_u945) => (Lean_List_casesOn v_u945 (Lean_List_cons_node v_u945 v_x c1_1_1) (fun c2_1_0 :e v_u945 => (fun c2_1_1 :e (Lean_List v_u945) => (Lean_dite (Lean_List v_u945)
+    (Lean_Eq_Prop Lean_Bool (v_le v_x c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le v_x c2_1_0) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (v_le v_x c2_1_0)
+    Lean_Bool_true_node) => (Lean_List_cons_node v_u945 v_x (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 c1_1_1 (Lean_List_cons_node v_u945 c2_1_0 c2_1_1) v_le)))
+    (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (v_le v_x c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 c2_1_0
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 (Lean_List_cons_node v_u945 v_x c1_1_1) c2_1_1 v_le)))))) (Lean_List_cons_node v_u945 v_y v_ys_2))) (fun c1_1_1
+    :e (Lean_List v_u945) => (Lean_List_casesOn v_u945 (Lean_List_cons_node v_u945 v_x c1_1_1) (fun c2_1_0 :e v_u945 => (fun c2_1_1 :e (Lean_List v_u945) => (Lean_dite (Lean_List v_u945)
+    (Lean_Eq_Prop Lean_Bool (v_le v_x c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le v_x c2_1_0) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (v_le v_x c2_1_0)
+    Lean_Bool_true_node) => (Lean_List_cons_node v_u945 v_x (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 c1_1_1 (Lean_List_cons_node v_u945 c2_1_0 c2_1_1) v_le)))
+    (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (v_le v_x c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 c2_1_0
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 (Lean_List_cons_node v_u945 v_x c1_1_1) c2_1_1 v_le)))))) (Lean_List_cons_node v_u945 v_y v_ys_2))) (beta v_u945
+    (fun c1_1_0 => (fun c1_1_1 :e (Lean_List v_u945) => (Lean_List_casesOn v_u945 (Lean_List_cons_node v_u945 c1_1_0 c1_1_1) (fun c2_1_0 :e v_u945 => (fun c2_1_1 :e (Lean_List v_u945) => (Lean_dite
+    (Lean_List v_u945) (Lean_Eq_Prop Lean_Bool (v_le c1_1_0 c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le c1_1_0 c2_1_0) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (v_le
+    c1_1_0 c2_1_0) Lean_Bool_true_node) => (Lean_List_cons_node v_u945 c1_1_0 (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 c1_1_1 (Lean_List_cons_node v_u945
+    c2_1_0 c2_1_1) v_le))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (v_le c1_1_0 c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 c2_1_0
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 (Lean_List_cons_node v_u945 c1_1_0 c1_1_1) c2_1_1 v_le)))))) (Lean_List_cons_node v_u945 v_y v_ys_2)))) v_x
+    H_v_x) (Lean_eq_refl (fun c1_1_1 :e (Lean_List v_u945) => (Lean_List_casesOn v_u945 (Lean_List_cons_node v_u945 v_x c1_1_1) (fun c2_1_0 :e v_u945 => (fun c2_1_1 :e (Lean_List v_u945) =>
+    (Lean_dite (Lean_List v_u945) (Lean_Eq_Prop Lean_Bool (v_le v_x c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le v_x c2_1_0) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool
+    (v_le v_x c2_1_0) Lean_Bool_true_node) => (Lean_List_cons_node v_u945 v_x (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 c1_1_1 (Lean_List_cons_node v_u945
+    c2_1_0 c2_1_1) v_le))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (v_le v_x c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 c2_1_0
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 (Lean_List_cons_node v_u945 v_x c1_1_1) c2_1_1 v_le)))))) (Lean_List_cons_node v_u945 v_y v_ys_2))))).
+rewrite (eq_i_tra ((fun c1_1_1 :e (Lean_List v_u945) => (Lean_List_casesOn v_u945 (Lean_List_cons_node v_u945 v_x c1_1_1) (fun c2_1_0 :e v_u945 => (fun c2_1_1 :e (Lean_List v_u945) => (Lean_dite
+    (Lean_List v_u945) (Lean_Eq_Prop Lean_Bool (v_le v_x c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le v_x c2_1_0) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (v_le v_x
+    c2_1_0) Lean_Bool_true_node) => (Lean_List_cons_node v_u945 v_x (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 c1_1_1 (Lean_List_cons_node v_u945 c2_1_0 c2_1_1)
+    v_le))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (v_le v_x c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 c2_1_0
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 (Lean_List_cons_node v_u945 v_x c1_1_1) c2_1_1 v_le)))))) (Lean_List_cons_node v_u945 v_y v_ys_2))) v_xs_2)
+    (Lean_List_casesOn v_u945 (Lean_List_cons_node v_u945 v_x v_xs_2) (fun c2_1_0 :e v_u945 => (fun c2_1_1 :e (Lean_List v_u945) => (Lean_dite (Lean_List v_u945) (Lean_Eq_Prop Lean_Bool (v_le v_x
+    c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le v_x c2_1_0) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (v_le v_x c2_1_0) Lean_Bool_true_node) => (Lean_List_cons_node
+    v_u945 v_x (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 v_xs_2 (Lean_List_cons_node v_u945 c2_1_0 c2_1_1) v_le))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop
+    Lean_Bool (v_le v_x c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 c2_1_0 (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945
+    (Lean_List_cons_node v_u945 v_x v_xs_2) c2_1_1 v_le)))))) (Lean_List_cons_node v_u945 v_y v_ys_2)) (Lean_List_casesOn v_u945 (Lean_List_cons_node v_u945 v_x v_xs_2) (fun c2_1_0 :e v_u945 => (fun
+    c2_1_1 :e (Lean_List v_u945) => (Lean_dite (Lean_List v_u945) (Lean_Eq_Prop Lean_Bool (v_le v_x c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le v_x c2_1_0) Lean_Bool_true_node) (fun
+    v_h :e (Lean_Eq_Prop Lean_Bool (v_le v_x c2_1_0) Lean_Bool_true_node) => (Lean_List_cons_node v_u945 v_x (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 v_xs_2
+    (Lean_List_cons_node v_u945 c2_1_0 c2_1_1) v_le))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (v_le v_x c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 c2_1_0
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 (Lean_List_cons_node v_u945 v_x v_xs_2) c2_1_1 v_le)))))) (Lean_List_cons_node v_u945 v_y v_ys_2)) (beta
+    (Lean_List v_u945) (fun c1_1_1 => (Lean_List_casesOn v_u945 (Lean_List_cons_node v_u945 v_x c1_1_1) (fun c2_1_0 :e v_u945 => (fun c2_1_1 :e (Lean_List v_u945) => (Lean_dite (Lean_List v_u945)
+    (Lean_Eq_Prop Lean_Bool (v_le v_x c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le v_x c2_1_0) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (v_le v_x c2_1_0)
+    Lean_Bool_true_node) => (Lean_List_cons_node v_u945 v_x (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 c1_1_1 (Lean_List_cons_node v_u945 c2_1_0 c2_1_1) v_le)))
+    (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (v_le v_x c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 c2_1_0
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 (Lean_List_cons_node v_u945 v_x c1_1_1) c2_1_1 v_le)))))) (Lean_List_cons_node v_u945 v_y v_ys_2))) v_xs_2
+    H_v_xs_2) (Lean_eq_refl (Lean_List_casesOn v_u945 (Lean_List_cons_node v_u945 v_x v_xs_2) (fun c2_1_0 :e v_u945 => (fun c2_1_1 :e (Lean_List v_u945) => (Lean_dite (Lean_List v_u945) (Lean_Eq_Prop
+    Lean_Bool (v_le v_x c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le v_x c2_1_0) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (v_le v_x c2_1_0) Lean_Bool_true_node) =>
+    (Lean_List_cons_node v_u945 v_x (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 v_xs_2 (Lean_List_cons_node v_u945 c2_1_0 c2_1_1) v_le))) (fun v_h :e (Pi_ ux :e
+    (Lean_Eq_Prop Lean_Bool (v_le v_x c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 c2_1_0 (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel
+    v_u945 (Lean_List_cons_node v_u945 v_x v_xs_2) c2_1_1 v_le)))))) (Lean_List_cons_node v_u945 v_y v_ys_2)))).
+rewrite Lean_List_casesOn_iota1 v_u945 (Lean_List_cons_node v_u945 v_x v_xs_2) (fun c2_1_0 :e v_u945 => (fun c2_1_1 :e (Lean_List v_u945) => (Lean_dite (Lean_List v_u945) (Lean_Eq_Prop Lean_Bool
+    (v_le v_x c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le v_x c2_1_0) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (v_le v_x c2_1_0) Lean_Bool_true_node) =>
+    (Lean_List_cons_node v_u945 v_x (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 v_xs_2 (Lean_List_cons_node v_u945 c2_1_0 c2_1_1) v_le))) (fun v_h :e (Pi_ ux :e
+    (Lean_Eq_Prop Lean_Bool (v_le v_x c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 c2_1_0 (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel
+    v_u945 (Lean_List_cons_node v_u945 v_x v_xs_2) c2_1_1 v_le)))))) v_y H_v_y v_ys_2 H_v_ys_2.
+rewrite (eq_i_tra ((fun c2_1_0 :e v_u945 => (fun c2_1_1 :e (Lean_List v_u945) => (Lean_dite (Lean_List v_u945) (Lean_Eq_Prop Lean_Bool (v_le v_x c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool
+    (v_le v_x c2_1_0) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (v_le v_x c2_1_0) Lean_Bool_true_node) => (Lean_List_cons_node v_u945 v_x
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 v_xs_2 (Lean_List_cons_node v_u945 c2_1_0 c2_1_1) v_le))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (v_le
+    v_x c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 c2_1_0 (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 (Lean_List_cons_node
+    v_u945 v_x v_xs_2) c2_1_1 v_le)))))) v_y) (fun c2_1_1 :e (Lean_List v_u945) => (Lean_dite (Lean_List v_u945) (Lean_Eq_Prop Lean_Bool (v_le v_x v_y) Lean_Bool_true_node) (Lean_instDecidableEqBool
+    (v_le v_x v_y) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (v_le v_x v_y) Lean_Bool_true_node) => (Lean_List_cons_node v_u945 v_x
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 v_xs_2 (Lean_List_cons_node v_u945 v_y c2_1_1) v_le))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (v_le v_x
+    v_y) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 v_y (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 (Lean_List_cons_node v_u945 v_x
+    v_xs_2) c2_1_1 v_le))))) (fun c2_1_1 :e (Lean_List v_u945) => (Lean_dite (Lean_List v_u945) (Lean_Eq_Prop Lean_Bool (v_le v_x v_y) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le v_x v_y)
+    Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (v_le v_x v_y) Lean_Bool_true_node) => (Lean_List_cons_node v_u945 v_x (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel
+    v_fuel v_u945 v_xs_2 (Lean_List_cons_node v_u945 v_y c2_1_1) v_le))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (v_le v_x v_y) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node
+    v_u945 v_y (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 (Lean_List_cons_node v_u945 v_x v_xs_2) c2_1_1 v_le))))) (beta v_u945 (fun c2_1_0 => (fun c2_1_1 :e
+    (Lean_List v_u945) => (Lean_dite (Lean_List v_u945) (Lean_Eq_Prop Lean_Bool (v_le v_x c2_1_0) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le v_x c2_1_0) Lean_Bool_true_node) (fun v_h :e
+    (Lean_Eq_Prop Lean_Bool (v_le v_x c2_1_0) Lean_Bool_true_node) => (Lean_List_cons_node v_u945 v_x (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 v_xs_2
+    (Lean_List_cons_node v_u945 c2_1_0 c2_1_1) v_le))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (v_le v_x c2_1_0) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 c2_1_0
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 (Lean_List_cons_node v_u945 v_x v_xs_2) c2_1_1 v_le)))))) v_y H_v_y) (Lean_eq_refl (fun c2_1_1 :e (Lean_List
+    v_u945) => (Lean_dite (Lean_List v_u945) (Lean_Eq_Prop Lean_Bool (v_le v_x v_y) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le v_x v_y) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop
+    Lean_Bool (v_le v_x v_y) Lean_Bool_true_node) => (Lean_List_cons_node v_u945 v_x (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 v_xs_2 (Lean_List_cons_node
+    v_u945 v_y c2_1_1) v_le))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (v_le v_x v_y) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 v_y
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 (Lean_List_cons_node v_u945 v_x v_xs_2) c2_1_1 v_le))))))).
+rewrite (eq_i_tra ((fun c2_1_1 :e (Lean_List v_u945) => (Lean_dite (Lean_List v_u945) (Lean_Eq_Prop Lean_Bool (v_le v_x v_y) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le v_x v_y)
+    Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (v_le v_x v_y) Lean_Bool_true_node) => (Lean_List_cons_node v_u945 v_x (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel
+    v_fuel v_u945 v_xs_2 (Lean_List_cons_node v_u945 v_y c2_1_1) v_le))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (v_le v_x v_y) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node
+    v_u945 v_y (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 (Lean_List_cons_node v_u945 v_x v_xs_2) c2_1_1 v_le))))) v_ys_2) (Lean_dite (Lean_List v_u945)
+    (Lean_Eq_Prop Lean_Bool (v_le v_x v_y) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le v_x v_y) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (v_le v_x v_y) Lean_Bool_true_node)
+    => (Lean_List_cons_node v_u945 v_x (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 v_xs_2 (Lean_List_cons_node v_u945 v_y v_ys_2) v_le))) (fun v_h :e (Pi_ ux :e
+    (Lean_Eq_Prop Lean_Bool (v_le v_x v_y) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 v_y (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945
+    (Lean_List_cons_node v_u945 v_x v_xs_2) v_ys_2 v_le)))) (Lean_dite (Lean_List v_u945) (Lean_Eq_Prop Lean_Bool (v_le v_x v_y) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le v_x v_y)
+    Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (v_le v_x v_y) Lean_Bool_true_node) => (Lean_List_cons_node v_u945 v_x (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel
+    v_fuel v_u945 v_xs_2 (Lean_List_cons_node v_u945 v_y v_ys_2) v_le))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (v_le v_x v_y) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node
+    v_u945 v_y (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 (Lean_List_cons_node v_u945 v_x v_xs_2) v_ys_2 v_le)))) (beta (Lean_List v_u945) (fun c2_1_1 =>
+    (Lean_dite (Lean_List v_u945) (Lean_Eq_Prop Lean_Bool (v_le v_x v_y) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le v_x v_y) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (v_le
+    v_x v_y) Lean_Bool_true_node) => (Lean_List_cons_node v_u945 v_x (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 v_xs_2 (Lean_List_cons_node v_u945 v_y c2_1_1)
+    v_le))) (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (v_le v_x v_y) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 v_y
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 (Lean_List_cons_node v_u945 v_x v_xs_2) c2_1_1 v_le))))) v_ys_2 H_v_ys_2) (Lean_eq_refl (Lean_dite (Lean_List
+    v_u945) (Lean_Eq_Prop Lean_Bool (v_le v_x v_y) Lean_Bool_true_node) (Lean_instDecidableEqBool (v_le v_x v_y) Lean_Bool_true_node) (fun v_h :e (Lean_Eq_Prop Lean_Bool (v_le v_x v_y)
+    Lean_Bool_true_node) => (Lean_List_cons_node v_u945 v_x (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 v_xs_2 (Lean_List_cons_node v_u945 v_y v_ys_2) v_le)))
+    (fun v_h :e (Pi_ ux :e (Lean_Eq_Prop Lean_Bool (v_le v_x v_y) Lean_Bool_true_node), Lean_False_Prop) => (Lean_List_cons_node v_u945 v_y
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel v_fuel v_u945 (Lean_List_cons_node v_u945 v_x v_xs_2) v_ys_2 v_le)))))).
+reflexivity.
+Qed.
+
+(** Mettapedia.Languages.Lean.Recursion.FuelCore.Merge.reading, from its equation theorem **)
+Definition Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_reading : set -> set -> set -> set -> set := fun a0 a1 a2 a3 => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel
+    (Lean_Nat_succ_node (Lean_Nat_add (Lean_List_length a0 a1) (Lean_List_length a0 a2))) a0 a1 a2 a3).
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_reading_In : forall a0, forall a1 :e (Lean_List a0), forall a2 :e (Lean_List a0), forall a3 :e (Pi_ ux :e a0, (Pi_ ux :e a0,
+    Lean_Bool)), Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_reading a0 a1 a2 a3 :e (Lean_List a0).
+let a0. let a1. assume H1: a1 :e (Lean_List a0). let a2. assume H2: a2 :e (Lean_List a0). let a3. assume H3: a3 :e (Pi_ ux :e a0, (Pi_ ux :e a0, Lean_Bool)). exact
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel_In (Lean_Nat_succ_node (Lean_Nat_add (Lean_List_length a0 a1) (Lean_List_length a0 a2))) (Lean_Nat_succ_typed (Lean_Nat_add
+    (Lean_List_length a0 a1) (Lean_List_length a0 a2)) (Lean_Nat_add_In (Lean_List_length a0 a1) (Lean_List_length_In a0 a1 H1) (Lean_List_length a0 a2) (Lean_List_length_In a0 a2 H2))) a0 a1 H1 a2
+    H2 a3 H3).
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_reading_eq_1 : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_xs :e (Lean_List v_u945), forall v_ys :e
+    (Lean_List v_u945), forall v_le :e (Pi_ ux :e v_u945, (Pi_ ux :e v_u945, Lean_Bool)), (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_reading v_u945 v_xs v_ys v_le) =
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel (Lean_Nat_succ_node (Lean_Nat_add (Lean_List_length v_u945 v_xs) (Lean_List_length v_u945 v_ys))) v_u945 v_xs v_ys v_le).
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let v_xs. assume H_v_xs: v_xs :e (Lean_List v_u945). let v_ys. assume H_v_ys: v_ys :e (Lean_List
+    v_u945). let v_le. assume H_v_le: v_le :e (Pi_ ux :e v_u945, (Pi_ ux :e v_u945, Lean_Bool)).
+reflexivity.
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_reading_unfold : forall a0 a1 a2 a3, Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_reading a0 a1 a2 a3 =
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_sourceFuel (Lean_Nat_succ_node (Lean_Nat_add (Lean_List_length a0 a1) (Lean_List_length a0 a2))) a0 a1 a2 a3).
+let a0 a1 a2 a3. reflexivity.
+Qed.
+
+(** List.merge, from its equation theorem **)
+Definition Lean_List_merge : set -> set -> set -> set -> set := fun a0 a1 a2 a3 => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_reading a0 a1 a2 a3).
+Theorem Lean_List_merge_In : forall a0, forall a1 :e (Lean_List a0), forall a2 :e (Lean_List a0), forall a3 :e (Pi_ ux :e a0, (Pi_ ux :e a0, Lean_Bool)), Lean_List_merge a0 a1 a2 a3 :e (Lean_List a0).
+let a0. let a1. assume H1: a1 :e (Lean_List a0). let a2. assume H2: a2 :e (Lean_List a0). let a3. assume H3: a3 :e (Pi_ ux :e a0, (Pi_ ux :e a0, Lean_Bool)). exact
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_reading_In a0 a1 H1 a2 H2 a3 H3).
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_bridge : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_xs :e (Lean_List v_u945), forall v_ys :e (Lean_List
+    v_u945), forall v_le :e (Pi_ ux :e v_u945, (Pi_ ux :e v_u945, Lean_Bool)), (Lean_List_merge v_u945 v_xs v_ys v_le) = (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_reading v_u945 v_xs
+    v_ys v_le).
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let v_xs. assume H_v_xs: v_xs :e (Lean_List v_u945). let v_ys. assume H_v_ys: v_ys :e (Lean_List
+    v_u945). let v_le. assume H_v_le: v_le :e (Pi_ ux :e v_u945, (Pi_ ux :e v_u945, Lean_Bool)).
+reflexivity.
+Qed.
+Theorem Lean_List_merge_unfold : forall a0 a1 a2 a3, Lean_List_merge a0 a1 a2 a3 = (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_Merge_reading a0 a1 a2 a3).
+let a0 a1 a2 a3. reflexivity.
 Qed.
 
 (** List.splitAt.go, from its equation theorems, split at argument 2 **)
@@ -3042,7 +4925,7 @@ let a0. let a1. assume H1: a1 :e (Lean_List a0). let a2. assume H2: a2 :e (Lean_
 Qed.
 Theorem Lean_List_splitAt_go_split0 : forall l_u, nat_p l_u -> forall s0 :e LeanUniv l_u, forall s1 :e (Lean_List s0), forall s3 :e Lean_Nat, forall s4 :e (Lean_List s0), (Lean_List_splitAt_go s0 s1
     (Lean_List_nil_node s0) s3 s4) = (Lean_Prod_mk_node (Lean_List s0) (Lean_List s0) s1 (Lean_List_nil_node s0)).
-let l_u. assume H_l_u: nat_p l_u. let s0. assume H_s0: s0 :e LeanUniv l_u. let s1. assume H_s1: s1 :e (Lean_List s0). let s3. assume H_s3: s3 :e Lean_Nat. let s4. assume H_s4: s4 :e (Lean_List s0). 
+let l_u. assume H_l_u: nat_p l_u. let s0. assume H_s0: s0 :e LeanUniv l_u. let s1. assume H_s1: s1 :e (Lean_List s0). let s3. assume H_s3: s3 :e Lean_Nat. let s4. assume H_s4: s4 :e (Lean_List s0).
 prove ((Lean_List_rec s0 (Lean_List_splitAt_go_method0_0 s0 s1) (Lean_List_splitAt_go_method1_0 s0 s1) (Lean_List_nil_node s0)) s3 s4) = (Lean_Prod_mk_node (Lean_List s0) (Lean_List s0) s1
     (Lean_List_nil_node s0)).
 rewrite Lean_List_iota0 s0 (Lean_List_splitAt_go_method0_0 s0 s1) (Lean_List_splitAt_go_method1_0 s0 s1).
@@ -3054,7 +4937,7 @@ Theorem Lean_List_splitAt_go_split1 : forall l_u, nat_p l_u -> forall s0 :e Lean
     :e (Lean_List s0), (Lean_List_splitAt_go s0 s1 (Lean_List_cons_node s0 t0 t1) s3 s4) = (Lean_Nat_casesOn (Lean_Prod_mk_node (Lean_List s0) (Lean_List s0) (Lean_List_reverse s0 s4)
     (Lean_List_cons_node s0 t0 t1)) (fun c1_1_0 :e Lean_Nat => (Lean_List_splitAt_go s0 s1 t1 c1_1_0 (Lean_List_cons_node s0 t0 s4))) s3).
 let l_u. assume H_l_u: nat_p l_u. let s0. assume H_s0: s0 :e LeanUniv l_u. let s1. assume H_s1: s1 :e (Lean_List s0). let t0. assume H_t0: t0 :e s0. let t1. assume H_t1: t1 :e (Lean_List s0). let s3.
-    assume H_s3: s3 :e Lean_Nat. let s4. assume H_s4: s4 :e (Lean_List s0). 
+    assume H_s3: s3 :e Lean_Nat. let s4. assume H_s4: s4 :e (Lean_List s0).
 prove ((Lean_List_rec s0 (Lean_List_splitAt_go_method0_0 s0 s1) (Lean_List_splitAt_go_method1_0 s0 s1) (Lean_List_cons_node s0 t0 t1)) s3 s4) = (Lean_Nat_casesOn (Lean_Prod_mk_node (Lean_List s0)
     (Lean_List s0) (Lean_List_reverse s0 s4) (Lean_List_cons_node s0 t0 t1)) (fun c1_1_0 :e Lean_Nat => ((Lean_List_rec s0 (Lean_List_splitAt_go_method0_0 s0 s1) (Lean_List_splitAt_go_method1_0 s0
     s1) t1) c1_1_0 (Lean_List_cons_node s0 t0 s4))) s3).
@@ -3071,7 +4954,7 @@ Qed.
 Theorem Lean_List_splitAt_go_eq_1 : forall l_u, nat_p l_u -> forall v_u945 :e LeanUniv l_u, forall v_l :e (Lean_List v_u945), forall v_a :e Lean_Nat, forall v_x3 :e (Lean_List v_u945),
     (Lean_List_splitAt_go v_u945 v_l (Lean_List_nil_node v_u945) v_a v_x3) = (Lean_Prod_mk_node (Lean_List v_u945) (Lean_List v_u945) v_l (Lean_List_nil_node v_u945)).
 let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let v_l. assume H_v_l: v_l :e (Lean_List v_u945). let v_a. assume H_v_a: v_a :e Lean_Nat. let v_x3. assume
-    H_v_x3: v_x3 :e (Lean_List v_u945). 
+    H_v_x3: v_x3 :e (Lean_List v_u945).
 rewrite Lean_List_splitAt_go_split0 l_u H_l_u v_u945 H_v_u945 v_l H_v_l v_a H_v_a v_x3 H_v_x3.
 reflexivity.
 Qed.
@@ -3080,7 +4963,7 @@ Theorem Lean_List_splitAt_go_eq_2 : forall l_u, nat_p l_u -> forall v_u945 :e Le
     (Lean_List v_u945), forall v_n :e Lean_Nat, (Lean_List_splitAt_go v_u945 v_l (Lean_List_cons_node v_u945 v_x_3 v_xs) (Lean_Nat_succ_node v_n) v_a) = (Lean_List_splitAt_go v_u945 v_l v_xs v_n
     (Lean_List_cons_node v_u945 v_x_3 v_a)).
 let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let v_l. assume H_v_l: v_l :e (Lean_List v_u945). let v_a. assume H_v_a: v_a :e (Lean_List v_u945). let v_x_3.
-    assume H_v_x_3: v_x_3 :e v_u945. let v_xs. assume H_v_xs: v_xs :e (Lean_List v_u945). let v_n. assume H_v_n: v_n :e Lean_Nat. 
+    assume H_v_x_3: v_x_3 :e v_u945. let v_xs. assume H_v_xs: v_xs :e (Lean_List v_u945). let v_n. assume H_v_n: v_n :e Lean_Nat.
 rewrite Lean_List_splitAt_go_split1 l_u H_l_u v_u945 H_v_u945 v_l H_v_l v_x_3 H_v_x_3 v_xs H_v_xs (Lean_Nat_succ_node v_n) (Lean_Nat_succ_typed v_n H_v_n) v_a H_v_a.
 rewrite Lean_Nat_casesOn_iota1 (Lean_Prod_mk_node (Lean_List v_u945) (Lean_List v_u945) (Lean_List_reverse v_u945 v_a) (Lean_List_cons_node v_u945 v_x_3 v_xs)) (fun c1_1_0 :e Lean_Nat =>
     (Lean_List_splitAt_go v_u945 v_l v_xs c1_1_0 (Lean_List_cons_node v_u945 v_x_3 v_a))) v_n H_v_n.
@@ -3094,7 +4977,7 @@ Theorem Lean_List_splitAt_go_eq_3 : forall l_u, nat_p l_u -> forall v_u945 :e Le
     (Lean_List v_u945), ((v_a = (Lean_List_nil_node v_u945)) -> False) -> (forall v_x :e v_u945, forall v_xs :e (Lean_List v_u945), forall v_n :e Lean_Nat, (v_a = (Lean_List_cons_node v_u945 v_x
     v_xs)) -> (v_x3 = (Lean_Nat_succ_node v_n)) -> False) -> (Lean_List_splitAt_go v_u945 v_l v_a v_x3 v_x4) = (Lean_Prod_mk_node (Lean_List v_u945) (Lean_List v_u945) (Lean_List_reverse v_u945 v_x4)
     v_a).
-let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. 
+let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u.
 let v_l. assume H_v_l: v_l :e (Lean_List v_u945). apply Lean_List_ind v_u945.
 { let v_x3. assume H_v_x3: v_x3 :e Lean_Nat. let v_x4. assume H_v_x4: v_x4 :e (Lean_List v_u945). assume v_x_4. assume v_x_5. apply FalseE. apply v_x_4.
 reflexivity.
@@ -3122,10 +5005,565 @@ Qed.
 (** Receipt: List.splitAt.eq_1 is the source of the MeTTa rule for List.splitAt, statement digest 2246599139. **)
 Theorem Lean_List_splitAt_eq_1 : forall l_u, nat_p l_u -> forall v_u945 :e LeanUniv l_u, forall v_n :e Lean_Nat, forall v_l :e (Lean_List v_u945), (Lean_List_splitAt v_u945 v_n v_l) =
     (Lean_List_splitAt_go v_u945 v_l v_l v_n (Lean_List_nil_node v_u945)).
-let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let v_n. assume H_v_n: v_n :e Lean_Nat. let v_l. assume H_v_l: v_l :e (Lean_List v_u945). 
+let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let v_n. assume H_v_n: v_n :e Lean_Nat. let v_l. assume H_v_l: v_l :e (Lean_List v_u945).
 reflexivity.
 Qed.
 Theorem Lean_List_splitAt_unfold : forall a0 a1 a2, Lean_List_splitAt a0 a1 a2 = (Lean_List_splitAt_go a0 a2 a2 a1 (Lean_List_nil_node a0)).
 let a0 a1 a2. reflexivity.
+Qed.
+
+(** Mettapedia.Languages.Lean.Recursion.FuelCore.MinFacAux.sourceFuel, from its equation theorems **)
+Definition Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method0_0 : set -> set := fun a1 => (fun a2 :e Lean_Nat => Lean_Nat_zero_node).
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method0_0_ap : forall a1, forall a2 :e Lean_Nat,
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method0_0 a1) a2 = Lean_Nat_zero_node.
+let a1. let a2. assume H: a2 :e Lean_Nat.
+exact beta Lean_Nat (fun a2 => Lean_Nat_zero_node) a2 H.
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method0_0_In : forall a1 :e Lean_Nat, (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method0_0
+    a1) :e (Pi_ a2 :e Lean_Nat, Lean_Nat).
+let a1. assume H1: a1 :e Lean_Nat. exact lam_Pi Lean_Nat (fun a2 => Lean_Nat) (fun a2 => Lean_Nat_zero_node) (fun a2 Ha2 => Lean_Nat_zero_typed).
+Qed.
+Definition Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_2 : set -> set -> set -> set := fun a1 y0 r0 => (fun a2 :e Lean_Nat => (Lean_dite Lean_Nat (Lean_Nat_le_Prop
+    (Lean_Nat_succ_node a1) (Lean_Nat_mul a2 a2)) (Lean_Nat_decLt a1 (Lean_Nat_mul a2 a2)) (fun v_h :e (Lean_Nat_le_Prop (Lean_Nat_succ_node a1) (Lean_Nat_mul a2 a2)) => a1) (fun v_h :e (Pi_ ux :e
+    (Lean_Nat_le_Prop (Lean_Nat_succ_node a1) (Lean_Nat_mul a2 a2)), Lean_False_Prop) => (Lean_dite Lean_Nat (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat a1 (Lean_Nat_mul
+    a2 v_c)))) (Lean_Nat_decidable_dvd a2 a1) (fun v_x4 :e (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat a1 (Lean_Nat_mul a2 v_c)))) => a2) (fun v_x4 :e (Pi_ ux :e
+    (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat a1 (Lean_Nat_mul a2 v_c)))), Lean_False_Prop) => (r0 (Lean_Nat_add a2 (LeanNum 2)))))))).
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_2_ap : forall a1 y0 r0, forall a2 :e Lean_Nat,
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_2 a1 y0 r0) a2 = (Lean_dite Lean_Nat (Lean_Nat_le_Prop (Lean_Nat_succ_node a1) (Lean_Nat_mul a2 a2))
+    (Lean_Nat_decLt a1 (Lean_Nat_mul a2 a2)) (fun v_h :e (Lean_Nat_le_Prop (Lean_Nat_succ_node a1) (Lean_Nat_mul a2 a2)) => a1) (fun v_h :e (Pi_ ux :e (Lean_Nat_le_Prop (Lean_Nat_succ_node a1)
+    (Lean_Nat_mul a2 a2)), Lean_False_Prop) => (Lean_dite Lean_Nat (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat a1 (Lean_Nat_mul a2 v_c)))) (Lean_Nat_decidable_dvd a2 a1)
+    (fun v_x4 :e (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat a1 (Lean_Nat_mul a2 v_c)))) => a2) (fun v_x4 :e (Pi_ ux :e (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat
+    => (Lean_Eq_Prop Lean_Nat a1 (Lean_Nat_mul a2 v_c)))), Lean_False_Prop) => (r0 (Lean_Nat_add a2 (LeanNum 2))))))).
+let a1. let y0. let r0. let a2. assume H: a2 :e Lean_Nat.
+exact beta Lean_Nat (fun a2 => (Lean_dite Lean_Nat (Lean_Nat_le_Prop (Lean_Nat_succ_node a1) (Lean_Nat_mul a2 a2)) (Lean_Nat_decLt a1 (Lean_Nat_mul a2 a2)) (fun v_h :e (Lean_Nat_le_Prop
+    (Lean_Nat_succ_node a1) (Lean_Nat_mul a2 a2)) => a1) (fun v_h :e (Pi_ ux :e (Lean_Nat_le_Prop (Lean_Nat_succ_node a1) (Lean_Nat_mul a2 a2)), Lean_False_Prop) => (Lean_dite Lean_Nat
+    (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat a1 (Lean_Nat_mul a2 v_c)))) (Lean_Nat_decidable_dvd a2 a1) (fun v_x4 :e (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat
+    => (Lean_Eq_Prop Lean_Nat a1 (Lean_Nat_mul a2 v_c)))) => a2) (fun v_x4 :e (Pi_ ux :e (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat a1 (Lean_Nat_mul a2 v_c)))),
+    Lean_False_Prop) => (r0 (Lean_Nat_add a2 (LeanNum 2)))))))) a2 H.
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_2_In : forall a1 :e Lean_Nat, forall y0 :e Lean_Nat, forall r0 :e (Pi_ ux :e Lean_Nat, Lean_Nat),
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_2 a1 y0 r0) :e (Pi_ a2 :e Lean_Nat, Lean_Nat).
+let a1. assume H1: a1 :e Lean_Nat. let y0. assume Hy0: y0 :e Lean_Nat. let r0. assume Hr0: r0 :e (Pi_ ux :e Lean_Nat, Lean_Nat). exact lam_Pi Lean_Nat (fun a2 => Lean_Nat) (fun a2 => (Lean_dite
+    Lean_Nat (Lean_Nat_le_Prop (Lean_Nat_succ_node a1) (Lean_Nat_mul a2 a2)) (Lean_Nat_decLt a1 (Lean_Nat_mul a2 a2)) (fun v_h :e (Lean_Nat_le_Prop (Lean_Nat_succ_node a1) (Lean_Nat_mul a2 a2)) =>
+    a1) (fun v_h :e (Pi_ ux :e (Lean_Nat_le_Prop (Lean_Nat_succ_node a1) (Lean_Nat_mul a2 a2)), Lean_False_Prop) => (Lean_dite Lean_Nat (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat =>
+    (Lean_Eq_Prop Lean_Nat a1 (Lean_Nat_mul a2 v_c)))) (Lean_Nat_decidable_dvd a2 a1) (fun v_x4 :e (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat a1 (Lean_Nat_mul a2
+    v_c)))) => a2) (fun v_x4 :e (Pi_ ux :e (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat a1 (Lean_Nat_mul a2 v_c)))), Lean_False_Prop) => (r0 (Lean_Nat_add a2 (LeanNum
+    2)))))))) (fun a2 Ha2 => (Lean_dite_In Lean_Nat (Lean_Nat_le_Prop (Lean_Nat_succ_node a1) (Lean_Nat_mul a2 a2)) (Lean_Nat_le_Prop_prop (Lean_Nat_succ_node a1) (Lean_Nat_mul a2 a2))
+    (Lean_Nat_decLt a1 (Lean_Nat_mul a2 a2)) (Lean_Nat_decLt_In a1 H1 (Lean_Nat_mul a2 a2) (Lean_Nat_mul_In a2 Ha2 a2 Ha2)) (fun v_h :e (Lean_Nat_le_Prop (Lean_Nat_succ_node a1) (Lean_Nat_mul a2 a2))
+    => a1) (lam_Pi (Lean_Nat_le_Prop (Lean_Nat_succ_node a1) (Lean_Nat_mul a2 a2)) (fun v_h => Lean_Nat) (fun v_h => a1) (fun v_h Hv_h => H1)) (fun v_h :e (Pi_ ux :e (Lean_Nat_le_Prop
+    (Lean_Nat_succ_node a1) (Lean_Nat_mul a2 a2)), Lean_False_Prop) => (Lean_dite Lean_Nat (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat a1 (Lean_Nat_mul a2 v_c))))
+    (Lean_Nat_decidable_dvd a2 a1) (fun v_x4 :e (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat a1 (Lean_Nat_mul a2 v_c)))) => a2) (fun v_x4 :e (Pi_ ux :e (Lean_Exists_Prop
+    Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat a1 (Lean_Nat_mul a2 v_c)))), Lean_False_Prop) => (r0 (Lean_Nat_add a2 (LeanNum 2)))))) (lam_Pi (Pi_ ux :e (Lean_Nat_le_Prop
+    (Lean_Nat_succ_node a1) (Lean_Nat_mul a2 a2)), Lean_False_Prop) (fun v_h => Lean_Nat) (fun v_h => (Lean_dite Lean_Nat (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat a1
+    (Lean_Nat_mul a2 v_c)))) (Lean_Nat_decidable_dvd a2 a1) (fun v_x4 :e (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat a1 (Lean_Nat_mul a2 v_c)))) => a2) (fun v_x4 :e (Pi_
+    ux :e (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat a1 (Lean_Nat_mul a2 v_c)))), Lean_False_Prop) => (r0 (Lean_Nat_add a2 (LeanNum 2)))))) (fun v_h Hv_h =>
+    (Lean_dite_In Lean_Nat (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat a1 (Lean_Nat_mul a2 v_c)))) (Lean_Exists_Prop_prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop
+    Lean_Nat a1 (Lean_Nat_mul a2 v_c)))) (Lean_Nat_decidable_dvd a2 a1) (Lean_Nat_decidable_dvd_In a2 Ha2 a1 H1) (fun v_x4 :e (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat
+    a1 (Lean_Nat_mul a2 v_c)))) => a2) (lam_Pi (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat a1 (Lean_Nat_mul a2 v_c)))) (fun v_x4 => Lean_Nat) (fun v_x4 => a2) (fun v_x4
+    Hv_x4 => Ha2)) (fun v_x4 :e (Pi_ ux :e (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat a1 (Lean_Nat_mul a2 v_c)))), Lean_False_Prop) => (r0 (Lean_Nat_add a2 (LeanNum
+    2)))) (lam_Pi (Pi_ ux :e (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat a1 (Lean_Nat_mul a2 v_c)))), Lean_False_Prop) (fun v_x4 => Lean_Nat) (fun v_x4 => (r0
+    (Lean_Nat_add a2 (LeanNum 2)))) (fun v_x4 Hv_x4 => (ap_Pi Lean_Nat (fun _ => Lean_Nat) r0 (Lean_Nat_add a2 (LeanNum 2)) Hr0 (Lean_Nat_add_In a2 Ha2 (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1
+    (nat_ordsucc 0 nat_0)))))))))))).
+Qed.
+Definition Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_1 : set -> set -> set := fun a1 y0 => (fun r0 :e (Pi_ ux :e Lean_Nat, Lean_Nat) =>
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_2 a1 y0 r0)).
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_1_ap : forall a1 y0, forall r0 :e (Pi_ ux :e Lean_Nat, Lean_Nat),
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_1 a1 y0) r0 = (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_2 a1 y0 r0).
+let a1. let y0. let r0. assume H: r0 :e (Pi_ ux :e Lean_Nat, Lean_Nat).
+exact beta (Pi_ ux :e Lean_Nat, Lean_Nat) (fun r0 => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_2 a1 y0 r0)) r0 H.
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_1_In : forall a1 :e Lean_Nat, forall y0 :e Lean_Nat,
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_1 a1 y0) :e (Pi_ r0 :e (Pi_ ux :e Lean_Nat, Lean_Nat), (Pi_ a2 :e Lean_Nat, Lean_Nat)).
+let a1. assume H1: a1 :e Lean_Nat. let y0. assume Hy0: y0 :e Lean_Nat. exact lam_Pi (Pi_ ux :e Lean_Nat, Lean_Nat) (fun r0 => (Pi_ a2 :e Lean_Nat, Lean_Nat)) (fun r0 =>
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_2 a1 y0 r0)) (fun r0 Hr0 => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_2_In a1
+    H1 y0 Hy0 r0 Hr0)).
+Qed.
+Definition Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_0 : set -> set := fun a1 => (fun y0 :e Lean_Nat =>
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_1 a1 y0)).
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_0_ap : forall a1, forall y0 :e Lean_Nat,
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_0 a1) y0 = (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_1 a1 y0).
+let a1. let y0. assume H: y0 :e Lean_Nat.
+exact beta Lean_Nat (fun y0 => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_1 a1 y0)) y0 H.
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_0_In : forall a1 :e Lean_Nat, (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_0
+    a1) :e (Pi_ y0 :e Lean_Nat, (Pi_ r0 :e (Pi_ ux :e Lean_Nat, Lean_Nat), (Pi_ a2 :e Lean_Nat, Lean_Nat))).
+let a1. assume H1: a1 :e Lean_Nat. exact lam_Pi Lean_Nat (fun y0 => (Pi_ r0 :e (Pi_ ux :e Lean_Nat, Lean_Nat), (Pi_ a2 :e Lean_Nat, Lean_Nat))) (fun y0 =>
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_1 a1 y0)) (fun y0 Hy0 => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_1_In a1 H1
+    y0 Hy0)).
+Qed.
+Definition Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel : set -> set -> set -> set := fun a0 a1 a2 => (Lean_Nat_rec
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method0_0 a1) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_0 a1) a0 a2).
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_recIn : forall a1 :e Lean_Nat, forall t :e Lean_Nat, Lean_Nat_rec
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method0_0 a1) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_0 a1) t :e (Pi_ ux :e
+    Lean_Nat, Lean_Nat).
+let a1. assume H1: a1 :e Lean_Nat. let t. assume Ht: t :e Lean_Nat.
+exact Lean_Nat_rec_type (fun _ => (Pi_ ux :e Lean_Nat, Lean_Nat)) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method0_0 a1)
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method0_0_In a1 H1) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_0 a1)
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_0_In a1 H1) t Ht.
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_In : forall a0 :e Lean_Nat, forall a1 :e Lean_Nat, forall a2 :e Lean_Nat,
+    Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel a0 a1 a2 :e Lean_Nat.
+let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat. let a2. assume H2: a2 :e Lean_Nat. exact (ap_Pi Lean_Nat (fun _ => Lean_Nat) (Lean_Nat_rec
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method0_0 a1) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_0 a1) a0) a2
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_recIn a1 H1 a0 H0) H2).
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_zero : forall v_n :e Lean_Nat, forall v_state :e Lean_Nat,
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel (LeanNum 0) v_n v_state) = Lean_Nat_zero_node.
+let v_n. assume H_v_n: v_n :e Lean_Nat. let v_state. assume H_v_state: v_state :e Lean_Nat.
+apply LeanNum_0_at (fun zpat => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel zpat v_n v_state)) Lean_Nat_zero_node.
+prove ((Lean_Nat_rec (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method0_0 v_n) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_0 v_n)
+    Lean_Nat_zero_node) v_state) = Lean_Nat_zero_node.
+rewrite Lean_Nat_iota0 (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method0_0 v_n) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_0 v_n).
+rewrite Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method0_0_ap v_n v_state H_v_state.
+reflexivity.
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_case0 : forall v_fuel :e Lean_Nat, forall v_n :e Lean_Nat, forall v_x :e Lean_Nat,
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel (Lean_Nat_succ_node v_fuel) v_n v_x) = (Lean_dite Lean_Nat (Lean_Nat_le_Prop (Lean_Nat_succ_node v_n) (Lean_Nat_mul v_x
+    v_x)) (Lean_Nat_decLt v_n (Lean_Nat_mul v_x v_x)) (fun v_h :e (Lean_Nat_le_Prop (Lean_Nat_succ_node v_n) (Lean_Nat_mul v_x v_x)) => v_n) (fun v_h :e (Pi_ ux :e (Lean_Nat_le_Prop
+    (Lean_Nat_succ_node v_n) (Lean_Nat_mul v_x v_x)), Lean_False_Prop) => (Lean_dite Lean_Nat (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat v_n (Lean_Nat_mul v_x v_c))))
+    (Lean_Nat_decidable_dvd v_x v_n) (fun v_x4 :e (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat v_n (Lean_Nat_mul v_x v_c)))) => v_x) (fun v_x4 :e (Pi_ ux :e
+    (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat v_n (Lean_Nat_mul v_x v_c)))), Lean_False_Prop) =>
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel v_fuel v_n (Lean_Nat_add v_x (LeanNum 2))))))).
+let v_fuel. assume H_v_fuel: v_fuel :e Lean_Nat. let v_n. assume H_v_n: v_n :e Lean_Nat. let v_x. assume H_v_x: v_x :e Lean_Nat.
+prove ((Lean_Nat_rec (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method0_0 v_n) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_0 v_n)
+    (Lean_Nat_succ_node v_fuel)) v_x) = (Lean_dite Lean_Nat (Lean_Nat_le_Prop (Lean_Nat_succ_node v_n) (Lean_Nat_mul v_x v_x)) (Lean_Nat_decLt v_n (Lean_Nat_mul v_x v_x)) (fun v_h :e
+    (Lean_Nat_le_Prop (Lean_Nat_succ_node v_n) (Lean_Nat_mul v_x v_x)) => v_n) (fun v_h :e (Pi_ ux :e (Lean_Nat_le_Prop (Lean_Nat_succ_node v_n) (Lean_Nat_mul v_x v_x)), Lean_False_Prop) =>
+    (Lean_dite Lean_Nat (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat v_n (Lean_Nat_mul v_x v_c)))) (Lean_Nat_decidable_dvd v_x v_n) (fun v_x4 :e (Lean_Exists_Prop
+    Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat v_n (Lean_Nat_mul v_x v_c)))) => v_x) (fun v_x4 :e (Pi_ ux :e (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat v_n
+    (Lean_Nat_mul v_x v_c)))), Lean_False_Prop) => ((Lean_Nat_rec (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method0_0 v_n)
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_0 v_n) v_fuel) (Lean_Nat_add v_x (LeanNum 2))))))).
+rewrite Lean_Nat_iota1 (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method0_0 v_n) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_0 v_n)
+    v_fuel H_v_fuel.
+rewrite Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_0_ap v_n v_fuel H_v_fuel.
+rewrite Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_1_ap v_n v_fuel (Lean_Nat_rec (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method0_0
+    v_n) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_0 v_n) v_fuel) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_recIn v_n H_v_n v_fuel
+    H_v_fuel).
+rewrite Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_2_ap v_n v_fuel (Lean_Nat_rec (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method0_0
+    v_n) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_method1_0 v_n) v_fuel) v_x H_v_x.
+reflexivity.
+Qed.
+
+(** Mettapedia.Languages.Lean.Recursion.FuelCore.MinFacAux.reading, from its equation theorem **)
+Definition Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_reading : set -> set -> set := fun a0 a1 => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel
+    (Lean_Nat_add a0 (LeanNum 3)) a0 a1).
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_reading_In : forall a0 :e Lean_Nat, forall a1 :e Lean_Nat, Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_reading a0
+    a1 :e Lean_Nat.
+let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat. exact (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel_In (Lean_Nat_add a0 (LeanNum 3)) (Lean_Nat_add_In
+    a0 H0 (LeanNum 3) (LeanNum_In 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))) a0 H0 a1 H1).
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_reading_eq_1 : forall v_n :e Lean_Nat, forall v_state :e Lean_Nat,
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_reading v_n v_state) = (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel (Lean_Nat_add v_n (LeanNum 3)) v_n
+    v_state).
+let v_n. assume H_v_n: v_n :e Lean_Nat. let v_state. assume H_v_state: v_state :e Lean_Nat.
+reflexivity.
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_reading_unfold : forall a0 a1, Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_reading a0 a1 =
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_sourceFuel (Lean_Nat_add a0 (LeanNum 3)) a0 a1).
+let a0 a1. reflexivity.
+Qed.
+
+(** Nat.minFacAux, from its equation theorem **)
+Definition Lean_Nat_minFacAux : set -> set -> set := fun a0 a1 => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_reading a0 a1).
+Theorem Lean_Nat_minFacAux_In : forall a0 :e Lean_Nat, forall a1 :e Lean_Nat, Lean_Nat_minFacAux a0 a1 :e Lean_Nat.
+let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat. exact (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_reading_In a0 H0 a1 H1).
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_bridge : forall v_n :e Lean_Nat, forall v_state :e Lean_Nat, (Lean_Nat_minFacAux v_n v_state) =
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_reading v_n v_state).
+let v_n. assume H_v_n: v_n :e Lean_Nat. let v_state. assume H_v_state: v_state :e Lean_Nat.
+reflexivity.
+Qed.
+Theorem Lean_Nat_minFacAux_unfold : forall a0 a1, Lean_Nat_minFacAux a0 a1 = (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MinFacAux_reading a0 a1).
+let a0 a1. reflexivity.
+Qed.
+
+(** Nat.minFac, from its equation theorem **)
+Definition Lean_Nat_minFac : set -> set := fun a0 => (Lean_ite Lean_Nat (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat a0 (Lean_Nat_mul (LeanNum 2) v_c))))
+    (Lean_Nat_decidable_dvd (LeanNum 2) a0) (LeanNum 2) (Lean_Nat_minFacAux a0 (LeanNum 3))).
+Theorem Lean_Nat_minFac_In : forall a0 :e Lean_Nat, Lean_Nat_minFac a0 :e Lean_Nat.
+let a0. assume H0: a0 :e Lean_Nat. exact (Lean_ite_In Lean_Nat (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat a0 (Lean_Nat_mul (LeanNum 2) v_c)))) (Lean_Exists_Prop_prop
+    Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat a0 (Lean_Nat_mul (LeanNum 2) v_c)))) (Lean_Nat_decidable_dvd (LeanNum 2) a0) (Lean_Nat_decidable_dvd_In (LeanNum 2) (LeanNum_In 2
+    (nat_ordsucc 1 (nat_ordsucc 0 nat_0))) a0 H0) (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))) (Lean_Nat_minFacAux a0 (LeanNum 3)) (Lean_Nat_minFacAux_In a0 H0 (LeanNum 3)
+    (LeanNum_In 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))).
+Qed.
+(** Receipt: Nat.minFac.eq_1 is the source of the MeTTa rule for Nat.minFac, statement digest 32996985. **)
+Theorem Lean_Nat_minFac_eq_1 : forall v_n :e Lean_Nat, (Lean_Nat_minFac v_n) = (Lean_ite Lean_Nat (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat v_n (Lean_Nat_mul (LeanNum
+    2) v_c)))) (Lean_Nat_decidable_dvd (LeanNum 2) v_n) (LeanNum 2) (Lean_Nat_minFacAux v_n (LeanNum 3))).
+let v_n. assume H_v_n: v_n :e Lean_Nat.
+reflexivity.
+Qed.
+Theorem Lean_Nat_minFac_unfold : forall a0, Lean_Nat_minFac a0 = (Lean_ite Lean_Nat (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat a0 (Lean_Nat_mul (LeanNum 2) v_c))))
+    (Lean_Nat_decidable_dvd (LeanNum 2) a0) (LeanNum 2) (Lean_Nat_minFacAux a0 (LeanNum 3))).
+let a0. reflexivity.
+Qed.
+
+(** Mettapedia.Languages.Lean.Recursion.FuelCore.PrimeFactorsList.sourceFuel, from its equation theorems, split at argument 0 **)
+Definition Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method0_0 : set := (fun a1 :e Lean_Nat => (Lean_List_nil_node Lean_Nat)).
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method0_0_ap : forall a1 :e Lean_Nat,
+    Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method0_0 a1 = (Lean_List_nil_node Lean_Nat).
+let a1. assume H: a1 :e Lean_Nat.
+exact beta Lean_Nat (fun a1 => (Lean_List_nil_node Lean_Nat)) a1 H.
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method0_0_In : Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method0_0 :e (Pi_ a1
+    :e Lean_Nat, (Lean_List Lean_Nat)).
+exact lam_Pi Lean_Nat (fun a1 => (Lean_List Lean_Nat)) (fun a1 => (Lean_List_nil_node Lean_Nat)) (fun a1 Ha1 => (Lean_List_nil_typed Lean_Nat)).
+Qed.
+Definition Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_2 : set -> set -> set := fun y0 r0 => (fun a1 :e Lean_Nat => (Lean_Nat_casesOn (Lean_List_nil_node
+    Lean_Nat) (Sigma Lean_Nat (Lean_Nat_casesOn (Lean_List_nil_node Lean_Nat) (fun c2_1_0 :e Lean_Nat => (Lean_List_cons_node Lean_Nat (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2))) (r0
+    (Lean_Nat_div (Lean_Nat_add c2_1_0 (LeanNum 2)) (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2))))))))) a1)).
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_2_ap : forall y0 r0, forall a1 :e Lean_Nat,
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_2 y0 r0) a1 = (Lean_Nat_casesOn (Lean_List_nil_node Lean_Nat) (Sigma Lean_Nat (Lean_Nat_casesOn
+    (Lean_List_nil_node Lean_Nat) (fun c2_1_0 :e Lean_Nat => (Lean_List_cons_node Lean_Nat (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2))) (r0 (Lean_Nat_div (Lean_Nat_add c2_1_0 (LeanNum 2))
+    (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2))))))))) a1).
+let y0. let r0. let a1. assume H: a1 :e Lean_Nat.
+exact beta Lean_Nat (fun a1 => (Lean_Nat_casesOn (Lean_List_nil_node Lean_Nat) (Sigma Lean_Nat (Lean_Nat_casesOn (Lean_List_nil_node Lean_Nat) (fun c2_1_0 :e Lean_Nat => (Lean_List_cons_node Lean_Nat
+    (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2))) (r0 (Lean_Nat_div (Lean_Nat_add c2_1_0 (LeanNum 2)) (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2))))))))) a1)) a1 H.
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_2_In : forall y0 :e Lean_Nat, forall r0 :e (Pi_ ux :e Lean_Nat, (Lean_List Lean_Nat)),
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_2 y0 r0) :e (Pi_ a1 :e Lean_Nat, (Lean_List Lean_Nat)).
+let y0. assume Hy0: y0 :e Lean_Nat. let r0. assume Hr0: r0 :e (Pi_ ux :e Lean_Nat, (Lean_List Lean_Nat)). exact lam_Pi Lean_Nat (fun a1 => (Lean_List Lean_Nat)) (fun a1 => (Lean_Nat_casesOn
+    (Lean_List_nil_node Lean_Nat) (Sigma Lean_Nat (Lean_Nat_casesOn (Lean_List_nil_node Lean_Nat) (fun c2_1_0 :e Lean_Nat => (Lean_List_cons_node Lean_Nat (Lean_Nat_minFac (Lean_Nat_add c2_1_0
+    (LeanNum 2))) (r0 (Lean_Nat_div (Lean_Nat_add c2_1_0 (LeanNum 2)) (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2))))))))) a1)) (fun a1 Ha1 => (Lean_Nat_casesOn_type (fun _ => (Lean_List
+    Lean_Nat)) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat) (Sigma Lean_Nat (Lean_Nat_casesOn (Lean_List_nil_node Lean_Nat) (fun c2_1_0 :e Lean_Nat => (Lean_List_cons_node Lean_Nat
+    (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2))) (r0 (Lean_Nat_div (Lean_Nat_add c2_1_0 (LeanNum 2)) (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2))))))))) (lam_Pi Lean_Nat (fun c1_1_0 =>
+    (Lean_List Lean_Nat)) (fun c1_1_0 => (Lean_Nat_casesOn (Lean_List_nil_node Lean_Nat) (fun c2_1_0 :e Lean_Nat => (Lean_List_cons_node Lean_Nat (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2)))
+    (r0 (Lean_Nat_div (Lean_Nat_add c2_1_0 (LeanNum 2)) (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2))))))) c1_1_0)) (fun c1_1_0 Hc1_1_0 => (Lean_Nat_casesOn_type (fun _ => (Lean_List Lean_Nat))
+    (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat) (fun c2_1_0 :e Lean_Nat => (Lean_List_cons_node Lean_Nat (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2))) (r0 (Lean_Nat_div
+    (Lean_Nat_add c2_1_0 (LeanNum 2)) (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2))))))) (lam_Pi Lean_Nat (fun c2_1_0 => (Lean_List Lean_Nat)) (fun c2_1_0 => (Lean_List_cons_node Lean_Nat
+    (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2))) (r0 (Lean_Nat_div (Lean_Nat_add c2_1_0 (LeanNum 2)) (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2))))))) (fun c2_1_0 Hc2_1_0 =>
+    (Lean_List_cons_typed Lean_Nat (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2))) (Lean_Nat_minFac_In (Lean_Nat_add c2_1_0 (LeanNum 2)) (Lean_Nat_add_In c2_1_0 Hc2_1_0 (LeanNum 2) (LeanNum_In 2
+    (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))) (r0 (Lean_Nat_div (Lean_Nat_add c2_1_0 (LeanNum 2)) (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2))))) (ap_Pi Lean_Nat (fun _ => (Lean_List Lean_Nat))
+    r0 (Lean_Nat_div (Lean_Nat_add c2_1_0 (LeanNum 2)) (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2)))) Hr0 (Lean_Nat_div_In (Lean_Nat_add c2_1_0 (LeanNum 2)) (Lean_Nat_add_In c2_1_0 Hc2_1_0
+    (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2))) (Lean_Nat_minFac_In (Lean_Nat_add c2_1_0 (LeanNum 2)) (Lean_Nat_add_In c2_1_0
+    Hc2_1_0 (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))))) c1_1_0 Hc1_1_0))) a1 Ha1)).
+Qed.
+Definition Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_1 : set -> set := fun y0 => (fun r0 :e (Pi_ ux :e Lean_Nat, (Lean_List Lean_Nat)) =>
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_2 y0 r0)).
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_1_ap : forall y0, forall r0 :e (Pi_ ux :e Lean_Nat, (Lean_List Lean_Nat)),
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_1 y0) r0 = (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_2 y0 r0).
+let y0. let r0. assume H: r0 :e (Pi_ ux :e Lean_Nat, (Lean_List Lean_Nat)).
+exact beta (Pi_ ux :e Lean_Nat, (Lean_List Lean_Nat)) (fun r0 => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_2 y0 r0)) r0 H.
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_1_In : forall y0 :e Lean_Nat,
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_1 y0) :e (Pi_ r0 :e (Pi_ ux :e Lean_Nat, (Lean_List Lean_Nat)), (Pi_ a1 :e Lean_Nat, (Lean_List Lean_Nat))).
+let y0. assume Hy0: y0 :e Lean_Nat. exact lam_Pi (Pi_ ux :e Lean_Nat, (Lean_List Lean_Nat)) (fun r0 => (Pi_ a1 :e Lean_Nat, (Lean_List Lean_Nat))) (fun r0 =>
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_2 y0 r0)) (fun r0 Hr0 =>
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_2_In y0 Hy0 r0 Hr0)).
+Qed.
+Definition Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_0 : set := (fun y0 :e Lean_Nat =>
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_1 y0)).
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_0_ap : forall y0 :e Lean_Nat,
+    Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_0 y0 = (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_1 y0).
+let y0. assume H: y0 :e Lean_Nat.
+exact beta Lean_Nat (fun y0 => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_1 y0)) y0 H.
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_0_In : Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_0 :e (Pi_ y0
+    :e Lean_Nat, (Pi_ r0 :e (Pi_ ux :e Lean_Nat, (Lean_List Lean_Nat)), (Pi_ a1 :e Lean_Nat, (Lean_List Lean_Nat)))).
+exact lam_Pi Lean_Nat (fun y0 => (Pi_ r0 :e (Pi_ ux :e Lean_Nat, (Lean_List Lean_Nat)), (Pi_ a1 :e Lean_Nat, (Lean_List Lean_Nat)))) (fun y0 =>
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_1 y0)) (fun y0 Hy0 =>
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_1_In y0 Hy0)).
+Qed.
+Definition Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel : set -> set -> set := fun a0 a1 => (Lean_Nat_rec
+    Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method0_0 Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_0 a0 a1).
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_recIn : forall t :e Lean_Nat, Lean_Nat_rec
+    Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method0_0 Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_0 t :e (Pi_ ux :e
+    Lean_Nat, (Lean_List Lean_Nat)).
+let t. assume Ht: t :e Lean_Nat.
+exact Lean_Nat_rec_type (fun _ => (Pi_ ux :e Lean_Nat, (Lean_List Lean_Nat))) Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method0_0
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method0_0_In) Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_0
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_0_In) t Ht.
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_In : forall a0 :e Lean_Nat, forall a1 :e Lean_Nat,
+    Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel a0 a1 :e (Lean_List Lean_Nat).
+let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat. exact (ap_Pi Lean_Nat (fun _ => (Lean_List Lean_Nat)) (Lean_Nat_rec
+    Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method0_0 Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_0 a0) a1
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_recIn a0 H0) H1).
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_split0 : forall s1 :e Lean_Nat, (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel
+    Lean_Nat_zero_node s1) = (Lean_List_nil_node Lean_Nat).
+let s1. assume H_s1: s1 :e Lean_Nat.
+prove ((Lean_Nat_rec Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method0_0 Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_0
+    Lean_Nat_zero_node) s1) = (Lean_List_nil_node Lean_Nat).
+rewrite Lean_Nat_iota0 Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method0_0 Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_0.
+rewrite Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method0_0_ap s1 H_s1.
+reflexivity.
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_split1 : forall t0 :e Lean_Nat, forall s1 :e Lean_Nat,
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel (Lean_Nat_succ_node t0) s1) = (Lean_Nat_casesOn (Lean_List_nil_node Lean_Nat) (Sigma Lean_Nat (Lean_Nat_casesOn
+    (Lean_List_nil_node Lean_Nat) (fun c2_1_0 :e Lean_Nat => (Lean_List_cons_node Lean_Nat (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2)))
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel t0 (Lean_Nat_div (Lean_Nat_add c2_1_0 (LeanNum 2)) (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2))))))))) s1).
+let t0. assume H_t0: t0 :e Lean_Nat. let s1. assume H_s1: s1 :e Lean_Nat.
+prove ((Lean_Nat_rec Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method0_0 Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_0
+    (Lean_Nat_succ_node t0)) s1) = (Lean_Nat_casesOn (Lean_List_nil_node Lean_Nat) (Sigma Lean_Nat (Lean_Nat_casesOn (Lean_List_nil_node Lean_Nat) (fun c2_1_0 :e Lean_Nat => (Lean_List_cons_node
+    Lean_Nat (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2))) ((Lean_Nat_rec Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method0_0
+    Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_0 t0) (Lean_Nat_div (Lean_Nat_add c2_1_0 (LeanNum 2)) (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum
+    2))))))))) s1).
+rewrite Lean_Nat_iota1 Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method0_0 Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_0
+    t0 H_t0.
+rewrite Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_0_ap t0 H_t0.
+rewrite Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_1_ap t0 (Lean_Nat_rec
+    Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method0_0 Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_0 t0)
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_recIn t0 H_t0).
+rewrite Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_2_ap t0 (Lean_Nat_rec
+    Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method0_0 Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_0 t0) s1 H_s1.
+reflexivity.
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_zero : forall v_state :e Lean_Nat, (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel
+    (LeanNum 0) v_state) = (Lean_List_nil_node Lean_Nat).
+let v_state. assume H_v_state: v_state :e Lean_Nat.
+apply LeanNum_0_at (fun zpat => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel zpat v_state)) (Lean_List_nil_node Lean_Nat).
+rewrite Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_split0 v_state H_v_state.
+reflexivity.
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_case0 : forall v_fuel :e Lean_Nat, (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel
+    (Lean_Nat_succ_node v_fuel) (LeanNum 0)) = (Lean_List_nil_node Lean_Nat).
+let v_fuel. assume H_v_fuel: v_fuel :e Lean_Nat.
+rewrite Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_split1 v_fuel H_v_fuel (LeanNum 0) (LeanNum_In 0 nat_0).
+rewrite LeanNum_0.
+rewrite Lean_Nat_casesOn_iota0 (Lean_List_nil_node Lean_Nat) (Sigma Lean_Nat (Lean_Nat_casesOn (Lean_List_nil_node Lean_Nat) (fun c2_1_0 :e Lean_Nat => (Lean_List_cons_node Lean_Nat (Lean_Nat_minFac
+    (Lean_Nat_add c2_1_0 (LeanNum 2))) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel v_fuel (Lean_Nat_div (Lean_Nat_add c2_1_0 (LeanNum 2)) (Lean_Nat_minFac
+    (Lean_Nat_add c2_1_0 (LeanNum 2))))))))).
+reflexivity.
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_case1 : forall v_fuel :e Lean_Nat, (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel
+    (Lean_Nat_succ_node v_fuel) (LeanNum 1)) = (Lean_List_nil_node Lean_Nat).
+let v_fuel. assume H_v_fuel: v_fuel :e Lean_Nat.
+rewrite Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_split1 v_fuel H_v_fuel (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0)).
+rewrite LeanNum_S 0 nat_0.
+rewrite Lean_Nat_casesOn_iota1 (Lean_List_nil_node Lean_Nat) (Sigma Lean_Nat (Lean_Nat_casesOn (Lean_List_nil_node Lean_Nat) (fun c2_1_0 :e Lean_Nat => (Lean_List_cons_node Lean_Nat (Lean_Nat_minFac
+    (Lean_Nat_add c2_1_0 (LeanNum 2))) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel v_fuel (Lean_Nat_div (Lean_Nat_add c2_1_0 (LeanNum 2)) (Lean_Nat_minFac
+    (Lean_Nat_add c2_1_0 (LeanNum 2))))))))) (LeanNum 0) (LeanNum_In 0 nat_0).
+rewrite (eq_i_tra ((Sigma Lean_Nat (Lean_Nat_casesOn (Lean_List_nil_node Lean_Nat) (fun c2_1_0 :e Lean_Nat => (Lean_List_cons_node Lean_Nat (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2)))
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel v_fuel (Lean_Nat_div (Lean_Nat_add c2_1_0 (LeanNum 2)) (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2)))))))))
+    (LeanNum 0)) (Lean_Nat_casesOn (Lean_List_nil_node Lean_Nat) (fun c2_1_0 :e Lean_Nat => (Lean_List_cons_node Lean_Nat (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2)))
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel v_fuel (Lean_Nat_div (Lean_Nat_add c2_1_0 (LeanNum 2)) (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2)))))))
+    (LeanNum 0)) (Lean_Nat_casesOn (Lean_List_nil_node Lean_Nat) (fun c2_1_0 :e Lean_Nat => (Lean_List_cons_node Lean_Nat (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2)))
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel v_fuel (Lean_Nat_div (Lean_Nat_add c2_1_0 (LeanNum 2)) (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2)))))))
+    (LeanNum 0)) (beta Lean_Nat (Lean_Nat_casesOn (Lean_List_nil_node Lean_Nat) (fun c2_1_0 :e Lean_Nat => (Lean_List_cons_node Lean_Nat (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2)))
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel v_fuel (Lean_Nat_div (Lean_Nat_add c2_1_0 (LeanNum 2)) (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2))))))))
+    (LeanNum 0) (LeanNum_In 0 nat_0)) (Lean_eq_refl (Lean_Nat_casesOn (Lean_List_nil_node Lean_Nat) (fun c2_1_0 :e Lean_Nat => (Lean_List_cons_node Lean_Nat (Lean_Nat_minFac (Lean_Nat_add c2_1_0
+    (LeanNum 2))) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel v_fuel (Lean_Nat_div (Lean_Nat_add c2_1_0 (LeanNum 2)) (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum
+    2))))))) (LeanNum 0)))).
+rewrite LeanNum_0.
+rewrite Lean_Nat_casesOn_iota0 (Lean_List_nil_node Lean_Nat) (fun c2_1_0 :e Lean_Nat => (Lean_List_cons_node Lean_Nat (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2)))
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel v_fuel (Lean_Nat_div (Lean_Nat_add c2_1_0 (LeanNum 2)) (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2))))))).
+reflexivity.
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_case2 : forall v_fuel :e Lean_Nat, forall v_k :e Lean_Nat,
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel (Lean_Nat_succ_node v_fuel) (Lean_Nat_succ_node (Lean_Nat_succ_node v_k))) = (Lean_List_cons_node Lean_Nat
+    (Lean_Nat_minFac (Lean_Nat_add v_k (LeanNum 2))) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel v_fuel (Lean_Nat_div (Lean_Nat_add v_k (LeanNum 2))
+    (Lean_Nat_minFac (Lean_Nat_add v_k (LeanNum 2)))))).
+let v_fuel. assume H_v_fuel: v_fuel :e Lean_Nat. let v_k. assume H_v_k: v_k :e Lean_Nat.
+rewrite Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_split1 v_fuel H_v_fuel (Lean_Nat_succ_node (Lean_Nat_succ_node v_k)) (Lean_Nat_succ_typed (Lean_Nat_succ_node
+    v_k) (Lean_Nat_succ_typed v_k H_v_k)).
+rewrite Lean_Nat_casesOn_iota1 (Lean_List_nil_node Lean_Nat) (Sigma Lean_Nat (Lean_Nat_casesOn (Lean_List_nil_node Lean_Nat) (fun c2_1_0 :e Lean_Nat => (Lean_List_cons_node Lean_Nat (Lean_Nat_minFac
+    (Lean_Nat_add c2_1_0 (LeanNum 2))) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel v_fuel (Lean_Nat_div (Lean_Nat_add c2_1_0 (LeanNum 2)) (Lean_Nat_minFac
+    (Lean_Nat_add c2_1_0 (LeanNum 2))))))))) (Lean_Nat_succ_node v_k) (Lean_Nat_succ_typed v_k H_v_k).
+rewrite (eq_i_tra ((Sigma Lean_Nat (Lean_Nat_casesOn (Lean_List_nil_node Lean_Nat) (fun c2_1_0 :e Lean_Nat => (Lean_List_cons_node Lean_Nat (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2)))
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel v_fuel (Lean_Nat_div (Lean_Nat_add c2_1_0 (LeanNum 2)) (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2)))))))))
+    (Lean_Nat_succ_node v_k)) (Lean_Nat_casesOn (Lean_List_nil_node Lean_Nat) (fun c2_1_0 :e Lean_Nat => (Lean_List_cons_node Lean_Nat (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2)))
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel v_fuel (Lean_Nat_div (Lean_Nat_add c2_1_0 (LeanNum 2)) (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2)))))))
+    (Lean_Nat_succ_node v_k)) (Lean_Nat_casesOn (Lean_List_nil_node Lean_Nat) (fun c2_1_0 :e Lean_Nat => (Lean_List_cons_node Lean_Nat (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2)))
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel v_fuel (Lean_Nat_div (Lean_Nat_add c2_1_0 (LeanNum 2)) (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2)))))))
+    (Lean_Nat_succ_node v_k)) (beta Lean_Nat (Lean_Nat_casesOn (Lean_List_nil_node Lean_Nat) (fun c2_1_0 :e Lean_Nat => (Lean_List_cons_node Lean_Nat (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum
+    2))) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel v_fuel (Lean_Nat_div (Lean_Nat_add c2_1_0 (LeanNum 2)) (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2))))))))
+    (Lean_Nat_succ_node v_k) (Lean_Nat_succ_typed v_k H_v_k)) (Lean_eq_refl (Lean_Nat_casesOn (Lean_List_nil_node Lean_Nat) (fun c2_1_0 :e Lean_Nat => (Lean_List_cons_node Lean_Nat (Lean_Nat_minFac
+    (Lean_Nat_add c2_1_0 (LeanNum 2))) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel v_fuel (Lean_Nat_div (Lean_Nat_add c2_1_0 (LeanNum 2)) (Lean_Nat_minFac
+    (Lean_Nat_add c2_1_0 (LeanNum 2))))))) (Lean_Nat_succ_node v_k)))).
+rewrite Lean_Nat_casesOn_iota1 (Lean_List_nil_node Lean_Nat) (fun c2_1_0 :e Lean_Nat => (Lean_List_cons_node Lean_Nat (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2)))
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel v_fuel (Lean_Nat_div (Lean_Nat_add c2_1_0 (LeanNum 2)) (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2))))))) v_k
+    H_v_k.
+rewrite (eq_i_tra ((fun c2_1_0 :e Lean_Nat => (Lean_List_cons_node Lean_Nat (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2)))
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel v_fuel (Lean_Nat_div (Lean_Nat_add c2_1_0 (LeanNum 2)) (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2))))))) v_k)
+    (Lean_List_cons_node Lean_Nat (Lean_Nat_minFac (Lean_Nat_add v_k (LeanNum 2))) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel v_fuel (Lean_Nat_div (Lean_Nat_add
+    v_k (LeanNum 2)) (Lean_Nat_minFac (Lean_Nat_add v_k (LeanNum 2)))))) (Lean_List_cons_node Lean_Nat (Lean_Nat_minFac (Lean_Nat_add v_k (LeanNum 2)))
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel v_fuel (Lean_Nat_div (Lean_Nat_add v_k (LeanNum 2)) (Lean_Nat_minFac (Lean_Nat_add v_k (LeanNum 2)))))) (beta
+    Lean_Nat (fun c2_1_0 => (Lean_List_cons_node Lean_Nat (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2))) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel v_fuel
+    (Lean_Nat_div (Lean_Nat_add c2_1_0 (LeanNum 2)) (Lean_Nat_minFac (Lean_Nat_add c2_1_0 (LeanNum 2))))))) v_k H_v_k) (Lean_eq_refl (Lean_List_cons_node Lean_Nat (Lean_Nat_minFac (Lean_Nat_add v_k
+    (LeanNum 2))) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel v_fuel (Lean_Nat_div (Lean_Nat_add v_k (LeanNum 2)) (Lean_Nat_minFac (Lean_Nat_add v_k (LeanNum
+    2)))))))).
+reflexivity.
+Qed.
+
+(** Mettapedia.Languages.Lean.Recursion.FuelCore.PrimeFactorsList.reading, from its equation theorem **)
+Definition Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_reading : set -> set := fun a0 => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel
+    (Lean_Nat_succ_node a0) a0).
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_reading_In : forall a0 :e Lean_Nat, Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_reading a0 :e
+    (Lean_List Lean_Nat).
+let a0. assume H0: a0 :e Lean_Nat. exact (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_In (Lean_Nat_succ_node a0) (Lean_Nat_succ_typed a0 H0) a0 H0).
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_reading_eq_1 : forall v_state :e Lean_Nat, (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_reading
+    v_state) = (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel (Lean_Nat_succ_node v_state) v_state).
+let v_state. assume H_v_state: v_state :e Lean_Nat.
+reflexivity.
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_reading_unfold : forall a0, Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_reading a0 =
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel (Lean_Nat_succ_node a0) a0).
+let a0. reflexivity.
+Qed.
+
+(** Nat.primeFactorsList, from its equation theorem **)
+Definition Lean_Nat_primeFactorsList : set -> set := fun a0 => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_reading a0).
+Theorem Lean_Nat_primeFactorsList_In : forall a0 :e Lean_Nat, Lean_Nat_primeFactorsList a0 :e (Lean_List Lean_Nat).
+let a0. assume H0: a0 :e Lean_Nat. exact (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_reading_In a0 H0).
+Qed.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_bridge : forall v_state :e Lean_Nat, (Lean_Nat_primeFactorsList v_state) =
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_reading v_state).
+let v_state. assume H_v_state: v_state :e Lean_Nat.
+reflexivity.
+Qed.
+Theorem Lean_Nat_primeFactorsList_unfold : forall a0, Lean_Nat_primeFactorsList a0 = (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_reading a0).
+let a0. reflexivity.
+Qed.
+
+(** Embedded proof support: Library/NatGcd.mg **)
+(** The remainder gives the decreasing rank used by Euclid's recursion. **)
+Theorem LeanGcd_remainder : forall p, nat_p p -> forall n :e Lean_Nat,
+  exists r, nat_p r /\ r :e ordsucc p /\ Lean_Nat_mod n (LeanNum (ordsucc p)) = LeanNum r.
+let p. assume Hp: nat_p p. let n. assume Hn: n :e Lean_Nat.
+apply Lean_Nat_num n Hn. let a. assume Ha: nat_p a /\ n = LeanNum a.
+apply Ha. assume Han: nat_p a. assume En: n = LeanNum a.
+apply nat_euclid p Hp a Han. let q.
+assume Hq: nat_p q /\ (exists r, nat_p r /\ (r :e ordsucc p /\ a = add_nat (mul_nat q (ordsucc p)) r)).
+apply Hq. assume Hqn: nat_p q.
+assume Hex: exists r, nat_p r /\ (r :e ordsucc p /\ a = add_nat (mul_nat q (ordsucc p)) r).
+apply Hex. let r. assume Hr: nat_p r /\ (r :e ordsucc p /\ a = add_nat (mul_nat q (ordsucc p)) r).
+apply Hr. assume Hrn: nat_p r.
+assume Hrest: r :e ordsucc p /\ a = add_nat (mul_nat q (ordsucc p)) r.
+apply Hrest. assume Hrp: r :e ordsucc p. assume Ea: a = add_nat (mul_nat q (ordsucc p)) r.
+witness r. apply and3I.
+- exact Hrn.
+- exact Hrp.
+- rewrite En. rewrite Ea. exact Lean_Nat_mod_num p Hp r Hrn Hrp q Hqn.
+Qed.
+
+Theorem LeanGcdFuel_zero : forall k, nat_p k -> forall n :e Lean_Nat,
+  Lean_Nat_gcdFuel (LeanNum (ordsucc k)) (LeanNum 0) n = n.
+let k. assume Hk: nat_p k. let n. assume Hn: n :e Lean_Nat.
+rewrite LeanNum_S k Hk.
+rewrite Lean_Nat_gcdFuel_eq_2 (LeanNum 0) (LeanNum_In 0 nat_0) n Hn (LeanNum k) (LeanNum_In k Hk).
+rewrite Lean_instDecidableEqNat_unfold (LeanNum 0) (LeanNum 0).
+rewrite Lean_Nat_decEq_canonical (LeanNum 0) (LeanNum_In 0 nat_0) (LeanNum 0) (LeanNum_In 0 nat_0).
+rewrite Lean_DecCanon_true (Lean_Eq_Prop Lean_Nat (LeanNum 0) (LeanNum 0)) (Lean_Eq_num_refl 0).
+exact Lean_ite_true_ap Lean_Nat (Lean_Eq_Prop Lean_Nat (LeanNum 0) (LeanNum 0)) (Lean_Eq_num_refl 0)
+  n (Lean_Nat_gcdFuel (LeanNum k) (Lean_Nat_mod n (LeanNum 0)) (LeanNum 0)).
+Qed.
+
+Theorem LeanGcdFuel_positive : forall k, nat_p k -> forall p, nat_p p -> forall n :e Lean_Nat,
+  Lean_Nat_gcdFuel (LeanNum (ordsucc k)) (LeanNum (ordsucc p)) n =
+  Lean_Nat_gcdFuel (LeanNum k) (Lean_Nat_mod n (LeanNum (ordsucc p))) (LeanNum (ordsucc p)).
+let k. assume Hk: nat_p k. let p. assume Hp: nat_p p. let n. assume Hn: n :e Lean_Nat.
+claim Hm: (LeanNum (ordsucc p)) :e Lean_Nat.
+{ exact LeanNum_In (ordsucc p) (nat_ordsucc p Hp). }
+claim Hfalse: 0 /:e Lean_Eq_Prop Lean_Nat (LeanNum (ordsucc p)) (LeanNum 0).
+{ exact Lean_Eq_num_not (ordsucc p) (nat_ordsucc p Hp) 0 nat_0 (neq_ordsucc_0 p). }
+rewrite LeanNum_S k Hk.
+rewrite Lean_Nat_gcdFuel_eq_2 (LeanNum (ordsucc p)) Hm n Hn (LeanNum k) (LeanNum_In k Hk).
+rewrite Lean_instDecidableEqNat_unfold (LeanNum (ordsucc p)) (LeanNum 0).
+rewrite Lean_Nat_decEq_canonical (LeanNum (ordsucc p)) Hm (LeanNum 0) (LeanNum_In 0 nat_0).
+rewrite Lean_DecCanon_false (Lean_Eq_Prop Lean_Nat (LeanNum (ordsucc p)) (LeanNum 0)) Hfalse.
+exact Lean_ite_false_ap Lean_Nat (Lean_Eq_Prop Lean_Nat (LeanNum (ordsucc p)) (LeanNum 0))
+  (Lean_Eq_Prop_prop Lean_Nat (LeanNum (ordsucc p)) (LeanNum 0)) Hfalse n
+  (Lean_Nat_gcdFuel (LeanNum k) (Lean_Nat_mod n (LeanNum (ordsucc p))) (LeanNum (ordsucc p))).
+Qed.
+
+Theorem LeanGcdFuel_stable : forall k, nat_p k -> forall l, nat_p l ->
+  forall m, nat_p m -> forall n :e Lean_Nat, m :e k -> m :e l ->
+  Lean_Nat_gcdFuel (LeanNum k) (LeanNum m) n = Lean_Nat_gcdFuel (LeanNum l) (LeanNum m) n.
+apply nat_ind.
+- let l. assume Hl: nat_p l. let m. assume Hm: nat_p m. let n. assume Hn: n :e Lean_Nat.
+  assume Hmk: m :e 0. assume Hml: m :e l.
+  exact FalseE (EmptyE m Hmk)
+    (Lean_Nat_gcdFuel (LeanNum 0) (LeanNum m) n = Lean_Nat_gcdFuel (LeanNum l) (LeanNum m) n).
+- let k. assume Hk: nat_p k.
+  assume IH: forall l, nat_p l -> forall m, nat_p m -> forall n :e Lean_Nat, m :e k -> m :e l ->
+    Lean_Nat_gcdFuel (LeanNum k) (LeanNum m) n = Lean_Nat_gcdFuel (LeanNum l) (LeanNum m) n.
+  let l. assume Hl: nat_p l. apply nat_inv l Hl.
+  + assume El: l = 0. rewrite El. let m. assume Hm: nat_p m. let n. assume Hn: n :e Lean_Nat.
+    assume Hmk: m :e ordsucc k. assume Hml: m :e 0.
+    exact FalseE (EmptyE m Hml)
+      (Lean_Nat_gcdFuel (LeanNum (ordsucc k)) (LeanNum m) n = Lean_Nat_gcdFuel (LeanNum 0) (LeanNum m) n).
+  + assume Hex: exists j, nat_p j /\ l = ordsucc j.
+    apply Hex. let j. assume Hj: nat_p j /\ l = ordsucc j.
+    apply Hj. assume Hjn: nat_p j. assume El: l = ordsucc j. rewrite El.
+    let m. assume Hm: nat_p m. apply nat_inv m Hm.
+    * assume Em: m = 0. rewrite Em. let n. assume Hn: n :e Lean_Nat.
+      assume Hmk: 0 :e ordsucc k. assume Hmj: 0 :e ordsucc j.
+      rewrite LeanGcdFuel_zero k Hk n Hn. rewrite LeanGcdFuel_zero j Hjn n Hn. reflexivity.
+    * assume Hpos: exists p, nat_p p /\ m = ordsucc p.
+      apply Hpos. let p. assume Hp: nat_p p /\ m = ordsucc p.
+      apply Hp. assume Hpn: nat_p p. assume Em: m = ordsucc p. rewrite Em.
+      let n. assume Hn: n :e Lean_Nat.
+      assume Hmk: ordsucc p :e ordsucc k. assume Hmj: ordsucc p :e ordsucc j.
+      rewrite LeanGcdFuel_positive k Hk p Hpn n Hn.
+      rewrite LeanGcdFuel_positive j Hjn p Hpn n Hn.
+      apply LeanGcd_remainder p Hpn n Hn.
+      let r. assume Hr: nat_p r /\ r :e ordsucc p /\ Lean_Nat_mod n (LeanNum (ordsucc p)) = LeanNum r.
+      apply and3E (nat_p r) (r :e ordsucc p) (Lean_Nat_mod n (LeanNum (ordsucc p)) = LeanNum r) Hr.
+      assume Hrn: nat_p r. assume Hrp: r :e ordsucc p.
+      assume Er: Lean_Nat_mod n (LeanNum (ordsucc p)) = LeanNum r.
+      rewrite Er.
+      exact IH j Hjn r Hrn (LeanNum (ordsucc p)) (LeanNum_In (ordsucc p) (nat_ordsucc p Hpn))
+        (nat_ordsucc_trans k Hk (ordsucc p) Hmk r Hrp) (nat_ordsucc_trans j Hjn (ordsucc p) Hmj r Hrp).
+Qed.
+
+Theorem LeanGcd_zero : forall n :e Lean_Nat, Lean_Nat_gcd (LeanNum 0) n = n.
+let n. assume Hn: n :e Lean_Nat.
+rewrite Lean_Nat_gcd_unfold (LeanNum 0) n.
+rewrite <- LeanNum_S 0 nat_0.
+exact LeanGcdFuel_zero 0 nat_0 n Hn.
+Qed.
+
+Theorem LeanGcd_positive : forall p, nat_p p -> forall n :e Lean_Nat,
+  Lean_Nat_gcd (LeanNum (ordsucc p)) n =
+    Lean_Nat_gcd (Lean_Nat_mod n (LeanNum (ordsucc p))) (LeanNum (ordsucc p)).
+let p. assume Hp: nat_p p. let n. assume Hn: n :e Lean_Nat.
+rewrite Lean_Nat_gcd_unfold (LeanNum (ordsucc p)) n.
+rewrite <- LeanNum_S (ordsucc p) (nat_ordsucc p Hp).
+rewrite LeanGcdFuel_positive (ordsucc p) (nat_ordsucc p Hp) p Hp n Hn.
+apply LeanGcd_remainder p Hp n Hn. let r.
+assume Hr: nat_p r /\ r :e ordsucc p /\ Lean_Nat_mod n (LeanNum (ordsucc p)) = LeanNum r.
+apply and3E (nat_p r) (r :e ordsucc p) (Lean_Nat_mod n (LeanNum (ordsucc p)) = LeanNum r) Hr.
+assume Hrn: nat_p r. assume Hrp: r :e ordsucc p.
+assume Er: Lean_Nat_mod n (LeanNum (ordsucc p)) = LeanNum r.
+rewrite Er. rewrite Lean_Nat_gcd_unfold (LeanNum r) (LeanNum (ordsucc p)).
+rewrite <- LeanNum_S r Hrn.
+exact LeanGcdFuel_stable (ordsucc p) (nat_ordsucc p Hp) (ordsucc r) (nat_ordsucc r Hrn)
+  r Hrn (LeanNum (ordsucc p)) (LeanNum_In (ordsucc p) (nat_ordsucc p Hp)) Hrp (ordsuccI2 r).
+Qed.
+
+Theorem LeanGcd_equation : forall m n :e Lean_Nat,
+  Lean_Nat_gcd m n = Lean_ite Lean_Nat (Lean_Eq_Prop Lean_Nat m (LeanNum 0))
+    (Lean_instDecidableEqNat m (LeanNum 0)) n (Lean_Nat_gcd (Lean_Nat_mod n m) m).
+let m. assume Hm: m :e Lean_Nat. let n. assume Hn: n :e Lean_Nat.
+apply Lean_Nat_num m Hm. let a. assume Ha: nat_p a /\ m = LeanNum a.
+apply Ha. assume Han: nat_p a. assume Em: m = LeanNum a. rewrite Em.
+apply nat_inv a Han.
+- assume Ea: a = 0. rewrite Ea. rewrite LeanGcd_zero n Hn.
+  rewrite Lean_instDecidableEqNat_unfold (LeanNum 0) (LeanNum 0).
+  rewrite Lean_Nat_decEq_canonical (LeanNum 0) (LeanNum_In 0 nat_0) (LeanNum 0) (LeanNum_In 0 nat_0).
+  rewrite Lean_DecCanon_true (Lean_Eq_Prop Lean_Nat (LeanNum 0) (LeanNum 0)) (Lean_Eq_num_refl 0).
+  rewrite Lean_ite_true_ap Lean_Nat (Lean_Eq_Prop Lean_Nat (LeanNum 0) (LeanNum 0)) (Lean_Eq_num_refl 0)
+    n (Lean_Nat_gcd (Lean_Nat_mod n (LeanNum 0)) (LeanNum 0)).
+  reflexivity.
+- assume Hex: exists p, nat_p p /\ a = ordsucc p.
+  apply Hex. let p. assume Hp: nat_p p /\ a = ordsucc p.
+  apply Hp. assume Hpn: nat_p p. assume Ea: a = ordsucc p. rewrite Ea.
+  claim Hfalse: 0 /:e Lean_Eq_Prop Lean_Nat (LeanNum (ordsucc p)) (LeanNum 0).
+  { exact Lean_Eq_num_not (ordsucc p) (nat_ordsucc p Hpn) 0 nat_0 (neq_ordsucc_0 p). }
+  rewrite LeanGcd_positive p Hpn n Hn.
+  rewrite Lean_instDecidableEqNat_unfold (LeanNum (ordsucc p)) (LeanNum 0).
+  rewrite Lean_Nat_decEq_canonical (LeanNum (ordsucc p)) (LeanNum_In (ordsucc p) (nat_ordsucc p Hpn))
+    (LeanNum 0) (LeanNum_In 0 nat_0).
+  rewrite Lean_DecCanon_false (Lean_Eq_Prop Lean_Nat (LeanNum (ordsucc p)) (LeanNum 0)) Hfalse.
+  rewrite Lean_ite_false_ap Lean_Nat (Lean_Eq_Prop Lean_Nat (LeanNum (ordsucc p)) (LeanNum 0))
+    (Lean_Eq_Prop_prop Lean_Nat (LeanNum (ordsucc p)) (LeanNum 0)) Hfalse n
+    (Lean_Nat_gcd (Lean_Nat_mod n (LeanNum (ordsucc p))) (LeanNum (ordsucc p))).
+  reflexivity.
+Qed.
+
+(** Receipt: Nat.gcd.eq_1 is the source of the MeTTa rule for Nat.gcd, statement digest 2685267990. **)
+Theorem Lean_Nat_gcd_eq_1 : forall v_m :e Lean_Nat, forall v_n :e Lean_Nat, (Lean_Nat_gcd v_m v_n) = (Lean_ite Lean_Nat (Lean_Eq_Prop Lean_Nat v_m (LeanNum 0)) (Lean_instDecidableEqNat v_m (LeanNum
+    0)) v_n (Lean_Nat_gcd (Lean_Nat_mod v_n v_m) v_m)).
+exact LeanGcd_equation.
 Qed.
 

@@ -1,4 +1,5 @@
 import Mettapedia.Languages.Lean.Recursion.Derive
+import Mettapedia.Languages.Lean.Recursion.FuelDerive
 import Mettapedia.Languages.Lean.Recursion.Wrappers
 import Mettapedia.Languages.Lean.Declarations.Terms
 import Lean.Meta.Sym.SymM
@@ -121,6 +122,28 @@ def wrappers (entries : Array Wrappers.Record) : MetaM String := do
     for (source, target) in entry.unfoldings do
       result := result ++ (← theoremStatement source).pretty 120 ++ "\n\n"
       result := result ++ (← theoremStatement target).pretty 120 ++ "\n\n"
+  return result
+
+/-- Fuel equations and adequacy belong to the same source identity as the
+accessible recipe. Consumers must check the bridge as well as evaluate fuel. -/
+def fuelReadings (entries : Array FuelDerive.Record) : MetaM String := do
+  let mut result := ""
+  for entry in entries do
+    result := result ++ (form [word "LeanFuelRecursion", named entry.source,
+      form [word "Fuel", named entry.fuel],
+      form [word "Equations", form [named entry.zeroEquation, named entry.stepEquation]],
+      form [word "SourceFuel", named entry.curriedFuel],
+      form [word "SourceFuelEquations", form (entry.curriedEquations.toList.map named)],
+      form [word "Adequate", named entry.adequate],
+      form [word "Budget", named entry.budget],
+      form [word "BudgetAdequate", named entry.budgetAdequate],
+      form [word "Reading", named entry.reading],
+      form [word "Bridge", named entry.bridge]]).pretty 120 ++ "\n\n"
+    for name in #[entry.fuel, entry.curriedFuel, entry.budget, entry.reading] do
+      result := result ++ (← definition name).pretty 120 ++ "\n\n"
+    for name in #[entry.zeroEquation, entry.stepEquation, entry.curriedStepEquation,
+        entry.adequate, entry.budgetAdequate, entry.bridge] ++ entry.curriedEquations do
+      result := result ++ (← theoremStatement name).pretty 120 ++ "\n\n"
   return result
 
 end Mettapedia.Languages.Lean.Recursion.Export

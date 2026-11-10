@@ -227,20 +227,22 @@ def dropTells (f : Firing T S O) : Firing T S O :=
   ⟨{ f.rule with tell := [] }, f.queries, f.selection⟩
 
 /-- **The one-frame transport with the residual that drops tells.** -/
-def noTells : Transport (firstOrder A label) :=
+def noTells : Transport (firstOrder A label).toStep :=
   (firstOrderTransport A label).withResidual (fun _ _ f => dropTells f) (fun _ _ _ => rfl)
     (fun _ _ _ _ => rfl)
 
 /-- **The one-frame step whose settlement instantiates the information by a fixed substitution.**
 Every law of the interface holds. -/
 def settledBy (u : S) :
-    Interface.Step (Frames.ofSubstitution A) O (Configuration T O) (fun _ => Firing T S O) :=
+    Interface.Step.Standard (Frames.ofSubstitution A) O (Configuration T O) (fun _ => Firing T S O) :=
   { firstOrder A label with
-    result := fun {C} f _ => ⟨(Frames.ofSubstitution A).applyStore u (f.selection.problem label f.rule C),
+    preparedResult := fun {C} f _ => ⟨(Frames.ofSubstitution A).applyStore u (f.selection.problem label f.rule C),
       fire C.present (f.selection.commit (T := Unit))⟩
-    present_result := fun _ _ => rfl
-    settle := fun _ _ => u
-    knowledge_result := fun _ _ => rfl }
+    present_preparedResult := fun _ _ => rfl
+    preparedSettle := fun _ _ => u
+    knowledge_preparedResult := fun _ _ => rfl
+    result_refines := fun {_C} _ _ {_b} σ solved =>
+      (Frames.models_applyStore (X := Frames.ofSubstitution A) u σ _).mp solved }
 
 end Laws
 

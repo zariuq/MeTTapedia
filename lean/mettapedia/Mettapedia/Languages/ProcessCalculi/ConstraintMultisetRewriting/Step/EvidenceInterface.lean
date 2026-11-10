@@ -8,9 +8,10 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Dise
 nothing. Its converse direction, that a run from solvable knowledge ends in solvable knowledge, is
 `Evidence.firstOrder_run_consistent` for the first-order step. This module states it once.
 
-* **The restriction** (`SettlesConservatively`, `run_solvable`): an instance whose settlement keeps
-  solvable information solvable never enters an inconsistent store; every run from solvable knowledge
-  ends in solvable knowledge.
+* **The restriction** (`SettlesConservatively`, `run_solvable`): with exact result knowledge, a
+  settlement keeping solvable information solvable never enters an inconsistent store. Exactness
+  is needed to transfer that solution to the actual result; semantic refinement alone need not
+  preserve consistency.
 * **A checkable sufficient condition** (`RetractsSettlement`, `conservative_of_retracts`): the
   settlement has a retraction up to the equivalence. An identity settlement has one.
 * **The bridge: it holds for every main instance** (`firstOrder_retracts`, `dependent_retracts`,
@@ -67,14 +68,15 @@ theorem conservative_of_retracts (retracts : RetractsSettlement P) : SettlesCons
   exact (X.equivalence b).trans first ((X.equivalence b).trans kept ((X.equivalence b).symm second))
 
 /-- An admitted firing of a conservatively settling instance ends in solvable knowledge. -/
-theorem solvable_result (conservative : SettlesConservatively P) {s : State} {f : Firing s}
+theorem solvable_result [P.Exact] (conservative : SettlesConservatively P) {s : State} {f : Firing s}
     (admitted : P.Admits f) : X.Solvable (P.knowledge (P.result f admitted)) := by
-  rw [P.knowledge_result f admitted]
-  exact conservative f admitted (P.solvable_information admitted)
+  obtain ⟨b, σ, solved⟩ := conservative f admitted (P.solvable_information admitted)
+  exact ⟨b, σ, Interface.Step.Exact.exactness f (P.prepares admitted) σ
+    ((Frames.models_applyStore _ _ _).mp solved)⟩
 
 /-- **A conservatively settling instance never enters an inconsistent store**: every run from
 solvable knowledge ends in solvable knowledge. -/
-theorem run_solvable (conservative : SettlesConservatively P) :
+theorem run_solvable [P.Exact] (conservative : SettlesConservatively P) :
     ∀ {s : State} (r : P.Run s), X.Solvable (P.knowledge s) → X.Solvable (P.knowledge r.last)
   | _, .nil _, solvable => solvable
   | _, .cons _ admitted rest, _ => run_solvable conservative rest (solvable_result conservative admitted)
@@ -109,12 +111,12 @@ def PrestepRetracts : Prop :=
       ∀ t : Tm (Q.target f), X.E (X.act (X.comp back (Q.settle f shapes)) t) t
 
 /-- Its step's settlement retracts. -/
-theorem step_retracts (retracts : PrestepRetracts Q) : RetractsSettlement Q.step :=
+theorem step_retracts (retracts : PrestepRetracts Q) : RetractsSettlement Q.step.toStep :=
   fun f admitted => retracts f admitted.1
 
 /-- **The step with disequations over a prestep whose settlement retracts also retracts.** -/
-theorem withDisequations_retracts (reflects : Q.Reflects) (retracts : PrestepRetracts Q) :
-    RetractsSettlement (Q.withDisequations reflects) := by
+theorem withDisequations_retracts (reflects : Q.step.Reflects) (retracts : PrestepRetracts Q) :
+    RetractsSettlement (Q.step.withDisequations reflects) := by
   intro s f admitted
   obtain ⟨back, retraction⟩ := retracts f.base admitted.1
   refine ⟨⟨back, fun c τ separated => ?_⟩, retraction⟩
@@ -136,7 +138,7 @@ variable {T : Type uA} {S : Type uB} {O : Type uC} [DecidableEq O] (A : Substitu
   (label : O → T)
 
 /-- **The first-order step's settlement retracts.** -/
-theorem firstOrder_retracts : RetractsSettlement (AnnotatedRuns.firstOrder A label) :=
+theorem firstOrder_retracts : RetractsSettlement (AnnotatedRuns.firstOrder A label).toStep :=
   fun _ _ => ⟨A.identity, id_retraction (X := Frames.ofSubstitution A) (a := PUnit.unit)⟩
 
 /-- The first-order prestep's settlement retracts. -/
@@ -151,7 +153,7 @@ theorem old_firstOrder_run_consistent {C : Configuration T O} (r : (AnnotatedRun
   exact (Frames.ofSubstitution_solvable_iff A _).mp solvable
 
 /-- The first-order step with disequations never enters an inconsistent store. -/
-theorem firstOrderWith_run_solvable {s : (DisequalityFrames.firstOrderPrestep A label).DState}
+theorem firstOrderWith_run_solvable {s : (DisequalityFrames.firstOrderPrestep A label).step.DState}
     (r : (DisequalityFrames.firstOrderWith A label).Run s)
     (solvable : (DisequalityFrames.frames (Frames.ofSubstitution A)).Solvable
       (a := (DisequalityFrames.firstOrderWith A label).frame s)
@@ -176,7 +178,7 @@ variable {Head L : Type} [UniverseLevel.LevelOrder L] {rules : Rules Head}
   (levels : LevelModel rules L) (O : Type) [DecidableEq O]
 
 /-- **The dependent full step's settlement retracts.** -/
-theorem dependent_retracts : RetractsSettlement (step levels O) :=
+theorem dependent_retracts : RetractsSettlement (step levels O).toStep :=
   fun f _ => ⟨(ContextualDependentEta.frames levels).id f.helpers.frame,
     id_retraction (X := ContextualDependentEta.frames levels)⟩
 
@@ -203,7 +205,7 @@ open Mettapedia.OSLF.Binding.ContextualFamily
 variable {S : Signature} {O : Type} [DecidableEq O]
 
 /-- **The helper step's settlement retracts.** -/
-theorem helper_retracts : RetractsSettlement (Interface.Helpers.helperStep (S := S) (O := O)) :=
+theorem helper_retracts : RetractsSettlement (Interface.Helpers.helperStep (S := S) (O := O)).toStep :=
   fun f _ => ⟨(Frames.contextual S).id (Interface.Helpers.extend _ f.helper),
     id_retraction (X := Frames.contextual S)⟩
 
@@ -272,7 +274,7 @@ theorem guess_enters_inconsistency :
   simp [Disequality.Controls.bind_zero] at clash
 
 /-- So its settlement does not retract. -/
-theorem guess_not_retracts : ¬ RetractsSettlement P := fun retracts =>
+theorem guess_not_retracts : ¬ RetractsSettlement P.toStep := fun retracts =>
   guess_enters_inconsistency.2 (solvable_result (conservative_of_retracts retracts) guess_admitted)
 
 end Controls

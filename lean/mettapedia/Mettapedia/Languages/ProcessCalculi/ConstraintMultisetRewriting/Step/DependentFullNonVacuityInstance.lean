@@ -153,7 +153,7 @@ theorem translateEquation_admits_iff
     (EquationStep.step (listFrames sig) O).Admits f ↔
       (step S.levels O).Admits (translateEquationFiring facts roots heads church names realization f) := by
   rw [fibre_admission_transfer facts roots heads algebra complete rigid church names realization sortInjective
-    closed @operatorInjective (EquationStep.step (listFrames sig) O) (fun f => f.guards) (fun _ _ _ => Iff.rfl)
+    closed @operatorInjective (EquationStep.step (listFrames sig) O).toStep (fun f => f.guards) (fun _ _ _ => Iff.rfl)
     f decided, admits_iff, translateEquation_information, translateEquation_made]
   show f.Shapes ∧ Enabled (fun _ : O => ()) s.present (f.selection.commit (T := Unit)) ∧ _ ↔ _
   rw [EquationStep.enabled_iff]

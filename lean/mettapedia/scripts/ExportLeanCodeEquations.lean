@@ -25,6 +25,8 @@ line; `LEAN_CODE_EQUATIONS_ROOTS` adds explicit executable declaration roots.
 imports, namespace and proof mode may be selected with the corresponding
 `_IMPORTS`, `_NAMESPACE` and `_PROOF` variables. Defaults retain the original
 slice. `LEAN_CODE_EQUATIONS_CHECK=1` compares in memory without changing files.
+The `equations` proof mode simplifies with the comma-separated declarations
+in `LEAN_CODE_EQUATIONS_EQUATIONS`; their names must exist in the environment.
 -/
 
 open Lean Meta Elab Term
@@ -160,7 +162,14 @@ unsafe def exportSlice : TermElabM Unit := do
   let out : System.FilePath := (← IO.getEnv "LEAN_CODE_EQUATIONS_OUT").getD "artifacts/lean-code-equations/core"
   let checking := (← IO.getEnv "LEAN_CODE_EQUATIONS_CHECK") == some "1"
   let proofMode := (← IO.getEnv "LEAN_CODE_EQUATIONS_PROOF").getD "slice"
-  unless proofMode == "slice" || proofMode == "rfl" do throwError "unknown control proof mode: {proofMode}"
+  unless ["slice", "rfl", "equations"].contains proofMode do
+    throwError "unknown code-equation control proof mode: {proofMode}"
+  let equationNames := ((← IO.getEnv "LEAN_CODE_EQUATIONS_EQUATIONS").getD "").splitOn "," |>.map
+    (fun name => name.trimAscii.toString) |>.filter (!·.isEmpty)
+  if proofMode == "equations" then
+    if equationNames.isEmpty then throwError "equations proof mode needs named declarations"
+    for name in equationNames do
+      unless (← getEnv).contains name.toName do throwError "unknown equation declaration: {name}"
   let controlNamespace := (← IO.getEnv "LEAN_CODE_EQUATIONS_NAMESPACE").getD "LeanCodeEquationsControls"
   let imports := (← IO.getEnv "LEAN_CODE_EQUATIONS_IMPORTS").getD "Mathlib"
   if !checking then IO.FS.createDirAll out
@@ -180,7 +189,10 @@ unsafe def exportSlice : TermElabM Unit := do
     let i := controls.size + 1
     let name := if i < 10 then s!"test_0{i}" else s!"test_{i}"
     let leanValue := (← leanValueOf e).replace "\n" " " |>.replace "\t" " "
-    let proof := if proofMode == "rfl" then "  rfl\n" else controlProof src
+    let proof := if proofMode == "rfl" then "  rfl\n"
+      else if proofMode == "equations" then
+        s!"  simp +decide only [{", ".intercalate equationNames}]\n"
+      else controlProof src
     controls := controls.push
       s!"theorem {name} : ({src}) = {leanValue} := by\n{proof}"
     testRows := testRows.push s!"{i}\t{src}\t{leanValue}\t{expected.back!}"

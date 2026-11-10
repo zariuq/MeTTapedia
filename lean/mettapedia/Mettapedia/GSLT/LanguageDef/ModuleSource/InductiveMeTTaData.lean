@@ -22,11 +22,19 @@ def termData : Term → Atom
   | .name name => .symbol name
   | .app function argument => .expression [termData function, termData argument]
   | .arrow domain result => .expression [.symbol "->", termData domain, termData result]
+  | .pi binder domain result =>
+      .expression [.symbol "Pi", .symbol binder, termData domain, termData result]
+  | .project owner field record =>
+      .expression [.symbol "Projection", .symbol owner, .grounded (.int (.ofNat field)), termData record]
 
 def readTerm : Atom → Option Term
   | .symbol name => some (.name name)
   | .expression [function, argument] => do return .app (← readTerm function) (← readTerm argument)
   | .expression [.symbol "->", domain, result] => do return .arrow (← readTerm domain) (← readTerm result)
+  | .expression [.symbol "Pi", .symbol binder, domain, result] =>
+      do return .pi binder (← readTerm domain) (← readTerm result)
+  | .expression [.symbol "Projection", .symbol owner, .grounded (.int (.ofNat field)), record] =>
+      do return .project owner field (← readTerm record)
   | _ => none
 termination_by atom => sizeOf atom
 
@@ -35,6 +43,11 @@ termination_by atom => sizeOf atom
   | name => simp [readTerm, termData]
   | app function argument hf ha => simp [termData, readTerm, hf, ha]
   | arrow domain result hd hr => simp [termData, readTerm, hd, hr]
+  | pi binder domain result hd hr => simp [termData, readTerm, hd, hr]
+  | project owner field record ih =>
+      simp only [termData]
+      rw [readTerm]
+      simp [ih]
 
 def binderData (binder : Binder) : Atom :=
   .expression [.symbol ":", .symbol binder.name, termData binder.type]

@@ -329,7 +329,7 @@ structure Valid {s : State A O} (f : Firing A O s) : Prop where
     Separates A σ f.target.1 → holdsAt A label f σ
 
 /-- **The step with disequations, an instance of the interface over disequation frames.** -/
-def step : Interface.Step (frames A) O (State A O) (Firing A O) where
+def step : Interface.Step.Standard (frames A) O (State A O) (Firing A O) where
   frame s := s.disequations
   knowledge s := s.configuration.equations
   present s := s.configuration.present
@@ -366,10 +366,10 @@ def step : Interface.Step (frames A) O (State A O) (Firing A O) where
         (solvable_iff _).mp solvable, (entails_iff (D := f.target) _ (holdsAt A label f)).mp asks⟩
       intro query member
       simp [Selection.commit] at member
-  result {s} f _ := ⟨f.base.result label s.configuration, f.target⟩
-  present_result _ _ := rfl
-  settle f _ := (frames A).id f.target
-  knowledge_result {s} f _ := (Frames.applyStore_id (X := frames A)
+  preparedResult {s} f _ := ⟨f.base.result label s.configuration, f.target⟩
+  present_preparedResult _ _ := rfl
+  preparedSettle f _ := (frames A).id f.target
+  knowledge_preparedResult {s} f _ := (Frames.applyStore_id (X := frames A)
     (f.base.selection.problem label f.base.rule s.configuration)).symm
 
 /-- **The admission theorem for knowledge with disequations**: the interface's characterization,

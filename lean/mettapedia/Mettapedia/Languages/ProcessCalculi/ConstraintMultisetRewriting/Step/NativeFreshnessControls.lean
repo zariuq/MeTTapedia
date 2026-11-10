@@ -34,7 +34,7 @@ namespace NativeFreshnessControls
 
 /-- **The native run**: the maker of occurrence `0`, at the state with no occurrences. -/
 noncomputable def makerRun :
-    Interface.Step.Run (native (S := tiny) (O := ℕ) (Γ := ([] : Ctx tiny)) (sort := ())) initial :=
+    Interface.Step.Run (native (S := tiny) (O := ℕ) (Γ := ([] : Ctx tiny)) (sort := ())).toStep initial :=
   .cons (maker 0 none).toNative (maker_realized 0 none) (.nil _)
 
 /-- **The native run is fresh under absent-only freshness**: the identity it makes is absent from the

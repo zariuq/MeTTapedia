@@ -46,14 +46,14 @@ abbrev firstOrderEscaping :=
 
 /-- **An escape-relative isomorphism is a row isomorphism modulo the knowledge**, relative to the
 identities the environment's record mentions. -/
-def escapeIso_rowIsoModulo {x y : Escaped (firstOrder A label)} (i : (firstOrderEscaping A label).Iso x y) :
+def escapeIso_rowIsoModulo {x y : Escaped (firstOrder A label).toStep} (i : (firstOrderEscaping A label).Iso x y) :
     RowIsoModulo (Observation.Record.support x.record) (ofConfiguration A label x.state) (ofConfiguration A label y.state) :=
   Interface.rowIsoModulo_of_renaming A label Observation.RenamingUpTo.refl
     (by rw [renameConfiguration_refl]; exact i.base.down)
 
 /-- **Trace-equivalent runs end in states related modulo the knowledge**, relative to what the
 record mentions at the end. -/
-theorem traceEquiv_rowEquivalentModulo {x : Escaped (firstOrder A label)}
+theorem traceEquiv_rowEquivalentModulo {x : Escaped (firstOrder A label).toStep}
     {r r' : (firstOrderEscape A label).step.Run x}
     (equivalent : (firstOrderEscaping A label).TraceEquiv x r r') :
     RowEquivalentModulo (Observation.Record.support r.last.record) (ofConfiguration A label r.last.state)
@@ -63,7 +63,7 @@ theorem traceEquiv_rowEquivalentModulo {x : Escaped (firstOrder A label)}
 
 /-- **Traces refine observation**: at the ends of two trace-equivalent runs, every frame probe that
 names only identities the record mentions observes the same. -/
-theorem traceEquiv_observes {x : Escaped (firstOrder A label)}
+theorem traceEquiv_observes {x : Escaped (firstOrder A label).toStep}
     {r r' : (firstOrderEscape A label).step.Run x}
     (equivalent : (firstOrderEscaping A label).TraceEquiv x r r')
     {p : FrameProbe (Frames.ofSubstitution A) PUnit.unit O} (named : p.names ⊆ Observation.Record.support r.last.record) :

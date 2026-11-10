@@ -8,7 +8,7 @@ test	outcome	reason
 7	joined	
 8	joined	
 9	joined	
-10	refused	List.mergeSort is not read: not one equation per constructor
+10	refused	List.mergeSort is not read: applies Mettapedia.Languages.Lean.Recursion.FuelCore.MergeSort.reading, which is not read
 11	joined	
 12	joined	
 13	joined	
@@ -24,8 +24,8 @@ test	outcome	reason
 23	joined	
 24	joined	
 25	joined	
-26	refused	Nat.primeFactorsList is not read: not one equation per constructor
-27	refused	Nat.instMonoid is not read: applies Monoid.mk, which is not read
-28	refused	Nat.instMonoid is not read: applies Monoid.mk, which is not read
-29	refused	Nat.instAddCommMonoid is not read: applies AddCommMonoid.mk, which is not read
-30	refused	Finset.range is not read: applies Finset.mk, which is not read
+26	joined	
+27	refused	Irreducible is not read: not exported with equations
+28	refused	Irreducible is not read: not exported with equations
+29	refused	Finset.range is not read: erased proofs in the definition or its equations are not reconstructed
+30	refused	Finset.range is not read: erased proofs in the definition or its equations are not reconstructed

@@ -3,9 +3,9 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Evid
 /-!
 # Why the step with disequations needs a reflecting settlement
 
-`Prestep.withDisequations` carries a firing's disequations into its result along the settlement,
-and asks the settlement to reflect the equivalence (`Prestep.Reflects`). This module shows that the
-hypothesis is the exact one.
+`Interface.Step.withDisequations` carries a firing's disequations into its result along the prepared
+settlement, and asks the prepared settlement to reflect the equivalence (`Interface.Step.Reflects`).
+This module shows that the hypothesis is the exact one.
 
 **The separating control** (`guess_breaks_frame`): the prestep `EvidenceInterface.Controls.guess`
 settles by the guess `X ↦ 0`. Its firing that tells `X ≐ 1` and the disequation `X ≠ 0` meets every
@@ -25,10 +25,10 @@ open Disequality.Controls (signature A X bind bind_zero)
 open EvidenceInterface.Controls (guess enabled_nothing)
 
 /-- The equation-only empty state. -/
-def start : guess.DState := guess.plain []
+def start : guess.step.DState := guess.step.plain []
 
 /-- **Tell `X ≐ 1` and `X ≠ 0`.** -/
-def tellApart : guess.DFiring start :=
+def tellApart : guess.step.DFiring start :=
   ⟨(), [(X, .const 0)], fun d member same => by
     have only : d = (X, .const 0) := by
       rcases List.mem_append.mp member with none | told
@@ -60,7 +60,7 @@ disequation frame for the result. -/
 theorem carried_not_separated :
     ¬ Separates (Frames.ofSubstitution A) (a := PUnit.unit) (b := PUnit.unit) A.identity
       ((Frames.ofSubstitution A).applyStore (a := PUnit.unit) (b := PUnit.unit) (bind (.const 0))
-        (guess.carried start tellApart.base ++ tellApart.tells)) := by
+        (guess.step.carried start tellApart.base ++ tellApart.tells)) := by
   intro separated
   apply separated (A.apply (bind (.const 0)) X, A.apply (bind (.const 0)) (.const 0))
     (List.mem_map.mpr ⟨(X, .const 0), List.mem_append_right _ (List.mem_singleton_self _), rfl⟩)
@@ -72,15 +72,17 @@ theorem guess_breaks_frame :
     tellApart.Admits ∧
       ¬ Separates (Frames.ofSubstitution A) (a := PUnit.unit) (b := PUnit.unit) A.identity
         ((Frames.ofSubstitution A).applyStore (a := PUnit.unit) (b := PUnit.unit) (bind (.const 0))
-          (guess.carried start tellApart.base ++ tellApart.tells)) :=
+          (guess.step.carried start tellApart.base ++ tellApart.tells)) :=
   ⟨tellApart_conditions, carried_not_separated⟩
 
-/-- **So the guess does not reflect**: the hypothesis of `withDisequations` is the one that fails. -/
-theorem guess_not_reflects : ¬ guess.Reflects := by
+/-- **So the guess does not reflect**: the hypothesis of `withDisequations` is the one that fails, at
+the preparation of the firing that meets every condition of admission with disequations. -/
+theorem guess_not_reflects : ¬ guess.step.Reflects := by
   intro reflects
   have settled : Separates (Frames.ofSubstitution A) (a := PUnit.unit) (b := PUnit.unit) (bind (.const 0))
-      (guess.carried start tellApart.base ++ tellApart.tells) :=
-    separates_of_reflects (reflects tellApart.base tellApart_conditions.1) tellApart.formed
+      (guess.step.carried start tellApart.base ++ tellApart.tells) :=
+    separates_of_reflects (reflects tellApart.base ⟨tellApart_conditions.1, tellApart_conditions.2.1,
+      solvable_base tellApart_conditions.2.2.1⟩) tellApart.formed
   apply carried_not_separated
   intro d member same
   obtain ⟨original, inside, rfl⟩ := List.mem_map.mp member
