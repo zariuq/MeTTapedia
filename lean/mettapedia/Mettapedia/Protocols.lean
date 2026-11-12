@@ -8,6 +8,9 @@ import Mettapedia.Protocols.Mail.Sync
 import Mettapedia.Protocols.Mail.Resumption
 import Mettapedia.Protocols.Mail.Submission
 import Mettapedia.Protocols.Mail.Custody
+import Mettapedia.Protocols.Mail.WaitAdmission
+import Mettapedia.Protocols.Mail.IdentityClaims
+import Mettapedia.Protocols.Repos.GitSkeleton
 import Mettapedia.Protocols.ClawMail
 import Mettapedia.Protocols.Nostr.Event
 import Mettapedia.Protocols.Nostr.Filter

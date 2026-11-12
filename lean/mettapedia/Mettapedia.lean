@@ -1086,6 +1086,7 @@ import Mettapedia.Machines.RelationTransferCost
 import Mettapedia.Machines.KeptSnapshotSize
 import Mettapedia.Machines.ContainerFormCost
 import Mettapedia.Machines.NestedSafePoints
+import Mettapedia.Machines.MovingCollectionHolders
 import Mettapedia.Machines.KeptCursorCeiling
 import Mettapedia.Machines.DeterminateReadAhead
 import Mettapedia.Machines.TrieWindowKeys

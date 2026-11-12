@@ -189,10 +189,14 @@ theorem quote_classify {context : List DataSort} {names : List String}
       · cases source with
         | name identifier => simp [classify, payload, length, recursive] at accepted
         | arrow domain codomain => simp [classify, payload, length, recursive] at accepted
+        | pi binder domain codomain => simp [classify, payload, length, recursive] at accepted
+        | project owner field record => simp [classify, payload, length, recursive] at accepted
         | app function element =>
             cases function with
             | name identifier => simp [classify, payload, length, recursive] at accepted
             | arrow domain codomain => simp [classify, payload, length, recursive] at accepted
+            | pi binder domain codomain => simp [classify, payload, length, recursive] at accepted
+            | project owner field record => simp [classify, payload, length, recursive] at accepted
             | app vectorHead lengthSource =>
                 cases vectorHead <;> cases lengthSource <;>
                   simp [classify, payload, length, recursive] at accepted
