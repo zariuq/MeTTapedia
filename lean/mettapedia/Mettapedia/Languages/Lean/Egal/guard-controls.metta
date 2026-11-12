@@ -153,3 +153,8 @@
 (TypingProof GuardTest_proofInput)
 !(check-guard "an actual proof input accounts for the guarded equation"
   (not (== (proof-input-direct GuardTest.proofInput) None)) True)
+
+!(check-guard "typing one value preserves the following argument and its proof"
+  (typ-args-raw ((var x) (num 1)) (term term)
+    ((app Nat ()) (app Nat ())) ((app Nat ()) (app Nat ())) () ((x "Hx")))
+  (x "Hx" "(LeanNum 1)" "(LeanNum_In 1 (nat_ordsucc 0 nat_0))"))

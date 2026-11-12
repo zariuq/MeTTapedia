@@ -14,8 +14,12 @@ theorem test_02 : ((Quot.liftOn (Quot.mk (fun (_ _ : Nat) => (0 : Nat) = 0) 9) (
 theorem test_03 : ((Nat.succ 4 : Nat)) = 5 := by
   rfl
 
+theorem test_04 : (List.length ([1, 2] : List Nat)) = 2 := by
+  rfl
+
 end QuotientCodeControls
 
 #print axioms QuotientCodeControls.test_01
 #print axioms QuotientCodeControls.test_02
 #print axioms QuotientCodeControls.test_03
+#print axioms QuotientCodeControls.test_04

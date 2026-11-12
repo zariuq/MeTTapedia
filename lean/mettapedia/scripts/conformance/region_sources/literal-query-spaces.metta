@@ -1,0 +1,12 @@
+!(let $s (new-space)
+  (let $first (add-atom $s (tree (leaf -7) (payload false ())))
+    (let $second (add-atom $s (tree (leaf -7) (payload false ())))
+      (Pair
+        (collapse (once (match $s (tree (leaf -7) (payload false ())) true)))
+        (collapse (once (match &self (tree (leaf -7) (payload false ())) true)))))))
+!(let $s (new-space)
+  (let $ignored (add-atom $s 42)
+    (collapse (once (match $s 42 true)))))
+!(let $s (new-space)
+  (let $ignored (add-atom $s leaf)
+    (collapse (once (match $s leaf true)))))

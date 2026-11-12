@@ -1,0 +1,20 @@
+{
+  "schema": "region-profile-probe-v1",
+  "source": "sssp-driver-inert-equation.metta",
+  "successful_output": "sssp-driver-inert-equation.expected",
+  "boundary": "An unmatchable equation can still affect source loading through mixed input arities.",
+  "profiles": [
+    {
+      "revision": "e1db30d56854f081fd3bd1d2cb4b524c49f46dd3",
+      "observed": "load_rejection",
+      "stderr_contains": "function_input_arities(rounds-renamed,[0,2])"
+    },
+    {
+      "revision": "6586540e08582f1985b79a24e4e93c5e66967b3a",
+      "observed": "completed",
+      "stdout_matches_successful_output": true
+    }
+  ],
+  "admission_control": "FrontierIterationEntry.Controls.mixed_driver_arities_require_reference",
+  "qualification": "Negative cross-profile probe; not a passing metamorphic control for the pinned loader."
+}

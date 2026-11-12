@@ -16,9 +16,12 @@ annotations reads an equation as soon as its pieces are read, whatever their ann
 along the reducts of the instantiated types (`dependentUnderN`), is read by the piece family from some budget on
 (`tower_pieceReads_of_spine`, `tower_pieceReads_of_under`, `tower_pieceReads_of_args`).
 
-**Acceptance for the piece family, reduced to the census rows not yet read** (`tower_piece_decided_of_uncovered`,
-`tower_piece_decided_of_uncovered_kinds`): the covered rows (`PieceCoveredHead`) are the skeleton family's three rows
-and these three.
+**A conditional decision for the piece family, from the census rows not yet read**
+(`tower_piece_decided_of_uncovered`, `tower_piece_decided_of_uncovered_kinds`): the covered rows (`PieceCoveredHead`)
+are the skeleton family's three rows and these three. At the tower the hypothesis fails: the conclusion would decide
+`crossStore`, solvable and without principal answer
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`). For every store, runs are exact; on
+`crossStore` they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`).
 -/
 
 set_option autoImplicit false
@@ -428,7 +431,7 @@ theorem tower_pieceReads_of_under {Θ : Context setting.R} {problem : EquationSt
             ContextualDependentInversion.Controls.reducer ContextualDependentInversion.Controls.declarations_formed
             ExecutableTowerChoices.choices larger pieces typed' (formed larger enough)))
 
-/-! ## Acceptance for the piece family, reduced to the census rows not yet read -/
+/-! ## A conditional decision for the piece family, from the census rows not yet read -/
 
 /-- **The census rows read by the piece family**, on one equation. -/
 def PieceCoveredHead {Γ : Context setting.R} (equation : Equation (TotalTerm Γ)) : Prop :=
@@ -459,9 +462,13 @@ theorem tower_pieceReads_of_covered {Θ : Context setting.R} {problem : Equation
   · exact tower_pieceReads_of_under constant member types under
   · exact tower_pieceReads_of_args constant member types args
 
-/-- **Acceptance for the tower's piece family, reduced to the census rows not yet read**: if every census head of a
-constant preparation outside the covered rows is read from some budget on, the family decides every store of the
-dynamic pattern fragment, with a principal answer or a certified refutation, constant at every larger budget. -/
+/-- **Conditional decision for the tower's piece family, from the census rows not yet read**: if every census head of
+a constant preparation outside the covered rows is read from some budget on, the family decides every store of the
+dynamic pattern fragment, with a principal answer or a certified refutation, constant at every larger budget. At the
+tower the hypothesis fails: the conclusion would decide `crossStore`
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`,
+`ContextualDependentSweep.Witnesses.acceptance_conclusion_false`). For every store, runs are exact; on `crossStore`
+they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`). -/
 theorem tower_piece_decided_of_uncovered
     (uncovered : ∀ {Γ : Context setting.R} {problem : EquationStore (TotalTerm Γ)},
       PermutedMiller setting.levels problem → problem ≠ [] → ∀ threshold,
@@ -482,7 +489,8 @@ theorem tower_piece_decided_of_uncovered
       · exact uncovered permuted nonempty threshold constant equation member normal head covered)
     inside
 
-/-- **The same, with the census kind of the η-long opened sides available.** -/
+/-- **The same conditional decision, with the census kind of the η-long opened sides available.** Its hypothesis
+fails at the tower for the same reason (`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`). -/
 theorem tower_piece_decided_of_uncovered_kinds
     (uncovered : ∀ {Γ : Context setting.R} {problem : EquationStore (TotalTerm Γ)},
       PermutedMiller setting.levels problem → problem ≠ [] → ∀ threshold,

@@ -56,12 +56,16 @@ theorem evaluate_eq_of_rank (ops : NativeTypeViews.Ops Atom TypeScopeMatcher.Sta
                 (refl_of_guarantees _ _ _ (body ops call) (body_keys_below ops call))
                 firstService secondService same (fun _ _ _ _ _ => trivial) supply
               change
-                (NativeTypeRecursiveDriver.completed (QueryState.run firstService (demand (body ops call)) supply).answer,
-                  retain (QueryState.run firstService (demand (body ops call)) supply).state
-                    (NativeTypeRecursiveDriver.completed (QueryState.run firstService (demand (body ops call)) supply).answer)) =
-                (NativeTypeRecursiveDriver.completed (QueryState.run secondService (demand (body ops call)) supply).answer,
-                  retain (QueryState.run secondService (demand (body ops call)) supply).state
-                    (NativeTypeRecursiveDriver.completed (QueryState.run secondService (demand (body ops call)) supply).answer))
+                (NativeTypeRecursiveDriver.completed
+                    (QueryState.run firstService (ReadOnlyQueryDemand.demand (body ops call)) supply).answer,
+                  retain (QueryState.run firstService (ReadOnlyQueryDemand.demand (body ops call)) supply).state
+                    (NativeTypeRecursiveDriver.completed
+                      (QueryState.run firstService (ReadOnlyQueryDemand.demand (body ops call)) supply).answer)) =
+                (NativeTypeRecursiveDriver.completed
+                    (QueryState.run secondService (ReadOnlyQueryDemand.demand (body ops call)) supply).answer,
+                  retain (QueryState.run secondService (ReadOnlyQueryDemand.demand (body ops call)) supply).state
+                    (NativeTypeRecursiveDriver.completed
+                      (QueryState.run secondService (ReadOnlyQueryDemand.demand (body ops call)) supply).answer))
               rw [observed]
 
 /-- The structural representative can be used for proof-only completion

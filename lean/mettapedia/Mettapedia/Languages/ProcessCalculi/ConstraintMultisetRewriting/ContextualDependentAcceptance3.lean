@@ -1,7 +1,7 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentMillerClosureRotation
 
 /-!
-# Acceptance for the last family, reduced to the cumulative round
+# A conditional decision for the last family, from the cumulative round
 
 The last family is the in-place family: the cumulative round, then general intersection at the newest metavariable,
 after rotation, and in place (`ContextualDependentIntersectionGeneral.inPlaceRound`). Its three new rules drop the first
@@ -24,7 +24,10 @@ not state them.
 
 The closure hypothesis fails in the tower: R86's in-place step reorders a `MillerNormal` store out of the class
 (`ContextualDependentMillerClosure.ReorderControls.cumulativeRound_not_keeps`). The corrected reduction, on the permuted
-class and for the anywhere family, is `anywhere_decided_of_cumulative` (`…Acceptance3Anywhere`).
+class and for the anywhere family, is `anywhere_decided_of_cumulative` (`…Acceptance3Anywhere`), and it is
+conditional too: at the tower its hypotheses do not both hold, since the conclusion would decide `crossStore`, solvable
+and without principal answer (`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`). For every store,
+runs are exact; on `crossStore` they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`).
 -/
 
 set_option autoImplicit false
@@ -219,10 +222,14 @@ variable (stable : ∀ {n : Nat} (fuel : Nat) (term : Tm Head n),
   Keeps (reducer fuel term) (reducer (fuel + 1) term))
 
 include stable in
-/-- **Acceptance for the last family, reduced to firing on the class and closure of the cumulative round.** If the last
-round is eventually not stuck on every nonempty `MillerNormal` store, and the cumulative round keeps the class at every
-budget, then the last family decides every store of the dynamic pattern fragment whose opened sides have β-normal
-reducts, with a principal answer or a certified refutation, and the same outcome at every larger joint budget. -/
+/-- **Conditional decision for the last family, from firing on the class and closure of the cumulative round.** If
+the last round is eventually not stuck on every nonempty `MillerNormal` store, and the cumulative round keeps the class
+at every budget, then the last family decides every store of the dynamic pattern fragment whose opened sides have
+β-normal reducts, with a principal answer or a certified refutation, and the same outcome at every larger joint budget.
+The closure hypothesis fails in the tower (`ContextualDependentMillerClosure.ReorderControls.cumulativeRound_not_keeps`),
+and the conclusion fails there on `crossStore` (`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`).
+For every store, runs are exact; on `crossStore` they stop postponed
+(`UnificationWithLevels.DependentFibre.cross_postponed`). -/
 theorem inPlace_decided_of_cumulative
     (firing : ∀ {Γ : Context S.R} {problem : EquationStore (TotalTerm Γ)}, MillerNormal problem → problem ≠ [] →
       ∃ bound, ∀ larger, bound ≤ larger →

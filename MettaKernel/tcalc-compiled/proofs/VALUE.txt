@@ -1,0 +1,85 @@
+ORDINARY-ROW PROOF BANK: REUSE AND RETIREMENT BOUNDARIES
+
+The accepted work survives a change of native backend. It specifies what row
+firing means, how packed descriptors represent that meaning, and which output
+and memory effects a caller may rely on. The unfinished GCC-generated adapter
+machine proof is a separate, paused artifact.
+
+Reusable mathematics
+--------------------
+ordinary_flat.ml defines row/constant lookup independently of flat_fire machine
+code. An ordinary make descriptor packs row and column into two 8-bit fields;
+a guard packs two such selections into four 8-bit fields. The projection and
+ORDINARY_FIRE_REFINEMENT theorems relate this packing to independent guard and
+selection semantics under the declared 4-word-row, 24-premise and 32-item bounds.
+
+flat_spec.ml specifies the packed leaf. Its row-base plus column computation
+uses 32-bit modular addition. Natural-number addressing is justified only by
+the corresponding nonwrapping premises; wrapped-offset controls remain valid
+and must survive a new backend.
+
+ordinary_pack_spec.ml separates source extents, destination capacities and
+complete packed workspaces. Its result lists include the previous suffixes.
+cesta_adapter_semantics.ml proves that those mathematical outputs retain the
+independent ordinary-row firing meaning. It needs no linked adapter artifact.
+
+flat_workspace.ml and flat_trace_workspace.ml retain useful exact contracts:
+prefix/suffix splicing, word-array splitting, access-region widening and event
+composition at a fresh callee-entry baseline. Some are statements about the
+HOL x86 memory/event model; they require a correspondence or a new proof before
+being used as Lean/Sail theorems.
+
+Independent machine evidence
+----------------------------
+The canonical traced flat_fire proof and its functional weakening concern the
+exact 211-byte leaf. Full-workspace contracts include suffix preservation and
+their stated separation/access conditions. The exact Micromath leaf contracts
+are also retained. These provide independent comparison implementations and
+artifact-specific checks, even after t-ISA replaces the surrounding adapter.
+
+The bank does not prove ORDINARY_PACK_MC_CORRECT or ORDINARY_ADAPTER_MC_CORRECT.
+Running its gate cannot certify the paused complete-adapter chain. The old
+proofs/check.sh retains that chain's completion requirements and remains separate.
+
+Concrete reuse in the native-refinement lane
+--------------------------------------------
+1. Give ordinary_flat_fire the independent ordinary-row result as its source
+   contract; keep the old leaf as an oracle rather than defining the new result
+   by the old implementation.
+2. Preserve the word-width and no-wrap distinctions at descriptor/address
+   lowering. Copying a natural-number formula is insufficient.
+3. Carry full workspace equations through the new consumer: produced prefix,
+   untouched suffix, refusal effects and capacity conditions.
+4. Preserve the entire executable image required by a caller, including future
+   blocks and return targets. The Lean X86CodePlacement.Placed.preserved theorem
+   now expresses this view-wide preservation rule; a leaf-local exclusion does
+   not discharge it.
+5. Add the new t-ISA observations explicitly: fuel, status, ABI, scratch registers
+   and no-verdict. They are not covered by the old span ABI contracts.
+6. Keep access-trace safety distinct from final-state framing. A bound on final
+   writes alone does not establish bounded reads or exclude transient accesses.
+
+Retention and cleanup
+---------------------
+Keep all bank sources, exact machine images/objects, runtime controls, accepted
+receipts, historical source, expanded failed proof attempts and their logs.
+The earlier untraced proof remains byte-for-byte history. Kimi's pack/adapter
+attempt stays paused; this document starts no further tactic replay.
+
+cleanup-candidates.tsv lists only legacy build-proof OCaml replay products:
+compiled interfaces/objects and native proof executables. It excludes machine
+objects under proof, source, expanded ML, logs and the accepted bank cohorts.
+These products are rebuildable; their hashes identify the cleanup cohort.
+The approved removal of all 135 products is recorded in cleanup-result.txt.
+Preserved source and evidence hashes matched before and after deletion.
+
+Qualification
+-------------
+Independent review on 2026-11-11 replayed check-bank.sh --math-only and the full
+bank in fresh processes from outside the compiled checkout. The runs accepted
+50 mathematical results and 61 combined results, checked axioms and rechecked
+input hashes. GCC/Clang leaf controls passed and the changed-guard mutant failed.
+The mathematical expanded proof contains no x86-state or object-file bindings.
+Fresh review receipts are recorded in the private native-refinement handoff.
+
+The ordinary runtime build remains independent of HOL, Sail and the bank.

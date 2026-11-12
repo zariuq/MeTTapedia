@@ -1,7 +1,7 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentCensusReadsValidHead
 
 /-!
-# Acceptance for the skeleton family, reduced to the census rows not yet read
+# A conditional decision for the skeleton family, from the census rows not yet read
 
 Every nonempty store of the permuted Miller class has, from some budget on, a census head on a preparation that no
 longer changes, with normal codes (`ContextualDependentCoverageReadersHalf.tower_stable_census_head`). Three rows of
@@ -13,11 +13,13 @@ the census are read by the skeleton family (`CoveredHead`, `tower_skeletonReads_
   sides;
 * its η-expanded sides have distinct skeletons, at any base type (`tower_skeletonReads_of_clash`).
 
-So **the skeleton family decides every store of the dynamic pattern fragment, with a principal answer or a certified
-refutation, constant at every larger budget, as soon as every census head outside these three rows is read**
-(`tower_skeleton_decided_of_uncovered`). The hypothesis is the rest of the census half of coverage; among its rows are
-the pattern rows, spines of one head with one skeleton, formers of one kind at a universe, and pairs against neutral
-terms.
+So **a conditional decision** (`tower_skeleton_decided_of_uncovered`): if every census head outside these three rows
+is read, the skeleton family decides every store of the dynamic pattern fragment, with a principal answer or a
+certified refutation, constant at every larger budget. The hypothesis is the rest of the census half of coverage;
+among its rows are the pattern rows, spines of one head with one skeleton, formers of one kind at a universe, and pairs
+against neutral terms. At the tower the hypothesis fails: the conclusion would decide `crossStore`, solvable and
+without principal answer (`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`). For every store,
+runs are exact; on `crossStore` they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`).
 
 The census can be read at the full depth: the η-long opened sides of every equation of the class with normal sides
 are of a census kind at the annotation's Π count (`eta_kind`), so the hypothesis may use that kind
@@ -62,9 +64,13 @@ theorem tower_skeletonReads_of_covered {Θ : Context setting.R} {problem : Equat
     exact ⟨bound, fun larger enough => .inl (reads larger enough)⟩
   · exact tower_skeletonReads_of_clash constant member types skeletons
 
-/-- **Acceptance for the tower's skeleton family, reduced to the census rows not yet read**: if every census head of a
-constant preparation outside the covered rows is read from some budget on, the family decides every store of the
-dynamic pattern fragment, with a principal answer or a certified refutation, constant at every larger budget. -/
+/-- **Conditional decision for the tower's skeleton family, from the census rows not yet read**: if every census head
+of a constant preparation outside the covered rows is read from some budget on, the family decides every store of the
+dynamic pattern fragment, with a principal answer or a certified refutation, constant at every larger budget. At the
+tower the hypothesis fails: the conclusion would decide `crossStore`
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`,
+`ContextualDependentSweep.Witnesses.acceptance_conclusion_false`). For every store, runs are exact; on `crossStore`
+they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`). -/
 theorem tower_skeleton_decided_of_uncovered
     (uncovered : ∀ {Γ : Context setting.R} {problem : EquationStore (TotalTerm Γ)},
       PermutedMiller setting.levels problem → problem ≠ [] → ∀ threshold,
@@ -110,11 +116,13 @@ theorem eta_kind {Γ : Context setting.R} {equation : Equation (TotalTerm Γ)}
       (ContextualDependentCensus.openNormal_normal empty (normal_expandTo empty _ normal) _)
   exact classification (opened left normalLeft) (opened right normalRight)
 
-/-- **Acceptance for the tower's skeleton family, reduced to the census rows not yet read**, with the census kind of
-the η-long opened sides available: if every census head of a constant preparation outside the covered rows, whose
+/-- **Conditional decision for the tower's skeleton family, from the census rows not yet read**, with the census kind
+of the η-long opened sides available: if every census head of a constant preparation outside the covered rows, whose
 η-long opened sides are of a census kind at the annotation's Π count, is read from some budget on, the family decides
 every store of the dynamic pattern fragment, with a principal answer or a certified refutation, constant at every
-larger budget. -/
+larger budget. At the tower the hypothesis fails for the same reason
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`). For every store, runs are exact; on
+`crossStore` they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`). -/
 theorem tower_skeleton_decided_of_uncovered_kinds
     (uncovered : ∀ {Γ : Context setting.R} {problem : EquationStore (TotalTerm Γ)},
       PermutedMiller setting.levels problem → problem ≠ [] → ∀ threshold,

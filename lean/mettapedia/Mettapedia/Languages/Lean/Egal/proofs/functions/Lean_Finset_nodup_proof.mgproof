@@ -1,0 +1,8 @@
+let A.
+claim L: forall x0 :e (Lean_Multiset A), forall x1 :e {z :e 1 | z :e (Lean_Multiset_Nodup A x0)},
+  0 :e Lean_Multiset_Nodup A (Lean_Finset_val A (Lean_Finset_mk_node A x0 x1)).
+{ let x0. assume Hx0: x0 :e Lean_Multiset A. let x1. assume Hx1: x1 :e {z :e 1 | z :e (Lean_Multiset_Nodup A x0)}.
+  rewrite Lean_Finset_val_mk A x0 Hx0 x1 Hx1.
+  exact Lean_prop_0_of (Lean_Multiset_Nodup A x0) (Lean_Multiset_Nodup_In A x0 Hx0) x1
+    (SepE2 1 (fun z => z :e (Lean_Multiset_Nodup A x0)) x1 Hx1). }
+exact Lean_Finset_ind A (fun self => 0 :e Lean_Multiset_Nodup A (Lean_Finset_val A self)) L.

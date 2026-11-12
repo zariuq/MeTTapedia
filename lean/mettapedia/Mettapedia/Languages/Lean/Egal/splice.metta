@@ -1,11 +1,13 @@
 ; Typing lemmas proved in Egal by hand.
 ;
 ;   cetta --lang petta splice.metta facts DIR OUT        writes (TypingProof Lean_X) for each DIR/Lean_X_In.mgproof
+;                                                         and (LemmaProof Lean_X) for each DIR/Lean_X_proof.mgproof
 ;   cetta --lang petta splice.metta splice DIR FILE...   replaces each line "PROOF-FILE NAME" with DIR/NAME.mgproof
 ;
-; The statements are generated from the functions' declared types; only the
-; proofs are written by hand, in proofs/functions/.  A marker without its
-; proof file is an error (exit status 1).
+; The statements are generated from the functions' declared types, and from
+; the statements of the theorems that Lean's proof terms cite; only the proofs
+; are written by hand, in proofs/functions/.  A marker without its proof file
+; is an error (exit status 1).
 
 !(import! &self fs)
 !(import! &self str)
@@ -32,12 +34,20 @@
          (if (str:ends-with $n "_In.mgproof")
              (cons-atom (str:byte-slice $n 0 (- (str:byte-length $n) 11)) $rest)
              $rest))))
+(= (lemma-names $names)
+   (if (== $names ()) ()
+       (let* (($n (car-atom $names)) ($rest (lemma-names (cdr-atom $names))))
+         (if (str:ends-with $n "_proof.mgproof")
+             (cons-atom (str:byte-slice $n 0 (- (str:byte-length $n) 14)) $rest)
+             $rest))))
 
 (= (write-facts $dir $out)
-   (let* (($names (sort-names (proof-names (entries (fs:open-directory $dir) ())))))
-     (fs:write $out (str:join "" (fact-lines $names)))))
-(= (fact-lines $ns)
-   (if (== $ns ()) () (cons-atom (format-args "(TypingProof {})\n" ((car-atom $ns))) (fact-lines (cdr-atom $ns)))))
+   (let* (($all (entries (fs:open-directory $dir) ()))
+          ($names (sort-names (proof-names $all))) ($lemmas (sort-names (lemma-names $all))))
+     (fs:write $out (str:join "" (append-lists (fact-lines "TypingProof" $names) (fact-lines "LemmaProof" $lemmas))))))
+(= (fact-lines $kind $ns)
+   (if (== $ns ()) ()
+       (cons-atom (format-args "({} {})\n" ($kind (car-atom $ns))) (fact-lines $kind (cdr-atom $ns)))))
 
 ; Each marker line is replaced by its proof, without its final newlines.
 (= (strip-newlines $t)

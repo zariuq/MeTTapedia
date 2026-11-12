@@ -21,9 +21,9 @@ def hidden (world : World) : List String := world.2.flatMap (fun frame => specBi
 
 inductive Primitive (policy : Policy) (world : World) (live : List Atom) (scope : List String) (frame : Frame) :
     Entry.Value → GroundedResult Entry.Value → Prop where
-  | fold (items init left right operation context) :
+  | fold {itemsMark : Entry.Status} (items init left right operation context) :
       Primitive policy world live scope frame
-        (HECollectionFoldEmission.call items init left right operation context)
+        (HECollectionFoldEmission.call items init left right operation context (itemsMark := itemsMark))
         (.ok [(HECollectionFoldEmission.emission (hidden world) live scope frame items init left right operation context,
           Bindings.empty)])
   | append {input outcome} : HECollectionClosedAppend.Step snapshots policy () world input outcome →
@@ -76,6 +76,12 @@ theorem emitter (policy : Policy) (world : World) :
     simp [environment, dispatch]
   · intro live scope frame items init left right operation context
     exact ⟨rfl, Primitive.fold items init left right operation context⟩
+
+theorem marked_emitter (policy : Policy) (world : World) :
+    HECollectionFoldNativeEntry.MarkedEmitter (environment policy) () world (hidden world) := by
+  refine ⟨emitter policy world, ?_⟩
+  intro live scope frame items init left right operation context itemsMark
+  exact ⟨rfl, Primitive.fold (itemsMark := itemsMark) items init left right operation context⟩
 
 theorem append_interface (policy : Policy) (world : World) :
     HECollectionAppendSource.Interface (environment policy) snapshots policy () world := by

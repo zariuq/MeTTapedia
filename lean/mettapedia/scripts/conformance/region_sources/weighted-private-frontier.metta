@@ -1,0 +1,28 @@
+(= (improve $space $vertex $candidate)
+  (let $current (collapse (match $space (sd $vertex $previous) $previous))
+    (if (== $current ())
+      (let $discard (add-atom $space (sd $vertex $candidate)) $vertex)
+      (let ($previous) $current
+        (if (< $candidate $previous)
+          (let* (($discard (remove-atom $space (sd $vertex $previous)))
+                 ($discard (add-atom $space (sd $vertex $candidate)))) $vertex)
+          (empty))))))
+
+(= (weighted-frontier $space $graph $front)
+  (collapse (unique
+    (let $u (superpose $front)
+      (match $space (sd $u $d)
+        (match $graph (e $u $vertex $w)
+          (improve $space $vertex (+ $d $w))))))))
+
+!(let $graph (new-space)
+  (let* (($a (add-atom $graph (e 0 1 9)))
+         ($b (add-atom $graph (e 0 1 3)))
+         ($c (add-atom $graph (e 0 2 8)))
+         ($d (add-atom $graph (e 1 2 1)))
+         ($root (add-atom &self (sd 0 0))))
+    (let $first (weighted-frontier &self $graph (0))
+      (let $second (weighted-frontier &self $graph $first)
+        (let $third (weighted-frontier &self $graph $second)
+          (quote ($first $second $third)))))))
+!(collapse (match &self (sd $vertex $distance) (quote ($vertex $distance))))

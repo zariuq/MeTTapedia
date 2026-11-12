@@ -33,6 +33,24 @@ theorem Transition.append_frames {registry : SpaceSemantics.Program} {source tar
   case data_enter bindings head arguments control notControl notCallable =>
     simp only [appendFrames, step, control]
     split <;> simp_all [sourceControlForm]
+    all_goals aesop
+  case equations bindings head index held selected used control ordinary notRemove notNative chosen =>
+    have notMatch : head ≠ "match" := by
+      rintro rfl
+      cases notNative
+    simp [appendFrames, step, control, ordinary, notRemove, notMatch, notNative, chosen]
+  case dynamic_native bindings callee supplied head control resolved native =>
+    simp [appendFrames, step, control, resolved, partial?, native]
+  case dynamic_equations bindings callee supplied head selected used control resolved notNative registered chosen =>
+    simp [appendFrames, step, control, resolved, partial?, notNative, registered, chosen,
+      invocationFrames_append]
+  case dynamic_data bindings callee supplied control notPartial notCallable =>
+    cases resolved : resolve bindings callee <;> simp_all [appendFrames, step, runtimeCallable]
+  case partial_value bindings head captured control =>
+    simp [appendFrames, step, control, Eval.partialValue, Eval.partialTag, partial?]
+  case fault_caught reason earned rest control recovered =>
+    have extended := recoverDynamic_append source.frames suffix [] earned rest recovered
+    simp [appendFrames, step, control, extended]
   case remove_bad bindings index held control invalid =>
     cases held with
     | nil => simp [appendFrames, step, control, Eval.ioHead]

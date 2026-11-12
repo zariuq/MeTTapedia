@@ -145,23 +145,6 @@ claim Lo: Lean_Nat_O 1 (TupArgs 1 (SeqCons (x0) SeqNil)) = 0.
 { prove SeqAt (SeqCons (0) (SeqCons (0) SeqNil)) 1 = 0. rewrite Lean_Nat_O1 (TupArgs 1 (SeqCons (x0) SeqNil)). reflexivity. }
 exact In_fam_eq (IndFiber Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B) (Lean_Nat_O 1 (TupArgs 1 (SeqCons (x0) SeqNil))) 0 Lo (Lean_Nat_succ_node x0) L.
 Qed.
-Theorem Lean_Nat_succ_node_In : forall u, nat_p u -> forall x0 :e LeanUniv u, Lean_Nat_succ_node x0 :e LeanUniv u.
-let u. assume Hu: nat_p u. let x0. assume H0: x0 :e LeanUniv u.
-claim Ht: TransSet (LeanUniv u).
-{ exact LeanUniv_TransSet u Hu. }
-claim Hz: ZF_closed (LeanUniv u).
-{ exact LeanUniv_ZF_closed u Hu. }
-claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
-{ rewrite SeqAt_0. reflexivity. }
-claim Lo: Lean_Nat_O 1 (TupArgs 1 (SeqCons (x0) SeqNil)) = 0.
-{ prove SeqAt (SeqCons (0) (SeqCons (0) SeqNil)) 1 = 0. rewrite Lean_Nat_O1 (TupArgs 1 (SeqCons (x0) SeqNil)). reflexivity. }
-prove IndNode Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B 1 (TupArgs 1 (SeqCons (x0) SeqNil)) :e LeanUniv u.
-exact IndNode_univ (LeanUniv u) Ht Hz Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B 1 (TupArgs 1 (SeqCons (x0) SeqNil)) (LeanUniv_nat_In u Hu 1 (nat_ordsucc
-    0 nat_0))
-  (In_eq_ls (Lean_Nat_O 1 (TupArgs 1 (SeqCons (x0) SeqNil))) 0 (LeanUniv u) Lo (LeanUniv_0_In u Hu))
-  (TupArgs_univ (LeanUniv u) Ht Hz 1 (LeanUniv_nat_In u Hu 1 (nat_ordsucc 0 nat_0)) (SeqCons (x0) SeqNil) (Below_S 0 (fun j => SeqAt (SeqCons (x0) SeqNil) j :e LeanUniv u) (Below_0 (fun j => SeqAt
-    (SeqCons (x0) SeqNil) j :e LeanUniv u)) (In_eq_ls (SeqAt (SeqCons (x0) SeqNil) 0) x0 (LeanUniv u) U0 H0))).
-Qed.
 Definition Lean_Nat_succ : set := (fun x0 :e Lean_Nat => Lean_Nat_succ_node x0).
 Theorem Lean_Nat_succ_type : Lean_Nat_succ :e (Pi_ x0 :e Lean_Nat, Lean_Nat).
 exact (lam_Pi Lean_Nat (fun x0 => Lean_Nat) (fun x0 => Lean_Nat_succ_node x0) (fun x0 H0 => (Lean_Nat_succ_typed x0 H0))).

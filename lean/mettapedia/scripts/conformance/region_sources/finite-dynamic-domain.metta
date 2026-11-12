@@ -1,0 +1,15 @@
+(step 1)
+(step 2)
+(p 0 0)
+
+(= (domain-round)
+   (size-atom (collapse (match &self (step $x)
+     (match &self (p $u $v)
+       (let $payload (quote (p $x $u))
+         (if (== (collapse (match &self $payload t)) ())
+           (add-atom &self $payload) (empty))))))))
+
+!(domain-round)
+!(domain-round)
+!(domain-round)
+!(collapse (match &self (p $u $v) (quote ($u $v))))

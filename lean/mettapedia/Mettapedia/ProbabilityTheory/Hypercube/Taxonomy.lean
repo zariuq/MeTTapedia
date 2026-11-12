@@ -32,7 +32,7 @@ Each axis has `⊤` (most general) and `⊥` (most specific).
 -/
 
 /-- Helper: define LE on a type with explicit comparison function. -/
-def mkLE {α : Type*} (cmp : α → α → Prop) : LE α := ⟨cmp⟩
+@[instance_reducible] def mkLE {α : Type*} (cmp : α → α → Prop) : LE α := ⟨cmp⟩
 
 /-!
 ## §2: Partial Order Instances for All Thirteen Axes

@@ -1,7 +1,7 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentCumulativeClosureIntersect
 
 /-!
-# Acceptance for the dead-binder family, reduced to firing and the open rule obligations
+# A conditional decision for the dead-binder family, from firing and the open rule obligations
 
 `ContextualDependentCumulativeClosure.Obligations` lists one closure obligation per rule of the cumulative round. On
 the permuted Miller class of a strongly normalizing package without root computation, six are discharged:
@@ -12,7 +12,10 @@ assembles the full list.
 **The reduction** (`dead_decided_of_rules`, and `tower_dead_decided_of_rules` for the tower): if the dead-binder round
 is eventually not stuck on nonempty `PermutedMiller` stores (firing) and the open rule obligations hold at every
 budget, the dead-binder family decides every store of the dynamic pattern fragment, with a principal answer or a
-certified refutation, constant at every larger budget.
+certified refutation, constant at every larger budget. At the tower the hypotheses do not both hold: the conclusion
+would decide `crossStore`, solvable and without principal answer
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`). For every store, runs are exact; on
+`crossStore` they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`).
 -/
 
 set_option autoImplicit false
@@ -157,8 +160,11 @@ variable (strengthening : EqualStrengthening S.R)
   (sn : StronglyNormalizing S.R)
 
 include stable sn in
-/-- **Acceptance for the dead-binder family, reduced to firing and the open rule obligations**, on a strongly
-normalizing package. -/
+/-- **Conditional decision for the dead-binder family, from firing and the open rule obligations**, on a strongly
+normalizing package. At the tower's setting the conclusion fails on `crossStore`
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`), so there the hypotheses do not both hold.
+For every store, runs are exact; on `crossStore` they stop postponed
+(`UnificationWithLevels.DependentFibre.cross_postponed`). -/
 theorem dead_decided_of_rules
     (firing : ∀ {Γ : Context S.R} {problem : EquationStore (TotalTerm Γ)}, PermutedMiller S.levels problem →
       problem ≠ [] → ∃ bound, ∀ larger, bound ≤ larger →
@@ -203,8 +209,11 @@ abbrev TowerOpen (fuel : Nat) : Prop :=
     ContextualDependentNormalCheckingTower.head_typing_unique
     (ContextualDependentNormalizing.tower_rootComplete (fun _ => (0 : Nat))) fuel
 
-/-- **Acceptance for the tower's dead-binder family, reduced to firing and the open rule obligations**, on every store
-of the dynamic pattern fragment. -/
+/-- **Conditional decision for the tower's dead-binder family, from firing and the open rule obligations**, on every
+store of the dynamic pattern fragment. At the tower the hypotheses do not both hold: the conclusion would decide
+`crossStore` (`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`,
+`ContextualDependentSweep.Witnesses.acceptance_conclusion_false`). For every store, runs are exact; on `crossStore`
+they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`). -/
 theorem tower_dead_decided_of_rules
     (firing : ∀ {Γ : Context setting.R} {problem : EquationStore (TotalTerm Γ)}, PermutedMiller setting.levels problem →
       problem ≠ [] → ∃ bound, ∀ larger, bound ≤ larger → deadTower.round larger problem ≠ .stuck)

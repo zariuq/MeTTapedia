@@ -11,8 +11,11 @@ one level down (`underRoundAt`). A round of the store so read is a round of the 
 The family is conservative over the dead-binder family (`under_run_of_dead`) and eventually constant at every depth
 (`underRoundAt_const`); it keeps the permuted Miller class at every budget on a strongly normalizing package without
 root computation whose reducer returns reducts (`underRound_closure`); so **it decides every store of the dynamic
-pattern fragment as soon as its round is eventually not stuck on nonempty stores of the permuted class**
-(`under_decided_of_firing`, `tower_under_decided_of_firing`).
+pattern fragment if its round is eventually not stuck on nonempty stores of the permuted class**
+(`under_decided_of_firing`, `tower_under_decided_of_firing`). These are conditional decisions; at the tower firing
+fails, since the conclusion would decide `crossStore`, solvable and without principal answer
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`). For every store, runs are exact; on
+`crossStore` they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`).
 -/
 
 set_option autoImplicit false
@@ -423,11 +426,13 @@ theorem underRound_closure (fuel : Nat) :
     smaller permuted fired
 
 include sn directed stable in
-/-- **Acceptance for the under-binder family from firing**: on a strongly normalizing package without root
+/-- **Conditional decision for the under-binder family, from firing**: on a strongly normalizing package without root
 computation whose reducer returns reducts and is monotone in its budget, and where typed equality strengthens past an
-unused variable, the family decides every store of the dynamic pattern fragment, with a principal answer or a
-certified refutation, constant at every larger budget, as soon as its round is eventually not stuck on nonempty stores
-of the permuted class. -/
+unused variable, if the family's round is eventually not stuck on nonempty stores of the permuted class, the family
+decides every store of the dynamic pattern fragment, with a principal answer or a certified refutation, constant at
+every larger budget. At the tower's setting the conclusion fails on `crossStore`
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`), so there firing fails. For every store, runs
+are exact; on `crossStore` they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`). -/
 theorem under_decided_of_firing
     (firing : ∀ {Γ : Context S.R} {problem : EquationStore (TotalTerm Γ)}, PermutedMiller S.levels problem →
       problem ≠ [] → ∃ bound, ∀ larger, bound ≤ larger →
@@ -472,8 +477,11 @@ noncomputable def underTower : ContextualDependentDecisiveDriver.Family setting.
     ContextualDependentNormalCheckingTower.head_typing_unique
     (ContextualDependentNormalizing.tower_rootComplete (fun _ => (0 : Nat))) tower_strengthening
 
-/-- **Acceptance for the tower's under-binder family from firing**, on every store of the dynamic pattern fragment: no
-rule obligation remains. -/
+/-- **Conditional decision for the tower's under-binder family, from firing**, on every store of the dynamic pattern
+fragment; no rule obligation remains. At the tower firing fails: the conclusion would decide `crossStore`
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`,
+`ContextualDependentSweep.Witnesses.acceptance_conclusion_false`). For every store, runs are exact; on `crossStore`
+they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`). -/
 theorem tower_under_decided_of_firing
     (firing : ∀ {Γ : Context setting.R} {problem : EquationStore (TotalTerm Γ)}, PermutedMiller setting.levels problem →
       problem ≠ [] → ∃ bound, ∀ larger, bound ≤ larger → underTower.round larger problem ≠ .stuck)

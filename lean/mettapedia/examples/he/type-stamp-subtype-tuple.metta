@@ -1,0 +1,10 @@
+; Equal subtype-closed child typings need not have equal raw tuple views.
+(: h H)
+(: x A)
+(: y A)
+(: y B)
+(: z B)
+(:< A B)
+!(let $ignored (new-state (h y))
+   (let $state (new-state (h z))
+     (let $_ (change-state! $state (h x)) (get-state $state))))

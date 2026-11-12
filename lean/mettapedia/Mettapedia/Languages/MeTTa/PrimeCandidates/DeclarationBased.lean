@@ -525,6 +525,9 @@ import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.SetProfile.Ba
 import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.SetProfile.Models
 import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.SetProfile.HOLFiberPeano
 import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.SetProfile.DeduktiHubFiber
+import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.AnnotatedRunsFormedSquare
+import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.AnnotatedRunsFormedWires
+import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.TransformStateTyping
 
 /-!
 # Declaration-based Prime candidate integration

@@ -1,0 +1,4 @@
+let v_x. assume Hx: v_x :e (Pi_ v_k :e Lean_Nat, (Pi_ ux :e (Lean_Nat_le_Prop (Lean_Nat_succ_node v_k) (LeanNum 0)), LeanProp)).
+let v_x1. assume Hx1: v_x1 :e Lean_Nat.
+assume H: 0 :e (Lean_Nat_le_Prop (Lean_Nat_succ_node v_x1) (LeanNum 0)).
+exact FalseE (LeanNat_not_below_zero v_x1 Hx1 H) (0 :e (v_x v_x1 0)).

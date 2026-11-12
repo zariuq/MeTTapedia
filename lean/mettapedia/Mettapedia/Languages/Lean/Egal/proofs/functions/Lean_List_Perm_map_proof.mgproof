@@ -1,0 +1,5 @@
+let A B f. assume Hf: f :e (Pi_ ux :e A, B).
+let xs. assume Hxs: xs :e Lean_List A. let ys. assume Hys: ys :e Lean_List A.
+assume H: 0 :e Lean_List_Perm_Prop A xs ys.
+exact LeanListPerm_to_prop B (Lean_List_map A B f xs) (Lean_List_map A B f ys)
+  (LeanListPerm_map A B f Hf xs ys (LeanListPerm_from_prop A xs ys H)).

@@ -17,9 +17,9 @@ List.range.eq_1	List.range	equation	248109846	generated Lean_List_range_eq_1
 List.zip.eq_1	List.zip	equation	444410807	generated Lean_List_zip_eq_1
 List.sum.eq_1	List.sum	equation	3671851631	generated Lean_List_sum_eq_1
 instAddNat.eq_1	instAddNat	equation	2020406042	generated Lean_instAddNat_eq_1
-List.mergeSort.eq_1	List.mergeSort	equation	1399613355	not read: applies Mettapedia.Languages.Lean.Recursion.FuelCore.MergeSort.reading, which is not read
-List.mergeSort.eq_2	List.mergeSort	equation	444773611	not read: applies Mettapedia.Languages.Lean.Recursion.FuelCore.MergeSort.reading, which is not read
-List.mergeSort.eq_3	List.mergeSort	equation	4213744023	not read: applies Mettapedia.Languages.Lean.Recursion.FuelCore.MergeSort.reading, which is not read
+List.mergeSort.eq_1	List.mergeSort	equation	1399613355	generated Lean_List_mergeSort_eq_1
+List.mergeSort.eq_2	List.mergeSort	equation	444773611	generated Lean_List_mergeSort_eq_2
+List.mergeSort.eq_3	List.mergeSort	equation	4213744023	generated Lean_List_mergeSort_eq_3
 List.max?.eq_1	List.max?	equation	3928188317	generated Lean_List_maxu63_eq_1
 List.max?.eq_2	List.max?	equation	2324372222	generated Lean_List_maxu63_eq_2
 Nat.instMax.eq_1	Nat.instMax	equation	1314102570	generated Lean_Nat_instMax_eq_1
@@ -39,16 +39,16 @@ Nat.choose.eq_1	Nat.choose	equation	2874669642	generated Lean_Nat_choose_eq_1
 Nat.choose.eq_2	Nat.choose	equation	173429890	generated Lean_Nat_choose_eq_2
 Nat.choose.eq_3	Nat.choose	equation	927451254	generated Lean_Nat_choose_eq_3
 Nat.fib.eq_1	Nat.fib	equation	3676078998	generated Lean_Nat_fib_eq_1
-Nat.primeFactorsList.eq_1	Nat.primeFactorsList	equation	518290124	not read
-Nat.primeFactorsList.eq_2	Nat.primeFactorsList	equation	322775473	not read
-Nat.primeFactorsList.eq_3	Nat.primeFactorsList	equation	4140184584	not read
-Nat.decidablePrime.eq_1	Nat.decidablePrime	equation	2573434571	not read: erased proofs in the definition or its equations are not reconstructed
-Finset.sum.eq_1	Finset.sum	equation	1194252111	not read: applies Multiset.sum, which is not read
+Nat.primeFactorsList.eq_1	Nat.primeFactorsList	equation	518290124	generated Lean_Nat_primeFactorsList_eq_1
+Nat.primeFactorsList.eq_2	Nat.primeFactorsList	equation	322775473	generated Lean_Nat_primeFactorsList_eq_2
+Nat.primeFactorsList.eq_3	Nat.primeFactorsList	equation	4140184584	generated Lean_Nat_primeFactorsList_eq_3
+Nat.decidablePrime.eq_1	Nat.decidablePrime	equation	2573434571	generated Lean_Nat_decidablePrime_eq_1
+Finset.sum.eq_1	Finset.sum	equation	1194252111	generated Lean_Finset_sum_eq_1
 Nat.instAddCommMonoid.eq_1	Nat.instAddCommMonoid	equation	3623298314	generated Lean_Nat_instAddCommMonoid_eq_1
-Finset.range.eq_1	Finset.range	equation	2213107918	not read: erased proofs in the definition or its equations are not reconstructed
+Finset.range.eq_1	Finset.range	equation	2213107918	generated Lean_Finset_range_eq_1
 id.eq_1	id	equation	3897527904	generated Lean_id_eq_1
-Finset.card.eq_1	Finset.card	equation	3930454784	not read: applies Multiset.card, which is not read
-Finset.filter.eq_1	Finset.filter	equation	3832976824	not read: erased proofs in the definition or its equations are not reconstructed
+Finset.card.eq_1	Finset.card	equation	3930454784	generated Lean_Finset_card_eq_1
+Finset.filter.eq_1	Finset.filter	equation	3832976824	generated Lean_Finset_filter_eq_1
 List.reverseAux.eq_1	List.reverseAux	equation	276107252	generated Lean_List_reverseAux_eq_1
 List.reverseAux.eq_2	List.reverseAux	equation	2325223703	generated Lean_List_reverseAux_eq_2
 _private.scripts.ExportLeanCodeEquations.0.List.filter.match_1.eq_1	List.filter.match_1	matcher-equation	2773188013	not read: a matcher of a function not read
@@ -59,12 +59,12 @@ List.zipWith.eq_1	List.zipWith	equation	1186223343	generated Lean_List_zipWith_e
 List.zipWith.eq_2	List.zipWith	equation	2402071751	not read
 Add.add	Add.add	projection	2736173627	generated Lean_Add_add_mk (the projection's reduction)
 Zero.zero	Zero.zero	projection	1351900946	generated Lean_Zero_zero_mk (the projection's reduction)
-List.merge.eq_1	List.merge	equation	1788216735	not read
-List.merge.eq_2	List.merge	equation	542016452	not read
-List.merge.eq_3	List.merge	equation	3793400694	not read
-Subtype.val	Subtype.val	projection	2875877041	not read: a structure projection
+List.merge.eq_1	List.merge	equation	1788216735	generated Lean_List_merge_eq_1
+List.merge.eq_2	List.merge	equation	542016452	generated Lean_List_merge_eq_2
+List.merge.eq_3	List.merge	equation	3793400694	generated Lean_List_merge_eq_3
+Subtype.val	Subtype.val	projection	2875877041	generated Lean_Subtype_val_mk (the projection's reduction)
 Prod.fst	Prod.fst	projection	1427615629	generated Lean_Prod_fst_mk (the projection's reduction)
-List.MergeSort.Internal.splitInTwo.eq_1	List.MergeSort.Internal.splitInTwo	equation	2624791718	not read: erased proofs in the definition or its equations are not reconstructed
+List.MergeSort.Internal.splitInTwo.eq_1	List.MergeSort.Internal.splitInTwo	equation	2624791718	generated Lean_List_MergeSort_Internal_splitInTwo_eq_1
 Prod.snd	Prod.snd	projection	2463326835	generated Lean_Prod_snd_mk (the projection's reduction)
 Max.max	Max.max	projection	2243624016	generated Lean_Max_max_mk (the projection's reduction)
 maxOfLe.eq_1	maxOfLe	equation	1641264148	generated Lean_maxOfLe_eq_1
@@ -76,32 +76,32 @@ decidable_of_iff'.eq_1	decidable_of_iff'	equation	2338311302	generated Lean_deci
 instDecidableAnd.eq_1	instDecidableAnd	equation	2877069531	generated Lean_instDecidableAnd_eq_1
 instDecidableAnd.eq_2	instDecidableAnd	equation	895030301	generated Lean_instDecidableAnd_eq_2
 instDecidableAnd.eq_3	instDecidableAnd	equation	2166950735	generated Lean_instDecidableAnd_eq_3
-Nat.decidableLoHi.eq_1	Nat.decidableLoHi	equation	3202057442	not read: erased proofs in the definition or its equations are not reconstructed
+Nat.decidableLoHi.eq_1	Nat.decidableLoHi	equation	3202057442	generated Lean_Nat_decidableLoHi_eq_1
 instDecidableNot.eq_1	instDecidableNot	equation	1922689119	generated Lean_instDecidableNot_eq_1
 instDecidableNot.eq_2	instDecidableNot	equation	645411312	generated Lean_instDecidableNot_eq_2
 Nat.decidable_dvd.eq_1	Nat.decidable_dvd	equation	3986948929	generated Lean_Nat_decidable_dvd_eq_1
-Multiset.sum.eq_1	Multiset.sum	equation	2607920674	not read: erased proofs in the definition or its equations are not reconstructed
-Multiset.map.eq_1	Multiset.map	equation	3582524169	not read: erased proofs in the definition or its equations are not reconstructed
-Finset.val	Finset.val	projection	960713715	not read: a structure projection
+Multiset.sum.eq_1	Multiset.sum	equation	2607920674	generated Lean_Multiset_sum_eq_1
+Multiset.map.eq_1	Multiset.map	equation	3582524169	generated Lean_Multiset_map_eq_1
+Finset.val	Finset.val	projection	960713715	generated Lean_Finset_val_mk (the projection's reduction)
 inferInstance.eq_1	inferInstance	equation	3624754066	generated Lean_inferInstance_eq_1
-Multiset.range.eq_1	Multiset.range	equation	2996635796	not read: applies Multiset.ofList, which is not read
-Multiset.card.eq_1	Multiset.card	equation	4290227001	not read: erased proofs in the definition or its equations are not reconstructed
-Multiset.filter.eq_1	Multiset.filter	equation	3298733475	not read: erased proofs in the definition or its equations are not reconstructed
+Multiset.range.eq_1	Multiset.range	equation	2996635796	generated Lean_Multiset_range_eq_1
+Multiset.card.eq_1	Multiset.card	equation	4290227001	generated Lean_Multiset_card_eq_1
+Multiset.filter.eq_1	Multiset.filter	equation	3298733475	generated Lean_Multiset_filter_eq_1
 Unit.unit.eq_1	Unit.unit	equation	3722246311	not read: applies PUnit.unit, which is not read
 instDecidableEqBool.eq_1	instDecidableEqBool	equation	2136972715	generated Lean_instDecidableEqBool_eq_1
 List.splitAt.eq_1	List.splitAt	equation	2246599139	generated Lean_List_splitAt_eq_1
-Nat.minFacAux.eq_1	Nat.minFacAux	equation	4194173946	not read
+Nat.minFacAux.eq_1	Nat.minFacAux	equation	4194173946	generated Lean_Nat_minFacAux_eq_1
 decidable_of_decidable_of_iff.eq_1	decidable_of_decidable_of_iff	equation	746476589	generated Lean_decidable_of_decidable_of_iff_eq_1
 decidable_of_iff.eq_1	decidable_of_iff	equation	1513722794	generated Lean_decidable_of_iff_eq_1
-Nat.decidableBallLT.eq_1	Nat.decidableBallLT	equation	502244984	not read: erased proofs in the definition or its equations are not reconstructed
-Nat.decidableBallLT.eq_2	Nat.decidableBallLT	equation	1358885639	not read: erased proofs in the definition or its equations are not reconstructed
-Multiset.foldr.eq_1	Multiset.foldr	equation	1627644574	not read: erased proofs in the definition or its equations are not reconstructed
+Nat.decidableBallLT.eq_1	Nat.decidableBallLT	equation	502244984	generated Lean_Nat_decidableBallLT_eq_1
+Nat.decidableBallLT.eq_2	Nat.decidableBallLT	equation	1358885639	generated Lean_Nat_decidableBallLT_eq_2
+Multiset.foldr.eq_1	Multiset.foldr	equation	1627644574	generated Lean_Multiset_foldr_eq_1
 AddSemigroup.toAdd	AddSemigroup.toAdd	projection	1817990591	generated Lean_AddSemigroup_toAdd_mk (the projection's reduction)
 AddMonoid.toAddSemigroup	AddMonoid.toAddSemigroup	projection	1378207289	generated Lean_AddMonoid_toAddSemigroup_mk (the projection's reduction)
 AddCommMonoid.toAddMonoid	AddCommMonoid.toAddMonoid	projection	1196223083	generated Lean_AddCommMonoid_toAddMonoid_mk (the projection's reduction)
 AddMonoid.toZero	AddMonoid.toZero	projection	2108963988	generated Lean_AddMonoid_toZero_mk (the projection's reduction)
-Quot.liftOn.eq_1	Quot.liftOn	equation	1879514711	not read: erased proofs in the definition or its equations are not reconstructed
-Multiset.ofList.eq_1	Multiset.ofList	equation	3302666032	not read: applies Quot.mk, which is not read
+Quot.liftOn.eq_1	Quot.liftOn	equation	1879514711	generated Lean_Quot_liftOn_eq_1
+Multiset.ofList.eq_1	Multiset.ofList	equation	3302666032	generated Lean_Multiset_ofList_eq_1
 Bool.decEq.eq_1	Bool.decEq	equation	1564927632	generated Lean_Bool_decEq_eq_1
 Bool.decEq.eq_2	Bool.decEq	equation	3540440316	generated Lean_Bool_decEq_eq_2
 Bool.decEq.eq_3	Bool.decEq	equation	526094128	generated Lean_Bool_decEq_eq_3

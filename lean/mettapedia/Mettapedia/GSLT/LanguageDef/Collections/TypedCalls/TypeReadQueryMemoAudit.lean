@@ -1,0 +1,23 @@
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadQueryMemoControls
+
+/-! # Axiom audit for recursive retained-reply memoization -/
+
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeCallRank.body_keys_below
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeScopedSaturation.evaluate_eq_of_rank
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeScopedSaturation.evaluate_canonical_depth
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.NativeTypeScopedSaturation.saturated_missing_stays_missing
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadQueryMemoRefinement.recorded_at
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadQueryMemoRefinement.completed_right_retained
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadQueryMemoRefinement.evaluate_related
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadQueryMemoRefinement.completion_saturated
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadQueryMemoRefinement.empty_valid
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadQueryMemoRefinement.retained_evaluate_equal
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadQueryMemoControls.source_safe
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadQueryMemoControls.mixed_recursive_hits_preserve_result_and_skip_allocation
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadQueryMemoControls.root_hit_leaves_supply_unchanged
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadQueryMemoControls.disabled_reuse_runs_the_source
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadQueryMemoControls.open_reply_is_not_published
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadQueryMemoControls.unfinished_closure_is_not_cached_as_empty
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadQueryMemoControls.fabricated_empty_changes_answers
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadQueryMemoControls.governing_change_requires_new_authority
+#print axioms Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeReadQueryMemoControls.arbitrary_prior_allocation_keeps_closed_ordered_duplicates

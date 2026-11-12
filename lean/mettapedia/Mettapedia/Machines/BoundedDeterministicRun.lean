@@ -36,6 +36,21 @@ def run (step : State → Option State) : Nat → State → State
       | none => state
       | some next => run step fuel next
 
+theorem run_of_none (step : State → Option State) (state : State) (stopped : step state = none)
+    (fuel : Nat) : run step fuel state = state := by
+  cases fuel <;> simp [run, stopped]
+
+/-- Continuing from the retained state executes the remaining suffix; it does
+not revisit earlier transitions, including when execution is already stuck. -/
+theorem run_add (step : State → Option State) (first second : Nat) (state : State) :
+    run step (first + second) state = run step second (run step first state) := by
+  induction first generalizing state with
+  | zero => simp [run]
+  | succ first ih =>
+      cases taken : step state with
+      | none => simp [run, taken, run_of_none step state taken]
+      | some next => simpa [run, taken, Nat.succ_add] using ih next
+
 def execute (step : State → Option State) (answer : State → Bool) : Nat → State → Result State
   | 0, state =>
       match step state with
@@ -58,6 +73,33 @@ theorem run_reachable (step : State → Option State) (fuel : Nat) (state : Stat
       | some next =>
           simpa [run, transition] using
             (Relation.ReflTransGen.head (r := fun first second => step first = some second) transition (ih next))
+
+/-- Every finite executed path has an allowance after which all future
+allowances continue from its actual endpoint. No termination is assumed. -/
+theorem run_suffix_of_path (step : State → Option State) {before after : State}
+    (path : Relation.ReflTransGen (fun first second => step first = some second) before after) :
+    ∃ spent, ∀ remaining, run step (spent + remaining) before = run step remaining after := by
+  induction path using Relation.ReflTransGen.head_induction_on with
+  | refl => exact ⟨0,fun _ => by simp only [Nat.zero_add]⟩
+  | @head before middle edge tail ih =>
+      obtain ⟨spent,continues⟩ := ih
+      refine ⟨spent + 1,?_⟩
+      intro remaining
+      calc
+        run step (spent + 1 + remaining) before = run step ((spent + remaining) + 1) before := by
+          rw [Nat.add_right_comm spent 1 remaining]
+        _ = run step (spent + remaining) middle := by simp only [run,edge]
+        _ = run step remaining after := continues remaining
+
+theorem reachable_iff_run (step : State → Option State) (before after : State) :
+    Relation.ReflTransGen (fun first second => step first = some second) before after ↔
+      ∃ fuel, run step fuel before = after := by
+  constructor
+  · intro path
+    obtain ⟨spent,continues⟩ := run_suffix_of_path step path
+    exact ⟨spent,by simpa only [Nat.add_zero,run] using continues 0⟩
+  · rintro ⟨fuel,rfl⟩
+    exact run_reachable step fuel before
 
 theorem execute_state (step : State → Option State) (answer : State → Bool) (fuel : Nat) (state : State) :
     (execute step answer fuel state).state = run step fuel state := by

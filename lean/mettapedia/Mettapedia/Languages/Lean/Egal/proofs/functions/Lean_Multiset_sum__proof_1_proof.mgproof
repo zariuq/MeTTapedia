@@ -1,0 +1,12 @@
+let M inst. assume Hinst: inst :e Lean_AddCommMonoid M.
+claim Hop: forall x y :e M,
+  (fun x1 :e M => (fun x2 :e M => (LeanAddOf M inst) x1 x2)) x y = LeanAddOf M inst x y.
+{ let x. assume Hx: x :e M. let y. assume Hy: y :e M.
+  rewrite beta M (fun x1 => (fun x2 :e M => (LeanAddOf M inst) x1 x2)) x Hx.
+  exact beta M (fun x2 => (LeanAddOf M inst) x x2) y Hy. }
+apply LeanLeftCommutative_intro M M (fun x1 :e M => (fun x2 :e M => (LeanAddOf M inst) x1 x2)).
+let x. assume Hx: x :e M. let y. assume Hy: y :e M. let v. assume Hv: v :e M.
+rewrite Hop y Hy v Hv. rewrite Hop x Hx v Hv.
+rewrite Hop x Hx (LeanAddOf M inst y v) (LeanAddOf_closed M inst Hinst y Hy v Hv).
+rewrite Hop y Hy (LeanAddOf M inst x v) (LeanAddOf_closed M inst Hinst x Hx v Hv).
+exact LeanAddOf_left_comm M inst Hinst x Hx y Hy v Hv.

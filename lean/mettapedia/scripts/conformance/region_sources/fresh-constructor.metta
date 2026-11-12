@@ -1,0 +1,12 @@
+(= (ty $class $node) poisoned)
+(= (add-ty $space $class $node)
+   (if (== (collapse (match $space (ty $class $node) t)) ())
+     (let $written (add-atom $space (ty $class $node)) (empty))
+     (empty)))
+
+!(collapse (add-ty &self Student 7))
+!(collapse (match &self (ty Student 7) t))
+!(ty Student 7)
+!(collapse (add-ty &self Student 7))
+!(collapse (match &self (ty $class $node) (quote ($class $node))))
+!(== (collapse (match &self (ty Student 7) false)) ())

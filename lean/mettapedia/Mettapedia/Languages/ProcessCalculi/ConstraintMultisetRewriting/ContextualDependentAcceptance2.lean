@@ -2,7 +2,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentInPlaceClosure
 
 /-!
-# The last family: what it keeps, and what acceptance still needs
+# The last family: what it keeps, and a conditional decision
 
 The chain of rounds is R99's arguments round, R107's firing, placed and eliminations rounds, then the reorder round,
 the intersection round, the prune-and-solve round and the flexible-base round. Each new round acts only where the round
@@ -10,11 +10,14 @@ below it is stuck, so **every store that an earlier family decides at a joint bu
 budget with the same outcome** (`pruneSolve_decided_of_elims`, `last_decided_of_elims`,
 `last_decided_of_arguments`).
 
-**Acceptance.** `Settled.decided` (R86) on every store of `InFragmentStore` follows, through the last family's settling
-criterion, from one hypothesis on the corrected class `StratifiedShort` (`decided_of_settling_short`): at each nonempty
-store of the class, from some budget on, the round is not stuck and every progress stays in the class. That hypothesis
-is firing and closure; it is not proved here. The class is `StratifiedShort` and not `Stratified`, because an in-place
-answer leaves `Stratified` (`ContextualDependentInPlaceClosure.witness_first_round`).
+**A conditional decision.** `Settled.decided` (R86) on every store of `InFragmentStore` follows, through the last
+family's settling criterion, from one hypothesis on the corrected class `StratifiedShort` (`decided_of_settling_short`):
+at each nonempty store of the class, from some budget on, the round is not stuck and every progress stays in the class.
+That hypothesis is firing and closure. At the tower it fails: the fragment holds `crossStore`, solvable and without
+principal answer (`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`). For every store, runs are
+exact; on `crossStore` they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`). The class is
+`StratifiedShort` and not `Stratified`, because an in-place answer leaves `Stratified`
+(`ContextualDependentInPlaceClosure.witness_first_round`).
 -/
 
 set_option autoImplicit false
@@ -134,16 +137,19 @@ theorem last_decided_of_arguments {Θ : Context S.R} {problem : EquationStore (T
     certifyNormal headTypingUnique rootComplete elimsDecided larger enough, elimsSame larger enough,
     placedSame larger enough]
 
-/-! ## Acceptance from settling on the corrected class -/
+/-! ## A conditional decision from settling on the corrected class -/
 
 variable (stable : ∀ {n : Nat} (fuel : Nat) (term : Tm Head n),
   Keeps (reducer fuel term) (reducer (fuel + 1) term))
 
 include stable in
-/-- **Acceptance reduced to settling on the corrected class.** If, at each nonempty store of `StratifiedShort` and from
-some budget on, the last family's round is not stuck and keeps every residual store in `StratifiedShort`, then the
-last family decides every store of the dynamic pattern fragment at one joint budget, with a principal answer or a
-certified refutation, and the same outcome at every larger joint budget (R86's `Settled.decided`). -/
+/-- **Conditional decision from settling on the corrected class.** If, at each nonempty store of `StratifiedShort` and
+from some budget on, the last family's round is not stuck and keeps every residual store in `StratifiedShort`, then
+the last family decides every store of the dynamic pattern fragment at one joint budget, with a principal answer or a
+certified refutation, and the same outcome at every larger joint budget (R86's `Settled.decided`). At the tower's
+setting the conclusion fails on `crossStore` (`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`),
+so there the hypothesis fails. For every store, runs are exact; on `crossStore` they stop postponed
+(`UnificationWithLevels.DependentFibre.cross_postponed`). -/
 theorem decided_of_settling_short
     (eventual : ∀ {Γ : Context S.R} {problem : EquationStore (TotalTerm Γ)}, StratifiedShort S.levels problem →
       problem ≠ [] → ∃ bound, ∀ larger, bound ≤ larger →

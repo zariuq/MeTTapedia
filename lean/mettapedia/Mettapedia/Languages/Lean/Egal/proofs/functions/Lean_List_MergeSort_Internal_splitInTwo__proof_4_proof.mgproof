@@ -1,0 +1,9 @@
+let v_u945. let v_n. assume Hn: v_n :e Lean_Nat. let v_l.
+assume Hl: v_l :e (Lean_Subtype (Lean_List v_u945) (fun v_x3 :e (Lean_List v_u945) => (Lean_Eq_Prop Lean_Nat (Lean_List_length v_u945 v_x3) v_n))).
+apply Lean_Eq_proof_of.
+apply LeanListSplitAt_halves v_u945 v_n Hn (Lean_Subtype_val (Lean_List v_u945) (fun v_x3 :e (Lean_List v_u945) => (Lean_Eq_Prop Lean_Nat (Lean_List_length v_u945 v_x3) v_n)) v_l)
+  (Lean_Subtype_val_In (Lean_List v_u945) (fun v_x3 :e (Lean_List v_u945) => (Lean_Eq_Prop Lean_Nat (Lean_List_length v_u945 v_x3) v_n)) v_l Hl)
+  (LeanSubtype_length_val v_u945 v_n v_l Hl).
+assume H1: Lean_List_length v_u945 (Lean_Prod_fst (Lean_List v_u945) (Lean_List v_u945) (Lean_List_splitAt v_u945 (Lean_Nat_div (Lean_Nat_add v_n (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List v_u945) (fun v_x3 :e (Lean_List v_u945) => (Lean_Eq_Prop Lean_Nat (Lean_List_length v_u945 v_x3) v_n)) v_l))) = (Lean_Nat_div (Lean_Nat_add v_n (LeanNum 1)) (LeanNum 2)).
+assume H2: Lean_List_length v_u945 (Lean_Prod_snd (Lean_List v_u945) (Lean_List v_u945) (Lean_List_splitAt v_u945 (Lean_Nat_div (Lean_Nat_add v_n (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List v_u945) (fun v_x3 :e (Lean_List v_u945) => (Lean_Eq_Prop Lean_Nat (Lean_List_length v_u945 v_x3) v_n)) v_l))) = Lean_Nat_div v_n (LeanNum 2).
+exact H2.

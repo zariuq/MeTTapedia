@@ -1,0 +1,4 @@
+function	theorem	kind	statement_digest	axioms
+Quot.liftOn	Quot.liftOn.eq_1	equation	1879514711	
+List.length	List.length.eq_1	equation	1887323071	
+List.length	List.length.eq_2	equation	2317829160	

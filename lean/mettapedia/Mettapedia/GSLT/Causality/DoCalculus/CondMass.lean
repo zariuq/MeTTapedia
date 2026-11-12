@@ -52,7 +52,9 @@ def assignEvent (S : Finset V)
   eventOfConstraints (bn := bn)
     (constraintsOfRestrict (bn := bn) (S : Set V) xS)
 
-omit [StandardBorelSpace bn.JointSpace] in
+omit [StandardBorelSpace bn.JointSpace] [DecidableEq V]
+  [(v : V) → Fintype (bn.stateSpace v)] [(v : V) → Inhabited (bn.stateSpace v)]
+  [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 lemma assignEvent_measurable_vertices (S : Finset V)
     (xS : ∀ p : ((S : Finset V) : Set V), bn.stateSpace p.1) :
     MeasurableSet[bn.measurableSpaceOfVertices (S : Set V)]
@@ -70,6 +72,7 @@ lemma assignEvent_measurable (S : Finset V)
   measurable_eventOfConstraints (bn := bn)
     (constraintsOfRestrict (bn := bn) (S : Set V) xS)
 
+omit [(v : V) → Fintype (bn.stateSpace v)] [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 /-- Conditional independence gives the atomic product
 `P(y, z, w) P(w) = P(y, w) P(z, w)`. -/
 theorem condIndepVertices_atom_mul
@@ -148,6 +151,7 @@ lemma ennreal_div_eq_of_cross_mul {a b c d : ℝ≥0∞}
     rw [hleft, hright, h]
   exact (ENNReal.mul_left_inj hdc0 hdct).mp hmul
 
+omit [(v : V) → Fintype (bn.stateSpace v)] [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 /-- Where `P(z, w)` is positive, conditional independence is
 `P(y | z, w) = P(y | w)`. -/
 theorem condIndepVertices_condMass

@@ -2,7 +2,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentCumulativeClosureCarryPlaced
 
 /-!
-# Closure of the cumulative round, and acceptance for the dead-binder family from firing
+# Closure of the cumulative round, and a conditional decision for the dead-binder family from firing
 
 All twenty-five rule obligations of the cumulative round (`ContextualDependentCumulativeClosure.Obligations`) are
 discharged on the permuted Miller class of a strongly normalizing package without root computation whose reducer
@@ -32,10 +32,13 @@ returns reducts:
 | flex–flex across a declaration | `reorderRule_keeps` |
 
 So the cumulative round keeps the permuted class and `PermutedNormal` at every budget (`cumulativeRound_closure`,
-`cumulativeRound_keepsPermutedNormal`). **Acceptance from firing** (`tower_dead_decided_of_firing`): if the tower's
-dead-binder round is eventually not stuck on nonempty `PermutedMiller` stores, the dead-binder family decides every
-store of the dynamic pattern fragment, with a principal answer or a certified refutation, constant at every larger
-budget.
+`cumulativeRound_keepsPermutedNormal`). **A conditional decision from firing** (`tower_dead_decided_of_firing`): if
+the tower's dead-binder round is eventually not stuck on nonempty `PermutedMiller` stores, the dead-binder family
+decides every store of the dynamic pattern fragment, with a principal answer or a certified refutation, constant at
+every larger budget. At the tower firing fails: the fragment holds `crossStore`, solvable and without principal answer
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`), which no family decides
+(`ContextualDependentSweep.Witnesses.acceptance_conclusion_false`). For every store, runs are exact; on `crossStore`
+they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`).
 -/
 
 set_option autoImplicit false
@@ -159,9 +162,12 @@ theorem cumulativeRound_keepsPermutedNormal (sn : StronglyNormalizing S.R)
     (cumulativeRound_closure facts roots heads algebra rigid complete declared choices reducer root normalizes
       certifyNormal headTypingUnique rootComplete sn directed fuel)
 
-/-- **Acceptance for the dead-binder family from firing**, on a strongly normalizing package whose reducer returns
-reducts, is monotone in its budget and strengthens typed equality: the family decides every store of the dynamic
-pattern fragment as soon as its round is eventually not stuck on nonempty stores of the permuted class. -/
+/-- **Conditional decision for the dead-binder family, from firing**, on a strongly normalizing package whose reducer
+returns reducts, is monotone in its budget and strengthens typed equality: if the family's round is eventually not
+stuck on nonempty stores of the permuted class, the family decides every store of the dynamic pattern fragment. At
+the tower's setting the conclusion fails on `crossStore`
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`), so there firing fails. For every store, runs
+are exact; on `crossStore` they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`). -/
 theorem dead_decided_of_firing (strengthening : EqualStrengthening S.R)
     (stable : ∀ {n : Nat} (fuel : Nat) (term : Tm Head n), Keeps (reducer fuel term) (reducer (fuel + 1) term))
     (sn : StronglyNormalizing S.R)
@@ -202,8 +208,12 @@ theorem tower_reducer_directed (fuel : Nat) {n : Nat} (term : Tm _ n)
     ContextualDependentExecutableJoin.Star (R := setting.R) term result.val :=
   normalize_star setting.R (fun _ => none) fuel computed
 
-/-- **Acceptance for the tower's dead-binder family from firing**, on every store of the dynamic pattern fragment: no
-rule obligation remains. -/
+/-- **Conditional decision for the tower's dead-binder family, from firing**: if its round is eventually not stuck on
+nonempty `PermutedMiller` stores, it decides every store of the dynamic pattern fragment; no rule obligation remains.
+At the tower firing fails: the conclusion would decide `crossStore`, solvable and without principal answer
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`,
+`ContextualDependentSweep.Witnesses.acceptance_conclusion_false`). For every store, runs are exact; on `crossStore`
+they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`). -/
 theorem tower_dead_decided_of_firing
     (firing : ∀ {Γ : Context setting.R} {problem : EquationStore (TotalTerm Γ)}, PermutedMiller setting.levels problem →
       problem ≠ [] → ∃ bound, ∀ larger, bound ≤ larger → deadTower.round larger problem ≠ .stuck)

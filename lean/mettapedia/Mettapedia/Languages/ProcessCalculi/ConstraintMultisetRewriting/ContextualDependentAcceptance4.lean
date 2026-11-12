@@ -3,7 +3,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Instances.TowerInterpretation.Elaboration
 
 /-!
-# Acceptance for the dead-binder family without the normal-reduct hypothesis
+# A conditional decision for the dead-binder family without the normal-reduct hypothesis
 
 On a strongly normalizing package without root computation every store has normal reducts of its opened sides
 (`ContextualDependentOpenedNormal.openedNormal_of_sn`), so R119's reduction `dead_decided_of_cumulative` loses its
@@ -13,9 +13,13 @@ hypothesis `OpenedNormal` on the store, and its two hypotheses are read on the p
 * **(firing)** on every nonempty `PermutedMiller` store the dead-binder round is eventually not stuck;
 * **(closure)** at every budget the cumulative round keeps `PermutedMiller`.
 
-The tower is strongly normalizing (`tower_stronglyNormalizing`, from `TowerInterpretation.tower_sn`), so the reduction
-holds for the tower's dead-binder family with no hypothesis on the store beyond the dynamic pattern fragment
-(`tower_dead_decided`).
+The tower is strongly normalizing (`tower_stronglyNormalizing`, from `TowerInterpretation.tower_sn`), so for the
+tower's dead-binder family the reduction asks nothing of the store beyond the dynamic pattern fragment
+(`tower_dead_decided`); it still asks firing and closure. At the tower firing and closure do not both hold: the
+conclusion would decide `crossStore`, in the fragment, solvable and without principal answer
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`). Closure is proved
+(`cumulativeRound_closure`), so firing fails. For every store, runs are exact; on `crossStore` they stop postponed
+(`UnificationWithLevels.DependentFibre.cross_postponed`).
 -/
 
 set_option autoImplicit false
@@ -57,8 +61,11 @@ variable (facts : FormFacts S.R S.roles) (roots : RootPreserving S.R) (heads : H
   (sn : StronglyNormalizing S.R)
 
 include stable sn in
-/-- **Acceptance for the dead-binder family on a strongly normalizing package, reduced to firing and closure on the
-permuted Miller class.** No hypothesis on the store beyond the dynamic pattern fragment. -/
+/-- **Conditional decision for the dead-binder family on a strongly normalizing package, from firing and closure on
+the permuted Miller class.** No hypothesis on the store beyond the dynamic pattern fragment. At the tower's setting
+the conclusion fails on `crossStore` (`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`), so
+there firing and closure do not both hold. For every store, runs are exact; on `crossStore` they stop postponed
+(`UnificationWithLevels.DependentFibre.cross_postponed`). -/
 theorem dead_decided_of_sn
     (firing : ∀ {Γ : Context S.R} {problem : EquationStore (TotalTerm Γ)}, PermutedMiller S.levels problem →
       problem ≠ [] → ∃ bound, ∀ larger, bound ≤ larger →
@@ -111,8 +118,12 @@ noncomputable def cumulativeTower : ContextualDependentDecisiveDriver.Family set
     ContextualDependentNormalCheckingTower.head_typing_unique
     (ContextualDependentNormalizing.tower_rootComplete (fun _ => (0 : Nat)))
 
-/-- **Acceptance for the tower's dead-binder family, reduced to firing and closure on the permuted Miller class**,
-on every store of the dynamic pattern fragment. -/
+/-- **Conditional decision for the tower's dead-binder family, from firing and closure on the permuted Miller
+class**, on every store of the dynamic pattern fragment. At the tower the hypotheses do not both hold: the conclusion
+would decide `crossStore`, solvable and without principal answer
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`,
+`ContextualDependentSweep.Witnesses.acceptance_conclusion_false`). For every store, runs are exact; on `crossStore`
+they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`). -/
 theorem tower_dead_decided
     (firing : ∀ {Γ : Context setting.R} {problem : EquationStore (TotalTerm Γ)}, PermutedMiller setting.levels problem →
       problem ≠ [] → ∃ bound, ∀ larger, bound ≤ larger → deadTower.round larger problem ≠ .stuck)

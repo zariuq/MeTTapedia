@@ -1,0 +1,4 @@
+let v_u945. let v_a. assume Ha: v_a :e v_u945. let v_b. assume Hb: v_b :e v_u945.
+let v_xs. assume Hxs: v_xs :e (Lean_List v_u945).
+apply Lean_Eq_proof_of.
+reflexivity.

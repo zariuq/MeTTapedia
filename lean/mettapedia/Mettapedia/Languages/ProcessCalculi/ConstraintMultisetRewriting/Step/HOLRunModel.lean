@@ -42,6 +42,7 @@ structure Input where
   readings : RunSourceReadback.Readings operations state
   state_parameter : operations.state = .var (Name.global "S")
   event_parameter : operations.lists.element = .var (Name.global "E")
+  value_parameter : operations.value = .var (Name.global "V")
 
 namespace Input
 
@@ -52,9 +53,12 @@ def receive? (operations : RunSourceReadback.Operations)
     (indices : RunSourceReadback.CacheIndices) : Option Input := do
   if stateParameter : operations.state.same (.var (Name.global "S")) = true then
     if eventParameter : operations.lists.element.same (.var (Name.global "E")) = true then
-      let readings ← RunSourceReadback.read? operations state indices
-      return ⟨operations, commands, state, accepted, readings,
-        (Ty.same_eq_true_iff _ _).mp stateParameter, (Ty.same_eq_true_iff _ _).mp eventParameter⟩
+      if valueParameter : operations.value.same (.var (Name.global "V")) = true then
+        let readings ← RunSourceReadback.read? operations state indices
+        return ⟨operations, commands, state, accepted, readings,
+          (Ty.same_eq_true_iff _ _).mp stateParameter, (Ty.same_eq_true_iff _ _).mp eventParameter,
+          (Ty.same_eq_true_iff _ _).mp valueParameter⟩
+      else none
     else none
   else none
 

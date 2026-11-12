@@ -1,0 +1,9 @@
+let v_n. assume Hn: v_n :e Lean_Nat.
+let v_P. assume HP: v_P :e (Pi_ v_k :e Lean_Nat, (Pi_ ux :e (Lean_Nat_le_Prop (Lean_Nat_succ_node v_k) (Lean_Nat_add v_n (LeanNum 1))), LeanProp)).
+assume Hp: 0 :e (v_P v_n 0).
+let v_x. assume Hx: v_x :e Lean_Nat.
+assume Hlt: 0 :e (Lean_Nat_le_Prop (Lean_Nat_succ_node v_x) (Lean_Nat_add v_n (LeanNum 1))).
+assume Hxn: 0 :e (Lean_Eq_Prop Lean_Nat v_x v_n).
+assume Hnx: 0 :e (Lean_Eq_Prop Lean_Nat v_n v_x).
+rewrite LeanEq_sound Lean_Nat v_x v_n 0 Hxn.
+exact Hp.

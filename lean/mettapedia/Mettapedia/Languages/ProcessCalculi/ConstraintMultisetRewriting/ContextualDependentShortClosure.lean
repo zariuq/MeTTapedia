@@ -22,8 +22,10 @@ the left side's depth before the earlier equation is solved, which is how Gundry
 **The corrected class** (`StratifiedMiller`) keeps the stratified annotations and the Miller condition on every normal
 form of each opened side, and drops the condition on the number of arguments. It contains `StratifiedShort`
 (`stratifiedMiller_of_short`), hence the fragment (`stratifiedMiller_of_fragment`), and it contains the witness's
-residual store. Acceptance reduces to settling on it exactly as on `StratifiedShort` (`decided_of_settling_miller`).
-Its closure under every progress is not proved here.
+residual store. A conditional decision follows from settling on it exactly as on `StratifiedShort`
+(`decided_of_settling_miller`). Its closure under every progress is not proved here, and at the tower the settling
+hypothesis fails: the conclusion would decide `crossStore`, solvable and without principal answer
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`).
 -/
 
 set_option autoImplicit false
@@ -153,7 +155,7 @@ theorem twin_stratifiedAt {Θ : Context S.R} (first second : Equation (TotalTerm
 
 end Twins
 
-/-! ## Acceptance from settling on the Miller class -/
+/-! ## A conditional decision from settling on the Miller class -/
 
 section Reduction
 
@@ -180,10 +182,13 @@ variable (stable : ∀ {n : Nat} (fuel : Nat) (term : Tm Head n),
   Keeps (reducer fuel term) (reducer (fuel + 1) term))
 
 include stable in
-/-- **Acceptance reduced to settling on the Miller class.** If, at each nonempty store of `StratifiedMiller` and from
-some budget on, the cumulative round is not stuck and keeps every residual store in `StratifiedMiller`, then the
+/-- **Conditional decision from settling on the Miller class.** If, at each nonempty store of `StratifiedMiller` and
+from some budget on, the cumulative round is not stuck and keeps every residual store in `StratifiedMiller`, then the
 cumulative family decides every store of the dynamic pattern fragment at one joint budget, with a principal answer or
-a certified refutation, and the same outcome at every larger joint budget. -/
+a certified refutation, and the same outcome at every larger joint budget. At the tower's setting the conclusion fails
+on `crossStore` (`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`), so there the hypothesis
+fails. For every store, runs are exact; on `crossStore` they stop postponed
+(`UnificationWithLevels.DependentFibre.cross_postponed`). -/
 theorem decided_of_settling_miller
     (eventual : ∀ {Γ : Context S.R} {problem : EquationStore (TotalTerm Γ)}, StratifiedMiller S.levels problem →
       problem ≠ [] → ∃ bound, ∀ larger, bound ≤ larger →

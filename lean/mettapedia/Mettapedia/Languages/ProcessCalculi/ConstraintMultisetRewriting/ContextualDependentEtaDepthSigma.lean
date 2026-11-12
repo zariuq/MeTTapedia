@@ -18,10 +18,13 @@ reached step by step.
 
 **The Σ round** (`sigmaRound`) is the piece round; when that is stuck, the piece round on the η-long prepared store
 η-expanded at Σ bases. The family is conservative over the piece family (`sigma_run_of_piece`), eventually constant
-(`sigmaRound_const`), closed in the permuted Miller class (`sigmaRound_closure`), and so decides every store of the
-dynamic pattern fragment as soon as its round is eventually not stuck on nonempty stores of the class
-(`sigma_decided_of_firing`, `tower_sigma_decided_of_firing`), in particular as soon as one of its readers reads
-(`SigmaReads`, `tower_sigma_decided_of_sigmaReads`).
+(`sigmaRound_const`), and closed in the permuted Miller class (`sigmaRound_closure`). So it decides every store of the
+dynamic pattern fragment if its round is eventually not stuck on nonempty stores of the class
+(`sigma_decided_of_firing`, `tower_sigma_decided_of_firing`), in particular if one of its readers reads (`SigmaReads`,
+`tower_sigma_decided_of_sigmaReads`). These are conditional decisions; at the tower the hypothesis fails, since the
+conclusion would decide `crossStore`, solvable and without principal answer
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`). For every store, runs are exact; on
+`crossStore` they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`).
 -/
 
 set_option autoImplicit false
@@ -488,8 +491,11 @@ theorem sigmaRound_closure (fuel : Nat) :
       cases fired
 
 include sn directed stable in
-/-- **Acceptance for the Σ family from firing**, on every store of the dynamic pattern fragment, with a principal
-answer or a certified refutation, constant at every larger budget. -/
+/-- **Conditional decision for the Σ family, from firing**, on every store of the dynamic pattern fragment, with a
+principal answer or a certified refutation, constant at every larger budget. At the tower's setting the conclusion
+fails on `crossStore` (`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`), so there firing fails.
+For every store, runs are exact; on `crossStore` they stop postponed
+(`UnificationWithLevels.DependentFibre.cross_postponed`). -/
 theorem sigma_decided_of_firing
     (firing : ∀ {Γ : Context S.R} {problem : EquationStore (TotalTerm Γ)}, PermutedMiller S.levels problem →
       problem ≠ [] → ∃ bound, ∀ larger, bound ≤ larger →
@@ -545,7 +551,11 @@ abbrev TowerSigmaReads (fuel : Nat) {Θ : Context setting.R} (problem : Equation
     ContextualDependentNormalCheckingTower.head_typing_unique
     (ContextualDependentNormalizing.tower_rootComplete (fun _ => (0 : Nat))) tower_strengthening fuel problem
 
-/-- **Acceptance for the tower's Σ family from firing**, on every store of the dynamic pattern fragment. -/
+/-- **Conditional decision for the tower's Σ family, from firing**, on every store of the dynamic pattern fragment.
+At the tower firing fails: the conclusion would decide `crossStore`
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`,
+`ContextualDependentSweep.Witnesses.acceptance_conclusion_false`). For every store, runs are exact; on `crossStore`
+they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`). -/
 theorem tower_sigma_decided_of_firing
     (firing : ∀ {Γ : Context setting.R} {problem : EquationStore (TotalTerm Γ)}, PermutedMiller setting.levels problem →
       problem ≠ [] → ∃ bound, ∀ larger, bound ≤ larger → sigmaTower.round larger problem ≠ .stuck)
@@ -565,8 +575,10 @@ theorem tower_sigma_decided_of_firing
     (ContextualDependentNormalizing.tower_rootComplete (fun _ => (0 : Nat))) tower_strengthening
     ContextualDependentDecisiveFragment.Controls.stable tower_stronglyNormalizing tower_reducer_directed firing inside
 
-/-- **Acceptance for the tower's Σ family from eventual reading**, on every store of the dynamic pattern
-fragment. -/
+/-- **Conditional decision for the tower's Σ family, from eventual reading**, on every store of the dynamic pattern
+fragment. At the tower the hypothesis fails: the conclusion would decide `crossStore`
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`). For every store, runs are exact; on
+`crossStore` they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`). -/
 theorem tower_sigma_decided_of_sigmaReads
     (reads : ∀ {Γ : Context setting.R} {problem : EquationStore (TotalTerm Γ)}, PermutedMiller setting.levels problem →
       problem ≠ [] → ∃ bound, ∀ larger, bound ≤ larger → TowerSigmaReads larger problem)

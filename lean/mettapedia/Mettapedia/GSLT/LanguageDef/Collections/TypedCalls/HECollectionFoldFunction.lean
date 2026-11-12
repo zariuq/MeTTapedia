@@ -15,13 +15,15 @@ open HECollectionFoldEmission HECollectionFoldReadback HECollectionFoldNativeEnt
 open HECollectionFoldSourceLoop
 
 def body (items : List Entry.Value) (init : Entry.Value) (left right spaceName : String)
-    (operationMark : Entry.Status) : Entry.Value :=
+    (operationMark : Entry.Status)
+    (operatorName : String := CollectionStdlibSource.appendName) (itemsMark : Entry.Status := .active) : Entry.Value :=
   .expression .active [.symbol "chain", .expression .active [.symbol "context-space"], .var spaceName,
-    .expression .active [.symbol "eval", call items init left right (operation operationMark left right) (.var spaceName)]]
+    .expression .active [.symbol "eval", call items init left right (operation operationMark left right (operatorName := operatorName)) (.var spaceName) (itemsMark := itemsMark)]]
 
 def function (items : List Entry.Value) (init : Entry.Value) (left right spaceName : String)
-    (operationMark : Entry.Status) : Entry.Value :=
-  .expression .active [.symbol "function", body items init left right spaceName operationMark]
+    (operationMark : Entry.Status)
+    (operatorName : String := CollectionStdlibSource.appendName) (itemsMark : Entry.Status := .active) : Entry.Value :=
+  .expression .active [.symbol "function", body items init left right spaceName operationMark (operatorName := operatorName) (itemsMark := itemsMark)]
 
 theorem source {Context World : Type} {environment : WorldEnvironment Context World}
     {snapshots : SnapshotServices Context World} {label world hidden}

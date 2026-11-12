@@ -1,0 +1,10 @@
+; Candidate with an open data-pattern binding before the late head update.
+(: vanish (-> Number Number))
+(= (vanish $ignored) (empty))
+(: expose (-> $t %Undefined% $t))
+(= (expose $anchor $slot) (let $slot vanish $anchor))
+(: outer (-> $t $t))
+(= (outer $a)
+   (let (wrap $h) (wrap $fresh)
+     (let $ignored ($h (expose 0 $h)) $a)))
+!(collapse (outer 1))

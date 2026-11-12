@@ -3,7 +3,7 @@ import Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaContexts
 /-!
 # Written calls and held syntax inside actual PeTTa contexts
 
-The source registry and the built-in interface determine written-call admission.
+The source registry, installed private code and built-in interface determine written-call admission.
 Saved caller frames do not change that classification. Quotation and variables
 that already hold values use different source rules: a callable-looking value
 does not become code merely because its syntax names a function.
@@ -21,9 +21,28 @@ open Mettapedia.Languages.ProcessCalculi.MORK (Subst)
 open Mettapedia.Languages.MeTTa.PeTTa
 open Unifying PeTTaContexts
 
-/-- This is precisely the classification predicate in the independent source rules. -/
+/-- A registry's classification predicate. The current source rule uses the
+registry combined with the configuration's installed private code. -/
 def callable (registry : SpaceSemantics.Program) (head : String) : Bool :=
   Eval.ioHead head || StdLib.known head || registry.equations.any (·.head == head)
+
+theorem callable_with_privateCode (registry : SpaceSemantics.Program)
+    (code : List SpaceSemantics.Equation) (head : String) (known : callable registry head = true) :
+    callable (codeRegistry registry code) head = true := by
+  have alternatives : (Eval.ioHead head || StdLib.known head) = true ∨
+      registry.equations.any (·.head == head) = true := by
+    simpa only [callable,Bool.or_eq_true] using known
+  rcases alternatives with builtin | authored
+  · simp [callable,codeRegistry,List.any_append,builtin]
+  · simp [callable,codeRegistry,List.any_append,authored]
+
+theorem current_written_call_step (registry : SpaceSemantics.Program) (base : Configuration)
+    (bindings : Subst) (head : String) (arguments : List Atom)
+    (ordinary : sourceControlForm (.expression (.symbol head :: arguments)) = false)
+    (recognized : callable (codeRegistry registry base.privateCode) head = true) :
+    step registry (atExpression base bindings (.expression (.symbol head :: arguments))) =
+      some { base with control := .arguments bindings (.function head) arguments [] 0 } :=
+  transition_step (.call_enter rfl ordinary recognized)
 
 theorem written_call_step (registry : SpaceSemantics.Program) (base : Configuration)
     (bindings : Subst) (head : String) (arguments : List Atom)
@@ -31,7 +50,8 @@ theorem written_call_step (registry : SpaceSemantics.Program) (base : Configurat
     (recognized : callable registry head = true) :
     step registry (atExpression base bindings (.expression (.symbol head :: arguments))) =
       some { base with control := .arguments bindings (.function head) arguments [] 0 } := by
-  exact transition_step (.call_enter rfl ordinary recognized)
+  exact current_written_call_step registry base bindings head arguments ordinary
+    (callable_with_privateCode registry base.privateCode head recognized)
 
 /-- No competing data-plan transition is available for an admitted written call. -/
 theorem written_call_not_data (registry : SpaceSemantics.Program) (base : Configuration)
@@ -47,11 +67,11 @@ theorem written_call_not_data (registry : SpaceSemantics.Program) (base : Config
   simp at controls
 
 /-- Arbitrarily nested evaluating contexts reach the admitted function plan. -/
-theorem written_call_in_context (registry : SpaceSemantics.Program) (context : Context)
+theorem current_written_call_in_context (registry : SpaceSemantics.Program) (context : Context)
     (base : Configuration) (bindings : Subst) (head : String) (arguments : List Atom)
     (frames : List Frame) (ready : frames? bindings context = some frames)
     (ordinary : sourceControlForm (.expression (.symbol head :: arguments)) = false)
-    (recognized : callable registry head = true) :
+    (recognized : callable (codeRegistry registry base.privateCode) head = true) :
     Relation.ReflTransGen (Transition registry)
       (atExpression base bindings (plug context (.expression (.symbol head :: arguments))))
       { base with
@@ -63,11 +83,24 @@ theorem written_call_in_context (registry : SpaceSemantics.Program) (context : C
     (.call_enter rfl ordinary recognized)
   simpa [appendFrames] using reached
 
+theorem written_call_in_context (registry : SpaceSemantics.Program) (context : Context)
+    (base : Configuration) (bindings : Subst) (head : String) (arguments : List Atom)
+    (frames : List Frame) (ready : frames? bindings context = some frames)
+    (ordinary : sourceControlForm (.expression (.symbol head :: arguments)) = false)
+    (recognized : callable registry head = true) :
+    Relation.ReflTransGen (Transition registry)
+      (atExpression base bindings (plug context (.expression (.symbol head :: arguments))))
+      {base with
+        control := .arguments bindings (.function head) arguments [] 0
+        frames := frames ++ base.frames} :=
+  current_written_call_in_context registry context base bindings head arguments frames ready ordinary
+    (callable_with_privateCode registry base.privateCode head recognized)
+
 /-- Unknown heads keep the source's data application rule, including its argument policy. -/
 theorem unknown_head_step (registry : SpaceSemantics.Program) (base : Configuration)
     (bindings : Subst) (head : String) (arguments : List Atom)
     (ordinary : sourceControlForm (.expression (.symbol head :: arguments)) = false)
-    (unknown : callable registry head = false) :
+    (unknown : callable (codeRegistry registry base.privateCode) head = false) :
     step registry (atExpression base bindings (.expression (.symbol head :: arguments))) =
       some { base with control := .arguments bindings .data (.symbol head :: arguments) [] 0 } := by
   exact transition_step (.data_enter rfl ordinary unknown)

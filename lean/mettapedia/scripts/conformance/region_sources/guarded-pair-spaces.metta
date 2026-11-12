@@ -1,0 +1,17 @@
+(sat f 7)
+
+(= (try-pair $sat $front $x)
+  (if (not (== (collapse (once (match $sat (sat f $x) t))) ()))
+    (empty)
+    (let $ignored (add-atom $sat (sat f $x))
+      (add-atom $front (fr f 1 $x)))))
+
+!(let $sat (new-space)
+  (let $front (new-space)
+    (let $first (size-atom (collapse (try-pair $sat $front 7)))
+      (let $second (size-atom (collapse (try-pair $sat $front 7)))
+        (let $satRows (collapse (match $sat (sat f $x) $x))
+          (let $frontRows (collapse (match $front (fr f 1 $x) $x))
+            (quote ($first $second $satRows $frontRows))))))))
+!(collapse (match &self (sat f $x) $x))
+!(collapse (match &self (fr f 1 $x) $x))

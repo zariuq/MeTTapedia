@@ -11,8 +11,11 @@ The cumulative family extends the flexible-base family by the cumulative round, 
 * every row that a lower round reads, its round reads (`cumulativeRound_not_stuck_of_flex`, with
   `flexRound_not_stuck_of_endpoints` and the readings of `ContextualDependentAcceptance2Readings`), and the cumulative
   rule reads the cumulative argument (`cumulativeRound_not_stuck_of_rule`);
-* acceptance on `InFragmentStore` reduces to settling on the corrected class `StratifiedShort`
-  (`decided_of_settling_short_cumulative`). The hypothesis is firing and closure; it is not proved here.
+* a conditional decision on `InFragmentStore`, from settling on the corrected class `StratifiedShort`
+  (`decided_of_settling_short_cumulative`). The hypothesis is firing and closure. At the tower it fails: the
+  fragment holds `crossStore`, solvable and without principal answer
+  (`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`). For every store, runs are exact; on
+  `crossStore` they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`).
 -/
 
 set_option autoImplicit false
@@ -81,10 +84,13 @@ variable (stable : ∀ {n : Nat} (fuel : Nat) (term : Tm Head n),
   Keeps (reducer fuel term) (reducer (fuel + 1) term))
 
 include stable in
-/-- **Acceptance reduced to settling on the corrected class, for the cumulative family.** If, at each nonempty store
-of `StratifiedShort` and from some budget on, the cumulative round is not stuck and keeps every residual store in
+/-- **Conditional decision for the cumulative family, from settling on the corrected class.** If, at each nonempty
+store of `StratifiedShort` and from some budget on, the cumulative round is not stuck and keeps every residual store in
 `StratifiedShort`, then the cumulative family decides every store of the dynamic pattern fragment at one joint budget,
-with a principal answer or a certified refutation, and the same outcome at every larger joint budget. -/
+with a principal answer or a certified refutation, and the same outcome at every larger joint budget. At the tower's
+setting the conclusion fails on `crossStore`, in the fragment, solvable and without principal answer
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`), so there the hypothesis fails. For every
+store, runs are exact; on `crossStore` they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`). -/
 theorem decided_of_settling_short_cumulative
     (eventual : ∀ {Γ : Context S.R} {problem : EquationStore (TotalTerm Γ)}, StratifiedShort S.levels problem →
       problem ≠ [] → ∃ bound, ∀ larger, bound ≤ larger →

@@ -1,0 +1,8 @@
+let A B relation. assume Hr: relation :e (Pi_ x :e A, Pi_ y :e A, LeanProp).
+let value. assume Hv: value :e Lean_Quot A relation.
+let function. assume Hf: function :e (Pi_ x :e A, B).
+let respect. assume Hrespect: respect :e LeanQuotRespect A relation B function.
+prove Lean_Quot_lift A relation B function 0 value :e B.
+exact Lean_Quot_lift_In A relation Hr B function Hf 0
+  (Lean_Quot_respect_value A relation Hr B function
+    (Lean_Quot_respect_native A relation B function respect Hrespect)) value Hv.

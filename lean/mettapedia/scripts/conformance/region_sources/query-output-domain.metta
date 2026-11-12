@@ -1,0 +1,13 @@
+(r 0 1)
+(r 0 1)
+(s 1 2)
+(s 1 2)
+
+!(collapse (match &self (r $x $y)
+    (match &self (s $y $z) (quote (out $x $z 9)))))
+!(size-atom (collapse (match &self (r $x $y)
+    (match &self (s $y $z)
+      (let $payload (quote (out $x $z 9))
+        (if (== (collapse (match &self $payload t)) ())
+          (add-atom &self $payload) (empty)))))))
+!(collapse (match &self (out $x $z $k) (quote ($x $z $k))))

@@ -34,7 +34,7 @@ noncomputable section
 
 namespace Mettapedia.PLN.RuleFamilies.FirstOrder.PLNDerivation
 
-open MeasureTheory ProbabilityTheory
+open MeasureTheory _root_.Mettapedia.ProbabilityTheory
 open Set
 
 /-! ## PLN Truth Value Algebra

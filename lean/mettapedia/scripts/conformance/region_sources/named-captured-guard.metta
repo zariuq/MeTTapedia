@@ -1,0 +1,16 @@
+(= (echo $value) $value)
+(= (echo $value) $value)
+(payload (add-atom &self (unexpected 99)))
+(sat f 7)
+
+(= (in-private $space $f $x)
+  (not (== (collapse (once (match $space (sat $f $x) t))) ())))
+
+!(collapse (match &self (payload $value)
+  (let $out (echo $value) (quote ($out retained)))))
+!(collapse (match &self (unexpected $x) $x))
+!(let $space (new-space)
+  (let $before (in-private $space f 7)
+    (let $ignored (add-atom $space (sat f 7))
+      (let $after (in-private $space f 7)
+        (quote ($before $after))))))

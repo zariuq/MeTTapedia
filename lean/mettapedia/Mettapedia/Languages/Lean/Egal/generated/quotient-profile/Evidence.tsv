@@ -1,0 +1,31 @@
+constant	role	kind	evidence	egal	detail
+Bool	reading	inductive	interpretation	Lean_Bool	family
+Bool.false	reading	constructor	interpretation	Lean_Bool_false_node	constructor
+Bool.true	reading	constructor	interpretation	Lean_Bool_true_node	constructor
+Eq	reading	inductive	interpretation	Lean_Eq	family
+Eq.casesOn	reading	definition	interpretation	Lean_Eq_rec	case analysis read as the recursor with the minors as methods
+Eq.refl	reading	constructor	interpretation	Lean_Eq_refl_node	constructor
+List	reading	inductive	interpretation	Lean_List	family
+List.casesOn	reading	definition	interpretation	Lean_List_casesOn	case analysis read as the family's case eliminator
+List.cons	reading	constructor	interpretation	Lean_List_cons_node	constructor
+List.length	reading	definition	interpretation	Lean_List_length	function read from its equation theorems; Lean's equations proved
+List.length.eq_1	reading	theorem	interpretation	Lean_List_length_eq_1	Lean's equation theorem, proved from the reading
+List.length.eq_2	reading	theorem	interpretation	Lean_List_length_eq_2	Lean's equation theorem, proved from the reading
+List.nil	reading	constructor	interpretation	Lean_List_nil_node	constructor
+Mettapedia.Languages.Lean.Declarations.QuotientProfile.lift_beta	reading	theorem	interpretation	Lean_Quot_lift_source_law	Lean's equation theorem, proved from the reading
+Nat	reading	inductive	interpretation	Lean_Nat	family
+Nat.add	reading	definition	interpretation	Lean_Nat_add	function read from its equation theorems; Lean's equations proved
+Nat.add.eq_1	reading	theorem	interpretation	Lean_Nat_add_eq_1	Lean's equation theorem, proved from the reading
+Nat.add.eq_2	reading	theorem	interpretation	Lean_Nat_add_eq_2	Lean's equation theorem, proved from the reading
+Nat.casesOn	reading	definition	interpretation	Lean_Nat_casesOn	case analysis read as the family's case eliminator
+Nat.le	reading	inductive	interpretation	Lean_Nat_le	family
+Nat.le.refl	reading	constructor	interpretation	Lean_Nat_le_refl_node	constructor
+Nat.le.step	reading	constructor	interpretation	Lean_Nat_le_step_node	constructor
+Nat.succ	reading	constructor	interpretation	Lean_Nat_succ_node	constructor
+Nat.zero	reading	constructor	interpretation	Lean_Nat_zero_node	constructor
+Quot	reading	definition	interpretation	Lean_Quot	Type-carrier quotient profile; source typing and kernel-law contracts proved
+Quot.lift	reading	definition	interpretation	Lean_Quot_lift	Type-carrier quotient profile; source typing and kernel-law contracts proved
+Quot.liftOn	reading	definition	interpretation	Lean_Quot_liftOn	function read from its equation theorems; Lean's equations proved; restricted to the declared Type universe profile
+Quot.liftOn.eq_1	reading	theorem	interpretation	Lean_Quot_liftOn_eq_1	Lean's equation theorem, proved from the reading
+Quot.mk	reading	definition	interpretation	Lean_Quot_mk	Type-carrier quotient profile; source typing and kernel-law contracts proved
+Quot.sound	reading	theorem	interpretation	Lean_Quot_mk_source_law	Lean's equation theorem, proved from the reading

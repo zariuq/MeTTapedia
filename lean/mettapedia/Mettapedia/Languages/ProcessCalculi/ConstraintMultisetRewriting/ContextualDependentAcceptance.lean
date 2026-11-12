@@ -2,7 +2,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentClosure
 
 /-!
-# The chain of rounds, and what the acceptance theorem still needs
+# The chain of rounds, and why no decision theorem holds on the fragment at the tower
 
 The rounds added after R97 form one chain over R97's ranked abstraction round:
 
@@ -16,9 +16,14 @@ the same move. Every run that R97's family decides, the last family decides with
 (`arguments_run_of_any`), and every store that R97's family decides at a joint budget, the last family
 decides at that budget with the same outcome (`arguments_decided_of_any`).
 
-The last family settles on every class where it fires and stays (`argumentsSettledOfConst`). Its acceptance
-theorem on `InFragmentStore` needs that hypothesis for a class containing the fragment; the stratified
-fragment (`ContextualDependentClosure.Stratified`) is the candidate class.
+The last family settles on every class where it fires and stays (`argumentsSettledOfConst`), and then decides
+every store of the class (`ContextualDependentDecisiveDriver.Settled.decided`). No family settles on a class
+containing the fragment at the tower: the fragment holds `crossStore`, solvable and without principal answer
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`), which no family decides. What holds for
+every store is that runs are exact; on `crossStore` they stop postponed
+(`UnificationWithLevels.DependentFibre.cross_postponed`). The stratified fragment
+(`ContextualDependentClosure.Stratified`) was the candidate class; the rows below are what firing and closure on it
+would need, and they are conditions of conditional decisions only.
 
 * **Firing.** The rigid rows of the census are read by the rules: clashes, occurrences and decompositions
   (`ContextualDependentCensusReadings`), projection spines and spine arguments (`argumentsRound_not_stuck_of_…`

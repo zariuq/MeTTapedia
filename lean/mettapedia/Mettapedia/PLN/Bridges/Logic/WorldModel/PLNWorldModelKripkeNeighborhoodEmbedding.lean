@@ -46,10 +46,10 @@ theorem evidence_mapState_eq
     crispEvidence PointedNeighborhood.satisfies (mapState E Wk) φ =
       crispEvidence PointedKripke.satisfies Wk φ := by
   classical
-  letI : DecidablePred (fun pn : PointedNeighborhood => pn.satisfies φ) := Classical.decPred _
-  letI : DecidablePred (fun pk : PointedKripke => pk.satisfies φ) := Classical.decPred _
-  letI : DecidablePred (fun pk : PointedKripke => (E.toNeighborhood pk).satisfies φ) := Classical.decPred _
-  letI : DecidablePred (fun pk : PointedKripke => ¬ (E.toNeighborhood pk).satisfies φ) := by
+  let : DecidablePred (fun pn : PointedNeighborhood => pn.satisfies φ) := Classical.decPred _
+  let : DecidablePred (fun pk : PointedKripke => pk.satisfies φ) := Classical.decPred _
+  let : DecidablePred (fun pk : PointedKripke => (E.toNeighborhood pk).satisfies φ) := Classical.decPred _
+  let : DecidablePred (fun pk : PointedKripke => ¬ (E.toNeighborhood pk).satisfies φ) := by
     intro pk
     infer_instance
   have hpred :

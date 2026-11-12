@@ -13,6 +13,5 @@ Mettapedia.Languages.Lean.Declarations.Controls.Odd.casesOn	reading	definition	i
 Mettapedia.Languages.Lean.Declarations.Controls.Odd.succ	reading	constructor	interpretation	Lean_Mettapedia_Languages_Lean_Declarations_Controls_Odd_succ_b_node	constructor of a nested block, read with the block
 Mettapedia.Languages.Lean.Declarations.ParityBlockCorrespondence.odd_zero_false	reading	theorem	target-reconstruction	Lean_Mettapedia_Languages_Lean_Declarations_ParityBlockCorrespondence_odd_zero_false	statement read from Lean, proved in Egal
 Nat	reading	inductive	interpretation	Lean_Nat	family
-Nat.le	reading	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
 Nat.succ	reading	constructor	interpretation	Lean_Nat_succ_node	constructor
 Nat.zero	reading	constructor	interpretation	Lean_Nat_zero_node	constructor

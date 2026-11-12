@@ -106,6 +106,18 @@ if out=$("$mgcheck" -I "$preamble" "$library" 2>&1); then
 else
     echo "mg-check:  library not verified:"; grep -v '^(Meg' <<<"$out"; fail=1
 fi
+# What the proofs cost Megalodon's tactic engine.  mg-check counts the
+# conversions each proof script asks for; with --reference-conversion it makes
+# them as Megalodon does, so the count is Megalodon's own work.  Reported, not
+# judged: a proof that is slow in Megalodon shows here first.  An mg-check
+# without the option reports nothing.
+if "$mgcheck" --help 2>/dev/null | grep -q -- '--reference-conversion'; then
+    out=$("$mgcheck" --verbose --reference-conversion -I "$preamble" "$library" 2>&1 || true)
+    total=$(sed -n 's/^elaboration: \([0-9]*\) conversions$/\1/p' <<<"$out")
+    most=$(sed -n 's/^theorem \([^ ]*\) line [0-9]*: .*, \([0-9]*\) conversions, .*/\2 \1/p' <<<"$out" |
+           LC_ALL=C sort -k1,1nr -k2,2 | head -3 | awk '{printf "%s%s %s", (NR > 1 ? ", " : ""), $2, $1}')
+    echo "costs:     $total conversions as Megalodon makes them; the most in $most"
+fi
 
 # The source equation that seeds H3: a receipt of the code-equation slice
 # (the theorem its MeTTa rule for List.length was taken from), checked above

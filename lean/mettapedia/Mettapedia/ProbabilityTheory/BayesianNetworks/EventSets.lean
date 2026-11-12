@@ -69,7 +69,7 @@ theorem eventEq_false_eq_compl_true_of_bool
     (h_ne : valTrue ≠ valFalse)
     (h_exhaust : ∀ x : bn.stateSpace v, x = valTrue ∨ x = valFalse) :
     eventEq (bn := bn) v valFalse = (eventEq (bn := bn) v valTrue)ᶜ := by
-  ext ω; simp only [eventEq, Set.mem_setOf_eq, Set.mem_compl_iff]
+  ext ω; simp only [eventEq, Set.mem_ofPred_eq, Set.mem_compl_iff]
   constructor
   · intro hf ht; exact h_ne (ht ▸ hf ▸ rfl)
   · intro hnt; rcases h_exhaust (ω v) with h | h

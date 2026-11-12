@@ -34,8 +34,9 @@ theorem next_call_substitution (policy : Policy) (name left right : String)
     (replacement context : Entry.Value) (tail : List Entry.Value) (operationMark : Entry.Status)
     (leftDifferent : left ≠ name) (rightDifferent : right ≠ name)
     (tailClosed : TypeSubst.typeVarsList (tail.map Entry.Value.erase) = [])
-    (contextClosed : TypeSubst.typeVars context.erase = []) :
-    let operation := Entry.Value.expression operationMark [.symbol CollectionStdlibSource.appendName, .var left, .var right]
+    (contextClosed : TypeSubst.typeVars context.erase = [])
+    (operatorName : String := CollectionStdlibSource.appendName) :
+    let operation := Entry.Value.expression operationMark [.symbol operatorName, .var left, .var right]
     substituteBinder policy name replacement
       (.expression .active [.symbol "eval", call tail (.var name) left right operation context]) =
       .expression .active [.symbol "eval", call tail replacement left right operation context] := by
@@ -45,7 +46,7 @@ theorem next_call_substitution (policy : Policy) (name left right : String)
   have contextFixed := substituteBinder_absent policy name replacement context (by
     simp only [contextClosed, List.not_mem_nil, not_false_eq_true])
   have operationFixed := substituteBinder_absent policy name replacement
-      (.expression operationMark [.symbol CollectionStdlibSource.appendName, .var left, .var right]) (by
+      (.expression operationMark [.symbol operatorName, .var left, .var right]) (by
     simp [Entry.Value.erase, TypeSubst.typeVars, TypeSubst.typeVarsList, Ne.symm leftDifferent, Ne.symm rightDifferent])
   unfold substituteBinder at tailFixed contextFixed operationFixed ⊢
   cases rebuilding : policy.rebuilding <;>
@@ -59,9 +60,10 @@ theorem call_read (policy : Policy) (frame : Frame) (items : List Entry.Value) (
     (rightFixed : frame.read policy (.var right) = .var right)
     (initClosed : TypeSubst.typeVars init.erase = [])
     (itemsClosed : TypeSubst.typeVarsList (items.map Entry.Value.erase) = [])
-    (contextClosed : TypeSubst.typeVars context.erase = []) :
-    let operation := Entry.Value.expression operationMark [.symbol CollectionStdlibSource.appendName, .var left, .var right]
-    frame.read policy (call items init left right operation context) = call items init left right operation context := by
+    (contextClosed : TypeSubst.typeVars context.erase = [])
+    (operatorName : String := CollectionStdlibSource.appendName) (itemsMark : Entry.Status := .active) :
+    let operation := Entry.Value.expression operationMark [.symbol operatorName, .var left, .var right]
+    frame.read policy (call items init left right operation context (itemsMark := itemsMark)) = call items init left right operation context (itemsMark := itemsMark) := by
   dsimp only
   apply Entry.Value.substitute_of_fixed_variables
   intro name occurs
@@ -76,24 +78,26 @@ theorem context_substitution (policy : Policy) (name left right : String)
     (context init : Entry.Value) (items : List Entry.Value) (operationMark : Entry.Status)
     (leftDifferent : left ≠ name) (rightDifferent : right ≠ name)
     (itemsClosed : TypeSubst.typeVarsList (items.map Entry.Value.erase) = [])
-    (initClosed : TypeSubst.typeVars init.erase = []) :
-    let operation := Entry.Value.expression operationMark [.symbol CollectionStdlibSource.appendName, .var left, .var right]
+    (initClosed : TypeSubst.typeVars init.erase = [])
+    (operatorName : String := CollectionStdlibSource.appendName) (itemsMark : Entry.Status := .active) :
+    let operation := Entry.Value.expression operationMark [.symbol operatorName, .var left, .var right]
     substituteBinder policy name context
-      (.expression .active [.symbol "eval", call items init left right operation (.var name)]) =
-      .expression .active [.symbol "eval", call items init left right operation context] := by
+      (.expression .active [.symbol "eval", call items init left right operation (.var name) (itemsMark := itemsMark)]) =
+      .expression .active [.symbol "eval", call items init left right operation context (itemsMark := itemsMark)] := by
   dsimp only
-  have itemsFixed := substituteBinder_absent policy name context (.expression .active items) (by
+  have itemsFixed := substituteBinder_absent policy name context (.expression itemsMark items) (by
     simp only [Entry.Value.erase, TypeSubst.typeVars, itemsClosed, List.not_mem_nil, not_false_eq_true])
   have initFixed := substituteBinder_absent policy name context init (by
     simp only [initClosed, List.not_mem_nil, not_false_eq_true])
   have operationFixed := substituteBinder_absent policy name context
-      (.expression operationMark [.symbol CollectionStdlibSource.appendName, .var left, .var right]) (by
+      (.expression operationMark [.symbol operatorName, .var left, .var right]) (by
     simp [Entry.Value.erase, TypeSubst.typeVars, TypeSubst.typeVarsList, Ne.symm leftDifferent, Ne.symm rightDifferent])
   unfold substituteBinder at itemsFixed initFixed operationFixed ⊢
   cases rebuilding : policy.rebuilding <;>
     simp [call, Entry.Value.substitute, Entry.Value.rebuildStatus, rebuilding,
       leftDifferent, rightDifferent] at itemsFixed initFixed operationFixed ⊢ <;>
     simp_all
+  exact itemsFixed.1
 
 theorem step_read (policy : Policy) (frame : Frame) (avoid : List String)
     (head : Entry.Value) (tail : List Entry.Value) (init : Entry.Value) (left right : String)
@@ -104,15 +108,16 @@ theorem step_read (policy : Policy) (frame : Frame) (avoid : List String)
     (initClosed : TypeSubst.typeVars init.erase = []) (headClosed : TypeSubst.typeVars head.erase = [])
     (tailClosed : TypeSubst.typeVarsList (tail.map Entry.Value.erase) = [])
     (contextClosed : TypeSubst.typeVars context.erase = [])
-    (fresh : chainName avoid (.expression operationMark [.symbol CollectionStdlibSource.appendName, .var left, .var right]) ∉
+    (operatorName : String := CollectionStdlibSource.appendName)
+    (fresh : chainName avoid (.expression operationMark [.symbol operatorName, .var left, .var right]) ∉
       specBindingVars frame.bindings) :
-    let operation := Entry.Value.expression operationMark [.symbol CollectionStdlibSource.appendName, .var left, .var right]
+    let operation := Entry.Value.expression operationMark [.symbol operatorName, .var left, .var right]
     frame.read policy (step avoid head tail init left right operation context) =
       step avoid head tail init left right operation context := by
   dsimp only
   apply Entry.Value.substitute_of_fixed_variables
   intro name occurs
-  have replacement := collapse_template avoid init head left right different operationMark
+  have replacement := collapse_template (operatorName := operatorName) avoid init head left right different operationMark
   simp only [step, replacement, call, Entry.Value.erase, List.map_cons, List.map_nil,
     TypeSubst.typeVars, TypeSubst.typeVarsList, initClosed, headClosed, tailClosed, contextClosed,
     List.nil_append, List.append_nil, List.mem_cons, List.mem_append, List.not_mem_nil, or_false] at occurs
@@ -128,12 +133,13 @@ theorem protected_step_read (policy : Policy) (frame : Frame) (hidden : List Str
     (rightFixed : frame.read policy (.var right) = .var right)
     (initClosed : TypeSubst.typeVars init.erase = []) (headClosed : TypeSubst.typeVars head.erase = [])
     (tailClosed : TypeSubst.typeVarsList (tail.map Entry.Value.erase) = [])
-    (contextClosed : TypeSubst.typeVars context.erase = []) :
-    let operation := Entry.Value.expression operationMark [.symbol CollectionStdlibSource.appendName, .var left, .var right]
+    (contextClosed : TypeSubst.typeVars context.erase = [])
+    (operatorName : String := CollectionStdlibSource.appendName) :
+    let operation := Entry.Value.expression operationMark [.symbol operatorName, .var left, .var right]
     frame.read policy (emission hidden live scope frame (head :: tail) init left right operation context) =
       emission hidden live scope frame (head :: tail) init left right operation context := by
   dsimp only
-  apply step_read policy frame _ head tail init left right context operationMark different leftFixed rightFixed
+  apply step_read (operatorName := operatorName) policy frame _ head tail init left right context operationMark different leftFixed rightFixed
     initClosed headClosed tailClosed contextClosed
   exact (protects_caller_and_hidden hidden live scope frame (head :: tail) init left right _ context).1
 

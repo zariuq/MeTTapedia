@@ -1,5 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DependentHelpers
-import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.CertifiedTransformProgram.Preservation
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.FormationSensitiveSubjectReduction
 
 /-!
 # State typing at dependent frames
@@ -26,9 +26,8 @@ frame nor the knowledge.
 * `compute_preserves`: in particular, given the rule-level certificates of subject reduction
   (`RootPreservation` for the declared root rules, with universe regularity, the head and the Π and Σ
   conversion boundaries).
-* `linear_compute_preserves`: the joint with the certified-transform program. Its linearized rules
-  carry these certificates (`CertifiedTransformProgram.Preservation.step_preserves`), so every
-  computation firing over them preserves state typing.
+Concrete certified-program instances consume these generic contracts in their
+respective language adapters.
 
 ## Controls
 
@@ -190,15 +189,6 @@ theorem compute_preserves (universes : UniverseRegularity rules)
   compute_preserves_of (fun judgment step =>
     judgment.step_preserves universes piBoundary sigmaBoundary heads roots step) f admitted typed
 
-open Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.CertifiedTransformProgram in
-/-- **The joint with the certified-transform program**: over its linearized rules, every computation
-firing preserves state typing. -/
-theorem linear_compute_preserves {s : LState Confluence.linearRules O} (f : Compute s)
-    (admitted : (computeStep (rules := Confluence.linearRules) (O := O)).Admits f)
-    (typed : Typed s.frame s.present s.label) :
-    Typed f.after.frame f.after.present f.after.label :=
-  compute_preserves_of (fun judgment step => Preservation.step_preserves judgment step) f admitted typed
-
 /-! ## Controls -/
 
 namespace Controls
@@ -239,7 +229,6 @@ end Controls
 #print axioms computeStep
 #print axioms compute_preserves_of
 #print axioms compute_preserves
-#print axioms linear_compute_preserves
 #print axioms Controls.helper_typed
 #print axioms Controls.universe_untyped
 #print axioms Controls.untyped_configuration

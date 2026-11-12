@@ -1357,8 +1357,7 @@ Qed.
 Theorem Lean_CEK_step_eq_4 : forall v_f :e Lean_Tm, forall v_a :e Lean_Tm, forall v_u961 :e (Lean_List Lean_CEK_Val), forall v_k :e (Lean_List Lean_CEK_Frame), (Lean_CEK_step (Lean_CEK_St_mk_node
     (Lean_CEK_Ctl_ev_node (Lean_Tm_app_node v_f v_a) v_u961) v_k)) = (Lean_Option_some_node Lean_CEK_St (Lean_CEK_St_mk_node (Lean_CEK_Ctl_ev_node v_f v_u961) (Lean_List_cons_node Lean_CEK_Frame
     (Lean_CEK_Frame_argOf_node v_a v_u961) v_k))).
-let v_f. assume H_v_f: v_f :e Lean_Tm. let v_a. assume H_v_a: v_a :e Lean_Tm. let v_u961. assume H_v_u961: v_u961 :e (Lean_List Lean_CEK_Val). let v_k. assume H_v_k: v_k :e (Lean_List
-    Lean_CEK_Frame).
+let v_f. assume H_v_f: v_f :e Lean_Tm. let v_a. assume H_v_a: v_a :e Lean_Tm. let v_u961. assume H_v_u961: v_u961 :e (Lean_List Lean_CEK_Val). let v_k. assume H_v_k: v_k :e (Lean_List Lean_CEK_Frame).
 rewrite Lean_CEK_step_split0 (Lean_CEK_Ctl_ev_node (Lean_Tm_app_node v_f v_a) v_u961) (Lean_CEK_Ctl_ev_typed (Lean_Tm_app_node v_f v_a) (Lean_Tm_app_typed v_f H_v_f v_a H_v_a) v_u961 H_v_u961) v_k
     H_v_k.
 rewrite Lean_CEK_Ctl_iota0 (fun c1_0_0 :e Lean_Tm => (fun c1_0_1 :e (Lean_List Lean_CEK_Val) => (Lean_Tm_casesOn (fun c2_0_0 :e Lean_Nat => (Lean_Option_map Lean_CEK_Val Lean_CEK_St (fun v_v :e
@@ -4180,5 +4179,4 @@ Theorem Lean_FunctionalCorrespondenceRuns_krivine_unfold : forall a0 a1, Lean_Fu
     Lean_Krivine_NThunk) (Lean_List_nil_node Lean_Krivine_NThunk))).
 let a0 a1. reflexivity.
 Qed.
-
 

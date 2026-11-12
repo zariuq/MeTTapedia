@@ -1,0 +1,20 @@
+(: PlainPair (-> $t $t PairRange))
+(: plain-result (-> PairRange))
+(= (plain-result) (PlainPair 1 2))
+
+(: OtherPair (-> $t $t PairRange))
+(: (OtherPair 1 2) UnrelatedRange)
+(: other-result (-> PairRange))
+(= (other-result) (OtherPair 1 2))
+
+(: AssertedPair (-> $t $t PairRange))
+(: (AssertedPair 1 2) PairRange)
+(: asserted-result (-> PairRange))
+(= (asserted-result) (AssertedPair 1 2))
+
+!(get-type (PlainPair 1 2))
+!(plain-result)
+!(get-type (OtherPair 1 2))
+!(other-result)
+!(get-type (AssertedPair 1 2))
+!(asserted-result)

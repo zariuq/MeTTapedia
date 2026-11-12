@@ -33,7 +33,7 @@ theorem symbol_expression_miss (live : List Atom) (before : Bindings) (position 
 theorem symbol_frontier (live : List Atom) (before : Bindings) (name : String) :
     EquationFrontierRel HECollectionSpaceExtension.space live (.symbol name) before [] := by
   have scanned : EquationFrontierRel HECollectionSpaceExtension.space live (.symbol name) before
-      ([[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []] :
+      ([[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []] :
         List (List EquationWork)).flatten := by
     apply EquationFrontierRel.completed
     simp only [HECollectionSpaceExtension.space, HERangeSourceProgram.space, HERangeSourceProgram.declaredSpace,
@@ -42,7 +42,7 @@ theorem symbol_frontier (live : List Atom) (before : Bindings) (name : String) :
       List.cons_append, List.nil_append, List.zipIdx_cons, List.zipIdx_nil]
     refine .cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_
       (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_
-        (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ .nil))))))))))))))))))))))))
+        (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ .nil)))))))))))))))))))))))))
     all_goals first
       | exact HERangeEquationFrontiers.annotation_irrelevant _ _ _ _ _ _
       | dsimp only [HEFreshEquationFrames.Range.pattern, HERangeSourceProgram.emptyRule, HERangeSourceProgram.emptyPattern,

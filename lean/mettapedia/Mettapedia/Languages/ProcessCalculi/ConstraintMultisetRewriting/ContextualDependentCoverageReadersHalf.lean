@@ -17,12 +17,14 @@ projection spines, a refutation among spine arguments, a rigid local outside the
 declaration, inversion in place, flex–flex across a declaration, intersection, pruning under binders, or a move at a
 flexible base. `OuterReads` collects the readers of the outer rounds: R110's cumulative rule, R119's intersection at
 the newest declaration, after a rotation, in place and anywhere, and the dead-binder rule
-(`deadRound_not_stuck_of_outerReads`); `AllReads` is either. **The firing hypothesis of acceptance follows from
-eventual reading** (`firing_of_reads`, `firing_of_allReads`), and the cumulative round is closed
-(`ContextualDependentAcceptance4.cumulativeRound_closure`), so acceptance for the tower is reduced to eventual reading
-on nonempty stores of the permuted class (`tower_dead_decided_of_reads`, `tower_dead_decided_of_allReads`). That
-every census kind is read, on the prepared store at a large budget, is the other half of coverage and is not proved
-here.
+(`deadRound_not_stuck_of_outerReads`); `AllReads` is either. **The firing hypothesis follows from eventual reading**
+(`firing_of_reads`, `firing_of_allReads`), and the cumulative round is closed
+(`ContextualDependentAcceptance4.cumulativeRound_closure`), so the tower's decision is conditional on eventual reading
+on nonempty stores of the permuted class (`tower_dead_decided_of_reads`, `tower_dead_decided_of_allReads`). That every
+census kind is read, on the prepared store at a large budget, is the other half of coverage, and at the tower it fails:
+the conclusion would decide `crossStore`, solvable and without principal answer
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`). For every store, runs are exact; on
+`crossStore` they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`).
 -/
 
 set_option autoImplicit false
@@ -320,8 +322,11 @@ abbrev TowerReads (fuel : Nat) {Θ : Context setting.R} (problem : EquationStore
     ContextualDependentNormalCheckingTower.head_typing_unique
     (ContextualDependentNormalizing.tower_rootComplete (fun _ => (0 : Nat))) fuel problem
 
-/-- **Acceptance for the tower's dead-binder family, reduced to eventual reading**, on every store of the dynamic
-pattern fragment. -/
+/-- **Conditional decision for the tower's dead-binder family, from eventual reading**, on every store of the dynamic
+pattern fragment. At the tower the hypothesis fails: the conclusion would decide `crossStore`
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`,
+`ContextualDependentSweep.Witnesses.acceptance_conclusion_false`). For every store, runs are exact; on `crossStore`
+they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`). -/
 theorem tower_dead_decided_of_reads
     (reads : ∀ {Γ : Context setting.R} {problem : EquationStore (TotalTerm Γ)}, PermutedMiller setting.levels problem →
       problem ≠ [] → ∃ bound, ∀ larger, bound ≤ larger → TowerReads larger problem)
@@ -354,8 +359,10 @@ abbrev TowerAllReads (fuel : Nat) {Θ : Context setting.R} (problem : EquationSt
     ContextualDependentNormalCheckingTower.head_typing_unique
     (ContextualDependentNormalizing.tower_rootComplete (fun _ => (0 : Nat))) tower_strengthening fuel problem
 
-/-- **Acceptance for the tower's dead-binder family, reduced to eventual reading by any of its readers**, on every
-store of the dynamic pattern fragment. -/
+/-- **Conditional decision for the tower's dead-binder family, from eventual reading by any of its readers**, on every
+store of the dynamic pattern fragment. At the tower the hypothesis fails: the conclusion would decide `crossStore`
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`). For every store, runs are exact; on
+`crossStore` they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`). -/
 theorem tower_dead_decided_of_allReads
     (reads : ∀ {Γ : Context setting.R} {problem : EquationStore (TotalTerm Γ)}, PermutedMiller setting.levels problem →
       problem ≠ [] → ∃ bound, ∀ larger, bound ≤ larger → TowerAllReads larger problem)

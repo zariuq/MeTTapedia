@@ -13,9 +13,10 @@ census (R86 through R116, the gap witnesses `twiceStore` and the twin store incl
 * the residual store after each of the first eight rounds, whenever the run is cut off there, has Miller sides
   (`finalDecided`).
 
-These are runs at one budget, the evidence the class and the family are built against. They are not the acceptance
-theorem, which is the reduction `inPlace_decided_of_settling_miller` together with firing and closure on the Miller
-class. The census is split over this module and `…Acceptance3ControlsHeads`, `…Acceptance3ControlsRest`, to keep each
+These are runs at one budget, the evidence the class and the family are built against. They are not a decision
+theorem. The reduction `inPlace_decided_of_settling_miller` is conditional on firing and closure on the Miller class,
+and at the tower that hypothesis fails: the fragment holds `crossStore`, solvable and without principal answer
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`). The census is split over this module and `…Acceptance3ControlsHeads`, `…Acceptance3ControlsRest`, to keep each
 check within its memory budget.
 -/
 

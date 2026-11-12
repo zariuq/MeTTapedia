@@ -5,7 +5,8 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 /-!
 # Decisiveness on stores with distinct rigid locals
 
-The first semantic class on which the acceptance theorem is instantiated, in the cumulative tower
+The first semantic class on which the driver's decision (`ContextualDependentDecisiveDriver.Settled.decided`)
+is instantiated, in the cumulative tower
 with the actual normalizer and universe choices.
 
 A store equation **equates distinct rigid locals** when its two annotations are equal types, its

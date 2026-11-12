@@ -8,8 +8,9 @@ operation. Arithmetic guards follow the overflow-avoiding tests emitted by
 the checked frontend; their specifications use unbounded arithmetic instead.
 Memory operations run on an independent finite list of initialized cells.
 
-These are the operational leaves needed by checked IR. This module does not
-yet prove that a source function or a compiler object realizes their semantics.
+These laws independently specify Cesta's checked primitives and support its
+differential tests. They do not prove that an arbitrary source function or
+compiler object realizes these semantics.
 -/
 
 set_option autoImplicit false

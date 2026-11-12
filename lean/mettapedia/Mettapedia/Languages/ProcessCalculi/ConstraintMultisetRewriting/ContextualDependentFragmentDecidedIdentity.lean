@@ -12,7 +12,8 @@ all finish, the identity decomposition refutes the equation at that budget and a
 
 On a store whose context and codes are stopped, preparation is the pending update, so the identity
 round then refutes the store at every larger budget, and the identity family **decides** it at one
-joint budget (`identity_decided_of_firm`).
+joint budget: `identitySettled` is the settling on that one store, and
+`ContextualDependentDecisiveDriver.Settled.decided` gives the decision.
 -/
 
 set_option autoImplicit false

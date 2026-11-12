@@ -8,7 +8,7 @@ test	status	constants	unresolved	reason
 7	qualified	61		
 8	qualified	15		
 9	qualified	20		
-10	refused	0		List.mergeSort is not read: applies Mettapedia.Languages.Lean.Recursion.FuelCore.MergeSort.reading, which is not read
+10	qualified	86		rests on theorems reconstructed in Egal: _private.Init.Data.List.Sort.Basic.0.List.MergeSort.Internal.splitInTwo._proof_3,_private.Init.Data.List.Sort.Basic.0.List.MergeSort.Internal.splitInTwo._proof_4
 11	qualified	50		
 12	qualified	14		
 13	qualified	39		
@@ -24,8 +24,8 @@ test	status	constants	unresolved	reason
 23	qualified	12		
 24	qualified	9		
 25	qualified	14		
-26	unqualified	76	Nat.minFacAux,Nat.primeFactorsList	
-27	refused	0		Irreducible is not read: not exported with equations
-28	refused	0		Irreducible is not read: not exported with equations
-29	refused	0		Finset.range is not read: erased proofs in the definition or its equations are not reconstructed
-30	refused	0		Finset.range is not read: erased proofs in the definition or its equations are not reconstructed
+26	qualified	85		rests on theorems reconstructed in Egal: Iff.symm,Nat.dvd_iff_mod_eq_zero
+27	qualified	99		rests on theorems reconstructed in Egal: Iff.symm,Nat.decidableLoHi._proof_1,Nat.dvd_iff_mod_eq_zero,Nat.prime_def_lt'
+28	qualified	99		rests on theorems reconstructed in Egal: Iff.symm,Nat.decidableLoHi._proof_1,Nat.dvd_iff_mod_eq_zero,Nat.prime_def_lt'
+29	qualified	93		rests on theorems reconstructed in Egal: List.Perm.foldr_eq,List.Perm.map,List.Perm.nodup_iff,Multiset.nodup_range,Multiset.sum._proof_1,Nat.add_assoc,Nat.add_comm,Nat.add_zero,Nat.succ_mul,Nat.zero_add,Nat.zero_mul
+30	qualified	108		rests on theorems reconstructed in Egal: Finset.nodup,List.Perm.filter,List.Perm.length_eq,List.Perm.nodup_iff,Multiset.Nodup.filter,Multiset.nodup_range

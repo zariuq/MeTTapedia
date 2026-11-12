@@ -92,7 +92,7 @@ def descendants (v : V) : Set V := { w | G.Reachable v w ∧ w ≠ v }
 theorem parents_subset_ancestors_of_irrefl (v : V)
     (hirrefl : ∀ w, ¬G.edges w w) : G.parents v ⊆ G.ancestors v := by
   intro u hu
-  simp only [Set.mem_setOf_eq, ancestors, parents] at *
+  simp only [Set.mem_ofPred_eq, ancestors, parents] at *
   constructor
   · exact edge_reachable G hu
   · intro heq
@@ -103,7 +103,7 @@ theorem parents_subset_ancestors_of_irrefl (v : V)
 theorem children_subset_descendants_of_irrefl (v : V)
     (hirrefl : ∀ w, ¬G.edges w w) : G.children v ⊆ G.descendants v := by
   intro w hw
-  simp only [Set.mem_setOf_eq, descendants, children] at *
+  simp only [Set.mem_ofPred_eq, descendants, children] at *
   constructor
   · exact edge_reachable G hw
   · intro heq
@@ -243,13 +243,13 @@ omit [DecidableEq V] [DecidableRel G.edges] in
 theorem exists_source_of_acyclic_nonempty [Nonempty V] (h : G.IsAcyclic) :
     ∃ v : V, G.IsSource v := by
   by_contra hno
-  push_neg at hno
+  push Not at hno
   -- Every vertex has a parent
   have hhas_parent : ∀ v, ∃ u, G.edges u v := by
     intro v
     specialize hno v
     rw [isSource_iff] at hno
-    push_neg at hno
+    push Not at hno
     exact hno
   -- Choose a parent function
   classical
@@ -269,7 +269,7 @@ theorem exists_source_of_acyclic_nonempty [Nonempty V] (h : G.IsAcyclic) :
       omega
     -- Get two distinct indices with same value
     simp only [Function.Injective] at this
-    push_neg at this
+    push Not at this
     obtain ⟨⟨i, hi⟩, ⟨j, hj⟩, heq, hne⟩ := this
     -- Ensure i < j (swap if needed)
     rcases Nat.lt_trichotomy i j with hij | hij | hij

@@ -635,4 +635,158 @@ theorem successful_apply_empty_tail {state after : State} {head : String}
         exact insert_preserves_empty_tail vacant selected
   · exact erase_preserves_empty_tail vacant (by assumption)
 
+/-! ## Logical-variable support of primitive replies
+
+These laws belong with the primitive definitions. Their constructor cases are
+generated in the defining module, so clients can use the checked law without
+regenerating the large dispatcher splitter. Parsing, row enumeration and match
+have their own scoped import/unification boundaries in the unifying machine.
+-/
+
+open Mettapedia.Languages.ProcessCalculi.MORK (atomFreeVars)
+
+private def VarsWithin (allowed : String → Prop) (term : Atom) : Prop :=
+  ∀ key ∈ atomFreeVars term, allowed key
+
+private theorem freeVars_expression_mem {key : String} {items : List Atom} :
+    key ∈ atomFreeVars (.expression items) ↔ ∃ item ∈ items, key ∈ atomFreeVars item := by
+  simp only [atomFreeVars]
+  induction items with
+  | nil => simp [atomFreeVars.atomFreeVarsList]
+  | cons first rest ih =>
+      simp only [atomFreeVars.atomFreeVarsList,List.mem_append,ih,List.mem_cons,exists_eq_or_imp]
+
+theorem variable_support_expression (allowed : String → Prop) (items : List Atom) :
+    VarsWithin allowed (.expression items) ↔ ∀ item ∈ items, VarsWithin allowed item := by
+  constructor
+  · intro all item member key present
+    exact all key (freeVars_expression_mem.mpr ⟨item,member,present⟩)
+  · intro all key present
+    obtain ⟨item,member,present⟩ := freeVars_expression_mem.mp present
+    exact all item member key present
+
+@[simp] private theorem variable_support_symbol (allowed : String → Prop) (name : String) :
+    VarsWithin allowed (.symbol name) := by simp [VarsWithin,atomFreeVars]
+
+@[simp] private theorem variable_support_grounded (allowed : String → Prop) (value : GroundedValue) :
+    VarsWithin allowed (.grounded value) := by simp [VarsWithin,atomFreeVars]
+
+private theorem bool_variable_support (allowed : String → Prop) (value : Bool) :
+    VarsWithin allowed (boolean value) := variable_support_grounded _ _
+
+theorem handle_variable_support (allowed : String → Prop) (handle : NamedSpaces.Handle) :
+    VarsWithin allowed (handleValue handle) := by cases handle <;> simp [handleValue]
+
+theorem byte_string_variable_support (allowed : String → Prop) (bytes : List UInt8) :
+    VarsWithin allowed (ByteString.encode bytes) := by
+  unfold ByteString.encode
+  split <;> exact variable_support_grounded _ _
+
+theorem metatype_variable_support (allowed : String → Prop) (state : State) (term : Atom) :
+    VarsWithin allowed (metatype state term) := by
+  cases term <;> simp [metatype]
+  split <;> exact variable_support_symbol _ _
+
+theorem string_error_variable_support (allowed : String → Prop) (head : String) (arguments : List Atom)
+    (inputs : ∀ term ∈ arguments, VarsWithin allowed term) (reason : Atom) (reasonGood : VarsWithin allowed reason) :
+    VarsWithin allowed (stringError head arguments reason) := by
+  simpa [stringError,variable_support_expression] using And.intro inputs reasonGood
+
+theorem string_operation_variable_support (allowed : String → Prop) (head : String) (arguments : List Atom)
+    (inputs : ∀ term ∈ arguments, VarsWithin allowed term) : VarsWithin allowed (stringOperation head arguments) := by
+  unfold stringOperation
+  repeat' first
+    | split
+    | exact variable_support_grounded _ _
+    | exact byte_string_variable_support _ _
+    | exact string_error_variable_support allowed _ _ inputs _ (variable_support_symbol _ _)
+    | solve
+        | apply string_error_variable_support allowed _ _ inputs
+          simp [variable_support_expression]
+
+theorem membership_variable_support (allowed : String → Prop) (value : Atom) (items : List Atom) :
+    ∀ answer ∈ membershipAnswers value items, VarsWithin allowed answer := by
+  unfold membershipAnswers
+  split <;> simp [boolean]
+
+theorem sorting_variable_support (allowed : String → Prop) (items sorted : List Atom)
+    (selected : sortClosed items = some sorted) : ∀ term ∈ sorted, VarsWithin allowed term := by
+  unfold sortClosed at selected
+  split at selected
+  · cases selected
+    simp [stringAtoms]
+  · obtain ⟨numbers,_,same⟩ := Option.map_eq_some_iff.mp selected
+    cases same
+    simp [integerAtoms]
+
+private theorem boolean_binary_variable_support (allowed : String → Prop) (state after : State)
+    (head : String) (operation : Bool → Bool → Bool) (arguments answers : List Atom)
+    (returned : booleanBinary state head operation arguments = .ok (after,answers)) :
+    ∀ answer ∈ answers, VarsWithin allowed answer := by
+  unfold booleanBinary at returned
+  split at returned
+  · cases returned
+    simp [boolean]
+  · cases returned
+
+private theorem append_expression_variable_support (allowed : String → Prop) (left right : List Atom)
+    (inputs : ∀ term ∈ [Atom.expression left,Atom.expression right], VarsWithin allowed term) :
+    VarsWithin allowed (.expression (left ++ right)) := by
+  apply (variable_support_expression allowed _).mpr
+  have leftGood := (variable_support_expression allowed left).mp (inputs _ (by simp))
+  have rightGood := (variable_support_expression allowed right).mp (inputs _ (by simp))
+  intro term member
+  rcases List.mem_append.mp member with present | present
+  · exact leftGood term present
+  · exact rightGood term present
+
+private theorem indexing_variable_support (allowed : String → Prop) (items : List Atom) (index : Nat)
+    (itemsGood : ∀ term ∈ items, VarsWithin allowed term) :
+    ∀ term ∈ (items[index]?).toList, VarsWithin allowed term := by
+  intro term member
+  exact itemsGood term (List.mem_of_getElem? (Option.mem_toList.mp member))
+
+theorem successful_apply_variable_support (allowed : String → Prop) (state after : State)
+    (head : String) (arguments answers : List Atom)
+    (inputs : ∀ term ∈ arguments, VarsWithin allowed term)
+    (cells : ∀ name value, state.cells name = some value → VarsWithin allowed value)
+    (notParse : head ≠ "parse") (notRows : head ≠ "get-atoms") (notMatch : head ≠ "match")
+    (returned : apply state head arguments = .ok (after,answers)) :
+    ∀ answer ∈ answers, VarsWithin allowed answer := by
+  delta apply at returned
+  repeat' first
+    | contradiction
+    | solve
+        | exact boolean_binary_variable_support allowed _ _ _ _ _ _ returned
+        | cases returned
+          simp_all [variable_support_expression,boolean]
+        | cases returned
+          exact membership_variable_support _ _ _
+        | cases returned
+          simpa using metatype_variable_support allowed _ _
+        | cases returned
+          simpa using string_operation_variable_support allowed _ _ inputs
+        | cases returned
+          intro value member
+          simp only [List.mem_singleton] at member
+          subst value
+          exact cells _ _ (by assumption)
+        | cases returned
+          intro value member
+          simp only [List.mem_singleton] at member
+          subst value
+          exact handle_variable_support allowed _
+        | cases returned
+          intro value member
+          simp only [List.mem_singleton] at member
+          subst value
+          exact (variable_support_expression allowed _).mpr (sorting_variable_support _ _ _ (by assumption))
+        | cases returned
+          simpa using append_expression_variable_support allowed _ _ inputs
+        | cases returned
+          exact indexing_variable_support allowed _ _
+            ((variable_support_expression allowed _).mp (inputs _ (by simp)))
+    | split at returned
+
+
 end Mettapedia.Languages.MeTTa.PeTTa.StdLib

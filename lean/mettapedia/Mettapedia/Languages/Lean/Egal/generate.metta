@@ -115,7 +115,9 @@
        (if (== (car-atom $t) ->)
            (format-args "(Pi_ ux :e {}, {})" ((sort-text (nth $t 1) $params) (sort-text (nth $t 2) $params)))
            (let $args (cdr-atom $t)
-             (format-args "({} {})" ((sort-head-text (car-atom $t) $params) (join " " (map-atom $args $u (sort-text $u $params)))))))
+             (format-args "({} {})"
+               ((if (== (get-metatype (car-atom $t)) Expression) (sort-text (car-atom $t) $params) (sort-head-text (car-atom $t) $params))
+                (join " " (map-atom $args $u (sort-text $u $params)))))))
        (if (== $t Prop) "LeanProp" (sort-head-text $t $params))))
 
 ; An index term, with fields read from the argument tuple a ("a") or as the

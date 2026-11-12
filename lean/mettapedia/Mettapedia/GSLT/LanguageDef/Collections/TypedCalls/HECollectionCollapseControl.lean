@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HECollectionSquareCapture
-import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HECollectionFoldWorldServices
+import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HECollectionScopedFold
 
 /-! Actual capture-to-fold-to-return control inside the collapse definition.
 The input pairs are produced by the executed square/range child, and the
@@ -59,6 +59,35 @@ variable (minimal : Minimal.Services) (nativePolicy : Policy) (external : Extern
 local notation "current" => environment minimal nativePolicy external active primitive subtypes
 local notation "sourceSpace" => HECollectionSpaceExtension.space
 
+theorem fold_then_return_scoped (world : World) (policy : Policy) (before : Frame)
+    (live : List Atom) (scope : List String) (caller : Option Atom) (left right resultName : String)
+    (different : left ≠ right) (leftFresh : left ∉ specBindingVars before.bindings) (rightFresh : right ∉ specBindingVars before.bindings)
+    (rows : List Result) (pairs : List Entry.Value)
+    (stored : List.Forall₂ (StoredPairRel snapshots sourceSpace world) rows pairs)
+    (closed : ∀ row ∈ rows, TypeSubst.typeVars row.1.erase = []) :
+    ∃ after mark, Stateful.MinimalRel current sourceSpace world live scope caller
+      (foldContinuation (.expression .active pairs) left right resultName) before
+      [(.expression .active [.symbol "return", .expression mark (rows.map Prod.fst)], after)] world (policy := policy) ∧
+      HECollectionScopedFold.PreservesUnrelated live before after left right := by
+  let code := foldContinuation (.expression .active pairs) left right resultName
+  obtain ⟨after, mark, folded, kept⟩ := HECollectionScopedFold.source minimal nativePolicy external active primitive subtypes
+    world policy before (code.erase :: live) scope (some code.erase) left right different leftFresh rightFresh rows pairs stored closed
+  refine ⟨after, mark, ?_, ?_⟩
+  ·
+    refine Stateful.MinimalRel.chain (world1 := world)
+      (selected := [(.expression mark (rows.map Prod.fst), after)]) ?_ ?_
+    · simpa only [code, foldContinuation, foldCall, HEFoldParameterCapture.query, Entry.Value.erase,
+        List.map_cons, List.map_nil] using folded
+    · apply Stateful.BoundaryBatchRel.single_iff.mpr
+      apply Stateful.BoundaryRel.chain
+      have valueClosed : TypeSubst.typeVars (.expression mark (rows.map Prod.fst) : Entry.Value).erase = [] := by
+        simpa only [Entry.Value.erase] using row_values_closed rows closed
+      rw [HECollectionClosedAppend.closed_read policy after _ valueClosed, substituteBinder_return]
+      exact .data (by simp [Entry.Value.erase, Minimal.embeddedInstruction])
+  · intro name visible unbound notLeft notRight
+    obtain ⟨atom, member, occurs⟩ := visible
+    exact kept name ⟨atom, List.mem_cons_of_mem _ member, occurs⟩ unbound notLeft notRight
+
 theorem fold_then_return (world : World) (policy : Policy) (before : Frame)
     (live : List Atom) (scope : List String) (caller : Option Atom) (left right resultName : String)
     (different : left ≠ right) (leftFresh : left ∉ specBindingVars before.bindings) (rightFresh : right ∉ specBindingVars before.bindings)
@@ -68,19 +97,37 @@ theorem fold_then_return (world : World) (policy : Policy) (before : Frame)
     ∃ after mark, Stateful.MinimalRel current sourceSpace world live scope caller
       (foldContinuation (.expression .active pairs) left right resultName) before
       [(.expression .active [.symbol "return", .expression mark (rows.map Prod.fst)], after)] world (policy := policy) := by
-  let code := foldContinuation (.expression .active pairs) left right resultName
-  obtain ⟨after, mark, folded⟩ := HECollectionFoldWorldServices.source minimal nativePolicy external active primitive subtypes
-    world policy before (code.erase :: live) scope (some code.erase) left right different leftFresh rightFresh rows pairs stored closed
-  refine ⟨after, mark, Stateful.MinimalRel.chain (world1 := world)
-    (selected := [(.expression mark (rows.map Prod.fst), after)]) ?_ ?_⟩
-  · simpa only [code, foldContinuation, foldCall, HEFoldParameterCapture.query, Entry.Value.erase,
-      List.map_cons, List.map_nil] using folded
+  obtain ⟨after, mark, executed, _kept⟩ := fold_then_return_scoped minimal nativePolicy external active primitive subtypes
+    world policy before live scope caller left right resultName different leftFresh rightFresh rows pairs stored closed
+  exact ⟨after, mark, executed⟩
+
+theorem source_inner_scoped (world : World) (policy : Policy) (before : Frame)
+    (live : List Atom) (scope : List String) (caller : Option Atom) (lower upper : Int)
+    (captureName resultName left right : String)
+    (different : left ≠ right) (leftFresh : left ∉ specBindingVars before.bindings) (rightFresh : right ∉ specBindingVars before.bindings)
+    (resultDifferent : resultName ≠ captureName) (leftDifferent : left ≠ captureName) (rightDifferent : right ≠ captureName) :
+    ∃ afterWorld after mark, Stateful.MinimalRel current sourceSpace world live scope caller
+      (inner minimal lower upper captureName resultName left right) before
+      [(.expression .active [.symbol "return", .expression mark (HECollectionSquareRange.squares lower (upper - lower).toNat)], after)]
+      afterWorld (policy := policy) ∧
+      HECollectionScopedFold.PreservesUnrelated live before after left right := by
+  let code := inner minimal lower upper captureName resultName left right
+  obtain ⟨afterWorld, pairs, rows, captured, stored, seen, closed, _, _⟩ :=
+    HECollectionSquareCapture.source minimal nativePolicy external active primitive subtypes world policy before
+      (code.erase :: live) scope (some code.erase) lower upper
+  obtain ⟨after, mark, folded, kept⟩ := fold_then_return_scoped minimal nativePolicy external active primitive subtypes afterWorld policy before
+    live scope caller left right resultName different leftFresh rightFresh rows pairs stored closed
+  refine ⟨afterWorld, after, mark, ?_, kept⟩
+  refine Stateful.MinimalRel.chain (world1 := afterWorld)
+    (selected := [(.expression .active pairs, before)]) ?_ ?_
+  · simpa only [code, inner, Entry.Value.erase, List.map_cons, List.map_nil] using captured
   · apply Stateful.BoundaryBatchRel.single_iff.mpr
     apply Stateful.BoundaryRel.chain
-    have valueClosed : TypeSubst.typeVars (.expression mark (rows.map Prod.fst) : Entry.Value).erase = [] := by
-      simpa only [Entry.Value.erase] using row_values_closed rows closed
-    rw [HECollectionClosedAppend.closed_read policy after _ valueClosed, substituteBinder_return]
-    exact .data (by simp [Entry.Value.erase, Minimal.embeddedInstruction])
+    have packedClosed : TypeSubst.typeVars (.expression .active pairs : Entry.Value).erase = [] := by
+      simpa only [Entry.Value.erase, TypeSubst.typeVars] using HECollectionFoldSourceLoop.pairs_closed stored closed
+    rw [HECollectionClosedAppend.closed_read policy before _ packedClosed,
+      capture_substitution policy captureName resultName left right _ resultDifferent leftDifferent rightDifferent]
+    simpa only [seen] using folded
 
 theorem source_inner (world : World) (policy : Policy) (before : Frame)
     (live : List Atom) (scope : List String) (caller : Option Atom) (lower upper : Int)
@@ -91,21 +138,9 @@ theorem source_inner (world : World) (policy : Policy) (before : Frame)
       (inner minimal lower upper captureName resultName left right) before
       [(.expression .active [.symbol "return", .expression mark (HECollectionSquareRange.squares lower (upper - lower).toNat)], after)]
       afterWorld (policy := policy) := by
-  let code := inner minimal lower upper captureName resultName left right
-  obtain ⟨afterWorld, pairs, rows, captured, stored, seen, closed, _, _⟩ :=
-    HECollectionSquareCapture.source minimal nativePolicy external active primitive subtypes world policy before
-      (code.erase :: live) scope (some code.erase) lower upper
-  obtain ⟨after, mark, folded⟩ := fold_then_return minimal nativePolicy external active primitive subtypes afterWorld policy before
-    live scope caller left right resultName different leftFresh rightFresh rows pairs stored closed
-  refine ⟨afterWorld, after, mark, Stateful.MinimalRel.chain (world1 := afterWorld)
-    (selected := [(.expression .active pairs, before)]) ?_ ?_⟩
-  · simpa only [code, inner, Entry.Value.erase, List.map_cons, List.map_nil] using captured
-  · apply Stateful.BoundaryBatchRel.single_iff.mpr
-    apply Stateful.BoundaryRel.chain
-    have packedClosed : TypeSubst.typeVars (.expression .active pairs : Entry.Value).erase = [] := by
-      simpa only [Entry.Value.erase, TypeSubst.typeVars] using HECollectionFoldSourceLoop.pairs_closed stored closed
-    rw [HECollectionClosedAppend.closed_read policy before _ packedClosed,
-      capture_substitution policy captureName resultName left right _ resultDifferent leftDifferent rightDifferent]
-    simpa only [seen] using folded
+  obtain ⟨afterWorld, after, mark, executed, _kept⟩ := source_inner_scoped minimal nativePolicy external active primitive subtypes
+    world policy before live scope caller lower upper captureName resultName left right different leftFresh rightFresh
+    resultDifferent leftDifferent rightDifferent
+  exact ⟨afterWorld, after, mark, executed⟩
 
 end Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HECollectionCollapseControl

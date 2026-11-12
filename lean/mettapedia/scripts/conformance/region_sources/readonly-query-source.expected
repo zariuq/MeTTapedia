@@ -1,0 +1,6 @@
+((triple 0 1 2) (triple 0 1 0) (triple 0 1 2) (triple 0 1 0))
+((triple 0 1 2) (triple 0 1 0) (triple 0 1 2) (triple 0 1 0))
+4
+()
+((triple 0 1 2) (triple 0 1 0) (triple 0 1 2) (triple 0 1 0))
+(tag true)

@@ -1,0 +1,10 @@
+(: FieldBox (-> Number FieldBoxType))
+(: field-read (-> FieldBoxType Number))
+(= (field-read (FieldBox $value)) $value)
+(: field-syntax (-> Atom Atom))
+(= (field-syntax $value) $value)
+(: field-number (-> Number))
+(= (field-number) 7)
+
+!(field-read (FieldBox 7))
+!(field-read (field-syntax (FieldBox (field-number))))

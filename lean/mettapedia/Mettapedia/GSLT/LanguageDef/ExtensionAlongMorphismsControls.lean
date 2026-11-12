@@ -42,6 +42,7 @@ open Mettapedia.GSLT.LanguageDef.StructuralCoproduct
 open Mettapedia.GSLT.LanguageDef.SourcePreservingCalculusCoproduct
 open Mettapedia.GSLT.LanguageDef.ExtensionAlongMorphisms
 open Mettapedia.GSLT.LanguageDef.ExtensionConservativity
+open Mettapedia.Logic.Relation.ObservationTransport
 
 /-! ## Two cores and their coproduct -/
 

@@ -1,0 +1,4 @@
+List.merge
+List.mergeSort
+Nat.primeFactorsList
+Nat.minFacAux

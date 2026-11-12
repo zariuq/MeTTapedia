@@ -90,3 +90,59 @@ claim Hempty: forall y :e {0}, 0 :e 0 -> 0 = 1.
   exact FalseE (EmptyE 0 Hbad) (0 = 1). }
 exact neq_0_1 (Hlocal 0 (SingI 0) (fun y => 0) (fun y => 1) Hempty).
 Qed.
+
+(** The layer form.  Two fuel levels that agree below a state give successor
+    levels that agree at it.  A local recipe with its equations has this
+    form, and the case equations of a fuelled function prove it directly. **)
+Definition RankedLayers : set -> (set -> set) -> (set -> set -> set) -> prop :=
+  fun A rank fuel => forall k, nat_p k -> forall l, nat_p l -> forall x :e A,
+    (forall y :e A, rank y :e rank x -> fuel k y = fuel l y) ->
+    fuel (ordsucc k) x = fuel (ordsucc l) x.
+
+Theorem RankedLocal_layers : forall A, forall rank : set -> set,
+  forall step : (set -> set) -> set -> set, RankedLocal A rank step ->
+  forall fuel : set -> set -> set, RankedEquations A step fuel -> RankedLayers A rank fuel.
+let A rank step. assume Hlocal: RankedLocal A rank step.
+let fuel. assume Heq: RankedEquations A step fuel.
+let k. assume Hk: nat_p k. let l. assume Hl: nat_p l. let x. assume Hx: x :e A.
+assume Hagree: forall y :e A, rank y :e rank x -> fuel k y = fuel l y.
+rewrite Heq k Hk x Hx. rewrite Heq l Hl x Hx.
+exact Hlocal x Hx (fuel k) (fuel l) Hagree.
+Qed.
+
+(** Above the rank of a state the fuel no longer matters. **)
+Theorem RankedLayers_stable : forall A, forall rank : set -> set, forall fuel : set -> set -> set,
+  RankedLayers A rank fuel ->
+  forall k, nat_p k -> forall l, nat_p l -> forall x :e A,
+    rank x :e k -> rank x :e l -> fuel k x = fuel l x.
+let A rank fuel. assume Hlayers: RankedLayers A rank fuel.
+apply nat_ind.
+- let l. assume Hl: nat_p l. let x. assume Hx: x :e A.
+  assume Hzero: rank x :e 0. assume Hxl: rank x :e l.
+  exact FalseE (EmptyE (rank x) Hzero) (fuel 0 x = fuel l x).
+- let k. assume Hk: nat_p k.
+  assume IH: forall l, nat_p l -> forall x :e A, rank x :e k -> rank x :e l -> fuel k x = fuel l x.
+  let l. assume Hl: nat_p l. apply nat_inv l Hl.
+  + assume El: l = 0. rewrite El. let x. assume Hx: x :e A.
+    assume Hxk: rank x :e ordsucc k. assume Hzero: rank x :e 0.
+    exact FalseE (EmptyE (rank x) Hzero) (fuel (ordsucc k) x = fuel 0 x).
+  + assume Hex: exists j, nat_p j /\ l = ordsucc j.
+    apply Hex. let j. assume Hj: nat_p j /\ l = ordsucc j.
+    apply Hj. assume Hjn: nat_p j. assume El: l = ordsucc j.
+    rewrite El. let x. assume Hx: x :e A.
+    assume Hxk: rank x :e ordsucc k. assume Hxj: rank x :e ordsucc j.
+    apply Hlayers k Hk j Hjn x Hx.
+    let y. assume Hy: y :e A. assume Hyx: rank y :e rank x.
+    exact IH j Hjn y Hy (nat_ordsucc_trans k Hk (rank x) Hxk (rank y) Hyx)
+      (nat_ordsucc_trans j Hjn (rank x) Hxj (rank y) Hyx).
+Qed.
+
+(** A counter is not such a fuel: with every state at rank zero nothing below
+    a state constrains it, yet its levels differ. **)
+Theorem RankedLayers_counter_refused : ~ RankedLayers {0} (fun x => 0) (fun k x => k).
+assume Hlayers: RankedLayers {0} (fun x => 0) (fun k x => k).
+claim Hempty: forall y :e {0}, 0 :e 0 -> 0 = 1.
+{ let y. assume Hy: y :e {0}. assume Hbad: 0 :e 0.
+  exact FalseE (EmptyE 0 Hbad) (0 = 1). }
+exact neq_1_2 (Hlayers 0 nat_0 1 nat_1 0 (SingI 0) Hempty).
+Qed.

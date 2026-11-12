@@ -11,8 +11,10 @@ every other step reads no budget, so the rule is **eventually constant on every 
 and so is the round (`generalRound_const`). The round makes the cumulative round's move wherever that round moves
 (`generalRound_eq_of_cumulative`, `general_decided_of_cumulative`).
 
-Acceptance reduces to settling on the Miller class for this family exactly as for the cumulative family
-(`general_decided_of_settling_miller`).
+A conditional decision follows from settling on the Miller class for this family exactly as for the cumulative
+family (`general_decided_of_settling_miller`). At the tower its hypothesis fails: the conclusion would decide
+`crossStore`, solvable and without principal answer
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`).
 -/
 
 set_option autoImplicit false
@@ -318,7 +320,10 @@ noncomputable def generalSettledOfConst (holds : {Γ : Context S.R} → Equation
     reducer root normalizes certifyNormal headTypingUnique rootComplete stable problem) holds eventual
 
 include stable in
-/-- **Acceptance for the general family, reduced to settling on the Miller class.** -/
+/-- **Conditional decision for the general family, from settling on the Miller class.** At the tower's setting the
+conclusion fails on `crossStore` (`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`), so there
+the hypothesis fails. For every store, runs are exact; on `crossStore` they stop postponed
+(`UnificationWithLevels.DependentFibre.cross_postponed`). -/
 theorem general_decided_of_settling_miller
     (eventual : ∀ {Γ : Context S.R} {problem : EquationStore (TotalTerm Γ)},
       ContextualDependentShortClosure.StratifiedMiller S.levels problem →

@@ -1,0 +1,12 @@
+source	theorem	value	native_refinement_obligation	boundary
+ordinary_flat.ml	ORDINARY_PACK_MAKE_PROJECTIONS	two-byte selector meaning	descriptor lowering	8-bit projection bounds
+ordinary_flat.ml	ORDINARY_PACK_GUARD_PROJECTIONS	four-byte equality guard meaning	guard lowering	8-bit projection bounds
+ordinary_flat.ml	ORDINARY_FIRE_REFINEMENT	independent row meaning agrees with packed operation	ordinary_flat_fire consumer	ordinary_valid input profile
+ordinary_flat.ml	ORDINARY_WROW_INDEX_NONWRAP	natural and 32-bit modular indices agree under bounds	address arithmetic	no-wrap premise is required
+ordinary_pack_spec.ml	ORDINARY_PACK_OFFSETS_VALID	subtractive extent check equivalence	overflow-safe input validation	four-word source extent
+cesta_adapter_semantics.ml	ORDINARY_ADAPTER_FIRE_REFINEMENT	complete packed workspaces preserve row meaning	source adapter refinement	mathematical outputs; no machine adapter proof
+flat_workspace.ml	WORDLIST_FULL_SPLICE_32	new prefix plus preserved suffix gives full workspace	output preservation	HOL x86 word-memory contract
+flat_trace_workspace.ml	FLAT_TRACE_COMPOSE_FULL	append and widen callee accesses	trace and frame composition	fresh callee-entry event baseline
+flat_trace_wide.ml	FLAT_FIRE_TRACED_FULL_WORKSPACE_CORRECT	exact leaf with full workspace and access contract	independent native comparison	211-byte leaf; explicit separation premises
+flat_trace_weaken.ml	FLAT_FIRE_CORRECT	functional leaf contract derived from canonical trace	independent native comparison	exact retained leaf; no total adapter theorem
+mm_sub1_leaf.ml	MM_SUB1_LEAF_INSIDE and MM_SUB1_LEAF_OUTSIDE	exact Micromath leaf contracts	Micromath consumer comparison	selected object and stated ABI only

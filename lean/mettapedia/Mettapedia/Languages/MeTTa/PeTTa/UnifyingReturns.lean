@@ -148,6 +148,30 @@ inductive ProtectedFrames (name : String) (expected : Atom) : List Frame → Pro
   | nested (frame : Frame) {rest : List Frame} : ProtectedFrames name expected rest →
       ProtectedFrames name expected (frame :: rest)
 
+theorem ReturnFrames.no_recovery {name : String} {expected : Atom} {frames : List Frame}
+    (good : ReturnFrames name expected frames) (earned : List Answer) :
+    recoverDynamic earned frames = none := by
+  induction good generalizing earned with
+  | nil => rfl
+  | sequence pending completed rest ih => exact ih _
+
+theorem ProtectedFrames.after_recovery {name : String} {expected : Atom} {frames : List Frame}
+    (good : ProtectedFrames name expected frames) (earned answers : List Answer) (remaining : List Frame)
+    (recovered : recoverDynamic earned frames = some (answers, remaining)) :
+    ProtectedFrames name expected remaining := by
+  induction good generalizing earned with
+  | boundary promise tail =>
+      have noHandler := tail.no_recovery []
+      cases promise <;> simp only [recoverDynamic, noHandler] at recovered <;> cases recovered
+  | nested frame later ih =>
+      cases frame with
+      | dynamicCall =>
+          simp only [recoverDynamic, Option.some.injEq, Prod.mk.injEq] at recovered
+          rcases recovered with ⟨rfl, rfl⟩
+          exact later
+      | sequence pending completed => exact ih (completed ++ earned) recovered
+      | _ => exact ih [] recovered
+
 def ReturnConfiguration (name : String) (expected : Atom) (configuration : Configuration) : Prop :=
   ProtectedFrames name expected configuration.frames ∨
     (ReturnFrames name expected configuration.frames ∧ ReturnControl name expected configuration.control)
@@ -298,6 +322,21 @@ theorem protected_transition {registry : SpaceSemantics.Program} {source target 
     cases protectedFrames with
     | nested frame later => exact .inl later
     | boundary promise tail => cases promise
+  case dispatch_return answers rest control frames =>
+    rw [frames] at protectedFrames
+    cases protectedFrames with
+    | nested frame later => exact .inl later
+    | boundary promise tail => cases promise
+  case dynamic_return answers rest control frames =>
+    rw [frames] at protectedFrames
+    cases protectedFrames with
+    | nested frame later => exact .inl later
+    | boundary promise tail => cases promise
+  case fault_caught reason earned rest control recovered =>
+    exact .inl (protectedFrames.after_recovery [] earned rest recovered)
+  case dynamic_equations bindings callee supplied head selected used control resolved notNative registered chosen =>
+    cases selected
+    all_goals first | exact .inl protectedFrames | exact .inl (.nested _ protectedFrames)
   case sequence_return answers collected pending rest control frames =>
     rw [frames] at protectedFrames
     cases protectedFrames with
@@ -428,7 +467,10 @@ theorem tail_step {registry : SpaceSemantics.Program} {source target : Configura
             simp only [step, Option.some.injEq] at computed
             subst target
             exact .inr ⟨restGood, .sequence pendingGood (collectedGood.append answersGood)⟩
-    | fault => simp [step] at computed
+    | fault =>
+        have noHandler := framesGood.no_recovery []
+        simp only [step, noHandler] at computed
+        cases computed
 
 theorem return_configuration_step {registry : SpaceSemantics.Program} {source target : Configuration}
     {initial : MORK.Subst} {name : String} {expected : Atom}

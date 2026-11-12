@@ -1,0 +1,10 @@
+(= (answer-code) 9)
+(= (list-maker) (quote (1 2)))
+
+!(collapse (superpose ((answer-code) (answer-code))))
+!(let $xs (quote ((answer-code) (answer-code))) (collapse (superpose $xs)))
+!(collapse (unique (superpose ((quote (answer-code)) (quote (answer-code))))))
+!(let $xs (quote (1 1 2)) (collapse (superpose $xs)))
+!(collapse (superpose 7))
+!(collapse (superpose (list-maker)))
+!(let $xs (list-maker) (collapse (superpose $xs)))

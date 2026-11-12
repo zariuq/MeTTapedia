@@ -1,0 +1,3 @@
+let n. assume Hn: n :e Lean_Nat. let m. assume Hm: m :e Lean_Nat.
+exact Lean_Eq_proof_of Lean_Nat (Lean_Nat_add n m) (Lean_Nat_add m n)
+  (NatAlgebra_add_comm Lean_Nat_add Lean_Nat_add_In Lean_Nat_add_eq_1 Lean_Nat_add_eq_2 n Hn m Hm).

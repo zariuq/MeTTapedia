@@ -16,7 +16,7 @@ This is the formal underpinning for the Hypercube’s “discrete vs dense” ax
 
 Mathlib references:
 - `AddSubgroup.dense_or_cyclic`
-- `AddSubgroup.dense_xor'_cyclic`
+- `AddSubgroup.dense_xor_cyclic`
 - `AddSubgroup.dense_iff_ne_zmultiples`
  -/
 
@@ -45,7 +45,7 @@ variable [Nontrivial G] [DenselyOrdered G]
 
 /-- A sharper statement (exclusive-or): subgroups are dense iff they are not `ℤ • g`. -/
 theorem dense_xor'_zmultiples (S : AddSubgroup G) :
-    Xor' (Dense (S : Set G)) (∃ g : G, S = AddSubgroup.zmultiples g) := by
+    Xor (Dense (S : Set G)) (∃ g : G, S = AddSubgroup.zmultiples g) := by
   exact AddSubgroup.dense_xor_cyclic S
 
 /-- A convenient corollary: density is equivalent to not being any `ℤ • g`. -/

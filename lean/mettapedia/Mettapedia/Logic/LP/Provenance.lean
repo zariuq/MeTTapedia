@@ -241,7 +241,7 @@ theorem support_indicator {σ : LPSignature}
     (I : Interpretation σ) [DecidablePred (· ∈ I)] :
     KRelation.support (fun (a : GroundAtom σ) => if a ∈ I then (1 : ℕ) else 0) = I := by
   ext a
-  simp only [KRelation.support, Set.mem_setOf_eq]
+  simp only [KRelation.support, Set.mem_ofPred_eq]
   split_ifs with h
   · exact ⟨fun _ => h, fun _ => by decide⟩
   · simp [h]

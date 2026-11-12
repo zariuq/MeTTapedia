@@ -29,6 +29,12 @@ are bare locals. Σ-typed metavariables and arguments are reduced to this form b
 (`ContextualDependentSigmaExpansion`), and occurrences are η-long, as in their setting. Annotations
 are required normal: the normalizing solver's preparation produces such stores
 (`ContextualDependentNormalizing.prepared_normal`).
+
+The two agree as conditions on terms, not in their consequences. Their calculus has no cumulative universes; over a
+cumulative tower the inclusion of a universe in the next is silent, so an unknown may receive a local of a smaller
+universe than the domain it declares, and the fragment then holds `crossStore`, which is solvable and has no
+principal answer (`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`). On such a store every run
+stops postponed (`UnificationWithLevels.DependentFibre.cross_postponed`).
 -/
 
 set_option autoImplicit false

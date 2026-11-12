@@ -1,0 +1,21 @@
+(sat tag 7)
+(sat tag 7)
+(sat tag 8)
+
+(= (present $x)
+  (not (== (collapse (once (match &self (sat tag $x) t))) ())))
+(= (guarded $required $x)
+  (let $required (present $x) (add-atom &self (visited entered))))
+
+!(collapse (guarded True 7))
+!(collapse (match &self (visited $x) $x))
+!(collapse (guarded True 9))
+!(collapse (guarded False 7))
+!(collapse (match &self (visited $x) $x))
+!(collapse (guarded False 9))
+!(collapse (match &self (visited $x) $x))
+
+(= (insert-missing $x)
+  (let False (present $x) (add-atom &self (sat tag $x))))
+!(collapse (superpose ((insert-missing 9) (insert-missing 9))))
+!(collapse (match &self (sat tag 9) present))

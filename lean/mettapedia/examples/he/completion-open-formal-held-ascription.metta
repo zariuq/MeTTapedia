@@ -1,0 +1,10 @@
+(: completion-number (-> Number))
+(= (completion-number) 7)
+(: (completion-number) Atom)
+(: CompletionPolyBox (-> $t CompletionPolyType))
+(: completion-make-poly (-> CompletionPolyType))
+(= (completion-make-poly) (CompletionPolyBox (completion-number)))
+
+!(get-type (completion-number))
+!(CompletionPolyBox (completion-number))
+!(completion-make-poly)

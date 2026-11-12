@@ -2,14 +2,16 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentIntersectionGeneralDeadBinder
 
 /-!
-# Acceptance for the dead-binder family, on the permuted class
+# A conditional decision for the dead-binder family, on the permuted class
 
 Every progress of the dead-binder rule **drops an equation of the store under a pattern answer** (`deadSearch_drop`):
 in-place intersection drops the first equation of the store read without its dead binder, and the answer that makes
 the reduced equation valid makes the equation itself valid, since the binder comes back
 (`ContextualDependentIntersectionGeneral.solves_of_reduced`). So the dead-binder round keeps the corrected class
-wherever the cumulative round does (`deadRound_keeps`), and acceptance for the dead-binder family reduces to firing and
-the closure of the cumulative round on `PermutedNormal` (`dead_decided_of_cumulative`), as for the anywhere family.
+wherever the cumulative round does (`deadRound_keeps`), and a decision for the dead-binder family follows from firing
+and the closure of the cumulative round on `PermutedNormal` (`dead_decided_of_cumulative`), as for the anywhere family.
+It is conditional: at the tower firing and closure do not both hold, since the conclusion would decide `crossStore`,
+solvable and without principal answer (`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`).
 -/
 
 set_option autoImplicit false
@@ -128,8 +130,11 @@ variable (stable : ∀ {n : Nat} (fuel : Nat) (term : Tm Head n),
   Keeps (reducer fuel term) (reducer (fuel + 1) term))
 
 include stable in
-/-- **Acceptance for the dead-binder family, reduced to firing on the corrected class and closure of the cumulative
-round.** -/
+/-- **Conditional decision for the dead-binder family, from firing on the corrected class and closure of the
+cumulative round.** At the tower's setting the conclusion fails on `crossStore`
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`), so there the hypotheses do not both hold.
+For every store, runs are exact; on `crossStore` they stop postponed
+(`UnificationWithLevels.DependentFibre.cross_postponed`). -/
 theorem dead_decided_of_cumulative
     (firing : ∀ {Γ : Context S.R} {problem : EquationStore (TotalTerm Γ)}, PermutedNormal problem → problem ≠ [] →
       ∃ bound, ∀ larger, bound ≤ larger →

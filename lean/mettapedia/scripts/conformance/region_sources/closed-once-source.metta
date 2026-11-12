@@ -1,0 +1,12 @@
+(edges -2 42)
+(edges -2 42)
+(sat 1 8)
+(sat 1 7)
+(: unrelated (-> Atom Atom))
+(= (unrelated $x) (println! must-not-run))
+
+!(collapse (once (match &self (edges -2 42) true)))
+!(collapse (match &self (edges -2 42) true))
+!(collapse (once (match &self (sat 1 9) true)))
+!(collapse (once (match &self (sat 1 7) true)))
+!(collapse (once (match &self (sat 1 7) false)))

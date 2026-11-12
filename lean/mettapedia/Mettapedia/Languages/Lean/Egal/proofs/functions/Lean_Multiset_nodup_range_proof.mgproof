@@ -1,0 +1,4 @@
+let n. assume Hn: n :e Lean_Nat.
+rewrite Lean_Multiset_range_unfold n.
+rewrite LeanMultisetNodup_mk Lean_Nat (Lean_List_range n) (Lean_List_range_In n Hn).
+exact LeanListRange_nodup n Hn.

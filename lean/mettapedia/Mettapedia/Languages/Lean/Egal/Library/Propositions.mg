@@ -118,3 +118,18 @@ exact SepE2 1 (fun z => Q) (Lean_Exists_prec A p 0 0)
   (Lean_Exists_prec_type A p (fun _ => {z :e 1 | Q})
     (fun _ => Lean_sep1_prop Q) 0 HM 0 Hex).
 Qed.
+
+(** Propositional extensionality on truth values: equivalent propositions
+    are the same subset of 1. **)
+Theorem Lean_propext_value : forall p q :e LeanProp, 0 :e Lean_Iff_Prop p q -> p = q.
+let p. assume Hp: p :e LeanProp. let q. assume Hq: q :e LeanProp. assume H: 0 :e Lean_Iff_Prop p q.
+claim Hpq: 0 :e p -> 0 :e q. { exact LeanIff_forward p Hp q Hq 0 H. }
+claim Hqp: 0 :e q -> 0 :e p. { exact LeanIff_backward p Hp q Hq 0 H. }
+apply set_ext.
+- let x. assume Hx: x :e p.
+  claim Hx1: x :e 1. { exact PowerE 1 p Hp x Hx. }
+  exact cases_1 x Hx1 (fun z => z :e p -> z :e q) Hpq Hx.
+- let x. assume Hx: x :e q.
+  claim Hx1: x :e 1. { exact PowerE 1 q Hq x Hx. }
+  exact cases_1 x Hx1 (fun z => z :e q -> z :e p) Hqp Hx.
+Qed.

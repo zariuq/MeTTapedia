@@ -1,0 +1,5 @@
+index	lean_source	lean_value	petta_value
+1	(Quot.lift (r := fun (_ _ : Nat) => (0 : Nat) = 0) (fun (_ : Nat) => 7) (by intro _ _ _; rfl) (Quot.mk (fun (_ _ : Nat) => (0 : Nat) = 0) 4) : Nat)	7	(7)
+2	(Quot.liftOn (Quot.mk (fun (_ _ : Nat) => (0 : Nat) = 0) 9) (fun (_ : Nat) => 3) (by intro _ _ _; rfl) : Nat)	3	(3)
+3	(Nat.succ 4 : Nat)	5	(5)
+4	List.length ([1, 2] : List Nat)	2	(2)

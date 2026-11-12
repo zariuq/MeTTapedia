@@ -1,0 +1,270 @@
+{
+  "model": "https://github.com/rems-project/sail-x86-from-acl2",
+  "model_commit": "0c6c023dccc7c20d8d9dbfc481f01d9bb49d62bf",
+  "compiler": "https://github.com/rems-project/sail",
+  "compiler_commit": "8eb1fb6b5bf9f18c0f89f71e94ff0c5894acd7c1",
+  "support": "https://github.com/rems-project/lean-sail",
+  "support_commit": "079463134b9c50450b8393e1566a09fc492a34d9",
+  "slice_roots": [
+    "x86_mov_op_en_mr",
+    "read_gpr",
+    "write_gpr",
+    "rgfi",
+    "write_rgfi",
+    "rgfi_size",
+    "write_rgfi_size",
+    "reg_index",
+    "_get_modr_m_mod",
+    "_get_modr_m_r_m",
+    "_get_modr_m_reg"
+  ],
+  "architectural_state": "Complete generated register and exception declarations from the unsliced model.",
+  "choice_provider": "The original generated SailM uses trivialChoiceSource. It selects zero for undefined AF in logical operations. X86LogicalFlags proves defined CF/ZF independence for every auxiliary bit; whole-hardware refinement still requires a relation abstracting undefined bits or a generalized choice model.",
+  "adaptation": "Omit the unused FakeReal import and generated emulator initializers. Supply the pure diagnostic primitive through Sail.print; refinement disables diagnostic logging. Add a checked absolute-value termination measure to integer AND. Expose external memory operations as explicit parameters without assumed laws.",
+  "scope": "Register accessors, register fields and the MOV handler. Fetch, opcode dispatch, concrete memory-operation interpretation, Sail translation correctness and whole-emitter refinement remain separate obligations.",
+  "opcode_dispatch": {
+    "generated_source_sha256": "c3a8c65bd1eb3d4b699faa0c134c6453a84149e8e87dad337865ff3a62688dd1",
+    "extracted_file_sha256": "4eaa2eb5a7efc4479d620fefc75317caf64d95d0cc5aae127f2836999fb7f665",
+    "source_definition": "one_byte_opcode_execute",
+    "retained_body": "Complete generated body, unchanged. Mark the dispatcher noncomputable only to omit redundant host IR generation; kernel evaluation is unchanged.",
+    "additional_definitions": [
+      "_get_cr0bits_em",
+      "_get_cr0bits_ts",
+      "_get_prefixes_lck",
+      "ext_one_byte_opcode_execute",
+      "feature_flag_fn",
+      "feature_flags_fn"
+    ],
+    "parameterized_handlers": [
+      "two_byte_opcode_decode_and_execute",
+      "x86_add_adc_sub_sbb_or_and_xor_cmp_g_e",
+      "x86_add_adc_sub_sbb_or_and_xor_cmp_test_e_g",
+      "x86_add_adc_sub_sbb_or_and_xor_cmp_test_e_i",
+      "x86_add_adc_sub_sbb_or_and_xor_cmp_test_rax_i",
+      "x86_call_e8_op_en_m",
+      "x86_call_ff_2_op_en_m",
+      "x86_cbw_cwd_cdqe",
+      "x86_cmc_clc_stc_cld_std",
+      "x86_cmps",
+      "x86_cwd_cdq_cqo",
+      "x86_div",
+      "x86_far_jmp_op_en_d",
+      "x86_hlt",
+      "x86_idiv",
+      "x86_imul_op_en_m",
+      "x86_imul_op_en_rmi",
+      "x86_inc_dec_4x",
+      "x86_inc_dec_fe_ff",
+      "x86_jrcxz",
+      "x86_lahf",
+      "x86_lea",
+      "x86_leave",
+      "x86_loop",
+      "x86_mov_op_en_fd",
+      "x86_mov_op_en_mi",
+      "x86_mov_op_en_oi",
+      "x86_mov_op_en_rm",
+      "x86_mov_op_en_td",
+      "x86_movs",
+      "x86_movsx",
+      "x86_mul",
+      "x86_near_jmp_op_en_d",
+      "x86_near_jmp_op_en_m",
+      "x86_not_neg_f6_f7",
+      "x86_one_byte_jcc",
+      "x86_one_byte_nop",
+      "x86_pop_ev",
+      "x86_pop_general_register",
+      "x86_popa",
+      "x86_popf",
+      "x86_push_ev",
+      "x86_push_general_register",
+      "x86_push_i",
+      "x86_push_segment_register",
+      "x86_pusha",
+      "x86_pushf",
+      "x86_ret",
+      "x86_sahf",
+      "x86_sal_sar_shl_shr_rcl_rcr_rol_ror",
+      "x86_stos",
+      "x86_xchg"
+    ],
+    "parameter_boundary": "Remaining handler symbols are ordinary function data without correctness laws or default implementations. MOV and LOCK-fault theorems quantify over every implementation.",
+    "scope": "Opcode 0x89 dispatch and its register MOV result; LOCK prefix fault. Instruction fetch and linking other handler bodies remain separate."
+  },
+  "prefix_scanner": {
+    "source_definition": "get_prefixes",
+    "extracted_file_sha256": "a41bb5aba5aaffa54e739cc5b69505e4355ca39354da5cfa6183b67870f8b569",
+    "source_body": "Retained as get_prefixes_body, parameterized by its recursive callback.",
+    "adaptation": "Qualify the shadowed prefixes type. In the implementation, replace the recursive counter result by checkedPredecessor, preserving its original check_range assertion and returning a strictly smaller subtype. Add a checked natural-number termination measure.",
+    "correspondence": "X86Prefix.unfold_original proves the original recursion equation; X86Prefix.unique proves its unique solution. Both use the actual imported body."
+  },
+  "fetch_decoder": {
+    "source_definition": "x86_fetch_decode_execute",
+    "extracted_file_sha256": "614abc4a994c442007bf868f7bb4f4a912380d39dae8bb831cb380240946f74d",
+    "retained_body": "Complete generated body. Mark noncomputable only to omit host IR generation; qualify shadowed prefixes, vex_prefixes and evex_prefixes type annotations.",
+    "parameterized_handlers": [
+      "vex_decode_and_execute",
+      "evex_decode_and_execute"
+    ],
+    "parameter_boundary": "Vector decoders are ordinary function data without laws or default implementations. The legacy MOV proof holds for every implementation.",
+    "correspondence": "X86InstructionFetch.fetch_register64 follows the actual fetch/decode body through architectural mode, RIP, code bytes, ModRM, dispatcher and MOV state updates. Native-byte placement, address linkage, ABI and whole-emitter refinement remain separate."
+  },
+  "arithmetic_primitives": {
+    "source_definitions": [
+      "gpr_add_spec_8",
+      "gpr_sub_spec_8",
+      "gpr_or_spec_8",
+      "gpr_and_spec_8",
+      "gpr_xor_spec_8"
+    ],
+    "extracted_file_sha256": "222ee9a4cd217ff0d7c75de008c8c7ffc52d5d3d942f5b724ecca43d7b64be5b",
+    "adaptation": "Keep function bodies unchanged. Add a checked natAbs termination measure to logcount_int; complement and positive-halving rank lemmas justify all recursive calls. Convert the detached trailing documentation comment to an ordinary comment.",
+    "correspondence": "X86Alu proves portable 64-bit result equality and state preservation for all five primitives, and a zero undefined-flag mask for ADD and SUB. Instruction handlers and whole-emitter refinement remain separate."
+  },
+  "flag_writer": {
+    "source_definitions": [
+      "write_user_rflags"
+    ],
+    "extracted_file_sha256": "50530326564e6c94b5a9fb6e088e4912601ec914ec93fe151b1355aa6945bcdc",
+    "adaptation": "Preserve all twelve definitions in the dependency closure. Convert detached documentation comments to ordinary comments.",
+    "correspondence": "X86Flags proves the actual defined-mask writer's exact state update, preservation of GPRs, RIP and memory, and missing-register failure. The undefined-mask branch remains in the original body and is not claimed by the defined-mask theorem."
+  },
+  "branch_condition": {
+    "source_definition": "jcc_cmovcc_setcc_spec",
+    "extracted_file_sha256": "920c42e8e2f9f973973e480a9c3b5d94d1e71ec5ac9a8a2685012c59d6725ce9",
+    "adaptation": "Retain the complete generated body unchanged.",
+    "correspondence": "X86BranchCondition proves the original unsigned and zero conditions, their missing-register failure and composition after fetched CMP/TEST with exact frames. Near-branch displacement reads, RIP changes and complete branch fetch remain separate."
+  },
+  "load_handler": {
+    "source_definitions": [
+      "x86_mov_op_en_rm"
+    ],
+    "extracted_file_sha256": "e767b5e35baf99ff4ea89973834a791cf5e075300b8c98c6b145d7a7a895e234",
+    "adaptation": "Retain the complete generated function body unchanged. Add ordinary documentation comments only.",
+    "correspondence": "X86FrameLoad explicitly links the original MOV memory-to-register handler and proves seven-byte fetch, signed disp32 calculation, eight-byte data read, destination update and RIP advancement for the no-SIB RDI frame form. X86FrameLoadCapture joins all 336 actual C helper outputs to this theorem. Compiler-buffer, physical pointer linkage, fuel-prefix and ABI composition remain separate."
+  },
+  "arithmetic_handler": {
+    "source_definitions": [
+      "x86_add_adc_sub_sbb_or_and_xor_cmp_test_e_g",
+      "x86_add_adc_sub_sbb_or_and_xor_cmp_g_e"
+    ],
+    "extracted_file_sha256": "2da5e4d6fe8df92c3b9821a61e718ee61257fbf5f4545d3608f6193a080b36dc",
+    "adaptation": "Preserve existing dependency bodies. Additionally retain the complete g_e handler unchanged from generated authority lines 7994-8031 for the emitted register-from-memory arithmetic form. The twelve flag-writer dependencies are imported separately by X86Flags. Convert detached documentation comments to ordinary comments.",
+    "correspondence": "X86Arithmetic explicitly links the actual handler and proves fetched ADD/SUB register results, flags and RIP updates. Shared input windows carry no execution hypothesis. Aliasing, wraparound and wrong-opcode controls use the complete fetch path. Other instruction families, native template composition and full emitter refinement remain separate."
+  },
+  "near_branch_handler": {
+    "source_definition": "x86_two_byte_jcc",
+    "extracted_file_sha256": "399b357d255faa7d184045d7bb43076bd5fe8fa00b61257567a9551c1101a744",
+    "adaptation": "Retain the complete generated body unchanged.",
+    "correspondence": "X86NearBranch proves forced displacement size, instruction length, signed disp32 read and both taken/fallthrough RIP updates. Forward/backward and wrong-target controls use the original handler."
+  },
+  "two_byte_dispatch": {
+    "source_definitions": [
+      "two_byte_opcode_execute",
+      "two_byte_opcode_decode_and_execute"
+    ],
+    "extracted_file_sha256": "4f8413388e634c205bad81d2808a944772e10cf91e2f22773bbb78d50bd25ebc",
+    "adaptation": "Retain all seventeen dependency bodies, converting detached documentation comments to ordinary comments. Mark the two dispatch roots noncomputable to omit redundant host IR generation; kernel evaluation is unchanged.",
+    "parameterized_handlers": [
+      "chk_exc_fn",
+      "x86_bt_0f_a3",
+      "x86_bt_0f_ba",
+      "x86_cmovcc",
+      "x86_cmpxchg",
+      "x86_imul_op_en_rm",
+      "x86_lgdt",
+      "x86_lidt",
+      "x86_lldt",
+      "x86_mov_control_regs_op_en_mr",
+      "x86_movaps_movapd_op_en_mr",
+      "x86_movaps_movapd_op_en_rm",
+      "x86_movd_movq_from_xmm",
+      "x86_movd_movq_to_xmm",
+      "x86_movhps_movhpd_op_en_mr",
+      "x86_movhps_movhpd_op_en_rm",
+      "x86_movlps_movlpd_op_en_mr",
+      "x86_movlps_movlpd_op_en_rm",
+      "x86_movss_movsd_op_en_mr",
+      "x86_movss_movsd_op_en_rm",
+      "x86_movsxd",
+      "x86_movups_movupd_movdqu_op_en_mr",
+      "x86_movups_movupd_movdqu_op_en_rm",
+      "x86_movzx",
+      "x86_setcc",
+      "x86_shld_shrd",
+      "x86_shufpd_op_en_rmi",
+      "x86_shufps_op_en_rmi",
+      "x86_syscall_both_views",
+      "x86_sysret",
+      "x86_two_byte_nop",
+      "x86_unpck?pd_op_en_rm",
+      "x86_unpck?ps_op_en_rm"
+    ],
+    "parameter_boundary": "Thirty-three additional handlers are ordinary function data without laws or default implementations. Conditional-branch selection and decoder correspondence hold for every assignment, along with the earlier one-byte handler parameters.",
+    "correspondence": "X86EscapeFetch follows original six-byte 0F fetch through both dispatchers and the original near-branch handler for all five conditional opcodes found in the native bundle. NativeBranchProfile checks coverage and actual opcode prefixes in all fifteen image certificates. Whole-image placement, unconditional branches and structured-control/compiler refinement remain separate."
+  },
+  "unconditional_jump": {
+    "source_definition": "x86_near_jmp_op_en_d",
+    "extracted_file_sha256": "da6b8f585704f00469129f10f9741363fcce4113114c901b2bbea2ebc3abc58b",
+    "adaptation": "Retain the complete generated body unchanged.",
+    "correspondence": "X86UnconditionalJump follows complete five-byte E9 fetch through original scanning, dispatch and signed-displacement handler to exact RIP. Forward/backward and changed-displacement controls are checked. Whole-image placement and source control-flow composition remain separate."
+  },
+  "immediate_memory_arithmetic": {
+    "source_definition": "x86_add_adc_sub_sbb_or_and_xor_cmp_test_e_i",
+    "extracted_file_sha256": "108927ecbf4e48e5f9e9be8f1410e6088bb434c053df5ab558fecfd752e45adf",
+    "adaptation": "Retain the complete generated body unchanged. Convert its detached documentation comment to an ordinary comment.",
+    "correspondence": "X86FrameIncrement links the original immediate-memory handler into the original dispatcher and proves complete eight-byte REX.W 83 /0 RDI+disp32 ADD-immediate-one fetch. It retains operand/immediate reads, modular arithmetic, bytewise writes, defined flags and RIP advancement, with exact register/byte framing. Increment, wraparound, wrong-answer, suffix and omitted-footprint controls use the full fetch path. Native buffer placement, preceding fuel-budget checks, ABI and whole-emitter composition remain separate."
+  },
+  "complete_fuel_prefix": {
+    "proof_module": "X86FuelPrefix",
+    "correspondence": "The complete forty-byte prefix composes original fetched budget load, TEST, JZ, used-count load, CMP, JAE and memory ADD. Architectural inputs and loaded code contain no execution hypothesis. Four, six and seven fetch calls yield exact RIP, counter bytes and resource frames for unlimited, exhausted and available budgets. Determinism reflects any successful same-length run into the result contract. Concrete available/equal-budget/unlimited-wrap and wrong-counter controls are checked. Native image-to-state placement, the exhaustion handler, source admission, ABI and whole-emitter composition remain separate."
+  },
+  "fueled_binary_template": {
+    "proof_modules": ["X86FueledBin", "NativeFueledBin"],
+    "correspondence": "The complete forty-nine-byte fueled U64 ADD/SUB template composes existing fetched contracts without adding an ISA model. Available execution updates the logical destination and counter; exhaustion preserves registers and memory at its declared boundary. Same-length reflection, source binary-cell correspondence, arbitrary operand aliasing and full-image preservation are proved. Actual C captures supply only the nine-byte body, never their unpatched fuel target. The generic raw-image adapter independently checks body bytes and derives bounds/placement from accepted images. Source admission, failure-handler results, whole-program and ABI refinement remain separate."
+  },
+  "move_immediate_handlers": {
+    "source_definitions": ["x86_mov_op_en_oi", "x86_mov_op_en_mi"],
+    "extracted_file_sha256": "e5006150efda0dde8e9c91a97d47041a2a02a5c5627f1b921f07269aaddd31ba",
+    "adaptation": "Retain both complete generated bodies unchanged from the pinned source, with the same external memory interface.",
+    "correspondence": "X86FrameStore proves full fetched RDI+disp32 register and immediate stores, including sign extension, alignment and byte frames. X86OutcomeLoad proves the full fetched B8 EAX immediate load and zero extension. X86FailureHandler composes the actual twenty-eight-byte handler through four fetched instructions to the epilogue boundary, exact outcome fields, flags and frames. NativeFailureProfile checks all current raw handler bodies and exit patches; NativeFailureRefinement derives execution inputs from image checks and explicit caller placement/separation. The public epilogue, ABI, source admission and full compiler remain open."
+  },
+  "native_exhaustion_path": {
+    "proof_module": "NativeExhaustion",
+    "correspondence": "The complete six-instruction exhausted fuel prefix composes with the four-instruction failure handler in the same accepted raw image. Current image metadata derives the actual pairing. Prefix state frames, existential flags and unchanged memory construct handler inputs; no intermediate execution is assumed. The result fixes RAX/status/ret_val to four, preserves all budget/used bytes and the complete image under explicit caller separation. A fourth fuel span in the exported R_DERIVE_IS_TYPE image and an incremented-counter refusal control are checked. Architectural fetch facts are transported with X86StateFrame.basisAt; no additional ISA semantics are introduced. The public epilogue, ABI and complete consumer/source-hosting theorems remain open."
+  },
+  "stack_operations": {
+    "source_definitions": ["rme16", "read_sptr", "add_to_sptr", "write_sptr", "x86_push_general_register", "x86_pop_general_register", "x86_ret"],
+    "extracted_file_sha256": "979aac5508f515cec64249da2a96964a60e3d07c1253cb5224666fc1c8157146",
+    "generated_stack_source_sha256": "f6af5ff85ebdbc852fb7e09892d10d7f59199e20d94593273d630db0f23e2e6e",
+    "source_model_file": "model/push_and_pop.sail",
+    "source_model_file_sha256": "f2a484de06de98e91f749df329fca03ac9c75030e98dffeb95af15303a191d54",
+    "adaptation": "Retain the complete original bodies. rme16 is required only to elaborate the unselected C2 branch of RET; no C2 coverage is claimed.",
+    "correspondence": "X86Stack follows complete fetched PUSH/POP register forms and C3 RET through stack-pointer, alignment, byte access and canonical-return checks. PUSH saves its pre-decrement source, including RSP aliasing, with an exact eight-byte frame. X86Prologue composes five actual pushes, proves their saved words are the caller's original registers, preserves the return address and constructs X86Epilogue stack facts. Concrete controls preserve high bits and refuse stale stack data and a changed return address. X86Epilogue composes five POPs and RET against the exact ten-byte public epilogue. NativeEpilogueRefinement derives inputs from checked raw images; an altered POP byte is refused. Whole-program/source/ABI refinement and physical memory placement remain open. Additional instruction coverage uses the original model and existing fetch/stepping infrastructure."
+  },
+  "byte_write_path": {
+    "source_definitions": [
+      "wb",
+      "bang_memi",
+      "store_bytes_to_ea"
+    ],
+    "retained_source": "Functions.lean.inc",
+    "correspondence": "X86WriteWords retains original inclusive-loop, canonical, app-view, byte-write, diagnostic RIP-read and alignment behavior. It proves the stateful fold, byte readback, exact frame, code/suffix preservation and refusal controls. X86StateFrame composes actual-state register and byte footprints; it introduces no new operational machine."
+  },
+  "conditional_byte_handlers": {
+    "source_definitions": [
+      "x86_setcc",
+      "x86_movzx"
+    ],
+    "generated_source_sha256": "f6af5ff85ebdbc852fb7e09892d10d7f59199e20d94593273d630db0f23e2e6e",
+    "source_model_files": {
+      "model/conditional.sail": "26ecaa0eea7a248d9d1c17210c07458a8709f0bb2f81ac0c4ed354b1eae5c4cd",
+      "model/move.sail": "08d9815bf2c7ce204ee4e9f2ac208cae2477048b122cb29780440d44ac24af68"
+    },
+    "retained_source": "ConditionalByteFunctions.lean.inc",
+    "extracted_file_sha256": "38a5321151c753b6c42ebcd0811d26fc5de141b53721ad14e7a291151653b940",
+    "adaptation": "Retain both complete generated bodies unchanged with the existing external memory interface.",
+    "correspondence": "X86ConditionByte follows the original SETE and MOVZX handlers and complete four-byte fetch paths. SETE preserves the old upper bits; MOVZX produces a zero-extended byte independently of those bits. Register and memory frames, REX escape scanning, real ModRM reads and actual dispatcher selection are proved. Source-template, admission, whole-consumer and generic-emitter composition remain separate obligations."
+  }
+}

@@ -1,0 +1,3 @@
+(((add-atom &self (unexpected 99)) retained) ((add-atom &self (unexpected 99)) retained))
+()
+(false true)

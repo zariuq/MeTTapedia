@@ -2,4 +2,3 @@
     equation theorems through their families' recursors, with Lean's equation
     theorems proved from them.  Do not edit. **)
 
-

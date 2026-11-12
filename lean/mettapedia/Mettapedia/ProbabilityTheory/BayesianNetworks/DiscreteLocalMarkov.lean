@@ -17,6 +17,7 @@ noncomputable def parentsRestrict (v : V) :
     bn.JointSpace → (∀ p : {x // x ∈ (bn.graph.parents v : Set V)}, bn.stateSpace p.1) :=
   restrictToSet (bn := bn) (bn.graph.parents v)
 
+omit [Fintype V] [DecidableEq V] [(v : V) → Fintype (bn.stateSpace v)] [∀ (v : V), Nonempty (bn.stateSpace v)] [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 lemma measurableSet_parents_preimage
     (v : V) {s : Set bn.JointSpace}
     (hs : MeasurableSet[bn.measurableSpaceOfVertices (bn.graph.parents v)] s) :
@@ -39,11 +40,13 @@ abbrev ParentAssign (v : V) :=
 def parentFiber (v : V) (c : ParentAssign (bn := bn) v) : Set bn.JointSpace :=
   (parentsRestrict (bn := bn) v) ⁻¹' {c}
 
+omit [Fintype V] [DecidableEq V] [(v : V) → Fintype (bn.stateSpace v)] [∀ (v : V), Nonempty (bn.stateSpace v)] [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 lemma mem_parentFiber_iff
     (v : V) (c : ParentAssign (bn := bn) v) (ω : bn.JointSpace) :
     ω ∈ parentFiber (bn := bn) v c ↔ (parentsRestrict (bn := bn) v ω) = c := by
   rfl
 
+omit [Fintype V] [DecidableEq V] [(v : V) → Fintype (bn.stateSpace v)] [∀ (v : V), Nonempty (bn.stateSpace v)] [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 lemma parentFiber_disjoint
     (v : V) (c₁ c₂ : ParentAssign (bn := bn) v) (h : c₁ ≠ c₂) :
     Disjoint (parentFiber (bn := bn) v c₁) (parentFiber (bn := bn) v c₂) := by
@@ -56,6 +59,7 @@ lemma parentFiber_disjoint
     simpa [parentFiber] using hω₂
   exact h (h1.symm.trans h2)
 
+omit [Fintype V] [DecidableEq V] [(v : V) → Fintype (bn.stateSpace v)] [∀ (v : V), Nonempty (bn.stateSpace v)] [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 lemma parents_preimage_eq_iUnion
     (v : V) (S : Set (ParentAssign (bn := bn) v)) :
     (parentsRestrict (bn := bn) v) ⁻¹' S =
@@ -79,12 +83,9 @@ lemma parents_preimage_eq_iUnion
       have hEq : parentsRestrict (bn := bn) v ω = c := by
         simpa [parentFiber] using hc'
       simpa [hEq] using h
-    · have hempty : False := by
-        have : ω ∈ (∅ : Set bn.JointSpace) := by
-          simpa [h] using hc
-        simpa using this
-      exact hempty.elim
+    · simp [h] at hc
 
+omit [Fintype V] [DecidableEq V] [(v : V) → Fintype (bn.stateSpace v)] [∀ (v : V), Nonempty (bn.stateSpace v)] [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 lemma measurable_parentFiber
     (v : V) [MeasurableSingletonClass (ParentAssign (bn := bn) v)]
     (c : ParentAssign (bn := bn) v) :
@@ -101,6 +102,7 @@ lemma measurable_parentFiber
     Measurable.of_comap_le hle
   simpa [parentFiber] using hmeas (measurableSet_singleton (x := c))
 
+omit [Fintype V] [DecidableEq V] [(v : V) → Fintype (bn.stateSpace v)] [∀ (v : V), Nonempty (bn.stateSpace v)] [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 lemma measurable_parentFiber_vertices
     (v : V) [MeasurableSingletonClass (ParentAssign (bn := bn) v)]
     (c : ParentAssign (bn := bn) v) :
@@ -118,6 +120,7 @@ lemma measurable_parentFiber_vertices
   -- `parentsRestrict v` is definitionally `restrictToSet (parents v)`.
   exact hcomap
 
+omit [∀ (v : V), Nonempty (bn.stateSpace v)] [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 lemma setIntegral_parents_preimage
     (μ : Measure bn.JointSpace) [IsFiniteMeasure μ]
     (v : V) [MeasurableSingletonClass (ParentAssign (bn := bn) v)]
@@ -176,6 +179,7 @@ lemma setIntegral_parents_preimage
     by_cases hc : c ∈ S <;> simp [hc]
   exact hUnion.trans hSum
 
+omit [Fintype V] [DecidableEq V] [(v : V) → Fintype (bn.stateSpace v)] [∀ (v : V), Nonempty (bn.stateSpace v)] [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 /-- Decompose a single-vertex preimage as a finite union of `eventEq` slices. -/
 lemma vertex_preimage_eq_iUnion_eventEq
     (v : V) (S : Set (bn.stateSpace v)) :
@@ -197,9 +201,9 @@ lemma vertex_preimage_eq_iUnion_eventEq
     · have : ω ∈ eventEq (bn := bn) v a := by simpa [hS] using ha
       have hv : ω v = a := by simpa [eventEq] using this
       simpa [hv] using hS
-    · have : ω ∈ (∅ : Set bn.JointSpace) := by simpa [hS] using ha
-      exact False.elim (by simpa using this)
+    · simp [hS] at ha
 
+omit [Fintype V] [DecidableEq V] [(v : V) → Fintype (bn.stateSpace v)] [∀ (v : V), Nonempty (bn.stateSpace v)] [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 /-- Distinct `eventEq` slices on the same vertex are disjoint. -/
 lemma eventEq_disjoint_of_ne
     (v : V) {a₁ a₂ : bn.stateSpace v} (h : a₁ ≠ a₂) :
@@ -210,6 +214,7 @@ lemma eventEq_disjoint_of_ne
   have hv2 : ω v = a₂ := by simpa [eventEq] using h2
   exact h (hv1.symm.trans hv2)
 
+omit [Fintype V] [DecidableEq V] [∀ (v : V), Nonempty (bn.stateSpace v)] [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 /-- Set-integral decomposition over single-vertex fibers. -/
 lemma setIntegral_vertex_preimage
     (μ : Measure bn.JointSpace) [IsFiniteMeasure μ]
@@ -268,6 +273,7 @@ lemma setIntegral_vertex_preimage
     by_cases ha : a ∈ S <;> simp [ha]
   exact hUnion.trans hSum
 
+omit [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 lemma jointMeasure_parentFiber_inter_as_sum
     (cpt : bn.DiscreteCPT)
     [∀ v, MeasurableSingletonClass (bn.stateSpace v)]
@@ -284,6 +290,7 @@ lemma jointMeasure_parentFiber_inter_as_sum
       (bn := bn) (cpt := cpt) (S := S ∩ parentFiber (bn := bn) v c)
       (hS.inter (measurable_parentFiber (bn := bn) v c)))
 
+omit [(v : V) → Fintype (bn.stateSpace v)] [∀ (v : V), Nonempty (bn.stateSpace v)] [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 private lemma prod_erase_split_descendants
     (cpt : bn.DiscreteCPT) (v : V) (x : bn.JointSpace) :
     (∏ w ∈ Finset.univ.erase v, cpt.nodeProb x w)
@@ -310,7 +317,7 @@ private lemma prod_erase_split_descendants
       have hw_ne : w ≠ v := by
         rcases hw_desc with ⟨_, hw_ne⟩
         exact hw_ne
-      exact Finset.mem_filter.mpr ⟨by simpa [hw_ne], hw_desc⟩
+      exact Finset.mem_filter.mpr ⟨by simp [hw_ne], hw_desc⟩
   have hnotdesc :
       (Finset.univ.erase v).filter (fun w => w ∉ bn.graph.descendants v)
         =
@@ -324,7 +331,7 @@ private lemma prod_erase_split_descendants
     · intro hw
       rcases Finset.mem_filter.mp hw with ⟨_, hw_pred⟩
       rcases hw_pred with ⟨hw_not_desc, hw_ne⟩
-      exact Finset.mem_filter.mpr ⟨by simpa [hw_ne], hw_not_desc⟩
+      exact Finset.mem_filter.mpr ⟨by simp [hw_ne], hw_not_desc⟩
   calc
     (∏ w ∈ Finset.univ.erase v, cpt.nodeProb x w)
         =
@@ -346,6 +353,7 @@ private lemma prod_erase_split_descendants
         cpt.nodeProb x d) := by
           ring
 
+omit [(v : V) → Fintype (bn.stateSpace v)] [∀ (v : V), Nonempty (bn.stateSpace v)] [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 private lemma jointWeight_split_descendants
     (cpt : bn.DiscreteCPT) (v : V) (x : bn.JointSpace) :
     cpt.jointWeight x
@@ -381,12 +389,14 @@ fiber-screening proof. They isolate the dependence on `x_v` and the ND-part
 from the descendant product, which telescopes to 1.
 -/
 
+omit [Fintype V] [DecidableEq V] [(v : V) → Fintype (bn.stateSpace v)] [∀ (v : V), Nonempty (bn.stateSpace v)] [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 theorem descendant_not_parent
     (v d : V) (hd : d ∈ bn.graph.descendants v) : d ∉ bn.graph.parents v := by
   intro hdpar
   rcases hd with ⟨hvd, _hvd_ne⟩
   exact bn.acyclic d ⟨v, hdpar, hvd⟩
 
+omit [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 theorem nodeProb_patch_descendants_at_v
     (cpt : bn.DiscreteCPT) (v : V) (D : Finset V)
     (hD_desc : ∀ d, d ∈ D → d ∈ bn.graph.descendants v)
@@ -398,6 +408,7 @@ theorem nodeProb_patch_descendants_at_v
     exact hvne rfl
   exact nodeProb_patch_descendants_irrelevant bn cpt v v D hD_desc x xD hv_not_desc
 
+omit [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 private lemma sum_descendants_jointWeight
     (cpt : bn.DiscreteCPT) (v : V) (x : bn.JointSpace) (D : Finset V)
     (hD_desc : ∀ d, d ∈ D → d ∈ bn.graph.descendants v)
@@ -556,6 +567,7 @@ private noncomputable def mergeDescNonDesc
     (Finset.univ.filter (fun d => d ∈ bn.graph.descendants v))
     (descSetToFin (bn := bn) v xD)
 
+omit [(v : V) → Fintype (bn.stateSpace v)] [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 private lemma piEquiv_descendants_symm_eq_merge
     (v : V)
     (xD : ∀ d : {d // d ∈ bn.graph.descendants v}, bn.stateSpace d)
@@ -602,6 +614,7 @@ private lemma piEquiv_descendants_symm_eq_merge
               (xD := descSetToFin (bn := bn) v xD)
               (v := u) hDnot, baseFromNonDesc, hu]
 
+omit [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 private lemma sum_reindex_desc_nonDesc
     (v : V) (f : bn.JointSpace → ENNReal) :
     (∑ x : bn.JointSpace, f x)
@@ -647,6 +660,7 @@ private lemma sum_reindex_desc_nonDesc
             simpa [e] using congrArg f
               (piEquiv_descendants_symm_eq_merge (bn := bn) (v := v) (xD := xD) (xND := xND))
 
+omit [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 private lemma sum_descendants_jointWeight_over_nonDesc
     (cpt : bn.DiscreteCPT) (v : V)
     (xND : ∀ n : {n // n ∉ bn.graph.descendants v}, bn.stateSpace n) :
@@ -718,6 +732,7 @@ private lemma sum_descendants_jointWeight_over_nonDesc
                 (D := Finset.univ.filter (fun d => d ∈ bn.graph.descendants v))
                 hD_desc rfl)
 
+omit [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 private lemma sum_jointWeight_reindex_and_collapse
     (cpt : bn.DiscreteCPT) (v : V) :
     (∑ x : bn.JointSpace, cpt.jointWeight x)
@@ -753,6 +768,7 @@ private lemma sum_jointWeight_reindex_and_collapse
               exact sum_descendants_jointWeight_over_nonDesc (bn := bn) (cpt := cpt)
                 (v := v) xND
 
+omit [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 private lemma sum_descendants_jointWeight_over_nonDesc_if
     (cpt : bn.DiscreteCPT) (v : V)
     (xND : ∀ n : {n // n ∉ bn.graph.descendants v}, bn.stateSpace n)
@@ -769,6 +785,7 @@ private lemma sum_descendants_jointWeight_over_nonDesc_if
   · simp [hP, sum_descendants_jointWeight_over_nonDesc]
   · simp [hP]
 
+omit [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 private lemma sum_jointWeight_reindex_and_collapse_of_desc_irrel
     (cpt : bn.DiscreteCPT) (v : V)
     (Q : bn.JointSpace → Prop)
@@ -981,7 +998,7 @@ theorem jointMeasure_parentFiber_screening_mul
       have hu_mem : u.1 ∈ bn.nonDescendantsExceptParentsAndSelf v := u.2
       have hu_mem' :
           u.1 ∉ bn.graph.descendants v ∧ u.1 ∉ bn.graph.parents v ∪ ({v} : Set V) := by
-        simpa [BayesianNetwork.nonDescendantsExceptParentsAndSelf, Set.mem_diff] using hu_mem
+        simpa [BayesianNetwork.nonDescendantsExceptParentsAndSelf, Set.mem_sdiff] using hu_mem
       exact hu_mem'.1
     exact hmerge_eq_base_of_not_desc xND xD u.1 hu_not_desc
   have hmerge_eq_base_on_parents :
@@ -1241,7 +1258,7 @@ theorem jointMeasure_parentFiber_screening_mul
     intro hv_mem
     have hv_mem' :
         v ∉ bn.graph.descendants v ∧ v ∉ bn.graph.parents v ∪ ({v} : Set V) := by
-      simpa [BayesianNetwork.nonDescendantsExceptParentsAndSelf, Set.mem_diff] using hv_mem
+      simp [BayesianNetwork.nonDescendantsExceptParentsAndSelf, Set.mem_sdiff] at hv_mem
     exact hv_mem'.2 (Set.mem_union_right _ rfl)
 
   have hrestrictND_update :
@@ -1847,7 +1864,7 @@ theorem condExp_indicator_mul_of_parent_screening
   set f := t₂.indicator (fun _ => (1 : ℝ)) with hf_def
   set g := B.indicator (fun _ => (1 : ℝ)) with hg_def
   have hm_pa_le : m_pa ≤ MeasurableSpace.pi := bn.measurableSpaceOfVertices_le _
-  haveI hsf : SigmaFinite (μ.trim hm_pa_le) :=
+  have hsf : SigmaFinite (μ.trim hm_pa_le) :=
     BayesianNetwork.sigmaFinite_trim_of_le bn μ m_pa hm_pa_le
   have hB_pi : @MeasurableSet _ MeasurableSpace.pi B :=
     (bn.measurableSpaceOfVertices_le _) _ hB
@@ -1910,7 +1927,7 @@ theorem condExp_indicator_mul_of_parent_screening
         · have hFne : F.Nonempty := by
             by_contra hne
             have hE : F = ∅ := Set.not_nonempty_iff_eq_empty.mp hne
-            exact hμF0 (by simpa [hE] using (MeasureTheory.measure_empty (μ := μ)))
+            exact hμF0 (by simp [hE])
           rcases hFne with ⟨ω0, hω0⟩
           have hconst_g :
               (fun x => (μ[g | m_pa]) x) =ᵐ[μ.restrict F] fun _ => (μ[g | m_pa]) ω0 := by
@@ -1972,9 +1989,7 @@ theorem condExp_indicator_mul_of_parent_screening
                       (MeasureTheory.setIntegral_indicator (μ := μ) (s := F)
                         (t := B) (f := fun _ : bn.JointSpace => (1 : ℝ)) hB_pi)
               _ = μ.real (F ∩ B) := by
-                    simpa using
-                      (MeasureTheory.setIntegral_const (μ := μ) (s := F ∩ B)
-                        (c := (1 : ℝ)))
+                    simp
               _ = μ.real (B ∩ F) := by simp [Set.inter_comm]
           have hInt_f :
               ∫ x in F, f x ∂μ = μ.real (t₂ ∩ F) := by
@@ -1987,9 +2002,7 @@ theorem condExp_indicator_mul_of_parent_screening
                       (MeasureTheory.setIntegral_indicator (μ := μ) (s := F)
                         (t := t₂) (f := fun _ : bn.JointSpace => (1 : ℝ)) ht₂_pi)
               _ = μ.real (F ∩ t₂) := by
-                    simpa using
-                      (MeasureTheory.setIntegral_const (μ := μ) (s := F ∩ t₂)
-                        (c := (1 : ℝ)))
+                    simp
               _ = μ.real (t₂ ∩ F) := by simp [Set.inter_comm]
           have hInt_gf :
               ∫ x in F, (g * f) x ∂μ = μ.real ((B ∩ t₂) ∩ F) := by
@@ -2003,11 +2016,9 @@ theorem condExp_indicator_mul_of_parent_screening
                         (t := (B ∩ t₂)) (f := fun _ : bn.JointSpace => (1 : ℝ))
                         (hB_pi.inter ht₂_pi))
               _ = μ.real (F ∩ (B ∩ t₂)) := by
-                    simpa using
-                      (MeasureTheory.setIntegral_const (μ := μ) (s := F ∩ (B ∩ t₂))
-                        (c := (1 : ℝ)))
+                    simp
               _ = μ.real ((B ∩ t₂) ∩ F) := by
-                    simp [Set.inter_assoc, Set.inter_left_comm, Set.inter_comm]
+                    simp [Set.inter_left_comm, Set.inter_comm]
           have hscreen : μ ((B ∩ t₂) ∩ F) * μ F = μ (B ∩ F) * μ (t₂ ∩ F) := by
             simpa [μ, F, Set.inter_assoc, Set.inter_left_comm, Set.inter_comm] using
               jointMeasure_parentFiber_screening_mul
@@ -2024,13 +2035,13 @@ theorem condExp_indicator_mul_of_parent_screening
           have hGF : (μ[g | m_pa]) ω0 * μ.real F = μ.real (B ∩ F) := by
             calc
               (μ[g | m_pa]) ω0 * μ.real F = ∫ x in F, (μ[g | m_pa]) x ∂μ := by
-                simpa [hGconst] using hGconst.symm
+                exact hGconst.symm
               _ = ∫ x in F, g x ∂μ := hGset
               _ = μ.real (B ∩ F) := hInt_g
           have hFF : (μ[f | m_pa]) ω0 * μ.real F = μ.real (t₂ ∩ F) := by
             calc
               (μ[f | m_pa]) ω0 * μ.real F = ∫ x in F, (μ[f | m_pa]) x ∂μ := by
-                simpa [hFconst] using hFconst.symm
+                exact hFconst.symm
               _ = ∫ x in F, f x ∂μ := hFset
               _ = μ.real (t₂ ∩ F) := hInt_f
           have hmul :
@@ -2111,7 +2122,7 @@ theorem condExp_ndesc_indep_of_vertex
   have hm_pa_le : m_pa ≤ MeasurableSpace.pi := bn.measurableSpaceOfVertices_le _
   have hm_pav_le : m_pav ≤ MeasurableSpace.pi :=
     sup_le hm_pa_le (bn.measurableSpaceOfVertices_le _)
-  haveI : SigmaFinite (μ.trim hm_pav_le) :=
+  have : SigmaFinite (μ.trim hm_pav_le) :=
     BayesianNetwork.sigmaFinite_trim_of_le bn μ m_pav hm_pav_le
   have ht₂_pi : @MeasurableSet _ MeasurableSpace.pi t₂ :=
     (bn.measurableSpaceOfVertices_le _) _ ht₂
@@ -2150,7 +2161,7 @@ theorem condExp_ndesc_indep_of_vertex
       exact ⟨A₁ ∩ A₂, B₁ ∩ B₂, hA₁.inter hA₂, hB₁.inter hB₂, by
         subst hs₁; subst hs₂; ext x; simp [Set.mem_inter_iff]; tauto⟩
     -- SigmaFinite for m_pa (needed for setIntegral_condExp)
-    haveI hsf_pa : SigmaFinite (μ.trim hm_pa_le) :=
+    have hsf_pa : SigmaFinite (μ.trim hm_pa_le) :=
       BayesianNetwork.sigmaFinite_trim_of_le bn μ m_pa hm_pa_le
     -- Apply Dynkin theorem
     have h_dynkin := MeasurableSpace.induction_on_inter h_gen h_pi
@@ -2168,7 +2179,7 @@ theorem condExp_ndesc_indep_of_vertex
         have hg_int : Integrable g μ := (integrable_const 1).indicator hB_pi
         -- g * f = (B ∩ t₂).indicator 1
         have hgf_eq : g * f = (B ∩ t₂).indicator (fun _ => (1 : ℝ)) := by
-          ext x; simp only [g, f, hg_def, hf_def, Pi.mul_apply, Set.indicator,
+          ext x; simp only [g, f, Pi.mul_apply, Set.indicator,
             Set.mem_inter_iff]; split_ifs <;> simp_all
         have hgf_int : Integrable (g * f) μ := by
           rw [hgf_eq]; exact (integrable_const 1).indicator (hB_pi.inter ht₂_pi)
@@ -2260,7 +2271,7 @@ theorem discrete_localMarkovCondition
     have hm_pa_le : m_pa ≤ MeasurableSpace.pi := bn.measurableSpaceOfVertices_le _
     have hm_pav_le : m_pav ≤ MeasurableSpace.pi :=
       sup_le hm_pa_le (bn.measurableSpaceOfVertices_le _)
-    haveI hsf : SigmaFinite (cpt.jointMeasure.trim hm_pav_le) :=
+    have hsf : SigmaFinite (cpt.jointMeasure.trim hm_pav_le) :=
       BayesianNetwork.sigmaFinite_trim_of_le bn cpt.jointMeasure m_pav hm_pav_le
     have ht₁_pi : @MeasurableSet _ MeasurableSpace.pi t₁ :=
       (bn.measurableSpaceOfVertices_le _) _ ht₁
@@ -2526,6 +2537,7 @@ theorem dsepFull_parentset_union_singleton_left_parentset_condIndepSet
       (μ := cpt.jointMeasure)).1 (by
         simpa [CondIndepVertices] using hCI) s t hs ht
 
+omit [DecidableEq V] [∀ (v : V), Nonempty (bn.stateSpace v)] in
 /-- If every pair of `eventOfConstraints` atoms over `X` and `Y` is conditionally
 independent given `σ(Z)`, then the full vertex-generated σ-algebras over `X` and
 `Y` are conditionally independent given `σ(Z)`. This packages the final lift
@@ -2596,9 +2608,9 @@ theorem condIndepVertices_of_condIndepSet_constraintAtoms
   have hp_pi : IsPiSystem p := by
     intro a ha b hb hab
     rcases ha with rfl | ⟨xX, rfl⟩
-    · simpa using hab
+    · simp at hab
     · rcases hb with rfl | ⟨yX, rfl⟩
-      · simpa [p] using hab
+      · simp [p]
       · by_cases hxy : xX = yX
         · right
           refine ⟨xX, ?_⟩
@@ -2622,9 +2634,9 @@ theorem condIndepVertices_of_condIndepSet_constraintAtoms
   have hq_pi : IsPiSystem q := by
     intro a ha b hb hab
     rcases ha with rfl | ⟨xY, rfl⟩
-    · simpa using hab
+    · simp at hab
     · rcases hb with rfl | ⟨yY, rfl⟩
-      · simpa [q] using hab
+      · simp [q]
       · by_cases hxy : xY = yY
         · right
           refine ⟨xY, ?_⟩
@@ -2648,19 +2660,19 @@ theorem condIndepVertices_of_condIndepSet_constraintAtoms
   have hp_meas : ∀ a ∈ p, @MeasurableSet _ MeasurableSpace.pi a := by
     intro a ha
     rcases ha with rfl | ⟨xX, rfl⟩
-    · simpa using (MeasurableSet.empty : @MeasurableSet _ MeasurableSpace.pi ∅)
+    · exact @MeasurableSet.empty _ MeasurableSpace.pi
     · exact hmX _ (hAtomX_meas xX)
   have hq_meas : ∀ b ∈ q, @MeasurableSet _ MeasurableSpace.pi b := by
     intro b hb
     rcases hb with rfl | ⟨xY, rfl⟩
-    · simpa using (MeasurableSet.empty : @MeasurableSet _ MeasurableSpace.pi ∅)
+    · exact @MeasurableSet.empty _ MeasurableSpace.pi
     · exact hmY _ (hAtomY_meas xY)
   have hp_generate : MeasurableSpace.generateFrom p = mX := by
     apply le_antisymm
     · apply MeasurableSpace.generateFrom_le
       intro a ha
       rcases ha with rfl | ⟨xX, rfl⟩
-      · simpa [mX] using (MeasurableSet.empty : MeasurableSet[MeasurableSpace.pi] ∅)
+      · exact @MeasurableSet.empty _ mX
       · exact hAtomX_meas xX
     · intro s hs
       rcases measurableSet_vertices_preimage (bn := bn) (S := X) (s := s) hs with
@@ -2679,13 +2691,13 @@ theorem condIndepVertices_of_condIndepSet_constraintAtoms
             (if xX ∈ T then atomX xX else (∅ : Set bn.JointSpace)) ∈ p := by
           left
           simp [hxX]
-        simpa [hxX] using MeasurableSpace.measurableSet_generateFrom hmem
+        simp [hxX]
   have hq_generate : MeasurableSpace.generateFrom q = mY := by
     apply le_antisymm
     · apply MeasurableSpace.generateFrom_le
       intro b hb
       rcases hb with rfl | ⟨xY, rfl⟩
-      · simpa [mY] using (MeasurableSet.empty : MeasurableSet[MeasurableSpace.pi] ∅)
+      · exact MeasurableSet.empty
       · exact hAtomY_meas xY
     · intro t ht
       rcases measurableSet_vertices_preimage (bn := bn) (S := Y) (s := t) ht with
@@ -2704,7 +2716,7 @@ theorem condIndepVertices_of_condIndepSet_constraintAtoms
             (if xY ∈ T then atomY xY else (∅ : Set bn.JointSpace)) ∈ q := by
           left
           simp [hxY]
-        simpa [hxY] using MeasurableSpace.measurableSet_generateFrom hmem
+        simp [hxY]
   have hpq :
       ProbabilityTheory.CondIndepSets (m' := mZ) (hm' := hmZ) p q μ := by
     rw [ProbabilityTheory.condIndepSets_iff

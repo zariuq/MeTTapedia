@@ -2,7 +2,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentAcceptance4Final
 
 /-!
-# Closure of the every-rule round, and acceptance for the every-rule family from firing
+# Closure of the every-rule round, and a conditional decision for the every-rule family from firing
 
 **Dropping a dead binder keeps the permuted Miller class** (`PermutedMiller.undead`): the reduced equation has closed
 normal Miller reducts of both sides, since its sides weakened are the bodies of the original sides (`reduced_reduct`),
@@ -11,11 +11,14 @@ an unused variable.
 
 So the every-rule round keeps the permuted class at every depth wherever the dead-binder round does
 (`everyRoundAt_keeps`), and on a strongly normalizing package without root computation whose reducer returns reducts
-it keeps the class at every budget (`everyRound_closure`). **Acceptance from firing** (`every_decided_of_firing`,
-`tower_every_decided_of_firing`): if the every-rule round is eventually not stuck on nonempty `PermutedMiller` stores,
-the every-rule family decides every store of the dynamic pattern fragment. The every-rule round fires wherever the
-dead-binder round fires (`everyRound_not_stuck_of_dead`), and also on the pattern equation behind a dead binder
-(`ContextualDependentAcceptance4.deadPattern_every_committed`), where the dead-binder round does not.
+it keeps the class at every budget (`everyRound_closure`). **A conditional decision from firing**
+(`every_decided_of_firing`, `tower_every_decided_of_firing`): if the every-rule round is eventually not stuck on
+nonempty `PermutedMiller` stores, the every-rule family decides every store of the dynamic pattern fragment. At the
+tower firing fails: the conclusion would decide `crossStore`, solvable and without principal answer
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`). For every store, runs are exact; on
+`crossStore` they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`). The every-rule round fires
+wherever the dead-binder round fires (`everyRound_not_stuck_of_dead`), and also on the pattern equation behind a dead
+binder (`ContextualDependentAcceptance4.deadPattern_every_committed`), where the dead-binder round does not.
 -/
 
 set_option autoImplicit false
@@ -244,10 +247,12 @@ theorem everyRound_closure (fuel : Nat) :
 variable (stable : ∀ {n : Nat} (fuel : Nat) (term : Tm Head n), Keeps (reducer fuel term) (reducer (fuel + 1) term))
 
 include sn directed stable in
-/-- **Acceptance for the every-rule family from firing**: on the same packages, with a reducer monotone in its budget,
-the family decides every store of the dynamic pattern fragment, with a principal answer or a certified refutation,
-constant at every larger budget, as soon as its round is eventually not stuck on nonempty stores of the permuted
-class. -/
+/-- **Conditional decision for the every-rule family, from firing**: on the same packages, with a reducer monotone in
+its budget, if the family's round is eventually not stuck on nonempty stores of the permuted class, the family decides
+every store of the dynamic pattern fragment, with a principal answer or a certified refutation, constant at every
+larger budget. At the tower's setting the conclusion fails on `crossStore`
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`), so there firing fails. For every store, runs
+are exact; on `crossStore` they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`). -/
 theorem every_decided_of_firing
     (firing : ∀ {Γ : Context S.R} {problem : EquationStore (TotalTerm Γ)}, PermutedMiller S.levels problem →
       problem ≠ [] → ∃ bound, ∀ larger, bound ≤ larger →
@@ -292,8 +297,11 @@ noncomputable def everyTower : ContextualDependentDecisiveDriver.Family setting.
     ContextualDependentNormalCheckingTower.head_typing_unique
     (ContextualDependentNormalizing.tower_rootComplete (fun _ => (0 : Nat))) tower_strengthening
 
-/-- **Acceptance for the tower's every-rule family from firing**, on every store of the dynamic pattern fragment: no
-rule obligation remains. -/
+/-- **Conditional decision for the tower's every-rule family, from firing**, on every store of the dynamic pattern
+fragment; no rule obligation remains. At the tower firing fails: the conclusion would decide `crossStore`
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`,
+`ContextualDependentSweep.Witnesses.acceptance_conclusion_false`). For every store, runs are exact; on `crossStore`
+they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`). -/
 theorem tower_every_decided_of_firing
     (firing : ∀ {Γ : Context setting.R} {problem : EquationStore (TotalTerm Γ)}, PermutedMiller setting.levels problem →
       problem ≠ [] → ∃ bound, ∀ larger, bound ≤ larger → everyTower.round larger problem ≠ .stuck)

@@ -1,0 +1,8 @@
+let A xs. assume Hxs: xs :e Lean_List A. let ys. assume Hys: ys :e Lean_List A.
+assume H: 0 :e Lean_List_Perm_Prop A xs ys.
+claim Hp: LeanListPerm A xs ys. { exact LeanListPerm_from_prop A xs ys H. }
+exact LeanIff_intro
+  (Lean_List_Pairwise_Prop A (LeanListNe A) xs) (Lean_List_Pairwise_Prop_prop A (LeanListNe A) xs)
+  (Lean_List_Pairwise_Prop A (LeanListNe A) ys) (Lean_List_Pairwise_Prop_prop A (LeanListNe A) ys)
+  (LeanListPerm_nodup A xs ys Hp)
+  (LeanListPerm_nodup A ys xs (LeanListPerm_symm A xs ys Hp)).

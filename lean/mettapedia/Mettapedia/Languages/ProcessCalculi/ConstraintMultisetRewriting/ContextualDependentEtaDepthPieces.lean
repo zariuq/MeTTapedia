@@ -20,10 +20,13 @@ reducts of the instantiated types (`argsNormal`, with `finishArgs`), keep it (`u
 
 **The piece round** (`pieceRound`) is the skeleton round; when that is stuck, the decomposition at normal annotations of
 the η-long prepared store (`normalRound`), committed. The family is conservative over the skeleton family
-(`piece_run_of_skeleton`), eventually constant (`pieceRound_const`), closed in the permuted Miller class
-(`pieceRound_closure`), and so decides every store of the dynamic pattern fragment as soon as its round is eventually not
-stuck on nonempty stores of the class (`piece_decided_of_firing`, `tower_piece_decided_of_firing`), in particular as
-soon as one of its readers reads (`PieceReads`, `tower_piece_decided_of_pieceReads`).
+(`piece_run_of_skeleton`), eventually constant (`pieceRound_const`), and closed in the permuted Miller class
+(`pieceRound_closure`). So it decides every store of the dynamic pattern fragment if its round is eventually not stuck
+on nonempty stores of the class (`piece_decided_of_firing`, `tower_piece_decided_of_firing`), in particular if one of
+its readers reads (`PieceReads`, `tower_piece_decided_of_pieceReads`). These are conditional decisions; at the tower the
+hypothesis fails, since the conclusion would decide `crossStore`, solvable and without principal answer
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`). For every store, runs are exact; on
+`crossStore` they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`).
 -/
 
 set_option autoImplicit false
@@ -891,11 +894,13 @@ theorem pieceRound_closure (fuel : Nat) :
       cases fired
 
 include sn directed stable in
-/-- **Acceptance for the piece family from firing**: on a strongly normalizing package without root computation whose
-reducer returns reducts and is monotone in its budget, and where typed equality strengthens past an unused variable,
-the family decides every store of the dynamic pattern fragment, with a principal answer or a certified refutation,
-constant at every larger budget, as soon as its round is eventually not stuck on nonempty stores of the permuted
-class. -/
+/-- **Conditional decision for the piece family, from firing**: on a strongly normalizing package without root
+computation whose reducer returns reducts and is monotone in its budget, and where typed equality strengthens past an
+unused variable, if the family's round is eventually not stuck on nonempty stores of the permuted class, the family
+decides every store of the dynamic pattern fragment, with a principal answer or a certified refutation, constant at
+every larger budget. At the tower's setting the conclusion fails on `crossStore`
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`), so there firing fails. For every store, runs
+are exact; on `crossStore` they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`). -/
 theorem piece_decided_of_firing
     (firing : ∀ {Γ : Context S.R} {problem : EquationStore (TotalTerm Γ)}, PermutedMiller S.levels problem →
       problem ≠ [] → ∃ bound, ∀ larger, bound ≤ larger →
@@ -951,7 +956,11 @@ abbrev TowerPieceReads (fuel : Nat) {Θ : Context setting.R} (problem : Equation
     ContextualDependentNormalCheckingTower.head_typing_unique
     (ContextualDependentNormalizing.tower_rootComplete (fun _ => (0 : Nat))) tower_strengthening fuel problem
 
-/-- **Acceptance for the tower's piece family from firing**, on every store of the dynamic pattern fragment. -/
+/-- **Conditional decision for the tower's piece family, from firing**, on every store of the dynamic pattern
+fragment. At the tower firing fails: the conclusion would decide `crossStore`
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`,
+`ContextualDependentSweep.Witnesses.acceptance_conclusion_false`). For every store, runs are exact; on `crossStore`
+they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`). -/
 theorem tower_piece_decided_of_firing
     (firing : ∀ {Γ : Context setting.R} {problem : EquationStore (TotalTerm Γ)}, PermutedMiller setting.levels problem →
       problem ≠ [] → ∃ bound, ∀ larger, bound ≤ larger → pieceTower.round larger problem ≠ .stuck)
@@ -971,8 +980,10 @@ theorem tower_piece_decided_of_firing
     (ContextualDependentNormalizing.tower_rootComplete (fun _ => (0 : Nat))) tower_strengthening
     ContextualDependentDecisiveFragment.Controls.stable tower_stronglyNormalizing tower_reducer_directed firing inside
 
-/-- **Acceptance for the tower's piece family from eventual reading**, on every store of the dynamic pattern
-fragment. -/
+/-- **Conditional decision for the tower's piece family, from eventual reading**, on every store of the dynamic
+pattern fragment. At the tower the hypothesis fails: the conclusion would decide `crossStore`
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`). For every store, runs are exact; on
+`crossStore` they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`). -/
 theorem tower_piece_decided_of_pieceReads
     (reads : ∀ {Γ : Context setting.R} {problem : EquationStore (TotalTerm Γ)}, PermutedMiller setting.levels problem →
       problem ≠ [] → ∃ bound, ∀ larger, bound ≤ larger → TowerPieceReads larger problem)

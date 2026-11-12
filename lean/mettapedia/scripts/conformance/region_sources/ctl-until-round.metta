@@ -1,0 +1,23 @@
+(fr f 0 1)
+(fr f 0 1)
+(rt 1 0)
+(rt 1 0)
+(sat a 0)
+(sat a 0)
+
+(= (in $f $x)
+  (not (== (collapse (once (match &self (sat $f $x) t))) ())))
+(= (eu-round $f $a $k $k1)
+  (size-atom (collapse
+    (match &self (fr $f $k $y)
+      (match &self (rt $y $x)
+        (match &self (sat $a $x)
+          (if (in $f $x) (empty)
+            (let $ignored (add-atom &self (sat $f $x))
+              (add-atom &self (fr $f $k1 $x))))))))))
+
+!(eu-round f a 0 1)
+!(collapse (match &self (sat f $x) $x))
+!(collapse (match &self (fr f 1 $x) $x))
+!(eu-round f a 0 2)
+!(collapse (match &self (fr f 0 $x) $x))

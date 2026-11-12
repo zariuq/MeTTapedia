@@ -1,0 +1,15 @@
+(= (put-if-absent $space $row)
+   (if (== (collapse (match $space $row true)) ())
+       (add-atom $space $row)
+       true))
+
+!(put-if-absent &self (guarded-fact 7))
+!(put-if-absent &self (guarded-fact 7))
+!(size-atom (collapse (match &self (guarded-fact 7) true)))
+!(size-atom (collapse (superpose
+    ((put-if-absent &self (guarded-fact 8))
+     (put-if-absent &self (guarded-fact 8))))))
+!(size-atom (collapse (match &self (guarded-fact 8) true)))
+!(add-atom &self (ordinary-fact 9))
+!(add-atom &self (ordinary-fact 9))
+!(size-atom (collapse (match &self (ordinary-fact 9) true)))

@@ -89,7 +89,8 @@ theorem known_operation_in_let_body (registry : SpaceSemantics.Program)
         frames := .sequence [] [] :: before.frames } := by
   have body := initializer_then_body registry before after incoming produced bound pattern initializer
     (.expression (.symbol head :: arguments)) value initialized unified
-  exact body.tail (.call_enter rfl ordinary recognized)
+  exact body.tail (.call_enter rfl ordinary
+    (callable_with_privateCode registry after.privateCode head recognized))
 
 /-- A failed pattern does not run the body or restore the world from before the initializer. -/
 theorem initializer_then_clash (registry : SpaceSemantics.Program)

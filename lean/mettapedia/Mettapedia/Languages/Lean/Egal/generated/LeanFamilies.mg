@@ -881,6 +881,19 @@ claim Lo: Lean_List_O 0 (TupArgs 0 SeqNil) = 0.
 { prove SeqAt (SeqCons (0) (SeqCons (0) SeqNil)) 0 = 0. rewrite Lean_List_O0 (TupArgs 0 SeqNil). reflexivity. }
 exact In_fam_eq (IndFiber Lean_List_K Lean_List_T Lean_List_N Lean_List_R Lean_List_F Lean_List_Ix Lean_List_O Lean_List_B) (Lean_List_O 0 (TupArgs 0 SeqNil)) 0 Lo (Lean_List_nil_node) L.
 Qed.
+Theorem Lean_List_nil_node_In : forall u, nat_p u -> Lean_List_nil_node :e LeanUniv u.
+let u. assume Hu: nat_p u.
+claim Ht: TransSet (LeanUniv u).
+{ exact LeanUniv_TransSet u Hu. }
+claim Hz: ZF_closed (LeanUniv u).
+{ exact LeanUniv_ZF_closed u Hu. }
+claim Lo: Lean_List_O 0 (TupArgs 0 SeqNil) = 0.
+{ prove SeqAt (SeqCons (0) (SeqCons (0) SeqNil)) 0 = 0. rewrite Lean_List_O0 (TupArgs 0 SeqNil). reflexivity. }
+prove IndNode Lean_List_K Lean_List_T Lean_List_N Lean_List_R Lean_List_F Lean_List_Ix Lean_List_O Lean_List_B 0 (TupArgs 0 SeqNil) :e LeanUniv u.
+exact IndNode_univ (LeanUniv u) Ht Hz Lean_List_K Lean_List_T Lean_List_N Lean_List_R Lean_List_F Lean_List_Ix Lean_List_O Lean_List_B 0 (TupArgs 0 SeqNil) (LeanUniv_nat_In u Hu 0 nat_0)
+  (In_eq_ls (Lean_List_O 0 (TupArgs 0 SeqNil)) 0 (LeanUniv u) Lo (LeanUniv_0_In u Hu))
+  (TupArgs_univ (LeanUniv u) Ht Hz 0 (LeanUniv_nat_In u Hu 0 nat_0) SeqNil (Below_0 (fun j => SeqAt SeqNil j :e LeanUniv u))).
+Qed.
 Definition Lean_List_nil : set := Lean_List_nil_node.
 Theorem Lean_List_nil_type : Lean_List_nil :e Lean_List.
 exact Lean_List_nil_typed.
@@ -961,6 +974,26 @@ claim Lo: Lean_List_O 1 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) = 0.
 { prove SeqAt (SeqCons (0) (SeqCons (0) SeqNil)) 1 = 0. rewrite Lean_List_O1 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))). reflexivity. }
 exact In_fam_eq (IndFiber Lean_List_K Lean_List_T Lean_List_N Lean_List_R Lean_List_F Lean_List_Ix Lean_List_O Lean_List_B) (Lean_List_O 1 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)))) 0 Lo
     (Lean_List_cons_node x0 x1) L.
+Qed.
+Theorem Lean_List_cons_node_In : forall u, nat_p u -> forall x0 :e LeanUniv u, forall x1 :e LeanUniv u, Lean_List_cons_node x0 x1 :e LeanUniv u.
+let u. assume Hu: nat_p u. let x0. assume H0: x0 :e LeanUniv u. let x1. assume H1: x1 :e LeanUniv u.
+claim Ht: TransSet (LeanUniv u).
+{ exact LeanUniv_TransSet u Hu. }
+claim Hz: ZF_closed (LeanUniv u).
+{ exact LeanUniv_ZF_closed u Hu. }
+claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim U1: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 1 = x1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim Lo: Lean_List_O 1 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) = 0.
+{ prove SeqAt (SeqCons (0) (SeqCons (0) SeqNil)) 1 = 0. rewrite Lean_List_O1 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))). reflexivity. }
+prove IndNode Lean_List_K Lean_List_T Lean_List_N Lean_List_R Lean_List_F Lean_List_Ix Lean_List_O Lean_List_B 1 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) :e LeanUniv u.
+exact IndNode_univ (LeanUniv u) Ht Hz Lean_List_K Lean_List_T Lean_List_N Lean_List_R Lean_List_F Lean_List_Ix Lean_List_O Lean_List_B 1 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)))
+    (LeanUniv_nat_In u Hu 1 (nat_ordsucc 0 nat_0))
+  (In_eq_ls (Lean_List_O 1 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)))) 0 (LeanUniv u) Lo (LeanUniv_0_In u Hu))
+  (TupArgs_univ (LeanUniv u) Ht Hz 2 (LeanUniv_nat_In u Hu 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))) (SeqCons (x0) (SeqCons (x1) SeqNil)) (Below_S 1 (fun j => SeqAt (SeqCons (x0) (SeqCons (x1)
+    SeqNil)) j :e LeanUniv u) (Below_S 0 (fun j => SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) j :e LeanUniv u) (Below_0 (fun j => SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) j :e LeanUniv u))
+    (In_eq_ls (SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0) x0 (LeanUniv u) U0 H0)) (In_eq_ls (SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 1) x1 (LeanUniv u) U1 H1))).
 Qed.
 Definition Lean_List_cons : set := (fun x0 :e P0 => (fun x1 :e Lean_List => Lean_List_cons_node x0 x1)).
 Theorem Lean_List_cons_type : Lean_List_cons :e (Pi_ x0 :e P0, (Pi_ x1 :e Lean_List, Lean_List)).
@@ -11688,3 +11721,4885 @@ exact IndFiber_In Lean_AddCommMonoid_K Lean_AddCommMonoid_T Lean_AddCommMonoid_N
 Qed.
 
 End Lean_AddCommMonoid_Section.
+(** ---- List.Perm, generated from its Lean declaration ---- **)
+
+Section Lean_List_Perm_Section.
+
+Variable P0 : set.
+Let Lean_List_Perm_K : set := 4.
+Let Lean_List_Perm_T : set -> set := fun k => k.
+Let Lean_List_Perm_N : set -> set := fun k => SeqAt (SeqCons (0) (SeqCons (4) (SeqCons (3) (SeqCons (5) SeqNil)))) k.
+Let Lean_List_Perm_R : set -> set -> prop := fun k j => 0 :e SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (1) SeqNil))))) (SeqCons ((SeqCons (0) (SeqCons
+    (0) (SeqCons (0) SeqNil)))) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (1) (SeqCons (1) SeqNil)))))) SeqNil)))) k) j.
+Let Lean_List_Perm_F : set -> set -> set -> set := fun k j a => SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (P0) (SeqCons ((Lean_List P0)) (SeqCons ((Lean_List P0)) (SeqCons (0) SeqNil)))))
+    (SeqCons ((SeqCons (P0) (SeqCons (P0) (SeqCons ((Lean_List P0)) SeqNil)))) (SeqCons ((SeqCons ((Lean_List P0)) (SeqCons ((Lean_List P0)) (SeqCons ((Lean_List P0)) (SeqCons (0) (SeqCons (0)
+    SeqNil)))))) SeqNil)))) k) j.
+Let Lean_List_Perm_Ix : set -> set -> set -> set := fun k j a => SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons ((setsum (a 1) (a 2))) SeqNil))))) (SeqCons
+    ((SeqCons (0) (SeqCons (0) (SeqCons (0) SeqNil)))) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons ((setsum (a 0) (a 1))) (SeqCons ((setsum (a 1) (a 2))) SeqNil)))))) SeqNil)))) k) j.
+Let Lean_List_Perm_O : set -> set -> set := fun k a => SeqAt (SeqCons ((setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0))) (SeqCons ((setsum (Lean_List_cons_node P0 (a 0) (a 1))
+    (Lean_List_cons_node P0 (a 0) (a 2)))) (SeqCons ((setsum (Lean_List_cons_node P0 (a 1) (Lean_List_cons_node P0 (a 0) (a 2))) (Lean_List_cons_node P0 (a 0) (Lean_List_cons_node P0 (a 1) (a 2)))))
+    (SeqCons ((setsum (a 0) (a 2))) SeqNil)))) k.
+Let Lean_List_Perm_B : set := (((((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: ((Lean_List
+    P0))).
+
+Definition Lean_List_Perm_All : set := IndCarrier Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B.
+Definition Lean_List_Perm : set -> set := IndFiber Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B.
+
+Theorem Lean_List_Perm_N0 : SeqAt (SeqCons (0) (SeqCons (4) (SeqCons (3) (SeqCons (5) SeqNil)))) 0 = 0.
+rewrite SeqAt_0. reflexivity.
+Qed.
+Theorem Lean_List_Perm_O0 : forall a, SeqAt (SeqCons ((setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0))) (SeqCons ((setsum (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_cons_node P0 (a 0) (a
+    2)))) (SeqCons ((setsum (Lean_List_cons_node P0 (a 1) (Lean_List_cons_node P0 (a 0) (a 2))) (Lean_List_cons_node P0 (a 0) (Lean_List_cons_node P0 (a 1) (a 2))))) (SeqCons ((setsum (a 0) (a 2)))
+    SeqNil)))) 0 = (setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0)).
+let a. rewrite SeqAt_0. reflexivity.
+Qed.
+Theorem Lean_List_Perm_N1 : SeqAt (SeqCons (0) (SeqCons (4) (SeqCons (3) (SeqCons (5) SeqNil)))) 1 = 4.
+rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0.
+Qed.
+Theorem Lean_List_Perm_O1 : forall a, SeqAt (SeqCons ((setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0))) (SeqCons ((setsum (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_cons_node P0 (a 0) (a
+    2)))) (SeqCons ((setsum (Lean_List_cons_node P0 (a 1) (Lean_List_cons_node P0 (a 0) (a 2))) (Lean_List_cons_node P0 (a 0) (Lean_List_cons_node P0 (a 1) (a 2))))) (SeqCons ((setsum (a 0) (a 2)))
+    SeqNil)))) 1 = (setsum (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_cons_node P0 (a 0) (a 2))).
+let a. rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0.
+Qed.
+Theorem Lean_List_Perm_nR1_0 : ~ (0 :e SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (1) SeqNil))))) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0)
+    SeqNil)))) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (1) (SeqCons (1) SeqNil)))))) SeqNil)))) 1) 0).
+rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_0. exact EmptyE 0. } exact nat_0.
+Qed.
+Theorem Lean_List_Perm_F1_0 : forall a, SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (P0) (SeqCons ((Lean_List P0)) (SeqCons ((Lean_List P0)) (SeqCons (0) SeqNil))))) (SeqCons ((SeqCons (P0)
+    (SeqCons (P0) (SeqCons ((Lean_List P0)) SeqNil)))) (SeqCons ((SeqCons ((Lean_List P0)) (SeqCons ((Lean_List P0)) (SeqCons ((Lean_List P0)) (SeqCons (0) (SeqCons (0) SeqNil)))))) SeqNil)))) 1) 0 =
+    P0.
+let a. rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_0. reflexivity. } exact nat_0.
+Qed.
+Theorem Lean_List_Perm_nR1_1 : ~ (0 :e SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (1) SeqNil))))) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0)
+    SeqNil)))) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (1) (SeqCons (1) SeqNil)))))) SeqNil)))) 1) 1).
+rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_0. exact EmptyE 0. } exact nat_0. } exact nat_0.
+Qed.
+Theorem Lean_List_Perm_F1_1 : forall a, SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (P0) (SeqCons ((Lean_List P0)) (SeqCons ((Lean_List P0)) (SeqCons (0) SeqNil))))) (SeqCons ((SeqCons (P0)
+    (SeqCons (P0) (SeqCons ((Lean_List P0)) SeqNil)))) (SeqCons ((SeqCons ((Lean_List P0)) (SeqCons ((Lean_List P0)) (SeqCons ((Lean_List P0)) (SeqCons (0) (SeqCons (0) SeqNil)))))) SeqNil)))) 1) 1 =
+    (Lean_List P0).
+let a. rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact nat_0.
+Qed.
+Theorem Lean_List_Perm_nR1_2 : ~ (0 :e SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (1) SeqNil))))) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0)
+    SeqNil)))) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (1) (SeqCons (1) SeqNil)))))) SeqNil)))) 1) 2).
+rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. exact EmptyE 0. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact nat_0.
+Qed.
+Theorem Lean_List_Perm_F1_2 : forall a, SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (P0) (SeqCons ((Lean_List P0)) (SeqCons ((Lean_List P0)) (SeqCons (0) SeqNil))))) (SeqCons ((SeqCons (P0)
+    (SeqCons (P0) (SeqCons ((Lean_List P0)) SeqNil)))) (SeqCons ((SeqCons ((Lean_List P0)) (SeqCons ((Lean_List P0)) (SeqCons ((Lean_List P0)) (SeqCons (0) (SeqCons (0) SeqNil)))))) SeqNil)))) 1) 2 =
+    (Lean_List P0).
+let a. rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact nat_0.
+Qed.
+Theorem Lean_List_Perm_R1_3 : 0 :e SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (1) SeqNil))))) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) SeqNil))))
+    (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (1) (SeqCons (1) SeqNil)))))) SeqNil)))) 1) 3.
+rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. exact In_0_1. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1
+    (nat_ordsucc 0 nat_0)). } exact nat_0.
+Qed.
+Theorem Lean_List_Perm_Ix1_3 : forall a, SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons ((setsum (a 1) (a 2))) SeqNil))))) (SeqCons ((SeqCons (0) (SeqCons
+    (0) (SeqCons (0) SeqNil)))) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons ((setsum (a 0) (a 1))) (SeqCons ((setsum (a 1) (a 2))) SeqNil)))))) SeqNil)))) 1) 3 = (setsum (a 1) (a 2)).
+let a. rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1
+    (nat_ordsucc 0 nat_0)). } exact nat_0.
+Qed.
+Theorem Lean_List_Perm_N2 : SeqAt (SeqCons (0) (SeqCons (4) (SeqCons (3) (SeqCons (5) SeqNil)))) 2 = 3.
+rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0).
+Qed.
+Theorem Lean_List_Perm_O2 : forall a, SeqAt (SeqCons ((setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0))) (SeqCons ((setsum (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_cons_node P0 (a 0) (a
+    2)))) (SeqCons ((setsum (Lean_List_cons_node P0 (a 1) (Lean_List_cons_node P0 (a 0) (a 2))) (Lean_List_cons_node P0 (a 0) (Lean_List_cons_node P0 (a 1) (a 2))))) (SeqCons ((setsum (a 0) (a 2)))
+    SeqNil)))) 2 = (setsum (Lean_List_cons_node P0 (a 1) (Lean_List_cons_node P0 (a 0) (a 2))) (Lean_List_cons_node P0 (a 0) (Lean_List_cons_node P0 (a 1) (a 2)))).
+let a. rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0).
+Qed.
+Theorem Lean_List_Perm_nR2_0 : ~ (0 :e SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (1) SeqNil))))) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0)
+    SeqNil)))) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (1) (SeqCons (1) SeqNil)))))) SeqNil)))) 2) 0).
+rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_0. exact EmptyE 0. } exact nat_0. } exact (nat_ordsucc 0 nat_0).
+Qed.
+Theorem Lean_List_Perm_F2_0 : forall a, SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (P0) (SeqCons ((Lean_List P0)) (SeqCons ((Lean_List P0)) (SeqCons (0) SeqNil))))) (SeqCons ((SeqCons (P0)
+    (SeqCons (P0) (SeqCons ((Lean_List P0)) SeqNil)))) (SeqCons ((SeqCons ((Lean_List P0)) (SeqCons ((Lean_List P0)) (SeqCons ((Lean_List P0)) (SeqCons (0) (SeqCons (0) SeqNil)))))) SeqNil)))) 2) 0 =
+    P0.
+let a. rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0).
+Qed.
+Theorem Lean_List_Perm_nR2_1 : ~ (0 :e SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (1) SeqNil))))) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0)
+    SeqNil)))) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (1) (SeqCons (1) SeqNil)))))) SeqNil)))) 2) 1).
+rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_0. exact EmptyE 0. } exact nat_0. } exact nat_0. } exact (nat_ordsucc 0 nat_0).
+Qed.
+Theorem Lean_List_Perm_F2_1 : forall a, SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (P0) (SeqCons ((Lean_List P0)) (SeqCons ((Lean_List P0)) (SeqCons (0) SeqNil))))) (SeqCons ((SeqCons (P0)
+    (SeqCons (P0) (SeqCons ((Lean_List P0)) SeqNil)))) (SeqCons ((SeqCons ((Lean_List P0)) (SeqCons ((Lean_List P0)) (SeqCons ((Lean_List P0)) (SeqCons (0) (SeqCons (0) SeqNil)))))) SeqNil)))) 2) 1 =
+    P0.
+let a. rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact nat_0. } exact (nat_ordsucc 0 nat_0).
+Qed.
+Theorem Lean_List_Perm_nR2_2 : ~ (0 :e SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (1) SeqNil))))) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0)
+    SeqNil)))) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (1) (SeqCons (1) SeqNil)))))) SeqNil)))) 2) 2).
+rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. exact EmptyE 0. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact nat_0. } exact
+    (nat_ordsucc 0 nat_0).
+Qed.
+Theorem Lean_List_Perm_F2_2 : forall a, SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (P0) (SeqCons ((Lean_List P0)) (SeqCons ((Lean_List P0)) (SeqCons (0) SeqNil))))) (SeqCons ((SeqCons (P0)
+    (SeqCons (P0) (SeqCons ((Lean_List P0)) SeqNil)))) (SeqCons ((SeqCons ((Lean_List P0)) (SeqCons ((Lean_List P0)) (SeqCons ((Lean_List P0)) (SeqCons (0) (SeqCons (0) SeqNil)))))) SeqNil)))) 2) 2 =
+    (Lean_List P0).
+let a. rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact nat_0. } exact
+    (nat_ordsucc 0 nat_0).
+Qed.
+Theorem Lean_List_Perm_N3 : SeqAt (SeqCons (0) (SeqCons (4) (SeqCons (3) (SeqCons (5) SeqNil)))) 3 = 5.
+rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)).
+Qed.
+Theorem Lean_List_Perm_O3 : forall a, SeqAt (SeqCons ((setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0))) (SeqCons ((setsum (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_cons_node P0 (a 0) (a
+    2)))) (SeqCons ((setsum (Lean_List_cons_node P0 (a 1) (Lean_List_cons_node P0 (a 0) (a 2))) (Lean_List_cons_node P0 (a 0) (Lean_List_cons_node P0 (a 1) (a 2))))) (SeqCons ((setsum (a 0) (a 2)))
+    SeqNil)))) 3 = (setsum (a 0) (a 2)).
+let a. rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)).
+Qed.
+Theorem Lean_List_Perm_nR3_0 : ~ (0 :e SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (1) SeqNil))))) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0)
+    SeqNil)))) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (1) (SeqCons (1) SeqNil)))))) SeqNil)))) 3) 0).
+rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_0. exact EmptyE 0. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)).
+Qed.
+Theorem Lean_List_Perm_F3_0 : forall a, SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (P0) (SeqCons ((Lean_List P0)) (SeqCons ((Lean_List P0)) (SeqCons (0) SeqNil))))) (SeqCons ((SeqCons (P0)
+    (SeqCons (P0) (SeqCons ((Lean_List P0)) SeqNil)))) (SeqCons ((SeqCons ((Lean_List P0)) (SeqCons ((Lean_List P0)) (SeqCons ((Lean_List P0)) (SeqCons (0) (SeqCons (0) SeqNil)))))) SeqNil)))) 3) 0 =
+    (Lean_List P0).
+let a. rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0
+    nat_0)).
+Qed.
+Theorem Lean_List_Perm_nR3_1 : ~ (0 :e SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (1) SeqNil))))) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0)
+    SeqNil)))) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (1) (SeqCons (1) SeqNil)))))) SeqNil)))) 3) 1).
+rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_0. exact EmptyE 0. } exact nat_0. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact
+    (nat_ordsucc 1 (nat_ordsucc 0 nat_0)).
+Qed.
+Theorem Lean_List_Perm_F3_1 : forall a, SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (P0) (SeqCons ((Lean_List P0)) (SeqCons ((Lean_List P0)) (SeqCons (0) SeqNil))))) (SeqCons ((SeqCons (P0)
+    (SeqCons (P0) (SeqCons ((Lean_List P0)) SeqNil)))) (SeqCons ((SeqCons ((Lean_List P0)) (SeqCons ((Lean_List P0)) (SeqCons ((Lean_List P0)) (SeqCons (0) (SeqCons (0) SeqNil)))))) SeqNil)))) 3) 1 =
+    (Lean_List P0).
+let a. rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact
+    (nat_ordsucc 1 (nat_ordsucc 0 nat_0)).
+Qed.
+Theorem Lean_List_Perm_nR3_2 : ~ (0 :e SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (1) SeqNil))))) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0)
+    SeqNil)))) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (1) (SeqCons (1) SeqNil)))))) SeqNil)))) 3) 2).
+rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. exact EmptyE 0. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact
+    nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)).
+Qed.
+Theorem Lean_List_Perm_F3_2 : forall a, SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (P0) (SeqCons ((Lean_List P0)) (SeqCons ((Lean_List P0)) (SeqCons (0) SeqNil))))) (SeqCons ((SeqCons (P0)
+    (SeqCons (P0) (SeqCons ((Lean_List P0)) SeqNil)))) (SeqCons ((SeqCons ((Lean_List P0)) (SeqCons ((Lean_List P0)) (SeqCons ((Lean_List P0)) (SeqCons (0) (SeqCons (0) SeqNil)))))) SeqNil)))) 3) 2 =
+    (Lean_List P0).
+let a. rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+    exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)).
+Qed.
+Theorem Lean_List_Perm_R3_3 : 0 :e SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (1) SeqNil))))) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) SeqNil))))
+    (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (1) (SeqCons (1) SeqNil)))))) SeqNil)))) 3) 3.
+rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. exact In_0_1. } exact nat_0. } exact (nat_ordsucc 0
+    nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)). } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)).
+Qed.
+Theorem Lean_List_Perm_Ix3_3 : forall a, SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons ((setsum (a 1) (a 2))) SeqNil))))) (SeqCons ((SeqCons (0) (SeqCons
+    (0) (SeqCons (0) SeqNil)))) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons ((setsum (a 0) (a 1))) (SeqCons ((setsum (a 1) (a 2))) SeqNil)))))) SeqNil)))) 3) 3 = (setsum (a 0) (a 1)).
+let a. rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact
+    (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)). } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)).
+Qed.
+Theorem Lean_List_Perm_R3_4 : 0 :e SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (1) SeqNil))))) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) SeqNil))))
+    (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (1) (SeqCons (1) SeqNil)))))) SeqNil)))) 3) 4.
+rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. exact In_0_1. } exact nat_0. }
+    exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)). } exact (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))). } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact
+    (nat_ordsucc 1 (nat_ordsucc 0 nat_0)).
+Qed.
+Theorem Lean_List_Perm_Ix3_4 : forall a, SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons ((setsum (a 1) (a 2))) SeqNil))))) (SeqCons ((SeqCons (0) (SeqCons
+    (0) (SeqCons (0) SeqNil)))) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons ((setsum (a 0) (a 1))) (SeqCons ((setsum (a 1) (a 2))) SeqNil)))))) SeqNil)))) 3) 4 = (setsum (a 1) (a 2)).
+let a. rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact
+    nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)). } exact (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))). } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+    exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)).
+Qed.
+
+Theorem Lean_List_Perm_bd0 : forall a, forall j :e Lean_List_Perm_N 0, ~ Lean_List_Perm_R 0 j -> Lean_List_Perm_F 0 j a c= Lean_List_Perm_B.
+let a j. assume Hj: j :e Lean_List_Perm_N 0. assume Hnr: ~ Lean_List_Perm_R 0 j.
+exact (Below_0 (fun j => ~ Lean_List_Perm_R 0 j -> Lean_List_Perm_F 0 j a c= Lean_List_Perm_B)) j (In_eq_r j (Lean_List_Perm_N 0) 0 Lean_List_Perm_N0 Hj) Hnr.
+Qed.
+Theorem Lean_List_Perm_bd1_0 : forall a, ~ Lean_List_Perm_R 1 0 -> Lean_List_Perm_F 1 0 a c= Lean_List_Perm_B.
+let a. assume Hnr: ~ Lean_List_Perm_R 1 0. let z. assume Hz: z :e Lean_List_Perm_F 1 0 a.
+exact (binunionI1 ((((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List P0)) z (binunionI1
+    (((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List P0)) z (binunionI1 ((((((P0) :\/: ((Lean_List P0))) :\/:
+    ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) ((Lean_List P0)) z (binunionI1 (((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) ((Lean_List P0)) z
+    (binunionI1 ((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) (P0) z (binunionI1 (((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) (P0) z (binunionI1 ((P0) :\/: ((Lean_List
+    P0))) ((Lean_List P0)) z (binunionI1 (P0) ((Lean_List P0)) z (In_eq_r z (Lean_List_Perm_F 1 0 a) (P0) (Lean_List_Perm_F1_0 a) Hz))))))))).
+Qed.
+Theorem Lean_List_Perm_bd1_1 : forall a, ~ Lean_List_Perm_R 1 1 -> Lean_List_Perm_F 1 1 a c= Lean_List_Perm_B.
+let a. assume Hnr: ~ Lean_List_Perm_R 1 1. let z. assume Hz: z :e Lean_List_Perm_F 1 1 a.
+exact (binunionI1 ((((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List P0)) z (binunionI1
+    (((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List P0)) z (binunionI1 ((((((P0) :\/: ((Lean_List P0))) :\/:
+    ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) ((Lean_List P0)) z (binunionI1 (((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) ((Lean_List P0)) z
+    (binunionI1 ((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) (P0) z (binunionI1 (((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) (P0) z (binunionI1 ((P0) :\/: ((Lean_List
+    P0))) ((Lean_List P0)) z (binunionI2 (P0) ((Lean_List P0)) z (In_eq_r z (Lean_List_Perm_F 1 1 a) ((Lean_List P0)) (Lean_List_Perm_F1_1 a) Hz))))))))).
+Qed.
+Theorem Lean_List_Perm_bd1_2 : forall a, ~ Lean_List_Perm_R 1 2 -> Lean_List_Perm_F 1 2 a c= Lean_List_Perm_B.
+let a. assume Hnr: ~ Lean_List_Perm_R 1 2. let z. assume Hz: z :e Lean_List_Perm_F 1 2 a.
+exact (binunionI1 ((((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List P0)) z (binunionI1
+    (((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List P0)) z (binunionI1 ((((((P0) :\/: ((Lean_List P0))) :\/:
+    ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) ((Lean_List P0)) z (binunionI1 (((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) ((Lean_List P0)) z
+    (binunionI1 ((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) (P0) z (binunionI1 (((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) (P0) z (binunionI2 ((P0) :\/: ((Lean_List
+    P0))) ((Lean_List P0)) z (In_eq_r z (Lean_List_Perm_F 1 2 a) ((Lean_List P0)) (Lean_List_Perm_F1_2 a) Hz)))))))).
+Qed.
+Theorem Lean_List_Perm_bd1_3 : forall a, ~ Lean_List_Perm_R 1 3 -> Lean_List_Perm_F 1 3 a c= Lean_List_Perm_B.
+let a. assume Hnr: ~ Lean_List_Perm_R 1 3. apply FalseE. exact Hnr Lean_List_Perm_R1_3.
+Qed.
+Theorem Lean_List_Perm_bd1 : forall a, forall j :e Lean_List_Perm_N 1, ~ Lean_List_Perm_R 1 j -> Lean_List_Perm_F 1 j a c= Lean_List_Perm_B.
+let a j. assume Hj: j :e Lean_List_Perm_N 1. assume Hnr: ~ Lean_List_Perm_R 1 j.
+exact (Below_S 3 (fun j => ~ Lean_List_Perm_R 1 j -> Lean_List_Perm_F 1 j a c= Lean_List_Perm_B) (Below_S 2 (fun j => ~ Lean_List_Perm_R 1 j -> Lean_List_Perm_F 1 j a c= Lean_List_Perm_B) (Below_S 1
+    (fun j => ~ Lean_List_Perm_R 1 j -> Lean_List_Perm_F 1 j a c= Lean_List_Perm_B) (Below_S 0 (fun j => ~ Lean_List_Perm_R 1 j -> Lean_List_Perm_F 1 j a c= Lean_List_Perm_B) (Below_0 (fun j => ~
+    Lean_List_Perm_R 1 j -> Lean_List_Perm_F 1 j a c= Lean_List_Perm_B)) (Lean_List_Perm_bd1_0 a)) (Lean_List_Perm_bd1_1 a)) (Lean_List_Perm_bd1_2 a)) (Lean_List_Perm_bd1_3 a)) j (In_eq_r j
+    (Lean_List_Perm_N 1) 4 Lean_List_Perm_N1 Hj) Hnr.
+Qed.
+Theorem Lean_List_Perm_bd2_0 : forall a, ~ Lean_List_Perm_R 2 0 -> Lean_List_Perm_F 2 0 a c= Lean_List_Perm_B.
+let a. assume Hnr: ~ Lean_List_Perm_R 2 0. let z. assume Hz: z :e Lean_List_Perm_F 2 0 a.
+exact (binunionI1 ((((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List P0)) z (binunionI1
+    (((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List P0)) z (binunionI1 ((((((P0) :\/: ((Lean_List P0))) :\/:
+    ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) ((Lean_List P0)) z (binunionI1 (((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) ((Lean_List P0)) z
+    (binunionI1 ((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) (P0) z (binunionI2 (((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) (P0) z (In_eq_r z (Lean_List_Perm_F 2 0 a)
+    (P0) (Lean_List_Perm_F2_0 a) Hz))))))).
+Qed.
+Theorem Lean_List_Perm_bd2_1 : forall a, ~ Lean_List_Perm_R 2 1 -> Lean_List_Perm_F 2 1 a c= Lean_List_Perm_B.
+let a. assume Hnr: ~ Lean_List_Perm_R 2 1. let z. assume Hz: z :e Lean_List_Perm_F 2 1 a.
+exact (binunionI1 ((((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List P0)) z (binunionI1
+    (((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List P0)) z (binunionI1 ((((((P0) :\/: ((Lean_List P0))) :\/:
+    ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) ((Lean_List P0)) z (binunionI1 (((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) ((Lean_List P0)) z
+    (binunionI2 ((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) (P0) z (In_eq_r z (Lean_List_Perm_F 2 1 a) (P0) (Lean_List_Perm_F2_1 a) Hz)))))).
+Qed.
+Theorem Lean_List_Perm_bd2_2 : forall a, ~ Lean_List_Perm_R 2 2 -> Lean_List_Perm_F 2 2 a c= Lean_List_Perm_B.
+let a. assume Hnr: ~ Lean_List_Perm_R 2 2. let z. assume Hz: z :e Lean_List_Perm_F 2 2 a.
+exact (binunionI1 ((((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List P0)) z (binunionI1
+    (((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List P0)) z (binunionI1 ((((((P0) :\/: ((Lean_List P0))) :\/:
+    ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) ((Lean_List P0)) z (binunionI2 (((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) ((Lean_List P0)) z
+    (In_eq_r z (Lean_List_Perm_F 2 2 a) ((Lean_List P0)) (Lean_List_Perm_F2_2 a) Hz))))).
+Qed.
+Theorem Lean_List_Perm_bd2 : forall a, forall j :e Lean_List_Perm_N 2, ~ Lean_List_Perm_R 2 j -> Lean_List_Perm_F 2 j a c= Lean_List_Perm_B.
+let a j. assume Hj: j :e Lean_List_Perm_N 2. assume Hnr: ~ Lean_List_Perm_R 2 j.
+exact (Below_S 2 (fun j => ~ Lean_List_Perm_R 2 j -> Lean_List_Perm_F 2 j a c= Lean_List_Perm_B) (Below_S 1 (fun j => ~ Lean_List_Perm_R 2 j -> Lean_List_Perm_F 2 j a c= Lean_List_Perm_B) (Below_S 0
+    (fun j => ~ Lean_List_Perm_R 2 j -> Lean_List_Perm_F 2 j a c= Lean_List_Perm_B) (Below_0 (fun j => ~ Lean_List_Perm_R 2 j -> Lean_List_Perm_F 2 j a c= Lean_List_Perm_B)) (Lean_List_Perm_bd2_0 a))
+    (Lean_List_Perm_bd2_1 a)) (Lean_List_Perm_bd2_2 a)) j (In_eq_r j (Lean_List_Perm_N 2) 3 Lean_List_Perm_N2 Hj) Hnr.
+Qed.
+Theorem Lean_List_Perm_bd3_0 : forall a, ~ Lean_List_Perm_R 3 0 -> Lean_List_Perm_F 3 0 a c= Lean_List_Perm_B.
+let a. assume Hnr: ~ Lean_List_Perm_R 3 0. let z. assume Hz: z :e Lean_List_Perm_F 3 0 a.
+exact (binunionI1 ((((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List P0)) z (binunionI1
+    (((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List P0)) z (binunionI2 ((((((P0) :\/: ((Lean_List P0))) :\/:
+    ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) ((Lean_List P0)) z (In_eq_r z (Lean_List_Perm_F 3 0 a) ((Lean_List P0)) (Lean_List_Perm_F3_0 a) Hz)))).
+Qed.
+Theorem Lean_List_Perm_bd3_1 : forall a, ~ Lean_List_Perm_R 3 1 -> Lean_List_Perm_F 3 1 a c= Lean_List_Perm_B.
+let a. assume Hnr: ~ Lean_List_Perm_R 3 1. let z. assume Hz: z :e Lean_List_Perm_F 3 1 a.
+exact (binunionI1 ((((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List P0)) z (binunionI2
+    (((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List P0)) z (In_eq_r z (Lean_List_Perm_F 3 1 a) ((Lean_List
+    P0)) (Lean_List_Perm_F3_1 a) Hz))).
+Qed.
+Theorem Lean_List_Perm_bd3_2 : forall a, ~ Lean_List_Perm_R 3 2 -> Lean_List_Perm_F 3 2 a c= Lean_List_Perm_B.
+let a. assume Hnr: ~ Lean_List_Perm_R 3 2. let z. assume Hz: z :e Lean_List_Perm_F 3 2 a.
+exact (binunionI2 ((((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List P0)) z (In_eq_r z
+    (Lean_List_Perm_F 3 2 a) ((Lean_List P0)) (Lean_List_Perm_F3_2 a) Hz)).
+Qed.
+Theorem Lean_List_Perm_bd3_3 : forall a, ~ Lean_List_Perm_R 3 3 -> Lean_List_Perm_F 3 3 a c= Lean_List_Perm_B.
+let a. assume Hnr: ~ Lean_List_Perm_R 3 3. apply FalseE. exact Hnr Lean_List_Perm_R3_3.
+Qed.
+Theorem Lean_List_Perm_bd3_4 : forall a, ~ Lean_List_Perm_R 3 4 -> Lean_List_Perm_F 3 4 a c= Lean_List_Perm_B.
+let a. assume Hnr: ~ Lean_List_Perm_R 3 4. apply FalseE. exact Hnr Lean_List_Perm_R3_4.
+Qed.
+Theorem Lean_List_Perm_bd3 : forall a, forall j :e Lean_List_Perm_N 3, ~ Lean_List_Perm_R 3 j -> Lean_List_Perm_F 3 j a c= Lean_List_Perm_B.
+let a j. assume Hj: j :e Lean_List_Perm_N 3. assume Hnr: ~ Lean_List_Perm_R 3 j.
+exact (Below_S 4 (fun j => ~ Lean_List_Perm_R 3 j -> Lean_List_Perm_F 3 j a c= Lean_List_Perm_B) (Below_S 3 (fun j => ~ Lean_List_Perm_R 3 j -> Lean_List_Perm_F 3 j a c= Lean_List_Perm_B) (Below_S 2
+    (fun j => ~ Lean_List_Perm_R 3 j -> Lean_List_Perm_F 3 j a c= Lean_List_Perm_B) (Below_S 1 (fun j => ~ Lean_List_Perm_R 3 j -> Lean_List_Perm_F 3 j a c= Lean_List_Perm_B) (Below_S 0 (fun j => ~
+    Lean_List_Perm_R 3 j -> Lean_List_Perm_F 3 j a c= Lean_List_Perm_B) (Below_0 (fun j => ~ Lean_List_Perm_R 3 j -> Lean_List_Perm_F 3 j a c= Lean_List_Perm_B)) (Lean_List_Perm_bd3_0 a))
+    (Lean_List_Perm_bd3_1 a)) (Lean_List_Perm_bd3_2 a)) (Lean_List_Perm_bd3_3 a)) (Lean_List_Perm_bd3_4 a)) j (In_eq_r j (Lean_List_Perm_N 3) 5 Lean_List_Perm_N3 Hj) Hnr.
+Qed.
+Theorem Lean_List_Perm_bounded : IndBounded Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B.
+let k. assume Hk: k :e Lean_List_Perm_K.
+exact (Below_S 3 (fun k => forall a, forall j :e Lean_List_Perm_N k, ~ Lean_List_Perm_R k j -> Lean_List_Perm_F k j a c= Lean_List_Perm_B) (Below_S 2 (fun k => forall a, forall j :e Lean_List_Perm_N
+    k, ~ Lean_List_Perm_R k j -> Lean_List_Perm_F k j a c= Lean_List_Perm_B) (Below_S 1 (fun k => forall a, forall j :e Lean_List_Perm_N k, ~ Lean_List_Perm_R k j -> Lean_List_Perm_F k j a c=
+    Lean_List_Perm_B) (Below_S 0 (fun k => forall a, forall j :e Lean_List_Perm_N k, ~ Lean_List_Perm_R k j -> Lean_List_Perm_F k j a c= Lean_List_Perm_B) (Below_0 (fun k => forall a, forall j :e
+    Lean_List_Perm_N k, ~ Lean_List_Perm_R k j -> Lean_List_Perm_F k j a c= Lean_List_Perm_B)) Lean_List_Perm_bd0) Lean_List_Perm_bd1) Lean_List_Perm_bd2) Lean_List_Perm_bd3) k Hk.
+Qed.
+
+Theorem Lean_List_Perm_distinct : IndDistinct Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B.
+let k. assume Hk: k :e Lean_List_Perm_K. let k'. assume Hk': k' :e Lean_List_Perm_K. assume H: k = k'. exact H.
+Qed.
+
+Theorem Lean_List_Perm_ar0 : nat_p (Lean_List_Perm_N 0).
+prove nat_p (SeqAt (SeqCons (0) (SeqCons (4) (SeqCons (3) (SeqCons (5) SeqNil)))) 0). rewrite Lean_List_Perm_N0. exact nat_0.
+Qed.
+Theorem Lean_List_Perm_ar1 : nat_p (Lean_List_Perm_N 1).
+prove nat_p (SeqAt (SeqCons (0) (SeqCons (4) (SeqCons (3) (SeqCons (5) SeqNil)))) 1). rewrite Lean_List_Perm_N1. exact (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))).
+Qed.
+Theorem Lean_List_Perm_ar2 : nat_p (Lean_List_Perm_N 2).
+prove nat_p (SeqAt (SeqCons (0) (SeqCons (4) (SeqCons (3) (SeqCons (5) SeqNil)))) 2). rewrite Lean_List_Perm_N2. exact (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))).
+Qed.
+Theorem Lean_List_Perm_ar3 : nat_p (Lean_List_Perm_N 3).
+prove nat_p (SeqAt (SeqCons (0) (SeqCons (4) (SeqCons (3) (SeqCons (5) SeqNil)))) 3). rewrite Lean_List_Perm_N3. exact (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0
+    nat_0))))).
+Qed.
+Theorem Lean_List_Perm_arity : forall k :e Lean_List_Perm_K, nat_p (Lean_List_Perm_N k).
+let k. assume Hk: k :e Lean_List_Perm_K.
+exact (Below_S 3 (fun k => nat_p (Lean_List_Perm_N k)) (Below_S 2 (fun k => nat_p (Lean_List_Perm_N k)) (Below_S 1 (fun k => nat_p (Lean_List_Perm_N k)) (Below_S 0 (fun k => nat_p (Lean_List_Perm_N
+    k)) (Below_0 (fun k => nat_p (Lean_List_Perm_N k))) Lean_List_Perm_ar0) Lean_List_Perm_ar1) Lean_List_Perm_ar2) Lean_List_Perm_ar3) k Hk.
+Qed.
+
+Definition Lean_List_Perm_nil_node : set := IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 0 (TupArgs
+    0 SeqNil).
+Theorem Lean_List_Perm_nil_args : (TupArgs 0 SeqNil) :e IndArgs Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B Lean_List_Perm_All 0.
+
+prove (TupArgs 0 SeqNil) :e {a :e Pi_ j :e SeqAt (SeqCons (0) (SeqCons (4) (SeqCons (3) (SeqCons (5) SeqNil)))) 0, Lean_List_Perm_B :\/: Lean_List_Perm_All | IndFits Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 0 a}.
+rewrite Lean_List_Perm_N0.
+apply SepI (Pi_ j :e 0, Lean_List_Perm_B :\/: Lean_List_Perm_All) (fun a => IndFits Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 0 a) (TupArgs 0 SeqNil).
+- exact lam_Pi 0 (fun j => Lean_List_Perm_B :\/: Lean_List_Perm_All) (fun j => SeqAt SeqNil j) (Below_0 (fun j => SeqAt SeqNil j :e Lean_List_Perm_B :\/: Lean_List_Perm_All)).
+- prove IndFits Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 0 (TupArgs 0 SeqNil).
+  let j. assume Hj: j :e Lean_List_Perm_N 0.
+  exact (Below_0 (fun j => (Lean_List_Perm_R 0 j -> (TupArgs 0 SeqNil) j :e Lean_List_Perm_All /\ IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B ((TupArgs 0 SeqNil) j) = Lean_List_Perm_Ix 0 j (TupArgs 0 SeqNil)) /\ (~ Lean_List_Perm_R 0 j -> (TupArgs 0 SeqNil) j :e Lean_List_Perm_F 0 j
+    (TupArgs 0 SeqNil)))) j (In_eq_r j (Lean_List_Perm_N 0) 0 Lean_List_Perm_N0 Hj).
+Qed.
+Theorem Lean_List_Perm_nil_typed : Lean_List_Perm_nil_node :e (Lean_List_Perm (setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0))).
+
+claim L: Lean_List_Perm_nil_node :e IndFiber Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (Lean_List_Perm_O
+    0 (TupArgs 0 SeqNil)).
+{ exact IndNode_Fiber Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_bounded 0 (ordsuccI1 3 0
+    (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0)))) Lean_List_Perm_ar0 (TupArgs 0 SeqNil) (Lean_List_Perm_nil_args ). }
+claim Lo: Lean_List_Perm_O 0 (TupArgs 0 SeqNil) = (setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0)).
+{ prove SeqAt (SeqCons ((setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0))) (SeqCons ((setsum (Lean_List_cons_node P0 (TupArgs 0 SeqNil 0) (TupArgs 0 SeqNil 1)) (Lean_List_cons_node P0 (TupArgs
+    0 SeqNil 0) (TupArgs 0 SeqNil 2)))) (SeqCons ((setsum (Lean_List_cons_node P0 (TupArgs 0 SeqNil 1) (Lean_List_cons_node P0 (TupArgs 0 SeqNil 0) (TupArgs 0 SeqNil 2))) (Lean_List_cons_node P0
+    (TupArgs 0 SeqNil 0) (Lean_List_cons_node P0 (TupArgs 0 SeqNil 1) (TupArgs 0 SeqNil 2))))) (SeqCons ((setsum (TupArgs 0 SeqNil 0) (TupArgs 0 SeqNil 2))) SeqNil)))) 0 = (setsum (Lean_List_nil_node
+    P0) (Lean_List_nil_node P0)). rewrite Lean_List_Perm_O0 (TupArgs 0 SeqNil). reflexivity. }
+exact In_fam_eq (IndFiber Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B) (Lean_List_Perm_O 0 (TupArgs 0
+    SeqNil)) (setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0)) Lo (Lean_List_Perm_nil_node) L.
+Qed.
+Definition Lean_List_Perm_nil : set := Lean_List_Perm_nil_node.
+Theorem Lean_List_Perm_nil_type : Lean_List_Perm_nil :e (Lean_List_Perm (setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0))).
+exact Lean_List_Perm_nil_typed.
+Qed.
+Definition Lean_List_Perm_cons_node : set -> set -> set -> set -> set := fun x0 x1 x2 x3 => IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))).
+Theorem Lean_List_Perm_cons_args : forall x0 :e P0, forall x1 :e (Lean_List P0), forall x2 :e (Lean_List P0), forall x3 :e (Lean_List_Perm (setsum x1 x2)), (TupArgs 4 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) (SeqCons (x3) SeqNil))))) :e IndArgs Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B
+    Lean_List_Perm_All 1.
+let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e (Lean_List P0). let x2. assume H2: x2 :e (Lean_List P0). let x3. assume H3: x3 :e (Lean_List_Perm (setsum x1 x2)).
+claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 = x0.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 (ordsuccI1 3 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0)))). exact U0. }
+claim U1: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 = x1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim T1: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 = x1.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 (ordsuccI1 3 1 (ordsuccI1 2 1 (ordsuccI2 1))). exact U1. }
+claim U2: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 = x2.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+claim T2: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 = x2.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 (ordsuccI1 3 2 (ordsuccI2 2)). exact U2. }
+claim U3: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 = x3.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)). }
+claim T3: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 = x3.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 (ordsuccI2 3). exact U3. }
+claim V3: x3 :e Lean_List_Perm_All.
+{ exact SepE1 Lean_List_Perm_All (fun x:set => IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B x =
+    (setsum x1 x2)) x3 H3. }
+claim I3: IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B x3 = (setsum x1 x2).
+{ exact SepE2 Lean_List_Perm_All (fun x:set => IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B x =
+    (setsum x1 x2)) x3 H3. }
+claim M0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 :e Lean_List_Perm_B :\/: Lean_List_Perm_All.
+{ exact In_eq_ls (SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0) x0 (Lean_List_Perm_B :\/: Lean_List_Perm_All) U0 (binunionI1 Lean_List_Perm_B Lean_List_Perm_All x0
+    (binunionI1 ((((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List P0)) x0 (binunionI1
+    (((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List P0)) x0 (binunionI1 ((((((P0) :\/: ((Lean_List P0))) :\/:
+    ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) ((Lean_List P0)) x0 (binunionI1 (((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) ((Lean_List P0)) x0
+    (binunionI1 ((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) (P0) x0 (binunionI1 (((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) (P0) x0 (binunionI1 ((P0) :\/: ((Lean_List
+    P0))) ((Lean_List P0)) x0 (binunionI1 (P0) ((Lean_List P0)) x0 H0))))))))). }
+claim M1: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 :e Lean_List_Perm_B :\/: Lean_List_Perm_All.
+{ exact In_eq_ls (SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1) x1 (Lean_List_Perm_B :\/: Lean_List_Perm_All) U1 (binunionI1 Lean_List_Perm_B Lean_List_Perm_All x1
+    (binunionI1 ((((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List P0)) x1 (binunionI1
+    (((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List P0)) x1 (binunionI1 ((((((P0) :\/: ((Lean_List P0))) :\/:
+    ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) ((Lean_List P0)) x1 (binunionI1 (((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) ((Lean_List P0)) x1
+    (binunionI1 ((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) (P0) x1 (binunionI1 (((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) (P0) x1 (binunionI1 ((P0) :\/: ((Lean_List
+    P0))) ((Lean_List P0)) x1 (binunionI2 (P0) ((Lean_List P0)) x1 H1))))))))). }
+claim M2: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 :e Lean_List_Perm_B :\/: Lean_List_Perm_All.
+{ exact In_eq_ls (SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2) x2 (Lean_List_Perm_B :\/: Lean_List_Perm_All) U2 (binunionI1 Lean_List_Perm_B Lean_List_Perm_All x2
+    (binunionI1 ((((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List P0)) x2 (binunionI1
+    (((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List P0)) x2 (binunionI1 ((((((P0) :\/: ((Lean_List P0))) :\/:
+    ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) ((Lean_List P0)) x2 (binunionI1 (((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) ((Lean_List P0)) x2
+    (binunionI1 ((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) (P0) x2 (binunionI1 (((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) (P0) x2 (binunionI2 ((P0) :\/: ((Lean_List
+    P0))) ((Lean_List P0)) x2 H2)))))))). }
+claim M3: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 :e Lean_List_Perm_B :\/: Lean_List_Perm_All.
+{ exact In_eq_ls (SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3) x3 (Lean_List_Perm_B :\/: Lean_List_Perm_All) U3 (binunionI2 Lean_List_Perm_B Lean_List_Perm_All x3 V3). }
+claim D0: (Lean_List_Perm_R 1 0 -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 0 :e Lean_List_Perm_All /\ IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 0) = Lean_List_Perm_Ix 1 0
+    (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) /\ (~ Lean_List_Perm_R 1 0 -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 0 :e
+    Lean_List_Perm_F 1 0 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))).
+{ apply andI.
+  - assume Hr: Lean_List_Perm_R 1 0. apply FalseE. exact Lean_List_Perm_nR1_0 Hr.
+  - assume Hnr: ~ Lean_List_Perm_R 1 0. exact In_eq_ls ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 0) x0 (Lean_List_Perm_F 1 0 (TupArgs 4 (SeqCons (x0) (SeqCons
+    (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) T0 (In_eq_rs x0 (Lean_List_Perm_F 1 0 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) P0 (Lean_List_Perm_F1_0
+    (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) H0).
+}
+claim D1: (Lean_List_Perm_R 1 1 -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 1 :e Lean_List_Perm_All /\ IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 1) = Lean_List_Perm_Ix 1 1
+    (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) /\ (~ Lean_List_Perm_R 1 1 -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 1 :e
+    Lean_List_Perm_F 1 1 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))).
+{ apply andI.
+  - assume Hr: Lean_List_Perm_R 1 1. apply FalseE. exact Lean_List_Perm_nR1_1 Hr.
+  - assume Hnr: ~ Lean_List_Perm_R 1 1. exact In_eq_ls ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 1) x1 (Lean_List_Perm_F 1 1 (TupArgs 4 (SeqCons (x0) (SeqCons
+    (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) T1 (In_eq_rs x1 (Lean_List_Perm_F 1 1 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) (Lean_List P0)
+    (Lean_List_Perm_F1_1 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) H1).
+}
+claim D2: (Lean_List_Perm_R 1 2 -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 2 :e Lean_List_Perm_All /\ IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 2) = Lean_List_Perm_Ix 1 2
+    (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) /\ (~ Lean_List_Perm_R 1 2 -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 2 :e
+    Lean_List_Perm_F 1 2 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))).
+{ apply andI.
+  - assume Hr: Lean_List_Perm_R 1 2. apply FalseE. exact Lean_List_Perm_nR1_2 Hr.
+  - assume Hnr: ~ Lean_List_Perm_R 1 2. exact In_eq_ls ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 2) x2 (Lean_List_Perm_F 1 2 (TupArgs 4 (SeqCons (x0) (SeqCons
+    (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) T2 (In_eq_rs x2 (Lean_List_Perm_F 1 2 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) (Lean_List P0)
+    (Lean_List_Perm_F1_2 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) H2).
+}
+claim D3: (Lean_List_Perm_R 1 3 -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 3 :e Lean_List_Perm_All /\ IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 3) = Lean_List_Perm_Ix 1 3
+    (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) /\ (~ Lean_List_Perm_R 1 3 -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 3 :e
+    Lean_List_Perm_F 1 3 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))).
+{ apply andI.
+  - assume Hr: Lean_List_Perm_R 1 3. apply andI.
+    + exact In_eq_ls ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 3) x3 Lean_List_Perm_All T3 V3.
+    + rewrite T3. prove IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B x3 = SeqAt (SeqAt (SeqCons
+    (SeqNil) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons ((setsum (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1) (TupArgs 4 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2))) SeqNil))))) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) SeqNil)))) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons ((setsum (TupArgs 4
+    (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0) (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1))) (SeqCons ((setsum (TupArgs 4 (SeqCons (x0)
+    (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1) (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2))) SeqNil)))))) SeqNil)))) 1) 3. rewrite
+    Lean_List_Perm_Ix1_3 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))). rewrite T1. rewrite T2.  exact I3.
+  - assume Hnr: ~ Lean_List_Perm_R 1 3. apply FalseE. exact Hnr Lean_List_Perm_R1_3.
+}
+prove (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) :e {a :e Pi_ j :e SeqAt (SeqCons (0) (SeqCons (4) (SeqCons (3) (SeqCons (5) SeqNil)))) 1, Lean_List_Perm_B :\/:
+    Lean_List_Perm_All | IndFits Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 1 a}.
+rewrite Lean_List_Perm_N1.
+apply SepI (Pi_ j :e 4, Lean_List_Perm_B :\/: Lean_List_Perm_All) (fun a => IndFits Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 1 a) (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))).
+- exact lam_Pi 4 (fun j => Lean_List_Perm_B :\/: Lean_List_Perm_All) (fun j => SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) j) (Below_S 3 (fun j => SeqAt (SeqCons (x0)
+    (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) j :e Lean_List_Perm_B :\/: Lean_List_Perm_All) (Below_S 2 (fun j => SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) j
+    :e Lean_List_Perm_B :\/: Lean_List_Perm_All) (Below_S 1 (fun j => SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) j :e Lean_List_Perm_B :\/: Lean_List_Perm_All) (Below_S
+    0 (fun j => SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) j :e Lean_List_Perm_B :\/: Lean_List_Perm_All) (Below_0 (fun j => SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons
+    (x2) (SeqCons (x3) SeqNil)))) j :e Lean_List_Perm_B :\/: Lean_List_Perm_All)) M0) M1) M2) M3).
+- prove IndFits Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 1 (TupArgs 4 (SeqCons (x0)
+    (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))).
+  let j. assume Hj: j :e Lean_List_Perm_N 1.
+  exact (Below_S 3 (fun j => (Lean_List_Perm_R 1 j -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j :e Lean_List_Perm_All /\ IndIdx Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    SeqNil))))) j) = Lean_List_Perm_Ix 1 j (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) /\ (~ Lean_List_Perm_R 1 j -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) (SeqCons (x3) SeqNil))))) j :e Lean_List_Perm_F 1 j (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))))) (Below_S 2 (fun j => (Lean_List_Perm_R 1 j ->
+    (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j :e Lean_List_Perm_All /\ IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j) = Lean_List_Perm_Ix 1 j (TupArgs 4 (SeqCons
+    (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) /\ (~ Lean_List_Perm_R 1 j -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j :e Lean_List_Perm_F 1 j
+    (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))))) (Below_S 1 (fun j => (Lean_List_Perm_R 1 j -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    SeqNil))))) j :e Lean_List_Perm_All /\ IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B ((TupArgs 4
+    (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j) = Lean_List_Perm_Ix 1 j (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) /\ (~
+    Lean_List_Perm_R 1 j -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j :e Lean_List_Perm_F 1 j (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    SeqNil))))))) (Below_S 0 (fun j => (Lean_List_Perm_R 1 j -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j :e Lean_List_Perm_All /\ IndIdx Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    SeqNil))))) j) = Lean_List_Perm_Ix 1 j (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) /\ (~ Lean_List_Perm_R 1 j -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) (SeqCons (x3) SeqNil))))) j :e Lean_List_Perm_F 1 j (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))))) (Below_0 (fun j => (Lean_List_Perm_R 1 j ->
+    (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j :e Lean_List_Perm_All /\ IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j) = Lean_List_Perm_Ix 1 j (TupArgs 4 (SeqCons
+    (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) /\ (~ Lean_List_Perm_R 1 j -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j :e Lean_List_Perm_F 1 j
+    (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))))) D0) D1) D2) D3) j (In_eq_r j (Lean_List_Perm_N 1) 4 Lean_List_Perm_N1 Hj).
+Qed.
+Theorem Lean_List_Perm_cons_typed : forall x0 :e P0, forall x1 :e (Lean_List P0), forall x2 :e (Lean_List P0), forall x3 :e (Lean_List_Perm (setsum x1 x2)), Lean_List_Perm_cons_node x0 x1 x2 x3 :e
+    (Lean_List_Perm (setsum (Lean_List_cons_node P0 x0 x1) (Lean_List_cons_node P0 x0 x2))).
+let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e (Lean_List P0). let x2. assume H2: x2 :e (Lean_List P0). let x3. assume H3: x3 :e (Lean_List_Perm (setsum x1 x2)).
+claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 = x0.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 (ordsuccI1 3 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0)))). exact U0. }
+claim U1: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 = x1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim T1: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 = x1.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 (ordsuccI1 3 1 (ordsuccI1 2 1 (ordsuccI2 1))). exact U1. }
+claim U2: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 = x2.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+claim T2: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 = x2.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 (ordsuccI1 3 2 (ordsuccI2 2)). exact U2. }
+claim U3: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 = x3.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)). }
+claim T3: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 = x3.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 (ordsuccI2 3). exact U3. }
+claim L: Lean_List_Perm_cons_node x0 x1 x2 x3 :e IndFiber Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B
+    (Lean_List_Perm_O 1 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))).
+{ exact IndNode_Fiber Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_bounded 1 (ordsuccI1 3 1
+    (ordsuccI1 2 1 (ordsuccI2 1))) Lean_List_Perm_ar1 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) (Lean_List_Perm_cons_args x0 H0 x1 H1 x2 H2 x3 H3). }
+claim Lo: Lean_List_Perm_O 1 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) = (setsum (Lean_List_cons_node P0 x0 x1) (Lean_List_cons_node P0 x0 x2)).
+{ prove SeqAt (SeqCons ((setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0))) (SeqCons ((setsum (Lean_List_cons_node P0 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    SeqNil)))) 0) (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1)) (Lean_List_cons_node P0 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    SeqNil)))) 0) (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2)))) (SeqCons ((setsum (Lean_List_cons_node P0 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2)
+    (SeqCons (x3) SeqNil)))) 1) (Lean_List_cons_node P0 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0) (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons
+    (x3) SeqNil)))) 2))) (Lean_List_cons_node P0 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0) (Lean_List_cons_node P0 (TupArgs 4 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1) (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2))))) (SeqCons ((setsum (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons
+    (x2) (SeqCons (x3) SeqNil)))) 0) (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2))) SeqNil)))) 1 = (setsum (Lean_List_cons_node P0 x0 x1) (Lean_List_cons_node P0
+    x0 x2)). rewrite Lean_List_Perm_O1 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))). rewrite T0. rewrite T1. rewrite T2. reflexivity. }
+exact In_fam_eq (IndFiber Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B) (Lean_List_Perm_O 1 (TupArgs 4
+    (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) (setsum (Lean_List_cons_node P0 x0 x1) (Lean_List_cons_node P0 x0 x2)) Lo (Lean_List_Perm_cons_node x0 x1 x2 x3) L.
+Qed.
+Definition Lean_List_Perm_cons : set := (fun x0 :e P0 => (fun x1 :e (Lean_List P0) => (fun x2 :e (Lean_List P0) => (fun x3 :e (Lean_List_Perm (setsum x1 x2)) => Lean_List_Perm_cons_node x0 x1 x2
+    x3)))).
+Theorem Lean_List_Perm_cons_type : Lean_List_Perm_cons :e (Pi_ x0 :e P0, (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum x1 x2)), (Lean_List_Perm (setsum
+    (Lean_List_cons_node P0 x0 x1) (Lean_List_cons_node P0 x0 x2))))))).
+exact (lam_Pi P0 (fun x0 => (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum x1 x2)), (Lean_List_Perm (setsum (Lean_List_cons_node P0 x0 x1)
+    (Lean_List_cons_node P0 x0 x2))))))) (fun x0 => (fun x1 :e (Lean_List P0) => (fun x2 :e (Lean_List P0) => (fun x3 :e (Lean_List_Perm (setsum x1 x2)) => Lean_List_Perm_cons_node x0 x1 x2 x3))))
+    (fun x0 H0 => (lam_Pi (Lean_List P0) (fun x1 => (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum x1 x2)), (Lean_List_Perm (setsum (Lean_List_cons_node P0 x0 x1) (Lean_List_cons_node
+    P0 x0 x2)))))) (fun x1 => (fun x2 :e (Lean_List P0) => (fun x3 :e (Lean_List_Perm (setsum x1 x2)) => Lean_List_Perm_cons_node x0 x1 x2 x3))) (fun x1 H1 => (lam_Pi (Lean_List P0) (fun x2 => (Pi_
+    x3 :e (Lean_List_Perm (setsum x1 x2)), (Lean_List_Perm (setsum (Lean_List_cons_node P0 x0 x1) (Lean_List_cons_node P0 x0 x2))))) (fun x2 => (fun x3 :e (Lean_List_Perm (setsum x1 x2)) =>
+    Lean_List_Perm_cons_node x0 x1 x2 x3)) (fun x2 H2 => (lam_Pi (Lean_List_Perm (setsum x1 x2)) (fun x3 => (Lean_List_Perm (setsum (Lean_List_cons_node P0 x0 x1) (Lean_List_cons_node P0 x0 x2))))
+    (fun x3 => Lean_List_Perm_cons_node x0 x1 x2 x3) (fun x3 H3 => (Lean_List_Perm_cons_typed x0 H0 x1 H1 x2 H2 x3 H3))))))))).
+Qed.
+Definition Lean_List_Perm_swap_node : set -> set -> set -> set := fun x0 x1 x2 => IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B 2 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))).
+Theorem Lean_List_Perm_swap_args : forall x0 :e P0, forall x1 :e P0, forall x2 :e (Lean_List P0), (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) :e IndArgs Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 2.
+let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e P0. let x2. assume H2: x2 :e (Lean_List P0).
+claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 = x0.
+{ rewrite TupArgs_at 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0))). exact U0. }
+claim U1: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1 = x1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim T1: TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1 = x1.
+{ rewrite TupArgs_at 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1 (ordsuccI1 2 1 (ordsuccI2 1)). exact U1. }
+claim U2: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 2 = x2.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+claim T2: TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 2 = x2.
+{ rewrite TupArgs_at 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 2 (ordsuccI2 2). exact U2. }
+claim M0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 :e Lean_List_Perm_B :\/: Lean_List_Perm_All.
+{ exact In_eq_ls (SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0) x0 (Lean_List_Perm_B :\/: Lean_List_Perm_All) U0 (binunionI1 Lean_List_Perm_B Lean_List_Perm_All x0 (binunionI1
+    ((((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List P0)) x0 (binunionI1 (((((((P0)
+    :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List P0)) x0 (binunionI1 ((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List
+    P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) ((Lean_List P0)) x0 (binunionI1 (((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) ((Lean_List P0)) x0 (binunionI1
+    ((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) (P0) x0 (binunionI2 (((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) (P0) x0 H0))))))). }
+claim M1: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1 :e Lean_List_Perm_B :\/: Lean_List_Perm_All.
+{ exact In_eq_ls (SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1) x1 (Lean_List_Perm_B :\/: Lean_List_Perm_All) U1 (binunionI1 Lean_List_Perm_B Lean_List_Perm_All x1 (binunionI1
+    ((((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List P0)) x1 (binunionI1 (((((((P0)
+    :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List P0)) x1 (binunionI1 ((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List
+    P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) ((Lean_List P0)) x1 (binunionI1 (((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) ((Lean_List P0)) x1 (binunionI2
+    ((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) (P0) x1 H1)))))). }
+claim M2: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 2 :e Lean_List_Perm_B :\/: Lean_List_Perm_All.
+{ exact In_eq_ls (SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 2) x2 (Lean_List_Perm_B :\/: Lean_List_Perm_All) U2 (binunionI1 Lean_List_Perm_B Lean_List_Perm_All x2 (binunionI1
+    ((((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List P0)) x2 (binunionI1 (((((((P0)
+    :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List P0)) x2 (binunionI1 ((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List
+    P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) ((Lean_List P0)) x2 (binunionI2 (((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) ((Lean_List P0)) x2 H2))))). }
+claim D0: (Lean_List_Perm_R 2 0 -> (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 0 :e Lean_List_Perm_All /\ IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 0) = Lean_List_Perm_Ix 2 0 (TupArgs 3
+    (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))))) /\ (~ Lean_List_Perm_R 2 0 -> (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 0 :e Lean_List_Perm_F 2 0 (TupArgs 3 (SeqCons
+    (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))))).
+{ apply andI.
+  - assume Hr: Lean_List_Perm_R 2 0. apply FalseE. exact Lean_List_Perm_nR2_0 Hr.
+  - assume Hnr: ~ Lean_List_Perm_R 2 0. exact In_eq_ls ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 0) x0 (Lean_List_Perm_F 2 0 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons
+    (x2) SeqNil))))) T0 (In_eq_rs x0 (Lean_List_Perm_F 2 0 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))))) P0 (Lean_List_Perm_F2_0 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons
+    (x2) SeqNil))))) H0).
+}
+claim D1: (Lean_List_Perm_R 2 1 -> (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 1 :e Lean_List_Perm_All /\ IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 1) = Lean_List_Perm_Ix 2 1 (TupArgs 3
+    (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))))) /\ (~ Lean_List_Perm_R 2 1 -> (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 1 :e Lean_List_Perm_F 2 1 (TupArgs 3 (SeqCons
+    (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))))).
+{ apply andI.
+  - assume Hr: Lean_List_Perm_R 2 1. apply FalseE. exact Lean_List_Perm_nR2_1 Hr.
+  - assume Hnr: ~ Lean_List_Perm_R 2 1. exact In_eq_ls ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 1) x1 (Lean_List_Perm_F 2 1 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons
+    (x2) SeqNil))))) T1 (In_eq_rs x1 (Lean_List_Perm_F 2 1 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))))) P0 (Lean_List_Perm_F2_1 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons
+    (x2) SeqNil))))) H1).
+}
+claim D2: (Lean_List_Perm_R 2 2 -> (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 2 :e Lean_List_Perm_All /\ IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 2) = Lean_List_Perm_Ix 2 2 (TupArgs 3
+    (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))))) /\ (~ Lean_List_Perm_R 2 2 -> (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 2 :e Lean_List_Perm_F 2 2 (TupArgs 3 (SeqCons
+    (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))))).
+{ apply andI.
+  - assume Hr: Lean_List_Perm_R 2 2. apply FalseE. exact Lean_List_Perm_nR2_2 Hr.
+  - assume Hnr: ~ Lean_List_Perm_R 2 2. exact In_eq_ls ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 2) x2 (Lean_List_Perm_F 2 2 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons
+    (x2) SeqNil))))) T2 (In_eq_rs x2 (Lean_List_Perm_F 2 2 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))))) (Lean_List P0) (Lean_List_Perm_F2_2 (TupArgs 3 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) SeqNil))))) H2).
+}
+prove (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) :e {a :e Pi_ j :e SeqAt (SeqCons (0) (SeqCons (4) (SeqCons (3) (SeqCons (5) SeqNil)))) 2, Lean_List_Perm_B :\/:
+    Lean_List_Perm_All | IndFits Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 2 a}.
+rewrite Lean_List_Perm_N2.
+apply SepI (Pi_ j :e 3, Lean_List_Perm_B :\/: Lean_List_Perm_All) (fun a => IndFits Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 2 a) (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))).
+- exact lam_Pi 3 (fun j => Lean_List_Perm_B :\/: Lean_List_Perm_All) (fun j => SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) j) (Below_S 2 (fun j => SeqAt (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) SeqNil))) j :e Lean_List_Perm_B :\/: Lean_List_Perm_All) (Below_S 1 (fun j => SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) j :e Lean_List_Perm_B :\/:
+    Lean_List_Perm_All) (Below_S 0 (fun j => SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) j :e Lean_List_Perm_B :\/: Lean_List_Perm_All) (Below_0 (fun j => SeqAt (SeqCons (x0) (SeqCons
+    (x1) (SeqCons (x2) SeqNil))) j :e Lean_List_Perm_B :\/: Lean_List_Perm_All)) M0) M1) M2).
+- prove IndFits Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 2 (TupArgs 3 (SeqCons (x0)
+    (SeqCons (x1) (SeqCons (x2) SeqNil)))).
+  let j. assume Hj: j :e Lean_List_Perm_N 2.
+  exact (Below_S 2 (fun j => (Lean_List_Perm_R 2 j -> (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) j :e Lean_List_Perm_All /\ IndIdx Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) j) = Lean_List_Perm_Ix 2 j
+    (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))))) /\ (~ Lean_List_Perm_R 2 j -> (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) j :e Lean_List_Perm_F 2 j (TupArgs 3
+    (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))))) (Below_S 1 (fun j => (Lean_List_Perm_R 2 j -> (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) j :e Lean_List_Perm_All /\
+    IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons
+    (x2) SeqNil)))) j) = Lean_List_Perm_Ix 2 j (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))))) /\ (~ Lean_List_Perm_R 2 j -> (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2)
+    SeqNil)))) j :e Lean_List_Perm_F 2 j (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))))) (Below_S 0 (fun j => (Lean_List_Perm_R 2 j -> (TupArgs 3 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) SeqNil)))) j :e Lean_List_Perm_All /\ IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B
+    ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) j) = Lean_List_Perm_Ix 2 j (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))))) /\ (~ Lean_List_Perm_R 2 j -> (TupArgs
+    3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) j :e Lean_List_Perm_F 2 j (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))))) (Below_0 (fun j => (Lean_List_Perm_R 2 j ->
+    (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) j :e Lean_List_Perm_All /\ IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) j) = Lean_List_Perm_Ix 2 j (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons
+    (x2) SeqNil))))) /\ (~ Lean_List_Perm_R 2 j -> (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) j :e Lean_List_Perm_F 2 j (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2)
+    SeqNil))))))) D0) D1) D2) j (In_eq_r j (Lean_List_Perm_N 2) 3 Lean_List_Perm_N2 Hj).
+Qed.
+Theorem Lean_List_Perm_swap_typed : forall x0 :e P0, forall x1 :e P0, forall x2 :e (Lean_List P0), Lean_List_Perm_swap_node x0 x1 x2 :e (Lean_List_Perm (setsum (Lean_List_cons_node P0 x1
+    (Lean_List_cons_node P0 x0 x2)) (Lean_List_cons_node P0 x0 (Lean_List_cons_node P0 x1 x2)))).
+let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e P0. let x2. assume H2: x2 :e (Lean_List P0).
+claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 = x0.
+{ rewrite TupArgs_at 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0))). exact U0. }
+claim U1: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1 = x1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim T1: TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1 = x1.
+{ rewrite TupArgs_at 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1 (ordsuccI1 2 1 (ordsuccI2 1)). exact U1. }
+claim U2: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 2 = x2.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+claim T2: TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 2 = x2.
+{ rewrite TupArgs_at 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 2 (ordsuccI2 2). exact U2. }
+claim L: Lean_List_Perm_swap_node x0 x1 x2 :e IndFiber Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B
+    (Lean_List_Perm_O 2 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))))).
+{ exact IndNode_Fiber Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_bounded 2 (ordsuccI1 3 2
+    (ordsuccI2 2)) Lean_List_Perm_ar2 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) (Lean_List_Perm_swap_args x0 H0 x1 H1 x2 H2). }
+claim Lo: Lean_List_Perm_O 2 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) = (setsum (Lean_List_cons_node P0 x1 (Lean_List_cons_node P0 x0 x2)) (Lean_List_cons_node P0 x0
+    (Lean_List_cons_node P0 x1 x2))).
+{ prove SeqAt (SeqCons ((setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0))) (SeqCons ((setsum (Lean_List_cons_node P0 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0) (TupArgs
+    3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1)) (Lean_List_cons_node P0 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0) (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons
+    (x2) SeqNil))) 2)))) (SeqCons ((setsum (Lean_List_cons_node P0 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1) (Lean_List_cons_node P0 (TupArgs 3 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) SeqNil))) 0) (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 2))) (Lean_List_cons_node P0 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0)
+    (Lean_List_cons_node P0 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1) (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 2))))) (SeqCons ((setsum (TupArgs 3
+    (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0) (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 2))) SeqNil)))) 2 = (setsum (Lean_List_cons_node P0 x1 (Lean_List_cons_node
+    P0 x0 x2)) (Lean_List_cons_node P0 x0 (Lean_List_cons_node P0 x1 x2))). rewrite Lean_List_Perm_O2 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))). rewrite T1. rewrite T0. rewrite
+    T2. reflexivity. }
+exact In_fam_eq (IndFiber Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B) (Lean_List_Perm_O 2 (TupArgs 3
+    (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))))) (setsum (Lean_List_cons_node P0 x1 (Lean_List_cons_node P0 x0 x2)) (Lean_List_cons_node P0 x0 (Lean_List_cons_node P0 x1 x2))) Lo
+    (Lean_List_Perm_swap_node x0 x1 x2) L.
+Qed.
+Definition Lean_List_Perm_swap : set := (fun x0 :e P0 => (fun x1 :e P0 => (fun x2 :e (Lean_List P0) => Lean_List_Perm_swap_node x0 x1 x2))).
+Theorem Lean_List_Perm_swap_type : Lean_List_Perm_swap :e (Pi_ x0 :e P0, (Pi_ x1 :e P0, (Pi_ x2 :e (Lean_List P0), (Lean_List_Perm (setsum (Lean_List_cons_node P0 x1 (Lean_List_cons_node P0 x0 x2))
+    (Lean_List_cons_node P0 x0 (Lean_List_cons_node P0 x1 x2))))))).
+exact (lam_Pi P0 (fun x0 => (Pi_ x1 :e P0, (Pi_ x2 :e (Lean_List P0), (Lean_List_Perm (setsum (Lean_List_cons_node P0 x1 (Lean_List_cons_node P0 x0 x2)) (Lean_List_cons_node P0 x0
+    (Lean_List_cons_node P0 x1 x2))))))) (fun x0 => (fun x1 :e P0 => (fun x2 :e (Lean_List P0) => Lean_List_Perm_swap_node x0 x1 x2))) (fun x0 H0 => (lam_Pi P0 (fun x1 => (Pi_ x2 :e (Lean_List P0),
+    (Lean_List_Perm (setsum (Lean_List_cons_node P0 x1 (Lean_List_cons_node P0 x0 x2)) (Lean_List_cons_node P0 x0 (Lean_List_cons_node P0 x1 x2)))))) (fun x1 => (fun x2 :e (Lean_List P0) =>
+    Lean_List_Perm_swap_node x0 x1 x2)) (fun x1 H1 => (lam_Pi (Lean_List P0) (fun x2 => (Lean_List_Perm (setsum (Lean_List_cons_node P0 x1 (Lean_List_cons_node P0 x0 x2)) (Lean_List_cons_node P0 x0
+    (Lean_List_cons_node P0 x1 x2))))) (fun x2 => Lean_List_Perm_swap_node x0 x1 x2) (fun x2 H2 => (Lean_List_Perm_swap_typed x0 H0 x1 H1 x2 H2))))))).
+Qed.
+Definition Lean_List_Perm_trans_node : set -> set -> set -> set -> set -> set := fun x0 x1 x2 x3 x4 => IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))).
+Theorem Lean_List_Perm_trans_args : forall x0 :e (Lean_List P0), forall x1 :e (Lean_List P0), forall x2 :e (Lean_List P0), forall x3 :e (Lean_List_Perm (setsum x0 x1)), forall x4 :e (Lean_List_Perm
+    (setsum x1 x2)), (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) :e IndArgs Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 3.
+let x0. assume H0: x0 :e (Lean_List P0). let x1. assume H1: x1 :e (Lean_List P0). let x2. assume H2: x2 :e (Lean_List P0). let x3. assume H3: x3 :e (Lean_List_Perm (setsum x0 x1)). let x4. assume H4:
+    x4 :e (Lean_List_Perm (setsum x1 x2)).
+claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 0 = x0.
+{ rewrite TupArgs_at 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 0 (ordsuccI1 4 0 (ordsuccI1 3 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0))))). exact U0. }
+claim U1: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 1 = x1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim T1: TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 1 = x1.
+{ rewrite TupArgs_at 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 1 (ordsuccI1 4 1 (ordsuccI1 3 1 (ordsuccI1 2 1 (ordsuccI2 1)))). exact U1. }
+claim U2: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 2 = x2.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+claim T2: TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 2 = x2.
+{ rewrite TupArgs_at 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 2 (ordsuccI1 4 2 (ordsuccI1 3 2 (ordsuccI2 2))). exact U2. }
+claim U3: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 3 = x3.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)). }
+claim T3: TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 3 = x3.
+{ rewrite TupArgs_at 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 3 (ordsuccI1 4 3 (ordsuccI2 3)). exact U3. }
+claim U4: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 4 = x4.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0
+    nat_0)). } exact (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))). }
+claim T4: TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 4 = x4.
+{ rewrite TupArgs_at 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 4 (ordsuccI2 4). exact U4. }
+claim V3: x3 :e Lean_List_Perm_All.
+{ exact SepE1 Lean_List_Perm_All (fun x:set => IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B x =
+    (setsum x0 x1)) x3 H3. }
+claim I3: IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B x3 = (setsum x0 x1).
+{ exact SepE2 Lean_List_Perm_All (fun x:set => IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B x =
+    (setsum x0 x1)) x3 H3. }
+claim V4: x4 :e Lean_List_Perm_All.
+{ exact SepE1 Lean_List_Perm_All (fun x:set => IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B x =
+    (setsum x1 x2)) x4 H4. }
+claim I4: IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B x4 = (setsum x1 x2).
+{ exact SepE2 Lean_List_Perm_All (fun x:set => IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B x =
+    (setsum x1 x2)) x4 H4. }
+claim M0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 0 :e Lean_List_Perm_B :\/: Lean_List_Perm_All.
+{ exact In_eq_ls (SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 0) x0 (Lean_List_Perm_B :\/: Lean_List_Perm_All) U0 (binunionI1 Lean_List_Perm_B
+    Lean_List_Perm_All x0 (binunionI1 ((((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List
+    P0)) x0 (binunionI1 (((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List P0)) x0 (binunionI2 ((((((P0) :\/:
+    ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) ((Lean_List P0)) x0 H0)))). }
+claim M1: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 1 :e Lean_List_Perm_B :\/: Lean_List_Perm_All.
+{ exact In_eq_ls (SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 1) x1 (Lean_List_Perm_B :\/: Lean_List_Perm_All) U1 (binunionI1 Lean_List_Perm_B
+    Lean_List_Perm_All x1 (binunionI1 ((((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List
+    P0)) x1 (binunionI2 (((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List P0)) x1 H1))). }
+claim M2: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 2 :e Lean_List_Perm_B :\/: Lean_List_Perm_All.
+{ exact In_eq_ls (SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 2) x2 (Lean_List_Perm_B :\/: Lean_List_Perm_All) U2 (binunionI1 Lean_List_Perm_B
+    Lean_List_Perm_All x2 (binunionI2 ((((((((P0) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: (P0)) :\/: (P0)) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) :\/: ((Lean_List P0))) ((Lean_List
+    P0)) x2 H2)). }
+claim M3: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 3 :e Lean_List_Perm_B :\/: Lean_List_Perm_All.
+{ exact In_eq_ls (SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 3) x3 (Lean_List_Perm_B :\/: Lean_List_Perm_All) U3 (binunionI2 Lean_List_Perm_B
+    Lean_List_Perm_All x3 V3). }
+claim M4: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 4 :e Lean_List_Perm_B :\/: Lean_List_Perm_All.
+{ exact In_eq_ls (SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 4) x4 (Lean_List_Perm_B :\/: Lean_List_Perm_All) U4 (binunionI2 Lean_List_Perm_B
+    Lean_List_Perm_All x4 V4). }
+claim D0: (Lean_List_Perm_R 3 0 -> (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) 0 :e Lean_List_Perm_All /\ IndIdx Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4)
+    SeqNil)))))) 0) = Lean_List_Perm_Ix 3 0 (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))))) /\ (~ Lean_List_Perm_R 3 0 -> (TupArgs 5 (SeqCons (x0)
+    (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) 0 :e Lean_List_Perm_F 3 0 (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))))).
+{ apply andI.
+  - assume Hr: Lean_List_Perm_R 3 0. apply FalseE. exact Lean_List_Perm_nR3_0 Hr.
+  - assume Hnr: ~ Lean_List_Perm_R 3 0. exact In_eq_ls ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) 0) x0 (Lean_List_Perm_F 3 0 (TupArgs 5 (SeqCons
+    (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))))) T0 (In_eq_rs x0 (Lean_List_Perm_F 3 0 (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4)
+    SeqNil))))))) (Lean_List P0) (Lean_List_Perm_F3_0 (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))))) H0).
+}
+claim D1: (Lean_List_Perm_R 3 1 -> (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) 1 :e Lean_List_Perm_All /\ IndIdx Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4)
+    SeqNil)))))) 1) = Lean_List_Perm_Ix 3 1 (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))))) /\ (~ Lean_List_Perm_R 3 1 -> (TupArgs 5 (SeqCons (x0)
+    (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) 1 :e Lean_List_Perm_F 3 1 (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))))).
+{ apply andI.
+  - assume Hr: Lean_List_Perm_R 3 1. apply FalseE. exact Lean_List_Perm_nR3_1 Hr.
+  - assume Hnr: ~ Lean_List_Perm_R 3 1. exact In_eq_ls ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) 1) x1 (Lean_List_Perm_F 3 1 (TupArgs 5 (SeqCons
+    (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))))) T1 (In_eq_rs x1 (Lean_List_Perm_F 3 1 (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4)
+    SeqNil))))))) (Lean_List P0) (Lean_List_Perm_F3_1 (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))))) H1).
+}
+claim D2: (Lean_List_Perm_R 3 2 -> (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) 2 :e Lean_List_Perm_All /\ IndIdx Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4)
+    SeqNil)))))) 2) = Lean_List_Perm_Ix 3 2 (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))))) /\ (~ Lean_List_Perm_R 3 2 -> (TupArgs 5 (SeqCons (x0)
+    (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) 2 :e Lean_List_Perm_F 3 2 (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))))).
+{ apply andI.
+  - assume Hr: Lean_List_Perm_R 3 2. apply FalseE. exact Lean_List_Perm_nR3_2 Hr.
+  - assume Hnr: ~ Lean_List_Perm_R 3 2. exact In_eq_ls ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) 2) x2 (Lean_List_Perm_F 3 2 (TupArgs 5 (SeqCons
+    (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))))) T2 (In_eq_rs x2 (Lean_List_Perm_F 3 2 (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4)
+    SeqNil))))))) (Lean_List P0) (Lean_List_Perm_F3_2 (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))))) H2).
+}
+claim D3: (Lean_List_Perm_R 3 3 -> (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) 3 :e Lean_List_Perm_All /\ IndIdx Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4)
+    SeqNil)))))) 3) = Lean_List_Perm_Ix 3 3 (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))))) /\ (~ Lean_List_Perm_R 3 3 -> (TupArgs 5 (SeqCons (x0)
+    (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) 3 :e Lean_List_Perm_F 3 3 (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))))).
+{ apply andI.
+  - assume Hr: Lean_List_Perm_R 3 3. apply andI.
+    + exact In_eq_ls ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) 3) x3 Lean_List_Perm_All T3 V3.
+    + rewrite T3. prove IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B x3 = SeqAt (SeqAt (SeqCons
+    (SeqNil) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons ((setsum (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 1) (TupArgs 5 (SeqCons
+    (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 2))) SeqNil))))) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) SeqNil)))) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons
+    (0) (SeqCons ((setsum (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 0) (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons
+    (x4) SeqNil))))) 1))) (SeqCons ((setsum (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 1) (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2)
+    (SeqCons (x3) (SeqCons (x4) SeqNil))))) 2))) SeqNil)))))) SeqNil)))) 3) 3. rewrite Lean_List_Perm_Ix3_3 (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4)
+    SeqNil)))))). rewrite T0. rewrite T1.  exact I3.
+  - assume Hnr: ~ Lean_List_Perm_R 3 3. apply FalseE. exact Hnr Lean_List_Perm_R3_3.
+}
+claim D4: (Lean_List_Perm_R 3 4 -> (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) 4 :e Lean_List_Perm_All /\ IndIdx Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4)
+    SeqNil)))))) 4) = Lean_List_Perm_Ix 3 4 (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))))) /\ (~ Lean_List_Perm_R 3 4 -> (TupArgs 5 (SeqCons (x0)
+    (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) 4 :e Lean_List_Perm_F 3 4 (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))))).
+{ apply andI.
+  - assume Hr: Lean_List_Perm_R 3 4. apply andI.
+    + exact In_eq_ls ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) 4) x4 Lean_List_Perm_All T4 V4.
+    + rewrite T4. prove IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B x4 = SeqAt (SeqAt (SeqCons
+    (SeqNil) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons ((setsum (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 1) (TupArgs 5 (SeqCons
+    (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 2))) SeqNil))))) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) SeqNil)))) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons
+    (0) (SeqCons ((setsum (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 0) (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons
+    (x4) SeqNil))))) 1))) (SeqCons ((setsum (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 1) (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2)
+    (SeqCons (x3) (SeqCons (x4) SeqNil))))) 2))) SeqNil)))))) SeqNil)))) 3) 4. rewrite Lean_List_Perm_Ix3_4 (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4)
+    SeqNil)))))). rewrite T1. rewrite T2.  exact I4.
+  - assume Hnr: ~ Lean_List_Perm_R 3 4. apply FalseE. exact Hnr Lean_List_Perm_R3_4.
+}
+prove (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) :e {a :e Pi_ j :e SeqAt (SeqCons (0) (SeqCons (4) (SeqCons (3) (SeqCons (5) SeqNil)))) 3,
+    Lean_List_Perm_B :\/: Lean_List_Perm_All | IndFits Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B
+    Lean_List_Perm_All 3 a}.
+rewrite Lean_List_Perm_N3.
+apply SepI (Pi_ j :e 5, Lean_List_Perm_B :\/: Lean_List_Perm_All) (fun a => IndFits Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 3 a) (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))).
+- exact lam_Pi 5 (fun j => Lean_List_Perm_B :\/: Lean_List_Perm_All) (fun j => SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) j) (Below_S 4 (fun j => SeqAt
+    (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) j :e Lean_List_Perm_B :\/: Lean_List_Perm_All) (Below_S 3 (fun j => SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons
+    (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) j :e Lean_List_Perm_B :\/: Lean_List_Perm_All) (Below_S 2 (fun j => SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4)
+    SeqNil))))) j :e Lean_List_Perm_B :\/: Lean_List_Perm_All) (Below_S 1 (fun j => SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) j :e Lean_List_Perm_B :\/:
+    Lean_List_Perm_All) (Below_S 0 (fun j => SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) j :e Lean_List_Perm_B :\/: Lean_List_Perm_All) (Below_0 (fun j =>
+    SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) j :e Lean_List_Perm_B :\/: Lean_List_Perm_All)) M0) M1) M2) M3) M4).
+- prove IndFits Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 3 (TupArgs 5 (SeqCons (x0)
+    (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))).
+  let j. assume Hj: j :e Lean_List_Perm_N 3.
+  exact (Below_S 4 (fun j => (Lean_List_Perm_R 3 j -> (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) j :e Lean_List_Perm_All /\ IndIdx Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    (SeqCons (x4) SeqNil)))))) j) = Lean_List_Perm_Ix 3 j (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))))) /\ (~ Lean_List_Perm_R 3 j -> (TupArgs 5
+    (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) j :e Lean_List_Perm_F 3 j (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4)
+    SeqNil)))))))) (Below_S 3 (fun j => (Lean_List_Perm_R 3 j -> (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) j :e Lean_List_Perm_All /\ IndIdx
+    Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2)
+    (SeqCons (x3) (SeqCons (x4) SeqNil)))))) j) = Lean_List_Perm_Ix 3 j (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))))) /\ (~ Lean_List_Perm_R 3 j ->
+    (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) j :e Lean_List_Perm_F 3 j (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons
+    (x4) SeqNil)))))))) (Below_S 2 (fun j => (Lean_List_Perm_R 3 j -> (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) j :e Lean_List_Perm_All /\ IndIdx
+    Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2)
+    (SeqCons (x3) (SeqCons (x4) SeqNil)))))) j) = Lean_List_Perm_Ix 3 j (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))))) /\ (~ Lean_List_Perm_R 3 j ->
+    (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) j :e Lean_List_Perm_F 3 j (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons
+    (x4) SeqNil)))))))) (Below_S 1 (fun j => (Lean_List_Perm_R 3 j -> (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) j :e Lean_List_Perm_All /\ IndIdx
+    Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2)
+    (SeqCons (x3) (SeqCons (x4) SeqNil)))))) j) = Lean_List_Perm_Ix 3 j (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))))) /\ (~ Lean_List_Perm_R 3 j ->
+    (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) j :e Lean_List_Perm_F 3 j (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons
+    (x4) SeqNil)))))))) (Below_S 0 (fun j => (Lean_List_Perm_R 3 j -> (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) j :e Lean_List_Perm_All /\ IndIdx
+    Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2)
+    (SeqCons (x3) (SeqCons (x4) SeqNil)))))) j) = Lean_List_Perm_Ix 3 j (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))))) /\ (~ Lean_List_Perm_R 3 j ->
+    (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) j :e Lean_List_Perm_F 3 j (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons
+    (x4) SeqNil)))))))) (Below_0 (fun j => (Lean_List_Perm_R 3 j -> (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) j :e Lean_List_Perm_All /\ IndIdx
+    Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2)
+    (SeqCons (x3) (SeqCons (x4) SeqNil)))))) j) = Lean_List_Perm_Ix 3 j (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))))) /\ (~ Lean_List_Perm_R 3 j ->
+    (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) j :e Lean_List_Perm_F 3 j (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons
+    (x4) SeqNil))))))))) D0) D1) D2) D3) D4) j (In_eq_r j (Lean_List_Perm_N 3) 5 Lean_List_Perm_N3 Hj).
+Qed.
+Theorem Lean_List_Perm_trans_typed : forall x0 :e (Lean_List P0), forall x1 :e (Lean_List P0), forall x2 :e (Lean_List P0), forall x3 :e (Lean_List_Perm (setsum x0 x1)), forall x4 :e (Lean_List_Perm
+    (setsum x1 x2)), Lean_List_Perm_trans_node x0 x1 x2 x3 x4 :e (Lean_List_Perm (setsum x0 x2)).
+let x0. assume H0: x0 :e (Lean_List P0). let x1. assume H1: x1 :e (Lean_List P0). let x2. assume H2: x2 :e (Lean_List P0). let x3. assume H3: x3 :e (Lean_List_Perm (setsum x0 x1)). let x4. assume H4:
+    x4 :e (Lean_List_Perm (setsum x1 x2)).
+claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 0 = x0.
+{ rewrite TupArgs_at 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 0 (ordsuccI1 4 0 (ordsuccI1 3 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0))))). exact U0. }
+claim U1: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 1 = x1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim T1: TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 1 = x1.
+{ rewrite TupArgs_at 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 1 (ordsuccI1 4 1 (ordsuccI1 3 1 (ordsuccI1 2 1 (ordsuccI2 1)))). exact U1. }
+claim U2: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 2 = x2.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+claim T2: TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 2 = x2.
+{ rewrite TupArgs_at 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 2 (ordsuccI1 4 2 (ordsuccI1 3 2 (ordsuccI2 2))). exact U2. }
+claim U3: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 3 = x3.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)). }
+claim T3: TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 3 = x3.
+{ rewrite TupArgs_at 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 3 (ordsuccI1 4 3 (ordsuccI2 3)). exact U3. }
+claim U4: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 4 = x4.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0
+    nat_0)). } exact (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))). }
+claim T4: TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 4 = x4.
+{ rewrite TupArgs_at 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 4 (ordsuccI2 4). exact U4. }
+claim L: Lean_List_Perm_trans_node x0 x1 x2 x3 x4 :e IndFiber Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B
+    (Lean_List_Perm_O 3 (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))))).
+{ exact IndNode_Fiber Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_bounded 3 (ordsuccI2 3)
+    Lean_List_Perm_ar3 (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) (Lean_List_Perm_trans_args x0 H0 x1 H1 x2 H2 x3 H3 x4 H4). }
+claim Lo: Lean_List_Perm_O 3 (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) = (setsum x0 x2).
+{ prove SeqAt (SeqCons ((setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0))) (SeqCons ((setsum (Lean_List_cons_node P0 (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons
+    (x4) SeqNil))))) 0) (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 1)) (Lean_List_cons_node P0 (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2)
+    (SeqCons (x3) (SeqCons (x4) SeqNil))))) 0) (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 2)))) (SeqCons ((setsum (Lean_List_cons_node P0 (TupArgs 5
+    (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 1) (Lean_List_cons_node P0 (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4)
+    SeqNil))))) 0) (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 2))) (Lean_List_cons_node P0 (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2)
+    (SeqCons (x3) (SeqCons (x4) SeqNil))))) 0) (Lean_List_cons_node P0 (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 1) (TupArgs 5 (SeqCons (x0)
+    (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 2))))) (SeqCons ((setsum (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 0)
+    (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 2))) SeqNil)))) 3 = (setsum x0 x2). rewrite Lean_List_Perm_O3 (TupArgs 5 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))). rewrite T0. rewrite T2. reflexivity. }
+exact In_fam_eq (IndFiber Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B) (Lean_List_Perm_O 3 (TupArgs 5
+    (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))))) (setsum x0 x2) Lo (Lean_List_Perm_trans_node x0 x1 x2 x3 x4) L.
+Qed.
+Definition Lean_List_Perm_trans : set := (fun x0 :e (Lean_List P0) => (fun x1 :e (Lean_List P0) => (fun x2 :e (Lean_List P0) => (fun x3 :e (Lean_List_Perm (setsum x0 x1)) => (fun x4 :e
+    (Lean_List_Perm (setsum x1 x2)) => Lean_List_Perm_trans_node x0 x1 x2 x3 x4))))).
+Theorem Lean_List_Perm_trans_type : Lean_List_Perm_trans :e (Pi_ x0 :e (Lean_List P0), (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum x0 x1)), (Pi_ x4 :e
+    (Lean_List_Perm (setsum x1 x2)), (Lean_List_Perm (setsum x0 x2))))))).
+exact (lam_Pi (Lean_List P0) (fun x0 => (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum x0 x1)), (Pi_ x4 :e (Lean_List_Perm (setsum x1 x2)), (Lean_List_Perm
+    (setsum x0 x2))))))) (fun x0 => (fun x1 :e (Lean_List P0) => (fun x2 :e (Lean_List P0) => (fun x3 :e (Lean_List_Perm (setsum x0 x1)) => (fun x4 :e (Lean_List_Perm (setsum x1 x2)) =>
+    Lean_List_Perm_trans_node x0 x1 x2 x3 x4))))) (fun x0 H0 => (lam_Pi (Lean_List P0) (fun x1 => (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum x0 x1)), (Pi_ x4 :e (Lean_List_Perm
+    (setsum x1 x2)), (Lean_List_Perm (setsum x0 x2)))))) (fun x1 => (fun x2 :e (Lean_List P0) => (fun x3 :e (Lean_List_Perm (setsum x0 x1)) => (fun x4 :e (Lean_List_Perm (setsum x1 x2)) =>
+    Lean_List_Perm_trans_node x0 x1 x2 x3 x4)))) (fun x1 H1 => (lam_Pi (Lean_List P0) (fun x2 => (Pi_ x3 :e (Lean_List_Perm (setsum x0 x1)), (Pi_ x4 :e (Lean_List_Perm (setsum x1 x2)),
+    (Lean_List_Perm (setsum x0 x2))))) (fun x2 => (fun x3 :e (Lean_List_Perm (setsum x0 x1)) => (fun x4 :e (Lean_List_Perm (setsum x1 x2)) => Lean_List_Perm_trans_node x0 x1 x2 x3 x4))) (fun x2 H2 =>
+    (lam_Pi (Lean_List_Perm (setsum x0 x1)) (fun x3 => (Pi_ x4 :e (Lean_List_Perm (setsum x1 x2)), (Lean_List_Perm (setsum x0 x2)))) (fun x3 => (fun x4 :e (Lean_List_Perm (setsum x1 x2)) =>
+    Lean_List_Perm_trans_node x0 x1 x2 x3 x4)) (fun x3 H3 => (lam_Pi (Lean_List_Perm (setsum x1 x2)) (fun x4 => (Lean_List_Perm (setsum x0 x2))) (fun x4 => Lean_List_Perm_trans_node x0 x1 x2 x3 x4)
+    (fun x4 H4 => (Lean_List_Perm_trans_typed x0 H0 x1 H1 x2 H2 x3 H3 x4 H4))))))))))).
+Qed.
+
+Definition Lean_List_Perm_rec : set -> set -> set -> set -> set -> set := fun h0 h1 h2 h3 t => IndRec Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1)
+    (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) t.
+Theorem Lean_List_Perm_iota0 : forall h0 h1 h2 h3, Lean_List_Perm_rec h0 h1 h2 h3 (Lean_List_Perm_nil_node) = h0.
+let h0 h1 h2 h3.
+prove IndRec Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons
+    ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) (IndNode Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 0 (TupArgs 0 SeqNil)) = h0.
+rewrite IndRec_iota Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_distinct
+    Lean_List_Perm_bounded Lean_List_Perm_arity (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2)
+    (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) 0 (ordsuccI1 3 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0)))) (TupArgs 0 SeqNil) (Lean_List_Perm_nil_args ).
+prove SeqAt (SeqCons (h0) (SeqCons ((h1 ((TupArgs 0 SeqNil) 0) ((TupArgs 0 SeqNil) 1) ((TupArgs 0 SeqNil) 2) ((TupArgs 0 SeqNil) 3) ((IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 0 (fun j => IndRec Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1)
+    (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) ((TupArgs 0 SeqNil) j))) 3))) (SeqCons ((h2 ((TupArgs 0 SeqNil) 0) ((TupArgs 0 SeqNil) 1) ((TupArgs 0 SeqNil) 2))) (SeqCons ((h3 ((TupArgs 0 SeqNil)
+    0) ((TupArgs 0 SeqNil) 1) ((TupArgs 0 SeqNil) 2) ((TupArgs 0 SeqNil) 3) ((TupArgs 0 SeqNil) 4) ((IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 0 (fun j => IndRec Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4)))
+    SeqNil)))) k) ((TupArgs 0 SeqNil) j))) 3) ((IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 0 (fun
+    j => IndRec Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons
+    ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) ((TupArgs 0 SeqNil) j))) 4))) SeqNil)))) 0 = h0.
+rewrite SeqAt_0. reflexivity.
+Qed.
+Theorem Lean_List_Perm_iota1 : forall h0 h1 h2 h3, forall x0 :e P0, forall x1 :e (Lean_List P0), forall x2 :e (Lean_List P0), forall x3 :e (Lean_List_Perm (setsum x1 x2)), Lean_List_Perm_rec h0 h1 h2
+    h3 (Lean_List_Perm_cons_node x0 x1 x2 x3) = (h1 x0 x1 x2 x3 (Lean_List_Perm_rec h0 h1 h2 h3 x3)).
+let h0 h1 h2 h3. let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e (Lean_List P0). let x2. assume H2: x2 :e (Lean_List P0). let x3. assume H3: x3 :e (Lean_List_Perm (setsum x1 x2)).
+claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 = x0.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 (ordsuccI1 3 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0)))). exact U0. }
+claim U1: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 = x1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim T1: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 = x1.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 (ordsuccI1 3 1 (ordsuccI1 2 1 (ordsuccI2 1))). exact U1. }
+claim U2: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 = x2.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+claim T2: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 = x2.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 (ordsuccI1 3 2 (ordsuccI2 2)). exact U2. }
+claim U3: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 = x3.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)). }
+claim T3: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 = x3.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 (ordsuccI2 3). exact U3. }
+claim R3: (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 (fun j => IndRec Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3)
+    (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))
+    j))) 3 = Lean_List_Perm_rec h0 h1 h2 h3 x3.
+{ rewrite IndRes_at Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 (fun j => IndRec Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3)
+    (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))
+    j)) 3 (In_eq_rs 3 (Lean_List_Perm_N 1) 4 Lean_List_Perm_N1 (ordsuccI2 3)) Lean_List_Perm_R1_3. prove IndRec Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1)
+    (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 3) = IndRec Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1)
+    (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) x3. rewrite T3. reflexivity. }
+prove IndRec Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons
+    ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) (IndNode Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) = (h1 x0
+    x1 x2 x3 (Lean_List_Perm_rec h0 h1 h2 h3 x3)).
+rewrite IndRec_iota Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_distinct
+    Lean_List_Perm_bounded Lean_List_Perm_arity (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2)
+    (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) 1 (ordsuccI1 3 1 (ordsuccI1 2 1 (ordsuccI2 1))) (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) (Lean_List_Perm_cons_args x0
+    H0 x1 H1 x2 H2 x3 H3).
+prove SeqAt (SeqCons (h0) (SeqCons ((h1 ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 0) ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    SeqNil))))) 1) ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 2) ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 3) ((IndRes
+    Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 (fun j => IndRec Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons
+    ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j))) 3))) (SeqCons
+    ((h2 ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 0) ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 1) ((TupArgs 4 (SeqCons
+    (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 2))) (SeqCons ((h3 ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 0) ((TupArgs 4 (SeqCons (x0) (SeqCons
+    (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 1) ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 2) ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons
+    (x3) SeqNil))))) 3) ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 4) ((IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 (fun j => IndRec Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4)
+    (r 3) (r 4))) SeqNil)))) k) ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j))) 3) ((IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 (fun j => IndRec Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4)
+    (r 3) (r 4))) SeqNil)))) k) ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j))) 4))) SeqNil)))) 1 = (h1 x0 x1 x2 x3 (Lean_List_Perm_rec h0 h1 h2 h3 x3)).
+rewrite SeqAt_S. { rewrite SeqAt_0. rewrite R3. rewrite T0. rewrite T1. rewrite T2. rewrite T3. reflexivity. } exact nat_0.
+Qed.
+Theorem Lean_List_Perm_iota2 : forall h0 h1 h2 h3, forall x0 :e P0, forall x1 :e P0, forall x2 :e (Lean_List P0), Lean_List_Perm_rec h0 h1 h2 h3 (Lean_List_Perm_swap_node x0 x1 x2) = (h2 x0 x1 x2).
+let h0 h1 h2 h3. let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e P0. let x2. assume H2: x2 :e (Lean_List P0).
+claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 = x0.
+{ rewrite TupArgs_at 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0))). exact U0. }
+claim U1: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1 = x1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim T1: TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1 = x1.
+{ rewrite TupArgs_at 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1 (ordsuccI1 2 1 (ordsuccI2 1)). exact U1. }
+claim U2: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 2 = x2.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+claim T2: TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 2 = x2.
+{ rewrite TupArgs_at 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 2 (ordsuccI2 2). exact U2. }
+prove IndRec Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons
+    ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) (IndNode Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 2 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))))) = (h2 x0 x1 x2).
+rewrite IndRec_iota Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_distinct
+    Lean_List_Perm_bounded Lean_List_Perm_arity (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2)
+    (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) 2 (ordsuccI1 3 2 (ordsuccI2 2)) (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) (Lean_List_Perm_swap_args x0 H0 x1 H1 x2 H2).
+prove SeqAt (SeqCons (h0) (SeqCons ((h1 ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 0) ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 1) ((TupArgs 3 (SeqCons
+    (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 2) ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 3) ((IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 2 (fun j => IndRec Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4)
+    (r 3) (r 4))) SeqNil)))) k) ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) j))) 3))) (SeqCons ((h2 ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 0) ((TupArgs
+    3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 1) ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 2))) (SeqCons ((h3 ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2)
+    SeqNil)))) 0) ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 1) ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 2) ((TupArgs 3 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) SeqNil)))) 3) ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 4) ((IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 2 (fun j => IndRec Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4)))
+    SeqNil)))) k) ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) j))) 3) ((IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 2 (fun j => IndRec Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4)))
+    SeqNil)))) k) ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) j))) 4))) SeqNil)))) 2 = (h2 x0 x1 x2).
+rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. rewrite T0. rewrite T1. rewrite T2. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0).
+Qed.
+Theorem Lean_List_Perm_iota3 : forall h0 h1 h2 h3, forall x0 :e (Lean_List P0), forall x1 :e (Lean_List P0), forall x2 :e (Lean_List P0), forall x3 :e (Lean_List_Perm (setsum x0 x1)), forall x4 :e
+    (Lean_List_Perm (setsum x1 x2)), Lean_List_Perm_rec h0 h1 h2 h3 (Lean_List_Perm_trans_node x0 x1 x2 x3 x4) = (h3 x0 x1 x2 x3 x4 (Lean_List_Perm_rec h0 h1 h2 h3 x3) (Lean_List_Perm_rec h0 h1 h2 h3
+    x4)).
+let h0 h1 h2 h3. let x0. assume H0: x0 :e (Lean_List P0). let x1. assume H1: x1 :e (Lean_List P0). let x2. assume H2: x2 :e (Lean_List P0). let x3. assume H3: x3 :e (Lean_List_Perm (setsum x0 x1)).
+    let x4. assume H4: x4 :e (Lean_List_Perm (setsum x1 x2)).
+claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 0 = x0.
+{ rewrite TupArgs_at 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 0 (ordsuccI1 4 0 (ordsuccI1 3 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0))))). exact U0. }
+claim U1: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 1 = x1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim T1: TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 1 = x1.
+{ rewrite TupArgs_at 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 1 (ordsuccI1 4 1 (ordsuccI1 3 1 (ordsuccI1 2 1 (ordsuccI2 1)))). exact U1. }
+claim U2: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 2 = x2.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+claim T2: TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 2 = x2.
+{ rewrite TupArgs_at 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 2 (ordsuccI1 4 2 (ordsuccI1 3 2 (ordsuccI2 2))). exact U2. }
+claim U3: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 3 = x3.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)). }
+claim T3: TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 3 = x3.
+{ rewrite TupArgs_at 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 3 (ordsuccI1 4 3 (ordsuccI2 3)). exact U3. }
+claim U4: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 4 = x4.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0
+    nat_0)). } exact (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))). }
+claim T4: TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 4 = x4.
+{ rewrite TupArgs_at 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 4 (ordsuccI2 4). exact U4. }
+claim R3: (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 (fun j => IndRec Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3)
+    (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4)
+    SeqNil)))))) j))) 3 = Lean_List_Perm_rec h0 h1 h2 h3 x3.
+{ rewrite IndRes_at Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 (fun j => IndRec Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3)
+    (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4)
+    SeqNil)))))) j)) 3 (In_eq_rs 3 (Lean_List_Perm_N 3) 5 Lean_List_Perm_N3 (ordsuccI1 4 3 (ordsuccI2 3))) Lean_List_Perm_R3_3. prove IndRec Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1)
+    (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) 3) = IndRec
+    Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0)
+    (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) x3. rewrite T3. reflexivity. }
+claim R4: (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 (fun j => IndRec Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3)
+    (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4)
+    SeqNil)))))) j))) 4 = Lean_List_Perm_rec h0 h1 h2 h3 x4.
+{ rewrite IndRes_at Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 (fun j => IndRec Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3)
+    (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4)
+    SeqNil)))))) j)) 4 (In_eq_rs 4 (Lean_List_Perm_N 3) 5 Lean_List_Perm_N3 (ordsuccI2 4)) Lean_List_Perm_R3_4. prove IndRec Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons
+    ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) 4) = IndRec Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3)
+    (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) x4. rewrite T4. reflexivity. }
+prove IndRec Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons
+    ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) (IndNode Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4)
+    SeqNil))))))) = (h3 x0 x1 x2 x3 x4 (Lean_List_Perm_rec h0 h1 h2 h3 x3) (Lean_List_Perm_rec h0 h1 h2 h3 x4)).
+rewrite IndRec_iota Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_distinct
+    Lean_List_Perm_bounded Lean_List_Perm_arity (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2)
+    (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) 3 (ordsuccI2 3) (TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) (Lean_List_Perm_trans_args x0 H0 x1 H1 x2 H2
+    x3 H3 x4 H4).
+prove SeqAt (SeqCons (h0) (SeqCons ((h1 ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) 0) ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2)
+    (SeqCons (x3) (SeqCons (x4) SeqNil)))))) 1) ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) 2) ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2)
+    (SeqCons (x3) (SeqCons (x4) SeqNil)))))) 3) ((IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3
+    (fun j => IndRec Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0)
+    (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) ((TupArgs 5 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) j))) 3))) (SeqCons ((h2 ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) 0) ((TupArgs 5
+    (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) 1) ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) 2))) (SeqCons
+    ((h3 ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) 0) ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4)
+    SeqNil)))))) 1) ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) 2) ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4)
+    SeqNil)))))) 3) ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) 4) ((IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 (fun j => IndRec Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4)
+    (r 3) (r 4))) SeqNil)))) k) ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) j))) 3) ((IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 (fun j => IndRec Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1)
+    (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) ((TupArgs 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil)))))) j))) 4))) SeqNil)))) 3 = (h3 x0 x1 x2 x3 x4
+    (Lean_List_Perm_rec h0 h1 h2 h3 x3) (Lean_List_Perm_rec h0 h1 h2 h3 x4)).
+rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. rewrite R3. rewrite R4. rewrite T0. rewrite T1. rewrite T2. rewrite T3. rewrite T4. reflexivity. } exact nat_0. } exact
+    (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)).
+Qed.
+
+Theorem Lean_List_Perm_HM0 : forall C:set -> set -> set, forall h0 h1 h2 h3, h0 :e (C (setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0)) Lean_List_Perm_nil_node) -> forall a :e IndArgs
+    Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 0, forall r:set -> set, (forall j :e
+    Lean_List_Perm_N 0, Lean_List_Perm_R 0 j -> r j :e (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B t) t) (a j)) -> (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4)
+    (r 3) (r 4))) SeqNil)))) k) 0 a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 0 r) :e (fun t:set
+    => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) t) (IndNode Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 0 a).
+let C h0 h1 h2 h3. assume Hh: h0 :e (C (setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0)) Lean_List_Perm_nil_node).
+let a. assume Ha: a :e IndArgs Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 0. let r.
+    assume Hr: forall j :e Lean_List_Perm_N 0, Lean_List_Perm_R 0 j -> r j :e (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) t) (a j).
+claim Fi: IndFits Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 0 a.
+{ exact IndArgs_Fits Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 0 a Ha. }
+claim Pm: a :e Pi_ j :e 0, Lean_List_Perm_B :\/: Lean_List_Perm_All.
+{ exact In_fam_eq (fun X:set => Pi_ j :e X, Lean_List_Perm_B :\/: Lean_List_Perm_All) (Lean_List_Perm_N 0) 0 Lean_List_Perm_N0 a (IndArgs_Pi Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 0 a Ha). }
+claim Ea: TupArgs 0 SeqNil = a.
+{ exact eq_i_tra (TupArgs 0 SeqNil) (fun j :e 0 => a j) a (lam_ext 0 (fun j => SeqAt SeqNil j) (fun j => a j) (Below_0 (fun j => SeqAt SeqNil j = a j))) (Pi_eta 0 (fun j => Lean_List_Perm_B :\/:
+    Lean_List_Perm_All) a Pm). }
+claim Lv: h0 :e (C (setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0)) Lean_List_Perm_nil_node).
+{ exact Hh. }
+claim Lm: (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k)
+    0 a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 0 r) = h0.
+{ prove SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B 0 r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 0 r 3) (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B 0 r 4))) SeqNil)))) 0 = h0. rewrite SeqAt_0. reflexivity. }
+claim Ln: Lean_List_Perm_nil_node = IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 0 a.
+{ prove IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 0 (TupArgs 0 SeqNil) = IndNode
+    Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 0 a. rewrite Ea. reflexivity. }
+claim Lo: (setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0)) = IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 0 a).
+{ exact eq_i_tra (setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0)) (Lean_List_Perm_O 0 a) (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B 0 a)) (eq_sym_i (Lean_List_Perm_O 0 a) (setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0)) (Lean_List_Perm_O0 a)) (eq_sym_i (IndIdx Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 0 a)) (Lean_List_Perm_O 0 a) (IndIdx_Node Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 0 a)). }
+exact In_eq_ls ((fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4)))
+    SeqNil)))) k) 0 a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 0 r)) h0 (C (IndIdx
+    Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 0 a)) (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 0 a)) Lm (In_fam_eq (fun z:set => C z (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 0 a)) (setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0)) (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 0 a)) Lo h0 (In_fam_eq (fun z:set => C (setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0)) z) Lean_List_Perm_nil_node (IndNode
+    Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 0 a) Ln h0 Lv)).
+Qed.
+Theorem Lean_List_Perm_HM1 : forall C:set -> set -> set, forall h0 h1 h2 h3, h1 :e (Pi_ x0 :e P0, (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum x1 x2)),
+    (Pi_ y3 :e (C (setsum x1 x2) x3), (C (setsum (Lean_List_cons_node P0 x0 x1) (Lean_List_cons_node P0 x0 x2)) (Lean_List_Perm_cons_node x0 x1 x2 x3))))))) -> forall a :e IndArgs Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 1, forall r:set -> set, (forall j :e Lean_List_Perm_N 1,
+    Lean_List_Perm_R 1 j -> r j :e (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t)
+    t) (a j)) -> (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4)))
+    SeqNil)))) k) 1 a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 r) :e (fun t:set => C (IndIdx
+    Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) t) (IndNode Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 a).
+let C h0 h1 h2 h3. assume Hh: h1 :e (Pi_ x0 :e P0, (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum x1 x2)), (Pi_ y3 :e (C (setsum x1 x2) x3), (C (setsum
+    (Lean_List_cons_node P0 x0 x1) (Lean_List_cons_node P0 x0 x2)) (Lean_List_Perm_cons_node x0 x1 x2 x3))))))).
+let a. assume Ha: a :e IndArgs Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 1. let r.
+    assume Hr: forall j :e Lean_List_Perm_N 1, Lean_List_Perm_R 1 j -> r j :e (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) t) (a j).
+claim Fi: IndFits Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 1 a.
+{ exact IndArgs_Fits Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 1 a Ha. }
+claim Pm: a :e Pi_ j :e 4, Lean_List_Perm_B :\/: Lean_List_Perm_All.
+{ exact In_fam_eq (fun X:set => Pi_ j :e X, Lean_List_Perm_B :\/: Lean_List_Perm_All) (Lean_List_Perm_N 1) 4 Lean_List_Perm_N1 a (IndArgs_Pi Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 1 a Ha). }
+claim G0: (a 0) :e P0.
+{ apply Fi 0 (In_eq_rs 0 (Lean_List_Perm_N 1) 4 Lean_List_Perm_N1 (ordsuccI1 3 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0))))). assume H1. assume H2. exact In_eq_r (a 0) (Lean_List_Perm_F 1 0 a) P0
+    (Lean_List_Perm_F1_0 a) (H2 Lean_List_Perm_nR1_0). }
+claim G1: (a 1) :e (Lean_List P0).
+{ apply Fi 1 (In_eq_rs 1 (Lean_List_Perm_N 1) 4 Lean_List_Perm_N1 (ordsuccI1 3 1 (ordsuccI1 2 1 (ordsuccI2 1)))). assume H1. assume H2. exact In_eq_r (a 1) (Lean_List_Perm_F 1 1 a) (Lean_List P0)
+    (Lean_List_Perm_F1_1 a) (H2 Lean_List_Perm_nR1_1). }
+claim G2: (a 2) :e (Lean_List P0).
+{ apply Fi 2 (In_eq_rs 2 (Lean_List_Perm_N 1) 4 Lean_List_Perm_N1 (ordsuccI1 3 2 (ordsuccI2 2))). assume H1. assume H2. exact In_eq_r (a 2) (Lean_List_Perm_F 1 2 a) (Lean_List P0)
+    (Lean_List_Perm_F1_2 a) (H2 Lean_List_Perm_nR1_2). }
+claim G3: (a 3) :e (Lean_List_Perm (setsum (a 1) (a 2))).
+{ apply Fi 3 (In_eq_rs 3 (Lean_List_Perm_N 1) 4 Lean_List_Perm_N1 (ordsuccI2 3)). assume H1. assume H2. apply H1 Lean_List_Perm_R1_3. assume H3: a 3 :e Lean_List_Perm_All. assume H4: IndIdx
+    Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (a 3) = Lean_List_Perm_Ix 1 3 a.
+  prove (a 3) :e {x :e Lean_List_Perm_All | IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B x = (setsum
+    (a 1) (a 2))}.
+  apply SepI Lean_List_Perm_All (fun x:set => IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B x =
+    (setsum (a 1) (a 2))) (a 3) H3.
+  exact eq_i_tra (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (a 3)) (Lean_List_Perm_Ix 1 3 a)
+    (setsum (a 1) (a 2)) H4 (Lean_List_Perm_Ix1_3 a). }
+claim Y3: r 3 :e (C (setsum (a 1) (a 2)) (a 3)).
+{ exact In_fam_eq (fun z:set => C z (a 3)) (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (a 3))
+    (setsum (a 1) (a 2)) (SepE2 Lean_List_Perm_All (fun x:set => IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B x = (setsum (a 1) (a 2))) (a 3) G3) (r 3) (Hr 3 (In_eq_rs 3 (Lean_List_Perm_N 1) 4 Lean_List_Perm_N1 (ordsuccI2 3)) Lean_List_Perm_R1_3). }
+claim U0: SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) SeqNil)))) 0 = (a 0).
+{ rewrite SeqAt_0. reflexivity. }
+claim U1: SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) SeqNil)))) 1 = (a 1).
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim U2: SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) SeqNil)))) 2 = (a 2).
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+claim U3: SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) SeqNil)))) 3 = (a 3).
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)). }
+claim Ea: TupArgs 4 (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) SeqNil)))) = a.
+{ exact eq_i_tra (TupArgs 4 (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) SeqNil))))) (fun j :e 4 => a j) a (lam_ext 4 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons
+    ((a 2)) (SeqCons ((a 3)) SeqNil)))) j) (fun j => a j) (Below_S 3 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) SeqNil)))) j = a j) (Below_S 2 (fun j => SeqAt
+    (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) SeqNil)))) j = a j) (Below_S 1 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) SeqNil)))) j
+    = a j) (Below_S 0 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) SeqNil)))) j = a j) (Below_0 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a
+    2)) (SeqCons ((a 3)) SeqNil)))) j = a j)) U0) U1) U2) U3)) (Pi_eta 4 (fun j => Lean_List_Perm_B :\/: Lean_List_Perm_All) a Pm). }
+claim Rp3: IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 r 3 = r 3.
+{ exact IndRes_at Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 r 3 (In_eq_rs 3 (Lean_List_Perm_N 1) 4
+    Lean_List_Perm_N1 (ordsuccI2 3)) Lean_List_Perm_R1_3. }
+claim Lv: (h1 (a 0) (a 1) (a 2) (a 3) (r 3)) :e (C (setsum (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_cons_node P0 (a 0) (a 2))) (Lean_List_Perm_cons_node (a 0) (a 1) (a 2) (a 3))).
+{ exact (ap_Pi (C (setsum (a 1) (a 2)) (a 3)) (fun y3 => (C (setsum (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_cons_node P0 (a 0) (a 2))) (Lean_List_Perm_cons_node (a 0) (a 1) (a 2) (a 3))))
+    ((((h1 (a 0)) (a 1)) (a 2)) (a 3)) (r 3) (ap_Pi (Lean_List_Perm (setsum (a 1) (a 2))) (fun x3 => (Pi_ y3 :e (C (setsum (a 1) (a 2)) x3), (C (setsum (Lean_List_cons_node P0 (a 0) (a 1))
+    (Lean_List_cons_node P0 (a 0) (a 2))) (Lean_List_Perm_cons_node (a 0) (a 1) (a 2) x3)))) (((h1 (a 0)) (a 1)) (a 2)) (a 3) (ap_Pi (Lean_List P0) (fun x2 => (Pi_ x3 :e (Lean_List_Perm (setsum (a 1)
+    x2)), (Pi_ y3 :e (C (setsum (a 1) x2) x3), (C (setsum (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_cons_node P0 (a 0) x2)) (Lean_List_Perm_cons_node (a 0) (a 1) x2 x3))))) ((h1 (a 0)) (a 1))
+    (a 2) (ap_Pi (Lean_List P0) (fun x1 => (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum x1 x2)), (Pi_ y3 :e (C (setsum x1 x2) x3), (C (setsum (Lean_List_cons_node P0 (a 0) x1)
+    (Lean_List_cons_node P0 (a 0) x2)) (Lean_List_Perm_cons_node (a 0) x1 x2 x3)))))) (h1 (a 0)) (a 1) (ap_Pi P0 (fun x0 => (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e
+    (Lean_List_Perm (setsum x1 x2)), (Pi_ y3 :e (C (setsum x1 x2) x3), (C (setsum (Lean_List_cons_node P0 x0 x1) (Lean_List_cons_node P0 x0 x2)) (Lean_List_Perm_cons_node x0 x1 x2 x3))))))) h1 (a 0)
+    Hh G0) G1) G2) G3) Y3). }
+claim Lm: (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k)
+    1 a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 r) = (h1 (a 0) (a 1) (a 2) (a 3) (r 3)).
+{ prove SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B 1 r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 r 3) (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B 1 r 4))) SeqNil)))) 1 = (h1 (a 0) (a 1) (a 2) (a 3) (r 3)). rewrite SeqAt_S. { rewrite SeqAt_0. rewrite Rp3. reflexivity. } exact nat_0. }
+claim Ln: (Lean_List_Perm_cons_node (a 0) (a 1) (a 2) (a 3)) = IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B 1 a.
+{ prove IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 (TupArgs 4 (SeqCons ((a 0)) (SeqCons ((a 1))
+    (SeqCons ((a 2)) (SeqCons ((a 3)) SeqNil))))) = IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1
+    a. rewrite Ea. reflexivity. }
+claim Lo: (setsum (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_cons_node P0 (a 0) (a 2))) = IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B 1 a).
+{ exact eq_i_tra (setsum (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_cons_node P0 (a 0) (a 2))) (Lean_List_Perm_O 1 a) (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B 1 a)) (eq_sym_i (Lean_List_Perm_O 1 a) (setsum (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_cons_node P0 (a 0) (a 2))) (Lean_List_Perm_O1 a)) (eq_sym_i
+    (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 a)) (Lean_List_Perm_O 1 a) (IndIdx_Node Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 a)). }
+exact In_eq_ls ((fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4)))
+    SeqNil)))) k) 1 a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 r)) (h1 (a 0) (a 1) (a 2) (a
+    3) (r 3)) (C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 a)) (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 a)) Lm (In_fam_eq (fun z:set => C z (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 a)) (setsum (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_cons_node P0 (a 0) (a 2))) (IndIdx
+    Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 a)) Lo (h1 (a 0) (a 1) (a 2) (a 3) (r 3)) (In_fam_eq (fun z:set => C (setsum
+    (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_cons_node P0 (a 0) (a 2))) z) (Lean_List_Perm_cons_node (a 0) (a 1) (a 2) (a 3)) (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 a) Ln (h1 (a 0) (a 1) (a 2) (a 3) (r 3)) Lv)).
+Qed.
+Theorem Lean_List_Perm_HM2 : forall C:set -> set -> set, forall h0 h1 h2 h3, h2 :e (Pi_ x0 :e P0, (Pi_ x1 :e P0, (Pi_ x2 :e (Lean_List P0), (C (setsum (Lean_List_cons_node P0 x1 (Lean_List_cons_node
+    P0 x0 x2)) (Lean_List_cons_node P0 x0 (Lean_List_cons_node P0 x1 x2))) (Lean_List_Perm_swap_node x0 x1 x2))))) -> forall a :e IndArgs Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 2, forall r:set -> set, (forall j :e Lean_List_Perm_N 2, Lean_List_Perm_R 2 j -> r j :e
+    (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) t) (a j)) -> (fun k a r:set =>
+    SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) 2 a (IndRes
+    Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 2 r) :e (fun t:set => C (IndIdx Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) t) (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 2 a).
+let C h0 h1 h2 h3. assume Hh: h2 :e (Pi_ x0 :e P0, (Pi_ x1 :e P0, (Pi_ x2 :e (Lean_List P0), (C (setsum (Lean_List_cons_node P0 x1 (Lean_List_cons_node P0 x0 x2)) (Lean_List_cons_node P0 x0
+    (Lean_List_cons_node P0 x1 x2))) (Lean_List_Perm_swap_node x0 x1 x2))))).
+let a. assume Ha: a :e IndArgs Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 2. let r.
+    assume Hr: forall j :e Lean_List_Perm_N 2, Lean_List_Perm_R 2 j -> r j :e (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) t) (a j).
+claim Fi: IndFits Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 2 a.
+{ exact IndArgs_Fits Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 2 a Ha. }
+claim Pm: a :e Pi_ j :e 3, Lean_List_Perm_B :\/: Lean_List_Perm_All.
+{ exact In_fam_eq (fun X:set => Pi_ j :e X, Lean_List_Perm_B :\/: Lean_List_Perm_All) (Lean_List_Perm_N 2) 3 Lean_List_Perm_N2 a (IndArgs_Pi Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 2 a Ha). }
+claim G0: (a 0) :e P0.
+{ apply Fi 0 (In_eq_rs 0 (Lean_List_Perm_N 2) 3 Lean_List_Perm_N2 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0)))). assume H1. assume H2. exact In_eq_r (a 0) (Lean_List_Perm_F 2 0 a) P0
+    (Lean_List_Perm_F2_0 a) (H2 Lean_List_Perm_nR2_0). }
+claim G1: (a 1) :e P0.
+{ apply Fi 1 (In_eq_rs 1 (Lean_List_Perm_N 2) 3 Lean_List_Perm_N2 (ordsuccI1 2 1 (ordsuccI2 1))). assume H1. assume H2. exact In_eq_r (a 1) (Lean_List_Perm_F 2 1 a) P0 (Lean_List_Perm_F2_1 a) (H2
+    Lean_List_Perm_nR2_1). }
+claim G2: (a 2) :e (Lean_List P0).
+{ apply Fi 2 (In_eq_rs 2 (Lean_List_Perm_N 2) 3 Lean_List_Perm_N2 (ordsuccI2 2)). assume H1. assume H2. exact In_eq_r (a 2) (Lean_List_Perm_F 2 2 a) (Lean_List P0) (Lean_List_Perm_F2_2 a) (H2
+    Lean_List_Perm_nR2_2). }
+claim U0: SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) SeqNil))) 0 = (a 0).
+{ rewrite SeqAt_0. reflexivity. }
+claim U1: SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) SeqNil))) 1 = (a 1).
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim U2: SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) SeqNil))) 2 = (a 2).
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+claim Ea: TupArgs 3 (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) SeqNil))) = a.
+{ exact eq_i_tra (TupArgs 3 (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) SeqNil)))) (fun j :e 3 => a j) a (lam_ext 3 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) SeqNil)))
+    j) (fun j => a j) (Below_S 2 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) SeqNil))) j = a j) (Below_S 1 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2))
+    SeqNil))) j = a j) (Below_S 0 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) SeqNil))) j = a j) (Below_0 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2))
+    SeqNil))) j = a j)) U0) U1) U2)) (Pi_eta 3 (fun j => Lean_List_Perm_B :\/: Lean_List_Perm_All) a Pm). }
+claim Lv: (h2 (a 0) (a 1) (a 2)) :e (C (setsum (Lean_List_cons_node P0 (a 1) (Lean_List_cons_node P0 (a 0) (a 2))) (Lean_List_cons_node P0 (a 0) (Lean_List_cons_node P0 (a 1) (a 2))))
+    (Lean_List_Perm_swap_node (a 0) (a 1) (a 2))).
+{ exact (ap_Pi (Lean_List P0) (fun x2 => (C (setsum (Lean_List_cons_node P0 (a 1) (Lean_List_cons_node P0 (a 0) x2)) (Lean_List_cons_node P0 (a 0) (Lean_List_cons_node P0 (a 1) x2)))
+    (Lean_List_Perm_swap_node (a 0) (a 1) x2))) ((h2 (a 0)) (a 1)) (a 2) (ap_Pi P0 (fun x1 => (Pi_ x2 :e (Lean_List P0), (C (setsum (Lean_List_cons_node P0 x1 (Lean_List_cons_node P0 (a 0) x2))
+    (Lean_List_cons_node P0 (a 0) (Lean_List_cons_node P0 x1 x2))) (Lean_List_Perm_swap_node (a 0) x1 x2)))) (h2 (a 0)) (a 1) (ap_Pi P0 (fun x0 => (Pi_ x1 :e P0, (Pi_ x2 :e (Lean_List P0), (C (setsum
+    (Lean_List_cons_node P0 x1 (Lean_List_cons_node P0 x0 x2)) (Lean_List_cons_node P0 x0 (Lean_List_cons_node P0 x1 x2))) (Lean_List_Perm_swap_node x0 x1 x2))))) h2 (a 0) Hh G0) G1) G2). }
+claim Lm: (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k)
+    2 a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 2 r) = (h2 (a 0) (a 1) (a 2)).
+{ prove SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B 2 r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 2 r 3) (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B 2 r 4))) SeqNil)))) 2 = (h2 (a 0) (a 1) (a 2)). rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0).
+    }
+claim Ln: (Lean_List_Perm_swap_node (a 0) (a 1) (a 2)) = IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B 2 a.
+{ prove IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 2 (TupArgs 3 (SeqCons ((a 0)) (SeqCons ((a 1))
+    (SeqCons ((a 2)) SeqNil)))) = IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 2 a. rewrite Ea.
+    reflexivity. }
+claim Lo: (setsum (Lean_List_cons_node P0 (a 1) (Lean_List_cons_node P0 (a 0) (a 2))) (Lean_List_cons_node P0 (a 0) (Lean_List_cons_node P0 (a 1) (a 2)))) = IndIdx Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 2 a).
+{ exact eq_i_tra (setsum (Lean_List_cons_node P0 (a 1) (Lean_List_cons_node P0 (a 0) (a 2))) (Lean_List_cons_node P0 (a 0) (Lean_List_cons_node P0 (a 1) (a 2)))) (Lean_List_Perm_O 2 a) (IndIdx
+    Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 2 a)) (eq_sym_i (Lean_List_Perm_O 2 a) (setsum (Lean_List_cons_node P0 (a 1)
+    (Lean_List_cons_node P0 (a 0) (a 2))) (Lean_List_cons_node P0 (a 0) (Lean_List_cons_node P0 (a 1) (a 2)))) (Lean_List_Perm_O2 a)) (eq_sym_i (IndIdx Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 2 a)) (Lean_List_Perm_O 2 a) (IndIdx_Node Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 2 a)). }
+exact In_eq_ls ((fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4)))
+    SeqNil)))) k) 2 a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 2 r)) (h2 (a 0) (a 1) (a 2)) (C
+    (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 2 a)) (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 2 a)) Lm (In_fam_eq (fun z:set => C z (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 2 a)) (setsum (Lean_List_cons_node P0 (a 1) (Lean_List_cons_node P0 (a 0) (a 2))) (Lean_List_cons_node P0 (a 0)
+    (Lean_List_cons_node P0 (a 1) (a 2)))) (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode
+    Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 2 a)) Lo (h2 (a 0) (a 1) (a 2)) (In_fam_eq (fun z:set => C
+    (setsum (Lean_List_cons_node P0 (a 1) (Lean_List_cons_node P0 (a 0) (a 2))) (Lean_List_cons_node P0 (a 0) (Lean_List_cons_node P0 (a 1) (a 2)))) z) (Lean_List_Perm_swap_node (a 0) (a 1) (a 2))
+    (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 2 a) Ln (h2 (a 0) (a 1) (a 2)) Lv)).
+Qed.
+Theorem Lean_List_Perm_HM3 : forall C:set -> set -> set, forall h0 h1 h2 h3, h3 :e (Pi_ x0 :e (Lean_List P0), (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum
+    x0 x1)), (Pi_ x4 :e (Lean_List_Perm (setsum x1 x2)), (Pi_ y3 :e (C (setsum x0 x1) x3), (Pi_ y4 :e (C (setsum x1 x2) x4), (C (setsum x0 x2) (Lean_List_Perm_trans_node x0 x1 x2 x3 x4))))))))) ->
+    forall a :e IndArgs Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 3, forall r:set ->
+    set, (forall j :e Lean_List_Perm_N 3, Lean_List_Perm_R 3 j -> r j :e (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B t) t) (a j)) -> (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1)
+    (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) 3 a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B
+    3 r) :e (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) t) (IndNode
+    Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 a).
+let C h0 h1 h2 h3. assume Hh: h3 :e (Pi_ x0 :e (Lean_List P0), (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum x0 x1)), (Pi_ x4 :e (Lean_List_Perm (setsum x1
+    x2)), (Pi_ y3 :e (C (setsum x0 x1) x3), (Pi_ y4 :e (C (setsum x1 x2) x4), (C (setsum x0 x2) (Lean_List_Perm_trans_node x0 x1 x2 x3 x4))))))))).
+let a. assume Ha: a :e IndArgs Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 3. let r.
+    assume Hr: forall j :e Lean_List_Perm_N 3, Lean_List_Perm_R 3 j -> r j :e (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) t) (a j).
+claim Fi: IndFits Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 3 a.
+{ exact IndArgs_Fits Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 3 a Ha. }
+claim Pm: a :e Pi_ j :e 5, Lean_List_Perm_B :\/: Lean_List_Perm_All.
+{ exact In_fam_eq (fun X:set => Pi_ j :e X, Lean_List_Perm_B :\/: Lean_List_Perm_All) (Lean_List_Perm_N 3) 5 Lean_List_Perm_N3 a (IndArgs_Pi Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 3 a Ha). }
+claim G0: (a 0) :e (Lean_List P0).
+{ apply Fi 0 (In_eq_rs 0 (Lean_List_Perm_N 3) 5 Lean_List_Perm_N3 (ordsuccI1 4 0 (ordsuccI1 3 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0)))))). assume H1. assume H2. exact In_eq_r (a 0)
+    (Lean_List_Perm_F 3 0 a) (Lean_List P0) (Lean_List_Perm_F3_0 a) (H2 Lean_List_Perm_nR3_0). }
+claim G1: (a 1) :e (Lean_List P0).
+{ apply Fi 1 (In_eq_rs 1 (Lean_List_Perm_N 3) 5 Lean_List_Perm_N3 (ordsuccI1 4 1 (ordsuccI1 3 1 (ordsuccI1 2 1 (ordsuccI2 1))))). assume H1. assume H2. exact In_eq_r (a 1) (Lean_List_Perm_F 3 1 a)
+    (Lean_List P0) (Lean_List_Perm_F3_1 a) (H2 Lean_List_Perm_nR3_1). }
+claim G2: (a 2) :e (Lean_List P0).
+{ apply Fi 2 (In_eq_rs 2 (Lean_List_Perm_N 3) 5 Lean_List_Perm_N3 (ordsuccI1 4 2 (ordsuccI1 3 2 (ordsuccI2 2)))). assume H1. assume H2. exact In_eq_r (a 2) (Lean_List_Perm_F 3 2 a) (Lean_List P0)
+    (Lean_List_Perm_F3_2 a) (H2 Lean_List_Perm_nR3_2). }
+claim G3: (a 3) :e (Lean_List_Perm (setsum (a 0) (a 1))).
+{ apply Fi 3 (In_eq_rs 3 (Lean_List_Perm_N 3) 5 Lean_List_Perm_N3 (ordsuccI1 4 3 (ordsuccI2 3))). assume H1. assume H2. apply H1 Lean_List_Perm_R3_3. assume H3: a 3 :e Lean_List_Perm_All. assume H4:
+    IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (a 3) = Lean_List_Perm_Ix 3 3 a.
+  prove (a 3) :e {x :e Lean_List_Perm_All | IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B x = (setsum
+    (a 0) (a 1))}.
+  apply SepI Lean_List_Perm_All (fun x:set => IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B x =
+    (setsum (a 0) (a 1))) (a 3) H3.
+  exact eq_i_tra (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (a 3)) (Lean_List_Perm_Ix 3 3 a)
+    (setsum (a 0) (a 1)) H4 (Lean_List_Perm_Ix3_3 a). }
+claim Y3: r 3 :e (C (setsum (a 0) (a 1)) (a 3)).
+{ exact In_fam_eq (fun z:set => C z (a 3)) (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (a 3))
+    (setsum (a 0) (a 1)) (SepE2 Lean_List_Perm_All (fun x:set => IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B x = (setsum (a 0) (a 1))) (a 3) G3) (r 3) (Hr 3 (In_eq_rs 3 (Lean_List_Perm_N 3) 5 Lean_List_Perm_N3 (ordsuccI1 4 3 (ordsuccI2 3))) Lean_List_Perm_R3_3). }
+claim G4: (a 4) :e (Lean_List_Perm (setsum (a 1) (a 2))).
+{ apply Fi 4 (In_eq_rs 4 (Lean_List_Perm_N 3) 5 Lean_List_Perm_N3 (ordsuccI2 4)). assume H1. assume H2. apply H1 Lean_List_Perm_R3_4. assume H3: a 4 :e Lean_List_Perm_All. assume H4: IndIdx
+    Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (a 4) = Lean_List_Perm_Ix 3 4 a.
+  prove (a 4) :e {x :e Lean_List_Perm_All | IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B x = (setsum
+    (a 1) (a 2))}.
+  apply SepI Lean_List_Perm_All (fun x:set => IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B x =
+    (setsum (a 1) (a 2))) (a 4) H3.
+  exact eq_i_tra (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (a 4)) (Lean_List_Perm_Ix 3 4 a)
+    (setsum (a 1) (a 2)) H4 (Lean_List_Perm_Ix3_4 a). }
+claim Y4: r 4 :e (C (setsum (a 1) (a 2)) (a 4)).
+{ exact In_fam_eq (fun z:set => C z (a 4)) (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (a 4))
+    (setsum (a 1) (a 2)) (SepE2 Lean_List_Perm_All (fun x:set => IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B x = (setsum (a 1) (a 2))) (a 4) G4) (r 4) (Hr 4 (In_eq_rs 4 (Lean_List_Perm_N 3) 5 Lean_List_Perm_N3 (ordsuccI2 4)) Lean_List_Perm_R3_4). }
+claim U0: SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) (SeqCons ((a 4)) SeqNil))))) 0 = (a 0).
+{ rewrite SeqAt_0. reflexivity. }
+claim U1: SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) (SeqCons ((a 4)) SeqNil))))) 1 = (a 1).
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim U2: SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) (SeqCons ((a 4)) SeqNil))))) 2 = (a 2).
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+claim U3: SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) (SeqCons ((a 4)) SeqNil))))) 3 = (a 3).
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)). }
+claim U4: SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) (SeqCons ((a 4)) SeqNil))))) 4 = (a 4).
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0
+    nat_0)). } exact (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))). }
+claim Ea: TupArgs 5 (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) (SeqCons ((a 4)) SeqNil))))) = a.
+{ exact eq_i_tra (TupArgs 5 (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) (SeqCons ((a 4)) SeqNil)))))) (fun j :e 5 => a j) a (lam_ext 5 (fun j => SeqAt (SeqCons ((a 0))
+    (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) (SeqCons ((a 4)) SeqNil))))) j) (fun j => a j) (Below_S 4 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3))
+    (SeqCons ((a 4)) SeqNil))))) j = a j) (Below_S 3 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) (SeqCons ((a 4)) SeqNil))))) j = a j) (Below_S 2 (fun j =>
+    SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) (SeqCons ((a 4)) SeqNil))))) j = a j) (Below_S 1 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2))
+    (SeqCons ((a 3)) (SeqCons ((a 4)) SeqNil))))) j = a j) (Below_S 0 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) (SeqCons ((a 4)) SeqNil))))) j = a j)
+    (Below_0 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) (SeqCons ((a 4)) SeqNil))))) j = a j)) U0) U1) U2) U3) U4)) (Pi_eta 5 (fun j => Lean_List_Perm_B :\/:
+    Lean_List_Perm_All) a Pm). }
+claim Rp3: IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 r 3 = r 3.
+{ exact IndRes_at Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 r 3 (In_eq_rs 3 (Lean_List_Perm_N 3) 5
+    Lean_List_Perm_N3 (ordsuccI1 4 3 (ordsuccI2 3))) Lean_List_Perm_R3_3. }
+claim Rp4: IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 r 4 = r 4.
+{ exact IndRes_at Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 r 4 (In_eq_rs 4 (Lean_List_Perm_N 3) 5
+    Lean_List_Perm_N3 (ordsuccI2 4)) Lean_List_Perm_R3_4. }
+claim Lv: (h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4)) :e (C (setsum (a 0) (a 2)) (Lean_List_Perm_trans_node (a 0) (a 1) (a 2) (a 3) (a 4))).
+{ exact (ap_Pi (C (setsum (a 1) (a 2)) (a 4)) (fun y4 => (C (setsum (a 0) (a 2)) (Lean_List_Perm_trans_node (a 0) (a 1) (a 2) (a 3) (a 4)))) ((((((h3 (a 0)) (a 1)) (a 2)) (a 3)) (a 4)) (r 3)) (r 4)
+    (ap_Pi (C (setsum (a 0) (a 1)) (a 3)) (fun y3 => (Pi_ y4 :e (C (setsum (a 1) (a 2)) (a 4)), (C (setsum (a 0) (a 2)) (Lean_List_Perm_trans_node (a 0) (a 1) (a 2) (a 3) (a 4))))) (((((h3 (a 0)) (a
+    1)) (a 2)) (a 3)) (a 4)) (r 3) (ap_Pi (Lean_List_Perm (setsum (a 1) (a 2))) (fun x4 => (Pi_ y3 :e (C (setsum (a 0) (a 1)) (a 3)), (Pi_ y4 :e (C (setsum (a 1) (a 2)) x4), (C (setsum (a 0) (a 2))
+    (Lean_List_Perm_trans_node (a 0) (a 1) (a 2) (a 3) x4))))) ((((h3 (a 0)) (a 1)) (a 2)) (a 3)) (a 4) (ap_Pi (Lean_List_Perm (setsum (a 0) (a 1))) (fun x3 => (Pi_ x4 :e (Lean_List_Perm (setsum (a
+    1) (a 2))), (Pi_ y3 :e (C (setsum (a 0) (a 1)) x3), (Pi_ y4 :e (C (setsum (a 1) (a 2)) x4), (C (setsum (a 0) (a 2)) (Lean_List_Perm_trans_node (a 0) (a 1) (a 2) x3 x4)))))) (((h3 (a 0)) (a 1)) (a
+    2)) (a 3) (ap_Pi (Lean_List P0) (fun x2 => (Pi_ x3 :e (Lean_List_Perm (setsum (a 0) (a 1))), (Pi_ x4 :e (Lean_List_Perm (setsum (a 1) x2)), (Pi_ y3 :e (C (setsum (a 0) (a 1)) x3), (Pi_ y4 :e (C
+    (setsum (a 1) x2) x4), (C (setsum (a 0) x2) (Lean_List_Perm_trans_node (a 0) (a 1) x2 x3 x4))))))) ((h3 (a 0)) (a 1)) (a 2) (ap_Pi (Lean_List P0) (fun x1 => (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e
+    (Lean_List_Perm (setsum (a 0) x1)), (Pi_ x4 :e (Lean_List_Perm (setsum x1 x2)), (Pi_ y3 :e (C (setsum (a 0) x1) x3), (Pi_ y4 :e (C (setsum x1 x2) x4), (C (setsum (a 0) x2)
+    (Lean_List_Perm_trans_node (a 0) x1 x2 x3 x4)))))))) (h3 (a 0)) (a 1) (ap_Pi (Lean_List P0) (fun x0 => (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum x0
+    x1)), (Pi_ x4 :e (Lean_List_Perm (setsum x1 x2)), (Pi_ y3 :e (C (setsum x0 x1) x3), (Pi_ y4 :e (C (setsum x1 x2) x4), (C (setsum x0 x2) (Lean_List_Perm_trans_node x0 x1 x2 x3 x4))))))))) h3 (a 0)
+    Hh G0) G1) G2) G3) G4) Y3) Y4). }
+claim Lm: (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k)
+    3 a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 r) = (h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3)
+    (r 4)).
+{ prove SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B 3 r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 r 3) (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B 3 r 4))) SeqNil)))) 3 = (h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4)). rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. rewrite Rp3.
+    rewrite Rp4. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)). }
+claim Ln: (Lean_List_Perm_trans_node (a 0) (a 1) (a 2) (a 3) (a 4)) = IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B 3 a.
+{ prove IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 (TupArgs 5 (SeqCons ((a 0)) (SeqCons ((a 1))
+    (SeqCons ((a 2)) (SeqCons ((a 3)) (SeqCons ((a 4)) SeqNil)))))) = IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B 3 a. rewrite Ea. reflexivity. }
+claim Lo: (setsum (a 0) (a 2)) = IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode
+    Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 a).
+{ exact eq_i_tra (setsum (a 0) (a 2)) (Lean_List_Perm_O 3 a) (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 a)) (eq_sym_i
+    (Lean_List_Perm_O 3 a) (setsum (a 0) (a 2)) (Lean_List_Perm_O3 a)) (eq_sym_i (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 a))
+    (Lean_List_Perm_O 3 a) (IndIdx_Node Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 a)). }
+exact In_eq_ls ((fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4)))
+    SeqNil)))) k) 3 a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 r)) (h3 (a 0) (a 1) (a 2) (a
+    3) (a 4) (r 3) (r 4)) (C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 a)) (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 a)) Lm (In_fam_eq (fun z:set => C z (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 a)) (setsum (a 0) (a 2)) (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B 3 a)) Lo (h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4)) (In_fam_eq (fun z:set => C (setsum (a 0) (a 2)) z) (Lean_List_Perm_trans_node (a 0) (a 1) (a 2) (a 3) (a
+    4)) (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 a) Ln (h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r
+    3) (r 4)) Lv)).
+Qed.
+Theorem Lean_List_Perm_rec_type : forall C:set -> set -> set, forall h0 :e (C (setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0)) Lean_List_Perm_nil_node), forall h1 :e (Pi_ x0 :e P0, (Pi_ x1 :e
+    (Lean_List P0), (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum x1 x2)), (Pi_ y3 :e (C (setsum x1 x2) x3), (C (setsum (Lean_List_cons_node P0 x0 x1) (Lean_List_cons_node P0 x0 x2))
+    (Lean_List_Perm_cons_node x0 x1 x2 x3))))))), forall h2 :e (Pi_ x0 :e P0, (Pi_ x1 :e P0, (Pi_ x2 :e (Lean_List P0), (C (setsum (Lean_List_cons_node P0 x1 (Lean_List_cons_node P0 x0 x2))
+    (Lean_List_cons_node P0 x0 (Lean_List_cons_node P0 x1 x2))) (Lean_List_Perm_swap_node x0 x1 x2))))), forall h3 :e (Pi_ x0 :e (Lean_List P0), (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List P0),
+    (Pi_ x3 :e (Lean_List_Perm (setsum x0 x1)), (Pi_ x4 :e (Lean_List_Perm (setsum x1 x2)), (Pi_ y3 :e (C (setsum x0 x1) x3), (Pi_ y4 :e (C (setsum x1 x2) x4), (C (setsum x0 x2)
+    (Lean_List_Perm_trans_node x0 x1 x2 x3 x4))))))))), forall i, forall t :e Lean_List_Perm i, Lean_List_Perm_rec h0 h1 h2 h3 t :e C i t.
+let C. let h0. assume Hh0. let h1. assume Hh1. let h2. assume Hh2. let h3. assume Hh3.
+claim HM: forall k :e Lean_List_Perm_K, forall a :e IndArgs Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B
+    Lean_List_Perm_All k, forall r:set -> set, (forall j :e Lean_List_Perm_N k, Lean_List_Perm_R k j -> r j :e (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) t) (a j)) -> (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons
+    ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) k a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B k r) :e (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B t) t) (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B k a).
+{ let k. assume Hk: k :e Lean_List_Perm_K. exact (Below_S 3 (fun k => forall a :e IndArgs Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All k, forall r:set -> set, (forall j :e Lean_List_Perm_N k, Lean_List_Perm_R k j -> r j :e (fun t:set => C (IndIdx Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) t) (a j)) -> (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0)
+    (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) k a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B k r) :e (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) t) (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B k a)) (Below_S 2 (fun k => forall a :e IndArgs Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All k, forall r:set -> set, (forall j :e Lean_List_Perm_N k, Lean_List_Perm_R k j -> r j :e (fun t:set => C (IndIdx Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) t) (a j)) -> (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0)
+    (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) k a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B k r) :e (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) t) (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B k a)) (Below_S 1 (fun k => forall a :e IndArgs Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All k, forall r:set -> set, (forall j :e Lean_List_Perm_N k, Lean_List_Perm_R k j -> r j :e (fun t:set => C (IndIdx Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) t) (a j)) -> (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0)
+    (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) k a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B k r) :e (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) t) (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B k a)) (Below_S 0 (fun k => forall a :e IndArgs Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All k, forall r:set -> set, (forall j :e Lean_List_Perm_N k, Lean_List_Perm_R k j -> r j :e (fun t:set => C (IndIdx Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) t) (a j)) -> (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0)
+    (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) k a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B k r) :e (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) t) (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B k a)) (Below_0 (fun k => forall a :e IndArgs Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All k, forall r:set -> set, (forall j :e Lean_List_Perm_N k, Lean_List_Perm_R k j -> r j :e (fun t:set => C (IndIdx Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) t) (a j)) -> (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0)
+    (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) k a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B k r) :e (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) t) (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B k a))) (Lean_List_Perm_HM0 C h0 h1 h2 h3 Hh0)) (Lean_List_Perm_HM1 C h0 h1 h2 h3 Hh1)) (Lean_List_Perm_HM2 C h0 h1 h2 h3 Hh2)) (Lean_List_Perm_HM3 C h0 h1 h2 h3
+    Hh3)) k Hk. }
+let i t. assume Ht: t :e Lean_List_Perm i.
+exact In_fam_eq (fun z:set => C z t) (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) i (SepE2
+    Lean_List_Perm_All (fun x:set => IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B x = i) t Ht)
+    (Lean_List_Perm_rec h0 h1 h2 h3 t) (IndRec_type Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B
+    Lean_List_Perm_distinct Lean_List_Perm_bounded Lean_List_Perm_arity (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons
+    ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B t) t) HM t (SepE1 Lean_List_Perm_All (fun x:set => IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B x = i) t Ht)).
+Qed.
+
+
+
+
+Theorem Lean_List_Perm_ind : forall P:set -> set -> prop, (P (setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0)) Lean_List_Perm_nil_node) -> (forall x0 :e P0, forall x1 :e (Lean_List P0), forall
+    x2 :e (Lean_List P0), forall x3 :e (Lean_List_Perm (setsum x1 x2)), P (setsum x1 x2) x3 -> P (setsum (Lean_List_cons_node P0 x0 x1) (Lean_List_cons_node P0 x0 x2)) (Lean_List_Perm_cons_node x0 x1
+    x2 x3)) -> (forall x0 :e P0, forall x1 :e P0, forall x2 :e (Lean_List P0), P (setsum (Lean_List_cons_node P0 x1 (Lean_List_cons_node P0 x0 x2)) (Lean_List_cons_node P0 x0 (Lean_List_cons_node P0
+    x1 x2))) (Lean_List_Perm_swap_node x0 x1 x2)) -> (forall x0 :e (Lean_List P0), forall x1 :e (Lean_List P0), forall x2 :e (Lean_List P0), forall x3 :e (Lean_List_Perm (setsum x0 x1)), forall x4 :e
+    (Lean_List_Perm (setsum x1 x2)), P (setsum x0 x1) x3 -> P (setsum x1 x2) x4 -> P (setsum x0 x2) (Lean_List_Perm_trans_node x0 x1 x2 x3 x4)) -> forall i, forall t :e Lean_List_Perm i, P i t.
+let P. assume H0. assume H1. assume H2. assume H3.
+claim M0: 0 :e {z :e 1 | P (setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0)) Lean_List_Perm_nil_node}.
+{ exact SepI 1 (fun z => P (setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0)) Lean_List_Perm_nil_node) 0 In_0_1 (H0). }
+claim M1: 0 :e (Pi_ x0 :e P0, (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum x1 x2)), (Pi_ y3 :e {z :e 1 | P (setsum x1 x2) x3}, {z :e 1 | P (setsum
+    (Lean_List_cons_node P0 x0 x1) (Lean_List_cons_node P0 x0 x2)) (Lean_List_Perm_cons_node x0 x1 x2 x3)}))))).
+{ apply Pi_0_In. let x0. assume Hx0: x0 :e P0.
+  prove 0 :e (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum x1 x2)), (Pi_ y3 :e {z :e 1 | P (setsum x1 x2) x3}, {z :e 1 | P (setsum (Lean_List_cons_node P0
+    x0 x1) (Lean_List_cons_node P0 x0 x2)) (Lean_List_Perm_cons_node x0 x1 x2 x3)})))).
+apply Pi_0_In. let x1. assume Hx1: x1 :e (Lean_List P0).
+  prove 0 :e (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum x1 x2)), (Pi_ y3 :e {z :e 1 | P (setsum x1 x2) x3}, {z :e 1 | P (setsum (Lean_List_cons_node P0 x0 x1) (Lean_List_cons_node
+    P0 x0 x2)) (Lean_List_Perm_cons_node x0 x1 x2 x3)}))).
+apply Pi_0_In. let x2. assume Hx2: x2 :e (Lean_List P0).
+  prove 0 :e (Pi_ x3 :e (Lean_List_Perm (setsum x1 x2)), (Pi_ y3 :e {z :e 1 | P (setsum x1 x2) x3}, {z :e 1 | P (setsum (Lean_List_cons_node P0 x0 x1) (Lean_List_cons_node P0 x0 x2))
+    (Lean_List_Perm_cons_node x0 x1 x2 x3)})).
+apply Pi_0_In. let x3. assume Hx3: x3 :e (Lean_List_Perm (setsum x1 x2)).
+  prove 0 :e (Pi_ y3 :e {z :e 1 | P (setsum x1 x2) x3}, {z :e 1 | P (setsum (Lean_List_cons_node P0 x0 x1) (Lean_List_cons_node P0 x0 x2)) (Lean_List_Perm_cons_node x0 x1 x2 x3)}).
+apply Pi_0_In. let y3. assume Hy3: y3 :e {z :e 1 | P (setsum x1 x2) x3}.
+  prove 0 :e {z :e 1 | P (setsum (Lean_List_cons_node P0 x0 x1) (Lean_List_cons_node P0 x0 x2)) (Lean_List_Perm_cons_node x0 x1 x2 x3)}.
+exact SepI 1 (fun z => P (setsum (Lean_List_cons_node P0 x0 x1) (Lean_List_cons_node P0 x0 x2)) (Lean_List_Perm_cons_node x0 x1 x2 x3)) 0 In_0_1 (H1 x0 Hx0 x1 Hx1 x2 Hx2 x3 Hx3 (SepE2 1 (fun z => P
+    (setsum x1 x2) x3) y3 Hy3)). }
+claim M2: 0 :e (Pi_ x0 :e P0, (Pi_ x1 :e P0, (Pi_ x2 :e (Lean_List P0), {z :e 1 | P (setsum (Lean_List_cons_node P0 x1 (Lean_List_cons_node P0 x0 x2)) (Lean_List_cons_node P0 x0 (Lean_List_cons_node
+    P0 x1 x2))) (Lean_List_Perm_swap_node x0 x1 x2)}))).
+{ apply Pi_0_In. let x0. assume Hx0: x0 :e P0.
+  prove 0 :e (Pi_ x1 :e P0, (Pi_ x2 :e (Lean_List P0), {z :e 1 | P (setsum (Lean_List_cons_node P0 x1 (Lean_List_cons_node P0 x0 x2)) (Lean_List_cons_node P0 x0 (Lean_List_cons_node P0 x1 x2)))
+    (Lean_List_Perm_swap_node x0 x1 x2)})).
+apply Pi_0_In. let x1. assume Hx1: x1 :e P0.
+  prove 0 :e (Pi_ x2 :e (Lean_List P0), {z :e 1 | P (setsum (Lean_List_cons_node P0 x1 (Lean_List_cons_node P0 x0 x2)) (Lean_List_cons_node P0 x0 (Lean_List_cons_node P0 x1 x2)))
+    (Lean_List_Perm_swap_node x0 x1 x2)}).
+apply Pi_0_In. let x2. assume Hx2: x2 :e (Lean_List P0).
+  prove 0 :e {z :e 1 | P (setsum (Lean_List_cons_node P0 x1 (Lean_List_cons_node P0 x0 x2)) (Lean_List_cons_node P0 x0 (Lean_List_cons_node P0 x1 x2))) (Lean_List_Perm_swap_node x0 x1 x2)}.
+exact SepI 1 (fun z => P (setsum (Lean_List_cons_node P0 x1 (Lean_List_cons_node P0 x0 x2)) (Lean_List_cons_node P0 x0 (Lean_List_cons_node P0 x1 x2))) (Lean_List_Perm_swap_node x0 x1 x2)) 0 In_0_1
+    (H2 x0 Hx0 x1 Hx1 x2 Hx2). }
+claim M3: 0 :e (Pi_ x0 :e (Lean_List P0), (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum x0 x1)), (Pi_ x4 :e (Lean_List_Perm (setsum x1 x2)), (Pi_ y3 :e {z
+    :e 1 | P (setsum x0 x1) x3}, (Pi_ y4 :e {z :e 1 | P (setsum x1 x2) x4}, {z :e 1 | P (setsum x0 x2) (Lean_List_Perm_trans_node x0 x1 x2 x3 x4)}))))))).
+{ apply Pi_0_In. let x0. assume Hx0: x0 :e (Lean_List P0).
+  prove 0 :e (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum x0 x1)), (Pi_ x4 :e (Lean_List_Perm (setsum x1 x2)), (Pi_ y3 :e {z :e 1 | P (setsum x0 x1) x3},
+    (Pi_ y4 :e {z :e 1 | P (setsum x1 x2) x4}, {z :e 1 | P (setsum x0 x2) (Lean_List_Perm_trans_node x0 x1 x2 x3 x4)})))))).
+apply Pi_0_In. let x1. assume Hx1: x1 :e (Lean_List P0).
+  prove 0 :e (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum x0 x1)), (Pi_ x4 :e (Lean_List_Perm (setsum x1 x2)), (Pi_ y3 :e {z :e 1 | P (setsum x0 x1) x3}, (Pi_ y4 :e {z :e 1 | P
+    (setsum x1 x2) x4}, {z :e 1 | P (setsum x0 x2) (Lean_List_Perm_trans_node x0 x1 x2 x3 x4)}))))).
+apply Pi_0_In. let x2. assume Hx2: x2 :e (Lean_List P0).
+  prove 0 :e (Pi_ x3 :e (Lean_List_Perm (setsum x0 x1)), (Pi_ x4 :e (Lean_List_Perm (setsum x1 x2)), (Pi_ y3 :e {z :e 1 | P (setsum x0 x1) x3}, (Pi_ y4 :e {z :e 1 | P (setsum x1 x2) x4}, {z :e 1 | P
+    (setsum x0 x2) (Lean_List_Perm_trans_node x0 x1 x2 x3 x4)})))).
+apply Pi_0_In. let x3. assume Hx3: x3 :e (Lean_List_Perm (setsum x0 x1)).
+  prove 0 :e (Pi_ x4 :e (Lean_List_Perm (setsum x1 x2)), (Pi_ y3 :e {z :e 1 | P (setsum x0 x1) x3}, (Pi_ y4 :e {z :e 1 | P (setsum x1 x2) x4}, {z :e 1 | P (setsum x0 x2) (Lean_List_Perm_trans_node x0
+    x1 x2 x3 x4)}))).
+apply Pi_0_In. let x4. assume Hx4: x4 :e (Lean_List_Perm (setsum x1 x2)).
+  prove 0 :e (Pi_ y3 :e {z :e 1 | P (setsum x0 x1) x3}, (Pi_ y4 :e {z :e 1 | P (setsum x1 x2) x4}, {z :e 1 | P (setsum x0 x2) (Lean_List_Perm_trans_node x0 x1 x2 x3 x4)})).
+apply Pi_0_In. let y3. assume Hy3: y3 :e {z :e 1 | P (setsum x0 x1) x3}.
+  prove 0 :e (Pi_ y4 :e {z :e 1 | P (setsum x1 x2) x4}, {z :e 1 | P (setsum x0 x2) (Lean_List_Perm_trans_node x0 x1 x2 x3 x4)}).
+apply Pi_0_In. let y4. assume Hy4: y4 :e {z :e 1 | P (setsum x1 x2) x4}.
+  prove 0 :e {z :e 1 | P (setsum x0 x2) (Lean_List_Perm_trans_node x0 x1 x2 x3 x4)}.
+exact SepI 1 (fun z => P (setsum x0 x2) (Lean_List_Perm_trans_node x0 x1 x2 x3 x4)) 0 In_0_1 (H3 x0 Hx0 x1 Hx1 x2 Hx2 x3 Hx3 x4 Hx4 (SepE2 1 (fun z => P (setsum x0 x1) x3) y3 Hy3) (SepE2 1 (fun z =>
+    P (setsum x1 x2) x4) y4 Hy4)). }
+let i t. assume Ht: t :e Lean_List_Perm i.
+exact SepE2 1 (fun z => P i t) (Lean_List_Perm_rec 0 0 0 0 t) (Lean_List_Perm_rec_type (fun i t => {z :e 1 | P i t}) 0 M0 0 M1 0 M2 0 M3 i t Ht).
+Qed.
+
+Theorem Lean_List_Perm_noconf0_1 : forall y0 y1 y2 y3, Lean_List_Perm_nil_node <> (Lean_List_Perm_cons_node y0 y1 y2 y3).
+let y0 y1 y2 y3. assume H: Lean_List_Perm_nil_node = (Lean_List_Perm_cons_node y0 y1 y2 y3).
+apply IndNode_inj Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_distinct 0 (ordsuccI1 3 0
+    (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0)))) 1 (ordsuccI1 3 1 (ordsuccI1 2 1 (ordsuccI2 1))) (TupArgs 0 SeqNil) (TupArgs 4 (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil))))) H.
+assume H1: 0 = 1. assume H2.
+exact In_irref 0 (In_eq_rs 0 0 1 H1 (ordsuccI2 0)).
+Qed.
+Theorem Lean_List_Perm_noconf0_2 : forall y0 y1 y2, Lean_List_Perm_nil_node <> (Lean_List_Perm_swap_node y0 y1 y2).
+let y0 y1 y2. assume H: Lean_List_Perm_nil_node = (Lean_List_Perm_swap_node y0 y1 y2).
+apply IndNode_inj Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_distinct 0 (ordsuccI1 3 0
+    (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0)))) 2 (ordsuccI1 3 2 (ordsuccI2 2)) (TupArgs 0 SeqNil) (TupArgs 3 (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) SeqNil)))) H.
+assume H1: 0 = 2. assume H2.
+exact In_irref 0 (In_eq_rs 0 0 2 H1 (ordsuccI1 1 0 (ordsuccI2 0))).
+Qed.
+Theorem Lean_List_Perm_noconf0_3 : forall y0 y1 y2 y3 y4, Lean_List_Perm_nil_node <> (Lean_List_Perm_trans_node y0 y1 y2 y3 y4).
+let y0 y1 y2 y3 y4. assume H: Lean_List_Perm_nil_node = (Lean_List_Perm_trans_node y0 y1 y2 y3 y4).
+apply IndNode_inj Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_distinct 0 (ordsuccI1 3 0
+    (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0)))) 3 (ordsuccI2 3) (TupArgs 0 SeqNil) (TupArgs 5 (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) (SeqCons (y4) SeqNil)))))) H.
+assume H1: 0 = 3. assume H2.
+exact In_irref 0 (In_eq_rs 0 0 3 H1 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0)))).
+Qed.
+Theorem Lean_List_Perm_noconf1_2 : forall x0 x1 x2 x3, forall y0 y1 y2, (Lean_List_Perm_cons_node x0 x1 x2 x3) <> (Lean_List_Perm_swap_node y0 y1 y2).
+let x0 x1 x2 x3 y0 y1 y2. assume H: (Lean_List_Perm_cons_node x0 x1 x2 x3) = (Lean_List_Perm_swap_node y0 y1 y2).
+apply IndNode_inj Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_distinct 1 (ordsuccI1 3 1
+    (ordsuccI1 2 1 (ordsuccI2 1))) 2 (ordsuccI1 3 2 (ordsuccI2 2)) (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) (TupArgs 3 (SeqCons (y0) (SeqCons (y1) (SeqCons (y2)
+    SeqNil)))) H.
+assume H1: 1 = 2. assume H2.
+exact In_irref 1 (In_eq_rs 1 1 2 H1 (ordsuccI2 1)).
+Qed.
+Theorem Lean_List_Perm_noconf1_3 : forall x0 x1 x2 x3, forall y0 y1 y2 y3 y4, (Lean_List_Perm_cons_node x0 x1 x2 x3) <> (Lean_List_Perm_trans_node y0 y1 y2 y3 y4).
+let x0 x1 x2 x3 y0 y1 y2 y3 y4. assume H: (Lean_List_Perm_cons_node x0 x1 x2 x3) = (Lean_List_Perm_trans_node y0 y1 y2 y3 y4).
+apply IndNode_inj Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_distinct 1 (ordsuccI1 3 1
+    (ordsuccI1 2 1 (ordsuccI2 1))) 3 (ordsuccI2 3) (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) (TupArgs 5 (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3)
+    (SeqCons (y4) SeqNil)))))) H.
+assume H1: 1 = 3. assume H2.
+exact In_irref 1 (In_eq_rs 1 1 3 H1 (ordsuccI1 2 1 (ordsuccI2 1))).
+Qed.
+Theorem Lean_List_Perm_noconf2_3 : forall x0 x1 x2, forall y0 y1 y2 y3 y4, (Lean_List_Perm_swap_node x0 x1 x2) <> (Lean_List_Perm_trans_node y0 y1 y2 y3 y4).
+let x0 x1 x2 y0 y1 y2 y3 y4. assume H: (Lean_List_Perm_swap_node x0 x1 x2) = (Lean_List_Perm_trans_node y0 y1 y2 y3 y4).
+apply IndNode_inj Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_distinct 2 (ordsuccI1 3 2
+    (ordsuccI2 2)) 3 (ordsuccI2 3) (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) (TupArgs 5 (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) (SeqCons (y4) SeqNil)))))) H.
+assume H1: 2 = 3. assume H2.
+exact In_irref 2 (In_eq_rs 2 2 3 H1 (ordsuccI2 2)).
+Qed.
+
+Theorem Lean_List_Perm_cons_inj0 : forall x0 x1 x2 x3 y0 y1 y2 y3, (Lean_List_Perm_cons_node x0 x1 x2 x3) = (Lean_List_Perm_cons_node y0 y1 y2 y3) -> x0 = y0.
+let x0 x1 x2 x3 y0 y1 y2 y3. assume H: (Lean_List_Perm_cons_node x0 x1 x2 x3) = (Lean_List_Perm_cons_node y0 y1 y2 y3).
+claim L: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 = SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) 0.
+{ exact IndNode_args_inj Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_distinct 1 (ordsuccI1
+    3 1 (ordsuccI1 2 1 (ordsuccI2 1))) 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) H 0 (ordsuccI1 3 0
+    (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0)))). }
+claim Lx: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim Ly: SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) 0 = y0.
+{ rewrite SeqAt_0. reflexivity. }
+rewrite <- Lx. rewrite <- Ly. exact L.
+Qed.
+Theorem Lean_List_Perm_cons_inj1 : forall x0 x1 x2 x3 y0 y1 y2 y3, (Lean_List_Perm_cons_node x0 x1 x2 x3) = (Lean_List_Perm_cons_node y0 y1 y2 y3) -> x1 = y1.
+let x0 x1 x2 x3 y0 y1 y2 y3. assume H: (Lean_List_Perm_cons_node x0 x1 x2 x3) = (Lean_List_Perm_cons_node y0 y1 y2 y3).
+claim L: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 = SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) 1.
+{ exact IndNode_args_inj Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_distinct 1 (ordsuccI1
+    3 1 (ordsuccI1 2 1 (ordsuccI2 1))) 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) H 1 (ordsuccI1 3 1
+    (ordsuccI1 2 1 (ordsuccI2 1))). }
+claim Lx: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 = x1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim Ly: SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) 1 = y1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+rewrite <- Lx. rewrite <- Ly. exact L.
+Qed.
+Theorem Lean_List_Perm_cons_inj2 : forall x0 x1 x2 x3 y0 y1 y2 y3, (Lean_List_Perm_cons_node x0 x1 x2 x3) = (Lean_List_Perm_cons_node y0 y1 y2 y3) -> x2 = y2.
+let x0 x1 x2 x3 y0 y1 y2 y3. assume H: (Lean_List_Perm_cons_node x0 x1 x2 x3) = (Lean_List_Perm_cons_node y0 y1 y2 y3).
+claim L: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 = SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) 2.
+{ exact IndNode_args_inj Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_distinct 1 (ordsuccI1
+    3 1 (ordsuccI1 2 1 (ordsuccI2 1))) 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) H 2 (ordsuccI1 3 2
+    (ordsuccI2 2)). }
+claim Lx: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 = x2.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+claim Ly: SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) 2 = y2.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+rewrite <- Lx. rewrite <- Ly. exact L.
+Qed.
+Theorem Lean_List_Perm_cons_inj3 : forall x0 x1 x2 x3 y0 y1 y2 y3, (Lean_List_Perm_cons_node x0 x1 x2 x3) = (Lean_List_Perm_cons_node y0 y1 y2 y3) -> x3 = y3.
+let x0 x1 x2 x3 y0 y1 y2 y3. assume H: (Lean_List_Perm_cons_node x0 x1 x2 x3) = (Lean_List_Perm_cons_node y0 y1 y2 y3).
+claim L: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 = SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) 3.
+{ exact IndNode_args_inj Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_distinct 1 (ordsuccI1
+    3 1 (ordsuccI1 2 1 (ordsuccI2 1))) 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) H 3 (ordsuccI2 3). }
+claim Lx: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 = x3.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)). }
+claim Ly: SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) 3 = y3.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)). }
+rewrite <- Lx. rewrite <- Ly. exact L.
+Qed.
+Theorem Lean_List_Perm_swap_inj0 : forall x0 x1 x2 y0 y1 y2, (Lean_List_Perm_swap_node x0 x1 x2) = (Lean_List_Perm_swap_node y0 y1 y2) -> x0 = y0.
+let x0 x1 x2 y0 y1 y2. assume H: (Lean_List_Perm_swap_node x0 x1 x2) = (Lean_List_Perm_swap_node y0 y1 y2).
+claim L: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 = SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) SeqNil))) 0.
+{ exact IndNode_args_inj Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_distinct 2 (ordsuccI1
+    3 2 (ordsuccI2 2)) 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) SeqNil))) H 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0))). }
+claim Lx: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim Ly: SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) SeqNil))) 0 = y0.
+{ rewrite SeqAt_0. reflexivity. }
+rewrite <- Lx. rewrite <- Ly. exact L.
+Qed.
+Theorem Lean_List_Perm_swap_inj1 : forall x0 x1 x2 y0 y1 y2, (Lean_List_Perm_swap_node x0 x1 x2) = (Lean_List_Perm_swap_node y0 y1 y2) -> x1 = y1.
+let x0 x1 x2 y0 y1 y2. assume H: (Lean_List_Perm_swap_node x0 x1 x2) = (Lean_List_Perm_swap_node y0 y1 y2).
+claim L: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1 = SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) SeqNil))) 1.
+{ exact IndNode_args_inj Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_distinct 2 (ordsuccI1
+    3 2 (ordsuccI2 2)) 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) SeqNil))) H 1 (ordsuccI1 2 1 (ordsuccI2 1)). }
+claim Lx: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1 = x1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim Ly: SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) SeqNil))) 1 = y1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+rewrite <- Lx. rewrite <- Ly. exact L.
+Qed.
+Theorem Lean_List_Perm_swap_inj2 : forall x0 x1 x2 y0 y1 y2, (Lean_List_Perm_swap_node x0 x1 x2) = (Lean_List_Perm_swap_node y0 y1 y2) -> x2 = y2.
+let x0 x1 x2 y0 y1 y2. assume H: (Lean_List_Perm_swap_node x0 x1 x2) = (Lean_List_Perm_swap_node y0 y1 y2).
+claim L: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 2 = SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) SeqNil))) 2.
+{ exact IndNode_args_inj Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_distinct 2 (ordsuccI1
+    3 2 (ordsuccI2 2)) 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) SeqNil))) H 2 (ordsuccI2 2). }
+claim Lx: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 2 = x2.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+claim Ly: SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) SeqNil))) 2 = y2.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+rewrite <- Lx. rewrite <- Ly. exact L.
+Qed.
+Theorem Lean_List_Perm_trans_inj0 : forall x0 x1 x2 x3 x4 y0 y1 y2 y3 y4, (Lean_List_Perm_trans_node x0 x1 x2 x3 x4) = (Lean_List_Perm_trans_node y0 y1 y2 y3 y4) -> x0 = y0.
+let x0 x1 x2 x3 x4 y0 y1 y2 y3 y4. assume H: (Lean_List_Perm_trans_node x0 x1 x2 x3 x4) = (Lean_List_Perm_trans_node y0 y1 y2 y3 y4).
+claim L: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 0 = SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) (SeqCons (y4) SeqNil))))) 0.
+{ exact IndNode_args_inj Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_distinct 3 (ordsuccI2
+    3) 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) (SeqCons (y4) SeqNil))))) H 0 (ordsuccI1 4 0
+    (ordsuccI1 3 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0))))). }
+claim Lx: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim Ly: SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) (SeqCons (y4) SeqNil))))) 0 = y0.
+{ rewrite SeqAt_0. reflexivity. }
+rewrite <- Lx. rewrite <- Ly. exact L.
+Qed.
+Theorem Lean_List_Perm_trans_inj1 : forall x0 x1 x2 x3 x4 y0 y1 y2 y3 y4, (Lean_List_Perm_trans_node x0 x1 x2 x3 x4) = (Lean_List_Perm_trans_node y0 y1 y2 y3 y4) -> x1 = y1.
+let x0 x1 x2 x3 x4 y0 y1 y2 y3 y4. assume H: (Lean_List_Perm_trans_node x0 x1 x2 x3 x4) = (Lean_List_Perm_trans_node y0 y1 y2 y3 y4).
+claim L: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 1 = SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) (SeqCons (y4) SeqNil))))) 1.
+{ exact IndNode_args_inj Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_distinct 3 (ordsuccI2
+    3) 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) (SeqCons (y4) SeqNil))))) H 1 (ordsuccI1 4 1
+    (ordsuccI1 3 1 (ordsuccI1 2 1 (ordsuccI2 1)))). }
+claim Lx: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 1 = x1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim Ly: SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) (SeqCons (y4) SeqNil))))) 1 = y1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+rewrite <- Lx. rewrite <- Ly. exact L.
+Qed.
+Theorem Lean_List_Perm_trans_inj2 : forall x0 x1 x2 x3 x4 y0 y1 y2 y3 y4, (Lean_List_Perm_trans_node x0 x1 x2 x3 x4) = (Lean_List_Perm_trans_node y0 y1 y2 y3 y4) -> x2 = y2.
+let x0 x1 x2 x3 x4 y0 y1 y2 y3 y4. assume H: (Lean_List_Perm_trans_node x0 x1 x2 x3 x4) = (Lean_List_Perm_trans_node y0 y1 y2 y3 y4).
+claim L: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 2 = SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) (SeqCons (y4) SeqNil))))) 2.
+{ exact IndNode_args_inj Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_distinct 3 (ordsuccI2
+    3) 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) (SeqCons (y4) SeqNil))))) H 2 (ordsuccI1 4 2
+    (ordsuccI1 3 2 (ordsuccI2 2))). }
+claim Lx: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 2 = x2.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+claim Ly: SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) (SeqCons (y4) SeqNil))))) 2 = y2.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+rewrite <- Lx. rewrite <- Ly. exact L.
+Qed.
+Theorem Lean_List_Perm_trans_inj3 : forall x0 x1 x2 x3 x4 y0 y1 y2 y3 y4, (Lean_List_Perm_trans_node x0 x1 x2 x3 x4) = (Lean_List_Perm_trans_node y0 y1 y2 y3 y4) -> x3 = y3.
+let x0 x1 x2 x3 x4 y0 y1 y2 y3 y4. assume H: (Lean_List_Perm_trans_node x0 x1 x2 x3 x4) = (Lean_List_Perm_trans_node y0 y1 y2 y3 y4).
+claim L: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 3 = SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) (SeqCons (y4) SeqNil))))) 3.
+{ exact IndNode_args_inj Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_distinct 3 (ordsuccI2
+    3) 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) (SeqCons (y4) SeqNil))))) H 3 (ordsuccI1 4 3
+    (ordsuccI2 3)). }
+claim Lx: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 3 = x3.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)). }
+claim Ly: SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) (SeqCons (y4) SeqNil))))) 3 = y3.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)). }
+rewrite <- Lx. rewrite <- Ly. exact L.
+Qed.
+Theorem Lean_List_Perm_trans_inj4 : forall x0 x1 x2 x3 x4 y0 y1 y2 y3 y4, (Lean_List_Perm_trans_node x0 x1 x2 x3 x4) = (Lean_List_Perm_trans_node y0 y1 y2 y3 y4) -> x4 = y4.
+let x0 x1 x2 x3 x4 y0 y1 y2 y3 y4. assume H: (Lean_List_Perm_trans_node x0 x1 x2 x3 x4) = (Lean_List_Perm_trans_node y0 y1 y2 y3 y4).
+claim L: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 4 = SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) (SeqCons (y4) SeqNil))))) 4.
+{ exact IndNode_args_inj Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_distinct 3 (ordsuccI2
+    3) 5 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) (SeqCons (y4) SeqNil))))) H 4 (ordsuccI2 4). }
+claim Lx: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) SeqNil))))) 4 = x4.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0
+    nat_0)). } exact (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))). }
+claim Ly: SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) (SeqCons (y4) SeqNil))))) 4 = y4.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0
+    nat_0)). } exact (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))). }
+rewrite <- Lx. rewrite <- Ly. exact L.
+Qed.
+
+Theorem Lean_List_Perm_in_All : forall i t, t :e Lean_List_Perm i -> t :e Lean_List_Perm_All.
+let i t. assume H: t :e Lean_List_Perm i. exact SepE1 Lean_List_Perm_All (fun x:set => IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B x = i) t H.
+Qed.
+Theorem Lean_List_Perm_one_index : forall i i' t, t :e Lean_List_Perm i -> t :e Lean_List_Perm i' -> i = i'.
+let i i' t. assume H: t :e Lean_List_Perm i. assume H': t :e Lean_List_Perm i'.
+exact eq_i_tra i (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) i' (eq_sym_i (IndIdx
+    Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) i (SepE2 Lean_List_Perm_All (fun x:set => IndIdx
+    Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B x = i) t H)) (SepE2 Lean_List_Perm_All (fun x:set =>
+    IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B x = i') t H').
+Qed.
+
+Definition Lean_List_Perm_PropPacked : set -> set := fun i => {x :e 1 | exists w, w :e Lean_List_Perm i}.
+Theorem Lean_List_Perm_PropPacked_prop : forall i, Lean_List_Perm_PropPacked i :e LeanProp.
+let i. exact PowerI 1 (Lean_List_Perm_PropPacked i) (Sep_Subq 1 (fun x:set => exists w, w :e Lean_List_Perm i)).
+Qed.
+Definition Lean_List_Perm_nil_proof : set := 0.
+Theorem Lean_List_Perm_nil_proof_ok : 0 :e (Lean_List_Perm_PropPacked (setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0))).
+exact SepI 1 (fun x:set => exists w, w :e Lean_List_Perm (setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0))) 0 In_0_1 (fun p H => H (Lean_List_Perm_nil_node) (Lean_List_Perm_nil_typed )).
+Qed.
+Theorem Lean_List_Perm_nil_proof_type : Lean_List_Perm_nil_proof :e (Lean_List_Perm_PropPacked (setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0))).
+exact (Lean_List_Perm_nil_proof_ok ).
+Qed.
+Definition Lean_List_Perm_cons_proof : set := (fun x0 :e P0 => (fun x1 :e (Lean_List P0) => (fun x2 :e (Lean_List P0) => (fun x3 :e (Lean_List_Perm (setsum x1 x2)) => 0)))).
+Theorem Lean_List_Perm_cons_proof_ok : forall x0 :e P0, forall x1 :e (Lean_List P0), forall x2 :e (Lean_List P0), forall x3 :e (Lean_List_Perm (setsum x1 x2)), 0 :e (Lean_List_Perm_PropPacked (setsum
+    (Lean_List_cons_node P0 x0 x1) (Lean_List_cons_node P0 x0 x2))).
+let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e (Lean_List P0). let x2. assume H2: x2 :e (Lean_List P0). let x3. assume H3: x3 :e (Lean_List_Perm (setsum x1 x2)). exact SepI 1 (fun x:set =>
+    exists w, w :e Lean_List_Perm (setsum (Lean_List_cons_node P0 x0 x1) (Lean_List_cons_node P0 x0 x2))) 0 In_0_1 (fun p H => H (Lean_List_Perm_cons_node x0 x1 x2 x3) (Lean_List_Perm_cons_typed x0
+    H0 x1 H1 x2 H2 x3 H3)).
+Qed.
+Theorem Lean_List_Perm_cons_proof_type : Lean_List_Perm_cons_proof :e (Pi_ x0 :e P0, (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum x1 x2)),
+    (Lean_List_Perm_PropPacked (setsum (Lean_List_cons_node P0 x0 x1) (Lean_List_cons_node P0 x0 x2))))))).
+exact (lam_Pi P0 (fun x0 => (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum x1 x2)), (Lean_List_Perm_PropPacked (setsum (Lean_List_cons_node P0 x0 x1)
+    (Lean_List_cons_node P0 x0 x2))))))) (fun x0 => (fun x1 :e (Lean_List P0) => (fun x2 :e (Lean_List P0) => (fun x3 :e (Lean_List_Perm (setsum x1 x2)) => 0)))) (fun x0 H0 => (lam_Pi (Lean_List P0)
+    (fun x1 => (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum x1 x2)), (Lean_List_Perm_PropPacked (setsum (Lean_List_cons_node P0 x0 x1) (Lean_List_cons_node P0 x0 x2)))))) (fun x1 =>
+    (fun x2 :e (Lean_List P0) => (fun x3 :e (Lean_List_Perm (setsum x1 x2)) => 0))) (fun x1 H1 => (lam_Pi (Lean_List P0) (fun x2 => (Pi_ x3 :e (Lean_List_Perm (setsum x1 x2)),
+    (Lean_List_Perm_PropPacked (setsum (Lean_List_cons_node P0 x0 x1) (Lean_List_cons_node P0 x0 x2))))) (fun x2 => (fun x3 :e (Lean_List_Perm (setsum x1 x2)) => 0)) (fun x2 H2 => (lam_Pi
+    (Lean_List_Perm (setsum x1 x2)) (fun x3 => (Lean_List_Perm_PropPacked (setsum (Lean_List_cons_node P0 x0 x1) (Lean_List_cons_node P0 x0 x2)))) (fun x3 => 0) (fun x3 H3 =>
+    (Lean_List_Perm_cons_proof_ok x0 H0 x1 H1 x2 H2 x3 H3))))))))).
+Qed.
+Definition Lean_List_Perm_swap_proof : set := (fun x0 :e P0 => (fun x1 :e P0 => (fun x2 :e (Lean_List P0) => 0))).
+Theorem Lean_List_Perm_swap_proof_ok : forall x0 :e P0, forall x1 :e P0, forall x2 :e (Lean_List P0), 0 :e (Lean_List_Perm_PropPacked (setsum (Lean_List_cons_node P0 x1 (Lean_List_cons_node P0 x0
+    x2)) (Lean_List_cons_node P0 x0 (Lean_List_cons_node P0 x1 x2)))).
+let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e P0. let x2. assume H2: x2 :e (Lean_List P0). exact SepI 1 (fun x:set => exists w, w :e Lean_List_Perm (setsum (Lean_List_cons_node P0 x1
+    (Lean_List_cons_node P0 x0 x2)) (Lean_List_cons_node P0 x0 (Lean_List_cons_node P0 x1 x2)))) 0 In_0_1 (fun p H => H (Lean_List_Perm_swap_node x0 x1 x2) (Lean_List_Perm_swap_typed x0 H0 x1 H1 x2
+    H2)).
+Qed.
+Theorem Lean_List_Perm_swap_proof_type : Lean_List_Perm_swap_proof :e (Pi_ x0 :e P0, (Pi_ x1 :e P0, (Pi_ x2 :e (Lean_List P0), (Lean_List_Perm_PropPacked (setsum (Lean_List_cons_node P0 x1
+    (Lean_List_cons_node P0 x0 x2)) (Lean_List_cons_node P0 x0 (Lean_List_cons_node P0 x1 x2))))))).
+exact (lam_Pi P0 (fun x0 => (Pi_ x1 :e P0, (Pi_ x2 :e (Lean_List P0), (Lean_List_Perm_PropPacked (setsum (Lean_List_cons_node P0 x1 (Lean_List_cons_node P0 x0 x2)) (Lean_List_cons_node P0 x0
+    (Lean_List_cons_node P0 x1 x2))))))) (fun x0 => (fun x1 :e P0 => (fun x2 :e (Lean_List P0) => 0))) (fun x0 H0 => (lam_Pi P0 (fun x1 => (Pi_ x2 :e (Lean_List P0), (Lean_List_Perm_PropPacked
+    (setsum (Lean_List_cons_node P0 x1 (Lean_List_cons_node P0 x0 x2)) (Lean_List_cons_node P0 x0 (Lean_List_cons_node P0 x1 x2)))))) (fun x1 => (fun x2 :e (Lean_List P0) => 0)) (fun x1 H1 => (lam_Pi
+    (Lean_List P0) (fun x2 => (Lean_List_Perm_PropPacked (setsum (Lean_List_cons_node P0 x1 (Lean_List_cons_node P0 x0 x2)) (Lean_List_cons_node P0 x0 (Lean_List_cons_node P0 x1 x2))))) (fun x2 => 0)
+    (fun x2 H2 => (Lean_List_Perm_swap_proof_ok x0 H0 x1 H1 x2 H2))))))).
+Qed.
+Definition Lean_List_Perm_trans_proof : set := (fun x0 :e (Lean_List P0) => (fun x1 :e (Lean_List P0) => (fun x2 :e (Lean_List P0) => (fun x3 :e (Lean_List_Perm (setsum x0 x1)) => (fun x4 :e
+    (Lean_List_Perm (setsum x1 x2)) => 0))))).
+Theorem Lean_List_Perm_trans_proof_ok : forall x0 :e (Lean_List P0), forall x1 :e (Lean_List P0), forall x2 :e (Lean_List P0), forall x3 :e (Lean_List_Perm (setsum x0 x1)), forall x4 :e
+    (Lean_List_Perm (setsum x1 x2)), 0 :e (Lean_List_Perm_PropPacked (setsum x0 x2)).
+let x0. assume H0: x0 :e (Lean_List P0). let x1. assume H1: x1 :e (Lean_List P0). let x2. assume H2: x2 :e (Lean_List P0). let x3. assume H3: x3 :e (Lean_List_Perm (setsum x0 x1)). let x4. assume H4:
+    x4 :e (Lean_List_Perm (setsum x1 x2)). exact SepI 1 (fun x:set => exists w, w :e Lean_List_Perm (setsum x0 x2)) 0 In_0_1 (fun p H => H (Lean_List_Perm_trans_node x0 x1 x2 x3 x4)
+    (Lean_List_Perm_trans_typed x0 H0 x1 H1 x2 H2 x3 H3 x4 H4)).
+Qed.
+Theorem Lean_List_Perm_trans_proof_type : Lean_List_Perm_trans_proof :e (Pi_ x0 :e (Lean_List P0), (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum x0 x1)),
+    (Pi_ x4 :e (Lean_List_Perm (setsum x1 x2)), (Lean_List_Perm_PropPacked (setsum x0 x2))))))).
+exact (lam_Pi (Lean_List P0) (fun x0 => (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum x0 x1)), (Pi_ x4 :e (Lean_List_Perm (setsum x1 x2)),
+    (Lean_List_Perm_PropPacked (setsum x0 x2))))))) (fun x0 => (fun x1 :e (Lean_List P0) => (fun x2 :e (Lean_List P0) => (fun x3 :e (Lean_List_Perm (setsum x0 x1)) => (fun x4 :e (Lean_List_Perm
+    (setsum x1 x2)) => 0))))) (fun x0 H0 => (lam_Pi (Lean_List P0) (fun x1 => (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum x0 x1)), (Pi_ x4 :e (Lean_List_Perm (setsum x1 x2)),
+    (Lean_List_Perm_PropPacked (setsum x0 x2)))))) (fun x1 => (fun x2 :e (Lean_List P0) => (fun x3 :e (Lean_List_Perm (setsum x0 x1)) => (fun x4 :e (Lean_List_Perm (setsum x1 x2)) => 0)))) (fun x1 H1
+    => (lam_Pi (Lean_List P0) (fun x2 => (Pi_ x3 :e (Lean_List_Perm (setsum x0 x1)), (Pi_ x4 :e (Lean_List_Perm (setsum x1 x2)), (Lean_List_Perm_PropPacked (setsum x0 x2))))) (fun x2 => (fun x3 :e
+    (Lean_List_Perm (setsum x0 x1)) => (fun x4 :e (Lean_List_Perm (setsum x1 x2)) => 0))) (fun x2 H2 => (lam_Pi (Lean_List_Perm (setsum x0 x1)) (fun x3 => (Pi_ x4 :e (Lean_List_Perm (setsum x1 x2)),
+    (Lean_List_Perm_PropPacked (setsum x0 x2)))) (fun x3 => (fun x4 :e (Lean_List_Perm (setsum x1 x2)) => 0)) (fun x3 H3 => (lam_Pi (Lean_List_Perm (setsum x1 x2)) (fun x4 =>
+    (Lean_List_Perm_PropPacked (setsum x0 x2))) (fun x4 => 0) (fun x4 H4 => (Lean_List_Perm_trans_proof_ok x0 H0 x1 H1 x2 H2 x3 H3 x4 H4))))))))))).
+Qed.
+Definition Lean_List_Perm_prec : set -> set -> set -> set -> set -> set -> set := fun h0 h1 h2 h3 i t => IndRec Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1)
+    (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) (Eps_i (fun w:set => w :e (Lean_List_Perm i))).
+Theorem Lean_List_Perm_PHM0 : forall C:set -> set -> set, forall h0 h1 h2 h3, h0 :e (C (setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0)) 0) -> forall a :e IndArgs Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 0, forall r:set -> set, (forall j :e Lean_List_Perm_N 0,
+    Lean_List_Perm_R 0 j -> r j :e (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t)
+    0) (a j)) -> (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4)))
+    SeqNil)))) k) 0 a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 0 r) :e (fun t:set => C (IndIdx
+    Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) 0) (IndNode Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 0 a).
+let C h0 h1 h2 h3. assume Hh: h0 :e (C (setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0)) 0).
+let a. assume Ha: a :e IndArgs Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 0. let r.
+    assume Hr: forall j :e Lean_List_Perm_N 0, Lean_List_Perm_R 0 j -> r j :e (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) 0) (a j).
+claim Fi: IndFits Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 0 a.
+{ exact IndArgs_Fits Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 0 a Ha. }
+claim Lv: h0 :e (C (setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0)) 0).
+{ exact Hh. }
+claim Lm: (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k)
+    0 a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 0 r) = h0.
+{ prove SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B 0 r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 0 r 3) (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B 0 r 4))) SeqNil)))) 0 = h0. rewrite SeqAt_0. reflexivity. }
+claim Lo: (setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0)) = IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 0 a).
+{ exact eq_i_tra (setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0)) (Lean_List_Perm_O 0 a) (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B 0 a)) (eq_sym_i (Lean_List_Perm_O 0 a) (setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0)) (Lean_List_Perm_O0 a)) (eq_sym_i (IndIdx Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 0 a)) (Lean_List_Perm_O 0 a) (IndIdx_Node Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 0 a)). }
+exact In_eq_ls ((fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4)))
+    SeqNil)))) k) 0 a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 0 r)) h0 (C (IndIdx
+    Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 0 a)) 0) Lm (In_fam_eq (fun z:set => C z 0) (setsum (Lean_List_nil_node P0)
+    (Lean_List_nil_node P0)) (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 0 a)) Lo h0 Lv).
+Qed.
+Theorem Lean_List_Perm_PHM1 : forall C:set -> set -> set, forall h0 h1 h2 h3, h1 :e (Pi_ x0 :e P0, (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum x1 x2)),
+    (Pi_ y3 :e (C (setsum x1 x2) 0), (C (setsum (Lean_List_cons_node P0 x0 x1) (Lean_List_cons_node P0 x0 x2)) 0)))))) -> forall a :e IndArgs Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 1, forall r:set -> set, (forall j :e Lean_List_Perm_N 1, Lean_List_Perm_R 1 j -> r j :e
+    (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) 0) (a j)) -> (fun k a r:set =>
+    SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) 1 a (IndRes
+    Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 r) :e (fun t:set => C (IndIdx Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) 0) (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 a).
+let C h0 h1 h2 h3. assume Hh: h1 :e (Pi_ x0 :e P0, (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum x1 x2)), (Pi_ y3 :e (C (setsum x1 x2) 0), (C (setsum
+    (Lean_List_cons_node P0 x0 x1) (Lean_List_cons_node P0 x0 x2)) 0)))))).
+let a. assume Ha: a :e IndArgs Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 1. let r.
+    assume Hr: forall j :e Lean_List_Perm_N 1, Lean_List_Perm_R 1 j -> r j :e (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) 0) (a j).
+claim Fi: IndFits Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 1 a.
+{ exact IndArgs_Fits Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 1 a Ha. }
+claim G0: (a 0) :e P0.
+{ apply Fi 0 (In_eq_rs 0 (Lean_List_Perm_N 1) 4 Lean_List_Perm_N1 (ordsuccI1 3 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0))))). assume H1. assume H2. exact In_eq_r (a 0) (Lean_List_Perm_F 1 0 a) P0
+    (Lean_List_Perm_F1_0 a) (H2 Lean_List_Perm_nR1_0). }
+claim G1: (a 1) :e (Lean_List P0).
+{ apply Fi 1 (In_eq_rs 1 (Lean_List_Perm_N 1) 4 Lean_List_Perm_N1 (ordsuccI1 3 1 (ordsuccI1 2 1 (ordsuccI2 1)))). assume H1. assume H2. exact In_eq_r (a 1) (Lean_List_Perm_F 1 1 a) (Lean_List P0)
+    (Lean_List_Perm_F1_1 a) (H2 Lean_List_Perm_nR1_1). }
+claim G2: (a 2) :e (Lean_List P0).
+{ apply Fi 2 (In_eq_rs 2 (Lean_List_Perm_N 1) 4 Lean_List_Perm_N1 (ordsuccI1 3 2 (ordsuccI2 2))). assume H1. assume H2. exact In_eq_r (a 2) (Lean_List_Perm_F 1 2 a) (Lean_List P0)
+    (Lean_List_Perm_F1_2 a) (H2 Lean_List_Perm_nR1_2). }
+claim G3: (a 3) :e (Lean_List_Perm (setsum (a 1) (a 2))).
+{ apply Fi 3 (In_eq_rs 3 (Lean_List_Perm_N 1) 4 Lean_List_Perm_N1 (ordsuccI2 3)). assume H1. assume H2. apply H1 Lean_List_Perm_R1_3. assume H3: a 3 :e Lean_List_Perm_All. assume H4: IndIdx
+    Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (a 3) = Lean_List_Perm_Ix 1 3 a.
+  prove (a 3) :e {x :e Lean_List_Perm_All | IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B x = (setsum
+    (a 1) (a 2))}.
+  apply SepI Lean_List_Perm_All (fun x:set => IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B x =
+    (setsum (a 1) (a 2))) (a 3) H3.
+  exact eq_i_tra (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (a 3)) (Lean_List_Perm_Ix 1 3 a)
+    (setsum (a 1) (a 2)) H4 (Lean_List_Perm_Ix1_3 a). }
+claim Y3: r 3 :e (C (setsum (a 1) (a 2)) 0).
+{ exact In_fam_eq (fun z:set => C z 0) (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (a 3)) (setsum
+    (a 1) (a 2)) (SepE2 Lean_List_Perm_All (fun x:set => IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B x = (setsum (a 1) (a 2))) (a 3) G3) (r 3) (Hr 3 (In_eq_rs 3 (Lean_List_Perm_N 1) 4 Lean_List_Perm_N1 (ordsuccI2 3)) Lean_List_Perm_R1_3). }
+claim Rp3: IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 r 3 = r 3.
+{ exact IndRes_at Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 r 3 (In_eq_rs 3 (Lean_List_Perm_N 1) 4
+    Lean_List_Perm_N1 (ordsuccI2 3)) Lean_List_Perm_R1_3. }
+claim Lv: (h1 (a 0) (a 1) (a 2) (a 3) (r 3)) :e (C (setsum (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_cons_node P0 (a 0) (a 2))) 0).
+{ exact (ap_Pi (C (setsum (a 1) (a 2)) 0) (fun y3 => (C (setsum (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_cons_node P0 (a 0) (a 2))) 0)) ((((h1 (a 0)) (a 1)) (a 2)) (a 3)) (r 3) (ap_Pi
+    (Lean_List_Perm (setsum (a 1) (a 2))) (fun x3 => (Pi_ y3 :e (C (setsum (a 1) (a 2)) 0), (C (setsum (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_cons_node P0 (a 0) (a 2))) 0))) (((h1 (a 0)) (a
+    1)) (a 2)) (a 3) (ap_Pi (Lean_List P0) (fun x2 => (Pi_ x3 :e (Lean_List_Perm (setsum (a 1) x2)), (Pi_ y3 :e (C (setsum (a 1) x2) 0), (C (setsum (Lean_List_cons_node P0 (a 0) (a 1))
+    (Lean_List_cons_node P0 (a 0) x2)) 0)))) ((h1 (a 0)) (a 1)) (a 2) (ap_Pi (Lean_List P0) (fun x1 => (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum x1 x2)), (Pi_ y3 :e (C (setsum x1
+    x2) 0), (C (setsum (Lean_List_cons_node P0 (a 0) x1) (Lean_List_cons_node P0 (a 0) x2)) 0))))) (h1 (a 0)) (a 1) (ap_Pi P0 (fun x0 => (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List P0), (Pi_ x3
+    :e (Lean_List_Perm (setsum x1 x2)), (Pi_ y3 :e (C (setsum x1 x2) 0), (C (setsum (Lean_List_cons_node P0 x0 x1) (Lean_List_cons_node P0 x0 x2)) 0)))))) h1 (a 0) Hh G0) G1) G2) G3) Y3). }
+claim Lm: (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k)
+    1 a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 r) = (h1 (a 0) (a 1) (a 2) (a 3) (r 3)).
+{ prove SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B 1 r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 r 3) (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B 1 r 4))) SeqNil)))) 1 = (h1 (a 0) (a 1) (a 2) (a 3) (r 3)). rewrite SeqAt_S. { rewrite SeqAt_0. rewrite Rp3. reflexivity. } exact nat_0. }
+claim Lo: (setsum (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_cons_node P0 (a 0) (a 2))) = IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B 1 a).
+{ exact eq_i_tra (setsum (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_cons_node P0 (a 0) (a 2))) (Lean_List_Perm_O 1 a) (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B 1 a)) (eq_sym_i (Lean_List_Perm_O 1 a) (setsum (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_cons_node P0 (a 0) (a 2))) (Lean_List_Perm_O1 a)) (eq_sym_i
+    (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 a)) (Lean_List_Perm_O 1 a) (IndIdx_Node Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 a)). }
+exact In_eq_ls ((fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4)))
+    SeqNil)))) k) 1 a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 r)) (h1 (a 0) (a 1) (a 2) (a
+    3) (r 3)) (C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 a)) 0) Lm (In_fam_eq (fun z:set => C z 0) (setsum (Lean_List_cons_node P0
+    (a 0) (a 1)) (Lean_List_cons_node P0 (a 0) (a 2))) (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B
+    (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 1 a)) Lo (h1 (a 0) (a 1) (a 2) (a 3) (r 3)) Lv).
+Qed.
+Theorem Lean_List_Perm_PHM2 : forall C:set -> set -> set, forall h0 h1 h2 h3, h2 :e (Pi_ x0 :e P0, (Pi_ x1 :e P0, (Pi_ x2 :e (Lean_List P0), (C (setsum (Lean_List_cons_node P0 x1 (Lean_List_cons_node
+    P0 x0 x2)) (Lean_List_cons_node P0 x0 (Lean_List_cons_node P0 x1 x2))) 0)))) -> forall a :e IndArgs Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 2, forall r:set -> set, (forall j :e Lean_List_Perm_N 2, Lean_List_Perm_R 2 j -> r j :e (fun t:set => C (IndIdx
+    Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) 0) (a j)) -> (fun k a r:set => SeqAt (SeqCons (h0)
+    (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) 2 a (IndRes Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 2 r) :e (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) 0) (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 2 a).
+let C h0 h1 h2 h3. assume Hh: h2 :e (Pi_ x0 :e P0, (Pi_ x1 :e P0, (Pi_ x2 :e (Lean_List P0), (C (setsum (Lean_List_cons_node P0 x1 (Lean_List_cons_node P0 x0 x2)) (Lean_List_cons_node P0 x0
+    (Lean_List_cons_node P0 x1 x2))) 0)))).
+let a. assume Ha: a :e IndArgs Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 2. let r.
+    assume Hr: forall j :e Lean_List_Perm_N 2, Lean_List_Perm_R 2 j -> r j :e (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) 0) (a j).
+claim Fi: IndFits Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 2 a.
+{ exact IndArgs_Fits Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 2 a Ha. }
+claim G0: (a 0) :e P0.
+{ apply Fi 0 (In_eq_rs 0 (Lean_List_Perm_N 2) 3 Lean_List_Perm_N2 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0)))). assume H1. assume H2. exact In_eq_r (a 0) (Lean_List_Perm_F 2 0 a) P0
+    (Lean_List_Perm_F2_0 a) (H2 Lean_List_Perm_nR2_0). }
+claim G1: (a 1) :e P0.
+{ apply Fi 1 (In_eq_rs 1 (Lean_List_Perm_N 2) 3 Lean_List_Perm_N2 (ordsuccI1 2 1 (ordsuccI2 1))). assume H1. assume H2. exact In_eq_r (a 1) (Lean_List_Perm_F 2 1 a) P0 (Lean_List_Perm_F2_1 a) (H2
+    Lean_List_Perm_nR2_1). }
+claim G2: (a 2) :e (Lean_List P0).
+{ apply Fi 2 (In_eq_rs 2 (Lean_List_Perm_N 2) 3 Lean_List_Perm_N2 (ordsuccI2 2)). assume H1. assume H2. exact In_eq_r (a 2) (Lean_List_Perm_F 2 2 a) (Lean_List P0) (Lean_List_Perm_F2_2 a) (H2
+    Lean_List_Perm_nR2_2). }
+claim Lv: (h2 (a 0) (a 1) (a 2)) :e (C (setsum (Lean_List_cons_node P0 (a 1) (Lean_List_cons_node P0 (a 0) (a 2))) (Lean_List_cons_node P0 (a 0) (Lean_List_cons_node P0 (a 1) (a 2)))) 0).
+{ exact (ap_Pi (Lean_List P0) (fun x2 => (C (setsum (Lean_List_cons_node P0 (a 1) (Lean_List_cons_node P0 (a 0) x2)) (Lean_List_cons_node P0 (a 0) (Lean_List_cons_node P0 (a 1) x2))) 0)) ((h2 (a 0))
+    (a 1)) (a 2) (ap_Pi P0 (fun x1 => (Pi_ x2 :e (Lean_List P0), (C (setsum (Lean_List_cons_node P0 x1 (Lean_List_cons_node P0 (a 0) x2)) (Lean_List_cons_node P0 (a 0) (Lean_List_cons_node P0 x1
+    x2))) 0))) (h2 (a 0)) (a 1) (ap_Pi P0 (fun x0 => (Pi_ x1 :e P0, (Pi_ x2 :e (Lean_List P0), (C (setsum (Lean_List_cons_node P0 x1 (Lean_List_cons_node P0 x0 x2)) (Lean_List_cons_node P0 x0
+    (Lean_List_cons_node P0 x1 x2))) 0)))) h2 (a 0) Hh G0) G1) G2). }
+claim Lm: (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k)
+    2 a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 2 r) = (h2 (a 0) (a 1) (a 2)).
+{ prove SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B 2 r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 2 r 3) (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B 2 r 4))) SeqNil)))) 2 = (h2 (a 0) (a 1) (a 2)). rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0).
+    }
+claim Lo: (setsum (Lean_List_cons_node P0 (a 1) (Lean_List_cons_node P0 (a 0) (a 2))) (Lean_List_cons_node P0 (a 0) (Lean_List_cons_node P0 (a 1) (a 2)))) = IndIdx Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 2 a).
+{ exact eq_i_tra (setsum (Lean_List_cons_node P0 (a 1) (Lean_List_cons_node P0 (a 0) (a 2))) (Lean_List_cons_node P0 (a 0) (Lean_List_cons_node P0 (a 1) (a 2)))) (Lean_List_Perm_O 2 a) (IndIdx
+    Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 2 a)) (eq_sym_i (Lean_List_Perm_O 2 a) (setsum (Lean_List_cons_node P0 (a 1)
+    (Lean_List_cons_node P0 (a 0) (a 2))) (Lean_List_cons_node P0 (a 0) (Lean_List_cons_node P0 (a 1) (a 2)))) (Lean_List_Perm_O2 a)) (eq_sym_i (IndIdx Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 2 a)) (Lean_List_Perm_O 2 a) (IndIdx_Node Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 2 a)). }
+exact In_eq_ls ((fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4)))
+    SeqNil)))) k) 2 a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 2 r)) (h2 (a 0) (a 1) (a 2)) (C
+    (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 2 a)) 0) Lm (In_fam_eq (fun z:set => C z 0) (setsum (Lean_List_cons_node P0 (a 1)
+    (Lean_List_cons_node P0 (a 0) (a 2))) (Lean_List_cons_node P0 (a 0) (Lean_List_cons_node P0 (a 1) (a 2)))) (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B 2 a)) Lo (h2 (a 0) (a 1) (a 2)) Lv).
+Qed.
+Theorem Lean_List_Perm_PHM3 : forall C:set -> set -> set, forall h0 h1 h2 h3, h3 :e (Pi_ x0 :e (Lean_List P0), (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum
+    x0 x1)), (Pi_ x4 :e (Lean_List_Perm (setsum x1 x2)), (Pi_ y3 :e (C (setsum x0 x1) 0), (Pi_ y4 :e (C (setsum x1 x2) 0), (C (setsum x0 x2) 0)))))))) -> forall a :e IndArgs Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 3, forall r:set -> set, (forall j :e Lean_List_Perm_N 3,
+    Lean_List_Perm_R 3 j -> r j :e (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t)
+    0) (a j)) -> (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4)))
+    SeqNil)))) k) 3 a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 r) :e (fun t:set => C (IndIdx
+    Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) 0) (IndNode Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 a).
+let C h0 h1 h2 h3. assume Hh: h3 :e (Pi_ x0 :e (Lean_List P0), (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum x0 x1)), (Pi_ x4 :e (Lean_List_Perm (setsum x1
+    x2)), (Pi_ y3 :e (C (setsum x0 x1) 0), (Pi_ y4 :e (C (setsum x1 x2) 0), (C (setsum x0 x2) 0)))))))).
+let a. assume Ha: a :e IndArgs Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 3. let r.
+    assume Hr: forall j :e Lean_List_Perm_N 3, Lean_List_Perm_R 3 j -> r j :e (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) 0) (a j).
+claim Fi: IndFits Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 3 a.
+{ exact IndArgs_Fits Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All 3 a Ha. }
+claim G0: (a 0) :e (Lean_List P0).
+{ apply Fi 0 (In_eq_rs 0 (Lean_List_Perm_N 3) 5 Lean_List_Perm_N3 (ordsuccI1 4 0 (ordsuccI1 3 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0)))))). assume H1. assume H2. exact In_eq_r (a 0)
+    (Lean_List_Perm_F 3 0 a) (Lean_List P0) (Lean_List_Perm_F3_0 a) (H2 Lean_List_Perm_nR3_0). }
+claim G1: (a 1) :e (Lean_List P0).
+{ apply Fi 1 (In_eq_rs 1 (Lean_List_Perm_N 3) 5 Lean_List_Perm_N3 (ordsuccI1 4 1 (ordsuccI1 3 1 (ordsuccI1 2 1 (ordsuccI2 1))))). assume H1. assume H2. exact In_eq_r (a 1) (Lean_List_Perm_F 3 1 a)
+    (Lean_List P0) (Lean_List_Perm_F3_1 a) (H2 Lean_List_Perm_nR3_1). }
+claim G2: (a 2) :e (Lean_List P0).
+{ apply Fi 2 (In_eq_rs 2 (Lean_List_Perm_N 3) 5 Lean_List_Perm_N3 (ordsuccI1 4 2 (ordsuccI1 3 2 (ordsuccI2 2)))). assume H1. assume H2. exact In_eq_r (a 2) (Lean_List_Perm_F 3 2 a) (Lean_List P0)
+    (Lean_List_Perm_F3_2 a) (H2 Lean_List_Perm_nR3_2). }
+claim G3: (a 3) :e (Lean_List_Perm (setsum (a 0) (a 1))).
+{ apply Fi 3 (In_eq_rs 3 (Lean_List_Perm_N 3) 5 Lean_List_Perm_N3 (ordsuccI1 4 3 (ordsuccI2 3))). assume H1. assume H2. apply H1 Lean_List_Perm_R3_3. assume H3: a 3 :e Lean_List_Perm_All. assume H4:
+    IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (a 3) = Lean_List_Perm_Ix 3 3 a.
+  prove (a 3) :e {x :e Lean_List_Perm_All | IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B x = (setsum
+    (a 0) (a 1))}.
+  apply SepI Lean_List_Perm_All (fun x:set => IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B x =
+    (setsum (a 0) (a 1))) (a 3) H3.
+  exact eq_i_tra (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (a 3)) (Lean_List_Perm_Ix 3 3 a)
+    (setsum (a 0) (a 1)) H4 (Lean_List_Perm_Ix3_3 a). }
+claim Y3: r 3 :e (C (setsum (a 0) (a 1)) 0).
+{ exact In_fam_eq (fun z:set => C z 0) (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (a 3)) (setsum
+    (a 0) (a 1)) (SepE2 Lean_List_Perm_All (fun x:set => IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B x = (setsum (a 0) (a 1))) (a 3) G3) (r 3) (Hr 3 (In_eq_rs 3 (Lean_List_Perm_N 3) 5 Lean_List_Perm_N3 (ordsuccI1 4 3 (ordsuccI2 3))) Lean_List_Perm_R3_3). }
+claim G4: (a 4) :e (Lean_List_Perm (setsum (a 1) (a 2))).
+{ apply Fi 4 (In_eq_rs 4 (Lean_List_Perm_N 3) 5 Lean_List_Perm_N3 (ordsuccI2 4)). assume H1. assume H2. apply H1 Lean_List_Perm_R3_4. assume H3: a 4 :e Lean_List_Perm_All. assume H4: IndIdx
+    Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (a 4) = Lean_List_Perm_Ix 3 4 a.
+  prove (a 4) :e {x :e Lean_List_Perm_All | IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B x = (setsum
+    (a 1) (a 2))}.
+  apply SepI Lean_List_Perm_All (fun x:set => IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B x =
+    (setsum (a 1) (a 2))) (a 4) H3.
+  exact eq_i_tra (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (a 4)) (Lean_List_Perm_Ix 3 4 a)
+    (setsum (a 1) (a 2)) H4 (Lean_List_Perm_Ix3_4 a). }
+claim Y4: r 4 :e (C (setsum (a 1) (a 2)) 0).
+{ exact In_fam_eq (fun z:set => C z 0) (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (a 4)) (setsum
+    (a 1) (a 2)) (SepE2 Lean_List_Perm_All (fun x:set => IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B x = (setsum (a 1) (a 2))) (a 4) G4) (r 4) (Hr 4 (In_eq_rs 4 (Lean_List_Perm_N 3) 5 Lean_List_Perm_N3 (ordsuccI2 4)) Lean_List_Perm_R3_4). }
+claim Rp3: IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 r 3 = r 3.
+{ exact IndRes_at Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 r 3 (In_eq_rs 3 (Lean_List_Perm_N 3) 5
+    Lean_List_Perm_N3 (ordsuccI1 4 3 (ordsuccI2 3))) Lean_List_Perm_R3_3. }
+claim Rp4: IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 r 4 = r 4.
+{ exact IndRes_at Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 r 4 (In_eq_rs 4 (Lean_List_Perm_N 3) 5
+    Lean_List_Perm_N3 (ordsuccI2 4)) Lean_List_Perm_R3_4. }
+claim Lv: (h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4)) :e (C (setsum (a 0) (a 2)) 0).
+{ exact (ap_Pi (C (setsum (a 1) (a 2)) 0) (fun y4 => (C (setsum (a 0) (a 2)) 0)) ((((((h3 (a 0)) (a 1)) (a 2)) (a 3)) (a 4)) (r 3)) (r 4) (ap_Pi (C (setsum (a 0) (a 1)) 0) (fun y3 => (Pi_ y4 :e (C
+    (setsum (a 1) (a 2)) 0), (C (setsum (a 0) (a 2)) 0))) (((((h3 (a 0)) (a 1)) (a 2)) (a 3)) (a 4)) (r 3) (ap_Pi (Lean_List_Perm (setsum (a 1) (a 2))) (fun x4 => (Pi_ y3 :e (C (setsum (a 0) (a 1))
+    0), (Pi_ y4 :e (C (setsum (a 1) (a 2)) 0), (C (setsum (a 0) (a 2)) 0)))) ((((h3 (a 0)) (a 1)) (a 2)) (a 3)) (a 4) (ap_Pi (Lean_List_Perm (setsum (a 0) (a 1))) (fun x3 => (Pi_ x4 :e
+    (Lean_List_Perm (setsum (a 1) (a 2))), (Pi_ y3 :e (C (setsum (a 0) (a 1)) 0), (Pi_ y4 :e (C (setsum (a 1) (a 2)) 0), (C (setsum (a 0) (a 2)) 0))))) (((h3 (a 0)) (a 1)) (a 2)) (a 3) (ap_Pi
+    (Lean_List P0) (fun x2 => (Pi_ x3 :e (Lean_List_Perm (setsum (a 0) (a 1))), (Pi_ x4 :e (Lean_List_Perm (setsum (a 1) x2)), (Pi_ y3 :e (C (setsum (a 0) (a 1)) 0), (Pi_ y4 :e (C (setsum (a 1) x2)
+    0), (C (setsum (a 0) x2) 0)))))) ((h3 (a 0)) (a 1)) (a 2) (ap_Pi (Lean_List P0) (fun x1 => (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum (a 0) x1)), (Pi_ x4 :e (Lean_List_Perm
+    (setsum x1 x2)), (Pi_ y3 :e (C (setsum (a 0) x1) 0), (Pi_ y4 :e (C (setsum x1 x2) 0), (C (setsum (a 0) x2) 0))))))) (h3 (a 0)) (a 1) (ap_Pi (Lean_List P0) (fun x0 => (Pi_ x1 :e (Lean_List P0),
+    (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum x0 x1)), (Pi_ x4 :e (Lean_List_Perm (setsum x1 x2)), (Pi_ y3 :e (C (setsum x0 x1) 0), (Pi_ y4 :e (C (setsum x1 x2) 0), (C (setsum x0
+    x2) 0)))))))) h3 (a 0) Hh G0) G1) G2) G3) G4) Y3) Y4). }
+claim Lm: (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k)
+    3 a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 r) = (h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3)
+    (r 4)).
+{ prove SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B 3 r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 r 3) (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B 3 r 4))) SeqNil)))) 3 = (h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4)). rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. rewrite Rp3.
+    rewrite Rp4. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)). }
+claim Lo: (setsum (a 0) (a 2)) = IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode
+    Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 a).
+{ exact eq_i_tra (setsum (a 0) (a 2)) (Lean_List_Perm_O 3 a) (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 a)) (eq_sym_i
+    (Lean_List_Perm_O 3 a) (setsum (a 0) (a 2)) (Lean_List_Perm_O3 a)) (eq_sym_i (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 a))
+    (Lean_List_Perm_O 3 a) (IndIdx_Node Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 a)). }
+exact In_eq_ls ((fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4)))
+    SeqNil)))) k) 3 a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 r)) (h3 (a 0) (a 1) (a 2) (a
+    3) (a 4) (r 3) (r 4)) (C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 a)) 0) Lm (In_fam_eq (fun z:set => C z 0) (setsum (a 0) (a 2)) (IndIdx
+    Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (IndNode Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B 3 a)) Lo (h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4)) Lv).
+Qed.
+Theorem Lean_List_Perm_prec_type : forall C:set -> set -> set, (forall i t, C i t :e LeanProp) -> forall h0 :e (C (setsum (Lean_List_nil_node P0) (Lean_List_nil_node P0)) 0), forall h1 :e (Pi_ x0 :e
+    P0, (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum x1 x2)), (Pi_ y3 :e (C (setsum x1 x2) 0), (C (setsum (Lean_List_cons_node P0 x0 x1)
+    (Lean_List_cons_node P0 x0 x2)) 0)))))), forall h2 :e (Pi_ x0 :e P0, (Pi_ x1 :e P0, (Pi_ x2 :e (Lean_List P0), (C (setsum (Lean_List_cons_node P0 x1 (Lean_List_cons_node P0 x0 x2))
+    (Lean_List_cons_node P0 x0 (Lean_List_cons_node P0 x1 x2))) 0)))), forall h3 :e (Pi_ x0 :e (Lean_List P0), (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List P0), (Pi_ x3 :e (Lean_List_Perm (setsum
+    x0 x1)), (Pi_ x4 :e (Lean_List_Perm (setsum x1 x2)), (Pi_ y3 :e (C (setsum x0 x1) 0), (Pi_ y4 :e (C (setsum x1 x2) 0), (C (setsum x0 x2) 0)))))))), forall i, forall t :e
+    (Lean_List_Perm_PropPacked i), Lean_List_Perm_prec h0 h1 h2 h3 i t :e C i t.
+let C. assume HP. let h0. assume Hh0. let h1. assume Hh1. let h2. assume Hh2. let h3. assume Hh3.
+claim HM: forall k :e Lean_List_Perm_K, forall a :e IndArgs Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B
+    Lean_List_Perm_All k, forall r:set -> set, (forall j :e Lean_List_Perm_N k, Lean_List_Perm_R k j -> r j :e (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) 0) (a j)) -> (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons
+    ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) k a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B k r) :e (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B t) 0) (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B k a).
+{ let k. assume Hk: k :e Lean_List_Perm_K. exact (Below_S 3 (fun k => forall a :e IndArgs Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All k, forall r:set -> set, (forall j :e Lean_List_Perm_N k, Lean_List_Perm_R k j -> r j :e (fun t:set => C (IndIdx Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) 0) (a j)) -> (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0)
+    (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) k a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B k r) :e (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) 0) (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B k a)) (Below_S 2 (fun k => forall a :e IndArgs Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All k, forall r:set -> set, (forall j :e Lean_List_Perm_N k, Lean_List_Perm_R k j -> r j :e (fun t:set => C (IndIdx Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) 0) (a j)) -> (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0)
+    (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) k a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B k r) :e (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) 0) (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B k a)) (Below_S 1 (fun k => forall a :e IndArgs Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All k, forall r:set -> set, (forall j :e Lean_List_Perm_N k, Lean_List_Perm_R k j -> r j :e (fun t:set => C (IndIdx Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) 0) (a j)) -> (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0)
+    (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) k a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B k r) :e (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) 0) (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B k a)) (Below_S 0 (fun k => forall a :e IndArgs Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All k, forall r:set -> set, (forall j :e Lean_List_Perm_N k, Lean_List_Perm_R k j -> r j :e (fun t:set => C (IndIdx Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) 0) (a j)) -> (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0)
+    (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) k a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B k r) :e (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) 0) (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B k a)) (Below_0 (fun k => forall a :e IndArgs Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_All k, forall r:set -> set, (forall j :e Lean_List_Perm_N k, Lean_List_Perm_R k j -> r j :e (fun t:set => C (IndIdx Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) 0) (a j)) -> (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0)
+    (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) k a (IndRes Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N
+    Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B k r) :e (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) 0) (IndNode Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix
+    Lean_List_Perm_O Lean_List_Perm_B k a))) (Lean_List_Perm_PHM0 C h0 h1 h2 h3 Hh0)) (Lean_List_Perm_PHM1 C h0 h1 h2 h3 Hh1)) (Lean_List_Perm_PHM2 C h0 h1 h2 h3 Hh2)) (Lean_List_Perm_PHM3 C h0 h1 h2
+    h3 Hh3)) k Hk. }
+let i. let t. assume Ht: t :e (Lean_List_Perm_PropPacked i).
+claim Hw0: (Eps_i (fun w:set => w :e (Lean_List_Perm i))) :e (Lean_List_Perm i).
+{ exact Eps_i_ex (fun w:set => w :e (Lean_List_Perm i)) (SepE2 1 (fun x:set => exists w, w :e (Lean_List_Perm i)) t Ht). }
+claim Ht0: t = 0.
+{ exact SingE 0 t (Subq_1_Sing0 t (SepE1 1 (fun x:set => exists w, w :e (Lean_List_Perm i)) t Ht)). }
+claim L: IndRec Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons
+    ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) (Eps_i (fun w:set => w :e (Lean_List_Perm i))) :e
+    (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B t) 0) (Eps_i (fun w:set => w :e
+    (Lean_List_Perm i))).
+{ exact IndRec_type Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B Lean_List_Perm_distinct
+    Lean_List_Perm_bounded Lean_List_Perm_arity (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2)
+    (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) (fun t:set => C (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B t) 0) HM (Eps_i (fun w:set => w :e (Lean_List_Perm i))) (SepE1 Lean_List_Perm_All (fun x:set => IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R
+    Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B x = i) (Eps_i (fun w:set => w :e (Lean_List_Perm i))) Hw0). }
+exact In_fam_eq (fun z:set => C i z) 0 t (eq_sym_i t 0 Ht0) (IndRec Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O
+    Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4)))
+    SeqNil)))) k) (Eps_i (fun w:set => w :e (Lean_List_Perm i)))) (In_fam_eq (fun z:set => C z 0) (IndIdx Lean_List_Perm_K Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F
+    Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (Eps_i (fun w:set => w :e (Lean_List_Perm i)))) i (SepE2 Lean_List_Perm_All (fun x:set => IndIdx Lean_List_Perm_K Lean_List_Perm_T
+    Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B x = i) (Eps_i (fun w:set => w :e (Lean_List_Perm i))) Hw0) (IndRec Lean_List_Perm_K
+    Lean_List_Perm_T Lean_List_Perm_N Lean_List_Perm_R Lean_List_Perm_F Lean_List_Perm_Ix Lean_List_Perm_O Lean_List_Perm_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3)
+    (r 3))) (SeqCons ((h2 (a 0) (a 1) (a 2))) (SeqCons ((h3 (a 0) (a 1) (a 2) (a 3) (a 4) (r 3) (r 4))) SeqNil)))) k) (Eps_i (fun w:set => w :e (Lean_List_Perm i)))) L).
+Qed.
+Definition Lean_List_Perm_Prop : set -> set -> set := fun i0 i1 => Lean_List_Perm_PropPacked (setsum i0 i1).
+Theorem Lean_List_Perm_Prop_prop : forall i0 i1, Lean_List_Perm_Prop i0 i1 :e LeanProp.
+let i0 i1. exact Lean_List_Perm_PropPacked_prop (setsum i0 i1).
+Qed.
+
+End Lean_List_Perm_Section.
+(** ---- List.Mem, generated from its Lean declaration ---- **)
+
+Section Lean_List_Mem_Section.
+
+Variable P0 : set.
+Variable P1 : set.
+Let Lean_List_Mem_K : set := 2.
+Let Lean_List_Mem_T : set -> set := fun k => k.
+Let Lean_List_Mem_N : set -> set := fun k => SeqAt (SeqCons (1) (SeqCons (3) SeqNil)) k.
+Let Lean_List_Mem_R : set -> set -> prop := fun k j => 0 :e SeqAt (SeqAt (SeqCons ((SeqCons (0) SeqNil)) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (1) SeqNil)))) SeqNil)) k) j.
+Let Lean_List_Mem_F : set -> set -> set -> set := fun k j a => SeqAt (SeqAt (SeqCons ((SeqCons ((Lean_List P0)) SeqNil)) (SeqCons ((SeqCons (P0) (SeqCons ((Lean_List P0)) (SeqCons (0) SeqNil))))
+    SeqNil)) k) j.
+Let Lean_List_Mem_Ix : set -> set -> set -> set := fun k j a => SeqAt (SeqAt (SeqCons ((SeqCons (0) SeqNil)) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons ((a 1)) SeqNil)))) SeqNil)) k) j.
+Let Lean_List_Mem_O : set -> set -> set := fun k a => SeqAt (SeqCons ((Lean_List_cons_node P0 P1 (a 0))) (SeqCons ((Lean_List_cons_node P0 (a 0) (a 1))) SeqNil)) k.
+Let Lean_List_Mem_B : set := ((((Lean_List P0)) :\/: (P0)) :\/: ((Lean_List P0))).
+
+Definition Lean_List_Mem_All : set := IndCarrier Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B.
+Definition Lean_List_Mem : set -> set := IndFiber Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B.
+
+Theorem Lean_List_Mem_N0 : SeqAt (SeqCons (1) (SeqCons (3) SeqNil)) 0 = 1.
+rewrite SeqAt_0. reflexivity.
+Qed.
+Theorem Lean_List_Mem_O0 : forall a, SeqAt (SeqCons ((Lean_List_cons_node P0 P1 (a 0))) (SeqCons ((Lean_List_cons_node P0 (a 0) (a 1))) SeqNil)) 0 = (Lean_List_cons_node P0 P1 (a 0)).
+let a. rewrite SeqAt_0. reflexivity.
+Qed.
+Theorem Lean_List_Mem_nR0_0 : ~ (0 :e SeqAt (SeqAt (SeqCons ((SeqCons (0) SeqNil)) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (1) SeqNil)))) SeqNil)) 0) 0).
+rewrite SeqAt_0. rewrite SeqAt_0. exact EmptyE 0.
+Qed.
+Theorem Lean_List_Mem_F0_0 : forall a, SeqAt (SeqAt (SeqCons ((SeqCons ((Lean_List P0)) SeqNil)) (SeqCons ((SeqCons (P0) (SeqCons ((Lean_List P0)) (SeqCons (0) SeqNil)))) SeqNil)) 0) 0 = (Lean_List
+    P0).
+let a. rewrite SeqAt_0. rewrite SeqAt_0. reflexivity.
+Qed.
+Theorem Lean_List_Mem_N1 : SeqAt (SeqCons (1) (SeqCons (3) SeqNil)) 1 = 3.
+rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0.
+Qed.
+Theorem Lean_List_Mem_O1 : forall a, SeqAt (SeqCons ((Lean_List_cons_node P0 P1 (a 0))) (SeqCons ((Lean_List_cons_node P0 (a 0) (a 1))) SeqNil)) 1 = (Lean_List_cons_node P0 (a 0) (a 1)).
+let a. rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0.
+Qed.
+Theorem Lean_List_Mem_nR1_0 : ~ (0 :e SeqAt (SeqAt (SeqCons ((SeqCons (0) SeqNil)) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (1) SeqNil)))) SeqNil)) 1) 0).
+rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_0. exact EmptyE 0. } exact nat_0.
+Qed.
+Theorem Lean_List_Mem_F1_0 : forall a, SeqAt (SeqAt (SeqCons ((SeqCons ((Lean_List P0)) SeqNil)) (SeqCons ((SeqCons (P0) (SeqCons ((Lean_List P0)) (SeqCons (0) SeqNil)))) SeqNil)) 1) 0 = P0.
+let a. rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_0. reflexivity. } exact nat_0.
+Qed.
+Theorem Lean_List_Mem_nR1_1 : ~ (0 :e SeqAt (SeqAt (SeqCons ((SeqCons (0) SeqNil)) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (1) SeqNil)))) SeqNil)) 1) 1).
+rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_0. exact EmptyE 0. } exact nat_0. } exact nat_0.
+Qed.
+Theorem Lean_List_Mem_F1_1 : forall a, SeqAt (SeqAt (SeqCons ((SeqCons ((Lean_List P0)) SeqNil)) (SeqCons ((SeqCons (P0) (SeqCons ((Lean_List P0)) (SeqCons (0) SeqNil)))) SeqNil)) 1) 1 = (Lean_List
+    P0).
+let a. rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact nat_0.
+Qed.
+Theorem Lean_List_Mem_R1_2 : 0 :e SeqAt (SeqAt (SeqCons ((SeqCons (0) SeqNil)) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (1) SeqNil)))) SeqNil)) 1) 2.
+rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. exact In_0_1. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact nat_0.
+Qed.
+Theorem Lean_List_Mem_Ix1_2 : forall a, SeqAt (SeqAt (SeqCons ((SeqCons (0) SeqNil)) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons ((a 1)) SeqNil)))) SeqNil)) 1) 2 = (a 1).
+let a. rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact nat_0.
+Qed.
+
+Theorem Lean_List_Mem_bd0_0 : forall a, ~ Lean_List_Mem_R 0 0 -> Lean_List_Mem_F 0 0 a c= Lean_List_Mem_B.
+let a. assume Hnr: ~ Lean_List_Mem_R 0 0. let z. assume Hz: z :e Lean_List_Mem_F 0 0 a.
+exact (binunionI1 (((Lean_List P0)) :\/: (P0)) ((Lean_List P0)) z (binunionI1 ((Lean_List P0)) (P0) z (In_eq_r z (Lean_List_Mem_F 0 0 a) ((Lean_List P0)) (Lean_List_Mem_F0_0 a) Hz))).
+Qed.
+Theorem Lean_List_Mem_bd0 : forall a, forall j :e Lean_List_Mem_N 0, ~ Lean_List_Mem_R 0 j -> Lean_List_Mem_F 0 j a c= Lean_List_Mem_B.
+let a j. assume Hj: j :e Lean_List_Mem_N 0. assume Hnr: ~ Lean_List_Mem_R 0 j.
+exact (Below_S 0 (fun j => ~ Lean_List_Mem_R 0 j -> Lean_List_Mem_F 0 j a c= Lean_List_Mem_B) (Below_0 (fun j => ~ Lean_List_Mem_R 0 j -> Lean_List_Mem_F 0 j a c= Lean_List_Mem_B))
+    (Lean_List_Mem_bd0_0 a)) j (In_eq_r j (Lean_List_Mem_N 0) 1 Lean_List_Mem_N0 Hj) Hnr.
+Qed.
+Theorem Lean_List_Mem_bd1_0 : forall a, ~ Lean_List_Mem_R 1 0 -> Lean_List_Mem_F 1 0 a c= Lean_List_Mem_B.
+let a. assume Hnr: ~ Lean_List_Mem_R 1 0. let z. assume Hz: z :e Lean_List_Mem_F 1 0 a.
+exact (binunionI1 (((Lean_List P0)) :\/: (P0)) ((Lean_List P0)) z (binunionI2 ((Lean_List P0)) (P0) z (In_eq_r z (Lean_List_Mem_F 1 0 a) (P0) (Lean_List_Mem_F1_0 a) Hz))).
+Qed.
+Theorem Lean_List_Mem_bd1_1 : forall a, ~ Lean_List_Mem_R 1 1 -> Lean_List_Mem_F 1 1 a c= Lean_List_Mem_B.
+let a. assume Hnr: ~ Lean_List_Mem_R 1 1. let z. assume Hz: z :e Lean_List_Mem_F 1 1 a.
+exact (binunionI2 (((Lean_List P0)) :\/: (P0)) ((Lean_List P0)) z (In_eq_r z (Lean_List_Mem_F 1 1 a) ((Lean_List P0)) (Lean_List_Mem_F1_1 a) Hz)).
+Qed.
+Theorem Lean_List_Mem_bd1_2 : forall a, ~ Lean_List_Mem_R 1 2 -> Lean_List_Mem_F 1 2 a c= Lean_List_Mem_B.
+let a. assume Hnr: ~ Lean_List_Mem_R 1 2. apply FalseE. exact Hnr Lean_List_Mem_R1_2.
+Qed.
+Theorem Lean_List_Mem_bd1 : forall a, forall j :e Lean_List_Mem_N 1, ~ Lean_List_Mem_R 1 j -> Lean_List_Mem_F 1 j a c= Lean_List_Mem_B.
+let a j. assume Hj: j :e Lean_List_Mem_N 1. assume Hnr: ~ Lean_List_Mem_R 1 j.
+exact (Below_S 2 (fun j => ~ Lean_List_Mem_R 1 j -> Lean_List_Mem_F 1 j a c= Lean_List_Mem_B) (Below_S 1 (fun j => ~ Lean_List_Mem_R 1 j -> Lean_List_Mem_F 1 j a c= Lean_List_Mem_B) (Below_S 0 (fun j
+    => ~ Lean_List_Mem_R 1 j -> Lean_List_Mem_F 1 j a c= Lean_List_Mem_B) (Below_0 (fun j => ~ Lean_List_Mem_R 1 j -> Lean_List_Mem_F 1 j a c= Lean_List_Mem_B)) (Lean_List_Mem_bd1_0 a))
+    (Lean_List_Mem_bd1_1 a)) (Lean_List_Mem_bd1_2 a)) j (In_eq_r j (Lean_List_Mem_N 1) 3 Lean_List_Mem_N1 Hj) Hnr.
+Qed.
+Theorem Lean_List_Mem_bounded : IndBounded Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B.
+let k. assume Hk: k :e Lean_List_Mem_K.
+exact (Below_S 1 (fun k => forall a, forall j :e Lean_List_Mem_N k, ~ Lean_List_Mem_R k j -> Lean_List_Mem_F k j a c= Lean_List_Mem_B) (Below_S 0 (fun k => forall a, forall j :e Lean_List_Mem_N k, ~
+    Lean_List_Mem_R k j -> Lean_List_Mem_F k j a c= Lean_List_Mem_B) (Below_0 (fun k => forall a, forall j :e Lean_List_Mem_N k, ~ Lean_List_Mem_R k j -> Lean_List_Mem_F k j a c= Lean_List_Mem_B))
+    Lean_List_Mem_bd0) Lean_List_Mem_bd1) k Hk.
+Qed.
+
+Theorem Lean_List_Mem_distinct : IndDistinct Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B.
+let k. assume Hk: k :e Lean_List_Mem_K. let k'. assume Hk': k' :e Lean_List_Mem_K. assume H: k = k'. exact H.
+Qed.
+
+Theorem Lean_List_Mem_ar0 : nat_p (Lean_List_Mem_N 0).
+prove nat_p (SeqAt (SeqCons (1) (SeqCons (3) SeqNil)) 0). rewrite Lean_List_Mem_N0. exact (nat_ordsucc 0 nat_0).
+Qed.
+Theorem Lean_List_Mem_ar1 : nat_p (Lean_List_Mem_N 1).
+prove nat_p (SeqAt (SeqCons (1) (SeqCons (3) SeqNil)) 1). rewrite Lean_List_Mem_N1. exact (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))).
+Qed.
+Theorem Lean_List_Mem_arity : forall k :e Lean_List_Mem_K, nat_p (Lean_List_Mem_N k).
+let k. assume Hk: k :e Lean_List_Mem_K.
+exact (Below_S 1 (fun k => nat_p (Lean_List_Mem_N k)) (Below_S 0 (fun k => nat_p (Lean_List_Mem_N k)) (Below_0 (fun k => nat_p (Lean_List_Mem_N k))) Lean_List_Mem_ar0) Lean_List_Mem_ar1) k Hk.
+Qed.
+
+Definition Lean_List_Mem_head_node : set -> set := fun x0 => IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 0
+    (TupArgs 1 (SeqCons (x0) SeqNil)).
+Theorem Lean_List_Mem_head_args : forall x0 :e (Lean_List P0), (TupArgs 1 (SeqCons (x0) SeqNil)) :e IndArgs Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F
+    Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_All 0.
+let x0. assume H0: x0 :e (Lean_List P0).
+claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
+{ rewrite TupArgs_at 1 (SeqCons (x0) SeqNil) 0 (ordsuccI2 0). exact U0. }
+claim M0: SeqAt (SeqCons (x0) SeqNil) 0 :e Lean_List_Mem_B :\/: Lean_List_Mem_All.
+{ exact In_eq_ls (SeqAt (SeqCons (x0) SeqNil) 0) x0 (Lean_List_Mem_B :\/: Lean_List_Mem_All) U0 (binunionI1 Lean_List_Mem_B Lean_List_Mem_All x0 (binunionI1 (((Lean_List P0)) :\/: (P0)) ((Lean_List
+    P0)) x0 (binunionI1 ((Lean_List P0)) (P0) x0 H0))). }
+claim D0: (Lean_List_Mem_R 0 0 -> (TupArgs 1 (SeqCons (x0) SeqNil)) 0 :e Lean_List_Mem_All /\ IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix
+    Lean_List_Mem_O Lean_List_Mem_B ((TupArgs 1 (SeqCons (x0) SeqNil)) 0) = Lean_List_Mem_Ix 0 0 (TupArgs 1 (SeqCons (x0) SeqNil))) /\ (~ Lean_List_Mem_R 0 0 -> (TupArgs 1 (SeqCons (x0) SeqNil)) 0 :e
+    Lean_List_Mem_F 0 0 (TupArgs 1 (SeqCons (x0) SeqNil))).
+{ apply andI.
+  - assume Hr: Lean_List_Mem_R 0 0. apply FalseE. exact Lean_List_Mem_nR0_0 Hr.
+  - assume Hnr: ~ Lean_List_Mem_R 0 0. exact In_eq_ls ((TupArgs 1 (SeqCons (x0) SeqNil)) 0) x0 (Lean_List_Mem_F 0 0 (TupArgs 1 (SeqCons (x0) SeqNil))) T0 (In_eq_rs x0 (Lean_List_Mem_F 0 0 (TupArgs 1
+    (SeqCons (x0) SeqNil))) (Lean_List P0) (Lean_List_Mem_F0_0 (TupArgs 1 (SeqCons (x0) SeqNil))) H0).
+}
+prove (TupArgs 1 (SeqCons (x0) SeqNil)) :e {a :e Pi_ j :e SeqAt (SeqCons (1) (SeqCons (3) SeqNil)) 0, Lean_List_Mem_B :\/: Lean_List_Mem_All | IndFits Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N
+    Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_All 0 a}.
+rewrite Lean_List_Mem_N0.
+apply SepI (Pi_ j :e 1, Lean_List_Mem_B :\/: Lean_List_Mem_All) (fun a => IndFits Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O
+    Lean_List_Mem_B Lean_List_Mem_All 0 a) (TupArgs 1 (SeqCons (x0) SeqNil)).
+- exact lam_Pi 1 (fun j => Lean_List_Mem_B :\/: Lean_List_Mem_All) (fun j => SeqAt (SeqCons (x0) SeqNil) j) (Below_S 0 (fun j => SeqAt (SeqCons (x0) SeqNil) j :e Lean_List_Mem_B :\/:
+    Lean_List_Mem_All) (Below_0 (fun j => SeqAt (SeqCons (x0) SeqNil) j :e Lean_List_Mem_B :\/: Lean_List_Mem_All)) M0).
+- prove IndFits Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_All 0 (TupArgs 1 (SeqCons (x0) SeqNil)).
+  let j. assume Hj: j :e Lean_List_Mem_N 0.
+  exact (Below_S 0 (fun j => (Lean_List_Mem_R 0 j -> (TupArgs 1 (SeqCons (x0) SeqNil)) j :e Lean_List_Mem_All /\ IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F
+    Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B ((TupArgs 1 (SeqCons (x0) SeqNil)) j) = Lean_List_Mem_Ix 0 j (TupArgs 1 (SeqCons (x0) SeqNil))) /\ (~ Lean_List_Mem_R 0 j -> (TupArgs 1 (SeqCons
+    (x0) SeqNil)) j :e Lean_List_Mem_F 0 j (TupArgs 1 (SeqCons (x0) SeqNil)))) (Below_0 (fun j => (Lean_List_Mem_R 0 j -> (TupArgs 1 (SeqCons (x0) SeqNil)) j :e Lean_List_Mem_All /\ IndIdx
+    Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B ((TupArgs 1 (SeqCons (x0) SeqNil)) j) = Lean_List_Mem_Ix 0 j
+    (TupArgs 1 (SeqCons (x0) SeqNil))) /\ (~ Lean_List_Mem_R 0 j -> (TupArgs 1 (SeqCons (x0) SeqNil)) j :e Lean_List_Mem_F 0 j (TupArgs 1 (SeqCons (x0) SeqNil))))) D0) j (In_eq_r j (Lean_List_Mem_N
+    0) 1 Lean_List_Mem_N0 Hj).
+Qed.
+Theorem Lean_List_Mem_head_typed : forall x0 :e (Lean_List P0), Lean_List_Mem_head_node x0 :e (Lean_List_Mem (Lean_List_cons_node P0 P1 x0)).
+let x0. assume H0: x0 :e (Lean_List P0).
+claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
+{ rewrite TupArgs_at 1 (SeqCons (x0) SeqNil) 0 (ordsuccI2 0). exact U0. }
+claim L: Lean_List_Mem_head_node x0 :e IndFiber Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B (Lean_List_Mem_O 0
+    (TupArgs 1 (SeqCons (x0) SeqNil))).
+{ exact IndNode_Fiber Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_bounded 0 (ordsuccI1 1 0
+    (ordsuccI2 0)) Lean_List_Mem_ar0 (TupArgs 1 (SeqCons (x0) SeqNil)) (Lean_List_Mem_head_args x0 H0). }
+claim Lo: Lean_List_Mem_O 0 (TupArgs 1 (SeqCons (x0) SeqNil)) = (Lean_List_cons_node P0 P1 x0).
+{ prove SeqAt (SeqCons ((Lean_List_cons_node P0 P1 (TupArgs 1 (SeqCons (x0) SeqNil) 0))) (SeqCons ((Lean_List_cons_node P0 (TupArgs 1 (SeqCons (x0) SeqNil) 0) (TupArgs 1 (SeqCons (x0) SeqNil) 1)))
+    SeqNil)) 0 = (Lean_List_cons_node P0 P1 x0). rewrite Lean_List_Mem_O0 (TupArgs 1 (SeqCons (x0) SeqNil)). rewrite T0. reflexivity. }
+exact In_fam_eq (IndFiber Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B) (Lean_List_Mem_O 0 (TupArgs 1 (SeqCons (x0)
+    SeqNil))) (Lean_List_cons_node P0 P1 x0) Lo (Lean_List_Mem_head_node x0) L.
+Qed.
+Definition Lean_List_Mem_head : set := (fun x0 :e (Lean_List P0) => Lean_List_Mem_head_node x0).
+Theorem Lean_List_Mem_head_type : Lean_List_Mem_head :e (Pi_ x0 :e (Lean_List P0), (Lean_List_Mem (Lean_List_cons_node P0 P1 x0))).
+exact (lam_Pi (Lean_List P0) (fun x0 => (Lean_List_Mem (Lean_List_cons_node P0 P1 x0))) (fun x0 => Lean_List_Mem_head_node x0) (fun x0 H0 => (Lean_List_Mem_head_typed x0 H0))).
+Qed.
+Definition Lean_List_Mem_tail_node : set -> set -> set -> set := fun x0 x1 x2 => IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix
+    Lean_List_Mem_O Lean_List_Mem_B 1 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))).
+Theorem Lean_List_Mem_tail_args : forall x0 :e P0, forall x1 :e (Lean_List P0), forall x2 :e (Lean_List_Mem x1), (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) :e IndArgs
+    Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_All 1.
+let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e (Lean_List P0). let x2. assume H2: x2 :e (Lean_List_Mem x1).
+claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 = x0.
+{ rewrite TupArgs_at 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0))). exact U0. }
+claim U1: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1 = x1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim T1: TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1 = x1.
+{ rewrite TupArgs_at 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1 (ordsuccI1 2 1 (ordsuccI2 1)). exact U1. }
+claim U2: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 2 = x2.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+claim T2: TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 2 = x2.
+{ rewrite TupArgs_at 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 2 (ordsuccI2 2). exact U2. }
+claim V2: x2 :e Lean_List_Mem_All.
+{ exact SepE1 Lean_List_Mem_All (fun x:set => IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B x = x1) x2 H2. }
+claim I2: IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B x2 = x1.
+{ exact SepE2 Lean_List_Mem_All (fun x:set => IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B x = x1) x2 H2. }
+claim M0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 :e Lean_List_Mem_B :\/: Lean_List_Mem_All.
+{ exact In_eq_ls (SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0) x0 (Lean_List_Mem_B :\/: Lean_List_Mem_All) U0 (binunionI1 Lean_List_Mem_B Lean_List_Mem_All x0 (binunionI1 (((Lean_List
+    P0)) :\/: (P0)) ((Lean_List P0)) x0 (binunionI2 ((Lean_List P0)) (P0) x0 H0))). }
+claim M1: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1 :e Lean_List_Mem_B :\/: Lean_List_Mem_All.
+{ exact In_eq_ls (SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1) x1 (Lean_List_Mem_B :\/: Lean_List_Mem_All) U1 (binunionI1 Lean_List_Mem_B Lean_List_Mem_All x1 (binunionI2 (((Lean_List
+    P0)) :\/: (P0)) ((Lean_List P0)) x1 H1)). }
+claim M2: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 2 :e Lean_List_Mem_B :\/: Lean_List_Mem_All.
+{ exact In_eq_ls (SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 2) x2 (Lean_List_Mem_B :\/: Lean_List_Mem_All) U2 (binunionI2 Lean_List_Mem_B Lean_List_Mem_All x2 V2). }
+claim D0: (Lean_List_Mem_R 1 0 -> (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 0 :e Lean_List_Mem_All /\ IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R
+    Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 0) = Lean_List_Mem_Ix 1 0 (TupArgs 3 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) SeqNil))))) /\ (~ Lean_List_Mem_R 1 0 -> (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 0 :e Lean_List_Mem_F 1 0 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons
+    (x2) SeqNil))))).
+{ apply andI.
+  - assume Hr: Lean_List_Mem_R 1 0. apply FalseE. exact Lean_List_Mem_nR1_0 Hr.
+  - assume Hnr: ~ Lean_List_Mem_R 1 0. exact In_eq_ls ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 0) x0 (Lean_List_Mem_F 1 0 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2)
+    SeqNil))))) T0 (In_eq_rs x0 (Lean_List_Mem_F 1 0 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))))) P0 (Lean_List_Mem_F1_0 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2)
+    SeqNil))))) H0).
+}
+claim D1: (Lean_List_Mem_R 1 1 -> (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 1 :e Lean_List_Mem_All /\ IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R
+    Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 1) = Lean_List_Mem_Ix 1 1 (TupArgs 3 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) SeqNil))))) /\ (~ Lean_List_Mem_R 1 1 -> (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 1 :e Lean_List_Mem_F 1 1 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons
+    (x2) SeqNil))))).
+{ apply andI.
+  - assume Hr: Lean_List_Mem_R 1 1. apply FalseE. exact Lean_List_Mem_nR1_1 Hr.
+  - assume Hnr: ~ Lean_List_Mem_R 1 1. exact In_eq_ls ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 1) x1 (Lean_List_Mem_F 1 1 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2)
+    SeqNil))))) T1 (In_eq_rs x1 (Lean_List_Mem_F 1 1 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))))) (Lean_List P0) (Lean_List_Mem_F1_1 (TupArgs 3 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) SeqNil))))) H1).
+}
+claim D2: (Lean_List_Mem_R 1 2 -> (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 2 :e Lean_List_Mem_All /\ IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R
+    Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 2) = Lean_List_Mem_Ix 1 2 (TupArgs 3 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) SeqNil))))) /\ (~ Lean_List_Mem_R 1 2 -> (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 2 :e Lean_List_Mem_F 1 2 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons
+    (x2) SeqNil))))).
+{ apply andI.
+  - assume Hr: Lean_List_Mem_R 1 2. apply andI.
+    + exact In_eq_ls ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 2) x2 Lean_List_Mem_All T2 V2.
+    + rewrite T2. prove IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B x2 = SeqAt (SeqAt (SeqCons ((SeqCons
+    (0) SeqNil)) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1)) SeqNil)))) SeqNil)) 1) 2. rewrite Lean_List_Mem_Ix1_2 (TupArgs 3
+    (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))). rewrite T1.  exact I2.
+  - assume Hnr: ~ Lean_List_Mem_R 1 2. apply FalseE. exact Hnr Lean_List_Mem_R1_2.
+}
+prove (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) :e {a :e Pi_ j :e SeqAt (SeqCons (1) (SeqCons (3) SeqNil)) 1, Lean_List_Mem_B :\/: Lean_List_Mem_All | IndFits Lean_List_Mem_K
+    Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_All 1 a}.
+rewrite Lean_List_Mem_N1.
+apply SepI (Pi_ j :e 3, Lean_List_Mem_B :\/: Lean_List_Mem_All) (fun a => IndFits Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O
+    Lean_List_Mem_B Lean_List_Mem_All 1 a) (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))).
+- exact lam_Pi 3 (fun j => Lean_List_Mem_B :\/: Lean_List_Mem_All) (fun j => SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) j) (Below_S 2 (fun j => SeqAt (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) SeqNil))) j :e Lean_List_Mem_B :\/: Lean_List_Mem_All) (Below_S 1 (fun j => SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) j :e Lean_List_Mem_B :\/: Lean_List_Mem_All)
+    (Below_S 0 (fun j => SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) j :e Lean_List_Mem_B :\/: Lean_List_Mem_All) (Below_0 (fun j => SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2)
+    SeqNil))) j :e Lean_List_Mem_B :\/: Lean_List_Mem_All)) M0) M1) M2).
+- prove IndFits Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_All 1 (TupArgs 3 (SeqCons (x0) (SeqCons
+    (x1) (SeqCons (x2) SeqNil)))).
+  let j. assume Hj: j :e Lean_List_Mem_N 1.
+  exact (Below_S 2 (fun j => (Lean_List_Mem_R 1 j -> (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) j :e Lean_List_Mem_All /\ IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N
+    Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) j) = Lean_List_Mem_Ix 1 j (TupArgs 3 (SeqCons
+    (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))))) /\ (~ Lean_List_Mem_R 1 j -> (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) j :e Lean_List_Mem_F 1 j (TupArgs 3 (SeqCons (x0)
+    (SeqCons (x1) (SeqCons (x2) SeqNil)))))) (Below_S 1 (fun j => (Lean_List_Mem_R 1 j -> (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) j :e Lean_List_Mem_All /\ IndIdx
+    Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))))
+    j) = Lean_List_Mem_Ix 1 j (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))))) /\ (~ Lean_List_Mem_R 1 j -> (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) j :e
+    Lean_List_Mem_F 1 j (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))))) (Below_S 0 (fun j => (Lean_List_Mem_R 1 j -> (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))))
+    j :e Lean_List_Mem_All /\ IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B ((TupArgs 3 (SeqCons (x0)
+    (SeqCons (x1) (SeqCons (x2) SeqNil)))) j) = Lean_List_Mem_Ix 1 j (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))))) /\ (~ Lean_List_Mem_R 1 j -> (TupArgs 3 (SeqCons (x0) (SeqCons
+    (x1) (SeqCons (x2) SeqNil)))) j :e Lean_List_Mem_F 1 j (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))))) (Below_0 (fun j => (Lean_List_Mem_R 1 j -> (TupArgs 3 (SeqCons (x0)
+    (SeqCons (x1) (SeqCons (x2) SeqNil)))) j :e Lean_List_Mem_All /\ IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O
+    Lean_List_Mem_B ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) j) = Lean_List_Mem_Ix 1 j (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))))) /\ (~ Lean_List_Mem_R 1
+    j -> (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) j :e Lean_List_Mem_F 1 j (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))))))) D0) D1) D2) j (In_eq_r j
+    (Lean_List_Mem_N 1) 3 Lean_List_Mem_N1 Hj).
+Qed.
+Theorem Lean_List_Mem_tail_typed : forall x0 :e P0, forall x1 :e (Lean_List P0), forall x2 :e (Lean_List_Mem x1), Lean_List_Mem_tail_node x0 x1 x2 :e (Lean_List_Mem (Lean_List_cons_node P0 x0 x1)).
+let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e (Lean_List P0). let x2. assume H2: x2 :e (Lean_List_Mem x1).
+claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 = x0.
+{ rewrite TupArgs_at 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0))). exact U0. }
+claim U1: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1 = x1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim T1: TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1 = x1.
+{ rewrite TupArgs_at 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1 (ordsuccI1 2 1 (ordsuccI2 1)). exact U1. }
+claim U2: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 2 = x2.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+claim T2: TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 2 = x2.
+{ rewrite TupArgs_at 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 2 (ordsuccI2 2). exact U2. }
+claim L: Lean_List_Mem_tail_node x0 x1 x2 :e IndFiber Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B (Lean_List_Mem_O
+    1 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))))).
+{ exact IndNode_Fiber Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_bounded 1 (ordsuccI2 1)
+    Lean_List_Mem_ar1 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) (Lean_List_Mem_tail_args x0 H0 x1 H1 x2 H2). }
+claim Lo: Lean_List_Mem_O 1 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) = (Lean_List_cons_node P0 x0 x1).
+{ prove SeqAt (SeqCons ((Lean_List_cons_node P0 P1 (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0))) (SeqCons ((Lean_List_cons_node P0 (TupArgs 3 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) SeqNil))) 0) (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1))) SeqNil)) 1 = (Lean_List_cons_node P0 x0 x1). rewrite Lean_List_Mem_O1 (TupArgs 3 (SeqCons (x0)
+    (SeqCons (x1) (SeqCons (x2) SeqNil)))). rewrite T0. rewrite T1. reflexivity. }
+exact In_fam_eq (IndFiber Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B) (Lean_List_Mem_O 1 (TupArgs 3 (SeqCons (x0)
+    (SeqCons (x1) (SeqCons (x2) SeqNil))))) (Lean_List_cons_node P0 x0 x1) Lo (Lean_List_Mem_tail_node x0 x1 x2) L.
+Qed.
+Definition Lean_List_Mem_tail : set := (fun x0 :e P0 => (fun x1 :e (Lean_List P0) => (fun x2 :e (Lean_List_Mem x1) => Lean_List_Mem_tail_node x0 x1 x2))).
+Theorem Lean_List_Mem_tail_type : Lean_List_Mem_tail :e (Pi_ x0 :e P0, (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List_Mem x1), (Lean_List_Mem (Lean_List_cons_node P0 x0 x1))))).
+exact (lam_Pi P0 (fun x0 => (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List_Mem x1), (Lean_List_Mem (Lean_List_cons_node P0 x0 x1))))) (fun x0 => (fun x1 :e (Lean_List P0) => (fun x2 :e
+    (Lean_List_Mem x1) => Lean_List_Mem_tail_node x0 x1 x2))) (fun x0 H0 => (lam_Pi (Lean_List P0) (fun x1 => (Pi_ x2 :e (Lean_List_Mem x1), (Lean_List_Mem (Lean_List_cons_node P0 x0 x1)))) (fun x1
+    => (fun x2 :e (Lean_List_Mem x1) => Lean_List_Mem_tail_node x0 x1 x2)) (fun x1 H1 => (lam_Pi (Lean_List_Mem x1) (fun x2 => (Lean_List_Mem (Lean_List_cons_node P0 x0 x1))) (fun x2 =>
+    Lean_List_Mem_tail_node x0 x1 x2) (fun x2 H2 => (Lean_List_Mem_tail_typed x0 H0 x1 H1 x2 H2))))))).
+Qed.
+
+Definition Lean_List_Mem_rec : set -> set -> set -> set := fun h0 h1 t => IndRec Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O
+    Lean_List_Mem_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k) t.
+Theorem Lean_List_Mem_iota0 : forall h0 h1, forall x0 :e (Lean_List P0), Lean_List_Mem_rec h0 h1 (Lean_List_Mem_head_node x0) = (h0 x0).
+let h0 h1. let x0. assume H0: x0 :e (Lean_List P0).
+claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
+{ rewrite TupArgs_at 1 (SeqCons (x0) SeqNil) 0 (ordsuccI2 0). exact U0. }
+prove IndRec Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons
+    ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k) (IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 0 (TupArgs 1
+    (SeqCons (x0) SeqNil))) = (h0 x0).
+rewrite IndRec_iota Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_distinct Lean_List_Mem_bounded
+    Lean_List_Mem_arity (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k) 0 (ordsuccI1 1 0 (ordsuccI2 0)) (TupArgs 1 (SeqCons (x0) SeqNil))
+    (Lean_List_Mem_head_args x0 H0).
+prove SeqAt (SeqCons ((h0 ((TupArgs 1 (SeqCons (x0) SeqNil)) 0))) (SeqCons ((h1 ((TupArgs 1 (SeqCons (x0) SeqNil)) 0) ((TupArgs 1 (SeqCons (x0) SeqNil)) 1) ((TupArgs 1 (SeqCons (x0) SeqNil)) 2)
+    ((IndRes Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 0 (fun j => IndRec Lean_List_Mem_K Lean_List_Mem_T
+    Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k)
+    ((TupArgs 1 (SeqCons (x0) SeqNil)) j))) 2))) SeqNil)) 0 = (h0 x0).
+rewrite SeqAt_0. rewrite T0. reflexivity.
+Qed.
+Theorem Lean_List_Mem_iota1 : forall h0 h1, forall x0 :e P0, forall x1 :e (Lean_List P0), forall x2 :e (Lean_List_Mem x1), Lean_List_Mem_rec h0 h1 (Lean_List_Mem_tail_node x0 x1 x2) = (h1 x0 x1 x2
+    (Lean_List_Mem_rec h0 h1 x2)).
+let h0 h1. let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e (Lean_List P0). let x2. assume H2: x2 :e (Lean_List_Mem x1).
+claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 = x0.
+{ rewrite TupArgs_at 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0))). exact U0. }
+claim U1: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1 = x1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim T1: TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1 = x1.
+{ rewrite TupArgs_at 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1 (ordsuccI1 2 1 (ordsuccI2 1)). exact U1. }
+claim U2: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 2 = x2.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+claim T2: TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 2 = x2.
+{ rewrite TupArgs_at 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 2 (ordsuccI2 2). exact U2. }
+claim R2: (IndRes Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 (fun j => IndRec Lean_List_Mem_K Lean_List_Mem_T
+    Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k)
+    ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) j))) 2 = Lean_List_Mem_rec h0 h1 x2.
+{ rewrite IndRes_at Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 (fun j => IndRec Lean_List_Mem_K Lean_List_Mem_T
+    Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k)
+    ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) j)) 2 (In_eq_rs 2 (Lean_List_Mem_N 1) 3 Lean_List_Mem_N1 (ordsuccI2 2)) Lean_List_Mem_R1_2. prove IndRec Lean_List_Mem_K
+    Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (r
+    2))) SeqNil)) k) ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 2) = IndRec Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix
+    Lean_List_Mem_O Lean_List_Mem_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k) x2. rewrite T2. reflexivity. }
+prove IndRec Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons
+    ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k) (IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 (TupArgs 3
+    (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))))) = (h1 x0 x1 x2 (Lean_List_Mem_rec h0 h1 x2)).
+rewrite IndRec_iota Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_distinct Lean_List_Mem_bounded
+    Lean_List_Mem_arity (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k) 1 (ordsuccI2 1) (TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2)
+    SeqNil)))) (Lean_List_Mem_tail_args x0 H0 x1 H1 x2 H2).
+prove SeqAt (SeqCons ((h0 ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 0))) (SeqCons ((h1 ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 0) ((TupArgs 3 (SeqCons
+    (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 1) ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil)))) 2) ((IndRes Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R
+    Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 (fun j => IndRec Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix
+    Lean_List_Mem_O Lean_List_Mem_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k) ((TupArgs 3 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))))
+    j))) 2))) SeqNil)) 1 = (h1 x0 x1 x2 (Lean_List_Mem_rec h0 h1 x2)).
+rewrite SeqAt_S. { rewrite SeqAt_0. rewrite R2. rewrite T0. rewrite T1. rewrite T2. reflexivity. } exact nat_0.
+Qed.
+
+Theorem Lean_List_Mem_HM0 : forall C:set -> set -> set, forall h0 h1, h0 :e (Pi_ x0 :e (Lean_List P0), (C (Lean_List_cons_node P0 P1 x0) (Lean_List_Mem_head_node x0))) -> forall a :e IndArgs
+    Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_All 0, forall r:set -> set, (forall j :e
+    Lean_List_Mem_N 0, Lean_List_Mem_R 0 j -> r j :e (fun t:set => C (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O
+    Lean_List_Mem_B t) t) (a j)) -> (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k) 0 a (IndRes Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N
+    Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 0 r) :e (fun t:set => C (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F
+    Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B t) t) (IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 0
+    a).
+let C h0 h1. assume Hh: h0 :e (Pi_ x0 :e (Lean_List P0), (C (Lean_List_cons_node P0 P1 x0) (Lean_List_Mem_head_node x0))).
+let a. assume Ha: a :e IndArgs Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_All 0. let r. assume Hr:
+    forall j :e Lean_List_Mem_N 0, Lean_List_Mem_R 0 j -> r j :e (fun t:set => C (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix
+    Lean_List_Mem_O Lean_List_Mem_B t) t) (a j).
+claim Fi: IndFits Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_All 0 a.
+{ exact IndArgs_Fits Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_All 0 a Ha. }
+claim Pm: a :e Pi_ j :e 1, Lean_List_Mem_B :\/: Lean_List_Mem_All.
+{ exact In_fam_eq (fun X:set => Pi_ j :e X, Lean_List_Mem_B :\/: Lean_List_Mem_All) (Lean_List_Mem_N 0) 1 Lean_List_Mem_N0 a (IndArgs_Pi Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N
+    Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_All 0 a Ha). }
+claim G0: (a 0) :e (Lean_List P0).
+{ apply Fi 0 (In_eq_rs 0 (Lean_List_Mem_N 0) 1 Lean_List_Mem_N0 (ordsuccI2 0)). assume H1. assume H2. exact In_eq_r (a 0) (Lean_List_Mem_F 0 0 a) (Lean_List P0) (Lean_List_Mem_F0_0 a) (H2
+    Lean_List_Mem_nR0_0). }
+claim U0: SeqAt (SeqCons ((a 0)) SeqNil) 0 = (a 0).
+{ rewrite SeqAt_0. reflexivity. }
+claim Ea: TupArgs 1 (SeqCons ((a 0)) SeqNil) = a.
+{ exact eq_i_tra (TupArgs 1 (SeqCons ((a 0)) SeqNil)) (fun j :e 1 => a j) a (lam_ext 1 (fun j => SeqAt (SeqCons ((a 0)) SeqNil) j) (fun j => a j) (Below_S 0 (fun j => SeqAt (SeqCons ((a 0)) SeqNil) j
+    = a j) (Below_0 (fun j => SeqAt (SeqCons ((a 0)) SeqNil) j = a j)) U0)) (Pi_eta 1 (fun j => Lean_List_Mem_B :\/: Lean_List_Mem_All) a Pm). }
+claim Lv: (h0 (a 0)) :e (C (Lean_List_cons_node P0 P1 (a 0)) (Lean_List_Mem_head_node (a 0))).
+{ exact (ap_Pi (Lean_List P0) (fun x0 => (C (Lean_List_cons_node P0 P1 x0) (Lean_List_Mem_head_node x0))) h0 (a 0) Hh G0). }
+claim Lm: (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k) 0 a (IndRes Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F
+    Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 0 r) = (h0 (a 0)).
+{ prove SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (IndRes Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O
+    Lean_List_Mem_B 0 r 2))) SeqNil)) 0 = (h0 (a 0)). rewrite SeqAt_0. reflexivity. }
+claim Ln: (Lean_List_Mem_head_node (a 0)) = IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 0 a.
+{ prove IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 0 (TupArgs 1 (SeqCons ((a 0)) SeqNil)) = IndNode
+    Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 0 a. rewrite Ea. reflexivity. }
+claim Lo: (Lean_List_cons_node P0 P1 (a 0)) = IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B (IndNode
+    Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 0 a).
+{ exact eq_i_tra (Lean_List_cons_node P0 P1 (a 0)) (Lean_List_Mem_O 0 a) (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O
+    Lean_List_Mem_B (IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 0 a)) (eq_sym_i (Lean_List_Mem_O 0 a)
+    (Lean_List_cons_node P0 P1 (a 0)) (Lean_List_Mem_O0 a)) (eq_sym_i (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O
+    Lean_List_Mem_B (IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 0 a)) (Lean_List_Mem_O 0 a) (IndIdx_Node
+    Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 0 a)). }
+exact In_eq_ls ((fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k) 0 a (IndRes Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R
+    Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 0 r)) (h0 (a 0)) (C (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix
+    Lean_List_Mem_O Lean_List_Mem_B (IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 0 a)) (IndNode
+    Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 0 a)) Lm (In_fam_eq (fun z:set => C z (IndNode Lean_List_Mem_K
+    Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 0 a)) (Lean_List_cons_node P0 P1 (a 0)) (IndIdx Lean_List_Mem_K Lean_List_Mem_T
+    Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B (IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F
+    Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 0 a)) Lo (h0 (a 0)) (In_fam_eq (fun z:set => C (Lean_List_cons_node P0 P1 (a 0)) z) (Lean_List_Mem_head_node (a 0)) (IndNode Lean_List_Mem_K
+    Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 0 a) Ln (h0 (a 0)) Lv)).
+Qed.
+Theorem Lean_List_Mem_HM1 : forall C:set -> set -> set, forall h0 h1, h1 :e (Pi_ x0 :e P0, (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List_Mem x1), (Pi_ y2 :e (C x1 x2), (C (Lean_List_cons_node P0
+    x0 x1) (Lean_List_Mem_tail_node x0 x1 x2)))))) -> forall a :e IndArgs Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O
+    Lean_List_Mem_B Lean_List_Mem_All 1, forall r:set -> set, (forall j :e Lean_List_Mem_N 1, Lean_List_Mem_R 1 j -> r j :e (fun t:set => C (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N
+    Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B t) t) (a j)) -> (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k)
+    1 a (IndRes Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 r) :e (fun t:set => C (IndIdx Lean_List_Mem_K
+    Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B t) t) (IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R
+    Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 a).
+let C h0 h1. assume Hh: h1 :e (Pi_ x0 :e P0, (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List_Mem x1), (Pi_ y2 :e (C x1 x2), (C (Lean_List_cons_node P0 x0 x1) (Lean_List_Mem_tail_node x0 x1 x2)))))).
+let a. assume Ha: a :e IndArgs Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_All 1. let r. assume Hr:
+    forall j :e Lean_List_Mem_N 1, Lean_List_Mem_R 1 j -> r j :e (fun t:set => C (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix
+    Lean_List_Mem_O Lean_List_Mem_B t) t) (a j).
+claim Fi: IndFits Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_All 1 a.
+{ exact IndArgs_Fits Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_All 1 a Ha. }
+claim Pm: a :e Pi_ j :e 3, Lean_List_Mem_B :\/: Lean_List_Mem_All.
+{ exact In_fam_eq (fun X:set => Pi_ j :e X, Lean_List_Mem_B :\/: Lean_List_Mem_All) (Lean_List_Mem_N 1) 3 Lean_List_Mem_N1 a (IndArgs_Pi Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N
+    Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_All 1 a Ha). }
+claim G0: (a 0) :e P0.
+{ apply Fi 0 (In_eq_rs 0 (Lean_List_Mem_N 1) 3 Lean_List_Mem_N1 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0)))). assume H1. assume H2. exact In_eq_r (a 0) (Lean_List_Mem_F 1 0 a) P0
+    (Lean_List_Mem_F1_0 a) (H2 Lean_List_Mem_nR1_0). }
+claim G1: (a 1) :e (Lean_List P0).
+{ apply Fi 1 (In_eq_rs 1 (Lean_List_Mem_N 1) 3 Lean_List_Mem_N1 (ordsuccI1 2 1 (ordsuccI2 1))). assume H1. assume H2. exact In_eq_r (a 1) (Lean_List_Mem_F 1 1 a) (Lean_List P0) (Lean_List_Mem_F1_1 a)
+    (H2 Lean_List_Mem_nR1_1). }
+claim G2: (a 2) :e (Lean_List_Mem (a 1)).
+{ apply Fi 2 (In_eq_rs 2 (Lean_List_Mem_N 1) 3 Lean_List_Mem_N1 (ordsuccI2 2)). assume H1. assume H2. apply H1 Lean_List_Mem_R1_2. assume H3: a 2 :e Lean_List_Mem_All. assume H4: IndIdx
+    Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B (a 2) = Lean_List_Mem_Ix 1 2 a.
+  prove (a 2) :e {x :e Lean_List_Mem_All | IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B x = (a 1)}.
+  apply SepI Lean_List_Mem_All (fun x:set => IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B x = (a 1)) (a 2)
+    H3.
+  exact eq_i_tra (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B (a 2)) (Lean_List_Mem_Ix 1 2 a) (a 1) H4
+    (Lean_List_Mem_Ix1_2 a). }
+claim Y2: r 2 :e (C (a 1) (a 2)).
+{ exact In_fam_eq (fun z:set => C z (a 2)) (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B (a 2)) (a 1) (SepE2
+    Lean_List_Mem_All (fun x:set => IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B x = (a 1)) (a 2) G2) (r 2)
+    (Hr 2 (In_eq_rs 2 (Lean_List_Mem_N 1) 3 Lean_List_Mem_N1 (ordsuccI2 2)) Lean_List_Mem_R1_2). }
+claim U0: SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) SeqNil))) 0 = (a 0).
+{ rewrite SeqAt_0. reflexivity. }
+claim U1: SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) SeqNil))) 1 = (a 1).
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim U2: SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) SeqNil))) 2 = (a 2).
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+claim Ea: TupArgs 3 (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) SeqNil))) = a.
+{ exact eq_i_tra (TupArgs 3 (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) SeqNil)))) (fun j :e 3 => a j) a (lam_ext 3 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) SeqNil)))
+    j) (fun j => a j) (Below_S 2 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) SeqNil))) j = a j) (Below_S 1 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2))
+    SeqNil))) j = a j) (Below_S 0 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) SeqNil))) j = a j) (Below_0 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2))
+    SeqNil))) j = a j)) U0) U1) U2)) (Pi_eta 3 (fun j => Lean_List_Mem_B :\/: Lean_List_Mem_All) a Pm). }
+claim Rp2: IndRes Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 r 2 = r 2.
+{ exact IndRes_at Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 r 2 (In_eq_rs 2 (Lean_List_Mem_N 1) 3
+    Lean_List_Mem_N1 (ordsuccI2 2)) Lean_List_Mem_R1_2. }
+claim Lv: (h1 (a 0) (a 1) (a 2) (r 2)) :e (C (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_Mem_tail_node (a 0) (a 1) (a 2))).
+{ exact (ap_Pi (C (a 1) (a 2)) (fun y2 => (C (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_Mem_tail_node (a 0) (a 1) (a 2)))) (((h1 (a 0)) (a 1)) (a 2)) (r 2) (ap_Pi (Lean_List_Mem (a 1)) (fun x2
+    => (Pi_ y2 :e (C (a 1) x2), (C (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_Mem_tail_node (a 0) (a 1) x2)))) ((h1 (a 0)) (a 1)) (a 2) (ap_Pi (Lean_List P0) (fun x1 => (Pi_ x2 :e (Lean_List_Mem
+    x1), (Pi_ y2 :e (C x1 x2), (C (Lean_List_cons_node P0 (a 0) x1) (Lean_List_Mem_tail_node (a 0) x1 x2))))) (h1 (a 0)) (a 1) (ap_Pi P0 (fun x0 => (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e
+    (Lean_List_Mem x1), (Pi_ y2 :e (C x1 x2), (C (Lean_List_cons_node P0 x0 x1) (Lean_List_Mem_tail_node x0 x1 x2)))))) h1 (a 0) Hh G0) G1) G2) Y2). }
+claim Lm: (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k) 1 a (IndRes Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F
+    Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 r) = (h1 (a 0) (a 1) (a 2) (r 2)).
+{ prove SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (IndRes Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O
+    Lean_List_Mem_B 1 r 2))) SeqNil)) 1 = (h1 (a 0) (a 1) (a 2) (r 2)). rewrite SeqAt_S. { rewrite SeqAt_0. rewrite Rp2. reflexivity. } exact nat_0. }
+claim Ln: (Lean_List_Mem_tail_node (a 0) (a 1) (a 2)) = IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 a.
+{ prove IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 (TupArgs 3 (SeqCons ((a 0)) (SeqCons ((a 1))
+    (SeqCons ((a 2)) SeqNil)))) = IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 a. rewrite Ea.
+    reflexivity. }
+claim Lo: (Lean_List_cons_node P0 (a 0) (a 1)) = IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B (IndNode
+    Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 a).
+{ exact eq_i_tra (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_Mem_O 1 a) (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O
+    Lean_List_Mem_B (IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 a)) (eq_sym_i (Lean_List_Mem_O 1 a)
+    (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_Mem_O1 a)) (eq_sym_i (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O
+    Lean_List_Mem_B (IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 a)) (Lean_List_Mem_O 1 a) (IndIdx_Node
+    Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 a)). }
+exact In_eq_ls ((fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k) 1 a (IndRes Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R
+    Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 r)) (h1 (a 0) (a 1) (a 2) (r 2)) (C (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F
+    Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B (IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 a))
+    (IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 a)) Lm (In_fam_eq (fun z:set => C z (IndNode
+    Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 a)) (Lean_List_cons_node P0 (a 0) (a 1)) (IndIdx Lean_List_Mem_K
+    Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B (IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R
+    Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 a)) Lo (h1 (a 0) (a 1) (a 2) (r 2)) (In_fam_eq (fun z:set => C (Lean_List_cons_node P0 (a 0) (a 1)) z) (Lean_List_Mem_tail_node
+    (a 0) (a 1) (a 2)) (IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 a) Ln (h1 (a 0) (a 1) (a 2) (r 2))
+    Lv)).
+Qed.
+Theorem Lean_List_Mem_rec_type : forall C:set -> set -> set, forall h0 :e (Pi_ x0 :e (Lean_List P0), (C (Lean_List_cons_node P0 P1 x0) (Lean_List_Mem_head_node x0))), forall h1 :e (Pi_ x0 :e P0, (Pi_
+    x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List_Mem x1), (Pi_ y2 :e (C x1 x2), (C (Lean_List_cons_node P0 x0 x1) (Lean_List_Mem_tail_node x0 x1 x2)))))), forall i, forall t :e Lean_List_Mem i,
+    Lean_List_Mem_rec h0 h1 t :e C i t.
+let C. let h0. assume Hh0. let h1. assume Hh1.
+claim HM: forall k :e Lean_List_Mem_K, forall a :e IndArgs Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B
+    Lean_List_Mem_All k, forall r:set -> set, (forall j :e Lean_List_Mem_N k, Lean_List_Mem_R k j -> r j :e (fun t:set => C (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R
+    Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B t) t) (a j)) -> (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k) k a (IndRes
+    Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B k r) :e (fun t:set => C (IndIdx Lean_List_Mem_K Lean_List_Mem_T
+    Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B t) t) (IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F
+    Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B k a).
+{ let k. assume Hk: k :e Lean_List_Mem_K. exact (Below_S 1 (fun k => forall a :e IndArgs Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix
+    Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_All k, forall r:set -> set, (forall j :e Lean_List_Mem_N k, Lean_List_Mem_R k j -> r j :e (fun t:set => C (IndIdx Lean_List_Mem_K Lean_List_Mem_T
+    Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B t) t) (a j)) -> (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (r
+    2))) SeqNil)) k) k a (IndRes Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B k r) :e (fun t:set => C (IndIdx
+    Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B t) t) (IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N
+    Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B k a)) (Below_S 0 (fun k => forall a :e IndArgs Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R
+    Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_All k, forall r:set -> set, (forall j :e Lean_List_Mem_N k, Lean_List_Mem_R k j -> r j :e (fun t:set => C (IndIdx
+    Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B t) t) (a j)) -> (fun k a r:set => SeqAt (SeqCons ((h0 (a 0)))
+    (SeqCons ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k) k a (IndRes Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B k
+    r) :e (fun t:set => C (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B t) t) (IndNode Lean_List_Mem_K
+    Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B k a)) (Below_0 (fun k => forall a :e IndArgs Lean_List_Mem_K Lean_List_Mem_T
+    Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_All k, forall r:set -> set, (forall j :e Lean_List_Mem_N k, Lean_List_Mem_R k j -> r
+    j :e (fun t:set => C (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B t) t) (a j)) -> (fun k a r:set =>
+    SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k) k a (IndRes Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix
+    Lean_List_Mem_O Lean_List_Mem_B k r) :e (fun t:set => C (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B t)
+    t) (IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B k a))) (Lean_List_Mem_HM0 C h0 h1 Hh0))
+    (Lean_List_Mem_HM1 C h0 h1 Hh1)) k Hk. }
+let i t. assume Ht: t :e Lean_List_Mem i.
+exact In_fam_eq (fun z:set => C z t) (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B t) i (SepE2
+    Lean_List_Mem_All (fun x:set => IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B x = i) t Ht)
+    (Lean_List_Mem_rec h0 h1 t) (IndRec_type Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_distinct
+    Lean_List_Mem_bounded Lean_List_Mem_arity (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k) (fun t:set => C (IndIdx Lean_List_Mem_K Lean_List_Mem_T
+    Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B t) t) HM t (SepE1 Lean_List_Mem_All (fun x:set => IndIdx Lean_List_Mem_K Lean_List_Mem_T
+    Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B x = i) t Ht)).
+Qed.
+
+
+
+
+Theorem Lean_List_Mem_ind : forall P:set -> set -> prop, (forall x0 :e (Lean_List P0), P (Lean_List_cons_node P0 P1 x0) (Lean_List_Mem_head_node x0)) -> (forall x0 :e P0, forall x1 :e (Lean_List P0),
+    forall x2 :e (Lean_List_Mem x1), P x1 x2 -> P (Lean_List_cons_node P0 x0 x1) (Lean_List_Mem_tail_node x0 x1 x2)) -> forall i, forall t :e Lean_List_Mem i, P i t.
+let P. assume H0. assume H1.
+claim M0: 0 :e (Pi_ x0 :e (Lean_List P0), {z :e 1 | P (Lean_List_cons_node P0 P1 x0) (Lean_List_Mem_head_node x0)}).
+{ apply Pi_0_In. let x0. assume Hx0: x0 :e (Lean_List P0).
+  prove 0 :e {z :e 1 | P (Lean_List_cons_node P0 P1 x0) (Lean_List_Mem_head_node x0)}.
+exact SepI 1 (fun z => P (Lean_List_cons_node P0 P1 x0) (Lean_List_Mem_head_node x0)) 0 In_0_1 (H0 x0 Hx0). }
+claim M1: 0 :e (Pi_ x0 :e P0, (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List_Mem x1), (Pi_ y2 :e {z :e 1 | P x1 x2}, {z :e 1 | P (Lean_List_cons_node P0 x0 x1) (Lean_List_Mem_tail_node x0 x1
+    x2)})))).
+{ apply Pi_0_In. let x0. assume Hx0: x0 :e P0.
+  prove 0 :e (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List_Mem x1), (Pi_ y2 :e {z :e 1 | P x1 x2}, {z :e 1 | P (Lean_List_cons_node P0 x0 x1) (Lean_List_Mem_tail_node x0 x1 x2)}))).
+apply Pi_0_In. let x1. assume Hx1: x1 :e (Lean_List P0).
+  prove 0 :e (Pi_ x2 :e (Lean_List_Mem x1), (Pi_ y2 :e {z :e 1 | P x1 x2}, {z :e 1 | P (Lean_List_cons_node P0 x0 x1) (Lean_List_Mem_tail_node x0 x1 x2)})).
+apply Pi_0_In. let x2. assume Hx2: x2 :e (Lean_List_Mem x1).
+  prove 0 :e (Pi_ y2 :e {z :e 1 | P x1 x2}, {z :e 1 | P (Lean_List_cons_node P0 x0 x1) (Lean_List_Mem_tail_node x0 x1 x2)}).
+apply Pi_0_In. let y2. assume Hy2: y2 :e {z :e 1 | P x1 x2}.
+  prove 0 :e {z :e 1 | P (Lean_List_cons_node P0 x0 x1) (Lean_List_Mem_tail_node x0 x1 x2)}.
+exact SepI 1 (fun z => P (Lean_List_cons_node P0 x0 x1) (Lean_List_Mem_tail_node x0 x1 x2)) 0 In_0_1 (H1 x0 Hx0 x1 Hx1 x2 Hx2 (SepE2 1 (fun z => P x1 x2) y2 Hy2)). }
+let i t. assume Ht: t :e Lean_List_Mem i.
+exact SepE2 1 (fun z => P i t) (Lean_List_Mem_rec 0 0 t) (Lean_List_Mem_rec_type (fun i t => {z :e 1 | P i t}) 0 M0 0 M1 i t Ht).
+Qed.
+
+Theorem Lean_List_Mem_noconf0_1 : forall x0, forall y0 y1 y2, (Lean_List_Mem_head_node x0) <> (Lean_List_Mem_tail_node y0 y1 y2).
+let x0 y0 y1 y2. assume H: (Lean_List_Mem_head_node x0) = (Lean_List_Mem_tail_node y0 y1 y2).
+apply IndNode_inj Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_distinct 0 (ordsuccI1 1 0 (ordsuccI2
+    0)) 1 (ordsuccI2 1) (TupArgs 1 (SeqCons (x0) SeqNil)) (TupArgs 3 (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) SeqNil)))) H.
+assume H1: 0 = 1. assume H2.
+exact In_irref 0 (In_eq_rs 0 0 1 H1 (ordsuccI2 0)).
+Qed.
+
+Theorem Lean_List_Mem_head_inj0 : forall x0 y0, (Lean_List_Mem_head_node x0) = (Lean_List_Mem_head_node y0) -> x0 = y0.
+let x0 y0. assume H: (Lean_List_Mem_head_node x0) = (Lean_List_Mem_head_node y0).
+claim L: SeqAt (SeqCons (x0) SeqNil) 0 = SeqAt (SeqCons (y0) SeqNil) 0.
+{ exact IndNode_args_inj Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_distinct 0 (ordsuccI1 1 0
+    (ordsuccI2 0)) 1 (SeqCons (x0) SeqNil) (SeqCons (y0) SeqNil) H 0 (ordsuccI2 0). }
+claim Lx: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim Ly: SeqAt (SeqCons (y0) SeqNil) 0 = y0.
+{ rewrite SeqAt_0. reflexivity. }
+rewrite <- Lx. rewrite <- Ly. exact L.
+Qed.
+Theorem Lean_List_Mem_tail_inj0 : forall x0 x1 x2 y0 y1 y2, (Lean_List_Mem_tail_node x0 x1 x2) = (Lean_List_Mem_tail_node y0 y1 y2) -> x0 = y0.
+let x0 x1 x2 y0 y1 y2. assume H: (Lean_List_Mem_tail_node x0 x1 x2) = (Lean_List_Mem_tail_node y0 y1 y2).
+claim L: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 = SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) SeqNil))) 0.
+{ exact IndNode_args_inj Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_distinct 1 (ordsuccI2 1) 3
+    (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) SeqNil))) H 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0))). }
+claim Lx: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim Ly: SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) SeqNil))) 0 = y0.
+{ rewrite SeqAt_0. reflexivity. }
+rewrite <- Lx. rewrite <- Ly. exact L.
+Qed.
+Theorem Lean_List_Mem_tail_inj1 : forall x0 x1 x2 y0 y1 y2, (Lean_List_Mem_tail_node x0 x1 x2) = (Lean_List_Mem_tail_node y0 y1 y2) -> x1 = y1.
+let x0 x1 x2 y0 y1 y2. assume H: (Lean_List_Mem_tail_node x0 x1 x2) = (Lean_List_Mem_tail_node y0 y1 y2).
+claim L: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1 = SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) SeqNil))) 1.
+{ exact IndNode_args_inj Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_distinct 1 (ordsuccI2 1) 3
+    (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) SeqNil))) H 1 (ordsuccI1 2 1 (ordsuccI2 1)). }
+claim Lx: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 1 = x1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim Ly: SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) SeqNil))) 1 = y1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+rewrite <- Lx. rewrite <- Ly. exact L.
+Qed.
+Theorem Lean_List_Mem_tail_inj2 : forall x0 x1 x2 y0 y1 y2, (Lean_List_Mem_tail_node x0 x1 x2) = (Lean_List_Mem_tail_node y0 y1 y2) -> x2 = y2.
+let x0 x1 x2 y0 y1 y2. assume H: (Lean_List_Mem_tail_node x0 x1 x2) = (Lean_List_Mem_tail_node y0 y1 y2).
+claim L: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 2 = SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) SeqNil))) 2.
+{ exact IndNode_args_inj Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_distinct 1 (ordsuccI2 1) 3
+    (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) SeqNil))) H 2 (ordsuccI2 2). }
+claim Lx: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) SeqNil))) 2 = x2.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+claim Ly: SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) SeqNil))) 2 = y2.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+rewrite <- Lx. rewrite <- Ly. exact L.
+Qed.
+
+Theorem Lean_List_Mem_in_All : forall i t, t :e Lean_List_Mem i -> t :e Lean_List_Mem_All.
+let i t. assume H: t :e Lean_List_Mem i. exact SepE1 Lean_List_Mem_All (fun x:set => IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix
+    Lean_List_Mem_O Lean_List_Mem_B x = i) t H.
+Qed.
+Theorem Lean_List_Mem_one_index : forall i i' t, t :e Lean_List_Mem i -> t :e Lean_List_Mem i' -> i = i'.
+let i i' t. assume H: t :e Lean_List_Mem i. assume H': t :e Lean_List_Mem i'.
+exact eq_i_tra i (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B t) i' (eq_sym_i (IndIdx Lean_List_Mem_K
+    Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B t) i (SepE2 Lean_List_Mem_All (fun x:set => IndIdx Lean_List_Mem_K Lean_List_Mem_T
+    Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B x = i) t H)) (SepE2 Lean_List_Mem_All (fun x:set => IndIdx Lean_List_Mem_K Lean_List_Mem_T
+    Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B x = i') t H').
+Qed.
+
+Definition Lean_List_Mem_Prop : set -> set := fun i => {x :e 1 | exists w, w :e Lean_List_Mem i}.
+Theorem Lean_List_Mem_Prop_prop : forall i, Lean_List_Mem_Prop i :e LeanProp.
+let i. exact PowerI 1 (Lean_List_Mem_Prop i) (Sep_Subq 1 (fun x:set => exists w, w :e Lean_List_Mem i)).
+Qed.
+Definition Lean_List_Mem_head_proof : set := (fun x0 :e (Lean_List P0) => 0).
+Theorem Lean_List_Mem_head_proof_ok : forall x0 :e (Lean_List P0), 0 :e (Lean_List_Mem_Prop (Lean_List_cons_node P0 P1 x0)).
+let x0. assume H0: x0 :e (Lean_List P0). exact SepI 1 (fun x:set => exists w, w :e Lean_List_Mem (Lean_List_cons_node P0 P1 x0)) 0 In_0_1 (fun p H => H (Lean_List_Mem_head_node x0)
+    (Lean_List_Mem_head_typed x0 H0)).
+Qed.
+Theorem Lean_List_Mem_head_proof_type : Lean_List_Mem_head_proof :e (Pi_ x0 :e (Lean_List P0), (Lean_List_Mem_Prop (Lean_List_cons_node P0 P1 x0))).
+exact (lam_Pi (Lean_List P0) (fun x0 => (Lean_List_Mem_Prop (Lean_List_cons_node P0 P1 x0))) (fun x0 => 0) (fun x0 H0 => (Lean_List_Mem_head_proof_ok x0 H0))).
+Qed.
+Definition Lean_List_Mem_tail_proof : set := (fun x0 :e P0 => (fun x1 :e (Lean_List P0) => (fun x2 :e (Lean_List_Mem x1) => 0))).
+Theorem Lean_List_Mem_tail_proof_ok : forall x0 :e P0, forall x1 :e (Lean_List P0), forall x2 :e (Lean_List_Mem x1), 0 :e (Lean_List_Mem_Prop (Lean_List_cons_node P0 x0 x1)).
+let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e (Lean_List P0). let x2. assume H2: x2 :e (Lean_List_Mem x1). exact SepI 1 (fun x:set => exists w, w :e Lean_List_Mem (Lean_List_cons_node P0 x0
+    x1)) 0 In_0_1 (fun p H => H (Lean_List_Mem_tail_node x0 x1 x2) (Lean_List_Mem_tail_typed x0 H0 x1 H1 x2 H2)).
+Qed.
+Theorem Lean_List_Mem_tail_proof_type : Lean_List_Mem_tail_proof :e (Pi_ x0 :e P0, (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List_Mem x1), (Lean_List_Mem_Prop (Lean_List_cons_node P0 x0 x1))))).
+exact (lam_Pi P0 (fun x0 => (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List_Mem x1), (Lean_List_Mem_Prop (Lean_List_cons_node P0 x0 x1))))) (fun x0 => (fun x1 :e (Lean_List P0) => (fun x2 :e
+    (Lean_List_Mem x1) => 0))) (fun x0 H0 => (lam_Pi (Lean_List P0) (fun x1 => (Pi_ x2 :e (Lean_List_Mem x1), (Lean_List_Mem_Prop (Lean_List_cons_node P0 x0 x1)))) (fun x1 => (fun x2 :e
+    (Lean_List_Mem x1) => 0)) (fun x1 H1 => (lam_Pi (Lean_List_Mem x1) (fun x2 => (Lean_List_Mem_Prop (Lean_List_cons_node P0 x0 x1))) (fun x2 => 0) (fun x2 H2 => (Lean_List_Mem_tail_proof_ok x0 H0
+    x1 H1 x2 H2))))))).
+Qed.
+Definition Lean_List_Mem_prec : set -> set -> set -> set -> set := fun h0 h1 i t => IndRec Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix
+    Lean_List_Mem_O Lean_List_Mem_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k) (Eps_i (fun w:set => w :e (Lean_List_Mem i))).
+Theorem Lean_List_Mem_PHM0 : forall C:set -> set -> set, forall h0 h1, h0 :e (Pi_ x0 :e (Lean_List P0), (C (Lean_List_cons_node P0 P1 x0) 0)) -> forall a :e IndArgs Lean_List_Mem_K Lean_List_Mem_T
+    Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_All 0, forall r:set -> set, (forall j :e Lean_List_Mem_N 0, Lean_List_Mem_R 0 j -> r
+    j :e (fun t:set => C (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B t) 0) (a j)) -> (fun k a r:set =>
+    SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k) 0 a (IndRes Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix
+    Lean_List_Mem_O Lean_List_Mem_B 0 r) :e (fun t:set => C (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B t)
+    0) (IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 0 a).
+let C h0 h1. assume Hh: h0 :e (Pi_ x0 :e (Lean_List P0), (C (Lean_List_cons_node P0 P1 x0) 0)).
+let a. assume Ha: a :e IndArgs Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_All 0. let r. assume Hr:
+    forall j :e Lean_List_Mem_N 0, Lean_List_Mem_R 0 j -> r j :e (fun t:set => C (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix
+    Lean_List_Mem_O Lean_List_Mem_B t) 0) (a j).
+claim Fi: IndFits Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_All 0 a.
+{ exact IndArgs_Fits Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_All 0 a Ha. }
+claim G0: (a 0) :e (Lean_List P0).
+{ apply Fi 0 (In_eq_rs 0 (Lean_List_Mem_N 0) 1 Lean_List_Mem_N0 (ordsuccI2 0)). assume H1. assume H2. exact In_eq_r (a 0) (Lean_List_Mem_F 0 0 a) (Lean_List P0) (Lean_List_Mem_F0_0 a) (H2
+    Lean_List_Mem_nR0_0). }
+claim Lv: (h0 (a 0)) :e (C (Lean_List_cons_node P0 P1 (a 0)) 0).
+{ exact (ap_Pi (Lean_List P0) (fun x0 => (C (Lean_List_cons_node P0 P1 x0) 0)) h0 (a 0) Hh G0). }
+claim Lm: (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k) 0 a (IndRes Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F
+    Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 0 r) = (h0 (a 0)).
+{ prove SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (IndRes Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O
+    Lean_List_Mem_B 0 r 2))) SeqNil)) 0 = (h0 (a 0)). rewrite SeqAt_0. reflexivity. }
+claim Lo: (Lean_List_cons_node P0 P1 (a 0)) = IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B (IndNode
+    Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 0 a).
+{ exact eq_i_tra (Lean_List_cons_node P0 P1 (a 0)) (Lean_List_Mem_O 0 a) (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O
+    Lean_List_Mem_B (IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 0 a)) (eq_sym_i (Lean_List_Mem_O 0 a)
+    (Lean_List_cons_node P0 P1 (a 0)) (Lean_List_Mem_O0 a)) (eq_sym_i (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O
+    Lean_List_Mem_B (IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 0 a)) (Lean_List_Mem_O 0 a) (IndIdx_Node
+    Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 0 a)). }
+exact In_eq_ls ((fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k) 0 a (IndRes Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R
+    Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 0 r)) (h0 (a 0)) (C (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix
+    Lean_List_Mem_O Lean_List_Mem_B (IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 0 a)) 0) Lm (In_fam_eq
+    (fun z:set => C z 0) (Lean_List_cons_node P0 P1 (a 0)) (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B
+    (IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 0 a)) Lo (h0 (a 0)) Lv).
+Qed.
+Theorem Lean_List_Mem_PHM1 : forall C:set -> set -> set, forall h0 h1, h1 :e (Pi_ x0 :e P0, (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List_Mem x1), (Pi_ y2 :e (C x1 0), (C (Lean_List_cons_node P0
+    x0 x1) 0))))) -> forall a :e IndArgs Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_All 1, forall
+    r:set -> set, (forall j :e Lean_List_Mem_N 1, Lean_List_Mem_R 1 j -> r j :e (fun t:set => C (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F
+    Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B t) 0) (a j)) -> (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k) 1 a (IndRes Lean_List_Mem_K
+    Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 r) :e (fun t:set => C (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N
+    Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B t) 0) (IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix
+    Lean_List_Mem_O Lean_List_Mem_B 1 a).
+let C h0 h1. assume Hh: h1 :e (Pi_ x0 :e P0, (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List_Mem x1), (Pi_ y2 :e (C x1 0), (C (Lean_List_cons_node P0 x0 x1) 0))))).
+let a. assume Ha: a :e IndArgs Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_All 1. let r. assume Hr:
+    forall j :e Lean_List_Mem_N 1, Lean_List_Mem_R 1 j -> r j :e (fun t:set => C (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix
+    Lean_List_Mem_O Lean_List_Mem_B t) 0) (a j).
+claim Fi: IndFits Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_All 1 a.
+{ exact IndArgs_Fits Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_All 1 a Ha. }
+claim G0: (a 0) :e P0.
+{ apply Fi 0 (In_eq_rs 0 (Lean_List_Mem_N 1) 3 Lean_List_Mem_N1 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0)))). assume H1. assume H2. exact In_eq_r (a 0) (Lean_List_Mem_F 1 0 a) P0
+    (Lean_List_Mem_F1_0 a) (H2 Lean_List_Mem_nR1_0). }
+claim G1: (a 1) :e (Lean_List P0).
+{ apply Fi 1 (In_eq_rs 1 (Lean_List_Mem_N 1) 3 Lean_List_Mem_N1 (ordsuccI1 2 1 (ordsuccI2 1))). assume H1. assume H2. exact In_eq_r (a 1) (Lean_List_Mem_F 1 1 a) (Lean_List P0) (Lean_List_Mem_F1_1 a)
+    (H2 Lean_List_Mem_nR1_1). }
+claim G2: (a 2) :e (Lean_List_Mem (a 1)).
+{ apply Fi 2 (In_eq_rs 2 (Lean_List_Mem_N 1) 3 Lean_List_Mem_N1 (ordsuccI2 2)). assume H1. assume H2. apply H1 Lean_List_Mem_R1_2. assume H3: a 2 :e Lean_List_Mem_All. assume H4: IndIdx
+    Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B (a 2) = Lean_List_Mem_Ix 1 2 a.
+  prove (a 2) :e {x :e Lean_List_Mem_All | IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B x = (a 1)}.
+  apply SepI Lean_List_Mem_All (fun x:set => IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B x = (a 1)) (a 2)
+    H3.
+  exact eq_i_tra (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B (a 2)) (Lean_List_Mem_Ix 1 2 a) (a 1) H4
+    (Lean_List_Mem_Ix1_2 a). }
+claim Y2: r 2 :e (C (a 1) 0).
+{ exact In_fam_eq (fun z:set => C z 0) (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B (a 2)) (a 1) (SepE2
+    Lean_List_Mem_All (fun x:set => IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B x = (a 1)) (a 2) G2) (r 2)
+    (Hr 2 (In_eq_rs 2 (Lean_List_Mem_N 1) 3 Lean_List_Mem_N1 (ordsuccI2 2)) Lean_List_Mem_R1_2). }
+claim Rp2: IndRes Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 r 2 = r 2.
+{ exact IndRes_at Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 r 2 (In_eq_rs 2 (Lean_List_Mem_N 1) 3
+    Lean_List_Mem_N1 (ordsuccI2 2)) Lean_List_Mem_R1_2. }
+claim Lv: (h1 (a 0) (a 1) (a 2) (r 2)) :e (C (Lean_List_cons_node P0 (a 0) (a 1)) 0).
+{ exact (ap_Pi (C (a 1) 0) (fun y2 => (C (Lean_List_cons_node P0 (a 0) (a 1)) 0)) (((h1 (a 0)) (a 1)) (a 2)) (r 2) (ap_Pi (Lean_List_Mem (a 1)) (fun x2 => (Pi_ y2 :e (C (a 1) 0), (C
+    (Lean_List_cons_node P0 (a 0) (a 1)) 0))) ((h1 (a 0)) (a 1)) (a 2) (ap_Pi (Lean_List P0) (fun x1 => (Pi_ x2 :e (Lean_List_Mem x1), (Pi_ y2 :e (C x1 0), (C (Lean_List_cons_node P0 (a 0) x1) 0))))
+    (h1 (a 0)) (a 1) (ap_Pi P0 (fun x0 => (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List_Mem x1), (Pi_ y2 :e (C x1 0), (C (Lean_List_cons_node P0 x0 x1) 0))))) h1 (a 0) Hh G0) G1) G2) Y2). }
+claim Lm: (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k) 1 a (IndRes Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F
+    Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 r) = (h1 (a 0) (a 1) (a 2) (r 2)).
+{ prove SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (IndRes Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O
+    Lean_List_Mem_B 1 r 2))) SeqNil)) 1 = (h1 (a 0) (a 1) (a 2) (r 2)). rewrite SeqAt_S. { rewrite SeqAt_0. rewrite Rp2. reflexivity. } exact nat_0. }
+claim Lo: (Lean_List_cons_node P0 (a 0) (a 1)) = IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B (IndNode
+    Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 a).
+{ exact eq_i_tra (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_Mem_O 1 a) (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O
+    Lean_List_Mem_B (IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 a)) (eq_sym_i (Lean_List_Mem_O 1 a)
+    (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_Mem_O1 a)) (eq_sym_i (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O
+    Lean_List_Mem_B (IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 a)) (Lean_List_Mem_O 1 a) (IndIdx_Node
+    Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 a)). }
+exact In_eq_ls ((fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k) 1 a (IndRes Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R
+    Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 r)) (h1 (a 0) (a 1) (a 2) (r 2)) (C (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F
+    Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B (IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 a)) 0)
+    Lm (In_fam_eq (fun z:set => C z 0) (Lean_List_cons_node P0 (a 0) (a 1)) (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O
+    Lean_List_Mem_B (IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B 1 a)) Lo (h1 (a 0) (a 1) (a 2) (r 2)) Lv).
+Qed.
+Theorem Lean_List_Mem_prec_type : forall C:set -> set -> set, (forall i t, C i t :e LeanProp) -> forall h0 :e (Pi_ x0 :e (Lean_List P0), (C (Lean_List_cons_node P0 P1 x0) 0)), forall h1 :e (Pi_ x0 :e
+    P0, (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e (Lean_List_Mem x1), (Pi_ y2 :e (C x1 0), (C (Lean_List_cons_node P0 x0 x1) 0))))), forall i, forall t :e (Lean_List_Mem_Prop i), Lean_List_Mem_prec h0 h1
+    i t :e C i t.
+let C. assume HP. let h0. assume Hh0. let h1. assume Hh1.
+claim HM: forall k :e Lean_List_Mem_K, forall a :e IndArgs Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B
+    Lean_List_Mem_All k, forall r:set -> set, (forall j :e Lean_List_Mem_N k, Lean_List_Mem_R k j -> r j :e (fun t:set => C (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R
+    Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B t) 0) (a j)) -> (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k) k a (IndRes
+    Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B k r) :e (fun t:set => C (IndIdx Lean_List_Mem_K Lean_List_Mem_T
+    Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B t) 0) (IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F
+    Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B k a).
+{ let k. assume Hk: k :e Lean_List_Mem_K. exact (Below_S 1 (fun k => forall a :e IndArgs Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix
+    Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_All k, forall r:set -> set, (forall j :e Lean_List_Mem_N k, Lean_List_Mem_R k j -> r j :e (fun t:set => C (IndIdx Lean_List_Mem_K Lean_List_Mem_T
+    Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B t) 0) (a j)) -> (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (r
+    2))) SeqNil)) k) k a (IndRes Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B k r) :e (fun t:set => C (IndIdx
+    Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B t) 0) (IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N
+    Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B k a)) (Below_S 0 (fun k => forall a :e IndArgs Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R
+    Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_All k, forall r:set -> set, (forall j :e Lean_List_Mem_N k, Lean_List_Mem_R k j -> r j :e (fun t:set => C (IndIdx
+    Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B t) 0) (a j)) -> (fun k a r:set => SeqAt (SeqCons ((h0 (a 0)))
+    (SeqCons ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k) k a (IndRes Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B k
+    r) :e (fun t:set => C (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B t) 0) (IndNode Lean_List_Mem_K
+    Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B k a)) (Below_0 (fun k => forall a :e IndArgs Lean_List_Mem_K Lean_List_Mem_T
+    Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_All k, forall r:set -> set, (forall j :e Lean_List_Mem_N k, Lean_List_Mem_R k j -> r
+    j :e (fun t:set => C (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B t) 0) (a j)) -> (fun k a r:set =>
+    SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k) k a (IndRes Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix
+    Lean_List_Mem_O Lean_List_Mem_B k r) :e (fun t:set => C (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B t)
+    0) (IndNode Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B k a))) (Lean_List_Mem_PHM0 C h0 h1 Hh0))
+    (Lean_List_Mem_PHM1 C h0 h1 Hh1)) k Hk. }
+let i. let t. assume Ht: t :e (Lean_List_Mem_Prop i).
+claim Hw0: (Eps_i (fun w:set => w :e (Lean_List_Mem i))) :e (Lean_List_Mem i).
+{ exact Eps_i_ex (fun w:set => w :e (Lean_List_Mem i)) (SepE2 1 (fun x:set => exists w, w :e (Lean_List_Mem i)) t Ht). }
+claim Ht0: t = 0.
+{ exact SingE 0 t (Subq_1_Sing0 t (SepE1 1 (fun x:set => exists w, w :e (Lean_List_Mem i)) t Ht)). }
+claim L: IndRec Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons
+    ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k) (Eps_i (fun w:set => w :e (Lean_List_Mem i))) :e (fun t:set => C (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F
+    Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B t) 0) (Eps_i (fun w:set => w :e (Lean_List_Mem i))).
+{ exact IndRec_type Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B Lean_List_Mem_distinct Lean_List_Mem_bounded
+    Lean_List_Mem_arity (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k) (fun t:set => C (IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N
+    Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B t) 0) HM (Eps_i (fun w:set => w :e (Lean_List_Mem i))) (SepE1 Lean_List_Mem_All (fun x:set => IndIdx
+    Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B x = i) (Eps_i (fun w:set => w :e (Lean_List_Mem i))) Hw0). }
+exact In_fam_eq (fun z:set => C i z) 0 t (eq_sym_i t 0 Ht0) (IndRec Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B
+    (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k) (Eps_i (fun w:set => w :e (Lean_List_Mem i)))) (In_fam_eq (fun z:set => C z 0) (IndIdx
+    Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B (Eps_i (fun w:set => w :e (Lean_List_Mem i)))) i (SepE2
+    Lean_List_Mem_All (fun x:set => IndIdx Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B x = i) (Eps_i (fun w:set =>
+    w :e (Lean_List_Mem i))) Hw0) (IndRec Lean_List_Mem_K Lean_List_Mem_T Lean_List_Mem_N Lean_List_Mem_R Lean_List_Mem_F Lean_List_Mem_Ix Lean_List_Mem_O Lean_List_Mem_B (fun k a r:set => SeqAt
+    (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0) (a 1) (a 2) (r 2))) SeqNil)) k) (Eps_i (fun w:set => w :e (Lean_List_Mem i)))) L).
+Qed.
+
+End Lean_List_Mem_Section.
+(** ---- List.Pairwise, generated from its Lean declaration ---- **)
+
+Section Lean_List_Pairwise_Section.
+
+Variable P0 : set.
+Variable P1 : set.
+Let Lean_List_Pairwise_K : set := 2.
+Let Lean_List_Pairwise_T : set -> set := fun k => k.
+Let Lean_List_Pairwise_N : set -> set := fun k => SeqAt (SeqCons (0) (SeqCons (4) SeqNil)) k.
+Let Lean_List_Pairwise_R : set -> set -> prop := fun k j => 0 :e SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (1) SeqNil))))) SeqNil)) k) j.
+Let Lean_List_Pairwise_F : set -> set -> set -> set := fun k j a => SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (P0) (SeqCons ((Lean_List P0)) (SeqCons ({z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e
+    (((Lean_List_Mem_Prop P0) q0) (a 1)), ((P1 (a 0)) q0)))}) (SeqCons (0) SeqNil))))) SeqNil)) k) j.
+Let Lean_List_Pairwise_Ix : set -> set -> set -> set := fun k j a => SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons ((a 1)) SeqNil))))) SeqNil)) k) j.
+Let Lean_List_Pairwise_O : set -> set -> set := fun k a => SeqAt (SeqCons ((Lean_List_nil_node P0)) (SeqCons ((Lean_List_cons_node P0 (a 0) (a 1))) SeqNil)) k.
+Let Lean_List_Pairwise_B : set := (((P0) :\/: ((Lean_List P0))) :\/: (1)).
+
+Definition Lean_List_Pairwise_All : set := IndCarrier Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix
+    Lean_List_Pairwise_O Lean_List_Pairwise_B.
+Definition Lean_List_Pairwise : set -> set := IndFiber Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix
+    Lean_List_Pairwise_O Lean_List_Pairwise_B.
+
+Theorem Lean_List_Pairwise_N0 : SeqAt (SeqCons (0) (SeqCons (4) SeqNil)) 0 = 0.
+rewrite SeqAt_0. reflexivity.
+Qed.
+Theorem Lean_List_Pairwise_O0 : forall a, SeqAt (SeqCons ((Lean_List_nil_node P0)) (SeqCons ((Lean_List_cons_node P0 (a 0) (a 1))) SeqNil)) 0 = (Lean_List_nil_node P0).
+let a. rewrite SeqAt_0. reflexivity.
+Qed.
+Theorem Lean_List_Pairwise_N1 : SeqAt (SeqCons (0) (SeqCons (4) SeqNil)) 1 = 4.
+rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0.
+Qed.
+Theorem Lean_List_Pairwise_O1 : forall a, SeqAt (SeqCons ((Lean_List_nil_node P0)) (SeqCons ((Lean_List_cons_node P0 (a 0) (a 1))) SeqNil)) 1 = (Lean_List_cons_node P0 (a 0) (a 1)).
+let a. rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0.
+Qed.
+Theorem Lean_List_Pairwise_nR1_0 : ~ (0 :e SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (1) SeqNil))))) SeqNil)) 1) 0).
+rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_0. exact EmptyE 0. } exact nat_0.
+Qed.
+Theorem Lean_List_Pairwise_F1_0 : forall a, SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (P0) (SeqCons ((Lean_List P0)) (SeqCons ({z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop
+    P0) q0) (a 1)), ((P1 (a 0)) q0)))}) (SeqCons (0) SeqNil))))) SeqNil)) 1) 0 = P0.
+let a. rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_0. reflexivity. } exact nat_0.
+Qed.
+Theorem Lean_List_Pairwise_nR1_1 : ~ (0 :e SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (1) SeqNil))))) SeqNil)) 1) 1).
+rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_0. exact EmptyE 0. } exact nat_0. } exact nat_0.
+Qed.
+Theorem Lean_List_Pairwise_F1_1 : forall a, SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (P0) (SeqCons ((Lean_List P0)) (SeqCons ({z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop
+    P0) q0) (a 1)), ((P1 (a 0)) q0)))}) (SeqCons (0) SeqNil))))) SeqNil)) 1) 1 = (Lean_List P0).
+let a. rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact nat_0.
+Qed.
+Theorem Lean_List_Pairwise_nR1_2 : ~ (0 :e SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (1) SeqNil))))) SeqNil)) 1) 2).
+rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. exact EmptyE 0. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact nat_0.
+Qed.
+Theorem Lean_List_Pairwise_F1_2 : forall a, SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (P0) (SeqCons ((Lean_List P0)) (SeqCons ({z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop
+    P0) q0) (a 1)), ((P1 (a 0)) q0)))}) (SeqCons (0) SeqNil))))) SeqNil)) 1) 2 = {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) (a 1)), ((P1 (a 0)) q0)))}.
+let a. rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact nat_0.
+Qed.
+Theorem Lean_List_Pairwise_R1_3 : 0 :e SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (1) SeqNil))))) SeqNil)) 1) 3.
+rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. exact In_0_1. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1
+    (nat_ordsucc 0 nat_0)). } exact nat_0.
+Qed.
+Theorem Lean_List_Pairwise_Ix1_3 : forall a, SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons ((a 1)) SeqNil))))) SeqNil)) 1) 3 = (a 1).
+let a. rewrite SeqAt_S. { rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1
+    (nat_ordsucc 0 nat_0)). } exact nat_0.
+Qed.
+
+Theorem Lean_List_Pairwise_bd0 : forall a, forall j :e Lean_List_Pairwise_N 0, ~ Lean_List_Pairwise_R 0 j -> Lean_List_Pairwise_F 0 j a c= Lean_List_Pairwise_B.
+let a j. assume Hj: j :e Lean_List_Pairwise_N 0. assume Hnr: ~ Lean_List_Pairwise_R 0 j.
+exact (Below_0 (fun j => ~ Lean_List_Pairwise_R 0 j -> Lean_List_Pairwise_F 0 j a c= Lean_List_Pairwise_B)) j (In_eq_r j (Lean_List_Pairwise_N 0) 0 Lean_List_Pairwise_N0 Hj) Hnr.
+Qed.
+Theorem Lean_List_Pairwise_bd1_0 : forall a, ~ Lean_List_Pairwise_R 1 0 -> Lean_List_Pairwise_F 1 0 a c= Lean_List_Pairwise_B.
+let a. assume Hnr: ~ Lean_List_Pairwise_R 1 0. let z. assume Hz: z :e Lean_List_Pairwise_F 1 0 a.
+exact (binunionI1 ((P0) :\/: ((Lean_List P0))) (1) z (binunionI1 (P0) ((Lean_List P0)) z (In_eq_r z (Lean_List_Pairwise_F 1 0 a) (P0) (Lean_List_Pairwise_F1_0 a) Hz))).
+Qed.
+Theorem Lean_List_Pairwise_bd1_1 : forall a, ~ Lean_List_Pairwise_R 1 1 -> Lean_List_Pairwise_F 1 1 a c= Lean_List_Pairwise_B.
+let a. assume Hnr: ~ Lean_List_Pairwise_R 1 1. let z. assume Hz: z :e Lean_List_Pairwise_F 1 1 a.
+exact (binunionI1 ((P0) :\/: ((Lean_List P0))) (1) z (binunionI2 (P0) ((Lean_List P0)) z (In_eq_r z (Lean_List_Pairwise_F 1 1 a) ((Lean_List P0)) (Lean_List_Pairwise_F1_1 a) Hz))).
+Qed.
+Theorem Lean_List_Pairwise_bd1_2 : forall a, ~ Lean_List_Pairwise_R 1 2 -> Lean_List_Pairwise_F 1 2 a c= Lean_List_Pairwise_B.
+let a. assume Hnr: ~ Lean_List_Pairwise_R 1 2. let z. assume Hz: z :e Lean_List_Pairwise_F 1 2 a.
+exact (binunionI2 ((P0) :\/: ((Lean_List P0))) (1) z (SepE1 1 (fun z => z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) (a 1)), ((P1 (a 0)) q0)))) z (In_eq_r z (Lean_List_Pairwise_F 1 2
+    a) ({z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) (a 1)), ((P1 (a 0)) q0)))}) (Lean_List_Pairwise_F1_2 a) Hz))).
+Qed.
+Theorem Lean_List_Pairwise_bd1_3 : forall a, ~ Lean_List_Pairwise_R 1 3 -> Lean_List_Pairwise_F 1 3 a c= Lean_List_Pairwise_B.
+let a. assume Hnr: ~ Lean_List_Pairwise_R 1 3. apply FalseE. exact Hnr Lean_List_Pairwise_R1_3.
+Qed.
+Theorem Lean_List_Pairwise_bd1 : forall a, forall j :e Lean_List_Pairwise_N 1, ~ Lean_List_Pairwise_R 1 j -> Lean_List_Pairwise_F 1 j a c= Lean_List_Pairwise_B.
+let a j. assume Hj: j :e Lean_List_Pairwise_N 1. assume Hnr: ~ Lean_List_Pairwise_R 1 j.
+exact (Below_S 3 (fun j => ~ Lean_List_Pairwise_R 1 j -> Lean_List_Pairwise_F 1 j a c= Lean_List_Pairwise_B) (Below_S 2 (fun j => ~ Lean_List_Pairwise_R 1 j -> Lean_List_Pairwise_F 1 j a c=
+    Lean_List_Pairwise_B) (Below_S 1 (fun j => ~ Lean_List_Pairwise_R 1 j -> Lean_List_Pairwise_F 1 j a c= Lean_List_Pairwise_B) (Below_S 0 (fun j => ~ Lean_List_Pairwise_R 1 j ->
+    Lean_List_Pairwise_F 1 j a c= Lean_List_Pairwise_B) (Below_0 (fun j => ~ Lean_List_Pairwise_R 1 j -> Lean_List_Pairwise_F 1 j a c= Lean_List_Pairwise_B)) (Lean_List_Pairwise_bd1_0 a))
+    (Lean_List_Pairwise_bd1_1 a)) (Lean_List_Pairwise_bd1_2 a)) (Lean_List_Pairwise_bd1_3 a)) j (In_eq_r j (Lean_List_Pairwise_N 1) 4 Lean_List_Pairwise_N1 Hj) Hnr.
+Qed.
+Theorem Lean_List_Pairwise_bounded : IndBounded Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O
+    Lean_List_Pairwise_B.
+let k. assume Hk: k :e Lean_List_Pairwise_K.
+exact (Below_S 1 (fun k => forall a, forall j :e Lean_List_Pairwise_N k, ~ Lean_List_Pairwise_R k j -> Lean_List_Pairwise_F k j a c= Lean_List_Pairwise_B) (Below_S 0 (fun k => forall a, forall j :e
+    Lean_List_Pairwise_N k, ~ Lean_List_Pairwise_R k j -> Lean_List_Pairwise_F k j a c= Lean_List_Pairwise_B) (Below_0 (fun k => forall a, forall j :e Lean_List_Pairwise_N k, ~ Lean_List_Pairwise_R k
+    j -> Lean_List_Pairwise_F k j a c= Lean_List_Pairwise_B)) Lean_List_Pairwise_bd0) Lean_List_Pairwise_bd1) k Hk.
+Qed.
+
+Theorem Lean_List_Pairwise_distinct : IndDistinct Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O
+    Lean_List_Pairwise_B.
+let k. assume Hk: k :e Lean_List_Pairwise_K. let k'. assume Hk': k' :e Lean_List_Pairwise_K. assume H: k = k'. exact H.
+Qed.
+
+Theorem Lean_List_Pairwise_ar0 : nat_p (Lean_List_Pairwise_N 0).
+prove nat_p (SeqAt (SeqCons (0) (SeqCons (4) SeqNil)) 0). rewrite Lean_List_Pairwise_N0. exact nat_0.
+Qed.
+Theorem Lean_List_Pairwise_ar1 : nat_p (Lean_List_Pairwise_N 1).
+prove nat_p (SeqAt (SeqCons (0) (SeqCons (4) SeqNil)) 1). rewrite Lean_List_Pairwise_N1. exact (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))).
+Qed.
+Theorem Lean_List_Pairwise_arity : forall k :e Lean_List_Pairwise_K, nat_p (Lean_List_Pairwise_N k).
+let k. assume Hk: k :e Lean_List_Pairwise_K.
+exact (Below_S 1 (fun k => nat_p (Lean_List_Pairwise_N k)) (Below_S 0 (fun k => nat_p (Lean_List_Pairwise_N k)) (Below_0 (fun k => nat_p (Lean_List_Pairwise_N k))) Lean_List_Pairwise_ar0)
+    Lean_List_Pairwise_ar1) k Hk.
+Qed.
+
+Definition Lean_List_Pairwise_nil_node : set := IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix
+    Lean_List_Pairwise_O Lean_List_Pairwise_B 0 (TupArgs 0 SeqNil).
+Theorem Lean_List_Pairwise_nil_args : (TupArgs 0 SeqNil) :e IndArgs Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix
+    Lean_List_Pairwise_O Lean_List_Pairwise_B Lean_List_Pairwise_All 0.
+
+prove (TupArgs 0 SeqNil) :e {a :e Pi_ j :e SeqAt (SeqCons (0) (SeqCons (4) SeqNil)) 0, Lean_List_Pairwise_B :\/: Lean_List_Pairwise_All | IndFits Lean_List_Pairwise_K Lean_List_Pairwise_T
+    Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B Lean_List_Pairwise_All 0 a}.
+rewrite Lean_List_Pairwise_N0.
+apply SepI (Pi_ j :e 0, Lean_List_Pairwise_B :\/: Lean_List_Pairwise_All) (fun a => IndFits Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F
+    Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B Lean_List_Pairwise_All 0 a) (TupArgs 0 SeqNil).
+- exact lam_Pi 0 (fun j => Lean_List_Pairwise_B :\/: Lean_List_Pairwise_All) (fun j => SeqAt SeqNil j) (Below_0 (fun j => SeqAt SeqNil j :e Lean_List_Pairwise_B :\/: Lean_List_Pairwise_All)).
+- prove IndFits Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B
+    Lean_List_Pairwise_All 0 (TupArgs 0 SeqNil).
+  let j. assume Hj: j :e Lean_List_Pairwise_N 0.
+  exact (Below_0 (fun j => (Lean_List_Pairwise_R 0 j -> (TupArgs 0 SeqNil) j :e Lean_List_Pairwise_All /\ IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R
+    Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B ((TupArgs 0 SeqNil) j) = Lean_List_Pairwise_Ix 0 j (TupArgs 0 SeqNil)) /\ (~ Lean_List_Pairwise_R 0 j ->
+    (TupArgs 0 SeqNil) j :e Lean_List_Pairwise_F 0 j (TupArgs 0 SeqNil)))) j (In_eq_r j (Lean_List_Pairwise_N 0) 0 Lean_List_Pairwise_N0 Hj).
+Qed.
+Theorem Lean_List_Pairwise_nil_typed : Lean_List_Pairwise_nil_node :e (Lean_List_Pairwise (Lean_List_nil_node P0)).
+
+claim L: Lean_List_Pairwise_nil_node :e IndFiber Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O
+    Lean_List_Pairwise_B (Lean_List_Pairwise_O 0 (TupArgs 0 SeqNil)).
+{ exact IndNode_Fiber Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B
+    Lean_List_Pairwise_bounded 0 (ordsuccI1 1 0 (ordsuccI2 0)) Lean_List_Pairwise_ar0 (TupArgs 0 SeqNil) (Lean_List_Pairwise_nil_args ). }
+claim Lo: Lean_List_Pairwise_O 0 (TupArgs 0 SeqNil) = (Lean_List_nil_node P0).
+{ prove SeqAt (SeqCons ((Lean_List_nil_node P0)) (SeqCons ((Lean_List_cons_node P0 (TupArgs 0 SeqNil 0) (TupArgs 0 SeqNil 1))) SeqNil)) 0 = (Lean_List_nil_node P0). rewrite Lean_List_Pairwise_O0
+    (TupArgs 0 SeqNil). reflexivity. }
+exact In_fam_eq (IndFiber Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B)
+    (Lean_List_Pairwise_O 0 (TupArgs 0 SeqNil)) (Lean_List_nil_node P0) Lo (Lean_List_Pairwise_nil_node) L.
+Qed.
+Definition Lean_List_Pairwise_nil : set := Lean_List_Pairwise_nil_node.
+Theorem Lean_List_Pairwise_nil_type : Lean_List_Pairwise_nil :e (Lean_List_Pairwise (Lean_List_nil_node P0)).
+exact Lean_List_Pairwise_nil_typed.
+Qed.
+Definition Lean_List_Pairwise_cons_node : set -> set -> set -> set -> set := fun x0 x1 x2 x3 => IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R
+    Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 1 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))).
+Theorem Lean_List_Pairwise_cons_args : forall x0 :e P0, forall x1 :e (Lean_List P0), forall x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) x1), ((P1 x0) q0)))}, forall
+    x3 :e (Lean_List_Pairwise x1), (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) :e IndArgs Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N
+    Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B Lean_List_Pairwise_All 1.
+let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e (Lean_List P0). let x2. assume H2: x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) x1), ((P1 x0) q0)))}. let x3.
+    assume H3: x3 :e (Lean_List_Pairwise x1).
+claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 = x0.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 (ordsuccI1 3 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0)))). exact U0. }
+claim U1: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 = x1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim T1: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 = x1.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 (ordsuccI1 3 1 (ordsuccI1 2 1 (ordsuccI2 1))). exact U1. }
+claim U2: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 = x2.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+claim T2: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 = x2.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 (ordsuccI1 3 2 (ordsuccI2 2)). exact U2. }
+claim U3: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 = x3.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)). }
+claim T3: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 = x3.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 (ordsuccI2 3). exact U3. }
+claim V3: x3 :e Lean_List_Pairwise_All.
+{ exact SepE1 Lean_List_Pairwise_All (fun x:set => IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix
+    Lean_List_Pairwise_O Lean_List_Pairwise_B x = x1) x3 H3. }
+claim I3: IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B x3 = x1.
+{ exact SepE2 Lean_List_Pairwise_All (fun x:set => IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix
+    Lean_List_Pairwise_O Lean_List_Pairwise_B x = x1) x3 H3. }
+claim M0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 :e Lean_List_Pairwise_B :\/: Lean_List_Pairwise_All.
+{ exact In_eq_ls (SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0) x0 (Lean_List_Pairwise_B :\/: Lean_List_Pairwise_All) U0 (binunionI1 Lean_List_Pairwise_B
+    Lean_List_Pairwise_All x0 (binunionI1 ((P0) :\/: ((Lean_List P0))) (1) x0 (binunionI1 (P0) ((Lean_List P0)) x0 H0))). }
+claim M1: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 :e Lean_List_Pairwise_B :\/: Lean_List_Pairwise_All.
+{ exact In_eq_ls (SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1) x1 (Lean_List_Pairwise_B :\/: Lean_List_Pairwise_All) U1 (binunionI1 Lean_List_Pairwise_B
+    Lean_List_Pairwise_All x1 (binunionI1 ((P0) :\/: ((Lean_List P0))) (1) x1 (binunionI2 (P0) ((Lean_List P0)) x1 H1))). }
+claim M2: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 :e Lean_List_Pairwise_B :\/: Lean_List_Pairwise_All.
+{ exact In_eq_ls (SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2) x2 (Lean_List_Pairwise_B :\/: Lean_List_Pairwise_All) U2 (binunionI1 Lean_List_Pairwise_B
+    Lean_List_Pairwise_All x2 (binunionI2 ((P0) :\/: ((Lean_List P0))) (1) x2 (SepE1 1 (fun z => z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) x1), ((P1 x0) q0)))) x2 H2))). }
+claim M3: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 :e Lean_List_Pairwise_B :\/: Lean_List_Pairwise_All.
+{ exact In_eq_ls (SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3) x3 (Lean_List_Pairwise_B :\/: Lean_List_Pairwise_All) U3 (binunionI2 Lean_List_Pairwise_B
+    Lean_List_Pairwise_All x3 V3). }
+claim D0: (Lean_List_Pairwise_R 1 0 -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 0 :e Lean_List_Pairwise_All /\ IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T
+    Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    SeqNil))))) 0) = Lean_List_Pairwise_Ix 1 0 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) /\ (~ Lean_List_Pairwise_R 1 0 -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) (SeqCons (x3) SeqNil))))) 0 :e Lean_List_Pairwise_F 1 0 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))).
+{ apply andI.
+  - assume Hr: Lean_List_Pairwise_R 1 0. apply FalseE. exact Lean_List_Pairwise_nR1_0 Hr.
+  - assume Hnr: ~ Lean_List_Pairwise_R 1 0. exact In_eq_ls ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 0) x0 (Lean_List_Pairwise_F 1 0 (TupArgs 4 (SeqCons (x0)
+    (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) T0 (In_eq_rs x0 (Lean_List_Pairwise_F 1 0 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) P0
+    (Lean_List_Pairwise_F1_0 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) H0).
+}
+claim D1: (Lean_List_Pairwise_R 1 1 -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 1 :e Lean_List_Pairwise_All /\ IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T
+    Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    SeqNil))))) 1) = Lean_List_Pairwise_Ix 1 1 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) /\ (~ Lean_List_Pairwise_R 1 1 -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) (SeqCons (x3) SeqNil))))) 1 :e Lean_List_Pairwise_F 1 1 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))).
+{ apply andI.
+  - assume Hr: Lean_List_Pairwise_R 1 1. apply FalseE. exact Lean_List_Pairwise_nR1_1 Hr.
+  - assume Hnr: ~ Lean_List_Pairwise_R 1 1. exact In_eq_ls ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 1) x1 (Lean_List_Pairwise_F 1 1 (TupArgs 4 (SeqCons (x0)
+    (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) T1 (In_eq_rs x1 (Lean_List_Pairwise_F 1 1 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) (Lean_List P0)
+    (Lean_List_Pairwise_F1_1 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) H1).
+}
+claim D2: (Lean_List_Pairwise_R 1 2 -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 2 :e Lean_List_Pairwise_All /\ IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T
+    Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    SeqNil))))) 2) = Lean_List_Pairwise_Ix 1 2 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) /\ (~ Lean_List_Pairwise_R 1 2 -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) (SeqCons (x3) SeqNil))))) 2 :e Lean_List_Pairwise_F 1 2 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))).
+{ apply andI.
+  - assume Hr: Lean_List_Pairwise_R 1 2. apply FalseE. exact Lean_List_Pairwise_nR1_2 Hr.
+  - assume Hnr: ~ Lean_List_Pairwise_R 1 2. claim G2: x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    SeqNil)))) 1)), ((P1 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0)) q0)))}.
+    { rewrite T1. rewrite T0. exact H2. }
+    exact In_eq_ls ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 2) x2 (Lean_List_Pairwise_F 1 2 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    SeqNil)))))) T2 (In_eq_rs x2 (Lean_List_Pairwise_F 1 2 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e
+    (((Lean_List_Mem_Prop P0) q0) (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1)), ((P1 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))
+    0)) q0)))} (Lean_List_Pairwise_F1_2 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) G2).
+}
+claim D3: (Lean_List_Pairwise_R 1 3 -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 3 :e Lean_List_Pairwise_All /\ IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T
+    Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    SeqNil))))) 3) = Lean_List_Pairwise_Ix 1 3 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) /\ (~ Lean_List_Pairwise_R 1 3 -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) (SeqCons (x3) SeqNil))))) 3 :e Lean_List_Pairwise_F 1 3 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))).
+{ apply andI.
+  - assume Hr: Lean_List_Pairwise_R 1 3. apply andI.
+    + exact In_eq_ls ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 3) x3 Lean_List_Pairwise_All T3 V3.
+    + rewrite T3. prove IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B
+    x3 = SeqAt (SeqAt (SeqCons (SeqNil) (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1)) SeqNil)))))
+    SeqNil)) 1) 3. rewrite Lean_List_Pairwise_Ix1_3 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))). rewrite T1.  exact I3.
+  - assume Hnr: ~ Lean_List_Pairwise_R 1 3. apply FalseE. exact Hnr Lean_List_Pairwise_R1_3.
+}
+prove (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) :e {a :e Pi_ j :e SeqAt (SeqCons (0) (SeqCons (4) SeqNil)) 1, Lean_List_Pairwise_B :\/: Lean_List_Pairwise_All |
+    IndFits Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B
+    Lean_List_Pairwise_All 1 a}.
+rewrite Lean_List_Pairwise_N1.
+apply SepI (Pi_ j :e 4, Lean_List_Pairwise_B :\/: Lean_List_Pairwise_All) (fun a => IndFits Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F
+    Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B Lean_List_Pairwise_All 1 a) (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))).
+- exact lam_Pi 4 (fun j => Lean_List_Pairwise_B :\/: Lean_List_Pairwise_All) (fun j => SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) j) (Below_S 3 (fun j => SeqAt (SeqCons
+    (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) j :e Lean_List_Pairwise_B :\/: Lean_List_Pairwise_All) (Below_S 2 (fun j => SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    SeqNil)))) j :e Lean_List_Pairwise_B :\/: Lean_List_Pairwise_All) (Below_S 1 (fun j => SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) j :e Lean_List_Pairwise_B :\/:
+    Lean_List_Pairwise_All) (Below_S 0 (fun j => SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) j :e Lean_List_Pairwise_B :\/: Lean_List_Pairwise_All) (Below_0 (fun j =>
+    SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) j :e Lean_List_Pairwise_B :\/: Lean_List_Pairwise_All)) M0) M1) M2) M3).
+- prove IndFits Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B
+    Lean_List_Pairwise_All 1 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))).
+  let j. assume Hj: j :e Lean_List_Pairwise_N 1.
+  exact (Below_S 3 (fun j => (Lean_List_Pairwise_R 1 j -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j :e Lean_List_Pairwise_All /\ IndIdx Lean_List_Pairwise_K
+    Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B ((TupArgs 4 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) (SeqCons (x3) SeqNil))))) j) = Lean_List_Pairwise_Ix 1 j (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) /\ (~ Lean_List_Pairwise_R 1 j -> (TupArgs 4
+    (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j :e Lean_List_Pairwise_F 1 j (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))))) (Below_S 2 (fun
+    j => (Lean_List_Pairwise_R 1 j -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j :e Lean_List_Pairwise_All /\ IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T
+    Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    SeqNil))))) j) = Lean_List_Pairwise_Ix 1 j (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) /\ (~ Lean_List_Pairwise_R 1 j -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) (SeqCons (x3) SeqNil))))) j :e Lean_List_Pairwise_F 1 j (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))))) (Below_S 1 (fun j => (Lean_List_Pairwise_R 1
+    j -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j :e Lean_List_Pairwise_All /\ IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N
+    Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j) =
+    Lean_List_Pairwise_Ix 1 j (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) /\ (~ Lean_List_Pairwise_R 1 j -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2)
+    (SeqCons (x3) SeqNil))))) j :e Lean_List_Pairwise_F 1 j (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))))) (Below_S 0 (fun j => (Lean_List_Pairwise_R 1 j -> (TupArgs
+    4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j :e Lean_List_Pairwise_All /\ IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R
+    Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j) = Lean_List_Pairwise_Ix 1 j
+    (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) /\ (~ Lean_List_Pairwise_R 1 j -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j
+    :e Lean_List_Pairwise_F 1 j (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))))) (Below_0 (fun j => (Lean_List_Pairwise_R 1 j -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) (SeqCons (x3) SeqNil))))) j :e Lean_List_Pairwise_All /\ IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F
+    Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j) = Lean_List_Pairwise_Ix 1 j (TupArgs 4 (SeqCons
+    (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) /\ (~ Lean_List_Pairwise_R 1 j -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j :e
+    Lean_List_Pairwise_F 1 j (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))))) D0) D1) D2) D3) j (In_eq_r j (Lean_List_Pairwise_N 1) 4 Lean_List_Pairwise_N1 Hj).
+Qed.
+Theorem Lean_List_Pairwise_cons_typed : forall x0 :e P0, forall x1 :e (Lean_List P0), forall x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) x1), ((P1 x0) q0)))}, forall
+    x3 :e (Lean_List_Pairwise x1), Lean_List_Pairwise_cons_node x0 x1 x2 x3 :e (Lean_List_Pairwise (Lean_List_cons_node P0 x0 x1)).
+let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e (Lean_List P0). let x2. assume H2: x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) x1), ((P1 x0) q0)))}. let x3.
+    assume H3: x3 :e (Lean_List_Pairwise x1).
+claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 = x0.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 (ordsuccI1 3 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0)))). exact U0. }
+claim U1: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 = x1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim T1: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 = x1.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 (ordsuccI1 3 1 (ordsuccI1 2 1 (ordsuccI2 1))). exact U1. }
+claim U2: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 = x2.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+claim T2: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 = x2.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 (ordsuccI1 3 2 (ordsuccI2 2)). exact U2. }
+claim U3: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 = x3.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)). }
+claim T3: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 = x3.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 (ordsuccI2 3). exact U3. }
+claim L: Lean_List_Pairwise_cons_node x0 x1 x2 x3 :e IndFiber Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix
+    Lean_List_Pairwise_O Lean_List_Pairwise_B (Lean_List_Pairwise_O 1 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))).
+{ exact IndNode_Fiber Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B
+    Lean_List_Pairwise_bounded 1 (ordsuccI2 1) Lean_List_Pairwise_ar1 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) (Lean_List_Pairwise_cons_args x0 H0 x1 H1 x2 H2 x3
+    H3). }
+claim Lo: Lean_List_Pairwise_O 1 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) = (Lean_List_cons_node P0 x0 x1).
+{ prove SeqAt (SeqCons ((Lean_List_nil_node P0)) (SeqCons ((Lean_List_cons_node P0 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0) (TupArgs 4 (SeqCons (x0) (SeqCons
+    (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1))) SeqNil)) 1 = (Lean_List_cons_node P0 x0 x1). rewrite Lean_List_Pairwise_O1 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    SeqNil))))). rewrite T0. rewrite T1. reflexivity. }
+exact In_fam_eq (IndFiber Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B)
+    (Lean_List_Pairwise_O 1 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) (Lean_List_cons_node P0 x0 x1) Lo (Lean_List_Pairwise_cons_node x0 x1 x2 x3) L.
+Qed.
+Definition Lean_List_Pairwise_cons : set := (fun x0 :e P0 => (fun x1 :e (Lean_List P0) => (fun x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) x1), ((P1 x0) q0)))} =>
+    (fun x3 :e (Lean_List_Pairwise x1) => Lean_List_Pairwise_cons_node x0 x1 x2 x3)))).
+Theorem Lean_List_Pairwise_cons_type : Lean_List_Pairwise_cons :e (Pi_ x0 :e P0, (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) x1), ((P1
+    x0) q0)))}, (Pi_ x3 :e (Lean_List_Pairwise x1), (Lean_List_Pairwise (Lean_List_cons_node P0 x0 x1)))))).
+exact (lam_Pi P0 (fun x0 => (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) x1), ((P1 x0) q0)))}, (Pi_ x3 :e (Lean_List_Pairwise x1),
+    (Lean_List_Pairwise (Lean_List_cons_node P0 x0 x1)))))) (fun x0 => (fun x1 :e (Lean_List P0) => (fun x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) x1), ((P1 x0)
+    q0)))} => (fun x3 :e (Lean_List_Pairwise x1) => Lean_List_Pairwise_cons_node x0 x1 x2 x3)))) (fun x0 H0 => (lam_Pi (Lean_List P0) (fun x1 => (Pi_ x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e
+    (((Lean_List_Mem_Prop P0) q0) x1), ((P1 x0) q0)))}, (Pi_ x3 :e (Lean_List_Pairwise x1), (Lean_List_Pairwise (Lean_List_cons_node P0 x0 x1))))) (fun x1 => (fun x2 :e {z :e 1 | z :e (Pi_ q0 :e P0,
+    (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) x1), ((P1 x0) q0)))} => (fun x3 :e (Lean_List_Pairwise x1) => Lean_List_Pairwise_cons_node x0 x1 x2 x3))) (fun x1 H1 => (lam_Pi {z :e 1 | z :e (Pi_ q0 :e
+    P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) x1), ((P1 x0) q0)))} (fun x2 => (Pi_ x3 :e (Lean_List_Pairwise x1), (Lean_List_Pairwise (Lean_List_cons_node P0 x0 x1)))) (fun x2 => (fun x3 :e
+    (Lean_List_Pairwise x1) => Lean_List_Pairwise_cons_node x0 x1 x2 x3)) (fun x2 H2 => (lam_Pi (Lean_List_Pairwise x1) (fun x3 => (Lean_List_Pairwise (Lean_List_cons_node P0 x0 x1))) (fun x3 =>
+    Lean_List_Pairwise_cons_node x0 x1 x2 x3) (fun x3 H3 => (Lean_List_Pairwise_cons_typed x0 H0 x1 H1 x2 H2 x3 H3))))))))).
+Qed.
+
+Definition Lean_List_Pairwise_rec : set -> set -> set -> set := fun h0 h1 t => IndRec Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F
+    Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil)) k) t.
+Theorem Lean_List_Pairwise_iota0 : forall h0 h1, Lean_List_Pairwise_rec h0 h1 (Lean_List_Pairwise_nil_node) = h0.
+let h0 h1.
+prove IndRec Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B (fun k a r:set =>
+    SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil)) k) (IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F
+    Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 0 (TupArgs 0 SeqNil)) = h0.
+rewrite IndRec_iota Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B
+    Lean_List_Pairwise_distinct Lean_List_Pairwise_bounded Lean_List_Pairwise_arity (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil)) k) 0 (ordsuccI1 1 0
+    (ordsuccI2 0)) (TupArgs 0 SeqNil) (Lean_List_Pairwise_nil_args ).
+prove SeqAt (SeqCons (h0) (SeqCons ((h1 ((TupArgs 0 SeqNil) 0) ((TupArgs 0 SeqNil) 1) ((TupArgs 0 SeqNil) 2) ((TupArgs 0 SeqNil) 3) ((IndRes Lean_List_Pairwise_K Lean_List_Pairwise_T
+    Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 0 (fun j => IndRec Lean_List_Pairwise_K Lean_List_Pairwise_T
+    Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a
+    2) (a 3) (r 3))) SeqNil)) k) ((TupArgs 0 SeqNil) j))) 3))) SeqNil)) 0 = h0.
+rewrite SeqAt_0. reflexivity.
+Qed.
+Theorem Lean_List_Pairwise_iota1 : forall h0 h1, forall x0 :e P0, forall x1 :e (Lean_List P0), forall x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) x1), ((P1 x0)
+    q0)))}, forall x3 :e (Lean_List_Pairwise x1), Lean_List_Pairwise_rec h0 h1 (Lean_List_Pairwise_cons_node x0 x1 x2 x3) = (h1 x0 x1 x2 x3 (Lean_List_Pairwise_rec h0 h1 x3)).
+let h0 h1. let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e (Lean_List P0). let x2. assume H2: x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) x1), ((P1 x0) q0)))}.
+    let x3. assume H3: x3 :e (Lean_List_Pairwise x1).
+claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 = x0.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 (ordsuccI1 3 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0)))). exact U0. }
+claim U1: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 = x1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim T1: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 = x1.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 (ordsuccI1 3 1 (ordsuccI1 2 1 (ordsuccI2 1))). exact U1. }
+claim U2: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 = x2.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+claim T2: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 = x2.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 (ordsuccI1 3 2 (ordsuccI2 2)). exact U2. }
+claim U3: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 = x3.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)). }
+claim T3: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 = x3.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 (ordsuccI2 3). exact U3. }
+claim R3: (IndRes Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 1 (fun j =>
+    IndRec Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B (fun k a r:set =>
+    SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil)) k) ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j))) 3 = Lean_List_Pairwise_rec h0 h1
+    x3.
+{ rewrite IndRes_at Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 1 (fun j
+    => IndRec Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B (fun k a r:set
+    => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil)) k) ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j)) 3 (In_eq_rs 3
+    (Lean_List_Pairwise_N 1) 4 Lean_List_Pairwise_N1 (ordsuccI2 3)) Lean_List_Pairwise_R1_3. prove IndRec Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R
+    Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil)) k) ((TupArgs 4
+    (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 3) = IndRec Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F
+    Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil)) k) x3. rewrite T3. reflexivity. }
+prove IndRec Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B (fun k a r:set =>
+    SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil)) k) (IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F
+    Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 1 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) = (h1 x0 x1 x2 x3 (Lean_List_Pairwise_rec h0 h1
+    x3)).
+rewrite IndRec_iota Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B
+    Lean_List_Pairwise_distinct Lean_List_Pairwise_bounded Lean_List_Pairwise_arity (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil)) k) 1 (ordsuccI2 1)
+    (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) (Lean_List_Pairwise_cons_args x0 H0 x1 H1 x2 H2 x3 H3).
+prove SeqAt (SeqCons (h0) (SeqCons ((h1 ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 0) ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    SeqNil))))) 1) ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 2) ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 3) ((IndRes
+    Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 1 (fun j => IndRec
+    Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B (fun k a r:set => SeqAt
+    (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil)) k) ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j))) 3))) SeqNil)) 1 = (h1 x0 x1 x2 x3
+    (Lean_List_Pairwise_rec h0 h1 x3)).
+rewrite SeqAt_S. { rewrite SeqAt_0. rewrite R3. rewrite T0. rewrite T1. rewrite T2. rewrite T3. reflexivity. } exact nat_0.
+Qed.
+
+Theorem Lean_List_Pairwise_HM0 : forall C:set -> set -> set, forall h0 h1, h0 :e (C (Lean_List_nil_node P0) Lean_List_Pairwise_nil_node) -> forall a :e IndArgs Lean_List_Pairwise_K
+    Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B Lean_List_Pairwise_All 0, forall r:set -> set,
+    (forall j :e Lean_List_Pairwise_N 0, Lean_List_Pairwise_R 0 j -> r j :e (fun t:set => C (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R
+    Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B t) t) (a j)) -> (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil))
+    k) 0 a (IndRes Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 0 r) :e
+    (fun t:set => C (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B t)
+    t) (IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 0 a).
+let C h0 h1. assume Hh: h0 :e (C (Lean_List_nil_node P0) Lean_List_Pairwise_nil_node).
+let a. assume Ha: a :e IndArgs Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B
+    Lean_List_Pairwise_All 0. let r. assume Hr: forall j :e Lean_List_Pairwise_N 0, Lean_List_Pairwise_R 0 j -> r j :e (fun t:set => C (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T
+    Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B t) t) (a j).
+claim Fi: IndFits Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B
+    Lean_List_Pairwise_All 0 a.
+{ exact IndArgs_Fits Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B
+    Lean_List_Pairwise_All 0 a Ha. }
+claim Pm: a :e Pi_ j :e 0, Lean_List_Pairwise_B :\/: Lean_List_Pairwise_All.
+{ exact In_fam_eq (fun X:set => Pi_ j :e X, Lean_List_Pairwise_B :\/: Lean_List_Pairwise_All) (Lean_List_Pairwise_N 0) 0 Lean_List_Pairwise_N0 a (IndArgs_Pi Lean_List_Pairwise_K Lean_List_Pairwise_T
+    Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B Lean_List_Pairwise_All 0 a Ha). }
+claim Ea: TupArgs 0 SeqNil = a.
+{ exact eq_i_tra (TupArgs 0 SeqNil) (fun j :e 0 => a j) a (lam_ext 0 (fun j => SeqAt SeqNil j) (fun j => a j) (Below_0 (fun j => SeqAt SeqNil j = a j))) (Pi_eta 0 (fun j => Lean_List_Pairwise_B :\/:
+    Lean_List_Pairwise_All) a Pm). }
+claim Lv: h0 :e (C (Lean_List_nil_node P0) Lean_List_Pairwise_nil_node).
+{ exact Hh. }
+claim Lm: (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil)) k) 0 a (IndRes Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N
+    Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 0 r) = h0.
+{ prove SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (IndRes Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F
+    Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 0 r 3))) SeqNil)) 0 = h0. rewrite SeqAt_0. reflexivity. }
+claim Ln: Lean_List_Pairwise_nil_node = IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O
+    Lean_List_Pairwise_B 0 a.
+{ prove IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 0 (TupArgs 0
+    SeqNil) = IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 0 a.
+    rewrite Ea. reflexivity. }
+claim Lo: (Lean_List_nil_node P0) = IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O
+    Lean_List_Pairwise_B (IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O
+    Lean_List_Pairwise_B 0 a).
+{ exact eq_i_tra (Lean_List_nil_node P0) (Lean_List_Pairwise_O 0 a) (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F
+    Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B (IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F
+    Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 0 a)) (eq_sym_i (Lean_List_Pairwise_O 0 a) (Lean_List_nil_node P0) (Lean_List_Pairwise_O0 a)) (eq_sym_i (IndIdx
+    Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B (IndNode
+    Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 0 a))
+    (Lean_List_Pairwise_O 0 a) (IndIdx_Node Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O
+    Lean_List_Pairwise_B 0 a)). }
+exact In_eq_ls ((fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil)) k) 0 a (IndRes Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N
+    Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 0 r)) h0 (C (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N
+    Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B (IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N
+    Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 0 a)) (IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N
+    Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 0 a)) Lm (In_fam_eq (fun z:set => C z (IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T
+    Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 0 a)) (Lean_List_nil_node P0) (IndIdx Lean_List_Pairwise_K
+    Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B (IndNode Lean_List_Pairwise_K
+    Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 0 a)) Lo h0 (In_fam_eq (fun z:set => C
+    (Lean_List_nil_node P0) z) Lean_List_Pairwise_nil_node (IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix
+    Lean_List_Pairwise_O Lean_List_Pairwise_B 0 a) Ln h0 Lv)).
+Qed.
+Theorem Lean_List_Pairwise_HM1 : forall C:set -> set -> set, forall h0 h1, h1 :e (Pi_ x0 :e P0, (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop
+    P0) q0) x1), ((P1 x0) q0)))}, (Pi_ x3 :e (Lean_List_Pairwise x1), (Pi_ y3 :e (C x1 x3), (C (Lean_List_cons_node P0 x0 x1) (Lean_List_Pairwise_cons_node x0 x1 x2 x3))))))) -> forall a :e IndArgs
+    Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B Lean_List_Pairwise_All 1,
+    forall r:set -> set, (forall j :e Lean_List_Pairwise_N 1, Lean_List_Pairwise_R 1 j -> r j :e (fun t:set => C (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N
+    Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B t) t) (a j)) -> (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a
+    3) (r 3))) SeqNil)) k) 1 a (IndRes Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O
+    Lean_List_Pairwise_B 1 r) :e (fun t:set => C (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix
+    Lean_List_Pairwise_O Lean_List_Pairwise_B t) t) (IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix
+    Lean_List_Pairwise_O Lean_List_Pairwise_B 1 a).
+let C h0 h1. assume Hh: h1 :e (Pi_ x0 :e P0, (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) x1), ((P1 x0) q0)))}, (Pi_ x3 :e
+    (Lean_List_Pairwise x1), (Pi_ y3 :e (C x1 x3), (C (Lean_List_cons_node P0 x0 x1) (Lean_List_Pairwise_cons_node x0 x1 x2 x3))))))).
+let a. assume Ha: a :e IndArgs Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B
+    Lean_List_Pairwise_All 1. let r. assume Hr: forall j :e Lean_List_Pairwise_N 1, Lean_List_Pairwise_R 1 j -> r j :e (fun t:set => C (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T
+    Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B t) t) (a j).
+claim Fi: IndFits Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B
+    Lean_List_Pairwise_All 1 a.
+{ exact IndArgs_Fits Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B
+    Lean_List_Pairwise_All 1 a Ha. }
+claim Pm: a :e Pi_ j :e 4, Lean_List_Pairwise_B :\/: Lean_List_Pairwise_All.
+{ exact In_fam_eq (fun X:set => Pi_ j :e X, Lean_List_Pairwise_B :\/: Lean_List_Pairwise_All) (Lean_List_Pairwise_N 1) 4 Lean_List_Pairwise_N1 a (IndArgs_Pi Lean_List_Pairwise_K Lean_List_Pairwise_T
+    Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B Lean_List_Pairwise_All 1 a Ha). }
+claim G0: (a 0) :e P0.
+{ apply Fi 0 (In_eq_rs 0 (Lean_List_Pairwise_N 1) 4 Lean_List_Pairwise_N1 (ordsuccI1 3 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0))))). assume H1. assume H2. exact In_eq_r (a 0)
+    (Lean_List_Pairwise_F 1 0 a) P0 (Lean_List_Pairwise_F1_0 a) (H2 Lean_List_Pairwise_nR1_0). }
+claim G1: (a 1) :e (Lean_List P0).
+{ apply Fi 1 (In_eq_rs 1 (Lean_List_Pairwise_N 1) 4 Lean_List_Pairwise_N1 (ordsuccI1 3 1 (ordsuccI1 2 1 (ordsuccI2 1)))). assume H1. assume H2. exact In_eq_r (a 1) (Lean_List_Pairwise_F 1 1 a)
+    (Lean_List P0) (Lean_List_Pairwise_F1_1 a) (H2 Lean_List_Pairwise_nR1_1). }
+claim G2: (a 2) :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) (a 1)), ((P1 (a 0)) q0)))}.
+{ apply Fi 2 (In_eq_rs 2 (Lean_List_Pairwise_N 1) 4 Lean_List_Pairwise_N1 (ordsuccI1 3 2 (ordsuccI2 2))). assume H1. assume H2. exact In_eq_r (a 2) (Lean_List_Pairwise_F 1 2 a) {z :e 1 | z :e (Pi_ q0
+    :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) (a 1)), ((P1 (a 0)) q0)))} (Lean_List_Pairwise_F1_2 a) (H2 Lean_List_Pairwise_nR1_2). }
+claim G3: (a 3) :e (Lean_List_Pairwise (a 1)).
+{ apply Fi 3 (In_eq_rs 3 (Lean_List_Pairwise_N 1) 4 Lean_List_Pairwise_N1 (ordsuccI2 3)). assume H1. assume H2. apply H1 Lean_List_Pairwise_R1_3. assume H3: a 3 :e Lean_List_Pairwise_All. assume H4:
+    IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B (a 3) =
+    Lean_List_Pairwise_Ix 1 3 a.
+  prove (a 3) :e {x :e Lean_List_Pairwise_All | IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix
+    Lean_List_Pairwise_O Lean_List_Pairwise_B x = (a 1)}.
+  apply SepI Lean_List_Pairwise_All (fun x:set => IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix
+    Lean_List_Pairwise_O Lean_List_Pairwise_B x = (a 1)) (a 3) H3.
+  exact eq_i_tra (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B (a
+    3)) (Lean_List_Pairwise_Ix 1 3 a) (a 1) H4 (Lean_List_Pairwise_Ix1_3 a). }
+claim Y3: r 3 :e (C (a 1) (a 3)).
+{ exact In_fam_eq (fun z:set => C z (a 3)) (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O
+    Lean_List_Pairwise_B (a 3)) (a 1) (SepE2 Lean_List_Pairwise_All (fun x:set => IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F
+    Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B x = (a 1)) (a 3) G3) (r 3) (Hr 3 (In_eq_rs 3 (Lean_List_Pairwise_N 1) 4 Lean_List_Pairwise_N1 (ordsuccI2 3))
+    Lean_List_Pairwise_R1_3). }
+claim U0: SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) SeqNil)))) 0 = (a 0).
+{ rewrite SeqAt_0. reflexivity. }
+claim U1: SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) SeqNil)))) 1 = (a 1).
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim U2: SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) SeqNil)))) 2 = (a 2).
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+claim U3: SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) SeqNil)))) 3 = (a 3).
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)). }
+claim Ea: TupArgs 4 (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) SeqNil)))) = a.
+{ exact eq_i_tra (TupArgs 4 (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) SeqNil))))) (fun j :e 4 => a j) a (lam_ext 4 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons
+    ((a 2)) (SeqCons ((a 3)) SeqNil)))) j) (fun j => a j) (Below_S 3 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) SeqNil)))) j = a j) (Below_S 2 (fun j => SeqAt
+    (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) SeqNil)))) j = a j) (Below_S 1 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) SeqNil)))) j
+    = a j) (Below_S 0 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) SeqNil)))) j = a j) (Below_0 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a
+    2)) (SeqCons ((a 3)) SeqNil)))) j = a j)) U0) U1) U2) U3)) (Pi_eta 4 (fun j => Lean_List_Pairwise_B :\/: Lean_List_Pairwise_All) a Pm). }
+claim Rp3: IndRes Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 1 r 3 = r 3.
+{ exact IndRes_at Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 1 r 3
+    (In_eq_rs 3 (Lean_List_Pairwise_N 1) 4 Lean_List_Pairwise_N1 (ordsuccI2 3)) Lean_List_Pairwise_R1_3. }
+claim Lv: (h1 (a 0) (a 1) (a 2) (a 3) (r 3)) :e (C (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_Pairwise_cons_node (a 0) (a 1) (a 2) (a 3))).
+{ exact (ap_Pi (C (a 1) (a 3)) (fun y3 => (C (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_Pairwise_cons_node (a 0) (a 1) (a 2) (a 3)))) ((((h1 (a 0)) (a 1)) (a 2)) (a 3)) (r 3) (ap_Pi
+    (Lean_List_Pairwise (a 1)) (fun x3 => (Pi_ y3 :e (C (a 1) x3), (C (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_Pairwise_cons_node (a 0) (a 1) (a 2) x3)))) (((h1 (a 0)) (a 1)) (a 2)) (a 3)
+    (ap_Pi {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) (a 1)), ((P1 (a 0)) q0)))} (fun x2 => (Pi_ x3 :e (Lean_List_Pairwise (a 1)), (Pi_ y3 :e (C (a 1) x3), (C
+    (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_Pairwise_cons_node (a 0) (a 1) x2 x3))))) ((h1 (a 0)) (a 1)) (a 2) (ap_Pi (Lean_List P0) (fun x1 => (Pi_ x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_
+    q1 :e (((Lean_List_Mem_Prop P0) q0) x1), ((P1 (a 0)) q0)))}, (Pi_ x3 :e (Lean_List_Pairwise x1), (Pi_ y3 :e (C x1 x3), (C (Lean_List_cons_node P0 (a 0) x1) (Lean_List_Pairwise_cons_node (a 0) x1
+    x2 x3)))))) (h1 (a 0)) (a 1) (ap_Pi P0 (fun x0 => (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) x1), ((P1 x0) q0)))}, (Pi_ x3 :e
+    (Lean_List_Pairwise x1), (Pi_ y3 :e (C x1 x3), (C (Lean_List_cons_node P0 x0 x1) (Lean_List_Pairwise_cons_node x0 x1 x2 x3))))))) h1 (a 0) Hh G0) G1) G2) G3) Y3). }
+claim Lm: (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil)) k) 1 a (IndRes Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N
+    Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 1 r) = (h1 (a 0) (a 1) (a 2) (a 3) (r 3)).
+{ prove SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (IndRes Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F
+    Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 1 r 3))) SeqNil)) 1 = (h1 (a 0) (a 1) (a 2) (a 3) (r 3)). rewrite SeqAt_S. { rewrite SeqAt_0. rewrite Rp3. reflexivity. } exact
+    nat_0. }
+claim Ln: (Lean_List_Pairwise_cons_node (a 0) (a 1) (a 2) (a 3)) = IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F
+    Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 1 a.
+{ prove IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 1 (TupArgs 4
+    (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) SeqNil))))) = IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F
+    Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 1 a. rewrite Ea. reflexivity. }
+claim Lo: (Lean_List_cons_node P0 (a 0) (a 1)) = IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix
+    Lean_List_Pairwise_O Lean_List_Pairwise_B (IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix
+    Lean_List_Pairwise_O Lean_List_Pairwise_B 1 a).
+{ exact eq_i_tra (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_Pairwise_O 1 a) (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F
+    Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B (IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F
+    Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 1 a)) (eq_sym_i (Lean_List_Pairwise_O 1 a) (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_Pairwise_O1 a)) (eq_sym_i (IndIdx
+    Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B (IndNode
+    Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 1 a))
+    (Lean_List_Pairwise_O 1 a) (IndIdx_Node Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O
+    Lean_List_Pairwise_B 1 a)). }
+exact In_eq_ls ((fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil)) k) 1 a (IndRes Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N
+    Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 1 r)) (h1 (a 0) (a 1) (a 2) (a 3) (r 3)) (C (IndIdx Lean_List_Pairwise_K
+    Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B (IndNode Lean_List_Pairwise_K
+    Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 1 a)) (IndNode Lean_List_Pairwise_K
+    Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 1 a)) Lm (In_fam_eq (fun z:set => C z (IndNode
+    Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 1 a)) (Lean_List_cons_node
+    P0 (a 0) (a 1)) (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B
+    (IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 1 a)) Lo (h1 (a
+    0) (a 1) (a 2) (a 3) (r 3)) (In_fam_eq (fun z:set => C (Lean_List_cons_node P0 (a 0) (a 1)) z) (Lean_List_Pairwise_cons_node (a 0) (a 1) (a 2) (a 3)) (IndNode Lean_List_Pairwise_K
+    Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 1 a) Ln (h1 (a 0) (a 1) (a 2) (a 3) (r 3)) Lv)).
+Qed.
+Theorem Lean_List_Pairwise_rec_type : forall C:set -> set -> set, forall h0 :e (C (Lean_List_nil_node P0) Lean_List_Pairwise_nil_node), forall h1 :e (Pi_ x0 :e P0, (Pi_ x1 :e (Lean_List P0), (Pi_ x2
+    :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) x1), ((P1 x0) q0)))}, (Pi_ x3 :e (Lean_List_Pairwise x1), (Pi_ y3 :e (C x1 x3), (C (Lean_List_cons_node P0 x0 x1)
+    (Lean_List_Pairwise_cons_node x0 x1 x2 x3))))))), forall i, forall t :e Lean_List_Pairwise i, Lean_List_Pairwise_rec h0 h1 t :e C i t.
+let C. let h0. assume Hh0. let h1. assume Hh1.
+claim HM: forall k :e Lean_List_Pairwise_K, forall a :e IndArgs Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix
+    Lean_List_Pairwise_O Lean_List_Pairwise_B Lean_List_Pairwise_All k, forall r:set -> set, (forall j :e Lean_List_Pairwise_N k, Lean_List_Pairwise_R k j -> r j :e (fun t:set => C (IndIdx
+    Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B t) t) (a j)) -> (fun k a
+    r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil)) k) k a (IndRes Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R
+    Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B k r) :e (fun t:set => C (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N
+    Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B t) t) (IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N
+    Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B k a).
+{ let k. assume Hk: k :e Lean_List_Pairwise_K. exact (Below_S 1 (fun k => forall a :e IndArgs Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F
+    Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B Lean_List_Pairwise_All k, forall r:set -> set, (forall j :e Lean_List_Pairwise_N k, Lean_List_Pairwise_R k j -> r j :e (fun t:set
+    => C (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B t) t) (a
+    j)) -> (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil)) k) k a (IndRes Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N
+    Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B k r) :e (fun t:set => C (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T
+    Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B t) t) (IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T
+    Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B k a)) (Below_S 0 (fun k => forall a :e IndArgs Lean_List_Pairwise_K
+    Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B Lean_List_Pairwise_All k, forall r:set -> set,
+    (forall j :e Lean_List_Pairwise_N k, Lean_List_Pairwise_R k j -> r j :e (fun t:set => C (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R
+    Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B t) t) (a j)) -> (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil))
+    k) k a (IndRes Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B k r) :e
+    (fun t:set => C (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B t)
+    t) (IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B k a)) (Below_0
+    (fun k => forall a :e IndArgs Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O
+    Lean_List_Pairwise_B Lean_List_Pairwise_All k, forall r:set -> set, (forall j :e Lean_List_Pairwise_N k, Lean_List_Pairwise_R k j -> r j :e (fun t:set => C (IndIdx Lean_List_Pairwise_K
+    Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B t) t) (a j)) -> (fun k a r:set => SeqAt
+    (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil)) k) k a (IndRes Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F
+    Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B k r) :e (fun t:set => C (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R
+    Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B t) t) (IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R
+    Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B k a))) (Lean_List_Pairwise_HM0 C h0 h1 Hh0)) (Lean_List_Pairwise_HM1 C h0 h1 Hh1)) k Hk. }
+let i t. assume Ht: t :e Lean_List_Pairwise i.
+exact In_fam_eq (fun z:set => C z t) (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O
+    Lean_List_Pairwise_B t) i (SepE2 Lean_List_Pairwise_All (fun x:set => IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F
+    Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B x = i) t Ht) (Lean_List_Pairwise_rec h0 h1 t) (IndRec_type Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N
+    Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B Lean_List_Pairwise_distinct Lean_List_Pairwise_bounded Lean_List_Pairwise_arity (fun k a
+    r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil)) k) (fun t:set => C (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R
+    Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B t) t) HM t (SepE1 Lean_List_Pairwise_All (fun x:set => IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T
+    Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B x = i) t Ht)).
+Qed.
+
+
+
+
+Theorem Lean_List_Pairwise_ind : forall P:set -> set -> prop, (P (Lean_List_nil_node P0) Lean_List_Pairwise_nil_node) -> (forall x0 :e P0, forall x1 :e (Lean_List P0), forall x2 :e {z :e 1 | z :e
+    (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) x1), ((P1 x0) q0)))}, forall x3 :e (Lean_List_Pairwise x1), P x1 x3 -> P (Lean_List_cons_node P0 x0 x1) (Lean_List_Pairwise_cons_node x0 x1
+    x2 x3)) -> forall i, forall t :e Lean_List_Pairwise i, P i t.
+let P. assume H0. assume H1.
+claim M0: 0 :e {z :e 1 | P (Lean_List_nil_node P0) Lean_List_Pairwise_nil_node}.
+{ exact SepI 1 (fun z => P (Lean_List_nil_node P0) Lean_List_Pairwise_nil_node) 0 In_0_1 (H0). }
+claim M1: 0 :e (Pi_ x0 :e P0, (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) x1), ((P1 x0) q0)))}, (Pi_ x3 :e (Lean_List_Pairwise x1),
+    (Pi_ y3 :e {z :e 1 | P x1 x3}, {z :e 1 | P (Lean_List_cons_node P0 x0 x1) (Lean_List_Pairwise_cons_node x0 x1 x2 x3)}))))).
+{ apply Pi_0_In. let x0. assume Hx0: x0 :e P0.
+  prove 0 :e (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) x1), ((P1 x0) q0)))}, (Pi_ x3 :e (Lean_List_Pairwise x1), (Pi_ y3 :e {z :e 1
+    | P x1 x3}, {z :e 1 | P (Lean_List_cons_node P0 x0 x1) (Lean_List_Pairwise_cons_node x0 x1 x2 x3)})))).
+apply Pi_0_In. let x1. assume Hx1: x1 :e (Lean_List P0).
+  prove 0 :e (Pi_ x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) x1), ((P1 x0) q0)))}, (Pi_ x3 :e (Lean_List_Pairwise x1), (Pi_ y3 :e {z :e 1 | P x1 x3}, {z :e 1 | P
+    (Lean_List_cons_node P0 x0 x1) (Lean_List_Pairwise_cons_node x0 x1 x2 x3)}))).
+apply Pi_0_In. let x2. assume Hx2: x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) x1), ((P1 x0) q0)))}.
+  prove 0 :e (Pi_ x3 :e (Lean_List_Pairwise x1), (Pi_ y3 :e {z :e 1 | P x1 x3}, {z :e 1 | P (Lean_List_cons_node P0 x0 x1) (Lean_List_Pairwise_cons_node x0 x1 x2 x3)})).
+apply Pi_0_In. let x3. assume Hx3: x3 :e (Lean_List_Pairwise x1).
+  prove 0 :e (Pi_ y3 :e {z :e 1 | P x1 x3}, {z :e 1 | P (Lean_List_cons_node P0 x0 x1) (Lean_List_Pairwise_cons_node x0 x1 x2 x3)}).
+apply Pi_0_In. let y3. assume Hy3: y3 :e {z :e 1 | P x1 x3}.
+  prove 0 :e {z :e 1 | P (Lean_List_cons_node P0 x0 x1) (Lean_List_Pairwise_cons_node x0 x1 x2 x3)}.
+exact SepI 1 (fun z => P (Lean_List_cons_node P0 x0 x1) (Lean_List_Pairwise_cons_node x0 x1 x2 x3)) 0 In_0_1 (H1 x0 Hx0 x1 Hx1 x2 Hx2 x3 Hx3 (SepE2 1 (fun z => P x1 x3) y3 Hy3)). }
+let i t. assume Ht: t :e Lean_List_Pairwise i.
+exact SepE2 1 (fun z => P i t) (Lean_List_Pairwise_rec 0 0 t) (Lean_List_Pairwise_rec_type (fun i t => {z :e 1 | P i t}) 0 M0 0 M1 i t Ht).
+Qed.
+
+Theorem Lean_List_Pairwise_noconf0_1 : forall y0 y1 y2 y3, Lean_List_Pairwise_nil_node <> (Lean_List_Pairwise_cons_node y0 y1 y2 y3).
+let y0 y1 y2 y3. assume H: Lean_List_Pairwise_nil_node = (Lean_List_Pairwise_cons_node y0 y1 y2 y3).
+apply IndNode_inj Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B
+    Lean_List_Pairwise_distinct 0 (ordsuccI1 1 0 (ordsuccI2 0)) 1 (ordsuccI2 1) (TupArgs 0 SeqNil) (TupArgs 4 (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil))))) H.
+assume H1: 0 = 1. assume H2.
+exact In_irref 0 (In_eq_rs 0 0 1 H1 (ordsuccI2 0)).
+Qed.
+
+Theorem Lean_List_Pairwise_cons_inj0 : forall x0 x1 x2 x3 y0 y1 y2 y3, (Lean_List_Pairwise_cons_node x0 x1 x2 x3) = (Lean_List_Pairwise_cons_node y0 y1 y2 y3) -> x0 = y0.
+let x0 x1 x2 x3 y0 y1 y2 y3. assume H: (Lean_List_Pairwise_cons_node x0 x1 x2 x3) = (Lean_List_Pairwise_cons_node y0 y1 y2 y3).
+claim L: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 = SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) 0.
+{ exact IndNode_args_inj Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B
+    Lean_List_Pairwise_distinct 1 (ordsuccI2 1) 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) H 0 (ordsuccI1
+    3 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0)))). }
+claim Lx: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim Ly: SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) 0 = y0.
+{ rewrite SeqAt_0. reflexivity. }
+rewrite <- Lx. rewrite <- Ly. exact L.
+Qed.
+Theorem Lean_List_Pairwise_cons_inj1 : forall x0 x1 x2 x3 y0 y1 y2 y3, (Lean_List_Pairwise_cons_node x0 x1 x2 x3) = (Lean_List_Pairwise_cons_node y0 y1 y2 y3) -> x1 = y1.
+let x0 x1 x2 x3 y0 y1 y2 y3. assume H: (Lean_List_Pairwise_cons_node x0 x1 x2 x3) = (Lean_List_Pairwise_cons_node y0 y1 y2 y3).
+claim L: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 = SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) 1.
+{ exact IndNode_args_inj Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B
+    Lean_List_Pairwise_distinct 1 (ordsuccI2 1) 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) H 1 (ordsuccI1
+    3 1 (ordsuccI1 2 1 (ordsuccI2 1))). }
+claim Lx: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 = x1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim Ly: SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) 1 = y1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+rewrite <- Lx. rewrite <- Ly. exact L.
+Qed.
+Theorem Lean_List_Pairwise_cons_inj2 : forall x0 x1 x2 x3 y0 y1 y2 y3, (Lean_List_Pairwise_cons_node x0 x1 x2 x3) = (Lean_List_Pairwise_cons_node y0 y1 y2 y3) -> x2 = y2.
+let x0 x1 x2 x3 y0 y1 y2 y3. assume H: (Lean_List_Pairwise_cons_node x0 x1 x2 x3) = (Lean_List_Pairwise_cons_node y0 y1 y2 y3).
+claim L: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 = SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) 2.
+{ exact IndNode_args_inj Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B
+    Lean_List_Pairwise_distinct 1 (ordsuccI2 1) 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) H 2 (ordsuccI1
+    3 2 (ordsuccI2 2)). }
+claim Lx: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 = x2.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+claim Ly: SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) 2 = y2.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+rewrite <- Lx. rewrite <- Ly. exact L.
+Qed.
+Theorem Lean_List_Pairwise_cons_inj3 : forall x0 x1 x2 x3 y0 y1 y2 y3, (Lean_List_Pairwise_cons_node x0 x1 x2 x3) = (Lean_List_Pairwise_cons_node y0 y1 y2 y3) -> x3 = y3.
+let x0 x1 x2 x3 y0 y1 y2 y3. assume H: (Lean_List_Pairwise_cons_node x0 x1 x2 x3) = (Lean_List_Pairwise_cons_node y0 y1 y2 y3).
+claim L: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 = SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) 3.
+{ exact IndNode_args_inj Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B
+    Lean_List_Pairwise_distinct 1 (ordsuccI2 1) 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) H 3 (ordsuccI2
+    3). }
+claim Lx: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 = x3.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)). }
+claim Ly: SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) 3 = y3.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)). }
+rewrite <- Lx. rewrite <- Ly. exact L.
+Qed.
+
+Theorem Lean_List_Pairwise_in_All : forall i t, t :e Lean_List_Pairwise i -> t :e Lean_List_Pairwise_All.
+let i t. assume H: t :e Lean_List_Pairwise i. exact SepE1 Lean_List_Pairwise_All (fun x:set => IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R
+    Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B x = i) t H.
+Qed.
+Theorem Lean_List_Pairwise_one_index : forall i i' t, t :e Lean_List_Pairwise i -> t :e Lean_List_Pairwise i' -> i = i'.
+let i i' t. assume H: t :e Lean_List_Pairwise i. assume H': t :e Lean_List_Pairwise i'.
+exact eq_i_tra i (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B t) i'
+    (eq_sym_i (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B t) i
+    (SepE2 Lean_List_Pairwise_All (fun x:set => IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix
+    Lean_List_Pairwise_O Lean_List_Pairwise_B x = i) t H)) (SepE2 Lean_List_Pairwise_All (fun x:set => IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R
+    Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B x = i') t H').
+Qed.
+
+Definition Lean_List_Pairwise_Prop : set -> set := fun i => {x :e 1 | exists w, w :e Lean_List_Pairwise i}.
+Theorem Lean_List_Pairwise_Prop_prop : forall i, Lean_List_Pairwise_Prop i :e LeanProp.
+let i. exact PowerI 1 (Lean_List_Pairwise_Prop i) (Sep_Subq 1 (fun x:set => exists w, w :e Lean_List_Pairwise i)).
+Qed.
+Definition Lean_List_Pairwise_nil_proof : set := 0.
+Theorem Lean_List_Pairwise_nil_proof_ok : 0 :e (Lean_List_Pairwise_Prop (Lean_List_nil_node P0)).
+exact SepI 1 (fun x:set => exists w, w :e Lean_List_Pairwise (Lean_List_nil_node P0)) 0 In_0_1 (fun p H => H (Lean_List_Pairwise_nil_node) (Lean_List_Pairwise_nil_typed )).
+Qed.
+Theorem Lean_List_Pairwise_nil_proof_type : Lean_List_Pairwise_nil_proof :e (Lean_List_Pairwise_Prop (Lean_List_nil_node P0)).
+exact (Lean_List_Pairwise_nil_proof_ok ).
+Qed.
+Definition Lean_List_Pairwise_cons_proof : set := (fun x0 :e P0 => (fun x1 :e (Lean_List P0) => (fun x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) x1), ((P1 x0) q0)))}
+    => (fun x3 :e (Lean_List_Pairwise x1) => 0)))).
+Theorem Lean_List_Pairwise_cons_proof_ok : forall x0 :e P0, forall x1 :e (Lean_List P0), forall x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) x1), ((P1 x0) q0)))},
+    forall x3 :e (Lean_List_Pairwise x1), 0 :e (Lean_List_Pairwise_Prop (Lean_List_cons_node P0 x0 x1)).
+let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e (Lean_List P0). let x2. assume H2: x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) x1), ((P1 x0) q0)))}. let x3.
+    assume H3: x3 :e (Lean_List_Pairwise x1). exact SepI 1 (fun x:set => exists w, w :e Lean_List_Pairwise (Lean_List_cons_node P0 x0 x1)) 0 In_0_1 (fun p H => H (Lean_List_Pairwise_cons_node x0 x1
+    x2 x3) (Lean_List_Pairwise_cons_typed x0 H0 x1 H1 x2 H2 x3 H3)).
+Qed.
+Theorem Lean_List_Pairwise_cons_proof_type : Lean_List_Pairwise_cons_proof :e (Pi_ x0 :e P0, (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0)
+    q0) x1), ((P1 x0) q0)))}, (Pi_ x3 :e (Lean_List_Pairwise x1), (Lean_List_Pairwise_Prop (Lean_List_cons_node P0 x0 x1)))))).
+exact (lam_Pi P0 (fun x0 => (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) x1), ((P1 x0) q0)))}, (Pi_ x3 :e (Lean_List_Pairwise x1),
+    (Lean_List_Pairwise_Prop (Lean_List_cons_node P0 x0 x1)))))) (fun x0 => (fun x1 :e (Lean_List P0) => (fun x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) x1), ((P1
+    x0) q0)))} => (fun x3 :e (Lean_List_Pairwise x1) => 0)))) (fun x0 H0 => (lam_Pi (Lean_List P0) (fun x1 => (Pi_ x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) x1),
+    ((P1 x0) q0)))}, (Pi_ x3 :e (Lean_List_Pairwise x1), (Lean_List_Pairwise_Prop (Lean_List_cons_node P0 x0 x1))))) (fun x1 => (fun x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e
+    (((Lean_List_Mem_Prop P0) q0) x1), ((P1 x0) q0)))} => (fun x3 :e (Lean_List_Pairwise x1) => 0))) (fun x1 H1 => (lam_Pi {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) x1),
+    ((P1 x0) q0)))} (fun x2 => (Pi_ x3 :e (Lean_List_Pairwise x1), (Lean_List_Pairwise_Prop (Lean_List_cons_node P0 x0 x1)))) (fun x2 => (fun x3 :e (Lean_List_Pairwise x1) => 0)) (fun x2 H2 =>
+    (lam_Pi (Lean_List_Pairwise x1) (fun x3 => (Lean_List_Pairwise_Prop (Lean_List_cons_node P0 x0 x1))) (fun x3 => 0) (fun x3 H3 => (Lean_List_Pairwise_cons_proof_ok x0 H0 x1 H1 x2 H2 x3 H3))))))))).
+Qed.
+Definition Lean_List_Pairwise_prec : set -> set -> set -> set -> set := fun h0 h1 i t => IndRec Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R
+    Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil)) k) (Eps_i (fun
+    w:set => w :e (Lean_List_Pairwise i))).
+Theorem Lean_List_Pairwise_PHM0 : forall C:set -> set -> set, forall h0 h1, h0 :e (C (Lean_List_nil_node P0) 0) -> forall a :e IndArgs Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N
+    Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B Lean_List_Pairwise_All 0, forall r:set -> set, (forall j :e Lean_List_Pairwise_N 0,
+    Lean_List_Pairwise_R 0 j -> r j :e (fun t:set => C (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix
+    Lean_List_Pairwise_O Lean_List_Pairwise_B t) 0) (a j)) -> (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil)) k) 0 a (IndRes Lean_List_Pairwise_K
+    Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 0 r) :e (fun t:set => C (IndIdx
+    Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B t) 0) (IndNode
+    Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 0 a).
+let C h0 h1. assume Hh: h0 :e (C (Lean_List_nil_node P0) 0).
+let a. assume Ha: a :e IndArgs Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B
+    Lean_List_Pairwise_All 0. let r. assume Hr: forall j :e Lean_List_Pairwise_N 0, Lean_List_Pairwise_R 0 j -> r j :e (fun t:set => C (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T
+    Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B t) 0) (a j).
+claim Fi: IndFits Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B
+    Lean_List_Pairwise_All 0 a.
+{ exact IndArgs_Fits Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B
+    Lean_List_Pairwise_All 0 a Ha. }
+claim Lv: h0 :e (C (Lean_List_nil_node P0) 0).
+{ exact Hh. }
+claim Lm: (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil)) k) 0 a (IndRes Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N
+    Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 0 r) = h0.
+{ prove SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (IndRes Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F
+    Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 0 r 3))) SeqNil)) 0 = h0. rewrite SeqAt_0. reflexivity. }
+claim Lo: (Lean_List_nil_node P0) = IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O
+    Lean_List_Pairwise_B (IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O
+    Lean_List_Pairwise_B 0 a).
+{ exact eq_i_tra (Lean_List_nil_node P0) (Lean_List_Pairwise_O 0 a) (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F
+    Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B (IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F
+    Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 0 a)) (eq_sym_i (Lean_List_Pairwise_O 0 a) (Lean_List_nil_node P0) (Lean_List_Pairwise_O0 a)) (eq_sym_i (IndIdx
+    Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B (IndNode
+    Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 0 a))
+    (Lean_List_Pairwise_O 0 a) (IndIdx_Node Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O
+    Lean_List_Pairwise_B 0 a)). }
+exact In_eq_ls ((fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil)) k) 0 a (IndRes Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N
+    Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 0 r)) h0 (C (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N
+    Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B (IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N
+    Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 0 a)) 0) Lm (In_fam_eq (fun z:set => C z 0) (Lean_List_nil_node P0) (IndIdx
+    Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B (IndNode
+    Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 0 a)) Lo h0 Lv).
+Qed.
+Theorem Lean_List_Pairwise_PHM1 : forall C:set -> set -> set, forall h0 h1, h1 :e (Pi_ x0 :e P0, (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop
+    P0) q0) x1), ((P1 x0) q0)))}, (Pi_ x3 :e (Lean_List_Pairwise x1), (Pi_ y3 :e (C x1 0), (C (Lean_List_cons_node P0 x0 x1) 0)))))) -> forall a :e IndArgs Lean_List_Pairwise_K Lean_List_Pairwise_T
+    Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B Lean_List_Pairwise_All 1, forall r:set -> set, (forall j :e
+    Lean_List_Pairwise_N 1, Lean_List_Pairwise_R 1 j -> r j :e (fun t:set => C (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F
+    Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B t) 0) (a j)) -> (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil)) k) 1 a (IndRes
+    Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 1 r) :e (fun t:set => C
+    (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B t) 0) (IndNode
+    Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 1 a).
+let C h0 h1. assume Hh: h1 :e (Pi_ x0 :e P0, (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) x1), ((P1 x0) q0)))}, (Pi_ x3 :e
+    (Lean_List_Pairwise x1), (Pi_ y3 :e (C x1 0), (C (Lean_List_cons_node P0 x0 x1) 0)))))).
+let a. assume Ha: a :e IndArgs Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B
+    Lean_List_Pairwise_All 1. let r. assume Hr: forall j :e Lean_List_Pairwise_N 1, Lean_List_Pairwise_R 1 j -> r j :e (fun t:set => C (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T
+    Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B t) 0) (a j).
+claim Fi: IndFits Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B
+    Lean_List_Pairwise_All 1 a.
+{ exact IndArgs_Fits Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B
+    Lean_List_Pairwise_All 1 a Ha. }
+claim G0: (a 0) :e P0.
+{ apply Fi 0 (In_eq_rs 0 (Lean_List_Pairwise_N 1) 4 Lean_List_Pairwise_N1 (ordsuccI1 3 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0))))). assume H1. assume H2. exact In_eq_r (a 0)
+    (Lean_List_Pairwise_F 1 0 a) P0 (Lean_List_Pairwise_F1_0 a) (H2 Lean_List_Pairwise_nR1_0). }
+claim G1: (a 1) :e (Lean_List P0).
+{ apply Fi 1 (In_eq_rs 1 (Lean_List_Pairwise_N 1) 4 Lean_List_Pairwise_N1 (ordsuccI1 3 1 (ordsuccI1 2 1 (ordsuccI2 1)))). assume H1. assume H2. exact In_eq_r (a 1) (Lean_List_Pairwise_F 1 1 a)
+    (Lean_List P0) (Lean_List_Pairwise_F1_1 a) (H2 Lean_List_Pairwise_nR1_1). }
+claim G2: (a 2) :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) (a 1)), ((P1 (a 0)) q0)))}.
+{ apply Fi 2 (In_eq_rs 2 (Lean_List_Pairwise_N 1) 4 Lean_List_Pairwise_N1 (ordsuccI1 3 2 (ordsuccI2 2))). assume H1. assume H2. exact In_eq_r (a 2) (Lean_List_Pairwise_F 1 2 a) {z :e 1 | z :e (Pi_ q0
+    :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) (a 1)), ((P1 (a 0)) q0)))} (Lean_List_Pairwise_F1_2 a) (H2 Lean_List_Pairwise_nR1_2). }
+claim G3: (a 3) :e (Lean_List_Pairwise (a 1)).
+{ apply Fi 3 (In_eq_rs 3 (Lean_List_Pairwise_N 1) 4 Lean_List_Pairwise_N1 (ordsuccI2 3)). assume H1. assume H2. apply H1 Lean_List_Pairwise_R1_3. assume H3: a 3 :e Lean_List_Pairwise_All. assume H4:
+    IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B (a 3) =
+    Lean_List_Pairwise_Ix 1 3 a.
+  prove (a 3) :e {x :e Lean_List_Pairwise_All | IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix
+    Lean_List_Pairwise_O Lean_List_Pairwise_B x = (a 1)}.
+  apply SepI Lean_List_Pairwise_All (fun x:set => IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix
+    Lean_List_Pairwise_O Lean_List_Pairwise_B x = (a 1)) (a 3) H3.
+  exact eq_i_tra (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B (a
+    3)) (Lean_List_Pairwise_Ix 1 3 a) (a 1) H4 (Lean_List_Pairwise_Ix1_3 a). }
+claim Y3: r 3 :e (C (a 1) 0).
+{ exact In_fam_eq (fun z:set => C z 0) (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O
+    Lean_List_Pairwise_B (a 3)) (a 1) (SepE2 Lean_List_Pairwise_All (fun x:set => IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F
+    Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B x = (a 1)) (a 3) G3) (r 3) (Hr 3 (In_eq_rs 3 (Lean_List_Pairwise_N 1) 4 Lean_List_Pairwise_N1 (ordsuccI2 3))
+    Lean_List_Pairwise_R1_3). }
+claim Rp3: IndRes Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 1 r 3 = r 3.
+{ exact IndRes_at Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 1 r 3
+    (In_eq_rs 3 (Lean_List_Pairwise_N 1) 4 Lean_List_Pairwise_N1 (ordsuccI2 3)) Lean_List_Pairwise_R1_3. }
+claim Lv: (h1 (a 0) (a 1) (a 2) (a 3) (r 3)) :e (C (Lean_List_cons_node P0 (a 0) (a 1)) 0).
+{ exact (ap_Pi (C (a 1) 0) (fun y3 => (C (Lean_List_cons_node P0 (a 0) (a 1)) 0)) ((((h1 (a 0)) (a 1)) (a 2)) (a 3)) (r 3) (ap_Pi (Lean_List_Pairwise (a 1)) (fun x3 => (Pi_ y3 :e (C (a 1) 0), (C
+    (Lean_List_cons_node P0 (a 0) (a 1)) 0))) (((h1 (a 0)) (a 1)) (a 2)) (a 3) (ap_Pi {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) (a 1)), ((P1 (a 0)) q0)))} (fun x2 => (Pi_
+    x3 :e (Lean_List_Pairwise (a 1)), (Pi_ y3 :e (C (a 1) 0), (C (Lean_List_cons_node P0 (a 0) (a 1)) 0)))) ((h1 (a 0)) (a 1)) (a 2) (ap_Pi (Lean_List P0) (fun x1 => (Pi_ x2 :e {z :e 1 | z :e (Pi_ q0
+    :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) x1), ((P1 (a 0)) q0)))}, (Pi_ x3 :e (Lean_List_Pairwise x1), (Pi_ y3 :e (C x1 0), (C (Lean_List_cons_node P0 (a 0) x1) 0))))) (h1 (a 0)) (a 1)
+    (ap_Pi P0 (fun x0 => (Pi_ x1 :e (Lean_List P0), (Pi_ x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) x1), ((P1 x0) q0)))}, (Pi_ x3 :e (Lean_List_Pairwise x1), (Pi_ y3
+    :e (C x1 0), (C (Lean_List_cons_node P0 x0 x1) 0)))))) h1 (a 0) Hh G0) G1) G2) G3) Y3). }
+claim Lm: (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil)) k) 1 a (IndRes Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N
+    Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 1 r) = (h1 (a 0) (a 1) (a 2) (a 3) (r 3)).
+{ prove SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (IndRes Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F
+    Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 1 r 3))) SeqNil)) 1 = (h1 (a 0) (a 1) (a 2) (a 3) (r 3)). rewrite SeqAt_S. { rewrite SeqAt_0. rewrite Rp3. reflexivity. } exact
+    nat_0. }
+claim Lo: (Lean_List_cons_node P0 (a 0) (a 1)) = IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix
+    Lean_List_Pairwise_O Lean_List_Pairwise_B (IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix
+    Lean_List_Pairwise_O Lean_List_Pairwise_B 1 a).
+{ exact eq_i_tra (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_Pairwise_O 1 a) (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F
+    Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B (IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F
+    Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 1 a)) (eq_sym_i (Lean_List_Pairwise_O 1 a) (Lean_List_cons_node P0 (a 0) (a 1)) (Lean_List_Pairwise_O1 a)) (eq_sym_i (IndIdx
+    Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B (IndNode
+    Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 1 a))
+    (Lean_List_Pairwise_O 1 a) (IndIdx_Node Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O
+    Lean_List_Pairwise_B 1 a)). }
+exact In_eq_ls ((fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil)) k) 1 a (IndRes Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N
+    Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 1 r)) (h1 (a 0) (a 1) (a 2) (a 3) (r 3)) (C (IndIdx Lean_List_Pairwise_K
+    Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B (IndNode Lean_List_Pairwise_K
+    Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B 1 a)) 0) Lm (In_fam_eq (fun z:set => C z 0)
+    (Lean_List_cons_node P0 (a 0) (a 1)) (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O
+    Lean_List_Pairwise_B (IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O
+    Lean_List_Pairwise_B 1 a)) Lo (h1 (a 0) (a 1) (a 2) (a 3) (r 3)) Lv).
+Qed.
+Theorem Lean_List_Pairwise_prec_type : forall C:set -> set -> set, (forall i t, C i t :e LeanProp) -> forall h0 :e (C (Lean_List_nil_node P0) 0), forall h1 :e (Pi_ x0 :e P0, (Pi_ x1 :e (Lean_List
+    P0), (Pi_ x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e (((Lean_List_Mem_Prop P0) q0) x1), ((P1 x0) q0)))}, (Pi_ x3 :e (Lean_List_Pairwise x1), (Pi_ y3 :e (C x1 0), (C (Lean_List_cons_node P0 x0
+    x1) 0)))))), forall i, forall t :e (Lean_List_Pairwise_Prop i), Lean_List_Pairwise_prec h0 h1 i t :e C i t.
+let C. assume HP. let h0. assume Hh0. let h1. assume Hh1.
+claim HM: forall k :e Lean_List_Pairwise_K, forall a :e IndArgs Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix
+    Lean_List_Pairwise_O Lean_List_Pairwise_B Lean_List_Pairwise_All k, forall r:set -> set, (forall j :e Lean_List_Pairwise_N k, Lean_List_Pairwise_R k j -> r j :e (fun t:set => C (IndIdx
+    Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B t) 0) (a j)) -> (fun k a
+    r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil)) k) k a (IndRes Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R
+    Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B k r) :e (fun t:set => C (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N
+    Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B t) 0) (IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N
+    Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B k a).
+{ let k. assume Hk: k :e Lean_List_Pairwise_K. exact (Below_S 1 (fun k => forall a :e IndArgs Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F
+    Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B Lean_List_Pairwise_All k, forall r:set -> set, (forall j :e Lean_List_Pairwise_N k, Lean_List_Pairwise_R k j -> r j :e (fun t:set
+    => C (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B t) 0) (a
+    j)) -> (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil)) k) k a (IndRes Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N
+    Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B k r) :e (fun t:set => C (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T
+    Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B t) 0) (IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T
+    Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B k a)) (Below_S 0 (fun k => forall a :e IndArgs Lean_List_Pairwise_K
+    Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B Lean_List_Pairwise_All k, forall r:set -> set,
+    (forall j :e Lean_List_Pairwise_N k, Lean_List_Pairwise_R k j -> r j :e (fun t:set => C (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R
+    Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B t) 0) (a j)) -> (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil))
+    k) k a (IndRes Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B k r) :e
+    (fun t:set => C (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B t)
+    0) (IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B k a)) (Below_0
+    (fun k => forall a :e IndArgs Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O
+    Lean_List_Pairwise_B Lean_List_Pairwise_All k, forall r:set -> set, (forall j :e Lean_List_Pairwise_N k, Lean_List_Pairwise_R k j -> r j :e (fun t:set => C (IndIdx Lean_List_Pairwise_K
+    Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B t) 0) (a j)) -> (fun k a r:set => SeqAt
+    (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil)) k) k a (IndRes Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F
+    Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B k r) :e (fun t:set => C (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R
+    Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B t) 0) (IndNode Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R
+    Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B k a))) (Lean_List_Pairwise_PHM0 C h0 h1 Hh0)) (Lean_List_Pairwise_PHM1 C h0 h1 Hh1)) k Hk. }
+let i. let t. assume Ht: t :e (Lean_List_Pairwise_Prop i).
+claim Hw0: (Eps_i (fun w:set => w :e (Lean_List_Pairwise i))) :e (Lean_List_Pairwise i).
+{ exact Eps_i_ex (fun w:set => w :e (Lean_List_Pairwise i)) (SepE2 1 (fun x:set => exists w, w :e (Lean_List_Pairwise i)) t Ht). }
+claim Ht0: t = 0.
+{ exact SingE 0 t (Subq_1_Sing0 t (SepE1 1 (fun x:set => exists w, w :e (Lean_List_Pairwise i)) t Ht)). }
+claim L: IndRec Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B (fun k a r:set
+    => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil)) k) (Eps_i (fun w:set => w :e (Lean_List_Pairwise i))) :e (fun t:set => C (IndIdx Lean_List_Pairwise_K
+    Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B t) 0) (Eps_i (fun w:set => w :e
+    (Lean_List_Pairwise i))).
+{ exact IndRec_type Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B
+    Lean_List_Pairwise_distinct Lean_List_Pairwise_bounded Lean_List_Pairwise_arity (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil)) k) (fun t:set => C
+    (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B t) 0) HM (Eps_i
+    (fun w:set => w :e (Lean_List_Pairwise i))) (SepE1 Lean_List_Pairwise_All (fun x:set => IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R
+    Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B x = i) (Eps_i (fun w:set => w :e (Lean_List_Pairwise i))) Hw0). }
+exact In_fam_eq (fun z:set => C i z) 0 t (eq_sym_i t 0 Ht0) (IndRec Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix
+    Lean_List_Pairwise_O Lean_List_Pairwise_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil)) k) (Eps_i (fun w:set => w :e (Lean_List_Pairwise i))))
+    (In_fam_eq (fun z:set => C z 0) (IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O
+    Lean_List_Pairwise_B (Eps_i (fun w:set => w :e (Lean_List_Pairwise i)))) i (SepE2 Lean_List_Pairwise_All (fun x:set => IndIdx Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N
+    Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B x = i) (Eps_i (fun w:set => w :e (Lean_List_Pairwise i))) Hw0) (IndRec
+    Lean_List_Pairwise_K Lean_List_Pairwise_T Lean_List_Pairwise_N Lean_List_Pairwise_R Lean_List_Pairwise_F Lean_List_Pairwise_Ix Lean_List_Pairwise_O Lean_List_Pairwise_B (fun k a r:set => SeqAt
+    (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (a 2) (a 3) (r 3))) SeqNil)) k) (Eps_i (fun w:set => w :e (Lean_List_Pairwise i)))) L).
+Qed.
+
+End Lean_List_Pairwise_Section.
+(** ---- Subtype, generated from its Lean declaration ---- **)
+
+Section Lean_Subtype_Section.
+
+Variable P0 : set.
+Variable P1 : set.
+Let Lean_Subtype_K : set := 1.
+Let Lean_Subtype_T : set -> set := fun k => k.
+Let Lean_Subtype_N : set -> set := fun k => SeqAt (SeqCons (2) SeqNil) k.
+Let Lean_Subtype_R : set -> set -> prop := fun k j => 0 :e SeqAt (SeqAt (SeqCons ((SeqCons (0) (SeqCons (0) SeqNil))) SeqNil) k) j.
+Let Lean_Subtype_F : set -> set -> set -> set := fun k j a => SeqAt (SeqAt (SeqCons ((SeqCons (P0) (SeqCons ({z :e 1 | z :e (P1 (a 0))}) SeqNil))) SeqNil) k) j.
+Let Lean_Subtype_Ix : set -> set -> set -> set := fun k j a => SeqAt (SeqAt (SeqCons ((SeqCons (0) (SeqCons (0) SeqNil))) SeqNil) k) j.
+Let Lean_Subtype_O : set -> set -> set := fun k a => SeqAt (SeqCons (0) SeqNil) k.
+Let Lean_Subtype_B : set := ((P0) :\/: (1)).
+
+Definition Lean_Subtype_All : set := IndCarrier Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B.
+Definition Lean_Subtype : set := IndFiber Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B 0.
+
+Theorem Lean_Subtype_N0 : SeqAt (SeqCons (2) SeqNil) 0 = 2.
+rewrite SeqAt_0. reflexivity.
+Qed.
+Theorem Lean_Subtype_O0 : forall a, SeqAt (SeqCons (0) SeqNil) 0 = 0.
+let a. rewrite SeqAt_0. reflexivity.
+Qed.
+Theorem Lean_Subtype_nR0_0 : ~ (0 :e SeqAt (SeqAt (SeqCons ((SeqCons (0) (SeqCons (0) SeqNil))) SeqNil) 0) 0).
+rewrite SeqAt_0. rewrite SeqAt_0. exact EmptyE 0.
+Qed.
+Theorem Lean_Subtype_F0_0 : forall a, SeqAt (SeqAt (SeqCons ((SeqCons (P0) (SeqCons ({z :e 1 | z :e (P1 (a 0))}) SeqNil))) SeqNil) 0) 0 = P0.
+let a. rewrite SeqAt_0. rewrite SeqAt_0. reflexivity.
+Qed.
+Theorem Lean_Subtype_nR0_1 : ~ (0 :e SeqAt (SeqAt (SeqCons ((SeqCons (0) (SeqCons (0) SeqNil))) SeqNil) 0) 1).
+rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_0. exact EmptyE 0. } exact nat_0.
+Qed.
+Theorem Lean_Subtype_F0_1 : forall a, SeqAt (SeqAt (SeqCons ((SeqCons (P0) (SeqCons ({z :e 1 | z :e (P1 (a 0))}) SeqNil))) SeqNil) 0) 1 = {z :e 1 | z :e (P1 (a 0))}.
+let a. rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0.
+Qed.
+
+Theorem Lean_Subtype_bd0_0 : forall a, ~ Lean_Subtype_R 0 0 -> Lean_Subtype_F 0 0 a c= Lean_Subtype_B.
+let a. assume Hnr: ~ Lean_Subtype_R 0 0. let z. assume Hz: z :e Lean_Subtype_F 0 0 a.
+exact (binunionI1 (P0) (1) z (In_eq_r z (Lean_Subtype_F 0 0 a) (P0) (Lean_Subtype_F0_0 a) Hz)).
+Qed.
+Theorem Lean_Subtype_bd0_1 : forall a, ~ Lean_Subtype_R 0 1 -> Lean_Subtype_F 0 1 a c= Lean_Subtype_B.
+let a. assume Hnr: ~ Lean_Subtype_R 0 1. let z. assume Hz: z :e Lean_Subtype_F 0 1 a.
+exact (binunionI2 (P0) (1) z (SepE1 1 (fun z => z :e (P1 (a 0))) z (In_eq_r z (Lean_Subtype_F 0 1 a) ({z :e 1 | z :e (P1 (a 0))}) (Lean_Subtype_F0_1 a) Hz))).
+Qed.
+Theorem Lean_Subtype_bd0 : forall a, forall j :e Lean_Subtype_N 0, ~ Lean_Subtype_R 0 j -> Lean_Subtype_F 0 j a c= Lean_Subtype_B.
+let a j. assume Hj: j :e Lean_Subtype_N 0. assume Hnr: ~ Lean_Subtype_R 0 j.
+exact (Below_S 1 (fun j => ~ Lean_Subtype_R 0 j -> Lean_Subtype_F 0 j a c= Lean_Subtype_B) (Below_S 0 (fun j => ~ Lean_Subtype_R 0 j -> Lean_Subtype_F 0 j a c= Lean_Subtype_B) (Below_0 (fun j => ~
+    Lean_Subtype_R 0 j -> Lean_Subtype_F 0 j a c= Lean_Subtype_B)) (Lean_Subtype_bd0_0 a)) (Lean_Subtype_bd0_1 a)) j (In_eq_r j (Lean_Subtype_N 0) 2 Lean_Subtype_N0 Hj) Hnr.
+Qed.
+Theorem Lean_Subtype_bounded : IndBounded Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B.
+let k. assume Hk: k :e Lean_Subtype_K.
+exact (Below_S 0 (fun k => forall a, forall j :e Lean_Subtype_N k, ~ Lean_Subtype_R k j -> Lean_Subtype_F k j a c= Lean_Subtype_B) (Below_0 (fun k => forall a, forall j :e Lean_Subtype_N k, ~
+    Lean_Subtype_R k j -> Lean_Subtype_F k j a c= Lean_Subtype_B)) Lean_Subtype_bd0) k Hk.
+Qed.
+
+Theorem Lean_Subtype_distinct : IndDistinct Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B.
+let k. assume Hk: k :e Lean_Subtype_K. let k'. assume Hk': k' :e Lean_Subtype_K. assume H: k = k'. exact H.
+Qed.
+
+Theorem Lean_Subtype_ar0 : nat_p (Lean_Subtype_N 0).
+prove nat_p (SeqAt (SeqCons (2) SeqNil) 0). rewrite Lean_Subtype_N0. exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)).
+Qed.
+Theorem Lean_Subtype_arity : forall k :e Lean_Subtype_K, nat_p (Lean_Subtype_N k).
+let k. assume Hk: k :e Lean_Subtype_K.
+exact (Below_S 0 (fun k => nat_p (Lean_Subtype_N k)) (Below_0 (fun k => nat_p (Lean_Subtype_N k))) Lean_Subtype_ar0) k Hk.
+Qed.
+
+Definition Lean_Subtype_mk_node : set -> set -> set := fun x0 x1 => IndNode Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B 0
+    (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))).
+Theorem Lean_Subtype_mk_field0 : forall x0 x1, (proj1 (Lean_Subtype_mk_node x0 x1)) 0 = x0.
+let x0 x1.
+prove (proj1 (IndNode Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B 0 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))))) 0 =
+    x0.
+rewrite IndNode_fields Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B 0 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 0.
+rewrite TupArgs_at 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 (ordsuccI1 1 0 (ordsuccI2 0)).
+rewrite SeqAt_0. reflexivity.
+Qed.
+Theorem Lean_Subtype_mk_field1 : forall x0 x1, (proj1 (Lean_Subtype_mk_node x0 x1)) 1 = x1.
+let x0 x1.
+prove (proj1 (IndNode Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B 0 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))))) 1 =
+    x1.
+rewrite IndNode_fields Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B 0 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 1.
+rewrite TupArgs_at 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 1 (ordsuccI2 1).
+rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0.
+Qed.
+Theorem Lean_Subtype_mk_args : forall x0 :e P0, forall x1 :e {z :e 1 | z :e (P1 x0)}, (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) :e IndArgs Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N
+    Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B Lean_Subtype_All 0.
+let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e {z :e 1 | z :e (P1 x0)}.
+claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
+{ rewrite TupArgs_at 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 (ordsuccI1 1 0 (ordsuccI2 0)). exact U0. }
+claim U1: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 1 = x1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim T1: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 1 = x1.
+{ rewrite TupArgs_at 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 1 (ordsuccI2 1). exact U1. }
+claim M0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 :e Lean_Subtype_B :\/: Lean_Subtype_All.
+{ exact In_eq_ls (SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0) x0 (Lean_Subtype_B :\/: Lean_Subtype_All) U0 (binunionI1 Lean_Subtype_B Lean_Subtype_All x0 (binunionI1 (P0) (1) x0 H0)). }
+claim M1: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 1 :e Lean_Subtype_B :\/: Lean_Subtype_All.
+{ exact In_eq_ls (SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 1) x1 (Lean_Subtype_B :\/: Lean_Subtype_All) U1 (binunionI1 Lean_Subtype_B Lean_Subtype_All x1 (binunionI2 (P0) (1) x1 (SepE1 1 (fun z =>
+    z :e (P1 x0)) x1 H1))). }
+claim D0: (Lean_Subtype_R 0 0 -> (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 0 :e Lean_Subtype_All /\ IndIdx Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F
+    Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B ((TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 0) = Lean_Subtype_Ix 0 0 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)))) /\ (~ Lean_Subtype_R 0
+    0 -> (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 0 :e Lean_Subtype_F 0 0 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)))).
+{ apply andI.
+  - assume Hr: Lean_Subtype_R 0 0. apply FalseE. exact Lean_Subtype_nR0_0 Hr.
+  - assume Hnr: ~ Lean_Subtype_R 0 0. exact In_eq_ls ((TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 0) x0 (Lean_Subtype_F 0 0 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)))) T0 (In_eq_rs x0
+    (Lean_Subtype_F 0 0 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)))) P0 (Lean_Subtype_F0_0 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)))) H0).
+}
+claim D1: (Lean_Subtype_R 0 1 -> (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 1 :e Lean_Subtype_All /\ IndIdx Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F
+    Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B ((TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 1) = Lean_Subtype_Ix 0 1 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)))) /\ (~ Lean_Subtype_R 0
+    1 -> (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 1 :e Lean_Subtype_F 0 1 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)))).
+{ apply andI.
+  - assume Hr: Lean_Subtype_R 0 1. apply FalseE. exact Lean_Subtype_nR0_1 Hr.
+  - assume Hnr: ~ Lean_Subtype_R 0 1. claim G1: x1 :e {z :e 1 | z :e (P1 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0))}.
+    { rewrite T0. exact H1. }
+    exact In_eq_ls ((TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 1) x1 (Lean_Subtype_F 0 1 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)))) T1 (In_eq_rs x1 (Lean_Subtype_F 0 1 (TupArgs 2
+    (SeqCons (x0) (SeqCons (x1) SeqNil)))) {z :e 1 | z :e (P1 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0))} (Lean_Subtype_F0_1 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)))) G1).
+}
+prove (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) :e {a :e Pi_ j :e SeqAt (SeqCons (2) SeqNil) 0, Lean_Subtype_B :\/: Lean_Subtype_All | IndFits Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N
+    Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B Lean_Subtype_All 0 a}.
+rewrite Lean_Subtype_N0.
+apply SepI (Pi_ j :e 2, Lean_Subtype_B :\/: Lean_Subtype_All) (fun a => IndFits Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O
+    Lean_Subtype_B Lean_Subtype_All 0 a) (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))).
+- exact lam_Pi 2 (fun j => Lean_Subtype_B :\/: Lean_Subtype_All) (fun j => SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) j) (Below_S 1 (fun j => SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) j :e
+    Lean_Subtype_B :\/: Lean_Subtype_All) (Below_S 0 (fun j => SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) j :e Lean_Subtype_B :\/: Lean_Subtype_All) (Below_0 (fun j => SeqAt (SeqCons (x0) (SeqCons
+    (x1) SeqNil)) j :e Lean_Subtype_B :\/: Lean_Subtype_All)) M0) M1).
+- prove IndFits Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B Lean_Subtype_All 0 (TupArgs 2 (SeqCons (x0) (SeqCons (x1)
+    SeqNil))).
+  let j. assume Hj: j :e Lean_Subtype_N 0.
+  exact (Below_S 1 (fun j => (Lean_Subtype_R 0 j -> (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) j :e Lean_Subtype_All /\ IndIdx Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R
+    Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B ((TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) j) = Lean_Subtype_Ix 0 j (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)))) /\ (~
+    Lean_Subtype_R 0 j -> (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) j :e Lean_Subtype_F 0 j (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))))) (Below_S 0 (fun j => (Lean_Subtype_R 0 j ->
+    (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) j :e Lean_Subtype_All /\ IndIdx Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O
+    Lean_Subtype_B ((TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) j) = Lean_Subtype_Ix 0 j (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)))) /\ (~ Lean_Subtype_R 0 j -> (TupArgs 2 (SeqCons (x0)
+    (SeqCons (x1) SeqNil))) j :e Lean_Subtype_F 0 j (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))))) (Below_0 (fun j => (Lean_Subtype_R 0 j -> (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) j :e
+    Lean_Subtype_All /\ IndIdx Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B ((TupArgs 2 (SeqCons (x0) (SeqCons (x1)
+    SeqNil))) j) = Lean_Subtype_Ix 0 j (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)))) /\ (~ Lean_Subtype_R 0 j -> (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) j :e Lean_Subtype_F 0 j (TupArgs
+    2 (SeqCons (x0) (SeqCons (x1) SeqNil)))))) D0) D1) j (In_eq_r j (Lean_Subtype_N 0) 2 Lean_Subtype_N0 Hj).
+Qed.
+Theorem Lean_Subtype_mk_typed : forall x0 :e P0, forall x1 :e {z :e 1 | z :e (P1 x0)}, Lean_Subtype_mk_node x0 x1 :e Lean_Subtype.
+let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e {z :e 1 | z :e (P1 x0)}.
+claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
+{ rewrite TupArgs_at 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 (ordsuccI1 1 0 (ordsuccI2 0)). exact U0. }
+claim U1: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 1 = x1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim T1: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 1 = x1.
+{ rewrite TupArgs_at 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 1 (ordsuccI2 1). exact U1. }
+claim L: Lean_Subtype_mk_node x0 x1 :e IndFiber Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B (Lean_Subtype_O 0 (TupArgs 2
+    (SeqCons (x0) (SeqCons (x1) SeqNil)))).
+{ exact IndNode_Fiber Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B Lean_Subtype_bounded 0 (ordsuccI2 0) Lean_Subtype_ar0
+    (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) (Lean_Subtype_mk_args x0 H0 x1 H1). }
+claim Lo: Lean_Subtype_O 0 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) = 0.
+{ prove SeqAt (SeqCons (0) SeqNil) 0 = 0. rewrite Lean_Subtype_O0 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))). reflexivity. }
+exact In_fam_eq (IndFiber Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B) (Lean_Subtype_O 0 (TupArgs 2 (SeqCons (x0) (SeqCons
+    (x1) SeqNil)))) 0 Lo (Lean_Subtype_mk_node x0 x1) L.
+Qed.
+Definition Lean_Subtype_mk : set := (fun x0 :e P0 => (fun x1 :e {z :e 1 | z :e (P1 x0)} => Lean_Subtype_mk_node x0 x1)).
+Theorem Lean_Subtype_mk_type : Lean_Subtype_mk :e (Pi_ x0 :e P0, (Pi_ x1 :e {z :e 1 | z :e (P1 x0)}, Lean_Subtype)).
+exact (lam_Pi P0 (fun x0 => (Pi_ x1 :e {z :e 1 | z :e (P1 x0)}, Lean_Subtype)) (fun x0 => (fun x1 :e {z :e 1 | z :e (P1 x0)} => Lean_Subtype_mk_node x0 x1)) (fun x0 H0 => (lam_Pi {z :e 1 | z :e (P1
+    x0)} (fun x1 => Lean_Subtype) (fun x1 => Lean_Subtype_mk_node x0 x1) (fun x1 H1 => (Lean_Subtype_mk_typed x0 H0 x1 H1))))).
+Qed.
+
+Definition Lean_Subtype_rec : set -> set -> set := fun h0 t => IndRec Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B (fun k a
+    r:set => SeqAt (SeqCons ((h0 (a 0) (a 1))) SeqNil) k) t.
+Theorem Lean_Subtype_iota0 : forall h0, forall x0 :e P0, forall x1 :e {z :e 1 | z :e (P1 x0)}, Lean_Subtype_rec h0 (Lean_Subtype_mk_node x0 x1) = (h0 x0 x1).
+let h0. let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e {z :e 1 | z :e (P1 x0)}.
+claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
+{ rewrite TupArgs_at 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 (ordsuccI1 1 0 (ordsuccI2 0)). exact U0. }
+claim U1: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 1 = x1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim T1: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 1 = x1.
+{ rewrite TupArgs_at 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 1 (ordsuccI2 1). exact U1. }
+prove IndRec Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0) (a 1))) SeqNil) k)
+    (IndNode Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B 0 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)))) = (h0 x0 x1).
+rewrite IndRec_iota Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B Lean_Subtype_distinct Lean_Subtype_bounded
+    Lean_Subtype_arity (fun k a r:set => SeqAt (SeqCons ((h0 (a 0) (a 1))) SeqNil) k) 0 (ordsuccI2 0) (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) (Lean_Subtype_mk_args x0 H0 x1 H1).
+prove SeqAt (SeqCons ((h0 ((TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 0) ((TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 1))) SeqNil) 0 = (h0 x0 x1).
+rewrite SeqAt_0. rewrite T0. rewrite T1. reflexivity.
+Qed.
+
+Theorem Lean_Subtype_HM0 : forall C:set -> set, forall h0, h0 :e (Pi_ x0 :e P0, (Pi_ x1 :e {z :e 1 | z :e (P1 x0)}, (C (Lean_Subtype_mk_node x0 x1)))) -> forall a :e IndArgs Lean_Subtype_K
+    Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B Lean_Subtype_All 0, forall r:set -> set, (forall j :e Lean_Subtype_N 0, Lean_Subtype_R 0
+    j -> r j :e C (a j)) -> (fun k a r:set => SeqAt (SeqCons ((h0 (a 0) (a 1))) SeqNil) k) 0 a (IndRes Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix
+    Lean_Subtype_O Lean_Subtype_B 0 r) :e C (IndNode Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B 0 a).
+let C h0. assume Hh: h0 :e (Pi_ x0 :e P0, (Pi_ x1 :e {z :e 1 | z :e (P1 x0)}, (C (Lean_Subtype_mk_node x0 x1)))).
+let a. assume Ha: a :e IndArgs Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B Lean_Subtype_All 0. let r. assume Hr: forall j
+    :e Lean_Subtype_N 0, Lean_Subtype_R 0 j -> r j :e C (a j).
+claim Fi: IndFits Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B Lean_Subtype_All 0 a.
+{ exact IndArgs_Fits Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B Lean_Subtype_All 0 a Ha. }
+claim Pm: a :e Pi_ j :e 2, Lean_Subtype_B :\/: Lean_Subtype_All.
+{ exact In_fam_eq (fun X:set => Pi_ j :e X, Lean_Subtype_B :\/: Lean_Subtype_All) (Lean_Subtype_N 0) 2 Lean_Subtype_N0 a (IndArgs_Pi Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R
+    Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B Lean_Subtype_All 0 a Ha). }
+claim G0: (a 0) :e P0.
+{ apply Fi 0 (In_eq_rs 0 (Lean_Subtype_N 0) 2 Lean_Subtype_N0 (ordsuccI1 1 0 (ordsuccI2 0))). assume H1. assume H2. exact In_eq_r (a 0) (Lean_Subtype_F 0 0 a) P0 (Lean_Subtype_F0_0 a) (H2
+    Lean_Subtype_nR0_0). }
+claim G1: (a 1) :e {z :e 1 | z :e (P1 (a 0))}.
+{ apply Fi 1 (In_eq_rs 1 (Lean_Subtype_N 0) 2 Lean_Subtype_N0 (ordsuccI2 1)). assume H1. assume H2. exact In_eq_r (a 1) (Lean_Subtype_F 0 1 a) {z :e 1 | z :e (P1 (a 0))} (Lean_Subtype_F0_1 a) (H2
+    Lean_Subtype_nR0_1). }
+claim U0: SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) SeqNil)) 0 = (a 0).
+{ rewrite SeqAt_0. reflexivity. }
+claim U1: SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) SeqNil)) 1 = (a 1).
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim Ea: TupArgs 2 (SeqCons ((a 0)) (SeqCons ((a 1)) SeqNil)) = a.
+{ exact eq_i_tra (TupArgs 2 (SeqCons ((a 0)) (SeqCons ((a 1)) SeqNil))) (fun j :e 2 => a j) a (lam_ext 2 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) SeqNil)) j) (fun j => a j) (Below_S 1 (fun j
+    => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) SeqNil)) j = a j) (Below_S 0 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) SeqNil)) j = a j) (Below_0 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a
+    1)) SeqNil)) j = a j)) U0) U1)) (Pi_eta 2 (fun j => Lean_Subtype_B :\/: Lean_Subtype_All) a Pm). }
+claim Lv: (h0 (a 0) (a 1)) :e (C (Lean_Subtype_mk_node (a 0) (a 1))).
+{ exact (ap_Pi {z :e 1 | z :e (P1 (a 0))} (fun x1 => (C (Lean_Subtype_mk_node (a 0) x1))) (h0 (a 0)) (a 1) (ap_Pi P0 (fun x0 => (Pi_ x1 :e {z :e 1 | z :e (P1 x0)}, (C (Lean_Subtype_mk_node x0 x1))))
+    h0 (a 0) Hh G0) G1). }
+claim Lm: (fun k a r:set => SeqAt (SeqCons ((h0 (a 0) (a 1))) SeqNil) k) 0 a (IndRes Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O
+    Lean_Subtype_B 0 r) = (h0 (a 0) (a 1)).
+{ prove SeqAt (SeqCons ((h0 (a 0) (a 1))) SeqNil) 0 = (h0 (a 0) (a 1)). rewrite SeqAt_0. reflexivity. }
+claim Ln: (Lean_Subtype_mk_node (a 0) (a 1)) = IndNode Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B 0 a.
+{ prove IndNode Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B 0 (TupArgs 2 (SeqCons ((a 0)) (SeqCons ((a 1)) SeqNil))) =
+    IndNode Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B 0 a. rewrite Ea. reflexivity. }
+exact In_eq_ls ((fun k a r:set => SeqAt (SeqCons ((h0 (a 0) (a 1))) SeqNil) k) 0 a (IndRes Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O
+    Lean_Subtype_B 0 r)) (h0 (a 0) (a 1)) (C (IndNode Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B 0 a)) Lm (In_fam_eq (fun
+    z:set => C z) (Lean_Subtype_mk_node (a 0) (a 1)) (IndNode Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B 0 a) Ln (h0 (a
+    0) (a 1)) Lv).
+Qed.
+Theorem Lean_Subtype_rec_type : forall C:set -> set, forall h0 :e (Pi_ x0 :e P0, (Pi_ x1 :e {z :e 1 | z :e (P1 x0)}, (C (Lean_Subtype_mk_node x0 x1)))), forall t :e Lean_Subtype, Lean_Subtype_rec h0
+    t :e C t.
+let C. let h0. assume Hh0.
+claim HM: forall k :e Lean_Subtype_K, forall a :e IndArgs Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B Lean_Subtype_All k,
+    forall r:set -> set, (forall j :e Lean_Subtype_N k, Lean_Subtype_R k j -> r j :e C (a j)) -> (fun k a r:set => SeqAt (SeqCons ((h0 (a 0) (a 1))) SeqNil) k) k a (IndRes Lean_Subtype_K
+    Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B k r) :e C (IndNode Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R
+    Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B k a).
+{ let k. assume Hk: k :e Lean_Subtype_K. exact (Below_S 0 (fun k => forall a :e IndArgs Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O
+    Lean_Subtype_B Lean_Subtype_All k, forall r:set -> set, (forall j :e Lean_Subtype_N k, Lean_Subtype_R k j -> r j :e C (a j)) -> (fun k a r:set => SeqAt (SeqCons ((h0 (a 0) (a 1))) SeqNil) k) k a
+    (IndRes Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B k r) :e C (IndNode Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N
+    Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B k a)) (Below_0 (fun k => forall a :e IndArgs Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F
+    Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B Lean_Subtype_All k, forall r:set -> set, (forall j :e Lean_Subtype_N k, Lean_Subtype_R k j -> r j :e C (a j)) -> (fun k a r:set => SeqAt (SeqCons
+    ((h0 (a 0) (a 1))) SeqNil) k) k a (IndRes Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B k r) :e C (IndNode
+    Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B k a))) (Lean_Subtype_HM0 C h0 Hh0)) k Hk. }
+let t. assume Ht: t :e Lean_Subtype.
+exact IndRec_type Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B Lean_Subtype_distinct Lean_Subtype_bounded
+    Lean_Subtype_arity (fun k a r:set => SeqAt (SeqCons ((h0 (a 0) (a 1))) SeqNil) k) C HM t (SepE1 Lean_Subtype_All (fun x:set => IndIdx Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R
+    Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B x = 0) t Ht).
+Qed.
+
+
+
+Theorem Lean_Subtype_ind : forall P:set -> prop, (forall x0 :e P0, forall x1 :e {z :e 1 | z :e (P1 x0)}, P (Lean_Subtype_mk_node x0 x1)) -> forall t :e Lean_Subtype, P t.
+let P. assume H0.
+claim M0: 0 :e (Pi_ x0 :e P0, (Pi_ x1 :e {z :e 1 | z :e (P1 x0)}, {z :e 1 | P (Lean_Subtype_mk_node x0 x1)})).
+{ apply Pi_0_In. let x0. assume Hx0: x0 :e P0.
+  prove 0 :e (Pi_ x1 :e {z :e 1 | z :e (P1 x0)}, {z :e 1 | P (Lean_Subtype_mk_node x0 x1)}).
+  apply Pi_0_In. let x1. assume Hx1: x1 :e {z :e 1 | z :e (P1 x0)}.
+  prove 0 :e {z :e 1 | P (Lean_Subtype_mk_node x0 x1)}.
+  exact SepI 1 (fun z => P (Lean_Subtype_mk_node x0 x1)) 0 In_0_1 (H0 x0 Hx0 x1 Hx1). }
+let t. assume Ht: t :e Lean_Subtype.
+exact SepE2 1 (fun z => P t) (Lean_Subtype_rec 0 t) (Lean_Subtype_rec_type (fun t => {z :e 1 | P t}) 0 M0 t Ht).
+Qed.
+
+
+
+
+Theorem Lean_Subtype_mk_inj0 : forall x0 x1 y0 y1, (Lean_Subtype_mk_node x0 x1) = (Lean_Subtype_mk_node y0 y1) -> x0 = y0.
+let x0 x1 y0 y1. assume H: (Lean_Subtype_mk_node x0 x1) = (Lean_Subtype_mk_node y0 y1).
+claim L: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = SeqAt (SeqCons (y0) (SeqCons (y1) SeqNil)) 0.
+{ exact IndNode_args_inj Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B Lean_Subtype_distinct 0 (ordsuccI2 0) 2 (SeqCons (x0)
+    (SeqCons (x1) SeqNil)) (SeqCons (y0) (SeqCons (y1) SeqNil)) H 0 (ordsuccI1 1 0 (ordsuccI2 0)). }
+claim Lx: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim Ly: SeqAt (SeqCons (y0) (SeqCons (y1) SeqNil)) 0 = y0.
+{ rewrite SeqAt_0. reflexivity. }
+rewrite <- Lx. rewrite <- Ly. exact L.
+Qed.
+Theorem Lean_Subtype_mk_inj1 : forall x0 x1 y0 y1, (Lean_Subtype_mk_node x0 x1) = (Lean_Subtype_mk_node y0 y1) -> x1 = y1.
+let x0 x1 y0 y1. assume H: (Lean_Subtype_mk_node x0 x1) = (Lean_Subtype_mk_node y0 y1).
+claim L: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 1 = SeqAt (SeqCons (y0) (SeqCons (y1) SeqNil)) 1.
+{ exact IndNode_args_inj Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B Lean_Subtype_distinct 0 (ordsuccI2 0) 2 (SeqCons (x0)
+    (SeqCons (x1) SeqNil)) (SeqCons (y0) (SeqCons (y1) SeqNil)) H 1 (ordsuccI2 1). }
+claim Lx: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 1 = x1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim Ly: SeqAt (SeqCons (y0) (SeqCons (y1) SeqNil)) 1 = y1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+rewrite <- Lx. rewrite <- Ly. exact L.
+Qed.
+
+
+Theorem Lean_Subtype_In : forall u, nat_p u -> P0 :e LeanUniv u -> P1 :e LeanUniv u -> Lean_Subtype_All :e LeanUniv u.
+let u. assume Hu: nat_p u. assume HP0: P0 :e LeanUniv u. assume HP1: P1 :e LeanUniv u.
+claim Ht: TransSet (LeanUniv u).
+{ exact LeanUniv_TransSet u Hu. }
+claim Hz: ZF_closed (LeanUniv u).
+{ exact LeanUniv_ZF_closed u Hu. }
+claim H0: 0 :e LeanUniv u.
+{ exact LeanUniv_0_In u Hu. }
+claim HO0: forall V :e LeanUniv u, forall a :e (Pi_ j :e Lean_Subtype_N 0, V), Lean_Subtype_O 0 a :e LeanUniv u.
+{ let V. assume HV: V :e LeanUniv u. let a. assume Ha: a :e (Pi_ j :e Lean_Subtype_N 0, V).
+  claim Ham: a :e Pi_ j :e 2, V.
+  { exact In_fam_eq (fun X:set => Pi_ j :e X, V) (Lean_Subtype_N 0) 2 Lean_Subtype_N0 a Ha. }
+  prove SeqAt (SeqCons (0) SeqNil) 0 :e LeanUniv u. rewrite Lean_Subtype_O0 a. exact H0. }
+exact IndCarrier_In Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B (LeanUniv u) Ht Hz (omega_In_LeanUniv u Hu)
+    (LeanUniv_nat_In u Hu 1 (nat_ordsucc 0 nat_0)) (ZF_binunion_closed (LeanUniv u) Hz (P0) HP0 (1) (LeanUniv_nat_In u Hu 1 nat_1)) Lean_Subtype_arity (fun k Hk => LeanUniv_nat_In u Hu k (nat_p_trans
+    1 (nat_ordsucc 0 nat_0) k Hk)) (fun k Hk => (Below_S 0 (fun k => forall V :e LeanUniv u, forall a :e (Pi_ j :e Lean_Subtype_N k, V), Lean_Subtype_O k a :e LeanUniv u) (Below_0 (fun k => forall V
+    :e LeanUniv u, forall a :e (Pi_ j :e Lean_Subtype_N k, V), Lean_Subtype_O k a :e LeanUniv u)) HO0) k Hk).
+Qed.
+Theorem Lean_Subtype_type_In : forall u, nat_p u -> P0 :e LeanUniv u -> P1 :e LeanUniv u -> Lean_Subtype :e LeanUniv u.
+let u. assume Hu: nat_p u. assume HP0: P0 :e LeanUniv u. assume HP1: P1 :e LeanUniv u.
+exact IndFiber_In Lean_Subtype_K Lean_Subtype_T Lean_Subtype_N Lean_Subtype_R Lean_Subtype_F Lean_Subtype_Ix Lean_Subtype_O Lean_Subtype_B (LeanUniv u) (LeanUniv_TransSet u Hu) (LeanUniv_ZF_closed u
+    Hu) (Lean_Subtype_In u Hu HP0 HP1) 0.
+Qed.
+
+End Lean_Subtype_Section.
+(** ---- LeftCommutative, generated from its Lean declaration ---- **)
+
+Section Lean_LeftCommutative_Section.
+
+Variable P0 : set.
+Variable P1 : set.
+Variable P2 : set.
+Let Lean_LeftCommutative_K : set := 1.
+Let Lean_LeftCommutative_T : set -> set := fun k => k.
+Let Lean_LeftCommutative_N : set -> set := fun k => SeqAt (SeqCons (1) SeqNil) k.
+Let Lean_LeftCommutative_R : set -> set -> prop := fun k j => 0 :e SeqAt (SeqAt (SeqCons ((SeqCons (0) SeqNil)) SeqNil) k) j.
+Let Lean_LeftCommutative_F : set -> set -> set -> set := fun k j a => SeqAt (SeqAt (SeqCons ((SeqCons ({z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2
+    q1) q2))) ((P2 q1) ((P2 q0) q2))))))}) SeqNil)) SeqNil) k) j.
+Let Lean_LeftCommutative_Ix : set -> set -> set -> set := fun k j a => SeqAt (SeqAt (SeqCons ((SeqCons (0) SeqNil)) SeqNil) k) j.
+Let Lean_LeftCommutative_O : set -> set -> set := fun k a => SeqAt (SeqCons (0) SeqNil) k.
+Let Lean_LeftCommutative_B : set := (1).
+
+Definition Lean_LeftCommutative_All : set := IndCarrier Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix
+    Lean_LeftCommutative_O Lean_LeftCommutative_B.
+Definition Lean_LeftCommutative : set := IndFiber Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix
+    Lean_LeftCommutative_O Lean_LeftCommutative_B 0.
+
+Theorem Lean_LeftCommutative_N0 : SeqAt (SeqCons (1) SeqNil) 0 = 1.
+rewrite SeqAt_0. reflexivity.
+Qed.
+Theorem Lean_LeftCommutative_O0 : forall a, SeqAt (SeqCons (0) SeqNil) 0 = 0.
+let a. rewrite SeqAt_0. reflexivity.
+Qed.
+Theorem Lean_LeftCommutative_nR0_0 : ~ (0 :e SeqAt (SeqAt (SeqCons ((SeqCons (0) SeqNil)) SeqNil) 0) 0).
+rewrite SeqAt_0. rewrite SeqAt_0. exact EmptyE 0.
+Qed.
+Theorem Lean_LeftCommutative_F0_0 : forall a, SeqAt (SeqAt (SeqCons ((SeqCons ({z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2 q1) ((P2
+    q0) q2))))))}) SeqNil)) SeqNil) 0) 0 = {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2 q1) ((P2 q0) q2))))))}.
+let a. rewrite SeqAt_0. rewrite SeqAt_0. reflexivity.
+Qed.
+
+Theorem Lean_LeftCommutative_bd0_0 : forall a, ~ Lean_LeftCommutative_R 0 0 -> Lean_LeftCommutative_F 0 0 a c= Lean_LeftCommutative_B.
+let a. assume Hnr: ~ Lean_LeftCommutative_R 0 0. let z. assume Hz: z :e Lean_LeftCommutative_F 0 0 a.
+exact (SepE1 1 (fun z => z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2 q1) ((P2 q0) q2))))))) z (In_eq_r z (Lean_LeftCommutative_F 0 0 a) ({z :e 1
+    | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2 q1) ((P2 q0) q2))))))}) (Lean_LeftCommutative_F0_0 a) Hz)).
+Qed.
+Theorem Lean_LeftCommutative_bd0 : forall a, forall j :e Lean_LeftCommutative_N 0, ~ Lean_LeftCommutative_R 0 j -> Lean_LeftCommutative_F 0 j a c= Lean_LeftCommutative_B.
+let a j. assume Hj: j :e Lean_LeftCommutative_N 0. assume Hnr: ~ Lean_LeftCommutative_R 0 j.
+exact (Below_S 0 (fun j => ~ Lean_LeftCommutative_R 0 j -> Lean_LeftCommutative_F 0 j a c= Lean_LeftCommutative_B) (Below_0 (fun j => ~ Lean_LeftCommutative_R 0 j -> Lean_LeftCommutative_F 0 j a c=
+    Lean_LeftCommutative_B)) (Lean_LeftCommutative_bd0_0 a)) j (In_eq_r j (Lean_LeftCommutative_N 0) 1 Lean_LeftCommutative_N0 Hj) Hnr.
+Qed.
+Theorem Lean_LeftCommutative_bounded : IndBounded Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix
+    Lean_LeftCommutative_O Lean_LeftCommutative_B.
+let k. assume Hk: k :e Lean_LeftCommutative_K.
+exact (Below_S 0 (fun k => forall a, forall j :e Lean_LeftCommutative_N k, ~ Lean_LeftCommutative_R k j -> Lean_LeftCommutative_F k j a c= Lean_LeftCommutative_B) (Below_0 (fun k => forall a, forall
+    j :e Lean_LeftCommutative_N k, ~ Lean_LeftCommutative_R k j -> Lean_LeftCommutative_F k j a c= Lean_LeftCommutative_B)) Lean_LeftCommutative_bd0) k Hk.
+Qed.
+
+Theorem Lean_LeftCommutative_distinct : IndDistinct Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix
+    Lean_LeftCommutative_O Lean_LeftCommutative_B.
+let k. assume Hk: k :e Lean_LeftCommutative_K. let k'. assume Hk': k' :e Lean_LeftCommutative_K. assume H: k = k'. exact H.
+Qed.
+
+Theorem Lean_LeftCommutative_ar0 : nat_p (Lean_LeftCommutative_N 0).
+prove nat_p (SeqAt (SeqCons (1) SeqNil) 0). rewrite Lean_LeftCommutative_N0. exact (nat_ordsucc 0 nat_0).
+Qed.
+Theorem Lean_LeftCommutative_arity : forall k :e Lean_LeftCommutative_K, nat_p (Lean_LeftCommutative_N k).
+let k. assume Hk: k :e Lean_LeftCommutative_K.
+exact (Below_S 0 (fun k => nat_p (Lean_LeftCommutative_N k)) (Below_0 (fun k => nat_p (Lean_LeftCommutative_N k))) Lean_LeftCommutative_ar0) k Hk.
+Qed.
+
+Definition Lean_LeftCommutative_mk_node : set -> set := fun x0 => IndNode Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F
+    Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B 0 (TupArgs 1 (SeqCons (x0) SeqNil)).
+Theorem Lean_LeftCommutative_mk_field0 : forall x0, (proj1 (Lean_LeftCommutative_mk_node x0)) 0 = x0.
+let x0.
+prove (proj1 (IndNode Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O
+    Lean_LeftCommutative_B 0 (TupArgs 1 (SeqCons (x0) SeqNil)))) 0 = x0.
+rewrite IndNode_fields Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O
+    Lean_LeftCommutative_B 0 (TupArgs 1 (SeqCons (x0) SeqNil)) 0.
+rewrite TupArgs_at 1 (SeqCons (x0) SeqNil) 0 (ordsuccI2 0).
+rewrite SeqAt_0. reflexivity.
+Qed.
+Theorem Lean_LeftCommutative_mk_args : forall x0 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2 q1) ((P2 q0) q2))))))}, (TupArgs 1
+    (SeqCons (x0) SeqNil)) :e IndArgs Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O
+    Lean_LeftCommutative_B Lean_LeftCommutative_All 0.
+let x0. assume H0: x0 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2 q1) ((P2 q0) q2))))))}.
+claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
+{ rewrite TupArgs_at 1 (SeqCons (x0) SeqNil) 0 (ordsuccI2 0). exact U0. }
+claim M0: SeqAt (SeqCons (x0) SeqNil) 0 :e Lean_LeftCommutative_B :\/: Lean_LeftCommutative_All.
+{ exact In_eq_ls (SeqAt (SeqCons (x0) SeqNil) 0) x0 (Lean_LeftCommutative_B :\/: Lean_LeftCommutative_All) U0 (binunionI1 Lean_LeftCommutative_B Lean_LeftCommutative_All x0 (SepE1 1 (fun z => z :e
+    (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2 q1) ((P2 q0) q2))))))) x0 H0)). }
+claim D0: (Lean_LeftCommutative_R 0 0 -> (TupArgs 1 (SeqCons (x0) SeqNil)) 0 :e Lean_LeftCommutative_All /\ IndIdx Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N
+    Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B ((TupArgs 1 (SeqCons (x0) SeqNil)) 0) = Lean_LeftCommutative_Ix 0 0 (TupArgs 1
+    (SeqCons (x0) SeqNil))) /\ (~ Lean_LeftCommutative_R 0 0 -> (TupArgs 1 (SeqCons (x0) SeqNil)) 0 :e Lean_LeftCommutative_F 0 0 (TupArgs 1 (SeqCons (x0) SeqNil))).
+{ apply andI.
+  - assume Hr: Lean_LeftCommutative_R 0 0. apply FalseE. exact Lean_LeftCommutative_nR0_0 Hr.
+  - assume Hnr: ~ Lean_LeftCommutative_R 0 0. claim G0: x0 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2 q1) ((P2 q0) q2))))))}.
+    { exact H0. }
+    exact In_eq_ls ((TupArgs 1 (SeqCons (x0) SeqNil)) 0) x0 (Lean_LeftCommutative_F 0 0 (TupArgs 1 (SeqCons (x0) SeqNil))) T0 (In_eq_rs x0 (Lean_LeftCommutative_F 0 0 (TupArgs 1 (SeqCons (x0)
+    SeqNil))) {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2 q1) ((P2 q0) q2))))))} (Lean_LeftCommutative_F0_0 (TupArgs 1 (SeqCons (x0)
+    SeqNil))) G0).
+}
+prove (TupArgs 1 (SeqCons (x0) SeqNil)) :e {a :e Pi_ j :e SeqAt (SeqCons (1) SeqNil) 0, Lean_LeftCommutative_B :\/: Lean_LeftCommutative_All | IndFits Lean_LeftCommutative_K Lean_LeftCommutative_T
+    Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B Lean_LeftCommutative_All 0 a}.
+rewrite Lean_LeftCommutative_N0.
+apply SepI (Pi_ j :e 1, Lean_LeftCommutative_B :\/: Lean_LeftCommutative_All) (fun a => IndFits Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R
+    Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B Lean_LeftCommutative_All 0 a) (TupArgs 1 (SeqCons (x0) SeqNil)).
+- exact lam_Pi 1 (fun j => Lean_LeftCommutative_B :\/: Lean_LeftCommutative_All) (fun j => SeqAt (SeqCons (x0) SeqNil) j) (Below_S 0 (fun j => SeqAt (SeqCons (x0) SeqNil) j :e Lean_LeftCommutative_B
+    :\/: Lean_LeftCommutative_All) (Below_0 (fun j => SeqAt (SeqCons (x0) SeqNil) j :e Lean_LeftCommutative_B :\/: Lean_LeftCommutative_All)) M0).
+- prove IndFits Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O
+    Lean_LeftCommutative_B Lean_LeftCommutative_All 0 (TupArgs 1 (SeqCons (x0) SeqNil)).
+  let j. assume Hj: j :e Lean_LeftCommutative_N 0.
+  exact (Below_S 0 (fun j => (Lean_LeftCommutative_R 0 j -> (TupArgs 1 (SeqCons (x0) SeqNil)) j :e Lean_LeftCommutative_All /\ IndIdx Lean_LeftCommutative_K Lean_LeftCommutative_T
+    Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B ((TupArgs 1 (SeqCons (x0) SeqNil)) j) =
+    Lean_LeftCommutative_Ix 0 j (TupArgs 1 (SeqCons (x0) SeqNil))) /\ (~ Lean_LeftCommutative_R 0 j -> (TupArgs 1 (SeqCons (x0) SeqNil)) j :e Lean_LeftCommutative_F 0 j (TupArgs 1 (SeqCons (x0)
+    SeqNil)))) (Below_0 (fun j => (Lean_LeftCommutative_R 0 j -> (TupArgs 1 (SeqCons (x0) SeqNil)) j :e Lean_LeftCommutative_All /\ IndIdx Lean_LeftCommutative_K Lean_LeftCommutative_T
+    Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B ((TupArgs 1 (SeqCons (x0) SeqNil)) j) =
+    Lean_LeftCommutative_Ix 0 j (TupArgs 1 (SeqCons (x0) SeqNil))) /\ (~ Lean_LeftCommutative_R 0 j -> (TupArgs 1 (SeqCons (x0) SeqNil)) j :e Lean_LeftCommutative_F 0 j (TupArgs 1 (SeqCons (x0)
+    SeqNil))))) D0) j (In_eq_r j (Lean_LeftCommutative_N 0) 1 Lean_LeftCommutative_N0 Hj).
+Qed.
+Theorem Lean_LeftCommutative_mk_typed : forall x0 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2 q1) ((P2 q0) q2))))))},
+    Lean_LeftCommutative_mk_node x0 :e Lean_LeftCommutative.
+let x0. assume H0: x0 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2 q1) ((P2 q0) q2))))))}.
+claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
+{ rewrite TupArgs_at 1 (SeqCons (x0) SeqNil) 0 (ordsuccI2 0). exact U0. }
+claim L: Lean_LeftCommutative_mk_node x0 :e IndFiber Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix
+    Lean_LeftCommutative_O Lean_LeftCommutative_B (Lean_LeftCommutative_O 0 (TupArgs 1 (SeqCons (x0) SeqNil))).
+{ exact IndNode_Fiber Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O
+    Lean_LeftCommutative_B Lean_LeftCommutative_bounded 0 (ordsuccI2 0) Lean_LeftCommutative_ar0 (TupArgs 1 (SeqCons (x0) SeqNil)) (Lean_LeftCommutative_mk_args x0 H0). }
+claim Lo: Lean_LeftCommutative_O 0 (TupArgs 1 (SeqCons (x0) SeqNil)) = 0.
+{ prove SeqAt (SeqCons (0) SeqNil) 0 = 0. rewrite Lean_LeftCommutative_O0 (TupArgs 1 (SeqCons (x0) SeqNil)). reflexivity. }
+exact In_fam_eq (IndFiber Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O
+    Lean_LeftCommutative_B) (Lean_LeftCommutative_O 0 (TupArgs 1 (SeqCons (x0) SeqNil))) 0 Lo (Lean_LeftCommutative_mk_node x0) L.
+Qed.
+Definition Lean_LeftCommutative_mk : set := (fun x0 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2 q1) ((P2 q0) q2))))))} =>
+    Lean_LeftCommutative_mk_node x0).
+Theorem Lean_LeftCommutative_mk_type : Lean_LeftCommutative_mk :e (Pi_ x0 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2 q1) ((P2 q0)
+    q2))))))}, Lean_LeftCommutative).
+exact (lam_Pi {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2 q1) ((P2 q0) q2))))))} (fun x0 => Lean_LeftCommutative) (fun x0 =>
+    Lean_LeftCommutative_mk_node x0) (fun x0 H0 => (Lean_LeftCommutative_mk_typed x0 H0))).
+Qed.
+
+Definition Lean_LeftCommutative_rec : set -> set -> set := fun h0 t => IndRec Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F
+    Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) SeqNil) k) t.
+Theorem Lean_LeftCommutative_iota0 : forall h0, forall x0 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2 q1) ((P2 q0) q2))))))},
+    Lean_LeftCommutative_rec h0 (Lean_LeftCommutative_mk_node x0) = (h0 x0).
+let h0. let x0. assume H0: x0 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2 q1) ((P2 q0) q2))))))}.
+claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
+{ rewrite TupArgs_at 1 (SeqCons (x0) SeqNil) 0 (ordsuccI2 0). exact U0. }
+prove IndRec Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B
+    (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) SeqNil) k) (IndNode Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F
+    Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B 0 (TupArgs 1 (SeqCons (x0) SeqNil))) = (h0 x0).
+rewrite IndRec_iota Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O
+    Lean_LeftCommutative_B Lean_LeftCommutative_distinct Lean_LeftCommutative_bounded Lean_LeftCommutative_arity (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) SeqNil) k) 0 (ordsuccI2 0) (TupArgs 1
+    (SeqCons (x0) SeqNil)) (Lean_LeftCommutative_mk_args x0 H0).
+prove SeqAt (SeqCons ((h0 ((TupArgs 1 (SeqCons (x0) SeqNil)) 0))) SeqNil) 0 = (h0 x0).
+rewrite SeqAt_0. rewrite T0. reflexivity.
+Qed.
+
+Theorem Lean_LeftCommutative_HM0 : forall C:set -> set, forall h0, h0 :e (Pi_ x0 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2 q1)
+    ((P2 q0) q2))))))}, (C (Lean_LeftCommutative_mk_node x0))) -> forall a :e IndArgs Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R
+    Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B Lean_LeftCommutative_All 0, forall r:set -> set, (forall j :e Lean_LeftCommutative_N 0,
+    Lean_LeftCommutative_R 0 j -> r j :e C (a j)) -> (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) SeqNil) k) 0 a (IndRes Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N
+    Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B 0 r) :e C (IndNode Lean_LeftCommutative_K Lean_LeftCommutative_T
+    Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B 0 a).
+let C h0. assume Hh: h0 :e (Pi_ x0 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2 q1) ((P2 q0) q2))))))}, (C
+    (Lean_LeftCommutative_mk_node x0))).
+let a. assume Ha: a :e IndArgs Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O
+    Lean_LeftCommutative_B Lean_LeftCommutative_All 0. let r. assume Hr: forall j :e Lean_LeftCommutative_N 0, Lean_LeftCommutative_R 0 j -> r j :e C (a j).
+claim Fi: IndFits Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O
+    Lean_LeftCommutative_B Lean_LeftCommutative_All 0 a.
+{ exact IndArgs_Fits Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O
+    Lean_LeftCommutative_B Lean_LeftCommutative_All 0 a Ha. }
+claim Pm: a :e Pi_ j :e 1, Lean_LeftCommutative_B :\/: Lean_LeftCommutative_All.
+{ exact In_fam_eq (fun X:set => Pi_ j :e X, Lean_LeftCommutative_B :\/: Lean_LeftCommutative_All) (Lean_LeftCommutative_N 0) 1 Lean_LeftCommutative_N0 a (IndArgs_Pi Lean_LeftCommutative_K
+    Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B Lean_LeftCommutative_All 0 a Ha).
+    }
+claim G0: (a 0) :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2 q1) ((P2 q0) q2))))))}.
+{ apply Fi 0 (In_eq_rs 0 (Lean_LeftCommutative_N 0) 1 Lean_LeftCommutative_N0 (ordsuccI2 0)). assume H1. assume H2. exact In_eq_r (a 0) (Lean_LeftCommutative_F 0 0 a) {z :e 1 | z :e (Pi_ q0 :e P0,
+    (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2 q1) ((P2 q0) q2))))))} (Lean_LeftCommutative_F0_0 a) (H2 Lean_LeftCommutative_nR0_0). }
+claim U0: SeqAt (SeqCons ((a 0)) SeqNil) 0 = (a 0).
+{ rewrite SeqAt_0. reflexivity. }
+claim Ea: TupArgs 1 (SeqCons ((a 0)) SeqNil) = a.
+{ exact eq_i_tra (TupArgs 1 (SeqCons ((a 0)) SeqNil)) (fun j :e 1 => a j) a (lam_ext 1 (fun j => SeqAt (SeqCons ((a 0)) SeqNil) j) (fun j => a j) (Below_S 0 (fun j => SeqAt (SeqCons ((a 0)) SeqNil) j
+    = a j) (Below_0 (fun j => SeqAt (SeqCons ((a 0)) SeqNil) j = a j)) U0)) (Pi_eta 1 (fun j => Lean_LeftCommutative_B :\/: Lean_LeftCommutative_All) a Pm). }
+claim Lv: (h0 (a 0)) :e (C (Lean_LeftCommutative_mk_node (a 0))).
+{ exact (ap_Pi {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2 q1) ((P2 q0) q2))))))} (fun x0 => (C (Lean_LeftCommutative_mk_node x0))) h0
+    (a 0) Hh G0). }
+claim Lm: (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) SeqNil) k) 0 a (IndRes Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F
+    Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B 0 r) = (h0 (a 0)).
+{ prove SeqAt (SeqCons ((h0 (a 0))) SeqNil) 0 = (h0 (a 0)). rewrite SeqAt_0. reflexivity. }
+claim Ln: (Lean_LeftCommutative_mk_node (a 0)) = IndNode Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix
+    Lean_LeftCommutative_O Lean_LeftCommutative_B 0 a.
+{ prove IndNode Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O
+    Lean_LeftCommutative_B 0 (TupArgs 1 (SeqCons ((a 0)) SeqNil)) = IndNode Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F
+    Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B 0 a. rewrite Ea. reflexivity. }
+exact In_eq_ls ((fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) SeqNil) k) 0 a (IndRes Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F
+    Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B 0 r)) (h0 (a 0)) (C (IndNode Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R
+    Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B 0 a)) Lm (In_fam_eq (fun z:set => C z) (Lean_LeftCommutative_mk_node (a 0)) (IndNode
+    Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B 0 a) Ln
+    (h0 (a 0)) Lv).
+Qed.
+Theorem Lean_LeftCommutative_rec_type : forall C:set -> set, forall h0 :e (Pi_ x0 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2 q1)
+    ((P2 q0) q2))))))}, (C (Lean_LeftCommutative_mk_node x0))), forall t :e Lean_LeftCommutative, Lean_LeftCommutative_rec h0 t :e C t.
+let C. let h0. assume Hh0.
+claim HM: forall k :e Lean_LeftCommutative_K, forall a :e IndArgs Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F
+    Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B Lean_LeftCommutative_All k, forall r:set -> set, (forall j :e Lean_LeftCommutative_N k, Lean_LeftCommutative_R k j -> r j :e
+    C (a j)) -> (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) SeqNil) k) k a (IndRes Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F
+    Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B k r) :e C (IndNode Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R
+    Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B k a).
+{ let k. assume Hk: k :e Lean_LeftCommutative_K. exact (Below_S 0 (fun k => forall a :e IndArgs Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R
+    Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B Lean_LeftCommutative_All k, forall r:set -> set, (forall j :e Lean_LeftCommutative_N k,
+    Lean_LeftCommutative_R k j -> r j :e C (a j)) -> (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) SeqNil) k) k a (IndRes Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N
+    Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B k r) :e C (IndNode Lean_LeftCommutative_K Lean_LeftCommutative_T
+    Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B k a)) (Below_0 (fun k => forall a :e IndArgs
+    Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B
+    Lean_LeftCommutative_All k, forall r:set -> set, (forall j :e Lean_LeftCommutative_N k, Lean_LeftCommutative_R k j -> r j :e C (a j)) -> (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) SeqNil) k) k
+    a (IndRes Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B
+    k r) :e C (IndNode Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O
+    Lean_LeftCommutative_B k a))) (Lean_LeftCommutative_HM0 C h0 Hh0)) k Hk. }
+let t. assume Ht: t :e Lean_LeftCommutative.
+exact IndRec_type Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O
+    Lean_LeftCommutative_B Lean_LeftCommutative_distinct Lean_LeftCommutative_bounded Lean_LeftCommutative_arity (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) SeqNil) k) C HM t (SepE1
+    Lean_LeftCommutative_All (fun x:set => IndIdx Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix
+    Lean_LeftCommutative_O Lean_LeftCommutative_B x = 0) t Ht).
+Qed.
+
+
+
+
+
+
+Theorem Lean_LeftCommutative_mk_inj0 : forall x0 y0, (Lean_LeftCommutative_mk_node x0) = (Lean_LeftCommutative_mk_node y0) -> x0 = y0.
+let x0 y0. assume H: (Lean_LeftCommutative_mk_node x0) = (Lean_LeftCommutative_mk_node y0).
+claim L: SeqAt (SeqCons (x0) SeqNil) 0 = SeqAt (SeqCons (y0) SeqNil) 0.
+{ exact IndNode_args_inj Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O
+    Lean_LeftCommutative_B Lean_LeftCommutative_distinct 0 (ordsuccI2 0) 1 (SeqCons (x0) SeqNil) (SeqCons (y0) SeqNil) H 0 (ordsuccI2 0). }
+claim Lx: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim Ly: SeqAt (SeqCons (y0) SeqNil) 0 = y0.
+{ rewrite SeqAt_0. reflexivity. }
+rewrite <- Lx. rewrite <- Ly. exact L.
+Qed.
+
+
+Definition Lean_LeftCommutative_Prop : set := {x :e 1 | exists w, w :e Lean_LeftCommutative}.
+Theorem Lean_LeftCommutative_Prop_prop : Lean_LeftCommutative_Prop :e LeanProp.
+exact PowerI 1 Lean_LeftCommutative_Prop (Sep_Subq 1 (fun x:set => exists w, w :e Lean_LeftCommutative)).
+Qed.
+Definition Lean_LeftCommutative_mk_proof : set := (fun x0 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2 q1) ((P2 q0) q2))))))} => 0).
+Theorem Lean_LeftCommutative_mk_proof_ok : forall x0 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2 q1) ((P2 q0) q2))))))}, 0 :e
+    Lean_LeftCommutative_Prop.
+let x0. assume H0: x0 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2 q1) ((P2 q0) q2))))))}. exact SepI 1 (fun x:set => exists w, w :e
+    Lean_LeftCommutative) 0 In_0_1 (fun p H => H (Lean_LeftCommutative_mk_node x0) (Lean_LeftCommutative_mk_typed x0 H0)).
+Qed.
+Theorem Lean_LeftCommutative_mk_proof_type : Lean_LeftCommutative_mk_proof :e (Pi_ x0 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2
+    q1) ((P2 q0) q2))))))}, Lean_LeftCommutative_Prop).
+exact (lam_Pi {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2 q1) ((P2 q0) q2))))))} (fun x0 => Lean_LeftCommutative_Prop) (fun x0 => 0)
+    (fun x0 H0 => (Lean_LeftCommutative_mk_proof_ok x0 H0))).
+Qed.
+Definition Lean_LeftCommutative_prec : set -> set -> set := fun h0 t => IndRec Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F
+    Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) SeqNil) k) (Eps_i (fun w:set => w :e Lean_LeftCommutative)).
+Theorem Lean_LeftCommutative_PHM0 : forall C:set -> set, forall h0, h0 :e (Pi_ x0 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2 q1)
+    ((P2 q0) q2))))))}, (C 0)) -> forall a :e IndArgs Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix
+    Lean_LeftCommutative_O Lean_LeftCommutative_B Lean_LeftCommutative_All 0, forall r:set -> set, (forall j :e Lean_LeftCommutative_N 0, Lean_LeftCommutative_R 0 j -> r j :e (fun t:set => C 0) (a
+    j)) -> (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) SeqNil) k) 0 a (IndRes Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F
+    Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B 0 r) :e (fun t:set => C 0) (IndNode Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N
+    Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B 0 a).
+let C h0. assume Hh: h0 :e (Pi_ x0 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2 q1) ((P2 q0) q2))))))}, (C 0)).
+let a. assume Ha: a :e IndArgs Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O
+    Lean_LeftCommutative_B Lean_LeftCommutative_All 0. let r. assume Hr: forall j :e Lean_LeftCommutative_N 0, Lean_LeftCommutative_R 0 j -> r j :e (fun t:set => C 0) (a j).
+claim Fi: IndFits Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O
+    Lean_LeftCommutative_B Lean_LeftCommutative_All 0 a.
+{ exact IndArgs_Fits Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O
+    Lean_LeftCommutative_B Lean_LeftCommutative_All 0 a Ha. }
+claim G0: (a 0) :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2 q1) ((P2 q0) q2))))))}.
+{ apply Fi 0 (In_eq_rs 0 (Lean_LeftCommutative_N 0) 1 Lean_LeftCommutative_N0 (ordsuccI2 0)). assume H1. assume H2. exact In_eq_r (a 0) (Lean_LeftCommutative_F 0 0 a) {z :e 1 | z :e (Pi_ q0 :e P0,
+    (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2 q1) ((P2 q0) q2))))))} (Lean_LeftCommutative_F0_0 a) (H2 Lean_LeftCommutative_nR0_0). }
+claim Lv: (h0 (a 0)) :e (C 0).
+{ exact (ap_Pi {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2 q1) ((P2 q0) q2))))))} (fun x0 => (C 0)) h0 (a 0) Hh G0). }
+claim Lm: (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) SeqNil) k) 0 a (IndRes Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F
+    Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B 0 r) = (h0 (a 0)).
+{ prove SeqAt (SeqCons ((h0 (a 0))) SeqNil) 0 = (h0 (a 0)). rewrite SeqAt_0. reflexivity. }
+exact In_eq_ls ((fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) SeqNil) k) 0 a (IndRes Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F
+    Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B 0 r)) (h0 (a 0)) (C 0) Lm Lv.
+Qed.
+Theorem Lean_LeftCommutative_prec_type : forall C:set -> set, forall h0 :e (Pi_ x0 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P1, (((Lean_Eq_Prop P1) ((P2 q0) ((P2 q1) q2))) ((P2 q1)
+    ((P2 q0) q2))))))}, (C 0)), forall t :e Lean_LeftCommutative_Prop, Lean_LeftCommutative_prec h0 t :e C t.
+let C. let h0. assume Hh0.
+claim HM: forall k :e Lean_LeftCommutative_K, forall a :e IndArgs Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F
+    Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B Lean_LeftCommutative_All k, forall r:set -> set, (forall j :e Lean_LeftCommutative_N k, Lean_LeftCommutative_R k j -> r j :e
+    (fun t:set => C 0) (a j)) -> (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) SeqNil) k) k a (IndRes Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R
+    Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B k r) :e (fun t:set => C 0) (IndNode Lean_LeftCommutative_K Lean_LeftCommutative_T
+    Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B k a).
+{ let k. assume Hk: k :e Lean_LeftCommutative_K. exact (Below_S 0 (fun k => forall a :e IndArgs Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R
+    Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B Lean_LeftCommutative_All k, forall r:set -> set, (forall j :e Lean_LeftCommutative_N k,
+    Lean_LeftCommutative_R k j -> r j :e (fun t:set => C 0) (a j)) -> (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) SeqNil) k) k a (IndRes Lean_LeftCommutative_K Lean_LeftCommutative_T
+    Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B k r) :e (fun t:set => C 0) (IndNode
+    Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B k a))
+    (Below_0 (fun k => forall a :e IndArgs Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix
+    Lean_LeftCommutative_O Lean_LeftCommutative_B Lean_LeftCommutative_All k, forall r:set -> set, (forall j :e Lean_LeftCommutative_N k, Lean_LeftCommutative_R k j -> r j :e (fun t:set => C 0) (a
+    j)) -> (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) SeqNil) k) k a (IndRes Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F
+    Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B k r) :e (fun t:set => C 0) (IndNode Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N
+    Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B k a))) (Lean_LeftCommutative_PHM0 C h0 Hh0)) k Hk. }
+let t. assume Ht: t :e Lean_LeftCommutative_Prop.
+claim Hw0: (Eps_i (fun w:set => w :e Lean_LeftCommutative)) :e Lean_LeftCommutative.
+{ exact Eps_i_ex (fun w:set => w :e Lean_LeftCommutative) (SepE2 1 (fun x:set => exists w, w :e Lean_LeftCommutative) t Ht). }
+claim Ht0: t = 0.
+{ exact SingE 0 t (Subq_1_Sing0 t (SepE1 1 (fun x:set => exists w, w :e Lean_LeftCommutative) t Ht)). }
+claim L: IndRec Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O
+    Lean_LeftCommutative_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) SeqNil) k) (Eps_i (fun w:set => w :e Lean_LeftCommutative)) :e (fun t:set => C 0) (Eps_i (fun w:set => w :e
+    Lean_LeftCommutative)).
+{ exact IndRec_type Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O
+    Lean_LeftCommutative_B Lean_LeftCommutative_distinct Lean_LeftCommutative_bounded Lean_LeftCommutative_arity (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) SeqNil) k) (fun t:set => C 0) HM (Eps_i
+    (fun w:set => w :e Lean_LeftCommutative)) (SepE1 Lean_LeftCommutative_All (fun x:set => IndIdx Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R
+    Lean_LeftCommutative_F Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B x = 0) (Eps_i (fun w:set => w :e Lean_LeftCommutative)) Hw0). }
+exact In_fam_eq (fun z:set => C z) 0 t (eq_sym_i t 0 Ht0) (IndRec Lean_LeftCommutative_K Lean_LeftCommutative_T Lean_LeftCommutative_N Lean_LeftCommutative_R Lean_LeftCommutative_F
+    Lean_LeftCommutative_Ix Lean_LeftCommutative_O Lean_LeftCommutative_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) SeqNil) k) (Eps_i (fun w:set => w :e Lean_LeftCommutative))) L.
+Qed.
+
+End Lean_LeftCommutative_Section.
+(** ---- Units, generated from its Lean declaration ---- **)
+
+Section Lean_Units_Section.
+
+Variable P0 : set.
+Variable P1 : set.
+Let Lean_Units_K : set := 1.
+Let Lean_Units_T : set -> set := fun k => k.
+Let Lean_Units_N : set -> set := fun k => SeqAt (SeqCons (4) SeqNil) k.
+Let Lean_Units_R : set -> set -> prop := fun k j => 0 :e SeqAt (SeqAt (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (0) SeqNil))))) SeqNil) k) j.
+Let Lean_Units_F : set -> set -> set -> set := fun k j a => SeqAt (SeqAt (SeqCons ((SeqCons (P0) (SeqCons (P0) (SeqCons ({z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) (a
+    0)) (a 1))) ((proj1 ((proj1 P1) 1)) 0))}) (SeqCons ({z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) (a 1)) (a 0))) ((proj1 ((proj1 P1) 1)) 0))}) SeqNil))))) SeqNil) k)
+    j.
+Let Lean_Units_Ix : set -> set -> set -> set := fun k j a => SeqAt (SeqAt (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (0) SeqNil))))) SeqNil) k) j.
+Let Lean_Units_O : set -> set -> set := fun k a => SeqAt (SeqCons (0) SeqNil) k.
+Let Lean_Units_B : set := ((((P0) :\/: (P0)) :\/: (1)) :\/: (1)).
+
+Definition Lean_Units_All : set := IndCarrier Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B.
+Definition Lean_Units : set := IndFiber Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B 0.
+
+Theorem Lean_Units_N0 : SeqAt (SeqCons (4) SeqNil) 0 = 4.
+rewrite SeqAt_0. reflexivity.
+Qed.
+Theorem Lean_Units_O0 : forall a, SeqAt (SeqCons (0) SeqNil) 0 = 0.
+let a. rewrite SeqAt_0. reflexivity.
+Qed.
+Theorem Lean_Units_nR0_0 : ~ (0 :e SeqAt (SeqAt (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (0) SeqNil))))) SeqNil) 0) 0).
+rewrite SeqAt_0. rewrite SeqAt_0. exact EmptyE 0.
+Qed.
+Theorem Lean_Units_F0_0 : forall a, SeqAt (SeqAt (SeqCons ((SeqCons (P0) (SeqCons (P0) (SeqCons ({z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) (a 0)) (a 1))) ((proj1
+    ((proj1 P1) 1)) 0))}) (SeqCons ({z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) (a 1)) (a 0))) ((proj1 ((proj1 P1) 1)) 0))}) SeqNil))))) SeqNil) 0) 0 = P0.
+let a. rewrite SeqAt_0. rewrite SeqAt_0. reflexivity.
+Qed.
+Theorem Lean_Units_nR0_1 : ~ (0 :e SeqAt (SeqAt (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (0) SeqNil))))) SeqNil) 0) 1).
+rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_0. exact EmptyE 0. } exact nat_0.
+Qed.
+Theorem Lean_Units_F0_1 : forall a, SeqAt (SeqAt (SeqCons ((SeqCons (P0) (SeqCons (P0) (SeqCons ({z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) (a 0)) (a 1))) ((proj1
+    ((proj1 P1) 1)) 0))}) (SeqCons ({z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) (a 1)) (a 0))) ((proj1 ((proj1 P1) 1)) 0))}) SeqNil))))) SeqNil) 0) 1 = P0.
+let a. rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0.
+Qed.
+Theorem Lean_Units_nR0_2 : ~ (0 :e SeqAt (SeqAt (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (0) SeqNil))))) SeqNil) 0) 2).
+rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. exact EmptyE 0. } exact nat_0. } exact (nat_ordsucc 0 nat_0).
+Qed.
+Theorem Lean_Units_F0_2 : forall a, SeqAt (SeqAt (SeqCons ((SeqCons (P0) (SeqCons (P0) (SeqCons ({z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) (a 0)) (a 1))) ((proj1
+    ((proj1 P1) 1)) 0))}) (SeqCons ({z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) (a 1)) (a 0))) ((proj1 ((proj1 P1) 1)) 0))}) SeqNil))))) SeqNil) 0) 2 = {z :e 1 | z :e
+    (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) (a 0)) (a 1))) ((proj1 ((proj1 P1) 1)) 0))}.
+let a. rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0).
+Qed.
+Theorem Lean_Units_nR0_3 : ~ (0 :e SeqAt (SeqAt (SeqCons ((SeqCons (0) (SeqCons (0) (SeqCons (0) (SeqCons (0) SeqNil))))) SeqNil) 0) 3).
+rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. exact EmptyE 0. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)).
+Qed.
+Theorem Lean_Units_F0_3 : forall a, SeqAt (SeqAt (SeqCons ((SeqCons (P0) (SeqCons (P0) (SeqCons ({z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) (a 0)) (a 1))) ((proj1
+    ((proj1 P1) 1)) 0))}) (SeqCons ({z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) (a 1)) (a 0))) ((proj1 ((proj1 P1) 1)) 0))}) SeqNil))))) SeqNil) 0) 3 = {z :e 1 | z :e
+    (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) (a 1)) (a 0))) ((proj1 ((proj1 P1) 1)) 0))}.
+let a. rewrite SeqAt_0. rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0
+    nat_0)).
+Qed.
+
+Theorem Lean_Units_bd0_0 : forall a, ~ Lean_Units_R 0 0 -> Lean_Units_F 0 0 a c= Lean_Units_B.
+let a. assume Hnr: ~ Lean_Units_R 0 0. let z. assume Hz: z :e Lean_Units_F 0 0 a.
+exact (binunionI1 (((P0) :\/: (P0)) :\/: (1)) (1) z (binunionI1 ((P0) :\/: (P0)) (1) z (binunionI1 (P0) (P0) z (In_eq_r z (Lean_Units_F 0 0 a) (P0) (Lean_Units_F0_0 a) Hz)))).
+Qed.
+Theorem Lean_Units_bd0_1 : forall a, ~ Lean_Units_R 0 1 -> Lean_Units_F 0 1 a c= Lean_Units_B.
+let a. assume Hnr: ~ Lean_Units_R 0 1. let z. assume Hz: z :e Lean_Units_F 0 1 a.
+exact (binunionI1 (((P0) :\/: (P0)) :\/: (1)) (1) z (binunionI1 ((P0) :\/: (P0)) (1) z (binunionI2 (P0) (P0) z (In_eq_r z (Lean_Units_F 0 1 a) (P0) (Lean_Units_F0_1 a) Hz)))).
+Qed.
+Theorem Lean_Units_bd0_2 : forall a, ~ Lean_Units_R 0 2 -> Lean_Units_F 0 2 a c= Lean_Units_B.
+let a. assume Hnr: ~ Lean_Units_R 0 2. let z. assume Hz: z :e Lean_Units_F 0 2 a.
+exact (binunionI1 (((P0) :\/: (P0)) :\/: (1)) (1) z (binunionI2 ((P0) :\/: (P0)) (1) z (SepE1 1 (fun z => z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) (a 0)) (a 1))) ((proj1
+    ((proj1 P1) 1)) 0))) z (In_eq_r z (Lean_Units_F 0 2 a) ({z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) (a 0)) (a 1))) ((proj1 ((proj1 P1) 1)) 0))}) (Lean_Units_F0_2
+    a) Hz)))).
+Qed.
+Theorem Lean_Units_bd0_3 : forall a, ~ Lean_Units_R 0 3 -> Lean_Units_F 0 3 a c= Lean_Units_B.
+let a. assume Hnr: ~ Lean_Units_R 0 3. let z. assume Hz: z :e Lean_Units_F 0 3 a.
+exact (binunionI2 (((P0) :\/: (P0)) :\/: (1)) (1) z (SepE1 1 (fun z => z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) (a 1)) (a 0))) ((proj1 ((proj1 P1) 1)) 0))) z (In_eq_r z
+    (Lean_Units_F 0 3 a) ({z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) (a 1)) (a 0))) ((proj1 ((proj1 P1) 1)) 0))}) (Lean_Units_F0_3 a) Hz))).
+Qed.
+Theorem Lean_Units_bd0 : forall a, forall j :e Lean_Units_N 0, ~ Lean_Units_R 0 j -> Lean_Units_F 0 j a c= Lean_Units_B.
+let a j. assume Hj: j :e Lean_Units_N 0. assume Hnr: ~ Lean_Units_R 0 j.
+exact (Below_S 3 (fun j => ~ Lean_Units_R 0 j -> Lean_Units_F 0 j a c= Lean_Units_B) (Below_S 2 (fun j => ~ Lean_Units_R 0 j -> Lean_Units_F 0 j a c= Lean_Units_B) (Below_S 1 (fun j => ~ Lean_Units_R
+    0 j -> Lean_Units_F 0 j a c= Lean_Units_B) (Below_S 0 (fun j => ~ Lean_Units_R 0 j -> Lean_Units_F 0 j a c= Lean_Units_B) (Below_0 (fun j => ~ Lean_Units_R 0 j -> Lean_Units_F 0 j a c=
+    Lean_Units_B)) (Lean_Units_bd0_0 a)) (Lean_Units_bd0_1 a)) (Lean_Units_bd0_2 a)) (Lean_Units_bd0_3 a)) j (In_eq_r j (Lean_Units_N 0) 4 Lean_Units_N0 Hj) Hnr.
+Qed.
+Theorem Lean_Units_bounded : IndBounded Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B.
+let k. assume Hk: k :e Lean_Units_K.
+exact (Below_S 0 (fun k => forall a, forall j :e Lean_Units_N k, ~ Lean_Units_R k j -> Lean_Units_F k j a c= Lean_Units_B) (Below_0 (fun k => forall a, forall j :e Lean_Units_N k, ~ Lean_Units_R k
+    j -> Lean_Units_F k j a c= Lean_Units_B)) Lean_Units_bd0) k Hk.
+Qed.
+
+Theorem Lean_Units_distinct : IndDistinct Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B.
+let k. assume Hk: k :e Lean_Units_K. let k'. assume Hk': k' :e Lean_Units_K. assume H: k = k'. exact H.
+Qed.
+
+Theorem Lean_Units_ar0 : nat_p (Lean_Units_N 0).
+prove nat_p (SeqAt (SeqCons (4) SeqNil) 0). rewrite Lean_Units_N0. exact (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))).
+Qed.
+Theorem Lean_Units_arity : forall k :e Lean_Units_K, nat_p (Lean_Units_N k).
+let k. assume Hk: k :e Lean_Units_K.
+exact (Below_S 0 (fun k => nat_p (Lean_Units_N k)) (Below_0 (fun k => nat_p (Lean_Units_N k))) Lean_Units_ar0) k Hk.
+Qed.
+
+Definition Lean_Units_mk_node : set -> set -> set -> set -> set := fun x0 x1 x2 x3 => IndNode Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B
+    0 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))).
+Theorem Lean_Units_mk_field0 : forall x0 x1 x2 x3, (proj1 (Lean_Units_mk_node x0 x1 x2 x3)) 0 = x0.
+let x0 x1 x2 x3.
+prove (proj1 (IndNode Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B 0 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    SeqNil))))))) 0 = x0.
+rewrite IndNode_fields Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B 0 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    SeqNil))))) 0.
+rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 (ordsuccI1 3 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0)))).
+rewrite SeqAt_0. reflexivity.
+Qed.
+Theorem Lean_Units_mk_field1 : forall x0 x1 x2 x3, (proj1 (Lean_Units_mk_node x0 x1 x2 x3)) 1 = x1.
+let x0 x1 x2 x3.
+prove (proj1 (IndNode Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B 0 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    SeqNil))))))) 1 = x1.
+rewrite IndNode_fields Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B 0 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    SeqNil))))) 1.
+rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 (ordsuccI1 3 1 (ordsuccI1 2 1 (ordsuccI2 1))).
+rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0.
+Qed.
+Theorem Lean_Units_mk_field2 : forall x0 x1 x2 x3, (proj1 (Lean_Units_mk_node x0 x1 x2 x3)) 2 = x2.
+let x0 x1 x2 x3.
+prove (proj1 (IndNode Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B 0 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    SeqNil))))))) 2 = x2.
+rewrite IndNode_fields Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B 0 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    SeqNil))))) 2.
+rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 (ordsuccI1 3 2 (ordsuccI2 2)).
+rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0).
+Qed.
+Theorem Lean_Units_mk_field3 : forall x0 x1 x2 x3, (proj1 (Lean_Units_mk_node x0 x1 x2 x3)) 3 = x3.
+let x0 x1 x2 x3.
+prove (proj1 (IndNode Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B 0 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    SeqNil))))))) 3 = x3.
+rewrite IndNode_fields Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B 0 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    SeqNil))))) 3.
+rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 (ordsuccI2 3).
+rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)).
+Qed.
+Theorem Lean_Units_mk_args : forall x0 :e P0, forall x1 :e P0, forall x2 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x0) x1)) ((proj1 ((proj1 P1) 1)) 0))}, forall
+    x3 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x1) x0)) ((proj1 ((proj1 P1) 1)) 0))}, (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    SeqNil))))) :e IndArgs Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B Lean_Units_All 0.
+let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e P0. let x2. assume H2: x2 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x0) x1)) ((proj1 ((proj1 P1) 1)) 0))}.
+    let x3. assume H3: x3 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x1) x0)) ((proj1 ((proj1 P1) 1)) 0))}.
+claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 = x0.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 (ordsuccI1 3 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0)))). exact U0. }
+claim U1: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 = x1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim T1: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 = x1.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 (ordsuccI1 3 1 (ordsuccI1 2 1 (ordsuccI2 1))). exact U1. }
+claim U2: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 = x2.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+claim T2: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 = x2.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 (ordsuccI1 3 2 (ordsuccI2 2)). exact U2. }
+claim U3: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 = x3.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)). }
+claim T3: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 = x3.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 (ordsuccI2 3). exact U3. }
+claim M0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 :e Lean_Units_B :\/: Lean_Units_All.
+{ exact In_eq_ls (SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0) x0 (Lean_Units_B :\/: Lean_Units_All) U0 (binunionI1 Lean_Units_B Lean_Units_All x0 (binunionI1 (((P0)
+    :\/: (P0)) :\/: (1)) (1) x0 (binunionI1 ((P0) :\/: (P0)) (1) x0 (binunionI1 (P0) (P0) x0 H0)))). }
+claim M1: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 :e Lean_Units_B :\/: Lean_Units_All.
+{ exact In_eq_ls (SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1) x1 (Lean_Units_B :\/: Lean_Units_All) U1 (binunionI1 Lean_Units_B Lean_Units_All x1 (binunionI1 (((P0)
+    :\/: (P0)) :\/: (1)) (1) x1 (binunionI1 ((P0) :\/: (P0)) (1) x1 (binunionI2 (P0) (P0) x1 H1)))). }
+claim M2: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 :e Lean_Units_B :\/: Lean_Units_All.
+{ exact In_eq_ls (SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2) x2 (Lean_Units_B :\/: Lean_Units_All) U2 (binunionI1 Lean_Units_B Lean_Units_All x2 (binunionI1 (((P0)
+    :\/: (P0)) :\/: (1)) (1) x2 (binunionI2 ((P0) :\/: (P0)) (1) x2 (SepE1 1 (fun z => z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x0) x1)) ((proj1 ((proj1 P1) 1)) 0))) x2
+    H2)))). }
+claim M3: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 :e Lean_Units_B :\/: Lean_Units_All.
+{ exact In_eq_ls (SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3) x3 (Lean_Units_B :\/: Lean_Units_All) U3 (binunionI1 Lean_Units_B Lean_Units_All x3 (binunionI2 (((P0)
+    :\/: (P0)) :\/: (1)) (1) x3 (SepE1 1 (fun z => z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x1) x0)) ((proj1 ((proj1 P1) 1)) 0))) x3 H3))). }
+claim D0: (Lean_Units_R 0 0 -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 0 :e Lean_Units_All /\ IndIdx Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R
+    Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 0) = Lean_Units_Ix 0 0 (TupArgs 4 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) (SeqCons (x3) SeqNil)))))) /\ (~ Lean_Units_R 0 0 -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 0 :e Lean_Units_F 0 0 (TupArgs 4 (SeqCons (x0)
+    (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))).
+{ apply andI.
+  - assume Hr: Lean_Units_R 0 0. apply FalseE. exact Lean_Units_nR0_0 Hr.
+  - assume Hnr: ~ Lean_Units_R 0 0. exact In_eq_ls ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 0) x0 (Lean_Units_F 0 0 (TupArgs 4 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) (SeqCons (x3) SeqNil)))))) T0 (In_eq_rs x0 (Lean_Units_F 0 0 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) P0 (Lean_Units_F0_0 (TupArgs 4 (SeqCons
+    (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) H0).
+}
+claim D1: (Lean_Units_R 0 1 -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 1 :e Lean_Units_All /\ IndIdx Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R
+    Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 1) = Lean_Units_Ix 0 1 (TupArgs 4 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) (SeqCons (x3) SeqNil)))))) /\ (~ Lean_Units_R 0 1 -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 1 :e Lean_Units_F 0 1 (TupArgs 4 (SeqCons (x0)
+    (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))).
+{ apply andI.
+  - assume Hr: Lean_Units_R 0 1. apply FalseE. exact Lean_Units_nR0_1 Hr.
+  - assume Hnr: ~ Lean_Units_R 0 1. exact In_eq_ls ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 1) x1 (Lean_Units_F 0 1 (TupArgs 4 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) (SeqCons (x3) SeqNil)))))) T1 (In_eq_rs x1 (Lean_Units_F 0 1 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) P0 (Lean_Units_F0_1 (TupArgs 4 (SeqCons
+    (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) H1).
+}
+claim D2: (Lean_Units_R 0 2 -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 2 :e Lean_Units_All /\ IndIdx Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R
+    Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 2) = Lean_Units_Ix 0 2 (TupArgs 4 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) (SeqCons (x3) SeqNil)))))) /\ (~ Lean_Units_R 0 2 -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 2 :e Lean_Units_F 0 2 (TupArgs 4 (SeqCons (x0)
+    (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))).
+{ apply andI.
+  - assume Hr: Lean_Units_R 0 2. apply FalseE. exact Lean_Units_nR0_2 Hr.
+  - assume Hnr: ~ Lean_Units_R 0 2. claim G2: x2 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    SeqNil)))) 0)) (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1))) ((proj1 ((proj1 P1) 1)) 0))}.
+    { rewrite T0. rewrite T1. exact H2. }
+    exact In_eq_ls ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 2) x2 (Lean_Units_F 0 2 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    SeqNil)))))) T2 (In_eq_rs x2 (Lean_Units_F 0 2 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0))
+    0)) 0) (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0)) (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1))) ((proj1 ((proj1 P1) 1))
+    0))} (Lean_Units_F0_2 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) G2).
+}
+claim D3: (Lean_Units_R 0 3 -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 3 :e Lean_Units_All /\ IndIdx Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R
+    Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 3) = Lean_Units_Ix 0 3 (TupArgs 4 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) (SeqCons (x3) SeqNil)))))) /\ (~ Lean_Units_R 0 3 -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 3 :e Lean_Units_F 0 3 (TupArgs 4 (SeqCons (x0)
+    (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))).
+{ apply andI.
+  - assume Hr: Lean_Units_R 0 3. apply FalseE. exact Lean_Units_nR0_3 Hr.
+  - assume Hnr: ~ Lean_Units_R 0 3. claim G3: x3 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    SeqNil)))) 1)) (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0))) ((proj1 ((proj1 P1) 1)) 0))}.
+    { rewrite T1. rewrite T0. exact H3. }
+    exact In_eq_ls ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 3) x3 (Lean_Units_F 0 3 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    SeqNil)))))) T3 (In_eq_rs x3 (Lean_Units_F 0 3 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0))
+    0)) 0) (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1)) (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0))) ((proj1 ((proj1 P1) 1))
+    0))} (Lean_Units_F0_3 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) G3).
+}
+prove (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) :e {a :e Pi_ j :e SeqAt (SeqCons (4) SeqNil) 0, Lean_Units_B :\/: Lean_Units_All | IndFits Lean_Units_K
+    Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B Lean_Units_All 0 a}.
+rewrite Lean_Units_N0.
+apply SepI (Pi_ j :e 4, Lean_Units_B :\/: Lean_Units_All) (fun a => IndFits Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B Lean_Units_All 0
+    a) (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))).
+- exact lam_Pi 4 (fun j => Lean_Units_B :\/: Lean_Units_All) (fun j => SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) j) (Below_S 3 (fun j => SeqAt (SeqCons (x0) (SeqCons
+    (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) j :e Lean_Units_B :\/: Lean_Units_All) (Below_S 2 (fun j => SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) j :e Lean_Units_B
+    :\/: Lean_Units_All) (Below_S 1 (fun j => SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) j :e Lean_Units_B :\/: Lean_Units_All) (Below_S 0 (fun j => SeqAt (SeqCons (x0)
+    (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) j :e Lean_Units_B :\/: Lean_Units_All) (Below_0 (fun j => SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) j :e
+    Lean_Units_B :\/: Lean_Units_All)) M0) M1) M2) M3).
+- prove IndFits Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B Lean_Units_All 0 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons
+    (x3) SeqNil))))).
+  let j. assume Hj: j :e Lean_Units_N 0.
+  exact (Below_S 3 (fun j => (Lean_Units_R 0 j -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j :e Lean_Units_All /\ IndIdx Lean_Units_K Lean_Units_T Lean_Units_N
+    Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j) = Lean_Units_Ix 0 j (TupArgs 4 (SeqCons (x0)
+    (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) /\ (~ Lean_Units_R 0 j -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j :e Lean_Units_F 0 j (TupArgs 4
+    (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))))) (Below_S 2 (fun j => (Lean_Units_R 0 j -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j :e
+    Lean_Units_All /\ IndIdx Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons
+    (x3) SeqNil))))) j) = Lean_Units_Ix 0 j (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) /\ (~ Lean_Units_R 0 j -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons
+    (x2) (SeqCons (x3) SeqNil))))) j :e Lean_Units_F 0 j (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))))) (Below_S 1 (fun j => (Lean_Units_R 0 j -> (TupArgs 4 (SeqCons
+    (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j :e Lean_Units_All /\ IndIdx Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B
+    ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j) = Lean_Units_Ix 0 j (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) /\ (~
+    Lean_Units_R 0 j -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j :e Lean_Units_F 0 j (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    SeqNil))))))) (Below_S 0 (fun j => (Lean_Units_R 0 j -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j :e Lean_Units_All /\ IndIdx Lean_Units_K Lean_Units_T
+    Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j) = Lean_Units_Ix 0 j (TupArgs 4
+    (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) /\ (~ Lean_Units_R 0 j -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j :e Lean_Units_F 0 j
+    (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))))) (Below_0 (fun j => (Lean_Units_R 0 j -> (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3)
+    SeqNil))))) j :e Lean_Units_All /\ IndIdx Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons
+    (x2) (SeqCons (x3) SeqNil))))) j) = Lean_Units_Ix 0 j (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))) /\ (~ Lean_Units_R 0 j -> (TupArgs 4 (SeqCons (x0) (SeqCons
+    (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) j :e Lean_Units_F 0 j (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))))) D0) D1) D2) D3) j (In_eq_r j (Lean_Units_N 0)
+    4 Lean_Units_N0 Hj).
+Qed.
+Theorem Lean_Units_mk_typed : forall x0 :e P0, forall x1 :e P0, forall x2 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x0) x1)) ((proj1 ((proj1 P1) 1)) 0))}, forall
+    x3 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x1) x0)) ((proj1 ((proj1 P1) 1)) 0))}, Lean_Units_mk_node x0 x1 x2 x3 :e Lean_Units.
+let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e P0. let x2. assume H2: x2 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x0) x1)) ((proj1 ((proj1 P1) 1)) 0))}.
+    let x3. assume H3: x3 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x1) x0)) ((proj1 ((proj1 P1) 1)) 0))}.
+claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 = x0.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 (ordsuccI1 3 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0)))). exact U0. }
+claim U1: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 = x1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim T1: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 = x1.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 (ordsuccI1 3 1 (ordsuccI1 2 1 (ordsuccI2 1))). exact U1. }
+claim U2: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 = x2.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+claim T2: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 = x2.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 (ordsuccI1 3 2 (ordsuccI2 2)). exact U2. }
+claim U3: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 = x3.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)). }
+claim T3: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 = x3.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 (ordsuccI2 3). exact U3. }
+claim L: Lean_Units_mk_node x0 x1 x2 x3 :e IndFiber Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B (Lean_Units_O 0 (TupArgs 4 (SeqCons (x0)
+    (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))))).
+{ exact IndNode_Fiber Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B Lean_Units_bounded 0 (ordsuccI2 0) Lean_Units_ar0 (TupArgs 4 (SeqCons
+    (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) (Lean_Units_mk_args x0 H0 x1 H1 x2 H2 x3 H3). }
+claim Lo: Lean_Units_O 0 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) = 0.
+{ prove SeqAt (SeqCons (0) SeqNil) 0 = 0. rewrite Lean_Units_O0 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))). reflexivity. }
+exact In_fam_eq (IndFiber Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B) (Lean_Units_O 0 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons
+    (x2) (SeqCons (x3) SeqNil)))))) 0 Lo (Lean_Units_mk_node x0 x1 x2 x3) L.
+Qed.
+Definition Lean_Units_mk : set := (fun x0 :e P0 => (fun x1 :e P0 => (fun x2 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x0) x1)) ((proj1 ((proj1 P1) 1)) 0))} =>
+    (fun x3 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x1) x0)) ((proj1 ((proj1 P1) 1)) 0))} => Lean_Units_mk_node x0 x1 x2 x3)))).
+Theorem Lean_Units_mk_type : Lean_Units_mk :e (Pi_ x0 :e P0, (Pi_ x1 :e P0, (Pi_ x2 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x0) x1)) ((proj1 ((proj1 P1) 1))
+    0))}, (Pi_ x3 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x1) x0)) ((proj1 ((proj1 P1) 1)) 0))}, Lean_Units)))).
+exact (lam_Pi P0 (fun x0 => (Pi_ x1 :e P0, (Pi_ x2 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x0) x1)) ((proj1 ((proj1 P1) 1)) 0))}, (Pi_ x3 :e {z :e 1 | z :e
+    (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x1) x0)) ((proj1 ((proj1 P1) 1)) 0))}, Lean_Units)))) (fun x0 => (fun x1 :e P0 => (fun x2 :e {z :e 1 | z :e (((Lean_Eq_Prop P0)
+    ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x0) x1)) ((proj1 ((proj1 P1) 1)) 0))} => (fun x3 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x1) x0)) ((proj1 ((proj1
+    P1) 1)) 0))} => Lean_Units_mk_node x0 x1 x2 x3)))) (fun x0 H0 => (lam_Pi P0 (fun x1 => (Pi_ x2 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x0) x1)) ((proj1
+    ((proj1 P1) 1)) 0))}, (Pi_ x3 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x1) x0)) ((proj1 ((proj1 P1) 1)) 0))}, Lean_Units))) (fun x1 => (fun x2 :e {z :e 1 | z
+    :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x0) x1)) ((proj1 ((proj1 P1) 1)) 0))} => (fun x3 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x1)
+    x0)) ((proj1 ((proj1 P1) 1)) 0))} => Lean_Units_mk_node x0 x1 x2 x3))) (fun x1 H1 => (lam_Pi {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x0) x1)) ((proj1 ((proj1
+    P1) 1)) 0))} (fun x2 => (Pi_ x3 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x1) x0)) ((proj1 ((proj1 P1) 1)) 0))}, Lean_Units)) (fun x2 => (fun x3 :e {z :e 1 |
+    z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x1) x0)) ((proj1 ((proj1 P1) 1)) 0))} => Lean_Units_mk_node x0 x1 x2 x3)) (fun x2 H2 => (lam_Pi {z :e 1 | z :e (((Lean_Eq_Prop
+    P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x1) x0)) ((proj1 ((proj1 P1) 1)) 0))} (fun x3 => Lean_Units) (fun x3 => Lean_Units_mk_node x0 x1 x2 x3) (fun x3 H3 => (Lean_Units_mk_typed x0 H0 x1 H1
+    x2 H2 x3 H3))))))))).
+Qed.
+
+Definition Lean_Units_rec : set -> set -> set := fun h0 t => IndRec Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B (fun k a r:set => SeqAt
+    (SeqCons ((h0 (a 0) (a 1) (a 2) (a 3))) SeqNil) k) t.
+Theorem Lean_Units_iota0 : forall h0, forall x0 :e P0, forall x1 :e P0, forall x2 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x0) x1)) ((proj1 ((proj1 P1) 1)) 0))},
+    forall x3 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x1) x0)) ((proj1 ((proj1 P1) 1)) 0))}, Lean_Units_rec h0 (Lean_Units_mk_node x0 x1 x2 x3) = (h0 x0 x1 x2
+    x3).
+let h0. let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e P0. let x2. assume H2: x2 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x0) x1)) ((proj1 ((proj1 P1) 1))
+    0))}. let x3. assume H3: x3 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x1) x0)) ((proj1 ((proj1 P1) 1)) 0))}.
+claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 = x0.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 (ordsuccI1 3 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0)))). exact U0. }
+claim U1: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 = x1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim T1: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 = x1.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 (ordsuccI1 3 1 (ordsuccI1 2 1 (ordsuccI2 1))). exact U1. }
+claim U2: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 = x2.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+claim T2: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 = x2.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 (ordsuccI1 3 2 (ordsuccI2 2)). exact U2. }
+claim U3: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 = x3.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)). }
+claim T3: TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 = x3.
+{ rewrite TupArgs_at 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 (ordsuccI2 3). exact U3. }
+prove IndRec Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0) (a 1) (a 2) (a 3))) SeqNil) k)
+    (IndNode Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B 0 (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))))
+    = (h0 x0 x1 x2 x3).
+rewrite IndRec_iota Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B Lean_Units_distinct Lean_Units_bounded Lean_Units_arity (fun k a r:set =>
+    SeqAt (SeqCons ((h0 (a 0) (a 1) (a 2) (a 3))) SeqNil) k) 0 (ordsuccI2 0) (TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) (Lean_Units_mk_args x0 H0 x1 H1 x2 H2 x3
+    H3).
+prove SeqAt (SeqCons ((h0 ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 0) ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 1)
+    ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 2) ((TupArgs 4 (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil))))) 3))) SeqNil) 0 = (h0 x0 x1 x2
+    x3).
+rewrite SeqAt_0. rewrite T0. rewrite T1. rewrite T2. rewrite T3. reflexivity.
+Qed.
+
+Theorem Lean_Units_HM0 : forall C:set -> set, forall h0, h0 :e (Pi_ x0 :e P0, (Pi_ x1 :e P0, (Pi_ x2 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x0) x1)) ((proj1
+    ((proj1 P1) 1)) 0))}, (Pi_ x3 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x1) x0)) ((proj1 ((proj1 P1) 1)) 0))}, (C (Lean_Units_mk_node x0 x1 x2 x3)))))) ->
+    forall a :e IndArgs Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B Lean_Units_All 0, forall r:set -> set, (forall j :e Lean_Units_N 0,
+    Lean_Units_R 0 j -> r j :e C (a j)) -> (fun k a r:set => SeqAt (SeqCons ((h0 (a 0) (a 1) (a 2) (a 3))) SeqNil) k) 0 a (IndRes Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F
+    Lean_Units_Ix Lean_Units_O Lean_Units_B 0 r) :e C (IndNode Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B 0 a).
+let C h0. assume Hh: h0 :e (Pi_ x0 :e P0, (Pi_ x1 :e P0, (Pi_ x2 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x0) x1)) ((proj1 ((proj1 P1) 1)) 0))}, (Pi_ x3 :e {z :e
+    1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x1) x0)) ((proj1 ((proj1 P1) 1)) 0))}, (C (Lean_Units_mk_node x0 x1 x2 x3)))))).
+let a. assume Ha: a :e IndArgs Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B Lean_Units_All 0. let r. assume Hr: forall j :e Lean_Units_N 0,
+    Lean_Units_R 0 j -> r j :e C (a j).
+claim Fi: IndFits Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B Lean_Units_All 0 a.
+{ exact IndArgs_Fits Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B Lean_Units_All 0 a Ha. }
+claim Pm: a :e Pi_ j :e 4, Lean_Units_B :\/: Lean_Units_All.
+{ exact In_fam_eq (fun X:set => Pi_ j :e X, Lean_Units_B :\/: Lean_Units_All) (Lean_Units_N 0) 4 Lean_Units_N0 a (IndArgs_Pi Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F
+    Lean_Units_Ix Lean_Units_O Lean_Units_B Lean_Units_All 0 a Ha). }
+claim G0: (a 0) :e P0.
+{ apply Fi 0 (In_eq_rs 0 (Lean_Units_N 0) 4 Lean_Units_N0 (ordsuccI1 3 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0))))). assume H1. assume H2. exact In_eq_r (a 0) (Lean_Units_F 0 0 a) P0
+    (Lean_Units_F0_0 a) (H2 Lean_Units_nR0_0). }
+claim G1: (a 1) :e P0.
+{ apply Fi 1 (In_eq_rs 1 (Lean_Units_N 0) 4 Lean_Units_N0 (ordsuccI1 3 1 (ordsuccI1 2 1 (ordsuccI2 1)))). assume H1. assume H2. exact In_eq_r (a 1) (Lean_Units_F 0 1 a) P0 (Lean_Units_F0_1 a) (H2
+    Lean_Units_nR0_1). }
+claim G2: (a 2) :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) (a 0)) (a 1))) ((proj1 ((proj1 P1) 1)) 0))}.
+{ apply Fi 2 (In_eq_rs 2 (Lean_Units_N 0) 4 Lean_Units_N0 (ordsuccI1 3 2 (ordsuccI2 2))). assume H1. assume H2. exact In_eq_r (a 2) (Lean_Units_F 0 2 a) {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1
+    ((proj1 ((proj1 P1) 0)) 0)) 0) (a 0)) (a 1))) ((proj1 ((proj1 P1) 1)) 0))} (Lean_Units_F0_2 a) (H2 Lean_Units_nR0_2). }
+claim G3: (a 3) :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) (a 1)) (a 0))) ((proj1 ((proj1 P1) 1)) 0))}.
+{ apply Fi 3 (In_eq_rs 3 (Lean_Units_N 0) 4 Lean_Units_N0 (ordsuccI2 3)). assume H1. assume H2. exact In_eq_r (a 3) (Lean_Units_F 0 3 a) {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1
+    P1) 0)) 0)) 0) (a 1)) (a 0))) ((proj1 ((proj1 P1) 1)) 0))} (Lean_Units_F0_3 a) (H2 Lean_Units_nR0_3). }
+claim U0: SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) SeqNil)))) 0 = (a 0).
+{ rewrite SeqAt_0. reflexivity. }
+claim U1: SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) SeqNil)))) 1 = (a 1).
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim U2: SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) SeqNil)))) 2 = (a 2).
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+claim U3: SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) SeqNil)))) 3 = (a 3).
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)). }
+claim Ea: TupArgs 4 (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) SeqNil)))) = a.
+{ exact eq_i_tra (TupArgs 4 (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) SeqNil))))) (fun j :e 4 => a j) a (lam_ext 4 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons
+    ((a 2)) (SeqCons ((a 3)) SeqNil)))) j) (fun j => a j) (Below_S 3 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) SeqNil)))) j = a j) (Below_S 2 (fun j => SeqAt
+    (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) SeqNil)))) j = a j) (Below_S 1 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) SeqNil)))) j
+    = a j) (Below_S 0 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a 3)) SeqNil)))) j = a j) (Below_0 (fun j => SeqAt (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a
+    2)) (SeqCons ((a 3)) SeqNil)))) j = a j)) U0) U1) U2) U3)) (Pi_eta 4 (fun j => Lean_Units_B :\/: Lean_Units_All) a Pm). }
+claim Lv: (h0 (a 0) (a 1) (a 2) (a 3)) :e (C (Lean_Units_mk_node (a 0) (a 1) (a 2) (a 3))).
+{ exact (ap_Pi {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) (a 1)) (a 0))) ((proj1 ((proj1 P1) 1)) 0))} (fun x3 => (C (Lean_Units_mk_node (a 0) (a 1) (a 2) x3))) (((h0
+    (a 0)) (a 1)) (a 2)) (a 3) (ap_Pi {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) (a 0)) (a 1))) ((proj1 ((proj1 P1) 1)) 0))} (fun x2 => (Pi_ x3 :e {z :e 1 | z :e
+    (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) (a 1)) (a 0))) ((proj1 ((proj1 P1) 1)) 0))}, (C (Lean_Units_mk_node (a 0) (a 1) x2 x3)))) ((h0 (a 0)) (a 1)) (a 2) (ap_Pi P0 (fun x1
+    => (Pi_ x2 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) (a 0)) x1)) ((proj1 ((proj1 P1) 1)) 0))}, (Pi_ x3 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1
+    ((proj1 P1) 0)) 0)) 0) x1) (a 0))) ((proj1 ((proj1 P1) 1)) 0))}, (C (Lean_Units_mk_node (a 0) x1 x2 x3))))) (h0 (a 0)) (a 1) (ap_Pi P0 (fun x0 => (Pi_ x1 :e P0, (Pi_ x2 :e {z :e 1 | z :e
+    (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x0) x1)) ((proj1 ((proj1 P1) 1)) 0))}, (Pi_ x3 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x1) x0))
+    ((proj1 ((proj1 P1) 1)) 0))}, (C (Lean_Units_mk_node x0 x1 x2 x3)))))) h0 (a 0) Hh G0) G1) G2) G3). }
+claim Lm: (fun k a r:set => SeqAt (SeqCons ((h0 (a 0) (a 1) (a 2) (a 3))) SeqNil) k) 0 a (IndRes Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O
+    Lean_Units_B 0 r) = (h0 (a 0) (a 1) (a 2) (a 3)).
+{ prove SeqAt (SeqCons ((h0 (a 0) (a 1) (a 2) (a 3))) SeqNil) 0 = (h0 (a 0) (a 1) (a 2) (a 3)). rewrite SeqAt_0. reflexivity. }
+claim Ln: (Lean_Units_mk_node (a 0) (a 1) (a 2) (a 3)) = IndNode Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B 0 a.
+{ prove IndNode Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B 0 (TupArgs 4 (SeqCons ((a 0)) (SeqCons ((a 1)) (SeqCons ((a 2)) (SeqCons ((a
+    3)) SeqNil))))) = IndNode Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B 0 a. rewrite Ea. reflexivity. }
+exact In_eq_ls ((fun k a r:set => SeqAt (SeqCons ((h0 (a 0) (a 1) (a 2) (a 3))) SeqNil) k) 0 a (IndRes Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O
+    Lean_Units_B 0 r)) (h0 (a 0) (a 1) (a 2) (a 3)) (C (IndNode Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B 0 a)) Lm (In_fam_eq (fun z:set
+    => C z) (Lean_Units_mk_node (a 0) (a 1) (a 2) (a 3)) (IndNode Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B 0 a) Ln (h0 (a 0) (a 1) (a
+    2) (a 3)) Lv).
+Qed.
+Theorem Lean_Units_rec_type : forall C:set -> set, forall h0 :e (Pi_ x0 :e P0, (Pi_ x1 :e P0, (Pi_ x2 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x0) x1)) ((proj1
+    ((proj1 P1) 1)) 0))}, (Pi_ x3 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x1) x0)) ((proj1 ((proj1 P1) 1)) 0))}, (C (Lean_Units_mk_node x0 x1 x2 x3)))))),
+    forall t :e Lean_Units, Lean_Units_rec h0 t :e C t.
+let C. let h0. assume Hh0.
+claim HM: forall k :e Lean_Units_K, forall a :e IndArgs Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B Lean_Units_All k, forall r:set -> set,
+    (forall j :e Lean_Units_N k, Lean_Units_R k j -> r j :e C (a j)) -> (fun k a r:set => SeqAt (SeqCons ((h0 (a 0) (a 1) (a 2) (a 3))) SeqNil) k) k a (IndRes Lean_Units_K Lean_Units_T Lean_Units_N
+    Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B k r) :e C (IndNode Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B k a).
+{ let k. assume Hk: k :e Lean_Units_K. exact (Below_S 0 (fun k => forall a :e IndArgs Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B
+    Lean_Units_All k, forall r:set -> set, (forall j :e Lean_Units_N k, Lean_Units_R k j -> r j :e C (a j)) -> (fun k a r:set => SeqAt (SeqCons ((h0 (a 0) (a 1) (a 2) (a 3))) SeqNil) k) k a (IndRes
+    Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B k r) :e C (IndNode Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F
+    Lean_Units_Ix Lean_Units_O Lean_Units_B k a)) (Below_0 (fun k => forall a :e IndArgs Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B
+    Lean_Units_All k, forall r:set -> set, (forall j :e Lean_Units_N k, Lean_Units_R k j -> r j :e C (a j)) -> (fun k a r:set => SeqAt (SeqCons ((h0 (a 0) (a 1) (a 2) (a 3))) SeqNil) k) k a (IndRes
+    Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B k r) :e C (IndNode Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F
+    Lean_Units_Ix Lean_Units_O Lean_Units_B k a))) (Lean_Units_HM0 C h0 Hh0)) k Hk. }
+let t. assume Ht: t :e Lean_Units.
+exact IndRec_type Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B Lean_Units_distinct Lean_Units_bounded Lean_Units_arity (fun k a r:set =>
+    SeqAt (SeqCons ((h0 (a 0) (a 1) (a 2) (a 3))) SeqNil) k) C HM t (SepE1 Lean_Units_All (fun x:set => IndIdx Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix
+    Lean_Units_O Lean_Units_B x = 0) t Ht).
+Qed.
+
+
+
+Theorem Lean_Units_ind : forall P:set -> prop, (forall x0 :e P0, forall x1 :e P0, forall x2 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x0) x1)) ((proj1 ((proj1 P1)
+    1)) 0))}, forall x3 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x1) x0)) ((proj1 ((proj1 P1) 1)) 0))}, P (Lean_Units_mk_node x0 x1 x2 x3)) -> forall t :e
+    Lean_Units, P t.
+let P. assume H0.
+claim M0: 0 :e (Pi_ x0 :e P0, (Pi_ x1 :e P0, (Pi_ x2 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x0) x1)) ((proj1 ((proj1 P1) 1)) 0))}, (Pi_ x3 :e {z :e 1 | z :e
+    (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x1) x0)) ((proj1 ((proj1 P1) 1)) 0))}, {z :e 1 | P (Lean_Units_mk_node x0 x1 x2 x3)})))).
+{ apply Pi_0_In. let x0. assume Hx0: x0 :e P0.
+  prove 0 :e (Pi_ x1 :e P0, (Pi_ x2 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x0) x1)) ((proj1 ((proj1 P1) 1)) 0))}, (Pi_ x3 :e {z :e 1 | z :e (((Lean_Eq_Prop P0)
+    ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x1) x0)) ((proj1 ((proj1 P1) 1)) 0))}, {z :e 1 | P (Lean_Units_mk_node x0 x1 x2 x3)}))).
+  apply Pi_0_In. let x1. assume Hx1: x1 :e P0.
+  prove 0 :e (Pi_ x2 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x0) x1)) ((proj1 ((proj1 P1) 1)) 0))}, (Pi_ x3 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1
+    ((proj1 ((proj1 P1) 0)) 0)) 0) x1) x0)) ((proj1 ((proj1 P1) 1)) 0))}, {z :e 1 | P (Lean_Units_mk_node x0 x1 x2 x3)})).
+  apply Pi_0_In. let x2. assume Hx2: x2 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x0) x1)) ((proj1 ((proj1 P1) 1)) 0))}.
+  prove 0 :e (Pi_ x3 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x1) x0)) ((proj1 ((proj1 P1) 1)) 0))}, {z :e 1 | P (Lean_Units_mk_node x0 x1 x2 x3)}).
+  apply Pi_0_In. let x3. assume Hx3: x3 :e {z :e 1 | z :e (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) x1) x0)) ((proj1 ((proj1 P1) 1)) 0))}.
+  prove 0 :e {z :e 1 | P (Lean_Units_mk_node x0 x1 x2 x3)}.
+  exact SepI 1 (fun z => P (Lean_Units_mk_node x0 x1 x2 x3)) 0 In_0_1 (H0 x0 Hx0 x1 Hx1 x2 Hx2 x3 Hx3). }
+let t. assume Ht: t :e Lean_Units.
+exact SepE2 1 (fun z => P t) (Lean_Units_rec 0 t) (Lean_Units_rec_type (fun t => {z :e 1 | P t}) 0 M0 t Ht).
+Qed.
+
+
+
+
+Theorem Lean_Units_mk_inj0 : forall x0 x1 x2 x3 y0 y1 y2 y3, (Lean_Units_mk_node x0 x1 x2 x3) = (Lean_Units_mk_node y0 y1 y2 y3) -> x0 = y0.
+let x0 x1 x2 x3 y0 y1 y2 y3. assume H: (Lean_Units_mk_node x0 x1 x2 x3) = (Lean_Units_mk_node y0 y1 y2 y3).
+claim L: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 = SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) 0.
+{ exact IndNode_args_inj Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B Lean_Units_distinct 0 (ordsuccI2 0) 4 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) (SeqCons (x3) SeqNil)))) (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) H 0 (ordsuccI1 3 0 (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0)))). }
+claim Lx: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim Ly: SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) 0 = y0.
+{ rewrite SeqAt_0. reflexivity. }
+rewrite <- Lx. rewrite <- Ly. exact L.
+Qed.
+Theorem Lean_Units_mk_inj1 : forall x0 x1 x2 x3 y0 y1 y2 y3, (Lean_Units_mk_node x0 x1 x2 x3) = (Lean_Units_mk_node y0 y1 y2 y3) -> x1 = y1.
+let x0 x1 x2 x3 y0 y1 y2 y3. assume H: (Lean_Units_mk_node x0 x1 x2 x3) = (Lean_Units_mk_node y0 y1 y2 y3).
+claim L: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 = SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) 1.
+{ exact IndNode_args_inj Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B Lean_Units_distinct 0 (ordsuccI2 0) 4 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) (SeqCons (x3) SeqNil)))) (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) H 1 (ordsuccI1 3 1 (ordsuccI1 2 1 (ordsuccI2 1))). }
+claim Lx: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 1 = x1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim Ly: SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) 1 = y1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+rewrite <- Lx. rewrite <- Ly. exact L.
+Qed.
+Theorem Lean_Units_mk_inj2 : forall x0 x1 x2 x3 y0 y1 y2 y3, (Lean_Units_mk_node x0 x1 x2 x3) = (Lean_Units_mk_node y0 y1 y2 y3) -> x2 = y2.
+let x0 x1 x2 x3 y0 y1 y2 y3. assume H: (Lean_Units_mk_node x0 x1 x2 x3) = (Lean_Units_mk_node y0 y1 y2 y3).
+claim L: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 = SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) 2.
+{ exact IndNode_args_inj Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B Lean_Units_distinct 0 (ordsuccI2 0) 4 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) (SeqCons (x3) SeqNil)))) (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) H 2 (ordsuccI1 3 2 (ordsuccI2 2)). }
+claim Lx: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 2 = x2.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+claim Ly: SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) 2 = y2.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). }
+rewrite <- Lx. rewrite <- Ly. exact L.
+Qed.
+Theorem Lean_Units_mk_inj3 : forall x0 x1 x2 x3 y0 y1 y2 y3, (Lean_Units_mk_node x0 x1 x2 x3) = (Lean_Units_mk_node y0 y1 y2 y3) -> x3 = y3.
+let x0 x1 x2 x3 y0 y1 y2 y3. assume H: (Lean_Units_mk_node x0 x1 x2 x3) = (Lean_Units_mk_node y0 y1 y2 y3).
+claim L: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 = SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) 3.
+{ exact IndNode_args_inj Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B Lean_Units_distinct 0 (ordsuccI2 0) 4 (SeqCons (x0) (SeqCons (x1)
+    (SeqCons (x2) (SeqCons (x3) SeqNil)))) (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) H 3 (ordsuccI2 3). }
+claim Lx: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) SeqNil)))) 3 = x3.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)). }
+claim Ly: SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3) SeqNil)))) 3 = y3.
+{ rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0). } exact (nat_ordsucc 1 (nat_ordsucc 0 nat_0)). }
+rewrite <- Lx. rewrite <- Ly. exact L.
+Qed.
+
+
+Theorem Lean_Units_In : forall u, nat_p u -> P0 :e LeanUniv u -> P1 :e LeanUniv u -> Lean_Units_All :e LeanUniv u.
+let u. assume Hu: nat_p u. assume HP0: P0 :e LeanUniv u. assume HP1: P1 :e LeanUniv u.
+claim Ht: TransSet (LeanUniv u).
+{ exact LeanUniv_TransSet u Hu. }
+claim Hz: ZF_closed (LeanUniv u).
+{ exact LeanUniv_ZF_closed u Hu. }
+claim H0: 0 :e LeanUniv u.
+{ exact LeanUniv_0_In u Hu. }
+claim HO0: forall V :e LeanUniv u, forall a :e (Pi_ j :e Lean_Units_N 0, V), Lean_Units_O 0 a :e LeanUniv u.
+{ let V. assume HV: V :e LeanUniv u. let a. assume Ha: a :e (Pi_ j :e Lean_Units_N 0, V).
+  claim Ham: a :e Pi_ j :e 4, V.
+  { exact In_fam_eq (fun X:set => Pi_ j :e X, V) (Lean_Units_N 0) 4 Lean_Units_N0 a Ha. }
+  prove SeqAt (SeqCons (0) SeqNil) 0 :e LeanUniv u. rewrite Lean_Units_O0 a. exact H0. }
+exact IndCarrier_In Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B (LeanUniv u) Ht Hz (omega_In_LeanUniv u Hu) (LeanUniv_nat_In u Hu 1
+    (nat_ordsucc 0 nat_0)) (ZF_binunion_closed (LeanUniv u) Hz (((P0) :\/: (P0)) :\/: (1)) (ZF_binunion_closed (LeanUniv u) Hz ((P0) :\/: (P0)) (ZF_binunion_closed (LeanUniv u) Hz (P0) HP0 (P0) HP0)
+    (1) (LeanUniv_nat_In u Hu 1 nat_1)) (1) (LeanUniv_nat_In u Hu 1 nat_1)) Lean_Units_arity (fun k Hk => LeanUniv_nat_In u Hu k (nat_p_trans 1 (nat_ordsucc 0 nat_0) k Hk)) (fun k Hk => (Below_S 0
+    (fun k => forall V :e LeanUniv u, forall a :e (Pi_ j :e Lean_Units_N k, V), Lean_Units_O k a :e LeanUniv u) (Below_0 (fun k => forall V :e LeanUniv u, forall a :e (Pi_ j :e Lean_Units_N k, V),
+    Lean_Units_O k a :e LeanUniv u)) HO0) k Hk).
+Qed.
+Theorem Lean_Units_type_In : forall u, nat_p u -> P0 :e LeanUniv u -> P1 :e LeanUniv u -> Lean_Units :e LeanUniv u.
+let u. assume Hu: nat_p u. assume HP0: P0 :e LeanUniv u. assume HP1: P1 :e LeanUniv u.
+exact IndFiber_In Lean_Units_K Lean_Units_T Lean_Units_N Lean_Units_R Lean_Units_F Lean_Units_Ix Lean_Units_O Lean_Units_B (LeanUniv u) (LeanUniv_TransSet u Hu) (LeanUniv_ZF_closed u Hu)
+    (Lean_Units_In u Hu HP0 HP1) 0.
+Qed.
+
+End Lean_Units_Section.

@@ -1,0 +1,12 @@
+(sat 1 7)
+(sat 1 7)
+(sat 1 8)
+
+!(collapse (match &self (sat 1 7) true))
+!(collapse (once (match &self (sat 1 7) true)))
+!(collapse (once (match &self (sat 1 9) true)))
+!(collapse (superpose ((once (match &self (sat 1 7) true)) outside)))
+!(collapse (superpose ((once (match &self (sat 1 9) true)) outside)))
+!(let $_ (println! prefix)
+   (once (superpose ((match &self (sat 1 7) true)
+                     (let $_ (println! forbidden) outside)))))

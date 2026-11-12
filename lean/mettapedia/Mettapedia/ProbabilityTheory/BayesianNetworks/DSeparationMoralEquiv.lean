@@ -80,7 +80,7 @@ theorem directedChain_activeTrail
         unfold IsNonCollider IsCollider; intro ⟨_, hcb⟩
         exact G.isAcyclic_no_two_cycle hacyclic b c hbc hcb
       have hAct : IsActive G Z ⟨a, b, c, hub, hbcU, hac⟩ := by
-        unfold IsActive IsBlocked; push_neg
+        unfold IsActive IsBlocked; push Not
         exact ⟨fun _ => hbNotZ, fun h => absurd h hNonCol⟩
       exact ActiveTrail.cons hub hbcU hac hAct
         (ih hC.2 (pathAvoidsInternals_tail hA) (List.cons_ne_nil _ _))
@@ -324,7 +324,7 @@ theorem backwardChain_activeTrail
         unfold IsNonCollider IsCollider; intro ⟨hab, _⟩
         exact G.isAcyclic_no_two_cycle hacyclic b a hba hab
       have hAct : IsActive G Z ⟨a, b, c, hub, hbcU, hac⟩ := by
-        unfold IsActive IsBlocked; push_neg
+        unfold IsActive IsBlocked; push Not
         exact ⟨fun _ => hbNotZ, fun h => absurd h hNonCol⟩
       exact ActiveTrail.cons hub hbcU hac hAct
         (ih hC.2 (pathAvoidsInternals_tail hA) (List.cons_ne_nil _ _))
@@ -707,7 +707,7 @@ private theorem activeWitness_of_not_dsepFull
     ∃ x ∈ X, ∃ y ∈ Y, x ≠ y ∧ HasActiveTrail G Z x y := by
   classical
   unfold DSeparatedFull at hNot
-  push_neg at hNot
+  push Not at hNot
   rcases hNot with ⟨x, hx, y, hy, hxy, hAT⟩
   exact ⟨x, hx, y, hy, hxy, hAT⟩
 

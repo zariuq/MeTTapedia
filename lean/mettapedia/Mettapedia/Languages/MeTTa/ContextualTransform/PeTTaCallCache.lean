@@ -103,6 +103,23 @@ theorem cached_call_in_context (registry : SpaceSemantics.Program) (cache : Cach
   apply written_call_in_context registry context base bindings head arguments frames ready ordinary
   simpa [lookup_exact sound head] using recognized
 
+/-- The same cache laws apply to installed code when its inventory is part
+of the actual registry key. A public-only negative entry cannot stand in for it. -/
+theorem cached_current_call_in_context (registry : SpaceSemantics.Program) (cache : Cache)
+    (context : Context) (base : Configuration) (bindings : Subst)
+    (sound : Sound (codeRegistry registry base.privateCode) cache)
+    (head : String) (arguments : List Atom) (frames : List Frame)
+    (ready : frames? bindings context = some frames)
+    (ordinary : sourceControlForm (.expression (.symbol head :: arguments)) = false)
+    (recognized : lookup (codeRegistry registry base.privateCode) cache head = true) :
+    Relation.ReflTransGen (Transition registry)
+      (atExpression base bindings (plug context (.expression (.symbol head :: arguments))))
+      {base with
+        control := .arguments bindings (.function head) arguments [] 0
+        frames := frames ++ base.frames} := by
+  apply current_written_call_in_context registry context base bindings head arguments frames ready ordinary
+  simpa [lookup_exact sound head] using recognized
+
 namespace Controls
 
 def registry (body : Atom) : SpaceSemantics.Program :=

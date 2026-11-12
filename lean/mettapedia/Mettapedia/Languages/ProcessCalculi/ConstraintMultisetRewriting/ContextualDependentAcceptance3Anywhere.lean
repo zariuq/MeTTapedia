@@ -3,7 +3,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentMillerClosurePermuted
 
 /-!
-# Acceptance for the anywhere family, on the permuted class
+# A conditional decision for the anywhere family, on the permuted class
 
 The corrected class is `PermutedNormal`: the permuted Miller class (`ContextualDependentMillerClosure.PermutedMiller`),
 with β-normal reducts of every opened side. Every intersection rule of the anywhere family **drops an equation of the
@@ -20,7 +20,11 @@ or a certified refutation, at every large joint budget.
 Unlike `ContextualDependentAcceptance3.inPlace_decided_of_cumulative` on `MillerNormal`, whose closure hypothesis the
 reorder witness refutes (`ContextualDependentMillerClosure.ReorderControls.cumulativeRound_not_keeps`), the closure
 hypothesis here survives the witness: its residual store is in the permuted class
-(`ContextualDependentMillerClosure.ReorderControls.reorder_residual_permuted`). Both hypotheses remain open.
+(`ContextualDependentMillerClosure.ReorderControls.reorder_residual_permuted`). At the tower the two hypotheses do not
+both hold: the tower is strongly normalizing, so every store has normal reducts, and the conclusion would decide
+`crossStore`, in the fragment, solvable and without principal answer
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`). For every store, runs are exact; on
+`crossStore` they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`).
 -/
 
 set_option autoImplicit false
@@ -253,11 +257,14 @@ variable (stable : ∀ {n : Nat} (fuel : Nat) (term : Tm Head n),
   Keeps (reducer fuel term) (reducer (fuel + 1) term))
 
 include stable in
-/-- **Acceptance for the anywhere family, reduced to firing on the corrected class and closure of the cumulative
+/-- **Conditional decision for the anywhere family, from firing on the corrected class and closure of the cumulative
 round.** If the anywhere round is eventually not stuck on every nonempty `PermutedNormal` store, and the cumulative
 round keeps the class at every budget, then the anywhere family decides every store of the dynamic pattern fragment
 whose opened sides have β-normal reducts, with a principal answer or a certified refutation, and the same outcome at
-every larger joint budget. -/
+every larger joint budget. At the tower's setting the conclusion fails on `crossStore`
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`), so there the hypotheses do not both hold.
+For every store, runs are exact; on `crossStore` they stop postponed
+(`UnificationWithLevels.DependentFibre.cross_postponed`). -/
 theorem anywhere_decided_of_cumulative
     (firing : ∀ {Γ : Context S.R} {problem : EquationStore (TotalTerm Γ)}, PermutedNormal problem → problem ≠ [] →
       ∃ bound, ∀ larger, bound ≤ larger →

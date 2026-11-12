@@ -16,8 +16,10 @@ site (`unrotate`).
 * **The anywhere round** is the in-place round, then this rule when that round is stuck (`anywhereRound`), with the
   **anywhere family** at the weight rank. It makes the in-place round's move wherever that round moves
   (`anywhereRound_eq_of_inPlace`, `anywhere_run_of_inPlace`).
-* It is eventually constant on every store (`anywhereRound_const`), and acceptance reduces to settling on a class as for
-  the other families (`anywhereSettledOfConst`).
+* It is eventually constant on every store (`anywhereRound_const`), so it settles on every class where it fires and
+  stays, as the other families do (`anywhereSettledOfConst`). No such class contains the fragment at the tower, which
+  holds `crossStore`, solvable and without principal answer
+  (`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`).
 -/
 
 set_option autoImplicit false

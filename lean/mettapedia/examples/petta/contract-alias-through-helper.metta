@@ -1,0 +1,11 @@
+; Entry separation alone does not describe aliases returned by a helper.
+(: Known (-> Number Tag))
+(: head-any (-> %Undefined% %Undefined%))
+(= (head-any ($head $argument)) $head)
+(: alias-one (-> $t $t))
+(= (alias-one $a)
+   (let $b (head-any $a)
+     (let $b Known $a)))
+(: launch-one (-> Number Number))
+(= (launch-one $ignored) (let $result (alias-one ($x 1)) 1))
+!(collapse (launch-one 0))

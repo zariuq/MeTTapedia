@@ -1,0 +1,477 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Frames
+
+/-!
+# Frames that carry knowledge
+
+An equation assumed in a context is a constraint held by the frame. This module makes that
+literal for any category of frames (`Interface.Frames`): a **frame with knowledge** (`Knowing`) is
+a frame together with an equivalence on its terms that contains the frame's own equivalence, and a
+morphism is an instantiation that carries what the source knows into what the target knows. Frames
+with knowledge are again a category of frames (`knowing`), so every notion of the step interface
+(solutions, asks, principal answers, effects, runs) applies to them unchanged.
+
+* **Telling is recording** (`Knowing.tell`, `settle`, `settle_principal`). The frame that has
+  learnt a store of equations is the same frame with the generated equivalence. The identity
+  instantiation into it is a principal answer of the store: every solution factors through it.
+  Every store therefore has a principal answer; no equation is refused, and none is solved by
+  choosing an instantiation.
+* **An ask is membership in what was told** (`entails_iff_known`): an equation holds at every
+  solution of a store exactly when the frame that has learnt the store knows it.
+* **The frame that has learnt a store represents its solutions** (`map_tell_iff`,
+  `map_tell_plain_iff`): the morphisms out of it into a frame without knowledge are exactly the
+  solutions of the store in the underlying frames. Frames with knowledge are to frames what
+  presentations by generators and equations are to free algebras.
+* **Typing at a frame with knowledge** (`TypedAt`) is a base judgment followed by one ask.
+  - **No transport term** (`TypedAt.along`): if the frame knows `a ≐ b`, a term typed at
+    `family a` is typed at `family b`, the same term, for every family that respects the frame's
+    knowledge.
+  - **Typings accumulate** (`TypedAt.map`, `TypedAt.told`): typing is kept along every morphism,
+    in particular when more is told. This is the refinement law read for typing.
+  - **Discharge by instantiation** (`TypedAt.discharge`): a typing derived under assumed equations
+    holds, instantiated, at every solution of them into a frame without knowledge.
+* **Types are classes of what the frame knows** (`TypeClass`). They are functorial in the frame
+  (`TypeClass.map_id`, `TypeClass.map_comp`), typing at a class is kept along morphisms
+  (`TypedClass.map`), and a term has one type class when the base judgment gives it one type
+  (`TypedClass.unique`): the frame's knowledge is exactly the freedom in the type of a term.
+* **Knowledge is not forgotten** (`Knowing.Map.solves`, `forgetting_iff`): every morphism out of a
+  frame that has learnt a store solves the store; the identity instantiation back to the frame
+  before the telling exists exactly when that frame already knew the store. A typing derived under
+  an assumed equation is therefore not a typing of the frame without it.
+
+## Controls (`Controls`)
+
+Terms in one natural-number variable, with instantiation of the variable. The frame that knows
+"the variable is zero" maps to the frame that knows nothing exactly by the instantiation of the
+variable by zero (`map_plain_iff`): an assumed equation is discharged by an instantiation that
+makes it true, and by no other map; the identity is not one (`identity_not_a_map`). For the base
+judgment "the second term bounds the first", the variable is bounded by zero at the frame that
+knows it is zero and not at the frame that knows nothing (`typed_at_zero`, `not_typed_plain`).
+
+Scope: knowledge here is an equivalence on the terms of one frame. Closure under term formers is
+asked of each family where it is used (`TypedAt.along`), not built into `Knowing`.
+-/
+
+set_option autoImplicit false
+
+namespace Mettapedia.TypeTheory.KnowledgeFrames
+
+open Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting
+open Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface
+
+universe uO uT uH
+
+variable {Obj : Type uO} {Tm : Obj → Type uT} {Hom : Obj → Obj → Type uH}
+
+/-- A frame with knowledge: a frame, and an equivalence on its terms that contains the frame's own
+equivalence. -/
+structure Knowing (X : Frames Tm Hom) where
+  frame : Obj
+  known : Tm frame → Tm frame → Prop
+  equivalence : Equivalence known
+  contains : ∀ {s t : Tm frame}, X.E s t → known s t
+
+namespace Knowing
+
+variable {X : Frames Tm Hom}
+
+/-- A morphism of frames with knowledge: an instantiation that carries what the source knows into
+what the target knows. -/
+abbrev Map (K L : Knowing X) : Type uH :=
+  {f : Hom K.frame L.frame //
+    ∀ s t : Tm K.frame, K.known s t → L.known (X.act f s) (X.act f t)}
+
+/-- The frame that knows only its own equivalence. -/
+def plain (X : Frames Tm Hom) (a : Obj) : Knowing X :=
+  ⟨a, X.E, X.equivalence a, fun related => related⟩
+
+/-- The frame after a store of equations has been told: the same frame, with the equivalence
+generated by what it knew and the store. -/
+def tell (K : Knowing X) (store : EquationStore (Tm K.frame)) : Knowing X where
+  frame := K.frame
+  known := Relation.EqvGen fun s t => K.known s t ∨ (s, t) ∈ store
+  equivalence := Relation.EqvGen.is_equivalence _
+  contains := fun related => Relation.EqvGen.rel _ _ (Or.inl (K.contains related))
+
+end Knowing
+
+/-- **Frames with knowledge are a category of frames.** -/
+def knowing (X : Frames Tm Hom) :
+    Frames (fun K : Knowing X => Tm K.frame) (fun K L : Knowing X => K.Map L) where
+  E := fun {K} s t => K.known s t
+  equivalence := fun K => K.equivalence
+  act := fun f t => X.act f.val t
+  id := fun K => ⟨X.id K.frame, fun s t related => by
+    rw [X.act_id, X.act_id]
+    exact related⟩
+  comp := fun g f => ⟨X.comp g.val f.val, fun s t related => by
+    rw [X.act_comp, X.act_comp]
+    exact g.property _ _ (f.property _ _ related)⟩
+  act_id := fun t => X.act_id t
+  act_comp := fun g f t => X.act_comp g.val f.val t
+  preserves := fun {_ _} f {_ _} related => f.property _ _ related
+
+variable {X : Frames Tm Hom}
+
+/-- The identity instantiation keeps what a frame knows. -/
+theorem known_act_id (K : Knowing X) {s t : Tm K.frame} (related : K.known s t) :
+    K.known (X.act (X.id K.frame) s) (X.act (X.id K.frame) t) := by
+  rw [X.act_id, X.act_id]
+  exact related
+
+theorem known_of_act_id (K : Knowing X) {s t : Tm K.frame}
+    (related : K.known (X.act (X.id K.frame) s) (X.act (X.id K.frame) t)) : K.known s t := by
+  rwa [X.act_id, X.act_id] at related
+
+/-- **Settlement**: the identity instantiation into the frame that has learnt the store. -/
+def settle (K : Knowing X) (store : EquationStore (Tm K.frame)) : K.Map (K.tell store) :=
+  ⟨X.id K.frame, fun _ _ related =>
+    known_act_id (K.tell store) (Relation.EqvGen.rel _ _ (Or.inl related))⟩
+
+/-- A solution of a store carries everything the telling frame knows. -/
+theorem tell_known_map {K L : Knowing X} {store : EquationStore (Tm K.frame)} (f : K.Map L)
+    (solved : (knowing X).Models f store) {s t : Tm K.frame}
+    (related : (K.tell store).known s t) : L.known (X.act f.val s) (X.act f.val t) := by
+  induction related with
+  | rel _ _ base =>
+      rcases base with old | told
+      · exact f.property _ _ old
+      · exact solved _ told
+  | refl _ => exact L.equivalence.refl _
+  | symm _ _ _ ih => exact L.equivalence.symm ih
+  | trans _ _ _ _ _ ihFirst ihSecond => exact L.equivalence.trans ihFirst ihSecond
+
+/-- **Telling is recording**: settlement is a principal answer of the store. Every solution
+factors through it, by the same instantiation. -/
+theorem settle_principal (K : Knowing X) (store : EquationStore (Tm K.frame)) :
+    (knowing X).Principal store (settle K store) where
+  sound := by
+    intro e member
+    exact known_act_id (K.tell store) (Relation.EqvGen.rel _ _ (Or.inr member))
+  factors := by
+    intro L f solved
+    refine ⟨⟨f.val, fun s t related => tell_known_map f solved related⟩, fun t => ?_⟩
+    show L.known (X.act f.val t) (X.act (X.comp f.val (X.id K.frame)) t)
+    rw [X.act_comp, X.act_id]
+    exact L.equivalence.refl _
+
+/-- Every store of equations is solvable at every frame with knowledge. -/
+theorem solvable (K : Knowing X) (store : EquationStore (Tm K.frame)) :
+    (knowing X).Solvable store :=
+  ⟨K.tell store, settle K store, (settle_principal K store).sound⟩
+
+/-- **An ask is membership in what was told**: an equation holds at every solution of a store
+exactly when the frame that has learnt the store knows it. -/
+theorem entails_iff_known (K : Knowing X) (store : EquationStore (Tm K.frame))
+    (s t : Tm K.frame) :
+    (knowing X).Entails (a := K) store
+        (fun L f => L.known (X.act f.val s) (X.act f.val t)) ↔
+      (K.tell store).known s t := by
+  constructor
+  · intro entailed
+    exact known_of_act_id (K.tell store)
+      (entailed (K.tell store) (settle K store) (settle_principal K store).sound)
+  · intro related L f solved
+    exact tell_known_map f solved related
+
+/-- Every morphism out of a frame that has learnt a store solves the store. -/
+theorem Knowing.Map.solves {K L : Knowing X} {store : EquationStore (Tm K.frame)}
+    (f : (K.tell store).Map L) :
+    ∀ e ∈ store, L.known (X.act f.val e.1) (X.act f.val e.2) :=
+  fun _ member => f.property _ _ (Relation.EqvGen.rel _ _ (Or.inr member))
+
+/-- **The frame that has learnt a store represents the store's solutions.** An instantiation of
+the underlying frames is a morphism out of the frame that has learnt the store exactly when it is
+a morphism out of the frame before the telling and solves the store. -/
+theorem map_tell_iff (K L : Knowing X) (store : EquationStore (Tm K.frame))
+    (f : Hom K.frame L.frame) :
+    (∀ s t : Tm K.frame, (K.tell store).known s t → L.known (X.act f s) (X.act f t)) ↔
+      (∀ s t : Tm K.frame, K.known s t → L.known (X.act f s) (X.act f t)) ∧
+        ∀ e ∈ store, L.known (X.act f e.1) (X.act f e.2) := by
+  constructor
+  · intro carries
+    exact ⟨fun s t related => carries s t (Relation.EqvGen.rel _ _ (Or.inl related)),
+      fun e member => carries e.1 e.2 (Relation.EqvGen.rel _ _ (Or.inr member))⟩
+  · rintro ⟨carries, solved⟩ s t related
+    exact tell_known_map (K := K) (L := L) ⟨f, carries⟩ solved related
+
+/-- At frames without knowledge: the morphisms from the frame that has learnt a store to a frame
+that knows nothing are exactly the solutions of the store in the underlying frames. -/
+theorem map_tell_plain_iff (a b : Obj) (store : EquationStore (Tm a)) (f : Hom a b) :
+    (∀ s t : Tm a, ((Knowing.plain X a).tell store).known s t →
+        (Knowing.plain X b).known (X.act f s) (X.act f t)) ↔
+      X.Models f store :=
+  (map_tell_iff (Knowing.plain X a) (Knowing.plain X b) store f).trans
+    ⟨fun both => both.2, fun solved => ⟨fun _ _ related => X.preserves f related, solved⟩⟩
+
+/-- **Knowledge is not forgotten.** An instantiation that acts as the identity leads from the
+frame that has learnt a store back to the frame before the telling exactly when that frame
+already knew the store. -/
+theorem forgetting_iff (K : Knowing X) (store : EquationStore (Tm K.frame)) :
+    (∃ f : (K.tell store).Map K, ∀ t : Tm K.frame, X.act f.val t = t) ↔
+      ∀ e ∈ store, K.known e.1 e.2 := by
+  constructor
+  · rintro ⟨f, identity⟩ e member
+    have solved := f.solves e member
+    rwa [identity, identity] at solved
+  · intro knows
+    refine ⟨⟨X.id K.frame, fun s t related => ?_⟩, fun t => X.act_id t⟩
+    have solved : (knowing X).Models ((knowing X).id K) store := by
+      intro e member
+      show K.known (X.act (X.id K.frame) e.1) (X.act (X.id K.frame) e.2)
+      rw [X.act_id, X.act_id]
+      exact knows e member
+    exact tell_known_map ((knowing X).id K) solved related
+
+/-! ## Typing at a frame with knowledge -/
+
+/-- **Typing at a frame with knowledge**: the base judgment, followed by one ask of what the
+frame knows. -/
+def TypedAt (Typed : (a : Obj) → Tm a → Tm a → Prop) (K : Knowing X) (e A : Tm K.frame) : Prop :=
+  ∃ A₀, Typed K.frame e A₀ ∧ K.known A₀ A
+
+namespace TypedAt
+
+variable {Typed : (a : Obj) → Tm a → Tm a → Prop}
+
+/-- A base typing is a typing at every knowledge of its frame. -/
+theorem of_typed {K : Knowing X} {e A : Tm K.frame} (typed : Typed K.frame e A) :
+    TypedAt Typed K e A :=
+  ⟨A, typed, K.equivalence.refl A⟩
+
+/-- **No transport term.** If the frame knows `a ≐ b`, a term typed at `family a` is typed at
+`family b`: the same term, with no coercion written. -/
+theorem along {K : Knowing X} {e a b : Tm K.frame} (family : Tm K.frame → Tm K.frame)
+    (respects : ∀ s t : Tm K.frame, K.known s t → K.known (family s) (family t))
+    (typed : TypedAt Typed K e (family a)) (known : K.known a b) :
+    TypedAt Typed K e (family b) := by
+  obtain ⟨A₀, base, converted⟩ := typed
+  exact ⟨A₀, base, K.equivalence.trans converted (respects a b known)⟩
+
+/-- **Typings are kept along morphisms**, for a base judgment that instantiation preserves. -/
+theorem map
+    (stable : ∀ {a b : Obj} (f : Hom a b) {e A : Tm a},
+      Typed a e A → Typed b (X.act f e) (X.act f A))
+    {K L : Knowing X} (f : K.Map L) {e A : Tm K.frame} (typed : TypedAt Typed K e A) :
+    TypedAt Typed L (X.act f.val e) (X.act f.val A) := by
+  obtain ⟨A₀, base, converted⟩ := typed
+  exact ⟨X.act f.val A₀, stable f.val base, f.property _ _ converted⟩
+
+/-- **Assumed equations are discharged by instantiation.** A typing derived at the frame that has
+learnt a store holds, with the term and the type instantiated, at every solution of the store into
+a frame without knowledge. Nothing is transported: the equations are made true. -/
+theorem discharge
+    (stable : ∀ {a b : Obj} (f : Hom a b) {e A : Tm a},
+      Typed a e A → Typed b (X.act f e) (X.act f A))
+    {a b : Obj} {store : EquationStore (Tm a)} (f : Hom a b) (solved : X.Models f store)
+    {e A : Tm a} (typed : TypedAt Typed ((Knowing.plain X a).tell store) e A) :
+    TypedAt Typed (Knowing.plain X b) (X.act f e) (X.act f A) :=
+  TypedAt.map (K := (Knowing.plain X a).tell store) (L := Knowing.plain X b) stable
+    ⟨f, (map_tell_plain_iff a b store f).mpr solved⟩ typed
+
+/-- **Typings accumulate**: what is typed stays typed when more is told. -/
+theorem told {K : Knowing X} {e A : Tm K.frame} (store : EquationStore (Tm K.frame))
+    (typed : TypedAt Typed K e A) : TypedAt Typed (K.tell store) e A := by
+  obtain ⟨A₀, base, converted⟩ := typed
+  exact ⟨A₀, base, Relation.EqvGen.rel _ _ (Or.inl converted)⟩
+
+end TypedAt
+
+/-! ## Types as classes of what the frame knows -/
+
+/-- **The types of a frame with knowledge**: its terms, up to what the frame knows. -/
+abbrev TypeClass (K : Knowing X) : Type uT := Quot K.known
+
+namespace TypeClass
+
+/-- Instantiation of type classes along a morphism of frames with knowledge. -/
+def map {K L : Knowing X} (f : K.Map L) : TypeClass K → TypeClass L :=
+  Quot.lift (fun A => Quot.mk L.known (X.act f.val A))
+    (fun A B related => Quot.sound (f.property A B related))
+
+/-- **Type classes are functorial in the frame**: the identity instantiation acts as the
+identity. -/
+theorem map_id (K : Knowing X) (A : TypeClass K) : map ((knowing X).id K) A = A :=
+  Quot.inductionOn A fun A => congrArg (Quot.mk K.known) (X.act_id A)
+
+/-- Instantiation along a composite is instantiation in two stages. -/
+theorem map_comp {K L M : Knowing X} (g : L.Map M) (f : K.Map L) (A : TypeClass K) :
+    map ((knowing X).comp g f) A = map g (map f A) :=
+  Quot.inductionOn A fun A => congrArg (Quot.mk M.known) (X.act_comp g.val f.val A)
+
+end TypeClass
+
+/-- Typing at a type class: typing at any of its members. -/
+def TypedClass (Typed : (a : Obj) → Tm a → Tm a → Prop) (K : Knowing X) (e : Tm K.frame)
+    (A : TypeClass K) : Prop :=
+  Quot.liftOn A (fun member => TypedAt Typed K e member) (fun _ _ related => propext
+    ⟨fun typed => typed.elim fun base both =>
+        ⟨base, both.1, K.equivalence.trans both.2 related⟩,
+      fun typed => typed.elim fun base both =>
+        ⟨base, both.1, K.equivalence.trans both.2 (K.equivalence.symm related)⟩⟩)
+
+theorem typedClass_mk {Typed : (a : Obj) → Tm a → Tm a → Prop} {K : Knowing X}
+    {e A : Tm K.frame} : TypedClass Typed K e (Quot.mk K.known A) ↔ TypedAt Typed K e A :=
+  Iff.rfl
+
+/-- **Typing at type classes is kept along morphisms**: with `TypeClass.map_id` and
+`TypeClass.map_comp`, typing is a family over the frames with knowledge that instantiation
+preserves. -/
+theorem TypedClass.map {Typed : (a : Obj) → Tm a → Tm a → Prop}
+    (stable : ∀ {a b : Obj} (f : Hom a b) {e A : Tm a},
+      Typed a e A → Typed b (X.act f e) (X.act f A))
+    {K L : Knowing X} (f : K.Map L) {e : Tm K.frame} {A : TypeClass K}
+    (typed : TypedClass Typed K e A) :
+    TypedClass Typed L (X.act f.val e) (TypeClass.map f A) := by
+  revert typed
+  exact Quot.inductionOn A fun member typed => TypedAt.map stable f (typedClass_mk.mp typed)
+
+/-- **A term has one type class**, when the base judgment gives a term one type: the frame's
+knowledge is exactly the freedom in the type of a term. -/
+theorem TypedClass.unique {Typed : (a : Obj) → Tm a → Tm a → Prop}
+    (unique : ∀ {a : Obj} {e A B : Tm a}, Typed a e A → Typed a e B → A = B)
+    {K : Knowing X} {e : Tm K.frame} {A B : TypeClass K}
+    (first : TypedClass Typed K e A) (second : TypedClass Typed K e B) : A = B := by
+  revert first second
+  exact Quot.inductionOn A fun firstMember => Quot.inductionOn B fun secondMember first second => by
+    obtain ⟨firstBase, firstTyping, firstKnown⟩ := typedClass_mk.mp first
+    obtain ⟨secondBase, secondTyping, secondKnown⟩ := typedClass_mk.mp second
+    have same := unique firstTyping secondTyping
+    subst same
+    exact Quot.sound (K.equivalence.trans (K.equivalence.symm firstKnown) secondKnown)
+
+/-! ## Controls -/
+
+namespace Controls
+
+/-- Terms in one natural-number variable, read as functions of its value. An instantiation gives
+the variable a term. -/
+def oneVariable : Frames (fun _ : Unit => Nat → Nat) (fun _ _ : Unit => Nat → Nat) where
+  E := fun {_} s t => s = t
+  equivalence := fun _ =>
+    ⟨fun _ => rfl, fun same => same.symm, fun first second => first.trans second⟩
+  act := fun f t => t ∘ f
+  id := fun _ => id
+  comp := fun g f => f ∘ g
+  act_id := fun _ => rfl
+  act_comp := fun _ _ _ => rfl
+  preserves := fun {_ _} f {_ _} same => congrArg (· ∘ f) same
+
+/-- The frame that knows the variable is zero: terms are identified when they agree there. -/
+def zeroKnown : Knowing oneVariable where
+  frame := ()
+  known := fun s t => s 0 = t 0
+  equivalence := ⟨fun _ => rfl, fun same => same.symm, fun first second => first.trans second⟩
+  contains := fun same => congrFun same 0
+
+/-- It knows that the variable is zero, and the frame without knowledge does not. -/
+theorem zeroKnown_knows : zeroKnown.known id (fun _ => 0) := rfl
+
+theorem plain_does_not_know : ¬ (Knowing.plain oneVariable ()).known id (fun _ => 0) :=
+  fun same => absurd (congrFun same 1) (by decide)
+
+/-- **An assumed equation is discharged by an instantiation that makes it true.** The frame that
+knows the variable is zero maps to the frame that knows nothing exactly by the instantiation of
+the variable by zero. -/
+theorem map_plain_iff (f : Nat → Nat) :
+    (∀ s t : Nat → Nat, zeroKnown.known s t →
+        (Knowing.plain oneVariable ()).known (oneVariable.act (a := ()) (b := ()) f s)
+          (oneVariable.act (a := ()) (b := ()) f t)) ↔
+      f = fun _ => 0 := by
+  constructor
+  · intro carries
+    have same : id ∘ f = (fun _ : Nat => 0) ∘ f := carries id (fun _ => 0) rfl
+    funext value
+    exact congrFun same value
+  · rintro rfl s t known
+    show s ∘ (fun _ : Nat => 0) = t ∘ (fun _ : Nat => 0)
+    funext _
+    exact known
+
+/-- The identity instantiation does not forget the knowledge. -/
+theorem identity_not_a_map :
+    ¬ ∀ s t : Nat → Nat, zeroKnown.known s t →
+        (Knowing.plain oneVariable ()).known (oneVariable.act (a := ()) (b := ()) id s)
+          (oneVariable.act (a := ()) (b := ()) id t) :=
+  fun carries => absurd (congrFun ((map_plain_iff id).mp carries) 1) (by decide)
+
+/-- A base judgment on these terms: the second term bounds the first at every value of the
+variable. -/
+def Bounded : (a : Unit) → (Nat → Nat) → (Nat → Nat) → Prop :=
+  fun _ term bound => ∀ value, term value ≤ bound value
+
+/-- **With the knowledge that the variable is zero, the variable is bounded by zero**: the base
+judgment bounds it by itself, and the frame knows the two bounds equal. No coercion is written. -/
+theorem typed_at_zero : TypedAt (X := oneVariable) Bounded zeroKnown id (fun _ => 0) :=
+  TypedAt.along (X := oneVariable) (K := zeroKnown) (fun bound => bound) (fun _ _ known => known)
+    (TypedAt.of_typed (X := oneVariable) (K := zeroKnown) (fun value => Nat.le_refl value))
+    zeroKnown_knows
+
+/-- Bounds are kept by instantiation. -/
+theorem bounded_stable {a b : Unit} (f : Nat → Nat) {term bound : Nat → Nat}
+    (bounded : Bounded a term bound) :
+    Bounded b (oneVariable.act (a := a) (b := b) f term) (oneVariable.act (a := a) (b := b) f bound) :=
+  fun value => bounded (f value)
+
+/-- The store that tells "the variable is zero". -/
+def tellsZero : EquationStore (Nat → Nat) := [(id, fun _ => 0)]
+
+/-- The variable is bounded by zero at the frame that has been told so. -/
+theorem typed_after_tell :
+    TypedAt (X := oneVariable) Bounded ((Knowing.plain oneVariable ()).tell tellsZero) id
+      (fun _ => 0) :=
+  ⟨id, fun value => Nat.le_refl value,
+    Relation.EqvGen.rel _ _ (Or.inr (List.mem_singleton_self _))⟩
+
+/-- **Discharged by the instantiation that makes the equation true**: at the variable put to zero,
+the bound holds in the frame that knows nothing. -/
+theorem told_then_discharged :
+    TypedAt (X := oneVariable) Bounded (Knowing.plain oneVariable ())
+      (oneVariable.act (a := ()) (b := ()) (fun _ => 0) id)
+      (oneVariable.act (a := ()) (b := ()) (fun _ => 0) (fun _ => 0)) :=
+  TypedAt.discharge (X := oneVariable) (Typed := Bounded)
+    (fun {_ _} f {_ _} bounded => bounded_stable f bounded) (a := ()) (b := ())
+    (store := tellsZero) (fun _ => 0)
+    (by
+      intro e member
+      obtain rfl := List.mem_singleton.mp member
+      rfl)
+    typed_after_tell
+
+/-- **Without the knowledge it is not.** -/
+theorem not_typed_plain :
+    ¬ TypedAt (X := oneVariable) Bounded (Knowing.plain oneVariable ()) id (fun _ => 0) := by
+  rintro ⟨bound, bounded, same⟩
+  have constant : bound = fun _ => 0 := same
+  have atOne : (1 : Nat) ≤ bound 1 := bounded 1
+  rw [constant] at atOne
+  exact absurd atOne (by decide)
+
+end Controls
+
+/-! ## Axiom audit -/
+
+#print axioms knowing
+#print axioms settle_principal
+#print axioms solvable
+#print axioms entails_iff_known
+#print axioms map_tell_iff
+#print axioms map_tell_plain_iff
+#print axioms Knowing.Map.solves
+#print axioms forgetting_iff
+#print axioms TypedAt.along
+#print axioms TypedAt.map
+#print axioms TypedAt.told
+#print axioms TypedAt.discharge
+#print axioms TypeClass.map_id
+#print axioms TypeClass.map_comp
+#print axioms TypedClass.map
+#print axioms TypedClass.unique
+#print axioms Controls.zeroKnown_knows
+#print axioms Controls.plain_does_not_know
+#print axioms Controls.map_plain_iff
+#print axioms Controls.identity_not_a_map
+#print axioms Controls.typed_at_zero
+#print axioms Controls.told_then_discharged
+#print axioms Controls.not_typed_plain
+
+end Mettapedia.TypeTheory.KnowledgeFrames

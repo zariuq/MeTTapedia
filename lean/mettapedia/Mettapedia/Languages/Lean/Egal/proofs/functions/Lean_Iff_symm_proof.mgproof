@@ -1,0 +1,3 @@
+let v_a. assume Ha: v_a :e LeanProp. let v_b. assume Hb: v_b :e LeanProp.
+assume H: 0 :e Lean_Iff_Prop v_a v_b.
+exact LeanIff_symm v_a Ha v_b Hb 0 H.

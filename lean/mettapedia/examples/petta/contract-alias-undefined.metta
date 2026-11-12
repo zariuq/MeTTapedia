@@ -1,0 +1,15 @@
+; A guarded polymorphic result and an unguarded ANY operand share a variable.
+; The three pairs compare a direct call with the same call inside an equation.
+(: Known A)
+(: Known B)
+(: alias-bind-u (-> $t %Undefined% $t))
+(= (alias-bind-u $a $b) (let $b Known $a))
+(= (entry-direct) (alias-bind-u $x $x))
+(= (entry-data) (alias-bind-u (Data $x) $x))
+(= (entry-ground) (alias-bind-u Data $x))
+!(collapse (alias-bind-u $x $x))
+!(collapse (entry-direct))
+!(collapse (alias-bind-u (Data $x) $x))
+!(collapse (entry-data))
+!(collapse (alias-bind-u Data $x))
+!(collapse (entry-ground))

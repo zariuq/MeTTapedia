@@ -31,7 +31,9 @@ trap cleanup EXIT
 
 # The target's family declarations, with the families it borrows from another
 # export (targets/TARGET.borrow: lines "SOURCE FAMILY..."), such as Nat for the
-# indices of a block exported on its own.
+# indices of a block exported on its own.  A borrowed family brings the names
+# of its constructors, not another family of the source whose name begins
+# with its own (List does not bring List.Perm).
 python3 - "$decls/families.metta" "$here/targets/$target.borrow" "$project/artifacts/lean-declarations" \
     "$work/families-in.metta" <<'EOF'
 import os, re, sys
@@ -43,22 +45,31 @@ if os.path.exists(borrow):
         if not parts:
             continue
         source, names = parts[0], set(parts[1:])
-        for fact in open(os.path.join(root, source, "families.metta")):
+        facts = open(os.path.join(root, source, "families.metta")).readlines()
+        families = {m.group(1) for m in (re.match(r"\((?:LeanFamily \(Family|LeanAdmitted) (\S+)", fact) for fact in facts) if m}
+        for fact in facts:
             m = re.match(r"\((?:LeanFamily \(Family|LeanAdmitted|EgalName) (\S+)", fact)
-            if m and (m.group(1) in names or m.group(1).rsplit(".", 1)[0] in names):
+            if m and (m.group(1) in names or
+                      (m.group(1) not in families and m.group(1).rsplit(".", 1)[0] in names)):
                 text += fact
 open(out, "w").write(text)
 EOF
 
 # The functions' definitions are opaque in the computations, which use the
 # proved equations only; checking needs no unfolding of large definitions.
+# A function that computes a type (it has a theorem NAME_type_In) stays
+# transparent: a value is typed at what the definition says.
+opaque_names() {
+  sed -n 's/^Definition \([A-Za-z0-9_]*\) .*/\1/p' "$1" |
+    grep -vxF -f <(sed -n 's/^Theorem \([A-Za-z0-9_]*\)_type_In .*/\1/p' "$1") | tr '\n' ' ' | sed 's/ $//' || true
+}
 opaque_open() {
-  local names; names=$(sed -n 's/^Definition \([A-Za-z0-9_]*\) .*/\1/p' "$1" | tr '\n' ' ' | sed 's/ $//')
+  local names; names=$(opaque_names "$1")
   [[ -n $names ]] && printf '%s\nOpaque %s.\n\n' "(** The runs use each function's proved equations, not its definition. **)" "$names"
   return 0
 }
 opaque_close() {
-  local names; names=$(sed -n 's/^Definition \([A-Za-z0-9_]*\) .*/\1/p' "$1" | tr '\n' ' ' | sed 's/ $//')
+  local names; names=$(opaque_names "$1")
   [[ -n $names ]] && printf '\nTransparent %s.\n' "$names"
   return 0
 }
@@ -183,7 +194,7 @@ for line in sys.stdin:
     line = line.rstrip("\n")
     if line.startswith("\""):
         print(json.loads(line, strict=False))
-' | sort > "$work/statements.txt"
+' | LC_ALL=C sort > "$work/statements.txt"
 python3 - "$work/statements.txt" "$here/proofs/$target" "$work/Theorems.mg" "$work/Skipped.txt" <<'PYEOF'
 import os, sys
 statements, proofs, out, skipped = sys.argv[1:5]

@@ -1,0 +1,11 @@
+(sat 1 7)
+(sat 1 7)
+(sat 1 8)
+
+!(not (== (collapse (once (match &self (sat 1 7) t))) ()))
+!(not (== (collapse (once (match &self (sat 1 9) t))) ()))
+!(collapse (once (match &self (sat 1 7) false)))
+!(not (== (collapse (once (match &self (sat 1 7) false))) ()))
+!(let $saved kept (Pair $saved (not (== (collapse (once (match &self (sat 1 7) t))) ()))))
+!(let $ignored (println! prefix) (not (== (collapse (once (match &self (sat 1 7) t))) ())))
+!(not (== (collapse (once (match &self (, (sat 1 7) (sat 1 8)) t))) ()))

@@ -1,0 +1,6 @@
+(: nested-unknown (SlotBox %Undefined%))
+(: retain-open (-> (SlotBox $t) (SlotBox $t)))
+(= (retain-open $value) $value)
+(: demand-number-box (-> (SlotBox Number) (SlotBox Number)))
+(= (demand-number-box $value) $value)
+!(demand-number-box (retain-open nested-unknown))

@@ -6,7 +6,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 
 * **The bridge** (`computation_empty`): a rule package whose constants are all rigid has no root computation at all,
   since the package's root shape puts every root step at a computing constant. So R116's closure lemmas, stated for a
-  package with no root computation (`RootComputation.empty`), hold in the general setting of acceptance, which excludes
+  package with no root computation (`RootComputation.empty`), hold in the general setting of the conditional decisions, which excludes
   root computation only through `rigid` and the root shape (`stratifiedMiller_prune_rigid`,
   `stratifiedMiller_intersect_rigid`, `stratifiedMiller_applyStore_rigid`).
 * **Twin retyping** (`stratifiedMiller_collapse`): R99's homogeneous forms keep the sides and make the annotations

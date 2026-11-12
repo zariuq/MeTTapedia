@@ -222,8 +222,11 @@ abbrev TowerEveryReads (fuel : Nat) {Θ : Context setting.R} (problem : Equation
     ContextualDependentNormalCheckingTower.head_typing_unique
     (ContextualDependentNormalizing.tower_rootComplete (fun _ => (0 : Nat))) tower_strengthening fuel problem
 
-/-- **Acceptance for the tower's every-rule family, reduced to eventual every-reading**, on every store of the dynamic
-pattern fragment. -/
+/-- **Conditional decision for the tower's every-rule family, from eventual every-reading**, on every store of the
+dynamic pattern fragment. At the tower the hypothesis fails: the conclusion would decide `crossStore`
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`,
+`ContextualDependentSweep.Witnesses.acceptance_conclusion_false`). For every store, runs are exact; on `crossStore`
+they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`). -/
 theorem tower_every_decided_of_everyReads
     (reads : ∀ {Γ : Context setting.R} {problem : EquationStore (TotalTerm Γ)}, PermutedMiller setting.levels problem →
       problem ≠ [] → ∃ bound, ∀ larger, bound ≤ larger → TowerEveryReads larger problem)

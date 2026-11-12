@@ -1,3 +1,4 @@
+import Mettapedia.Machines.Cursor.QueryCore
 import Mettapedia.Machines.Cursor.Protocol
 import Mettapedia.Machines.Cursor.FairObservation
 import Mettapedia.Machines.ReadOnlyQuery
@@ -39,24 +40,6 @@ open Mettapedia.Machines.ReadOnlyQuery (Program Reads Observation run Agrees che
 universe u
 
 variable {Key Value Answer : Type u}
-
-abbrev protocol (Key Value : Type u) :
-    IndexedPolynomial PUnit.{u + 1} (fun _ => PUnit.{u + 1}) where
-  Shape _ _ := Key
-  Position _ := Value
-  next _ _ := .unit
-
-/-- Reads are retained in reverse chronological order so a new read is a
-single list constructor. The immutable store view is supplied by the provider. -/
-def provider (store : Key → Value) : Provider (protocol Key Value) where
-  State _ _ := Reads Key Value
-  step reads key := ⟨store key, (key, store key) :: reads⟩
-
-def client : Client (P := protocol Key Value) (Return := fun _ _ => Answer) where
-  V _ _ := Program Key Value Answer
-  str := fun _ _ => ↾(fun program => match program with
-    | .pure answer => ⟨.inl answer, fun impossible => nomatch impossible⟩
-    | .read key next => ⟨.inr key, next⟩)
 
 def readCharge (store : Key → Value) : Charge (provider store) := fun _ _ => 1
 
@@ -5473,48 +5456,6 @@ open Mettapedia.Machines.ReadOnlyQuery (Program Reads Observation Agrees checkRe
 universe u
 variable {Key Value Answer Context : Type u}
 
-/-- A real sampling operation returns its actual reply and next context. -/
-def provider (sample : Context → Key → Value × Context) :
-    Cursor.Provider (protocol Key Value) where
-  State _ _ := Context × Reads Key Value
-  step saved key :=
-    let observed := sample saved.1 key
-    ⟨observed.1, observed.2, (key, observed.1) :: saved.2⟩
-
-def charge (sample : Context → Key → Value × Context) (price : Key → Nat) :
-    Cursor.Charge (provider sample) := fun _ key => price key
-
-def fixedCharge (store : Key → Value) (price : Key → Nat) :
-    Cursor.Charge (ReadOnlyQuery.provider store) := fun _ key => price key
-
-/-- This is the existing cursor, with the existing adaptive query client. -/
-def advance (sample : Context → Key → Value × Context) (price : Key → Nat)
-    (fuel : Nat) (program : Program Key Value Answer) (context : Context)
-    (reads : Reads Key Value) :=
-  Cursor.advance (provider sample) client (charge sample price) (base := PUnit.unit) fuel
-    ⟨PUnit.unit, program, context, reads⟩
-
-def fixedAdvance (store : Key → Value) (price : Key → Nat) (fuel : Nat)
-    (program : Program Key Value Answer) (reads : Reads Key Value) :=
-  Cursor.advance (ReadOnlyQuery.provider store) client (fixedCharge store price) (base := PUnit.unit) fuel
-    ⟨PUnit.unit, program, reads⟩
-
-def savedState (sample : Context → Key → Value × Context) :
-    Cursor.Outcome (provider sample) (client (Answer := Answer)) PUnit.unit →
-      Context × Reads Key Value
-  | .paused ⟨_, _, saved⟩ => saved
-  | .done ⟨_, _, saved⟩ => saved
-
-def recorded (sample : Context → Key → Value × Context)
-    (outcome : Cursor.Outcome (provider sample) (client (Answer := Answer)) PUnit.unit) :
-    Reads Key Value := (savedState sample outcome).2.reverse
-
-def completed? (sample : Context → Key → Value × Context) :
-    Cursor.Outcome (provider sample) (client (Answer := Answer)) PUnit.unit →
-      Option (Observation Key Value Answer)
-  | .paused _ => none
-  | .done ⟨_, answer, saved⟩ => some ⟨answer, saved.2.reverse⟩
-
 /-- The existing state projection keeps the whole client residual/status.
 It asserts no step law on contexts not visited by this execution. -/
 def project (sample : Context → Key → Value × Context) (store : Key → Value)
@@ -5684,14 +5625,6 @@ theorem earned_completion_correct (sample : Context → Key → Value × Context
     exact finished
   rw [fixed_outcome] at completed
   exact ReadOnlyQuery.completed_correct store fuel program observation completed
-
-def resume (sample : Context → Key → Value × Context) (price : Key → Nat) (fuel : Nat)
-    (previous : Nat × Cursor.Outcome (provider sample) (client (Answer := Answer)) PUnit.unit) :=
-  Cursor.resume (provider sample) client (charge sample price) fuel previous
-
-def fixedResume (store : Key → Value) (price : Key → Nat) (fuel : Nat)
-    (previous : Nat × Cursor.Outcome (ReadOnlyQuery.provider store) (client (Answer := Answer)) PUnit.unit) :=
-  Cursor.resume (ReadOnlyQuery.provider store) client (fixedCharge store price) fuel previous
 
 theorem resume_zero (sample : Context → Key → Value × Context) (price : Key → Nat)
     (previous : Nat × Cursor.Outcome (provider sample) (client (Answer := Answer)) PUnit.unit) :

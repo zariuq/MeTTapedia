@@ -600,11 +600,14 @@ theorem swap_observation (F : Frame S) (first second : MetaArity S) (t : Observa
     _ = instantiateObservation (incl (extend F second) first) (instantiateObservation (incl F second) t) :=
         (instantiateObservation_comp _ _ t).symm
 
-/-- **The diamond of two helper firings closes only up to renaming**: the two composite results hold
-their two helpers in the two orders, and swapping them is an isomorphism of the results. -/
-theorem helper_closes : (helperTransport (S := S) (O := O)).Closes := by
-  intro s f g first second _ _
-  refine ⟨⟨swapIso s.frame f.helper g.helper, ?_, Equiv.refl O, ?_⟩⟩
+/-- The canonical result isomorphism swaps the two fresh declaration blocks
+and preserves physical occurrence identities. -/
+def helperSquareIso {s : State S O} {f g : Firing s}
+    (first : helperStep.Admits f) (second : helperStep.Admits g) :
+    helperStep.StateIso
+      (g.move (t := f.after) (helperStep.along f first)).after
+      (f.move (t := g.after) (helperStep.along g second)).after := by
+  refine ⟨swapIso s.frame f.helper g.helper, ?_, Equiv.refl O, ?_⟩
   · show (Frames.contextual S).Equivalent
         ((Frames.contextual S).applyStore (swap s.frame f.helper g.helper)
           (g.move (t := f.after) (helperStep.along f first)).information)
@@ -676,6 +679,11 @@ theorem helper_closes : (helperTransport (S := S) (O := O)).Closes := by
     simp only [Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits.mem_fire]
     simp [Firing.selection, Selection.commit]
     tauto
+
+/-- Both admitted orders close through the canonical declaration swap. -/
+theorem helper_closes : (helperTransport (S := S) (O := O)).Closes := by
+  intro _s _f _g first second _afterFirst _afterSecond
+  exact ⟨helperSquareIso first second⟩
 
 /-- The residual's guards are asked after the other firing exactly when the knowledge asks them. -/
 theorem residual_asks_iff {s : State S O} (f : Firing s) (first : helperStep.Admits f)

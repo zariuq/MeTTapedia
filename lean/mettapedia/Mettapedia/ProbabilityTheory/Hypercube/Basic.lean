@@ -564,20 +564,19 @@ structure ProbabilityMorphism (V W : ProbabilityVertex) where
     V.precision = .precise → W.precision = .precise
 
 /-- K&S is a specialization of Cox (same vertex, different derivation). -/
-def ks_specializes_cox : ProbabilityMorphism knuthSkilling cox where
-  respects_commutativity := fun _ => rfl
-  respects_precision := fun _ => rfl
+theorem ks_specializes_cox : ProbabilityMorphism knuthSkilling cox :=
+  ⟨fun _ => rfl, fun _ => rfl⟩
 
 /-- Classical probability embeds into D-S (as Bayesian mass functions).
     Note: This morphism goes FROM D-S TO Kolmogorov (specialization).
     Every D-S belief function with Bayesian mass function IS a probability. -/
-def bayesian_ds_is_classical : ProbabilityMorphism dempsterShafer kolmogorov where
-  respects_commutativity := fun _ => rfl
-  respects_precision := fun h => by
+theorem bayesian_ds_is_classical : ProbabilityMorphism dempsterShafer kolmogorov := by
+  refine ⟨fun _ => rfl, ?_⟩
+  intro h
     -- D-S is imprecise, so hypothesis h contradicts dempsterShafer.precision = .imprecise
-    simp only [dempsterShafer] at h
+  simp only [dempsterShafer] at h
     -- h : PrecisionAxis.imprecise = PrecisionAxis.precise (which is False)
-    exact absurd h (by decide)
+  exact absurd h (by decide)
 
 /-!
 ## §4: Operational Semantics as Rewrite Rules
@@ -1341,9 +1340,8 @@ theorem morphism_specialization {V W : ProbabilityVertex}
     | inr hWp => exact hWp
 
 /-- The identity morphism exists for any vertex. -/
-def identityMorphism (V : ProbabilityVertex) : ProbabilityMorphism V V where
-  respects_commutativity := id
-  respects_precision := id
+theorem identityMorphism (V : ProbabilityVertex) : ProbabilityMorphism V V :=
+  ⟨id, id⟩
 
 /-- The most general vertex is more general than all named theories. -/
 theorem mostGeneral_dominates :

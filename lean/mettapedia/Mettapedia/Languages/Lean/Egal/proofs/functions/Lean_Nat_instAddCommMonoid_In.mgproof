@@ -1,8 +1,0 @@
-claim MZero: forall x :e Lean_Nat,
-  Lean_Nat_mul x Lean_Nat_zero_node = Lean_Nat_zero_node.
-{ let x. assume Hx: x :e Lean_Nat.
-  rewrite <- LeanNum_0. exact Lean_Nat_mul_eq_1 x Hx. }
-prove Lean_AddCommMonoidOf Lean_Nat (Lean_BinaryMap Lean_Nat Lean_Nat Lean_Nat_add)
-  Lean_Nat_zero_node (Lean_BinaryMap Lean_Nat Lean_Nat Lean_Nat_mul) :e Lean_AddCommMonoid Lean_Nat.
-exact NatAlgebra_additive Lean_Nat_add Lean_Nat_add_In Lean_Nat_add_eq_1 Lean_Nat_add_eq_2
-  Lean_Nat_mul Lean_Nat_mul_In MZero Lean_Nat_mul_eq_2.

@@ -193,7 +193,7 @@ lemma condIndep_mul_cond_core
     exact screening_const_eq_of_ae_chain (bn := bn) (μ := μ)
       (hACconst_ae := hACconst_ae) (hcondR := hcondR)
       (hAconst_ae := hAconst_ae) (hCconst_ae := hCconst_ae) hB0
-  haveI : SigmaFinite (μ.trim hm') :=
+  have : SigmaFinite (μ.trim hm') :=
     sigmaFinite_trim_of_le (bn := bn) (μ := μ) (m' := m') hm'
   have hAint :
       μ.real (sA ∩ sB) = (μ⟦sA | m'⟧) ω0 * μ.real sB := by

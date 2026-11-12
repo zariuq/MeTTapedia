@@ -1,0 +1,14 @@
+let v_n. assume Hn: v_n :e Lean_Nat.
+let v_P. assume HP: v_P :e (Pi_ v_k :e Lean_Nat, (Pi_ ux :e (Lean_Nat_le_Prop (Lean_Nat_succ_node v_k) (Lean_Nat_add v_n (LeanNum 1))), LeanProp)).
+assume Hnot: 0 :e (Lean_Not (v_P v_n 0)).
+assume Hall: 0 :e (Pi_ v_x4 :e Lean_Nat, (Pi_ v_h :e (Lean_Nat_le_Prop (Lean_Nat_succ_node v_x4) (Lean_Nat_add v_n (LeanNum 1))), (v_P v_x4 0))).
+apply FalseE.
+claim Hle: 0 :e Lean_Nat_le_Prop (Lean_Nat_succ_node v_n) (Lean_Nat_add v_n (LeanNum 1)).
+{ rewrite LeanNat_add_one v_n Hn. exact Lean_Nat_le_refl_proof_ok (Lean_Nat_succ_node v_n). }
+claim A0: 0 v_n :e (Pi_ v_h :e (Lean_Nat_le_Prop (Lean_Nat_succ_node v_n) (Lean_Nat_add v_n (LeanNum 1))), (v_P v_n 0)).
+{ exact ap_Pi Lean_Nat (fun v_x4 => (Pi_ v_h :e (Lean_Nat_le_Prop (Lean_Nat_succ_node v_x4) (Lean_Nat_add v_n (LeanNum 1))), (v_P v_x4 0))) 0 v_n Hall Hn. }
+claim A1: 0 v_n 0 :e (v_P v_n 0).
+{ exact ap_Pi (Lean_Nat_le_Prop (Lean_Nat_succ_node v_n) (Lean_Nat_add v_n (LeanNum 1))) (fun _ => (v_P v_n 0)) (0 v_n) 0 A0 Hle. }
+claim N0: 0 :e (Pi_ ux :e (v_P v_n 0), Lean_False_Prop).
+{ rewrite <- Lean_Not_unfold (v_P v_n 0). exact Hnot. }
+exact Lean_False_Prop_empty (0 (0 v_n 0)) (ap_Pi (v_P v_n 0) (fun _ => Lean_False_Prop) 0 (0 v_n 0) N0 A1).

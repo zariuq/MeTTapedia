@@ -15,8 +15,9 @@ open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 open Spec.Eval Spec.Eval.Completed Spec.Type.Presentation
 open HECollectionFoldEmission HECollectionFoldReadback HECollectionFoldNativeEntry
 
-def operation (mark : Entry.Status) (left right : String) : Entry.Value :=
-  .expression mark [.symbol CollectionStdlibSource.appendName, .var left, .var right]
+def operation (mark : Entry.Status) (left right : String)
+    (operatorName : String := CollectionStdlibSource.appendName) : Entry.Value :=
+  .expression mark [.symbol operatorName, .var left, .var right]
 
 /-- A local source call at the saved world, including its actual publication
 status. The relation does not replace snapshot restore or compute a fold. -/

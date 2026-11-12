@@ -1,0 +1,18 @@
+let A p. assume Hp: p :e (Pi_ ux :e A, LeanProp). let inst. assume Hinst: inst :e (Pi_ x :e A, (Lean_Decidable (p x))).
+let s. assume Hs: s :e Lean_Quot (Lean_List A) (LeanPermRel A).
+assume H: 0 :e Lean_Multiset_Nodup A s.
+claim Hq: (fun b :e A => (Lean_Decidable_decide (p b) (inst b))) :e (Pi_ ux :e A, Lean_Bool).
+{ exact lam_Pi A (fun _ => Lean_Bool) (fun b => Lean_Decidable_decide (p b) (inst b))
+    (fun b Hb => Lean_Decidable_decide_In (p b) (ap_Pi A (fun _ => LeanProp) p b Hp Hb)
+      (inst b) (ap_Pi A (fun x => Lean_Decidable (p x)) inst b Hinst Hb)). }
+apply Lean_Quot_rep (Lean_List A) (LeanPermRel A) s Hs.
+let l. assume Hl: l :e Lean_List A. assume E: s = Lean_Quot_mk (Lean_List A) (LeanPermRel A) l.
+claim E2: s = Lean_Multiset_ofList A l. { exact E. }
+claim H2: 0 :e Lean_List_Pairwise_Prop A (LeanListNe A) l.
+{ rewrite <- LeanMultisetNodup_mk A l Hl. rewrite <- E2. exact H. }
+rewrite E2.
+rewrite LeanMultisetFilter_mk A p Hp inst Hinst l Hl.
+rewrite LeanMultisetNodup_mk A (Lean_List_filter A (fun b :e A => (Lean_Decidable_decide (p b) (inst b))) l)
+  (Lean_List_filter_In A (fun b :e A => (Lean_Decidable_decide (p b) (inst b))) Hq l Hl).
+exact LeanListFilter_pairwise A (LeanListNe A) (LeanListNe_typed A)
+  (fun b :e A => (Lean_Decidable_decide (p b) (inst b))) Hq l Hl H2.

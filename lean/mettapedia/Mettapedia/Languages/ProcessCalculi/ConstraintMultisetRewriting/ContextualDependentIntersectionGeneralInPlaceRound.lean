@@ -7,8 +7,10 @@ The in-place intersection rule reads the newest declaration, the strengthening o
 intersection rule on the strengthened equation, at each depth. All of these keep their results at larger budgets, so the
 rule is **eventually constant on every store** (`inPlaceIntersectRule_const`), and so is the round
 (`inPlaceRound_const`). The round makes the older round's move wherever that round moves
-(`inPlaceRound_eq_of_older`, `inPlace_run_of_older`), and acceptance reduces to settling on the Miller class for this
-family as for the others (`inPlace_decided_of_settling_miller`).
+(`inPlaceRound_eq_of_older`, `inPlace_run_of_older`), and a conditional decision follows from settling on the Miller
+class for this family as for the others (`inPlace_decided_of_settling_miller`). At the tower its hypothesis fails: the
+conclusion would decide `crossStore`, solvable and without principal answer
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`).
 -/
 
 set_option autoImplicit false
@@ -279,7 +281,10 @@ noncomputable def inPlaceSettledOfConst (holds : {Γ : Context S.R} → Equation
     reducer root normalizes certifyNormal headTypingUnique rootComplete stable problem) holds eventual
 
 include stable in
-/-- **Acceptance for the in-place family, reduced to settling on the Miller class.** -/
+/-- **Conditional decision for the in-place family, from settling on the Miller class.** At the tower's setting the
+conclusion fails on `crossStore` (`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`), so there
+the hypothesis fails. For every store, runs are exact; on `crossStore` they stop postponed
+(`UnificationWithLevels.DependentFibre.cross_postponed`). -/
 theorem inPlace_decided_of_settling_miller
     (eventual : ∀ {Γ : Context S.R} {problem : EquationStore (TotalTerm Γ)},
       ContextualDependentShortClosure.StratifiedMiller S.levels problem →

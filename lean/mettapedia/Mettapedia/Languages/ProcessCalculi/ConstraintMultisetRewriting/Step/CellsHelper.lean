@@ -11,6 +11,8 @@ The square of two helper firings `f` and `g` closes by swapping their two helper
   `f` and then `g`, and carried along the swap, is the same firing read after `g` and then `f`. Hence
   the cube law holds for every closing choice whose frame isomorphisms are the swaps and whose
   occurrence renamings are the identity (`Helpers.helperCubeLaw`).
+  The concrete operation `Helpers.helperClosing` retains these swap witnesses;
+  `Helpers.helperClosing_cube` instantiates the cube law for that operation.
 * **The closing swaps cohere** (`Helpers.swap_swap`, `Helpers.swap_braid`): a swap is its own inverse,
   and the two ways of reversing three helpers by swaps of neighbours agree. These are the relations
   of the symmetric group on the helpers; they hold because fresh helpers are allocated by coproduct
@@ -104,6 +106,13 @@ theorem helperCubeLaw (close : (helperTransport (S := S) (O := O)).Closing)
   dsimp only at framed renamed
   subst framed renamed
   exact cube
+
+/-- A concrete closing operation, retaining the declaration-swap witness. -/
+def helperClosing : (helperTransport (S := S) (O := O)).Closing :=
+  fun first second _afterFirst _afterSecond => helperSquareIso first second
+
+theorem helperClosing_cube : (helperTransport (S := S) (O := O)).CubeLaw helperClosing :=
+  helperCubeLaw helperClosing (by intros; rfl) (by intros; rfl)
 
 /-- **The two ways of reversing three helpers by swaps of neighbours agree.** -/
 theorem swap_braid (F : Frame S) (a b c : MetaArity S) :

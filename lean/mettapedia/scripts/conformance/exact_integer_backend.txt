@@ -1,0 +1,214 @@
+Exact natural/integer backend integration
+========================================
+
+Use one integer operation contract across dialects; retain each dialect's
+surface and observation policy. These are separate layers, already expressed
+by ArithmeticExtension's coGSLT theoryLayer and surfaceLayer and by
+IntegerRepresentationExtension's representationLayer.
+
+The semantic operations are add, sub, mul, tquot, fquot, trem and frem.
+Quotient and remainder conventions are operation identities. Do not infer
+them from a spelling such as / or %. Exact integers, natural numbers,
+machine words, rationals and floats have different domains and laws.
+
+Theory entry points
+-------------------
+
+Mettapedia/OSLF/NativeTypes/Instances/Natural/ExactArithmetic.lean:
+  evaluate?_admission and exact_iff connect the selected natural requests
+  to the integer operation family. Subtraction here requires second <= first;
+  it is not truncated Nat subtraction. readNatural?_iff rejects negative or
+  noninteger payloads. representedAdd is the independent initial-algebra fold.
+
+Mettapedia/GSLT/LanguageDef/IntegerRepresentationExternalCall.lean:
+  A FastPath is a guarded conversion with a proved decoded result.
+  A Provider computes on its own carrier and returns Except Fault Carrier.
+  SuccessfulSound specifies values independently of availability.
+  FallbackAvailable is required only on defined requests refused by FastPath.
+  externalCallAdequacy derives the existing arithmetic hosting contract.
+  signedFastPath uses actual Lean Int64 addition with range admission.
+
+Mettapedia/GSLT/LanguageDef/IntegerRepresentationRetainedCall.lean:
+  Retained.add reuses Provider with Int64-or-storage operands. Existing
+  storage goes directly to the provider; only words entering fallback are
+  encoded. add_storage states this operational equation explicitly.
+  add_sound and addMany_sound preserve decoded values across successful
+  calls. add_available requires availability on the actual retained operands.
+  Availability only on freshly encoded operands does not suffice.
+
+Mettapedia/GSLT/LanguageDef/IntegerRepresentationPublication.lean:
+  Publication reuses GuardedTransfer to narrow fitting provider results to
+  Int64. Declining the guard retains the actual stored operand. add_sound and
+  addMany_sound preserve integer meanings, with publication between calls;
+  add_fault_iff preserves each call's failure. Publication may change later
+  availability by releasing storage metadata, so no whole-sequence resource
+  equivalence is inferred. integerNarrow supplies an executable mathematical
+  guard, with explicit overflow and cancellation controls.
+
+Mettapedia/OSLF/NativeTypes/Instances/Natural/Provider.lean:
+  returned_natural_sound needs no availability promise.
+  run_natural_iff supplies both directions when fallback is available.
+  authored_target_iff connects that result to actual authored counter steps.
+  retained_add_interpretation preserves the initial-algebra reading while
+  dispatch retains either the signed word or the provider's representation.
+  retained_counter_target_iff connects an already represented operand and
+  addition by one to the same authored successor relation. It needs local
+  fallback availability; it does not promise a native scheduler's progress.
+
+Mettapedia/OSLF/NativeTypes/Instances/Natural/RetainedCounter.lean:
+  Successful retained calls form the transition span. Arithmetic soundness
+  preserves its infinite paths. check_buchi_iff additionally needs availability
+  on admitted retained values to lift the finite parity verdict to a source
+  execution. authored_buchi_iff connects the same verdict to the authored
+  counter module. A partial-provider control shows why a positive mathematical
+  recurrence verdict cannot promise an infinite native run.
+
+Production responsibilities
+---------------------------
+
+1. Language admission
+   Resolve a declared operation and numeric domain before backend dispatch.
+   Keep natural subtraction's chosen policy explicit. A rejected natural
+   request does not change the meaning of signed integer subtraction.
+
+2. Integer dispatch
+   Check signed input/result bounds before selecting a machine operation.
+   Overflow means fallback, never wraparound. Keep the chosen representation
+   across calls where useful; a decoder is for specification and observation,
+   not a requirement to serialize every production operation.
+   The retained-call interface specifies this for addition, including signed
+   overflow and sequences of calls. Other operations keep their existing
+   domain and fault policies; this addition join does not qualify them anew.
+
+3. GMP adapter
+   Trust GMP's documented integer operations explicitly. Separately check
+   initialized handles, signed conversion, borrowing, output ownership,
+   aliasing, and cleanup. GMP import/export uses magnitudes: preserve the sign
+   outside that transfer. Negative values must not decode as natural zero.
+
+   CeTTa's Atom layer already offers borrowed mpz views and owned result
+   transfer. Its grounded arithmetic already has small signed arithmetic,
+   promotion and dialect-specific division selection. An adapter should use
+   these owners rather than introduce a second big-integer lifetime system.
+
+4. Completion and errors
+   The generated ABI distinguishes VALUE, DECLINED, LANGUAGE_FAULT,
+   ENGINE_FAULT and RESOURCE_FAULT. The generated division guard declines
+   before calling GMP. Direct provider division by zero is an invalid call.
+   Resource failure is not a false mathematical proposition. Default GMP
+   allocation does not provide a recoverable allocation-failure promise.
+
+5. Receipts
+   Preserve chronological instruction and external-result events. A short
+   receipt buffer changes completeness, not the arithmetic result. Do not
+   authorize a complete receipt from a truncated buffer. The full reference
+   machine receipt theorem uses its declared reference environment; successful
+   GMP arithmetic alone does not establish that theorem for a live adapter.
+
+6. Checker authority
+   An exact arithmetic result is not by itself authority to admit a theorem.
+   A checker profile must either name GMP and its adapter in its trusted
+   implementation boundary or independently check the supplied evidence.
+   Changing the backend must preserve the selected judgment and policy.
+
+Existing C interface
+--------------------
+
+external_call_generated_abi_v1.h already declares the opaque exact-integer
+carrier and receipts. external_call_gmp_exact_integer_v1.c supplies its GMP
+provider. The generated functions are cetta_generated_exact_integer_*_v1.
+These are the interface used by this gate, not a replacement production ABI.
+
+An Atom-backed provider can implement that interface while keeping Atom
+borrowing and ownership private. The existing standalone GMP provider and
+CeTTa's production Atom arithmetic are separate implementations today; this
+qualification does not claim that they have been merged.
+
+Production Atom qualification
+-----------------------------
+
+check_exact_integer_atoms.py --cetta-tree CETTA_TREE --output EVIDENCE_DIR
+--sanitize compiles exact_integer_atom_probe.c against the selected tree.
+The probe includes the actual grounded arithmetic helper and links the actual
+Atom owners. It tests borrowed inputs, mixed signed/GMP operands, moved limb
+ownership, narrowing, repeated retained calls, same-input aliasing, copies
+across arenas and cleanup. Addition/subtraction/multiplication values and
+publication tags are compared with independent Python integer arithmetic.
+Compiler-reported project dependencies are pinned before and after execution.
+
+The optimized and ASan/UBSan builds use a standalone probe configuration;
+they do not establish that a separately supplied CeTTa binary was compiled
+from those sources. The joint M1 driver accepts --cetta-tree to run this stage
+alongside its existing binary/dialect workload. Array append ownership and
+fault qualification remain separate. No recoverable GMP/arena allocation
+failure is promised, and no C correctness theorem is claimed.
+Select the intended system compiler explicitly with --native-cc when running
+the joint driver under lake env; Lake can change which clang is found. The
+standalone Atom gate uses --compiler; the ABI gate honors CC.
+
+Qualification
+-------------
+
+From the Lean project, run:
+
+  python3 scripts/conformance/check_exact_integer_backend.py \
+    --provider-root CETTA_TREE --generated-c GENERATED_C --output EVIDENCE_DIR \
+    --cetta CETTA_BINARY --lang he --lang petta --lang prime --sanitize
+
+CC and LEAN_RUNNER may select a compiler and a qualified Lean environment.
+The gate builds only its probe and provider in EVIDENCE_DIR. It hashes inputs,
+records compiler/GMP versions and compares every result with the Lean oracle.
+It covers all seven ABI operations, signed boundaries, large integers,
+output aliasing, exact receipt order, truncated receipts and injected faults.
+The public runtime gate covers only common exact +,-,* with dialect-specific
+answer framing and exactly one result. Division policy, typed natural calls,
+stateful Atom ownership and cross-call representation retention need their
+own production adapter qualification.
+
+The selected authored Nat/Vec append specialization has a separate gate:
+
+  lake env python3 ../../metta/gslt/tools/test_inductive_append.py EVIDENCE_DIR \
+    --cetta CETTA_BINARY --petta PETTA_RUNNER
+
+Build GSLTInductiveAppendQuotation and GSLTInductiveAppendObservation first.
+This gate checks complete ordered answer packets, reused arrays/large integers
+and altered-packet rejection. It then feeds the actual append result to the
+existing spatial checker. Length is expressed by the shared formula language;
+the observed marker bag keeps every occurrence and deliberately forgets payload
+and order. The full array remains in the qualified packet. Returned cursors and
+verdicts must agree with Lean, including Unknown and bounded-round resumption.
+The resumption law preserves the same total strategy work; it is not a claim
+about scheduler fairness or instruction/allocation cost.
+Its native payload profile is natural integers. A separate compound-payload
+probe records whether the supplied modes evaluate executable-looking array
+elements or preserve them as data. Do not generalize this gate to
+arbitrary payloads or treat an Atom/Expression annotation as a complete
+value-preservation contract. No physical ownership or allocation proof follows
+from returned-value agreement.
+
+The joined authored-program driver consumes the live reader's proposal:
+
+  lake env python3 ../../metta/gslt/tools/qualify_inductive_m1.py EVIDENCE_DIR \
+    --cetta CETTA_BINARY --petta PETTA_RUNNER
+
+Build GSLTInductiveM1Qualification first. The reader gate selects HE with profile extended;
+the supplied executable must support that profile spelling. The same binary
+then executes the policy-checked emission in Prime and PeTTa modes. The driver
+binds the source, generated checking policy, emitted library and runtime inputs
+by their hashes, and refuses a different library before execution. It reuses
+the existing finite fixed-point controls, including the separately authored
+natural-counter companion and its parity observation. Those are differential
+checks; recurrence in a retained provider still requires availability on every
+actual retained value. No scheduler fairness follows from a positive query.
+
+Exit 1 records a failed available stage. Exit 2 records passed available stages
+with unfinished M1 obligations. The native kernel routes, selected profile
+comparisons and production ownership/failure contracts remain required; this
+driver cannot report a complete M1 until their adapters and evidence are joined.
+
+Sanitizers instrument the probe, selected generated C and provider source.
+The separately supplied CeTTa executables and installed GMP library are not
+rebuilt or instrumented by this gate.
+
+The gate is differential evidence. It is not a proof of GMP, printed C,
+the C compiler, recoverable allocation failure, or arbitrary dialect equality.

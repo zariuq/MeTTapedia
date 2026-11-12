@@ -1,0 +1,7 @@
+authorization: Zar explicitly approved the 135 listed generated products
+removed-files: 135
+removed-bytes: 1622682526
+manifest-sha256: 83cadb35ac39868f7d259c29d9e8e46a3df8981e44a6c969a4be91aa863a7c76
+protected-evidence: all recorded hashes unchanged before and after cleanup
+scope: legacy OCaml replay products only; no source, logs, expanded ML, machine artifacts or bank cohorts removed
+old-adapter-proof: paused and unproved; not resumed

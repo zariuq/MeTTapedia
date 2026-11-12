@@ -19,6 +19,14 @@ claim Htrue: forall h :e p, Lean_ite T p (Lean_Decidable_isTrue_node p h) value 
 exact Lean_Decidable_ind p (fun d => Lean_ite T p d value value = value) Hfalse Htrue.
 Qed.
 
+(** A conditional whose branches are equal is either of them. **)
+Theorem Lean_ite_agree : forall T p a b, forall decision :e Lean_Decidable p,
+  a = b -> Lean_ite T p decision a b = b.
+let T p a b decision. assume Hd: decision :e Lean_Decidable p. assume H: a = b.
+rewrite H.
+exact Lean_ite_same T p b decision Hd.
+Qed.
+
 Theorem Lean_modCore_zero : forall n :e Lean_Nat, Lean_Nat_modCore n (LeanNum 0) = n.
 let n. assume Hn: n :e Lean_Nat.
 claim Hnot: 0 /:e Lean_Nat_le_Prop (Lean_Nat_succ_node (LeanNum 0)) (LeanNum 0).
@@ -38,10 +46,11 @@ apply Lean_Nat_ind.
 - rewrite <- LeanNum_0. exact Lean_Nat_mod_eq_1 (LeanNum 0) (LeanNum_In 0 nat_0).
 - let n. assume Hn: n :e Lean_Nat. assume IH: Lean_Nat_mod n (LeanNum 0) = n.
   rewrite Lean_Nat_mod_eq_2 (LeanNum 0) (LeanNum_In 0 nat_0) n Hn.
-  rewrite Lean_modCore_zero (Lean_Nat_succ_node n) (Lean_Nat_succ_typed n Hn).
-  exact Lean_ite_same Lean_Nat (Lean_Nat_le_Prop (LeanNum 0) (Lean_Nat_succ_node n))
-    (Lean_Nat_succ_node n) (Lean_Nat_decLe (LeanNum 0) (Lean_Nat_succ_node n))
-    (Lean_Nat_decLe_In (LeanNum 0) (LeanNum_In 0 nat_0) (Lean_Nat_succ_node n) (Lean_Nat_succ_typed n Hn)).
+  exact Lean_ite_agree Lean_Nat (Lean_Nat_le_Prop (LeanNum 0) (Lean_Nat_succ_node n))
+    (Lean_Nat_modCore (Lean_Nat_succ_node n) (LeanNum 0)) (Lean_Nat_succ_node n)
+    (Lean_Nat_decLe (LeanNum 0) (Lean_Nat_succ_node n))
+    (Lean_Nat_decLe_In (LeanNum 0) (LeanNum_In 0 nat_0) (Lean_Nat_succ_node n) (Lean_Nat_succ_typed n Hn))
+    (Lean_modCore_zero (Lean_Nat_succ_node n) (Lean_Nat_succ_typed n Hn)).
 Qed.
 
 Theorem Lean_mod_zero_witness_positive : forall d, nat_p d -> forall n, nat_p n ->

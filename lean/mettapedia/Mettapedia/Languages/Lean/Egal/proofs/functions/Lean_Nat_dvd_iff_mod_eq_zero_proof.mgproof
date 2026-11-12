@@ -1,0 +1,7 @@
+let v_m. assume Hm: v_m :e Lean_Nat. let v_n. assume Hn: v_n :e Lean_Nat.
+exact LeanIff_symm
+  (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_n v_m) (LeanNum 0))
+  (Lean_Eq_Prop_prop Lean_Nat (Lean_Nat_mod v_n v_m) (LeanNum 0))
+  (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => Lean_Eq_Prop Lean_Nat v_n (Lean_Nat_mul v_m v_c)))
+  (Lean_Exists_Prop_prop Lean_Nat (fun v_c :e Lean_Nat => Lean_Eq_Prop Lean_Nat v_n (Lean_Nat_mul v_m v_c)))
+  0 (Lean_mod_divisibility_iff v_m Hm v_n Hn).

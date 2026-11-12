@@ -43,6 +43,12 @@ theorem emitter (world : World) :
   · intro live scope before items init left right operation context
     exact ⟨rfl, HECollectionWorld.Primitive.fold items init left right operation context⟩
 
+theorem marked_emitter (world : World) :
+    HECollectionFoldNativeEntry.MarkedEmitter current sourceSpace world (HECollectionWorld.hidden world) := by
+  refine ⟨emitter minimal nativePolicy external active primitive subtypes world, ?_⟩
+  intro live scope before items init left right operation context itemsMark
+  exact ⟨rfl, HECollectionWorld.Primitive.fold (itemsMark := itemsMark) items init left right operation context⟩
+
 theorem append_interface (world : World) (policy : Policy) :
     HECollectionAppendSource.Interface current snapshots policy sourceSpace world := by
   constructor

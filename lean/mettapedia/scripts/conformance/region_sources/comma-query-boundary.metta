@@ -1,0 +1,5 @@
+(r 1)
+(r 2)
+!(size-atom (collapse (match &self (, $left $right) t)))
+!(size-atom (collapse (match &self (,) t)))
+!(size-atom (collapse (match &self (r $x) (match &self (r $y) t))))

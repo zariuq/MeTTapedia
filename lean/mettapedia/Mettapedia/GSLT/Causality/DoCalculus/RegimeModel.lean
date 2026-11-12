@@ -352,7 +352,8 @@ lemma const_ne (Z : Finset V) (target : Regime) :
     ENNReal.pow_ne_top_iff.mpr (Or.inl hbaseTop)
   exact ⟨mul_ne_zero hpow0 hmass.1, ENNReal.mul_ne_top hpowTop hmass.2⟩
 
-omit [DecidableEq β] [MeasurableSingletonClass β] [DecidableRel graph.edges] in
+omit [Fintype β] [DecidableEq β] [Inhabited β] [StandardBorelSpace β] [MeasurableSingletonClass β] [DecidableRel graph.edges] in
+omit [Fintype β] [Inhabited β] [StandardBorelSpace β] in
 lemma mem_assignEvent
     (X Z : Finset V) {S : Finset (AugV V)}
     (xS : ∀ p : ((S : Set (AugV V))),
@@ -652,7 +653,7 @@ def patternEvent (X Z S : Finset V) (anchor : V → β) (target : Regime) :
     assignEvent (bn := augNet β graph hAcyclic X Z) (regimeImage Z)
       (regimeRead β Z target)
 
-omit [MeasurableSingletonClass β] [DecidableRel graph.edges] in
+omit [Fintype β] [StandardBorelSpace β] [MeasurableSingletonClass β] [DecidableRel graph.edges] in
 lemma mem_patternEvent (X Z S : Finset V) (anchor : V → β) (target : Regime)
     (ω : (augNet β graph hAcyclic X Z).JointSpace) :
     ω ∈ patternEvent β graph hAcyclic X Z S anchor target ↔
@@ -660,6 +661,7 @@ lemma mem_patternEvent (X Z S : Finset V) (anchor : V → β) (target : Regime)
   rw [patternEvent, Set.mem_inter_iff, mem_assignEvent, mem_assignEvent,
     restrict_obs_iff, restrict_regime_iff, agreesOn_eq_true_iff]
 
+omit [StandardBorelSpace β] in
 lemma measure_pattern_force
     (cpt : (network (β := β) graph hAcyclic).DiscreteCPT)
     {X Z : Finset V} (hXZ : Disjoint X Z) (x z anchor : V → β) (S : Finset V) :
@@ -679,6 +681,7 @@ lemma measure_pattern_force
   simp_rw [hmem]
   exact slice_sum_force β graph hAcyclic cpt hXZ x z anchor S
 
+omit [StandardBorelSpace β] in
 lemma measure_pattern_idle
     (cpt : (network (β := β) graph hAcyclic).DiscreteCPT)
     {X Z : Finset V} (x z anchor : V → β) (S : Finset V) :

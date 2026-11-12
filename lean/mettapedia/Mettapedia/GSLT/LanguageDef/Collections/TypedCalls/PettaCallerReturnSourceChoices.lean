@@ -106,7 +106,7 @@ theorem opening {argument : Atom} {control : DControl} {frames : List CallFrame}
     (held : Frames argument control frames) (older : List EagerDFS.Destination.Goal) (boundary : Nat)
     (atGoal : control.goals = .openCommit :: older) :
     Frames argument {control with goals := older, cutBoundary := boundary} frames := by
-  apply held.source_step (.refl _)
+  apply held.source_step (after := {control with goals := older, cutBoundary := boundary}) (.refl _)
   rintro ⟨name, returning⟩
   exact ⟨name, Bridges.ScopedReturnDispatch.open_commit_keeps_return name _ control older boundary returning atGoal⟩
 
@@ -114,7 +114,7 @@ theorem committing {argument : Atom} {control : DControl} {frames : List CallFra
     (held : Frames argument control frames) (older : List EagerDFS.Destination.Goal)
     (atGoal : control.goals = .commit :: older) :
     Frames argument {control with goals := older} frames := by
-  apply held.source_step (.refl _)
+  apply held.source_step (after := {control with goals := older}) (.refl _)
   rintro ⟨name, returning⟩
   exact ⟨name, Bridges.ScopedReturnDispatch.commit_keeps_return name _ control older returning atGoal⟩
 
@@ -122,7 +122,7 @@ theorem collapse_caller {argument : Atom} {control : DControl} {frames : List Ca
     (held : Frames argument control frames) (child destination : Atom) (older : List EagerDFS.Destination.Goal)
     (atGoal : control.goals = .evaluate (.expression [.symbol "collapse", child]) destination :: older) :
     Frames argument {control with goals := older} frames := by
-  apply held.source_step (.refl _)
+  apply held.source_step (after := {control with goals := older}) (.refl _)
   rintro ⟨name, returning⟩
   exact ⟨name, Bridges.ScopedReturnDispatch.collapse_saved_return name _ control child destination older returning atGoal⟩
 
@@ -148,7 +148,7 @@ theorem collection_copies {User : Type} (inputs : User → Atom) (copies : List 
     (caller : CollectionCaller (Context User))
     (held : Frames (inputs caller.2.2.1.user) caller.1 caller.2.2.1.calls) :
     PettaCallerReturnPhases.WorkHolds inputs (Source.resumeCopies copies caller) := by
-  apply held.source_step (.refl _)
+  apply held.source_step (after := (Source.resumeCopies copies caller).1) (.refl _)
   rintro ⟨name, protectedRead, returning⟩
   refine ⟨name, protectedRead, ?_⟩
   rcases returning with realized | pending

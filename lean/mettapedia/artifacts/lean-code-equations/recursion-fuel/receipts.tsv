@@ -1,0 +1,9 @@
+function	theorem	kind	statement_digest	axioms
+List.merge	List.merge.eq_1	equation	1788216735	propext,Quot.sound
+List.merge	List.merge.eq_2	equation	542016452	propext,Quot.sound
+List.merge	List.merge.eq_3	equation	3793400694	propext,Quot.sound
+instDecidableEqBool	instDecidableEqBool.eq_1	equation	2136972715	
+Bool.decEq	Bool.decEq.eq_1	equation	1564927632	
+Bool.decEq	Bool.decEq.eq_2	equation	3540440316	
+Bool.decEq	Bool.decEq.eq_3	equation	526094128	
+Bool.decEq	Bool.decEq.eq_4	equation	3387219894	

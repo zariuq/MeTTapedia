@@ -1,0 +1,15 @@
+(= (preimage $s $g $f $a)
+  (size-atom (collapse
+    (match $s (sat $a $y)
+      (match $g (rt $y $x) (add-atom $s (sat $f $x)))))))
+
+!(let $s (new-space)
+  (let $g (new-space)
+    (let* (($a (add-atom $s (sat a 1)))
+           ($b (add-atom $s (sat a 2)))
+           ($c (add-atom $g (rt 1 0)))
+           ($d (add-atom $g (rt 2 0))))
+      (let $count (preimage $s $g f a)
+        (let $bag (collapse (match $s (sat f $x) $x))
+          (let $support (collapse (unique (match $s (sat f $x) $x)))
+            (quote ($count $bag $support))))))))

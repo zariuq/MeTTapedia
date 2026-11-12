@@ -1,0 +1,4 @@
+let u. assume Hu: nat_p u. let A. assume HA: A :e LeanUniv u.
+let ys. assume Hys: ys :e Lean_List A.
+let le. assume Hle: le :e (Pi_ x :e A, (Pi_ y :e A, Lean_Bool)).
+exact LeanMerge_nil_left u Hu A HA ys Hys le Hle.

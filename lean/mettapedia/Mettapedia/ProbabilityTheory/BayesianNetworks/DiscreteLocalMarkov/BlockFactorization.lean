@@ -42,6 +42,7 @@ follows from the factored weight after summing out descendants (telescoping_sum)
 
 variable [∀ v : V, StandardBorelSpace (bn.stateSpace v)]
 
+omit [Fintype V] [DecidableEq V] [(v : V) → Fintype (bn.stateSpace v)] [∀ (v : V), Nonempty (bn.stateSpace v)] [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 /-- Helper: condExp of an indicator is bounded by 1 in norm a.e. -/
 lemma condExp_indicator_norm_le_one
     (μ : Measure bn.JointSpace) [IsFiniteMeasure μ]
@@ -75,6 +76,7 @@ parent assignments via the restriction map. They will be used to decompose
 integrals over parent fibers in the BN CI proof below.
 -/
 
+omit [Fintype V] [DecidableEq V] [(v : V) → Fintype (bn.stateSpace v)] [∀ (v : V), Nonempty (bn.stateSpace v)] [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 lemma measurableSet_vertices_preimage
     (S : Set V) {s : Set bn.JointSpace}
     (hs : MeasurableSet[bn.measurableSpaceOfVertices S] s) :
@@ -88,6 +90,7 @@ lemma measurableSet_vertices_preimage
   rcases (MeasurableSpace.measurableSet_comap).1 hs' with ⟨T, hT, hpre⟩
   exact ⟨T, hT, hpre.symm⟩
 
+omit [Fintype V] [DecidableEq V] [(v : V) → Fintype (bn.stateSpace v)] [∀ (v : V), Nonempty (bn.stateSpace v)] [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 lemma measurableSet_singleton_preimage
     (v : V) {s : Set bn.JointSpace}
     (hs : MeasurableSet[bn.measurableSpaceOfVertices ({v} : Set V)] s) :
@@ -118,6 +121,7 @@ noncomputable def constraintsOfRestrict (S : Set V)
     (xS : ∀ p : S, bn.stateSpace p.1) : List (Σ v : V, bn.stateSpace v) :=
   ((Finset.univ : Finset S).toList).map (fun p => (⟨p.1, xS p⟩ : Σ v : V, bn.stateSpace v))
 
+omit [DecidableEq V] [(v : V) → Fintype (bn.stateSpace v)] [∀ (v : V), Nonempty (bn.stateSpace v)] [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 /-- The constraint list built from a restriction assignment cuts out exactly the
 singleton fiber of that assignment. -/
 lemma eventOfConstraints_constraintsOfRestrict
@@ -134,8 +138,7 @@ lemma eventOfConstraints_constraintsOfRestrict
     have hcMem :
         (⟨p.1, xS p⟩ : Σ v : V, bn.stateSpace v) ∈
           constraintsOfRestrict (bn := bn) S xS := by
-      simpa [constraintsOfRestrict] using
-        (List.mem_map.2 ⟨p, hpMem, rfl⟩)
+      exact List.mem_map.2 ⟨p, hpMem, rfl⟩
     exact hω _ hcMem
   · intro hω c hc
     have hc' : ∃ p : S, (⟨p.1, xS p⟩ : Σ v : V, bn.stateSpace v) = c := by
@@ -144,6 +147,7 @@ lemma eventOfConstraints_constraintsOfRestrict
     subst hpEq
     exact congrFun hω p
 
+omit [DecidableEq V] [(v : V) → Fintype (bn.stateSpace v)] [∀ (v : V), Nonempty (bn.stateSpace v)] [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 /-- Distinct block assignments yield disjoint constraint atoms. -/
 lemma eventOfConstraints_constraintsOfRestrict_disjoint
     (S : Set V) {xS yS : ∀ p : S, bn.stateSpace p.1}
@@ -159,6 +163,7 @@ lemma eventOfConstraints_constraintsOfRestrict_disjoint
     simpa [eventOfConstraints_constraintsOfRestrict (bn := bn) S yS] using hy
   exact hxy (hx'.symm.trans hy')
 
+omit [DecidableEq V] [(v : V) → Fintype (bn.stateSpace v)] [∀ (v : V), Nonempty (bn.stateSpace v)] [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 /-- A constraint atom over `S` is measurable in the vertex σ-algebra `σ(S)`. -/
 lemma measurable_eventOfConstraints_constraintsOfRestrict_vertices
     [∀ v, MeasurableSingletonClass (bn.stateSpace v)]
@@ -174,6 +179,7 @@ lemma measurable_eventOfConstraints_constraintsOfRestrict_vertices
   rw [measurableSpaceOfVertices_eq_comap_restrict (bn := bn) S]
   exact hcomap
 
+omit [DecidableEq V] [(v : V) → Fintype (bn.stateSpace v)] [∀ (v : V), Nonempty (bn.stateSpace v)] [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 /-- Conditional expectations with respect to `σ(S)` are constant on each
 constraint atom fixing the coordinates in `S`. -/
 lemma condExp_ae_eq_const_on_constraintsOfRestrict
@@ -207,6 +213,7 @@ lemma condExp_ae_eq_const_on_constraintsOfRestrict
       simpa [eventOfConstraints_constraintsOfRestrict (bn := bn) S xS] using hω
     exact hωS.trans hω0.symm
 
+omit [DecidableEq V] [(v : V) → Fintype (bn.stateSpace v)] [∀ (v : V), Nonempty (bn.stateSpace v)] [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 /-- Any event measurable in `σ(S)` is a finite union of constraint atoms. -/
 lemma vertices_preimage_eq_iUnion_eventOfConstraints
     (S : Set V) (T : Set (∀ p : S, bn.stateSpace p.1)) :
@@ -222,8 +229,8 @@ lemma vertices_preimage_eq_iUnion_eventOfConstraints
     refine Set.mem_iUnion.2 ?_
     refine ⟨restrictToSet (bn := bn) S ω, ?_⟩
     by_cases hT : restrictToSet (bn := bn) S ω ∈ T
-    · simpa [hT, eventOfConstraints_constraintsOfRestrict (bn := bn) S
-        (restrictToSet (bn := bn) S ω)] using hω
+    · simp [hT, eventOfConstraints_constraintsOfRestrict (bn := bn) S
+        (restrictToSet (bn := bn) S ω)]
     · exact (hT hω).elim
   · intro hω
     rcases Set.mem_iUnion.1 hω with ⟨xS, hxS⟩
@@ -234,12 +241,9 @@ lemma vertices_preimage_eq_iUnion_eventOfConstraints
       have hEq : restrictToSet (bn := bn) S ω = xS := by
         simpa [eventOfConstraints_constraintsOfRestrict (bn := bn) S xS] using hx
       simpa [hEq] using hT
-    · have hempty : False := by
-        have : ω ∈ (∅ : Set bn.JointSpace) := by
-          simpa [hT] using hxS
-        simpa using this
-      exact hempty.elim
+    · simp [hT] at hxS
 
+omit [∀ (v : V), Nonempty (bn.stateSpace v)] [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 /-- Direct measure decomposition over block-constraint atoms. -/
 lemma measure_vertices_preimage_eq_sum
     (μ : Measure bn.JointSpace)
@@ -316,6 +320,7 @@ lemma measure_vertices_preimage_eq_sum
           intro xS _
           by_cases hxS : xS ∈ T <;> simp [hxS]
 
+omit [∀ (v : V), Nonempty (bn.stateSpace v)] [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 /-- Set-integral decomposition over block-constraint atoms. -/
 lemma setIntegral_vertices_preimage
     (μ : Measure bn.JointSpace) [IsFiniteMeasure μ]
@@ -447,6 +452,7 @@ private noncomputable def mergeRelevantIrrelevant
     (irrelevantHeadFinset bn X Y Z)
     (irrSetToFin (bn := bn) X Y Z xI)
 
+omit [(v : V) → Fintype (bn.stateSpace v)] [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 private lemma mergeRelevantIrrelevant_restrict_relevant
     (X Y Z : Set V)
     (xR : ∀ r : {r // r ∈ DSeparation.relevantVertices bn.graph X Y Z}, bn.stateSpace r)
@@ -474,6 +480,7 @@ private lemma mergeRelevantIrrelevant_restrict_relevant
     _ = xR r := by
       simp [baseFromRelevant, r.2]
 
+omit [(v : V) → Fintype (bn.stateSpace v)] [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 private lemma piEquiv_relevant_symm_eq_merge
     (X Y Z : Set V)
     (xR : ∀ r : {r // r ∈ DSeparation.relevantVertices bn.graph X Y Z}, bn.stateSpace r)
@@ -521,6 +528,7 @@ private lemma piEquiv_relevant_symm_eq_merge
               (xD := irrSetToFin (bn := bn) X Y Z xI)
               (v := u) hu_mem, irrSetToFin]
 
+omit [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 private lemma sum_reindex_relevant_irrelevant
     (X Y Z : Set V) (f : bn.JointSpace → ENNReal) :
     (∑ x : bn.JointSpace, f x)
@@ -569,6 +577,7 @@ private lemma sum_reindex_relevant_irrelevant
             simpa [e] using congrArg f
               (piEquiv_relevant_symm_eq_merge (bn := bn) X Y Z xR xI)
 
+omit [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 /-- The joint-weight sum over a single atom on the full relevant vertex set
 collapses to the product of the relevant block factors. -/
 theorem jointWeight_sum_indicator_relevantAtom_eq_relevantBlockProducts
@@ -669,6 +678,7 @@ theorem jointWeight_sum_indicator_relevantAtom_eq_relevantBlockProducts
                     (bn := bn) (cpt := cpt) X Y Z hirr hXY hSep
                     (baseFromRelevant (bn := bn) X Y Z xR)
 
+omit [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 /-- The joint measure of a single atom on the full relevant vertex set collapses
 to the product of the relevant block factors. -/
 theorem jointMeasure_relevantAtom_eq_relevantBlockProducts
@@ -809,6 +819,7 @@ private noncomputable def residualAssignmentOfRelevant
     ∀ p : {v // v ∈ DSeparation.residualBlock bn.graph X Y Z}, bn.stateSpace p.1 :=
   fun p => xR (residualBlockToRelevant (bn := bn) X Y Z p)
 
+omit [Fintype V] [DecidableEq V] [(v : V) → Fintype (bn.stateSpace v)] [∀ (v : V), Nonempty (bn.stateSpace v)] [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 private theorem mergeRelevantFromBlockAssignments_mem_matchingBlocks
     (X Y Z : Set V)
     (hXY : Disjoint X Y)
@@ -838,6 +849,7 @@ private theorem mergeRelevantFromBlockAssignments_mem_matchingBlocks
       exact hpY.1.2 p.2
     simp [mergeRelevantFromBlockAssignments, zToRelevant, hp_not_x, hp_not_y, p.2]
 
+omit [Fintype V] [DecidableEq V] [(v : V) → Fintype (bn.stateSpace v)] [∀ (v : V), Nonempty (bn.stateSpace v)] [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 private theorem residualAssignmentOfRelevant_mergeRelevantFromBlockAssignments
     (X Y Z : Set V)
     (xX : ∀ p : {v // v ∈ DSeparation.xReachableBlock bn.graph X Y Z}, bn.stateSpace p.1)
@@ -857,6 +869,7 @@ private theorem residualAssignmentOfRelevant_mergeRelevantFromBlockAssignments
   simp [residualAssignmentOfRelevant, residualBlockToRelevant, mergeRelevantFromBlockAssignments,
     residualBlockToRelevant, relevantToResidual, hp_not_x, hp_not_y, hp_not_z]
 
+omit [Fintype V] [DecidableEq V] [(v : V) → Fintype (bn.stateSpace v)] [∀ (v : V), Nonempty (bn.stateSpace v)] [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 private theorem mergeRelevantFromBlockAssignments_residualAssignmentOfRelevant
     (X Y Z : Set V)
     (hXY : Disjoint X Y)
@@ -914,6 +927,7 @@ private noncomputable def residualMatchingEquiv
     exact mergeRelevantFromBlockAssignments_residualAssignmentOfRelevant
       (bn := bn) X Y Z hXY hSep xX xY xZ xR.1 xR.2
 
+omit [DecidableEq V] [(v : V) → Fintype (bn.stateSpace v)] [∀ (v : V), Nonempty (bn.stateSpace v)] [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 /-- The intersection of the `X`-block, `Y`-block, and conditioning atoms is
 exactly the preimage of the set of relevant assignments that match those three
 block restrictions. -/
@@ -973,6 +987,7 @@ theorem blockConstraint_inter_eq_relevantPreimage
     · simpa [eventOfConstraints_constraintsOfRestrict
         (bn := bn) Z xZ] using! funext hz
 
+omit [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 /-- A block atom over the `X`-reachable side, `Y`-reachable side, and
 conditioning set is a finite disjoint sum of full relevant atoms. -/
 theorem jointMeasure_blockConstraint_eq_sum_relevantAtoms
@@ -1007,6 +1022,7 @@ theorem jointMeasure_blockConstraint_eq_sum_relevantAtoms
       (S := DSeparation.relevantVertices bn.graph X Y Z)
       (T := relevantAssignmentsMatchingBlocks (bn := bn) X Y Z xX xY xZ)
 
+omit [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 /-- Substituting the full relevant-atom factorization turns the previous block
 decomposition into a finite sum of block products. This is the first
 residual-summation theorem on the route from full relevant atoms to partial
@@ -1087,6 +1103,7 @@ theorem jointMeasure_blockConstraint_eq_sum_relevantBlockProducts
               (bn := bn) (cpt := cpt) X Y Z hirr hXY hSep xR]
           · simp [hxR]
 
+omit [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 /-- Explicit residual-summation form of the partial block-atom theorem. Once
 the `X`-reachable block, `Y`-reachable block, and conditioning coordinates are
 fixed, the remaining degrees of freedom are exactly the assignments on the
@@ -1243,6 +1260,7 @@ noncomputable def conditioningBlockFactor
   ∏ v ∈ relevantHeadConditioningFinset bn X Y Z,
     cpt.nodeProb (baseFromRelevant (bn := bn) X Y Z xR) v
 
+omit [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 /-- The `X`-head product does not depend on the `Y` or residual assignments once
 the `X`-block and conditioning coordinates are fixed. -/
 theorem relevantHeadXProd_mergeRelevant_eq_xReachableBlockFactor
@@ -1290,6 +1308,7 @@ theorem relevantHeadXProd_mergeRelevant_eq_xReachableBlockFactor
   simpa [xReachableBlockFactor, xR, xR0]
     using hProd
 
+omit [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 /-- The `Y`-head product does not depend on the `X` or residual assignments once
 the `Y`-block and conditioning coordinates are fixed. -/
 theorem relevantHeadYProd_mergeRelevant_eq_yReachableBlockFactor
@@ -1344,6 +1363,7 @@ theorem relevantHeadYProd_mergeRelevant_eq_yReachableBlockFactor
   simpa [yReachableBlockFactor, xR, xR0]
     using hProd
 
+omit [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 /-- The residual-head product does not depend on the endpoint-block assignments
 once the residual block and conditioning coordinates are fixed. -/
 theorem relevantHeadResidualProd_mergeRelevant_eq_residualBlockFactor
@@ -1397,6 +1417,7 @@ theorem relevantHeadResidualProd_mergeRelevant_eq_residualBlockFactor
   simpa [residualBlockFactor, xR, xR0]
     using hProd
 
+omit [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 /-- The conditioning-only product depends only on the conditioning coordinates. -/
 theorem relevantHeadConditioningProd_mergeRelevant_eq_conditioningBlockFactor
     (cpt : bn.DiscreteCPT) (X Y Z : Set V)
@@ -1440,6 +1461,7 @@ theorem relevantHeadConditioningProd_mergeRelevant_eq_conditioningBlockFactor
   simpa [conditioningBlockFactor, xR, xR0]
     using hProd
 
+omit [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 /-- Factored residual-summation form of the separated `X/Y/Z` block atom. The
 `X`- and `Y`-reachable head products depend only on their own block plus `Z`,
 the residual product depends only on the residual block plus `Z`, and the
@@ -1574,6 +1596,7 @@ theorem jointMeasure_blockConstraint_eq_factoredResidualSum
                       conditioningBlockFactor (bn := bn) cpt X Y Z xZ) := by
                         ac_rfl
 
+omit [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 /-- Summing the separated `X/Y/Z` block atom over all assignments to the
 `Y`-reachable block yields the corresponding `X/Z` block atom. -/
 theorem jointMeasure_xzBlock_eq_sum_blockConstraints
@@ -1643,6 +1666,7 @@ theorem jointMeasure_xzBlock_eq_sum_blockConstraints
   simpa [u, hpre_univ, hu, Measure.restrict_apply,
     measurable_eventOfConstraints, Set.inter_assoc, Set.inter_left_comm, Set.inter_comm] using hsum
 
+omit [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 /-- Summing the separated `X/Y/Z` block atom over all assignments to the
 `X`-reachable block yields the corresponding `Y/Z` block atom. -/
 theorem jointMeasure_yzBlock_eq_sum_blockConstraints
@@ -1712,6 +1736,7 @@ theorem jointMeasure_yzBlock_eq_sum_blockConstraints
   simpa [u, hpre_univ, hu, Measure.restrict_apply,
     measurable_eventOfConstraints, Set.inter_assoc, Set.inter_left_comm, Set.inter_comm] using hsum
 
+omit [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 /-- Summing the `X/Z` block atoms over all assignments to the `X`-reachable
 block yields the pure conditioning atom. -/
 theorem jointMeasure_zBlock_eq_sum_xzBlocks
@@ -1765,6 +1790,7 @@ theorem jointMeasure_zBlock_eq_sum_xzBlocks
   simpa [u, hpre_univ, hu, Measure.restrict_apply,
     measurable_eventOfConstraints, Set.inter_assoc, Set.inter_left_comm, Set.inter_comm] using hsum
 
+omit [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 /-- Factored `X/Z` block-atom formula obtained by summing out the
 `Y`-reachable block. -/
 theorem jointMeasure_xzBlock_eq_factoredReachableSum
@@ -1835,6 +1861,7 @@ theorem jointMeasure_xzBlock_eq_factoredReachableSum
                 conditioningBlockFactor (bn := bn) cpt X Y Z xZ := by
           rw [← Finset.mul_sum]
 
+omit [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 /-- Factored `Y/Z` block-atom formula obtained by summing out the
 `X`-reachable block. -/
 theorem jointMeasure_yzBlock_eq_factoredReachableSum
@@ -1905,6 +1932,7 @@ theorem jointMeasure_yzBlock_eq_factoredReachableSum
               conditioningBlockFactor (bn := bn) cpt X Y Z xZ) := by
           rw [Finset.sum_mul]
 
+omit [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 /-- Factored pure conditioning-atom formula obtained by summing out the
 `X`-reachable block from the `X/Z` factorization. -/
 theorem jointMeasure_zBlock_eq_factoredReachableSum
@@ -1965,6 +1993,7 @@ theorem jointMeasure_zBlock_eq_factoredReachableSum
                 conditioningBlockFactor (bn := bn) cpt X Y Z xZ := by
           rw [Finset.sum_mul]
 
+omit [∀ (v : V), StandardBorelSpace (bn.stateSpace v)] in
 /-- Atomic separated-block multiplication identity for a discrete CPT joint
 measure. This is the event-level semantic heart of the disjoint-core d-separation
 soundness bridge. -/
@@ -2115,7 +2144,7 @@ theorem jointMeasure_blockConstraint_condIndepSet
     simpa [fAC, mZ, μ, atomZ, sB, xZ] using
       condExp_ae_eq_const_on_constraintsOfRestrict
         (bn := bn) (μ := μ) (S := Z) (xS := xZ) (s := sA ∩ sC) (ω0 := ω) rfl
-  haveI : SigmaFinite (μ.trim hmZ) :=
+  have : SigmaFinite (μ.trim hmZ) :=
     sigmaFinite_trim_of_le (bn := bn) (μ := μ) (m' := mZ) hmZ
   have hAint :
       μ.real (sA ∩ sB) = fA ω * μ.real sB := by

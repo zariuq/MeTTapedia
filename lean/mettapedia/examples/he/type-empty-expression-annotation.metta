@@ -1,0 +1,8 @@
+(: () EmptyTupleType)
+(: retain-empty-tuple (-> EmptyTupleType EmptyTupleType))
+(= (retain-empty-tuple $value) $value)
+(: other-empty-tuple (-> OtherTupleType OtherTupleType))
+(= (other-empty-tuple $value) $value)
+!(get-type ())
+!(retain-empty-tuple ())
+!(other-empty-tuple ())

@@ -368,7 +368,10 @@ noncomputable def olderSettledOfConst (holds : {Γ : Context S.R} → EquationSt
     reducer root normalizes certifyNormal headTypingUnique rootComplete stable problem) holds eventual
 
 include stable in
-/-- **Acceptance for the older family, reduced to settling on the Miller class.** -/
+/-- **Conditional decision for the older family, from settling on the Miller class.** At the tower's setting the
+conclusion fails on `crossStore` (`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`), so there
+the hypothesis fails. For every store, runs are exact; on `crossStore` they stop postponed
+(`UnificationWithLevels.DependentFibre.cross_postponed`). -/
 theorem older_decided_of_settling_miller
     (eventual : ∀ {Γ : Context S.R} {problem : EquationStore (TotalTerm Γ)},
       ContextualDependentShortClosure.StratifiedMiller S.levels problem →

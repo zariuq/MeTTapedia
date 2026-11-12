@@ -1,0 +1,85 @@
+Authored vector append: native array qualification
+=================================================
+
+The source interface is IndexedNatVecAppend.module. Admission and emission
+select gslt:inductive:append, and the existing VectorArray and append bridge
+theorems compare its complete ordered payload with the authored dependent
+vector result. Repeated values remain repeated occurrences.
+
+The qualified native client passes captured arrays of natural integers.
+Sequence-producing calls are sequenced with let. Arbitrary executable
+payloads and dialect-specific global bindings are separate profiles.
+
+Production implementation
+-------------------------
+
+Use CeTTa's existing Atom sequence views, arena owners and GMP payloads.
+The actual union-atom path and PeTTa machine append copy element pointers
+into a new sequence. Qualifying this requires more than correct lengths:
+the original sequence, shared elements and GMP limbs must remain valid
+through subsequent calls and collection. No second array ownership API is
+introduced by this qualification.
+
+Native build
+------------
+
+build_cetta_qualification.py --cetta-tree CETTA_TREE --output BUILD_EVIDENCE
+--compiler C_COMPILER --sanitize --runtime-stats replays the selected ordinary
+Makefile C recipes into a private artifact directory. It checks the ordered
+object inventory, preserves the baked parser's special compile flags and
+link position, and pins compiler-discovered project inputs before and after
+the build. Existing generated C/header artifacts must already be present.
+Their source-language generators are not qualified by this build.
+
+The manifest records every translation unit and object, the link command,
+selected configuration and executable hash. System headers, the C toolchain,
+GMP and other linked system libraries remain trusted implementation inputs.
+This is build provenance, not a proof of C implementation correctness.
+
+Lifetime gate
+-------------
+
+From the Lean project environment, run the existing M1 driver with
+--cetta-build-manifest BUILD_EVIDENCE/build.json and the matching --cetta
+binary. Its existing reader/library setup still applies. The driver passes
+the actual source-checked emission to test_inductive_array_lifetime.py.
+For paired qualification, use the optimized build as the primary artifact
+and pass --cetta-sanitized-build-manifest SANITIZED_EVIDENCE/build.json plus
+--cetta-tree CETTA_TREE. The driver requires the same source inventory,
+matching shared input pins and identical generated configuration headers.
+It records the different compilation flags and runs both lifetime gates.
+
+The lifetime gate runs Prime and PeTTa modes at two collection budgets.
+Lean independently checks all original, grown and aliased result arrays,
+including a computed GMP payload. Missing or extra entries, reordered or
+changed payloads, dropped aliases and incomplete/duplicate packets fail.
+A changed emitted library is refused before execution. Runtime counters
+must establish actual Prime collection and reclaimed bytes. Sanitizer
+diagnostics, runtime failure or unfinished execution cannot qualify a run.
+The gate also pins the linked dynamic libraries and reports observed costs.
+
+These finite checks do not establish a general collector theorem. PeTTa's
+runtime may use a different reclamation route; Prime collection counters
+must not be attributed to it. Global bind! is not part of this lifetime
+workload.
+
+Failure completion
+------------------
+
+The native array allocation path is not a recoverable provider: CeTTa's
+arena/GMP allocation failure can terminate the process. The paired driver
+runs check_cetta_allocation_failure.py against each build's actual object
+files. Its private link adds one test wrapper around malloc; it does not
+change production source or implement an alternative allocator. After an
+emitted-client checkpoint, one large allocation is refused. The runtime
+must take its actual fatal out-of-memory path. A signal, sanitizer report
+or incomplete stream cannot qualify as a completed packet or refutation.
+The same private link without injection must return all exact Lean packets.
+
+This establishes finite fail-stop qualification at the process boundary.
+It does not provide a resumed computation after allocation failure or turn
+an abort into an in-process Except return. Availability and infinite-path
+theorems retain their explicit hypotheses. Recoverable allocation would
+require a separately implemented and qualified operational contract.
+The M1 driver remains incomplete until its native kernel and selected DTT
+profile obligations also pass.

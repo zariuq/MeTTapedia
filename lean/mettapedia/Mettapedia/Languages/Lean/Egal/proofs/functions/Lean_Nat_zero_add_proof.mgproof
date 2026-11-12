@@ -1,0 +1,4 @@
+let n. assume Hn: n :e Lean_Nat.
+apply Lean_Eq_proof_of Lean_Nat (Lean_Nat_add (LeanNum 0) n) n.
+rewrite LeanNum_0.
+exact NatAlgebra_add_zeroL Lean_Nat_add Lean_Nat_add_In Lean_Nat_add_eq_1 Lean_Nat_add_eq_2 n Hn.

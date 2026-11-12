@@ -413,6 +413,7 @@ exact SepE2 1 (fun z => P t) (Lean_Nat_rec 0 0 t) (Lean_Nat_rec_type (fun t => {
 Qed.
 
 
+
 Theorem Lean_Nat_noconf0_1 : forall y0, Lean_Nat_zero_node <> (Lean_Nat_succ_node y0).
 let y0. assume H: Lean_Nat_zero_node = (Lean_Nat_succ_node y0).
 apply IndNode_inj Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B Lean_Nat_distinct 0 (ordsuccI1 1 0 (ordsuccI2 0)) 1 (ordsuccI2 1) (TupArgs 0 SeqNil)
@@ -653,6 +654,14 @@ Qed.
 
 
 
+
+Theorem Lean_Eq_ind : forall P:set -> set -> prop, (P P1 Lean_Eq_refl_node) -> forall i, forall t :e Lean_Eq i, P i t.
+let P. assume H0.
+claim M0: 0 :e {z :e 1 | P P1 Lean_Eq_refl_node}.
+{ exact SepI 1 (fun z => P P1 Lean_Eq_refl_node) 0 In_0_1 (H0). }
+let i t. assume Ht: t :e Lean_Eq i.
+exact SepE2 1 (fun z => P i t) (Lean_Eq_rec 0 t) (Lean_Eq_rec_type (fun i t => {z :e 1 | P i t}) 0 M0 i t Ht).
+Qed.
 
 
 
@@ -965,6 +974,7 @@ Qed.
 
 
 
+
 Theorem Lean_Mul_mk_inj0 : forall x0 y0, (Lean_Mul_mk_node x0) = (Lean_Mul_mk_node y0) -> x0 = y0.
 let x0 y0. assume H: (Lean_Mul_mk_node x0) = (Lean_Mul_mk_node y0).
 claim L: SeqAt (SeqCons (x0) SeqNil) 0 = SeqAt (SeqCons (y0) SeqNil) 0.
@@ -1189,6 +1199,7 @@ claim M0: 0 :e (Pi_ x0 :e P0, {z :e 1 | P (Lean_One_mk_node x0)}).
 let t. assume Ht: t :e Lean_One.
 exact SepE2 1 (fun z => P t) (Lean_One_rec 0 t) (Lean_One_rec_type (fun t => {z :e 1 | P t}) 0 M0 t Ht).
 Qed.
+
 
 
 
@@ -1418,6 +1429,7 @@ claim M0: 0 :e (Pi_ x0 :e (Pi_ ux :e Lean_Nat, (Pi_ ux :e P0, P0)), {z :e 1 | P 
 let t. assume Ht: t :e Lean_NPow.
 exact SepE2 1 (fun z => P t) (Lean_NPow_rec 0 t) (Lean_NPow_rec_type (fun t => {z :e 1 | P t}) 0 M0 t Ht).
 Qed.
+
 
 
 
@@ -1755,6 +1767,7 @@ claim M0: 0 :e (Pi_ x0 :e (Lean_Mul P0), (Pi_ x1 :e {z :e 1 | z :e (Pi_ q0 :e P0
 let t. assume Ht: t :e Lean_Semigroup.
 exact SepE2 1 (fun z => P t) (Lean_Semigroup_rec 0 t) (Lean_Semigroup_rec_type (fun t => {z :e 1 | P t}) 0 M0 t Ht).
 Qed.
+
 
 
 
@@ -2626,6 +2639,7 @@ Qed.
 
 
 
+
 Theorem Lean_Monoid_mk_inj0 : forall x0 x1 x2 x3 x4 x5 x6 y0 y1 y2 y3 y4 y5 y6, (Lean_Monoid_mk_node x0 x1 x2 x3 x4 x5 x6) = (Lean_Monoid_mk_node y0 y1 y2 y3 y4 y5 y6) -> x0 = y0.
 let x0 x1 x2 x3 x4 x5 x6 y0 y1 y2 y3 y4 y5 y6. assume H: (Lean_Monoid_mk_node x0 x1 x2 x3 x4 x5 x6) = (Lean_Monoid_mk_node y0 y1 y2 y3 y4 y5 y6).
 claim L: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) (SeqCons (x5) (SeqCons (x6) SeqNil))))))) 0 = SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3)
@@ -2947,6 +2961,7 @@ Qed.
 
 
 
+
 Theorem Lean_Add_mk_inj0 : forall x0 y0, (Lean_Add_mk_node x0) = (Lean_Add_mk_node y0) -> x0 = y0.
 let x0 y0. assume H: (Lean_Add_mk_node x0) = (Lean_Add_mk_node y0).
 claim L: SeqAt (SeqCons (x0) SeqNil) 0 = SeqAt (SeqCons (y0) SeqNil) 0.
@@ -3174,6 +3189,7 @@ claim M0: 0 :e (Pi_ x0 :e P0, {z :e 1 | P (Lean_Zero_mk_node x0)}).
 let t. assume Ht: t :e Lean_Zero.
 exact SepE2 1 (fun z => P t) (Lean_Zero_rec 0 t) (Lean_Zero_rec_type (fun t => {z :e 1 | P t}) 0 M0 t Ht).
 Qed.
+
 
 
 
@@ -3408,6 +3424,7 @@ claim M0: 0 :e (Pi_ x0 :e (Pi_ ux :e Lean_Nat, (Pi_ ux :e P0, P0)), {z :e 1 | P 
 let t. assume Ht: t :e Lean_NSMul.
 exact SepE2 1 (fun z => P t) (Lean_NSMul_rec 0 t) (Lean_NSMul_rec_type (fun t => {z :e 1 | P t}) 0 M0 t Ht).
 Qed.
+
 
 
 
@@ -3761,6 +3778,7 @@ claim M0: 0 :e (Pi_ x0 :e (Lean_Add P0), (Pi_ x1 :e {z :e 1 | z :e (Pi_ q0 :e P0
 let t. assume Ht: t :e Lean_AddSemigroup.
 exact SepE2 1 (fun z => P t) (Lean_AddSemigroup_rec 0 t) (Lean_AddSemigroup_rec_type (fun t => {z :e 1 | P t}) 0 M0 t Ht).
 Qed.
+
 
 
 
@@ -4648,6 +4666,7 @@ Qed.
 
 
 
+
 Theorem Lean_AddMonoid_mk_inj0 : forall x0 x1 x2 x3 x4 x5 x6 y0 y1 y2 y3 y4 y5 y6, (Lean_AddMonoid_mk_node x0 x1 x2 x3 x4 x5 x6) = (Lean_AddMonoid_mk_node y0 y1 y2 y3 y4 y5 y6) -> x0 = y0.
 let x0 x1 x2 x3 x4 x5 x6 y0 y1 y2 y3 y4 y5 y6. assume H: (Lean_AddMonoid_mk_node x0 x1 x2 x3 x4 x5 x6) = (Lean_AddMonoid_mk_node y0 y1 y2 y3 y4 y5 y6).
 claim L: SeqAt (SeqCons (x0) (SeqCons (x1) (SeqCons (x2) (SeqCons (x3) (SeqCons (x4) (SeqCons (x5) (SeqCons (x6) SeqNil))))))) 0 = SeqAt (SeqCons (y0) (SeqCons (y1) (SeqCons (y2) (SeqCons (y3)
@@ -5086,6 +5105,7 @@ claim M0: 0 :e (Pi_ x0 :e (Lean_AddMonoid P0), (Pi_ x1 :e {z :e 1 | z :e (Pi_ q0
 let t. assume Ht: t :e Lean_AddCommMonoid.
 exact SepE2 1 (fun z => P t) (Lean_AddCommMonoid_rec 0 t) (Lean_AddCommMonoid_rec_type (fun t => {z :e 1 | P t}) 0 M0 t Ht).
 Qed.
+
 
 
 

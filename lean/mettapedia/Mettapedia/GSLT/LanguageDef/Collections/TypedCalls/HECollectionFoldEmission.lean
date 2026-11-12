@@ -21,8 +21,8 @@ open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 open Spec.Eval Spec.Eval.Completed Spec.Type.Presentation Spec.Bindings.ScopeObservation
 
 def call (items : List Entry.Value) (init : Entry.Value) (left right : String)
-    (operation context : Entry.Value) : Entry.Value :=
-  .expression .active [.symbol CollectionStdlibSource.foldName, .expression .active items,
+    (operation context : Entry.Value) (itemsMark : Entry.Status := .active) : Entry.Value :=
+  .expression .active [.symbol CollectionStdlibSource.foldName, .expression itemsMark items,
     init, .var left, .var right, operation, context]
 
 def protectedNames (hidden : List String) (live : List Atom) (scope : List String) (frame : Frame)
@@ -114,10 +114,11 @@ theorem chain_distinct_from_parameters (hidden : List String) (live : List Atom)
 /-- The actual collapse operation template has no third class of variables.
 Its replacement retains both full values and the template's root mark. -/
 theorem collapse_template (avoid : List String) (init head : Entry.Value) (left right : String)
-    (different : left ≠ right) (readiness : Entry.Status) :
+    (different : left ≠ right) (readiness : Entry.Status)
+    (operatorName : String := CollectionStdlibSource.appendName) :
     rewritten avoid init head left right
-      (.expression readiness [.symbol CollectionStdlibSource.appendName, .var left, .var right]) =
-      .expression readiness [.symbol CollectionStdlibSource.appendName, init, head] := by
+      (.expression readiness [.symbol operatorName, .var left, .var right]) =
+      .expression readiness [.symbol operatorName, init, head] := by
   simp [rewritten, Entry.Value.substitute, Entry.Value.rebuildStatus, Ne.symm different]
 
 theorem empty_returns_init (hidden : List String) (live : List Atom) (scope : List String) (frame : Frame)

@@ -1,0 +1,16 @@
+(sat 1 7)
+(sat 1 7)
+(edge 7 9)
+(edge 7 10)
+
+!(size-atom (collapse
+  (match &self (sat 1 $x)
+    (match &self (edge $x $y)
+      (let $payload (quote (sat 2 $x))
+        (if (== (collapse (match &self $payload true)) ())
+            (add-atom &self $payload)
+            true))))))
+!(size-atom (collapse (match &self (sat 2 $x) true)))
+!(size-atom (collapse (match &self (sat 1 $x) true)))
+!(let $_ (add-atom &self (edge 7 11))
+   (size-atom (collapse (match &self (edge $x $y) true))))

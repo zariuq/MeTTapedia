@@ -1,0 +1,17 @@
+(= (in $f $x)
+  (not (== (collapse (once (match &self (sat $f $x) t))) ())))
+(= (try $f $x)
+  (if (in $f $x) (empty)
+    (let $ignored (add-atom &self (sat $f $x))
+      (add-atom &self (fr $f 1 $x)))))
+
+!(collapse (try 10 1))
+!(collapse (try 10 1))
+!(collapse (match &self (sat 10 $x) $x))
+!(collapse (match &self (fr 10 1 $x) $x))
+
+(= (in $f $x)
+  (not (== (collapse (once (match &self (sat $f $x) t))) ())))
+!(collapse (try 10 2))
+!(collapse (match &self (sat 10 $x) $x))
+!(collapse (match &self (fr 10 1 $x) $x))

@@ -22,7 +22,8 @@ project=$(cd "$here/../../../.." && pwd)
 cetta=${CETTA:-cetta}
 families=(Nat Bool List Option Sum Prod Mettapedia.Languages.Lean.Declarations.Controls.Vec Eq Or And Iff
           Exists Nat.le Fin Add Zero False Decidable LT LE Max Ordering
-          Mul One NPow Semigroup Monoid NSMul AddSemigroup AddMonoid AddCommMonoid)
+          Mul One NPow Semigroup Monoid NSMul AddSemigroup AddMonoid AddCommMonoid
+          List.Perm List.Mem List.Pairwise Subtype LeftCommutative Units)
 decls=$project/artifacts/lean-declarations
 work=$(mktemp -d "${TMPDIR:-/tmp}/lean-egal-generate.XXXXXX")
 preserve_work=0
@@ -38,13 +39,19 @@ trap cleanup EXIT
 
 # The functions' definitions are opaque in the computations, which use the
 # proved equations only; checking needs no unfolding of large definitions.
+# A function that computes a type (it has a theorem NAME_type_In) stays
+# transparent: a value is typed at what the definition says.
+opaque_names() {
+  sed -n 's/^Definition \([A-Za-z0-9_]*\) .*/\1/p' "$1" |
+    grep -vxF -f <(sed -n 's/^Theorem \([A-Za-z0-9_]*\)_type_In .*/\1/p' "$1") | tr '\n' ' ' | sed 's/ $//' || true
+}
 opaque_open() {
-  local names; names=$(sed -n 's/^Definition \([A-Za-z0-9_]*\) .*/\1/p' "$1" | tr '\n' ' ' | sed 's/ $//')
+  local names; names=$(opaque_names "$1")
   [[ -n $names ]] && printf '%s\nOpaque %s.\n\n' "(** The runs use each function's proved equations, not its definition. **)" "$names"
   return 0
 }
 opaque_close() {
-  local names; names=$(sed -n 's/^Definition \([A-Za-z0-9_]*\) .*/\1/p' "$1" | tr '\n' ' ' | sed 's/ $//')
+  local names; names=$(opaque_names "$1")
   [[ -n $names ]] && printf '\nTransparent %s.\n' "$names"
   return 0
 }

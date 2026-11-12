@@ -13,9 +13,14 @@ progresses it stays in the class.
 On a class where the family settles, the driver decides every store at one
 joint budget, used both for the rounds and for the executable budget: it reaches
 a principal answer or a certified refutation, and the outcome is the same at every
-larger joint budget. This is the shape of the dependent unifier's acceptance
-theorem; for a concrete solver it leaves exactly the settling of its semantic class
-to prove.
+larger joint budget. This is a conditional decision: it holds on the classes where
+a family settles. No family settles on a class holding a solvable store without a
+principal answer, such as `crossStore` in the dynamic pattern fragment of the
+cumulative tower (`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`).
+The state of a run is exact for every store
+(`UnificationWithLevels.DependentFibre.outcome_exact`), and on `crossStore` every
+state keeps a nonempty exact residual: the run stops postponed
+(`UnificationWithLevels.DependentFibre.cross_driver_states`).
 -/
 
 set_option autoImplicit false

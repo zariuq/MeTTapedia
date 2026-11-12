@@ -7,8 +7,9 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 The store `λ x y. x ≐ λ x y. y` over `T : U0, F : (a b : T) → U0` is in the class of stores with
 distinct rigid locals: its annotation `(x y : T) → T` is normal with two leading binders, and under
 every telescope of its annotation of length two its sides reduce to the locals `x` and `y`. The
-acceptance theorem therefore applies to it, as an instance: at one joint budget and at every larger
-one, the rigid solver refutes it with a certified refutation and keeps that outcome.
+driver's decision on that class (`ContextualDependentDecisiveDriver.Settled.decided`) therefore
+applies to it, as an instance: at one joint budget and at every larger one, the rigid solver refutes
+it with a certified refutation and keeps that outcome.
 -/
 
 set_option autoImplicit false

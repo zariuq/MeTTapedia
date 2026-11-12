@@ -2251,4 +2251,3 @@ Theorem Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidabl
 let a0 a1. reflexivity.
 Qed.
 
-

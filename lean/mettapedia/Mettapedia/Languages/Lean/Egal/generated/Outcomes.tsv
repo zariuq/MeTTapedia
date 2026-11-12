@@ -8,7 +8,7 @@ test	outcome	reason
 7	joined	
 8	joined	
 9	joined	
-10	refused	List.mergeSort is not read: applies Mettapedia.Languages.Lean.Recursion.FuelCore.MergeSort.reading, which is not read
+10	joined	
 11	joined	
 12	joined	
 13	joined	
@@ -25,7 +25,7 @@ test	outcome	reason
 24	joined	
 25	joined	
 26	joined	
-27	refused	Irreducible is not read: not exported with equations
-28	refused	Irreducible is not read: not exported with equations
-29	refused	Finset.range is not read: erased proofs in the definition or its equations are not reconstructed
-30	refused	Finset.range is not read: erased proofs in the definition or its equations are not reconstructed
+27	joined	
+28	joined	
+29	joined	
+30	joined	

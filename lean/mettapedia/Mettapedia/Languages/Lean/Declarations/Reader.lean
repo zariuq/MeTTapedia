@@ -189,6 +189,17 @@ def keptConstructorFields (c : Name) : MetaM (List Bool) := do
     (xs.extract info.numParams xs.size).toList.mapM fun x => do
       return !(← erasedType (← inferType x))
 
+/-- A proposition in weak head normal form, unless that form is a quotient
+primitive stuck at a variable: `s.Nodup` on a multiset unfolds to `Quot.lift`
+at `s`, an elimination that has not computed, not a form of the proposition.
+Such a proposition is the function applied to its arguments, as written, and
+the function is read by its equations. -/
+def propositionForm (type : Expr) : MetaM Expr := do
+  let normal ← whnfD type
+  if let some c := normal.getAppFn.constName? then
+    if let some (.quotInfo _) := (← getEnv).find? c then return type
+  return normal
+
 /-- Read one constructor, naming its parameters as the family does: its
 syntax, which fields are kept, and the propositions of its proof fields. -/
 def readConstructor (parameterNames : List String) (c : Name) (normalizeTypes : Bool := false) :
@@ -206,7 +217,7 @@ def readConstructor (parameterNames : List String) (c : Name) (normalizeTypes : 
       let proofs ← fields.toList.mapM fun x => do
         let type ← inferType x
         if ← isProp type then
-          return some (← toTerm names c.toString (← whnfD type) true)
+          return some (← toTerm names c.toString (← propositionForm type) true)
         else return none
       return (⟨c.toString, fieldBinders, ← toTerm names c.toString result⟩,
         ← keptConstructorFields c, proofs)

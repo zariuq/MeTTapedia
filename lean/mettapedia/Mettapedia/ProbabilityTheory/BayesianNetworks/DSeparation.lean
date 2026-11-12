@@ -92,7 +92,7 @@ def IsNonCollider (G : DirectedGraph V) (t : PathTriple G) : Prop :=
 theorem nonCollider_has_outgoing (G : DirectedGraph V) (t : PathTriple G)
     (h : IsNonCollider G t) : G.edges t.b t.a ∨ G.edges t.b t.c := by
   unfold IsNonCollider IsCollider at h
-  push_neg at h
+  push Not at h
   -- We have: G.edges t.a t.b → ¬G.edges t.c t.b
   cases t.edge_ab with
   | inl hab => -- a → b
@@ -134,7 +134,7 @@ theorem active_nonCollider_not_in_Z (G : DirectedGraph V) (Z : Set V)
     (t : PathTriple G) (hact : IsActive G Z t) (hnonc : IsNonCollider G t) :
     t.b ∉ Z := by
   unfold IsActive IsBlocked at hact
-  push_neg at hact
+  push Not at hact
   exact hact.1 hnonc
 
 /-- Active collider: b or a descendant is in Z. -/
@@ -142,7 +142,7 @@ theorem active_collider_desc_in_Z (G : DirectedGraph V) (Z : Set V)
     (t : PathTriple G) (hact : IsActive G Z t) (hcol : IsCollider G t) :
     t.b ∈ Z ∨ ∃ d ∈ G.descendants t.b, d ∈ Z := by
   unfold IsActive IsBlocked at hact
-  push_neg at hact
+  push Not at hact
   -- hact.2 hcol : t.b ∉ Z → ∃ d ∈ G.descendants t.b, d ∈ Z
   -- Convert implication to disjunction
   by_cases hbZ : t.b ∈ Z

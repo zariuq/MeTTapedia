@@ -1,4 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFreshSyntaxBinding
+import Mettapedia.Languages.MeTTa.HE.ContextualAlias
 
 /-! Open variable-data capture uses the same contextual binder as closed
 capture. Fresh aliases retain their unassigned representative, and older
@@ -52,34 +53,7 @@ theorem other_stays_fresh (policy : Policy) (before : Frame) (name other : Strin
   simpa [HEFreshRangeFrame.extend, specBindingVars, and_assoc, and_left_comm, and_comm]
     using And.intro (And.intro otherFresh different) otherAbsent
 
-private theorem lookup_filter_map (entries : Entry.Value.Environment) (name key : String)
-    (transform : Entry.Value → Entry.Value) (different : name ≠ key) :
-    List.lookup name ((entries.filter (fun row => row.1 != key)).map (fun row => (row.1, transform row.2))) =
-      (List.lookup name entries).map transform := by
-  induction entries with
-  | nil => rfl
-  | cons row tail ih =>
-      rcases row with ⟨head, value⟩
-      by_cases removed : head = key
-      · subst head
-        simpa [List.lookup_cons, beq_eq_false_iff_ne.mpr different] using ih
-      · by_cases selected : name = head
-        · subst head
-          simp [removed]
-        · simpa [List.lookup_cons, removed, beq_eq_false_iff_ne.mpr selected] using ih
-
-theorem resolve_bind_other (rebuilding : Entry.RebuildPolicy) (entries : Entry.Value.Environment)
-    (name other : String) (value : Entry.Value) (different : other ≠ name) :
-    let selected := Entry.Value.substitute rebuilding (Entry.Value.resolve entries) value
-    Entry.Value.resolve (Entry.Value.bind rebuilding entries name value) other =
-      Entry.Value.substitute rebuilding (Entry.Value.resolve [(name, selected)]) (Entry.Value.resolve entries other) := by
-  dsimp only
-  unfold Entry.Value.bind
-  simp only [Entry.Value.resolve, List.lookup_cons, beq_eq_false_iff_ne.mpr different]
-  rw [lookup_filter_map entries other name _ different]
-  cases found : List.lookup other entries with
-  | none => simp [Entry.Value.substitute, Entry.Value.resolve, List.lookup_cons, beq_eq_false_iff_ne.mpr different]
-  | some previous => rfl
+export Mettapedia.Languages.MeTTa.HE.ContextualAlias (resolve_bind_other)
 
 theorem older_closed_read (policy readingPolicy : Policy) (before : Frame) (name other : String)
     (value previous : Entry.Value) (fresh : name ∉ specBindingVars before.bindings)

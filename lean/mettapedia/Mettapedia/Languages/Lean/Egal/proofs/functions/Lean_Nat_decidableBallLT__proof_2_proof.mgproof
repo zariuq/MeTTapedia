@@ -1,0 +1,2 @@
+let v_n. assume Hn: v_n :e Lean_Nat.
+exact Lean_Nat_le_refl_proof_ok (Lean_Nat_succ_node v_n).

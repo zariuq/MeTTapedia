@@ -131,7 +131,7 @@ theorem twoInh2Sim_eq_one_iff (s_AC s_CA : ℝ)
     · unfold twoInh2Sim at hsim
       rw [if_pos hzero] at hsim
       norm_num at hsim
-    · push_neg at hzero
+    · push Not at hzero
       have hAC_pos : 0 < s_AC := lt_of_le_of_ne hAC.1 hzero.1.symm
       have hCA_pos : 0 < s_CA := lt_of_le_of_ne hCA.1 hzero.2.symm
       have hden_pos : 0 < s_AC + s_CA - s_AC * s_CA := by
@@ -163,7 +163,7 @@ theorem twoInh2Sim_nonneg (s_AC s_CA : ℝ)
   · -- Case: s_AC = 0 ∨ s_CA = 0 → result is 0
     linarith
   · -- Case: both non-zero
-    push_neg at h
+    push Not at h
     -- Result is 1 / (1/s_AC + 1/s_CA - 1)
     -- Both terms in denom are positive when s_AC, s_CA ∈ (0, 1]
     have hAC_pos : 0 < s_AC := hAC.1.lt_of_ne' h.1
@@ -205,7 +205,7 @@ theorem twoInh2Sim_mono_on_unit {s_AC₁ s_AC₂ s_CA₁ s_CA₂ : ℝ}
       · have hCA₁_zero : s_CA₁ = 0 :=
           le_antisymm (by simpa [hCA₂_zero] using hCA) hCA₁_nonneg
         exact False.elim (hleft (Or.inr hCA₁_zero))
-    · push_neg at hleft hright
+    · push Not at hleft hright
       have hAC₁_pos : 0 < s_AC₁ :=
         lt_of_le_of_ne hAC₁_nonneg hleft.1.symm
       have hCA₁_pos : 0 < s_CA₁ :=

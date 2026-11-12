@@ -23,9 +23,15 @@ produced it** (`Answer`). In `(let $r (z $u) ($r $u))` with `(= (z 0) yes)` and
 `$u = 1`, and the `let` continues each with its own binding:
 `(yes 0)`, `(no 1)`.
 
-* **Terms.** The variables of a request are logic variables. A use of an
-  equation or a stored row renames its variables apart (`rename`, from the
-  counter `Configuration.uses`). A substitution is kept idempotent: no bound
+* **Terms.** The variables of a request are logic variables. Equation and row
+  uses rename variables with a counter suffix (`rename`, from `uses`). The
+  raw-entry counterexample in `PeTTaLambdaControls` shows why a legal caller
+  name cannot be used as an unscoped logical identity. `ScopedSource` admits
+  request variables in their own activation and retains the reached supply
+  across requests. Parsing, input, enumeration and assignment copy variables
+  at the corresponding boundary. The full world/readout invariant is separate
+  from the checked entry and unifier-support results.
+  A substitution is kept idempotent: no bound
   variable occurs in a bound value (`bindVar`), so `resolve` is one pass.
 * **Unification** (`unifyTerms`) is first-order, with the occurs check: where
   SWI-PeTTa's default unification would build a cyclic term, there is no
@@ -52,6 +58,23 @@ produced it** (`Answer`). In `(let $r (z $u) ($r $u))` with `(= (z 0) yes)` and
   argument, the row renamed apart and nothing bound (`retractall`). For an `=`
   row it answers whether some row was removed (SWI-PeTTa `e1db30d`), otherwise
   `True`.
+* **Runtime heads.** Runtime-dispatch sites receive a computed head and strict
+  supplied arguments. Function lookup and arity read the live equations. A
+  private partial reuses its resolved captures without evaluating them again;
+  authored data merely spelled `partial` is not that carrier. Runtime `match`
+  unifies freshly copied rows and returns its already evaluated template under
+  each branch's bindings. Written `match` instead schedules its body after
+  selection. These two routes cannot share a second template-evaluation pass.
+* **Runtime exceptions.** A runtime call catches exceptions in its invoked
+  goal, retaining completed root answers and the reached effects. Arity
+  rejection occurs before entering that goal. A fault with no runtime-call
+  boundary remains an uncaught fault.
+
+This remains the completed-operand profile. Source-to-runtime admission for
+statically known computed heads, lambda authoring/installation, native partial
+arity profiles and streaming operand schedules are separate obligations. In
+particular the runtime argument policy here is SWI's dispatch policy, not a
+claim that every corrected CeTTa profile uses it.
 
 `Eval.step` is the matching machine with fixed equations. On ground calls and
 ground rows the two select the same equations and rows with the same bindings
@@ -71,6 +94,31 @@ open SpaceSemantics (Program Equation Cases)
 open Effects (State Fault)
 open Eval (Target ioHead argumentIsRaw readCases nestedLets arities knownArities partialValue)
 open LiveEquations (liveEquations atState equationOfRow Observation)
+
+/-- Recognize the private partial carrier, not authored syntax headed by the
+symbol `partial`. Its stored arguments are values, never requests to evaluate. -/
+def partial? : Atom → Option (String × List Atom)
+  | .expression [.grounded (.custom "PeTTa.Partial" ""), .symbol head, .expression captured] =>
+      some (head, captured)
+  | _ => none
+
+theorem partial?_some (value : Atom) (head : String) (captured : List Atom) :
+    partial? value = some (head, captured) ↔ value = partialValue head captured := by
+  constructor
+  · intro recognized
+    unfold partial? at recognized
+    split at recognized
+    · cases recognized
+      rfl
+    · cases recognized
+  · rintro rfl
+    rfl
+
+/-- These heads are determined by evaluation rather than a written function
+name. Literal scalar heads remain data constructors. -/
+def dynamicItems : List Atom → Bool
+  | .var _ :: _ | .expression _ :: _ => true
+  | _ => false
 
 /-! ## Unification -/
 
@@ -216,6 +264,8 @@ structure Answer where
 
 inductive Control where
   | evaluate (bindings : Subst) (expression : Atom)
+  /-- Runtime dispatch after the head and all supplied arguments are values. -/
+  | dynamic (bindings : Subst) (head : Atom) (values : List Atom)
   | arguments (bindings : Subst) (target : Target) (remaining values : List Atom) (index : Nat)
   | sequence (remaining : List Control) (answers : List Answer)
   | returned (answers : List Answer)
@@ -233,7 +283,47 @@ inductive Frame where
   | argument (target : Target) (remaining values : List Atom) (index : Nat)
   | sequence (remaining : List Control) (answers : List Answer)
   | query (pattern body : Atom)
+  /-- The strict data-argument traversal has built the head/argument vector. -/
+  | dispatch
+  /-- Runtime reduce/2 catches exceptions raised by the invoked goal. -/
+  | dynamicCall
   deriving Repr
+
+/-- Recover completed root alternatives at the nearest runtime-call boundary.
+Nested root collectors contribute in discovery order. A pending operand or
+binding continuation makes its inner answers tentative, so that prefix is
+discarded before the outer root collectors are visited. The reached store,
+I/O and use counter are deliberately not restored. -/
+def recoverDynamic : List Answer → List Frame → Option (List Answer × List Frame)
+  | _, [] => none
+  | earned, .dynamicCall :: rest => some (earned, rest)
+  | earned, .sequence _ completed :: rest => recoverDynamic (completed ++ earned) rest
+  | _, _ :: rest => recoverDynamic [] rest
+
+/-- Saturated authored calls run a goal. Partial and over-applied calls do
+not enter that goal, so their classification stays outside its error scope. -/
+def invocationFrames (control : Control) (frames : List Frame) : List Frame :=
+  match control with
+  | .sequence _ _ => .dynamicCall :: frames
+  | _ => frames
+
+theorem invocationFrames_append (control : Control) (frames suffix : List Frame) :
+    invocationFrames control (frames ++ suffix) = invocationFrames control frames ++ suffix := by
+  cases control <;> rfl
+
+theorem recoverDynamic_append (frames suffix : List Frame) (earned answers : List Answer)
+    (remaining : List Frame) (recovered : recoverDynamic earned frames = some (answers, remaining)) :
+    recoverDynamic earned (frames ++ suffix) = some (answers, remaining ++ suffix) := by
+  induction frames generalizing earned with
+  | nil => cases recovered
+  | cons frame rest ih =>
+      cases frame with
+      | dynamicCall =>
+          simp only [recoverDynamic, Option.some.injEq, Prod.mk.injEq] at recovered
+          rcases recovered with ⟨rfl, rfl⟩
+          rfl
+      | sequence pending completed => exact ih (completed ++ earned) recovered
+      | _ => exact ih [] recovered
 
 structure Configuration where
   state : State
@@ -243,6 +333,9 @@ structure Configuration where
   output : List Atom := []
   /-- The next use number for renaming apart. -/
   uses : Nat := 0
+  /-- Translator-installed clauses are callable but are not atoms of `&self`.
+  The staging owner retains this immutable inventory across requests. -/
+  privateCode : List Equation := []
 
 inductive Outcome where
   | complete (state : State) (answers : List Atom) (input output : List Atom)
@@ -281,6 +374,30 @@ def application (registry : Program) (live : List Equation) (head : String)
       !(arities registry head).isEmpty then
     some (.fault (.overApplication head (knownArities registry head) values.length), 0)
   else some (.returned [⟨partialValue head values, bindings⟩], 0)
+
+/-- Private generated clauses precede later public definitions of their fresh
+name. Space inspection/removal still sees only the actual public rows. -/
+def codeEquations (state : State) (privateCode : List Equation) : List Equation :=
+  privateCode ++ liveEquations state
+
+def codeRegistry (registry : Program) (privateCode : List Equation) : Program :=
+  {registry with equations := privateCode ++ registry.equations}
+
+def runtimeRegistry (registry : Program) (state : State) (privateCode : List Equation) : Program :=
+  {registry with equations := codeEquations state privateCode}
+
+/-- Runtime lookup uses current public equations and installed private code.
+Runtime type-declaration mutation remains outside this source profile. -/
+def runtimeCallable (state : State) (value : Atom) (privateCode : List Equation := []) : Bool :=
+  match value with
+  | .symbol head => ioHead head || StdLib.known head ||
+      (codeEquations state privateCode).any (·.head == head)
+  | _ => false
+
+def dispatchAnswer (answer : Answer) : Control :=
+  match answer.value with
+  | .expression (head :: values) => .dynamic answer.bindings head values
+  | _ => .returned [answer]
 
 /-- Whether an atom is an `=` row with a call head. -/
 def equationRow (atom : Atom) : Bool := (equationOfRow atom).isSome
@@ -332,6 +449,31 @@ def queryBodies (bindings : Subst) (pattern body : Atom) :
       | .clash => some others
       | .exhausted => none
 
+/-- Runtime `match` receives values: its template has already completed its
+argument evaluation. Return it under each row's unifier without evaluating it
+again. Open row variables are freshly copied and caller bindings escape. -/
+def matchAnswers (bindings : Subst) (pattern template : Atom) :
+    Nat → List Atom → Option (List Answer)
+  | _, [] => some []
+  | use, row :: rest => do
+      let others ← matchAnswers bindings pattern template (use + 1) rest
+      match unify bindings pattern (rename use row) with
+      | .ok bound => some (⟨resolve bound template,bound⟩ :: others)
+      | .clash => some others
+      | .exhausted => none
+
+/-- The value-level native call differs from the written `match` control:
+the latter schedules body computation after each match. -/
+def matchCall (state : State) (bindings : Subst) (use : Nat) (values : List Atom) :
+    Option (Except Fault (List Answer × Nat)) :=
+  match values with
+  | [location,pattern,template] =>
+      match Effects.readHandle location >>= state.read with
+      | none => some (.error .invalidSpace)
+      | some rows => (matchAnswers bindings pattern template use rows).map fun answers =>
+          .ok (answers,rows.length)
+  | _ => some (.error (.invalidArguments "match"))
+
 /-- The alternatives of `match` on the space values `answers`, and the uses
 they took; a value that is not a space is an invalid-space fault. -/
 def queries (state : State) (pattern body : Atom) :
@@ -382,6 +524,27 @@ def copies (use : Nat) : List Answer → List Atom
   | [] => []
   | answer :: rest => rename use (resolve answer.bindings answer.value) :: copies (use + 1) rest
 
+/-- Newly parsed syntax and enumerated stored rows contain fresh variables;
+equal printed names in different returned occurrences do not share identities. -/
+def copyTerms (use : Nat) : List Atom → List Atom
+  | [] => []
+  | value :: rest => rename use value :: copyTerms (use + 1) rest
+
+def primitiveCopies (head : String) : Bool := head == "parse" || head == "get-atoms"
+
+/-- SWI's non-backtrackable assignment copies the assigned term. A subsequent
+read returns the retained value, rather than copying it a second time. -/
+def primitiveInputs (head : String) (use : Nat) (values : List Atom) : List Atom :=
+  match head, values with
+  | "change-state!", [name,value] => [name,rename use value]
+  | _, _ => values
+
+def primitiveOutputs (head : String) (use : Nat) (answers : List Atom) : List Atom :=
+  if primitiveCopies head then copyTerms use answers else answers
+
+def primitiveUses (head : String) (answers : List Atom) : Nat :=
+  if head = "change-state!" then 1 else if primitiveCopies head then answers.length else 0
+
 /-- One step of a request translated against `registry`. -/
 def step (registry : Program) (configuration : Configuration) : Option Configuration :=
   let state := configuration.state
@@ -391,7 +554,30 @@ def step (registry : Program) (configuration : Configuration) : Option Configura
   let push := fun frame bindings expression =>
     some { configuration with control := .evaluate bindings expression, frames := frame :: frames }
   match configuration.control with
-  | .fault _ => none
+  | .fault _ =>
+      match recoverDynamic [] frames with
+      | none => none
+      | some (earned, rest) => some { configuration with control := .returned earned, frames := rest }
+  | .dynamic bindings callee supplied =>
+      let callee := resolve bindings callee
+      let values := supplied.map (resolve bindings)
+      match partial? callee with
+      | some (head, captured) => advance (.dynamic bindings (.symbol head) (captured ++ values))
+      | none =>
+          match callee with
+          | .symbol head =>
+              if ioHead head || StdLib.known head then
+                some { configuration with
+                  control := .arguments bindings (.function head) [] values 0
+                  frames := .dynamicCall :: frames }
+              else if (codeEquations state configuration.privateCode).any (·.head == head) then
+                match application (runtimeRegistry registry state configuration.privateCode)
+                    (codeEquations state configuration.privateCode) head values bindings use with
+                | some (control, used) => some { configuration with
+                    control, uses := use + used, frames := invocationFrames control frames }
+                | none => none
+              else advance (.returned [⟨.expression (.symbol head :: values), bindings⟩])
+          | _ => advance (.returned [⟨.expression (callee :: values), bindings⟩])
   | .sequence [] answers => advance (.returned answers)
   | .sequence (first :: rest) answers =>
       some { configuration with control := first, frames := .sequence rest answers :: frames }
@@ -406,7 +592,10 @@ def step (registry : Program) (configuration : Configuration) : Option Configura
                 match configuration.input with
                 | [] => advance (.returned [⟨.symbol "end_of_file", bindings⟩])
                 | first :: rest =>
-                    some { configuration with input := rest, control := .returned [⟨first, bindings⟩] }
+                    some { configuration with
+                      input := rest
+                      control := .returned [⟨rename use first, bindings⟩]
+                      uses := use + 1 }
             | "println!", [value] =>
                 some { configuration with
                   output := configuration.output ++ [value]
@@ -425,15 +614,23 @@ def step (registry : Program) (configuration : Configuration) : Option Configura
                 | some (.error fault) => advance (.fault fault)
                 | none => none
             | _ => advance (.fault (.invalidArguments head))
+          else if head = "match" then
+            match matchCall state bindings use values with
+            | some (.ok (answers,used)) =>
+                some {configuration with control := .returned answers, uses := use + used}
+            | some (.error fault) => advance (.fault fault)
+            | none => none
           else if StdLib.known head then
-            match StdLib.apply state head values with
+            match StdLib.apply state head (primitiveInputs head use values) with
             | .ok (after, answers) =>
                 some { configuration with
                   state := after
-                  control := .returned (answers.map fun value => ⟨value, bindings⟩) }
+                  control := .returned ((primitiveOutputs head use answers).map fun value => ⟨value, bindings⟩)
+                  uses := use + primitiveUses head answers }
             | .error fault => advance (.fault fault)
           else
-            match application registry (liveEquations state) head values bindings use with
+            match application (codeRegistry registry configuration.privateCode)
+                (codeEquations state configuration.privateCode) head values bindings use with
             | some (control, used) => some { configuration with control, uses := use + used }
             | none => none
   | .arguments bindings target (first :: rest) values index =>
@@ -470,10 +667,19 @@ def step (registry : Program) (configuration : Configuration) : Option Configura
       | .expression [.symbol "match", space, pattern, body] =>
           push (.query pattern body) bindings space
       | .expression (.symbol head :: arguments) =>
-          if ioHead head || StdLib.known head || registry.equations.any (·.head == head) then
+          if ioHead head || StdLib.known head ||
+              (codeRegistry registry configuration.privateCode).equations.any (·.head == head) then
             advance (.arguments bindings (.function head) arguments [] 0)
           else advance (.arguments bindings .data (.symbol head :: arguments) [] 0)
-      | .expression items => advance (.arguments bindings .data items [] 0)
+      | .expression items =>
+          match partial? (.expression items) with
+          | some _ => advance (.returned [⟨resolve bindings (.expression items), bindings⟩])
+          | none =>
+              if dynamicItems items then
+                some { configuration with
+                  control := .arguments bindings .data items [] 0
+                  frames := .dispatch :: frames }
+              else advance (.arguments bindings .data items [] 0)
   | .returned answers =>
       match frames with
       | [] => none
@@ -503,6 +709,8 @@ def step (registry : Program) (configuration : Configuration) : Option Configura
                   control := .sequence continued []
                   frames := rest
                   uses := use + used }
+          | .dispatch => resume (.sequence (answers.map dispatchAnswer) [])
+          | .dynamicCall => resume (.returned answers)
 
 /-- The fuelled runner. Completed answers are the values resolved under their
 own branches. -/
@@ -512,7 +720,16 @@ def run (registry : Program) : Nat → Configuration → Outcome
       | .returned answers, [] =>
           .complete configuration.state (answers.map fun answer => resolve answer.bindings answer.value)
             configuration.input configuration.output
-      | .fault fault, _ => .fault fault configuration
+      | .fault fault, frames =>
+          match recoverDynamic [] frames with
+          | none => .fault fault configuration
+          | some _ =>
+              match fuel with
+              | 0 => .exhausted configuration
+              | fuel + 1 =>
+                  match step registry configuration with
+                  | some next => run registry fuel next
+                  | none => .exhausted configuration
       | _, _ =>
           match fuel with
           | 0 => .exhausted configuration
@@ -521,13 +738,14 @@ def run (registry : Program) : Nat → Configuration → Outcome
               | some next => run registry fuel next
               | none => .exhausted configuration
 
-/-- A request starts with no bindings and no uses. -/
+/-- Raw machine entry with no bindings or uses. Scoped source admission is
+provided by `ScopedSource`; this constructor alone does not ensure freshness. -/
 def start (state : State) (expression : Atom) : Configuration :=
   { state, control := .evaluate [] expression }
 
-/-- Requests run in order. Each is translated against the program as it stands
-when it starts, and starts from the store the previous one left; a request that
-does not complete ends the sequence. -/
+/-- Raw-entry controls run in order, retaining stores but resetting local use
+numbers. `ScopedSource.requests` is the source driver which also retains the
+reached identity supply. A request that does not complete ends either list. -/
 def requests (program : Program) (fuel : Nat) : State → List Atom → List Outcome
   | _, [] => []
   | state, request :: rest =>

@@ -1,0 +1,1 @@
+{"constants":376,"lean":"4.33.1","recursorRules":"constructor identities and right-hand-side dependencies included","roots":4,"schema":1,"sourceModule":"Mettapedia.Languages.Lean.Recursion.FuelCore","sourceModules":["Mettapedia.Languages.Lean.Recursion.FuelCore"],"theoremProofs":"reconstructed; statement dependencies included"}

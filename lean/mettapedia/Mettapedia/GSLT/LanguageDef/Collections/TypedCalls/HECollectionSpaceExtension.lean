@@ -32,7 +32,7 @@ theorem extension_row_rejected (live : List Atom) (before : Bindings) (name : St
   simp only [extensionRows, authoredRows, nativeTypeRows, instructionTypeRows,
     List.mem_append, List.mem_cons, List.not_mem_nil, or_false] at present
   rcases present with ((rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl) |
-    (rfl | rfl | rfl)) | (rfl | rfl | rfl | rfl | rfl | rfl)
+    (rfl | rfl | rfl)) | (rfl | rfl | rfl | rfl | rfl | rfl | rfl)
   all_goals first
     | exact HERangeEquationFrontiers.annotation_irrelevant _ _ _ _ _ _
     | apply HERangeEquationFrontiers.different_head_miss

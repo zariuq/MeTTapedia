@@ -3,8 +3,11 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 /-!
 # A firing gap: a pattern equation behind a dead binder
 
-Acceptance for the dead-binder family is reduced to firing (`ContextualDependentAcceptance4.tower_dead_decided_of_firing`).
-This store shows that firing still needs a rule. Over `A : U0, F : U0 → U0 → U0, b : F A A`, the equation
+The decision for the dead-binder family is conditional on firing
+(`ContextualDependentAcceptance4.tower_dead_decided_of_firing`), and at the tower firing fails: the fragment holds
+`crossStore`, solvable and without principal answer
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`). This store shows a further firing gap, on a
+solvable pattern store. Over `A : U0, F : U0 → U0 → U0, b : F A A`, the equation
 
   `λ p x y. F x y ≐ λ p x y. x` at `Π (p : Id (F A A) b b). Π (x y : U0). U0`
 

@@ -1,0 +1,4 @@
+let A xs. assume Hxs: xs :e Lean_List A. let ys. assume Hys: ys :e Lean_List A.
+assume H: 0 :e Lean_List_Perm_Prop A xs ys.
+exact Lean_Eq_proof_of Lean_Nat (Lean_List_length A xs) (Lean_List_length A ys)
+  (LeanListPerm_length_any A xs ys (LeanListPerm_from_prop A xs ys H)).

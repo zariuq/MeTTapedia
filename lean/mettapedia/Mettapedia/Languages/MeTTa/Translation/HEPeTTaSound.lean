@@ -6292,8 +6292,9 @@ theorem he_propagates_assembled_error_tail (policy : Policy) :
       simpa only [List.append_nil] using
         (CallsRel.cons (children := [(errorTail,Frame.empty)]) (rest := [])
           (CallRel.error (by simp [IsErrorRel,errorTail,Entry.Value.erase])) .nil)) priority
-  simpa [publishResult,Entry.Value.publish,Entry.publish,Entry.Value.withStatus,errorTail,
-    Entry.Value.erase,HE.isErrorAtom] using completed
+  cases marking : policy.marking <;>
+    simpa [publishResult,Entry.Value.publish,Entry.publish,Entry.Value.withStatus,errorTail,
+      Entry.Value.erase,Entry.Value.status,HE.isErrorAtom,marking] using completed
 
 /-- The prospective full constructor grammar cannot be identified with HE's
 published tuple semantics merely by forgetting answer order or bindings. -/

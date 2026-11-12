@@ -31,8 +31,9 @@
 ; reaches through the names their statements and proofs use, transitively;
 ; each belongs to the Lean constant whose Egal name is its longest prefix.  The
 ; test is qualified when every constant it depends on has interpretation
-; evidence (or is unfolded or expanded); otherwise it is unqualified, with the
-; constants that make it so.  The joined tests must be exactly those with a
+; evidence (or is unfolded or expanded) or is a theorem reconstructed in Egal;
+; its row names the reconstructed theorems it rests on.  Otherwise it is
+; unqualified, with the constants that make it so.  The joined tests must be exactly those with a
 ; theorem.  A missing input or a disagreement is an error (exit status 1).
 
 !(import! &self fs)
@@ -84,6 +85,7 @@
           ($f (collapse (match &self (LeanCasesOn $c $F) (put2 CasesS $c (str-of $F)))))
           ($g (collapse (match &self (LeanProjection $c $S $k $i $np) (put1 ProjS $c))))
           ($h (collapse (match &self (LeanTheorem $c $P) (put1 ThmS $c))))
+          ($cited (collapse (match &self (LeanLemma $c $bs $P) (put1 LemS $c))))
           ($i (collapse (match &self (LeanReducible $c) (put1 RedS $c))))
           ($j (collapse (match &self (LeanInstance $c) (put1 InstS $c))))
           ($k (collapse (match &self (LeanFunctionRefused $c $why) (put2 RefFnS $c (str-of $why)))))
@@ -269,6 +271,10 @@
      (if (has (PrimS $c $primitiveKind)) (primitive-evidence $c)
      ; Source equations prove the function interpretation even when their
      ; target proof was supplied through the theorem-reconstruction path.
+     ; A theorem that the term of an erased proof cites: its statement is
+     ; read from Lean, and its proof in Egal stands where Lean's term cites it.
+     (if (and (has (LemS $c)) (is-defined (str:concat $e "_proof")))
+         (ev target-reconstruction (str:concat $e "_proof") "statement read from Lean, proved in Egal; cited where Lean's proof term cites it")
      (if (and (== $kind "theorem") (and (has (ThmS $c)) (not (has (EqS $c)))))
          (if (is-defined $e) (ev target-reconstruction $e "statement read from Lean, proved in Egal")
              (ev refused $e (skip-reason $c "statement read, not proved here yet")))
@@ -318,10 +324,11 @@
      (let $hv (helper-ev $c (helper-reasons))
        (if (not (== $hv None)) $hv
            (if (== $kind "theorem") (ev not-needed "" "a theorem Lean's proofs use; the theorems are reconstructed in Egal, not transported")
-               (ev not-needed "" "no read definition, equation, theorem or test uses it")))))))))))))))))))))))))))
+               (ev not-needed "" "no read definition, equation, theorem or test uses it"))))))))))))))))))))))))))))
 
 (= (ev-kind $v) (case $v (((ev $k $e $d) $k))))
-(= (qualifying $k) (or (== $k interpretation) (or (== $k unfolded) (== $k expanded))))
+(= (qualifying $k)
+   (or (== $k interpretation) (or (== $k target-reconstruction) (or (== $k unfolded) (== $k expanded)))))
 
 ; ---- rows: the manifest's, display instances, and the constants the reading adds ----
 (= (manifest-rows $decls)
@@ -337,7 +344,7 @@
           ($eg (sort-strs (filter-out (dedup (collapse (match &self (EgalS $c $e) $c)) ()) $listed2))))
      (append-lists $drows
        (map-atom $eg $c (row $c "reading"
-         (if (or (has (ThmS $c)) (has (EqS $c))) "theorem"
+         (if (or (has (ThmS $c)) (or (has (EqS $c)) (has (LemS $c)))) "theorem"
              (if (has (FamS $c)) "inductive" (if (has (CtorS $c)) "constructor" "definition"))))))))
 (= (filter-out $xs $ys)
    (if (== $xs ()) () (if (in-list (car-atom $xs) $ys) (filter-out (cdr-atom $xs) $ys) (cons-atom (car-atom $xs) (filter-out (cdr-atom $xs) $ys)))))
@@ -426,8 +433,18 @@
        (((oc $i $out $w)
          (if (== $out "joined")
              (let $b (deps-of $i $bad)
-               (format-args "{}\t{}\t{}\t{}\t\n" ($i (if (== $b ()) "qualified" "unqualified") (len-of (deps-of $i $deps)) (join-comma $b))))
+               (format-args "{}\t{}\t{}\t{}\t{}\n"
+                 ($i (if (== $b ()) "qualified" "unqualified") (len-of (deps-of $i $deps)) (join-comma $b)
+                  (reconstruction-note (deps-of $i $deps)))))
              (format-args "{}\trefused\t0\t\t{}\n" ($i $w)))))))))
+; The reconstructed theorems among a test's constants.
+(= (reconstructed-of $cs)
+   (if (== $cs ()) ()
+       (let* (($c (car-atom $cs)) ($v (ev-of $c ())) ($rest (reconstructed-of (cdr-atom $cs))))
+         (if (== $v None) $rest (if (== (ev-kind $v) target-reconstruction) (cons-atom $c $rest) $rest)))))
+(= (reconstruction-note $cs)
+   (let $rs (sort-strs (reconstructed-of $cs))
+     (if (== $rs ()) "" (format-args "rests on theorems reconstructed in Egal: {}" ((join-comma $rs))))))
 (= (oc-id $o) (case $o (((oc $i $out $w) $i))))
 (= (insert-oc $x $ys)
    (if (== $ys ()) ($x) (if (< (oc-id $x) (oc-id (car-atom $ys))) (cons-atom $x $ys) (cons-atom (car-atom $ys) (insert-oc $x (cdr-atom $ys))))))

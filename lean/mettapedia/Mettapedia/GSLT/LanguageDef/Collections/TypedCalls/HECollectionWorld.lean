@@ -29,8 +29,8 @@ inductive Primitive (policy : Policy) (label : Space) (world : World) (live : Li
   | superpose (mark tupleMark : Entry.Status) (items : List Entry.Value) :
       Primitive policy label world live scope before (.expression mark [.symbol "superpose", .expression tupleMark items])
         (.ok (items.map fun item => (item, Bindings.empty)))
-  | fold (items init left right operation context) :
-      Primitive policy label world live scope before (HECollectionFoldEmission.call items init left right operation context)
+  | fold {itemsMark : Entry.Status} (items init left right operation context) :
+      Primitive policy label world live scope before (HECollectionFoldEmission.call items init left right operation context (itemsMark := itemsMark))
         (.ok [(HECollectionFoldEmission.emission (hidden world) live scope before items init left right operation context, Bindings.empty)])
   | append {input outcome} : HECollectionClosedAppend.Step snapshots policy label world input outcome →
       Primitive policy label world live scope before input outcome

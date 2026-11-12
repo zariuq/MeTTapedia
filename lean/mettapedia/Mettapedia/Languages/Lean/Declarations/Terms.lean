@@ -36,6 +36,9 @@ variable `α : Type u`, or a term variable `x : T`.
   number of such arguments is recorded, since the statement is Lean's up to
   function extensionality.
 
+* A proposition is read in weak head normal form (`¬p` is `p → False`),
+  unless that form is a quotient primitive stuck at a variable: then it stays
+  the function applied to its arguments (`propositionForm`).
 * A sort other than `Prop` is `sort L`, its level kept: a level parameter,
   a numeral, or a successor (`Sort u` is the type of a matcher's motive).
 * `let x := v; b` and `have x := v; b` are read as `b` with `v` for `x`.
@@ -45,6 +48,12 @@ variable `α : Type u`, or a term variable `x : T`.
 
 Anything else is refused, with its reason: binders of other sorts, and
 terms that are not first-order applications.
+
+A proof is irrelevant as a value, and is written `proof`.  Where Lean's proof
+term is an abstraction, a hypothesis or a theorem applied to arguments
+(`Quot.sound` and `propext` among the theorems), or a projection onto a proof
+field, the term is kept beside it (`proofBy`): it says which theorems the
+proposition follows from, so that a target can follow the same steps.
 -/
 
 open Lean Meta
@@ -84,6 +93,12 @@ inductive FTerm where
   | sort (level : FLevel)
   /-- A proof: its value is irrelevant (in the set model, 0). -/
   | proof
+  /-- A proof with the term Lean records for it.  Its value is as irrelevant
+  as `proof`'s; the term says how the proposition follows. -/
+  | proofBy (term : FTerm)
+  /-- In a proof term: a theorem applied to as many arguments as its
+  statement binds. -/
+  | cite (name : Name) (args : List FTerm)
   deriving Repr, BEq, Inhabited
 
 /-- A binder of an equation theorem. -/
@@ -121,7 +136,12 @@ partial def readTerm (names : Names) (e : Expr) : FReadM FTerm := do
     match FLevel.of? u with
     | some level => return .sort level
     | none => throwThe String s!"a sort at a level outside parameters and successors: {← ppExpr e}"
-  if ← Meta.isProof e then return .proof
+  if ← Meta.isProof e then
+    let attempt : MetaM (Except String FTerm) :=
+      try (readProof names e).run catch _ => pure (.error "not readable")
+    match ← (monadLift attempt : FReadM (Except String FTerm)) with
+    | .ok term => return .proofBy term
+    | .error _ => return .proof
   -- `let x := v; b` and `have x := v; b`: the binding `(fun x => b) v`, so
   -- that `v` is computed once however often `b` uses `x`.
   if let .letE binderName type value body _ := e then
@@ -131,13 +151,14 @@ partial def readTerm (names : Names) (e : Expr) : FReadM FTerm := do
   -- A proposition, in weak head normal form: `¬p` is `p → False`, `a < b` on
   -- naturals is `Nat.le (a + 1) b`.
   if ← Meta.isProp e then
-    let e' ← whnfD e
+    let e' ← propositionForm e
     -- Not when it only exposes a projection of an instance variable.
     if e' != e && !e'.getAppFn.isProj then return ← readTerm names e'
   -- A type given by a definition (`DecidableEq α`), in weak head normal form.
+  -- (A proposition's form was decided above.)
   if let some c := e.getAppFn.constName? then
     if let some (.defnInfo _) := (← getEnv).find? c then
-      if ← Meta.isType e then
+      if (← Meta.isType e) && !(← Meta.isProp e) then
         let e' ← whnfD e
         if e' != e && !e'.getAppFn.isProj then return ← readTerm names e'
   if e.isConstOf ``Nat.zero then return .app ``Nat.zero []
@@ -198,11 +219,63 @@ where
   binderName' (names : Names) (x : Expr) : MetaM String := do
     let taken := names.toList.map (·.2)
     binderName x s!"x{taken.length}" taken
+  /-- Read a proof by the term Lean records for it: abstractions, and
+  hypotheses, theorems and projections onto proof fields applied to
+  arguments.  A theorem is applied to as many arguments as its statement
+  binds (fewer are eta-expanded).  Anything else is refused. -/
+  readProof (names : Names) (e : Expr) : FReadM FTerm := do
+    let e := (← instantiateMVars e).consumeMData
+    if let .letE _ _ value body _ := e then
+      return ← readProof names (body.instantiate1 value)
+    if e.isAppOfArity ``letFun 4 then
+      return ← readProof names (mkApp (e.getArg! 3) (e.getArg! 2)).headBeta
+    if let .lam binderName type body _ := e then
+      let typeTerm ← readTerm names type
+      return ← Meta.withLocalDeclD binderName type fun x => do
+        let name ← binderName' names x
+        return .lam name typeTerm (← readProof (names.insert x.fvarId! name) (body.instantiate1 x))
+    let readArgument (a : Expr) : FReadM FTerm := do
+      if ← Meta.isProof a then readProof names a else readTerm names a
+    match e.getAppFn.consumeMData with
+    | .fvar id =>
+      let some name := names[id]? | throwThe String s!"an unnamed hypothesis: {← ppExpr e}"
+      if e.getAppNumArgs == 0 then return .var name
+      return .apv (.var name) (← e.getAppArgs.toList.mapM readArgument)
+    | .lam .. => readProof names e.headBeta
+    | .const c levels =>
+      let info ← getConstInfo c
+      let citable ← match info with
+        | .thmInfo _ => pure true
+        | .axiomInfo _ => pure (c == ``propext || c == ``Quot.sound)
+        | _ => pure (← getProjectionFnInfo? c).isSome
+      unless citable do
+        throwThe String s!"a proof by {c}, which is not a theorem"
+      -- As the quotient primitives: only instances at carriers in `Type`.
+      if c == ``Quot.sound then
+        for level in levels do
+          unless level.normalize matches .succ _ do
+            throwThe String s!"Quot.sound at level {level}, which is not a successor"
+      let arity := info.type.getForallBinderNames.length
+      let args := e.getAppArgs
+      if args.size < arity then
+        let expanded ← forallBoundedTelescope (← inferType e) (some (arity - args.size)) fun xs _ =>
+          mkLambdaFVars xs (mkAppN e xs)
+        unless expanded.isLambda do
+          throwThe String s!"{c} applied to fewer arguments than its statement binds"
+        return ← readProof names expanded
+      let own ← (args.extract 0 arity).toList.mapM readArgument
+      if args.size == arity then return .cite c own
+      return .apv (.cite c own) (← (args.extract arity args.size).toList.mapM readArgument)
+    | _ => throwThe String s!"a proof outside the readable profile: {← ppExpr e}"
 
 /-- Read the statement of a theorem: as `readTerm`, except that a proposition
 given by a definition that is not an abbreviation (`Final s`, `Presents w s st`)
-stays folded, under `∀`, implication, `∧` and `∃`. -/
-partial def readStatement (names : Names) (e : Expr) : FReadM FTerm := do
+stays folded, under `∀`, implication, `∧` and `∃`. With `projections`, a
+proposition whose head is a structure projection (`a < b` is `LT.lt` at an
+instance) is read as a term reads it, in its proposition form
+(`Nat.le (a + 1) b`): a theorem cited from a proof term then states its
+hypotheses as the definitions that cite it state theirs. -/
+partial def readStatement (names : Names) (e : Expr) (projections : Bool := false) : FReadM FTerm := do
   let e := (← instantiateMVars e).consumeMData
   match e with
   | .forallE binderName domain body _ =>
@@ -210,23 +283,26 @@ partial def readStatement (names : Names) (e : Expr) : FReadM FTerm := do
         let domainTerm ← readTerm names domain
         Meta.withLocalDeclD binderName domain fun x => do
           let name ← readTerm.binderName' names x
-          return .pi name domainTerm (← readStatement (names.insert x.fvarId! name) (body.instantiate1 x))
+          return .pi name domainTerm
+            (← readStatement (names.insert x.fvarId! name) (body.instantiate1 x) projections)
       else
-        return .arrow (← readStatement names domain) (← readStatement names body)
+        return .arrow (← readStatement names domain projections) (← readStatement names body projections)
   | _ =>
     if let some c := e.getAppFn.constName? then
       if let some (.defnInfo _) := (← getEnv).find? c then
-        unless ← isReducible c do
+        unless (← isReducible c) || (projections && (← getEnv).isProjectionFn c) do
           return .app c (← e.getAppArgs.toList.mapM (readTerm names))
     if e.isAppOfArity ``And 2 then
-      return .app ``And [← readStatement names (e.getArg! 0), ← readStatement names (e.getArg! 1)]
+      return .app ``And [← readStatement names (e.getArg! 0) projections,
+        ← readStatement names (e.getArg! 1) projections]
     if e.isAppOfArity ``Exists 2 then
       if let .lam binderName domain body _ := (e.getArg! 1).consumeMData then
         let domainTerm ← readTerm names domain
         return ← Meta.withLocalDeclD binderName domain fun x => do
           let name ← readTerm.binderName' names x
           return .app ``Exists [← readTerm names (e.getArg! 0),
-            .lam name domainTerm (← readStatement (names.insert x.fvarId! name) (body.instantiate1 x))]
+            .lam name domainTerm
+              (← readStatement (names.insert x.fvarId! name) (body.instantiate1 x) projections)]
     readTerm names e
 
 /-- The level of `Type u`, when `u` is a parameter or `0`. -/
@@ -352,7 +428,47 @@ partial def FTerm.atom : FTerm → String
   | .pi x domain codomain => s!"(pi {egalVar x} {domain.atom} {codomain.atom})"
   | .prop => "(prop)"
   | .sort level => s!"(sort {level.atom})"
+  | .proof | .proofBy _ => "(proof)"
+  | .cite c args => s!"(cite {c} ({" ".intercalate (args.map FTerm.atom)}))"
+
+/-- A term as an atom with its proof terms written out: a proof Lean's term
+is kept for is `(by term)`, and a theorem applied to its arguments is
+`(cite thm (args ..))`. -/
+partial def FTerm.atomWithProofs : FTerm → String
+  | .var x => s!"(var {egalVar x})"
+  | .num n => s!"(num {n})"
+  | .app c args => s!"(app {c} ({" ".intercalate (args.map FTerm.atomWithProofs)}))"
+  | .apv f args => s!"(apv {f.atomWithProofs} ({" ".intercalate (args.map FTerm.atomWithProofs)}))"
+  | .lam x type body => s!"(lam {egalVar x} {type.atomWithProofs} {body.atomWithProofs})"
+  | .arrow domain codomain => s!"(arrow {domain.atomWithProofs} {codomain.atomWithProofs})"
+  | .pi x domain codomain => s!"(pi {egalVar x} {domain.atomWithProofs} {codomain.atomWithProofs})"
+  | .prop => "(prop)"
+  | .sort level => s!"(sort {level.atom})"
   | .proof => "(proof)"
+  | .proofBy term => s!"(by {term.atomWithProofs})"
+  | .cite c args => s!"(cite {c} ({" ".intercalate (args.map FTerm.atomWithProofs)}))"
+
+/-- The proofs of a term in the order its atom writes them: for each, the
+term Lean records, when it was read. -/
+partial def FTerm.proofTerms : FTerm → List (Option FTerm)
+  | .var _ | .num _ | .prop | .sort _ => []
+  | .app _ args | .cite _ args => args.flatMap FTerm.proofTerms
+  | .apv f args => (f :: args).flatMap FTerm.proofTerms
+  | .lam _ type body => type.proofTerms ++ body.proofTerms
+  | .arrow domain codomain | .pi _ domain codomain => domain.proofTerms ++ codomain.proofTerms
+  | .proof => [none]
+  | .proofBy term => [some term]
+
+/-- The theorems a term's proofs cite, in order of first use. -/
+partial def FTerm.cited : FTerm → List Name
+  | .var _ | .num _ | .prop | .sort _ | .proof => []
+  | .app _ args => args.foldl (fun acc a => acc ++ (a.cited.filter (!acc.contains ·))) []
+  | .cite c args => args.foldl (fun acc a => acc ++ (a.cited.filter (!acc.contains ·))) [c]
+  | .apv f args => (f :: args).foldl (fun acc a => acc ++ (a.cited.filter (!acc.contains ·))) []
+  | .lam _ type body => [type, body].foldl (fun acc a => acc ++ (a.cited.filter (!acc.contains ·))) []
+  | .arrow domain codomain | .pi _ domain codomain =>
+      [domain, codomain].foldl (fun acc a => acc ++ (a.cited.filter (!acc.contains ·))) []
+  | .proofBy term => term.cited
 
 def FBinder.atom : FBinder → String
   | .type x level => s!"(type {egalVar x} {egalLevel level})"
@@ -378,6 +494,8 @@ partial def FTerm.constants : FTerm → List Name
       [domain, codomain].foldl (fun acc a => acc ++ (a.constants.filter (!acc.contains ·))) []
   | .pi _ domain codomain =>
       [domain, codomain].foldl (fun acc a => acc ++ (a.constants.filter (!acc.contains ·))) []
-  | .prop | .proof | .sort _ => []
+  -- A proof's term adds no function to the closure: what it cites is
+  -- recorded separately (`FTerm.cited`).
+  | .prop | .proof | .proofBy _ | .cite _ _ | .sort _ => []
 
 end Mettapedia.Languages.Lean.Declarations

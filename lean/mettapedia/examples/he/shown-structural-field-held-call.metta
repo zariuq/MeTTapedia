@@ -1,0 +1,12 @@
+(: SlotNode (-> Number SlotNodeType))
+(: SlotBox (-> SlotNodeType SlotBoxType))
+(: slot-produce-node (-> SlotNodeType))
+(= (slot-produce-node) (SlotNode 7))
+(: slot-hold (-> Atom Atom))
+(= (slot-hold $value) $value)
+(: slot-project (-> SlotBoxType SlotNodeType))
+(= (slot-project (SlotBox $value)) $value)
+
+!(slot-project (SlotBox (SlotNode 7)))
+!(slot-project (SlotBox (slot-produce-node)))
+!(slot-project (slot-hold (SlotBox (slot-produce-node))))

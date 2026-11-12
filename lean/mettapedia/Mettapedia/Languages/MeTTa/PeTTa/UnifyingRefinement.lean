@@ -116,6 +116,7 @@ theorem BindingRefines.arguments {initial bindings bound : Subst} (good : Bindin
 
 def ControlRefines (initial : Subst) : Control → Prop
   | .evaluate bindings _ => BindingRefines initial bindings
+  | .dynamic bindings _ _ => BindingRefines initial bindings
   | .arguments bindings _ _ _ _ => BindingRefines initial bindings
   | .sequence pending answers =>
       (∀ control ∈ pending, ControlRefines initial control) ∧
@@ -133,6 +134,40 @@ def FrameRefines (initial : Subst) : Frame → Prop
 def ConfigurationRefines (initial : Subst) (configuration : Configuration) : Prop :=
   ControlRefines initial configuration.control ∧
     ∀ frame ∈ configuration.frames, FrameRefines initial frame
+
+theorem dispatchAnswer_refines {initial : Subst} (answer : Answer)
+    (good : BindingRefines initial answer.bindings) : ControlRefines initial (dispatchAnswer answer) := by
+  rcases answer with ⟨value, bindings⟩
+  cases value with
+  | symbol name => simpa [dispatchAnswer, ControlRefines] using good
+  | var name => simpa [dispatchAnswer, ControlRefines] using good
+  | grounded value => simpa [dispatchAnswer, ControlRefines] using good
+  | expression items =>
+      cases items <;> simpa [dispatchAnswer, ControlRefines] using good
+
+theorem recovered_frames_refine {initial : Subst} (earned : List Answer) (frames : List Frame)
+    (earnedGood : ∀ answer ∈ earned, BindingRefines initial answer.bindings)
+    (framesGood : ∀ frame ∈ frames, FrameRefines initial frame)
+    (answers : List Answer) (remaining : List Frame)
+    (recovered : recoverDynamic earned frames = some (answers, remaining)) :
+    (∀ answer ∈ answers, BindingRefines initial answer.bindings) ∧
+      (∀ frame ∈ remaining, FrameRefines initial frame) := by
+  induction frames generalizing earned with
+  | nil => cases recovered
+  | cons frame rest ih =>
+      have headGood := framesGood frame (by simp)
+      have tailGood : ∀ frame ∈ rest, FrameRefines initial frame :=
+        fun frame member => framesGood frame (List.mem_cons_of_mem _ member)
+      cases frame with
+      | dynamicCall =>
+          simp only [recoverDynamic, Option.some.injEq, Prod.mk.injEq] at recovered
+          rcases recovered with ⟨rfl, rfl⟩
+          exact ⟨earnedGood, tailGood⟩
+      | sequence pending completed =>
+          apply ih (completed ++ earned) ?_ tailGood recovered
+          intro answer member
+          exact (List.mem_append.mp member).elim (headGood.2 answer) (earnedGood answer)
+      | _ => exact ih [] (by simp) tailGood recovered
 
 theorem selections_refines {initial bindings : Subst} (good : BindingRefines initial bindings)
     (values : List Atom) : ∀ use equations selected,
@@ -301,6 +336,50 @@ theorem queryBodies_refines {initial bindings : Subst} (good : BindingRefines in
               · simpa only [ControlRefines] using good.terms _ _ unified
               · exact ih _ _ tailRun control present
 
+theorem matchAnswers_refines {initial bindings : Subst} (good : BindingRefines initial bindings)
+    (pattern template : Atom) : ∀ use rows answers,
+    matchAnswers bindings pattern template use rows = some answers →
+      ∀ answer ∈ answers, BindingRefines initial answer.bindings := by
+  intro use rows
+  induction rows generalizing use with
+  | nil =>
+      intro answers queried
+      cases queried
+      simp
+  | cons row rest ih =>
+      intro answers queried
+      simp only [matchAnswers] at queried
+      cases tailRun : matchAnswers bindings pattern template (use + 1) rest with
+      | none => simp [tailRun] at queried
+      | some tail =>
+          simp only [tailRun] at queried
+          cases unified : unify bindings pattern (rename use row) with
+          | exhausted => simp [unified] at queried
+          | clash =>
+              simp [unified] at queried
+              subst answers
+              exact ih _ _ tailRun
+          | ok bound =>
+              simp [unified] at queried
+              subst answers
+              intro answer member
+              rcases List.mem_cons.mp member with rfl | present
+              · exact good.terms _ _ unified
+              · exact ih _ _ tailRun answer present
+
+theorem matchCall_refines {initial bindings : Subst} (good : BindingRefines initial bindings)
+    (state : Effects.State) (use : Nat) (values : List Atom) (answers : List Answer) (used : Nat)
+    (queried : matchCall state bindings use values = some (.ok (answers,used))) :
+    ∀ answer ∈ answers, BindingRefines initial answer.bindings := by
+  unfold matchCall at queried
+  split at queried
+  · split at queried
+    · cases queried
+    · obtain ⟨returned,source,same⟩ := Option.map_eq_some_iff.mp queried
+      cases same
+      exact matchAnswers_refines good _ _ _ _ _ source
+  · cases queried
+
 theorem queries_refines {initial : Subst} (state : Effects.State) (pattern body : Atom) :
     ∀ use answers continued used, (∀ answer ∈ answers, BindingRefines initial answer.bindings) →
       queries state pattern body use answers = some (continued, used) →
@@ -361,6 +440,28 @@ theorem transition_refines {registry : SpaceSemantics.Program} {initial : Subst}
   case equations bindings head index held selected used control ordinary notRemove notNative chosen =>
     refine ⟨application_refines ?_ _ _ _ _ _ _ _ chosen, framesGood⟩
     simpa only [control, ControlRefines] using controlGood
+  case native_query bindings index held answers used control queried =>
+    refine ⟨?_,framesGood⟩
+    simpa only [ControlRefines] using
+      matchCall_refines (by simpa only [control,ControlRefines] using controlGood) _ _ _ _ _ queried
+  case dynamic_equations bindings callee supplied head selected used control resolved notNative registered chosen =>
+    refine ⟨application_refines ?_ _ _ _ _ _ _ _ chosen, ?_⟩
+    · simpa only [control, ControlRefines] using controlGood
+    · cases selected <;> simpa only [invocationFrames, List.mem_cons, forall_eq_or_imp,
+        FrameRefines, true_and] using framesGood
+  case fault_caught reason earned rest control recovered =>
+    simpa only [ConfigurationRefines, ControlRefines] using
+      recovered_frames_refine [] source.frames (by simp) framesGood earned rest recovered
+  case dispatch_return answers rest control frames =>
+    have incoming : ∀ answer ∈ answers, BindingRefines initial answer.bindings := by
+      simpa only [control, ControlRefines] using controlGood
+    refine ⟨?_, ?_⟩
+    · simp only [ControlRefines, List.not_mem_nil, false_implies, implies_true, and_true]
+      intro pending member
+      rcases List.mem_map.mp member with ⟨answer, sourceMember, rfl⟩
+      exact dispatchAnswer_refines answer (incoming answer sourceMember)
+    · intro frame member
+      exact framesGood frame (by rw [frames]; exact List.mem_cons_of_mem _ member)
   case binding_return answers pattern body rest continued control frames bound =>
     have all := bindAnswers_refines (initial := initial) pattern body answers continued
       (by simpa only [control, ControlRefines] using controlGood) bound

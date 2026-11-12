@@ -1,0 +1,9 @@
+let A B f. assume Hf: f :e (Pi_ ux :e A, (Pi_ ux :e B, B)).
+let xs. assume Hxs: xs :e Lean_List A. let ys. assume Hys: ys :e Lean_List A.
+assume Hlc: 0 :e Lean_LeftCommutative_Prop A B f.
+assume Hperm: 0 :e Lean_List_Perm_Prop A xs ys.
+let b. assume Hb: b :e B.
+exact Lean_Eq_proof_of B (Lean_List_foldr A B f b xs) (Lean_List_foldr A B f b ys)
+  (LeanListPerm_foldr A B f Hf
+    (fun x Hx y Hy value Hvalue => LeanLeftCommutative_elim A B f Hlc y Hy x Hx value Hvalue)
+    b Hb xs ys (LeanListPerm_from_prop A xs ys Hperm)).

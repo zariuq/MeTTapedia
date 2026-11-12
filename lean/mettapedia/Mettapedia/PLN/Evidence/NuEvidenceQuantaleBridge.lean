@@ -502,7 +502,7 @@ theorem min_c2w_eq_c2w_min_capConf (c1 c2 : ℝ) :
   · simp only [h, ↓reduceIte]
     have hle : c2w c1 ≤ c2w c2 := c2w_monotone_on_capped c1 c2 h
     exact min_eq_left hle
-  · push_neg at h
+  · push Not at h
     simp only [not_le.mpr h, ↓reduceIte]
     have hle : c2w c2 ≤ c2w c1 := c2w_monotone_on_capped c2 c1 (le_of_lt h)
     exact min_eq_right hle

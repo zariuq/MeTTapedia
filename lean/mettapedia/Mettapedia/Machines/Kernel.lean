@@ -11,6 +11,7 @@ import Mettapedia.Machines.Kernel.SharedCalls
 import Mettapedia.Machines.Kernel.EpochTransition
 import Mettapedia.Machines.Kernel.EpochLedger
 import Mettapedia.Machines.Kernel.EpochMemory
+import Mettapedia.Machines.Kernel.FrameLease
 import Mettapedia.Machines.Kernel.EpochHandover
 import Mettapedia.Machines.Kernel.EpochActivation
 import Mettapedia.Machines.Kernel.EpochDevice

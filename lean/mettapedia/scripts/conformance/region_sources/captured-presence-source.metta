@@ -1,0 +1,20 @@
+(sat 1 7)
+(sat 1 7)
+(sat 1 8)
+
+(= (present $tag $node)
+  (not (== (collapse (once (match &self (sat $tag $node) t))) ())))
+(= (choose $tag $node)
+  (if (present $tag $node)
+    (add-atom &self (picked yes))
+    (add-atom &self (picked no))))
+
+!(choose 1 7)
+!(choose 1 9)
+!(collapse (match &self (picked $which) $which))
+!(let $ignored $shared
+  (let $ignored (add-atom &self (aliased-write))
+    (quote ($ignored $shared))))
+!(collapse (match &self (aliased-write) t))
+!(if (present 1 7) kept (empty))
+!(if (present 1 9) (empty) missing)

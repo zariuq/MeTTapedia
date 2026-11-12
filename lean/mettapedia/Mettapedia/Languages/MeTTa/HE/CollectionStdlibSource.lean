@@ -68,7 +68,8 @@ def instructionTypeRows : List Atom :=
    declaration "chain" (arrow [Atom.atomType, Atom.variableType, Atom.atomType] Atom.undefinedType),
    declaration "context-space" (arrow [] (.symbol "SpaceType")),
    declaration "collapse-bind" (arrow [Atom.atomType] Atom.expressionType),
-   declaration "metta" (arrow [Atom.atomType, .symbol "Type", .symbol "SpaceType"] Atom.atomType)]
+   declaration "metta" (arrow [Atom.atomType, .symbol "Type", .symbol "SpaceType"] Atom.atomType),
+   declaration "unify" (arrow [Atom.atomType, Atom.atomType, Atom.atomType, Atom.atomType] Atom.undefinedType)]
 
 def extensionRows : List Atom := authoredRows ++ nativeTypeRows ++ instructionTypeRows
 

@@ -68,7 +68,7 @@ theorem complete_frame (policy : Policy) (live : List Atom) (before : Frame) (va
       (CollectionStdlibSource.equation CollectionStdlibSource.squarePattern CollectionStdlibSource.squareBody) [work] :=
     .hit 9 _ _ _ _ matched output ⟨rename, injective, renamedPattern, renamedBody, fresh⟩ matching merged
   have frontier : EquationFrontierRel HECollectionSpaceExtension.space live (call value).erase before.bindings
-      ([[], [], [], [], [], [], [], [], [], [work], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []] :
+      ([[], [], [], [], [], [], [], [], [], [work], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []] :
         List (List EquationWork)).flatten := by
     apply EquationFrontierRel.completed
     simp only [HECollectionSpaceExtension.space, HERangeSourceProgram.space, HERangeSourceProgram.declaredSpace,
@@ -77,7 +77,7 @@ theorem complete_frame (policy : Policy) (live : List Atom) (before : Frame) (va
       List.cons_append, List.nil_append, List.zipIdx_cons, List.zipIdx_nil]
     refine .cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ (.cons hit
       (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_
-        (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ .nil))))))))))))))))))))))))
+        (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ (.cons ?_ .nil)))))))))))))))))))))))))
     all_goals first
       | exact HERangeEquationFrontiers.annotation_irrelevant _ _ _ _ _ _
       | dsimp only [call, Entry.Value.erase, List.map, HEFreshEquationFrames.Range.pattern,

@@ -1,0 +1,5 @@
+2
+0
+2
+3
+(seed (pair a seed) (pair b seed) (pair b (pair a seed)))

@@ -1,0 +1,17 @@
+(r 0 1)
+(r 0 1)
+(s 1 2)
+(s 1 0)
+
+(= (paths $space)
+   (match $space (r $x $y)
+     (match $space (s $y $z) (triple $x $y $z))))
+(= (wrapper $table) (paths $table))
+
+!(collapse (match &self (r $x $y)
+   (match &self (s $y $z) (triple $x $y $z))))
+!(collapse (wrapper &self))
+!(size-atom (collapse (wrapper &self)))
+!(collapse (match &self (r $x $x) $x))
+!(collapse (let $saved (quote &self) (paths $saved)))
+!(tag (< (size-atom (collapse (wrapper &self))) 5))
