@@ -1,5 +1,3 @@
-import Mettapedia.Languages.MeTTa.HE.CeTTaRuntimeContracts
-
 /-!
 # MM2 Syntax↔IR Symbol Lowering/Raising Round-Trip
 

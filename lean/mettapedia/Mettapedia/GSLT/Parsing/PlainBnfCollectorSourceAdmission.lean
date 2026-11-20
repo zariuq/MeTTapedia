@@ -175,15 +175,15 @@ private theorem discoveryOperators6_encoded :
   decide
 
 private def discoveryOperators7 : List Operator :=
-  (((operatorRows discoverySyntax).drop 70).take 10).filterMap decodeOperator
+  ((operatorRows discoverySyntax).drop 70).filterMap decodeOperator
 
 private theorem discoveryOperators7_decoded :
-    decodeList decodeOperator (((operatorRows discoverySyntax).drop 70).take 10) = some discoveryOperators7 := by
+    decodeList decodeOperator ((operatorRows discoverySyntax).drop 70) = some discoveryOperators7 := by
   dsimp only [discoveryOperators7, operatorRows, discoverySyntax, List.drop, List.take]
   simp [decodeList, decodeOperator, atomToken?]
 
 private theorem discoveryOperators7_encoded :
-    discoveryOperators7.map encodeOperator = ((operatorRows discoverySyntax).drop 70).take 10 := by
+    discoveryOperators7.map encodeOperator = (operatorRows discoverySyntax).drop 70 := by
   dsimp only [discoveryOperators7, operatorRows, discoverySyntax, List.drop, List.take]
   simp [decodeOperator, atomToken?, encodeOperator, encodeAtomToken]
   decide
@@ -192,7 +192,7 @@ def discoveryOperators : List Operator :=
   discoveryOperators0 ++ discoveryOperators1 ++ discoveryOperators2 ++ discoveryOperators3 ++ discoveryOperators4 ++ discoveryOperators5 ++ discoveryOperators6 ++ discoveryOperators7
 
 private theorem discoveryOperators_partition :
-    operatorRows discoverySyntax = ((operatorRows discoverySyntax).drop 0).take 10 ++ ((operatorRows discoverySyntax).drop 10).take 10 ++ ((operatorRows discoverySyntax).drop 20).take 10 ++ ((operatorRows discoverySyntax).drop 30).take 10 ++ ((operatorRows discoverySyntax).drop 40).take 10 ++ ((operatorRows discoverySyntax).drop 50).take 10 ++ ((operatorRows discoverySyntax).drop 60).take 10 ++ ((operatorRows discoverySyntax).drop 70).take 10 := by rfl
+    operatorRows discoverySyntax = ((operatorRows discoverySyntax).drop 0).take 10 ++ ((operatorRows discoverySyntax).drop 10).take 10 ++ ((operatorRows discoverySyntax).drop 20).take 10 ++ ((operatorRows discoverySyntax).drop 30).take 10 ++ ((operatorRows discoverySyntax).drop 40).take 10 ++ ((operatorRows discoverySyntax).drop 50).take 10 ++ ((operatorRows discoverySyntax).drop 60).take 10 ++ (operatorRows discoverySyntax).drop 70 := by rfl
 
 theorem discoveryOperators_decoded :
     decodeList decodeOperator (operatorRows discoverySyntax) = some discoveryOperators := by
@@ -327,15 +327,15 @@ private theorem indexOperators1_encoded :
   decide
 
 private def indexOperators2 : List Operator :=
-  (((operatorRows indexSyntax).drop 20).take 10).filterMap decodeOperator
+  ((operatorRows indexSyntax).drop 20).filterMap decodeOperator
 
 private theorem indexOperators2_decoded :
-    decodeList decodeOperator (((operatorRows indexSyntax).drop 20).take 10) = some indexOperators2 := by
+    decodeList decodeOperator ((operatorRows indexSyntax).drop 20) = some indexOperators2 := by
   dsimp only [indexOperators2, operatorRows, indexSyntax, List.drop, List.take]
   simp [decodeList, decodeOperator, atomToken?]
 
 private theorem indexOperators2_encoded :
-    indexOperators2.map encodeOperator = ((operatorRows indexSyntax).drop 20).take 10 := by
+    indexOperators2.map encodeOperator = (operatorRows indexSyntax).drop 20 := by
   dsimp only [indexOperators2, operatorRows, indexSyntax, List.drop, List.take]
   simp [decodeOperator, atomToken?, encodeOperator, encodeAtomToken]
   decide
@@ -344,7 +344,7 @@ def indexOperators : List Operator :=
   indexOperators0 ++ indexOperators1 ++ indexOperators2
 
 private theorem indexOperators_partition :
-    operatorRows indexSyntax = ((operatorRows indexSyntax).drop 0).take 10 ++ ((operatorRows indexSyntax).drop 10).take 10 ++ ((operatorRows indexSyntax).drop 20).take 10 := by rfl
+    operatorRows indexSyntax = ((operatorRows indexSyntax).drop 0).take 10 ++ ((operatorRows indexSyntax).drop 10).take 10 ++ (operatorRows indexSyntax).drop 20 := by rfl
 
 theorem indexOperators_decoded :
     decodeList decodeOperator (operatorRows indexSyntax) = some indexOperators := by
@@ -467,14 +467,14 @@ theorem discovery_rewrite_count : discoverySource.rewrites.length = 79 := by rfl
 
 theorem index_rewrite_count : indexSource.rewrites.length = 20 := by rfl
 
-theorem discovery_operator_count : discoverySource.operators.length = 80 := by
+theorem discovery_operator_count : discoverySource.operators.length = 82 := by
   have h := congrArg List.length discoveryOperators_encoded
-  have count : (operatorRows discoverySyntax).length = 80 := by rfl
+  have count : (operatorRows discoverySyntax).length = 82 := by rfl
   simpa only [discoverySource, List.length_map, count] using h
 
-theorem index_operator_count : indexSource.operators.length = 26 := by
+theorem index_operator_count : indexSource.operators.length = 27 := by
   have h := congrArg List.length indexOperators_encoded
-  have count : (operatorRows indexSyntax).length = 26 := by rfl
+  have count : (operatorRows indexSyntax).length = 27 := by rfl
   simpa only [indexSource, List.length_map, count] using h
 
 theorem discovery_family_occurrences :

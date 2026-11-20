@@ -63,8 +63,8 @@ def twoContinue (fuel : Nat) {Θ : Context S.R} {equation : Equation (TotalTerm 
       let same := id_replace_equivalent choices reading.2.2 found.property firstComputed secondComputed rest
       match ContextualDependentRigidDecomposition.localsRule rigid complete facts roots heads algebra declared choices
           reducer root fuel (firstClosed.equation :: secondClosed.equation :: rest) with
-      | some absent => some (.refuted fun solvable =>
-          absent.down (((Update.pending S.levels _).rephrase same).solvable_iff.mp solvable))
+      | some missing => some (.refuted fun solvable =>
+          missing.down (((Update.pending S.levels _).rephrase same).solvable_iff.mp solvable))
       | none => afterParts facts roots heads algebra declared choices reducer rigid complete root normalizes certifyNormal
           headTypingUnique fuel (firstClosed.equation :: secondClosed.equation :: rest) same
   | _, _ => none

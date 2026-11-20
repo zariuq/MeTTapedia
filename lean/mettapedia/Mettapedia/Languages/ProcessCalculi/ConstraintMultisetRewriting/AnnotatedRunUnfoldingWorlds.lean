@@ -1,5 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.AnnotatedRunUnfolding
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.StratifiedCensusCollection
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.StratifiedQueryCollection
 
 /-!
 # Branch observations and causal classes of the finite unfolding
@@ -92,7 +92,7 @@ def collectQueries (layer : Sources.TermLayer N Value Pattern)
     (contents : List Row) (pattern template : Pattern)
     (store : World → Store N Value) (worlds : List World) : List Value :=
   worlds.flatMap fun world =>
-    (StratifiedCensusCollection.observe layer matcher label contents pattern template (store world)).answer
+    (StratifiedQueryCollection.observe layer matcher label contents pattern template (store world)).answer
 
 /-- When each branch's dependencies are determined, refining its store
 leaves the actual collected answer sequence unchanged. Scanner order and row
@@ -103,7 +103,7 @@ theorem collectQueries_stable (layer : Sources.TermLayer N Value Pattern)
     (regionReads : ∀ value, ReadsOnly names
       (fun state => Sources.Matcher.region matcher state pattern value))
     (valueReads : ∀ value, ReadsOnly names
-      (fun state => StratifiedCensusCollection.emitted layer matcher pattern template state value))
+      (fun state => StratifiedQueryCollection.emitted layer matcher pattern template state value))
     (first second : World → Store N Value) (worlds : List World)
     (determined : ∀ world ∈ worlds, Determined names (first world))
     (refines : ∀ world ∈ worlds, first world ⊑ second world) :
@@ -112,7 +112,7 @@ theorem collectQueries_stable (layer : Sources.TermLayer N Value Pattern)
   induction worlds with
   | nil => rfl
   | cons world rest ih =>
-    have same := StratifiedCensusCollection.stable_after_determination layer matcher label
+    have same := StratifiedQueryCollection.stable_after_determination layer matcher label
       contents pattern template names regionReads valueReads
       (determined world (by simp)) (refines world (by simp))
     exact congrArg₂ (· ++ ·) (congrArg (fun packet => packet.1.answer) same)

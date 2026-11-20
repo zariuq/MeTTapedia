@@ -31,17 +31,20 @@ hypothesis, stated on the program: it mentions rows, patterns and bodies, never 
   answer list `L` that HE's machine returns from pending work on the term under any live list,
   scope, activation and stack (`HEEvaluates`), and that PeTTa's streaming machine delivers, in
   order, under any frames (`PeTTaEvaluates`, in continuation form through `Delivers`).
-* `answers_agree`, `answer_bags_agree`, `answer_bags_agree_with_he_lookups`: **HE's complete run
-  from its entry configuration publishes exactly the atoms that PeTTa's streaming run of the
-  translation yields from some fuel on, in the same order and with the same multiplicities**; so
-  the bags agree.
+* `answers_agree`, `answer_bags_agree_with_he_lookups`: **HE's machine has a complete run from HE's
+  entry configuration, and it publishes the bag of atoms that PeTTa's streaming run of the
+  translation yields from some fuel on, with the same multiplicities.** Order is not stated: the
+  model's run gives PeTTa's list (`settles_agree`), while HE publishes the alternatives of a body
+  that is itself a nondeterministic call in another order, the same on every run (`(toss)` below:
+  HE answers `tails, heads, edge`), so the bag is what is HE's.
 * `uncovered_calls_differ`: a call whose head has an equation of its arity but no matching row:
   HE answers the call, PeTTa answers nothing (more in `FragmentDifferences`).
 
 ## Controls
 
-* `Controls.toss_agrees` (several equations, a call body, recursion): `heads`, `tails`, `edge` in
-  both; `Controls.pick_agrees` (a literal and a variable pattern both match): `one`, `any`.
+* `Controls.toss_agrees` (several equations, a call body, recursion): the bag of `heads`, `tails`,
+  `edge` in both (PeTTa lists `heads, tails, edge`, HE `tails, heads, edge`);
+  `Controls.pick_agrees` (a literal and a variable pattern both match): `one`, `any`.
 * `Controls.five_differs`: `(f 5)` on `{(= (f 4) 8)}`: HE `(f 5)`, PeTTa nothing.
 * `Controls.loop_does_not_settle`: `(loop)` on `{(= (loop) (loop))}` does not settle, so the
   termination hypothesis is not vacuous.
@@ -1448,7 +1451,9 @@ section Joint
 variable {dispatch : GroundedDispatch} {lookup : CastLookup} {policy : Policy}
 
 /-- **Both machines evaluate every settling term to the same answer list**: one induction on the
-program's settling derivation, with the list shared by the two machines. -/
+program's settling derivation, with the list shared by the two machines. The list is the model's
+order, which is PeTTa's; HE's order can differ (`Controls.toss_agrees`), and HE's claim is the bag
+(`answers_agree`, `EveryRun.every_complete_run`). -/
 theorem settles_agree (answers : AnswersUndefined lookup) {atoms : List Atom}
     (program : ∀ row ∈ atoms, RegionsWithVariables.ConsFreeHeads row) {t : Atom}
     (settles : Settles dispatch atoms t) :
@@ -1541,13 +1546,15 @@ theorem he_complete {atoms : List Atom} {c : Atom} {L : List Atom}
   obtain ⟨R, eraseR, path⟩ := evaluates [] [] Completed.Frame.empty [] []
   exact ⟨R, eraseR, path.trans (HERuns.publish_all _ R []), rfl⟩
 
-/-- **The answers agree over the fragment** (the generalization of
+/-- **The answers agree over the fragment, as bags** (the generalization of
 `CompleteRun.double_complete_run`). For a program of symbol-headed, `cons`-free equations and a
 term that settles in it (a flat ground call of data atoms whose head is undeclared, no host
 operation and no instruction, with termination and coverage stated on the program): HE's machine,
-with any cast lookup meeting `AnswersUndefined` and any policy, runs from its entry configuration to
-a completed phase, and from some fuel on PeTTa's streaming run of the translation yields exactly the
-atoms HE published, in the same order and with the same multiplicities. -/
+with any cast lookup meeting `AnswersUndefined` and any policy, runs from HE's entry configuration
+to a completed phase, and from some fuel on PeTTa's streaming run of the translation yields the bag
+of atoms that run published, with the same multiplicities. Order is not an observation of HE: HE
+publishes the alternatives of a nondeterministic body in another order than the model's. The
+model's run and PeTTa's give one list (`settles_agree`, the model's order). -/
 theorem answers_agree (dispatch : GroundedDispatch) {lookup : CastLookup}
     (answers : AnswersUndefined lookup) (policy : Policy) {atoms : List Atom}
     (program : ∀ row ∈ atoms, RegionsWithVariables.ConsFreeHeads row) {c : Atom}
@@ -1558,30 +1565,13 @@ theorem answers_agree (dispatch : GroundedDispatch) {lookup : CastLookup}
           ⟨Space.ofList atoms, .returning [], [], heAnswers⟩ ∧
         observe ⟨Space.ofList atoms, .returning [], [], heAnswers⟩ = some heAnswers ∧
         ∀ n, N ≤ n →
-          Streaming.values (Streaming.advance (translate atoms) n
-            (Streaming.enter { state := store atoms } c)) = heAnswers.map (fun r => r.1.erase) := by
+          ((Streaming.values (Streaming.advance (translate atoms) n
+            (Streaming.enter { state := store atoms } c)) : List Atom) : Multiset Atom) =
+            ((heAnswers.map (fun r => r.1.erase) : List Atom) : Multiset Atom) := by
   obtain ⟨L, clean, he, petta⟩ := settles_agree (policy := policy) answers program settles
   obtain ⟨R, eraseR, path, observed⟩ := he_complete he
   obtain ⟨N, stable⟩ := petta_complete (settles_facts settles).ground clean petta
   exact ⟨R, N, path, observed, fun n bigger => by rw [stable n bigger, eraseR]⟩
-
-/-- **The answer bags agree over the fragment**: the same statement read as bags. Order is not an
-observation in either dialect; multiplicity is, and it is kept. -/
-theorem answer_bags_agree (dispatch : GroundedDispatch) {lookup : CastLookup}
-    (answers : AnswersUndefined lookup) (policy : Policy) {atoms : List Atom}
-    (program : ∀ row ∈ atoms, RegionsWithVariables.ConsFreeHeads row) {c : Atom}
-    (settles : Settles dispatch atoms c) :
-    ∃ (heAnswers : List Result) (N : Nat),
-      Relation.ReflTransGen (HEStep dispatch lookup policy)
-          (load (Space.ofList atoms) c Atom.undefinedType)
-          ⟨Space.ofList atoms, .returning [], [], heAnswers⟩ ∧
-        observe ⟨Space.ofList atoms, .returning [], [], heAnswers⟩ = some heAnswers ∧
-        ∀ n, N ≤ n →
-          ((heAnswers.map fun r => r.1.erase : List Atom) : Multiset Atom) =
-            (Streaming.values (Streaming.advance (translate atoms) n
-              (Streaming.enter { state := store atoms } c)) : Multiset Atom) := by
-  obtain ⟨R, N, path, observed, agree⟩ := answers_agree dispatch answers policy program settles
-  exact ⟨R, N, path, observed, fun n bigger => by rw [agree n bigger]⟩
 
 /-- **With either of HE's own cast lookups** (the historical list storage and the scoped fresh
 variants), the answer bags agree on every settling term. -/
@@ -1601,8 +1591,11 @@ theorem answer_bags_agree_with_he_lookups (dispatch : GroundedDispatch) (policy 
   intro lookup member
   simp only [List.mem_cons, List.not_mem_nil, or_false] at member
   rcases member with rfl | rfl
-  · exact answer_bags_agree dispatch raw_answers policy program settles
-  · exact answer_bags_agree dispatch scoped_answers policy program settles
+  · obtain ⟨R, N, path, observed, agree⟩ := answers_agree dispatch raw_answers policy program settles
+    exact ⟨R, N, path, observed, fun n bigger => (agree n bigger).symm⟩
+  · obtain ⟨R, N, path, observed, agree⟩ :=
+      answers_agree dispatch scoped_answers policy program settles
+    exact ⟨R, N, path, observed, fun n bigger => (agree n bigger).symm⟩
 
 /-! ## Where the answers differ inside the fragment -/
 
@@ -1735,14 +1728,16 @@ theorem toss_settles : Settles noHost coinRows (app "toss" []) := by
   · exact settles_symbol "edge" (by decide) (by decide) (by decide)
 
 /-- **Positive control: several equations, a call body, multiplicity.** `(toss)` on the coin
-program: HE's complete run publishes `heads`, `tails`, `edge`, and PeTTa's streaming run of the
-translation yields the same three values. -/
+program: HE's complete run publishes the bag of `heads`, `tails`, `edge` (HE answers
+`[tails, heads, edge]`), and PeTTa's streaming run of the translation yields the list
+`heads, tails, edge`. -/
 theorem toss_agrees {lookup : CastLookup} (answers : AnswersUndefined lookup) (policy : Policy) :
     ∃ heAnswers : List Result,
       Relation.ReflTransGen (HEStep noHost lookup policy)
           (load (Space.ofList coinRows) (app "toss" []) Atom.undefinedType)
           ⟨Space.ofList coinRows, .returning [], [], heAnswers⟩ ∧
-        heAnswers.map (fun r => r.1.erase) = [sym "heads", sym "tails", sym "edge"] ∧
+        ((heAnswers.map (fun r => r.1.erase) : List Atom) : Multiset Atom) =
+          (([sym "tails", sym "heads", sym "edge"] : List Atom) : Multiset Atom) ∧
         Streaming.values (Streaming.advance (translate coinRows) 80
           (Streaming.enter { state := store coinRows } (app "toss" []))) =
           [sym "heads", sym "tails", sym "edge"] := by
@@ -1757,7 +1752,8 @@ theorem toss_agrees {lookup : CastLookup} (answers : AnswersUndefined lookup) (p
   refine ⟨R, path, ?_, computed⟩
   have later := agree (max N 80) (le_max_left _ _)
   rw [advance_stable (List.eq_nil_of_length_eq_zero finished) _ (le_max_right _ _), computed] at later
-  exact later.symm
+  rw [← later]
+  exact Multiset.coe_eq_coe.mpr (List.Perm.swap _ _ _)
 
 /-- `(pick 1)`: a literal pattern and a variable pattern both match. -/
 theorem pick_bodies : regionBodies coinRows "pick" [.grounded (.int 1)] = [sym "one", sym "any"] := by
@@ -1793,11 +1789,13 @@ theorem pick_agrees {lookup : CastLookup} (answers : AnswersUndefined lookup) (p
       (Streaming.enter { state := store coinRows }
         (app "pick" [.grounded (.int 1)]))).agenda.length = 0 := by
     decide +kernel
-  obtain ⟨R, N, path, _, agree⟩ := answers_agree noHost answers policy coin_program pick_settles
+  obtain ⟨L, clean, he, petta⟩ := settles_agree (policy := policy) answers coin_program pick_settles
+  obtain ⟨R, eraseR, path, _⟩ := he_complete he
+  obtain ⟨N, stable⟩ := petta_complete (settles_facts pick_settles).ground clean petta
   refine ⟨R, path, ?_⟩
-  have later := agree (max N 60) (le_max_left _ _)
+  have later := stable (max N 60) (le_max_left _ _)
   rw [advance_stable (List.eq_nil_of_length_eq_zero finished) _ (le_max_right _ _), computed] at later
-  exact later.symm
+  rw [eraseR, ← later]
 
 /-- `{(= (f 4) 8)}`. -/
 def fourRows : List Atom := [rule (app "f" [.grounded (.int 4)]) (.grounded (.int 8))]
@@ -1888,7 +1886,6 @@ end Controls
 #print axioms petta_complete
 #print axioms he_complete
 #print axioms answers_agree
-#print axioms answer_bags_agree
 #print axioms answer_bags_agree_with_he_lookups
 #print axioms uncovered_calls_differ
 #print axioms Controls.toss_agrees

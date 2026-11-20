@@ -75,6 +75,13 @@ def endpointMap {start : State rules O} {first second : (helperStep levels O).to
     (cell : Transport.RunRearrangement.Cell (helperTransport levels O) first second) :
     PlainIso levels first.last second.last := (endpointFunctor levels O start).map cell
 
+theorem endpointMap_generator {start : State rules O}
+    {first second : (helperStep levels O).toStep.Run start}
+    (witness : Transport.RunRearrangement.Generator (helperTransport levels O) first second) :
+    endpointMap levels O (Transport.RunRearrangement.generator (helperTransport levels O) witness) =
+      (endpointGenerators levels O start).map witness :=
+  Prefunctor.congr_hom (Quiver.FreeGroupoid.lift_spec (endpointGenerators levels O start)) witness
+
 theorem endpointMap_comp {start : State rules O}
     {first second third : (helperStep levels O).toStep.Run start}
     (one : Transport.RunRearrangement.Cell (helperTransport levels O) first second)

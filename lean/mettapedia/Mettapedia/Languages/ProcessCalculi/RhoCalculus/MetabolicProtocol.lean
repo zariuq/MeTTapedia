@@ -60,10 +60,27 @@ private theorem actual_comm (receiver resource result : RhoProcess)
   have resourceTyped := ((rhoClosedTermWellSorted_process_iff _).mp resource.2).1
   rw [resourceShape] at resourceTyped
   have contentsTyped := (rho_output_wellSorted_inv resourceTyped).2
-  refine ⟨parallel (receiver :: resource :: rest), parallel (result :: rest), rfl, ?_, rfl⟩
-  have firing := RhoStep.comm channel body contents (rest.map Subtype.val) bodyTyped contentsTyped
-  change RhoStep (parallel (receiver :: resource :: rest)).1 (parallel (result :: rest)).1
-  simpa [parallel, ofList, receiverShape, resourceShape, resultShape, input, output] using firing
+  have firing : RhoStep (parallel (receiver :: resource :: rest)).1
+      (.collection .hashBag
+        (semanticCommSubst
+          (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body)
+          contents :: rest.map Subtype.val) none) := by
+    simpa [parallel, ofList, receiverShape, resourceShape, input, output] using
+      RhoStep.comm_resolved channel body contents (rest.map Subtype.val) bodyTyped contentsTyped
+  refine ⟨parallel (receiver :: resource :: rest),
+    (parallel (receiver :: resource :: rest)).stepTarget firing, rfl, firing, ?_⟩
+  apply (rhoProcessEquations_iff_structuralCongruence _ _).mpr
+  change StructuralCongruence
+    (.collection .hashBag
+      (semanticCommSubst
+        (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body)
+        contents :: rest.map Subtype.val) none)
+    (.collection .hashBag (result.1 :: rest.map Subtype.val) none)
+  rw [resultShape]
+  exact collectionCongruence_of_forall₂ .hashBag none
+    (.cons (SubstitutionCanonicalCommutation.semanticCommSubst_resolveQuotes_structuralCongruence
+        bodyTyped (PureBoundary.rhoProcWellSorted_hashSetFree contentsTyped))
+      (List.forall₂_same.mpr fun _ _ => .refl _))
 
 def payloadProcess (encoding : Encoding Head) (stack : Stack Head) : RhoProcess :=
   closedProcess (payload encoding stack) (payload_typed _ _ _) (payload_safe _ _ _)

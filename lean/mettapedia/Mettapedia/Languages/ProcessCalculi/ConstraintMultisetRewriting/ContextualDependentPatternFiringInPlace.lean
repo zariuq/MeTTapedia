@@ -106,7 +106,7 @@ def placedRound (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (TotalT
       match placedRule facts roots heads algebra rigid complete declared choices reducer root normalizes certifyNormal
           fuel problem with
       | some (.solved update smaller) => .progress update (below_of_arity facts roots heads algebra rigid complete smaller)
-      | some (.refuted absent) => .refuted absent
+      | some (.refuted notMem) => .refuted notMem
       | none => .stuck
   | other => other
 
@@ -131,7 +131,7 @@ theorem placedRound_eq_of_firing (fuel : Nat) {Θ : Context S.R} {problem : Equa
       certifyNormal headTypingUnique rootComplete fuel problem with
   | stuck => exact absurd computed moving
   | progress update smaller => rfl
-  | refuted absent => rfl
+  | refuted notMem => rfl
 
 /-- **Every run that the firing family decides, the placed family decides with the same outcome.** -/
 theorem placed_run_of_firing (fuel rounds : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ))
@@ -210,9 +210,9 @@ theorem placedRound_not_stuck_of_placed (fuel : Nat) {Θ : Context S.R} {problem
       rw [computed]
       cases found with
       | solved update smaller => exact fun impossible => by cases impossible
-      | refuted absent => exact fun impossible => by cases impossible
+      | refuted notMem => exact fun impossible => by cases impossible
   | progress update smaller => exact fun impossible => by cases impossible
-  | refuted absent => exact fun impossible => by cases impossible
+  | refuted notMem => exact fun impossible => by cases impossible
 
 /-- The search decides when one of its depths does. -/
 theorem placedSearch_isSome_of_mem (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ))
@@ -318,10 +318,10 @@ theorem placedRound_view (fuel : Nat) {Θ : Context S.R} (problem : EquationStor
       | some found =>
           cases found with
           | solved update smaller => rfl
-          | refuted absent => rfl
+          | refuted notMem => rfl
       | none => rfl
   | progress update smaller => rfl
-  | refuted absent => rfl
+  | refuted notMem => rfl
 
 include stable in
 /-- **The placed round is eventually constant on every store.** -/

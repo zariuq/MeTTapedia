@@ -58,7 +58,7 @@ theorem pruneSolveRound_eq_of_intersect (fuel : Nat) {Θ : Context S.R} {problem
       certifyNormal headTypingUnique rootComplete fuel problem with
   | stuck => exact absurd computed moving
   | progress update smaller => rfl
-  | refuted absent => rfl
+  | refuted missing => rfl
 
 /-- **Every run that the intersection family decides, the prune-and-solve family decides with the same outcome.** -/
 theorem pruneSolve_run_of_intersect (fuel rounds : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ))
@@ -105,9 +105,9 @@ theorem pruneSolveRound_not_stuck_of_rule (fuel : Nat) {Θ : Context S.R} {probl
       rw [computed]
       cases found with
       | solved update smaller => exact fun impossible => by cases impossible
-      | refuted absent => exact fun impossible => by cases impossible
+      | refuted missing => exact fun impossible => by cases impossible
   | progress update smaller => exact fun impossible => by cases impossible
-  | refuted absent => exact fun impossible => by cases impossible
+  | refuted missing => exact fun impossible => by cases impossible
 
 /-! ## Eventual constancy -/
 
@@ -442,10 +442,10 @@ theorem pruneSolveRound_view (fuel : Nat) {Θ : Context S.R} (problem : Equation
       | some found =>
           cases found with
           | solved update smaller => rfl
-          | refuted absent => rfl
+          | refuted missing => rfl
       | none => rfl
   | progress update smaller => rfl
-  | refuted absent => rfl
+  | refuted missing => rfl
 
 include stable in
 /-- **The prune-and-solve round is eventually constant on every store.** -/

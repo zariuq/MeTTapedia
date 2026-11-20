@@ -408,8 +408,8 @@ theorem single_decided {Γ : Context S.R} {equation : Equation (TotalTerm Γ)}
       ((∃ state finished, run ((rigidFamily rigid facts complete roots heads algebra declared choices reducer root
             normalizes certifyNormal headTypingUnique).solver larger) [equation] larger = .solved state finished ∧
           (frames S.levels).Principal [equation] state.answer) ∨
-        (∃ absent, run ((rigidFamily rigid facts complete roots heads algebra declared choices reducer root normalizes
-          certifyNormal headTypingUnique).solver larger) [equation] larger = .refuted absent)) :=
+        (∃ missing, run ((rigidFamily rigid facts complete roots heads algebra declared choices reducer root normalizes
+          certifyNormal headTypingUnique).solver larger) [equation] larger = .refuted missing)) :=
   (singleSettled rigid facts complete roots heads algebra declared choices reducer root normalizes certifyNormal
     headTypingUnique stable).decided ⟨by simp, fun _ => firing⟩
 

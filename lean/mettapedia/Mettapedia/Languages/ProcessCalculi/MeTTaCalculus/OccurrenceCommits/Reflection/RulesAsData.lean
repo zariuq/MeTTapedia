@@ -42,7 +42,7 @@ region, then:
   later round, never in the round that made it;
 * **another commit's install must follow it** (`ruleBase_reader_before_install`), and a commit that
   installs a rule under a predicate query of the `every`'s outputs closes a precedence cycle with it
-  (`RuleControls.reflective_cycle`): no order runs both, which is the reflective form of the absence
+  (`RuleControls.reflective_cycle`): no order runs both, which is the reflective form of the none query
   race. A stratified program ranks the readers of the rule base before the installs into it.
 * **MeTTa's own case**: the answer route of evaluation queries the equation region (no equation
   applies), so installing an equation withdraws an inert answer
@@ -174,9 +174,9 @@ theorem firing_before_uninstall {S : Finset O} {r : O} {c : Commit O R}
     · simp [uninstall] at member
 
 omit [DecidableEq O] in
-/-- **Installing causes firings**: a firing of `r` is not enabled where `r` is absent. -/
+/-- **Installing causes firings**: a firing of `r` is not enabled where `r` is not present. -/
 theorem firing_needs_install {S : Finset O} {r : O} {c : Commit O R} (fires : FiresRule r c)
-    (absent : r ∉ S) : ¬ Enabled label S c := fun enabled => absent (enabled.kept_subset fires)
+    (missing : r ∉ S) : ¬ Enabled label S c := fun enabled => missing (enabled.kept_subset fires)
 
 omit [DecidableEq O] in
 /-- Two firings of one rule do not conflict over the rule: neither takes what both keep. -/
@@ -328,7 +328,7 @@ theorem install_disables_every :
 /-! ### Installing an equation withdraws an inert answer -/
 
 /-- The answer route of evaluation: take a redex `redex(x)` and, when no equation `eqn(x, _)` is
-installed, answer `out(x)`. The absence queries the equation region. -/
+installed, answer `out(x)`. The none query reads the equation region. -/
 def inertAnswer : Transform ℕ (Tm RSig) (Pat ℕ RSig) :=
   ⟨.cons (.take (.node .redex (.var 0) (.leaf .nil)))
     (.cons (.absent (.node .eqn (.var 0) (.var 1))) .done), [.node .out (.var 0) (.leaf .nil)]⟩
@@ -370,7 +370,7 @@ def isOutRegion : Atom → Bool
 /-- The `every` over the rule base: queries the rule region (empty), makes an output. -/
 def everyOverRules : Commit ℕ Atom := ⟨∅, ∅, {101}, [⟨isRuleRegion, ∅⟩]⟩
 
-/-- An installer guarded by the absence of outputs: installs the rule `100`. -/
+/-- An installer guarded by the none query of outputs: installs the rule `100`. -/
 def guardedInstall : Commit ℕ Atom := ⟨∅, ∅, {100}, [⟨isOutRegion, ∅⟩]⟩
 
 /-- **A reflective precedence cycle.** The `every` over rules must precede the installer (the

@@ -56,7 +56,7 @@ theorem towerMixed_decided {Θ : Context setting.R} {original : EquationStore (T
       run towerMixedSolver original larger = run towerMixedSolver original fuel ∧
         ((∃ state finished, run towerMixedSolver original larger = .solved state finished ∧
             (frames setting.levels).Principal original state.answer) ∨
-          (∃ absent, run towerMixedSolver original larger = .refuted absent)) :=
+          (∃ missing, run towerMixedSolver original larger = .refuted missing)) :=
   mixed_decided (S := setting) ExecutableTowerChoices.choices TowerModel.facts TowerModel.roots TowerModel.heads
     TowerModel.algebra ContextualDependentPiSpine.Controls.rigid TowerModel.complete
     ContextualDependentGeneralPattern.DispatchControls.tower_normalizes Miller.Controls.towerInh

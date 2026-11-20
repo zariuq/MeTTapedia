@@ -32,12 +32,12 @@ new protected occurrence under the actual authority-system step relation. -/
 theorem client_cannot_publish (definition : ValidatedCalculusLanguageDef)
     {before after : Configuration Value Occurrence}
     (step : (system definition).Step payload false before after)
-    (occurrence : Occurrence) (absent : occurrence ∉ before.present)
+    (occurrence : Occurrence) (missing : occurrence ∉ before.present)
     (protectedHere : location occurrence = .judgments) : occurrence ∉ after.present := by
   obtain ⟨source, installed, inputs, raw, computed, picked, valid, formed, rfl⟩ := step
   intro present
   rcases mem_fire.mp present with retained | made
-  · exact absent retained.1
+  · exact missing retained.1
   · have selected : occurrence ∈ picked.made := by simpa [Selection.commit] using made
     have permission := formed occurrence selected
     change (location occurrence == Space.requests) = true at permission

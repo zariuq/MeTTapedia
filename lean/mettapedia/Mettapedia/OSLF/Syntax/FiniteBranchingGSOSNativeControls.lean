@@ -293,7 +293,7 @@ abbrev growingSpan := Mettapedia.OSLF.DeterministicGSOS.NativeGuardControls.Grow
 theorem present_empty_future_enabled :
     (¬ ∃ event : growingSpan.events.obj spot, event ∈ (⊤ : Subfunctor growingSpan.events).obj spot ∧
       growingSpan.source.app spot event = ()) ∧
-    () ∉ (Mettapedia.GSLT.Topos.PresheafEventAbsence.absent growingSpan.source ⊤).obj spot :=
+    () ∉ (Mettapedia.GSLT.Topos.PresheafEventNone.noneEnabled growingSpan.source ⊤).obj spot :=
   ⟨absence_now, native_absence_fails⟩
 
 theorem complete_successor_equation_excludes_this_growth :

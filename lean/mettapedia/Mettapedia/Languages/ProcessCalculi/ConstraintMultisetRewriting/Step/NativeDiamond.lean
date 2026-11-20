@@ -36,7 +36,7 @@ identity, not with the row the other firing publishes there.
 
 ## Controls
 
-* **Query interference breaks stability** (`NativeDiamondControls.interference_breaks`): an absence
+* **Query interference breaks stability** (`NativeDiamondControls.interference_breaks`): a none query
   query of the occurrence `1` holds at `{0}` and fails after a commit makes `1`.
 * **A port collision blocks both orders** (`NativeDiamondControls.collision_blocks`): two commits
   that make the same port clash, and neither is enabled after the other.
@@ -65,7 +65,7 @@ guard sees nothing. -/
 def GuardSees (candidate : Assignment captures next) (rows : O → ContextualConditionalRows.Row locals captures Γ sort) :
     Check (Term (signature S captures) Γ sort) → O → Prop
   | .equal _ _, _ => False
-  | .absent pattern, o => ContextualConditionalRows.Matches locals captures candidate (instantiate candidate pattern) (rows o)
+  | .predicate _ pattern, o => ContextualConditionalRows.Matches locals captures candidate (instantiate candidate pattern) (rows o)
   | .count pattern _, o => ContextualConditionalRows.Matches locals captures candidate (instantiate candidate pattern) (rows o)
 
 variable [DecidableEq O]
@@ -79,16 +79,28 @@ theorem guardHolds_fire (candidate : Assignment captures next)
       ContextualConditionalGuards.Holds locals candidate rows world check := by
   cases check with
   | equal _ _ => exact Iff.rfl
-  | absent pattern =>
-      constructor
-      · intro after o present matched
-        by_cases taken : o ∈ writer.taken
-        · exact blind o (Finset.mem_union_left _ taken) matched
-        · exact after o (mem_fire.mpr (Or.inl ⟨present, taken⟩)) matched
-      · intro before o present matched
-        rcases mem_fire.mp present with ⟨inWorld, _⟩ | made
-        · exact before o inWorld matched
-        · exact blind o (Finset.mem_union_right _ made) matched
+  | predicate quantifier pattern =>
+      cases quantifier with
+      | any =>
+          constructor
+          · rintro ⟨o, present, matched⟩
+            rcases mem_fire.mp present with ⟨inWorld, _⟩ | made
+            · exact ⟨o, inWorld, matched⟩
+            · exact absurd matched (blind o (Finset.mem_union_right _ made))
+          · rintro ⟨o, present, matched⟩
+            by_cases taken : o ∈ writer.taken
+            · exact absurd matched (blind o (Finset.mem_union_left _ taken))
+            · exact ⟨o, mem_fire.mpr (Or.inl ⟨present, taken⟩), matched⟩
+      | none =>
+          constructor
+          · intro after o present matched
+            by_cases taken : o ∈ writer.taken
+            · exact blind o (Finset.mem_union_left _ taken) matched
+            · exact after o (mem_fire.mpr (Or.inl ⟨present, taken⟩)) matched
+          · intro before o present matched
+            rcases mem_fire.mp present with ⟨inWorld, _⟩ | made
+            · exact before o inWorld matched
+            · exact blind o (Finset.mem_union_right _ made) matched
   | count pattern cardinality =>
       have region : ContextualConditionalGuards.region locals candidate rows (fire world writer) pattern =
           ContextualConditionalGuards.region locals candidate rows world pattern := by
@@ -271,13 +283,13 @@ namespace NativeDiamondControls
 
 open Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits (PredicateQuery)
 
-/-- An absence query of the occurrence `1`, over native-style labels carrying identities. -/
+/-- A none query of the occurrence `1`, over native-style labels carrying identities. -/
 def noOne : PredicateQuery ℕ (ℕ × Unit) := ⟨fun label => decide (label.1 = 1), ∅⟩
 
 /-- A commit that makes the occurrence `1`. -/
 def makesOne : Commit ℕ Unit := ⟨∅, ∅, {1}, []⟩
 
-/-- **Query interference breaks stability**: the absence query holds at `{0}` and fails after a
+/-- **Query interference breaks stability**: the none query holds at `{0}` and fails after a
 commit makes `1` inside its region. -/
 theorem interference_breaks :
     noOne.Holds (fun o => (o, ())) {0} ∧ ¬ noOne.Holds (fun o => (o, ())) (fire {0} makesOne) := by

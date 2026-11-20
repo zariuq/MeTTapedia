@@ -66,7 +66,7 @@ theorem frame_operand_immediate_size (prefixes : BitVec 52)
   dsimp only
   rw [effective_frame_immediate_size]
 
-theorem write_frame (state : State) (dataAddress : BitVec 48) (prefixes : BitVec 52)
+theorem write_frame_checked (state : State) (dataAddress : BitVec 48) (prefixes : BitVec 52)
     (attributes visible : Vector (BitVec 16) 6) (controls : Vector (BitVec 64) 17)
     (pointer value : Word) (flags : BitVec 32) (rex : BitVec 8)
     (addressOverride : Functions._get_prefixes_adr prefixes = (0#8))
@@ -77,7 +77,7 @@ theorem write_frame (state : State) (dataAddress : BitVec 48) (prefixes : BitVec
     (controlKnown : state.regs.get? .ctrs = some controls)
     (flagsKnown : state.regs.get? .rflags = some flags)
     (visibleKnown : state.regs.get? .seg_visibles = some visible)
-    (aligned : dataAddress &&& (7#48) = (0#48)) :
+    (safe : X86FrameLoad.alignmentEnabled controls flags visible = false ∨ dataAddress &&& (7#48) = (0#48)) :
     (Functions.x86_operand_to_reg_mem .Mode_64bit 8 true false (value.zeroExtend 128) 3
       (dataAddress.signExtend 64) prefixes rex (7#3) (2#2) (0#8)).run state =
       .ok () (X86WriteWords.storeBytes 8 state dataAddress value) := by
@@ -96,7 +96,25 @@ theorem write_frame (state : State) (dataAddress : BitVec 48) (prefixes : BitVec
     (X86FrameLoad.alignmentEnabled controls flags visible) false).run state = _
   rw [X86Move.widen_truncate]
   exact X86WriteWords.store_word_exact state dataAddress none attributes pointer value
-    (X86FrameLoad.alignmentEnabled controls flags visible) false upper segments application rip (Or.inr aligned)
+    (X86FrameLoad.alignmentEnabled controls flags visible) false upper segments application rip safe
+
+theorem write_frame (state : State) (dataAddress : BitVec 48) (prefixes : BitVec 52)
+    (attributes visible : Vector (BitVec 16) 6) (controls : Vector (BitVec 64) 17)
+    (pointer value : Word) (flags : BitVec 32) (rex : BitVec 8)
+    (addressOverride : Functions._get_prefixes_adr prefixes = (0#8))
+    (upper : dataAddress.toInt + 8 ≤ (2 ^ 47 : Int))
+    (segments : state.regs.get? .seg_hidden_attrs = some attributes)
+    (application : state.regs.get? .app_view = some true)
+    (rip : state.regs.get? .rip = some pointer)
+    (controlKnown : state.regs.get? .ctrs = some controls)
+    (flagsKnown : state.regs.get? .rflags = some flags)
+    (visibleKnown : state.regs.get? .seg_visibles = some visible)
+    (aligned : dataAddress &&& (7#48) = (0#48)) :
+    (Functions.x86_operand_to_reg_mem .Mode_64bit 8 true false (value.zeroExtend 128) 3
+      (dataAddress.signExtend 64) prefixes rex (7#3) (2#2) (0#8)).run state =
+      .ok () (X86WriteWords.storeBytes 8 state dataAddress value) := by
+  exact write_frame_checked state dataAddress prefixes attributes visible controls pointer value flags
+    rex addressOverride upper segments application rip controlKnown flagsKnown visibleKnown (Or.inr aligned)
 
 theorem read_immediate_one (state : State) (address : BitVec 48) (pointer : Word)
     (attributes : Vector (BitVec 16) 6)

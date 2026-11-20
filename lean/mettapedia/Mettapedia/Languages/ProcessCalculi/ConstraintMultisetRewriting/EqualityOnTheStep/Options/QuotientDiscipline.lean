@@ -6,7 +6,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Publicati
 # A publication discipline for class equations
 
 `Quotient` identifies classes of sets by telling equations between class names, read through by
-absence and counting. The step also admits such equations without evidence
+none queries and counting. The step also admits such equations without evidence
 (`Quotient.unwitnessedTell_admitted`), and they are observed (`Observability.unwitnessed_tell_observed`).
 
 **A second unwitnessed route: reading** (`unwitnessedRead_admitted`, `unwitnessedRead_identifies`).

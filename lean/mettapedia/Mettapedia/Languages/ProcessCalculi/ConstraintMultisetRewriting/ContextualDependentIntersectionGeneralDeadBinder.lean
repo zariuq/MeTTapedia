@@ -439,7 +439,7 @@ theorem deadRound_eq_of_anywhere (fuel : Nat) {Θ : Context S.R} {problem : Equa
       certifyNormal headTypingUnique rootComplete fuel problem with
   | stuck => exact absurd computed moving
   | progress update smaller => rfl
-  | refuted absent => rfl
+  | refuted missing => rfl
 
 /-- **Every run that the anywhere family decides, the dead-binder family decides with the same outcome.** -/
 theorem dead_run_of_anywhere (fuel rounds : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ))
@@ -516,7 +516,7 @@ theorem deadRound_view (fuel : Nat) {Θ : Context S.R} (problem : EquationStore 
       | some found => rfl
       | none => rfl
   | progress update smaller => rfl
-  | refuted absent => rfl
+  | refuted missing => rfl
 
 include stable in
 /-- **The dead-binder round is eventually constant on every store.** -/

@@ -4,7 +4,7 @@ import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.PatternFootprints.Polic
 # Waves by claims: removals among positive steps
 
 A removal leaves the monotone fragment, and it does not leave it as a guard for
-absence or a complete read does.  No addition disables a removal; what removals
+none queries or a complete read does.  No addition disables a removal; what removals
 compete for is occurrences.  So for proposals whose steps are positive
 (`Step.Positive`: additions, removals, cell writes, reads of a presence) and whose
 answers read nothing, a wave is a matter of counting, and no footprint is
@@ -41,7 +41,7 @@ compared.
   reaches that state (`Region.Positive.observe_publishWaveOnClaims`); so on
   positive siblings the observation does not depend on the order of evaluation
   (`Region.Positive.observe_publishWaveOnClaims_perm`).  Outside the positive
-  regions it does (`ClaimControls.claims_order_matters_for_an_absence_guard`).  On
+  regions it does (`ClaimControls.claims_order_matters_for_a_none_guard`).  On
   the five programs of `PatternFootprints.PolicyTable`:
   `ClaimControls.programs_on_claims`.
 
@@ -63,7 +63,7 @@ the claims, and the reads lie in the shared part.  This module states the law
 behind that test for proposals: several steps each, any positive guards, any
 separation algebra in which every two resources are separate.
 
-What claims do not cover: a guard that asks for an absence, and an answer that
+What claims do not cover: a guard that asks for a none query, and an answer that
 reads.  An addition invalidates those, and they are validated by what they read
 (`PatternFootprints.Validations`, `PatternFootprints.PatternWaves`).
 -/
@@ -769,10 +769,10 @@ theorem claims_accept_the_monotone :
   decide
 
 /-- **Outside the positive regions the wave on claims depends on the order of
-evaluation.**  A guard for the absence of `a` and an addition of `a` claim nothing.
+evaluation.**  A guard for the none query of `a` and an addition of `a` claim nothing.
 With the guard first both are published; with the addition first the replay of
 the guard is refused. -/
-theorem claims_order_matters_for_an_absence_guard :
+theorem claims_order_matters_for_a_none_guard :
     (Policy.publishWaveOnClaims.change
         [ValidationControls.guardedOutcome, ValidationControls.markerOutcome] noKinds).isSome =
         true ∧
@@ -824,6 +824,6 @@ end ClaimControls
 #print axioms ClaimControls.seeThenTake_on_claims
 #print axioms ClaimControls.programs_on_claims
 #print axioms ClaimControls.claims_accept_the_monotone
-#print axioms ClaimControls.claims_order_matters_for_an_absence_guard
+#print axioms ClaimControls.claims_order_matters_for_a_none_guard
 
 end Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.Regions

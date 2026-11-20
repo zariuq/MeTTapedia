@@ -188,9 +188,9 @@ enabled; it reads neither the exec's patterns nor whether every match was used
 theorem effectFiring_admitted (b : Behaviour E Sub) (S : Finset E) (e : E) {C : Configuration E E}
     (present : C.present = S) (trivial : ∀ q ∈ C.equations, q.1 = q.2) :
     (mm2Step E).Admits (s := C) (effectFiring b S e) := by
-  show PredicateQueryAdmission.Valid (groundOf E) id (effectFiring b S e).rule [] C
+  show PredicateQueryAdmission.RegionValid (groundOf E) id (effectFiring b S e).rule [] C
     (effectFiring b S e).selection
-  apply (PredicateQueryAdmission.valid_empty_iff (groundOf E) id _ C _).mpr
+  apply PredicateQueryAdmission.regionValid_nil_iff.mpr
   have enabled := b.commitOf_enabled S e
   refine ⟨Finset.nodup_toList _, Finset.nodup_toList _, rfl, rfl, List.map_id _, ?_,
     ⟨(), problem_trivial b S e trivial⟩, ?_⟩

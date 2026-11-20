@@ -651,14 +651,25 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalTyping (procListWe
 open Mettapedia.OSLF.MeTTaIL.ScopedPattern (binderSafeAt binderSafeListAt binderSafeListAt_eq_true_iff)
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Canonical (HashSetFree HashSetFreeList)
 
+/-- Resorting keeps the canonical form, hence quote admission. -/
+private theorem quoteAdmits_resortLex (process : Pattern) :
+    Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.quoteAdmits
+        rhoReflectivePresentation.toReflectivePresentationDecl (resortLex process) =
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.quoteAdmits
+        rhoReflectivePresentation.toReflectivePresentationDecl process :=
+  Mettapedia.OSLF.MeTTaIL.ReflectiveQuoteAdmission.quoteAdmits_of_canonicalize_eq (by
+    rw [CanonicalMatch.derivedCanonicalize_eq, CanonicalMatch.derivedCanonicalize_eq,
+      canonicalize_resortLex])
+
 mutual
   theorem resortLex_name {free : FreeSortContext} {bound : List String} {name : Pattern} :
       NameWellSorted rhoReflectivePresentation free bound name →
         NameWellSorted rhoReflectivePresentation free bound (resortLex name)
     | .bvar found => .bvar found
     | .fvar found => .fvar found
-    | .quote processTyped => by
+    | .quote processTyped admitted => by
         have resorted := NameWellSorted.quote (resortLex_proc processTyped)
+          ((quoteAdmits_resortLex _).trans admitted)
         simpa [resortLex, resortLexList] using resorted
 
   theorem resortLex_proc {free : FreeSortContext} {bound : List String} {process : Pattern} :
@@ -809,7 +820,7 @@ mutual
       NameWellSorted rhoReflectivePresentation free bound name → HashSetFree name
     | .bvar _ => trivial
     | .fvar _ => trivial
-    | .quote processTyped => by
+    | .quote processTyped _ => by
         simp only [HashSetFree, HashSetFreeList]
         exact ⟨proc_hashSetFree processTyped, trivial⟩
 
@@ -845,20 +856,20 @@ theorem perm_extract_two (elements : List Pattern) (first second : Nat) (firstBo
   (List.getElem_cons_eraseIdx_perm firstBound).symm.trans ((List.getElem_cons_eraseIdx_perm secondBound).symm.cons _)
 
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalStepperCompleteness (rho_parallel_wellSorted_inv
-  locate_pair rhoStepAt_one_inv rhoStepAt_one_comm apply_commBindingsAt rhoCanonicalEquivalent_iff canonicalize_bag
+  locate_pair rhoStepAt_one_inv rhoStepAt_one_comm apply_commBindingsAt_resolved rhoCanonicalEquivalent_iff
+  canonicalize_bag
   canonicalStep_complete_of_rhoStep closed_canonicalize)
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedContextualStep (RhoStepAt RhoStep rhoComm_match_shape
   rho_input_wellSorted_inv rho_output_wellSorted_inv)
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.SubstitutionCanonicalCommutation
-  (canonicalize_semanticCommSubst_canonicalize)
+  (canonicalize_semanticCommSubst_canonicalize canonicalize_semanticCommSubst_resolveQuotes)
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus (semanticCommSubst)
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalMatch (rhoCanonicalEquivalent)
 
-/-- **A depth-one step survives re-sorting.** On a closed, quotation-sealed bag, every depth-one
+/-- **A depth-one step survives re-sorting.** On a well-sorted bag, every depth-one
 step is matched, up to canonical form, by a depth-one step of the re-sorted bag. -/
 theorem stepAt_one_resortLex {free : FreeSortContext} {source target : Pattern}
     (typed : ProcWellSorted rhoReflectivePresentation free [] source)
-    (safe : binderSafeAt "NQuote" 0 source = true)
     (step : RhoStepAt 1 source target) :
     ∃ target', RhoStepAt 1 (resortLex source) target' ∧ canonicalize target' = canonicalize target := by
   obtain ⟨bindings, matched, applied⟩ := rhoStepAt_one_inv step
@@ -874,17 +885,10 @@ theorem stepAt_one_resortLex {free : FreeSortContext} {source target : Pattern}
   have outputTyped := procListWellSorted_iff_forall_mem.mp elementsTyped _ outputMember
   rw [outputEq] at outputTyped
   obtain ⟨_, payloadTyped⟩ := rho_output_wellSorted_inv outputTyped
-  have bodySealed : binderSafeAt "NQuote" 1 body = true := by
-    have listSafe : binderSafeListAt "NQuote" 0 elements = true := by simpa [binderSafeAt] using safe
-    have memberSafe := (binderSafeListAt_eq_true_iff "NQuote" 0 elements).mp listSafe _ inputMember
-    rw [inputEq] at memberSafe
-    simp only [binderSafeAt, binderSafeListAt] at memberSafe
-    simp at memberSafe
-    exact memberSafe.2
-  have originalTarget : target = .collection .hashBag (semanticCommSubst body payload ::
+  have originalTarget : target = .collection .hashBag (semanticCommSubst (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body) payload ::
       (elements.eraseIdx inputIndex).eraseIdx outputIndex) none := by
     rw [← applied]
-    exact apply_commBindingsAt bodyTyped payloadTyped elements inputIndex outputIndex inputChannel
+    exact apply_commBindingsAt_resolved bodyTyped payloadTyped elements inputIndex outputIndex inputChannel
   have extracted := perm_extract_two elements inputIndex outputIndex inputBound outputBound
   rw [inputEq, outputEq] at extracted
   have resortedPerm := (sortLex_perm (elements.map resortLex)).trans (extracted.map resortLex)
@@ -896,15 +900,18 @@ theorem stepAt_one_resortLex {free : FreeSortContext} {source target : Pattern}
   have bodyTyped' := resortLex_proc bodyTyped
   have payloadTyped' := resortLex_proc payloadTyped
   have step' := rhoStepAt_one_comm iBound jBound inputEq' outputEq' channels
-  rw [apply_commBindingsAt bodyTyped' payloadTyped'] at step'
+  rw [apply_commBindingsAt_resolved bodyTyped' payloadTyped'] at step'
   rw [resortLex_bag]
   refine ⟨_, step', ?_⟩
-  have contractum : canonicalize (semanticCommSubst (resortLex body) (resortLex payload)) =
-      canonicalize (semanticCommSubst body payload) := by
-    rw [← canonicalize_semanticCommSubst_canonicalize bodyTyped' (resortLex_binderSafe "NQuote" 1 body bodySealed)
+  have contractum : canonicalize (semanticCommSubst (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation (resortLex body)) (resortLex payload)) =
+      canonicalize (semanticCommSubst (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body) payload) := by
+    rw [canonicalize_semanticCommSubst_resolveQuotes bodyTyped'
+        (resortLex_hashSetFree payload (proc_hashSetFree payloadTyped)),
+      canonicalize_semanticCommSubst_resolveQuotes bodyTyped (proc_hashSetFree payloadTyped),
+      ← canonicalize_semanticCommSubst_canonicalize bodyTyped'
         (resortLex_hashSetFree payload (proc_hashSetFree payloadTyped)),
       canonicalize_resortLex, canonicalize_resortLex,
-      canonicalize_semanticCommSubst_canonicalize bodyTyped bodySealed (proc_hashSetFree payloadTyped)]
+      canonicalize_semanticCommSubst_canonicalize bodyTyped (proc_hashSetFree payloadTyped)]
   rw [originalTarget, canonicalize_bag, canonicalize_bag, normalizeBagElements_eq_sort_bagContents,
     normalizeBagElements_eq_sort_bagContents]
   congr 1
@@ -931,16 +938,15 @@ theorem closed_lexCanon {free : FreeSortContext} {process : Pattern}
   rw [lexCanon_eq]
   exact ⟨resortLex_proc canonicalTyped, resortLex_binderSafe "NQuote" 0 _ canonicalSafe⟩
 
-/-- **The lexicographic stepper is complete.** Every step from a closed, quotation-sealed process,
+/-- **The lexicographic stepper is complete.** Every step from a well-sorted process,
 at any depth, is matched up to canonical form by a depth-one COMM on its lexicographic form. -/
 theorem lexStep_complete {free : FreeSortContext} {source target : Pattern}
     (typed : ProcWellSorted rhoReflectivePresentation free [] source)
-    (safe : binderSafeAt "NQuote" 0 source = true)
     (step : RhoStep source target) :
     ∃ target', RhoStepAt 1 (lexCanon source) target' ∧ canonicalize target' = canonicalize target := by
-  obtain ⟨middle, depthOne, same⟩ := canonicalStep_complete_of_rhoStep typed safe step
-  obtain ⟨canonicalTyped, canonicalSafe⟩ := closed_canonicalize typed safe
-  obtain ⟨target', resorted, same'⟩ := stepAt_one_resortLex canonicalTyped canonicalSafe depthOne
+  obtain ⟨middle, depthOne, same⟩ := canonicalStep_complete_of_rhoStep typed step
+  obtain ⟨target', resorted, same'⟩ :=
+    stepAt_one_resortLex (CanonicalTyping.canonicalize_procWellSorted [] typed) depthOne
   rw [lexCanon_eq]
   exact ⟨target', resorted, same'.trans same⟩
 
@@ -1055,7 +1061,7 @@ mutual
       NameWellSorted rhoReflectivePresentation (fun _ => none) bound name → RhoShaped name
     | .bvar _ => .bvar _
     | .fvar lookup => by cases lookup
-    | .quote processTyped => .apply (by decide) (.cons (proc_rhoShaped processTyped) .nil)
+    | .quote processTyped _ => .apply (by decide) (.cons (proc_rhoShaped processTyped) .nil)
 
   /-- Closed processes are rho shaped. -/
   theorem proc_rhoShaped {bound : List String} {process : Pattern} :

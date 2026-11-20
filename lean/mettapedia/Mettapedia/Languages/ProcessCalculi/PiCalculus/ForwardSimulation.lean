@@ -844,26 +844,6 @@ private theorem closeFVar_encode_rf_noBoundUnderQuote {P : Process}
     simpa [rhoNoLiteralQuote_closeFVar] using hq
   exact noBoundUnderQuote_of_rhoNoLiteralQuote j hqc
 
-private theorem semanticSubstNameMark_true_eq_replacement_local
-    (k : Nat) (replacementName name name' : Pattern)
-    (hmark : semanticSubstNameMark k replacementName name = (name', true)) :
-    name' = replacementName := by
-  unfold semanticSubstNameMark at hmark
-  cases hnorm : semanticNormalizeName name with
-  | bvar n =>
-      by_cases hEq : n = k
-      · subst hEq
-        simp [hnorm] at hmark
-        exact hmark.symm
-      · have hbeq : (n == k) = false := beq_eq_false_iff_ne.mpr hEq
-        simp [hnorm, hbeq] at hmark
-  | fvar x => simp [hnorm] at hmark
-  | apply c args => simp [hnorm] at hmark
-  | lambda nm body => simp [hnorm] at hmark
-  | multiLambda n nms body => simp [hnorm] at hmark
-  | subst body repl => simp [hnorm] at hmark
-  | collection ct elems rest => simp [hnorm] at hmark
-
 private theorem semanticSubstName_dropPayload_SC_openBVar (k : Nat) (z : String)
     {n : Pattern}
     (hshape : rhoNameCoreShape n = true)
@@ -960,7 +940,7 @@ mutual
                   simpa [hmark, openBVar] using struct_apply_cong_single (f := "PDrop") hname
               | true =>
                   have hname' : name' = .apply "NQuote" [.apply "PDrop" [.fvar z]] :=
-                    semanticSubstNameMark_true_eq_replacement_local
+                    semanticSubstNameMark_true_eq_replacement
                       k (.apply "NQuote" [.apply "PDrop" [.fvar z]]) n name' hmark
                   have hname :
                       (.apply "NQuote" [.apply "PDrop" [.fvar z]]) ≡ᵨ

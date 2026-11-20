@@ -300,7 +300,7 @@ theorem definition_step_duplicate_rule_sound : InstantiatedRuleSound 8 := by
 theorem collect_nil_rule_sound : InstantiatedRuleSound 9 := by
   intro a _
   change CollectMeaning (GroundTerms.ofList
-    [.app "metta-nullary" (.cons (.atom "bnf-v1:entries-nil") .nil),
+    [.app "bnf-v1:entries-nil" .nil,
       a 0, a 0, .atom "BNFDiagnosticsNilV1"])
   intro entries before after diagnostics equal _ _
   cases entries with

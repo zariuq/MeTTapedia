@@ -5,12 +5,15 @@ import Mettapedia.OSLF.MeTTaIL.DerivedPresentationSyntax
 /-!
 # Scope admission for rho whole names
 
-Rho's name equation identifies `@*n` with the whole name `n`. The
-scope checker therefore resolves this exact shape before applying the
-literal-quotation boundary. Other quotations remain sealed: a bound
-index inside their code does not gain access to the surrounding binder.
-This checker is specific to the rho presentation and does not change the
-shared MeTTaIL quotation checker.
+Rho's equations identify a quotation such as `@*n` or `@(*n|0)` with the
+whole name `n`. The scope checker reads a whole name exactly as the
+translation and the executor's whole-name test do, by the binder
+observation of rho's reflective presentation, before applying the
+literal-quotation boundary: a quotation whose whole name is a bound index
+is checked at the surrounding depth. Other quotations remain sealed: a
+bound index inside their code does not gain access to the surrounding
+binder. This checker is specific to the rho presentation and does not
+change the shared MeTTaIL quotation checker.
 -/
 
 set_option autoImplicit false
@@ -28,14 +31,17 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedContextualStep (RhoS
 mutual
 
 /-- Rho-specific scope admission for a pattern at a binder depth.
-The exact whole-name shape `@*n` inherits the scope of `n`; every other
+The whole name `@*n` inherits the scope of `n`, and a quotation whose whole
+name is a bound index is checked at the surrounding depth; every other
 quotation checks its code from depth zero. -/
 def wholeNameSafeAt (depth : Nat) : Pattern → Bool
   | .bvar index => decide (index < depth)
   | .fvar _ => true
   | .apply "NQuote" [.apply "PDrop" [name]] =>
       wholeNameSafeAt depth name
-  | .apply "NQuote" [body] => wholeNameSafeAt 0 body
+  | .apply "NQuote" [body] =>
+      if (nameHead (.apply "NQuote" [body])).isSome then wholeNameSafeAt depth body
+      else wholeNameSafeAt 0 body
   | .apply _ arguments => wholeNameSafeListAt depth arguments
   | .lambda _ body => wholeNameSafeAt (depth + 1) body
   | .multiLambda arity _ body => wholeNameSafeAt (depth + arity) body
@@ -72,58 +78,84 @@ theorem literal_quote_remains_sealed :
         [.bvar 0, .apply "PZero" []]]) = false := by
   decide
 
+/-- The admission of a quotation other than the quote of a drop. -/
+theorem wholeNameSafeAt_quote {depth : Nat} {body : Pattern}
+    (hbody : ∀ name, body = .apply "PDrop" [name] → False) :
+    wholeNameSafeAt depth (.apply "NQuote" [body]) =
+      if (nameHead (.apply "NQuote" [body])).isSome then wholeNameSafeAt depth body
+      else wholeNameSafeAt 0 body :=
+  wholeNameSafeAt.eq_4 depth body hbody
+
+/-- Whole-name-aware admission is ordinary local scope: a whole name is
+admitted only where the index it denotes is in scope. -/
+theorem isWellScopedAt_of_wholeNameSafeAt :
+    (∀ (depth : Nat) (pattern : Pattern), wholeNameSafeAt depth pattern = true →
+      pattern.isWellScopedAt depth = true) ∧
+    (∀ (depth : Nat) (patterns : List Pattern), wholeNameSafeListAt depth patterns = true →
+      Pattern.isWellScopedListAt depth patterns = true) := by
+  refine wholeNameSafeAt.mutual_induct
+    (fun depth pattern => wholeNameSafeAt depth pattern = true →
+      pattern.isWellScopedAt depth = true)
+    (fun depth patterns => wholeNameSafeListAt depth patterns = true →
+      Pattern.isWellScopedListAt depth patterns = true)
+    ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_
+  · intro depth index safe
+    simpa [wholeNameSafeAt, Pattern.isWellScopedAt] using safe
+  · intro depth label _
+    rfl
+  · intro depth name ih safe
+    rw [wholeNameSafeAt.eq_3] at safe
+    simpa [Pattern.isWellScopedAt, Pattern.isWellScopedListAt] using ih safe
+  · intro depth body hbody head ih safe
+    rw [wholeNameSafeAt_quote hbody, if_pos head] at safe
+    simpa [Pattern.isWellScopedAt, Pattern.isWellScopedListAt] using ih safe
+  · intro depth body hbody head ih safe
+    rw [wholeNameSafeAt_quote hbody, if_neg head] at safe
+    simpa [Pattern.isWellScopedAt, Pattern.isWellScopedListAt] using
+      isWellScopedAt_mono (ih safe) (Nat.zero_le depth)
+  · intro depth constructor arguments hquoteDrop hquote ih safe
+    rw [wholeNameSafeAt.eq_5 depth constructor arguments hquoteDrop hquote] at safe
+    exact ih safe
+  · intro depth binder body ih safe
+    exact ih (by simpa [wholeNameSafeAt] using safe)
+  · intro depth arity binders body ih safe
+    exact ih (by simpa [wholeNameSafeAt] using safe)
+  · intro depth body replacement ihBody ihReplacement safe
+    simp only [wholeNameSafeAt, Bool.and_eq_true] at safe
+    simp only [Pattern.isWellScopedAt, Bool.and_eq_true]
+    exact ⟨ihBody safe.1, ihReplacement safe.2⟩
+  · intro depth kind elements rest ih safe
+    exact ih (by simpa [wholeNameSafeAt] using safe)
+  · intro depth _
+    rfl
+  · intro depth process rest ihp ihr safe
+    simp only [wholeNameSafeListAt, Bool.and_eq_true] at safe
+    simp only [Pattern.isWellScopedListAt, Bool.and_eq_true]
+    exact ⟨ihp safe.1, ihr safe.2⟩
+
 /-- A whole name denotes only an index actually available at the current
 binder depth. This is the scope fact needed by translation coverage. -/
 theorem nameHead_lt_of_wholeNameSafe {name : Pattern} {index : Nat}
     (head : nameHead name = some index) :
     ∀ {depth : Nat}, wholeNameSafeAt depth name = true → index < depth := by
-  induction name using nameHead.induct with
-  | case1 k =>
-      intro depth safe
-      simp only [nameHead, Option.some.injEq] at head
-      subst head
-      simpa [wholeNameSafeAt] using safe
-  | case2 inner ih =>
-      intro depth safe
-      rw [nameHead.eq_2] at head
-      exact ih head (by simpa [wholeNameSafeAt] using safe)
-  | case3 other hbvar hquoteDrop =>
-      rw [nameHead.eq_3 other hbvar hquoteDrop] at head
-      cases head
+  intro depth safe
+  have inScope := isWellScopedAt_of_wholeNameSafeAt.1 depth name safe
+  rw [nameHead_wellScoped head] at inScope
+  exact of_decide_eq_true inScope
 
-/-- Translation resolves an exact whole-name chain through the same
-environment entry as its underlying bound index. -/
-theorem tName_eq_env_of_nameHead {Γ : Ctx sig} (ρ : Env Γ)
-    {name : Pattern} {index : Nat} (head : nameHead name = some index) :
-    tName ρ name = (ρ index).map nameOf := by
-  induction name using nameHead.induct with
-  | case1 k =>
-      simp only [nameHead, Option.some.injEq] at head
-      subst head
-      rfl
-  | case2 inner ih =>
-      rw [nameHead.eq_2] at head
-      rw [tName.eq_3]
-      exact ih head
-  | case3 other hbvar hquoteDrop =>
-      rw [nameHead.eq_3 other hbvar hquoteDrop] at head
-      cases head
-
-/-- If the drop of a well-scoped name translates, the name itself
-translates. This recovers the name witness needed for whole-name quotes. -/
+/-- If the drop of a name translates, the name itself translates. This
+recovers the name witness needed for whole-name quotes. -/
 theorem tName_exists_of_drop_translation {Γ : Ctx sig} (ρ : Env Γ)
     {name : Pattern} {process : Term sig Γ Srt.pr}
     (translated : tProc ρ (.apply "PDrop" [name]) = some process) :
     ∃ value, tName ρ name = some value := by
-  rw [tProc.eq_2] at translated
   cases head : nameHead name with
   | some index =>
-      simp only [head] at translated
-      refine ⟨nameOf process, ?_⟩
-      rw [tName_eq_env_of_nameHead ρ head, translated]
-      rfl
+      rw [tProc_drop_of_nameHead _ head] at translated
+      obtain ⟨value, hvalue, _⟩ := Option.bind_eq_some_iff.mp translated
+      exact ⟨value, hvalue⟩
   | none =>
-      simp only [head] at translated
+      rw [tProc_drop_of_nameHead_none _ head] at translated
       obtain ⟨value, hvalue, _⟩ := Option.map_eq_some_iff.mp translated
       exact ⟨value, hvalue⟩
 
@@ -160,10 +192,10 @@ theorem translate_covers_wholeNameSafe {free : FreeSortContext}
   · intro bound index _ _ depth Γ ρ hρ safe
     have hlt : index < depth := by simpa [wholeNameSafeAt] using safe
     obtain ⟨t, ht⟩ := hρ index hlt
-    exact ⟨nameOf t, by rw [tName.eq_1, ht, Option.map_some]⟩
+    exact ⟨nameOf t, by rw [tName_bvar, ht, Option.map_some]⟩
   · intro bound name _ _ depth Γ ρ _ _
-    exact ⟨freeT name, tName.eq_2 ρ name⟩
-  · intro bound process _ ih hb depth Γ ρ hρ safe
+    exact ⟨freeT name, tName_fvar ρ name⟩
+  · intro bound process _ _ ih hb depth Γ ρ hρ safe
     change wholeNameSafeAt depth (.apply "NQuote" [process]) = true at safe
     show ∃ value, tName ρ (.apply "NQuote" [process]) = some value
     by_cases hdrop : ∃ name, process = .apply "PDrop" [name]
@@ -173,14 +205,24 @@ theorem translate_covers_wholeNameSafe {free : FreeSortContext}
         simpa [wholeNameSafeAt, wholeNameSafeListAt] using safe
       obtain ⟨t, ht⟩ := ih hb depth ρ hρ safeDrop
       exact tName_exists_of_drop_translation ρ ht
-    · have safe0 : wholeNameSafeAt 0 process = true := by
-        cases process <;> simp_all [wholeNameSafeAt]
-      obtain ⟨code, hcode⟩ := ih hb 0 (Env.empty [])
-        (fun index hi => absurd hi (Nat.not_lt_zero index)) safe0
-      have hnot : ∀ name, process = .apply "PDrop" [name] → False :=
+    · have hnot : ∀ name, process = .apply "PDrop" [name] → False :=
         fun name equal => hdrop ⟨name, equal⟩
-      exact ⟨nameOf (lift0 code), by
-        rw [tName.eq_4 _ _ hnot, hcode, Option.map_some]⟩
+      have safeQuote := safe
+      rw [wholeNameSafeAt_quote hnot] at safe
+      cases head : nameHead (.apply "NQuote" [process]) with
+      | some k =>
+          rw [head] at safe
+          obtain ⟨code, hcode⟩ := ih hb depth ρ hρ safe
+          obtain ⟨u, hu⟩ := hρ k (nameHead_lt_of_wholeNameSafe head safeQuote)
+          exact ⟨nameOf u, by
+            rw [tName_quote_of_nameHead _ hnot head, hcode, Option.bind_some, hu,
+              Option.map_some]⟩
+      | none =>
+          rw [head] at safe
+          obtain ⟨code, hcode⟩ := ih hb 0 (Env.empty [])
+            (fun index hi => absurd hi (Nat.not_lt_zero index)) safe
+          exact ⟨nameOf (lift0 code), by
+            rw [tName_quote _ hnot head, hcode, Option.map_some]⟩
   · intro bound index lookup hb
     exact absurd lookup (hb index)
   · intro bound name lookup _
@@ -190,16 +232,15 @@ theorem translate_covers_wholeNameSafe {free : FreeSortContext}
   · intro bound name _ ih hb depth Γ ρ hρ safe
     change wholeNameSafeAt depth (.apply "PDrop" [name]) = true at safe
     show ∃ t, tProc ρ (.apply "PDrop" [name]) = some t
-    rw [tProc.eq_2]
+    have safeName : wholeNameSafeAt depth name = true := by
+      simpa [wholeNameSafeAt, wholeNameSafeListAt] using safe
+    obtain ⟨value, hvalue⟩ := ih hb depth ρ hρ safeName
     cases head : nameHead name with
     | some index =>
-        exact hρ index (nameHead_lt_of_wholeNameSafe head
-          (by simpa [wholeNameSafeAt, wholeNameSafeListAt] using safe))
+        obtain ⟨t, ht⟩ := hρ index (nameHead_lt_of_wholeNameSafe head safeName)
+        exact ⟨t, by rw [tProc_drop_of_nameHead _ head, hvalue, Option.bind_some, ht]⟩
     | none =>
-        have safeName : wholeNameSafeAt depth name = true := by
-          simpa [wholeNameSafeAt, wholeNameSafeListAt] using safe
-        obtain ⟨value, hvalue⟩ := ih hb depth ρ hρ safeName
-        exact ⟨drpT value, by simp only [hvalue, Option.map_some]⟩
+        exact ⟨drpT value, by rw [tProc_drop_of_nameHead_none _ head, hvalue, Option.map_some]⟩
   · intro bound channel payload _ _ ihc ihp hb depth Γ ρ hρ safe
     change wholeNameSafeAt depth (.apply "POutput" [channel, payload]) = true at safe
     show ∃ t, tProc ρ (.apply "POutput" [channel, payload]) = some t
@@ -289,45 +330,64 @@ theorem nested_wholeName_translation_control :
   · decide
   · rfl
 
-/-- Quote/drop cancellation and the parallel-unit equation also identify a
-quoted process of the form `*n | 0` with the whole name `n`. The current
-source admission checker recognizes only the literal quote/drop spine: a
-bound index in this structurally equivalent spelling remains behind its
-quotation boundary. Thus coverage of all equation-equivalent spellings is
-not implied by the exact-spine admission theorem. -/
-theorem structural_unit_whole_name_boundary {Γ : Ctx sig}
+/-- Quote/drop cancellation and the parallel-unit equation identify a quoted
+process of the form `*n | 0` with the whole name `n`. Admission reads whole
+names the same way, so this spelling is admitted beneath a binder for `n`. -/
+theorem structural_unit_whole_name_admitted {Γ : Ctx sig}
     (name : Term sig Γ Srt.nm) :
     EqClosure equations
       (quoT (parT (drpT name) nilT)) name ∧
     wholeNameSafeAt 1
       (.apply "NQuote" [.collection .hashBag
-        [.apply "PDrop" [.bvar 0], .apply "PZero" []] none]) = false := by
+        [.apply "PDrop" [.bvar 0], .apply "PZero" []] none]) = true := by
   constructor
   · exact (equiv_quoT (parT_nil (drpT name))).trans
       (quoteDrop_equiv name)
   · decide
 
-/-- A well-sorted bound name may have an equation-equivalent spelling that
-the exact-spine scope check rejects. The current translation also leaves
-that spelling undefined: its literal-quotation branch checks the code in an
-empty environment. This is a boundary of the admission criterion, rather
-than a claim about the executable surface parser. -/
-theorem structural_unit_bound_name_admission_gap :
+/-- A well-sorted bound name spelled `@(*x|0)` is admitted at its binder and
+translates as the bound name, exactly as `@*x` does. -/
+theorem structural_unit_bound_name_admitted :
     let wrapped : Pattern := .apply "NQuote" [.collection .hashBag
       [.apply "PDrop" [.bvar 0], .apply "PZero" []] none]
     NameWellSorted rhoReflectivePresentation FreeSortContext.empty
       [rhoReflectivePresentation.nameSort] wrapped ∧
     NameEquiv wrapped (.bvar 0) ∧
-    wholeNameSafeAt 1 wrapped = false ∧
-    tName (Env.empty []).up wrapped = none := by
+    wholeNameSafeAt 1 wrapped = true ∧
+    tName (Env.empty []).up wrapped = some (quoT (.var .zero)) := by
   dsimp
-  refine ⟨?_, ?_, by decide, by decide⟩
+  refine ⟨?_, ?_, by decide, rfl⟩
   · exact .quote (.parallel (.cons (.drop (.bvar rfl))
-      (.cons .unit .nil)))
+      (.cons .unit .nil))) (by decide)
   · exact NameEquiv.trans _ _ _
       (NameEquiv.struct_equiv _ _
         (StructuralCongruence.par_nil_right (.apply "PDrop" [.bvar 0])))
       (NameEquiv.quote_drop (.bvar 0))
+
+/-- A non-unit partner keeps the quotation as code: `@(*x | @0!(0))` is
+sorted when binders reach into quotations, but its code mentions the outer
+binder, so authored rho's sorting does not admit it, it is not whole-name
+safe, and it is not translated beneath that binder. -/
+theorem structural_partner_quote_remains_sealed :
+    let sealed : Pattern := .apply "NQuote" [.collection .hashBag
+      [.apply "PDrop" [.bvar 0],
+        .apply "POutput" [.apply "NQuote" [.apply "PZero" []], .apply "PZero" []]] none]
+    NameWellSorted rhoApplyPresentation FreeSortContext.empty
+      [rhoReflectivePresentation.nameSort] sealed ∧
+    ¬ NameWellSorted rhoReflectivePresentation FreeSortContext.empty
+      [rhoReflectivePresentation.nameSort] sealed ∧
+    wholeNameSafeAt 1 sealed = false ∧
+    tName (Env.empty []).up sealed = none := by
+  dsimp
+  refine ⟨?_, ?_, by decide, rfl⟩
+  · exact .quote (.parallel (.cons (.drop (.bvar rfl))
+      (.cons (.output (.quote .unit
+        (MeTTaIL.ReflectiveSubstitution.quoteAdmits_of_reaching rfl _)) .unit) .nil)))
+      (MeTTaIL.ReflectiveSubstitution.quoteAdmits_of_reaching rfl _)
+  · intro typed
+    have closed := typed.quotesClosed rfl
+    revert closed
+    decide
 
 /-- Whole-name-aware admission is sufficient to enter the strict-core
 executor/presentation comparison. The simulation theorem itself has no
@@ -389,5 +449,6 @@ theorem wholeNameSafe_dropExecution_reflection {free : FreeSortContext}
 
 end Mettapedia.OSLF.Binding.RhoPayloadPresentation
 
-#print axioms Mettapedia.OSLF.Binding.RhoPayloadPresentation.structural_unit_whole_name_boundary
-#print axioms Mettapedia.OSLF.Binding.RhoPayloadPresentation.structural_unit_bound_name_admission_gap
+#print axioms Mettapedia.OSLF.Binding.RhoPayloadPresentation.structural_unit_whole_name_admitted
+#print axioms Mettapedia.OSLF.Binding.RhoPayloadPresentation.structural_unit_bound_name_admitted
+#print axioms Mettapedia.OSLF.Binding.RhoPayloadPresentation.structural_partner_quote_remains_sealed

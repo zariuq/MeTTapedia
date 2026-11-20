@@ -228,7 +228,7 @@ theorem guardSees_retained {W : Type} {next : W → MetaArity S} (ρ : Assignmen
         (ContextualConditionalExecution.guardRows s.locals s.state.declarations s.state.rows) check o := by
   cases check with
   | equal first second => exact Iff.rfl
-  | absent pattern =>
+  | predicate quantifier pattern =>
       show ContextualConditionalRows.Matches _ _ ρ (instantiate ρ (instantiate (carry G) pattern)) _ ↔
         ContextualConditionalRows.Matches _ _ (Assignment.compose ρ (carry G))
           (instantiate (Assignment.compose ρ (carry G)) pattern) _
@@ -251,7 +251,7 @@ theorem seesOutput_map {V W X : Type} {declaration : V → MetaArity S} {middle 
       SeesOutput (Assignment.compose left φ) (Assignment.compose right φ) output check := by
   cases check with
   | equal first second => exact Iff.rfl
-  | absent pattern =>
+  | predicate quantifier pattern =>
       show instantiate left (instantiate φ pattern) = instantiate right (instantiate φ output) ↔ _
       rw [← Assignment.instantiate_compose, ← Assignment.instantiate_compose]
       rfl

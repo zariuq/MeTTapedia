@@ -1,13 +1,13 @@
 import Mettapedia.Machines.CMemory.Array
-import Mettapedia.Machines.OrderedDependencyCArray
-import Mettapedia.Machines.OrderedDependencyCReserve
+import Mettapedia.Machines.OrderedDependencyArrays
+import Mettapedia.Machines.CountedArrayReserve
 
 /-!
 # Layer 2: from block memory to Co5's split heaps
 
 Co5's proofs of CeTTa's module-link functions run over split heaps: one
 abstract counted array per owner and direction
-(`OrderedDependencyCArray.Heap Id`, with `forward` and `reverse` of type
+(`OrderedDependencyArrays.Heap Id`, with `forward` and `reverse` of type
 `Id → Array32 Id`).  This module relates block memory to those split heaps and
 proves the publisher's refinements through the relation.
 
@@ -45,7 +45,7 @@ struct, and arrays store the addresses of the spaces they name.  With
   ```
 
   executed on block memory from the representations of two different spaces,
-  refine Co5's `OrderedDependencyCArray.writeLink`.  The two stores cannot
+  refine Co5's `OrderedDependencyArrays.writeLink`.  The two stores cannot
   interfere because the representations are separate: that disjointness is
   what Co5's split heap supplied by construction.
 * `publish_refines`: the publisher loop over the pending identities, from the
@@ -56,7 +56,7 @@ struct, and arrays store the addresses of the spaces they name.  With
 * `shared_block_unsatisfiable`: two spaces never share a `deps` block (the
   negative control of the B1 plan).
 * `nextCapacity_eq_chosenCapacity`: the capacity the block-level `reserve`
-  requests is Co5's `OrderedDependencyCReserve.chosenCapacity`.
+  requests is Co5's `CountedArrayReserve.chosenCapacity`.
 
 The publisher loop here iterates over the pending identities as values; it
 does not yet load them from the reservation's `pending` array.
@@ -77,7 +77,7 @@ open CellPermission
 universe u
 
 /-- Co5's split heap over identities `Id`. -/
-abbrev SplitHeap (Id : Type) := Mettapedia.Machines.OrderedDependencyCArray.Heap Id
+abbrev SplitHeap (Id : Type) := Mettapedia.Machines.OrderedDependencyArrays.Heap Id
 
 /-- A `Space *` stored in a cell. -/
 def spacePtr (s : Ptr) : CVal := .ptr (some s)
@@ -262,7 +262,7 @@ theorem writeLink_refines [DecidableEq Id] (layout : SpaceLayout) (H : SplitHeap
       (SpaceRep addr layout reader (H.forward reader) (H.reverse reader) ∗
         SpaceRep addr layout source (H.forward source) (H.reverse source))
       (writeLinkProg addr layout reader source)
-      (fun _ σ => ∃ H', OrderedDependencyCArray.writeLink H reader source = some H' ∧
+      (fun _ σ => ∃ H', OrderedDependencyArrays.writeLink H reader source = some H' ∧
         (SpaceRep addr layout reader (H'.forward reader) (H'.reverse reader) ∗
           SpaceRep addr layout source (H'.forward source) (H'.reverse source)) σ) := by
   unfold writeLinkProg
@@ -298,7 +298,7 @@ theorem writeLink_refines [DecidableEq Id] (layout : SpaceLayout) (H : SplitHeap
   rintro _ σ ⟨x₁, y₁, separate₁, rfl, holds₁, x₂, y₂, separate₂, rfl, holds₂, x₃, y₃,
     separate₃, rfl, holds₃, A'', storedReverse, holds₄⟩
   refine ⟨⟨Function.update H.forward reader A', Function.update H.reverse source A''⟩, ?_, ?_⟩
-  · simp [OrderedDependencyCArray.writeLink, storedForward, storedReverse]
+  · simp [OrderedDependencyArrays.writeLink, storedForward, storedReverse]
   · simp only [Function.update_self, Function.update_of_ne different,
       Function.update_of_ne (Ne.symm different)]
     rw [SpaceRep, SpaceRep, sepConj_assoc]
@@ -341,9 +341,9 @@ heap is `Ready`. -/
 theorem publish_refines [DecidableEq Id] (layout : SpaceLayout) {D : List Id}
     (distinct : D.Nodup) {reader : Id} (readerIn : reader ∈ D) :
     ∀ (pending : List Id) (H : SplitHeap Id), (∀ s ∈ pending, s ∈ D) → reader ∉ pending →
-      OrderedDependencyCArray.Ready H reader pending →
+      OrderedDependencyArrays.Ready H reader pending →
       CTriple (L := L) (StoreRep addr layout D H) (publishProg addr layout reader pending)
-        (fun _ σ => ∃ H', OrderedDependencyCArray.writeBatch H reader pending = some H' ∧
+        (fun _ σ => ∃ H', OrderedDependencyArrays.writeBatch H reader pending = some H' ∧
           StoreRep addr layout D H' σ) := by
   intro pending
   induction pending with
@@ -366,11 +366,11 @@ theorem publish_refines [DecidableEq Id] (layout : SpaceLayout) {D : List Id}
     rw [Prog.foldList, storeRep_split addr layout H readerIn sourceIn different]
     refine triple_bind _ (frame (writeLink_refines addr layout H reader source different
       ready.1 forwardRoom reverseRoom) _) fun _ => ?_
-    refine triple_pre _ (P := fun σ => ∃ H', OrderedDependencyCArray.writeLink H reader source =
+    refine triple_pre _ (P := fun σ => ∃ H', OrderedDependencyArrays.writeLink H reader source =
         some H' ∧ StoreRep addr layout D H' σ) (fun σ holds => ?_) ?_
     · obtain ⟨x, y, separate, rfl, ⟨H', linked, holdsX⟩, holdsY⟩ := holds
       refine ⟨H', linked, ?_⟩
-      obtain ⟨forward, reverse, -, -, rfl⟩ := OrderedDependencyCArray.writeLink_fields linked
+      obtain ⟨forward, reverse, -, -, rfl⟩ := OrderedDependencyArrays.writeLink_fields linked
       rw [storeRep_split addr layout _ readerIn sourceIn different,
         storeRep_congr addr layout (H := H)]
       · exact ⟨x, y, separate, rfl, holdsX, holdsY⟩
@@ -383,9 +383,9 @@ theorem publish_refines [DecidableEq Id] (layout : SpaceLayout) {D : List Id}
     intro linked
     refine triple_post _ (ih H' (fun s member => pendingIn s (List.mem_cons_of_mem _ member))
       (fun member => notSelf (List.mem_cons_of_mem _ member))
-      (OrderedDependencyCArray.ready_after_first ready linked)) ?_
+      (OrderedDependencyArrays.ready_after_first ready linked)) ?_
     rintro _ σ ⟨H'', batch, holds⟩
-    exact ⟨H'', by simp [OrderedDependencyCArray.writeBatch, linked, batch], holds⟩
+    exact ⟨H'', by simp [OrderedDependencyArrays.writeBatch, linked, batch], holds⟩
 
 /-! ## Negative controls for the representation -/
 
@@ -429,20 +429,20 @@ theorem publication_realizes_store {L : Type u} [Zero L] [Add L] [SepAlgebra L]
     [CellPermission L (Option CVal)] {Entry : Type*} {size : ℕ} (addr : Fin size → Ptr)
     (layout : SpaceLayout) (state : OrderedDependencyStore.Store Entry size)
     (H : SplitHeap (Fin size)) (reader : Fin size) (sources : List (Fin size))
-    (represented : OrderedDependencyCArray.Represents H state)
+    (represented : OrderedDependencyArrays.Represents H state)
     (observers : OrderedDependencyStore.ObserverInvariant state)
-    (ready : OrderedDependencyCArray.Ready H reader
+    (ready : OrderedDependencyArrays.Ready H reader
       (OrderedDependencyBatch.collectMissing (state.members reader).deps [] sources))
     (notSelf : reader ∉
       OrderedDependencyBatch.collectMissing (state.members reader).deps [] sources) :
     CTriple (L := L) (StoreRep addr layout (List.finRange size) H)
       (publishProg addr layout reader
         (OrderedDependencyBatch.collectMissing (state.members reader).deps [] sources))
-      (fun _ σ => ∃ H', OrderedDependencyCArray.Represents H'
+      (fun _ σ => ∃ H', OrderedDependencyArrays.Represents H'
           (OrderedDependencyBatch.publish state reader sources) ∧
         StoreRep addr layout (List.finRange size) H' σ) := by
   obtain ⟨after, batch, representsAfter⟩ :=
-    OrderedDependencyCArray.prepared_publication_represents_topology state H reader sources
+    OrderedDependencyArrays.prepared_publication_represents_topology state H reader sources
       represented observers ready
   refine triple_post _ (publish_refines addr layout (List.nodup_finRange size)
     (List.mem_finRange reader) _ H (fun s _ => List.mem_finRange s) notSelf ready) ?_
@@ -454,7 +454,7 @@ theorem publication_realizes_store {L : Type u} [Zero L] [Add L] [SepAlgebra L]
 /-- **The capacity `reserve` requests is Co5's `chosenCapacity`.** -/
 theorem nextCapacity_eq_chosenCapacity {Value : Type} (required cap : UInt32)
     (before : Array32 Value) (capacity : before.slots.length = cap.toNat) :
-    nextCapacity required cap = OrderedDependencyCReserve.chosenCapacity before required := by
-  simp only [nextCapacity, OrderedDependencyCReserve.chosenCapacity, capacity]
+    nextCapacity required cap = CountedArrayReserve.chosenCapacity before required := by
+  simp only [nextCapacity, CountedArrayReserve.chosenCapacity, capacity]
 
 end Mettapedia.Machines.CMemory.Lift

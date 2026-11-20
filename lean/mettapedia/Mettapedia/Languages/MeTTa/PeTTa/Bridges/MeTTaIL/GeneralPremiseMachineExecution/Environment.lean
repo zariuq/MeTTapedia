@@ -1,4 +1,5 @@
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.GeneralPremiseMachineExecution.Core
+import Mettapedia.Tools.KernelReflexivity
 
 /-! Native environment metadata, provider validation, and ground-pattern traversal. -/
 
@@ -70,8 +71,12 @@ private def EnvHelper.names : EnvHelper → List String
   | .row => ["declarations", "free", "bound", "signature", "row"]
   | .ground => ["depth", "pattern"]
   | .groundList => ["depth", "patterns"]
+private theorem env_owned (helper : EnvHelper) : Base.library.owns helper.head = true := by
+  cases helper <;> decide +kernel
+private def envEquations (head : String) : List SpaceSemantics.Equation :=
+  Base.library.source.equations.filter (fun equation => equation.head == head)
 private def envEquation (helper : EnvHelper) : SpaceSemantics.Equation :=
-  (Base.equations helper.head)[0]'(by cases helper <;> decide +kernel)
+  (envEquations helper.head)[0]'(by cases helper <;> decide +kernel)
 private def envCaptured (helper : EnvHelper) (values : List Atom) : Subst :=
   (helper.names.zip values).reverse
 
@@ -80,12 +85,16 @@ private theorem env_clause (helper : EnvHelper) (values : List Atom)
     clauses Base.runtime helper.head values =
       [.evaluate (envCaptured helper values) (envEquation helper).body] :=
   PureData.named_equation_clause Base.runtime helper.head (envEquation helper) helper.names values
-    (by cases helper <;> rfl) (by cases helper <;> decide +kernel)
+    (by
+      rw [Base.library_runtime]
+      exact (BridgeKit.Library.owned_equations Base.library_checked (env_owned helper)).trans
+        (by cases helper <;> kernel_reflexivity)) (by cases helper <;> decide +kernel)
     (by cases helper <;> decide) length
 
 set_option maxHeartbeats 4000000 in
 private theorem env_raw (helper : EnvHelper) (index : Nat) (bounded : index < helper.names.length) :
     argumentIsRaw Base.runtime helper.head index = true := by
+  apply Base.raw_of_source
   cases helper <;> simp only [EnvHelper.names, List.length_cons, List.length_nil] at bounded
   all_goals
     have small : index = 0 ∨ index = 1 ∨ index = 2 ∨ index = 3 ∨ index = 4 := by omega
@@ -100,7 +109,7 @@ private theorem env_call (helper : EnvHelper) (caller : Subst) (state : State)
   apply PureData.raw_authored_call_return Base.runtime caller (envCaptured helper values) state state
     helper.head arguments (envEquation helper).body answer
     (by cases helper <;> decide) (by cases helper <;> decide) (by cases helper <;> decide)
-    (by cases helper <;> decide +kernel)
+    (Base.registered_of_source (by cases helper <;> decide +kernel))
   · intro index bounded
     apply env_raw helper index
     have same : arguments.length = values.length := by simpa using congrArg List.length captured
@@ -116,7 +125,8 @@ private theorem env_capture (helper : EnvHelper) (caller : Subst) (state : State
     (returned : PureReturns Base.runtime [] state (Base.a helper.head values) state answer) :
     PureReturns Base.runtime caller state (Base.a helper.head arguments) state answer := by
   apply PureData.raw_capture_returns Base.runtime [] caller state state helper.head values arguments answer
-    (by cases helper <;> decide +kernel) _ (by cases helper <;> decide) _ returned
+    (by simp only [Base.registered_of_source (head := helper.head) (by cases helper <;> decide +kernel),
+      Bool.or_true]) _ (by cases helper <;> decide) _ returned
   · intro index bounded
     exact env_raw helper index (by omega)
   · have unchanged : applySubst [] = id := by

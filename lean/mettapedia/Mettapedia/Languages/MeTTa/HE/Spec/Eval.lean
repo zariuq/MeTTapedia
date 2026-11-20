@@ -7018,18 +7018,41 @@ theorem NativeRowsRel.length_eq_of_compatible {policy dispatch operator argument
       exact congrArg Nat.succ (ih (fun row present => compatible row (List.mem_cons_of_mem _ present)))
   | rejected impossible _ _ => exact False.elim (impossible (compatible _ List.mem_cons_self))
 
+/-- A producer with no compatible binding has no prepared work, even when its
+raw result list was nonempty. -/
+theorem NativeRowsRel.all_rejected {policy dispatch operator arguments before rows results}
+    (source : NativeRowsRel policy dispatch operator arguments before rows results)
+    (incompatible : ∀ row ∈ rows, ¬∃ output,
+      Spec.Bindings.ScopeObservation.LogicalMergeRel row.2 before.bindings output) :
+    results = [] := by
+  induction source with
+  | nil => rfl
+  | cons renewed _ _ =>
+    cases renewed with
+    | merged evidence _ => exact (incompatible _ List.mem_cons_self ⟨_, evidence⟩).elim
+  | rejected _ _ ih =>
+    exact ih (fun row member => incompatible row (List.mem_cons_of_mem _ member))
+
 /-- Only successful producer rows require a continuation. A refusal restores
 the original full call or returns the raw minimal refusal sentinel. -/
 inductive NativeReplyPlan where
   | done (results : List Result)
   | resume (rows : List Result)
 
+/-- The local evaluator tests emptiness **after** merging the producer's
+bindings. Rust's native dispatch returns the internal Empty marker when no
+continuation survives, not an empty continuation. -/
+def NativeReplyPlan.afterRows (caller : Frame) : List Result → NativeReplyPlan
+  | [] => .done [(Entry.Value.ofAtom Atom.empty, caller)]
+  | head :: tail => .resume (head :: tail)
+
 inductive NativeOutcomeRel (policy : Policy) (dispatch : GroundedDispatch) (operator : Atom)
     (arguments : List Atom) (original : Entry.Value) (expected : Option Atom) (frame : Frame) :
     GroundedResult Entry.Value → NativeReplyPlan → Prop where
   | success {head tail rows} :
       NativeRowsRel policy dispatch operator arguments frame (head :: tail) rows →
-      NativeOutcomeRel policy dispatch operator arguments original expected frame (.ok (head :: tail)) (.resume rows)
+      NativeOutcomeRel policy dispatch operator arguments original expected frame (.ok (head :: tail))
+        (NativeReplyPlan.afterRows frame rows)
   | empty : NativeOutcomeRel policy dispatch operator arguments original expected frame (.ok [])
       (.done [(Entry.Value.ofAtom Atom.empty,frame)])
   | runtimeError (message) :
@@ -7039,6 +7062,17 @@ inductive NativeOutcomeRel (policy : Policy) (dispatch : GroundedDispatch) (oper
       (.done [(if expected.isSome then original else Entry.Value.ofAtom Atom.notReducible,frame)])
   | incorrectArgument : NativeOutcomeRel policy dispatch operator arguments original expected frame .incorrectArgument
       (.done [(if expected.isSome then original else Entry.Value.ofAtom Atom.notReducible,frame)])
+
+theorem NativeOutcomeRel.all_rejected {policy dispatch operator arguments original expected frame rows plan}
+    (prepared : NativeOutcomeRel policy dispatch operator arguments original expected frame (.ok rows) plan)
+    (incompatible : ∀ row ∈ rows, ¬∃ output,
+      Spec.Bindings.ScopeObservation.LogicalMergeRel row.2 frame.bindings output) :
+    plan = .done [(Entry.Value.ofAtom Atom.empty,frame)] := by
+  cases prepared with
+  | empty => rfl
+  | success native =>
+    rw [native.all_rejected incompatible]
+    rfl
 
 theorem NativeOutcomeRel.total (policy : Policy) (dispatch : GroundedDispatch) (operator : Atom)
     (arguments : List Atom) (original : Entry.Value) (expected : Option Atom) (frame : Frame)
@@ -7054,6 +7088,22 @@ theorem NativeOutcomeRel.total (policy : Policy) (dispatch : GroundedDispatch) (
   | runtimeError message => exact ⟨_,.runtimeError message⟩
   | noReduce => exact ⟨_,.noReduce⟩
   | incorrectArgument => exact ⟨_,.incorrectArgument⟩
+
+theorem NativeOutcomeRel.ok_iff_rows {policy dispatch operator arguments original expected frame raw plan} :
+    NativeOutcomeRel policy dispatch operator arguments original expected frame (.ok raw) plan ↔
+      ∃ rows, NativeRowsRel policy dispatch operator arguments frame raw rows ∧
+        plan = NativeReplyPlan.afterRows frame rows := by
+  constructor
+  · intro prepared
+    cases prepared with
+    | empty => exact ⟨[], .nil, rfl⟩
+    | success rows => exact ⟨_, rows, rfl⟩
+  · rintro ⟨rows, paired, rfl⟩
+    cases raw with
+    | nil =>
+      cases paired
+      exact .empty
+    | cons head tail => exact .success paired
 
 /-- Producer-completed values use a pure return/type gate, independent of
 reentry policy. Function-shaped completed data is never activated here. -/

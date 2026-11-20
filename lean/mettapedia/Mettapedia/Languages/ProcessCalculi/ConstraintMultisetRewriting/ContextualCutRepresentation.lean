@@ -7,7 +7,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Occurrenc
 
 The information problem and checks stay at their original cut. Only the
 row representation and physical names change. Conditional matching plus
-an injective inventory image preserves equality, absence and exact counts.
+an injective inventory image preserves equality, none queries and exact counts.
 The construction and proof are independent of the source clause kind.
 An entry cut records such a representation over allocation names together
 with the prefix resource delta that produced it.

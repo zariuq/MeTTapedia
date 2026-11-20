@@ -1,4 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefGSLT
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalStepperCompleteness
 import Mettapedia.GSLT.Dynamics.ProtocolModuloEquations
 import Mettapedia.GSLT.Core.StructuralIsomorphism
 
@@ -123,6 +124,27 @@ theorem step_iff {free : FreeSortContext} {source target : Process free} :
       occurrence.receipt.step, occurrence.targetEquation⟩
   · rintro ⟨redex, contractum, before, ⟨depth, firing⟩, after⟩
     exact ⟨⟨redex, contractum, before, ⟨depth, firing⟩, after⟩⟩
+
+/-- Each admitted equation-saturated step can execute on the computed
+source representative. It needs one actual authored COMM at depth one;
+its computed contractum presents the target's equation class. -/
+theorem step_iff_canonical_communication {free : FreeSortContext} {source target : Process free} :
+    (theory free).Step source target ↔
+      ∃ contractum, RhoStepAt 1 (canonicalize source.1) contractum ∧
+        canonicalize contractum = canonicalize target.1 := by
+  constructor
+  · intro step
+    obtain ⟨redex,residual,before,firing,after⟩ := step_iff.mp step
+    have typed := (process_iff free redex.1).mp redex.2
+    obtain ⟨canonical,admitted,same⟩ :=
+      CanonicalStepperCompleteness.canonicalStep_complete_of_rhoStep typed.1 firing
+    change canonicalize source.1 = canonicalize redex.1 at before
+    rw [← before] at admitted
+    exact ⟨canonical,admitted,same.trans after⟩
+  · rintro ⟨contractum,admitted,same⟩
+    let redex := termCanonicalize source
+    let residual := stepTarget redex ⟨1,admitted⟩
+    exact step_iff.mpr ⟨redex,residual,(canonicalize_idempotent source.1).symm,⟨1,admitted⟩,same⟩
 
 /-- Every actual raw firing enters the parameterized generated semantics. -/
 theorem of_step {free : FreeSortContext} {source target : Process free}

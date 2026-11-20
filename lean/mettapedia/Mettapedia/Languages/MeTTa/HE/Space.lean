@@ -1381,4 +1381,105 @@ theorem queryEquationsCovered_stable (avoid : List String) (space : Space) (atom
         congrArg Mettapedia.Machines.ReadOnlyQuery.Observation.answer
           (MatchDepth.queryCovered_stable (depth + 1) extra _ covered)
 
+/-! ## Match queries on a captured view -/
+
+namespace Space.MatchQuery
+
+open Mettapedia.Machines.ReadOnlyQuery
+
+/-- The atomic selector works in a fixed view and receives the earlier
+branch's bindings for scoped row selection. A failed completion certificate
+is not an empty completed selection. The selector owns freshening and
+narrowing of open row locals. -/
+abbrev AtomicRead := Bindings → Atom → Option (List Bindings)
+
+inductive Read where
+  | atoms (incoming : Bindings) (pattern : Atom)
+  | merge (hit incoming : Bindings)
+
+abbrev Query := Program Read (Option (List Bindings)) (List Bindings)
+
+/-- Finish the join left to right: inside each branch apply its bindings
+before making the next atomic request, then merge the hit with the incoming
+record. No template is evaluated in this traversal. The atomic provider,
+not the outer comma form, decides how to interpret a nested pattern. -/
+def conjuncts : List Atom → List Bindings → Query
+  | [], frontier => .pure frontier
+  | pattern :: rest, frontier =>
+      bind (flatTraverse frontier fun incoming =>
+        .read (.atoms incoming (incoming.applyFull pattern (incoming.resolutionFuel pattern))) fun hits =>
+          flatTraverse (hits.getD []) fun hit =>
+            .read (.merge hit incoming) fun merged => .pure (merged.getD [])) (conjuncts rest)
+
+def program : Atom → Query
+  | .expression (.symbol "," :: legs) => conjuncts legs [Bindings.empty]
+  | pattern => .read (.atoms Bindings.empty pattern) fun hits => .pure (hits.getD [])
+
+def read (atomic : AtomicRead) (depth : Nat) : Read → Option (List Bindings)
+  | .atoms incoming pattern => atomic incoming pattern
+  | .merge hit incoming =>
+      if matchCovered depth (.merge hit incoming) then
+        some (mergeBindings hit incoming depth)
+      else none
+
+/-- Every attempted read must be complete, including an empty read. Using
+the empty list to stop a blocked branch of the dependency program never
+turns that branch's missing certificate into an answer. -/
+def capture (atomic : AtomicRead) (depth : Nat) (pattern : Atom) : Option (List Bindings) :=
+  let observed := run (read atomic depth) (program pattern)
+  if observed.reads.all (fun sampled => sampled.2.isSome) then some observed.answer else none
+
+/-- Only the visited atomic requests have to agree. The whole adaptive
+read path and the capture agree, not just their supports. -/
+theorem capture_eq_of_agrees {before after : AtomicRead} (depth : Nat) (pattern : Atom)
+    (same : ∀ incoming atom value,
+      (.atoms incoming atom, value) ∈ (run (read before depth) (program pattern)).reads →
+      after incoming atom = value) :
+    capture after depth pattern = capture before depth pattern := by
+  have valid : Agrees (read after depth) (run (read before depth) (program pattern)).reads := by
+    rintro ⟨request,value⟩ found
+    cases request with
+    | atoms incoming atom => exact same incoming atom value found
+    | merge hit incoming => exact run_agrees (read before depth) (program pattern) _ found
+  simp only [capture, run_eq_of_agrees (read before depth) (read after depth) (program pattern) valid]
+
+/-- A finished capture is unchanged by a larger matcher depth and a provider
+that preserves completed atomic replies. This includes zero answers and
+does not require certification of requests behind a failed earlier leg. -/
+theorem capture_stable {before after : AtomicRead} (depth extra : Nat) (pattern : Atom)
+    {answers : List Bindings}
+    (extend : ∀ incoming atom rows, before incoming atom = some rows →
+      after incoming atom = some rows)
+    (complete : capture before depth pattern = some answers) :
+    capture after (depth + extra) pattern = some answers := by
+  have closed : (run (read before depth) (program pattern)).reads.all
+      (fun sampled => sampled.2.isSome) = true := by
+    by_contra incomplete
+    simp only [capture, if_neg incomplete] at complete
+    cases complete
+  have valid : Agrees (read after (depth + extra)) (run (read before depth) (program pattern)).reads := by
+    rintro ⟨request,value⟩ found
+    have available : value.isSome = true := List.all_eq_true.mp closed _ found
+    have replied := run_agrees (read before depth) (program pattern) (request,value) found
+    cases value with
+    | none => simp at available
+    | some rows =>
+      cases request with
+      | atoms incoming atom => exact extend incoming atom rows replied
+      | merge hit incoming =>
+        have known : matchCovered depth (.merge hit incoming) = true := by
+          simp only [read] at replied
+          split at replied
+          · assumption
+          · contradiction
+        have later := matchCovered_mono depth extra (.merge hit incoming) known
+        have answer := matchCovered_stable depth extra (.merge hit incoming) known
+        change mergeBindings hit incoming (depth + extra) = mergeBindings hit incoming depth at answer
+        rw [read, if_pos later, answer]
+        simpa only [read, if_pos known] using replied
+  have equal := run_eq_of_agrees (read before depth) (read after (depth + extra)) (program pattern) valid
+  simpa only [capture, equal] using complete
+
+end Space.MatchQuery
+
 end Mettapedia.Languages.MeTTa.HE

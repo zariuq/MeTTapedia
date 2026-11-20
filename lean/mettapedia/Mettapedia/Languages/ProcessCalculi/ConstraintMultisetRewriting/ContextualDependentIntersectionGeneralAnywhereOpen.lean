@@ -10,7 +10,7 @@ Over `A : U0, F : U0 → U0 → U0, b : F A A`, the equation
 is a flex–flex intersection on `F`, in the dynamic pattern fragment (`annotated_in_fragment`). Rotation cannot move
 `F` past `b`, which mentions it, and in-place intersection cannot strengthen the equation past `b`, because its
 annotation mentions `b`. The anywhere solver is suspended on it at budget 16 (`annotated_suspended`), and the store is
-solvable (`annotated_solvable`: `F := λ x y. A`, after which `b : A`), so this is an open row of the census, not a
+solvable (`annotated_solvable`: `F := λ x y. A`, after which `b : A`), so this is an open row of the classification, not a
 refutation.
 
 The binder `p` is dead: neither the bodies nor the codomain mention it. Reading the equation without it and

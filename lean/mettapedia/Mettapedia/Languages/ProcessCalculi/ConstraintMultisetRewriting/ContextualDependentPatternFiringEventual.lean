@@ -131,7 +131,7 @@ theorem piCount_eq_piDepth {n : Nat} : ∀ code : Tm (LevelTower.Head L) n, piCo
 omit [UniverseLevel.LevelOrder L] [DecidableEq (LevelTower.Head L)] [DecidableRel (LevelTower.rules L).headEq]
   [∀ head, Decidable ((LevelTower.rules L).isUniverse head)] [DecidableRel (LevelTower.rules L).cumulative] in
 variable {Head : Type} in
-/-- **The rigid out-of-scope row of the census**, read from the store: the normal opening of the left side is a
+/-- **The rigid out-of-scope row of the classification**, read from the store: the normal opening of the left side is a
 metavariable applied to locals, and the normal opening of the right side has, in its rigid support, a local
 outside those arguments. -/
 def RigidOutside {rules : Rules Head} {Θ : Context rules} (equation : Equation (TotalTerm Θ)) : Prop :=
@@ -159,21 +159,21 @@ theorem rigidOutside_of_normal {rules : Rules Head} (empty : rules.computation =
     {head : Fin (Θ.arity + ContextualDependentPatternSolver.lamDepth equation.1.2.code)}
     {arguments : List (Fin (Θ.arity + ContextualDependentPatternSolver.lamDepth equation.1.2.code))}
     {outside : Fin (Θ.arity + ContextualDependentPatternSolver.lamDepth equation.1.2.code)}
-    (read : readSpine (ContextualDependentCensus.openNormal (ContextualDependentPatternSolver.lamDepth equation.1.2.code)
+    (read : readSpine (ContextualDependentClassification.openNormal (ContextualDependentPatternSolver.lamDepth equation.1.2.code)
       equation.1.2.code) = some (head, arguments))
     (flexibleHead : openedFlexible (ContextualDependentPatternSolver.lamDepth equation.1.2.code) head = true)
     (rigidArguments : ∀ argument ∈ arguments,
       openedFlexible (ContextualDependentPatternSolver.lamDepth equation.1.2.code) argument = false)
     (occurs : outside ∈ rigidSupport (openedFlexible (ContextualDependentPatternSolver.lamDepth equation.1.2.code))
-      (ContextualDependentCensus.openNormal (ContextualDependentPatternSolver.lamDepth equation.1.2.code)
+      (ContextualDependentClassification.openNormal (ContextualDependentPatternSolver.lamDepth equation.1.2.code)
         equation.2.2.code))
     (rigidOutside : openedFlexible (ContextualDependentPatternSolver.lamDepth equation.1.2.code) outside = false)
     (notArgument : outside ∉ arguments) : RigidOutside equation := by
   intro left right toLeft normalLeft toRight normalRight
-  rw [normal_reduct_unique empty (ContextualDependentCensus.openCode_star _ _)
-    (ContextualDependentCensus.openNormal_normal empty leftNormal _) toLeft normalLeft]
-  rw [normal_reduct_unique empty (ContextualDependentCensus.openCode_star _ _)
-    (ContextualDependentCensus.openNormal_normal empty rightNormal _) toRight normalRight]
+  rw [normal_reduct_unique empty (ContextualDependentClassification.openCode_star _ _)
+    (ContextualDependentClassification.openNormal_normal empty leftNormal _) toLeft normalLeft]
+  rw [normal_reduct_unique empty (ContextualDependentClassification.openCode_star _ _)
+    (ContextualDependentClassification.openNormal_normal empty rightNormal _) toRight normalRight]
   exact ⟨head, arguments, outside, read, flexibleHead, rigidArguments, occurs, rigidOutside, notArgument⟩
 
 variable (rigid : ∀ name, (TowerModel.setting valuation).roles name = .rigid)
@@ -217,8 +217,8 @@ theorem readingRefute_isSome {Γ : Context (TowerModel.setting valuation).R} {sc
       cases found
     · split
       · rename_i missing
-        have absent : certifyNormal active.right.code = none := missing
-        rw [absent] at certified
+        have notMem : certifyNormal active.right.code = none := missing
+        rw [notMem] at certified
         cases certified
       · rw [dif_pos millerRight]
         rfl

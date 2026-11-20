@@ -96,8 +96,19 @@ theorem updated_rows_exact (head : String) (rows : List (Nat × Nat)) (key candi
         simp [encodeRows, encode]
       · simp [updatedRows, OrderedRows.publish, better]
 
+/-- An erasure changes its space exactly when a stored row matches the pattern. -/
+theorem erasureChanged_iff {before after : Effects.State} {target : Handle} {pattern : Atom}
+    {rows : List Atom} (snapshot : before.read target = some rows)
+    (erased : Effects.erase before target pattern = some after) :
+    Effects.erasureChanged before after target = true ↔ ∃ row ∈ rows, Effects.removalMatches pattern row = true := by
+  obtain ⟨stored, read, result⟩ := Effects.erase_reads_back erased
+  cases Option.some.inj (read.symm.trans snapshot)
+  simp [Effects.erasureChanged, snapshot, result, List.length_filter_lt_length_iff_exists]
+
+/-- The replacement branch removes its claimed incumbent, so that row must be stored. -/
 theorem write_complete (before : Effects.State) (target : Handle) (head : String) (key candidate : Nat)
-    (old : Option Nat) (rows : List Atom) (snapshot : before.read target = some rows) :
+    (old : Option Nat) (rows : List Atom) (snapshot : before.read target = some rows)
+    (stored : ∀ previous ∈ old, row head (number key) (number previous) ∈ rows) :
     ∃ after answers, write before target head key candidate old = some (after, answers) := by
   cases old with
   | none =>
@@ -108,7 +119,9 @@ theorem write_complete (before : Effects.State) (target : Handle) (head : String
       · obtain ⟨middle, erased⟩ := Effects.erase_exists_of_read_some snapshot (row head (number key) (number previous))
         obtain ⟨_, _, middleRead⟩ := Effects.erase_reads_back erased
         obtain ⟨after, inserted⟩ := Effects.insert_exists_of_read_some middleRead (row head (number key) (number candidate))
-        exact ⟨after, [number key], by simp [write, better, erased, inserted]⟩
+        have changed := (erasureChanged_iff snapshot erased).mpr
+          ⟨_, stored previous rfl, Effects.removalMatches_self _ _⟩
+        exact ⟨after, [number key], by simp [write, better, erased, changed, inserted]⟩
       · exact ⟨before, [], by simp [write, better]⟩
 
 def Represents (head : String) (state : Effects.State) (target : Handle)
@@ -132,6 +145,7 @@ theorem run_total_refines (names : Names) (head : String)
     rw [queryValues]
     cases store key <;> rfl
   obtain ⟨after, answers, completed⟩ := write_complete before target head key candidate (store key) _ snapshot
+    fun previous held => List.mem_map_of_mem ((rowRepresentation.member key previous).mpr held)
   have observation := write_observation before after target head notCons key candidate (store key) answers _ snapshot completed
   obtain ⟨preserved, _⟩ := OrderedRows.publish_refines rowRepresentation key candidate
   refine ⟨after, answers, ?_, ⟨(OrderedRows.publish rows key candidate (store key)).1, ?_, preserved⟩, ?_, observation.2.2⟩

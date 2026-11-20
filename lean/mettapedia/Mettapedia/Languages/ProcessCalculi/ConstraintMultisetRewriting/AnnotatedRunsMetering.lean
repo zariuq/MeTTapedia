@@ -10,7 +10,7 @@ firings with guards and predicate queries, provided the fuel lies outside what t
 
 ## Firings blind to the fuel
 
-A firing is **blind to the fuel atom** (`FuelBlind`) when no pattern scanned by an absence or
+A firing is **blind to the fuel atom** (`FuelBlind`) when no pattern scanned by a none query or
 count guard matches the fuel atom, and no space observed by its predicate queries contains it, at any
 solution. An equation guard scans no occurrence. A guard-free firing without predicate queries
 is blind (`fuelBlind_of_plain`).
@@ -50,7 +50,7 @@ variable {T : Type uT} {S : Type uS} {O : Type uO} [DecidableEq O]
 occurrence. -/
 def checkScanned : Check T → Option T
   | .equal _ _ => none
-  | .absent pattern => some pattern
+  | .predicate _ pattern => some pattern
   | .count pattern _ => some pattern
 
 /-- **A firing blind to the fuel atom**: no pattern scanned by its guards matches the fuel atom,
@@ -81,12 +81,16 @@ theorem check_holds_frame {σ : S} {store frame : Finset O} {check : Check T}
     (holds : check.Holds A σ label store) : check.Holds A σ label (store ∪ frame) := by
   cases check with
   | equal left right => exact holds
-  | absent pattern =>
-      intro o member
-      rcases Finset.mem_union.mp member with inStore | inFrame
-      · exact holds o inStore
-      · rw [labelled o inFrame]
-        exact blind pattern rfl
+  | predicate quantifier pattern =>
+      cases quantifier with
+      | any => exact Quantifier.holds_any_mono Finset.subset_union_left holds
+      | none =>
+          intro o member
+          rcases Finset.mem_union.mp member with inStore | inFrame
+          · exact holds o inStore
+          · beta_reduce
+            rw [labelled o inFrame]
+            exact blind pattern rfl
   | count pattern number =>
       have same : Check.matches A σ label (store ∪ frame) pattern =
           Check.matches A σ label store pattern := by
@@ -103,21 +107,26 @@ theorem check_holds_frame {σ : S} {store frame : Finset O} {check : Check T}
       rw [same]
       exact holds
 
-/-- A predicate query whose space excludes the fuel keeps its answer when fuel is added. -/
-theorem query_holds_frame {σ : S} {store frame : Finset O} {query : PredicateQueryAdmission.Query T S O}
+/-- A region query whose fiber excludes the fuel keeps what it observes when fuel is added, whatever
+it observes: the fiber is unchanged. -/
+theorem query_holds_frame {σ : S} {store frame : Finset O}
+    {query : PredicateQueryAdmission.RegionQuery T S O}
     (labelled : ∀ o ∈ frame, label o = fuelAtom) (blind : query.region σ fuelAtom = false)
-    (holds : regionOf label store (query.region σ) = query.seen) :
-    regionOf label (store ∪ frame) (query.region σ) = query.seen := by
-  rw [← holds]
-  ext o
-  simp only [mem_regionOf, Finset.mem_union]
-  constructor
-  · rintro ⟨inStore | inFrame, inRegion⟩
-    · exact ⟨inStore, inRegion⟩
-    · rw [labelled o inFrame, blind] at inRegion
-      cases inRegion
-  · rintro ⟨inStore, inRegion⟩
-    exact ⟨Or.inl inStore, inRegion⟩
+    (holds : query.Holds σ label store) : query.Holds σ label (store ∪ frame) := by
+  have fiber : regionOf label (store ∪ frame) (query.region σ) =
+      regionOf label store (query.region σ) := by
+    ext o
+    simp only [mem_regionOf, Finset.mem_union]
+    constructor
+    · rintro ⟨inStore | inFrame, inRegion⟩
+      · exact ⟨inStore, inRegion⟩
+      · rw [labelled o inFrame, blind] at inRegion
+        cases inRegion
+    · rintro ⟨inStore, inRegion⟩
+      exact ⟨Or.inl inStore, inRegion⟩
+  show query.accepts σ (regionOf label (store ∪ frame) (query.region σ))
+  rw [fiber]
+  exact holds
 
 /-- **The frame law for one blind firing.** -/
 theorem Firing.valid_frame_blind {f : Firing T S O} {C : Configuration T O} {frame : Finset O}
@@ -275,10 +284,10 @@ def fuel : Term signature := .const 9
 def worker : Run := ⟨⟨[.const 5], [], [], [], [.const 6]⟩, [], ⟨[5], [], [6]⟩⟩
 
 /-- Guards that no fuel is present. -/
-def noFuelGuard : Run := ⟨⟨[], [], [], [.absent fuel], []⟩, [], ⟨[], [], []⟩⟩
+def noFuelGuard : Run := ⟨⟨[], [], [], [.predicate .none fuel], []⟩, [], ⟨[], [], []⟩⟩
 
 /-- Guards that no `7` is present: blind to the fuel. -/
-def blindGuard : Run := ⟨⟨[], [], [], [.absent (.const 7)], []⟩, [], ⟨[], [], []⟩⟩
+def blindGuard : Run := ⟨⟨[], [], [], [.predicate .none (.const 7)], []⟩, [], ⟨[], [], []⟩⟩
 
 /-- The token and one fuel occurrence. -/
 def start : Configuration (Term signature) Nat := ⟨[], {5, 9}⟩
@@ -316,11 +325,11 @@ theorem metered_present : ((worker.metered fuel [9]).result label start).present
 theorem plain_present : (worker.result label start).present = {9, 6} := by
   decide
 
-/-- An absence guard whose pattern is ground holds at a store none of whose labels is it. -/
-theorem absent_holds {pattern : Term signature} {store : Finset Nat} (σ : Subst signature)
+/-- A none guard whose pattern is ground holds at a store none of whose labels is it. -/
+theorem none_holds {pattern : Term signature} {store : Finset Nat} (σ : Subst signature)
     (ground : ∀ τ : Subst signature, τ.applyTerm pattern = pattern)
     (apart : ∀ o ∈ store, label o ≠ pattern) :
-    (Check.absent pattern).Holds A σ label store := by
+    (Check.predicate .none pattern).Holds A σ label store := by
   intro o member same
   have labelGround : ∀ n, (σ.applyTerm (label n)) = label n := by
     intro n
@@ -339,7 +348,7 @@ theorem metered_then_guard_runs : Executable A label start [worker.metered fuel 
     exact metered_worker_problem _ equation member
   · intro check member σ _
     obtain rfl := List.mem_singleton.mp member
-    refine absent_holds σ (fun _ => rfl) ?_
+    refine none_holds σ (fun _ => rfl) ?_
     rw [metered_present]
     intro o inStore
     obtain rfl := Finset.mem_singleton.mp inStore
@@ -376,9 +385,10 @@ theorem guard_sees_fuel :
 
 theorem metered_then_query_runs : Executable A label start [worker.metered fuel [9], observer] := by
   refine ⟨metered_worker_valid, ?_, ?_⟩
-  · refine (PredicateQueryAdmission.valid_fixed_iff A label observer.rule [⟨persistent, ∅⟩] _
-      observer.selection).mpr ⟨⟨by decide, by decide, rfl, rfl, rfl, by decide,
-        ⟨Subst.id signature, ?_⟩, by simp [observer]⟩, ?_⟩
+  · refine PredicateQueryAdmission.valid_iff_regionValid.mp
+      ((PredicateQueryAdmission.valid_fixed_iff A label observer.rule [⟨persistent, ∅⟩] _
+        observer.selection).mpr ⟨⟨by decide, by decide, rfl, rfl, rfl, by decide,
+          ⟨Subst.id signature, ?_⟩, by simp [observer]⟩, ?_⟩)
     · intro equation member
       simp only [Selection.problem, Selection.equations, observer, List.zipWith_nil_left,
         List.append_nil] at member
@@ -394,11 +404,12 @@ theorem metered_then_query_runs : Executable A label start [worker.metered fuel 
 
 theorem plain_then_query_refused : ¬ Executable A label start [worker, observer] := by
   rintro ⟨-, queryValid, -⟩
-  have holds := queryValid.observations _ List.mem_cons_self (Subst.id signature) (by
-    intro equation member
-    simp only [Selection.problem, Selection.equations, observer, Firing.result,
-      Selection.result, List.zipWith_nil_left, List.append_nil] at member
-    exact worker_problem _ equation member)
+  have holds := (PredicateQueryAdmission.Query.toRegion_holds_iff _).mp
+    (queryValid.observations _ List.mem_cons_self (Subst.id signature) (by
+      intro equation member
+      simp only [Selection.problem, Selection.equations, observer, Firing.result,
+        Selection.result, List.zipWith_nil_left, List.append_nil] at member
+      exact worker_problem _ equation member))
   revert holds
   decide
 
@@ -428,7 +439,7 @@ theorem metered_then_blind_runs :
   · intro check member σ _
     simp only [Firing.metered, blindGuard, List.mem_singleton] at member
     subst member
-    refine absent_holds σ (fun _ => rfl) ?_
+    refine none_holds σ (fun _ => rfl) ?_
     rw [metered_present]
     intro o inStore
     obtain rfl := Finset.mem_singleton.mp inStore

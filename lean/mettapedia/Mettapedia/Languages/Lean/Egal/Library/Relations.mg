@@ -12,19 +12,11 @@ Qed.
 Theorem Lean_guard_of : forall p:set, 0 :e p -> 0 :e {z :e 1 | z :e p}.
 let p. assume H: 0 :e p. exact SepI 1 (fun z => z :e p) 0 In_0_1 H.
 Qed.
-Theorem Lean_of_guard : forall p:set, forall x :e {z :e 1 | z :e p}, 0 :e p.
-let p x. assume Hx: x :e {z :e 1 | z :e p}.
-claim L: x = 0. { exact In_1_eq_0 x (SepE1 1 (fun z => z :e p) x Hx). }
-rewrite <- L. exact SepE2 1 (fun z => z :e p) x Hx.
-Qed.
-
 Theorem Lean_RTG_tail : forall A r a, forall b :e A, forall c :e A,
   0 :e Lean_Relation_ReflTransGen_Prop A r a b -> 0 :e r b c -> 0 :e Lean_Relation_ReflTransGen_Prop A r a c.
 let A r a b. assume Hb: b :e A. let c. assume Hc: c :e A.
 assume Hab: 0 :e Lean_Relation_ReflTransGen_Prop A r a b. assume Hr: 0 :e r b c.
-apply SepE2 1 (fun x => exists w, w :e Lean_Relation_ReflTransGen A r a b) 0 Hab.
-let w. assume Hw: w :e Lean_Relation_ReflTransGen A r a b.
-exact Lean_Relation_ReflTransGen_tail_proof_ok A r a b Hb c Hc w Hw 0 (Lean_guard_of (r b c) Hr).
+exact Lean_Relation_ReflTransGen_tail_proof_ok A r a b Hb c Hc 0 Hab 0 (Lean_guard_of (r b c) Hr).
 Qed.
 
 Theorem Lean_RTG_single : forall A r, forall a :e A, forall b :e A, 0 :e r a b -> 0 :e Lean_Relation_ReflTransGen_Prop A r a b.

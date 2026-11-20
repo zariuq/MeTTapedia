@@ -33,7 +33,7 @@ knowledge is a congruence for each of them (`Semantic`, `Observation.ModuloEquiv
 
 ## A family that reads syntactically
 
-The run layer's census controls read labels syntactically. The region of persistent atoms tests the
+The run layer's collect query controls read labels syntactically. The region of persistent atoms tests the
 raw constant `9` (`AnnotatedRuns.Controls.persistent`), and the solution that sends the variable `0`
 to `9` identifies two terms the region separates (`persistent_not_semantic`). Its labels are ground
 in those controls, so their behaviour does not depend on it, but as firings they belong to the
@@ -116,7 +116,7 @@ variable {T : Type uT} {S : Type uS} {O : Type uO} {A : SubstitutionAction T S} 
 /-- **Equivariance modulo the knowledge for guarded firings.** Guards are predicates of the solution
 and read no label. At equivalent states, along a renaming supported on the present occurrences, a
 guarded firing whose queries read through solutions and its renaming are admitted together in the
-guarded step, and their results are equivalent, when the made identities are absent from both
+guarded step, and their results are equivalent, when the made identities are missing from both
 states. -/
 theorem ModuloEquivalent.guarded_firing [DecidableEq O] {C D : Configuration T O}
     (h : ModuloEquivalent A label E C D) (f : GuardedFiring T S O)
@@ -262,16 +262,16 @@ end Typing
 
 /-! ## A family that reads syntactically -/
 
-section Census
+section PredicateQuery
 
 open Mettapedia.Logic.LP
 open ConstraintMultisetRewriting.Controls (signature A)
 
-/-- The census query of the run layer's controls: no persistent atom. -/
+/-- The predicate query of the run layer's controls: no persistent atom. -/
 def persistentQuery : PredicateQueryAdmission.Query (Term signature) (Subst signature) ℕ :=
   PredicateQueryAdmission.Query.fixed AnnotatedRuns.Controls.noPersistent
 
-/-- **The census controls read labels syntactically**: the solution that sends every variable to the
+/-- **The predicate query controls read labels syntactically**: the solution that sends every variable to the
 constant `9` identifies the variable `0` with `9`, and the region of persistent atoms holds only the
 second. -/
 theorem persistent_not_semantic : ¬ ReadsThroughSolutions A persistentQuery := by
@@ -284,7 +284,7 @@ theorem persistent_not_semantic : ¬ ReadsThroughSolutions A persistentQuery := 
 def persistentThrough : SemanticQuery A ℕ :=
   throughSolutions A AnnotatedRuns.Controls.persistent (fun same => congrArg AnnotatedRuns.Controls.persistent same) ∅
 
-end Census
+end PredicateQuery
 
 #print axioms resolve_isSemantic
 #print axioms isSemantic_of_isResolution

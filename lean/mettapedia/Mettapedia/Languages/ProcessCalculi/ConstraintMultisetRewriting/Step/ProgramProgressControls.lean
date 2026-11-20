@@ -116,7 +116,7 @@ theorem next_budget_finds_semantic_binding :
 theorem combined_budget_agrees :
     seek sourceObservation bindingExecution 3 0 = .found 2 .letK := rfl
 
-theorem zero_budget_is_not_absence :
+theorem zero_budget_is_not_none :
     seek sourceObservation sourceLoop 0 0 = .suspended 0 ∧
       sourceObservation (sourceLoop.event 0) = some .call := ⟨rfl, rfl⟩
 

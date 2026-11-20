@@ -5,7 +5,8 @@ import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits.Equiv
 
 A Rholang bundle has two flags (`Bundle{write_flag, read_flag}` in the reducer): `bundle+ {c}`
 may send, `bundle- {c}` may receive, `bundle0 {c}` neither, `bundle {c}` both. Receiving with
-`<-` or `<=` removes the message, and peeking with `<<-` does not, but both need the read flag.
+`<-` or `<=` can consume a linear message. Peeking with `<<-` settles with the message
+available in an isolated run. Both need the read flag.
 So a holder who may look at a shared datum may also remove it.
 
 ## Results
@@ -57,6 +58,25 @@ def Bundle.permits (b : Bundle) : Part → Bool
   | .take => b.read
   | .peek => b.read
   | .observe => false
+
+/-- After expression evaluation and substitution, the Rust receive gate
+unwraps a sole readable bundle. Failure has no channel to pass to matching.
+The write bit is irrelevant to this gate. -/
+def receiveChannel {Ch : Type*} (evaluated : Ch) : Option (Bundle × Ch) → Option Ch
+  | none => some evaluated
+  | some (flags, channel) => if flags.read then some channel else none
+
+theorem receiveChannel_bundle_iff {Ch : Type*} (evaluated channel result : Ch) (flags : Bundle) :
+    receiveChannel evaluated (some (flags, channel)) = some result ↔
+      flags.permits .take = true ∧ channel = result := by
+  by_cases readable : flags.read = true <;> simp [receiveChannel, Bundle.permits, readable]
+
+/-- The interpreter collects the whole join, or returns a permission fault
+without submitting any of its binds to the store. -/
+def prepareReceiveBinds {Ch Pat : Type*} (binds : List (Ch × Option (Bundle × Ch) × Pat)) :
+    Option (List (Ch × Pat)) :=
+  binds.mapM fun (evaluated, soleBundle, pattern) =>
+    (receiveChannel evaluated soleBundle).map (fun channel => (channel, pattern))
 
 /-- A set of rights, as a Prime handle may carry any set of parts. -/
 abbrev RightSet := Part → Bool

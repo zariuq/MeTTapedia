@@ -90,7 +90,7 @@ def observedRules : List RewriteRule := [
       (pattern (metta_sexpr% petta "(BNFGraphTriePutV1 ?key ?value (BNFGraphTrieV1 BNFIndexMissingV1 BNFGraphTrieEdgesNilV1))"))
       (pattern (metta_sexpr% petta "(?result)"))],
   observedRule "bnf-discovery-trie-put-value-v1"
-    (metta_sexpr% petta "(BNFGraphTriePutV1 (metta-nullary bnf-v1:text-nil) ?value (BNFGraphTrieV1 ?old ?edges))")
+    (metta_sexpr% petta "(BNFGraphTriePutV1 (bnf-v1:text-nil) ?value (BNFGraphTrieV1 ?old ?edges))")
     (metta_sexpr% petta "((BNFGraphTrieV1 (BNFIndexFoundV1 ?value) ?edges))"),
   observedRule "bnf-discovery-trie-put-cons-v1"
     (metta_sexpr% petta "(BNFGraphTriePutV1 (bnf-v1:text-cons ?head ?tail) ?value (BNFGraphTrieV1 ?old ?edges))")

@@ -124,11 +124,14 @@ def tryEquation (equation : Equation (Observation S source)) : Option (RootCase 
     else none
   else none
 
-def choose : (problem : Problem source) → Option (Choice problem)
-  | [] => none
-  | equation :: rest =>
-      match tryEquation equation with
+def choose : (problem : Problem source) →
+    (allowed : Equation (Observation S source) → Bool := fun _ => true) → Option (Choice problem)
+  | [], _ => none
+  | equation :: rest, allowed =>
+      match (match allowed equation with
+        | true => tryEquation equation
+        | false => none) with
       | some selected => some ⟨[], equation, selected, rest, rfl⟩
-      | none => (choose rest).map fun selected => selected.prepend equation
+      | none => (choose rest allowed).map fun selected => selected.prepend equation
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualSolverSelect

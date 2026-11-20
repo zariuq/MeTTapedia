@@ -370,7 +370,7 @@ theorem bernstein_of_round_pair {f g : Firing T S O} {C : Configuration T O} (sf
           ⟨o, by simpa [Selection.commit] using taken, by simpa [Selection.commit] using readG⟩))
       · exact freshF o made (presentG o (Or.inr readG))
     · have outside := gQueries query member σ₀ cut o (List.mem_append.mpr written)
-      rw [sg.queries query member σ σ₀, outside] at inside
+      rw [(sg.queries query member).1 σ σ₀, outside] at inside
       cases inside
   · rcases other with readF | ⟨query, member, inside⟩
     · rcases written with taken | made
@@ -378,7 +378,7 @@ theorem bernstein_of_round_pair {f g : Firing T S O} {C : Configuration T O} (sf
           ⟨o, by simpa [Selection.commit] using taken, by simpa [Selection.commit] using readF⟩))
       · exact freshG o made (presentF o (Or.inr readF))
     · have outside := fQueries query member σ₀ cut o (List.mem_append.mpr written)
-      rw [sf.queries query member σ σ₀, outside] at inside
+      rw [(sf.queries query member).1 σ σ₀, outside] at inside
       cases inside
 
 end Rounds

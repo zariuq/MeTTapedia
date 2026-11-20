@@ -1,24 +1,24 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.KnowledgeTensorCoreTraceControls
 
 /-!
-# Control: the interchange law fails for absence too
+# Control: the interchange law fails for none queries too
 
 `interchange_fails_for_counting` exchanges a counting firing with a block that adds and then
-removes a counted occurrence. The same exchange with an **absence** check fails in the same way,
-with all three tensors present (`interchange_fails_for_absence`): on one side a firing checks that
+removes a counted occurrence. The same exchange with an **none queries** check fails in the same way,
+with all three tensors present (`interchange_fails_for_none`): on one side a firing checks that
 no occurrence labelled `5` is present; on the other side `adds` makes one and `removes` takes it.
 The cut of the two tensors runs `adds`, `removes`, `unlessFive`; the tensor of the two cuts runs
 `unlessFive`, `adds`, `removes`. Both are native runs, and they are not one trace: between `adds`
-and `removes` the absence fails.
+and `removes` the none query fails.
 
-So the failure of the interchange law is not a feature of counting. Absence grades are positively
+So the failure of the interchange law is not a feature of counting. None grades are positively
 correlated in every random surrounding (`cut_harris`), and the interchange law still fails for
 them; separation, not the shape of the grade, is what restores it.
 -/
 
 set_option autoImplicit false
 
-namespace Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.KnowledgeTensorCore.AbsenceInterchange
+namespace Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.KnowledgeTensorCore.NoneInterchange
 
 open Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits
 open AnnotatedRuns (Firing firstOrder firstOrderTransport)
@@ -28,7 +28,7 @@ open KnowledgeTensorFirstOrderControls (plain)
 open _root_.Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.KnowledgeTensorCore.Controls
 
 /-- Takes, reads and makes nothing, and checks that no occurrence labelled `5` is present. -/
-def unlessFive : Firing Nat Unit Nat := ⟨⟨[], [], [], [Check.absent 5], []⟩, [], ⟨[], [], []⟩⟩
+def unlessFive : Firing Nat Unit Nat := ⟨⟨[], [], [], [Check.predicate .none 5], []⟩, [], ⟨[], [], []⟩⟩
 
 theorem unlessFive_problem_solved {C : Configuration Nat Nat}
     (solved : plain.Models () C.equations) :
@@ -45,7 +45,7 @@ theorem unlessFive_valid {C : Configuration Nat Nat} (solved : plain.Models () C
     ⟨(), unlessFive_problem_solved solved⟩, ?_⟩, ?_⟩
   · refine ⟨?_, ?_, ?_, ?_, ?_⟩ <;> simp [Selection.commit, unlessFive]
   · intro check member σ _
-    have only : check = Check.absent 5 := List.mem_singleton.mp member
+    have only : check = Check.predicate .none 5 := List.mem_singleton.mp member
     subst only
     intro o inside
     rw [bare] at inside
@@ -57,7 +57,7 @@ theorem unlessFive_valid {C : Configuration Nat Nat} (solved : plain.Models () C
 theorem present_empty_of_unlessFive {C : Configuration Nat Nat}
     (solved : plain.Models () C.equations) (valid : unlessFive.Valid plain five C) :
     C.present = ∅ := by
-  have holds := valid.firing.checks (Check.absent 5) (List.mem_singleton.mpr rfl) ()
+  have holds := valid.firing.checks (Check.predicate .none 5) (List.mem_singleton.mpr rfl) ()
     (unlessFive_problem_solved solved)
   exact Finset.eq_empty_of_forall_notMem fun o inside => holds o inside rfl
 
@@ -73,12 +73,12 @@ def idleSide : (firstOrder plain five).toStep.Run empty := .nil empty
 
 theorem unlessFive_alone : unlessFive.Valid plain five empty := unlessFive_valid empty_solved rfl
 
-/-- After the cut the first side checks absence. -/
+/-- After the cut the first side checks none queries. -/
 def unlessRun : (firstOrder plain five).toStep.Run idleSide.last :=
   .cons unlessFive unlessFive_alone (.nil _)
 
 /-- The first tensor: nothing beside `adds`, `removes`. -/
-def beforeAbsent : (contextualRunInterpretation plain five).TensorPlan (contextualFlip plain five)
+def beforeNone : (contextualRunInterpretation plain five).TensorPlan (contextualFlip plain five)
     PUnit.unit idleSide addsRemoves where
   leftPlan := .nil _
   rightPlan :=
@@ -92,8 +92,8 @@ def beforeAbsent : (contextualRunInterpretation plain five).TensorPlan (contextu
         (.nil _)))
 
 /-- The second tensor: `unlessFive` beside nothing. -/
-def afterAbsent : (contextualRunInterpretation plain five).TensorPlan (contextualFlip plain five)
-    (beforeAbsent.realize (contextualRunInterpretation plain five) (contextualFlip plain five)).target
+def afterNone : (contextualRunInterpretation plain five).TensorPlan (contextualFlip plain five)
+    (beforeNone.realize (contextualRunInterpretation plain five) (contextualFlip plain five)).target
     unlessRun rests where
   leftPlan :=
     (.cons (I := contextualRunInterpretation plain five) (left := empty) (right := addsRemoves.last)
@@ -106,7 +106,7 @@ def afterAbsent : (contextualRunInterpretation plain five).TensorPlan (contextua
   rightPlan := .nil _
 
 /-- The tensor of the two cuts: `unlessFive` beside `adds`, `removes`. -/
-def wholeAbsent : (contextualRunInterpretation plain five).TensorPlan (contextualFlip plain five)
+def wholeNone : (contextualRunInterpretation plain five).TensorPlan (contextualFlip plain five)
     PUnit.unit (idleSide.append unlessRun) (addsRemoves.append rests) where
   leftPlan :=
     (.cons (I := contextualRunInterpretation plain five) (left := empty) (right := empty)
@@ -135,7 +135,7 @@ theorem unlessFive_not_between : ¬ unlessFive.Valid plain five (adds.result fiv
     (by decide)
 
 /-- No admitted pair of the word `adds`, `removes`, `unlessFive` can be swapped. -/
-theorem no_swap_from_absence_last (later : List (Firing Nat Unit Nat)) :
+theorem no_swap_from_none_last (later : List (Firing Nat Unit Nat)) :
     ¬ WordSwap plain five bare [adds, removes, unlessFive] later := by
   intro swapped
   generalize shape : [adds, removes, unlessFive] = word at swapped
@@ -163,8 +163,8 @@ theorem unlessFive_ne_adds : unlessFive ≠ adds := by
   have produce := congrArg (fun firing : Firing Nat Unit Nat => firing.rule.produce) same
   exact absurd produce (by decide)
 
-/-- **A block exchange around an absence check that is not a trace equation.** -/
-theorem not_one_trace_for_absence :
+/-- **A block exchange around a none check that is not a trace equation.** -/
+theorem not_one_trace_for_none :
     ¬ WordTrace plain five bare [adds, removes, unlessFive] [unlessFive, adds, removes] := by
   have invariant : ∀ first second : List (Firing Nat Unit Nat),
       WordTrace plain five bare first second →
@@ -175,10 +175,10 @@ theorem not_one_trace_for_absence :
         constructor
         · intro same
           subst same
-          exact absurd swapped (no_swap_from_absence_last two)
+          exact absurd swapped (no_swap_from_none_last two)
         · intro same
           subst same
-          exact absurd (swapped.symm plain five) (no_swap_from_absence_last one)
+          exact absurd (swapped.symm plain five) (no_swap_from_none_last one)
     | refl => exact Iff.rfl
     | symm _ _ _ ih => exact ih.symm
     | trans _ _ _ _ _ left right => exact left.trans right
@@ -186,19 +186,19 @@ theorem not_one_trace_for_absence :
   have same := (invariant _ _ related).mp rfl
   exact unlessFive_ne_adds (List.cons.inj same).1
 
-/-- **The interchange law fails for absence, with all three tensors present.** -/
-theorem interchange_fails_for_absence :
+/-- **The interchange law fails for none queries, with all three tensors present.** -/
+theorem interchange_fails_for_none :
     ¬ InterchangeAt (contextualRunInterpretation plain five) (contextualFlip plain five)
-      beforeAbsent afterAbsent wholeAbsent := by
+      beforeNone afterNone wholeNone := by
   intro law
   have words := (native_trace_iff_word_trace plain five _ _).mp law
   have cut : sites plain five (cutOfTensors (contextualRunInterpretation plain five)
-      (contextualFlip plain five) beforeAbsent afterAbsent) = [adds, removes, unlessFive] :=
-    sites_sequentialTensor plain five beforeAbsent afterAbsent
-  have tensor : sites plain five (wholeAbsent.realize (contextualRunInterpretation plain five)
+      (contextualFlip plain five) beforeNone afterNone) = [adds, removes, unlessFive] :=
+    sites_sequentialTensor plain five beforeNone afterNone
+  have tensor : sites plain five (wholeNone.realize (contextualRunInterpretation plain five)
       (contextualFlip plain five)).execution = [unlessFive, adds, removes] :=
-    tensor_sites plain five wholeAbsent
+    tensor_sites plain five wholeNone
   rw [cut, tensor] at words
-  exact not_one_trace_for_absence words
+  exact not_one_trace_for_none words
 
-end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.KnowledgeTensorCore.AbsenceInterchange
+end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.KnowledgeTensorCore.NoneInterchange

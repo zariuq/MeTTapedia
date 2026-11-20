@@ -1,5 +1,6 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.RegionQueryAdapters
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Spaces
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.TransformQualification
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.OccurrenceCorePlacement
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NamedSpacesReach
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.SpaceInteraction
 
@@ -198,10 +199,10 @@ theorem reachStep_iff_admitted (K : Set T) (space payload : O → T) (r : NamedS
           (firstOrder A (NamedSpaces.located sts space payload)).result _ admitted = D := by
   constructor
   · rintro ⟨selection, admits, rfl⟩
-    exact ⟨selection, (PredicateQueryAdmission.valid_empty_iff _ _ _ _ _).mpr admits.valid,
+    exact ⟨selection, (Interface.RegionQueryAdapters.valid_empty_iff _ _ _ _ _).mpr admits.valid,
       admits.holds, admits.selected, admits.resolved, rfl⟩
   · rintro ⟨selection, admitted, holds, selected, resolved, rfl⟩
-    exact ⟨selection, ⟨holds, (PredicateQueryAdmission.valid_empty_iff _ _ _ _ _).mp admitted,
+    exact ⟨selection, ⟨holds, (Interface.RegionQueryAdapters.valid_empty_iff _ _ _ _ _).mp admitted,
       selected, resolved⟩, rfl⟩
 
 end Reach

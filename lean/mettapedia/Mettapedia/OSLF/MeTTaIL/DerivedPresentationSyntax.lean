@@ -1,4 +1,4 @@
-import Mettapedia.OSLF.MeTTaIL.Syntax
+import Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 
 /-!
 # Syntax derived from a reflective presentation
@@ -8,6 +8,12 @@ reflective process calculus inside its authored `LanguageDef`.  The judgments
 below provide the corresponding induction principle on the shared `Pattern`
 carrier.  They are indexed by the proof-oriented signature data; they are not
 a second term syntax and contain no hard-coded rho constructor names.
+
+A quotation is admitted as its presentation's quote scope requires
+(`ReflectiveSubstitution.quoteAdmits`). Under a closed scope quoted code is closed
+with respect to object binders, as contextual modal type theory types the body
+of `box` in the empty object context; a quotation whose payload exposes a drop
+denotes that name and is not code. A reaching scope admits every quotation.
 -/
 
 namespace Mettapedia.OSLF.MeTTaIL.DerivedPresentationSyntax
@@ -33,6 +39,7 @@ mutual
         NameWellSorted presentation free bound (.fvar name)
     | quote {bound : List String} {process : Pattern} :
         ProcWellSorted presentation free bound process →
+        ReflectiveSubstitution.quoteAdmits presentation.toReflectivePresentationDecl process = true →
         NameWellSorted presentation free bound
           (.apply presentation.quoteConstructor [process])
 
@@ -98,7 +105,7 @@ mutual
         rw [List.getElem?_append_left inBounds]
         exact lookup
     | fvar lookup => exact .fvar lookup
-    | quote processTyped => exact .quote (processTyped.weakenBoundRight extension)
+    | quote processTyped admitted => exact .quote (processTyped.weakenBoundRight extension) admitted
 
   /-- Process form of outer-context weakening. -/
   theorem ProcWellSorted.weakenBoundRight
@@ -177,6 +184,58 @@ theorem ProcListWellSorted.eraseIdx
 
 /-! ## Presentation-parametric examples -/
 
+/-! ## Scope and admission -/
+
+mutual
+  /-- A derived name uses only the indices of its sort context. -/
+  theorem NameWellSorted.isWellScopedAt
+      {presentation : ReflectiveProcessSignature} {free : FreeSortContext}
+      {bound : List String} {name : Pattern}
+      (typed : NameWellSorted presentation free bound name) :
+      name.isWellScopedAt bound.length = true := by
+    cases typed with
+    | bvar lookup =>
+        simpa [Pattern.isWellScopedAt] using (List.getElem?_eq_some_iff.mp lookup).1
+    | fvar _ => rfl
+    | quote processTyped _ =>
+        simpa [Pattern.isWellScopedAt, Pattern.isWellScopedListAt] using processTyped.isWellScopedAt
+
+  /-- A derived process uses only the indices of its sort context. -/
+  theorem ProcWellSorted.isWellScopedAt
+      {presentation : ReflectiveProcessSignature} {free : FreeSortContext}
+      {bound : List String} {process : Pattern}
+      (typed : ProcWellSorted presentation free bound process) :
+      process.isWellScopedAt bound.length = true := by
+    cases typed with
+    | bvar lookup =>
+        simpa [Pattern.isWellScopedAt] using (List.getElem?_eq_some_iff.mp lookup).1
+    | fvar _ => rfl
+    | unit => rfl
+    | drop nameTyped =>
+        simpa [Pattern.isWellScopedAt, Pattern.isWellScopedListAt] using nameTyped.isWellScopedAt
+    | output channelTyped payloadTyped =>
+        simp [Pattern.isWellScopedAt, Pattern.isWellScopedListAt, channelTyped.isWellScopedAt,
+          payloadTyped.isWellScopedAt]
+    | input channelTyped bodyTyped =>
+        have body := bodyTyped.isWellScopedAt
+        simp only [List.length_cons] at body
+        simp [Pattern.isWellScopedAt, Pattern.isWellScopedListAt, channelTyped.isWellScopedAt, body]
+    | parallel processesTyped =>
+        simpa [Pattern.isWellScopedAt] using processesTyped.isWellScopedListAt
+
+  /-- List form. -/
+  theorem ProcListWellSorted.isWellScopedListAt
+      {presentation : ReflectiveProcessSignature} {free : FreeSortContext}
+      {bound : List String} {processes : List Pattern}
+      (typed : ProcListWellSorted presentation free bound processes) :
+      Pattern.isWellScopedListAt bound.length processes = true := by
+    cases typed with
+    | nil => rfl
+    | cons processTyped processesTyped =>
+        simp [Pattern.isWellScopedListAt, processTyped.isWellScopedAt,
+          processesTyped.isWellScopedListAt]
+end
+
 section Examples
 
 variable (presentation : ReflectiveProcessSignature)
@@ -189,8 +248,31 @@ example : ProcWellSorted presentation FreeSortContext.empty []
 /-- Positive: quoting the unit yields a name. -/
 example : NameWellSorted presentation FreeSortContext.empty []
     (.apply presentation.quoteConstructor
-      [.apply presentation.parallelUnitConstructor []]) :=
-  .quote .unit
+      [.apply presentation.parallelUnitConstructor []]) := by
+  refine .quote .unit ?_
+  unfold ReflectiveSubstitution.quoteAdmits
+  split <;> simp [ReflectiveSubstitution.resolveQuotes, ReflectiveSubstitution.resolveQuotesList,
+    ReflectiveSubstitution.finishResolveApply, ReflectiveSubstitution.exposedDrop?,
+    ReflectiveSubstitution.parallelLeaves, ReflectiveSubstitution.closedCode, Pattern.isWellScopedAt,
+    Pattern.isWellScopedListAt]
+
+/-- Negative: under a closed scope, quoted code that mentions an enclosing binder is
+not a name, although its code is a well-sorted process. -/
+theorem quoted_binder_not_name_of_closed (closed : presentation.quoteScope = .closed) :
+    ¬ NameWellSorted presentation FreeSortContext.empty [presentation.nameSort]
+      (.apply presentation.quoteConstructor
+        [.collection presentation.parallelCollection
+          [.apply presentation.dropConstructor [.bvar 0],
+            .apply presentation.dropConstructor [.bvar 0]] none]) := by
+  intro typed
+  cases typed with
+  | quote _ admitted =>
+      simp [ReflectiveSubstitution.quoteAdmits, closed, ReflectiveSubstitution.exposedDrop?,
+        ReflectiveSubstitution.closedCode, ReflectiveSubstitution.closedCodeList,
+        ReflectiveSubstitution.resolveQuotes, ReflectiveSubstitution.resolveQuotesList,
+        ReflectiveSubstitution.parallelLeaves, ReflectiveSubstitution.parallelLeavesList,
+        ReflectiveSubstitution.finishResolveApply, Pattern.isWellScopedAt,
+        Pattern.isWellScopedListAt] at admitted
 
 /-- Negative: a top-level bound variable is rejected in an empty context. -/
 theorem bvar_zero_not_name_wellSorted_empty :

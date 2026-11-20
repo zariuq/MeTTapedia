@@ -30,7 +30,7 @@ set_option autoImplicit false
 namespace Mettapedia.Languages.MeTTa.PeTTa.LibTransformStep
 
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
-open Mettapedia.Languages.ProcessCalculi.MORK (Subst isGroundAtom applySubst)
+open Mettapedia.Languages.ProcessCalculi.MORK (Subst isGroundAtom applySubst applySubst_eq_subst)
 open Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.MetaMeTTaComparison
   (atomAction)
 open Mettapedia.Languages.MeTTa (SubstitutionAlgebra.subst SubstitutionAlgebra.vars)

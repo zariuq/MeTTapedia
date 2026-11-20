@@ -70,8 +70,8 @@ theorem instance_fine_of_settles {policy : Policy} (notHost : ¬ dispatch.execut
 
 /-- **HE's `let` with a variable pattern on every run**: on the scoped lookup, for a dispatch that
 executes neither `let` nor `unify` and any policy, a complete run of `(let $x d b)` exists, every
-complete run publishes `L`, no run is infinite, and every reachable configuration steps or is final
-with `L`, where `L` is the instance's answers by its source and finishing contracts. -/
+complete run publishes the bag of `L`, no run is infinite, and every reachable configuration steps or
+is final with that bag, where `L` is the instance's answers by its source and finishing contracts. -/
 theorem let_every_run_he (notLet : ¬ dispatch.executable (.symbol "let"))
     (notUnify : ¬ dispatch.executable (.symbol "unify")) (policy : Policy) {atoms : List Atom}
     (program : LetProgram atoms) {x : String} {d b : Atom} (call : LetCall atoms x d b)
@@ -86,7 +86,7 @@ theorem let_every_run_he (notLet : ¬ dispatch.executable (.symbol "let"))
         (final (Space.ofList atoms) emitted) →
       emitted.map (fun r => r.1.erase) = L :=
     fun emitted run => LetSource.let_entry_source program call source (complete_source run)
-  refine ⟨⟨?_, every⟩, ⟨fine.acc, fun y path => ?_⟩⟩
+  refine ⟨PublishesInOrder.bag ⟨?_, every⟩, FinishesInOrder.bag ⟨fine.acc, fun y path => ?_⟩⟩
   · obtain ⟨space, emitted, path⟩ := IfAtFrames.Fine.exists_final fine
     have same : space = Space.ofList atoms := space_fixed path
     subst same
@@ -147,8 +147,8 @@ theorem annotations_none {target : Atom} :
     ∀ rows : List Atom, (∀ row ∈ rows, ∀ T, row ≠ .expression [.symbol ":", target, T]) →
       AnnotationTypesRel target rows []
   | [], _ => .nil
-  | row :: rows, absent => .skip (absent row List.mem_cons_self)
-      (annotations_none rows fun r member => absent r (List.mem_cons_of_mem _ member))
+  | row :: rows, missing => .skip (missing row List.mem_cons_self)
+      (annotations_none rows fun r member => missing r (List.mem_cons_of_mem _ member))
 
 theorem let_types : StorageTypesRel (Space.ofList letIfRows) (.symbol "let") [LetPlain.letArrow] := by
   have extracted := Mettapedia.Languages.MeTTa.HE.Spec.Type.AnnotationTypesRel.complete

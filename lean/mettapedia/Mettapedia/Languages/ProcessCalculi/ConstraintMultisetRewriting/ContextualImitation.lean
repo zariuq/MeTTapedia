@@ -77,7 +77,7 @@ theorem factors_of_head {Variables : Type} {next : Variables → MetaArity S}
   | .inr identity => by rw [answer, instantiate_generator]; rfl
 
 /-- The selected equation establishes the constructor shape; all other
-equations remain in the residual queue, including constraints absent from
+equations remain in the residual queue, including constraints missing from
 the selected equation's vocabulary. -/
 theorem reduction (parameters : Ctx S) {result : S.Srt}
     (operator : S.Op result) (others : Other → MetaArity S) {Γ : Ctx S}

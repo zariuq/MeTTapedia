@@ -48,7 +48,7 @@ def unfiltered : guarded.step.effectCore.Admission := fun _ _ => True
 def unfilteredEvent : guarded.step.effectCore.Event unfiltered () () :=
   ⟨(), prepared, True.intro, rfl⟩
 
-theorem guarded_event_absent :
+theorem no_guarded_event :
     ¬ Nonempty (guarded.step.effectCore.Event guarded.step.eventAdmission () ()) := by
   rintro ⟨e⟩
   exact guarded_refused ((guarded.step.eventAdmission_iff e.firing e.prepared).mp e.permitted)
@@ -57,7 +57,7 @@ theorem guarded_event_absent :
 theorem distinct_admission_domains :
     Nonempty (guarded.step.effectCore.Event unfiltered () ()) ∧
     ¬ Nonempty (guarded.step.effectCore.Event guarded.step.eventAdmission () ()) :=
-  ⟨⟨unfilteredEvent⟩, guarded_event_absent⟩
+  ⟨⟨unfilteredEvent⟩, no_guarded_event⟩
 
 abbrev restricted := guarded.step.withDisequations guarded_reflects
 

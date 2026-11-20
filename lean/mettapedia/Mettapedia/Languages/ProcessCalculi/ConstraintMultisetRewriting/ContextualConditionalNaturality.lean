@@ -58,7 +58,7 @@ theorem row_map_identity {Γ : Ctx S} {sort : S.Srt} (row : Row locals captures 
     ContextualResidual.mapProblem, instantiateObservation_identity, List.map_id']
 
 /-- Reindexing the entire conditional ask retains its row-local equations,
-including for absence and count checks at the original physical world. -/
+including for none queries and count checks at the original physical world. -/
 theorem ask_reindex_iff (forward : V → W) (backward : W → V)
     (forwardPreserves : ∀ name, middle (forward name) = source name)
     (backwardPreserves : ∀ name, source (backward name) = middle name)
@@ -124,7 +124,7 @@ theorem holds_extendPrivate (candidate : Assignment captures next) {Γ : Ctx S} 
       ContextualConditionalGuards.Holds locals candidate rows world check := by
   cases check with
   | equal first second => rfl
-  | absent pattern =>
+  | predicate quantifier pattern =>
       simp only [ContextualConditionalGuards.Holds, ContextualConditionalPublication.extendPrivate_matches_iff]
   | count pattern cardinality =>
       have regions : ContextualConditionalGuards.region (ContextualPublication.privateFamily locals unused) candidate
@@ -240,7 +240,7 @@ theorem holds_inclusion_iff (candidate : Assignment captures next) {Γ : Ctx S} 
         instantiate (Assignment.compose (inclusion unused next) candidate) second ↔ _
       rw [Assignment.instantiate_compose, Assignment.instantiate_compose]
       exact ⟨fun same => inclusion_injective unused next _ _ same, congrArg (instantiate (inclusion unused next))⟩
-  | absent pattern =>
+  | predicate quantifier pattern =>
       simp only [ContextualConditionalGuards.Holds, Assignment.instantiate_compose, matches_inclusion_iff]
   | count pattern number =>
       change (ContextualConditionalGuards.region locals _ rows world pattern).card = number ↔

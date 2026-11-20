@@ -82,7 +82,7 @@ def fromResolved (bindings : Equations) (arguments : Arguments) (principal : Env
             have locationRead : EagerDFS.Destination.read principal arguments.location =
                 Effects.handleValue request.handle := by
               rw [handleEq]
-              exact (LiteralQuerySource.handle_readback _ handle handleRead).symm
+              exact (Effects.handleValue_of_readHandle handleRead).symm
             have location := resolved_forces resolved arguments.location _ locationRead
               (LiteralQuerySource.read_handle request.handle) environment solved
             have pattern := resolved_forces resolved arguments.pattern _ patternEq.symm

@@ -30,7 +30,7 @@ counterexample, separate the record level from the level of held references.
 
 ## Semantic firings
 
-A firing extends the record by what it sighted and took (`choiceRecord`, the record of
+An exact-query firing extends the record by what it sighted and took (`choiceRecord`, the record of
 `AnnotatedRuns.choiceEscape`), and the record moves with the firing (`choiceRecord_rename`). Joint
 ends compare states with records by one renaming that carries one record to the other
 (`JointRecordModuloEquivalent`, a groupoid; at one record it is `RecordModuloEquivalent`,
@@ -246,18 +246,18 @@ section Firings
 
 /-- **The record a firing leaves**: the sets its queries sighted and the occurrences it took, as held
 references; the record of `AnnotatedRuns.choiceEscape`. -/
-def choiceRecord (f : Firing T S O) : Record O :=
-  querySightings f.queries ++ Record.references f.selection.taken
+def choiceRecord (f : ExactQueryAlphabet.Alphabet T S O) : Record O :=
+  querySightings f.2.queries ++ Record.references f.1.selection.taken
 
-theorem choiceRecord_rename (π : O ≃ O) (f : Firing T S O) :
-    choiceRecord (f.rename π) = Record.rename π (choiceRecord f) := by
-  show querySightings (f.queries.map (renameQuery π)) ++ Record.references (f.selection.taken.map π) =
-    Record.rename π (querySightings f.queries ++ Record.references f.selection.taken)
+theorem choiceRecord_rename (π : O ≃ O) (f : ExactQueryAlphabet.Alphabet T S O) :
+    choiceRecord (ExactQueryAlphabet.rename π f) = Record.rename π (choiceRecord f) := by
+  show querySightings (f.2.queries.map (ExactQueryAlphabet.renameQuery π)) ++ Record.references (f.1.selection.taken.map π) =
+    Record.rename π (querySightings f.2.queries ++ Record.references f.1.selection.taken)
   rw [querySightings_rename, Record.rename_append, Record.references_rename]
 
 /-- **The record a firing leaves is what the choice escape records for it.** -/
 theorem choiceRecord_eq_records [DecidableEq O] (A : SubstitutionAction T S) (label : O → T)
-    {C : Configuration T O} (f : Firing T S O) :
+    {C : Configuration T O} (f : ExactQueryAlphabet.Alphabet T S O) :
     (AnnotatedRuns.choiceEscape A label).records (s := C) f = choiceRecord f :=
   rfl
 
@@ -290,48 +290,48 @@ theorem JointRecordModuloEquivalent.trans {x y z : Configuration T O × Record O
 
 variable {r : Record O}
 
-/-- **Semantic firings that remake no remembered identity preserve equivalence relative to the
+/-- **Semantic exact-query firings that remake no remembered identity preserve equivalence relative to the
 record**, when their made identities also avoid the other state. -/
 theorem RecordModuloEquivalent.firing [DecidableEq O] {C D : Configuration T O}
-    (h : RecordModuloEquivalent A label r C D) {f : Firing T S O} (valid : f.Valid A label C)
-    (reads : IsSemantic A f)
-    (avoids : ∀ m ∈ f.selection.made, m ∉ D.present ∧ m ∉ Record.support r) :
-    ∃ π : O ≃ O, (f.rename π).Valid A label D ∧
-      JointRecordModuloEquivalent A label (f.result label C, r ++ choiceRecord f)
-        ((f.rename π).result label D, r ++ choiceRecord (f.rename π)) := by
+    (h : RecordModuloEquivalent A label r C D) {f : ExactQueryAlphabet.Alphabet T S O} (valid : f.1.Valid A label C)
+    (reads : IsSemantic A f.1)
+    (avoids : ∀ m ∈ f.1.selection.made, m ∉ D.present ∧ m ∉ Record.support r) :
+    ∃ π : O ≃ O, (f.1.rename π).Valid A label D ∧
+      JointRecordModuloEquivalent A label (f.1.result label C, r ++ choiceRecord f)
+        ((f.1.rename π).result label D, r ++ choiceRecord (ExactQueryAlphabet.rename π f)) := by
   obtain ⟨π, aut, k, same, outside⟩ := h.supported
   obtain ⟨admits, kResult, sameResult⟩ := modulo_step_witness k same
     (fun m member => outside m (made_fresh valid member) (avoids m member).1 (avoids m member).2) reads
   refine ⟨π, admits.mpr valid, π, ?_, kResult, sameResult⟩
-  show Record.rename π (r ++ choiceRecord f) = r ++ choiceRecord (f.rename π)
+  show Record.rename π (r ++ choiceRecord f) = r ++ choiceRecord (ExactQueryAlphabet.rename π f)
   rw [Record.rename_append, Record.mem_automorphisms.mp aut, choiceRecord_rename]
 
-/-- **With a fresh supply of the made labels, semantic firings that remake no remembered identity
+/-- **With a fresh supply of the made labels, semantic exact-query firings that remake no remembered identity
 preserve equivalence relative to the record.** -/
 theorem RecordModuloEquivalent.counterpart [DecidableEq O] {C D : Configuration T O}
-    (h : RecordModuloEquivalent A label r C D) {f : Firing T S O} (valid : f.Valid A label C)
-    (reads : IsSemantic A f) (unremembered : ∀ m ∈ f.selection.made, m ∉ Record.support r)
-    (supply : ∀ m ∈ f.selection.made, ∀ G : Finset O, ∃ o, o ∉ G ∧ label o = label m) :
-    ∃ τ : O ≃ O, (f.rename τ).Valid A label D ∧
-      JointRecordModuloEquivalent A label (f.result label C, r ++ choiceRecord f)
-        ((f.rename τ).result label D, r ++ choiceRecord (f.rename τ)) := by
+    (h : RecordModuloEquivalent A label r C D) {f : ExactQueryAlphabet.Alphabet T S O} (valid : f.1.Valid A label C)
+    (reads : IsSemantic A f.1) (unremembered : ∀ m ∈ f.1.selection.made, m ∉ Record.support r)
+    (supply : ∀ m ∈ f.1.selection.made, ∀ G : Finset O, ∃ o, o ∉ G ∧ label o = label m) :
+    ∃ τ : O ≃ O, (f.1.rename τ).Valid A label D ∧
+      JointRecordModuloEquivalent A label (f.1.result label C, r ++ choiceRecord f)
+        ((f.1.rename τ).result label D, r ++ choiceRecord (ExactQueryAlphabet.rename τ f)) := by
   classical
-  let M := f.selection.made.toFinset.filter (· ∈ D.present)
-  let F := C.present ∪ D.present ∪ Record.support r ∪ f.names
+  let M := f.1.selection.made.toFinset.filter (· ∈ D.present)
+  let F := C.present ∪ D.present ∪ Record.support r ∪ f.1.selection.made.toFinset
   have inF_C : ∀ {o}, o ∈ C.present → o ∈ F := fun inC =>
     Finset.mem_union_left _ (Finset.mem_union_left _ (Finset.mem_union_left _ inC))
   have inF_D : ∀ {o}, o ∈ D.present → o ∈ F := fun inD =>
     Finset.mem_union_left _ (Finset.mem_union_left _ (Finset.mem_union_right _ inD))
   have inF_R : ∀ {o}, o ∈ Record.support r → o ∈ F := fun inR =>
     Finset.mem_union_left _ (Finset.mem_union_right _ inR)
-  have madeNamed : ∀ {o}, o ∈ f.selection.made → o ∈ f.names := fun made => by
-    simp [Firing.names, made]
-  have madeOfM : ∀ {o}, o ∈ M → o ∈ f.selection.made := fun inM =>
+  have madeNamed : ∀ {o}, o ∈ f.1.selection.made → o ∈ f.1.selection.made.toFinset :=
+    List.mem_toFinset.mpr
+  have madeOfM : ∀ {o}, o ∈ M → o ∈ f.1.selection.made := fun inM =>
     List.mem_toFinset.mp (Finset.mem_filter.mp inM).1
   have sub : M ⊆ F := fun o inM => inF_D (Finset.mem_filter.mp inM).2
   obtain ⟨ρ, keeps, moved, fixed⟩ := exists_fresh_relabelling M F sub
     fun m inM => supply m (madeOfM inM)
-  have freshC : ∀ {m}, m ∈ f.selection.made → m ∉ C.present := fun made => made_fresh valid made
+  have freshC : ∀ {m}, m ∈ f.1.selection.made → m ∉ C.present := fun made => made_fresh valid made
   have fixC : ∀ o ∈ C.present, ρ o = o := fun o inC =>
     fixed o (inF_C inC) fun inM => freshC (madeOfM inM) inC
   have fixR : ∀ o ∈ Record.support r, ρ o = o := fun o inR =>
@@ -339,15 +339,15 @@ theorem RecordModuloEquivalent.counterpart [DecidableEq O] {C D : Configuration 
   have stays : renameConfiguration ρ C = C := by
     show (⟨C.equations, C.present.map ρ.toEmbedding⟩ : Configuration T O) = C
     rw [finset_map_eq_self ρ fixC]
-  have gValid : (f.rename ρ).Valid A label C := by
-    have moved := (Firing.valid_rename A keeps f C).mpr valid
+  have gValid : (f.1.rename ρ).Valid A label C := by
+    have moved := (Firing.valid_rename A keeps f.1 C).mpr valid
     rwa [stays] at moved
-  have gResult : (f.rename ρ).result label C = renameConfiguration ρ (f.result label C) := by
-    have moved := Firing.result_rename keeps f C
+  have gResult : (f.1.rename ρ).result label C = renameConfiguration ρ (f.1.result label C) := by
+    have moved := Firing.result_rename keeps f.1 C
     rwa [stays] at moved
-  have gAvoids : ∀ m ∈ (f.rename ρ).selection.made, m ∉ D.present ∧ m ∉ Record.support r := by
+  have gAvoids : ∀ m ∈ (f.1.rename ρ).selection.made, m ∉ D.present ∧ m ∉ Record.support r := by
     intro m member
-    change m ∈ f.selection.made.map ρ at member
+    change m ∈ f.1.selection.made.map ρ at member
     obtain ⟨m₀, made₀, rfl⟩ := List.mem_map.mp member
     by_cases inD : m₀ ∈ D.present
     · have out := moved m₀ (Finset.mem_filter.mpr ⟨List.mem_toFinset.mpr made₀, inD⟩)
@@ -356,22 +356,25 @@ theorem RecordModuloEquivalent.counterpart [DecidableEq O] {C D : Configuration 
         (Finset.mem_union_right _ (madeNamed made₀)) fun inM => inD (Finset.mem_filter.mp inM).2
       rw [same]
       exact ⟨inD, unremembered m₀ made₀⟩
-  have privateStep : JointRecordModuloEquivalent A label (f.result label C, r ++ choiceRecord f)
-      ((f.rename ρ).result label C, r ++ choiceRecord (f.rename ρ)) := by
+  have privateStep : JointRecordModuloEquivalent A label (f.1.result label C, r ++ choiceRecord f)
+      ((f.1.rename ρ).result label C, r ++ choiceRecord (ExactQueryAlphabet.rename ρ f)) := by
     refine ⟨ρ, ?_, ⟨fun o => ?_, fun o member => absurd member (Finset.notMem_empty o)⟩, ?_⟩
-    · show Record.rename ρ (r ++ choiceRecord f) = r ++ choiceRecord (f.rename ρ)
+    · show Record.rename ρ (r ++ choiceRecord f) = r ++ choiceRecord (ExactQueryAlphabet.rename ρ f)
       rw [Record.rename_append, Record.rename_eq_self_of_fixes fixR, ← choiceRecord_rename]
-    · show (entailedSetoid A (f.result label C).equations) (label (ρ o)) (label o)
+    · show (entailedSetoid A (f.1.result label C).equations) (label (ρ o)) (label o)
       rw [keeps o]
-    · show SameUpTo A (renameConfiguration ρ (f.result label C)) ((f.rename ρ).result label C)
+    · show SameUpTo A (renameConfiguration ρ (f.1.result label C)) ((f.1.rename ρ).result label C)
       rw [gResult]
       exact GuardFreeProcessOrders.SameUpTo.refl A _
-  obtain ⟨π, admitted, joint⟩ := h.firing gValid (isSemantic_rename ρ reads) gAvoids
+  obtain ⟨π, admitted, joint⟩ := h.firing (f := ExactQueryAlphabet.rename ρ f)
+    (by simpa only [ExactQueryAlphabet.rename_fst] using gValid)
+    (by simpa only [ExactQueryAlphabet.rename_fst] using isSemantic_rename ρ reads)
+    (by simpa only [ExactQueryAlphabet.rename_fst] using gAvoids)
   refine ⟨ρ.trans π, ?_, ?_⟩
   · rw [Firing.rename_trans]
-    exact admitted
-  · rw [Firing.rename_trans]
-    exact privateStep.trans joint
+    simpa only [ExactQueryAlphabet.rename_fst] using admitted
+  · rw [Firing.rename_trans,← ExactQueryAlphabet.rename_trans]
+    simpa only [ExactQueryAlphabet.rename_fst] using privateStep.trans joint
 
 end Firings
 
@@ -501,21 +504,22 @@ theorem remake_control :
     RecordModuloEquivalent A recLabel twins twinC twinD ∧ (makeAt 20).Valid A recLabel twinC ∧
       IsSemantic A (makeAt 20) ∧ 20 ∈ Record.support twins ∧
       (∀ G : Finset ℕ, ∃ o, o ∉ G ∧ recLabel o = recLabel 20) ∧
-      ∀ g : Firing Tm (Subst signature) ℕ, g.rule = makeXRule → g.Valid A recLabel twinD →
+      ∀ g : ExactQueryAlphabet.Alphabet Tm (Subst signature) ℕ,
+        g.1.rule = makeXRule → g.1.Valid A recLabel twinD →
         ¬ JointRecordModuloEquivalent A recLabel
-          ((makeAt 20).result recLabel twinC, twins ++ choiceRecord (makeAt 20))
-          (g.result recLabel twinD, twins ++ choiceRecord g) := by
+          ((makeAt 20).result recLabel twinC, twins ++ choiceRecord ⟨makeAt 20,⟨[],rfl⟩⟩)
+          (g.1.result recLabel twinD, twins ++ choiceRecord g) := by
   have label20 : recLabel 20 = X := by simp [recLabel]
   refine ⟨twins_equivalent, makeAt_valid label20 (by decide), isSemantic_of_queries_nil rfl,
     by decide, fun G => by rw [label20]; exact recLabel_supply G, fun g rule valid joint => ?_⟩
   obtain ⟨τ, carried, -, same⟩ := joint
   have takes := valid.firing.take_length
   rw [rule] at takes
-  have noTake : g.selection.taken = [] := List.eq_nil_of_length_eq_zero takes.symm
+  have noTake : g.1.selection.taken = [] := List.eq_nil_of_length_eq_zero takes.symm
   have outputs := valid.firing.outputs
   rw [rule] at outputs
-  obtain ⟨n, single⟩ : ∃ n, g.selection.made = [n] := by
-    rcases madeEq : g.selection.made with _ | ⟨n, _ | ⟨n', rest⟩⟩
+  obtain ⟨n, single⟩ : ∃ n, g.1.selection.made = [n] := by
+    rcases madeEq : g.1.selection.made with _ | ⟨n, _ | ⟨n', rest⟩⟩
     · rw [madeEq] at outputs
       exact absurd outputs (by simp [makeXRule])
     · exact ⟨n, rfl⟩
@@ -531,7 +535,7 @@ theorem remake_control :
       (show [20, 22] ∈ ({[20, 22], [21, 23]} : Finset (List ℕ)) by decide)
   have present : (MeTTaCalculus.OccurrenceCommits.fire ({22} : Finset ℕ)
       ((makeAt 20).selection.commit (T := Tm))).map τ.toEmbedding =
-      MeTTaCalculus.OccurrenceCommits.fire ({23} : Finset ℕ) (g.selection.commit (T := Tm)) := same.2
+      MeTTaCalculus.OccurrenceCommits.fire ({23} : Finset ℕ) (g.1.selection.commit (T := Tm)) := same.2
   have at20 : τ.toEmbedding 20 ∈ (MeTTaCalculus.OccurrenceCommits.fire ({22} : Finset ℕ)
       ((makeAt 20).selection.commit (T := Tm))).map τ.toEmbedding :=
     Finset.mem_map_of_mem _ (by simp [MeTTaCalculus.OccurrenceCommits.fire, makeAt, Selection.commit])

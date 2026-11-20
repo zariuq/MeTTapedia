@@ -2,24 +2,32 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsA
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.TriangleFootprints.GroundedDifferences
 
 /-!
-# A primitive's name hides the program's equations from PeTTa
+# Primitive names: an equation for a name in PeTTa's table, and an equation for HE's own operation
 
 PeTTa applies its primitive table (`StdLib.known`: `+ - * % < <= > >= == and or not cons
 size-atom …`) to every call of a primitive's name, in place of the program's equations: in
 `Unifying.step`, the `StdLib.known` branch comes before the equations' application. HE's grounded
-dispatch is its own table; on a name its dispatch does not execute, HE queries the program's
-equations. The two tables differ (`GroundedTables`: HE's integer dispatch has no `not`), so a
-program that gives equations to such a name is read by HE and not by PeTTa.
+operations are its own table (`GroundedTables.measuredDispatch`); on a name that table does not
+execute, HE queries the program's equations.
 
 * `HEHead`: HE's side of a call's head (undeclared, no host operation, no instruction), without
   PeTTa's conditions.
 * `he_query_head`, `query_head_determined`: HE's query of a call of data atoms with open bodies, and
   its determinacy, for such a head.
-* `Controls.not_every_run`: on `{(= (not Yes) No)}`, every complete run of HE publishes `No`, while
-  PeTTa applies its `not` primitive to the symbol `Yes` and stops at the `invalidArguments` fault,
-  with no value.
-* `Controls.neg_every_run` (positive): the same program under the name `neg` gets `No` on every
-  complete HE run and in PeTTa; only the name separates the dialects.
+* `Controls.cons_every_run`: on `{(= (cons Yes No) Both)}`, `cons` is a name in PeTTa's table and no
+  operation of HE's: every complete run of HE publishes `Both`, through the equation; PeTTa's machine
+  applies its `cons` primitive to the symbols `Yes` and `No` and stops at the `invalidArguments`
+  fault, with no value.
+* `Controls.not_declines_every_run`: on `{(= (not Yes) No)}`, `not` is an operation of HE's table as
+  well. It declines the symbol `Yes`, so every complete run of HE's world machine publishes the call
+  `(not Yes)` itself; the equation, whose region holds `No`, is never consulted
+  (`GroundedDifferences.declined_source_of`, the grounded-head rule). PeTTa's machine stops at the
+  `invalidArguments` fault. Neither dialect answers `No`.
+* `Controls.neg_every_run` (positive): the same one-row program under the name `neg`, in neither
+  table, gets `No` on every complete HE run and in PeTTa.
+
+The PeTTa hosts refuse both programs when they load them (the equation would redefine a built-in);
+the PeTTa machine of the tree loads them and faults at the call. Both give no value.
 -/
 
 set_option autoImplicit false
@@ -35,12 +43,13 @@ open Mettapedia.Languages.MeTTa.HE (Space Bindings isErrorAtom)
 open Mettapedia.Languages.MeTTa.HE.Spec.Eval
 open Mettapedia.Languages.MeTTa.HE.Spec.Eval.Steps (EquationWork EquationFrontierRel)
 open Mettapedia.Languages.MeTTa.HE.Spec.Eval.Completed (Policy Result CastLookup Frame)
-open Mettapedia.Languages.MeTTa.HE.RecursiveMachine.Contextual (load observe)
+open Mettapedia.Languages.MeTTa.HE.RecursiveMachine.Contextual (load observe WorldSteps)
+open Mettapedia.Languages.MeTTa.HE.RecursiveTasks.Contextual (WorldConfiguration)
 open Mettapedia.Languages.MeTTa.HE.Spec.Type.Presentation (TypeSubst)
 open Mettapedia.Languages.MeTTa.PeTTa
 open Mettapedia.Languages.ProcessCalculi.MORK (Subst isGroundAtom applySubst)
 open ServiceFootprints EntryToQuery AnswerBags EveryRun BoundVariables NestedArguments
-  NestedEveryRun
+  NestedEveryRun GroundedTables
 
 /-- **HE's side of a call's head**: undeclared, no host operation, no instruction. -/
 structure HEHead (dispatch : GroundedDispatch) (atoms : List Atom) (f : String) : Prop where
@@ -148,101 +157,178 @@ open AnswerBags.Controls (sym app rule rule_consFree)
 open BoundVariables.Controls (sym_data)
 open WholeRunWords.Double (noHost)
 open NestedCalls.Controls (one_consFree yes_data no_data one_data)
+open GroundedDifferences.Controls (measuredServices executable_of outcome_eq)
 
-/-- A program that gives an equation to `not`, a name in PeTTa's primitive table. -/
+/-! ### `cons`: a name in PeTTa's table, no operation of HE's -/
+
+/-- A program that gives an equation to `cons`, a name in PeTTa's primitive table. -/
+def consRows : List Atom := [rule (app "cons" [sym "Yes", sym "No"]) (sym "Both")]
+
+/-- `cons` is a PeTTa primitive. -/
+theorem cons_primitive : StdLib.known "cons" = true := by decide
+
+theorem both_data : DataAtom (sym "Both") := sym_data "Both" (by decide) (by decide)
+
+theorem two_data : ∀ v ∈ [sym "Yes", sym "No"], DataAtom v := by
+  intro v member
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at member
+  rcases member with rfl | rfl
+  · exact yes_data
+  · exact no_data
+
+theorem cons_head : HEHead measuredDispatch consRows "cons" :=
+  ⟨.symbol (by decide) (by decide), by decide +kernel, cons_not_measured, by decide⟩
+
+theorem cons_scoped : ScopedProgram consRows := by
+  intro row member
+  simp only [consRows, List.mem_singleton] at member
+  subst member
+  exact ⟨rule_consFree (fun a member => by
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at member
+    rcases member with rfl | rfl <;> exact .symbol _), fun lhs rhs same => by
+    cases same
+    decide⟩
+
+theorem cons_instances : regionInstances consRows "cons" [sym "Yes", sym "No"] = [sym "Both"] := by
+  decide +kernel
+
+theorem cons_closed : ∀ name, ¬ Mettapedia.Languages.MeTTa.HE.Spec.Match.Merge.AtomOccurs
+    (app "cons" [sym "Yes", sym "No"]) name :=
+  (call_answerable cons_head.head two_data).closed
+
+theorem both_answerable : ∀ a ∈ [sym "Both"], Answerable a := by
+  intro a member
+  rw [List.mem_singleton] at member
+  subst member
+  exact answerable_of_data both_data
+
+/-- HE evaluates `(cons Yes No)` to `Both`, through the program's equation. -/
+theorem cons_evaluates {lookup : CastLookup} (answers : AnswersUndefined lookup) (policy : Policy) :
+    HEEvaluates measuredDispatch lookup policy consRows (app "cons" [sym "Yes", sym "No"])
+      [sym "Both"] := by
+  have only : combos [[sym "Yes"], [sym "No"]] = [[sym "Yes", sym "No"]] := rfl
+  have evaluates := HENested.he_nested answers cons_head.head cons_head.untyped cons_closed
+    (Ls := [[sym "Yes"], [sym "No"]])
+    (.cons ⟨HERuns.he_data answers consRows yes_data, fun a member => by
+        rw [List.mem_singleton] at member
+        subst member
+        exact answerable_of_data yes_data⟩
+      (.cons ⟨HERuns.he_data answers consRows no_data, fun a member => by
+        rw [List.mem_singleton] at member
+        subst member
+        exact answerable_of_data no_data⟩ .nil))
+    (fun _ => [sym "Both"]) (fun vals member => by
+      rw [only, List.mem_singleton] at member
+      subst member
+      have query := he_query_head (policy := policy) cons_scoped cons_head two_data
+        (by rw [cons_instances]; simp) (Ls := [[sym "Both"]])
+        (by
+          rw [cons_instances]
+          exact .cons ⟨HERuns.he_data answers consRows both_data,
+            settles_facts (Settles.data (dispatch := measuredDispatch) (atoms := consRows) both_data
+              (by decide)),
+            both_answerable⟩ .nil)
+      exact ⟨by simpa using query, both_answerable⟩)
+  rw [only] at evaluates
+  simpa using evaluates
+
+/-- HE's source semantics determines `(cons Yes No)`'s answer, `Both` (historical lookup). -/
+theorem cons_determined (policy : Policy) :
+    Determined measuredDispatch policy consRows (app "cons" [sym "Yes", sym "No"]) [sym "Both"] := by
+  have only : combos [[sym "Yes"], [sym "No"]] = [[sym "Yes", sym "No"]] := rfl
+  have determined := nested_determined (dispatch := measuredDispatch) (policy := policy)
+    cons_head.head cons_head.untyped cons_closed (Ls := [[sym "Yes"], [sym "No"]])
+    (.cons (data_settled yes_data) (.cons (data_settled no_data) .nil))
+    (fun _ => [sym "Both"]) (fun vals member => by
+      rw [only, List.mem_singleton] at member
+      subst member
+      have query := query_head_determined (policy := policy) cons_scoped cons_head two_data
+        (by rw [cons_instances]; simp) (Ls := [[sym "Both"]])
+        (by
+          rw [cons_instances]
+          exact .cons ⟨(data_settled both_data).2,
+            settles_facts (Settles.data (dispatch := measuredDispatch) (atoms := consRows) both_data
+              (by decide))⟩ .nil)
+      exact ⟨both_answerable, by simpa using query⟩)
+  rw [only] at determined
+  simpa using determined.2
+
+/-- **A name in PeTTa's table hides the program's equation from PeTTa.** On
+`{(= (cons Yes No) Both)}`, with HE's table as the dispatch (it has no `cons`): a complete run of HE
+exists, and every complete run publishes `Both`, through the equation; PeTTa's machine applies its
+`cons` primitive to the symbols `Yes` and `No` and stops at the `invalidArguments` fault, with no
+value. -/
+theorem cons_every_run (policy : Policy) :
+    ((∃ heAnswers : List Result, Relation.ReflTransGen
+        (HEStep measuredDispatch Completed.rawLookup policy)
+        (load (Space.ofList consRows) (app "cons" [sym "Yes", sym "No"]) Atom.undefinedType)
+        ⟨Space.ofList consRows, .returning [], [], heAnswers⟩) ∧
+      ∀ emitted : List Result, Relation.ReflTransGen
+          (HEStep measuredDispatch Completed.rawLookup policy)
+          (load (Space.ofList consRows) (app "cons" [sym "Yes", sym "No"]) Atom.undefinedType)
+          ⟨Space.ofList consRows, .returning [], [], emitted⟩ →
+        emitted.map (fun r => r.1.erase) = [sym "Both"]) ∧
+      GroundedDifferences.stoppedAt (Streaming.advance (translate consRows) 20
+        (Streaming.enter { state := store consRows } (app "cons" [sym "Yes", sym "No"]))).agenda =
+          some (.invalidArguments "cons") ∧
+      Streaming.values (Streaming.advance (translate consRows) 20
+        (Streaming.enter { state := store consRows } (app "cons" [sym "Yes", sym "No"]))) = [] := by
+  obtain ⟨R, _, path, _⟩ := he_complete (cons_evaluates raw_answers policy)
+  exact ⟨⟨⟨R, path⟩, fun emitted run => cons_determined policy _ _ _ _ (complete_source run)⟩,
+    by decide +kernel, by decide +kernel⟩
+
+/-! ### `not`: an operation of both tables -/
+
+/-- A program that gives an equation to `not`, an operation of HE's table and of PeTTa's. -/
 def notRows : List Atom := [rule (app "not" [sym "Yes"]) (sym "No")]
 
 /-- `not` is a PeTTa primitive. -/
 theorem not_primitive : StdLib.known "not" = true := by decide
 
-theorem not_head : HEHead noHost notRows "not" :=
-  ⟨.symbol (by decide) (by decide), by decide +kernel, fun impossible => impossible, by decide⟩
-
-theorem not_scoped : ScopedProgram notRows := by
-  intro row member
-  simp only [notRows, List.mem_singleton] at member
-  subst member
-  exact ⟨rule_consFree (one_consFree _ (.symbol _)), fun lhs rhs same => by
-    cases same
-    decide⟩
-
+/-- The program's equation matches `(not Yes)`: its region holds `No`. -/
 theorem not_instances : regionInstances notRows "not" [sym "Yes"] = [sym "No"] := by
   decide +kernel
 
-theorem not_closed : ∀ name, ¬ Mettapedia.Languages.MeTTa.HE.Spec.Match.Merge.AtomOccurs
-    (app "not" [sym "Yes"]) name :=
-  (call_answerable not_head.head (one_data yes_data)).closed
-
-theorem no_answerable : ∀ a ∈ [sym "No"], Answerable a := by
-  intro a member
-  rw [List.mem_singleton] at member
-  subst member
-  exact answerable_of_data no_data
-
-/-- HE evaluates `(not Yes)` to `No`, through the program's equation. -/
-theorem not_evaluates {lookup : CastLookup} (answers : AnswersUndefined lookup) (policy : Policy) :
-    HEEvaluates noHost lookup policy notRows (app "not" [sym "Yes"]) [sym "No"] := by
-  have only : combos [[sym "Yes"]] = [[sym "Yes"]] := rfl
-  have evaluates := HENested.he_nested answers not_head.head not_head.untyped not_closed
-    (Ls := [[sym "Yes"]])
-    (.cons ⟨HERuns.he_data answers notRows yes_data, fun a member => by
-        rw [List.mem_singleton] at member
-        subst member
-        exact answerable_of_data yes_data⟩ .nil)
-    (fun _ => [sym "No"]) (fun vals member => by
-      rw [only, List.mem_singleton] at member
-      subst member
-      have query := he_query_head (policy := policy) not_scoped not_head (one_data yes_data)
-        (by rw [not_instances]; simp) (Ls := [[sym "No"]])
-        (by
-          rw [not_instances]
-          exact .cons ⟨HERuns.he_data answers notRows no_data,
-            settles_facts (Settles.data (dispatch := noHost) (atoms := notRows) no_data (by decide)),
-            no_answerable⟩ .nil)
-      exact ⟨by simpa using query, no_answerable⟩)
-  rw [only] at evaluates
-  simpa using evaluates
-
-/-- HE's source semantics determines `(not Yes)`'s answer, `No` (historical lookup). -/
-theorem not_determined (policy : Policy) :
-    Determined noHost policy notRows (app "not" [sym "Yes"]) [sym "No"] := by
-  have only : combos [[sym "Yes"]] = [[sym "Yes"]] := rfl
-  have determined := nested_determined (dispatch := noHost) (policy := policy) not_head.head
-    not_head.untyped not_closed (Ls := [[sym "Yes"]]) (.cons (data_settled yes_data) .nil)
-    (fun _ => [sym "No"]) (fun vals member => by
-      rw [only, List.mem_singleton] at member
-      subst member
-      have query := query_head_determined (policy := policy) not_scoped not_head
-        (one_data yes_data) (by rw [not_instances]; simp) (Ls := [[sym "No"]])
-        (by
-          rw [not_instances]
-          exact .cons ⟨(data_settled no_data).2,
-            settles_facts (Settles.data (dispatch := noHost) (atoms := notRows) no_data (by decide))⟩
-            .nil)
-      exact ⟨no_answerable, by simpa using query⟩)
-  rw [only] at determined
-  simpa using determined.2
-
-/-- **A primitive's name hides the program's equations from PeTTa.** On `{(= (not Yes) No)}`: a
-complete run of HE exists, and every complete run publishes `No`, through the equation; PeTTa
-applies its `not` primitive to the symbol `Yes` and stops at the `invalidArguments` fault, with no
-value. -/
-theorem not_every_run (policy : Policy) :
-    ((∃ heAnswers : List Result, Relation.ReflTransGen (HEStep noHost Completed.rawLookup policy)
-        (load (Space.ofList notRows) (app "not" [sym "Yes"]) Atom.undefinedType)
-        ⟨Space.ofList notRows, .returning [], [], heAnswers⟩) ∧
-      ∀ emitted : List Result, Relation.ReflTransGen (HEStep noHost Completed.rawLookup policy)
-          (load (Space.ofList notRows) (app "not" [sym "Yes"]) Atom.undefinedType)
-          ⟨Space.ofList notRows, .returning [], [], emitted⟩ →
-        emitted.map (fun r => r.1.erase) = [sym "No"]) ∧
+/-- **HE's grounded `not` declines a symbol, and the equation is not consulted.** On
+`{(= (not Yes) No)}`, whose equation matches the call (`not_instances`), the call is in HE's typed
+region (`Yes` has no declared type), and with HE's table: a complete run of HE's world machine
+exists, and every complete run publishes the call `(not Yes)` itself;
+PeTTa's machine applies its `not` primitive to the symbol `Yes` and stops at the `invalidArguments`
+fault, with no value. Neither publishes `No`. -/
+theorem not_declines_every_run (minimal : Minimal.Services) (policy : Policy) :
+    TypedRegion notRows "not" [sym "Yes"] ∧
+    regionInstances notRows "not" [sym "Yes"] = [sym "No"] ∧
+      ((∃ heAnswers : List Result,
+          WorldSteps (fun (_ : Unit) => id) (measuredServices minimal) measuredDispatch
+            Completed.rawLookup policy
+            (WorldConfiguration.ofReadOnly
+              (load (Space.ofList notRows) (app "not" [sym "Yes"]) Atom.undefinedType))
+            (WorldConfiguration.ofReadOnly ⟨Space.ofList notRows, .returning [], [], heAnswers⟩)) ∧
+        ∀ emitted : List Result,
+          WorldSteps (fun (_ : Unit) => id) (measuredServices minimal) measuredDispatch
+            Completed.rawLookup policy
+            (WorldConfiguration.ofReadOnly
+              (load (Space.ofList notRows) (app "not" [sym "Yes"]) Atom.undefinedType))
+            (WorldConfiguration.ofReadOnly ⟨Space.ofList notRows, .returning [], [], emitted⟩) →
+          emitted.map (fun r => r.1.erase) = [app "not" [sym "Yes"]]) ∧
       GroundedDifferences.stoppedAt (Streaming.advance (translate notRows) 20
         (Streaming.enter { state := store notRows } (app "not" [sym "Yes"]))).agenda =
           some (.invalidArguments "not") ∧
       Streaming.values (Streaming.advance (translate notRows) 20
         (Streaming.enter { state := store notRows } (app "not" [sym "Yes"]))) = [] := by
-  obtain ⟨R, _, path, _⟩ := he_complete (not_evaluates raw_answers policy)
-  exact ⟨⟨⟨R, path⟩, fun emitted run => not_determined policy _ _ _ _ (complete_source run)⟩,
-    by decide +kernel, by decide +kernel⟩
+  have head : DataAtom (.symbol "not") := .symbol (by decide) (by decide)
+  have computed : measuredOutcome (.symbol "not") [sym "Yes"] = .incorrectArgument := rfl
+  have untyped : (Space.ofList notRows).atoms.filter (typeRegion (.symbol "not")) = [] := by
+    decide +kernel
+  obtain ⟨R, _, path⟩ := GroundedDifferences.declined_steps (policy := policy)
+    measuredDispatch_minimal minimal raw_answers (atoms := notRows) (executable_of "not" (by decide))
+    head (one_data yes_data) computed.symm untyped
+  exact ⟨by decide +kernel, not_instances, ⟨⟨R, path⟩, fun emitted run =>
+    GroundedDifferences.declined_every_run raw_contract (executable_of "not" (by decide)) head
+    (one_data yes_data) (outcome_eq computed) untyped emitted run⟩, by decide +kernel,
+    by decide +kernel⟩
+
+/-! ### `neg`: in neither table -/
 
 /-- The same one-row program under a name outside PeTTa's table. -/
 def negOnlyRows : List Atom := [rule (app "neg" [sym "Yes"]) (sym "No")]
@@ -274,7 +360,7 @@ theorem negOnly_settles :
   simpa using built
 
 /-- **Positive control: only the name separates them.** On `{(= (neg Yes) No)}`, the same program
-under a name outside PeTTa's table, every complete HE run publishes `No` and PeTTa's run gives `No`. -/
+under a name in neither table, every complete HE run publishes `No` and PeTTa's run gives `No`. -/
 theorem neg_every_run (policy : Policy) :
     ((∃ heAnswers : List Result, Relation.ReflTransGen (HEStep noHost Completed.rawLookup policy)
         (load (Space.ofList negOnlyRows) (app "neg" [sym "Yes"]) Atom.undefinedType)
@@ -285,7 +371,7 @@ theorem neg_every_run (policy : Policy) :
         emitted.map (fun r => r.1.erase) = [sym "No"]) ∧
       Streaming.values (Streaming.advance (translate negOnlyRows) 20
         (Streaming.enter { state := store negOnlyRows } (app "neg" [sym "Yes"]))) = [sym "No"] := by
-  obtain ⟨complete, N, every⟩ := NestedCalls.every_complete_run_c policy negOnly_program
+  obtain ⟨complete, N, every⟩ := NestedCalls.every_complete_run_c_single policy negOnly_program
     negOnly_settles
   exact ⟨⟨complete, (every N le_rfl).2⟩, by decide +kernel⟩
 
@@ -293,7 +379,10 @@ end Controls
 
 #print axioms he_query_head
 #print axioms query_head_determined
-#print axioms Controls.not_every_run
+#print axioms Controls.cons_evaluates
+#print axioms Controls.cons_determined
+#print axioms Controls.cons_every_run
+#print axioms Controls.not_declines_every_run
 #print axioms Controls.neg_every_run
 
 end PrimitiveNames

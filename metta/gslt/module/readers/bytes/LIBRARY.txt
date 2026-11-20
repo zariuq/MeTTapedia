@@ -1,0 +1,55 @@
+Composable binary representations
+=================================
+
+ByteScalars declares bit bytes, fixed words, binary naturals and result states.
+ByteValues supplies U8 and little-endian U16 read/write rules. ByteDecode adds
+minimal unsigned LEB128 below 2^62 and counted byte slices. ByteArithmetic
+supplies exact binary arithmetic, bounded fixed-width reads and FNV-1a64.
+ByteRecords supplies schema-directed fields, counted word/pair lists and
+opcode lookup. ByteViews checks an offset-plus-length bound before producing
+a byte slice or reading a little-endian word at an offset.
+
+Bytes are eight explicit bits; raw-byte transport never uses a UTF-8 lexer.
+Reader-produced naturals use canonical binary representations. Arbitrarily
+constructed noncanonical Nat values are outside the executable reader profile.
+
+HOLRStream composes the common rules with its pinned header, opcode schema,
+record loop and END integrity checks. ReadHOLRFile returns a complete-format
+verdict. ReadHOLRPrefix retains complete records preceding a terminal fault.
+This prefix is necessary when composing with a checker that can refuse a
+record before a later decoding or integrity failure.
+
+lib_holr_observation exposes decoded data through the interface in
+INTERFACE.txt. Its complete-file prefix view preserves the header, record
+order and terminal category; an unfinished field is classified as truncated.
+Magic/kernel-id mismatches share the BadHeader category in this profile.
+
+lib_holr_kernel_values maps the byte decoder's representations to the distinct
+HOLLightKernel value interface: bytes to nibbles, binary naturals to its binary
+numerals, records to named HOLR constructors, and prefixes to decoded checker
+inputs. The two language authorities retain separate sorts. A value of the
+kernel's Record or Thm syntax is not by itself a logical derivation.
+
+MMBHeader reuses schema-directed decoding by adding FixedField and one
+operand rule. It covers the 40-byte header and 0/1/2/4-byte command payloads.
+It does not implement the whole MMB file: table extents, relative pointers,
+statement/proof streams and the debugging index remain separate work.
+Reserved header fields are checked against mmb.md; the current reference
+header checker is more permissive on these fields.
+
+Execution uses the existing module reader and authoring API, followed by an
+explicit MeTTa projection of unconditional constructor rules. The projection
+checks its first-order fragment, declared-variable closure, RHS provenance
+and symbol spellings. Linked definitions are installed as one batch to retain
+forward and mutual calls. Premises and binding patterns are not approximated.
+Kernel rules with premises execute through their existing contextual runner.
+
+Source namespaces combine logical names with a digest of the same captured
+source bytes; machine-specific paths are not part of those namespaces.
+The optional authoring client and reference observers live in module/tools.
+Their build fragment adds no dependencies to CeTTa's default build.
+
+The modules are executable specifications with targeted differential and
+mutation controls. Formal source-to-realization, reader-to-logic and native
+refinement theorems remain open. Type admission and test agreement do not
+establish those theorems.

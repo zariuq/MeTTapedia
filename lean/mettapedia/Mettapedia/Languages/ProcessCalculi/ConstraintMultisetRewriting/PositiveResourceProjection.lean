@@ -155,9 +155,9 @@ private theorem fresh_outputs (label : O → T)
   | value :: values, world => by
       obtain ⟨occurrence, fresh, atValue⟩ := supply world value
       obtain ⟨made, distinct, away, outputs⟩ := fresh_outputs label supply values (insert occurrence world)
-      have absent : occurrence ∉ made := fun member =>
+      have missing : occurrence ∉ made := fun member =>
         Finset.disjoint_left.mp away (by simpa using member) (by simp)
-      refine ⟨occurrence :: made, List.nodup_cons.mpr ⟨absent, distinct⟩, ?_, ?_⟩
+      refine ⟨occurrence :: made, List.nodup_cons.mpr ⟨missing, distinct⟩, ?_, ?_⟩
       · apply Finset.disjoint_left.mpr
         intro item inMade inWorld
         rcases List.mem_cons.mp (by simpa using inMade) with rfl | member

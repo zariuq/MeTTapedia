@@ -136,7 +136,7 @@ theorem solvedStable_keepLeft {Θ : Context S.R} {rest : EquationStore (TotalTer
   | solved moved movedSmaller =>
       cases same
       exact (stable moved movedSmaller computed).keepLeft equation
-  | refuted absent => cases same
+  | refuted missing => cases same
 
 end ContextualDependentCumulativeClosure
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting

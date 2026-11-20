@@ -1,0 +1,32 @@
+import "HOLRSchema.module" as schema
+import "HOLRData.module" as data
+import "../bytes/ByteRecords.module" as records
+import "../bytes/ByteScalars.module" as scalars
+
+Module HOLRRecords {
+  Theory Signature(h: data.Data) {
+    h Terms {
+      HOLRControl . CodecState ::= "holr_control" "(" Ordering "," Bytes "," HOLRHeader "," Nat "," Bytes ")";
+      RecordCarry . CodecState ::= "record_carry" "(" Bytes "," HOLRHeader "," Nat "," CodecState ")";
+      StreamPush . CodecState ::= "stream_push" "(" Record "," CodecState ")";
+    }
+  }
+  Theory Format(r: Signature) {
+    r Rewrites {
+      LoopEmpty: (HOLRLoop full header count (BNil)) ~> (HOLRDecoded header (RecordsNil) (HOLRPrefixError (MissingEnd)));
+      LoopSelect: (HOLRLoop full header count (BCons op rest)) ~> (HOLRControl (NatCompare (PackByte op (NatZero)) (NatBit (Bit1) (NatBit (Bit1) (NatBit (Bit1) (NatBit (Bit1) (NatBit (Bit1) (NatBit (Bit1) (NatBit (Bit1) (NatZero))))))))) full header count (BCons op rest));
+      LoopLess: (HOLRControl (Less) full header count xs) ~> (RecordCarry full header count (ReadRecord (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatZero)))))))))))))))))))))) (HOLRSchema) xs));
+      LoopGreater: (HOLRControl (Greater) full header count xs) ~> (RecordCarry full header count (ReadRecord (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatZero)))))))))))))))))))))) (HOLRSchema) xs));
+      LoopEnd: (HOLRControl (Equal) full header count (BCons op rest)) ~> (EndCount full header count (BCons op rest) (ReadULEB62 rest));
+      RecordNext: (RecordCarry full header count (RecordDecoded record rest)) ~> (StreamPush record (HOLRLoop full header (NatInc count) rest));
+      RecordBad: (RecordCarry full header count (UnknownOpcode op)) ~> (HOLRDecoded header (RecordsNil) (HOLRPrefixError (BadOpcode)));
+      StreamCons: (StreamPush record (HOLRDecoded header records terminal)) ~> (HOLRDecoded header (RecordsCons record records) terminal);
+      StreamBad: (StreamPush record (HOLRMalformed reason)) ~> (HOLRMalformed reason);
+      StreamShort: (StreamPush record (NeedInput)) ~> (NeedInput);
+      RecordCarryNeedInput: (RecordCarry full header count (NeedInput)) ~> (HOLRDecoded header (RecordsNil) (HOLRPrefixIncomplete));
+      RecordCarryBadInteger: (RecordCarry full header count (BadInteger)) ~> (HOLRDecoded header (RecordsNil) (HOLRPrefixError (IntegerEncoding)));
+      RecordCarryLimitExceeded: (RecordCarry full header count (LimitExceeded)) ~> (HOLRDecoded header (RecordsNil) (HOLRPrefixError (FieldLimit)));
+    }
+  }
+  theory Format(Signature(data.Data(records.ReaderInterface(scalars.Values()))))
+}

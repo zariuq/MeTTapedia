@@ -133,17 +133,23 @@ private theorem classify_nonStrict {n : Nat} (a : FourierMotzkin.Atom (n+1)) (cl
     simp only [FourierMotzkin.classify]
     split_ifs <;> rfl
 
-private theorem lower_closed {n : Nat} (atoms : List (FourierMotzkin.Atom (n+1))) (closed : NonStrict atoms)
+theorem lower_closed {n : Nat} (atoms : List (FourierMotzkin.Atom (n+1))) (closed : NonStrict atoms)
     (bound : FourierMotzkin.Bound n) (member : bound ∈ FourierMotzkin.lowers atoms) : bound.strict = false := by
   obtain ⟨a, member, same⟩ := FourierMotzkin.mem_lowers.mp member
   have result := classify_nonStrict a (closed a member)
   simpa only [same] using result
 
-private theorem upper_closed {n : Nat} (atoms : List (FourierMotzkin.Atom (n+1))) (closed : NonStrict atoms)
+theorem upper_closed {n : Nat} (atoms : List (FourierMotzkin.Atom (n+1))) (closed : NonStrict atoms)
     (bound : FourierMotzkin.Bound n) (member : bound ∈ FourierMotzkin.uppers atoms) : bound.strict = false := by
   obtain ⟨a, member, same⟩ := FourierMotzkin.mem_uppers.mp member
   have result := classify_nonStrict a (closed a member)
   simpa only [same] using result
+
+theorem residuals_closed {n : Nat} (atoms : List (FourierMotzkin.Atom (n+1))) (closed : NonStrict atoms) :
+    NonStrict (FourierMotzkin.residuals atoms) := by
+  intro row member
+  obtain ⟨a, inside, same⟩ := FourierMotzkin.mem_residuals.mp member
+  simpa only [same] using classify_nonStrict a (closed a inside)
 
 theorem project_nonStrict {n : Nat} (atoms : List (FourierMotzkin.Atom (n+1))) (closed : NonStrict atoms) :
     NonStrict (FourierMotzkin.project atoms) := by
@@ -395,6 +401,26 @@ private theorem le_upperEndpoint (atoms : List (FourierMotzkin.Atom 1)) (value :
     have number : b.term.const = upperEndpoint atoms := congrArg Prod.snd equal
     rw [← number]
     exact upper b member
+
+theorem oneDimensional_in_unit {atoms : List (FourierMotzkin.Atom 1)} (closed : NonStrict atoms)
+    (value : ℝ) :
+    (FourierMotzkin.allSat atoms (fun _ => value) ∧ value ∈ Set.Icc (0 : ℝ) 1) ↔
+      FourierMotzkin.allSat (FourierMotzkin.residuals atoms) (Fin.elim0 : Fin 0 → ℝ) ∧
+        value ∈ Set.Icc (lowerEndpoint atoms : ℝ) (upperEndpoint atoms : ℝ) := by
+  rw [oneDimensional_sat atoms closed]
+  constructor
+  · rintro ⟨⟨residual, lower, upper⟩, unit⟩
+    exact ⟨residual, lowerEndpoint_le atoms value unit.1 lower, le_upperEndpoint atoms value unit.2 upper⟩
+  · rintro ⟨residual, lower, upper⟩
+    refine ⟨⟨residual, ?_, ?_⟩, ?_, ?_⟩
+    · intro b hb
+      exact (Rat.cast_le.mpr ((lowerEndpoint_spec atoms).2 b.term.const
+        (List.mem_cons_of_mem _ (List.mem_map.mpr ⟨b, hb, rfl⟩)))).trans lower
+    · intro b hb
+      exact upper.trans (Rat.cast_le.mpr ((upperEndpoint_spec atoms).2 b.term.const
+        (List.mem_cons_of_mem _ (List.mem_map.mpr ⟨b, hb, rfl⟩))))
+    · exact (Rat.cast_nonneg.mpr ((lowerEndpoint_spec atoms).2 0 (by simp [lowerValues]))).trans lower
+    · exact upper.trans (by exact_mod_cast (upperEndpoint_spec atoms).2 1 (by simp [upperValues]))
 
 theorem projected_interval {n : Nat} (base : KnowledgeBase (Fin n)) (event condition : Event (Fin n))
     (possible : (queryValues base event condition).Nonempty) :

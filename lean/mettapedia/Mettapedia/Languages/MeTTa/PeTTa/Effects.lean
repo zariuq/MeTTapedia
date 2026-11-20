@@ -47,11 +47,14 @@ theorem empty_empty_tail : Store.EmptyTail empty [] := Store.new_emptyTail _ _
 
 def handleValue : Handle → Atom
   | .self => .symbol "&self"
+  | .namedSpace name => .symbol name.1
   | .privateSpace index =>
       .grounded (.custom "PeTTa.Space" (String.replicate index '#'))
 
 def readHandle : Atom → Option Handle
-  | .symbol "&self" => some .self
+  | .symbol name =>
+      if reserved : name = "&self" then some .self
+      else some (.namedSpace ⟨name, reserved⟩)
   | .grounded (.custom "PeTTa.Space" token) =>
       if token = String.replicate token.length '#' then
         some (.privateSpace token.length)
@@ -60,7 +63,30 @@ def readHandle : Atom → Option Handle
 
 @[simp] theorem readHandle_handleValue (handle : Handle) :
     readHandle (handleValue handle) = some handle := by
-  cases handle <;> simp [handleValue, readHandle]
+  cases handle with
+  | self => rfl
+  | privateSpace index => simp [handleValue, readHandle]
+  | namedSpace name => simp [handleValue, readHandle, name.property]
+
+theorem handleValue_of_readHandle {value : Atom} {handle : Handle}
+    (read : readHandle value = some handle) : handleValue handle = value := by
+  unfold readHandle at read
+  split at read
+  · rename_i name
+    split at read
+    · rename_i reserved
+      cases Option.some.inj read
+      simp [handleValue, reserved]
+    · cases Option.some.inj read
+      rfl
+  · split at read
+    · rename_i token equal
+      cases Option.some.inj read
+      change Atom.grounded (.custom "PeTTa.Space" (String.replicate token.length '#')) =
+        Atom.grounded (.custom "PeTTa.Space" token)
+      rw [← equal]
+    · contradiction
+  · contradiction
 
 theorem handleValue_injective : Function.Injective handleValue := by
   intro first second same
@@ -71,13 +97,18 @@ def insert (state : State) (handle : Handle) (atom : Atom) : Option State := do
   let rows ← state.read handle
   state.write handle (rows ++ [atom])
 
-/-- PeTTa removal uses an ordinary expression pattern, without the `cons`
-list-view interpretation used by case selection. This ground-store fragment
-uses the existing matcher; open stored equations require the dialect's scoped
-unifier. A bare variable is not a universal removal request. -/
+/-- The structural test underlying ground-store removal. Scalars and empty
+expressions are data too. Native argument admission is separate: an unbound
+removal operand raises an instantiation fault before this test is used.
+Open stored rows require the dialect's scoped two-sided unifier. -/
 def removalMatches (pattern row : Atom) : Bool :=
-  match pattern with
-  | .expression (_ :: _) => (matchAtom [] pattern row).isSome
+  (matchAtom [] pattern row).isSome
+
+/-- A native removal needs its operand and, for an equation, its function
+head. Variables elsewhere in the pattern remain legitimate unknowns. -/
+def removalNeedsValue : Atom → Bool
+  | .var _ => true
+  | .expression [.symbol "=", .expression (.var _ :: _), _] => true
   | _ => false
 
 theorem removalMatches_self (first : Atom) (rest : List Atom) :
@@ -87,6 +118,11 @@ theorem removalMatches_self (first : Atom) (rest : List Atom) :
 def erase (state : State) (handle : Handle) (pattern : Atom) : Option State := do
   let rows ← state.read handle
   state.write handle (rows.filter fun row => !removalMatches pattern row)
+
+/-- The ordinary source removal acknowledgement observes a decrease in the
+number of occurrences, not merely successful access to the space. -/
+def erasureChanged (before after : State) (handle : Handle) : Bool :=
+  decide (((after.read handle).getD []).length < ((before.read handle).getD []).length)
 
 /-- Physical row shape, independent of the validity or currency of its fields. -/
 def RowsHaveArity (arity : Nat) (rows : List Atom) : Prop :=
@@ -252,6 +288,7 @@ given more arguments than any of its equations takes; `arities` lists the
 input arities its equations record, ascending and without repeats. -/
 inductive Fault where
   | invalidSpace
+  | instantiation
   | missingCell (name : String)
   | invalidArguments (head : String)
   | zeroDivisor

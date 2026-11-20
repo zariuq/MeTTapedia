@@ -258,9 +258,9 @@ def glbJoinSolverK : ContextualDependentWorklist.Solver S.levels where
 
 /-- **The rules never refute.** -/
 theorem glbJoinRoundK_ne_refuted {Γ : Context S.R} (problem : EquationStore (TotalTerm Γ))
-    (absent : ¬ (frames S.levels).Solvable problem) :
+    (missing : ¬ (frames S.levels).Solvable problem) :
     glbJoinRoundK facts roots heads algebra rigid complete headsTyped join joinSound meet meetSound problem ≠
-      .refuted absent := by
+      .refuted missing := by
   cases problem with
   | nil => intro h; cases h
   | cons e rest =>
@@ -377,9 +377,9 @@ theorem glbJoinK_decided {Θ : Context S.R} {original : EquationStore (TotalTerm
         ((∃ state finished,
             run (glbJoinSolverK facts roots heads algebra rigid complete headsTyped join joinSound meet meetSound)
                 original larger = .solved state finished ∧ (frames S.levels).Principal original state.answer) ∨
-          (∃ absent,
+          (∃ missing,
             run (glbJoinSolverK facts roots heads algebra rigid complete headsTyped join joinSound meet meetSound)
-              original larger = .refuted absent)) :=
+              original larger = .refuted missing)) :=
   (glbJoinFragmentK facts roots heads algebra rigid complete headsTyped join joinSound meet meetSound joinTotal
     meetTotal).decided inside
 
@@ -390,14 +390,14 @@ theorem principal_of_inGlbJoinFragmentK {Θ : Context S.R} {original : EquationS
     ∃ (Δ : Context S.R) (answer : Δ ⟶ Θ), (frames S.levels).Principal original answer := by
   obtain ⟨fuel, ends⟩ := glbJoinK_decided facts roots heads algebra rigid complete headsTyped join joinSound meet
     meetSound joinTotal meetTotal inside
-  rcases (ends fuel le_rfl).2 with ⟨state, _, _, principal⟩ | ⟨absent, refuted⟩
+  rcases (ends fuel le_rfl).2 with ⟨state, _, _, principal⟩ | ⟨missing, refuted⟩
   · exact ⟨_, _, principal⟩
   · exact absurd refuted (drive_ne_refuted
       (glbJoinSolverK facts roots heads algebra rigid complete headsTyped join joinSound meet meetSound)
-      (fun problem absent =>
+      (fun problem missing =>
         glbJoinRoundK_ne_refuted facts roots heads algebra rigid complete headsTyped join joinSound meet meetSound
-          problem absent)
-      fuel _ absent)
+          problem missing)
+      fuel _ missing)
 
 end Solver
 

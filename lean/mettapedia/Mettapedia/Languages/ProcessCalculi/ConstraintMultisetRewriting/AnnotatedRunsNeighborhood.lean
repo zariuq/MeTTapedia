@@ -36,7 +36,7 @@ them (`box`).
   pieces with a common history; belief in `ψ` is entailment of `ψ` by the meet of every maximal
   consistent body (`belief`). Belief is normal (`belief_inf`, `belief_mono`). With two pieces:
   - two consistent pieces form the only maximal body, so belief is their meet
-    (`belief_pair_consistent`), while evidence for the meet may be absent;
+    (`belief_pair_consistent`), while evidence for the meet may not be present;
   - two conflicting pieces form two maximal bodies, so belief is their join
     (`belief_pair_conflict`): evidence for each, belief in neither.
 
@@ -383,8 +383,8 @@ def madeIn (o : O) : Family (runObject A label C₀) :=
 theorem made_of_mem_follow (o : O) :
     ∀ {C : Configuration T O} {w : List (Firing T S O)}, o ∈ (follow label C w).present →
       o ∉ C.present → ∃ f ∈ w, o ∈ f.selection.made
-  | C, [], present, absent => absurd present absent
-  | C, f :: rest, present, absent => by
+  | C, [], present, missing => absurd present missing
+  | C, f :: rest, present, missing => by
       by_cases made : o ∈ f.selection.made
       · exact ⟨f, List.mem_cons_self, made⟩
       · have notAfter : o ∉ (f.result label C).present := by
@@ -392,22 +392,22 @@ theorem made_of_mem_follow (o : O) :
           simp only [Firing.result, Selection.result, MeTTaCalculus.OccurrenceCommits.mem_fire,
             Selection.commit, List.mem_toFinset] at after
           rcases after with ⟨old, _⟩ | new
-          · exact absent old
+          · exact missing old
           · exact made new
         obtain ⟨g, member, inG⟩ := made_of_mem_follow o (C := f.result label C) present notAfter
         exact ⟨g, List.mem_cons_of_mem f member, inG⟩
 
-/-- **Provenance evidence is sound**: an observation in the ledger where a history ends, absent at
+/-- **Provenance evidence is sound**: an observation in the ledger where a history ends, not present at
 its start, was made in that history. -/
 theorem madeIn_of_mem_ledger {y : Runs A label} (h : runObject A label C₀ ⟶ y) {o : O}
-    (inLedger : o ∈ ledgerClass A label space y) (absent : o ∉ C₀.present) :
+    (inLedger : o ∈ ledgerClass A label space y) (missing : o ∉ C₀.present) :
     h ∈ madeIn A label C₀ o y := by
   have target := target_eq A label h C₀ rfl
   have present : o ∈ (follow label C₀ (OccurrencePath.sites h)).present := by
     have : o ∈ ledgerClass A label space
         (classOf A label (follow label C₀ (OccurrencePath.sites h))) := target ▸ inLedger
     exact ((WorldModelRuns.mem_ledger label space).mp this).1
-  exact made_of_mem_follow label o present absent
+  exact made_of_mem_follow label o present missing
 
 /-- The ledger only grows along a run whose firings keep evidence. -/
 theorem ledger_subset_follow_of_keeps :

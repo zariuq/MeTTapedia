@@ -51,7 +51,7 @@ theorem scan_ground {O : Type} (label : O → Atom) {bindings : Subst} {pattern 
   | _, [], _ => rfl
   | use, row :: rest, ground => by
       have rowGround := ground row List.mem_cons_self
-      simp only [scan, scan_ground label range (use + 1) rest
+      simp only [PeTTaQueryInterpretation.scan_cons, scan_ground label range (use + 1) rest
         (fun item member => ground item (List.mem_cons_of_mem _ member)), Option.bind_eq_bind,
         Option.bind_some, Unifying.rename_ground use (label row) rowGround,
         Unifying.unify_ground range rowGround, List.filterMap_cons]

@@ -411,7 +411,7 @@ theorem not_fragment : ¬ Fragment (S := S) (label τ) (offers τ) := by
     simp [qb, qc, firing] at this
   have independent := fragment.independent _ _ _ _ (by simp [offers, alphabet] : offers (S := S) τ .t (qb τ))
     (by simp [offers, alphabet] : offers (S := S) τ .t (qc τ)) distinct
-  exact (independent.2.2 A.identity).1.1 (.inl (of_decide_eq_false rfl))
+  exact (independent.2.2 A.identity ⟨[],∅⟩).1.1 (.inl (of_decide_eq_false rfl))
 
 end Private
 

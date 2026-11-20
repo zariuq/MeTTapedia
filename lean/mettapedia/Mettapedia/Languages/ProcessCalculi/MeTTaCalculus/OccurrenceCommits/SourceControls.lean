@@ -35,7 +35,7 @@ syntactic case. Every fact about rows below is computed by the kernel (`decide`)
   variable is equality modulo `E`.
 * **A matcher that is sound and not complete** (`syntactic_sound_for_comm`,
   `syntactic_not_complete_for_comm`): the syntactic matcher used for the commutative theory.
-  What breaks: an absence fires although the region is not empty modulo `E`
+  What breaks: a none query fires although the region is not empty modulo `E`
   (`incomplete_absence_fires`); an `every` misses a row and its completeness query, computed by
   the same matcher, does not see it either (`incomplete_every_misses_row`); `unique` fires with
   two occurrences in its region (`incomplete_unique_fires`). The complete matcher refuses the
@@ -449,7 +449,7 @@ def absentAB : Transform ℕ (Tm Sig) (Pat ℕ Sig) := ⟨.cons (.absent pBagAB)
 /-- A store with `bag(b, a)`. -/
 def storeBA : Finset Occ := {(bagBA, 0)}
 
-/-- **What breaks: an absence fires although its region is not empty modulo the theory.** -/
+/-- **What breaks: a none query fires although its region is not empty modulo the theory.** -/
 theorem incomplete_absence_fires :
     (∃ c, Fires Lc ms lbl storeBA absentAB c) ∧ (∃ o ∈ storeBA, Lc.Covers empty pBagAB (lbl o)) ∧
       ∀ c, ¬ Fires Lc mc lbl storeBA absentAB c := by
@@ -609,7 +609,7 @@ theorem takeTok_readTok_dependent :
 /-! ## The cheapest check, from the text -/
 
 /-- **Positive and negative controls of the text checks**: a reader of `lock` has no complete
-source and takes nothing; an absence has a complete source; a taker takes. -/
+source and takes nothing; a none query has a complete source; a taker takes. -/
 theorem text_checks :
     readLock.sources.queryFree = true ∧ readLock.sources.takeFree = true ∧
       readLock.sources.keepFree = false ∧ absentAB.sources.queryFree = false ∧

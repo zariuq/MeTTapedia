@@ -128,11 +128,14 @@ theorem check_holds_union {σ : S} {store frame : Finset O} {check : Check T}
     (holds : check.Holds A σ label store) : check.Holds A σ label (store ∪ frame) := by
   cases check with
   | equal left right => exact holds
-  | absent pattern =>
-      intro o member
-      rcases Finset.mem_union.mp member with inStore | inFrame
-      · exact holds o inStore
-      · exact blind pattern rfl o inFrame
+  | predicate quantifier pattern =>
+      cases quantifier with
+      | any => exact Quantifier.holds_any_mono Finset.subset_union_left holds
+      | none =>
+          intro o member
+          rcases Finset.mem_union.mp member with inStore | inFrame
+          · exact holds o inStore
+          · exact blind pattern rfl o inFrame
   | count pattern number =>
       have same : Check.matches A σ label (store ∪ frame) pattern =
           Check.matches A σ label store pattern := by
@@ -148,20 +151,26 @@ theorem check_holds_union {σ : S} {store frame : Finset O} {check : Check T}
       rw [same]
       exact holds
 
-theorem query_holds_union {σ : S} {store frame : Finset O} {query : PredicateQueryAdmission.Query T S O}
+/-- A region query whose fiber excludes a frame keeps what it observes when the frame is added,
+whatever it observes: the fiber is unchanged. -/
+theorem query_holds_union {σ : S} {store frame : Finset O}
+    {query : PredicateQueryAdmission.RegionQuery T S O}
     (blind : ∀ o ∈ frame, query.region σ (label o) = false)
-    (holds : regionOf label store (query.region σ) = query.seen) :
-    regionOf label (store ∪ frame) (query.region σ) = query.seen := by
-  rw [← holds]
-  ext o
-  simp only [mem_regionOf, Finset.mem_union]
-  constructor
-  · rintro ⟨inStore | inFrame, inRegion⟩
-    · exact ⟨inStore, inRegion⟩
-    · rw [blind o inFrame] at inRegion
-      cases inRegion
-  · rintro ⟨inStore, inRegion⟩
-    exact ⟨Or.inl inStore, inRegion⟩
+    (holds : query.Holds σ label store) : query.Holds σ label (store ∪ frame) := by
+  have fiber : regionOf label (store ∪ frame) (query.region σ) =
+      regionOf label store (query.region σ) := by
+    ext o
+    simp only [mem_regionOf, Finset.mem_union]
+    constructor
+    · rintro ⟨inStore | inFrame, inRegion⟩
+      · exact ⟨inStore, inRegion⟩
+      · rw [blind o inFrame] at inRegion
+        cases inRegion
+    · rintro ⟨inStore, inRegion⟩
+      exact ⟨Or.inl inStore, inRegion⟩
+  show query.accepts σ (regionOf label (store ∪ frame) (query.region σ))
+  rw [fiber]
+  exact holds
 
 /-- **The frame law with more equations.** A firing admitted at `C` and blind to `frame` is admitted
 at a configuration that adds `frame` to the space of `C` and refines its store, when its problem
@@ -186,7 +195,7 @@ theorem Firing.valid_of_frame {f : Firing T S O} {C D : Configuration T O} {fram
     exact check_holds_union A label (fun pattern scanned => blind.checks check member pattern scanned σ)
       (valid.firing.checks check member σ (older σ solved))
   · intro query member σ solved
-    change regionOf label D.present (query.region σ) = query.seen
+    show query.Holds σ label D.present
     rw [present]
     exact query_holds_union label (blind.queries query member σ)
       (valid.observations query member σ (older σ solved))
@@ -500,7 +509,7 @@ theorem Separated.head_round {C₁ C₂ : Configuration T O} {f g : Firing T S O
   · intro check member
     cases check with
     | equal left right => trivial
-    | absent pattern =>
+    | predicate quantifier pattern =>
         intro o written ⟨σ, solved⟩
         exact fBlind.checks _ member pattern rfl σ o (gWrites o written)
           (solved _ (List.mem_append_right _ (List.mem_singleton_self _)))
@@ -511,7 +520,7 @@ theorem Separated.head_round {C₁ C₂ : Configuration T O} {f g : Firing T S O
   · intro check member
     cases check with
     | equal left right => trivial
-    | absent pattern =>
+    | predicate quantifier pattern =>
         intro o written ⟨σ, solved⟩
         exact gBlind.checks _ member pattern rfl σ o (fWrites o written)
           (solved _ (List.mem_append_right _ (List.mem_singleton_self _)))
@@ -840,8 +849,8 @@ theorem blindness_needed :
       ¬ Executable A label AnnotatedRuns.Controls.empty [maker, observer] ∧
       Executable A label AnnotatedRuns.Controls.empty [observer, maker] := by
   refine ⟨by decide, ⟨Subst.id signature, ?_⟩, fun blind => ?_,
-    AnnotatedRuns.Controls.census_writer_one_order.2.2.2.2,
-    AnnotatedRuns.Controls.census_writer_one_order.2.2.2.1⟩
+    AnnotatedRuns.Controls.query_writer_one_order.2.2.2.2,
+    AnnotatedRuns.Controls.query_writer_one_order.2.2.2.1⟩
   · intro equation member
     simp [jointStore, Firing.added, GuardFreeProcessOrders.added, Selection.equations,
       AnnotatedRuns.Controls.empty, maker, observer] at member

@@ -719,8 +719,9 @@ theorem settlesIf_petta {atoms : List Atom} {t : Atom} {L : List Atom}
 /-- **HE and PeTTa agree on `if` inside bodies, on every run, on the scoped lookup.** On a program
 carrying HE's `if`, for any dispatch that does not execute `if` and any policy: for a settling term
 (with `if` nodes inside bodies, as constructor arguments, or at the entry), a complete HE run exists
-and every complete run publishes `L`; no run is infinite and every reachable configuration steps or
-is final with `L`; and PeTTa's streaming run yields `L` from some fuel on. -/
+and every complete run publishes the bag of `L`; no run is infinite and every reachable
+configuration steps or is final with that bag; and PeTTa's streaming run yields the list `L` from
+some fuel on. -/
 theorem if_bodies_every_run (dispatch : GroundedDispatch)
     (notHost : ¬ dispatch.executable (.symbol "if")) (policy : Policy) {atoms : List Atom}
     (program : IfProgram atoms) {c : Atom} {L : List Atom} (settles : SettlesIf dispatch atoms c L) :
@@ -740,17 +741,22 @@ theorem if_bodies_every_run (dispatch : GroundedDispatch)
       emitted.map (fun r => r.1.erase) = L :=
     fun emitted run => determined _ _ _ _ (complete_source run)
   have shape := settlesIf_shape settles
-  refine ⟨⟨?_, every⟩, ⟨fine.acc, fun y path => ?_⟩,
-    petta_complete shape.2.ground shape.1 (settlesIf_petta settles)⟩
-  · obtain ⟨space, emitted, path⟩ := IfAtFrames.Fine.exists_final fine
+  have exists_ : ∃ heAnswers : List Result,
+      Relation.ReflTransGen (HEStep dispatch Completed.scopedLookup policy)
+        (load (Space.ofList atoms) c Atom.undefinedType) (final (Space.ofList atoms) heAnswers) := by
+    obtain ⟨space, emitted, path⟩ := IfAtFrames.Fine.exists_final fine
     have same : space = Space.ofList atoms := space_fixed path
     subst same
     exact ⟨emitted, path⟩
-  · rcases (fine.reaches path).progress with moves | ⟨space, emitted, rfl⟩
+  have inOrder : FinishesInOrder dispatch Completed.scopedLookup policy (Space.ofList atoms) c L := by
+    refine ⟨fine.acc, fun y path => ?_⟩
+    rcases (fine.reaches path).progress with moves | ⟨space, emitted, rfl⟩
     · exact Or.inl moves
     · have same : space = Space.ofList atoms := space_fixed path
       subst same
       exact Or.inr ⟨emitted, rfl, every emitted path⟩
+  exact ⟨PublishesInOrder.bag ⟨exists_, every⟩, inOrder.bag,
+    petta_complete shape.2.ground shape.1 (settlesIf_petta settles)⟩
 
 /-! ## Controls -/
 

@@ -28,10 +28,10 @@ open Mettapedia.GSLT Mettapedia.GSLT.Ultrainfinite Mettapedia.GSLT.IndexedOperat
 
 /-- The target's one-step relation uses its own rule interpretation and
 equation classes, independently of the source executor. -/
-def classStep (before after : Cls [] Srt.pr) : Prop :=
+def classStep {context : Ctx sig} (before after : Cls context Srt.pr) : Prop :=
   Steps strictRules (Quotient.out before) (Quotient.out after)
 
-theorem classStep_cls (before after : Term sig [] Srt.pr) :
+theorem classStep_cls {context : Ctx sig} (before after : Term sig context Srt.pr) :
     classStep (cls before) (cls after) ↔ Steps strictRules before after := by
   have beforeEq : EqClosure equations (Quotient.out (cls before)) before :=
     cls_eq_iff.mp (Quotient.out_eq _)
@@ -39,6 +39,34 @@ theorem classStep_cls (before after : Term sig [] Srt.pr) :
     cls_eq_iff.mp (Quotient.out_eq _)
   exact ⟨steps_of_equiv beforeEq.symm afterEq,
     steps_of_equiv beforeEq afterEq.symm⟩
+
+open Mettapedia.OSLF.Binding.IntrinsicScopedConditionalSubstitution (Reduces reduces_substitute)
+
+/-- Ambient substitution transports the full strict COMM proof tree. In
+particular it substitutes the payload and the continuation's ambient
+variables without consuming the continuation's received binder. -/
+theorem classStep_substitute {Γ Δ : Ctx sig} (change : Sub sig Γ Δ)
+    {before after : Cls Γ Srt.pr} (step : classStep before after) :
+    classStep (bindQ change before) (bindQ change after) := by
+  let model := (FreeBindingEquationModel.presented equations).algebra
+  have tree : Reduces strictRules (A := model) ⟨Γ, Srt.pr, before, after⟩ := by
+    change Reduces strictRules (A := model)
+      ⟨Γ, Srt.pr, cls (Quotient.out before), cls (Quotient.out after)⟩ at step
+    simpa only [show cls (Quotient.out before) = before from Quotient.out_eq _,
+      show cls (Quotient.out after) = after from Quotient.out_eq _] using step
+  let env (s : Srt) (position : Var Γ s) := cls (change s position)
+  have moved := reduces_substitute strictRules tree env
+  change Reduces strictRules (A := model) ⟨Δ, Srt.pr,
+    BindingEquationQuotientSubstitution.substitute equations env before,
+    BindingEquationQuotientSubstitution.substitute equations env after⟩ at moved
+  have represents (s : Srt) (position : Var Γ s) :
+      (Quotient.mk _ (change s position) : TermQ equations Δ s) = env s position := rfl
+  rw [BindingEquationQuotientSubstitution.substitute_eq_bindQ equations env change represents before,
+    BindingEquationQuotientSubstitution.substitute_eq_bindQ equations env change represents after] at moved
+  change Reduces strictRules (A := model) ⟨Δ, Srt.pr,
+    cls (Quotient.out (bindQ change before)), cls (Quotient.out (bindQ change after))⟩
+  simpa only [show cls (Quotient.out (bindQ change before)) = bindQ change before from Quotient.out_eq _,
+    show cls (Quotient.out (bindQ change after)) = bindQ change after from Quotient.out_eq _] using moved
 
 def targetTheory : GSLT where
   Term := Cls [] Srt.pr

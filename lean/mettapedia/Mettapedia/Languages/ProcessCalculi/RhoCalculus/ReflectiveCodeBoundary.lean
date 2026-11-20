@@ -70,7 +70,7 @@ theorem unary_congruence (constructor : String) {left right : Pattern}
   simpa using related
 
 /-- Both reflective constructors descend to the structural quotient. -/
-def structuralCompatibility :
+theorem structuralCompatibility :
     Interface.QuotientCompatibility rawInterface structuralSetoid
       structuralSetoid where
   quote_respects := by
@@ -147,8 +147,8 @@ when this substitution supplied a quotation. -/
 theorem communication_substitution_beta (process : Pattern) :
     substituteReflective declaration 0 (rawInterface.quote process)
         (rawInterface.drop (.bvar 0)) = process := by
-  simp [rawInterface, declaration, substituteReflective,
-    substituteNameMark, normalizeReflective, rhoReflectivePresentation]
+  simp [rawInterface, declaration, substituteReflective, resolveQuotes, resolveQuotesList,
+    finishResolveApply, substituteResolved, receive, rhoReflectivePresentation]
 
 /-- A free dropped quotation remains inert under the same substitution; the
 beta law is provenance-scoped rather than a raw constructor equation. -/

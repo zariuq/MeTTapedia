@@ -6,10 +6,12 @@ import Mettapedia.Languages.MeTTa.PeTTa.Bridges.CapturedQueryOperands
 
 The canonical handle operand is prepared before the ordinary ground-fact
 mutation. The payload remains raw source and is read in the reached frame.
-The pinned removal profile answers true even when the fact is already absent.
-Current destination admission and a readable target construct the successful
-receipt; no future successful primitive or already-prepared frame is assumed
-by `source_exists`. This is a local source prefix, not a complete drop call.
+Removal deletes every matching copy and answers whether the target changed:
+true exactly when some stored row matches, false when the fact is already
+absent. Current destination admission and a readable target construct the
+successful receipt; no future successful primitive or already-prepared frame
+is assumed by `source_exists`. This is a local source prefix, not a complete
+drop call.
 -/
 
 set_option autoImplicit false
@@ -37,8 +39,10 @@ def ready (caller : Control) (destination : Atom) (handle : NamedSpaces.Handle) 
     bindings := caller.bindings ++ [(Effects.handleValue handle, .var (location caller destination handle payloadCode))]
     goals := .invoke "remove-atom" [.var (location caller destination handle payloadCode), payloadCode] destination :: caller.goals}
 
-def returned (caller : Control) (destination : Atom) (handle : NamedSpaces.Handle) (payloadCode : Atom) : Control :=
-  {caller with bindings := (ready caller destination handle payloadCode).bindings ++ [(Effects.boolean true, destination)]}
+/-- The caller after the removal reply `changed` is equated with its destination. -/
+def returned (caller : Control) (destination : Atom) (handle : NamedSpaces.Handle) (payloadCode : Atom)
+    (changed : Bool) : Control :=
+  {caller with bindings := (ready caller destination handle payloadCode).bindings ++ [(Effects.boolean changed, destination)]}
 
 theorem location_fresh (caller : Control) (destination : Atom) (handle : NamedSpaces.Handle) (payloadCode : Atom) :
     FreshFor (location caller destination handle payloadCode) caller.bindings :=
@@ -79,14 +83,14 @@ theorem preparation {Context : Type} (program : SpaceSemantics.Program)
       callArguments, freshSlots, List.range_succ, Eval.argumentIsRaw, StdLib.rawArgument,
       ready, location, Effects.handleValue] at refined ⊢ <;> simp [refined]
 
-private theorem payload_shape (payload : Atom) (ordinary : ScopedQuerySource.mutationPayload true payload = true) :
-    ∃ first rest, payload = .expression (first :: rest) := by
-  cases payload with
-  | var | symbol | grounded => simp [ScopedQuerySource.mutationPayload] at ordinary
-  | expression fields =>
-      cases fields with
-      | nil => simp [ScopedQuerySource.mutationPayload] at ordinary
-      | cons first rest => exact ⟨first, rest, rfl⟩
+/-- An ordinary ground removal payload supplies every value native removal demands. -/
+private theorem payload_specified (payload : Atom) (ordinary : ScopedQuerySource.mutationPayload true payload = true) :
+    Effects.removalNeedsValue payload = false := by
+  unfold Effects.removalNeedsValue
+  split
+  · simp [ScopedQuerySource.mutationPayload, Mettapedia.Languages.ProcessCalculi.MORK.isGroundAtom] at ordinary
+  · simp [ScopedQuerySource.mutationPayload] at ordinary
+  · rfl
 
 theorem source_prefix {Context : Type} (program : SpaceSemantics.Program)
     (allocator : Allocator) (world : World) (scope : CollectionScope Context)
@@ -102,7 +106,8 @@ theorem source_prefix {Context : Type} (program : SpaceSemantics.Program)
     (ScopedQuerySource.machine .relational program).run 5
       (placed allocator world scope parents (entry caller destination handle payloadCode) context origins pending) =
       ([], .exhausted (placed allocator {world with state := after} scope parents
-        (returned caller destination handle payloadCode) context (origins ++ [0]) pending)) := by
+        (returned caller destination handle payloadCode (Effects.erasureChanged world.state after handle))
+        context (origins ++ [0]) pending)) := by
   obtain ⟨environment, representative, prepared, stillUnbound⟩ := ScopedMutationSource.unbound_after_fresh_operand
     caller.bindings principal destination (Effects.handleValue handle) result (location caller destination handle payloadCode)
     resolved unbound (location_fresh caller destination handle payloadCode) (location_apart caller destination handle payloadCode)
@@ -116,23 +121,13 @@ theorem source_prefix {Context : Type} (program : SpaceSemantics.Program)
       (List.mem_append_right _ (by simp))
     rw [LiteralQuerySource.read_handle] at bound
     exact bound.symm
-  have applied : StdLib.apply world.state "remove-atom" [Effects.handleValue handle, payload] =
-      .ok (after, [Effects.boolean true]) := by
-    obtain ⟨first, rest, shape⟩ := payload_shape payload ordinaryPayload
-    rw [shape] at erased ⊢
-    change (match Effects.readHandle (Effects.handleValue handle) with
-      | none => Except.error Effects.Fault.invalidSpace
-      | some handle => match world.state.read handle with
-        | none => Except.error Effects.Fault.invalidSpace
-        | some _ => match Effects.erase world.state handle (.expression (first :: rest)) with
-          | some result => Except.ok (result, [Effects.boolean true])
-          | none => Except.error Effects.Fault.invalidSpace) = _
-    simp [snapshot, erased]
+  have applied := StdLib.remove_atom_applies_of_erased (payload_specified payload ordinaryPayload) erased
   have primitive := ScopedMutationSource.primitive_prefix .relational program allocator world
     {scope with frontier := (ready caller destination handle payloadCode, context, origins) :: pending} parents
     (ready caller destination handle payloadCode) context origins pending "remove-atom"
     [.var (location caller destination handle payloadCode), payloadCode] destination representative caller.goals
-    environment after (Effects.boolean true) rfl rfl prepared stillUnbound (PresenceGuardSource.read_boolean true)
+    environment after (Effects.boolean (Effects.erasureChanged world.state after handle)) rfl rfl prepared stillUnbound
+    (PresenceGuardSource.read_boolean _)
     (by decide) (by decide) (by decide)
     (by intro _; simp [ScopedQuerySource.mutationReady, handleRead, payloadRead, snapshot, ordinaryPayload, complete])
     (by simpa [handleRead, payloadRead] using applied)
@@ -145,7 +140,8 @@ theorem source_prefix {Context : Type} (program : SpaceSemantics.Program)
   simpa [returned, ready, placed] using combined
 
 /-- Readability constructs the primitive receipt, and source execution
-derives the exact filtered target and unchanged external frame. -/
+derives the exact filtered target, the change reply and the unchanged
+external frame. The reply is true exactly when a stored row matches. -/
 theorem source_exists {Context : Type} (program : SpaceSemantics.Program)
     (allocator : Allocator) (world : World) (scope : CollectionScope Context)
     (parents : List (CollectionScope Context)) (caller : Control) (context : Context)
@@ -160,7 +156,10 @@ theorem source_exists {Context : Type} (program : SpaceSemantics.Program)
       (ScopedQuerySource.machine .relational program).run 5
         (placed allocator world scope parents (entry caller destination handle payloadCode) context origins pending) =
         ([], .exhausted (placed allocator {world with state := after} scope parents
-          (returned caller destination handle payloadCode) context (origins ++ [0]) pending)) ∧
+          (returned caller destination handle payloadCode (Effects.erasureChanged world.state after handle))
+          context (origins ++ [0]) pending)) ∧
+      (Effects.erasureChanged world.state after handle = true ↔
+        ∃ row ∈ rows, Effects.removalMatches payload row = true) ∧
       after.read handle = some (rows.filter fun row => !Effects.removalMatches payload row) ∧
       (∀ other, other ≠ handle → after.read other = world.state.read other) ∧ after.cells = world.state.cells := by
   obtain ⟨after, erased⟩ := Effects.erase_exists_of_read_some snapshot payload
@@ -169,19 +168,20 @@ theorem source_exists {Context : Type} (program : SpaceSemantics.Program)
   subst actual
   exact ⟨after, erased, source_prefix program allocator world scope parents caller context origins pending destination
     handle payloadCode payload principal result rows after resolved unbound reading closed ordinaryPayload snapshot complete erased,
+    by simp [Effects.erasureChanged, snapshot, afterRead, List.length_filter_lt_length_iff_exists],
     afterRead, fun other apart => Effects.erase_read_other erased apart, Effects.erase_preserves_cells erased⟩
 
 theorem returned_consistent (caller : Control) (destination : Atom) (handle : NamedSpaces.Handle)
-    (payloadCode : Atom) (principal : Environment) (result : String)
+    (payloadCode : Atom) (changed : Bool) (principal : Environment) (result : String)
     (resolved : resolve caller.bindings = some principal) (unbound : read principal destination = .var result) :
-    ∃ environment, Solves environment (returned caller destination handle payloadCode).bindings := by
+    ∃ environment, Solves environment (returned caller destination handle payloadCode changed).bindings := by
   obtain ⟨environment, representative, prepared, stillUnbound⟩ := ScopedMutationSource.unbound_after_fresh_operand
     caller.bindings principal destination (Effects.handleValue handle) result (location caller destination handle payloadCode)
     resolved unbound (location_fresh caller destination handle payloadCode) (location_apart caller destination handle payloadCode)
     (by rw [LiteralQuerySource.handle_freeVars]; simp)
   exact ClosedOnceQueryFrame.refined_consistent _ _ _
     (ScopedMutationSource.refine_unbound (ready caller destination handle payloadCode).bindings environment destination
-      (Effects.boolean true) representative prepared stillUnbound (PresenceGuardSource.read_boolean true))
+      (Effects.boolean changed) representative prepared stillUnbound (PresenceGuardSource.read_boolean changed))
 
 /-- A missing target retains the actual invocation after preparation, with
 no removal and no fabricated Boolean or empty result. -/
@@ -217,6 +217,66 @@ theorem unavailable_prefix {Context : Type} (program : SpaceSemantics.Program)
   have combined := (ScopedQuerySource.machine .relational program).established_and_pending 3 1 _ _ [] began
   rw [last] at combined
   simpa using combined
+
+namespace Controls
+
+def fact : Atom := .expression [.symbol "fact"]
+
+def caller : Control := ⟨[], [], .var "r", ∅, 0⟩
+
+def world (rows : List Atom) : World := ⟨NamedSpaces.Store.new rows [], [], []⟩
+
+/-- `(remove-atom &self (fact))` run as source over the `&self` rows `rows`. -/
+private theorem run_on (program : SpaceSemantics.Program) (rows : List Atom)
+    (complete : ClosedQueryAdmission.rowsReady fact rows = true) :
+    ∃ after, (ScopedQuerySource.machine .relational program).run 5
+        (placed (Allocator.empty 0 0) (world rows) ({frontier := []} : CollectionScope Unit) []
+          (entry caller (.var "r") .self fact) () [] []) =
+        ([], .exhausted (placed (Allocator.empty 0 0) {world rows with state := after} {frontier := []} []
+          (returned caller (.var "r") .self fact (Effects.erasureChanged (world rows).state after .self))
+          () [0] [])) ∧
+      (Effects.erasureChanged (world rows).state after .self = true ↔
+        ∃ row ∈ rows, Effects.removalMatches fact row = true) ∧
+      after.read .self = some (rows.filter fun row => !Effects.removalMatches fact row) := by
+  obtain ⟨principal, resolved⟩ := resolve_complete (source := caller.bindings)
+    ⟨fun _ => .var "x", fun _ member => absurd member List.not_mem_nil⟩
+  have unbound : read principal (.var "r") = .var "r" :=
+    ClosedOnceQueryFrame.fresh_read [] "r" principal (fun _ member => absurd member List.not_mem_nil) resolved
+  have closed := LiteralQuerySource.read_literal fact
+    (SpaceSemantics.Literal.constructor "fact" [] (by decide) fun _ member => absurd member List.not_mem_nil)
+  obtain ⟨after, _, run, changed, afterRead, _⟩ := source_exists program (Allocator.empty 0 0) (world rows)
+    {frontier := []} [] caller () [] [] (.var "r") .self fact fact principal "r" rows
+    resolved unbound (closed principal) closed rfl rfl complete
+  exact ⟨after, run, changed, afterRead⟩
+
+/-- Negative: an absent fact is not removed, and the reply is false. -/
+theorem absent_answers_false (program : SpaceSemantics.Program) :
+    ∃ after, (ScopedQuerySource.machine .relational program).run 5
+        (placed (Allocator.empty 0 0) (world []) ({frontier := []} : CollectionScope Unit) []
+          (entry caller (.var "r") .self fact) () [] []) =
+        ([], .exhausted (placed (Allocator.empty 0 0) {world [] with state := after} {frontier := []} []
+          (returned caller (.var "r") .self fact false) () [0] [])) ∧
+      after.read .self = some [] := by
+  obtain ⟨after, run, changed, afterRead⟩ := run_on program [] rfl
+  have unchanged : Effects.erasureChanged (world []).state after .self = false :=
+    Bool.eq_false_iff.mpr fun yes => by simpa using changed.mp yes
+  exact ⟨after, unchanged ▸ run, afterRead⟩
+
+/-- Positive: every stored copy is removed, and the reply is true. -/
+theorem copies_removed_answers_true (program : SpaceSemantics.Program) :
+    ∃ after, (ScopedQuerySource.machine .relational program).run 5
+        (placed (Allocator.empty 0 0) (world [fact, fact]) ({frontier := []} : CollectionScope Unit) []
+          (entry caller (.var "r") .self fact) () [] []) =
+        ([], .exhausted (placed (Allocator.empty 0 0) {world [fact, fact] with state := after} {frontier := []} []
+          (returned caller (.var "r") .self fact true) () [0] [])) ∧
+      after.read .self = some [] := by
+  have matched : Effects.removalMatches fact fact = true := Effects.removalMatches_self _ _
+  obtain ⟨after, run, changed, afterRead⟩ := run_on program [fact, fact] (by decide)
+  have removed : Effects.erasureChanged (world [fact, fact]).state after .self = true :=
+    changed.mpr ⟨fact, by simp, matched⟩
+  exact ⟨after, removed ▸ run, by simpa [matched] using afterRead⟩
+
+end Controls
 
 end Mettapedia.Languages.MeTTa.PeTTa.Bridges.ScopedRemovalSource
 

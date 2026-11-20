@@ -98,8 +98,9 @@ theorem located_independent {C : Configuration (H × T) O} {f g : AnnotatedRuns.
     (Spaces.independent A space payload (Ne.symm different) atG atF admittedG quietG
       (fun o made other => distinct o other made)).mp admittedF⟩
 
-/-- **And statically independent**, for static firings: the run layer's static independence. -/
+/-- **And statically independent**, for static exact-query firings: the run layer's static independence. -/
 theorem located_static_independent {C : Configuration (H × T) O} {f g : AnnotatedRuns.Firing (H × T) S O}
+    (fData : ExactQueryAlphabet.ExactData f) (gData : ExactQueryAlphabet.ExactData g)
     {a b : H} (different : a ≠ b) (atF : At a f) (atG : At b g)
     (fStatic : f.Static) (gStatic : g.Static)
     (admittedF : (located A space payload).Admits (s := C) f)
@@ -110,7 +111,7 @@ theorem located_static_independent {C : Configuration (H × T) O} {f g : Annotat
       (g.selection.problem (label space payload) g.rule C) C.equations)
     (distinct : ∀ o ∈ g.selection.made, o ∉ f.selection.made) :
     AnnotatedRuns.StaticIndependent (label space payload) f g :=
-  (AnnotatedRuns.firstOrder_independent_iff_static _ _ fStatic gStatic admittedF
+  (AnnotatedRuns.firstOrder_independent_iff_static _ _ fData gData fStatic gStatic admittedF
     ((Spaces.independent A space payload different atF atG admittedF quietF distinct).mp admittedG)).mp
     (located_independent A space payload different atF atG admittedF admittedG quietF quietG distinct)
 

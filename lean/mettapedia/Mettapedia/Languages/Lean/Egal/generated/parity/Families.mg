@@ -396,6 +396,17 @@ exact SepE2 1 (fun z => P t) (Lean_Nat_rec 0 0 t) (Lean_Nat_rec_type (fun t => {
 Qed.
 
 
+Theorem Lean_Nat_rec_proof_ok : forall motive:set -> set,
+  0 :e (motive Lean_Nat_zero_node) ->
+  0 :e (Pi_ x0 :e Lean_Nat, (Pi_ y0 :e (motive x0), (motive (Lean_Nat_succ_node x0)))) ->
+  forall t :e Lean_Nat, 0 :e (motive t).
+let motive. assume H0. assume H1.
+apply Lean_Nat_ind.
+  - exact H0.
+  - let x0. assume Hx0. assume IH0. exact (Pi_0_ap (motive x0) (fun y0 => (motive (Lean_Nat_succ_node x0))) (Pi_0_ap Lean_Nat (fun x0 => (Pi_ y0 :e (motive x0), (motive (Lean_Nat_succ_node x0)))) H1
+    x0 Hx0) 0 IH0).
+Qed.
+
 
 Theorem Lean_Nat_noconf0_1 : forall y0, Lean_Nat_zero_node <> (Lean_Nat_succ_node y0).
 let y0. assume H: Lean_Nat_zero_node = (Lean_Nat_succ_node y0).
@@ -719,6 +730,16 @@ exact SepE2 1 (fun z => P t) (Lean_Bool_rec 0 0 t) (Lean_Bool_rec_type (fun t =>
 Qed.
 
 
+Theorem Lean_Bool_rec_proof_ok : forall motive:set -> set,
+  0 :e (motive Lean_Bool_false_node) ->
+  0 :e (motive Lean_Bool_true_node) ->
+  forall t :e Lean_Bool, 0 :e (motive t).
+let motive. assume H0. assume H1.
+apply Lean_Bool_ind.
+  - exact H0.
+  - exact H1.
+Qed.
+
 
 Theorem Lean_Bool_noconf0_1 : Lean_Bool_false_node <> Lean_Bool_true_node.
 assume H: Lean_Bool_false_node = Lean_Bool_true_node.
@@ -792,6 +813,10 @@ Theorem Lean_False_Prop_false : forall t, t /:e Lean_False_Prop.
 let t. assume Ht: t :e Lean_False_Prop.
 apply SepE2 1 (fun x:set => exists w, w :e Lean_False) t Ht.
 let w. assume Hw: w :e Lean_False. exact Lean_False_empty w Hw.
+Qed.
+Theorem Lean_False_rec_proof_ok : forall motive:set -> set, 0 :e Lean_False_Prop -> 0 :e (motive 0).
+let motive. assume Ht: 0 :e Lean_False_Prop.
+exact FalseE (Lean_False_Prop_false 0 Ht) (0 :e (motive 0)).
 Qed.
 End Lean_False_Section.
 (** ---- (bk Mettapedia.Languages.Lean.Declarations.Controls.Even), generated from its Lean declaration ---- **)
@@ -2073,6 +2098,7 @@ Qed.
 
 
 
+
 Theorem Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_ind : forall P:set -> set -> prop, (P (setsum 1 (LeanNum 0))
     Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_zero_b_node) -> (forall x0 :e Lean_Nat, forall x1 :e (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b (setsum 2 x0)), P
     (setsum 2 x0) x1 -> P (setsum 1 (Lean_Nat_succ_node x0)) (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_succ_b_node x0 x1)) -> (forall x0 :e Lean_Nat, forall x1 :e
@@ -2235,41 +2261,47 @@ Qed.
 Definition Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_zero_b_proof : set := 0.
 Theorem Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_zero_b_proof_ok : 0 :e (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked (setsum 1 (LeanNum 0))).
 exact SepI 1 (fun x:set => exists w, w :e Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b (setsum 1 (LeanNum 0))) 0 In_0_1 (fun p H => H
-    (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_zero_b_node) (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_zero_b_typed )).
+    (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_zero_b_node ) (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_zero_b_typed )).
 Qed.
 Theorem Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_zero_b_proof_type : Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_zero_b_proof :e
     (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked (setsum 1 (LeanNum 0))).
 exact (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_zero_b_proof_ok ).
 Qed.
-Definition Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_succ_b_proof : set := (fun x0 :e Lean_Nat => (fun x1 :e (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b (setsum 2
-    x0)) => 0)).
-Theorem Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_succ_b_proof_ok : forall x0 :e Lean_Nat, forall x1 :e (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b (setsum 2 x0)), 0
-    :e (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked (setsum 1 (Lean_Nat_succ_node x0))).
-let x0. assume H0: x0 :e Lean_Nat. let x1. assume H1: x1 :e (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b (setsum 2 x0)). exact SepI 1 (fun x:set => exists w, w :e
-    Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b (setsum 1 (Lean_Nat_succ_node x0))) 0 In_0_1 (fun p H => H (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_succ_b_node x0
-    x1) (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_succ_b_typed x0 H0 x1 H1)).
+Definition Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_succ_b_proof : set := (fun x0 :e Lean_Nat => (fun x1 :e (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked
+    (setsum 2 x0)) => 0)).
+Theorem Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_succ_b_proof_ok : forall x0 :e Lean_Nat, forall x1 :e (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked (setsum
+    2 x0)), 0 :e (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked (setsum 1 (Lean_Nat_succ_node x0))).
+let x0. assume H0: x0 :e Lean_Nat. let x1. assume H1: x1 :e (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked (setsum 2 x0)). apply SepE2 1 (fun x:set => exists w, w :e
+    (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b (setsum 2 x0))) x1 H1. let w1. assume W1: w1 :e (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b (setsum 2 x0)).
+exact SepI 1 (fun x:set => exists w, w :e Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b (setsum 1 (Lean_Nat_succ_node x0))) 0 In_0_1 (fun p H => H
+    (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_succ_b_node x0 w1) (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_succ_b_typed x0 H0 w1 W1)).
 Qed.
 Theorem Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_succ_b_proof_type : Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_succ_b_proof :e (Pi_ x0 :e Lean_Nat, (Pi_ x1 :e
-    (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b (setsum 2 x0)), (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked (setsum 1 (Lean_Nat_succ_node x0))))).
-exact (lam_Pi Lean_Nat (fun x0 => (Pi_ x1 :e (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b (setsum 2 x0)), (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked
-    (setsum 1 (Lean_Nat_succ_node x0))))) (fun x0 => (fun x1 :e (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b (setsum 2 x0)) => 0)) (fun x0 H0 => (lam_Pi
-    (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b (setsum 2 x0)) (fun x1 => (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked (setsum 1 (Lean_Nat_succ_node x0))))
-    (fun x1 => 0) (fun x1 H1 => (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_succ_b_proof_ok x0 H0 x1 H1))))).
+    (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked (setsum 2 x0)), (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked (setsum 1 (Lean_Nat_succ_node
+    x0))))).
+exact (lam_Pi Lean_Nat (fun x0 => (Pi_ x1 :e (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked (setsum 2 x0)),
+    (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked (setsum 1 (Lean_Nat_succ_node x0))))) (fun x0 => (fun x1 :e
+    (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked (setsum 2 x0)) => 0)) (fun x0 H0 => (lam_Pi (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked (setsum
+    2 x0)) (fun x1 => (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked (setsum 1 (Lean_Nat_succ_node x0)))) (fun x1 => 0) (fun x1 H1 =>
+    (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_succ_b_proof_ok x0 H0 x1 H1))))).
 Qed.
-Definition Lean_Mettapedia_Languages_Lean_Declarations_Controls_Odd_succ_b_proof : set := (fun x0 :e Lean_Nat => (fun x1 :e (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b (setsum 1 x0))
-    => 0)).
-Theorem Lean_Mettapedia_Languages_Lean_Declarations_Controls_Odd_succ_b_proof_ok : forall x0 :e Lean_Nat, forall x1 :e (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b (setsum 1 x0)), 0
-    :e (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked (setsum 2 (Lean_Nat_succ_node x0))).
-let x0. assume H0: x0 :e Lean_Nat. let x1. assume H1: x1 :e (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b (setsum 1 x0)). exact SepI 1 (fun x:set => exists w, w :e
-    Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b (setsum 2 (Lean_Nat_succ_node x0))) 0 In_0_1 (fun p H => H (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Odd_succ_b_node x0 x1)
-    (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Odd_succ_b_typed x0 H0 x1 H1)).
+Definition Lean_Mettapedia_Languages_Lean_Declarations_Controls_Odd_succ_b_proof : set := (fun x0 :e Lean_Nat => (fun x1 :e (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked
+    (setsum 1 x0)) => 0)).
+Theorem Lean_Mettapedia_Languages_Lean_Declarations_Controls_Odd_succ_b_proof_ok : forall x0 :e Lean_Nat, forall x1 :e (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked (setsum
+    1 x0)), 0 :e (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked (setsum 2 (Lean_Nat_succ_node x0))).
+let x0. assume H0: x0 :e Lean_Nat. let x1. assume H1: x1 :e (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked (setsum 1 x0)). apply SepE2 1 (fun x:set => exists w, w :e
+    (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b (setsum 1 x0))) x1 H1. let w1. assume W1: w1 :e (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b (setsum 1 x0)).
+exact SepI 1 (fun x:set => exists w, w :e Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b (setsum 2 (Lean_Nat_succ_node x0))) 0 In_0_1 (fun p H => H
+    (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Odd_succ_b_node x0 w1) (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Odd_succ_b_typed x0 H0 w1 W1)).
 Qed.
 Theorem Lean_Mettapedia_Languages_Lean_Declarations_Controls_Odd_succ_b_proof_type : Lean_Mettapedia_Languages_Lean_Declarations_Controls_Odd_succ_b_proof :e (Pi_ x0 :e Lean_Nat, (Pi_ x1 :e
-    (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b (setsum 1 x0)), (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked (setsum 2 (Lean_Nat_succ_node x0))))).
-exact (lam_Pi Lean_Nat (fun x0 => (Pi_ x1 :e (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b (setsum 1 x0)), (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked
-    (setsum 2 (Lean_Nat_succ_node x0))))) (fun x0 => (fun x1 :e (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b (setsum 1 x0)) => 0)) (fun x0 H0 => (lam_Pi
-    (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b (setsum 1 x0)) (fun x1 => (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked (setsum 2 (Lean_Nat_succ_node x0))))
-    (fun x1 => 0) (fun x1 H1 => (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Odd_succ_b_proof_ok x0 H0 x1 H1))))).
+    (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked (setsum 1 x0)), (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked (setsum 2 (Lean_Nat_succ_node
+    x0))))).
+exact (lam_Pi Lean_Nat (fun x0 => (Pi_ x1 :e (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked (setsum 1 x0)),
+    (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked (setsum 2 (Lean_Nat_succ_node x0))))) (fun x0 => (fun x1 :e
+    (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked (setsum 1 x0)) => 0)) (fun x0 H0 => (lam_Pi (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked (setsum
+    1 x0)) (fun x1 => (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked (setsum 2 (Lean_Nat_succ_node x0)))) (fun x1 => 0) (fun x1 H1 =>
+    (Lean_Mettapedia_Languages_Lean_Declarations_Controls_Odd_succ_b_proof_ok x0 H0 x1 H1))))).
 Qed.
 Definition Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_prec : set -> set -> set -> set -> set -> set := fun h0 h1 h2 i t => IndRec
     Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_K Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_T Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_N

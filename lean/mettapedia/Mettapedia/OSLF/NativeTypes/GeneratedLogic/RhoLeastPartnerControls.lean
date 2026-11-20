@@ -35,7 +35,7 @@ open Mettapedia.GSLT.SemiSaturated (SemiSaturatedBisimilar)
 
 theorem plain_output_prime : IsPrime (output channel zero) := by
   refine ⟨(Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefRewriteSystem.rhoClosedTermWellSorted_process_iff _).mpr
-    ⟨.output (.quote .unit) .unit, rfl⟩, ?_, ?_, ?_⟩
+    ⟨.output (.quote .unit (by decide)) .unit, rfl⟩, ?_, ?_, ?_⟩
   · simp [output, channel, zero, IsCanonical, IsCanonicalList]
   · simp [output]
   · intro elements

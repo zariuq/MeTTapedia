@@ -8148,11 +8148,11 @@ private theorem rhoNameCoreShape_apply_inv {f : String} {args : List Pattern}
 name buried under a quote, normalizes (semantically) to the bound variable `0`.
 The only `rhoNameCoreShape` name normalizing to `*0` is literally `bvar 0`; the
 quoted alternative `@(*0)` is excluded by the under-quote hygiene hypothesis. -/
-private theorem semanticNormalizeName_eq_bvar_of_nfAtom_drop {n : Pattern}
+private theorem eq_bvar_zero_of_nfAtom_drop {n : Pattern}
     (hcore : rhoNameCoreShape n = true)
     (hhyg : noBoundUnderQuote 0 n = true)
     (hnf : nfAtom n = .bvar 0) :
-    semanticNormalizeName n = .bvar 0 := by
+    n = .bvar 0 := by
   match n with
   | .bvar i =>
       rw [show nfAtom (.bvar i) = .bvar i from rfl] at hnf
@@ -8380,11 +8380,9 @@ private theorem collapseBag_nfBagList_eq_pzero {ws : List Pattern}
   · exact absurd h (by simp)
 
 /-- The bound drop after substituting `@p` for bound name `0` is exactly `p`. -/
-private theorem semanticSubstProc_drop_eq {p n : Pattern}
-    (hn : semanticNormalizeName n = .bvar 0) :
-    semanticSubstProc 0 (.apply "NQuote" [p]) (.apply "PDrop" [n]) = p := by
-  simp only [semanticSubstProc, semanticSubstNameMark, hn]
-  simp
+private theorem semanticSubstProc_drop_eq {p : Pattern} :
+    semanticSubstProc 0 (.apply "NQuote" [p]) (.apply "PDrop" [.bvar 0]) = p := by
+  simp [semanticSubstProc, semanticSubstNameMark, Canonical.canonicalize]
 
 /-- Inversion for `rhoProcCoreShape` on `apply`: only the four strict-core process
 heads (with correct arity) are admissible. -/
@@ -8451,8 +8449,8 @@ private theorem subst_drop_keystone {p body : Pattern}
             rfl] at hnf
           have h1 := Pattern.apply.inj hnf
           exact (List.cons.inj h1.2).1
-        have hnorm := semanticNormalizeName_eq_bvar_of_nfAtom_drop hcore' hhyg' hnfn
-        rw [semanticSubstProc_drop_eq hnorm]
+        obtain rfl := eq_bvar_zero_of_nfAtom_drop hcore' hhyg' hnfn
+        rw [semanticSubstProc_drop_eq]
         exact StructuralCongruence.refl _
       · subst hf; subst ha
         refine absurd hnf ?_

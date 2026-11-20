@@ -15,22 +15,37 @@ namespace Mettapedia.Languages.MeTTa.PeTTa.Streaming
 
 open Mettapedia.Machines
 
+/-- Each controller delivery publishes either no root
+answer or one. A collection may save an answer without reporting it. -/
+theorem Delivery.answers_packet {registry : SpaceSemantics.Program} {state target : State}
+    {answer : Unifying.Answer} {frames : List Frame} {older : List Job}
+    (delivery : Delivery registry state answer frames older target) :
+    ∃ packet : Option Unifying.Answer, target.answers = state.answers ++ packet.toList := by
+  cases delivery with
+  | root => exact ⟨some _, rfl⟩
+  | source _ placed => exact ⟨none, by simp [placed.answers]⟩
+  | _ => exact ⟨none, (List.append_nil _).symm⟩
+
+theorem Transition.answers_packet {registry : SpaceSemantics.Program} {before after : State}
+    (taken : Transition registry before after) :
+    ∃ packet : Option Unifying.Answer, after.answers = before.answers ++ packet.toList := by
+  cases taken with
+  | answer _ delivered => exact delivered.answers_packet
+  | phase _ _ _ placed => exact ⟨none, by simp [placed.answers]⟩
+  | _ => exact ⟨none, (List.append_nil _).symm⟩
+
 theorem Delivery.answers_prefix {registry : SpaceSemantics.Program} {state target : State}
     {answer : Unifying.Answer} {frames : List Frame} {older : List Job}
     (delivery : Delivery registry state answer frames older target) :
-    ∃ added, target.answers = state.answers ++ added := by
-  cases delivery with
-  | root => exact ⟨_,rfl⟩
-  | source _ placed => exact ⟨[],by rw [placed.answers,List.append_nil]⟩
-  | _ => exact ⟨[],(List.append_nil _).symm⟩
+    ∃ added, target.answers = state.answers ++ added :=
+  let ⟨packet, appended⟩ := delivery.answers_packet
+  ⟨packet.toList, appended⟩
 
 theorem Transition.answers_prefix {registry : SpaceSemantics.Program} {before after : State}
     (taken : Transition registry before after) :
-    ∃ added, after.answers = before.answers ++ added := by
-  cases taken with
-  | answer _ delivered => exact delivered.answers_prefix
-  | phase _ _ _ placed => exact ⟨[],by rw [placed.answers,List.append_nil]⟩
-  | _ => exact ⟨[],(List.append_nil _).symm⟩
+    ∃ added, after.answers = before.answers ++ added :=
+  let ⟨packet, appended⟩ := taken.answers_packet
+  ⟨packet.toList, appended⟩
 
 theorem Transition.uses_mono {registry : SpaceSemantics.Program} {before after : State}
     (taken : Transition registry before after) : before.world.uses ≤ after.world.uses := by

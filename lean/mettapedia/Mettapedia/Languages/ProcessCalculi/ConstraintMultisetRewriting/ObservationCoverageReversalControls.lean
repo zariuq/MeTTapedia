@@ -1,7 +1,7 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ObservationCoverageReversals
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.FirstOrderChecksControls
 
-/-! A real first-order constraint model separates equality of absence
+/-! A real first-order constraint model separates equality of none queries
 verdicts from preservation of all physical matching occurrences. -/
 
 set_option autoImplicit false
@@ -13,16 +13,16 @@ open ConstraintMultisetRewriting.Controls (signature zero)
 
 def constantLabel (_ : Nat) : Term signature := .const 0
 
-theorem absence_agrees_in_every_substitution :
+theorem none_agrees_in_every_substitution :
     ∀ σ : Subst signature,
-      (Check.absent (.const 0)).Holds (FirstOrder.action signature) σ constantLabel {1} ↔
-      (Check.absent (.const 0)).Holds (FirstOrder.action signature) σ constantLabel {1, 4} := by
+      (Check.predicate .none (.const 0)).Holds (FirstOrder.action signature) σ constantLabel {1} ↔
+      (Check.predicate .none (.const 0)).Holds (FirstOrder.action signature) σ constantLabel {1, 4} := by
   intro σ
   constructor
-  · intro absent
-    exact False.elim (absent 1 (by simp) rfl)
-  · intro absent
-    exact False.elim (absent 1 (by simp) rfl)
+  · intro missing
+    exact False.elim (missing 1 (by simp) rfl)
+  · intro missing
+    exact False.elim (missing 1 (by simp) rfl)
 
 theorem empty_equations_have_a_model : (FirstOrder.action signature).Models zero [] := by
   intro equation member

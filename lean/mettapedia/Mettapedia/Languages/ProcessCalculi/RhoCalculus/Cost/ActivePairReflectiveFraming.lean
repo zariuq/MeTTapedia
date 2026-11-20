@@ -87,6 +87,7 @@ theorem original_contractum_with_rest (inputChannel body sent after : Pattern)
         ("p", body), ("n", inputChannel)] = flatResidual body sent after rest := by
   rw [applyBindingsForRuleUsing, selected_substitution]
   simp [rhoSyncCommRewrite, applyBindingsReflective, applyBindingsReflectiveList,
+    substituteDeclared_of_closed (declaration := rhoReflectivePresentation.toReflectivePresentationDecl) rfl,
     flatResidual, activatedBody]
 
 /-- A source reflective step with any ambient remainder. -/

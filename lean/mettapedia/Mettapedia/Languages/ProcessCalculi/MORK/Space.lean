@@ -1,4 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.MORK.Syntax
+import Mettapedia.Languages.MeTTa.SubstitutionAlgebra
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Finset.Card
 
@@ -115,6 +116,73 @@ where
     | [] => rfl
     | a :: as => by
         simp [applySubst.applySubstList, applySubst_nil a, applySubstList_nil as]
+
+/-! ## Binding tables and simultaneous substitution -/
+
+mutual
+
+/-- The actual one-pass table application denotes the shared atom algebra. -/
+theorem applySubst_eq_subst (bindings : Subst) : ∀ term : Atom,
+    applySubst bindings term =
+      Mettapedia.Languages.MeTTa.SubstitutionAlgebra.subst bindings.lookup term
+  | .var _ => rfl
+  | .symbol _ => rfl
+  | .grounded _ => rfl
+  | .expression terms => congrArg Atom.expression (applySubstList_eq_substList bindings terms)
+
+theorem applySubstList_eq_substList (bindings : Subst) : ∀ terms : List Atom,
+    applySubst.applySubstList bindings terms =
+      Mettapedia.Languages.MeTTa.SubstitutionAlgebra.subst.substList bindings.lookup terms
+  | [] => rfl
+  | head :: tail => congrArg₂ List.cons (applySubst_eq_subst bindings head)
+      (applySubstList_eq_substList bindings tail)
+
+end
+
+/-- Sequential table application, not reconciliation of constraints.
+The earlier table's first matching entry retains precedence. -/
+def Subst.compose (earlier later : Subst) : Subst :=
+  earlier.map (fun entry => (entry.1, applySubst later entry.2)) ++ later
+
+theorem Subst.lookup_compose (earlier later : Subst) (name : String) :
+    (earlier.compose later).lookup name =
+      match earlier.lookup name with
+      | some term => some (applySubst later term)
+      | none => later.lookup name := by
+  induction earlier with
+  | nil => rfl
+  | cons entry rest ih =>
+      by_cases same : entry.1 = name
+      · simp [Subst.compose, Subst.lookup, same]
+      · simpa [Subst.compose, Subst.lookup, same] using ih
+
+/-- Two actual applications can be deferred to one composed table. -/
+theorem applySubst_compose (earlier later : Subst) (term : Atom) :
+    applySubst (earlier.compose later) term = applySubst later (applySubst earlier term) := by
+  rw [applySubst_eq_subst, applySubst_eq_subst, applySubst_eq_subst]
+  have pointwise : (earlier.compose later).lookup =
+      Mettapedia.Languages.MeTTa.SubstitutionAlgebra.comp earlier.lookup later.lookup := by
+    funext name
+    rw [Subst.lookup_compose]
+    unfold Mettapedia.Languages.MeTTa.SubstitutionAlgebra.comp
+    cases earlier.lookup name with
+    | none => rfl
+    | some value => exact congrArg some (applySubst_eq_subst later value)
+  rw [pointwise]
+  exact (Mettapedia.Languages.MeTTa.SubstitutionAlgebra.subst_subst
+    earlier.lookup later.lookup term).symm
+
+/-- Quotation is an ordinary expression for binding application; this is
+not a claim about how an evaluator executes that expression. -/
+theorem applySubst_quote (bindings : Subst) (code : Atom) :
+    applySubst bindings (.expression [.symbol "quote", code]) =
+      .expression [.symbol "quote", applySubst bindings code] := rfl
+
+theorem compose_is_not_append :
+    applySubst (Subst.compose [("x", .var "y")] [("y", .symbol "bound")]) (.var "x") =
+      .symbol "bound" ∧
+    applySubst ([("x", .var "y"), ("y", .symbol "bound")] : Subst) (.var "x") = .var "y" := by
+  constructor <;> decide +kernel
 
 /-! ## Free variables and freshness -/
 

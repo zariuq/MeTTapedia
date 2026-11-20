@@ -1,13 +1,13 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentShortClosurePieces
 
 /-!
-# The census of the first equation of a stratified Miller store
+# The classification of the first equation of a stratified Miller store
 
 The classification half of coverage starts from the first equation of a store, which is the one the rounds read.
 In the corrected class (`ContextualDependentShortClosure.StratifiedMiller`):
 
 * its two annotations are equal types (`StratifiedMiller.head_typeEq`), since no equation precedes it;
-* every pair of normal forms of its opened sides is one of R86's census kinds (`StratifiedMiller.head_kind`): a Miller
+* every pair of normal forms of its opened sides is one of R86's classified kinds (`StratifiedMiller.head_kind`): a Miller
   pattern on the left or on the right against any side (flex–flex included), or two rigid sides with equal or with
   distinct spine heads.
 
@@ -37,7 +37,7 @@ theorem StratifiedMiller.head_typeEq {Θ : Context rules} {equation : Equation (
   change TypeEq rules Θ.raw (subst ids equation.1.1.code) (subst ids equation.2.1.code) at atHead
   rwa [subst_ids, subst_ids] at atHead
 
-/-- **The first equation of a store in the Miller class is in the census**: every pair of normal forms of its
+/-- **The first equation of a store in the Miller class is in the classification**: every pair of normal forms of its
 opened sides is a pattern equation or a rigid–rigid equation with equal or distinct heads. -/
 theorem StratifiedMiller.head_kind [DecidableEq Head] {Θ : Context rules} {equation : Equation (TotalTerm Θ)}
     {rest : EquationStore (TotalTerm Θ)} (stratified : StratifiedMiller levels (equation :: rest))

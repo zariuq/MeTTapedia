@@ -39,7 +39,7 @@ def initial : State :=
    cells := fun name =>
      if name = InferenceCache.cell then some (handleValue spaces.cache)
      else if name = "mm0-proof-store" then some (handleValue spaces.proofs)
-     else none}
+     else none, namedEmpty := [] }
 
 theorem input : SharedService.Input spaces logical initial := by
   refine ⟨⟨⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, by decide +kernel⟩, ?_⟩, ?_, ?_⟩

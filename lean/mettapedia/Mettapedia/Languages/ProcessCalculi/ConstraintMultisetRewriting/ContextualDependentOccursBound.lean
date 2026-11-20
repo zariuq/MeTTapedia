@@ -880,9 +880,9 @@ def boundSearch {Θ : Context S.R} : (problem : EquationStore (TotalTerm Θ)) �
           | some shape => some ⟨fun ⟨_, σ, solved⟩ =>
               shape.refutes facts roots heads algebra rigid complete σ
                 ((solves_swap σ equation).mpr (solved equation List.mem_cons_self))⟩
-          | none => (boundSearch rest).map fun absent =>
+          | none => (boundSearch rest).map fun missing =>
               ⟨fun ⟨Δ, σ, solved⟩ =>
-                absent.down ⟨Δ, σ, fun other member => solved other (List.mem_cons_of_mem _ member)⟩⟩
+                missing.down ⟨Δ, σ, fun other member => solved other (List.mem_cons_of_mem _ member)⟩⟩
 
 end ContextualDependentOccursBound
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting

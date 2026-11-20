@@ -48,8 +48,8 @@ theorem sourceSides_from_admitted (occurrence : Nat) :
 
 def emittedSource? (occurrence : Nat) : Option SExpr := do
   let (left, right) ← sourceSides? occurrence
-  let head ← PlainBnfGeneratedPeTTaSyntax.sourceTerm? left
-  let body ← PlainBnfGeneratedPeTTaSyntax.sourceTerm? right
+  let head ← PlainBnfGeneratedPeTTaSyntax.targetTerm? left
+  let body ← PlainBnfGeneratedPeTTaSyntax.targetTerm? right
   return .list [.atom "=", head, body]
 
 def isIntegerProvider : SExpr → Bool

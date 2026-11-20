@@ -6,8 +6,8 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 # Scoped guards distinguish private instances from future caller bindings
 
 A schematic row counts once under every model. A shared unknown does not
-license absence from its identity instance. The bounded absence checker
-requires actual refutation and never treats exhausted fuel as absence.
+license none queries from its identity instance. The bounded none query checker
+requires actual refutation and never treats exhausted fuel as none queries.
 -/
 
 set_option autoImplicit false
@@ -94,8 +94,8 @@ private theorem query_ne_live_unknown : query ≠ p sharedValue := by
   have heads := (Term.op.inj first).1
   cases heads
 
-theorem identity_absence_of_a_shared_unknown_is_only_pointwise :
-    Holds locals (generator captures) sharedRows world (.absent query) := by
+theorem identity_none_of_a_shared_unknown_is_only_pointwise :
+    Holds locals (generator captures) sharedRows world (.predicate .none query) := by
   intro _ _ matched
   exact query_ne_live_unknown matched
 
@@ -105,11 +105,11 @@ theorem later_binding_makes_the_shared_row_match :
     Matches locals assignedA (instantiate assignedA query) (sharedRows 7) := by
   with_unfolding_all rfl
 
-theorem pointwise_identity_absence_does_not_admit_the_guard :
-    ¬ Ask locals ([] : EquationStore CapturedTerm) sharedRows world (.absent query) := by
+theorem pointwise_identity_none_does_not_admit_the_guard :
+    ¬ Ask locals ([] : EquationStore CapturedTerm) sharedRows world (.predicate .none query) := by
   intro admitted
-  have absent := admitted Nat captures assignedA (fun _ member => False.elim (List.not_mem_nil member))
-  exact absent 7 (by decide) later_binding_makes_the_shared_row_match
+  have missing := admitted Nat captures assignedA (fun _ member => False.elim (List.not_mem_nil member))
+  exact missing 7 (by decide) later_binding_makes_the_shared_row_match
 
 theorem an_unknown_shared_row_does_not_entail_count_zero :
     ¬ Ask locals ([] : EquationStore CapturedTerm) sharedRows world (.count query 0) := by
@@ -125,8 +125,8 @@ theorem an_unknown_shared_row_does_not_entail_count_one :
     ¬ Ask locals ([] : EquationStore CapturedTerm) sharedRows world (.count query 1) := by
   intro admitted
   have one := admitted Nat captures (generator captures) (fun _ member => False.elim (List.not_mem_nil member))
-  have empty := (absent_iff_empty locals (generator captures) sharedRows world query).mp
-    identity_absence_of_a_shared_unknown_is_only_pointwise
+  have empty := (none_iff_empty locals (generator captures) sharedRows world query).mp
+    identity_none_of_a_shared_unknown_is_only_pointwise
   have zero : (region locals (generator captures) sharedRows world query).card = 0 :=
     (congrArg Finset.card empty).trans rfl
   change (region locals (generator captures) sharedRows world query).card = 1 at one
@@ -134,35 +134,35 @@ theorem an_unknown_shared_row_does_not_entail_count_one :
 
 def rigidOtherRows (_ : Nat) : Stored := .shared (p (pair capturedAtom capturedAtom))
 
-theorem zero_fuel_is_not_an_absence_certificate :
-    ContextualGuardRefutation.certifiesAbsence locals captures 0
+theorem zero_fuel_is_not_a_none_certificate :
+    ContextualGuardRefutation.certifiesNone locals captures 0
       ([] : EquationStore CapturedTerm) rigidOtherRows world query = false := by decide
 
-theorem an_actual_rigid_refutation_certifies_absence :
-    ContextualGuardRefutation.certifiesAbsence locals captures 1
+theorem an_actual_rigid_refutation_certifies_none :
+    ContextualGuardRefutation.certifiesNone locals captures 1
       ([] : EquationStore CapturedTerm) rigidOtherRows world query = true := by decide +kernel
 
-theorem the_executable_certificate_proves_the_future_absence_ask :
-    Ask locals ([] : EquationStore CapturedTerm) rigidOtherRows world (.absent query) :=
-  ContextualGuardRefutation.certifiesAbsence_sound locals captures 1 [] rigidOtherRows world query
-    an_actual_rigid_refutation_certifies_absence
+theorem the_executable_certificate_proves_the_future_none_ask :
+    Ask locals ([] : EquationStore CapturedTerm) rigidOtherRows world (.predicate .none query) :=
+  ContextualGuardRefutation.certifiesNone_sound locals captures 1 [] rigidOtherRows world query
+    an_actual_rigid_refutation_certifies_none
 
-theorem a_compatible_schema_does_not_certify_absence :
-    ContextualGuardRefutation.certifiesAbsence locals captures 2
+theorem a_compatible_schema_does_not_certify_none :
+    ContextualGuardRefutation.certifiesNone locals captures 2
       ([] : EquationStore CapturedTerm) schemaRows world query = false := by
-  cases computed : ContextualGuardRefutation.certifiesAbsence locals captures 2
+  cases computed : ContextualGuardRefutation.certifiesNone locals captures 2
       ([] : EquationStore CapturedTerm) schemaRows world query with
   | false => rfl
   | true =>
-      have admitted := ContextualGuardRefutation.certifiesAbsence_sound locals captures 2 [] schemaRows world query computed
-      have absent := admitted Nat captures (generator captures)
+      have admitted := ContextualGuardRefutation.certifiesNone_sound locals captures 2 [] schemaRows world query computed
+      have missing := admitted Nat captures (generator captures)
         (fun _ member => False.elim (List.not_mem_nil member))
-      exact False.elim (absent 7 (by decide) (schema_matches_every_supplied_model captures (generator captures)))
+      exact False.elim (missing 7 (by decide) (schema_matches_every_supplied_model captures (generator captures)))
 
-theorem absence_after_consuming_the_matching_schema_keeps_count_one :
-    Holds locals assignedA schemaRows (world.erase 7) (.absent query) ↔
+theorem none_after_consuming_the_matching_schema_keeps_count_one :
+    Holds locals assignedA schemaRows (world.erase 7) (.predicate .none query) ↔
       Holds locals assignedA schemaRows world (.count query 1) :=
-  absent_after_erase_iff_count_one locals assignedA schemaRows world query 7 (by decide)
+  none_after_erase_iff_count_one locals assignedA schemaRows world query 7 (by decide)
     (schema_matches_every_supplied_model captures assignedA)
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualGuardSemantics.Controls

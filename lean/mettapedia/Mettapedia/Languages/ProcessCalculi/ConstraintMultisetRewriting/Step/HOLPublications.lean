@@ -121,7 +121,7 @@ theorem base_loaded_event_refused :
   intro admitted
   obtain ⟨event, _⟩ := (HOLPreparedRunEncoding.step_iff_event guarded.step.effectCore
     guarded.step.eventAdmission () () _).mp admitted
-  exact EventControls.guarded_event_absent ⟨event⟩
+  exact EventControls.no_guarded_event ⟨event⟩
 
 omit input other prior in
 theorem base_prepared_payload_available :

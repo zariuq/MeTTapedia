@@ -188,7 +188,7 @@ theorem Intent.resumed_names_bounded {program : Program} (intent : Intent progra
   resumeAt_names_bounded fresh resume (intent.resume_below fresh source operation resume edit bounded).2
 
 /-- Reusing a source name gives the intended source continuation when that
-name is absent from all retained old references. This is a decoding law;
+name is missing from all retained old references. This is a decoding law;
 physical exclusivity and other observers are separate obligations. -/
 theorem Intent.reuse_interpretation {program : Program} (intent : Intent program) (stores : Nat → Store)
     (source : Nat) (operation : NeedStoreOperations.Operation) (resume : Resume)

@@ -21,8 +21,11 @@ same final configurations, for every grounded dispatch without minimal services 
 enters a context, `local_contexts`).
 
 Every-run statements are bundled once (`Publishes`: a complete run exists and every complete run
-publishes the given atoms; `Finishes`: no infinite run, and every reachable configuration steps or is
-final with the given atoms) and transferred once (`publishes_iff`, `finishes_iff`). The earlier
+publishes the bag of the given atoms; `Finishes`: no infinite run, and every reachable configuration
+steps or is final with that bag) and transferred once (`publishes_iff`, `finishes_iff`). Order is not
+an observation of HE: the bundles state bags. The model's machine has an order, which the bundles
+`PublishesInOrder` and `FinishesInOrder` keep (`PublishesInOrder.bag`, `FinishesInOrder.bag` read
+the bag off them); the variant machine of `SyntacticMerge` is built from that order. The earlier
 every-run theorems then hold on the scoped lookup at once:
 
 * `every_complete_run_c_scoped`, `every_complete_run_n_scoped`, `every_complete_run_k_scoped`:
@@ -352,10 +355,10 @@ theorem acc_iff (none : dispatch.minimal = none) {space : Space} (closed : Close
 /-- The final configuration publishing `emitted`. -/
 abbrev final (space : Space) (emitted : List Result) : HEConfig := ⟨space, .returning [], [], emitted⟩
 
-/-- **Every complete run publishes `L`, and one exists**, from the entry of `c` under
-`%Undefined%`. -/
-def Publishes (dispatch : GroundedDispatch) (lookup : CastLookup) (policy : Policy) (space : Space)
-    (c : Atom) (L : List Atom) : Prop :=
+/-- **Every complete run of the model publishes `L` in this order, and one exists**, from the entry
+of `c` under `%Undefined%`. The order is the model's; HE's observable is the bag (`Publishes`). -/
+def PublishesInOrder (dispatch : GroundedDispatch) (lookup : CastLookup) (policy : Policy)
+    (space : Space) (c : Atom) (L : List Atom) : Prop :=
   (∃ heAnswers : List Result,
     Relation.ReflTransGen (HEStep dispatch lookup policy) (load space c Atom.undefinedType)
       (final space heAnswers)) ∧
@@ -364,14 +367,65 @@ def Publishes (dispatch : GroundedDispatch) (lookup : CastLookup) (policy : Poli
       (final space emitted) →
     emitted.map (fun r => r.1.erase) = L
 
-/-- **Every run finishes with `L`**: no infinite run from the entry of `c`, and every reachable
-configuration steps or is final with `L`. -/
+/-- **Every run of the model finishes with `L` in this order**: no infinite run from the entry of
+`c`, and every reachable configuration steps or is final with `L`. The order is the model's; HE's
+observable is the bag (`Finishes`). -/
+def FinishesInOrder (dispatch : GroundedDispatch) (lookup : CastLookup) (policy : Policy)
+    (space : Space) (c : Atom) (L : List Atom) : Prop :=
+  Acc (fun b a => HEStep dispatch lookup policy a b) (load space c Atom.undefinedType) ∧
+  ∀ y, Relation.ReflTransGen (HEStep dispatch lookup policy) (load space c Atom.undefinedType) y →
+    (∃ z, HEStep dispatch lookup policy y z) ∨
+      ∃ emitted : List Result, y = final space emitted ∧ emitted.map (fun r => r.1.erase) = L
+
+/-- **Every complete run publishes the bag of `L`, and one exists**, from the entry of `c` under
+`%Undefined%`. Order is not an observation of HE; multiplicity is, and it is kept. -/
+def Publishes (dispatch : GroundedDispatch) (lookup : CastLookup) (policy : Policy) (space : Space)
+    (c : Atom) (L : List Atom) : Prop :=
+  (∃ heAnswers : List Result,
+    Relation.ReflTransGen (HEStep dispatch lookup policy) (load space c Atom.undefinedType)
+      (final space heAnswers)) ∧
+  ∀ emitted : List Result,
+    Relation.ReflTransGen (HEStep dispatch lookup policy) (load space c Atom.undefinedType)
+      (final space emitted) →
+    ((emitted.map (fun r => r.1.erase) : List Atom) : Multiset Atom) = (L : Multiset Atom)
+
+/-- **Every run finishes with the bag of `L`**: no infinite run from the entry of `c`, and every
+reachable configuration steps or is final with the bag of `L`. -/
 def Finishes (dispatch : GroundedDispatch) (lookup : CastLookup) (policy : Policy) (space : Space)
     (c : Atom) (L : List Atom) : Prop :=
   Acc (fun b a => HEStep dispatch lookup policy a b) (load space c Atom.undefinedType) ∧
   ∀ y, Relation.ReflTransGen (HEStep dispatch lookup policy) (load space c Atom.undefinedType) y →
     (∃ z, HEStep dispatch lookup policy y z) ∨
-      ∃ emitted : List Result, y = final space emitted ∧ emitted.map (fun r => r.1.erase) = L
+      ∃ emitted : List Result, y = final space emitted ∧
+        ((emitted.map (fun r => r.1.erase) : List Atom) : Multiset Atom) = (L : Multiset Atom)
+
+/-- The model's order gives the bag. -/
+theorem PublishesInOrder.bag {lookup : CastLookup} {space : Space} {c : Atom} {L : List Atom}
+    (publishes : PublishesInOrder dispatch lookup policy space c L) :
+    Publishes dispatch lookup policy space c L :=
+  ⟨publishes.1, fun emitted run => congrArg (fun l : List Atom => (l : Multiset Atom))
+    (publishes.2 emitted run)⟩
+
+/-- The model's order gives the bag. -/
+theorem FinishesInOrder.bag {lookup : CastLookup} {space : Space} {c : Atom} {L : List Atom}
+    (finishes : FinishesInOrder dispatch lookup policy space c L) :
+    Finishes dispatch lookup policy space c L :=
+  ⟨finishes.1, fun y run => (finishes.2 y run).imp id fun ⟨emitted, same, erased⟩ =>
+    ⟨emitted, same, congrArg (fun l : List Atom => (l : Multiset Atom)) erased⟩⟩
+
+/-- A bag of one answer is its list: the bundles of a single answer give the model's order. -/
+theorem Publishes.inOrder_single {lookup : CastLookup} {space : Space} {c a : Atom}
+    (publishes : Publishes dispatch lookup policy space c [a]) :
+    PublishesInOrder dispatch lookup policy space c [a] :=
+  ⟨publishes.1, fun emitted run =>
+    List.perm_singleton.mp (Multiset.coe_eq_coe.mp (publishes.2 emitted run))⟩
+
+/-- A bag of one answer is its list. -/
+theorem Finishes.inOrder_single {lookup : CastLookup} {space : Space} {c a : Atom}
+    (finishes : Finishes dispatch lookup policy space c [a]) :
+    FinishesInOrder dispatch lookup policy space c [a] :=
+  ⟨finishes.1, fun y run => (finishes.2 y run).imp id fun ⟨emitted, same, erased⟩ =>
+    ⟨emitted, same, List.perm_singleton.mp (Multiset.coe_eq_coe.mp erased)⟩⟩
 
 /-- **The every-run bundle transfers to the scoped lookup**, on a closed space, for a dispatch
 without minimal services. -/
@@ -380,6 +434,33 @@ theorem publishes_iff (none : dispatch.minimal = none) {space : Space} (closed :
     Publishes dispatch Completed.rawLookup policy space c L ↔
       Publishes dispatch Completed.scopedLookup policy space c L := by
   simp only [Publishes, runs_iff none closed]
+
+/-- **The every-run bundle in the model's order transfers to the scoped lookup.** -/
+theorem publishesInOrder_iff (none : dispatch.minimal = none) {space : Space}
+    (closed : ClosedTypes space) (c : Atom) (L : List Atom) :
+    PublishesInOrder dispatch Completed.rawLookup policy space c L ↔
+      PublishesInOrder dispatch Completed.scopedLookup policy space c L := by
+  simp only [PublishesInOrder, runs_iff none closed]
+
+/-- **The finishing bundle in the model's order transfers to the scoped lookup.** -/
+theorem finishesInOrder_iff (none : dispatch.minimal = none) {space : Space}
+    (closed : ClosedTypes space) (c : Atom) (L : List Atom) :
+    FinishesInOrder dispatch Completed.rawLookup policy space c L ↔
+      FinishesInOrder dispatch Completed.scopedLookup policy space c L := by
+  unfold FinishesInOrder
+  rw [acc_iff none closed]
+  constructor
+  · rintro ⟨acc, every⟩
+    refine ⟨acc, fun y run => ?_⟩
+    have back := (runs_iff none closed c Atom.undefinedType y).mpr run
+    rcases every y back with ⟨z, step⟩ | done
+    · exact Or.inl ⟨z, (reached_step_iff none closed back z).mp step⟩
+    · exact Or.inr done
+  · rintro ⟨acc, every⟩
+    refine ⟨acc, fun y run => ?_⟩
+    rcases every y ((runs_iff none closed c Atom.undefinedType y).mp run) with ⟨z, step⟩ | done
+    · exact Or.inl ⟨z, (reached_step_iff none closed run z).mpr step⟩
+    · exact Or.inr done
 
 /-- **The finishing bundle transfers to the scoped lookup.** -/
 theorem finishes_iff (none : dispatch.minimal = none) {space : Space} (closed : ClosedTypes space)
@@ -400,6 +481,32 @@ theorem finishes_iff (none : dispatch.minimal = none) {space : Space} (closed : 
     rcases every y ((runs_iff none closed c Atom.undefinedType y).mp run) with ⟨z, step⟩ | done
     · exact Or.inl ⟨z, (reached_step_iff none closed run z).mpr step⟩
     · exact Or.inr done
+
+/-- `FinishesInOrder` gives `PublishesInOrder`: a final configuration is reached, and a final
+configuration does not step. -/
+theorem FinishesInOrder.publishes {lookup : CastLookup} {space : Space} {c : Atom} {L : List Atom}
+    (finishes : FinishesInOrder dispatch lookup policy space c L) :
+    PublishesInOrder dispatch lookup policy space c L := by
+  obtain ⟨acc, every⟩ := finishes
+  refine ⟨?_, fun emitted run => ?_⟩
+  · have reach : ∀ x, Acc (fun b a => HEStep dispatch lookup policy a b) x →
+        Relation.ReflTransGen (HEStep dispatch lookup policy) (load space c Atom.undefinedType) x →
+        ∃ heAnswers, Relation.ReflTransGen (HEStep dispatch lookup policy)
+          (load space c Atom.undefinedType) (final space heAnswers) := by
+      intro x accX
+      induction accX with
+      | intro x _ ih =>
+          intro path
+          rcases every x path with ⟨z, step⟩ | ⟨emitted, rfl, _⟩
+          · exact ih z step (path.tail step)
+          · exact ⟨emitted, path⟩
+    exact reach _ acc .refl
+  · rcases every _ run with ⟨z, step⟩ | ⟨emitted', same, erased⟩
+    · exact absurd step final_no_step
+    · simp only [final, Mettapedia.Languages.MeTTa.HE.RecursiveTasks.Contextual.Configuration.mk.injEq,
+        true_and] at same
+      rw [same]
+      exact erased
 
 /-- `Finishes` gives `Publishes`: a final configuration is reached, and a final configuration does
 not step. -/
@@ -453,7 +560,7 @@ open AnswerBags.Controls (sym app rule)
 
 /-- **Nested calls in bodies, on the scoped lookup** (`NestedCalls.every_complete_run_c`): for a
 program with closed declarations and a dispatch without minimal services, a complete run exists; from
-some fuel on PeTTa's streaming run yields `L`; every complete run publishes `L`. -/
+some fuel on PeTTa's streaming run yields the list `L`; every complete run publishes the bag of `L`. -/
 theorem every_complete_run_c_scoped (policy : Policy) (none : dispatch.minimal = none)
     {atoms : List Atom} (closed : ClosedDeclarations atoms) (program : NestedCalls.CallProgram atoms)
     {c : Atom} {L : List Atom} (settles : NestedCalls.SettlesC dispatch atoms c L) :
@@ -468,7 +575,8 @@ theorem every_complete_run_c_scoped (policy : Policy) (none : dispatch.minimal =
             Relation.ReflTransGen (HEStep dispatch Completed.scopedLookup policy)
                 (load (Space.ofList atoms) c Atom.undefinedType)
                 ⟨Space.ofList atoms, .returning [], [], emitted⟩ →
-              emitted.map (fun r => r.1.erase) = L := by
+              ((emitted.map (fun r => r.1.erase) : List Atom) : Multiset Atom) =
+                ((L : List Atom) : Multiset Atom) := by
   have raw := NestedCalls.every_complete_run_c policy program settles
   simpa only [runs_iff none (closedTypes_of_declarations closed)] using raw
 
@@ -486,8 +594,9 @@ theorem every_complete_run_n_scoped (policy : Policy) (none : dispatch.minimal =
         Relation.ReflTransGen (HEStep dispatch Completed.scopedLookup policy)
             (load (Space.ofList atoms) c Atom.undefinedType)
             ⟨Space.ofList atoms, .returning [], [], emitted⟩ →
-          Streaming.values (Streaming.advance (translate atoms) n
-            (Streaming.enter { state := store atoms } c)) = emitted.map (fun r => r.1.erase) := by
+          ((Streaming.values (Streaming.advance (translate atoms) n
+            (Streaming.enter { state := store atoms } c)) : List Atom) : Multiset Atom) =
+            ((emitted.map (fun r => r.1.erase) : List Atom) : Multiset Atom) := by
   have raw := NestedValues.every_complete_run_n policy program settles
   simpa only [runs_iff none (closedTypes_of_declarations closed)] using raw
 
@@ -507,7 +616,8 @@ theorem every_complete_run_k_scoped (policy : Policy) (none : dispatch.minimal =
             Relation.ReflTransGen (HEStep dispatch Completed.scopedLookup policy)
                 (load (Space.ofList atoms) c Atom.undefinedType)
                 ⟨Space.ofList atoms, .returning [], [], emitted⟩ →
-              emitted.map (fun r => r.1.erase) = L := by
+              ((emitted.map (fun r => r.1.erase) : List Atom) : Multiset Atom) =
+                ((L : List Atom) : Multiset Atom) := by
   have raw := CompoundBindings.every_complete_run_k policy program settles
   simpa only [runs_iff none (closedTypes_of_declarations closed)] using raw
 
@@ -521,20 +631,24 @@ theorem every_run_finishes_k_scoped (policy : Policy) (none : dispatch.minimal =
       ∃ N : Nat, ∀ n, N ≤ n → Streaming.values (Streaming.advance (translate atoms) n
         (Streaming.enter { state := store atoms } c)) = L := by
   obtain ⟨acc, every, N, petta⟩ := every_run_finishes_k policy program settles
-  have raw : Finishes dispatch Completed.rawLookup policy (Space.ofList atoms) c L := ⟨acc, every⟩
-  have onScoped := (finishes_iff none (closedTypes_of_declarations closed) c L).mp raw
-  exact ⟨onScoped, onScoped.publishes, N, petta⟩
+  have raw : FinishesInOrder dispatch Completed.rawLookup policy (Space.ofList atoms) c L :=
+    ⟨acc, every⟩
+  have onScoped := (finishesInOrder_iff none (closedTypes_of_declarations closed) c L).mp raw
+  exact ⟨onScoped.bag, onScoped.publishes.bag, N, petta⟩
 
 /-- The declarations of `{(: f (-> Number Number)), (: b Bool), (= (f $x) yes)}` are closed. -/
 theorem declaredRows_closed : ClosedDeclarations DeclaredHeads.declaredRows :=
   closedDeclarations_of_check (by decide)
 
-/-- **The well-typed declared path, on the scoped lookup** (`TypedEveryRun.typed_every_run`):
-`(f 4)` with `(: f (-> Number Number))` publishes `yes` on every complete run. -/
+/-- **The well-typed declared path, on the scoped lookup** (`TypedEveryRun.typed_every_run`): on
+the declared program, in the measured type fragment, `(f 4)` publishes `yes`
+on every complete run, and a complete run exists; on the program without `f`'s declaration PeTTa
+answers `yes`, as the PeTTa hosts do (with the declaration they answer nothing). -/
 theorem typed_every_run_scoped (dispatch : GroundedDispatch) (none : dispatch.minimal = none)
     (notHost : ¬ dispatch.executable (.symbol "f")) (policy : Policy) :
-    (∃ heAnswers : List Result,
-      Relation.ReflTransGen (HEStep dispatch Completed.scopedLookup policy)
+    TypeQueryFragment.MeasuredTypeFragment DeclaredHeads.declaredRows ∧
+      (∃ heAnswers : List Result,
+        Relation.ReflTransGen (HEStep dispatch Completed.scopedLookup policy)
           (load (Space.ofList DeclaredHeads.declaredRows) DeclaredHeads.typedCall Atom.undefinedType)
           ⟨Space.ofList DeclaredHeads.declaredRows, .returning [], [], heAnswers⟩) ∧
       (∀ emitted : List Result,
@@ -542,26 +656,36 @@ theorem typed_every_run_scoped (dispatch : GroundedDispatch) (none : dispatch.mi
             (load (Space.ofList DeclaredHeads.declaredRows) DeclaredHeads.typedCall Atom.undefinedType)
             ⟨Space.ofList DeclaredHeads.declaredRows, .returning [], [], emitted⟩ →
           emitted.map (fun r => r.1.erase) = [sym "yes"]) ∧
-      ∀ n, 40 ≤ n → Streaming.values (Streaming.advance (translate DeclaredHeads.declaredRows) n
-        (Streaming.enter { state := store DeclaredHeads.declaredRows } DeclaredHeads.typedCall)) =
-          [sym "yes"] := by
+      ∀ n, 40 ≤ n → Streaming.values (Streaming.advance
+        (translate (DeclaredHeads.headUndeclared DeclaredHeads.declaredRows "f")) n
+        (Streaming.enter { state := store (DeclaredHeads.headUndeclared DeclaredHeads.declaredRows "f") }
+          DeclaredHeads.typedCall)) = [sym "yes"] := by
   have raw := TypedEveryRun.typed_every_run dispatch notHost policy
   simpa only [runs_iff none (closedTypes_of_declarations declaredRows_closed)] using raw
 
-/-- **The declared guard, on the scoped lookup** (`DeclaredEveryRun.declared_every_run`): `(f b)`
-publishes the `BadArgType` error on every complete run, while PeTTa answers `yes`. -/
+/-- **The declared guard, on the scoped lookup** (`DeclaredEveryRun.declared_every_run`): on the
+declared program, in the measured type fragment, a complete run exists and
+`(f b)` publishes the `BadArgType` error on every complete run; on the program without `f`'s
+declaration PeTTa answers `yes` (with the declaration the PeTTa hosts answer nothing). -/
 theorem declared_every_run_scoped (dispatch : GroundedDispatch) (none : dispatch.minimal = none)
     (policy : Policy) :
-    (∀ emitted : List Result,
-      Relation.ReflTransGen (HEStep dispatch Completed.scopedLookup policy)
+    TypeQueryFragment.MeasuredTypeFragment DeclaredHeads.declaredRows ∧
+      (∃ heAnswers : List Result,
+        Relation.ReflTransGen (HEStep dispatch Completed.scopedLookup policy)
+          (load (Space.ofList DeclaredHeads.declaredRows) DeclaredHeads.declaredCall
+            Atom.undefinedType)
+          ⟨Space.ofList DeclaredHeads.declaredRows, .returning [], [], heAnswers⟩) ∧
+      (∀ emitted : List Result,
+        Relation.ReflTransGen (HEStep dispatch Completed.scopedLookup policy)
           (load (Space.ofList DeclaredHeads.declaredRows) DeclaredHeads.declaredCall
             Atom.undefinedType)
           ⟨Space.ofList DeclaredHeads.declaredRows, .returning [], [], emitted⟩ →
         emitted.map (fun r => r.1.erase) = [DeclaredHeads.badArgument]) ∧
       Mettapedia.Languages.MeTTa.HE.isErrorAtom DeclaredHeads.badArgument = true ∧
-      ∀ n, 40 ≤ n → Streaming.values (Streaming.advance (translate DeclaredHeads.declaredRows) n
-        (Streaming.enter { state := store DeclaredHeads.declaredRows } DeclaredHeads.declaredCall)) =
-          [sym "yes"] := by
+      ∀ n, 40 ≤ n → Streaming.values (Streaming.advance
+        (translate (DeclaredHeads.headUndeclared DeclaredHeads.declaredRows "f")) n
+        (Streaming.enter { state := store (DeclaredHeads.headUndeclared DeclaredHeads.declaredRows "f") }
+          DeclaredHeads.declaredCall)) = [sym "yes"] := by
   have raw := DeclaredEveryRun.declared_every_run dispatch policy
   simpa only [runs_iff none (closedTypes_of_declarations declaredRows_closed)] using raw
 
@@ -653,6 +777,13 @@ end Controls
 #print axioms publishes_iff
 #print axioms finishes_iff
 #print axioms Finishes.publishes
+#print axioms PublishesInOrder.bag
+#print axioms FinishesInOrder.bag
+#print axioms Publishes.inOrder_single
+#print axioms Finishes.inOrder_single
+#print axioms publishesInOrder_iff
+#print axioms finishesInOrder_iff
+#print axioms FinishesInOrder.publishes
 #print axioms closedDeclarations_of_check
 #print axioms every_complete_run_c_scoped
 #print axioms every_complete_run_n_scoped

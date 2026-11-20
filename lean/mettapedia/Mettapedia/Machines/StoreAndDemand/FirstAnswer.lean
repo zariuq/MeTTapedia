@@ -102,6 +102,45 @@ theorem first_after_progress (next : State → Reply Answer Fault × State)
       rw [ih observed]
       simp [Nat.add_comm]
 
+private theorem accepted_done (next : State → Reply Answer Fault × State)
+    (fuel : Nat) (value : Result Answer Fault) (reached : State) :
+    advance (provider next) (client Answer Fault) (fun _ _ => 1) (fuel + 1) (base := ())
+      ⟨(), some value, reached⟩ = (0, .done ⟨(), value, reached⟩) := rfl
+
+/-- An answer computed by the existing cursor supplies the actual paid
+producer prefix. No request after the first answer contributes to the
+cost or the returned state. -/
+theorem progress_of_answer (next : State → Reply Answer Fault × State)
+    (fuel : Nat) {state after : State} {spent : Nat} {answer : Answer}
+    (observed : advance (provider next) (client Answer Fault) (fun _ _ => 1) fuel (start next state) =
+      (spent, .done ⟨(), Result.answer answer, after⟩)) :
+    ∃ ready count, Progress next state count ready ∧ next ready = (.answer answer, after) ∧ spent = count + 1 := by
+  induction fuel generalizing state spent with
+  | zero => cases observed
+  | succ fuel ih =>
+      rw [advance_start] at observed
+      rcases requested : next state with ⟨reply, reached⟩
+      rw [requested] at observed
+      cases reply with
+      | progress =>
+          let following := advance (provider next) (client Answer Fault) (fun _ _ => 1) fuel (start next reached)
+          change (1 + following.1, following.2) = _ at observed
+          obtain ⟨charged, done⟩ := Prod.mk.inj observed
+          obtain ⟨ready, count, progressed, answered, cost⟩ :=
+            ih (state := reached) (spent := following.1) (Prod.ext rfl done)
+          exact ⟨ready, count + 1, .step requested progressed, answered, by omega⟩
+      | answer value =>
+          cases fuel with
+          | zero => cases observed
+          | succ fuel =>
+              simp only [accept, accepted_done, Nat.add_zero] at observed
+              cases observed
+              exact ⟨state, 0, .nil state, requested, rfl⟩
+      | exhausted | raised | interrupted =>
+          cases fuel
+          all_goals simp only [accept, advance_zero, accepted_done, Nat.add_zero] at observed
+          all_goals cases observed
+
 /-- Once done, any later scheduler allowance leaves the provider state and account unchanged. -/
 theorem no_requests_after_answer (next : State → Reply Answer Fault × State)
     (after : State) (value : Answer) (spent later : Nat) :

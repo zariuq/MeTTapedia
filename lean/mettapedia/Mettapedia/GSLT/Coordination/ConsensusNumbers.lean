@@ -5,7 +5,7 @@ import Mettapedia.GSLT.Coordination.ConsensusNumbers.Registers
 import Mettapedia.GSLT.Coordination.ConsensusNumbers.Spaces
 import Mettapedia.GSLT.Coordination.ConsensusNumbers.StepSpace
 import Mettapedia.GSLT.Coordination.ConsensusNumbers.Rho
-import Mettapedia.GSLT.Coordination.ConsensusNumbers.Absence
+import Mettapedia.GSLT.Coordination.ConsensusNumbers.WholeSpaceConditions
 import Mettapedia.GSLT.Coordination.ConsensusNumbers.RemovalAnswers
 import Mettapedia.GSLT.Coordination.ConsensusNumbers.Linearizability
 import Mettapedia.GSLT.Coordination.ConsensusNumbers.Universal

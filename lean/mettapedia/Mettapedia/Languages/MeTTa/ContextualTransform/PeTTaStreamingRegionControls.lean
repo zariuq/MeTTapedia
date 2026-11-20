@@ -96,4 +96,59 @@ theorem full_drain_returns_only_the_first_packet :
     (advance program 4 nestedFirst).agenda = [] ∧
       values (advance program 4 nestedFirst) = [.expression [.symbol "a"]] := by constructor <;> rfl
 
+section Custody
+
+open Streaming.Regions.Custody
+
+private def written : Atom :=
+  .expression [.symbol "collapse", .expression [.symbol "once", .symbol "a"]]
+
+private def atBank : State := advance program 4 (enter base.world written)
+
+private theorem authored_bank_frontier :
+    atBank.agenda = [.execute ⟨.returned [a], [.collection 0]⟩, .collect 0 [] [] []] := by
+  rfl
+
+private def bankWritten : State := {atBank with agenda := [.collect 0 [] [] [a]]}
+
+/-- An authored nested request cuts its inner marker, keeps the outer
+bank, then executes the actual bank write only under its own stamped
+address. A second request's marker can have exactly the same name and
+caller code without authorizing that write. -/
+theorem authored_cut_then_owned_collection :
+    (ledger (10 : Nat) atBank).mark (site 10 1) = none ∧
+      (ledger (10 : Nat) atBank).mark (site 10 0) =
+        some (entry 10 (.collection 0 [])).2 ∧
+      commitCollection program 10 (site 10 0) atBank = some bankWritten ∧
+      commitCollection program 10 (site 10 1) atBank = none ∧
+      commitCollection program 10 (site 11 0) atBank = none ∧
+      (ledger (11 : Nat) atBank).mark (site 11 0) =
+        some (entry 11 (.collection 0 [])).2 ∧
+      ledger (10 : Nat) bankWritten = ledger 10 atBank := by
+  have well : Regions.WellFormed atBank :=
+    Regions.every_request_prefix_wellFormed program 4 base.world written
+  have actual : Streaming.step program atBank = some bankWritten := rfl
+  refine ⟨?_, collection_mark 10 well authored_bank_frontier, ?_, ?_, ?_,
+    collection_mark 11 well authored_bank_frontier, ?_⟩
+  · exact dead_address_has_no_mark 10 well (by decide +kernel)
+  · rw [commit_collection_exact program 10 _ well authored_bank_frontier]
+    simpa using actual
+  · rw [commit_collection_exact program 10 _ well authored_bank_frontier]
+    rfl
+  · rw [commit_collection_exact program 10 _ well authored_bank_frontier]
+    rfl
+  · rfl
+
+/-- A paid bank delivery preserves the reached agenda and cannot
+bring back the first-answer marker whose packet already won. -/
+theorem authored_first_address_stays_retired (fuel : Nat) :
+    (ledger (10 : Nat) (advance program fuel bankWritten)).mark (site 10 1) = none := by
+  have good : Regions.WellFormed atBank :=
+    Regions.every_request_prefix_wellFormed program 4 base.world written
+  have executed : Streaming.step program atBank = some bankWritten := rfl
+  exact issued_marker_stays_dead 10 (Regions.step_wellFormed executed good)
+    (Streaming.advance_reachable program fuel bankWritten) (by decide +kernel) (by decide +kernel)
+
+end Custody
+
 end Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaStreamingRegionControls

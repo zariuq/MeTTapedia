@@ -509,7 +509,7 @@ theorem size_le_labelBound : ∀ (l : List Row), ∀ row ∈ l, row.label.size �
         simp only [labelBound, List.foldr_cons] at this ⊢
         omega
 
-theorem absent_iff_count (s : St) (v : Tm) :
+theorem none_iff_count (s : St) (v : Tm) :
     (∀ row ∈ s.present, row.label ≠ v) ↔
       (s.present.filter fun row => decide (row.label = v)).length = 0 := by
   rw [List.length_eq_zero_iff, List.filter_eq_nil_iff]
@@ -677,12 +677,12 @@ theorem guard_phase (c : Ctx) (host : String → List Tm → Prop) (E : Env) (b 
      (∃ rs', run c (compileGuard E n i g).1 m = (some (.guard i), { m with rs := rs' }) ∧
         ¬ ∀ σ, S σ → g.Holds host m.st σ))
   | .host _ _, hg => by simp [Guard.inClassB] at hg
-  | .absent q, _ => by
+  | .none q, _ => by
       obtain ⟨g1, g2, g3⟩ := countGuard_phase c q 0 E n i m S hE hS hne
       refine ⟨g1, g2, ?_⟩
       rcases g3 with ⟨rs', r, sm, h⟩ | ⟨rs', r, h⟩
-      · exact Or.inl ⟨rs', r, sm, fun σ hσ => (absent_iff_count m.st _).mpr (h σ hσ)⟩
-      · exact Or.inr ⟨rs', r, fun hall => h (fun σ hσ => (absent_iff_count m.st _).mp (hall σ hσ))⟩
+      · exact Or.inl ⟨rs', r, sm, fun σ hσ => (none_iff_count m.st _).mpr (h σ hσ)⟩
+      · exact Or.inr ⟨rs', r, fun hall => h (fun σ hσ => (none_iff_count m.st _).mp (hall σ hσ))⟩
   | .count q k, _ => countGuard_phase c q k E n i m S hE hS hne
   | .ask a a', hg => by
       have hall := List.all_eq_true.mp hg

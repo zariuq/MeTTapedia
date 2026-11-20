@@ -300,20 +300,21 @@ theorem literal_dollar_source_needs_separate_treatment :
   · simp [SourceSExprPatternInstantiation.instantiate?, SourceIntegerProvider.sourceVariableToken]
   · exact missing_can_become_bound.1
 
-/-- The source nullary marker is explicitly converted by the syntax fold,
-so direct equality of source and target payload representations is false. -/
-theorem nullary_source_is_not_target_data :
+/-- A constructor named `metta-nullary` is ordinary source data. Only the
+separate authored target-code renderer may interpret that notation. -/
+theorem nullary_named_source_preserves_data :
     SourceSExprPatternInstantiation.instantiate? []
       (.list [.atom "metta-nullary", .atom "constant"]) =
         some (.list [.atom "metta-nullary", .atom "constant"]) ∧
     (PlainBnfGeneratedPeTTaSyntax.sourceTerm?
       (.list [.atom "metta-nullary", .atom "constant"])).bind (instantiate? []) =
-        some (.list [.atom "constant"]) := by
+        some (.list [.atom "metta-nullary", .atom "constant"]) := by
   constructor
   · simp [SourceSExprPatternInstantiation.instantiate?, SourceSExprPatternInstantiation.instantiateList?,
       SourceIntegerProvider.sourceVariableToken]
-  · rw [PlainBnfGeneratedPeTTaSyntax.sourceTerm_nullary]
-    simp [PlainBnfGeneratedPeTTaSyntax.variableToken, instantiate_atom, variableToken]
+  · simp [PlainBnfGeneratedPeTTaSyntax.sourceTerm?, PlainBnfGeneratedPeTTaSyntax.termInContext?,
+      PlainBnfGeneratedPeTTaSyntax.termsInContext?,
+      PlainBnfGeneratedPeTTaSyntax.variableToken, instantiate_atom, variableToken]
 
 #print axioms instantiate_eq_some_iff
 #print axioms instantiate_of_extends

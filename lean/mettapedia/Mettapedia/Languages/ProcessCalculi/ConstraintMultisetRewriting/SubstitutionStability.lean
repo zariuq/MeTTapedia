@@ -50,7 +50,7 @@ theorem check_map (A : SubstitutionAction T S) (outer inner : S) (label : O → 
       check.Holds A (A.compose outer inner) label world := by
   cases check with
   | equal _ _ => simp only [Check.map, Check.Holds, SubstitutionAction.Solves, A.apply_compose]
-  | absent _ => simp only [Check.map, Check.Holds, A.apply_compose]
+  | predicate quantifier _ => simp only [Check.map, Check.Holds, A.apply_compose]
   | count _ _ => simp only [Check.map, Check.Holds, region_map]
 
 theorem valid_map (A : SubstitutionAction T S) (θ : S) (label : O → T)

@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits.Chann
 # Facets: rights per name, checked when a commit is formed
 
 A **facet** is one way of using a name: `send` puts an occurrence there, `receive` takes one,
-`peek` keeps one, `observe` queries the name's region (absence, counts, uniqueness, folds).
+`peek` keeps one, `observe` queries the name's region (none queries, counts, uniqueness, folds).
 The four facets are the four components of a commit, located at a name. **Rights** say which
 facets a process holds at each name (`Rights`). A commit is **formed under** rights when each of
 its components uses only facets held at the names it touches (`FormedUnder`). A process typed with
@@ -21,7 +21,7 @@ The separations of the basis say which law each commit component breaks. Rights 
 * **Without `send`, nothing arrives** (`restrict_fireList_subset_of_noSend`).
 * **Without `observe`, arrivals only help** (`Executable.frame_of_noObserve`): a run stays
   executable when occurrences arrive at names the process cannot observe, and ends with them
-  added. Absence at those names is undetectable.
+  added. The none query at those names is undetectable.
 * **With `send` alone, the process is blind** (`blind_of_sendOnly`): two stores that agree outside
   the names where the process holds no facet but `send` run its commits alike, given that the
   identities it makes are allocated apart from both stores. Writing to a name teaches nothing
@@ -494,13 +494,13 @@ def observerRights : Rights Atom
   | .out, .send => true
   | _, _ => false
 
-/-- **Granting `observe` breaks "arrivals only help"**: the commit guarded by the absence of a
+/-- **Granting `observe` breaks "arrivals only help"**: the commit guarded by the none query of a
 lock is formed under rights that observe the lock's name, and a lock's arrival disables it. -/
 theorem observer_disabled :
     FormedUnder label atomName observerRights unlessLocked ∧ Enabled label {0} unlessLocked ∧
       ¬ Enabled label ({0} ∪ {1}) unlessLocked := by
-  refine ⟨⟨by simp [unlessLocked], by simp [unlessLocked], ?_, ?_⟩, absence_holds_empty,
-    absence_not_framed⟩
+  refine ⟨⟨by simp [unlessLocked], by simp [unlessLocked], ?_, ?_⟩, none_holds_empty,
+    none_not_framed⟩
   · intro o member
     simp only [unlessLocked, Finset.mem_singleton] at member
     subst member

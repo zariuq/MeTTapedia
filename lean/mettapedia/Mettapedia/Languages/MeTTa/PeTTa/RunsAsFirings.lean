@@ -63,9 +63,9 @@ open Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting
 open Interface
 open Mettapedia.Languages.MeTTa.ContextualTransform
 open PeTTaStoreSelection (atomFrames selectedRows Removal)
-open PeTTaQueryInterpretation (scan continuations)
+open PeTTaQueryInterpretation (scan joinedRequest)
 open AddAtomStep (addRequest addRequest_admitted)
-open Unifying (resolve)
+open Unifying (resolve queryJoin queryLegs joinedBodies)
 open NamedSpaces (Handle)
 
 /-! ## Occurrences over every space -/
@@ -249,22 +249,34 @@ def askQuery (ids : List O) (state : Effects.State) (bindings : Subst) (uses : N
         readRequest (packets.map Prod.fst)
     else none
 
+/-- A written match selects complete occurrence paths in the retained entry
+view. The receipt preserves repeated occurrences in those paths. -/
+def askWrittenQuery (ids : List O) (state : Effects.State) (bindings : Subst) (uses : Nat)
+    (location pattern : Atom) : Option (OrderedStore.Publication Atom O) :=
+  (Effects.readHandle location).bind fun handle =>
+    if (state.read handle).isSome then
+      (queryJoin S.label (S.rowsAt handle ids) (queryLegs pattern) bindings uses).map
+        fun (packets,_) => joinedRequest packets
+    else none
+
 /-- The request of a native call whose arguments are values. -/
 def askCall (ids : List O) (state : Effects.State) (bindings : Subst) (uses : Nat)
     (head : String) (values : List Atom) : Option (OrderedStore.Publication Atom O) :=
   if head = "add-atom" then
     match values with
     | [location, atom] =>
+        if atom.isVariable then none else
         (Effects.readHandle location).bind fun handle =>
           if (state.read handle).isSome then some (addRequest (S.fresh ids handle atom))
           else none
     | _ => none
   else if head = "remove-atom" then
     match values with
-    | [location, .expression (first :: rest)] =>
+    | [location, pattern] =>
+        if Effects.removalNeedsValue pattern then none else
         (Effects.readHandle location).bind fun handle =>
           if (state.read handle).isSome then
-            (selectedRows S.label (.expression (first :: rest)) uses (S.rowsAt handle ids)).map
+            (selectedRows S.label pattern uses (S.rowsAt handle ids)).map
               PeTTaStoreSelection.request
           else none
     | _ => none
@@ -340,7 +352,7 @@ def ask (registry : SpaceSemantics.Program) (ids : List O) (source : Unifying.Co
   | .returned [answer] =>
       match source.frames with
       | .query pattern _ :: _ =>
-          askQuery S ids source.state answer.bindings source.uses answer.value pattern
+          askWrittenQuery S ids source.state answer.bindings source.uses answer.value pattern
       | _ => none
   | _ => none
 
@@ -359,16 +371,17 @@ inductive Asked (registry : SpaceSemantics.Program) (ids : List O)
       (control : source.control =
         .arguments bindings (.function "add-atom") [] [location, atom] index)
       (resolved : Effects.readHandle (resolve bindings location) = some handle)
+      (specified : (resolve bindings atom).isVariable = false)
       (opened : source.state.read handle = some rows) :
       Asked registry ids source (addRequest (S.fresh ids handle (resolve bindings atom)))
-  | remove {bindings : Subst} {index : Nat} {location pattern first : Atom}
-      {rest : List Atom} {handle : Handle} {rows : List Atom} {taken : List O}
+  | remove {bindings : Subst} {index : Nat} {location pattern : Atom}
+      {handle : Handle} {rows : List Atom} {taken : List O}
       (control : source.control =
         .arguments bindings (.function "remove-atom") [] [location, pattern] index)
       (resolved : Effects.readHandle (resolve bindings location) = some handle)
       (opened : source.state.read handle = some rows)
-      (shape : resolve bindings pattern = .expression (first :: rest))
-      (selected : selectedRows S.label (.expression (first :: rest)) source.uses
+      (specified : Effects.removalNeedsValue (resolve bindings pattern) = false)
+      (selected : selectedRows S.label (resolve bindings pattern) source.uses
         (S.rowsAt handle ids) = some taken) :
       Asked registry ids source (PeTTaStoreSelection.request taken)
   | nativeMatch {bindings : Subst} {index : Nat} {location pattern template : Atom}
@@ -389,14 +402,14 @@ inductive Asked (registry : SpaceSemantics.Program) (ids : List O)
       Asked registry ids source (readRequest (S.rowsAt handle ids))
   | writtenMatch {answer : Unifying.Answer} {pattern body : Atom}
       {later : List Unifying.Frame} {handle : Handle} {rows : List Atom}
-      {packets : List (O × Subst)}
+      {packets : List (List O × Subst)} {used : Nat}
       (control : source.control = .returned [answer])
       (frames : source.frames = .query pattern body :: later)
       (resolved : Effects.readHandle answer.value = some handle)
       (opened : source.state.read handle = some rows)
-      (scanned : scan S.label answer.bindings pattern source.uses (S.rowsAt handle ids) =
-        some packets) :
-      Asked registry ids source (readRequest (packets.map Prod.fst))
+      (scanned : queryJoin S.label (S.rowsAt handle ids) (queryLegs pattern) answer.bindings source.uses =
+        some (packets,used)) :
+      Asked registry ids source (joinedRequest packets)
   | call {bindings : Subst} {index : Nat} {head : String} {held : List Atom}
       {packets : List (O × Unifying.Control)}
       (control : source.control = .arguments bindings (.function head) [] held index)
@@ -424,6 +437,28 @@ inductive Asked (registry : SpaceSemantics.Program) (ids : List O)
       Asked registry ids source (readRequest (packets.map Prod.fst))
 
 variable {S}
+
+omit [DecidableEq O] in
+theorem askWrittenQuery_some {ids : List O} {state : Effects.State} {bindings : Subst} {uses : Nat}
+    {location pattern : Atom} {request : OrderedStore.Publication Atom O}
+    (asked : askWrittenQuery S ids state bindings uses location pattern = some request) :
+    ∃ handle rows packets used, Effects.readHandle location = some handle ∧
+      state.read handle = some rows ∧
+      queryJoin S.label (S.rowsAt handle ids) (queryLegs pattern) bindings uses = some (packets,used) ∧
+      request = joinedRequest packets := by
+  unfold askWrittenQuery at asked
+  cases resolved : Effects.readHandle location with
+  | none => simp [resolved] at asked
+  | some handle =>
+    cases opened : state.read handle with
+    | none => simp [resolved,opened] at asked
+    | some rows =>
+      cases scanned : queryJoin S.label (S.rowsAt handle ids) (queryLegs pattern) bindings uses with
+      | none => simp [resolved,opened,scanned] at asked
+      | some result =>
+        rcases result with ⟨packets,used⟩
+        simp [resolved,opened,scanned] at asked
+        exact ⟨handle,rows,packets,used,rfl,opened,scanned,asked.symm⟩
 
 omit [DecidableEq O] in
 theorem askQuery_some {ids : List O} {state : Effects.State} {bindings : Subst} {uses : Nat}
@@ -556,9 +591,13 @@ theorem asked_of_ask {registry : SpaceSemantics.Program} {ids : List O}
                 match held, asked with
                 | [location, atom], asked =>
                     simp only [List.map_cons, List.map_nil] at asked
-                    obtain ⟨handle, rows, resolved, opened, made⟩ := opened_some asked
-                    cases made
-                    exact Asked.add rfl resolved opened
+                    cases specified : (resolve bindings atom).isVariable with
+                    | true => simp [specified] at asked
+                    | false =>
+                      simp only [specified, Bool.false_eq_true, ↓reduceIte] at asked
+                      obtain ⟨handle, rows, resolved, opened, made⟩ := opened_some asked
+                      cases made
+                      exact Asked.add rfl resolved specified opened
                 | [], asked => simp at asked
                 | [_], asked => simp at asked
                 | _ :: _ :: _ :: _, asked => simp at asked
@@ -566,19 +605,13 @@ theorem asked_of_ask {registry : SpaceSemantics.Program} {ids : List O}
                 match held, asked with
                 | [location, pattern], asked =>
                     simp only [List.map_cons, List.map_nil] at asked
-                    cases shape : resolve bindings pattern with
-                    | expression items =>
-                        cases items with
-                        | nil => simp [shape] at asked
-                        | cons first rest =>
-                            rw [shape] at asked
-                            simp only at asked
-                            obtain ⟨handle, rows, resolved, opened, made⟩ := opened_some asked
-                            obtain ⟨taken, selected, rfl⟩ := Option.map_eq_some_iff.mp made
-                            exact Asked.remove rfl resolved opened shape selected
-                    | var name => simp [shape] at asked
-                    | symbol name => simp [shape] at asked
-                    | grounded value => simp [shape] at asked
+                    cases specified : Effects.removalNeedsValue (resolve bindings pattern) with
+                    | true => simp [specified] at asked
+                    | false =>
+                        simp only [specified, Bool.false_eq_true, ↓reduceIte] at asked
+                        obtain ⟨handle, rows, resolved, opened, made⟩ := opened_some asked
+                        obtain ⟨taken, selected, rfl⟩ := Option.map_eq_some_iff.mp made
+                        exact Asked.remove rfl resolved opened specified selected
                 | [], asked => simp at asked
                 | [_], asked => simp at asked
                 | _ :: _ :: _ :: _, asked => simp at asked
@@ -609,8 +642,8 @@ theorem asked_of_ask {registry : SpaceSemantics.Program} {ids : List O}
           match frames, asked with
           | .query pattern body :: later, asked =>
               simp only at asked
-              obtain ⟨handle, rows, packets, resolved, opened, scanned, rfl⟩ :=
-                askQuery_some asked
+              obtain ⟨handle, rows, packets, used, resolved, opened, scanned, rfl⟩ :=
+                askWrittenQuery_some asked
               exact Asked.writtenMatch rfl rfl resolved opened scanned
           | [], asked => simp at asked
           | .bind _ _ :: _, asked => simp at asked
@@ -646,15 +679,16 @@ theorem ask_of_asked {registry : SpaceSemantics.Program} {ids : List O}
     {request : OrderedStore.Publication Atom O} (asked : Asked S registry ids source request) :
     ask S registry ids source = some request := by
   cases asked with
-  | add control resolved opened => simp [ask, control, askCall, known_add, resolved, opened]
-  | remove control resolved opened shape selected =>
-      simp [ask, control, askCall, known_remove, shape, resolved, opened, selected]
+  | add control resolved specified opened =>
+      simp [ask, control, askCall, known_add, resolved, specified, opened]
+  | remove control resolved opened specified selected =>
+      simp [ask, control, askCall, known_remove, specified, resolved, opened, selected]
   | nativeMatch control resolved opened scanned =>
       simp [ask, control, askCall, known_match, askQuery_of resolved opened scanned]
   | getAtoms control resolved opened =>
       simp [ask, control, askCall, known_get_atoms, resolved, opened]
   | writtenMatch control frames resolved opened scanned =>
-      simp [ask, control, frames, askQuery_of resolved opened scanned]
+      simp [ask, control, frames, askWrittenQuery, resolved, opened, scanned]
   | call control authored ordinary arity scanned =>
       simp only [ask, control]
       rw [if_pos ⟨authored, ordinary⟩]
@@ -717,10 +751,10 @@ theorem asked_admitted {registry : SpaceSemantics.Program} {ids : List O}
     (consistent : atomFrames.Solvable (a := PUnit.unit) knowledge) :
     (OrderedStore.step atomFrames PUnit.unit S.label).Admits (s := (knowledge, ids)) request := by
   cases asked with
-  | add control resolved opened =>
+  | add control resolved specified opened =>
       exact addRequest_admitted S.label knowledge ids _ unique (S.fresh_new _ _ _) consistent
-  | @remove bindings index location pattern first rest handle rows taken control resolved
-      opened shape selected =>
+  | @remove bindings index location pattern handle rows taken control resolved
+      opened specified selected =>
       obtain ⟨kept, removal⟩ := PeTTaStoreSelection.prepared_selection S.label selected
       exact takes_admitted S.label knowledge ids taken unique
         ((removal.taken_sublist S.label).trans (S.rowsAt_sublist handle ids)) consistent
@@ -733,12 +767,11 @@ theorem asked_admitted {registry : SpaceSemantics.Program} {ids : List O}
   | @getAtoms bindings index location handle rows control resolved opened =>
       exact reads_admitted S.label knowledge ids _ unique
         (fun occurrence member => (S.rowsAt_sublist handle ids).subset member) consistent
-  | @writtenMatch answer pattern body later handle rows packets control frames resolved
+  | @writtenMatch answer pattern body later handle rows packets used control frames resolved
       opened scanned =>
       exact reads_admitted S.label knowledge ids _ unique (fun occurrence member =>
         (S.rowsAt_sublist handle ids).subset
-          ((PeTTaQueryInterpretation.scanned_occurrences_sublist S.label _ _ _ _ _
-            scanned).subset member)) consistent
+          (PeTTaQueryInterpretation.joined_occurrences_in_view S.label scanned occurrence member)) consistent
   | call control authored ordinary arity scanned =>
       exact reads_admitted S.label knowledge ids _ unique (fun occurrence member =>
         (S.rowsAt_sublist .self ids).subset
@@ -788,61 +821,43 @@ theorem removeRows_ok {state after : Effects.State} {location pattern : Atom} {u
     {answers : List Atom} {used : Nat}
     (removed : Unifying.removeRows state location pattern use =
       some (.ok (after, answers, used))) :
-    after = state ∨ ∃ handle rows first rest kept,
+    ∃ handle rows kept,
       Effects.readHandle location = some handle ∧ state.read handle = some rows ∧
-      pattern = .expression (first :: rest) ∧
+      Effects.removalNeedsValue pattern = false ∧
       Unifying.survivors pattern use rows = some kept ∧
       state.write handle kept = some after := by
   unfold Unifying.removeRows at removed
-  cases resolved : Effects.readHandle location with
-  | none => simp [resolved] at removed
-  | some handle =>
-      cases opened : state.read handle with
-      | none => simp [resolved, opened] at removed
-      | some rows =>
-          cases pattern with
-          | var name =>
-              simp [resolved, opened] at removed
-              exact Or.inl removed.1.symm
-          | symbol name =>
-              simp [resolved, opened] at removed
-              exact Or.inl removed.1.symm
-          | grounded value =>
-              simp [resolved, opened] at removed
-              exact Or.inl removed.1.symm
-          | expression items =>
-              cases items with
-              | nil =>
-                  simp [resolved, opened] at removed
-                  exact Or.inl removed.1.symm
-              | cons first rest =>
-                  simp only [resolved, opened] at removed
-                  cases survived : Unifying.survivors (.expression (first :: rest)) use rows with
-                  | none => simp [survived] at removed
-                  | some kept =>
-                      cases written : state.write handle kept with
-                      | none => simp [survived, written] at removed
-                      | some next =>
-                          simp [survived, written] at removed
-                          exact Or.inr ⟨handle, rows, first, rest, kept, rfl, opened, rfl, survived,
-                            removed.1 ▸ written⟩
+  cases specified : Effects.removalNeedsValue pattern with
+  | true => simp [specified] at removed
+  | false =>
+    simp only [specified, Bool.false_eq_true, ↓reduceIte] at removed
+    cases resolved : Effects.readHandle location with
+    | none => simp [resolved] at removed
+    | some handle =>
+        cases opened : state.read handle with
+        | none => simp [resolved, opened] at removed
+        | some rows =>
+            simp only [resolved, opened] at removed
+            cases survived : Unifying.survivors pattern use rows with
+            | none => simp [survived] at removed
+            | some kept =>
+                cases written : state.write handle kept with
+                | none => simp [survived, written] at removed
+                | some next =>
+                    simp [survived, written] at removed
+                    exact ⟨handle, rows, kept, rfl, opened, rfl, survived,
+                      removed.1 ▸ written⟩
 
 theorem apply_add_atom {state after : Effects.State} {arguments answers : List Atom}
     (returned : StdLib.apply state "add-atom" arguments = .ok (after, answers)) :
     ∃ location atom handle, arguments = [location, atom] ∧
       Effects.readHandle location = some handle ∧
+      atom.isVariable = false ∧
       Effects.insert state handle atom = some after := by
   match arguments, returned with
   | [location, atom], returned =>
-      rw [StdLib.add_atom_call] at returned
-      cases resolved : Effects.readHandle location with
-      | none => simp [resolved] at returned
-      | some handle =>
-          cases inserted : Effects.insert state handle atom with
-          | none => simp [resolved, inserted] at returned
-          | some next =>
-              simp [resolved, inserted] at returned
-              exact ⟨location, atom, handle, rfl, resolved, returned.1 ▸ inserted⟩
+      obtain ⟨handle, resolved, specified, inserted⟩ := StdLib.add_atom_success returned
+      exact ⟨location, atom, handle, rfl, resolved, specified, inserted⟩
   | [], returned =>
       cases (returned : (.error (.invalidArguments "add-atom") : Effects.Result) = _)
   | [_], returned =>
@@ -954,25 +969,24 @@ theorem transition_tracks {registry : SpaceSemantics.Program}
   | some request =>
       simp only
       cases asked_of_ask asked with
-      | @add bindings index location atom handle rows control resolved opened =>
+      | @add bindings index location atom handle rows control resolved specified opened =>
           obtain ⟨after, inserted⟩ :=
             Effects.insert_exists_of_read_some opened (resolve bindings atom)
           rw [AddAtomStep.add_atom_transition_unique registry source target bindings index
-            location atom handle after control resolved inserted step]
+            location atom handle after control resolved specified inserted step]
           show Tracks S (OrderedStore.publish ids
             ⟨[], [], [S.fresh ids handle (resolve bindings atom)]⟩) after
           rw [OrderedStore.append_only]
           exact tracks.insert inserted
-      | @remove bindings index location pattern first rest handle rows taken control resolved
-          opened shape selected =>
+      | @remove bindings index location pattern handle rows taken control resolved
+          opened specified selected =>
           obtain ⟨kept, removal⟩ := PeTTaStoreSelection.prepared_selection S.label selected
           have held := tracks.rows handle rows opened
           obtain ⟨after, written⟩ := NamedSpaces.Store.write_exists_of_read_some source.state
             handle rows (kept.map S.label) opened
           have removed := PeTTaStoreSelection.source_remove_rows S.label source.state after
-            (resolve bindings location) first rest handle source.uses (S.rowsAt handle ids)
-            kept taken resolved (by rw [← held]; exact opened) removal written
-          rw [← shape] at removed
+            (resolve bindings location) (resolve bindings pattern) handle source.uses (S.rowsAt handle ids)
+            kept taken resolved specified (by rw [← held]; exact opened) removal written
           rw [transition_unique step (Unifying.Transition.remove control removed)]
           show Tracks S (OrderedStore.publish ids ⟨taken, [], []⟩) after
           have contracted : OrderedStore.publish ids ⟨taken, [], []⟩ =
@@ -1013,23 +1027,20 @@ theorem transition_tracks {registry : SpaceSemantics.Program}
         ⟨bindings, head, index, held, answers, control, notRemove, applied⟩
       · rw [same]
         exact tracks
-      · rcases removeRows_ok removed with same |
-          ⟨handle, rows, first, rest, kept, resolved, opened, shape, survived, written⟩
-        · rw [same]
-          exact tracks
-        · exfalso
-          rw [tracks.rows handle rows opened, shape] at survived
-          obtain ⟨keptIds, taken, removal, _⟩ :=
-            PeTTaStoreSelection.source_selection S.label survived
-          have prepared := removal.prepared S.label
-          simp [ask, control, askCall, known_remove, shape, resolved, opened, prepared] at asked
+      · obtain ⟨handle, rows, kept, resolved, opened, specified, survived, _⟩ := removeRows_ok removed
+        exfalso
+        rw [tracks.rows handle rows opened] at survived
+        obtain ⟨keptIds, taken, removal, _⟩ :=
+          PeTTaStoreSelection.source_selection S.label survived
+        have prepared := removal.prepared S.label
+        simp [ask, control, askCall, known_remove, specified, resolved, opened, prepared] at asked
       · by_cases isAdd : head = "add-atom"
         · subst isAdd
           exfalso
           rw [primitiveInputs_of_ne (by decide)] at applied
-          obtain ⟨location, atom, handle, shape, resolved, inserted⟩ := apply_add_atom applied
+          obtain ⟨location, atom, handle, shape, resolved, specified, inserted⟩ := apply_add_atom applied
           obtain ⟨before, opened, _⟩ := Effects.insert_reads_back inserted
-          simp [ask, control, askCall, known_add, shape, resolved, opened] at asked
+          simp [ask, control, askCall, known_add, shape, specified, resolved, opened] at asked
         · by_cases isNew : head = "new-space"
           · subst isNew
             rw [apply_new_space applied]
@@ -1052,37 +1063,32 @@ theorem scan_answers (label : O → Atom) (bindings : Subst) (pattern template :
     Unifying.matchAnswers bindings pattern template use (rows.map label) =
       (scan label bindings pattern use rows).map fun packets =>
         packets.map fun row => (⟨resolve row.2 template, row.2⟩ : Unifying.Answer) := by
-  induction rows generalizing use with
-  | nil => rfl
-  | cons occurrence rest ih =>
-      simp only [List.map_cons, Unifying.matchAnswers, scan, ih]
-      cases later : scan label bindings pattern (use + 1) rest with
-      | none => simp
-      | some packets =>
-          cases matched : Unifying.unify bindings pattern
-            (Unifying.rename use (label occurrence)) <;> simp
+  exact Unifying.queryRows_natural id Prod.mk
+    (fun _ bound => (⟨resolve bound template,bound⟩ : Unifying.Answer))
+    label (fun packet : O × Subst => ⟨resolve packet.2 template,packet.2⟩)
+    (fun _ _ => rfl) bindings pattern use rows
 
 omit [DecidableEq O] in
-/-- **A written `match` goes on with exactly the occurrences it reads**: the machine's next
-configuration evaluates the body once under the unifier of each read occurrence, in store
-order, and nothing else. -/
+/-- A written match installs one body evaluation per joined occurrence
+path, preserving its binding rather than reopening later legs after
+the body changes the world. -/
 theorem written_match_continues {registry : SpaceSemantics.Program}
     {source : Unifying.Configuration} {ids : List O} (tracks : Tracks S ids source.state)
     {answer : Unifying.Answer} {pattern body : Atom} {later : List Unifying.Frame}
-    {handle : Handle} {rows : List Atom} {packets : List (O × Subst)}
+    {handle : Handle} {rows : List Atom} {packets : List (List O × Subst)} {used : Nat}
     (control : source.control = .returned [answer])
     (frames : source.frames = .query pattern body :: later)
     (resolved : Effects.readHandle answer.value = some handle)
     (opened : source.state.read handle = some rows)
-    (scanned : scan S.label answer.bindings pattern source.uses (S.rowsAt handle ids) =
-      some packets) :
+    (scanned : queryJoin S.label (S.rowsAt handle ids) (queryLegs pattern) answer.bindings source.uses =
+      some (packets,used)) :
     Unifying.Transition registry source
       { source with
-        control := .sequence (continuations body packets) []
+        control := .sequence (joinedBodies body packets) []
         frames := later
-        uses := source.uses + (S.rowsAt handle ids).length } := by
+        uses := source.uses + used } := by
   apply PeTTaQueryInterpretation.source_query_transition S.label registry source answer
-    pattern body later (S.rowsAt handle ids) packets control frames ?_ scanned
+    pattern body later (S.rowsAt handle ids) packets used control frames ?_ scanned
   have same := tracks.rows handle rows opened
   simp [resolved, opened, same]
 
@@ -1492,6 +1498,20 @@ theorem tracks_load (core : List Atom) :
         exact (Row.load_atoms 0 core).symm
     | privateSpace index =>
         simp [NamedSpaces.Store.new, NamedSpaces.Store.read] at opened
+    | namedSpace name =>
+        have empty : rowSupply.rowsAt (.namedSpace name) (Row.load 0 core) = [] := by
+          apply List.filter_eq_nil_iff.mpr
+          intro row member
+          have here := (Row.load_serial 0 core row member).2
+          simp only [decide_eq_true_eq]
+          change row.place ≠ Handle.namedSpace name
+          rw [here]
+          intro impossible
+          cases impossible
+        rw [empty]
+        have values : rows = [] := (Option.some.inj opened).symm
+        rw [values]
+        rfl
   · intro row member
     have here : rowSupply.place row = .self := (Row.load_serial 0 core row member).2
     rw [here]
@@ -1579,7 +1599,7 @@ theorem matching_reads :
 theorem adding_nowhere_asks_nothing :
     (ask rowSupply registry ids
       { state := store
-        control := .arguments [] (.function "add-atom") [] [.symbol "nowhere", p q] 0 }).map shape =
+        control := .arguments [] (.function "add-atom") [] [.grounded (.int 0), p q] 0 }).map shape =
       none := by
   decide
 

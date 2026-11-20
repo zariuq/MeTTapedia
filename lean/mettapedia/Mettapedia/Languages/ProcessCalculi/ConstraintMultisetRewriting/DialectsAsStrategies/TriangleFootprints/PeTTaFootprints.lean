@@ -6,7 +6,7 @@ import Mettapedia.Languages.MeTTa.PeTTa.UnifyingRename
 
 `PeTTa.RunsAsFirings` records, for a call of an authored function, a read of the equation rows the
 call selects (`askEquations`, through `scanCall`), and nothing about the rows it left. PeTTa
-enumerates every clause of the called predicate, so its answer depends on the absence of other
+enumerates every clause of the called predicate, so its answer depends on the lack of other
 matching equations as much as on the rows it used. Here the request carries that completeness.
 
 * `pettaCallRegion`: the region of a call of `head` with the values `values`, as a predicate of a

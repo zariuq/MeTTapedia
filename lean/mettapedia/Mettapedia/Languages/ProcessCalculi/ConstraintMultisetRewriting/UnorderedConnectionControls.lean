@@ -118,8 +118,8 @@ theorem the_backwards_listed_chain_is_actually_sorted : order? chain = some [1, 
 
 theorem the_original_roster_cannot_execute : ¬ ConditionalSchedule.Executable A chainLabel chainBefore (roster chain) := by
   intro executes
-  have absent : 2 ∉ chainBefore.present := by decide
-  exact absent (executes.1.occurrences.taken_subset (by decide))
+  have notMem : 2 ∉ chainBefore.present := by decide
+  exact notMem (executes.1.occurrences.taken_subset (by decide))
 
 theorem the_computed_chain_executes_and_retains_the_correct_boundary :
     ConditionalSchedule.Executable A chainLabel chainBefore ([1, 0].map chain) ∧

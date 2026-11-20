@@ -1085,7 +1085,9 @@ theorem guarded_root_same_source {permitted : Bool} {items others : List Pattern
       have typed := typed_assignment_same compared capturedTyped
       obtain ⟨target', reduced', targetSame⟩ := instantiateWith?_same rule specification 0
         (ScopedReflectiveExecution.binderOperation (environment permitted).reflection rule)
-        (binderOperation_same _ rule) rule.right .right [] 0 captured assignment target compared reduced
+        (binderOperation_same _ rule (by
+          apply (checkBinderLawsFor_iff _ _ _).mp
+          cases permitted <;> decide +kernel)) rule.right .right [] 0 captured assignment target compared reduced
       refine ⟨trace', assignment, target', ?_, targetSame⟩
       exact .fire (selected_rule permitted) (selected_specification permitted) admitted
         (openPatternWellSorted_of_eqvGen ((same_iff _ _).mp same) sourceTyped)

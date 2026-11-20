@@ -137,7 +137,7 @@ theorem comm_reflection_admitted {free : FreeSortContext} {P : Pattern}
       inputSafety.1, inputSafety.2, outputSafety.2, restSafe]
   let redex : ParameterizedRewriteSystem.Process free :=
     ⟨redexPattern, (ParameterizedRewriteSystem.process_iff _ _).mpr ⟨redexTyped, redexSafe⟩⟩
-  have firing := RhoStep.comm chI body pl rest bodyTyped payloadTyped
+  have firing := RhoStep.comm_resolved chI body pl rest bodyTyped payloadTyped
   let contractum := ParameterizedRewriteSystem.stepTarget redex firing
   refine ⟨redex, contractum, ?_, firing, ?_⟩
   · have flat := sc_flatAtoms.1 P
@@ -148,17 +148,18 @@ theorem comm_reflection_admitted {free : FreeSortContext} {P : Pattern}
     change StructuralCongruence (.collection .hashBag (xi.1 :: xo.1 :: rest) none) _
     rw [hxo1, hxi1]
     exact sc_second rest (sc_apply2 _ channels (.refl pl))
-  · obtain ⟨T, hT, eT⟩ := translate_semanticCommSubst hK' hq'
+  · obtain ⟨K'', hK'', eK''⟩ := translate_resolveQuotes _ body K' hK'
+    obtain ⟨T, hT, eT⟩ := translate_semanticCommSubst hK'' hq'
     obtain ⟨R, hR, hRatoms⟩ := tProcs_atoms hρ L' (fun x hx => hLtr x (memL' x hx))
       (fun x hx => atomAt x (memL' x hx))
     refine ⟨parT T R, ?_, ?_⟩
-    · change tProc (Env.empty []) (.collection .hashBag (semanticCommSubst body pl :: rest)
-          none) = _
+    · change tProc (Env.empty []) (.collection .hashBag
+          (semanticCommSubst (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body) pl :: rest) none) = _
       rw [tProc.eq_5, tProcs.eq_2, hT, Option.bind_some, hR, Option.map_some]
     · apply cls_eq_of_atoms_eq
       change atoms T + atoms R = atoms u
-      rw [atoms_invariant (eT.trans (inst_equiv (cls_eq_iff.mp eK') (cls_eq_iff.mp eq'))),
-        hRatoms, hL', htgt]
+      rw [atoms_invariant (eT.trans (inst_equiv (eK''.trans (cls_eq_iff.mp eK'))
+          (cls_eq_iff.mp eq'))), hRatoms, hL', htgt]
 
 theorem strict_reflection_admitted {free : FreeSortContext} {P : Pattern}
     (typed : ProcWellSorted rhoReflectivePresentation free [] P)

@@ -46,7 +46,7 @@ an instance of `Interface.Step` over `frames`.
   is, with the same result; every run of the first-order step is a run of this step with the same
   firings and last configuration.
 * A disequation is checked: telling an equation that identifies a told disequation is refused, and a
-  disequation can make an absence guard hold that equations alone leave open
+  disequation can make a none guard hold that equations alone leave open
   (`DisequalityControls`).
 -/
 
@@ -310,7 +310,7 @@ variable (label : O → T)
 /-- The guards and predicate queries of a firing at one substitution. -/
 def holdsAt {s : State A O} (f : Firing A O s) (σ : S) : Prop :=
   (∀ check ∈ f.base.rule.checks, check.Holds A σ label s.configuration.present) ∧
-    ∀ query ∈ f.base.queries, (query.atSolution σ).Holds label s.configuration.present
+    ∀ query ∈ f.base.queries, query.Holds σ label s.configuration.present
 
 /-- **Admission with disequations**: the first-order shapes and occurrences, a solution of the
 information that separates every disequation, and the guards and predicate queries at every such

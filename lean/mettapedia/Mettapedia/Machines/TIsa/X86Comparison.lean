@@ -94,7 +94,7 @@ theorem sub_zero (state : State) (left right : Word) (flags : BitVec 32) :
     Sail.BitVec.updateSubrange']
   rfl
 
-theorem register_compare64 [MemoryPrimitives]
+theorem register_compare64_defined [MemoryPrimitives]
     (state : State) (source destination : Fin 16) (left right : Word)
     (start next : BitVec 48) (prefixes : BitVec 52) (flags : BitVec 32)
     (segment : Functions._get_prefixes_seg prefixes = (0#8))
@@ -111,12 +111,13 @@ theorem register_compare64 [MemoryPrimitives]
           .ok () (X86Move.putPointer
             (X86Flags.putFlags state (X86Flags.mergeFlags flags output)) next) ∧
       Functions._get_rflagsbits_cf output = Functions.bool_to_bits (left.toNat < right.toNat) ∧
-      Functions._get_rflagsbits_zf output = Functions.zf_spec (left - right).toNat := by
+      Functions._get_rflagsbits_zf output = Functions.zf_spec (left - right).toNat ∧
+      (Functions.gpr_sub_spec_8 left right flags).run state = .ok (left - right, output, 0#32) state := by
   obtain ⟨output, calculated⟩ := X86Alu.sub_executes_defined state left right flags
   have carry := sub_carry state left right flags
   have zero := sub_zero state left right flags
   simp only [map_eq_pure_bind, run_bind, calculated, run_pure] at carry zero
-  refine ⟨output, ?_, (EStateM.Result.ok.inj carry).1, (EStateM.Result.ok.inj zero).1⟩
+  refine ⟨output, ?_, (EStateM.Result.ok.inj carry).1, (EStateM.Result.ok.inj zero).1, calculated⟩
   have calculated' : (Functions.gpr_arith_logic_spec 8 8 left right flags).run state =
       .ok (left - right, output, 0#32) state := calculated
   have eightBits : Functions.bits_of_int 8 4 = (8#4) := rfl
@@ -148,6 +149,28 @@ theorem register_compare64 [MemoryPrimitives]
   apply X86Move.write_pointer64
   rw [X86Flags.putFlags_other _ _ .log_register_writes (by decide)]
   exact quiet
+
+theorem register_compare64 [MemoryPrimitives]
+    (state : State) (source destination : Fin 16) (left right : Word)
+    (start next : BitVec 48) (prefixes : BitVec 52) (flags : BitVec 32)
+    (segment : Functions._get_prefixes_seg prefixes = (0#8))
+    (addressSize : Functions._get_prefixes_adr prefixes = (0#8))
+    (sourceKnown : lookup state source = some right)
+    (destinationKnown : lookup state destination = some left)
+    (flagsKnown : state.regs.get? .rflags = some flags)
+    (quiet : state.regs.get? .log_register_writes = some false)
+    (length : Functions.check_instruction_length start next (0#3) = none) :
+    ∃ output,
+      (Functions.x86_add_adc_sub_sbb_or_and_xor_cmp_test_e_g 8
+        .Mode_64bit start next prefixes (rex true source destination) (0x39#8)
+        (modRM source destination) (0#8)).run state =
+          .ok () (X86Move.putPointer
+            (X86Flags.putFlags state (X86Flags.mergeFlags flags output)) next) ∧
+      Functions._get_rflagsbits_cf output = Functions.bool_to_bits (left.toNat < right.toNat) ∧
+      Functions._get_rflagsbits_zf output = Functions.zf_spec (left - right).toNat := by
+  obtain ⟨output, fetched, carry, zero, _⟩ := register_compare64_defined state source destination
+    left right start next prefixes flags segment addressSize sourceKnown destinationKnown flagsKnown quiet length
+  exact ⟨output, fetched, carry, zero⟩
 
 theorem register_test64 [MemoryPrimitives]
     (state : State) (source destination : Fin 16) (left right : Word)
@@ -224,6 +247,32 @@ theorem dispatch_test64 [MemoryPrimitives] (other : OtherOpcodeHandlers)
 
 local instance : MemoryPrimitives := X86Memory.ordinary
 
+theorem fetched_compare64_defined (other : OtherOpcodeHandlers) (vector : VectorOpcodeHandlers)
+    (state : State) (source destination : Fin 16)
+    (window : X86LegacyFetch.Window state (0x39#8) true source destination)
+    (left right : Word) (flags : BitVec 32)
+    (sourceKnown : lookup state source = some right)
+    (destinationKnown : lookup state destination = some left)
+    (flagsKnown : state.regs.get? .rflags = some flags)
+    (quiet : state.regs.get? .log_register_writes = some false) :
+    letI : OtherOpcodeHandlers := X86Arithmetic.linkedHandlers other
+    letI : VectorOpcodeHandlers := vector
+    ∃ output, (Functions.x86_fetch_decode_execute ()).run state =
+      .ok () (X86Move.putPointer
+        (X86Flags.putFlags state (X86Flags.mergeFlags flags output)) window.next) ∧
+      Functions._get_rflagsbits_cf output = Functions.bool_to_bits (left.toNat < right.toNat) ∧
+      Functions._get_rflagsbits_zf output = Functions.zf_spec (left - right).toNat ∧
+      (Functions.gpr_sub_spec_8 left right flags).run state = .ok (left - right, output, 0#32) state := by
+  let : OtherOpcodeHandlers := X86Arithmetic.linkedHandlers other
+  let : VectorOpcodeHandlers := vector
+  have regular : X86LegacyFetch.RegularOpcode (0x39#8) := (X86LegacyFetch.checkOpcode_iff _).mp (by decide)
+  rw [X86LegacyFetch.Window.dispatches (0x39#8) regular true state source destination window,
+    dispatch_compare64 other]
+  apply register_compare64_defined state source destination left right window.address window.next
+    (X86LegacyFetch.packet (0x39#8)) flags (by decide) (by decide)
+    sourceKnown destinationKnown flagsKnown quiet
+  exact X86InstructionFetch.length_from_geometry _ _ (by have := window.step2; have := window.step3; omega)
+
 theorem fetched_compare64 (other : OtherOpcodeHandlers) (vector : VectorOpcodeHandlers)
     (state : State) (source destination : Fin 16)
     (window : X86LegacyFetch.Window state (0x39#8) true source destination)
@@ -239,15 +288,9 @@ theorem fetched_compare64 (other : OtherOpcodeHandlers) (vector : VectorOpcodeHa
         (X86Flags.putFlags state (X86Flags.mergeFlags flags output)) window.next) ∧
       Functions._get_rflagsbits_cf output = Functions.bool_to_bits (left.toNat < right.toNat) ∧
       Functions._get_rflagsbits_zf output = Functions.zf_spec (left - right).toNat := by
-  let : OtherOpcodeHandlers := X86Arithmetic.linkedHandlers other
-  let : VectorOpcodeHandlers := vector
-  have regular : X86LegacyFetch.RegularOpcode (0x39#8) := (X86LegacyFetch.checkOpcode_iff _).mp (by decide)
-  rw [X86LegacyFetch.Window.dispatches (0x39#8) regular true state source destination window,
-    dispatch_compare64 other]
-  apply register_compare64 state source destination left right window.address window.next
-    (X86LegacyFetch.packet (0x39#8)) flags (by decide) (by decide)
-    sourceKnown destinationKnown flagsKnown quiet
-  exact X86InstructionFetch.length_from_geometry _ _ (by have := window.step2; have := window.step3; omega)
+  obtain ⟨output, fetched, carry, zero, _⟩ := fetched_compare64_defined other vector state source
+    destination window left right flags sourceKnown destinationKnown flagsKnown quiet
+  exact ⟨output, fetched, carry, zero⟩
 
 theorem fetched_test64 (other : OtherOpcodeHandlers) (vector : VectorOpcodeHandlers)
     (state : State) (source destination : Fin 16)

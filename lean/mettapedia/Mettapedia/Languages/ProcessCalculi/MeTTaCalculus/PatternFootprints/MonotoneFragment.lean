@@ -46,7 +46,7 @@ Three operations leave the fragment, and each breaks a law of it.  They do not
 leave it alike.  A removal keeps the first law: its outcomes from a snapshot are
 outcomes from every larger state (`MonotoneControls.positive_instances`); it
 breaks the other two, because removals compete for occurrences.  A complete read
-and a guard that asks for absence break the first law.
+and a guard that asks for none queries break the first law.
 
 * **A removal** (`removeKind_not_monotone`).  Two takers of one token both
   answer from the snapshot; they are not published together, and the committed
@@ -56,10 +56,10 @@ and a guard that asks for absence break the first law.
   each add an atom and read the pattern has an answer that neither gave from the
   snapshot and lacks one that was given
   (`MonotoneControls.complete_read_leaves_the_fragment`).
-* **A guard that asks for absence** (`addKindUnless_not_monotone`).  Its outcome
+* **A guard that asks for none queries** (`addKindUnless_not_monotone`).  Its outcome
   from a snapshot is no outcome from a larger state, and with the addition it
   watches it is published in one order and refused in the other
-  (`MonotoneControls.absence_guard_leaves_the_fragment`).
+  (`MonotoneControls.none_guard_leaves_the_fragment`).
 -/
 
 set_option autoImplicit false
@@ -93,7 +93,7 @@ structure Proposal.Positive (proposal : Proposal Location Value Answer) : Prop w
   constant : proposal.readout.reads = ∅
 
 /-- **A positive region**: every step is positive and every answer reads nothing.
-Removals and cell writes are admitted; guards that ask for an absence and answers
+Removals and cell writes are admitted; guards that ask for a none query and answers
 that read are not. -/
 inductive Region.Positive : Region Location Value Answer → Prop
   | fail : Region.Positive .fail
@@ -441,7 +441,7 @@ theorem replaceKind_not_monotone (old new : Location) : ¬ (replaceKind old new)
   rw [marking_singleton] at atOld
   simp at atOld
 
-/-- **A guard that asks for absence is not monotone**: the addition of the kind
+/-- **A guard that asks for the none query is not monotone**: the addition of the kind
 it watches disables it. -/
 theorem addKindUnless_not_monotone (kind watched : Location) :
     ¬ (addKindUnless kind watched).Monotone :=
@@ -559,11 +559,11 @@ def guarded : Region Kind ℕ Unit :=
 def marker : Region Kind ℕ Unit :=
   .step (addKind .a) (.answer (Readout.const ()))
 
-/-- **A guard that asks for absence leaves the fragment.**  The guarded addition
+/-- **A guard that asks for the none query leaves the fragment.**  The guarded addition
 is not a monotone region.  It has an outcome from the empty state and none from
 the larger state with an `a`; and with the addition of that `a` it is published
 in one order and refused in the other. -/
-theorem absence_guard_leaves_the_fragment :
+theorem none_guard_leaves_the_fragment :
     ¬ guarded.Monotone ∧
       (guarded.branchLocal noKinds).length = 1 ∧ (guarded.branchLocal oneA).length = 0 ∧
       (publishAll ((guarded.branchLocal noKinds).map Prod.snd ++
@@ -641,7 +641,7 @@ end MonotoneControls
 #print axioms MonotoneControls.chain_answers_sublist
 #print axioms MonotoneControls.removal_leaves_the_fragment
 #print axioms MonotoneControls.complete_read_leaves_the_fragment
-#print axioms MonotoneControls.absence_guard_leaves_the_fragment
+#print axioms MonotoneControls.none_guard_leaves_the_fragment
 #print axioms MonotoneControls.positive_proposal_instances
 #print axioms MonotoneControls.positive_instances
 #print axioms MonotoneControls.chain_publishes_in_both_orders

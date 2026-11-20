@@ -112,7 +112,7 @@ theorem canonicalSuccessorList_complete (term : RhoProcess) :
   have redexClosed := (rhoClosedTermWellSorted_process_iff redex.1).mp redex.2
   have termClosed := (rhoClosedTermWellSorted_process_iff term.1).mp term.2
   obtain ⟨target', canonicalStep, targetEq⟩ :=
-    canonicalStep_complete_of_rhoStep redexClosed.1 redexClosed.2 reduces
+    canonicalStep_complete_of_rhoStep redexClosed.1 reduces
   rw [← termRedexEq] at canonicalStep
   have closed := rhoStepAt_preserves_closed
     (canonicalize_procWellSorted [] termClosed.1)

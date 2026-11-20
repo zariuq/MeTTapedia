@@ -86,9 +86,9 @@ theorem ExactReached.permuted {Γ : Context setting.R} {problem : EquationStore 
   | start inside _ => exact permutedMiller_of_fragment inside
   | step fuel _ fired ih => exact tower_withinRound_closure fuel _ _ _ ih fired
 
-/-- **Conditional decision for `withinTower` on stores of the fragment with exact arguments, from the census rows
+/-- **Conditional decision for `withinTower` on stores of the fragment with exact arguments, from the classification rows
 outside the rows read**: if, on every store reached by the family from a store of the fragment with exact
-arguments, every census head of a constant preparation whose η-long opened sides are of a census kind and outside
+arguments, every classified head of a constant preparation whose η-long opened sides are of a classified kind and outside
 the rows read is read by a reader of the family from some budget on, then the family decides every store of the
 dynamic pattern fragment with exact arguments, with a principal answer or a certified refutation, constant at every
 larger budget. The hypothesis is not proved; `narrowStore`, exact and with a principal answer, needs a narrowing
@@ -99,12 +99,12 @@ theorem tower_within_decided_of_uncovered_exact
       ExactReached problem → problem ≠ [] → ∀ threshold,
         (∀ larger, threshold ≤ larger → towerPrepare larger problem = towerPrepare threshold problem) →
         ∀ equation ∈ (towerPrepare threshold problem).remaining,
-          ContextualDependentNormalizing.NormalEquation (fun _ => (0 : Nat)) equation → CensusHead equation →
+          ContextualDependentNormalizing.NormalEquation (fun _ => (0 : Nat)) equation → ClassifiedHead equation →
           ContextualDependentShortClosure.FragmentSidesMiller equation →
           Kind (openedFlexible (piCount equation.1.1.code))
-            (ContextualDependentCensus.openNormal (piCount equation.1.1.code)
+            (ContextualDependentClassification.openNormal (piCount equation.1.1.code)
               (expandTo (piCount equation.1.1.code) equation.1.2.code))
-            (ContextualDependentCensus.openNormal (piCount equation.1.1.code)
+            (ContextualDependentClassification.openNormal (piCount equation.1.1.code)
               (expandTo (piCount equation.1.1.code) equation.2.2.code)) →
           ¬ MixedCoveredHead equation → ∃ bound, ∀ larger, bound ≤ larger → TowerWithinReads larger problem)
     {Θ : Context setting.R} {problem : EquationStore (TotalTerm Θ)} (inside : InFragmentStore problem)
@@ -113,13 +113,13 @@ theorem tower_within_decided_of_uncovered_exact
       run (withinTower.solver larger) problem larger = run (withinTower.solver budget) problem budget ∧
       ((∃ state finished, run (withinTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ absent, run (withinTower.solver larger) problem larger = .refuted absent)) :=
+        (∃ missing, run (withinTower.solver larger) problem larger = .refuted missing)) :=
   (Settled.ofConst withinTower (fun problem => tower_withinRound_const problem)
     (fun problem => ExactReached problem)
     (fun {_} {problem} held nonempty => by
       have permuted := held.permuted
       have reads : ∃ bound, ∀ larger, bound ≤ larger → TowerWithinReads larger problem := by
-        obtain ⟨threshold, constant, equation, member, normal, head⟩ := tower_stable_census_head permuted nonempty
+        obtain ⟨threshold, constant, equation, member, normal, head⟩ := tower_stable_classified_head permuted nonempty
         by_cases covered : MixedCoveredHead equation
         · obtain ⟨bound, mixed⟩ := tower_mixedReads_of_covered constant member normal head.1 covered
           exact ⟨bound, fun larger enough => .inl (.inl (.inl (.inl (.inl (mixed larger enough)))))⟩

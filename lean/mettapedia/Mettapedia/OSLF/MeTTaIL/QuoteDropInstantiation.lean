@@ -224,7 +224,7 @@ theorem binderRespects_ordinary : BinderRespects declaration Substitution.instan
 
 theorem binderRespects_reflective (distinct : declaration.dropConstructor ≠ declaration.quoteConstructor) :
     BinderRespects declaration (ScopedRuleInstantiation.reflectiveOperation declaration) :=
-  fun sameNormalized _ named => by rw [reflectiveOperation_normal distinct sameNormalized named]
+  fun sameNormalized _ _ => by rw [reflectiveOperation_normal distinct sameNormalized]
 
 /-- Every captured body has its drops applied to names. -/
 def CapturesNamed (declaration : ReflectivePresentationDecl) (assignment : ScopedRuleMatching.Assignment) : Prop :=

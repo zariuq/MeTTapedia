@@ -227,18 +227,18 @@ theorem instantiate_eq_of_noMeta : ∀ {Γ : Ctx S} {sort : S.Srt} (term : Term 
     hasMeta term = false → ∀ (first second : Assignment declaration target),
       instantiate first term = instantiate second term
   | _, _, .var _, _, _, _ => rfl
-  | _, _, .op (.inl _) arguments, absent, first, second => by
-      have same := instantiateArgs_eq_of_noMeta arguments absent first second
+  | _, _, .op (.inl _) arguments, missing, first, second => by
+      have same := instantiateArgs_eq_of_noMeta arguments missing first second
       simp only [instantiate, same]
-  | _, _, .op (.inr _) _, absent, _, _ => by cases absent
+  | _, _, .op (.inr _) _, missing, _, _ => by cases missing
 
 theorem instantiateArgs_eq_of_noMeta : ∀ {arities : List (List S.Srt × S.Srt)} {Γ : Ctx S}
     (arguments : Args (signature S declaration) arities Γ), hasMetaArgs arguments = false →
       ∀ (first second : Assignment declaration target),
         instantiateArgs first arguments = instantiateArgs second arguments
   | _, _, .nil, _, _, _ => rfl
-  | _, _, .cons head tail, absent, first, second => by
-      have split : (hasMeta head || hasMetaArgs tail) = false := absent
+  | _, _, .cons head tail, missing, first, second => by
+      have split : (hasMeta head || hasMetaArgs tail) = false := missing
       cases inHead : hasMeta head with
       | true =>
           rw [inHead] at split

@@ -144,8 +144,8 @@ theorem take_not_alwaysPossibly : ¬ AlwaysPossibly racesObserved (2 : ℕ) (.in
       (.refl _)
   obtain ⟨t'', steps, seen⟩ := holds _ reach
   rw [dead_end_stuck steps rfl] at seen
-  have absent : (2 : ℕ) ∈ ({1} : Finset ℕ) := seen
-  exact absurd absent (by decide)
+  have missing : (2 : ℕ) ∈ ({1} : Finset ℕ) := seen
+  exact absurd missing (by decide)
 
 /-- The repaired race stays among its three stores. -/
 theorem repair_multiStep_store {t t' : races.Term} (steps : races.MultiStep t t') :

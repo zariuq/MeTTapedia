@@ -72,18 +72,18 @@ theorem discharge_preserves_later_models (A : SubstitutionAction T S)
   ResidualChecks.discharge_correct _ probe
     (fun check b ready => sound check b ready σ (refinement σ model)) checks
 
-/-- Definite absence is exactly non-unifiability of every occurrence under
+/-- Definite the none query is exactly non-unifiability of every occurrence under
 the same current equations. This is stable under equation refinement only
 while the occurrence world and the equality theory stay fixed. -/
-theorem entails_absent_iff_apart (A : SubstitutionAction T S) (equations : EquationStore T)
+theorem entails_none_iff_apart (A : SubstitutionAction T S) (equations : EquationStore T)
     (label : O → T) (world : Finset O) (pattern : T) :
-    A.Entails equations (fun σ => (Check.absent pattern).Holds A σ label world) ↔
+    A.Entails equations (fun σ => (Check.predicate .none pattern).Holds A σ label world) ↔
       ∀ o ∈ world, A.Apart equations pattern (label o) := by
   constructor
-  · intro absent o member
+  · intro missing o member
     rintro ⟨σ, solved⟩
     obtain ⟨old, equation⟩ := (A.models_append _ _ _).mp solved
-    exact absent σ old o member (equation (pattern, label o) (by simp))
+    exact missing σ old o member (equation (pattern, label o) (by simp))
   · intro apart σ solved o member same
     apply apart o member
     refine ⟨σ, (A.models_append _ _ _).mpr ⟨solved, ?_⟩⟩
@@ -141,11 +141,11 @@ theorem region_eq_of_covered [DecidableEq O] (A : SubstitutionAction T S)
 
 /-- A negative scan is sound only with the coverage argument. Equations and
 the observed occurrence world are the same on both sides. -/
-theorem entails_absent_iff_of_covered (A : SubstitutionAction T S)
+theorem entails_none_iff_of_covered (A : SubstitutionAction T S)
     {equations : EquationStore T} {label : O → T} {visible world : Finset O} {pattern : T}
     (included : visible ⊆ world) (covered : CoversMatches A equations label visible world pattern) :
-    A.Entails equations (fun σ => (absent pattern).Holds A σ label visible) ↔
-      A.Entails equations (fun σ => (absent pattern).Holds A σ label world) := by
+    A.Entails equations (fun σ => (predicate .none pattern).Holds A σ label visible) ↔
+      A.Entails equations (fun σ => (predicate .none pattern).Holds A σ label world) := by
   constructor
   · intro holds σ model o member same
     exact holds σ model o (covered σ model o member same) same
@@ -168,23 +168,23 @@ theorem entails_count_iff_of_covered [DecidableEq O] (A : SubstitutionAction T S
 
 /-- Equation refinement and adding only provably nonmatching occurrences
 preserve a negative observation. Adding an arbitrary row is not allowed. -/
-theorem absent_after_refinement_and_extension [DecidableEq O] (A : SubstitutionAction T S)
+theorem none_after_refinement_and_extension [DecidableEq O] (A : SubstitutionAction T S)
     {early late : EquationStore T} (refinement : A.Refines late early)
     {label : O → T} {world added : Finset O} {pattern : T}
-    (absentNow : A.Entails early (fun σ => (absent pattern).Holds A σ label world))
+    (noneNow : A.Entails early (fun σ => (predicate .none pattern).Holds A σ label world))
     (newApart : ∀ o ∈ added, A.Apart late pattern (label o)) :
-    A.Entails late (fun σ => (absent pattern).Holds A σ label (world ∪ added)) := by
+    A.Entails late (fun σ => (predicate .none pattern).Holds A σ label (world ∪ added)) := by
   intro σ model o member
   rcases Finset.mem_union.mp member with old | new
-  · exact absentNow σ (refinement σ model) o old
-  · exact ((entails_absent_iff_apart A late label added pattern).mpr newApart) σ model o new
+  · exact noneNow σ (refinement σ model) o old
+  · exact ((entails_none_iff_apart A late label added pattern).mpr newApart) σ model o new
 
 /-- A resource update cannot change this check's matching occurrences under
 the stated joint constraints. Equality checks do not inspect occurrences. -/
 def IgnoresWrites (A : SubstitutionAction T S) (equations : EquationStore T)
     (label : O → T) (selection : Selection O) : Check T → Prop
   | .equal _ _ => True
-  | .absent pattern | .count pattern _ =>
+  | .predicate _ pattern | .count pattern _ =>
       ∀ o ∈ selection.taken ++ selection.made, A.Apart equations pattern (label o)
 
 private theorem no_match_of_apart (A : SubstitutionAction T S)
@@ -219,6 +219,23 @@ theorem region_fire_eq_of_apart [DecidableEq O] (A : SubstitutionAction T S)
     have member : o ∈ selection.taken := by simpa [Selection.commit] using taken
     exact no_match_of_apart A (apart o (List.mem_append_left _ member)) σ model same
 
+/-- A predicate query reads its world only through the rows its pattern matches. -/
+theorem predicate_holds_iff_accepts (A : SubstitutionAction T S) (σ : S) (label : O → T)
+    (store : Finset O) (quantifier : Quantifier) (pattern : T) :
+    (Check.predicate quantifier pattern).Holds A σ label store ↔
+      quantifier.Accepts («matches» A σ label store pattern) := by
+  classical
+  cases quantifier with
+  | any =>
+      constructor
+      · rintro ⟨o, present, same⟩
+        exact ⟨o, Finset.mem_filter.mpr ⟨present, same⟩⟩
+      · rintro ⟨o, inside⟩
+        exact ⟨o, (Finset.mem_filter.mp inside).1, (Finset.mem_filter.mp inside).2⟩
+  | none =>
+      show (∀ o ∈ store, ¬ _) ↔ «matches» A σ label store pattern = ∅
+      simp only [«matches», Finset.filter_eq_empty_iff]
+
 /-- Guard stability is derived from excluded matching writes, rather than
 supplied as equality of the two guard verdicts. -/
 theorem holds_fire_iff_of_ignored [DecidableEq O] (A : SubstitutionAction T S)
@@ -229,13 +246,9 @@ theorem holds_fire_iff_of_ignored [DecidableEq O] (A : SubstitutionAction T S)
     check.Holds A σ label (fire world (selection.commit (T := T))) ↔ check.Holds A σ label world := by
   cases check with
   | equal left right => rfl
-  | absent pattern =>
-      have same := region_fire_eq_of_apart A world selection ignored σ model
-      have absent_iff (current : Finset O) :
-          (Check.absent pattern).Holds A σ label current ↔ «matches» A σ label current pattern = ∅ := by
-        classical
-        simp only [Holds, «matches», Finset.filter_eq_empty_iff]
-      rw [absent_iff, absent_iff, same]
+  | predicate quantifier pattern =>
+      rw [predicate_holds_iff_accepts, predicate_holds_iff_accepts,
+        region_fire_eq_of_apart A world selection ignored σ model]
   | count pattern number =>
       change («matches» A σ label (fire world (selection.commit (T := T))) pattern).card = number ↔
         («matches» A σ label world pattern).card = number

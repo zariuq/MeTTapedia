@@ -14,7 +14,7 @@ In the tower typed equality strengthens past an unused variable (`tower_strength
 | `λ p x y. F x y ≐ λ p x y. F y x` at `Π (p : Id (F A A) b b). Π x y. U0` | suspended | commit |
 | the same, then `λ x y. F x x ≐ λ x y. x` | suspended | refuted |
 
-Wherever the anywhere family decides, the dead-binder family decides the same way (`dead_of_anywhere`), so the census
+Wherever the anywhere family decides, the dead-binder family decides the same way (`dead_of_anywhere`), so the classification
 and the reorder witness keep their outcomes.
 -/
 
@@ -101,7 +101,7 @@ theorem dead_of_anywhere {Θ : Context setting.R} {problem : EquationStore (Tota
     ContextualDependentNormalCheckingTower.head_typing_unique
     (ContextualDependentNormalizing.tower_rootComplete (fun _ => (0 : Nat))) tower_strengthening 16 8 problem decided
 
-/-- **The census keeps its outcomes under the dead-binder solver.** -/
+/-- **The classification keeps its outcomes under the dead-binder solver.** -/
 theorem dead_of_final {Θ : Context setting.R} {problem : EquationStore (TotalTerm Θ)}
     (final : ContextualDependentAcceptance3.Controls.finalDecided problem = true) :
     (run inPlaceOnly problem 8).Decided ∧ run deadOnly problem 8 = run inPlaceOnly problem 8 := by

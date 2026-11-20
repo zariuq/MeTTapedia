@@ -1,0 +1,42 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DependentBraidCertificateControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DependentControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.TypedPublicationPredecessorControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DependentContextNoneControl
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DependentKnowledgeBaseControl
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DependentStrengtheningControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DependentRunEventObservation
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.RunRearrangementControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DependentBlockNaturality
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DependentBlockControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DependentContextSimilarity
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DependentThreeEventControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DependentContextCancellation
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.TypedPublicationRunTransportControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.TypedPublicationCoherenceModal
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.TypedPublicationCountControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DependentPublicationConsumer
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DependentContextFunctorControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DependentContextComposition
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DependentExecutionBraidControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.NativeRoundExecution
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.SetFamilyBlockCoherence
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.RunSuffixDescentControl
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.TypedPublicationOriginLedger
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DependentBraidPublication
+
+/-!
+# Witnessed dependent run comparisons and context placement
+
+The imported constructions retain native event positions and observations,
+actual dependent endpoint transports, helper-block coherence and local query
+conditions for placing complete runs in larger occurrence contexts.
+Typed source applications and runs carry actual solver answers, residual
+knowledge and output code. Qualified modal laws use the existing firing span.
+Licensed context functors retain the complete event and boundary interpretations.
+The actual three-dimensional admission cell supports both full execution braids.
+Raw continuation actions remain distinguished from cancellation quotients.
+Consistent stronger knowledge lifts the actual schedules when the comparison
+preserves their source refinement. Incoming certified publications lift to
+compared endpoints; restricted offer tables retain their separate closure law.
+Scoped finite certificates preserve the declared event and frame observations.
+-/

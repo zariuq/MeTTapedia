@@ -8,7 +8,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Esca
 * **Every key on firings obeys the key laws** (`firstOrderKeyLaws`): the one-frame transport moves and
   carries nothing. So canonical interleavings are complete for every key and every sound oracle
   (`firstOrder_exists_canonical`), in particular for the exact oracle, independence itself, which the
-  static fibre decides (`decidableIndependent`).
+  static exact-query fibre decides (`decidableIndependent`).
 * **A nonempty run is an executable word** (`executable_of_run`).
 
 ## Controls (`CanonicalControls`)

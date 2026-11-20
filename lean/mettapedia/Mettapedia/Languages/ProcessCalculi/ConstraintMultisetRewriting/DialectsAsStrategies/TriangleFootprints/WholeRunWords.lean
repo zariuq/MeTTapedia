@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsA
 /-!
 # Read words over a whole run
 
-H2 compared one firing with one request: HE's equation query reads `regionRows (eqRegion …)` of
+`ReadWordTriangle` compared one firing with one request: HE's equation query reads `regionRows (eqRegion …)` of
 the program, PeTTa's complete call request reads the rows of its call region, each row with its
 position (`ReadWordTriangle.read_word_triangle`). Here HE's whole run from its entry configuration
 through the equation query (`EntryToQuery`) is compared with PeTTa's request word, with the same
@@ -18,7 +18,7 @@ observation guards.
   each firing reads (`heRows`), against the rows of PeTTa's complete call request (`pettaRows`),
   both in store order, each positioned row once.
 * *Guards*: the region each firing observes completely. A region of no row is vacuous; a region
-  that holds no row of the program but could hold one is an absence guard.
+  that holds no row of the program but could hold one is a none guard.
 
 ## Results
 
@@ -29,19 +29,21 @@ observation guards.
 * `whole_run_guards` (**the exact difference**): every row an HE firing before the query guards is
   a declaration `(: a T)` of an atom `a` of the call, PeTTa's call request guards no declaration,
   and HE's entry guard is not vacuous: it holds `(: f T)` for every `T`. So the words differ by
-  HE's absence guards over the call's declarations: the type-directed entry (the declarations of
+  HE's none guards over the call's declarations: the type-directed entry (the declarations of
   `f` and of the arguments, observed together) and one cast guard per atom of the call (`f` again,
   and each argument; a grounded argument's guard is vacuous).
 * `declaration_race`: the difference is observable. A commit that adds `(: f T)` spoils HE's entry
   firing, while it commutes with PeTTa's call request, whose region it leaves unchanged.
-* `Double.double_whole_run`: H2's tied instance completed. On `{(p a), (= (double 4) 8)}` HE's run
+* `Double.double_whole_run`: the tied instance of `ExpressionTriangle` completed. On
+  `{(p a), (= (double 4) 8)}` HE's run
   from `ExpressionTriangle.entry` reaches the query, its fourteen firings before the query read no
   row, the query reads `(= (double 4) 8)` at position `1`, and PeTTa's run of the translation is
   the one request reading that row.
 
 ## Controls
 
-* `separating_controls`: H2's two separating programs are kept: a variable-headed equation (HE
+* `separating_controls`: the two separating programs (`ReadWordTriangle.Instance.region_disagreement`,
+  `GroundFragment.Controls.cons_view_distinguishes`) are kept: a variable-headed equation (HE
   answers `8`, PeTTa makes no request) and a `cons` list view in a head (PeTTa answers `5`, HE does
   not reduce). Both lie outside the fragment.
 * `Double.double_declaration_race`: `(: double Number)` lands in HE's entry guard of `(double 4)`
@@ -79,7 +81,8 @@ def heRows (atoms : List Atom) (f : String) (args : List Atom) : List (List (Ato
       [eqRegion [Atom.undefinedType] (.expression (.symbol f :: args)) Bindings.empty]).map
     fun ρ => regionRows ρ atoms
 
-/-- **PeTTa's read word** for the call: its complete call request, H2's observation. -/
+/-- **PeTTa's read word** for the call: its complete call request, the observation of
+`ReadWordTriangle`. -/
 def pettaRows (atoms : List Atom) (f : String) (args : List Atom) : List (Atom × ℕ) :=
   (completeCall rowSupply f args (Row.load 0 atoms)).selection.read.map
     fun row => (row.atom, row.serial)
@@ -228,9 +231,10 @@ theorem declaration_race {C F A : Type} {f : String} {args : List Atom} (type : 
   rw [readRequest_commit]
   exact commutes.1
 
-/-! ## Controls: H2's separating programs -/
+/-! ## Controls: the separating programs -/
 
-/-- **H2's two separating programs, kept as controls.** A variable-headed equation `(= ($h 4) 8)`:
+/-- **The two separating programs, kept as controls** (`ReadWordTriangle.Instance.region_disagreement`,
+`GroundFragment.Controls.cons_view_distinguishes`). A variable-headed equation `(= ($h 4) 8)`:
 HE answers `8`, PeTTa makes no request and answers `(double 4)`. A `cons` list view in a head
 `(= (f (cons 1 (2))) 5)`: PeTTa's region of `(f (1 2))` holds it and PeTTa answers `5`; HE's region
 leaves it out and HE answers `(f (1 2))`. Neither program is in the literal-head fragment. -/
@@ -298,7 +302,8 @@ theorem double_fragment : ∀ row ∈ program, GroundFragment.LiteralHeads row :
         subst member
         exact SpaceSemantics.Literal.grounded _)
 
-/-- **H2's tied instance over the whole run.** From H2's entry configuration of `(double 4)` on
+/-- **The tied instance of `ExpressionTriangle` over the whole run.** From the entry configuration
+`ExpressionTriangle.entry` of `(double 4)` on
 `{(p a), (= (double 4) 8)}`, with HE's raw lookup, any policy and a dispatch for which `double` is
 no host operation (`noHost` is one): HE's machine reaches the call with fourteen firings, none
 reading a row; the equation query fires and reads `(= (double 4) 8)` at position `1`; HE's

@@ -10,12 +10,13 @@ for its own algebra: the finite one refutes by the occurs-checked unifier and is
 terms; this one refutes by clashes only and is sound for rational trees. A refutation of one is not
 a refutation of the other (control in `RationalControls`).
 
-* **Syntax**: the checks (equality, absence, count) of a store of rational trees, read as guard
+* **Syntax**: the checks (equality, predicate queries, count) of a store of rational trees, read as guard
   formulas by `checkGuard`.
-* **Derivability** (`RationalChecks.Derives`): three rules over the solved form `mgu` of the store,
+* **Derivability** (`RationalChecks.Derives`): four rules over the solved form `mgu` of the store,
   each requiring that the solved form solves the store:
   - `equal`: the solved form identifies both sides;
-  - `absent`: each occurrence of the region is refuted by a clash with the pattern;
+  - `any`: the solved form matches some occurrence of the region;
+  - `none`: each occurrence of the region is refuted by a clash with the pattern;
   - `count`: the solved form matches exactly `number` occurrences, and each other occurrence is
     refuted by a clash.
 * **Model**: the algebra of rational trees (`treeModel`), with rational substitutions as its points.
@@ -93,9 +94,12 @@ inductive Derives (problem : EquationStore (RTree σ)) (label : O → RTree σ) 
   | equal {left right : RTree σ} : (rationalAction σ).Models (mgu problem) problem →
       RTree.subst (mgu problem) left = RTree.subst (mgu problem) right →
       Derives problem label world (.equal left right)
-  | absent {pattern : RTree σ} : (rationalAction σ).Models (mgu problem) problem →
+  | any {pattern : RTree σ} : (rationalAction σ).Models (mgu problem) problem →
+      (certain problem label world pattern).Nonempty →
+      Derives problem label world (.predicate .any pattern)
+  | none {pattern : RTree σ} : (rationalAction σ).Models (mgu problem) problem →
       (∀ o ∈ world, Refuted (problem ++ [(pattern, label o)])) →
-      Derives problem label world (.absent pattern)
+      Derives problem label world (.predicate .none pattern)
   | count {pattern : RTree σ} {number : Nat} : (rationalAction σ).Models (mgu problem) problem →
       (certain problem label world pattern).card = number →
       (∀ o ∈ world, RTree.subst (mgu problem) pattern = RTree.subst (mgu problem) (label o) ∨
@@ -190,8 +194,15 @@ theorem derives_iff_entails (problem : EquationStore (RTree σ)) (label : O → 
         have principal := mgu_principal ((consistent_iff_not_refuted problem).mp consistent)
         exact ⟨consistent, (PrincipalCheckRegions.equal_iff_principal_answer (rationalAction σ)
           (SubstitutionAction.Principal.on _ principal [left, right]) left right (by simp) (by simp)).mpr same⟩
-    | @absent pattern solved refuted =>
-        exact ⟨⟨_, solved⟩, (PrincipalCheckRegions.absent_iff_possible_empty (rationalAction σ) problem
+    | @any pattern solved witness =>
+        have consistent : (rationalAction σ).Consistent problem := ⟨_, solved⟩
+        have principal := mgu_principal ((consistent_iff_not_refuted problem).mp consistent)
+        exact ⟨consistent, (PrincipalCheckRegions.any_iff_principal_nonempty (rationalAction σ)
+          (SubstitutionAction.Principal.on _ principal (pattern :: world.toList.map label)) label world
+          pattern List.mem_cons_self (fun o present => List.mem_cons_of_mem _
+            (List.mem_map.mpr ⟨o, Finset.mem_toList.mpr present, rfl⟩))).mpr witness⟩
+    | @none pattern solved refuted =>
+        exact ⟨⟨_, solved⟩, (PrincipalCheckRegions.none_iff_possible_empty (rationalAction σ) problem
           label world pattern).mpr ((possible_empty_iff problem label world pattern).mpr refuted)⟩
     | @count pattern number solved card covered =>
         have consistent : (rationalAction σ).Consistent problem := ⟨_, solved⟩
@@ -208,10 +219,17 @@ theorem derives_iff_entails (problem : EquationStore (RTree σ)) (label : O → 
     | equal left right =>
         exact .equal solved ((PrincipalCheckRegions.equal_iff_principal_answer (rationalAction σ)
           (SubstitutionAction.Principal.on _ principal [left, right]) left right (by simp) (by simp)).mp asked)
-    | absent pattern =>
-        exact .absent solved ((possible_empty_iff problem label world pattern).mp
-          ((PrincipalCheckRegions.absent_iff_possible_empty (rationalAction σ) problem label world
-            pattern).mp asked))
+    | predicate quantifier pattern =>
+        cases quantifier with
+        | any =>
+            exact .any solved ((PrincipalCheckRegions.any_iff_principal_nonempty (rationalAction σ)
+              (SubstitutionAction.Principal.on _ principal (pattern :: world.toList.map label)) label world
+          pattern List.mem_cons_self (fun o present => List.mem_cons_of_mem _
+            (List.mem_map.mpr ⟨o, Finset.mem_toList.mpr present, rfl⟩))).mp asked)
+        | none =>
+            exact .none solved ((possible_empty_iff problem label world pattern).mp
+              ((PrincipalCheckRegions.none_iff_possible_empty (rationalAction σ) problem label world
+                pattern).mp asked))
     | count pattern number =>
         obtain ⟨card, same⟩ := (PrincipalCheckRegions.count_iff_regions (rationalAction σ)
           (SubstitutionAction.Principal.on _ principal (pattern :: world.toList.map label)) label world

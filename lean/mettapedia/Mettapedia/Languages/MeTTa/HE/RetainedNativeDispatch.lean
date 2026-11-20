@@ -19,6 +19,43 @@ namespace Mettapedia.Languages.MeTTa.HE.RetainedNativeDispatch
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 open Spec.Eval Spec.Eval.Completed
 open RecursiveTasks.Contextual RecursiveMachine.Contextual
+open Mettapedia.Machines.OrderedProtocol.Completion (OrderedStateFlatMapRel)
+
+/-- A complete snapshot returns the authored template paired with every
+matching occurrence's bindings. Recovering syntax and evaluating it is
+the caller's work, not part of this host reply. -/
+def snapshotMatchReply (atomic : Space.MatchQuery.AtomicRead) (depth : Nat)
+    (pattern : Atom) (template : Entry.Value) : Option (GroundedResult Entry.Value) :=
+  (Space.MatchQuery.capture atomic depth pattern).map fun selected =>
+    .ok (selected.map fun bindings => (template,bindings))
+
+/-- Route decoded match calls through a single immutable query view.
+The address can be different from the caller's context. An unrecognized
+operation still uses the original scoped or unscoped host service. -/
+def withSnapshotMatch {Context World Address : Type}
+    (base : WorldServices Context World)
+    (decode : Context → Entry.Value → Option (Address × Atom × Entry.Value))
+    (select : Context → World → List Atom → List String → Frame → Address →
+      Space.MatchQuery.AtomicRead) (depth : Nat) : WorldServices Context World :=
+  { base with scopedGroundedCall := some fun label before live scope caller call outcome after =>
+      match decode label call with
+      | none => base.groundedAt label before live scope caller call outcome after
+      | some (address, pattern, template) =>
+        snapshotMatchReply (select label before live scope caller address) depth pattern template =
+          some outcome ∧ after = before }
+
+theorem snapshot_match_at_iff {Context World Address : Type} {base : WorldServices Context World}
+    {decode : Context → Entry.Value → Option (Address × Atom × Entry.Value)}
+    {select : Context → World → List Atom → List String → Frame → Address →
+      Space.MatchQuery.AtomicRead} {depth : Nat}
+    {label : Context} {before after : World} {live : List Atom} {scope : List String}
+    {caller : Frame} {call template : Entry.Value} {pattern : Atom} {address : Address}
+    {outcome : GroundedResult Entry.Value}
+    (decoded : decode label call = some (address,pattern,template)) :
+    (withSnapshotMatch base decode select depth).groundedAt label before live scope caller call outcome after ↔
+      snapshotMatchReply (select label before live scope caller address) depth pattern template =
+        some outcome ∧ after = before := by
+  simp only [withSnapshotMatch, WorldServices.groundedAt, decoded]
 
 theorem native_call_iff {Context World : Type} (environment : WorldEnvironment Context World)
     (policy : Policy) (label : Context) (world : World) (live : List Atom) (scope : List String)
@@ -57,6 +94,86 @@ theorem native_call_iff {Context World : Type} (environment : WorldEnvironment C
       obtain ⟨rfl, rfl⟩ := remaining
       exact .groundedDone shape executable notError produced prepared
     | resume rows => exact .groundedResume shape executable notError produced prepared remaining
+
+/-- All retained emissions use their own bindings. The already selected list
+doesn't change as each of its members advances the shared world. -/
+theorem boundary_traversal_exact {Context World : Type} {environment : WorldEnvironment Context World}
+    {policy : Policy} {label : Context} {live : List Atom} {scope : List String} {caller : Option Atom}
+    {boundary : Boundary} {rows results : List Result} {before after : World} :
+    Stateful.BoundaryBatchRel environment label before live scope caller boundary rows results after
+        (policy := policy) ↔
+      OrderedStateFlatMapRel
+        (fun row w answers w' => Stateful.BoundaryRel environment label w live scope caller boundary
+          row.1 row.2 answers w' (policy := policy)) rows before results after := by
+  constructor
+  · intro batch
+    induction rows generalizing before results with
+    | nil => cases batch; exact .nil _
+    | cons head tail ih =>
+      cases batch with
+      | cons first remaining => exact .cons first (ih remaining)
+  · intro run
+    induction run with
+    | nil => exact .nil
+    | cons first _ ih => exact .cons first ih
+
+/-- Reorder the retained rows, not the selector. On the actual HE boundary
+relation the exchange certificate must transport both template runs through
+their shared world. Completed answers are compared with multiplicity. -/
+theorem boundary_permute {Context World : Type} {environment : WorldEnvironment Context World}
+    {policy : Policy} {label : Context} {live : List Atom} {scope : List String} {caller : Option Atom}
+    {boundary : Boundary} {rows reordered results : List Result} {before after : World}
+    (schedule : rows.Perm reordered)
+    (swap : ∀ a ∈ rows, ∀ b ∈ rows, a ≠ b → OrderedStateFlatMapRel.BagSwap
+      (fun row w answers w' => Stateful.BoundaryRel environment label w live scope caller boundary
+        row.1 row.2 answers w' (policy := policy)) a b)
+    (batch : Stateful.BoundaryBatchRel environment label before live scope caller boundary rows results after
+      (policy := policy)) :
+    ∃ reorderedResults, Stateful.BoundaryBatchRel environment label before live scope caller boundary
+      reordered reorderedResults after (policy := policy) ∧ reorderedResults.Perm results := by
+  obtain ⟨_, run, bag⟩ := (boundary_traversal_exact.mp batch).permute schedule swap
+  exact ⟨_, boundary_traversal_exact.mpr run, bag⟩
+
+/-- An occurrence-preserving read-only producer, such as HE's native match,
+hands its captured template/binding pairs to the actual continuation. A
+subsequent write can affect that continuation but not the captured frontier.
+The loading/selector contract here is local: it is not an evaluator oracle. -/
+theorem captured_call_iff {Context World : Type} {environment : WorldEnvironment Context World}
+    {policy : Policy} {label : Context} {world : World} {live : List Atom} {scope : List String}
+    {value : Entry.Value} {expected : Atom} {activation : Frame}
+    {operator : Atom} {arguments : List Atom} {raw : List (Entry.Value × Bindings)}
+    {answers : List Result} {finalWorld : World}
+    (shape : value.erase = .expression (operator :: arguments))
+    (executable : environment.dispatch.executable operator) (notError : ¬IsErrorRel value.erase)
+    (captured : ∀ outcome after,
+      environment.services.groundedAt label world live scope activation value outcome after ↔
+        outcome = .ok raw ∧ after = world) :
+    Stateful.CallRel environment label world live scope value expected activation answers finalWorld
+        (policy := policy) ↔
+      ∃ rows, NativeRowsRel policy environment.dispatch operator arguments activation raw rows ∧
+        match rows with
+        | [] => answers = [(Entry.Value.ofAtom Atom.empty, activation)] ∧ finalWorld = world
+        | _ :: _ =>
+          OrderedStateFlatMapRel
+            (fun row w values w' => Stateful.BoundaryRel environment label w live scope none
+              (.native value (some expected) (environment.dispatch.valueProvenance operator arguments))
+              row.1 row.2 values w' (policy := policy)) rows world answers finalWorld := by
+  rw [native_call_iff environment policy label world live scope value expected activation operator arguments
+    answers finalWorld shape executable notError]
+  constructor
+  · rintro ⟨outcome, reached, plan, host, prepared, continuation⟩
+    obtain ⟨rfl, rfl⟩ := (captured outcome reached).mp host
+    obtain ⟨rows, paired, rfl⟩ := NativeOutcomeRel.ok_iff_rows.mp prepared
+    refine ⟨rows, paired, ?_⟩
+    cases rows with
+    | nil => exact continuation
+    | cons head tail => exact boundary_traversal_exact.mp continuation
+  · rintro ⟨rows, paired, run⟩
+    refine ⟨.ok raw, world, NativeReplyPlan.afterRows activation rows, (captured _ _).mpr ⟨rfl, rfl⟩,
+      NativeOutcomeRel.ok_iff_rows.mpr ⟨rows, paired, rfl⟩, ?_⟩
+    cases rows with
+    | nil => exact run
+    | cons head tail => exact boundary_traversal_exact.mpr run
 
 def resumeNative {Context World : Type} (dispatch : Spec.Eval.GroundedDispatch)
     (before : WorldConfiguration Context World) (live : List Atom) (scope : List String)
@@ -232,6 +349,36 @@ theorem completed_boundary_world {Context World : Type} {environment : WorldEnvi
     finalWorld = world := by
   cases source
   rfl
+
+/-- Producer-completed replies can be checked in the reverse order. Each
+return check then sees exactly the same HE world as it did before. A raw
+emission that may run a continuation does not have this licence. -/
+theorem completed_boundary_swap {Context World : Type}
+    {environment : WorldEnvironment Context World} {policy : Policy} {label : Context}
+    {live : List Atom} {scope : List String} {caller : Option Atom} {original : Entry.Value}
+    {expected : Atom} (first second : Result) :
+    OrderedStateFlatMapRel.BagSwap
+      (fun row w answers w' => Stateful.BoundaryRel environment label w live scope caller
+        (.native original (some expected) .completed) row.1 row.2 answers w' (policy := policy))
+      first second := by
+  intro before middle after firstRows secondRows firstRun secondRun
+  have firstKeeps := completed_boundary_world firstRun
+  have secondKeeps := completed_boundary_world secondRun
+  subst middle after
+  exact ⟨before, secondRows, firstRows, secondRun, firstRun, List.perm_append_comm⟩
+
+/-- Completed native return checks admit every permutation at the bag
+observer, including errors and repeated result occurrences. -/
+theorem completed_boundary_permute {Context World : Type} {environment : WorldEnvironment Context World}
+    {policy : Policy} {label : Context} {live : List Atom} {scope : List String} {caller : Option Atom}
+    {original : Entry.Value} {expected : Atom} {rows reordered results : List Result} {before after : World}
+    (schedule : rows.Perm reordered)
+    (batch : Stateful.BoundaryBatchRel environment label before live scope caller
+      (.native original (some expected) .completed) rows results after (policy := policy)) :
+    ∃ reorderedResults, Stateful.BoundaryBatchRel environment label before live scope caller
+      (.native original (some expected) .completed) reordered reorderedResults after (policy := policy) ∧
+      reorderedResults.Perm results :=
+  boundary_permute schedule (fun a _ b _ _ => completed_boundary_swap a b) batch
 
 private theorem completed_batch_world_at {Context World : Type} {environment : WorldEnvironment Context World}
     {policy : Policy} {label : Context} {world finalWorld : World} {live scope caller site rows results}

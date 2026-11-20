@@ -2,7 +2,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualConjunctiveControls
 
 /-!
-# Joined absence, independent schema instances and empty tuples retain their scopes
+# Joined none queries, independent schema instances and empty tuples retain their scopes
 
 The semantic transport keeps every physical port. The actual finite
 worklist certifier is also exercised on the transported conjunction.
@@ -14,7 +14,7 @@ namespace Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contex
 
 open Mettapedia.OSLF.Binding hiding instantiate instantiateArgs
 open Mettapedia.OSLF.Binding.ContextualFamily
-open ContextualPrefixModels ContextualConjunctiveQueries ContextualConjunctiveAbsence
+open ContextualPrefixModels ContextualConjunctiveQueries ContextualConjunctiveNone
 open ContextualSelectionViews.Controls (base)
 open ContextualConjunctiveControls
   (queries locals captures patterns rows world enlarged independentPatterns schemaRows
@@ -68,16 +68,16 @@ theorem grown_tuple_is_certified (first second : Nat)
   rw [← ContextualPatternFragment.checkProblem_iff]
   rcases firstPresent with rfl | rfl <;> rcases secondPresent with rfl | rfl <;> decide +kernel
 
-theorem original_shared_query_absence_transports :
+theorem original_shared_query_none_transports :
     Ask queries locals wide (ContextualFrameUnifier.mapProblem grow []) grownPatterns grownRows world :=
   (Ask.unused_extension_iff queries locals captures unused [] patterns rows world).mpr
-    ContextualConjunctiveControls.the_executable_result_proves_the_all_future_absence
+    ContextualConjunctiveControls.the_executable_result_proves_none_at_every_future
 
-theorem the_added_shared_value_still_defeats_absence :
+theorem the_added_shared_value_still_defeats_none :
     ¬ Ask queries locals wide (ContextualFrameUnifier.mapProblem grow []) grownPatterns grownRows enlarged := by
-  intro absent
+  intro missing
   exact ContextualConjunctiveControls.adding_that_row_invalidates_the_guard
-    ((Ask.unused_extension_iff queries locals captures unused [] patterns rows enlarged).mp absent)
+    ((Ask.unused_extension_iff queries locals captures unused [] patterns rows enlarged).mp missing)
 
 theorem actual_transported_conjunction_is_certified :
     certifies queries locals wide 2 [] grownPatterns grownRows world = true := by

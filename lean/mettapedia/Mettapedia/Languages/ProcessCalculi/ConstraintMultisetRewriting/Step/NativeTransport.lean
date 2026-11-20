@@ -171,9 +171,20 @@ theorem guardHolds_renamed [DecidableEq O] {Next : Type} {next : Next → MetaAr
       ContextualConditionalGuards.Holds locals candidate rows world check := by
   cases check with
   | equal _ _ => exact Iff.rfl
-  | absent pattern =>
-      simp only [ContextualConditionalGuards.Holds, Finset.forall_mem_map, Equiv.coe_toEmbedding,
-        Equiv.symm_apply_apply]
+  | predicate quantifier pattern =>
+      cases quantifier with
+      | any =>
+          constructor
+          · rintro ⟨o, member, matched⟩
+            obtain ⟨a, inside, rfl⟩ := Finset.mem_map.mp member
+            refine ⟨a, inside, ?_⟩
+            simpa only [Equiv.coe_toEmbedding, Equiv.symm_apply_apply] using matched
+          · rintro ⟨o, inside, matched⟩
+            refine ⟨π o, Finset.mem_map_of_mem π.toEmbedding inside, ?_⟩
+            simpa only [Equiv.symm_apply_apply] using matched
+      | none =>
+          simp only [ContextualConditionalGuards.Holds, Quantifier.holds_none, Finset.forall_mem_map,
+            Equiv.coe_toEmbedding, Equiv.symm_apply_apply]
   | count pattern cardinality =>
       have region : ContextualConditionalGuards.region locals candidate (fun o => rows (π.symm o))
           (world.map π.toEmbedding) pattern =

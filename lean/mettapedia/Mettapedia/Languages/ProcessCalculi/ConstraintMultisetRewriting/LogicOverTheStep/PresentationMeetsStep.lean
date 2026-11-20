@@ -48,12 +48,13 @@ possibility is the presentation's possibility after an existential choice of the
   implies the step's at the state, and is strictly stronger: a refused firing beside an admitted
   one.
 * Both, on a real store effect (`Controls`): two tell firings over Boolean equation stores, coded
-  by window 9's exact store codec, one admitted and one refused at the empty store.
+  by the exact store codec of `Step.PresentationControls` (`readStore_pattern`), one admitted and one
+  refused at the empty store.
 
 ## Boundary: the first-order step's firings have no exact code
 
 The comparison needs an exact encoding of firings into patterns. A first-order firing
-(`AnnotatedRuns.Firing`) carries predicate queries, each with a region `S → T → Bool`. When the
+(`AnnotatedRuns.Firing`) carries region queries, each with a region `S → T → Bool`. When the
 substitutions are infinite and terms exist, there are uncountably many firings, while patterns are
 countable, so no injective code exists (`no_pattern_code`). The presentation therefore meets the
 first-order step through firings without predicate queries; queries add no successor
@@ -395,8 +396,8 @@ namespace Controls
 open Presentation.Controls (frame Store effect prepares statePresentation storePattern readStore
   readStore_pattern boolPattern readBool readBool_pattern)
 
-/-- **Two tell firings at every Boolean equation store**: both tell `true = false`, as window 9's
-store effect does. -/
+/-- **Two tell firings at every Boolean equation store**: both tell `true = false`, as the store
+effect of `Step.PresentationControls` does. -/
 def twoTells : EffectCore frame Nat Store (fun _ => Bool) where
   frame s := effect.frame s
   knowledge s := effect.knowledge s
@@ -473,8 +474,9 @@ end Controls
 /-! ## Boundary: first-order firings have no exact code -/
 
 /-- **No exact code for the first-order step's firings**: with infinitely many substitutions and
-some term, the predicate query regions `S → T → Bool` make the first-order firings uncountable, so
-no injective code into patterns exists. -/
+some term, the regions `S → T → Bool` of the region queries make the first-order firings
+uncountable, already among the exact queries that see no occurrence, so no injective code into
+patterns exists. -/
 theorem no_pattern_code {T : Type*} {S : Type*} {O : Type*} [Infinite S] [Nonempty T]
     (rule : RuleInstance T) (selection : ConstraintMultisetRewriting.Selection O) :
     ¬ ∃ code : AnnotatedRuns.Firing T S O → Pattern, Function.Injective code := by
@@ -482,12 +484,14 @@ theorem no_pattern_code {T : Type*} {S : Type*} {O : Type*} [Infinite S] [Nonemp
   rintro ⟨code, injective⟩
   let e : ℕ ↪ S := Infinite.natEmbedding S
   let firing : Set ℕ → AnnotatedRuns.Firing T S O := fun A =>
-    ⟨rule, [⟨fun s _ => decide (∃ n ∈ A, e n = s), ∅⟩], selection⟩
+    ⟨rule, [PredicateQueryAdmission.RegionQuery.exact (fun s _ => decide (∃ n ∈ A, e n = s)) ∅],
+      selection⟩
   have firingInjective : Function.Injective firing := by
     intro A B same
     obtain ⟨t⟩ := ‹Nonempty T›
     have queries := congrArg AnnotatedRuns.Firing.queries same
-    simp only [firing, List.cons.injEq, PredicateQueryAdmission.Query.mk.injEq, and_true] at queries
+    simp only [firing, List.cons.injEq, PredicateQueryAdmission.RegionQuery.exact,
+      PredicateQueryAdmission.RegionQuery.mk.injEq, and_true] at queries
     ext n
     have atN := congrFun (congrFun queries (e n)) t
     simp only [decide_eq_decide] at atN

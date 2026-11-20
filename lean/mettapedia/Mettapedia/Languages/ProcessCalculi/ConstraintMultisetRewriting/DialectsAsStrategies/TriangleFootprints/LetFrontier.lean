@@ -231,9 +231,9 @@ theorem linear_row_hit {live : List Atom} {h : String} {args : List Atom} {incom
     ∃ w : EquationWork, block = [w] ∧ w.left = left ∧ w.right = right := by
   cases row with
   | irrelevant _ notEquation => exact absurd rfl (notEquation left right)
-  | miss _ _ pattern body alpha absent =>
+  | miss _ _ pattern body alpha missing =>
       obtain ⟨output, matched, matching, merged⟩ := linear_viable linear arity satisfiable alpha
-      exact absurd ⟨matching, merged⟩ (absent pattern body alpha matched output)
+      exact absurd ⟨matching, merged⟩ (missing pattern body alpha matched output)
   | hit _ _ pattern body matched output => exact ⟨_, rfl, rfl, rfl⟩
 
 /-- A row foreign to the queries `(h a₁ … aₙ)`: not an equation, or an equation whose left side has

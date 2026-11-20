@@ -445,6 +445,56 @@ theorem costWrappedConstructor_filter_generated
   (ofRetypingPlan plan).wrappedConstructor_filter_generated plan.noDuplicates
     constructor membership
 
+/-- The tagged base copy of a name outside the source signature lies outside
+the generated continuation signature. -/
+theorem costBaseConstructorName_fresh_generated
+    (plan : ContinuationRetypingPlan cut) {name : String}
+    (fresh : theory.presentation.presentation.language.terms.any
+      (fun term => term.label == name) = false) :
+    plan.generatedLanguage.terms.any
+      (fun term => term.label == costBaseConstructorName name) = false := by
+  apply List.any_eq_false.mpr
+  intro term member labelled
+  rw [generatedLanguage_terms] at member
+  rcases List.mem_append.mp member with base | wrapped
+  · obtain ⟨source, sourceMember, rfl⟩ := List.mem_map.mp base
+    have same : source.label = name := costBaseConstructorName_injective
+      (beq_iff_eq.mp labelled : costBaseConstructorName source.label = costBaseConstructorName name)
+    have present : theory.presentation.presentation.language.terms.any
+        (fun term => term.label == name) = true :=
+      List.any_eq_true.mpr ⟨source, sourceMember, by simp [same]⟩
+    rw [fresh] at present
+    exact Bool.false_ne_true present
+  · obtain ⟨constructor, _, rfl⟩ := List.mem_map.mp wrapped
+    exact costBaseConstructorName_ne_wrapped name constructor.1.label
+      (beq_iff_eq.mp labelled : costWrappedConstructorName constructor.1.label =
+        costBaseConstructorName name).symm
+
+/-- The tagged wrapped copy of a name outside the source signature lies
+outside the generated continuation signature. -/
+theorem costWrappedConstructorName_fresh_generated
+    (plan : ContinuationRetypingPlan cut) {name : String}
+    (fresh : theory.presentation.presentation.language.terms.any
+      (fun term => term.label == name) = false) :
+    plan.generatedLanguage.terms.any
+      (fun term => term.label == costWrappedConstructorName name) = false := by
+  apply List.any_eq_false.mpr
+  intro term member labelled
+  rw [generatedLanguage_terms] at member
+  rcases List.mem_append.mp member with base | wrapped
+  · obtain ⟨source, _, rfl⟩ := List.mem_map.mp base
+    exact costBaseConstructorName_ne_wrapped source.label name
+      (beq_iff_eq.mp labelled : costBaseConstructorName source.label = costWrappedConstructorName name)
+  · obtain ⟨constructor, _, rfl⟩ := List.mem_map.mp wrapped
+    have same : constructor.1.label = name := costWrappedConstructorName_injective
+      (beq_iff_eq.mp labelled : costWrappedConstructorName constructor.1.label =
+        costWrappedConstructorName name)
+    have present : theory.presentation.presentation.language.terms.any
+        (fun term => term.label == name) = true :=
+      List.any_eq_true.mpr ⟨constructor.1, constructor.2, by simp [same]⟩
+    rw [fresh] at present
+    exact Bool.false_ne_true present
+
 end ContinuationRetypingPlan
 
 namespace ContinuationDecorationProfile

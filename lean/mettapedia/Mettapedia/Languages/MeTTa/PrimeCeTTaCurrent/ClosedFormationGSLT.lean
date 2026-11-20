@@ -2,15 +2,14 @@ import Mettapedia.GSLT.LanguageDef.InferenceChecker
 import Mettapedia.GSLT.LanguageDef.CalculusLanguageDef
 
 /-!
-# Closed structural type formation in the Prime C draft profile
+# Closed structural type formation
 
-This definition models the closed, environment-free structural fragment of
-`prime_form_type` in the Prime C draft (`src/prime_semantics.c`). It is a
-formal formation profile, not a refinement proof of the C function: primitive type symbols and
-nondependent arrow telescopes.  Source terms are reified into a small list
-algebra before checking.  Named binders, free variables, declared type
-constructors, conversion, and environment lookup are outside this fragment and
-must remain undetermined rather than being rejected by absence of a rule.
+A calculus of closed, environment-free type formation: primitive type
+symbols and nondependent arrow telescopes. Source terms are reified into a
+small list algebra before checking. Named binders, free variables, declared
+type constructors, conversion, and environment lookup are outside this
+fragment and must remain undetermined rather than being rejected by absence
+of a rule.
 
 Both positive formation and the one closed negative case in this fragment
 (the empty arrow telescope) are explicit judgments.  A native specialization

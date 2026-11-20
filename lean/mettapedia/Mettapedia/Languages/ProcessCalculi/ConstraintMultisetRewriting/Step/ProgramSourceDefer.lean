@@ -234,7 +234,8 @@ theorem chain_sound : ∀ (rs : List Schema), (∀ r ∈ rs, r.WellFormed ∧ r.
           obtain ⟨sel, len, exec, rep'⟩ :=
             chain_sound rs (fun r' h => wf r' (List.mem_cons_of_mem _ h)) rest rep₁
           refine ⟨taken :: sel, by simp [len], show PredicateQueryAdmission.Valid _ _ _ _ _ _ ∧
-            StagedSourceEffects.Executable _ _ _ _ from ⟨valid, exec⟩, ?_⟩
+            StagedSourceEffects.Executable _ _ _ _ from
+              ⟨PredicateQueryAdmission.valid_iff_regionValid.mpr valid, exec⟩, ?_⟩
           have index : n + (r :: rs).length = n + 1 + rs.length := by
             simp only [List.length_cons]; omega
           rw [index]
@@ -250,7 +251,7 @@ theorem chain_complete : ∀ (rs : List Schema), (∀ r ∈ rs, r.WellFormed ∧
   | r :: rs, wf, taken :: sel, len, W, C, n, rep, ready => by
       obtain ⟨valid, exec⟩ := ready
       obtain ⟨wfr, -⟩ := wf r List.mem_cons_self
-      obtain ⟨W₁, fires, rep₁⟩ := complete (read := []) wfr rep valid
+      obtain ⟨W₁, fires, rep₁⟩ := complete (read := []) wfr rep (PredicateQueryAdmission.valid_iff_regionValid.mp valid)
       obtain ⟨W', rest, rep'⟩ := chain_complete rs (fun r' h => wf r' (List.mem_cons_of_mem _ h)) sel
         (by simpa using len) rep₁ exec
       refine ⟨W', .cons fires rest, ?_⟩
@@ -309,8 +310,8 @@ theorem defer_one_firing (code : List (StagedSourceEffects.Instruction Tm
     (Mettapedia.Logic.LP.Subst rows) Occ)) (C : Config)
     (ready : StagedSourceEffects.Executable A Occ.label C code) :
     let plan := (StagedSourceEffects.compile Occ.label code).raw
-    let selected := CensusSourceCompilation.selection plan.effect
-    let rule := CensusSourceCompilation.rule Occ.label plan.effect plan.equations
+    let selected := PredicateQuerySourceCompilation.selection plan.effect
+    let rule := PredicateQuerySourceCompilation.rule Occ.label plan.effect plan.equations
     PredicateQueryAdmission.Valid A Occ.label rule (plan.effect.queries.map PredicateQueryAdmission.Query.fixed)
         C selected ∧
       A.Equivalent (selected.result Occ.label rule C).equations (codeEnd C code).equations ∧

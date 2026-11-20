@@ -1,5 +1,6 @@
 import Mettapedia.Machines.CMemory.ScalarBytes
-import Mettapedia.Machines.CMemory.DependencyCapacityReads
+import Mettapedia.GSLT.LanguageDef.NativeOpsCLocalLoop
+import Mettapedia.GSLT.LanguageDef.NativeOpsCDeclarator
 
 /-!
 # Retained local C control with typed block-memory effects
@@ -22,6 +23,25 @@ open Mettapedia.GSLT.LanguageDef.NativeOps.NativeC
 open Mettapedia.GSLT.Logic.AbstractSeparationLogic
 open ScalarBytes
 
+abbrev Pointers := Name → Option Ptr
+abbrev Words := Name → Option UInt32
+
+/-- A typed UInt32 expression fragment. Conditional evaluation selects only
+one branch; absent bindings and unsupported syntax are not zero values. -/
+def readWordWith (pointers : Pointers) (words : Words) : CExpr → CProg CVal UInt32
+  | .identifier name => match words name with
+    | some value => pure value
+    | none => CProg.undefined
+  | .unsignedInteger value =>
+      if value < 2 ^ 32 then pure (UInt32.ofNat value) else CProg.undefined
+  | .unary .dereference (.identifier name) => match pointers name with
+    | some pointer => CProg.loadU32 pointer
+    | none => CProg.undefined
+  | .conditional condition yes no => do
+      let value ← readWordWith pointers words condition
+      if value = 0 then readWordWith pointers words no else readWordWith pointers words yes
+  | _ => CProg.undefined
+
 structure Context where
   values : ScalarRead.Environment Ptr
   types : Types
@@ -35,18 +55,18 @@ def Context.bind (context : Context) (type : CType) (name : Name)
   ⟨Function.update context.values name (some value),
     Function.update context.types name (some type)⟩
 
-def pointers (context : Context) : DependencyCapacityReads.Pointers := fun name =>
+def pointers (context : Context) : Pointers := fun name =>
   match context.values name with
   | some (.identity pointer) => pointer
   | _ => none
 
-def words (context : Context) : DependencyCapacityReads.Words := fun name =>
+def words (context : Context) : Words := fun name =>
   match context.values name with
   | some (.unsigned value) => some value
   | _ => none
 
 def readWord (context : Context) (expression : CExpr) : CProg CVal UInt32 :=
-  DependencyCapacityReads.readWord (pointers context) (words context) expression
+  readWordWith (pointers context) (words context) expression
 
 /-- The service accepts byte requests only when they denote whole cells. -/
 def readPointer (services : Services) (context : Context) : CExpr → CProg CVal (Option Ptr)
@@ -125,10 +145,15 @@ def restore (context : Context) (name : Name) : Flow → Flow
       Function.update updated.types name (context.types name)⟩
   | other => other
 
+-- The interpreter is a proof-level semantics. Code generation for the
+-- local-loop service at a concrete pointer type fails in the current
+-- toolchain ("invalid out of scope free variable"), so the entry points
+-- below are not compiled.
+
 /-- A supplied while body is handled by the existing pure typed local service.
 Memory effects inside a loop body remain outside that service's admitted
 fragment; they cannot silently become pure local assignments. -/
-def execute (services : Services) (loopFuel : Nat) :
+noncomputable def execute (services : Services) (loopFuel : Nat) :
     Nat → Context → List CStatement → CProg CVal Flow
   | 0, _, _ => pure .exhausted
   | _ + 1, context, [] => pure (.next context)
@@ -190,14 +215,14 @@ def arguments? (base : Context) : List CDeclaratorParameter →
       else none
   | _, _ => none
 
-def runFunction? (services : Services) (base : Context)
+noncomputable def runFunction? (services : Services) (base : Context)
     (arguments : List (ScalarRead.Value Ptr)) (bodyFuel loopFuel : Nat)
     (function : CDeclaratorFunction) : Option (CProg CVal Result) := do
   if function.result ≠ ⟨"bool".toList, 0⟩ then none else do
     let context ← arguments? base function.parameters arguments
     some (execute services loopFuel bodyFuel context function.body >>= fun flow => pure (result flow))
 
-def runText? (names : TypeNames) (text : String) (services : Services) (base : Context)
+noncomputable def runText? (names : TypeNames) (text : String) (services : Services) (base : Context)
     (arguments : List (ScalarRead.Value Ptr)) (bodyFuel loopFuel : Nat) :
     Option (CProg CVal Result) :=
   (declaratorFunctionText? names text.toList).bind
@@ -262,7 +287,7 @@ theorem local_declaration_restores_previous_binding (previous current : UInt32) 
       (noBindings.bind ⟨"uint32_t".toList, 0⟩ "x".toList (.unsigned previous))
       [.declare ⟨"uint32_t".toList, 0⟩ "x".toList (.unsignedInteger current.toNat)] =
       pure (.next (noBindings.bind ⟨"uint32_t".toList, 0⟩ "x".toList (.unsigned previous))) := by
-  simp only [execute, initialValue, readWord, DependencyCapacityReads.readWord,
+  simp only [execute, initialValue, readWord, readWordWith,
     current.toNat_lt, if_true, UInt32.ofNat_toNat, Prog.pure_eq, Prog.ret_bind,
     Prog.bind_eq, Context.bind, restore]
   simp only [Function.update_idem, Function.update_self]

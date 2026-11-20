@@ -65,7 +65,7 @@ theorem undecided_every_budget {Γ : Context setting.R} {original : EquationStor
   | solved state finished =>
       rw [h] at suspended
       cases suspended
-  | refuted absent =>
+  | refuted missing =>
       rw [h] at suspended
       cases suspended
   | stuck state =>
@@ -82,7 +82,7 @@ theorem principal_of_rankCommit {Γ : Context setting.R} {original : EquationSto
     ∃ (Δ : Context setting.R) (answer : Δ ⟶ Γ), (frames setting.levels).Principal original answer := by
   cases h : runRank solver original with
   | solved state finished => exact ⟨state.target, state.answer, state.completed finished⟩
-  | refuted absent =>
+  | refuted missing =>
       rw [h] at committed
       cases committed
   | stuck state =>

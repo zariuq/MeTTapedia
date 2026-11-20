@@ -6,9 +6,8 @@ import Mettapedia.OSLF.MeTTaIL.GeneralScopedMatchMachineComparison
 # Firing at law-normal forms
 
 A rule fires at the law-normal form of its focus when its left side is safe for the declared
-laws (`FlatSafe`), it has no premises, and its metavariable sorts are typed for the laws
-(`LawFiringAdmissible`); every binder operation respects law-equality
-(`binderOperation_lawSame`). The
+laws (`FlatSafe`), it has no premises, its metavariable sorts are typed for the laws,
+and its selected binder operation respects the laws (`LawFiringAdmissible`). The
 captures are the normal forms of the original captures, and the reduct is law-equal to the
 original (`rootFiring_normalize`).
 -/
@@ -30,6 +29,7 @@ def LawFiringAdmissible (laws : List Laws) (environment : GeneralPremise.Environ
       (∀ name expected, rule.typeContext.lookup name = some expected → LawTypeOk laws environment.language expected) ∧
       (∀ name dependencies, dependencies? spec name = some dependencies →
         ∀ entry ∈ dependencies, LawTypeOk laws environment.language entry)
+      ∧ BinderLawsFor laws environment.reflection rule
 
 theorem assignLawSame_normalize : ∀ assignment : ScopedRuleMatching.Assignment,
     AssignLawSame laws assignment (mapAssignment (normalize laws) assignment)
@@ -101,13 +101,15 @@ theorem rootFiring_normalize {environment : GeneralPremise.Environment} {bound :
   cases fired with
   | @fire _ _ _ _ _ rule spec _ _ _ _ selected specified admitted sourceSorted matched typed premises reduced
       targetSorted =>
-    obtain ⟨safe, unconditional, sortsOk, dependenciesOk⟩ := admissible rule spec selected specified
+    obtain ⟨safe, unconditional, sortsOk, dependenciesOk, binderOk⟩ :=
+      admissible rule spec selected specified
     rw [unconditional] at premises
     cases premises
     obtain ⟨trace', traced⟩ := GeneralScopedMatchMachine.traced_iff_matches.mpr
       (matches_normalize laws safe (GeneralScopedMatchMachine.traced_iff_matches.mp ⟨_, matched⟩))
     obtain ⟨target', reduced', same⟩ := instantiateWith?_lawSame rule spec bound.length
-      (ScopedReflectiveExecution.binderOperation environment.reflection rule) (binderOperation_lawSame _ rule)
+      (ScopedReflectiveExecution.binderOperation environment.reflection rule)
+      (binderOperation_lawSame _ rule binderOk)
       rule.right .right [] 0
       captured (mapAssignment (normalize laws) captured) target (assignLawSame_normalize captured) reduced
     refine ⟨trace', target', ?_, same⟩

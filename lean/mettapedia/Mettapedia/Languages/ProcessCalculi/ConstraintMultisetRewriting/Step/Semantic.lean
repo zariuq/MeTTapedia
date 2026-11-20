@@ -87,13 +87,21 @@ terms that the solution identifies. -/
 def ReadsThroughSolutions {O : Type uO} (query : PredicateQueryAdmission.Query T S O) : Prop :=
   ∀ σ {s t : T}, A.Solves σ (s, t) → query.region σ s = query.region σ t
 
+/-- A region query reads labels through the same solution relation. Its
+observation of that region remains separate from label comparison. -/
+def ReadsRegionThroughSolutions {O : Type uO} (query : PredicateQueryAdmission.RegionQuery T S O) : Prop :=
+  ∀ σ {s t : T}, A.Solves σ (s, t) → query.region σ s = query.region σ t
+
+theorem readsThroughSolutions_toRegion_iff {O : Type uO} (query : PredicateQueryAdmission.Query T S O) :
+    ReadsRegionThroughSolutions A query.toRegion ↔ ReadsThroughSolutions A query := Iff.rfl
+
 /-- **A semantic query**: a raw query with a proof that its region reads labels through solutions. -/
 abbrev SemanticQuery (O : Type uO) :=
   {query : PredicateQueryAdmission.Query T S O // ReadsThroughSolutions A query}
 
 /-- **A semantic firing reads through solutions in every query.** -/
 def IsSemantic {O : Type uO} (f : Firing T S O) : Prop :=
-  ∀ query ∈ f.queries, ReadsThroughSolutions A query
+  ∀ query ∈ f.queries, ReadsRegionThroughSolutions A query
 
 /-- **A semantic firing**: a raw firing with a proof that its query regions read labels through
 solutions. -/
@@ -123,7 +131,7 @@ theorem isSemantic_iff {O : Type uO} [DecidableEq O] (f : Firing T S O) :
 /-- **A firing built from semantic queries is semantic by construction.** -/
 def SemanticFiring.ofQueries {O : Type uO} (rule : RuleInstance T) (queries : List (SemanticQuery A O))
     (selection : Selection O) : SemanticFiring A O :=
-  ⟨⟨rule, queries.map Subtype.val, selection⟩, fun query member => by
+  ⟨⟨rule, queries.map (fun query => query.val.toRegion), selection⟩, fun query member => by
     obtain ⟨q, -, rfl⟩ := List.mem_map.mp member
     exact q.2⟩
 
@@ -255,7 +263,7 @@ variable {T : Type uT} {S : Type uS} {O : Type uO} {A : SubstitutionAction T S} 
 
 /-- **Equivariance modulo the knowledge for semantic firings**: at equivalent states, along a renaming
 supported on the present occurrences, a semantic firing and its renaming are admitted together and
-their results are equivalent, when the firing's made identities are absent from both states. -/
+their results are equivalent, when the firing's made identities are missing from both states. -/
 theorem ModuloEquivalent.semantic_firing [DecidableEq O] {C D : Configuration T O}
     (h : ModuloEquivalent A label E C D) (f : SemanticFiring A O)
     (avoids : ∀ r ∈ f.1.selection.made, r ∉ C.present ∧ r ∉ D.present) :
@@ -275,10 +283,11 @@ theorem ModuloEquivalent.semantic_admitted [DecidableEq O] {C D : Configuration 
 
 /-- **Semantic firings that name only escaped identities keep the equivalence.** -/
 theorem ModuloEquivalent.semantic_named_firing [DecidableEq O] {C D : Configuration T O}
-    (h : ModuloEquivalent A label E C D) (f : SemanticFiring A O) (named : f.1.names ⊆ E) :
+    (h : ModuloEquivalent A label E C D) (f : SemanticFiring A O)
+    (supports : Interface.RegionQuerySupport.Supports f.1.queries) (named : f.1.names supports ⊆ E) :
     (f.1.Valid A label C ↔ f.1.Valid A label D) ∧
       ModuloEquivalent A label E (f.1.result label C) (f.1.result label D) :=
-  h.named_firing named f.2
+  h.named_firing supports named f.2
 
 /-- **Counterparts of admitted semantic firings.** When the made labels have fresh identities outside
 every finite set, every admitted semantic firing has a renamed counterpart at the other state, and
@@ -291,15 +300,15 @@ theorem ModuloEquivalent.semantic_counterpart [DecidableEq O] {C D : Configurati
       ModuloEquivalent A label E (f.result label C) ((f.rename π).result label D) := by
   classical
   let M := f.selection.made.toFinset.filter (· ∈ D.present)
-  let F := C.present ∪ D.present ∪ E ∪ f.names
+  let F := C.present ∪ D.present ∪ E ∪ f.selection.made.toFinset
   have inF_C : ∀ {o}, o ∈ C.present → o ∈ F := fun inC =>
     Finset.mem_union_left _ (Finset.mem_union_left _ (Finset.mem_union_left _ inC))
   have inF_D : ∀ {o}, o ∈ D.present → o ∈ F := fun inD =>
     Finset.mem_union_left _ (Finset.mem_union_left _ (Finset.mem_union_right _ inD))
   have inF_E : ∀ {o}, o ∈ E → o ∈ F := fun inE =>
     Finset.mem_union_left _ (Finset.mem_union_right _ inE)
-  have madeNamed : ∀ {o}, o ∈ f.selection.made → o ∈ f.names := fun made => by
-    simp [Firing.names, made]
+  have madeNamed : ∀ {o}, o ∈ f.selection.made → o ∈ f.selection.made.toFinset :=
+    List.mem_toFinset.mpr
   have madeOfM : ∀ {o}, o ∈ M → o ∈ f.selection.made := fun inM =>
     List.mem_toFinset.mp (Finset.mem_filter.mp inM).1
   have sub : M ⊆ F := fun o inM => inF_D (Finset.mem_filter.mp inM).2
@@ -373,16 +382,17 @@ equivalent modulo the knowledge relative to those identities are bisimilar for t
 offered firing is its own counterpart, so no fresh supply is needed. -/
 theorem ModuloEquivalent.program_bisimilar [DecidableEq O] {L : Type uL}
     {offers : L → Firing T S O → Prop}
-    (named : ∀ ℓ f, offers ℓ f → f.names ⊆ E ∧ IsSemantic A f) {C D : Configuration T O}
+    (supports : ∀ ℓ f, offers ℓ f → Interface.RegionQuerySupport.Supports f.queries)
+    (named : ∀ ℓ f (offered : offers ℓ f), f.names (supports ℓ f offered) ⊆ E ∧ IsSemantic A f) {C D : Configuration T O}
     (h : ModuloEquivalent A label E C D) : Race.Bisimilar A label offers C D := by
   refine ⟨ModuloEquivalent A label E, ⟨?_, ?_, ?_⟩, h⟩
   · rintro X Y related ℓ X' ⟨f, offered, valid, rfl⟩
     obtain ⟨names, reads⟩ := named ℓ f offered
-    obtain ⟨admits, results⟩ := related.named_firing names reads
+    obtain ⟨admits, results⟩ := related.named_firing (supports ℓ _ offered) names reads
     exact ⟨_, ⟨f, offered, admits.mp valid, rfl⟩, results⟩
   · rintro X Y related ℓ Y' ⟨g, offered, valid, rfl⟩
     obtain ⟨names, reads⟩ := named ℓ g offered
-    obtain ⟨admits, results⟩ := related.named_firing names reads
+    obtain ⟨admits, results⟩ := related.named_firing (supports ℓ _ offered) names reads
     exact ⟨_, ⟨g, offered, admits.mpr valid, rfl⟩, results⟩
   · intro _ _ _ atom
     exact atom.elim

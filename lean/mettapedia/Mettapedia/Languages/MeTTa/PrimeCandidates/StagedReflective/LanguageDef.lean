@@ -531,7 +531,9 @@ def reflectionPresentation : ReflectivePresentationDecl :=
     dropConstructor := "prime-drop"
     parallelCollection := .hashBag
     parallelUnitConstructor := "prime-unit"
-    quoteDropEquation := "prime-quote-drop" }
+    quoteDropEquation := "prime-quote-drop"
+    -- Closed: the staged rules never substitute into quoted code.
+    quoteScope := .closed }
 
 def admittedReflection : AdmittedProfile language :=
   ⟨{ presentations := [reflectionPresentation] }, by decide⟩

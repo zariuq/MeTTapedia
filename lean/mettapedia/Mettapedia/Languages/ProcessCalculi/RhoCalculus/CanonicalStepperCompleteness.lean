@@ -12,7 +12,7 @@ step modulo equations, every step from any representative must be matched,
 up to the equations, by a depth-one COMM on the canonical representative.
 This module proves that statement for closed rho processes.
 
-The proof inverts the compiled step: a step is a COMM at the top of a
+The proof inverts the compiled step on well-sorted syntax: a step is a COMM at the top of a
 parallel bag or a `ParCong` descent into one component.  In both cases the
 communicating pair survives canonicalization (flattening only merges bags,
 sorting only reorders them, unit absorption only removes nil), so COMM fires
@@ -156,11 +156,32 @@ theorem rhoStepAt_one_comm {elements : List Pattern} {inputIndex outputIndex : N
     · rfl
   · simp [commBindingsAt, mergeBindingsWith, channels]
 
-/-- The contractum of a COMM at given positions, on derived syntax. -/
+/-- The contractum of a COMM at given positions, on derived syntax: the
+paper-facing COMM result of the body with its quotations of drops resolved. -/
+theorem apply_commBindingsAt_resolved {scope : QuoteScope}
+    {free : FreeSortContext} {bound : List String} {body payload : Pattern}
+    (bodyTyped : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free
+      (rhoReflectivePresentation.nameSort :: bound) body)
+    (payloadTyped : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound payload)
+    (elements : List Pattern) (inputIndex outputIndex : Nat) (inputChannel : Pattern) :
+    applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
+        (commBindingsAt elements inputIndex outputIndex inputChannel body payload) =
+      .collection .hashBag
+        (semanticCommSubst (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body) payload ::
+          (elements.eraseIdx inputIndex).eraseIdx outputIndex) none := by
+  show applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
+    (rhoCommMatchedBindings inputChannel body payload
+      ((elements.eraseIdx inputIndex).eraseIdx outputIndex)) = _
+  rw [rhoComm_apply_exact]
+  exact applyBindingsForRule_rhoComm_eq_resolved bodyTyped payloadTyped inputChannel _
+
+/-- The contractum of a COMM at given positions, on derived syntax whose body
+lies in the literal-quotation fiber. -/
 theorem apply_commBindingsAt
     {free : FreeSortContext} {bound : List String} {body payload : Pattern}
     (bodyTyped : ProcWellSorted rhoReflectivePresentation free
       (rhoReflectivePresentation.nameSort :: bound) body)
+    (fiber : Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral rhoReflectivePresentation body = true)
     (payloadTyped : ProcWellSorted rhoReflectivePresentation free bound payload)
     (elements : List Pattern) (inputIndex outputIndex : Nat) (inputChannel : Pattern) :
     applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
@@ -168,11 +189,8 @@ theorem apply_commBindingsAt
       .collection .hashBag
         (semanticCommSubst body payload ::
           (elements.eraseIdx inputIndex).eraseIdx outputIndex) none := by
-  show applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
-    (rhoCommMatchedBindings inputChannel body payload
-      ((elements.eraseIdx inputIndex).eraseIdx outputIndex)) = _
-  rw [rhoComm_apply_exact]
-  exact applyBindingsForRule_rhoComm_agrees_derived bodyTyped payloadTyped inputChannel _
+  rw [apply_commBindingsAt_resolved bodyTyped payloadTyped,
+    semanticCommSubst_resolveQuotes_of_fiber bodyTyped fiber payloadTyped]
 
 /-! ## Inversion of the compiled step -/
 
@@ -359,11 +377,11 @@ theorem locate_pair {patterns : List Pattern} {first second : Pattern} {residue 
 /-! ## Closedness bookkeeping -/
 
 /-- Inversion of the derived process judgment at a parallel bag. -/
-theorem rho_parallel_wellSorted_inv {free : FreeSortContext} {bound : List String}
+theorem rho_parallel_wellSorted_inv {scope : QuoteScope} {free : FreeSortContext} {bound : List String}
     {elements : List Pattern} {termRest : Option String}
-    (typed : ProcWellSorted rhoReflectivePresentation free bound
+    (typed : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound
       (.collection .hashBag elements termRest)) :
-    termRest = none ∧ ProcListWellSorted rhoReflectivePresentation free bound elements := by
+    termRest = none ∧ ProcListWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound elements := by
   generalize patternEq : (Pattern.collection .hashBag elements termRest) = pattern at typed
   cases typed <;> simp [rhoReflectivePresentation] at patternEq
   rename_i elementsTyped
@@ -422,9 +440,9 @@ theorem canonicalize_output (channel payload : Pattern) :
 
 /-- Given a canonical parallel list holding, up to permutation, a canonical
 input and output on equivalent channels plus a residue, COMM fires on the
-bag at depth one and the contractum is the substitution result in front of a
-list with the residue's contents. -/
-theorem canonical_comm_of_pair
+bag at depth one and the contractum is the substitution result for the
+resolved body in front of a list with the residue's contents. -/
+theorem canonical_comm_of_pair_resolved
     {free : FreeSortContext} {elements : List Pattern}
     {inputChannel body outputChannel payload : Pattern} {residue : List Pattern}
     (bodyTyped : ProcWellSorted rhoReflectivePresentation free
@@ -435,7 +453,7 @@ theorem canonical_comm_of_pair
       (.apply "PInput" [inputChannel, .lambda none body] ::
         .apply "POutput" [outputChannel, payload] :: residue)) :
     ∃ tail, RhoStepAt 1 (canonicalize (.collection .hashBag elements none))
-        (.collection .hashBag (semanticCommSubst body payload :: tail) none) ∧
+        (.collection .hashBag (semanticCommSubst (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body) payload :: tail) none) ∧
       List.Perm (bagContents (tail.map canonicalize)) residue := by
   obtain ⟨i, iBound, j, jBound, inputEq, outputEq, tailPerm⟩ := locate_pair perm
   have twoElements : 2 ≤ (normalizeBagElements (elements.map canonicalize)).length := by
@@ -444,7 +462,7 @@ theorem canonical_comm_of_pair
   refine ⟨(normalizeBagElements (elements.map canonicalize)).eraseIdx i |>.eraseIdx j, ?_, ?_⟩
   · rw [canonicalize_bag, collapseBag_eq_bag_of_length_ge_two twoElements]
     have step := rhoStepAt_one_comm iBound jBound inputEq outputEq channels
-    rwa [apply_commBindingsAt bodyTyped payloadTyped] at step
+    rwa [apply_commBindingsAt_resolved bodyTyped payloadTyped] at step
   · have facts := canonicalList_facts elements
     have subset : ∀ pattern ∈ ((normalizeBagElements (elements.map canonicalize)).eraseIdx i
         |>.eraseIdx j), pattern ∈ normalizeBagElements (elements.map canonicalize) :=
@@ -455,6 +473,25 @@ theorem canonical_comm_of_pair
       (fun pattern membership => facts.2.2 pattern (subset pattern membership))]
     exact tailPerm
 
+/-- `canonical_comm_of_pair_resolved` for a body in the literal-quotation
+fiber: the contractum is the paper-facing substitution result. -/
+theorem canonical_comm_of_pair
+    {free : FreeSortContext} {elements : List Pattern}
+    {inputChannel body outputChannel payload : Pattern} {residue : List Pattern}
+    (bodyTyped : ProcWellSorted rhoReflectivePresentation free
+      (rhoReflectivePresentation.nameSort :: []) body)
+    (fiber : Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral rhoReflectivePresentation body = true)
+    (payloadTyped : ProcWellSorted rhoReflectivePresentation free [] payload)
+    (channels : rhoCanonicalEquivalent inputChannel outputChannel = true)
+    (perm : List.Perm (normalizeBagElements (elements.map canonicalize))
+      (.apply "PInput" [inputChannel, .lambda none body] ::
+        .apply "POutput" [outputChannel, payload] :: residue)) :
+    ∃ tail, RhoStepAt 1 (canonicalize (.collection .hashBag elements none))
+        (.collection .hashBag (semanticCommSubst body payload :: tail) none) ∧
+      List.Perm (bagContents (tail.map canonicalize)) residue := by
+  rw [← semanticCommSubst_resolveQuotes_of_fiber bodyTyped fiber payloadTyped]
+  exact canonical_comm_of_pair_resolved bodyTyped payloadTyped channels perm
+
 /-! ## The keystone -/
 
 /-- Every step from a closed process is matched, up to canonical form, by a
@@ -462,17 +499,16 @@ depth-one COMM on its canonical representative. -/
 theorem canonicalStep_complete {free : FreeSortContext} :
     ∀ (fuel : Nat) {source target : Pattern},
       ProcWellSorted rhoReflectivePresentation free [] source →
-      binderSafeAt "NQuote" 0 source = true →
       RhoStepAt fuel source target →
       ∃ target', RhoStepAt 1 (canonicalize source) target' ∧
         canonicalize target' = canonicalize target := by
   intro fuel
   induction fuel with
   | zero =>
-      intro source target _ _ step
+      intro source target _ step
       cases step
   | succ fuel inductionHypothesis =>
-      intro source target sourceTyped sourceSafe step
+      intro source target sourceTyped step
       rcases rhoStepAt_succ_inv step with
         ⟨bindings, matched, applied⟩ |
         ⟨elements, termRest, index, indexBound, candidate, sourceEq, componentStep, targetEq⟩
@@ -482,24 +518,23 @@ theorem canonicalStep_complete {free : FreeSortContext} :
             rhoComm_match_shape matched
         subst sourceEq
         subst bindingsEq
-        obtain ⟨restEq, _⟩ := rho_parallel_wellSorted_inv sourceTyped
+        obtain ⟨restEq, elementsTyped⟩ := rho_parallel_wellSorted_inv sourceTyped
         subst restEq
         have inputMember : elements[i] ∈ elements := List.getElem_mem iBound
         have outputMember : (elements.eraseIdx i)[j] ∈ elements :=
           List.mem_of_mem_eraseIdx (List.getElem_mem jBound)
-        obtain ⟨inputTyped, inputSafe⟩ := closed_member sourceTyped sourceSafe inputMember
-        obtain ⟨outputTyped, outputSafe⟩ := closed_member sourceTyped sourceSafe outputMember
-        rw [inputEq] at inputTyped inputSafe
-        rw [outputEq] at outputTyped outputSafe
+        have inputTyped := procListWellSorted_iff_forall_mem.mp elementsTyped _ inputMember
+        have outputTyped := procListWellSorted_iff_forall_mem.mp elementsTyped _ outputMember
+        rw [inputEq] at inputTyped
+        rw [outputEq] at outputTyped
         obtain ⟨binderEq, _, bodyTyped⟩ := rho_input_wellSorted_inv inputTyped
         subst binderEq
         obtain ⟨_, payloadTyped⟩ := rho_output_wellSorted_inv outputTyped
-        obtain ⟨_, bodySafe⟩ := binderSafe_of_input inputSafe
         have targetEq : target =
-            .collection .hashBag (semanticCommSubst body payload ::
+            .collection .hashBag (semanticCommSubst (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body) payload ::
               (elements.eraseIdx i).eraseIdx j) none := by
           rw [← applied]
-          exact apply_commBindingsAt bodyTyped payloadTyped elements i j inputChannel
+          exact apply_commBindingsAt_resolved bodyTyped payloadTyped elements i j inputChannel
         subst targetEq
         -- the pair survives canonicalization
         have elementsPerm : List.Perm elements
@@ -517,48 +552,53 @@ theorem canonicalStep_complete {free : FreeSortContext} :
             bagContents_cons_plain _ _ (by simp) (by simp),
             bagContents_cons_plain _ _ (by simp) (by simp)]
           exact (sortPatterns_perm _).symm
-        obtain ⟨tail, canonicalStep, tailPerm⟩ := canonical_comm_of_pair
-          (canonicalize_procWellSorted _ bodyTyped) (canonicalize_procWellSorted _ payloadTyped)
+        have canonicalBodyTyped := canonicalize_procWellSorted _ bodyTyped
+        have canonicalPayloadTyped := canonicalize_procWellSorted _ payloadTyped
+        obtain ⟨tail, canonicalStep, tailPerm⟩ := canonical_comm_of_pair_resolved
+          canonicalBodyTyped canonicalPayloadTyped
           (rhoCanonicalEquivalent_canonicalize channels) canonicalPerm
         refine ⟨_, canonicalStep, ?_⟩
         exact canonicalize_bag_cons_congr
-          (canonicalize_semanticCommSubst_canonicalize bodyTyped bodySafe
-            (rhoProcWellSorted_hashSetFree payloadTyped))
+          ((canonicalize_semanticCommSubst_resolveQuotes canonicalBodyTyped
+              (rhoProcWellSorted_hashSetFree canonicalPayloadTyped)).trans
+            ((canonicalize_semanticCommSubst_canonicalize bodyTyped
+              (rhoProcWellSorted_hashSetFree payloadTyped)).trans
+            (canonicalize_semanticCommSubst_resolveQuotes bodyTyped
+              (rhoProcWellSorted_hashSetFree payloadTyped)).symm))
           tailPerm
       · -- a ParCong descent into one component
         subst sourceEq
         subst targetEq
-        obtain ⟨restEq, _⟩ := rho_parallel_wellSorted_inv sourceTyped
+        obtain ⟨restEq, elementsTyped⟩ := rho_parallel_wellSorted_inv sourceTyped
         subst restEq
         have componentMember : elements[index] ∈ elements := List.getElem_mem indexBound
-        obtain ⟨componentTyped, componentSafe⟩ :=
-          closed_member sourceTyped sourceSafe componentMember
+        have componentTyped := procListWellSorted_iff_forall_mem.mp elementsTyped _ componentMember
         obtain ⟨candidate', canonicalComponentStep, candidateEq⟩ :=
-          inductionHypothesis componentTyped componentSafe componentStep
+          inductionHypothesis componentTyped componentStep
         obtain ⟨bindings, matched, applied⟩ := rhoStepAt_one_inv canonicalComponentStep
         obtain ⟨inner, innerRest, i, iBound, j, jBound, inputChannel, body, inputBinder,
           outputChannel, payload, innerEq, inputEq, outputEq, channels, bindingsEq⟩ :=
             rhoComm_match_shape matched
         subst bindingsEq
-        obtain ⟨canonicalTyped, canonicalSafe⟩ := closed_canonicalize componentTyped componentSafe
-        rw [innerEq] at canonicalTyped canonicalSafe
-        obtain ⟨innerRestEq, _⟩ := rho_parallel_wellSorted_inv canonicalTyped
+        have canonicalTyped := canonicalize_procWellSorted [] componentTyped
+        rw [innerEq] at canonicalTyped
+        obtain ⟨innerRestEq, innerTyped⟩ := rho_parallel_wellSorted_inv canonicalTyped
         subst innerRestEq
         have inputMember : inner[i] ∈ inner := List.getElem_mem iBound
         have outputMember : (inner.eraseIdx i)[j] ∈ inner :=
           List.mem_of_mem_eraseIdx (List.getElem_mem jBound)
-        obtain ⟨inputTyped, _⟩ := closed_member canonicalTyped canonicalSafe inputMember
-        obtain ⟨outputTyped, _⟩ := closed_member canonicalTyped canonicalSafe outputMember
+        have inputTyped := procListWellSorted_iff_forall_mem.mp innerTyped _ inputMember
+        have outputTyped := procListWellSorted_iff_forall_mem.mp innerTyped _ outputMember
         rw [inputEq] at inputTyped
         rw [outputEq] at outputTyped
         obtain ⟨binderEq, _, bodyTyped⟩ := rho_input_wellSorted_inv inputTyped
         subst binderEq
         obtain ⟨_, payloadTyped⟩ := rho_output_wellSorted_inv outputTyped
         have candidate'Eq : candidate' =
-            .collection .hashBag (semanticCommSubst body payload ::
+            .collection .hashBag (semanticCommSubst (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body) payload ::
               (inner.eraseIdx i).eraseIdx j) none := by
           rw [← applied]
-          exact apply_commBindingsAt bodyTyped payloadTyped inner i j inputChannel
+          exact apply_commBindingsAt_resolved bodyTyped payloadTyped inner i j inputChannel
         subst candidate'Eq
         -- the inner canonical list is normalized
         have innerCanonical : IsCanonical (.collection .hashBag inner none) := by
@@ -596,18 +636,18 @@ theorem canonicalStep_complete {free : FreeSortContext} :
           rw [inputEq, outputEq] at innerPerm
           exact (sortPatterns_perm _).symm.trans (innerPerm.append_right _)
         obtain ⟨tail, canonicalStep, tailPerm⟩ :=
-          canonical_comm_of_pair bodyTyped payloadTyped channels outerPerm
+          canonical_comm_of_pair_resolved bodyTyped payloadTyped channels outerPerm
         refine ⟨_, canonicalStep, ?_⟩
         rw [canonicalize_bag_cons, canonicalize_bag_cons, ← candidateEq, canonicalize_bag]
         have candidateContents : bagContents [collapseBag (normalizeBagElements
-            ((semanticCommSubst body payload :: (inner.eraseIdx i).eraseIdx j).map
+            ((semanticCommSubst (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body) payload :: (inner.eraseIdx i).eraseIdx j).map
               canonicalize))] =
             normalizeBagElements
-              ((semanticCommSubst body payload :: (inner.eraseIdx i).eraseIdx j).map
+              ((semanticCommSubst (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body) payload :: (inner.eraseIdx i).eraseIdx j).map
                 canonicalize) :=
           bagContents_collapse_normalized (isCanonicalList_map_canonicalize' _)
         rw [candidateContents, normalizeBagElements_eq_sort_bagContents, List.map_cons,
-          bagContents_cons (canonicalize (semanticCommSubst body payload))
+          bagContents_cons (canonicalize (semanticCommSubst (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body) payload))
             (List.map canonicalize ((inner.eraseIdx i).eraseIdx j)),
           bagContents_map_canonicalize_of_normalized
             (fun p membership => innerIsCanonical p (innerSub p membership))
@@ -622,11 +662,10 @@ theorem canonicalStep_complete {free : FreeSortContext} :
 /-- The keystone for the least relation. -/
 theorem canonicalStep_complete_of_rhoStep {free : FreeSortContext} {source target : Pattern}
     (sourceTyped : ProcWellSorted rhoReflectivePresentation free [] source)
-    (sourceSafe : binderSafeAt "NQuote" 0 source = true)
     (step : RhoStep source target) :
     ∃ target', RhoStepAt 1 (canonicalize source) target' ∧
       canonicalize target' = canonicalize target := by
   obtain ⟨fuel, bounded⟩ := step
-  exact canonicalStep_complete fuel sourceTyped sourceSafe bounded
+  exact canonicalStep_complete fuel sourceTyped bounded
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalStepperCompleteness

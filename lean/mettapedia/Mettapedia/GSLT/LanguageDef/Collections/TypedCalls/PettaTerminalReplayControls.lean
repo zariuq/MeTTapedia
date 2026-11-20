@@ -53,11 +53,11 @@ def bodyInitial (bad : Bool) : State Unit :=
   (Allocator.empty 0 1, ⟨{state := Effects.empty},
     [⟨[(branchControl, ⟨(), [frame]⟩, [])], [], none⟩]⟩)
 
-/-- error: Replay certificates must be closed and contain no admitted proof -/
+/-- error: The kernel refused the proposed transition 1 -/
 #guard_msgs (error, drop warning, drop info, substring := true) in
 kernel_petta_run rejectedGuard using (machine challenged .eagerValue program) for 1 from initial
 
-/-- error: Replay certificates must be closed and contain no admitted proof -/
+/-- error: The kernel refused the proposed transition 1 -/
 #guard_msgs (error, drop warning, drop info, substring := true) in
 kernel_petta_run rejectedBodyGuard using (machine challenged .eagerValue program)
   for 1 from (bodyInitial false)

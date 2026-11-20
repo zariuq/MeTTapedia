@@ -22,7 +22,7 @@ sender occurrence and a receiver occurrence on the same channel.
   process is a functional bisimulation onto the source reduction, and onto
   every process. Only existence of lifts is asserted.
 * `interpretedStep_iff_core`: those firings are exactly the admitted events
-  of the first-order instance of the calculus core (`AnnotatedRuns.firstOrder`)
+  of the first-order instance of the candidate step (`AnnotatedRuns.firstOrder`)
   whose firing is a compiled source root, with the identity model kept.
 * `unheated_store_cannot_communicate`: a store that keeps a communication
   redex in one occurrence denotes the same process but cannot fire it,
@@ -187,7 +187,7 @@ theorem observe_functional_bisimulation :
   · obtain ⟨world, components⟩ := every_source_class_has_occurrences process
     refine ⟨⟨[], world⟩, represents_iff_heated.mp ⟨(action context).models_nil _, components⟩⟩
 
-/-! ## The calculus core -/
+/-! ## The first-order candidate step -/
 
 /-- Interpreted firings are the admitted events of the core's first-order
 instance whose firing is a compiled source root. -/

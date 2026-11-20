@@ -135,8 +135,8 @@ theorem meetGroupK_decides_unary {Θ : Context S.R} {original : EquationStore (T
           run (meetGroupSolverK facts roots heads algebra rigid complete) original fuel ∧
         ((∃ state finished, run (meetGroupSolverK facts roots heads algebra rigid complete) original larger =
               .solved state finished ∧ (frames S.levels).Principal original state.answer) ∨
-          (∃ absent, run (meetGroupSolverK facts roots heads algebra rigid complete) original larger =
-            .refuted absent)) :=
+          (∃ missing, run (meetGroupSolverK facts roots heads algebra rigid complete) original larger =
+            .refuted missing)) :=
   meetGroupK_decided facts roots heads algebra rigid complete (inMeetFragmentK_of_meet inside)
 
 end TreeFibre

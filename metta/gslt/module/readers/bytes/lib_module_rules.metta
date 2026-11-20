@@ -1,0 +1,148 @@
+; Executable projection of unconditional constructor rewrite rules.
+; The module reader and assembler retain the signature and rule origins.
+; Unsupported patterns and premises are refused rather than approximated.
+!(import! &self str)
+!(import! &self (library lib_module))
+
+(= (byte-module:name? $name)
+   (if (> (str:byte-length $name) 0)
+     (let $first (str:byte-slice $name 0 1)
+       (and (or (str:is-all-in alpha $first) (== $first "_"))
+            (str:is-all-in word $name)))
+     false))
+
+(= (byte-module:term $pattern)
+   (case $pattern
+     (((FVar $name)
+       (if (byte-module:name? $name) (ByteModuleText (str:concat "$" $name))
+         (ByteModuleRefused InvalidVariable $name)))
+      ((PApp $head $args)
+       (if (byte-module:name? $head)
+         (case (byte-module:terms $args)
+           (((ByteModuleText $text)
+             (ByteModuleText (str:concat "(" (str:concat $head (str:concat $text ")")))))
+            ($other $other)))
+         (ByteModuleRefused InvalidConstructor $head)))
+      ($other (ByteModuleRefused UnsupportedPattern $other)))))
+
+(= (byte-module:declared? $name $bindings)
+   (case $bindings
+     ((LNil false)
+      ((LCons (TypeBinding $key (TBase $sort)) $rest)
+       (or (== $name $key) (byte-module:declared? $name $rest)))
+      ($other false))))
+(= (byte-module:bindings? $bindings)
+   (case $bindings
+     ((LNil true)
+      ((LCons (TypeBinding $name (TBase $sort)) $rest)
+       (and (not (byte-module:declared? $name $rest)) (byte-module:bindings? $rest)))
+      ($other false))))
+(= (byte-module:bound? $pattern $bindings)
+   (case $pattern
+     (((FVar $name) (byte-module:declared? $name $bindings))
+      ((PApp $head $args) (byte-module:bound-list? $args $bindings))
+      ($other false))))
+(= (byte-module:bound-list? $patterns $bindings)
+   (case $patterns
+     ((LNil true)
+      ((LCons $first $rest) (and (byte-module:bound? $first $bindings) (byte-module:bound-list? $rest $bindings)))
+      ($other false))))
+(= (byte-module:occurs? $name $pattern)
+   (case $pattern
+     (((FVar $key) (== $name $key))
+      ((PApp $head $args) (byte-module:occurs-list? $name $args))
+      ($other false))))
+(= (byte-module:occurs-list? $name $patterns)
+   (case $patterns
+     ((LNil false)
+      ((LCons $first $rest) (or (byte-module:occurs? $name $first) (byte-module:occurs-list? $name $rest)))
+      ($other false))))
+(= (byte-module:from-left? $right $left)
+   (case $right
+     (((FVar $name) (byte-module:occurs? $name $left))
+      ((PApp $head $args) (byte-module:from-left-list? $args $left))
+      ($other false))))
+(= (byte-module:from-left-list? $patterns $left)
+   (case $patterns
+     ((LNil true)
+      ((LCons $first $rest) (and (byte-module:from-left? $first $left) (byte-module:from-left-list? $rest $left)))
+      ($other false))))
+
+(= (byte-module:checked-equation $bindings $left $right)
+   (if (and (byte-module:bindings? $bindings)
+            (and (byte-module:bound? $left $bindings)
+                 (and (byte-module:bound? $right $bindings) (byte-module:from-left? $right $left))))
+     (byte-module:equation $left $right)
+     (ByteModuleRefused UnclosedRule)))
+(= (byte-module:terms LNil) (ByteModuleText ""))
+(= (byte-module:terms (LCons $first $rest))
+   (case (byte-module:term $first)
+     (((ByteModuleText $head)
+       (case (byte-module:terms $rest)
+         (((ByteModuleText $tail) (ByteModuleText (str:concat " " (str:concat $head $tail))))
+          ($other $other))))
+      ($other $other))))
+
+(= (byte-module:rule $occurrence)
+   (case $occurrence
+     (((ModuleRuleOccurrenceV1 $origin (RewriteRule $name $bindings LNil $lhs $rhs))
+       (byte-module:checked-equation $bindings $lhs $rhs))
+      ((ModuleRuleOccurrenceV1 $origin (ScopedRewriteRuleV1 $name $bindings LNil $lhs $rhs RuleBindingNone))
+       (byte-module:checked-equation $bindings $lhs $rhs))
+      ($other (ByteModuleRefused UnsupportedRule $other)))))
+
+(= (byte-module:equation $lhs $rhs)
+   (case (byte-module:term $lhs)
+     (((ByteModuleText $left)
+       (case (byte-module:term $rhs)
+         (((ByteModuleText $right)
+           (ByteModuleText (str:concat "(= " (str:concat $left (str:concat " " (str:concat $right ")\n"))))))
+          ($other $other))))
+      ($other $other))))
+(= (byte-module:rules LNil) (ByteModuleText ""))
+(= (byte-module:rules (LCons $first $rest))
+   (case (byte-module:rule $first)
+     (((ByteModuleText $head)
+       (case (byte-module:rules $rest)
+         (((ByteModuleText $tail) (ByteModuleText (str:concat $head $tail)))
+          ($other $other))))
+      ($other $other))))
+
+(= (byte-module:install $space $presentation $name)
+   (case $presentation
+     (((ModulePresentationV1 $a $b $c $d $e)
+       (byte-module:install-presentation $space $presentation $name))
+      ($other $other))))
+
+(= (byte-module:install-presentation $space $presentation $name)
+   (case (module:rewrite-rules $presentation $name)
+     (((ModuleRewriteRulesV1 $core $rules)
+       (byte-module:install-export $space (ModuleRewriteRulesV1 $core $rules)))
+      ($other $other))))
+
+(= (byte-module:install-export $space $exported)
+   (case (byte-module:export-source $exported)
+     (((ByteModuleText $text) (module:install-definitions $space $text))
+      ($other $other))))
+
+(= (byte-module:export-source $exported)
+   (case $exported
+     (((ModuleRewriteRulesV1 $core $rules)
+       (byte-module:rules $rules))
+      ($other (ByteModuleRefused InvalidRuleExport $other)))))
+
+(= (byte-module:link-source $exports)
+   (case $exports
+     ((LNil (ByteModuleText ""))
+      ((LCons $first $rest)
+       (case (byte-module:export-source $first)
+         (((ByteModuleText $head)
+           (case (byte-module:link-source $rest)
+             (((ByteModuleText $tail) (ByteModuleText (str:concat $head $tail)))
+              ($other $other))))
+          ($other $other)))))))
+
+(= (byte-module:install-linked $space $exports)
+   (case (byte-module:link-source $exports)
+     (((ByteModuleText $text) (module:install-definitions $space $text))
+      ($other $other))))

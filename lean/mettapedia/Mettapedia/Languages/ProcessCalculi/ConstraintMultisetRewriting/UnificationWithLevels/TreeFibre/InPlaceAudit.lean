@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Unificati
 # The tree's in-place solver, audited: level variables, cumulativity, and runs with no budget of rounds
 
 The in-place solver (`ContextualDependentInPlace`) is a solver of the tree's driver: every progress is an update
-(sound and complete for `frames S.levels`), every refutation carries the absence of solutions, and its rank is the
+(sound and complete for `frames S.levels`), every refutation carries the lack of solutions, and its rank is the
 telescope's length, then the number of equations. Two facts its uses need are proved here.
 
 * **Level variables are parameters, not unknowns** (`models_valuation_free`, `solvable_valuation_free`,
@@ -80,7 +80,7 @@ def Decided.ofRank (solver : ContextualDependentWorklist.Solver S.levels) {Θ : 
     (problem : EquationStore (TotalTerm Θ)) : Option (Decided problem) :=
   match runRank solver problem with
   | .solved state finished => some (.solved state finished)
-  | .refuted absent => some (.refuted absent)
+  | .refuted missing => some (.refuted missing)
   | _ => none
 
 /-- A run with a budget that decides is finished. -/
@@ -90,7 +90,7 @@ theorem finished_of_ofRun {solver : ContextualDependentWorklist.Solver S.levels}
   unfold Decided.ofRun at found
   cases h : run solver problem fuel with
   | solved state finished => trivial
-  | refuted absent => trivial
+  | refuted missing => trivial
   | stuck state => trivial
   | cutoff state =>
       rw [h] at found

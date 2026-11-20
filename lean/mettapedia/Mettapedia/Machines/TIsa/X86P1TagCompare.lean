@@ -1,3 +1,4 @@
+import Mettapedia.Machines.TIsa.X86BranchCondition
 import Mettapedia.Machines.TIsa.X86SubImmediate
 import Mettapedia.Machines.TIsa.X86DwordLoad
 

@@ -255,7 +255,7 @@ def liftConfig (C : Configuration (Term σ) O) : Configuration (RTree σ) O :=
 def equalityGuards {T : Type*} : List (Check T) → EquationStore T
   | [] => []
   | .equal l r :: rest => (l, r) :: equalityGuards rest
-  | .absent _ :: rest => equalityGuards rest
+  | .predicate _ _ :: rest => equalityGuards rest
   | .count _ _ :: rest => equalityGuards rest
 
 theorem mem_equalityGuards {T : Type*} {e : T × T} (checks : List (Check T)) :
@@ -267,7 +267,7 @@ theorem mem_equalityGuards {T : Type*} {e : T × T} (checks : List (Check T)) :
     | equal l r =>
       obtain ⟨e₁, e₂⟩ := e
       simp [equalityGuards, ih]
-    | absent p => simp [equalityGuards, ih]
+    | predicate quantifier p => simp [equalityGuards, ih]
     | count p n => simp [equalityGuards, ih]
 
 theorem ofStore_append (K L : EquationStore (Term σ)) : ofStore (K ++ L) = ofStore K ++ ofStore L :=

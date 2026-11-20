@@ -333,7 +333,8 @@ theorem typed_condition_finishes (dispatch : GroundedDispatch) (policy : Policy)
         (final (Space.ofList ifProgram) emitted) →
       emitted.map (fun r => r.1.erase) = [badArg] :=
     fun emitted run => five_source_scoped (complete_source run)
-  refine ⟨⟨?_, every⟩, ⟨fine.acc, fun y path => ?_⟩, petta_five⟩
+  refine ⟨PublishesInOrder.bag ⟨?_, every⟩, FinishesInOrder.bag ⟨fine.acc, fun y path => ?_⟩,
+    petta_five⟩
   · obtain ⟨space, emitted, path⟩ := IfAtFrames.Fine.exists_final fine
     have same : space = Space.ofList ifProgram := space_fixed path
     subst same

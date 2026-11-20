@@ -1,6 +1,7 @@
 import Mettapedia.OSLF.Syntax.RhoEquationRuleModels
 import Mettapedia.OSLF.Syntax.RhoCommunicationEncoding
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefRewriteSystem
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SubstitutionCanonicalCommutation
 
 /-!
 # The intrinsic communication generator and authored rho COMM rule
@@ -31,6 +32,24 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefRewriteSystem
 
 private abbrev raw := BindingCloneAlgebra.terms sig
 
+/-- A quote-safe intrinsic process is admitted by authored rho's closed scope. -/
+private theorem closed_typed_process {Γ : Ctx sig} (term : Term sig Γ Srt.pr)
+    (safe : intrinsicQuoteSafe Γ.length term = true) :
+    ProcWellSorted rhoReflectivePresentation FreeSortContext.empty (contextLabels Γ) (encodeTerm term) :=
+  ProcWellSorted.ofSealed (presentation := rhoReflectivePresentation)
+    (encodedTerm_typed term : ProcWellSorted rhoApplyPresentation FreeSortContext.empty
+      (contextLabels Γ) (encodeTerm term))
+    ((encodeTerm_quoteSafe term Γ.length).trans safe)
+
+/-- A quote-safe intrinsic name is admitted by authored rho's closed scope. -/
+private theorem closed_typed_name {Γ : Ctx sig} (term : Term sig Γ Srt.nm)
+    (safe : intrinsicQuoteSafe Γ.length term = true) :
+    NameWellSorted rhoReflectivePresentation FreeSortContext.empty (contextLabels Γ) (encodeTerm term) :=
+  NameWellSorted.ofSealed (presentation := rhoReflectivePresentation)
+    (encodedTerm_typed term : NameWellSorted rhoApplyPresentation FreeSortContext.empty
+      (contextLabels Γ) (encodeTerm term))
+    ((encodeTerm_quoteSafe term Γ.length).trans safe)
+
 def intrinsicSource (channel : Term sig [] Srt.nm)
     (payload : Term sig [] Srt.pr)
     (body : Term sig [Srt.nm] Srt.pr) : Term sig [] Srt.pr :=
@@ -43,10 +62,34 @@ def authoredInputFirst (channel : Term sig [] Srt.nm)
     [.apply "PInput" [encodeTerm channel, .lambda none (encodeTerm body)],
      .apply "POutput" [encodeTerm channel, encodeTerm payload]] none
 
+/-- The result of the authored COMM firing: the paper-facing COMM result of the
+encoded body with its quotations of drops resolved. -/
 def authoredResult (payload : Term sig [] Srt.pr)
     (body : Term sig [Srt.nm] Srt.pr) : Pattern :=
   .collection .hashBag
-    [semanticCommSubst (encodeTerm body) (encodeTerm payload)] none
+    [semanticCommSubst
+      (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation
+        (encodeTerm body))
+      (encodeTerm payload)] none
+
+/-- The authored result of a quote-safe body and payload is structurally
+congruent to the paper-facing COMM result of their encodings. -/
+theorem authoredResult_structuralCongruence (payload : Term sig [] Srt.pr)
+    (body : Term sig [Srt.nm] Srt.pr)
+    (payloadSafe : intrinsicQuoteSafe 0 payload = true)
+    (bodySafe : intrinsicQuoteSafe 1 body = true) :
+    StructuralCongruence (authoredResult payload body)
+      (.collection .hashBag [semanticCommSubst (encodeTerm body) (encodeTerm payload)] none) := by
+  have bodyTyped : ProcWellSorted rhoReflectivePresentation FreeSortContext.empty
+      [rhoReflectivePresentation.nameSort] (encodeTerm body) := by
+    simpa [contextLabels, sortLabel, rhoReflectivePresentation] using
+      closed_typed_process body bodySafe
+  have payloadTyped : ProcWellSorted rhoReflectivePresentation FreeSortContext.empty []
+      (encodeTerm payload) := by
+    simpa [contextLabels] using closed_typed_process payload payloadSafe
+  exact Canonical.collectionCongruence_of_forall₂ .hashBag none
+    (.cons (SubstitutionCanonicalCommutation.semanticCommSubst_resolveQuotes_structuralCongruence
+        bodyTyped (PureBoundary.rhoProcWellSorted_hashSetFree payloadTyped)) .nil)
 
 theorem source_encoded (channel : Term sig [] Srt.nm)
     (payload : Term sig [] Srt.pr)
@@ -66,9 +109,12 @@ theorem source_structurally_congruent (channel : Term sig [] Srt.nm)
   rw [source_encoded]
   exact StructuralCongruence.par_comm _ _
 
+/-- The authored COMM rule fires on every quote-safe intrinsic generator. -/
 theorem authored_comm_all (channel : Term sig [] Srt.nm)
     (payload : Term sig [] Srt.pr)
-    (body : Term sig [Srt.nm] Srt.pr) :
+    (body : Term sig [Srt.nm] Srt.pr)
+    (payloadSafe : intrinsicQuoteSafe 0 payload = true)
+    (bodySafe : intrinsicQuoteSafe 1 body = true) :
     RhoStep (authoredInputFirst channel payload body)
       (authoredResult payload body) := by
   change RhoStep
@@ -76,11 +122,14 @@ theorem authored_comm_all (channel : Term sig [] Srt.nm)
       ([.apply "PInput" [encodeTerm channel, .lambda none (encodeTerm body)],
         .apply "POutput" [encodeTerm channel, encodeTerm payload]] ++ []) none)
     (.collection .hashBag
-      (semanticCommSubst (encodeTerm body) (encodeTerm payload) :: []) none)
-  apply RhoStep.comm (free := FreeSortContext.empty) (bound := [])
-  · simpa [EncodedTermTyped, contextLabels, sortLabel,
-      rhoReflectivePresentation] using encodedTerm_typed body
-  · simpa [EncodedTermTyped, contextLabels] using encodedTerm_typed payload
+      (semanticCommSubst
+        (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation
+          (encodeTerm body))
+        (encodeTerm payload) :: []) none)
+  apply RhoStep.comm_resolved (free := FreeSortContext.empty) (bound := [])
+  · simpa [contextLabels, sortLabel, rhoReflectivePresentation] using
+      closed_typed_process body bodySafe
+  · simpa [contextLabels] using closed_typed_process payload payloadSafe
 
 /-- The intrinsic schema has one occurrence for every closed channel,
 payload and one-name continuation; the input binder is retained in the
@@ -109,13 +158,15 @@ noncomputable def sourceEquationCommTree (channel : Term sig [] Srt.nm)
   interpretTree (FreeBindingClone.interpretHom sourceAlgebra) _
     (intrinsicCommTree channel payload body)
 
-/-- Every closed intrinsic COMM generator has a source-congruent authored
-COMM step and a retained generator in the source equation model. The
+/-- Every quote-safe closed intrinsic COMM generator has a source-congruent
+authored COMM step and a retained generator in the source equation model. The
 immediate targets are intentionally not identified here: authored semantic
 substitution may contract a quoted Drop that intrinsic substitution retains. -/
 theorem comm_source_and_rule_cover (channel : Term sig [] Srt.nm)
     (payload : Term sig [] Srt.pr)
-    (body : Term sig [Srt.nm] Srt.pr) :
+    (body : Term sig [Srt.nm] Srt.pr)
+    (payloadSafe : intrinsicQuoteSafe 0 payload = true)
+    (bodySafe : intrinsicQuoteSafe 1 body = true) :
     StructuralCongruence
       (encodeTerm (intrinsicSource channel payload body))
       (authoredInputFirst channel payload body) ∧
@@ -126,7 +177,7 @@ theorem comm_source_and_rule_cover (channel : Term sig [] Srt.nm)
         (judgment raw (intrinsicSource channel payload body)
           (commTarget raw payload body)))) :=
   ⟨source_structurally_congruent channel payload body,
-   authored_comm_all channel payload body,
+   authored_comm_all channel payload body payloadSafe bodySafe,
    ⟨sourceEquationCommTree channel payload body⟩⟩
 
 theorem encoded_comm_source_admitted_of_safe
@@ -163,16 +214,14 @@ theorem authored_comm_source_admitted_of_safe
   · exact .parallel
       (.cons
         (.input
-          (show NameWellSorted rhoReflectivePresentation
-            FreeSortContext.empty [] (encodeTerm channel) from
-              encodedTerm_typed channel)
+          (closed_typed_name channel channelSafe)
           (show ProcWellSorted rhoReflectivePresentation
             FreeSortContext.empty [rhoReflectivePresentation.nameSort]
             (encodeTerm body) from by
-              simpa [EncodedTermTyped, contextLabels, sortLabel,
-                rhoReflectivePresentation] using encodedTerm_typed body))
+              simpa [contextLabels, sortLabel, rhoReflectivePresentation] using
+                closed_typed_process body bodySafe))
         (.cons
-          (.output (encodedTerm_typed channel) (encodedTerm_typed payload))
+          (.output (closed_typed_name channel channelSafe) (closed_typed_process payload payloadSafe))
           .nil))
   · simp [authoredInputFirst, binderSafeAt, binderSafeListAt,
       encodeTerm_quoteSafe, channelSafe, payloadSafe, bodySafe]
@@ -192,7 +241,7 @@ theorem authored_comm_result_admitted_of_safe
   have sourceParts := (rhoClosedTermWellSorted_process_iff _).mp sourceAdmitted
   exact (rhoClosedTermWellSorted_process_iff _).mpr
     (rhoStep_preserves_closed sourceParts.1 sourceParts.2
-      (authored_comm_all channel payload body))
+      (authored_comm_all channel payload body payloadSafe bodySafe))
 
 theorem comm_closed_source_and_rule_cover
     (channel : Term sig [] Srt.nm)
@@ -219,7 +268,7 @@ theorem comm_closed_source_and_rule_cover
       (mapJudgment (FreeBindingClone.interpretHom sourceAlgebra)
         (judgment raw (intrinsicSource channel payload body)
           (commTarget raw payload body)))) := by
-  have cover := comm_source_and_rule_cover channel payload body
+  have cover := comm_source_and_rule_cover channel payload body payloadSafe bodySafe
   exact ⟨encoded_comm_source_admitted_of_safe channel payload body
       channelSafe payloadSafe bodySafe,
     authored_comm_source_admitted_of_safe channel payload body

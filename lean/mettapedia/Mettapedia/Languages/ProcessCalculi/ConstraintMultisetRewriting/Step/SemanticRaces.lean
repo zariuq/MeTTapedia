@@ -71,9 +71,10 @@ theorem bisimilar_semantic_iff (label : O → T) (ordinary : Ordinary A offers)
 /-- **Equivalence modulo the knowledge is a bisimulation for an ordinary program**, relative to
 identities that include every identity its firings name. -/
 theorem Ordinary.bisimilar {label : O → T} {E : Finset O} (ordinary : Ordinary A offers)
-    (named : ∀ ℓ f, offers ℓ f → f.names ⊆ E) {C D : Configuration T O}
+    (supports : ∀ ℓ f, offers ℓ f → Interface.RegionQuerySupport.Supports f.queries)
+    (named : ∀ ℓ f (offered : offers ℓ f), f.names (supports ℓ f offered) ⊆ E) {C D : Configuration T O}
     (h : ModuloEquivalent A label E C D) : Race.Bisimilar A label offers C D :=
-  h.program_bisimilar fun ℓ f offered => ⟨named ℓ f offered, ordinary ℓ f offered⟩
+  h.program_bisimilar supports fun ℓ f offered => ⟨named ℓ f offered, ordinary ℓ f offered⟩
 
 /-- **The determinate fragment is ordinary**: its firings are ground. -/
 theorem fragment_ordinary {label : O → T} (fragment : Race.Fragment label offers) :

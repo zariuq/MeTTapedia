@@ -2,6 +2,9 @@ import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaReplayWitnesses
 import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeEquationScalarReduction
 import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaTerminalReadout
 import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaSourceClassGuardReduction
+import Mettapedia.Logic.LP.TotalUnificationStructural
+import Mettapedia.Languages.MeTTa.HE.Spec.Type.RenameTypeVarsStructural
+import Mettapedia.Tools.KernelReducibleCopies
 
 /-!
 # Kernel-checked finite runs of the actual scoped typed machine
@@ -10,6 +13,13 @@ Native evaluation proposes transitions only. Safe data declarations and every
 one-step equality are independently checked, then composed through the existing
 machine-run theorems. No evaluated proposition, runtime Boolean or supplied
 whole-run equality is accepted as a proof.
+
+Each one-step equality is checked by kernel reduction. The machine reaches
+two definitions by well-founded recursion, `unifyTotal` and `renameTypeVars`,
+which the kernel cannot evaluate; the check runs on copies of the machine's
+definitions that use their proven-equal structural implementations, and the
+result is transported back along the copies' equations
+(`Mettapedia.Tools.KernelReducibleCopies`).
 
 The witness codec retains the initial store expression. A proposed store
 change cannot pass the step check under that codec; this is a read-only-store
@@ -29,6 +39,7 @@ open Mettapedia.Languages.MeTTa.PeTTa
 open Mettapedia.GSLT.Distinction.ProductiveBlocks
 open PettaOccurrenceOverlay
 open PettaReplayWitnesses
+open Mettapedia.Tools.KernelReducibleCopies
 
 private def prependEvents {Event Result : Type} (events : List Event) (reply : List Event × Result) : List Event × Result :=
   (events ++ reply.1, reply.2)
@@ -39,6 +50,11 @@ meta section
 
 private def checkedOptions (options : Options) : Options :=
   debug.skipKernelTC.set (Elab.async.set options false) false
+
+/-- The equations `@structural = @wellFounded` used to evaluate the machine in the kernel. -/
+private def structuralEquations : Array Name :=
+  #[``Mettapedia.Logic.LP.unifyTotalStructural_eq,
+    ``Mettapedia.Languages.MeTTa.HE.Spec.Type.RuntimeRefinement.renameTypeVarsStructural_eq]
 
 private def requireSafe (type value : Expr) : TermElabM Unit := do
   let environment ← getEnv
@@ -61,78 +77,29 @@ private def closeCertificate (proof : Expr) : TermElabM Expr := do
   let proof ← instantiateMVars proof
   closeProof (← inferType proof) proof
 
-private def quoteData (type value : Expr) : TermElabM Expr := do
+private def quoteData (type value : Expr) (compile : Bool := true) : TermElabM Expr := do
   requireSafe type value
   let name ← mkAuxDeclName `_typedReplayData
-  withOptions checkedOptions <| addAndCompile <| .defnDecl {
+  let declaration := .defnDecl {
     name, levelParams := [], type, value, hints := .regular 0, safety := .safe }
+  withOptions checkedOptions <|
+    if compile then addAndCompile declaration else addDecl declaration
   return mkConst name
 
-private def proveAtomic (type : Expr) : TermElabM Expr := do
-  let proof ← elabTerm (← `(by
-    try dsimp only
-    all_goals cbv
-    all_goals simp_all [PettaReplayWitnesses.stringSet, Finset.ext_iff, or_comm, or_left_comm, or_assoc])) (some type)
-  synthesizeSyntheticMVarsNoPostponing
-  closeProof type proof
 
-/-- Factor a typed terminal through its separately checked source readout.
-Native values select a candidate lemma instance; every shape premise, read
-and resulting transition still receives an ordinary kernel certificate. -/
-private def terminalCertificate? (type machine state : Expr) (actual : State Unit) : TermElabM (Option Expr) := do
-  let scope :: parents := actual.2.scopes | return none
-  let (branchControl, context, origins) :: pending := scope.frontier | return none
-  let frame :: outside := context.calls | return none
-  unless branchControl.goals.isEmpty && frame.scopeDepth == actual.2.scopes.length do return none
-  if frame.phase matches .nextArgument then return none
-  let some environment := EagerDFS.Destination.resolve branchControl.bindings | return none
-  let delivered := EagerDFS.Destination.read environment branchControl.destination
-  let parts? ← withLocalDeclD `source stateType fun stateVariable => do
-    let application ← whnf (← mkAppM ``Machine.step #[machine, stateVariable])
-    let_expr Option.some _ step := application | return none
-    unless step.isAppOfArity ``PettaOccurrenceOverlay.step 5 do return none
-    let arguments := step.getAppArgs
-    return some (arguments[1]!, arguments[2]!, arguments[3]!)
-  let some (services, policy, program) := parts? | return none
-  let shared : Array (Option Expr) :=
-    #[some (mkConst ``Unit), some services, some policy, some program, some state,
-      some (toExpr scope), some (toExpr parents), some (toExpr branchControl),
-      some (toExpr context), some (toExpr origins), some (toExpr pending),
-      some (toExpr frame), some (toExpr outside)]
-  let remaining := match frame.phase with
-    | .argument formal slot => #[some (toExpr formal), some (toExpr slot), some (toExpr delivered)]
-    | .body => #[some (toExpr delivered)]
-    | .nextArgument => #[]
-  let theoremName := match frame.phase with
-    | .argument _ _ => ``PettaTerminalReadout.argument
-    | _ => ``PettaTerminalReadout.body
-  let mut proof ← mkAppOptM theoremName (shared ++ remaining)
-  for index in [:7] do
-    let .forallE _ obligationType _ _ ← whnf (← inferType proof)
-      | throwError "Expected a terminal readout premise"
-    trace[Meta.Tactic.pettaReplay] "Checking terminal certificate field {index + 1}"
-    let checked ← if index < 6 then do
-        let_expr Eq _ left right := obligationType | proveAtomic obligationType
-        if ← isDefEq left right then closeProof obligationType (← mkEqRefl left)
-        else proveAtomic obligationType
-      else proveAtomic obligationType
-    proof := mkApp proof checked
-  let closedProof ← closeCertificate (← instantiateMVars proof)
-  let transitionType ← mkAppM ``PettaOccurrenceOverlay.Step #[mkConst ``Unit]
-  let lift ← withLocalDeclD `transition transitionType fun transition => do
-    mkLambdaFVars #[transition] (← mkSome transitionType transition)
-  let lifted ← mkAppM ``congrArg #[lift, closedProof]
-  let liftedType ← inferType lifted
-  let_expr Eq _ _ reduced := liftedType | throwError "Expected a terminal transition equality"
-  let_expr Eq _ _ expected := type | throwError "Expected a replay equation"
-  let remaining ← proveAtomic (← mkEq reduced expected)
-  let complete ← mkAppM ``Eq.trans #[lifted, remaining]
-  trace[Meta.Tactic.pettaReplay] "Checked typed terminal through its actual readout"
-  return some (← closeProof type complete)
-
-private def proveStep (type machine state : Expr) (actual : State Unit) : TermElabM Expr := do
-  if let some proof ← terminalCertificate? type machine state actual then return proof
-  proveAtomic type
+/-- Check `statement : left = right` by kernel reduction on the reducible copies,
+then transport it back to the machine's own definitions. -/
+private def proveStep (copies : IO.Ref CopyCache) (statement : Expr) (label : MessageData) :
+    TermElabM Expr := do
+  requireSafe (mkSort .zero) statement
+  let ((copied, transport), cache) ← CopyM.run' structuralEquations (copyTerm statement) (← copies.get)
+  copies.set cache
+  let some (_, _, right) := copied.eq? | throwError "Expected a replay equation"
+  let reduced ← try
+      withOptions checkedOptions <| mkAuxLemma [] copied (← mkEqRefl right) (cache := false)
+    catch failure =>
+      throwError "The kernel refused the proposed {label}:{indentD failure.toMessageData}"
+  closeProof statement (← mkEqMP transport (mkConst reduced))
 
 private def addProof (name : Name) (proof : Expr) : TermElabM Unit := do
   let proof ← instantiateMVars proof
@@ -173,6 +140,14 @@ private def replay (name : Name) (machineStx fuelStx initialStx : TSyntax `term)
     let store ← mkAppM ``EagerDFS.World.state #[world]
     let backing ← quoteData (← inferType store) store
     let backingName := backing.constName!
+    let copies ← IO.mkRef ({} : CopyCache)
+    -- Intermediate states retain the reducible copy of the store, so that the
+    -- kernel compares them without copying each state; states named or stated
+    -- by the `run` theorem retain the store itself.
+    let ((copiedBackingName, _), cache) ← CopyM.run' structuralEquations (do
+        if ← reachesReplaced backingName then copyConstant backingName
+        else pure (backingName, backingName)) (← copies.get)
+    copies.set cache
     -- These native computations propose data, never proofs.
     let fuel ← unsafe evalExpr Nat (mkConst ``Nat) fuelExpr
     let mut actual ← unsafe evalExpr (State Unit) stateType initial
@@ -180,38 +155,43 @@ private def replay (name : Name) (machineStx fuelStx initialStx : TSyntax `term)
     let nativeStep ← unsafe evalExpr
       ((State Unit) → Option (Transition (State Unit) EagerDFS.Destination.CollectedAnswer (State Unit) Request))
       stepType (← mkAppM ``Machine.step #[machine])
+    let intermediate (reached : State Unit) : TermElabM Expr :=
+      quoteData stateType (stateExpr copiedBackingName reached) (compile := false)
+    -- A state that the `run` theorem states retains the store itself.
+    let stated (reached : State Unit) : TermElabM Expr := quoteData stateType (stateExpr backingName reached)
     let mut state := initial
     let mut receipts : Array (Bool × Expr × Expr) := #[]
     let mut terminal : Option Expr := none
     for index in [:fuel] do
       let remaining := fuel - index - 1
+      let label := m!"transition {index + 1} for {name}"
       let observed := nativeStep actual
       match observed with
       | none =>
           let missing := mkApp (mkConst ``Option.none [0]) transitionType
-          let checked ← proveStep (← mkEq (← sourceStep machine state) missing) machine state actual
+          let checked ← proveStep copies (← mkEq (← sourceStep machine state) missing) label
           terminal := some (← closeCertificate (← mkAppOptM ``Machine.run_succ_stuck
             #[none, none, none, none, some machine, some (toExpr remaining), none, some checked]))
           break
       | some next =>
+          -- The last state of an exhausted or stuck run is stated by the `run` theorem.
+          let continuing (following : State Unit) : TermElabM Expr :=
+            if remaining == 0 || (nativeStep following).isNone then stated following
+            else intermediate following
           let (constructor, fields, nextActual) ← match next with
             | .silent following => do
-                let quoted ← quoteData stateType (stateExpr backingName following)
-                pure (``Transition.silent, #[quoted], some following)
+                pure (``Transition.silent, #[← continuing following], some following)
             | .publish events following => do
-                let quoted ← quoteData stateType (stateExpr backingName following)
-                pure (``Transition.publish, #[toExpr events, quoted], some following)
+                pure (``Transition.publish, #[toExpr events, ← continuing following], some following)
             | .finish verdict => do
-                let quoted ← quoteData stateType (stateExpr backingName verdict)
-                pure (``Transition.finish, #[quoted], none)
+                pure (``Transition.finish, #[← stated verdict], none)
             | .fail events => pure (``Transition.fail, #[toExpr events], none)
             | .call request saved => do
-                let quoted ← quoteData stateType (stateExpr backingName saved)
-                pure (``Transition.call, #[toExpr request, quoted], none)
+                pure (``Transition.call, #[toExpr request, ← stated saved], none)
           let transition := mkAppN (mkConst constructor) (parameterTypes ++ fields)
           let proposed := mkApp2 (mkConst ``Option.some [0]) transitionType transition
-          trace[Meta.Tactic.pettaReplay] "Checking transition {index + 1} for {name}"
-          let checked ← proveStep (← mkEq (← sourceStep machine state) proposed) machine state actual
+          trace[Meta.Tactic.pettaReplay] "Checking {label}"
+          let checked ← proveStep copies (← mkEq (← sourceStep machine state) proposed) label
           if (index + 1) % 20 = 0 then
             logInfo m!"Checked transition {index + 1} for {name}"
           if let some following := nextActual then

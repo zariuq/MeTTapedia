@@ -13,7 +13,7 @@ Every interaction is one atomic commit. A commit has four components:
 2. **take** (`taken`): consume an occurrence; a linear resource, a Petri-net token.
 3. **make** (`made`): produce occurrences with fresh identities; the right leg of the span.
 4. **predicate query** (`queries`): observe every occurrence of a region that satisfies its
-   predicate; an application condition of the span. Absence, uniqueness, counts, folds and the
+   predicate; an application condition of the span. The none query, uniqueness, counts, folds and the
    completeness of `every` are predicate queries.
 
 Two further sources of behaviour are not commit components:
@@ -58,12 +58,12 @@ The two hypotheses are needed, and the necessity is shown:
   occur at most once could drop keep.
 * **predicate query needs an unbounded region.** When only finitely many identities can carry a
   region's labels, a commit that makes all of them is fresh exactly when the region is empty, so
-  freshness stands in for the absence (`Controls.freshness_encodes_bounded_absence`).
+  freshness stands in for the none query (`Controls.freshness_encodes_bounded_none`).
 
 Encodings are one commit for one commit. For take, make and fresh names the law holds along runs
 too (`subset_fireList_of_noTake`, `fireList_subset_of_noMake`, `storeNames_fireList_subset`), so
 no run of the smaller fragment has the effect either.
-Tombstones (make "spent x" and read the absence of "spent x") simulate a take only up to the
+Tombstones (make "spent x" and read the none query of "spent x") simulate a take only up to the
 tombstone labels, which the criterion counts, so they are not an encoding.
 
 ## What is derived, with the theorem that makes the derivation honest
@@ -81,7 +81,7 @@ tombstone labels, which the criterion counts, so they are not an encoding.
   rows of a region together with the predicate query of that region. An arrival into the region
   spoils it, which is why `every` is not monotone; without the predicate query the amalgamation
   could commit with a row missing.
-* **Absence, uniqueness, counts, folds**: a predicate query with the seen set empty, a singleton, or
+* **The none query, uniqueness, counts, folds**: a predicate query with the seen set empty, a singleton, or
   bound to a value that a term-level fold consumes.
 * **Cell replace**: take the old value, make the new one; two replacers of one cell clash, so no
   update is lost (`Exactness.Controls.takers_clash` is the shape).
@@ -250,7 +250,7 @@ theorem not_encodes_predicateQuery {label : O → R} {store : Finset O} {c e : C
     (unbounded : ∀ F : Finset O, ∃ o ∉ F, read.region (label o) = true) (positive : e.Positive) :
     ¬ Encodes label c e := fun encodes => by
   obtain ⟨o, outside, inRegion⟩ := unbounded (store ∪ e.made)
-  have absent : o ∉ store := fun inStore => outside (Finset.mem_union_left _ inStore)
+  have missing : o ∉ store := fun inStore => outside (Finset.mem_union_left _ inStore)
   have notMade : o ∉ e.made := fun made => outside (Finset.mem_union_right _ made)
   have eLater : Enabled label (store ∪ {o}) e :=
     ((encodes.enabled_iff store).mp enabled).frame_of_positive positive
@@ -262,7 +262,7 @@ theorem not_encodes_predicateQuery {label : O → R} {store : Finset O} {c e : C
     rw [← holds]
     exact mem_regionOf.mpr ⟨Finset.mem_union_right _ (Finset.mem_singleton_self o), inRegion⟩
   rw [← before] at seen
-  exact absent (mem_regionOf.mp seen).1
+  exact missing (mem_regionOf.mp seen).1
 
 /-- **Keep is not encoded without keep**, when labels repeat. Let a positive commit keep `o`,
 and let an occurrence `o'` with the label of `o` be able to arrive. A commit without keep that
@@ -271,7 +271,7 @@ label of `o` to be disabled where `o` is missing, and then the arrival of `o'` d
 the keeper stays enabled. -/
 theorem not_encodes_keep {label : O → R} {store : Finset O} {c e : Commit O R} {o o' : O}
     (positive : c.Positive) (enabled : Enabled label store c) (kept : o ∈ c.kept)
-    (absent : o' ∉ store) (notMade : o' ∉ c.made) (sameLabel : label o' = label o)
+    (missing : o' ∉ store) (notMade : o' ∉ c.made) (sameLabel : label o' = label o)
     (keepFree : e.kept = ∅) : ¬ Encodes label c e := fun encodes => by
   have eEnabled := (encodes.enabled_iff store).mp enabled
   have present : o ∈ store := enabled.kept_subset kept
@@ -329,7 +329,7 @@ theorem not_encodes_keep {label : O → R} {store : Finset O} {c e : Commit O R}
       exact mem_regionOf.mpr ⟨Finset.mem_union_right _ (Finset.mem_singleton_self o'),
         sameLabel ▸ inRegion⟩
     rw [← before] at seen
-    exact absent (mem_regionOf.mp seen).1
+    exact missing (mem_regionOf.mp seen).1
 
 section Injective
 
@@ -567,7 +567,7 @@ theorem outputs_unbounded (F : Finset ℕ) : ∃ o ∉ F, isOut (label o) = true
     simp only [id] at this
     omega, rfl⟩
 
-/-- **The absence of outputs is not encoded by a positive commit.** -/
+/-- **The none query of outputs is not encoded by a positive commit.** -/
 theorem noOutput_not_encoded (e : Commit ℕ Atom) (positive : e.Positive) :
     ¬ Encodes label noOutput e :=
   not_encodes_predicateQuery (read := ⟨isOut, ∅⟩) noOutput_enabled (by simp [noOutput])
@@ -590,11 +590,11 @@ def makeBothTokens : Commit ℕ Atom := ⟨∅, ∅, {20, 21}, [⟨isTok, ∅⟩
 /-- Make both tokens, with no predicate query. -/
 def makeBothTokensPositive : Commit ℕ Atom := ⟨∅, ∅, {20, 21}, []⟩
 
-/-- **A bounded region: freshness stands in for absence.** Only `20` and `21` can be tokens, so
+/-- **A bounded region: freshness stands in for none queries.** Only `20` and `21` can be tokens, so
 making both is possible exactly where no token is present, and the positive commit encodes the
-one with the absence read. The separation of predicate queries needs a region that can receive an
+one with the none read. The separation of predicate queries needs a region that can receive an
 occurrence outside any finite set. -/
-theorem freshness_encodes_bounded_absence :
+theorem freshness_encodes_bounded_none :
     Encodes cellLabel makeBothTokens makeBothTokensPositive where
   enabled_iff store := by
     constructor

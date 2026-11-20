@@ -1,6 +1,7 @@
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.GuardedReplication
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.ScopedSubstitutionInert
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.Bridges.RhoEndpointOperational
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LiteralQuotationFiber
 
 /-!
 # Request-dependent persistent servers in the authored rho core
@@ -12,8 +13,11 @@ unchanged. Receiving a request substitutes its actual payload into the
 released handler. Initialization uses one communication and each request
 uses two, retaining the same waiting server at the supplied endpoint.
 
-The channel and handler records contain only sorting, scope, and semantic
-normalization data. The operational contracts are proved from these data.
+The channel and handler records contain sorting, scope, semantic
+normalization, and literal-quotation data. The operational contracts are
+proved from these data. Literal quotation makes each compiled communication
+exactly the paper-facing one; every channel and handler built in this
+development satisfies it by construction.
 -/
 
 set_option autoImplicit false
@@ -47,6 +51,8 @@ structure Channel (free : FreeSortContext) where
   typed : NameWellSorted rhoReflectivePresentation free [] term
   safe : binderSafeAt "NQuote" 0 term = true
   normalized : semanticNormalizeName term = term
+  /-- Its quotations expose a drop only literally. -/
+  literal : Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral rhoReflectivePresentation term = true
 
 /-- A normalized handler template depending on the received name. -/
 structure Handler (free : FreeSortContext) where
@@ -54,6 +60,8 @@ structure Handler (free : FreeSortContext) where
   typed : ProcWellSorted rhoReflectivePresentation free ["Name"] term
   safe : binderSafeAt "NQuote" 1 term = true
   normalized : semanticNormalizeProc term = term
+  /-- Its quotations expose a drop only literally. -/
+  literal : Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral rhoReflectivePresentation term = true
 
 namespace Channel
 
@@ -106,7 +114,7 @@ theorem code_inert (index : Nat) (replacement : Pattern) :
       GuardedReplication.code self.term request.term handler.term := by
   simp [GuardedReplication.code, GuardedReplication.body, semanticSubstProc, semanticSubstProcList,
     self.inert, request.inert, handler.inertAbove (by omega : 1 ≤ index + 1 + 1),
-    semanticSubstNameMark, semanticNormalizeName]
+    semanticSubstNameMark, semanticNormalizeName, Canonical.canonicalize]
 
 theorem code_received :
     semanticCommSubst (GuardedReplication.body self.term request.term handler.term)
@@ -115,7 +123,7 @@ theorem code_received :
   simp [semanticCommSubst, code_normalized self request handler,
     GuardedReplication.body, GuardedReplication.idle, semanticSubstProc, semanticSubstProcList,
     self.inert, request.inert, handler.inertAbove (by omega : 1 ≤ 1),
-    semanticSubstNameMark, semanticNormalizeName]
+    semanticSubstNameMark, Canonical.canonicalize]
 
 theorem request_received (payload : Pattern) :
     semanticCommSubst
@@ -180,6 +188,23 @@ theorem start_safe :
     binderSafeAt "NQuote" 0 (GuardedReplication.start self.term request.term handler.term) = true := by
   simp [GuardedReplication.start, binderSafeAt, binderSafeListAt, self.safe,
     code_safe self request handler]
+
+theorem code_literal :
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral rhoReflectivePresentation (GuardedReplication.code self.term request.term handler.term) = true := by
+  simp [GuardedReplication.code, GuardedReplication.body, self.literal, request.literal,
+    handler.literal]
+
+theorem idle_literal :
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral rhoReflectivePresentation (GuardedReplication.idle self.term request.term handler.term) = true := by
+  simp [GuardedReplication.idle, GuardedReplication.code, GuardedReplication.body, self.literal,
+    request.literal, handler.literal]
+
+/-- The continuation of a literal receiver is literal. -/
+theorem input_body_literal {channel body : Pattern}
+    (literal : Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral rhoReflectivePresentation (receive channel body) = true) : Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral rhoReflectivePresentation body = true := by
+  simp only [receive, Mettapedia.Languages.ProcessCalculi.RhoCalculus.LiteralQuotationFiber.quotesLiteral_input,
+    Bool.and_eq_true] at literal
+  exact literal.2
 
 /-- Initialization takes one actual core communication. -/
 theorem start_reduces :
@@ -246,8 +271,10 @@ theorem idle_blocked : NormalForm (GuardedReplication.idle self.term request.ter
   idle_normal self request handler [] (empty_nameCount request.term)
 
 /-- An authored COMM at selected bag positions, with independently proved
-sorting for the actual body and payload. -/
-theorem authored_comm_at
+sorting for the actual body and payload: the contractum is the paper-facing
+substitution result of the continuation with its quotations of drops
+resolved. -/
+theorem authored_comm_at_resolved
     {elements : List Pattern} {inputIndex outputIndex : Nat}
     (inputBound : inputIndex < elements.length)
     (outputBound : outputIndex < (elements.eraseIdx inputIndex).length)
@@ -257,14 +284,34 @@ theorem authored_comm_at
     (bodyTyped : ProcWellSorted rhoReflectivePresentation free ["Name"] body)
     (payloadTyped : ProcWellSorted rhoReflectivePresentation free [] payload) :
     RhoStepAt 1 (parallel elements)
-      (parallel (semanticCommSubst body payload ::
-        (elements.eraseIdx inputIndex).eraseIdx outputIndex)) := by
+      (parallel (semanticCommSubst
+        (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body)
+        payload :: (elements.eraseIdx inputIndex).eraseIdx outputIndex)) := by
   have matching : rhoCanonicalEquivalent channel channel = true := by
     simp [rhoCanonicalEquivalent,
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalEquivalent]
   have fired := rhoStepAt_one_comm inputBound outputBound inputEq outputEq matching
-  rw [apply_commBindingsAt bodyTyped payloadTyped] at fired
+  rw [apply_commBindingsAt_resolved bodyTyped payloadTyped] at fired
   exact fired
+
+/-- An authored COMM at selected bag positions on a literal continuation: the
+contractum is the paper-facing substitution result. -/
+theorem authored_comm_at
+    {elements : List Pattern} {inputIndex outputIndex : Nat}
+    (inputBound : inputIndex < elements.length)
+    (outputBound : outputIndex < (elements.eraseIdx inputIndex).length)
+    {channel body payload : Pattern}
+    (inputEq : elements[inputIndex] = receive channel body)
+    (outputEq : (elements.eraseIdx inputIndex)[outputIndex] = send channel payload)
+    (bodyTyped : ProcWellSorted rhoReflectivePresentation free ["Name"] body)
+    (bodyLiteral : Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral rhoReflectivePresentation body = true)
+    (payloadTyped : ProcWellSorted rhoReflectivePresentation free [] payload) :
+    RhoStepAt 1 (parallel elements)
+      (parallel (semanticCommSubst body payload ::
+        (elements.eraseIdx inputIndex).eraseIdx outputIndex)) := by
+  have fired := authored_comm_at_resolved inputBound outputBound inputEq outputEq bodyTyped payloadTyped
+  rwa [LanguageDefAdequacy.semanticCommSubst_resolveQuotes_of_fiber bodyTyped bodyLiteral
+    payloadTyped] at fired
 
 /-- The initialization is accepted by the authored matcher and application
 at its actual positions in the stored-code bag. -/
@@ -276,7 +323,8 @@ theorem start_authored :
     (elements := [send self.term (GuardedReplication.code self.term request.term handler.term),
       GuardedReplication.code self.term request.term handler.term])
     (inputIndex := 1) (outputIndex := 0) (by simp) (by simp)
-    (by rfl) (by rfl) bodyTyped (code_typed self request handler)
+    (by rfl) (by rfl) bodyTyped (input_body_literal (code_literal self request handler))
+    (code_typed self request handler)
   simpa [GuardedReplication.start, code_received self request handler] using fired
 
 /-- Initialization remains an actual authored firing after applying the
@@ -286,7 +334,7 @@ theorem start_canonical :
       (Canonical.canonicalize (GuardedReplication.start self.term request.term handler.term))
       (Canonical.canonicalize (GuardedReplication.idle self.term request.term handler.term)) := by
   obtain ⟨target, fired, endpoint⟩ := canonicalStep_complete_of_rhoStep
-    (start_typed self request handler) (start_safe self request handler)
+    (start_typed self request handler)
     ⟨1, start_authored self request handler⟩
   exact ⟨target, fired, endpoint.trans (Canonical.canonicalize_parallel_singleton _)⟩
 
@@ -326,7 +374,7 @@ theorem request_authored {payload : Pattern}
     (elements := [send request.term payload,
       GuardedReplication.idle self.term request.term handler.term])
     (inputIndex := 1) (outputIndex := 0) (by simp) (by simp)
-    (by rfl) (by rfl) bodyTyped payloadTyped
+    (by rfl) (by rfl) bodyTyped (input_body_literal (idle_literal self request handler)) payloadTyped
   simpa [requestStage, request_received self request handler] using fired
 
 /-- Restoring the same server is also an actual authored firing. -/
@@ -340,7 +388,8 @@ theorem rearm_authored (payload : Pattern) :
       GuardedReplication.code self.term request.term handler.term,
       semanticCommSubst handler.term payload])
     (inputIndex := 1) (outputIndex := 0) (by simp) (by simp)
-    (by rfl) (by rfl) bodyTyped (code_typed self request handler)
+    (by rfl) (by rfl) bodyTyped (input_body_literal (code_literal self request handler))
+    (code_typed self request handler)
   simpa [requestStage, code_received self request handler] using fired
 
 /-- Two actual authored firings restore the waiting server and retain the
@@ -362,16 +411,10 @@ theorem request_canonical {payload : Pattern}
         GuardedReplication.idle self.term request.term handler.term]) :=
     .parallel (.cons (.output request.typed payloadTyped)
       (.cons (idle_typed self request handler) .nil))
-  have sourceSafe : binderSafeAt "NQuote" 0
-      (parallel [send request.term payload,
-        GuardedReplication.idle self.term request.term handler.term]) = true := by
-    simp [binderSafeAt, binderSafeListAt, request.safe, payloadSafe,
-      idle_safe self request handler]
   obtain ⟨firstTarget, first, firstEndpoint⟩ := canonicalStep_complete_of_rhoStep
-    sourceTyped sourceSafe ⟨1, request_authored self request handler payloadTyped⟩
+    sourceTyped ⟨1, request_authored self request handler payloadTyped⟩
   obtain ⟨secondTarget, second, secondEndpoint⟩ := canonicalStep_complete_of_rhoStep
     (requestStage_typed self request handler payloadTyped payloadSafe)
-    (requestStage_safe self request handler payloadTyped payloadSafe)
     ⟨1, rearm_authored self request handler payload⟩
   refine ⟨Canonical.canonicalize (requestStage self request handler payload), ?_, ?_⟩
   · exact ⟨firstTarget, first,

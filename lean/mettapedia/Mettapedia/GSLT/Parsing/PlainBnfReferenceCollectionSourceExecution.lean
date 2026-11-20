@@ -120,21 +120,21 @@ def element : Element → SExpr
   | .reference value location => .list [.atom "bnf-v1:reference", text value, span location]
 
 def elements : List Element → SExpr
-  | [] => .list [.atom "metta-nullary", .atom "bnf-v1:elements-nil"]
+  | [] => .list [.atom "bnf-v1:elements-nil"]
   | first :: rest => .list [.atom "bnf-v1:elements-cons", element first, elements rest]
 
 def alternative (value : Alternative) : SExpr :=
   .list [.atom "bnf-v1:alternative", elements value.elements, span value.span]
 
 def alternatives : List Alternative → SExpr
-  | [] => .list [.atom "metta-nullary", .atom "bnf-v1:alternatives-nil"]
+  | [] => .list [.atom "bnf-v1:alternatives-nil"]
   | first :: rest => .list [.atom "bnf-v1:alternatives-cons", alternative first, alternatives rest]
 
 def expression (value : Expression) : SExpr :=
   .list [.atom "bnf-v1:expression", alternatives value.alternatives, span value.span]
 
 def scalars : List Nat → SExpr
-  | [] => .list [.atom "metta-nullary", .atom "bnf-v1:scalars-nil"]
+  | [] => .list [.atom "bnf-v1:scalars-nil"]
   | first :: rest => .list [.atom "bnf-v1:scalars-cons", .atom (toString first), scalars rest]
 
 def matcher : LexicalMatcher → SExpr
@@ -148,7 +148,7 @@ def declaration (value : LexicalDeclaration) : SExpr :=
       .atom (toString value.origin.occurrence)]]
 
 def declarations : List LexicalDeclaration → SExpr
-  | [] => .list [.atom "metta-nullary", .atom "bnf-v1:lexical-declarations-nil"]
+  | [] => .list [.atom "bnf-v1:lexical-declarations-nil"]
   | first :: rest => .list [.atom "bnf-v1:lexical-declarations-cons", declaration first, declarations rest]
 
 def names : List String → SExpr
@@ -199,7 +199,7 @@ private def appendObserved : List RewriteRule :=
 
 private def lookupObserved : List RewriteRule :=
   [observed "bnf-lexical-reference-lookup-missing-v1"
-    (metta_sexpr% petta "(BNFLexicalReferenceLookupV1 ?name (metta-nullary bnf-v1:lexical-declarations-nil))")
+    (metta_sexpr% petta "(BNFLexicalReferenceLookupV1 ?name (bnf-v1:lexical-declarations-nil))")
     (metta_sexpr% petta "(BNFLexicalMissingV1)"),
    observed "bnf-lexical-reference-lookup-found-v1"
     (metta_sexpr% petta "(BNFLexicalReferenceLookupV1 ?name (bnf-v1:lexical-declarations-cons (bnf-v1:lexical-declaration ?name ?class ?matcher ?label ?origin) ?tail))")
@@ -222,7 +222,7 @@ private def collectionObserved : List RewriteRule :=
     (metta_sexpr% petta "(?references)")
     [metta_sexpr% petta "(BNFCollectAlternativesReferencesV1 ?alternatives ?lexicals ?references)"],
    observed "bnf-collect-alternatives-references-nil-v1"
-    (metta_sexpr% petta "(BNFCollectAlternativesReferencesV1 (metta-nullary bnf-v1:alternatives-nil) ?lexicals)")
+    (metta_sexpr% petta "(BNFCollectAlternativesReferencesV1 (bnf-v1:alternatives-nil) ?lexicals)")
     (metta_sexpr% petta "(BNFNamesNilV1)"),
    observed "bnf-collect-alternatives-references-cons-v1"
     (metta_sexpr% petta "(BNFCollectAlternativesReferencesV1 (bnf-v1:alternatives-cons (bnf-v1:alternative ?elements ?span) ?tail) ?lexicals)")
@@ -231,7 +231,7 @@ private def collectionObserved : List RewriteRule :=
      metta_sexpr% petta "(BNFCollectAlternativesReferencesV1 ?tail ?lexicals ?following)",
      metta_sexpr% petta "(BNFAppendNamesV1 ?current ?following ?references)"],
    observed "bnf-collect-elements-references-nil-v1"
-    (metta_sexpr% petta "(BNFCollectElementsReferencesV1 (metta-nullary bnf-v1:elements-nil) ?lexicals)")
+    (metta_sexpr% petta "(BNFCollectElementsReferencesV1 (bnf-v1:elements-nil) ?lexicals)")
     (metta_sexpr% petta "(BNFNamesNilV1)"),
    observed "bnf-collect-elements-references-cons-v1"
     (metta_sexpr% petta "(BNFCollectElementsReferencesV1 (bnf-v1:elements-cons ?element ?tail) ?lexicals)")

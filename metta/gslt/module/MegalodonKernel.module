@@ -1,0 +1,684 @@
+-- The Megalodon proof kernel (Mathdata: simple types with prefix polymorphism, terms, propositions and
+-- proof terms), stated as a calculus over an explicit theory state.
+--
+-- Every judgment is a constructor of its result sort whose rewrites compute the result in one step
+-- from premises ("big step"): a judgment that has no rewrite for its arguments does not hold.  The
+-- rules are deterministic: for every argument at most one rule applies (a lookup returns the newest
+-- declaration of a name in its namespace).
+--
+-- Data.  Naturals are unary (de Bruijn indices, type-variable indices, primitive indices, depths).
+-- Names are bit strings compared by structure (a host interns its names injectively).  Types, terms
+-- and proofs carry the kernel's own constructor names; lists are cons lists, innermost first.
+--
+-- State.  A theory is (thy PRIMITIVES RESERVED DECLARATIONS SELECTIONS):
+--   the primitive types of its profile, by index (prim.none where the profile has none);
+--   the names the profile reserves;
+--   its declarations, newest first: parameters, definitions, realizations of parameters, axioms
+--   and theorems, in two namespaces (terms: parameters, definitions, realizations; knowns: axioms
+--   and theorems);
+--   its selected authority: the parameters and axioms it may admit.
+--
+-- Judgments.
+--   tm.infer THY D TS M        the type of M at type depth D in the term context TS
+--   tm.isprop THY D TS M       M is a proposition (a prefix of type quantifiers allowed)
+--   tm.nf M                    the beta-eta normal form (both sorts), innermost first
+--   tm.delta THY M             every visible defined name expanded (parameters stay)
+--   tm.norm THY M              the beta-eta-delta normal form
+--   tm.normalize THY M         the same for a term given as data (it must be protected)
+--   tm.conv THY D TS M N       M and N are convertible (bool.f when their types differ)
+--   pf.ref THY CTX P           the proposition P proves by the eight rules: the normal forms of what
+--                              the rules compute, the hypotheses of CTX as they are given
+--   pf.check THY CTX P         P in a context given as data, as the kernel's default mode checks it:
+--                              the context safe and formed, its hypotheses normalized, then pf.ref
+--   pf.check.ref THY CTX P     the same as the kernel's reference mode checks it: the context safe,
+--                              then pf.ref with the hypotheses as given
+--   thm.check THY CLAIM P      P proves the closed proposition CLAIM (both modes agree here)
+--   thy.select-param / thy.select-known / thy.admit-param / thy.admit-def / thy.admit-axiom /
+--   thy.admit-thm / thy.conjecture   theory extension
+--
+-- The protected fragment: in an admitted term every type region (type application, type
+-- abstraction, type quantification) is closed in term variables; terms, contexts and proofs outside
+-- it are not judged.
+--
+-- Realization: a definition may realize a parameter whose name is the identity of the definition's
+-- body.  That identity is Megalodon's content hash; it is the relation "identity" below, supplied by
+-- the host, and is not stated in this module.
+Module MegalodonKernel {
+  Theory Kernel() {
+    Empty
+    Types {
+      Nat; Bool; Cmp; Yes; Name; Names; Tp; Tm; Pf; TpList; TmList; Ctx;
+      PrimEntry; Prims; Decl; Decls; Sel; Sels; Thy; TermEntry; KnownEntry; SelEntry;
+    }
+    Terms {
+      -- naturals, booleans, comparisons
+      "nat.z". |- "nat.z" : Nat;
+      "nat.s". n:Nat |- "nat.s" n : Nat;
+      "bool.t". |- "bool.t" : Bool;
+      "bool.f". |- "bool.f" : Bool;
+      "cmp.lt". |- "cmp.lt" : Cmp;
+      "cmp.eq". |- "cmp.eq" : Cmp;
+      "cmp.gt". |- "cmp.gt" : Cmp;
+      "yes". |- "yes" : Yes;
+      "nat.cmp". a:Nat, b:Nat |- "nat.cmp" a b : Cmp;
+      "nat.eq". a:Nat, b:Nat |- "nat.eq" a b : Bool;
+      "nat.add". a:Nat, b:Nat |- "nat.add" a b : Nat;
+      "bool.and". a:Bool, b:Bool |- "bool.and" a b : Bool;
+      "bool.or". a:Bool, b:Bool |- "bool.or" a b : Bool;
+      "bool.not". a:Bool |- "bool.not" a : Bool;
+
+      -- names
+      "nm.nil". |- "nm.nil" : Name;
+      "nm.o". n:Name |- "nm.o" n : Name;
+      "nm.i". n:Name |- "nm.i" n : Name;
+      "name.eq". a:Name, b:Name |- "name.eq" a b : Bool;
+      "names.nil". |- "names.nil" : Names;
+      "names.cons". n:Name, rest:Names |- "names.cons" n rest : Names;
+      "names.has". l:Names, n:Name |- "names.has" l n : Bool;
+
+      -- types
+      "Tp.var". i:Nat |- "Tp.var" i : Tp;
+      "Tp.prop". |- "Tp.prop" : Tp;
+      "Tp.base". i:Nat |- "Tp.base" i : Tp;
+      "Tp.arr". a:Tp, b:Tp |- "Tp.arr" a b : Tp;
+      "Tp.all". a:Tp |- "Tp.all" a : Tp;
+      "tp.shift". c:Nat, k:Nat, a:Tp |- "tp.shift" c k a : Tp;
+      "tp.down". c:Nat, a:Tp |- "tp.down" c a : Tp;
+      "tp.inst". d:Nat, b:Tp, a:Tp |- "tp.inst" d b a : Tp;
+      "tp.plain". d:Nat, a:Tp |- "tp.plain" d a : Bool;
+      "tp.poly". d:Nat, a:Tp |- "tp.poly" d a : Bool;
+      "tp.free". k:Nat, a:Tp |- "tp.free" k a : Bool;
+      "tp.tag". a:Tp |- "tp.tag" a : Nat;
+      "tp.eq". a:Tp, b:Tp |- "tp.eq" a b : Bool;
+      "tps.nil". |- "tps.nil" : TpList;
+      "tps.cons". a:Tp, rest:TpList |- "tps.cons" a rest : TpList;
+      "tps.nth". l:TpList, i:Nat |- "tps.nth" l i : Tp;
+      "tps.len". l:TpList |- "tps.len" l : Nat;
+      "tps.shift1". l:TpList |- "tps.shift1" l : TpList;
+
+      -- terms
+      "Tm.db". i:Nat |- "Tm.db" i : Tm;
+      "Tm.named". n:Name |- "Tm.named" n : Tm;
+      "Tm.prim". i:Nat |- "Tm.prim" i : Tm;
+      "Tm.app". f:Tm, x:Tm |- "Tm.app" f x : Tm;
+      "Tm.lam". a:Tp, b:Tm |- "Tm.lam" a b : Tm;
+      "Tm.imp". p:Tm, q:Tm |- "Tm.imp" p q : Tm;
+      "Tm.all". a:Tp, b:Tm |- "Tm.all" a b : Tm;
+      "Tm.typeApp". f:Tm, a:Tp |- "Tm.typeApp" f a : Tm;
+      "Tm.typeLam". b:Tm |- "Tm.typeLam" b : Tm;
+      "Tm.typeAll". b:Tm |- "Tm.typeAll" b : Tm;
+      "tm.shift". c:Nat, k:Nat, m:Tm |- "tm.shift" c k m : Tm;
+      "tm.down". c:Nat, m:Tm |- "tm.down" c m : Tm;
+      "tm.tshift". c:Nat, k:Nat, m:Tm |- "tm.tshift" c k m : Tm;
+      "tm.tdown". c:Nat, m:Tm |- "tm.tdown" c m : Tm;
+      "tm.inst". d:Nat, n:Tm, m:Tm |- "tm.inst" d n m : Tm;
+      "tm.tinst". d:Nat, b:Tp, m:Tm |- "tm.tinst" d b m : Tm;
+      "tm.free". k:Nat, m:Tm |- "tm.free" k m : Bool;
+      "tm.tfree". k:Nat, m:Tm |- "tm.tfree" k m : Bool;
+      "tm.closed". k:Nat, m:Tm |- "tm.closed" k m : Bool;
+      "tm.prot". m:Tm |- "tm.prot" m : Bool;
+      "tm.mentions". n:Name, m:Tm |- "tm.mentions" n m : Bool;
+      "tm.tag". m:Tm |- "tm.tag" m : Nat;
+      "tm.eq". a:Tm, b:Tm |- "tm.eq" a b : Bool;
+      "tm.nf". m:Tm |- "tm.nf" m : Tm;
+      "nf.app". f:Tm, x:Tm |- "nf.app" f x : Tm;
+      "nf.lam". a:Tp, b:Tm |- "nf.lam" a b : Tm;
+      "nf.eta". a:Tp, f:Tm, x:Tm |- "nf.eta" a f x : Tm;
+      "nf.tapp". f:Tm, a:Tp |- "nf.tapp" f a : Tm;
+      "nf.tlam". b:Tm |- "nf.tlam" b : Tm;
+      "nf.teta". f:Tm, a:Tp |- "nf.teta" f a : Tm;
+      "tm.delta". t:Thy, m:Tm |- "tm.delta" t m : Tm;
+      "delta.named". t:Thy, n:Name, e:TermEntry |- "delta.named" t n e : Tm;
+      "tm.norm". t:Thy, m:Tm |- "tm.norm" t m : Tm;
+      "tm.normalize". t:Thy, m:Tm |- "tm.normalize" t m : Tm;
+      "tm.infer". t:Thy, d:Nat, ts:TpList, m:Tm |- "tm.infer" t d ts m : Tp;
+      "infer.named". e:TermEntry |- "infer.named" e : Tp;
+      "tm.isprop". t:Thy, d:Nat, ts:TpList, m:Tm |- "tm.isprop" t d ts m : Yes;
+      "tm.conv". t:Thy, d:Nat, ts:TpList, m:Tm, n:Tm |- "tm.conv" t d ts m n : Bool;
+      "conv.typed". t:Thy, e:Bool, m:Tm, n:Tm |- "conv.typed" t e m n : Bool;
+      "tms.nil". |- "tms.nil" : TmList;
+      "tms.cons". m:Tm, rest:TmList |- "tms.cons" m rest : TmList;
+      "tms.nth". l:TmList, i:Nat |- "tms.nth" l i : Tm;
+      "tms.shift1". l:TmList |- "tms.shift1" l : TmList;
+      "tms.closed". k:Nat, l:TmList |- "tms.closed" k l : Bool;
+      "tms.prot". l:TmList |- "tms.prot" l : Bool;
+      "tms.norm". t:Thy, l:TmList |- "tms.norm" t l : TmList;
+      "tms.formed". t:Thy, d:Nat, ts:TpList, l:TmList |- "tms.formed" t d ts l : Yes;
+
+      -- proofs and contexts
+      "Pf.hyp". i:Nat |- "Pf.hyp" i : Pf;
+      "Pf.known". n:Name |- "Pf.known" n : Pf;
+      "Pf.termApp". d:Pf, m:Tm |- "Pf.termApp" d m : Pf;
+      "Pf.proofApp". d:Pf, e:Pf |- "Pf.proofApp" d e : Pf;
+      "Pf.proofLam". p:Tm, d:Pf |- "Pf.proofLam" p d : Pf;
+      "Pf.termLam". a:Tp, d:Pf |- "Pf.termLam" a d : Pf;
+      "Pf.typeApp". d:Pf, a:Tp |- "Pf.typeApp" d a : Pf;
+      "Pf.typeLam". d:Pf |- "Pf.typeLam" d : Pf;
+      "ctx". d:Nat, ts:TpList, hs:TmList |- "ctx" d ts hs : Ctx;
+      "ctx.safe". c:Ctx |- "ctx.safe" c : Bool;
+      "pf.prot". d:Pf |- "pf.prot" d : Bool;
+      "pf.ref". t:Thy, c:Ctx, d:Pf |- "pf.ref" t c d : Tm;
+      "pf.check". t:Thy, c:Ctx, d:Pf |- "pf.check" t c d : Tm;
+      "pf.check.ref". t:Thy, c:Ctx, d:Pf |- "pf.check.ref" t c d : Tm;
+      "thm.check". t:Thy, p:Tm, d:Pf |- "thm.check" t p d : Yes;
+
+      -- theories
+      "prim.none". |- "prim.none" : PrimEntry;
+      "prim.some". a:Tp |- "prim.some" a : PrimEntry;
+      "prims.nil". |- "prims.nil" : Prims;
+      "prims.cons". e:PrimEntry, rest:Prims |- "prims.cons" e rest : Prims;
+      "prims.nth". l:Prims, i:Nat |- "prims.nth" l i : PrimEntry;
+      "d.param". n:Name, a:Tp |- "d.param" n a : Decl;
+      "d.def". n:Name, a:Tp, b:Tm |- "d.def" n a b : Decl;
+      "d.real". n:Name, a:Tp, b:Tm |- "d.real" n a b : Decl;
+      "d.axiom". n:Name, p:Tm |- "d.axiom" n p : Decl;
+      "d.thm". n:Name, p:Tm |- "d.thm" n p : Decl;
+      "ds.nil". |- "ds.nil" : Decls;
+      "ds.cons". d:Decl, rest:Decls |- "ds.cons" d rest : Decls;
+      "sel.param". n:Name, a:Tp |- "sel.param" n a : Sel;
+      "sel.known". n:Name, p:Tm |- "sel.known" n p : Sel;
+      "ss.nil". |- "ss.nil" : Sels;
+      "ss.cons". s:Sel, rest:Sels |- "ss.cons" s rest : Sels;
+      "thy". ps:Prims, rs:Names, ds:Decls, ss:Sels |- "thy" ps rs ds ss : Thy;
+      "te.absent". |- "te.absent" : TermEntry;
+      "te.param". a:Tp |- "te.param" a : TermEntry;
+      "te.def". a:Tp, b:Tm |- "te.def" a b : TermEntry;
+      "ke.absent". |- "ke.absent" : KnownEntry;
+      "ke.known". p:Tm |- "ke.known" p : KnownEntry;
+      "se.absent". |- "se.absent" : SelEntry;
+      "se.param". a:Tp |- "se.param" a : SelEntry;
+      "se.known". p:Tm |- "se.known" p : SelEntry;
+      "thy.prim". t:Thy, i:Nat |- "thy.prim" t i : PrimEntry;
+      "thy.term". t:Thy, n:Name |- "thy.term" t n : TermEntry;
+      "thy.known". t:Thy, n:Name |- "thy.known" t n : KnownEntry;
+      "ds.term". l:Decls, n:Name |- "ds.term" l n : TermEntry;
+      "ds.known". l:Decls, n:Name |- "ds.known" l n : KnownEntry;
+      "ds.has-term". l:Decls, n:Name |- "ds.has-term" l n : Bool;
+      "ds.has-known". l:Decls, n:Name |- "ds.has-known" l n : Bool;
+      "ss.param". l:Sels, n:Name |- "ss.param" l n : SelEntry;
+      "ss.known". l:Sels, n:Name |- "ss.known" l n : SelEntry;
+      "thy.fresh-term". t:Thy, n:Name |- "thy.fresh-term" t n : Bool;
+      "thy.fresh-known". t:Thy, n:Name |- "thy.fresh-known" t n : Bool;
+      "thy.select-param". t:Thy, n:Name, a:Tp |- "thy.select-param" t n a : Thy;
+      "thy.select-known". t:Thy, n:Name, p:Tm |- "thy.select-known" t n p : Thy;
+      "thy.admit-param". t:Thy, n:Name, a:Tp |- "thy.admit-param" t n a : Thy;
+      "thy.admit-def". t:Thy, n:Name, a:Tp, b:Tm |- "thy.admit-def" t n a b : Thy;
+      "thy.admit-axiom". t:Thy, n:Name, p:Tm |- "thy.admit-axiom" t n p : Thy;
+      "thy.admit-thm". t:Thy, n:Name, p:Tm, d:Pf |- "thy.admit-thm" t n p d : Thy;
+      "thy.conjecture". t:Thy, p:Tm |- "thy.conjecture" t p : Yes;
+    }
+    Rewrites {
+      -- ── naturals and booleans ─────────────────────────────────────────────────────────────────
+      "NAT-CMP-ZZ". |- "nat.cmp"("nat.z"(), "nat.z"()) ~> "cmp.eq"();
+      "NAT-CMP-ZS". b:Nat |- "nat.cmp"("nat.z"(), "nat.s"(b)) ~> "cmp.lt"();
+      "NAT-CMP-SZ". a:Nat |- "nat.cmp"("nat.s"(a), "nat.z"()) ~> "cmp.gt"();
+      "NAT-CMP-SS". a:Nat, b:Nat, r:Cmp | "nat.cmp"(a, b) ~> r |- "nat.cmp"("nat.s"(a), "nat.s"(b)) ~> r;
+      "NAT-EQ-EQ". a:Nat, b:Nat | "nat.cmp"(a, b) ~> "cmp.eq"() |- "nat.eq"(a, b) ~> "bool.t"();
+      "NAT-EQ-LT". a:Nat, b:Nat | "nat.cmp"(a, b) ~> "cmp.lt"() |- "nat.eq"(a, b) ~> "bool.f"();
+      "NAT-EQ-GT". a:Nat, b:Nat | "nat.cmp"(a, b) ~> "cmp.gt"() |- "nat.eq"(a, b) ~> "bool.f"();
+      "NAT-ADD-Z". b:Nat |- "nat.add"("nat.z"(), b) ~> b;
+      "NAT-ADD-S". a:Nat, b:Nat, c:Nat | "nat.add"(a, b) ~> c |- "nat.add"("nat.s"(a), b) ~> "nat.s"(c);
+      "AND-T". b:Bool |- "bool.and"("bool.t"(), b) ~> b;
+      "AND-F". b:Bool |- "bool.and"("bool.f"(), b) ~> "bool.f"();
+      "OR-T". b:Bool |- "bool.or"("bool.t"(), b) ~> "bool.t"();
+      "OR-F". b:Bool |- "bool.or"("bool.f"(), b) ~> b;
+      "NOT-T". |- "bool.not"("bool.t"()) ~> "bool.f"();
+      "NOT-F". |- "bool.not"("bool.f"()) ~> "bool.t"();
+
+      -- ── names ─────────────────────────────────────────────────────────────────────────────────
+      "NAME-EQ-NN". |- "name.eq"("nm.nil"(), "nm.nil"()) ~> "bool.t"();
+      "NAME-EQ-NO". b:Name |- "name.eq"("nm.nil"(), "nm.o"(b)) ~> "bool.f"();
+      "NAME-EQ-NI". b:Name |- "name.eq"("nm.nil"(), "nm.i"(b)) ~> "bool.f"();
+      "NAME-EQ-ON". a:Name |- "name.eq"("nm.o"(a), "nm.nil"()) ~> "bool.f"();
+      "NAME-EQ-OO". a:Name, b:Name, r:Bool | "name.eq"(a, b) ~> r |- "name.eq"("nm.o"(a), "nm.o"(b)) ~> r;
+      "NAME-EQ-OI". a:Name, b:Name |- "name.eq"("nm.o"(a), "nm.i"(b)) ~> "bool.f"();
+      "NAME-EQ-IN". a:Name |- "name.eq"("nm.i"(a), "nm.nil"()) ~> "bool.f"();
+      "NAME-EQ-IO". a:Name, b:Name |- "name.eq"("nm.i"(a), "nm.o"(b)) ~> "bool.f"();
+      "NAME-EQ-II". a:Name, b:Name, r:Bool | "name.eq"(a, b) ~> r |- "name.eq"("nm.i"(a), "nm.i"(b)) ~> r;
+      "NAMES-HAS-NIL". n:Name |- "names.has"("names.nil"(), n) ~> "bool.f"();
+      "NAMES-HAS-HIT". m:Name, rest:Names, n:Name | "name.eq"(n, m) ~> "bool.t"() |- "names.has"("names.cons"(m, rest), n) ~> "bool.t"();
+      "NAMES-HAS-NEXT". m:Name, rest:Names, n:Name, r:Bool | "name.eq"(n, m) ~> "bool.f"(), "names.has"(rest, n) ~> r |- "names.has"("names.cons"(m, rest), n) ~> r;
+
+      -- ── types: shifting, lowering, instantiation ──────────────────────────────────────────────
+      "TP-SHIFT-VAR-LT". c:Nat, k:Nat, i:Nat | "nat.cmp"(i, c) ~> "cmp.lt"() |- "tp.shift"(c, k, "Tp.var"(i)) ~> "Tp.var"(i);
+      "TP-SHIFT-VAR-EQ". c:Nat, k:Nat, i:Nat, j:Nat | "nat.cmp"(i, c) ~> "cmp.eq"(), "nat.add"(k, i) ~> j |- "tp.shift"(c, k, "Tp.var"(i)) ~> "Tp.var"(j);
+      "TP-SHIFT-VAR-GT". c:Nat, k:Nat, i:Nat, j:Nat | "nat.cmp"(i, c) ~> "cmp.gt"(), "nat.add"(k, i) ~> j |- "tp.shift"(c, k, "Tp.var"(i)) ~> "Tp.var"(j);
+      "TP-SHIFT-PROP". c:Nat, k:Nat |- "tp.shift"(c, k, "Tp.prop"()) ~> "Tp.prop"();
+      "TP-SHIFT-BASE". c:Nat, k:Nat, i:Nat |- "tp.shift"(c, k, "Tp.base"(i)) ~> "Tp.base"(i);
+      "TP-SHIFT-ARR". c:Nat, k:Nat, a:Tp, b:Tp, a2:Tp, b2:Tp | "tp.shift"(c, k, a) ~> a2, "tp.shift"(c, k, b) ~> b2 |- "tp.shift"(c, k, "Tp.arr"(a, b)) ~> "Tp.arr"(a2, b2);
+      "TP-SHIFT-ALL". c:Nat, k:Nat, a:Tp, a2:Tp | "tp.shift"("nat.s"(c), k, a) ~> a2 |- "tp.shift"(c, k, "Tp.all"(a)) ~> "Tp.all"(a2);
+      "TP-DOWN-VAR-LT". c:Nat, i:Nat | "nat.cmp"(i, c) ~> "cmp.lt"() |- "tp.down"(c, "Tp.var"(i)) ~> "Tp.var"(i);
+      "TP-DOWN-VAR-GT". c:Nat, j:Nat | "nat.cmp"("nat.s"(j), c) ~> "cmp.gt"() |- "tp.down"(c, "Tp.var"("nat.s"(j))) ~> "Tp.var"(j);
+      "TP-DOWN-PROP". c:Nat |- "tp.down"(c, "Tp.prop"()) ~> "Tp.prop"();
+      "TP-DOWN-BASE". c:Nat, i:Nat |- "tp.down"(c, "Tp.base"(i)) ~> "Tp.base"(i);
+      "TP-DOWN-ARR". c:Nat, a:Tp, b:Tp, a2:Tp, b2:Tp | "tp.down"(c, a) ~> a2, "tp.down"(c, b) ~> b2 |- "tp.down"(c, "Tp.arr"(a, b)) ~> "Tp.arr"(a2, b2);
+      "TP-DOWN-ALL". c:Nat, a:Tp, a2:Tp | "tp.down"("nat.s"(c), a) ~> a2 |- "tp.down"(c, "Tp.all"(a)) ~> "Tp.all"(a2);
+      "TP-INST-VAR-LT". d:Nat, b:Tp, i:Nat | "nat.cmp"(i, d) ~> "cmp.lt"() |- "tp.inst"(d, b, "Tp.var"(i)) ~> "Tp.var"(i);
+      "TP-INST-VAR-EQ". d:Nat, b:Tp, i:Nat, r:Tp | "nat.cmp"(i, d) ~> "cmp.eq"(), "tp.shift"("nat.z"(), d, b) ~> r |- "tp.inst"(d, b, "Tp.var"(i)) ~> r;
+      "TP-INST-VAR-GT". d:Nat, b:Tp, j:Nat | "nat.cmp"("nat.s"(j), d) ~> "cmp.gt"() |- "tp.inst"(d, b, "Tp.var"("nat.s"(j))) ~> "Tp.var"(j);
+      "TP-INST-PROP". d:Nat, b:Tp |- "tp.inst"(d, b, "Tp.prop"()) ~> "Tp.prop"();
+      "TP-INST-BASE". d:Nat, b:Tp, i:Nat |- "tp.inst"(d, b, "Tp.base"(i)) ~> "Tp.base"(i);
+      "TP-INST-ARR". d:Nat, b:Tp, x:Tp, y:Tp, x2:Tp, y2:Tp | "tp.inst"(d, b, x) ~> x2, "tp.inst"(d, b, y) ~> y2 |- "tp.inst"(d, b, "Tp.arr"(x, y)) ~> "Tp.arr"(x2, y2);
+      "TP-INST-ALL". d:Nat, b:Tp, x:Tp, x2:Tp | "tp.inst"("nat.s"(d), b, x) ~> x2 |- "tp.inst"(d, b, "Tp.all"(x)) ~> "Tp.all"(x2);
+
+      -- ── types: formation, free variables, equality ────────────────────────────────────────────
+      "TP-PLAIN-VAR-LT". d:Nat, i:Nat | "nat.cmp"(i, d) ~> "cmp.lt"() |- "tp.plain"(d, "Tp.var"(i)) ~> "bool.t"();
+      "TP-PLAIN-VAR-EQ". d:Nat, i:Nat | "nat.cmp"(i, d) ~> "cmp.eq"() |- "tp.plain"(d, "Tp.var"(i)) ~> "bool.f"();
+      "TP-PLAIN-VAR-GT". d:Nat, i:Nat | "nat.cmp"(i, d) ~> "cmp.gt"() |- "tp.plain"(d, "Tp.var"(i)) ~> "bool.f"();
+      "TP-PLAIN-PROP". d:Nat |- "tp.plain"(d, "Tp.prop"()) ~> "bool.t"();
+      "TP-PLAIN-BASE". d:Nat, i:Nat |- "tp.plain"(d, "Tp.base"(i)) ~> "bool.t"();
+      "TP-PLAIN-ARR". d:Nat, a:Tp, b:Tp, x:Bool, y:Bool, r:Bool | "tp.plain"(d, a) ~> x, "tp.plain"(d, b) ~> y, "bool.and"(x, y) ~> r |- "tp.plain"(d, "Tp.arr"(a, b)) ~> r;
+      "TP-PLAIN-ALL". d:Nat, a:Tp |- "tp.plain"(d, "Tp.all"(a)) ~> "bool.f"();
+      "TP-POLY-ALL". d:Nat, a:Tp, r:Bool | "tp.poly"("nat.s"(d), a) ~> r |- "tp.poly"(d, "Tp.all"(a)) ~> r;
+      "TP-POLY-VAR". d:Nat, i:Nat, r:Bool | "tp.plain"(d, "Tp.var"(i)) ~> r |- "tp.poly"(d, "Tp.var"(i)) ~> r;
+      "TP-POLY-PROP". d:Nat |- "tp.poly"(d, "Tp.prop"()) ~> "bool.t"();
+      "TP-POLY-BASE". d:Nat, i:Nat |- "tp.poly"(d, "Tp.base"(i)) ~> "bool.t"();
+      "TP-POLY-ARR". d:Nat, a:Tp, b:Tp, r:Bool | "tp.plain"(d, "Tp.arr"(a, b)) ~> r |- "tp.poly"(d, "Tp.arr"(a, b)) ~> r;
+      "TP-FREE-VAR". k:Nat, i:Nat, r:Bool | "nat.eq"(i, k) ~> r |- "tp.free"(k, "Tp.var"(i)) ~> r;
+      "TP-FREE-PROP". k:Nat |- "tp.free"(k, "Tp.prop"()) ~> "bool.f"();
+      "TP-FREE-BASE". k:Nat, i:Nat |- "tp.free"(k, "Tp.base"(i)) ~> "bool.f"();
+      "TP-FREE-ARR". k:Nat, a:Tp, b:Tp, x:Bool, y:Bool, r:Bool | "tp.free"(k, a) ~> x, "tp.free"(k, b) ~> y, "bool.or"(x, y) ~> r |- "tp.free"(k, "Tp.arr"(a, b)) ~> r;
+      "TP-FREE-ALL". k:Nat, a:Tp, r:Bool | "tp.free"("nat.s"(k), a) ~> r |- "tp.free"(k, "Tp.all"(a)) ~> r;
+      "TP-TAG-VAR". i:Nat |- "tp.tag"("Tp.var"(i)) ~> "nat.z"();
+      "TP-TAG-PROP". |- "tp.tag"("Tp.prop"()) ~> "nat.s"("nat.z"());
+      "TP-TAG-BASE". i:Nat |- "tp.tag"("Tp.base"(i)) ~> "nat.s"("nat.s"("nat.z"()));
+      "TP-TAG-ARR". a:Tp, b:Tp |- "tp.tag"("Tp.arr"(a, b)) ~> "nat.s"("nat.s"("nat.s"("nat.z"())));
+      "TP-TAG-ALL". a:Tp |- "tp.tag"("Tp.all"(a)) ~> "nat.s"("nat.s"("nat.s"("nat.s"("nat.z"()))));
+      "TP-EQ-HEADS". a:Tp, b:Tp, i:Nat, j:Nat | "tp.tag"(a) ~> i, "tp.tag"(b) ~> j, "nat.eq"(i, j) ~> "bool.f"() |- "tp.eq"(a, b) ~> "bool.f"();
+      "TP-EQ-VAR". i:Nat, j:Nat, r:Bool | "nat.eq"(i, j) ~> r |- "tp.eq"("Tp.var"(i), "Tp.var"(j)) ~> r;
+      "TP-EQ-PROP". |- "tp.eq"("Tp.prop"(), "Tp.prop"()) ~> "bool.t"();
+      "TP-EQ-BASE". i:Nat, j:Nat, r:Bool | "nat.eq"(i, j) ~> r |- "tp.eq"("Tp.base"(i), "Tp.base"(j)) ~> r;
+      "TP-EQ-ARR". a:Tp, b:Tp, c:Tp, d:Tp, x:Bool, y:Bool, r:Bool | "tp.eq"(a, c) ~> x, "tp.eq"(b, d) ~> y, "bool.and"(x, y) ~> r |- "tp.eq"("Tp.arr"(a, b), "Tp.arr"(c, d)) ~> r;
+      "TP-EQ-ALL". a:Tp, b:Tp, r:Bool | "tp.eq"(a, b) ~> r |- "tp.eq"("Tp.all"(a), "Tp.all"(b)) ~> r;
+      "TPS-NTH-Z". a:Tp, rest:TpList |- "tps.nth"("tps.cons"(a, rest), "nat.z"()) ~> a;
+      "TPS-NTH-S". a:Tp, rest:TpList, i:Nat, r:Tp | "tps.nth"(rest, i) ~> r |- "tps.nth"("tps.cons"(a, rest), "nat.s"(i)) ~> r;
+      "TPS-LEN-NIL". |- "tps.len"("tps.nil"()) ~> "nat.z"();
+      "TPS-LEN-CONS". a:Tp, rest:TpList, n:Nat | "tps.len"(rest) ~> n |- "tps.len"("tps.cons"(a, rest)) ~> "nat.s"(n);
+      "TPS-SHIFT1-NIL". |- "tps.shift1"("tps.nil"()) ~> "tps.nil"();
+      "TPS-SHIFT1-CONS". a:Tp, rest:TpList, a2:Tp, rest2:TpList | "tp.shift"("nat.z"(), "nat.s"("nat.z"()), a) ~> a2, "tps.shift1"(rest) ~> rest2 |- "tps.shift1"("tps.cons"(a, rest)) ~> "tps.cons"(a2, rest2);
+
+      -- ── terms: term-variable shifting, lowering, instantiation ────────────────────────────────
+      "TM-SHIFT-DB-LT". c:Nat, k:Nat, i:Nat | "nat.cmp"(i, c) ~> "cmp.lt"() |- "tm.shift"(c, k, "Tm.db"(i)) ~> "Tm.db"(i);
+      "TM-SHIFT-DB-EQ". c:Nat, k:Nat, i:Nat, j:Nat | "nat.cmp"(i, c) ~> "cmp.eq"(), "nat.add"(k, i) ~> j |- "tm.shift"(c, k, "Tm.db"(i)) ~> "Tm.db"(j);
+      "TM-SHIFT-DB-GT". c:Nat, k:Nat, i:Nat, j:Nat | "nat.cmp"(i, c) ~> "cmp.gt"(), "nat.add"(k, i) ~> j |- "tm.shift"(c, k, "Tm.db"(i)) ~> "Tm.db"(j);
+      "TM-SHIFT-NAMED". c:Nat, k:Nat, n:Name |- "tm.shift"(c, k, "Tm.named"(n)) ~> "Tm.named"(n);
+      "TM-SHIFT-PRIM". c:Nat, k:Nat, i:Nat |- "tm.shift"(c, k, "Tm.prim"(i)) ~> "Tm.prim"(i);
+      "TM-SHIFT-APP". c:Nat, k:Nat, f:Tm, x:Tm, f2:Tm, x2:Tm | "tm.shift"(c, k, f) ~> f2, "tm.shift"(c, k, x) ~> x2 |- "tm.shift"(c, k, "Tm.app"(f, x)) ~> "Tm.app"(f2, x2);
+      "TM-SHIFT-LAM". c:Nat, k:Nat, a:Tp, b:Tm, b2:Tm | "tm.shift"("nat.s"(c), k, b) ~> b2 |- "tm.shift"(c, k, "Tm.lam"(a, b)) ~> "Tm.lam"(a, b2);
+      "TM-SHIFT-IMP". c:Nat, k:Nat, p:Tm, q:Tm, p2:Tm, q2:Tm | "tm.shift"(c, k, p) ~> p2, "tm.shift"(c, k, q) ~> q2 |- "tm.shift"(c, k, "Tm.imp"(p, q)) ~> "Tm.imp"(p2, q2);
+      "TM-SHIFT-ALL". c:Nat, k:Nat, a:Tp, b:Tm, b2:Tm | "tm.shift"("nat.s"(c), k, b) ~> b2 |- "tm.shift"(c, k, "Tm.all"(a, b)) ~> "Tm.all"(a, b2);
+      "TM-SHIFT-TAPP". c:Nat, k:Nat, f:Tm, a:Tp, f2:Tm | "tm.shift"(c, k, f) ~> f2 |- "tm.shift"(c, k, "Tm.typeApp"(f, a)) ~> "Tm.typeApp"(f2, a);
+      "TM-SHIFT-TLAM". c:Nat, k:Nat, b:Tm, b2:Tm | "tm.shift"(c, k, b) ~> b2 |- "tm.shift"(c, k, "Tm.typeLam"(b)) ~> "Tm.typeLam"(b2);
+      "TM-SHIFT-TALL". c:Nat, k:Nat, b:Tm, b2:Tm | "tm.shift"(c, k, b) ~> b2 |- "tm.shift"(c, k, "Tm.typeAll"(b)) ~> "Tm.typeAll"(b2);
+      "TM-DOWN-DB-LT". c:Nat, i:Nat | "nat.cmp"(i, c) ~> "cmp.lt"() |- "tm.down"(c, "Tm.db"(i)) ~> "Tm.db"(i);
+      "TM-DOWN-DB-GT". c:Nat, j:Nat | "nat.cmp"("nat.s"(j), c) ~> "cmp.gt"() |- "tm.down"(c, "Tm.db"("nat.s"(j))) ~> "Tm.db"(j);
+      "TM-DOWN-NAMED". c:Nat, n:Name |- "tm.down"(c, "Tm.named"(n)) ~> "Tm.named"(n);
+      "TM-DOWN-PRIM". c:Nat, i:Nat |- "tm.down"(c, "Tm.prim"(i)) ~> "Tm.prim"(i);
+      "TM-DOWN-APP". c:Nat, f:Tm, x:Tm, f2:Tm, x2:Tm | "tm.down"(c, f) ~> f2, "tm.down"(c, x) ~> x2 |- "tm.down"(c, "Tm.app"(f, x)) ~> "Tm.app"(f2, x2);
+      "TM-DOWN-LAM". c:Nat, a:Tp, b:Tm, b2:Tm | "tm.down"("nat.s"(c), b) ~> b2 |- "tm.down"(c, "Tm.lam"(a, b)) ~> "Tm.lam"(a, b2);
+      "TM-DOWN-IMP". c:Nat, p:Tm, q:Tm, p2:Tm, q2:Tm | "tm.down"(c, p) ~> p2, "tm.down"(c, q) ~> q2 |- "tm.down"(c, "Tm.imp"(p, q)) ~> "Tm.imp"(p2, q2);
+      "TM-DOWN-ALL". c:Nat, a:Tp, b:Tm, b2:Tm | "tm.down"("nat.s"(c), b) ~> b2 |- "tm.down"(c, "Tm.all"(a, b)) ~> "Tm.all"(a, b2);
+      "TM-DOWN-TAPP". c:Nat, f:Tm, a:Tp, f2:Tm | "tm.down"(c, f) ~> f2 |- "tm.down"(c, "Tm.typeApp"(f, a)) ~> "Tm.typeApp"(f2, a);
+      "TM-DOWN-TLAM". c:Nat, b:Tm, b2:Tm | "tm.down"(c, b) ~> b2 |- "tm.down"(c, "Tm.typeLam"(b)) ~> "Tm.typeLam"(b2);
+      "TM-DOWN-TALL". c:Nat, b:Tm, b2:Tm | "tm.down"(c, b) ~> b2 |- "tm.down"(c, "Tm.typeAll"(b)) ~> "Tm.typeAll"(b2);
+      "TM-INST-DB-LT". d:Nat, n:Tm, i:Nat | "nat.cmp"(i, d) ~> "cmp.lt"() |- "tm.inst"(d, n, "Tm.db"(i)) ~> "Tm.db"(i);
+      "TM-INST-DB-EQ". d:Nat, n:Tm, i:Nat, r:Tm | "nat.cmp"(i, d) ~> "cmp.eq"(), "tm.shift"("nat.z"(), d, n) ~> r |- "tm.inst"(d, n, "Tm.db"(i)) ~> r;
+      "TM-INST-DB-GT". d:Nat, n:Tm, j:Nat | "nat.cmp"("nat.s"(j), d) ~> "cmp.gt"() |- "tm.inst"(d, n, "Tm.db"("nat.s"(j))) ~> "Tm.db"(j);
+      "TM-INST-NAMED". d:Nat, n:Tm, k:Name |- "tm.inst"(d, n, "Tm.named"(k)) ~> "Tm.named"(k);
+      "TM-INST-PRIM". d:Nat, n:Tm, i:Nat |- "tm.inst"(d, n, "Tm.prim"(i)) ~> "Tm.prim"(i);
+      "TM-INST-APP". d:Nat, n:Tm, f:Tm, x:Tm, f2:Tm, x2:Tm | "tm.inst"(d, n, f) ~> f2, "tm.inst"(d, n, x) ~> x2 |- "tm.inst"(d, n, "Tm.app"(f, x)) ~> "Tm.app"(f2, x2);
+      "TM-INST-LAM". d:Nat, n:Tm, a:Tp, b:Tm, b2:Tm | "tm.inst"("nat.s"(d), n, b) ~> b2 |- "tm.inst"(d, n, "Tm.lam"(a, b)) ~> "Tm.lam"(a, b2);
+      "TM-INST-IMP". d:Nat, n:Tm, p:Tm, q:Tm, p2:Tm, q2:Tm | "tm.inst"(d, n, p) ~> p2, "tm.inst"(d, n, q) ~> q2 |- "tm.inst"(d, n, "Tm.imp"(p, q)) ~> "Tm.imp"(p2, q2);
+      "TM-INST-ALL". d:Nat, n:Tm, a:Tp, b:Tm, b2:Tm | "tm.inst"("nat.s"(d), n, b) ~> b2 |- "tm.inst"(d, n, "Tm.all"(a, b)) ~> "Tm.all"(a, b2);
+      "TM-INST-TAPP". d:Nat, n:Tm, f:Tm, a:Tp, f2:Tm | "tm.inst"(d, n, f) ~> f2 |- "tm.inst"(d, n, "Tm.typeApp"(f, a)) ~> "Tm.typeApp"(f2, a);
+      "TM-INST-TLAM". d:Nat, n:Tm, b:Tm, b2:Tm | "tm.inst"(d, n, b) ~> b2 |- "tm.inst"(d, n, "Tm.typeLam"(b)) ~> "Tm.typeLam"(b2);
+      "TM-INST-TALL". d:Nat, n:Tm, b:Tm, b2:Tm | "tm.inst"(d, n, b) ~> b2 |- "tm.inst"(d, n, "Tm.typeAll"(b)) ~> "Tm.typeAll"(b2);
+
+      -- ── terms: type-variable shifting, lowering, instantiation ────────────────────────────────
+      "TM-TSHIFT-DB". c:Nat, k:Nat, i:Nat |- "tm.tshift"(c, k, "Tm.db"(i)) ~> "Tm.db"(i);
+      "TM-TSHIFT-NAMED". c:Nat, k:Nat, n:Name |- "tm.tshift"(c, k, "Tm.named"(n)) ~> "Tm.named"(n);
+      "TM-TSHIFT-PRIM". c:Nat, k:Nat, i:Nat |- "tm.tshift"(c, k, "Tm.prim"(i)) ~> "Tm.prim"(i);
+      "TM-TSHIFT-APP". c:Nat, k:Nat, f:Tm, x:Tm, f2:Tm, x2:Tm | "tm.tshift"(c, k, f) ~> f2, "tm.tshift"(c, k, x) ~> x2 |- "tm.tshift"(c, k, "Tm.app"(f, x)) ~> "Tm.app"(f2, x2);
+      "TM-TSHIFT-LAM". c:Nat, k:Nat, a:Tp, b:Tm, a2:Tp, b2:Tm | "tp.shift"(c, k, a) ~> a2, "tm.tshift"(c, k, b) ~> b2 |- "tm.tshift"(c, k, "Tm.lam"(a, b)) ~> "Tm.lam"(a2, b2);
+      "TM-TSHIFT-IMP". c:Nat, k:Nat, p:Tm, q:Tm, p2:Tm, q2:Tm | "tm.tshift"(c, k, p) ~> p2, "tm.tshift"(c, k, q) ~> q2 |- "tm.tshift"(c, k, "Tm.imp"(p, q)) ~> "Tm.imp"(p2, q2);
+      "TM-TSHIFT-ALL". c:Nat, k:Nat, a:Tp, b:Tm, a2:Tp, b2:Tm | "tp.shift"(c, k, a) ~> a2, "tm.tshift"(c, k, b) ~> b2 |- "tm.tshift"(c, k, "Tm.all"(a, b)) ~> "Tm.all"(a2, b2);
+      "TM-TSHIFT-TAPP". c:Nat, k:Nat, f:Tm, a:Tp, f2:Tm, a2:Tp | "tm.tshift"(c, k, f) ~> f2, "tp.shift"(c, k, a) ~> a2 |- "tm.tshift"(c, k, "Tm.typeApp"(f, a)) ~> "Tm.typeApp"(f2, a2);
+      "TM-TSHIFT-TLAM". c:Nat, k:Nat, b:Tm, b2:Tm | "tm.tshift"("nat.s"(c), k, b) ~> b2 |- "tm.tshift"(c, k, "Tm.typeLam"(b)) ~> "Tm.typeLam"(b2);
+      "TM-TSHIFT-TALL". c:Nat, k:Nat, b:Tm, b2:Tm | "tm.tshift"("nat.s"(c), k, b) ~> b2 |- "tm.tshift"(c, k, "Tm.typeAll"(b)) ~> "Tm.typeAll"(b2);
+      "TM-TDOWN-DB". c:Nat, i:Nat |- "tm.tdown"(c, "Tm.db"(i)) ~> "Tm.db"(i);
+      "TM-TDOWN-NAMED". c:Nat, n:Name |- "tm.tdown"(c, "Tm.named"(n)) ~> "Tm.named"(n);
+      "TM-TDOWN-PRIM". c:Nat, i:Nat |- "tm.tdown"(c, "Tm.prim"(i)) ~> "Tm.prim"(i);
+      "TM-TDOWN-APP". c:Nat, f:Tm, x:Tm, f2:Tm, x2:Tm | "tm.tdown"(c, f) ~> f2, "tm.tdown"(c, x) ~> x2 |- "tm.tdown"(c, "Tm.app"(f, x)) ~> "Tm.app"(f2, x2);
+      "TM-TDOWN-LAM". c:Nat, a:Tp, b:Tm, a2:Tp, b2:Tm | "tp.down"(c, a) ~> a2, "tm.tdown"(c, b) ~> b2 |- "tm.tdown"(c, "Tm.lam"(a, b)) ~> "Tm.lam"(a2, b2);
+      "TM-TDOWN-IMP". c:Nat, p:Tm, q:Tm, p2:Tm, q2:Tm | "tm.tdown"(c, p) ~> p2, "tm.tdown"(c, q) ~> q2 |- "tm.tdown"(c, "Tm.imp"(p, q)) ~> "Tm.imp"(p2, q2);
+      "TM-TDOWN-ALL". c:Nat, a:Tp, b:Tm, a2:Tp, b2:Tm | "tp.down"(c, a) ~> a2, "tm.tdown"(c, b) ~> b2 |- "tm.tdown"(c, "Tm.all"(a, b)) ~> "Tm.all"(a2, b2);
+      "TM-TDOWN-TAPP". c:Nat, f:Tm, a:Tp, f2:Tm, a2:Tp | "tm.tdown"(c, f) ~> f2, "tp.down"(c, a) ~> a2 |- "tm.tdown"(c, "Tm.typeApp"(f, a)) ~> "Tm.typeApp"(f2, a2);
+      "TM-TDOWN-TLAM". c:Nat, b:Tm, b2:Tm | "tm.tdown"("nat.s"(c), b) ~> b2 |- "tm.tdown"(c, "Tm.typeLam"(b)) ~> "Tm.typeLam"(b2);
+      "TM-TDOWN-TALL". c:Nat, b:Tm, b2:Tm | "tm.tdown"("nat.s"(c), b) ~> b2 |- "tm.tdown"(c, "Tm.typeAll"(b)) ~> "Tm.typeAll"(b2);
+      "TM-TINST-DB". d:Nat, t:Tp, i:Nat |- "tm.tinst"(d, t, "Tm.db"(i)) ~> "Tm.db"(i);
+      "TM-TINST-NAMED". d:Nat, t:Tp, n:Name |- "tm.tinst"(d, t, "Tm.named"(n)) ~> "Tm.named"(n);
+      "TM-TINST-PRIM". d:Nat, t:Tp, i:Nat |- "tm.tinst"(d, t, "Tm.prim"(i)) ~> "Tm.prim"(i);
+      "TM-TINST-APP". d:Nat, t:Tp, f:Tm, x:Tm, f2:Tm, x2:Tm | "tm.tinst"(d, t, f) ~> f2, "tm.tinst"(d, t, x) ~> x2 |- "tm.tinst"(d, t, "Tm.app"(f, x)) ~> "Tm.app"(f2, x2);
+      "TM-TINST-LAM". d:Nat, t:Tp, a:Tp, b:Tm, a2:Tp, b2:Tm | "tp.inst"(d, t, a) ~> a2, "tm.tinst"(d, t, b) ~> b2 |- "tm.tinst"(d, t, "Tm.lam"(a, b)) ~> "Tm.lam"(a2, b2);
+      "TM-TINST-IMP". d:Nat, t:Tp, p:Tm, q:Tm, p2:Tm, q2:Tm | "tm.tinst"(d, t, p) ~> p2, "tm.tinst"(d, t, q) ~> q2 |- "tm.tinst"(d, t, "Tm.imp"(p, q)) ~> "Tm.imp"(p2, q2);
+      "TM-TINST-ALL". d:Nat, t:Tp, a:Tp, b:Tm, a2:Tp, b2:Tm | "tp.inst"(d, t, a) ~> a2, "tm.tinst"(d, t, b) ~> b2 |- "tm.tinst"(d, t, "Tm.all"(a, b)) ~> "Tm.all"(a2, b2);
+      "TM-TINST-TAPP". d:Nat, t:Tp, f:Tm, a:Tp, f2:Tm, a2:Tp | "tm.tinst"(d, t, f) ~> f2, "tp.inst"(d, t, a) ~> a2 |- "tm.tinst"(d, t, "Tm.typeApp"(f, a)) ~> "Tm.typeApp"(f2, a2);
+      "TM-TINST-TLAM". d:Nat, t:Tp, b:Tm, b2:Tm | "tm.tinst"("nat.s"(d), t, b) ~> b2 |- "tm.tinst"(d, t, "Tm.typeLam"(b)) ~> "Tm.typeLam"(b2);
+      "TM-TINST-TALL". d:Nat, t:Tp, b:Tm, b2:Tm | "tm.tinst"("nat.s"(d), t, b) ~> b2 |- "tm.tinst"(d, t, "Tm.typeAll"(b)) ~> "Tm.typeAll"(b2);
+
+      -- ── terms: occurrence tests and the protected fragment ────────────────────────────────────
+      "TM-FREE-DB". k:Nat, i:Nat, r:Bool | "nat.eq"(i, k) ~> r |- "tm.free"(k, "Tm.db"(i)) ~> r;
+      "TM-FREE-NAMED". k:Nat, n:Name |- "tm.free"(k, "Tm.named"(n)) ~> "bool.f"();
+      "TM-FREE-PRIM". k:Nat, i:Nat |- "tm.free"(k, "Tm.prim"(i)) ~> "bool.f"();
+      "TM-FREE-APP". k:Nat, f:Tm, x:Tm, a:Bool, b:Bool, r:Bool | "tm.free"(k, f) ~> a, "tm.free"(k, x) ~> b, "bool.or"(a, b) ~> r |- "tm.free"(k, "Tm.app"(f, x)) ~> r;
+      "TM-FREE-LAM". k:Nat, a:Tp, b:Tm, r:Bool | "tm.free"("nat.s"(k), b) ~> r |- "tm.free"(k, "Tm.lam"(a, b)) ~> r;
+      "TM-FREE-IMP". k:Nat, p:Tm, q:Tm, a:Bool, b:Bool, r:Bool | "tm.free"(k, p) ~> a, "tm.free"(k, q) ~> b, "bool.or"(a, b) ~> r |- "tm.free"(k, "Tm.imp"(p, q)) ~> r;
+      "TM-FREE-ALL". k:Nat, a:Tp, b:Tm, r:Bool | "tm.free"("nat.s"(k), b) ~> r |- "tm.free"(k, "Tm.all"(a, b)) ~> r;
+      "TM-FREE-TAPP". k:Nat, f:Tm, a:Tp, r:Bool | "tm.free"(k, f) ~> r |- "tm.free"(k, "Tm.typeApp"(f, a)) ~> r;
+      "TM-FREE-TLAM". k:Nat, b:Tm, r:Bool | "tm.free"(k, b) ~> r |- "tm.free"(k, "Tm.typeLam"(b)) ~> r;
+      "TM-FREE-TALL". k:Nat, b:Tm, r:Bool | "tm.free"(k, b) ~> r |- "tm.free"(k, "Tm.typeAll"(b)) ~> r;
+      "TM-TFREE-DB". k:Nat, i:Nat |- "tm.tfree"(k, "Tm.db"(i)) ~> "bool.f"();
+      "TM-TFREE-NAMED". k:Nat, n:Name |- "tm.tfree"(k, "Tm.named"(n)) ~> "bool.f"();
+      "TM-TFREE-PRIM". k:Nat, i:Nat |- "tm.tfree"(k, "Tm.prim"(i)) ~> "bool.f"();
+      "TM-TFREE-APP". k:Nat, f:Tm, x:Tm, a:Bool, b:Bool, r:Bool | "tm.tfree"(k, f) ~> a, "tm.tfree"(k, x) ~> b, "bool.or"(a, b) ~> r |- "tm.tfree"(k, "Tm.app"(f, x)) ~> r;
+      "TM-TFREE-LAM". k:Nat, t:Tp, b:Tm, x:Bool, y:Bool, r:Bool | "tp.free"(k, t) ~> x, "tm.tfree"(k, b) ~> y, "bool.or"(x, y) ~> r |- "tm.tfree"(k, "Tm.lam"(t, b)) ~> r;
+      "TM-TFREE-IMP". k:Nat, p:Tm, q:Tm, a:Bool, b:Bool, r:Bool | "tm.tfree"(k, p) ~> a, "tm.tfree"(k, q) ~> b, "bool.or"(a, b) ~> r |- "tm.tfree"(k, "Tm.imp"(p, q)) ~> r;
+      "TM-TFREE-ALL". k:Nat, t:Tp, b:Tm, x:Bool, y:Bool, r:Bool | "tp.free"(k, t) ~> x, "tm.tfree"(k, b) ~> y, "bool.or"(x, y) ~> r |- "tm.tfree"(k, "Tm.all"(t, b)) ~> r;
+      "TM-TFREE-TAPP". k:Nat, f:Tm, t:Tp, x:Bool, y:Bool, r:Bool | "tm.tfree"(k, f) ~> x, "tp.free"(k, t) ~> y, "bool.or"(x, y) ~> r |- "tm.tfree"(k, "Tm.typeApp"(f, t)) ~> r;
+      "TM-TFREE-TLAM". k:Nat, b:Tm, r:Bool | "tm.tfree"("nat.s"(k), b) ~> r |- "tm.tfree"(k, "Tm.typeLam"(b)) ~> r;
+      "TM-TFREE-TALL". k:Nat, b:Tm, r:Bool | "tm.tfree"("nat.s"(k), b) ~> r |- "tm.tfree"(k, "Tm.typeAll"(b)) ~> r;
+      "TM-CLOSED-DB-LT". k:Nat, i:Nat | "nat.cmp"(i, k) ~> "cmp.lt"() |- "tm.closed"(k, "Tm.db"(i)) ~> "bool.t"();
+      "TM-CLOSED-DB-EQ". k:Nat, i:Nat | "nat.cmp"(i, k) ~> "cmp.eq"() |- "tm.closed"(k, "Tm.db"(i)) ~> "bool.f"();
+      "TM-CLOSED-DB-GT". k:Nat, i:Nat | "nat.cmp"(i, k) ~> "cmp.gt"() |- "tm.closed"(k, "Tm.db"(i)) ~> "bool.f"();
+      "TM-CLOSED-NAMED". k:Nat, n:Name |- "tm.closed"(k, "Tm.named"(n)) ~> "bool.t"();
+      "TM-CLOSED-PRIM". k:Nat, i:Nat |- "tm.closed"(k, "Tm.prim"(i)) ~> "bool.t"();
+      "TM-CLOSED-APP". k:Nat, f:Tm, x:Tm, a:Bool, b:Bool, r:Bool | "tm.closed"(k, f) ~> a, "tm.closed"(k, x) ~> b, "bool.and"(a, b) ~> r |- "tm.closed"(k, "Tm.app"(f, x)) ~> r;
+      "TM-CLOSED-LAM". k:Nat, a:Tp, b:Tm, r:Bool | "tm.closed"("nat.s"(k), b) ~> r |- "tm.closed"(k, "Tm.lam"(a, b)) ~> r;
+      "TM-CLOSED-IMP". k:Nat, p:Tm, q:Tm, a:Bool, b:Bool, r:Bool | "tm.closed"(k, p) ~> a, "tm.closed"(k, q) ~> b, "bool.and"(a, b) ~> r |- "tm.closed"(k, "Tm.imp"(p, q)) ~> r;
+      "TM-CLOSED-ALL". k:Nat, a:Tp, b:Tm, r:Bool | "tm.closed"("nat.s"(k), b) ~> r |- "tm.closed"(k, "Tm.all"(a, b)) ~> r;
+      "TM-CLOSED-TAPP". k:Nat, f:Tm, a:Tp, r:Bool | "tm.closed"(k, f) ~> r |- "tm.closed"(k, "Tm.typeApp"(f, a)) ~> r;
+      "TM-CLOSED-TLAM". k:Nat, b:Tm, r:Bool | "tm.closed"(k, b) ~> r |- "tm.closed"(k, "Tm.typeLam"(b)) ~> r;
+      "TM-CLOSED-TALL". k:Nat, b:Tm, r:Bool | "tm.closed"(k, b) ~> r |- "tm.closed"(k, "Tm.typeAll"(b)) ~> r;
+      "TM-PROT-DB". i:Nat |- "tm.prot"("Tm.db"(i)) ~> "bool.t"();
+      "TM-PROT-NAMED". n:Name |- "tm.prot"("Tm.named"(n)) ~> "bool.t"();
+      "TM-PROT-PRIM". i:Nat |- "tm.prot"("Tm.prim"(i)) ~> "bool.t"();
+      "TM-PROT-APP". f:Tm, x:Tm, a:Bool, b:Bool, r:Bool | "tm.prot"(f) ~> a, "tm.prot"(x) ~> b, "bool.and"(a, b) ~> r |- "tm.prot"("Tm.app"(f, x)) ~> r;
+      "TM-PROT-LAM". a:Tp, b:Tm, r:Bool | "tm.prot"(b) ~> r |- "tm.prot"("Tm.lam"(a, b)) ~> r;
+      "TM-PROT-IMP". p:Tm, q:Tm, a:Bool, b:Bool, r:Bool | "tm.prot"(p) ~> a, "tm.prot"(q) ~> b, "bool.and"(a, b) ~> r |- "tm.prot"("Tm.imp"(p, q)) ~> r;
+      "TM-PROT-ALL". a:Tp, b:Tm, r:Bool | "tm.prot"(b) ~> r |- "tm.prot"("Tm.all"(a, b)) ~> r;
+      "TM-PROT-TAPP". f:Tm, a:Tp, x:Bool, y:Bool, r:Bool | "tm.closed"("nat.z"(), f) ~> x, "tm.prot"(f) ~> y, "bool.and"(x, y) ~> r |- "tm.prot"("Tm.typeApp"(f, a)) ~> r;
+      "TM-PROT-TLAM". b:Tm, x:Bool, y:Bool, r:Bool | "tm.closed"("nat.z"(), b) ~> x, "tm.prot"(b) ~> y, "bool.and"(x, y) ~> r |- "tm.prot"("Tm.typeLam"(b)) ~> r;
+      "TM-PROT-TALL". b:Tm, x:Bool, y:Bool, r:Bool | "tm.closed"("nat.z"(), b) ~> x, "tm.prot"(b) ~> y, "bool.and"(x, y) ~> r |- "tm.prot"("Tm.typeAll"(b)) ~> r;
+      "TM-MENTIONS-DB". n:Name, i:Nat |- "tm.mentions"(n, "Tm.db"(i)) ~> "bool.f"();
+      "TM-MENTIONS-NAMED". n:Name, m:Name, r:Bool | "name.eq"(n, m) ~> r |- "tm.mentions"(n, "Tm.named"(m)) ~> r;
+      "TM-MENTIONS-PRIM". n:Name, i:Nat |- "tm.mentions"(n, "Tm.prim"(i)) ~> "bool.f"();
+      "TM-MENTIONS-APP". n:Name, f:Tm, x:Tm, a:Bool, b:Bool, r:Bool | "tm.mentions"(n, f) ~> a, "tm.mentions"(n, x) ~> b, "bool.or"(a, b) ~> r |- "tm.mentions"(n, "Tm.app"(f, x)) ~> r;
+      "TM-MENTIONS-LAM". n:Name, a:Tp, b:Tm, r:Bool | "tm.mentions"(n, b) ~> r |- "tm.mentions"(n, "Tm.lam"(a, b)) ~> r;
+      "TM-MENTIONS-IMP". n:Name, p:Tm, q:Tm, a:Bool, b:Bool, r:Bool | "tm.mentions"(n, p) ~> a, "tm.mentions"(n, q) ~> b, "bool.or"(a, b) ~> r |- "tm.mentions"(n, "Tm.imp"(p, q)) ~> r;
+      "TM-MENTIONS-ALL". n:Name, a:Tp, b:Tm, r:Bool | "tm.mentions"(n, b) ~> r |- "tm.mentions"(n, "Tm.all"(a, b)) ~> r;
+      "TM-MENTIONS-TAPP". n:Name, f:Tm, a:Tp, r:Bool | "tm.mentions"(n, f) ~> r |- "tm.mentions"(n, "Tm.typeApp"(f, a)) ~> r;
+      "TM-MENTIONS-TLAM". n:Name, b:Tm, r:Bool | "tm.mentions"(n, b) ~> r |- "tm.mentions"(n, "Tm.typeLam"(b)) ~> r;
+      "TM-MENTIONS-TALL". n:Name, b:Tm, r:Bool | "tm.mentions"(n, b) ~> r |- "tm.mentions"(n, "Tm.typeAll"(b)) ~> r;
+
+      -- ── terms: structural equality ────────────────────────────────────────────────────────────
+      "TM-TAG-DB". i:Nat |- "tm.tag"("Tm.db"(i)) ~> "nat.z"();
+      "TM-TAG-NAMED". n:Name |- "tm.tag"("Tm.named"(n)) ~> "nat.s"("nat.z"());
+      "TM-TAG-PRIM". i:Nat |- "tm.tag"("Tm.prim"(i)) ~> "nat.s"("nat.s"("nat.z"()));
+      "TM-TAG-APP". f:Tm, x:Tm |- "tm.tag"("Tm.app"(f, x)) ~> "nat.s"("nat.s"("nat.s"("nat.z"())));
+      "TM-TAG-LAM". a:Tp, b:Tm |- "tm.tag"("Tm.lam"(a, b)) ~> "nat.s"("nat.s"("nat.s"("nat.s"("nat.z"()))));
+      "TM-TAG-IMP". p:Tm, q:Tm |- "tm.tag"("Tm.imp"(p, q)) ~> "nat.s"("nat.s"("nat.s"("nat.s"("nat.s"("nat.z"())))));
+      "TM-TAG-ALL". a:Tp, b:Tm |- "tm.tag"("Tm.all"(a, b)) ~> "nat.s"("nat.s"("nat.s"("nat.s"("nat.s"("nat.s"("nat.z"()))))));
+      "TM-TAG-TAPP". f:Tm, a:Tp |- "tm.tag"("Tm.typeApp"(f, a)) ~> "nat.s"("nat.s"("nat.s"("nat.s"("nat.s"("nat.s"("nat.s"("nat.z"())))))));
+      "TM-TAG-TLAM". b:Tm |- "tm.tag"("Tm.typeLam"(b)) ~> "nat.s"("nat.s"("nat.s"("nat.s"("nat.s"("nat.s"("nat.s"("nat.s"("nat.z"()))))))));
+      "TM-TAG-TALL". b:Tm |- "tm.tag"("Tm.typeAll"(b)) ~> "nat.s"("nat.s"("nat.s"("nat.s"("nat.s"("nat.s"("nat.s"("nat.s"("nat.s"("nat.z"())))))))));
+      "TM-EQ-HEADS". a:Tm, b:Tm, i:Nat, j:Nat | "tm.tag"(a) ~> i, "tm.tag"(b) ~> j, "nat.eq"(i, j) ~> "bool.f"() |- "tm.eq"(a, b) ~> "bool.f"();
+      "TM-EQ-DB". i:Nat, j:Nat, r:Bool | "nat.eq"(i, j) ~> r |- "tm.eq"("Tm.db"(i), "Tm.db"(j)) ~> r;
+      "TM-EQ-NAMED". n:Name, m:Name, r:Bool | "name.eq"(n, m) ~> r |- "tm.eq"("Tm.named"(n), "Tm.named"(m)) ~> r;
+      "TM-EQ-PRIM". i:Nat, j:Nat, r:Bool | "nat.eq"(i, j) ~> r |- "tm.eq"("Tm.prim"(i), "Tm.prim"(j)) ~> r;
+      "TM-EQ-APP". f:Tm, x:Tm, g:Tm, y:Tm, a:Bool, b:Bool, r:Bool | "tm.eq"(f, g) ~> a, "tm.eq"(x, y) ~> b, "bool.and"(a, b) ~> r |- "tm.eq"("Tm.app"(f, x), "Tm.app"(g, y)) ~> r;
+      "TM-EQ-LAM". s:Tp, b:Tm, t:Tp, c:Tm, x:Bool, y:Bool, r:Bool | "tp.eq"(s, t) ~> x, "tm.eq"(b, c) ~> y, "bool.and"(x, y) ~> r |- "tm.eq"("Tm.lam"(s, b), "Tm.lam"(t, c)) ~> r;
+      "TM-EQ-IMP". p:Tm, q:Tm, u:Tm, v:Tm, a:Bool, b:Bool, r:Bool | "tm.eq"(p, u) ~> a, "tm.eq"(q, v) ~> b, "bool.and"(a, b) ~> r |- "tm.eq"("Tm.imp"(p, q), "Tm.imp"(u, v)) ~> r;
+      "TM-EQ-ALL". s:Tp, b:Tm, t:Tp, c:Tm, x:Bool, y:Bool, r:Bool | "tp.eq"(s, t) ~> x, "tm.eq"(b, c) ~> y, "bool.and"(x, y) ~> r |- "tm.eq"("Tm.all"(s, b), "Tm.all"(t, c)) ~> r;
+      "TM-EQ-TAPP". f:Tm, s:Tp, g:Tm, t:Tp, a:Bool, b:Bool, r:Bool | "tm.eq"(f, g) ~> a, "tp.eq"(s, t) ~> b, "bool.and"(a, b) ~> r |- "tm.eq"("Tm.typeApp"(f, s), "Tm.typeApp"(g, t)) ~> r;
+      "TM-EQ-TLAM". b:Tm, c:Tm, r:Bool | "tm.eq"(b, c) ~> r |- "tm.eq"("Tm.typeLam"(b), "Tm.typeLam"(c)) ~> r;
+      "TM-EQ-TALL". b:Tm, c:Tm, r:Bool | "tm.eq"(b, c) ~> r |- "tm.eq"("Tm.typeAll"(b), "Tm.typeAll"(c)) ~> r;
+
+      -- ── beta-eta normal form, both sorts, innermost first ─────────────────────────────────────
+      "NF-DB". i:Nat |- "tm.nf"("Tm.db"(i)) ~> "Tm.db"(i);
+      "NF-NAMED". n:Name |- "tm.nf"("Tm.named"(n)) ~> "Tm.named"(n);
+      "NF-PRIM". i:Nat |- "tm.nf"("Tm.prim"(i)) ~> "Tm.prim"(i);
+      "NF-APP". f:Tm, x:Tm, f2:Tm, x2:Tm, r:Tm | "tm.nf"(f) ~> f2, "tm.nf"(x) ~> x2, "nf.app"(f2, x2) ~> r |- "tm.nf"("Tm.app"(f, x)) ~> r;
+      "NF-LAM". a:Tp, b:Tm, b2:Tm, r:Tm | "tm.nf"(b) ~> b2, "nf.lam"(a, b2) ~> r |- "tm.nf"("Tm.lam"(a, b)) ~> r;
+      "NF-IMP". p:Tm, q:Tm, p2:Tm, q2:Tm | "tm.nf"(p) ~> p2, "tm.nf"(q) ~> q2 |- "tm.nf"("Tm.imp"(p, q)) ~> "Tm.imp"(p2, q2);
+      "NF-ALL". a:Tp, b:Tm, b2:Tm | "tm.nf"(b) ~> b2 |- "tm.nf"("Tm.all"(a, b)) ~> "Tm.all"(a, b2);
+      "NF-TAPP". f:Tm, a:Tp, f2:Tm, r:Tm | "tm.nf"(f) ~> f2, "nf.tapp"(f2, a) ~> r |- "tm.nf"("Tm.typeApp"(f, a)) ~> r;
+      "NF-TLAM". b:Tm, b2:Tm, r:Tm | "tm.nf"(b) ~> b2, "nf.tlam"(b2) ~> r |- "tm.nf"("Tm.typeLam"(b)) ~> r;
+      "NF-TALL". b:Tm, b2:Tm | "tm.nf"(b) ~> b2 |- "tm.nf"("Tm.typeAll"(b)) ~> "Tm.typeAll"(b2);
+      -- beta at the head of a normal application
+      "BETA". a:Tp, b:Tm, x:Tm, t:Tm, r:Tm | "tm.inst"("nat.z"(), x, b) ~> t, "tm.nf"(t) ~> r |- "nf.app"("Tm.lam"(a, b), x) ~> r;
+      "NF-APP-DB". i:Nat, x:Tm |- "nf.app"("Tm.db"(i), x) ~> "Tm.app"("Tm.db"(i), x);
+      "NF-APP-NAMED". n:Name, x:Tm |- "nf.app"("Tm.named"(n), x) ~> "Tm.app"("Tm.named"(n), x);
+      "NF-APP-PRIM". i:Nat, x:Tm |- "nf.app"("Tm.prim"(i), x) ~> "Tm.app"("Tm.prim"(i), x);
+      "NF-APP-APP". f:Tm, y:Tm, x:Tm |- "nf.app"("Tm.app"(f, y), x) ~> "Tm.app"("Tm.app"(f, y), x);
+      "NF-APP-IMP". p:Tm, q:Tm, x:Tm |- "nf.app"("Tm.imp"(p, q), x) ~> "Tm.app"("Tm.imp"(p, q), x);
+      "NF-APP-ALL". a:Tp, b:Tm, x:Tm |- "nf.app"("Tm.all"(a, b), x) ~> "Tm.app"("Tm.all"(a, b), x);
+      "NF-APP-TAPP". f:Tm, a:Tp, x:Tm |- "nf.app"("Tm.typeApp"(f, a), x) ~> "Tm.app"("Tm.typeApp"(f, a), x);
+      "NF-APP-TLAM". b:Tm, x:Tm |- "nf.app"("Tm.typeLam"(b), x) ~> "Tm.app"("Tm.typeLam"(b), x);
+      "NF-APP-TALL". b:Tm, x:Tm |- "nf.app"("Tm.typeAll"(b), x) ~> "Tm.app"("Tm.typeAll"(b), x);
+      -- eta under a normal abstraction: lam A. f (db 0) with db 0 not free in f
+      "NF-LAM-APP". a:Tp, f:Tm, x:Tm, r:Tm | "nf.eta"(a, f, x) ~> r |- "nf.lam"(a, "Tm.app"(f, x)) ~> r;
+      "NF-LAM-DB". a:Tp, i:Nat |- "nf.lam"(a, "Tm.db"(i)) ~> "Tm.lam"(a, "Tm.db"(i));
+      "NF-LAM-NAMED". a:Tp, n:Name |- "nf.lam"(a, "Tm.named"(n)) ~> "Tm.lam"(a, "Tm.named"(n));
+      "NF-LAM-PRIM". a:Tp, i:Nat |- "nf.lam"(a, "Tm.prim"(i)) ~> "Tm.lam"(a, "Tm.prim"(i));
+      "NF-LAM-LAM". a:Tp, s:Tp, b:Tm |- "nf.lam"(a, "Tm.lam"(s, b)) ~> "Tm.lam"(a, "Tm.lam"(s, b));
+      "NF-LAM-IMP". a:Tp, p:Tm, q:Tm |- "nf.lam"(a, "Tm.imp"(p, q)) ~> "Tm.lam"(a, "Tm.imp"(p, q));
+      "NF-LAM-ALL". a:Tp, s:Tp, b:Tm |- "nf.lam"(a, "Tm.all"(s, b)) ~> "Tm.lam"(a, "Tm.all"(s, b));
+      "NF-LAM-TAPP". a:Tp, f:Tm, s:Tp |- "nf.lam"(a, "Tm.typeApp"(f, s)) ~> "Tm.lam"(a, "Tm.typeApp"(f, s));
+      "NF-LAM-TLAM". a:Tp, b:Tm |- "nf.lam"(a, "Tm.typeLam"(b)) ~> "Tm.lam"(a, "Tm.typeLam"(b));
+      "NF-LAM-TALL". a:Tp, b:Tm |- "nf.lam"(a, "Tm.typeAll"(b)) ~> "Tm.lam"(a, "Tm.typeAll"(b));
+      "ETA". a:Tp, f:Tm, r:Tm | "tm.free"("nat.z"(), f) ~> "bool.f"(), "tm.down"("nat.z"(), f) ~> r |- "nf.eta"(a, f, "Tm.db"("nat.z"())) ~> r;
+      "ETA-FREE". a:Tp, f:Tm | "tm.free"("nat.z"(), f) ~> "bool.t"() |- "nf.eta"(a, f, "Tm.db"("nat.z"())) ~> "Tm.lam"(a, "Tm.app"(f, "Tm.db"("nat.z"())));
+      "ETA-NO-DB". a:Tp, f:Tm, i:Nat |- "nf.eta"(a, f, "Tm.db"("nat.s"(i))) ~> "Tm.lam"(a, "Tm.app"(f, "Tm.db"("nat.s"(i))));
+      "ETA-NO-NAMED". a:Tp, f:Tm, n:Name |- "nf.eta"(a, f, "Tm.named"(n)) ~> "Tm.lam"(a, "Tm.app"(f, "Tm.named"(n)));
+      "ETA-NO-PRIM". a:Tp, f:Tm, i:Nat |- "nf.eta"(a, f, "Tm.prim"(i)) ~> "Tm.lam"(a, "Tm.app"(f, "Tm.prim"(i)));
+      "ETA-NO-APP". a:Tp, f:Tm, g:Tm, y:Tm |- "nf.eta"(a, f, "Tm.app"(g, y)) ~> "Tm.lam"(a, "Tm.app"(f, "Tm.app"(g, y)));
+      "ETA-NO-LAM". a:Tp, f:Tm, s:Tp, b:Tm |- "nf.eta"(a, f, "Tm.lam"(s, b)) ~> "Tm.lam"(a, "Tm.app"(f, "Tm.lam"(s, b)));
+      "ETA-NO-IMP". a:Tp, f:Tm, p:Tm, q:Tm |- "nf.eta"(a, f, "Tm.imp"(p, q)) ~> "Tm.lam"(a, "Tm.app"(f, "Tm.imp"(p, q)));
+      "ETA-NO-ALL". a:Tp, f:Tm, s:Tp, b:Tm |- "nf.eta"(a, f, "Tm.all"(s, b)) ~> "Tm.lam"(a, "Tm.app"(f, "Tm.all"(s, b)));
+      "ETA-NO-TAPP". a:Tp, f:Tm, g:Tm, s:Tp |- "nf.eta"(a, f, "Tm.typeApp"(g, s)) ~> "Tm.lam"(a, "Tm.app"(f, "Tm.typeApp"(g, s)));
+      "ETA-NO-TLAM". a:Tp, f:Tm, b:Tm |- "nf.eta"(a, f, "Tm.typeLam"(b)) ~> "Tm.lam"(a, "Tm.app"(f, "Tm.typeLam"(b)));
+      "ETA-NO-TALL". a:Tp, f:Tm, b:Tm |- "nf.eta"(a, f, "Tm.typeAll"(b)) ~> "Tm.lam"(a, "Tm.app"(f, "Tm.typeAll"(b)));
+      -- type-level beta at the head of a normal type application
+      "TBETA". b:Tm, a:Tp, t:Tm, r:Tm | "tm.tinst"("nat.z"(), a, b) ~> t, "tm.nf"(t) ~> r |- "nf.tapp"("Tm.typeLam"(b), a) ~> r;
+      "NF-TAPP-DB". i:Nat, a:Tp |- "nf.tapp"("Tm.db"(i), a) ~> "Tm.typeApp"("Tm.db"(i), a);
+      "NF-TAPP-NAMED". n:Name, a:Tp |- "nf.tapp"("Tm.named"(n), a) ~> "Tm.typeApp"("Tm.named"(n), a);
+      "NF-TAPP-PRIM". i:Nat, a:Tp |- "nf.tapp"("Tm.prim"(i), a) ~> "Tm.typeApp"("Tm.prim"(i), a);
+      "NF-TAPP-APP". f:Tm, x:Tm, a:Tp |- "nf.tapp"("Tm.app"(f, x), a) ~> "Tm.typeApp"("Tm.app"(f, x), a);
+      "NF-TAPP-LAM". s:Tp, b:Tm, a:Tp |- "nf.tapp"("Tm.lam"(s, b), a) ~> "Tm.typeApp"("Tm.lam"(s, b), a);
+      "NF-TAPP-IMP". p:Tm, q:Tm, a:Tp |- "nf.tapp"("Tm.imp"(p, q), a) ~> "Tm.typeApp"("Tm.imp"(p, q), a);
+      "NF-TAPP-ALL". s:Tp, b:Tm, a:Tp |- "nf.tapp"("Tm.all"(s, b), a) ~> "Tm.typeApp"("Tm.all"(s, b), a);
+      "NF-TAPP-TAPP". f:Tm, s:Tp, a:Tp |- "nf.tapp"("Tm.typeApp"(f, s), a) ~> "Tm.typeApp"("Tm.typeApp"(f, s), a);
+      "NF-TAPP-TALL". b:Tm, a:Tp |- "nf.tapp"("Tm.typeAll"(b), a) ~> "Tm.typeApp"("Tm.typeAll"(b), a);
+      -- type-level eta: typeLam. f [var 0] with var 0 not free in f
+      "NF-TLAM-TAPP". f:Tm, a:Tp, r:Tm | "nf.teta"(f, a) ~> r |- "nf.tlam"("Tm.typeApp"(f, a)) ~> r;
+      "NF-TLAM-DB". i:Nat |- "nf.tlam"("Tm.db"(i)) ~> "Tm.typeLam"("Tm.db"(i));
+      "NF-TLAM-NAMED". n:Name |- "nf.tlam"("Tm.named"(n)) ~> "Tm.typeLam"("Tm.named"(n));
+      "NF-TLAM-PRIM". i:Nat |- "nf.tlam"("Tm.prim"(i)) ~> "Tm.typeLam"("Tm.prim"(i));
+      "NF-TLAM-APP". f:Tm, x:Tm |- "nf.tlam"("Tm.app"(f, x)) ~> "Tm.typeLam"("Tm.app"(f, x));
+      "NF-TLAM-LAM". s:Tp, b:Tm |- "nf.tlam"("Tm.lam"(s, b)) ~> "Tm.typeLam"("Tm.lam"(s, b));
+      "NF-TLAM-IMP". p:Tm, q:Tm |- "nf.tlam"("Tm.imp"(p, q)) ~> "Tm.typeLam"("Tm.imp"(p, q));
+      "NF-TLAM-ALL". s:Tp, b:Tm |- "nf.tlam"("Tm.all"(s, b)) ~> "Tm.typeLam"("Tm.all"(s, b));
+      "NF-TLAM-TLAM". b:Tm |- "nf.tlam"("Tm.typeLam"(b)) ~> "Tm.typeLam"("Tm.typeLam"(b));
+      "NF-TLAM-TALL". b:Tm |- "nf.tlam"("Tm.typeAll"(b)) ~> "Tm.typeLam"("Tm.typeAll"(b));
+      "TETA". f:Tm, r:Tm | "tm.tfree"("nat.z"(), f) ~> "bool.f"(), "tm.tdown"("nat.z"(), f) ~> r |- "nf.teta"(f, "Tp.var"("nat.z"())) ~> r;
+      "TETA-FREE". f:Tm | "tm.tfree"("nat.z"(), f) ~> "bool.t"() |- "nf.teta"(f, "Tp.var"("nat.z"())) ~> "Tm.typeLam"("Tm.typeApp"(f, "Tp.var"("nat.z"())));
+      "TETA-NO-VAR". f:Tm, i:Nat |- "nf.teta"(f, "Tp.var"("nat.s"(i))) ~> "Tm.typeLam"("Tm.typeApp"(f, "Tp.var"("nat.s"(i))));
+      "TETA-NO-PROP". f:Tm |- "nf.teta"(f, "Tp.prop"()) ~> "Tm.typeLam"("Tm.typeApp"(f, "Tp.prop"()));
+      "TETA-NO-BASE". f:Tm, i:Nat |- "nf.teta"(f, "Tp.base"(i)) ~> "Tm.typeLam"("Tm.typeApp"(f, "Tp.base"(i)));
+      "TETA-NO-ARR". f:Tm, a:Tp, b:Tp |- "nf.teta"(f, "Tp.arr"(a, b)) ~> "Tm.typeLam"("Tm.typeApp"(f, "Tp.arr"(a, b)));
+      "TETA-NO-ALL". f:Tm, a:Tp |- "nf.teta"(f, "Tp.all"(a)) ~> "Tm.typeLam"("Tm.typeApp"(f, "Tp.all"(a)));
+
+      -- ── delta: every visible defined name expanded, its body expanded in turn ─────────────────
+      "DELTA-DB". t:Thy, i:Nat |- "tm.delta"(t, "Tm.db"(i)) ~> "Tm.db"(i);
+      "DELTA-NAMED". t:Thy, n:Name, e:TermEntry, r:Tm | "thy.term"(t, n) ~> e, "delta.named"(t, n, e) ~> r |- "tm.delta"(t, "Tm.named"(n)) ~> r;
+      "DELTA-UNFOLD". t:Thy, n:Name, a:Tp, b:Tm, r:Tm | "tm.delta"(t, b) ~> r |- "delta.named"(t, n, "te.def"(a, b)) ~> r;
+      "DELTA-PARAM". t:Thy, n:Name, a:Tp |- "delta.named"(t, n, "te.param"(a)) ~> "Tm.named"(n);
+      "DELTA-ABSENT". t:Thy, n:Name |- "delta.named"(t, n, "te.absent"()) ~> "Tm.named"(n);
+      "DELTA-PRIM". t:Thy, i:Nat |- "tm.delta"(t, "Tm.prim"(i)) ~> "Tm.prim"(i);
+      "DELTA-APP". t:Thy, f:Tm, x:Tm, f2:Tm, x2:Tm | "tm.delta"(t, f) ~> f2, "tm.delta"(t, x) ~> x2 |- "tm.delta"(t, "Tm.app"(f, x)) ~> "Tm.app"(f2, x2);
+      "DELTA-LAM". t:Thy, a:Tp, b:Tm, b2:Tm | "tm.delta"(t, b) ~> b2 |- "tm.delta"(t, "Tm.lam"(a, b)) ~> "Tm.lam"(a, b2);
+      "DELTA-IMP". t:Thy, p:Tm, q:Tm, p2:Tm, q2:Tm | "tm.delta"(t, p) ~> p2, "tm.delta"(t, q) ~> q2 |- "tm.delta"(t, "Tm.imp"(p, q)) ~> "Tm.imp"(p2, q2);
+      "DELTA-ALL". t:Thy, a:Tp, b:Tm, b2:Tm | "tm.delta"(t, b) ~> b2 |- "tm.delta"(t, "Tm.all"(a, b)) ~> "Tm.all"(a, b2);
+      "DELTA-TAPP". t:Thy, f:Tm, a:Tp, f2:Tm | "tm.delta"(t, f) ~> f2 |- "tm.delta"(t, "Tm.typeApp"(f, a)) ~> "Tm.typeApp"(f2, a);
+      "DELTA-TLAM". t:Thy, b:Tm, b2:Tm | "tm.delta"(t, b) ~> b2 |- "tm.delta"(t, "Tm.typeLam"(b)) ~> "Tm.typeLam"(b2);
+      "DELTA-TALL". t:Thy, b:Tm, b2:Tm | "tm.delta"(t, b) ~> b2 |- "tm.delta"(t, "Tm.typeAll"(b)) ~> "Tm.typeAll"(b2);
+      "NORM". t:Thy, m:Tm, d:Tm, r:Tm | "tm.delta"(t, m) ~> d, "tm.nf"(d) ~> r |- "tm.norm"(t, m) ~> r;
+      -- the normal form of a term given as data: it must be protected
+      "NORMALIZE". t:Thy, m:Tm, r:Tm | "tm.prot"(m) ~> "bool.t"(), "tm.norm"(t, m) ~> r |- "tm.normalize"(t, m) ~> r;
+
+      -- ── typing of terms ───────────────────────────────────────────────────────────────────────
+      "INFER-DB". t:Thy, d:Nat, ts:TpList, i:Nat, a:Tp | "tps.nth"(ts, i) ~> a |- "tm.infer"(t, d, ts, "Tm.db"(i)) ~> a;
+      "INFER-PRIM". t:Thy, d:Nat, ts:TpList, i:Nat, a:Tp | "thy.prim"(t, i) ~> "prim.some"(a) |- "tm.infer"(t, d, ts, "Tm.prim"(i)) ~> a;
+      "INFER-NAMED". t:Thy, d:Nat, ts:TpList, n:Name, e:TermEntry, a:Tp | "thy.term"(t, n) ~> e, "infer.named"(e) ~> a |- "tm.infer"(t, d, ts, "Tm.named"(n)) ~> a;
+      "INFER-PARAM". a:Tp |- "infer.named"("te.param"(a)) ~> a;
+      "INFER-DEF". a:Tp, b:Tm |- "infer.named"("te.def"(a, b)) ~> a;
+      "INFER-APP". t:Thy, d:Nat, ts:TpList, f:Tm, x:Tm, a:Tp, b:Tp | "tm.infer"(t, d, ts, f) ~> "Tp.arr"(a, b), "tm.infer"(t, d, ts, x) ~> a |- "tm.infer"(t, d, ts, "Tm.app"(f, x)) ~> b;
+      "INFER-TAPP". t:Thy, d:Nat, ts:TpList, f:Tm, a:Tp, b:Tp, r:Tp | "tp.plain"(d, a) ~> "bool.t"(), "tm.infer"(t, d, ts, f) ~> "Tp.all"(b), "tp.inst"("nat.z"(), a, b) ~> r |- "tm.infer"(t, d, ts, "Tm.typeApp"(f, a)) ~> r;
+      "INFER-LAM". t:Thy, d:Nat, ts:TpList, a:Tp, m:Tm, b:Tp | "tp.plain"(d, a) ~> "bool.t"(), "tm.infer"(t, d, "tps.cons"(a, ts), m) ~> b |- "tm.infer"(t, d, ts, "Tm.lam"(a, m)) ~> "Tp.arr"(a, b);
+      "INFER-TLAM". t:Thy, d:Nat, ts:TpList, m:Tm, ts2:TpList, b:Tp | "tps.shift1"(ts) ~> ts2, "tm.infer"(t, "nat.s"(d), ts2, m) ~> b |- "tm.infer"(t, d, ts, "Tm.typeLam"(m)) ~> "Tp.all"(b);
+      "INFER-IMP". t:Thy, d:Nat, ts:TpList, p:Tm, q:Tm | "tm.infer"(t, d, ts, p) ~> "Tp.prop"(), "tm.infer"(t, d, ts, q) ~> "Tp.prop"() |- "tm.infer"(t, d, ts, "Tm.imp"(p, q)) ~> "Tp.prop"();
+      "INFER-ALL". t:Thy, d:Nat, ts:TpList, a:Tp, m:Tm | "tp.plain"(d, a) ~> "bool.t"(), "tm.infer"(t, d, "tps.cons"(a, ts), m) ~> "Tp.prop"() |- "tm.infer"(t, d, ts, "Tm.all"(a, m)) ~> "Tp.prop"();
+      -- a proposition: a prefix of type quantifiers (each opens a fresh term context), then a term
+      -- of type prop
+      "PROP-TALL". t:Thy, d:Nat, ts:TpList, m:Tm | "tm.isprop"(t, "nat.s"(d), "tps.nil"(), m) ~> "yes"() |- "tm.isprop"(t, d, ts, "Tm.typeAll"(m)) ~> "yes"();
+      "PROP-DB". t:Thy, d:Nat, ts:TpList, i:Nat | "tm.infer"(t, d, ts, "Tm.db"(i)) ~> "Tp.prop"() |- "tm.isprop"(t, d, ts, "Tm.db"(i)) ~> "yes"();
+      "PROP-NAMED". t:Thy, d:Nat, ts:TpList, n:Name | "tm.infer"(t, d, ts, "Tm.named"(n)) ~> "Tp.prop"() |- "tm.isprop"(t, d, ts, "Tm.named"(n)) ~> "yes"();
+      "PROP-PRIM". t:Thy, d:Nat, ts:TpList, i:Nat | "tm.infer"(t, d, ts, "Tm.prim"(i)) ~> "Tp.prop"() |- "tm.isprop"(t, d, ts, "Tm.prim"(i)) ~> "yes"();
+      "PROP-APP". t:Thy, d:Nat, ts:TpList, f:Tm, x:Tm | "tm.infer"(t, d, ts, "Tm.app"(f, x)) ~> "Tp.prop"() |- "tm.isprop"(t, d, ts, "Tm.app"(f, x)) ~> "yes"();
+      "PROP-LAM". t:Thy, d:Nat, ts:TpList, a:Tp, m:Tm | "tm.infer"(t, d, ts, "Tm.lam"(a, m)) ~> "Tp.prop"() |- "tm.isprop"(t, d, ts, "Tm.lam"(a, m)) ~> "yes"();
+      "PROP-IMP". t:Thy, d:Nat, ts:TpList, p:Tm, q:Tm | "tm.infer"(t, d, ts, "Tm.imp"(p, q)) ~> "Tp.prop"() |- "tm.isprop"(t, d, ts, "Tm.imp"(p, q)) ~> "yes"();
+      "PROP-ALL". t:Thy, d:Nat, ts:TpList, a:Tp, m:Tm | "tm.infer"(t, d, ts, "Tm.all"(a, m)) ~> "Tp.prop"() |- "tm.isprop"(t, d, ts, "Tm.all"(a, m)) ~> "yes"();
+      "PROP-TAPP". t:Thy, d:Nat, ts:TpList, f:Tm, a:Tp | "tm.infer"(t, d, ts, "Tm.typeApp"(f, a)) ~> "Tp.prop"() |- "tm.isprop"(t, d, ts, "Tm.typeApp"(f, a)) ~> "yes"();
+      "PROP-TLAM". t:Thy, d:Nat, ts:TpList, m:Tm | "tm.infer"(t, d, ts, "Tm.typeLam"(m)) ~> "Tp.prop"() |- "tm.isprop"(t, d, ts, "Tm.typeLam"(m)) ~> "yes"();
+
+      -- ── conversion: equality of beta-eta-delta normal forms of two typed terms ────────────────
+      "CONV". t:Thy, d:Nat, ts:TpList, m:Tm, n:Tm, a:Tp, b:Tp, e:Bool, r:Bool | "tm.prot"(m) ~> "bool.t"(), "tm.prot"(n) ~> "bool.t"(), "tm.infer"(t, d, ts, m) ~> a, "tm.infer"(t, d, ts, n) ~> b, "tp.eq"(a, b) ~> e, "conv.typed"(t, e, m, n) ~> r |- "tm.conv"(t, d, ts, m, n) ~> r;
+      "CONV-TYPES-DIFFER". t:Thy, m:Tm, n:Tm |- "conv.typed"(t, "bool.f"(), m, n) ~> "bool.f"();
+      "CONV-NORMAL-FORMS". t:Thy, m:Tm, n:Tm, x:Tm, y:Tm, r:Bool | "tm.norm"(t, m) ~> x, "tm.norm"(t, n) ~> y, "tm.eq"(x, y) ~> r |- "conv.typed"(t, "bool.t"(), m, n) ~> r;
+
+      -- ── term lists (hypotheses) ───────────────────────────────────────────────────────────────
+      "TMS-NTH-Z". m:Tm, rest:TmList |- "tms.nth"("tms.cons"(m, rest), "nat.z"()) ~> m;
+      "TMS-NTH-S". m:Tm, rest:TmList, i:Nat, r:Tm | "tms.nth"(rest, i) ~> r |- "tms.nth"("tms.cons"(m, rest), "nat.s"(i)) ~> r;
+      "TMS-SHIFT1-NIL". |- "tms.shift1"("tms.nil"()) ~> "tms.nil"();
+      "TMS-SHIFT1-CONS". m:Tm, rest:TmList, m2:Tm, rest2:TmList | "tm.shift"("nat.z"(), "nat.s"("nat.z"()), m) ~> m2, "tms.shift1"(rest) ~> rest2 |- "tms.shift1"("tms.cons"(m, rest)) ~> "tms.cons"(m2, rest2);
+      "TMS-CLOSED-NIL". k:Nat |- "tms.closed"(k, "tms.nil"()) ~> "bool.t"();
+      "TMS-CLOSED-CONS". k:Nat, m:Tm, rest:TmList, a:Bool, b:Bool, r:Bool | "tm.closed"(k, m) ~> a, "tms.closed"(k, rest) ~> b, "bool.and"(a, b) ~> r |- "tms.closed"(k, "tms.cons"(m, rest)) ~> r;
+      "TMS-PROT-NIL". |- "tms.prot"("tms.nil"()) ~> "bool.t"();
+      "TMS-PROT-CONS". m:Tm, rest:TmList, a:Bool, b:Bool, r:Bool | "tm.prot"(m) ~> a, "tms.prot"(rest) ~> b, "bool.and"(a, b) ~> r |- "tms.prot"("tms.cons"(m, rest)) ~> r;
+      "TMS-NORM-NIL". t:Thy |- "tms.norm"(t, "tms.nil"()) ~> "tms.nil"();
+      "TMS-NORM-CONS". t:Thy, m:Tm, rest:TmList, m2:Tm, rest2:TmList | "tm.norm"(t, m) ~> m2, "tms.norm"(t, rest) ~> rest2 |- "tms.norm"(t, "tms.cons"(m, rest)) ~> "tms.cons"(m2, rest2);
+      "TMS-FORMED-NIL". t:Thy, d:Nat, ts:TpList |- "tms.formed"(t, d, ts, "tms.nil"()) ~> "yes"();
+      "TMS-FORMED-CONS". t:Thy, d:Nat, ts:TpList, m:Tm, rest:TmList | "tm.infer"(t, d, ts, m) ~> "Tp.prop"(), "tms.formed"(t, d, ts, rest) ~> "yes"() |- "tms.formed"(t, d, ts, "tms.cons"(m, rest)) ~> "yes"();
+
+      -- ── proofs: the protected fragment and the safe context ───────────────────────────────────
+      "PF-PROT-HYP". i:Nat |- "pf.prot"("Pf.hyp"(i)) ~> "bool.t"();
+      "PF-PROT-KNOWN". n:Name |- "pf.prot"("Pf.known"(n)) ~> "bool.t"();
+      "PF-PROT-TERMAPP". d:Pf, m:Tm, a:Bool, b:Bool, r:Bool | "pf.prot"(d) ~> a, "tm.prot"(m) ~> b, "bool.and"(a, b) ~> r |- "pf.prot"("Pf.termApp"(d, m)) ~> r;
+      "PF-PROT-PROOFAPP". d:Pf, e:Pf, a:Bool, b:Bool, r:Bool | "pf.prot"(d) ~> a, "pf.prot"(e) ~> b, "bool.and"(a, b) ~> r |- "pf.prot"("Pf.proofApp"(d, e)) ~> r;
+      "PF-PROT-PROOFLAM". p:Tm, d:Pf, a:Bool, b:Bool, r:Bool | "tm.prot"(p) ~> a, "pf.prot"(d) ~> b, "bool.and"(a, b) ~> r |- "pf.prot"("Pf.proofLam"(p, d)) ~> r;
+      "PF-PROT-TERMLAM". a:Tp, d:Pf, r:Bool | "pf.prot"(d) ~> r |- "pf.prot"("Pf.termLam"(a, d)) ~> r;
+      "PF-PROT-TYPEAPP". d:Pf, a:Tp, r:Bool | "pf.prot"(d) ~> r |- "pf.prot"("Pf.typeApp"(d, a)) ~> r;
+      "PF-PROT-TYPELAM". d:Pf, r:Bool | "pf.prot"(d) ~> r |- "pf.prot"("Pf.typeLam"(d)) ~> r;
+      "CTX-SAFE". d:Nat, ts:TpList, hs:TmList, k:Nat, a:Bool, b:Bool, r:Bool | "tps.len"(ts) ~> k, "tms.closed"(k, hs) ~> a, "tms.prot"(hs) ~> b, "bool.and"(a, b) ~> r |- "ctx.safe"("ctx"(d, ts, hs)) ~> r;
+
+      -- ── the eight proof rules (ProofJudgment.Proves): the normal proposition a proof proves ───
+      "HYP". t:Thy, d:Nat, ts:TpList, hs:TmList, i:Nat, h:Tm | "tms.nth"(hs, i) ~> h |- "pf.ref"(t, "ctx"(d, ts, hs), "Pf.hyp"(i)) ~> h;
+      "KNOWN". t:Thy, c:Ctx, n:Name, p:Tm, q:Tm | "thy.known"(t, n) ~> "ke.known"(p), "tm.norm"(t, p) ~> q |- "pf.ref"(t, c, "Pf.known"(n)) ~> q;
+      "TERM-APP". t:Thy, d:Nat, ts:TpList, hs:TmList, e:Pf, m:Tm, a:Tp, b:Tm, m2:Tm, i:Tm, r:Tm | "pf.ref"(t, "ctx"(d, ts, hs), e) ~> "Tm.all"(a, b), "tm.infer"(t, d, ts, m) ~> a, "tm.delta"(t, m) ~> m2, "tm.inst"("nat.z"(), m2, b) ~> i, "tm.norm"(t, i) ~> r |- "pf.ref"(t, "ctx"(d, ts, hs), "Pf.termApp"(e, m)) ~> r;
+      "PROOF-APP". t:Thy, c:Ctx, e:Pf, f:Pf, p:Tm, q:Tm | "pf.ref"(t, c, e) ~> "Tm.imp"(p, q), "pf.ref"(t, c, f) ~> p |- "pf.ref"(t, c, "Pf.proofApp"(e, f)) ~> q;
+      "TERM-LAM". t:Thy, d:Nat, ts:TpList, hs:TmList, a:Tp, e:Pf, hs2:TmList, b:Tm | "tp.plain"(d, a) ~> "bool.t"(), "tms.shift1"(hs) ~> hs2, "pf.ref"(t, "ctx"(d, "tps.cons"(a, ts), hs2), e) ~> b |- "pf.ref"(t, "ctx"(d, ts, hs), "Pf.termLam"(a, e)) ~> "Tm.all"(a, b);
+      "PROOF-LAM". t:Thy, d:Nat, ts:TpList, hs:TmList, p:Tm, e:Pf, p2:Tm, q:Tm | "tm.infer"(t, d, ts, p) ~> "Tp.prop"(), "tm.norm"(t, p) ~> p2, "pf.ref"(t, "ctx"(d, ts, "tms.cons"(p2, hs)), e) ~> q |- "pf.ref"(t, "ctx"(d, ts, hs), "Pf.proofLam"(p, e)) ~> "Tm.imp"(p2, q);
+      "TYPE-APP". t:Thy, c:Ctx, e:Pf, a:Tp, b:Tm, r:Tm | "pf.ref"(t, c, e) ~> "Tm.typeAll"(b), "tm.tinst"("nat.z"(), a, b) ~> r |- "pf.ref"(t, c, "Pf.typeApp"(e, a)) ~> r;
+      "TYPE-LAM". t:Thy, d:Nat, e:Pf, q:Tm | "pf.ref"(t, "ctx"("nat.s"(d), "tps.nil"(), "tms.nil"()), e) ~> q |- "pf.ref"(t, "ctx"(d, "tps.nil"(), "tms.nil"()), "Pf.typeLam"(e)) ~> "Tm.typeAll"(q);
+
+      -- ── checking a proof: in a context given as data; a closed claim ──────────────────────────
+      -- The kernel's default: a safe, formed context, its hypotheses normalized, then the rules.
+      "CHECK". t:Thy, d:Nat, ts:TpList, hs:TmList, e:Pf, hs2:TmList, p:Tm | "ctx.safe"("ctx"(d, ts, hs)) ~> "bool.t"(), "pf.prot"(e) ~> "bool.t"(), "tms.formed"(t, d, ts, hs) ~> "yes"(), "tms.norm"(t, hs) ~> hs2, "pf.ref"(t, "ctx"(d, ts, hs2), e) ~> p |- "pf.check"(t, "ctx"(d, ts, hs), e) ~> p;
+      -- The kernel's reference mode (mg:set-conversion reference): the context as given.
+      "CHECK-REF". t:Thy, c:Ctx, e:Pf, p:Tm | "ctx.safe"(c) ~> "bool.t"(), "pf.prot"(e) ~> "bool.t"(), "pf.ref"(t, c, e) ~> p |- "pf.check.ref"(t, c, e) ~> p;
+      "THEOREM". t:Thy, p:Tm, e:Pf, q:Tm | "tm.prot"(p) ~> "bool.t"(), "pf.prot"(e) ~> "bool.t"(), "tm.isprop"(t, "nat.z"(), "tps.nil"(), p) ~> "yes"(), "tm.norm"(t, p) ~> q, "pf.ref"(t, "ctx"("nat.z"(), "tps.nil"(), "tms.nil"()), e) ~> q |- "thm.check"(t, p, e) ~> "yes"();
+
+      -- ── the theory: primitives, declarations, selections ──────────────────────────────────────
+      "PRIMS-NTH-NIL". i:Nat |- "prims.nth"("prims.nil"(), i) ~> "prim.none"();
+      "PRIMS-NTH-Z". e:PrimEntry, rest:Prims |- "prims.nth"("prims.cons"(e, rest), "nat.z"()) ~> e;
+      "PRIMS-NTH-S". e:PrimEntry, rest:Prims, i:Nat, r:PrimEntry | "prims.nth"(rest, i) ~> r |- "prims.nth"("prims.cons"(e, rest), "nat.s"(i)) ~> r;
+      "THY-PRIM". ps:Prims, rs:Names, ds:Decls, ss:Sels, i:Nat, r:PrimEntry | "prims.nth"(ps, i) ~> r |- "thy.prim"("thy"(ps, rs, ds, ss), i) ~> r;
+      "THY-TERM". ps:Prims, rs:Names, ds:Decls, ss:Sels, n:Name, r:TermEntry | "ds.term"(ds, n) ~> r |- "thy.term"("thy"(ps, rs, ds, ss), n) ~> r;
+      "THY-KNOWN". ps:Prims, rs:Names, ds:Decls, ss:Sels, n:Name, r:KnownEntry | "ds.known"(ds, n) ~> r |- "thy.known"("thy"(ps, rs, ds, ss), n) ~> r;
+      -- the newest term declaration of a name: a realization before the parameter it realizes
+      "TERM-NIL". n:Name |- "ds.term"("ds.nil"(), n) ~> "te.absent"();
+      "TERM-PARAM-HIT". m:Name, a:Tp, rest:Decls, n:Name | "name.eq"(n, m) ~> "bool.t"() |- "ds.term"("ds.cons"("d.param"(m, a), rest), n) ~> "te.param"(a);
+      "TERM-PARAM-NEXT". m:Name, a:Tp, rest:Decls, n:Name, r:TermEntry | "name.eq"(n, m) ~> "bool.f"(), "ds.term"(rest, n) ~> r |- "ds.term"("ds.cons"("d.param"(m, a), rest), n) ~> r;
+      "TERM-DEF-HIT". m:Name, a:Tp, b:Tm, rest:Decls, n:Name | "name.eq"(n, m) ~> "bool.t"() |- "ds.term"("ds.cons"("d.def"(m, a, b), rest), n) ~> "te.def"(a, b);
+      "TERM-DEF-NEXT". m:Name, a:Tp, b:Tm, rest:Decls, n:Name, r:TermEntry | "name.eq"(n, m) ~> "bool.f"(), "ds.term"(rest, n) ~> r |- "ds.term"("ds.cons"("d.def"(m, a, b), rest), n) ~> r;
+      "TERM-REAL-HIT". m:Name, a:Tp, b:Tm, rest:Decls, n:Name | "name.eq"(n, m) ~> "bool.t"() |- "ds.term"("ds.cons"("d.real"(m, a, b), rest), n) ~> "te.def"(a, b);
+      "TERM-REAL-NEXT". m:Name, a:Tp, b:Tm, rest:Decls, n:Name, r:TermEntry | "name.eq"(n, m) ~> "bool.f"(), "ds.term"(rest, n) ~> r |- "ds.term"("ds.cons"("d.real"(m, a, b), rest), n) ~> r;
+      "TERM-SKIP-AXIOM". m:Name, p:Tm, rest:Decls, n:Name, r:TermEntry | "ds.term"(rest, n) ~> r |- "ds.term"("ds.cons"("d.axiom"(m, p), rest), n) ~> r;
+      "TERM-SKIP-THM". m:Name, p:Tm, rest:Decls, n:Name, r:TermEntry | "ds.term"(rest, n) ~> r |- "ds.term"("ds.cons"("d.thm"(m, p), rest), n) ~> r;
+      "KNOWN-NIL". n:Name |- "ds.known"("ds.nil"(), n) ~> "ke.absent"();
+      "KNOWN-AXIOM-HIT". m:Name, p:Tm, rest:Decls, n:Name | "name.eq"(n, m) ~> "bool.t"() |- "ds.known"("ds.cons"("d.axiom"(m, p), rest), n) ~> "ke.known"(p);
+      "KNOWN-AXIOM-NEXT". m:Name, p:Tm, rest:Decls, n:Name, r:KnownEntry | "name.eq"(n, m) ~> "bool.f"(), "ds.known"(rest, n) ~> r |- "ds.known"("ds.cons"("d.axiom"(m, p), rest), n) ~> r;
+      "KNOWN-THM-HIT". m:Name, p:Tm, rest:Decls, n:Name | "name.eq"(n, m) ~> "bool.t"() |- "ds.known"("ds.cons"("d.thm"(m, p), rest), n) ~> "ke.known"(p);
+      "KNOWN-THM-NEXT". m:Name, p:Tm, rest:Decls, n:Name, r:KnownEntry | "name.eq"(n, m) ~> "bool.f"(), "ds.known"(rest, n) ~> r |- "ds.known"("ds.cons"("d.thm"(m, p), rest), n) ~> r;
+      "KNOWN-SKIP-PARAM". m:Name, a:Tp, rest:Decls, n:Name, r:KnownEntry | "ds.known"(rest, n) ~> r |- "ds.known"("ds.cons"("d.param"(m, a), rest), n) ~> r;
+      "KNOWN-SKIP-DEF". m:Name, a:Tp, b:Tm, rest:Decls, n:Name, r:KnownEntry | "ds.known"(rest, n) ~> r |- "ds.known"("ds.cons"("d.def"(m, a, b), rest), n) ~> r;
+      "KNOWN-SKIP-REAL". m:Name, a:Tp, b:Tm, rest:Decls, n:Name, r:KnownEntry | "ds.known"(rest, n) ~> r |- "ds.known"("ds.cons"("d.real"(m, a, b), rest), n) ~> r;
+      -- a name is used in a namespace once a parameter or definition (terms), an axiom or theorem
+      -- (knowns) carries it
+      "HAS-TERM-NIL". n:Name |- "ds.has-term"("ds.nil"(), n) ~> "bool.f"();
+      "HAS-TERM-PARAM". m:Name, a:Tp, rest:Decls, n:Name, x:Bool, y:Bool, r:Bool | "name.eq"(n, m) ~> x, "ds.has-term"(rest, n) ~> y, "bool.or"(x, y) ~> r |- "ds.has-term"("ds.cons"("d.param"(m, a), rest), n) ~> r;
+      "HAS-TERM-DEF". m:Name, a:Tp, b:Tm, rest:Decls, n:Name, x:Bool, y:Bool, r:Bool | "name.eq"(n, m) ~> x, "ds.has-term"(rest, n) ~> y, "bool.or"(x, y) ~> r |- "ds.has-term"("ds.cons"("d.def"(m, a, b), rest), n) ~> r;
+      "HAS-TERM-REAL". m:Name, a:Tp, b:Tm, rest:Decls, n:Name, x:Bool, y:Bool, r:Bool | "name.eq"(n, m) ~> x, "ds.has-term"(rest, n) ~> y, "bool.or"(x, y) ~> r |- "ds.has-term"("ds.cons"("d.real"(m, a, b), rest), n) ~> r;
+      "HAS-TERM-AXIOM". m:Name, p:Tm, rest:Decls, n:Name, r:Bool | "ds.has-term"(rest, n) ~> r |- "ds.has-term"("ds.cons"("d.axiom"(m, p), rest), n) ~> r;
+      "HAS-TERM-THM". m:Name, p:Tm, rest:Decls, n:Name, r:Bool | "ds.has-term"(rest, n) ~> r |- "ds.has-term"("ds.cons"("d.thm"(m, p), rest), n) ~> r;
+      "HAS-KNOWN-NIL". n:Name |- "ds.has-known"("ds.nil"(), n) ~> "bool.f"();
+      "HAS-KNOWN-AXIOM". m:Name, p:Tm, rest:Decls, n:Name, x:Bool, y:Bool, r:Bool | "name.eq"(n, m) ~> x, "ds.has-known"(rest, n) ~> y, "bool.or"(x, y) ~> r |- "ds.has-known"("ds.cons"("d.axiom"(m, p), rest), n) ~> r;
+      "HAS-KNOWN-THM". m:Name, p:Tm, rest:Decls, n:Name, x:Bool, y:Bool, r:Bool | "name.eq"(n, m) ~> x, "ds.has-known"(rest, n) ~> y, "bool.or"(x, y) ~> r |- "ds.has-known"("ds.cons"("d.thm"(m, p), rest), n) ~> r;
+      "HAS-KNOWN-PARAM". m:Name, a:Tp, rest:Decls, n:Name, r:Bool | "ds.has-known"(rest, n) ~> r |- "ds.has-known"("ds.cons"("d.param"(m, a), rest), n) ~> r;
+      "HAS-KNOWN-DEF". m:Name, a:Tp, b:Tm, rest:Decls, n:Name, r:Bool | "ds.has-known"(rest, n) ~> r |- "ds.has-known"("ds.cons"("d.def"(m, a, b), rest), n) ~> r;
+      "HAS-KNOWN-REAL". m:Name, a:Tp, b:Tm, rest:Decls, n:Name, r:Bool | "ds.has-known"(rest, n) ~> r |- "ds.has-known"("ds.cons"("d.real"(m, a, b), rest), n) ~> r;
+      -- a name is fresh in a namespace when no declaration of that namespace carries it and the
+      -- profile does not reserve it
+      "FRESH-TERM". ps:Prims, rs:Names, ds:Decls, ss:Sels, n:Name, x:Bool, y:Bool, z:Bool, r:Bool | "names.has"(rs, n) ~> x, "ds.has-term"(ds, n) ~> y, "bool.or"(x, y) ~> z, "bool.not"(z) ~> r |- "thy.fresh-term"("thy"(ps, rs, ds, ss), n) ~> r;
+      "FRESH-KNOWN". ps:Prims, rs:Names, ds:Decls, ss:Sels, n:Name, x:Bool, y:Bool, z:Bool, r:Bool | "names.has"(rs, n) ~> x, "ds.has-known"(ds, n) ~> y, "bool.or"(x, y) ~> z, "bool.not"(z) ~> r |- "thy.fresh-known"("thy"(ps, rs, ds, ss), n) ~> r;
+      -- the selected authority: at most one selection per name and namespace
+      "SEL-PARAM-NIL". n:Name |- "ss.param"("ss.nil"(), n) ~> "se.absent"();
+      "SEL-PARAM-HIT". m:Name, a:Tp, rest:Sels, n:Name | "name.eq"(n, m) ~> "bool.t"() |- "ss.param"("ss.cons"("sel.param"(m, a), rest), n) ~> "se.param"(a);
+      "SEL-PARAM-NEXT". m:Name, a:Tp, rest:Sels, n:Name, r:SelEntry | "name.eq"(n, m) ~> "bool.f"(), "ss.param"(rest, n) ~> r |- "ss.param"("ss.cons"("sel.param"(m, a), rest), n) ~> r;
+      "SEL-PARAM-SKIP". m:Name, p:Tm, rest:Sels, n:Name, r:SelEntry | "ss.param"(rest, n) ~> r |- "ss.param"("ss.cons"("sel.known"(m, p), rest), n) ~> r;
+      "SEL-KNOWN-NIL". n:Name |- "ss.known"("ss.nil"(), n) ~> "se.absent"();
+      "SEL-KNOWN-HIT". m:Name, p:Tm, rest:Sels, n:Name | "name.eq"(n, m) ~> "bool.t"() |- "ss.known"("ss.cons"("sel.known"(m, p), rest), n) ~> "se.known"(p);
+      "SEL-KNOWN-NEXT". m:Name, p:Tm, rest:Sels, n:Name, r:SelEntry | "name.eq"(n, m) ~> "bool.f"(), "ss.known"(rest, n) ~> r |- "ss.known"("ss.cons"("sel.known"(m, p), rest), n) ~> r;
+      "SEL-KNOWN-SKIP". m:Name, a:Tp, rest:Sels, n:Name, r:SelEntry | "ss.known"(rest, n) ~> r |- "ss.known"("ss.cons"("sel.param"(m, a), rest), n) ~> r;
+
+      -- ── theory extension ──────────────────────────────────────────────────────────────────────
+      -- selecting: a parameter type must be prefix-polymorphic and closed; a name selected again
+      -- must be selected with the same type or proposition
+      "SELECT-PARAM-NEW". ps:Prims, rs:Names, ds:Decls, ss:Sels, n:Name, a:Tp | "tp.poly"("nat.z"(), a) ~> "bool.t"(), "ss.param"(ss, n) ~> "se.absent"() |- "thy.select-param"("thy"(ps, rs, ds, ss), n, a) ~> "thy"(ps, rs, ds, "ss.cons"("sel.param"(n, a), ss));
+      "SELECT-PARAM-SAME". ps:Prims, rs:Names, ds:Decls, ss:Sels, n:Name, a:Tp | "tp.poly"("nat.z"(), a) ~> "bool.t"(), "ss.param"(ss, n) ~> "se.param"(a) |- "thy.select-param"("thy"(ps, rs, ds, ss), n, a) ~> "thy"(ps, rs, ds, ss);
+      "SELECT-KNOWN-NEW". ps:Prims, rs:Names, ds:Decls, ss:Sels, n:Name, p:Tm | "ss.known"(ss, n) ~> "se.absent"() |- "thy.select-known"("thy"(ps, rs, ds, ss), n, p) ~> "thy"(ps, rs, ds, "ss.cons"("sel.known"(n, p), ss));
+      "SELECT-KNOWN-SAME". ps:Prims, rs:Names, ds:Decls, ss:Sels, n:Name, p:Tm | "ss.known"(ss, n) ~> "se.known"(p) |- "thy.select-known"("thy"(ps, rs, ds, ss), n, p) ~> "thy"(ps, rs, ds, ss);
+      "ADMIT-PARAM". ps:Prims, rs:Names, ds:Decls, ss:Sels, n:Name, a:Tp | "thy.fresh-term"("thy"(ps, rs, ds, ss), n) ~> "bool.t"(), "tp.poly"("nat.z"(), a) ~> "bool.t"(), "ss.param"(ss, n) ~> "se.param"(a) |- "thy.admit-param"("thy"(ps, rs, ds, ss), n, a) ~> "thy"(ps, rs, "ds.cons"("d.param"(n, a), ds), ss);
+      -- a definition: a fresh name, a closed prefix-polymorphic type, a protected beta-eta normal
+      -- body of that type
+      "ADMIT-DEF". ps:Prims, rs:Names, ds:Decls, ss:Sels, n:Name, a:Tp, b:Tm | "thy.fresh-term"("thy"(ps, rs, ds, ss), n) ~> "bool.t"(), "tp.poly"("nat.z"(), a) ~> "bool.t"(), "tm.prot"(b) ~> "bool.t"(), "tm.nf"(b) ~> b, "tm.infer"("thy"(ps, rs, ds, ss), "nat.z"(), "tps.nil"(), b) ~> a |- "thy.admit-def"("thy"(ps, rs, ds, ss), n, a, b) ~> "thy"(ps, rs, "ds.cons"("d.def"(n, a, b), ds), ss);
+      -- a definition realizing a parameter of the same type, unrealized, whose name is the identity
+      -- of the body, and whose body does not name it
+      "ADMIT-DEF-REALIZE". ps:Prims, rs:Names, ds:Decls, ss:Sels, n:Name, a:Tp, b:Tm | "thy.fresh-term"("thy"(ps, rs, ds, ss), n) ~> "bool.f"(), "thy.term"("thy"(ps, rs, ds, ss), n) ~> "te.param"(a), "tp.poly"("nat.z"(), a) ~> "bool.t"(), "tm.prot"(b) ~> "bool.t"(), "tm.nf"(b) ~> b, "tm.infer"("thy"(ps, rs, ds, ss), "nat.z"(), "tps.nil"(), b) ~> a, "identity"(n, a, b), "tm.mentions"(n, b) ~> "bool.f"() |- "thy.admit-def"("thy"(ps, rs, ds, ss), n, a, b) ~> "thy"(ps, rs, "ds.cons"("d.real"(n, a, b), ds), ss);
+      "ADMIT-AXIOM". ps:Prims, rs:Names, ds:Decls, ss:Sels, n:Name, p:Tm | "thy.fresh-known"("thy"(ps, rs, ds, ss), n) ~> "bool.t"(), "tm.prot"(p) ~> "bool.t"(), "tm.isprop"("thy"(ps, rs, ds, ss), "nat.z"(), "tps.nil"(), p) ~> "yes"(), "ss.known"(ss, n) ~> "se.known"(p) |- "thy.admit-axiom"("thy"(ps, rs, ds, ss), n, p) ~> "thy"(ps, rs, "ds.cons"("d.axiom"(n, p), ds), ss);
+      "ADMIT-THEOREM". ps:Prims, rs:Names, ds:Decls, ss:Sels, n:Name, p:Tm, e:Pf | "thy.fresh-known"("thy"(ps, rs, ds, ss), n) ~> "bool.t"(), "thm.check"("thy"(ps, rs, ds, ss), p, e) ~> "yes"() |- "thy.admit-thm"("thy"(ps, rs, ds, ss), n, p, e) ~> "thy"(ps, rs, "ds.cons"("d.thm"(n, p), ds), ss);
+      "CONJECTURE". t:Thy, p:Tm | "tm.prot"(p) ~> "bool.t"(), "tm.isprop"(t, "nat.z"(), "tps.nil"(), p) ~> "yes"() |- "thy.conjecture"(t, p) ~> "yes"();
+    }
+  }
+  theory Kernel()
+}

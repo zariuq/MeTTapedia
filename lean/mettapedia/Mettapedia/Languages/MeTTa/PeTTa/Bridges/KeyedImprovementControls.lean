@@ -21,6 +21,10 @@ def program : Program := {equations := [equation], declarations := []}
 theorem strictly_better_replaces_and_returns_key : run names "sd" .self 0 7 before = some (after, [number 0]) := by
   kernel_reflexivity
 
+theorem claimed_incumbent_without_removal_cannot_license_replacement :
+    write (Store.new [] []) .self "sd" 0 7 (some 10) = none := by
+  kernel_reflexivity
+
 theorem nonimprovement_returns_no_answer : run names "sd" .self 0 12 before = some (before, []) := by
   kernel_reflexivity
 

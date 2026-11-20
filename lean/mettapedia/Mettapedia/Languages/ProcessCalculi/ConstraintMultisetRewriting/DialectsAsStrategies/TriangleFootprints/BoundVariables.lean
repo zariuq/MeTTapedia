@@ -30,11 +30,12 @@ mentions rows, patterns, PeTTa's matching and bodies, never an answer or a run.
 ## Results
 
 * `settlesV_agree`: for every settling term, one answer list that HE's machine returns and PeTTa's
-  streaming machine delivers, for every open presentation.
-* `answersV_agree`: HE's complete run publishes the values of PeTTa's run, in order.
+  streaming machine delivers, for every open presentation (the model's order).
+* `answersV_agree`: a complete run from HE's entry exists and publishes the bag of PeTTa's values.
 * `settlesV_determined`, `every_complete_run_v`, `answer_bags_every_run_v`: **every** complete run
-  of HE's machine from the entry publishes exactly the values PeTTa's streaming run yields from
-  some fuel on; a complete run exists; so the bags agree.
+  of HE's machine from the entry publishes the bag of values PeTTa's streaming run yields from some
+  fuel on, and a complete run exists. Answers are bags: HE publishes the alternatives of a nested
+  or body call in another order than the model's runs, the same on every run.
 * `settles_settlesV`: the extension is conservative: every term that settles in `AnswerBags`'s
   sense on such a program settles here.
 
@@ -1167,7 +1168,8 @@ section Joint
 variable {dispatch : GroundedDispatch} {lookup : CastLookup} {policy : Policy}
 
 /-- **Both machines evaluate every settling term to the same answer list**, PeTTa on every open
-presentation: one induction on the settling derivation. -/
+presentation: one induction on the settling derivation. The list is the model's order, which is
+PeTTa's; HE's claim is the bag (`answersV_agree`, `every_complete_run_v`). -/
 theorem settlesV_agree (answers : AnswersUndefined lookup) {atoms : List Atom}
     (program : BoundProgram atoms) {t : Atom} (settles : SettlesV dispatch atoms t) :
     ∃ L : List Atom, (∀ a ∈ L, Answerable a) ∧ HEEvaluates dispatch lookup policy atoms t L ∧
@@ -1210,9 +1212,11 @@ theorem settlesV_agree (answers : AnswersUndefined lookup) {atoms : List Atom}
       obtain ⟨b, both⟩ := forall₂_right_exists related L inLs
       exact both.2.1 a inner
 
-/-- **The answers agree on the extended fragment**: HE's machine runs from its entry configuration
-to a completed phase, and from some fuel on PeTTa's streaming run of the translation yields exactly
-the atoms HE published, in the same order and with the same multiplicities. -/
+/-- **The answers agree on the extended fragment, as bags**: HE's machine runs from HE's entry
+configuration to a completed phase, and from some fuel on PeTTa's streaming run of the translation
+yields the bag of atoms that run published, with the same multiplicities. Order is not stated: the
+model's run gives PeTTa's list (`settlesV_agree`), and HE's own order differs where alternatives are
+nested (`every_complete_run_v` covers every run). -/
 theorem answersV_agree (dispatch : GroundedDispatch) {lookup : CastLookup}
     (answers : AnswersUndefined lookup) (policy : Policy) {atoms : List Atom}
     (program : BoundProgram atoms) {c : Atom} (settles : SettlesV dispatch atoms c) :
@@ -1222,8 +1226,9 @@ theorem answersV_agree (dispatch : GroundedDispatch) {lookup : CastLookup}
           ⟨Space.ofList atoms, .returning [], [], heAnswers⟩ ∧
         observe ⟨Space.ofList atoms, .returning [], [], heAnswers⟩ = some heAnswers ∧
         ∀ n, N ≤ n →
-          Streaming.values (Streaming.advance (translate atoms) n
-            (Streaming.enter { state := store atoms } c)) = heAnswers.map (fun r => r.1.erase) := by
+          ((Streaming.values (Streaming.advance (translate atoms) n
+            (Streaming.enter { state := store atoms } c)) : List Atom) : Multiset Atom) =
+            ((heAnswers.map (fun r => r.1.erase) : List Atom) : Multiset Atom) := by
   obtain ⟨L, clean, he, petta⟩ := settlesV_agree (policy := policy) answers program settles
   obtain ⟨R, eraseR, path, observed⟩ := he_complete he
   obtain ⟨N, stable⟩ := petta_complete (settlesV_facts settles).ground clean
@@ -1384,8 +1389,9 @@ theorem every_complete_run_v (dispatch : GroundedDispatch) {lookup : CastLookup}
       Relation.ReflTransGen (HEStep dispatch lookup policy)
           (load (Space.ofList atoms) c Atom.undefinedType)
           ⟨Space.ofList atoms, .returning [], [], emitted⟩ →
-        Streaming.values (Streaming.advance (translate atoms) n
-          (Streaming.enter { state := store atoms } c)) = emitted.map (fun r => r.1.erase) := by
+        ((Streaming.values (Streaming.advance (translate atoms) n
+          (Streaming.enter { state := store atoms } c)) : List Atom) : Multiset Atom) =
+          ((emitted.map (fun r => r.1.erase) : List Atom) : Multiset Atom) := by
   obtain ⟨L, _, determined⟩ := settlesV_determined_under (policy := policy) contract program settles
   obtain ⟨heAnswers, N, path, _, agree⟩ := answersV_agree dispatch answers policy program settles
   refine ⟨N, fun n bigger emitted run => ?_⟩
@@ -1472,7 +1478,7 @@ namespace Controls
 open AnswerBags.Controls (sym app rule rule_consFree)
 open WholeRunWords.Double (noHost)
 
-/-- `twice`, `swap`, `wrap` and `box`, `both` (two rows), and `id` all use their variables. -/
+/-- `twice`, `swap`, `wrap` and `box`, `both` (two rows), and `ident` all use their variables. -/
 def varRows : List Atom :=
   [rule (app "twice" [.var "x"]) (app "pair" [.var "x", .var "x"]),
    rule (app "swap" [.var "x", .var "y"]) (app "pair" [.var "y", .var "x"]),
@@ -1480,7 +1486,7 @@ def varRows : List Atom :=
    rule (app "box" [.var "y"]) (app "boxed" [.var "y"]),
    rule (app "both" [.var "x"]) (app "left" [.var "x"]),
    rule (app "both" [.var "x"]) (app "right" [.var "x"]),
-   rule (app "id" [.var "x"]) (.var "x")]
+   rule (app "ident" [.var "x"]) (.var "x")]
 
 theorem typeVars_vars : ∀ xs : List String, TypeSubst.typeVarsList (xs.map Atom.var) = xs
   | [] => rfl
@@ -1518,7 +1524,7 @@ theorem var_program : BoundProgram varRows := by
   · exact bound_rule "both" ["x"] (by decide) (.call "left" [.var "x"] (by decide) (var_items ["x"]))
   · exact bound_rule "both" ["x"] (by decide)
       (.call "right" [.var "x"] (by decide) (var_items ["x"]))
-  · exact bound_rule "id" ["x"] (by decide) (.item (.var "x"))
+  · exact bound_rule "ident" ["x"] (by decide) (.item (.var "x"))
 
 theorem sym_data (name : String) (notEmpty : name ≠ "Empty") (notError : name ≠ "Error") :
     DataAtom (sym name) :=
@@ -1552,13 +1558,32 @@ theorem every_run_control {atoms : List Atom} {c : Atom} (program : BoundProgram
       ∀ emitted : List Result, Relation.ReflTransGen (HEStep noHost Completed.rawLookup policy)
           (load (Space.ofList atoms) c Atom.undefinedType)
           ⟨Space.ofList atoms, .returning [], [], emitted⟩ →
-        emitted.map (fun r => r.1.erase) = expected := by
+        ((emitted.map (fun r => r.1.erase) : List Atom) : Multiset Atom) =
+          ((expected : List Atom) : Multiset Atom) := by
   obtain ⟨⟨heAnswers, path, _⟩, _⟩ := answer_bags_every_run_v noHost policy program settles
   obtain ⟨N, every⟩ := every_complete_run_v noHost raw_answers raw_contract policy program settles
   refine ⟨⟨heAnswers, path⟩, fun emitted run => ?_⟩
   have later := every (max N fuel) (le_max_left _ _) emitted run
   rw [advance_stable (List.eq_nil_of_length_eq_zero finished) _ (le_max_right _ _), computed] at later
   exact later.symm
+
+/-- `every_run_control` for one answer, which is its own list. -/
+theorem every_run_control_single {atoms : List Atom} {c : Atom} (program : BoundProgram atoms)
+    (settles : SettlesV noHost atoms c) (fuel : Nat) {answer : Atom}
+    (computed : Streaming.values (Streaming.advance (translate atoms) fuel
+      (Streaming.enter { state := store atoms } c)) = [answer])
+    (finished : (Streaming.advance (translate atoms) fuel
+      (Streaming.enter { state := store atoms } c)).agenda.length = 0) (policy : Policy) :
+    (∃ heAnswers : List Result, Relation.ReflTransGen (HEStep noHost Completed.rawLookup policy)
+        (load (Space.ofList atoms) c Atom.undefinedType)
+        ⟨Space.ofList atoms, .returning [], [], heAnswers⟩) ∧
+      ∀ emitted : List Result, Relation.ReflTransGen (HEStep noHost Completed.rawLookup policy)
+          (load (Space.ofList atoms) c Atom.undefinedType)
+          ⟨Space.ofList atoms, .returning [], [], emitted⟩ →
+        emitted.map (fun r => r.1.erase) = [answer] := by
+  obtain ⟨exists_, every⟩ := every_run_control program settles fuel computed finished policy
+  exact ⟨exists_, fun emitted run =>
+    List.perm_singleton.mp (Multiset.coe_eq_coe.mp (every emitted run))⟩
 
 theorem pair_constructor (args : List Atom) (data : ∀ v ∈ args, DataAtom v)
     (untyped : (Space.ofList varRows).atoms.filter (typeRegion (.symbol "pair")) = [])
@@ -1599,7 +1624,8 @@ theorem twice_every_run (policy : Policy) :
   have computed : Streaming.values (Streaming.advance (translate varRows) 60
       (Streaming.enter { state := store varRows } (app "twice" [sym "a"]))) =
       [app "pair" [sym "a", sym "a"]] := by decide +kernel
-  exact ⟨every_run_control var_program twice_settles 60 computed (by decide +kernel) policy, computed⟩
+  exact ⟨every_run_control_single var_program twice_settles 60 computed (by decide +kernel) policy,
+    computed⟩
 
 /-- **Positive control: two variables used in the other order.** `(swap a b)` gives `(pair b a)`
 on every complete HE run and in PeTTa. -/
@@ -1630,7 +1656,8 @@ theorem swap_every_run (policy : Policy) :
   have computed : Streaming.values (Streaming.advance (translate varRows) 60
       (Streaming.enter { state := store varRows } (app "swap" [sym "a", sym "b"]))) =
       [app "pair" [sym "b", sym "a"]] := by decide +kernel
-  exact ⟨every_run_control var_program settles 60 computed (by decide +kernel) policy, computed⟩
+  exact ⟨every_run_control_single var_program settles 60 computed (by decide +kernel) policy,
+    computed⟩
 
 /-- **Positive control: a body that calls a defined function on its variable.** `(wrap a)` reads
 `(box a)`, whose instance is `(boxed a)`: every complete HE run and PeTTa give `(boxed a)`. -/
@@ -1672,7 +1699,8 @@ theorem wrap_every_run (policy : Policy) :
   have computed : Streaming.values (Streaming.advance (translate varRows) 80
       (Streaming.enter { state := store varRows } (app "wrap" [sym "a"]))) =
       [app "boxed" [sym "a"]] := by decide +kernel
-  exact ⟨every_run_control var_program settles 80 computed (by decide +kernel) policy, computed⟩
+  exact ⟨every_run_control_single var_program settles 80 computed (by decide +kernel) policy,
+    computed⟩
 
 /-- **Positive control: two matching rows use the same variable.** `(both a)` gives `(left a)` and
 `(right a)`, in row order, on every complete HE run and in PeTTa. -/
@@ -1683,7 +1711,8 @@ theorem both_every_run (policy : Policy) :
       ∀ emitted : List Result, Relation.ReflTransGen (HEStep noHost Completed.rawLookup policy)
           (load (Space.ofList varRows) (app "both" [sym "a"]) Atom.undefinedType)
           ⟨Space.ofList varRows, .returning [], [], emitted⟩ →
-        emitted.map (fun r => r.1.erase) = [app "left" [sym "a"], app "right" [sym "a"]]) ∧
+        ((emitted.map (fun r => r.1.erase) : List Atom) : Multiset Atom) =
+          (([app "left" [sym "a"], app "right" [sym "a"]] : List Atom) : Multiset Atom)) ∧
       Streaming.values (Streaming.advance (translate varRows) 80
         (Streaming.enter { state := store varRows } (app "both" [sym "a"]))) =
         [app "left" [sym "a"], app "right" [sym "a"]] := by
@@ -1708,20 +1737,22 @@ theorem both_every_run (policy : Policy) :
       [app "left" [sym "a"], app "right" [sym "a"]] := by decide +kernel
   exact ⟨every_run_control var_program settles 80 computed (by decide +kernel) policy, computed⟩
 
-/-- **Positive control: a body that is a bare variable.** `(id a)` gives `a`. -/
-theorem id_every_run (policy : Policy) :
+/-- **Positive control: a body that is a bare variable.** `(ident a)` gives `a`. (The head is not
+`id`: HE's standard library defines `(= (id $x) $x)` already, so a program adding that row gets two
+rows and HE answers `[a, a]`.) -/
+theorem ident_every_run (policy : Policy) :
     ((∃ heAnswers : List Result, Relation.ReflTransGen (HEStep noHost Completed.rawLookup policy)
-        (load (Space.ofList varRows) (app "id" [sym "a"]) Atom.undefinedType)
+        (load (Space.ofList varRows) (app "ident" [sym "a"]) Atom.undefinedType)
         ⟨Space.ofList varRows, .returning [], [], heAnswers⟩) ∧
       ∀ emitted : List Result, Relation.ReflTransGen (HEStep noHost Completed.rawLookup policy)
-          (load (Space.ofList varRows) (app "id" [sym "a"]) Atom.undefinedType)
+          (load (Space.ofList varRows) (app "ident" [sym "a"]) Atom.undefinedType)
           ⟨Space.ofList varRows, .returning [], [], emitted⟩ →
         emitted.map (fun r => r.1.erase) = [sym "a"]) ∧
       Streaming.values (Streaming.advance (translate varRows) 40
-        (Streaming.enter { state := store varRows } (app "id" [sym "a"]))) = [sym "a"] := by
-  have instances : regionInstances varRows "id" [sym "a"] = [sym "a"] := by decide +kernel
-  have settles : SettlesV noHost varRows (app "id" [sym "a"]) := by
-    refine .call ⟨sym_data "id" (by decide) (by decide), a_data, by decide +kernel,
+        (Streaming.enter { state := store varRows } (app "ident" [sym "a"]))) = [sym "a"] := by
+  have instances : regionInstances varRows "ident" [sym "a"] = [sym "a"] := by decide +kernel
+  have settles : SettlesV noHost varRows (app "ident" [sym "a"]) := by
+    refine .call ⟨sym_data "ident" (by decide) (by decide), a_data, by decide +kernel,
       fun impossible => impossible, by decide +kernel, by decide, by decide, by decide +kernel,
       by decide, by decide⟩ (by rw [instances]; simp) ?_
     rw [instances]
@@ -1730,9 +1761,10 @@ theorem id_every_run (policy : Policy) :
     subst member
     exact .data (sym_data "a" (by decide) (by decide)) (by decide)
   have computed : Streaming.values (Streaming.advance (translate varRows) 40
-      (Streaming.enter { state := store varRows } (app "id" [sym "a"]))) = [sym "a"] := by
+      (Streaming.enter { state := store varRows } (app "ident" [sym "a"]))) = [sym "a"] := by
     decide +kernel
-  exact ⟨every_run_control var_program settles 40 computed (by decide +kernel) policy, computed⟩
+  exact ⟨every_run_control_single var_program settles 40 computed (by decide +kernel) policy,
+    computed⟩
 
 /-- **Negative control: the extension is strict.** `(twice a)` does not settle in `AnswerBags`'s
 sense: its raw body `(pair $x $x)` has variables. -/
@@ -1777,13 +1809,15 @@ end Controls
 #print axioms bodies_source_open
 #print axioms settlesV_determined_under
 #print axioms every_complete_run_v
+#print axioms Controls.every_run_control
+#print axioms Controls.every_run_control_single
 #print axioms answer_bags_every_run_v
 #print axioms settles_settlesV
 #print axioms Controls.twice_every_run
 #print axioms Controls.swap_every_run
 #print axioms Controls.wrap_every_run
 #print axioms Controls.both_every_run
-#print axioms Controls.id_every_run
+#print axioms Controls.ident_every_run
 #print axioms Controls.twice_not_settles
 #print axioms Controls.free_not_bound
 

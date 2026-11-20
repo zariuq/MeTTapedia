@@ -2,7 +2,7 @@ import Mettapedia.Logic.LinearLogic.KnowledgeTensorControls
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ProofRelevantRuns.Grades
 
 /-!
-# Controls: counting and absence interchange only within their grade
+# Controls: counting and none queries interchange only within their grade
 
 * **Counting** (`counting`): `checker` asks that at most one `c` lies in its frame; `eater` takes a
   `c`. At one `c` the two run in both orders to one state and form a cell
@@ -11,11 +11,11 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ProofRele
   (`counting_source_refused_beside`), so the cell is not placed there (`counting_cell_not_placed`)
   and no cell joins the two words there (`counting_no_cell_beside`). The grade is a property of a
   run, not of its trace (`grade_not_trace_invariant`).
-* **Absence** (`absent`): `adds` makes a `c`, `removes` takes it, `unless` asks that no `c` lies in its
+* **The none query** (`absent`): `adds` makes a `c`, `removes` takes it, `unless` asks that no `c` lies in its
   frame. From nothing, `adds`, `removes`, `unless` runs and `unless`, `adds`, `removes` runs
-  (`absence_left_runs`, `absence_right_runs`); no cell joins them (`absence_no_cell`), even with the
+  (`noneGuarded_left_runs`, `noneGuarded_right_runs`); no cell joins them (`noneGuarded_no_cell`), even with the
   most permissive sound admissibility, two orders that run to one state. This is the one-frame form
-  of the failure of the interchange law for absence.
+  of the failure of the interchange law for none queries.
 -/
 
 set_option autoImplicit false
@@ -118,9 +118,9 @@ theorem grade_not_trace_invariant :
       ¬ ∃ t, Runs (checkedFires counting) (beside {c} (Set.univ, {c})) [checker, eater] t :=
   ⟨⟨counting_cell⟩, counting_target_runs_beside, counting_source_refused_beside⟩
 
-/-! ## Absence -/
+/-! ## The none query -/
 
-/-- A maker of `c`, a taker of `c`, and an absence check. -/
+/-- A maker of `c`, a taker of `c`, and a none check. -/
 inductive Guarded where
   | adds | removes | vetoed
   deriving DecidableEq
@@ -128,7 +128,7 @@ inductive Guarded where
 open Guarded
 
 /-- `adds` makes a `c`, `removes` takes one, `vetoed` asks that no `c` lies in its frame. -/
-def absent : CheckedSystem Knowledge Item Guarded where
+def noneGuarded : CheckedSystem Knowledge Item Guarded where
   take := fun
     | adds => 0
     | removes => {c}
@@ -148,23 +148,23 @@ def absent : CheckedSystem Knowledge Item Guarded where
     cases declaration <;> exact holds
 
 theorem adds_fires (k : Knowledge) (Γ : Multiset Item) :
-    checkedFires absent (k, Γ) adds (k ⊓ Set.univ, {c} + Γ) :=
-  ⟨Γ, by simp [CheckedSystem.premises, absent], True.intro, rfl,
-    by simp [CheckedSystem.conclusions, absent]⟩
+    checkedFires noneGuarded (k, Γ) adds (k ⊓ Set.univ, {c} + Γ) :=
+  ⟨Γ, by simp [CheckedSystem.premises, noneGuarded], True.intro, rfl,
+    by simp [CheckedSystem.conclusions, noneGuarded]⟩
 
 theorem removes_fires (k : Knowledge) (Γ : Multiset Item) :
-    checkedFires absent (k, {c} + Γ) removes (k ⊓ Set.univ, Γ) :=
-  ⟨Γ, by simp [CheckedSystem.premises, absent], True.intro, rfl,
-    by simp [CheckedSystem.conclusions, absent]⟩
+    checkedFires noneGuarded (k, {c} + Γ) removes (k ⊓ Set.univ, Γ) :=
+  ⟨Γ, by simp [CheckedSystem.premises, noneGuarded], True.intro, rfl,
+    by simp [CheckedSystem.conclusions, noneGuarded]⟩
 
 theorem vetoed_fires (k : Knowledge) (Γ : Multiset Item) (clear : c ∉ Γ) :
-    checkedFires absent (k, Γ) vetoed (k ⊓ Set.univ, Γ) :=
-  ⟨Γ, by simp [CheckedSystem.premises, absent], clear, rfl,
-    by simp [CheckedSystem.conclusions, absent]⟩
+    checkedFires noneGuarded (k, Γ) vetoed (k ⊓ Set.univ, Γ) :=
+  ⟨Γ, by simp [CheckedSystem.premises, noneGuarded], clear, rfl,
+    by simp [CheckedSystem.conclusions, noneGuarded]⟩
 
 /-- `adds`, `removes`, `vetoed` runs from nothing. -/
-theorem absence_left_runs :
-    ∃ t, Runs (checkedFires absent) (Set.univ, 0) [adds, removes, vetoed] t := by
+theorem noneGuarded_left_runs :
+    ∃ t, Runs (checkedFires noneGuarded) (Set.univ, 0) [adds, removes, vetoed] t := by
   have first := adds_fires Set.univ 0
   rw [add_zero] at first
   have second := removes_fires (Set.univ ⊓ Set.univ) 0
@@ -173,8 +173,8 @@ theorem absence_left_runs :
     (Runs.cons (vetoed_fires _ 0 (Multiset.notMem_zero c)) (Runs.nil _)))⟩
 
 /-- `vetoed`, `adds`, `removes` runs from nothing. -/
-theorem absence_right_runs :
-    ∃ t, Runs (checkedFires absent) (Set.univ, 0) [vetoed, adds, removes] t := by
+theorem noneGuarded_right_runs :
+    ∃ t, Runs (checkedFires noneGuarded) (Set.univ, 0) [vetoed, adds, removes] t := by
   have second := adds_fires (Set.univ ⊓ Set.univ) 0
   rw [add_zero] at second
   have third := removes_fires (Set.univ ⊓ Set.univ ⊓ Set.univ) 0
@@ -183,8 +183,8 @@ theorem absence_right_runs :
     (Runs.cons second (Runs.cons third (Runs.nil _)))⟩
 
 /-- **No cell joins the two runs**, with the most permissive sound admissibility. -/
-theorem absence_no_cell :
-    IsEmpty (SemanticCell absent (Set.univ, 0) [adds, removes, vetoed] [vetoed, adds, removes]) := by
+theorem noneGuarded_no_cell :
+    IsEmpty (SemanticCell noneGuarded (Set.univ, 0) [adds, removes, vetoed] [vetoed, adds, removes]) := by
   refine ⟨fun cell => ?_⟩
   obtain ⟨before, mid, x, y, after, shape, reach, square⟩ := cell.first_swap (by decide)
   rcases Rearrangement.split_three shape.symm with ⟨rfl, rfl, rfl, rfl⟩ | ⟨rfl, rfl, rfl, rfl⟩
@@ -197,7 +197,7 @@ theorem absence_no_cell :
         have sizes := congrArg Multiset.card bare
         simp at sizes
   · have here : mid = (Set.univ ⊓ Set.univ, {c} + 0) :=
-      Runs.unique (step := checkedFires absent) checkedFires_deterministic reach
+      Runs.unique (step := checkedFires noneGuarded) checkedFires_deterministic reach
         (Runs.cons (adds_fires Set.univ 0) (Runs.nil _))
     subst here
     obtain ⟨t, _, swapped⟩ := square

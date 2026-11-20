@@ -166,7 +166,7 @@ theorem tower_within_decided_of_firing
       run (withinTower.solver larger) problem larger = run (withinTower.solver budget) problem budget ∧
       ((∃ state finished, run (withinTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ absent, run (withinTower.solver larger) problem larger = .refuted absent)) :=
+        (∃ missing, run (withinTower.solver larger) problem larger = .refuted missing)) :=
   read_decided_of_firing (S := setting) TowerModel.facts TowerModel.roots TowerModel.heads TowerModel.algebra
     ContextualDependentPiSpine.Controls.rigid TowerModel.complete
     (fun fuel _ problem => sortTower.round fuel problem) (fun fuel _ problem => towerWithin fuel problem)
@@ -185,7 +185,7 @@ theorem tower_within_decided_of_reads
       run (withinTower.solver larger) problem larger = run (withinTower.solver budget) problem budget ∧
       ((∃ state finished, run (withinTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ absent, run (withinTower.solver larger) problem larger = .refuted absent)) :=
+        (∃ missing, run (withinTower.solver larger) problem larger = .refuted missing)) :=
   tower_within_decided_of_firing (fun held nonempty => by
     obtain ⟨bound, read⟩ := reads held nonempty
     refine ⟨bound, fun larger enough => ?_⟩
@@ -195,8 +195,8 @@ theorem tower_within_decided_of_reads
       exact moving
     · exact tower_withinRound_not_stuck_of_read larger (tower_sortRound_not_stuck_of_reads larger lowered)) inside
 
-/-- **Conditional decision for the family, from the census rows outside the rows read**: if every census head of a
-constant preparation whose η-long opened sides are of a census kind and outside the rows read is read by a reader
+/-- **Conditional decision for the family, from the classification rows outside the rows read**: if every classified head of a
+constant preparation whose η-long opened sides are of a classified kind and outside the rows read is read by a reader
 of the family from some budget on, the family decides every store of the dynamic pattern fragment, with a principal
 answer or a certified refutation, constant at every larger budget. At the tower the hypothesis fails: the conclusion
 would decide `crossStore` (`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`,
@@ -210,12 +210,12 @@ theorem tower_within_decided_of_uncovered
       PermutedMiller setting.levels problem → problem ≠ [] → ∀ threshold,
         (∀ larger, threshold ≤ larger → towerPrepare larger problem = towerPrepare threshold problem) →
         ∀ equation ∈ (towerPrepare threshold problem).remaining,
-          ContextualDependentNormalizing.NormalEquation (fun _ => (0 : Nat)) equation → CensusHead equation →
+          ContextualDependentNormalizing.NormalEquation (fun _ => (0 : Nat)) equation → ClassifiedHead equation →
           ContextualDependentShortClosure.FragmentSidesMiller equation →
           Kind (openedFlexible (piCount equation.1.1.code))
-            (ContextualDependentCensus.openNormal (piCount equation.1.1.code)
+            (ContextualDependentClassification.openNormal (piCount equation.1.1.code)
               (expandTo (piCount equation.1.1.code) equation.1.2.code))
-            (ContextualDependentCensus.openNormal (piCount equation.1.1.code)
+            (ContextualDependentClassification.openNormal (piCount equation.1.1.code)
               (expandTo (piCount equation.1.1.code) equation.2.2.code)) →
           ¬ MixedCoveredHead equation → ∃ bound, ∀ larger, bound ≤ larger → TowerWithinReads larger problem)
     {Θ : Context setting.R} {problem : EquationStore (TotalTerm Θ)} (inside : InFragmentStore problem) :
@@ -223,9 +223,9 @@ theorem tower_within_decided_of_uncovered
       run (withinTower.solver larger) problem larger = run (withinTower.solver budget) problem budget ∧
       ((∃ state finished, run (withinTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ absent, run (withinTower.solver larger) problem larger = .refuted absent)) :=
+        (∃ missing, run (withinTower.solver larger) problem larger = .refuted missing)) :=
   tower_within_decided_of_reads (fun {_} {problem} permuted nonempty => by
-      obtain ⟨threshold, constant, equation, member, normal, head⟩ := tower_stable_census_head permuted nonempty
+      obtain ⟨threshold, constant, equation, member, normal, head⟩ := tower_stable_classified_head permuted nonempty
       by_cases covered : MixedCoveredHead equation
       · obtain ⟨bound, mixed⟩ := tower_mixedReads_of_covered constant member normal head.1 covered
         exact ⟨bound, fun larger enough => .inl (.inl (.inl (.inl (.inl (mixed larger enough)))))⟩

@@ -417,7 +417,8 @@ def pushAtom : Atom :=
                 (.list [(.symbol "LocalRef"), (.text "ordinary"), (.symbol "next_capacity")])]),
              (.list [(.symbol "var"),
                 (.list [(.symbol "TypeArgument"), (.symbol "count")]),
-                (.list [(.symbol "LocalRef"), (.text "ordinary"), (.symbol "bytes")])]),
+                (.list [(.symbol "LocalRef"), (.text "ordinary"), (.symbol "bytes")]),
+                (.symbol "0")]),
              (.list [(.symbol "var"),
                 (.list [(.symbol "TypeArgument"), (.symbol "element")]),
                 (.list [(.symbol "*"),
@@ -555,7 +556,7 @@ def push : Rule where
                   .symbol "0"],
                 .text "\"worklist count must be unsigned\""],
               .list [.symbol "var", .typeArg 1, .localRef 0],
-              .list [.symbol "var", .typeArg 1, .localRef 1],
+              .list [.symbol "var", .typeArg 1, .localRef 1, .symbol "0"],
               .list [.symbol "var", .typeArg 0, .list [.symbol "*", .localRef 2]],
               .list [.symbol "var", .symbol "int", .localRef 3, .symbol "1"],
               .list [.symbol "if",
@@ -1115,6 +1116,18 @@ structure PushCall : Prop where
   size : profile.sizeOf tE = some k
   int : profile.types (.symbol "int") = some (.integer profile.int)
   one : profile.int.Represents 1
+
+/-- Zero converts to every integer format under every policy: a push declares
+its byte count initialized to zero. -/
+@[simp] theorem convert_zero_integer (policy : SignedConversionPolicy) (f : IntegerFormat) :
+    convertInteger policy 0 (.integer f) = .value 0 :=
+  convertInteger_preserves_representable policy f 0 f.zero_representable
+
+@[simp] theorem convert_zero (profile : Profile) (f : IntegerFormat) :
+    convert profile (.integer f) (.int profile.int 0) = .ok (.int f 0) := by
+  simp [convert]
+
+@[simp] theorem constant_zero (profile : Profile) : constant profile "0" = some (.int profile.int 0) := rfl
 
 /-- The captured arguments of a `worklist-push` use, in acquisition order. -/
 def pushParams (g : String) (lB lL lC : Loc) (w : Val) : Nat → Option Param := fun k =>

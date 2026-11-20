@@ -21,9 +21,10 @@ private theorem root_rules {plan : GeneralExecutionAdmission.Plan}
     (certificate : CollectionRootSearch.CoverageProfile plan)
     (declaration : GeneralExecutionAdmission.RulePlan) (member : declaration ∈ plan.rules) :
     IncreasingSpines declaration.rule declaration.binding.spec ∧
-      NullaryGuards declaration.rule.premises := by
-  obtain ⟨kind, schemas, rest, _, _, _, increasing, empty⟩ := certificate.rules declaration member
-  refine ⟨increasing, ?_⟩
+      NullaryGuards declaration.rule.premises ∧
+      BinderLawsFor [] (GeneralPlanEnvironment.environment plan).reflection declaration.rule := by
+  obtain ⟨kind, schemas, rest, _, _, _, increasing, empty, binderOk⟩ := certificate.rules declaration member
+  refine ⟨increasing, ?_, binderOk⟩
   rw [empty]
   intro premise impossible
   cases impossible
@@ -54,10 +55,11 @@ theorem root_publication_target_iff {plan : GeneralExecutionAdmission.Plan}
     have fragment := root_rules certificate original.job.declaration
       (List.fst_mem_of_mem_zipIdx valid.1.1)
     have bounded : StructuralDescent.eventsDepth original.premiseHistory ≤ depth := by
-      rw [valid.2.1.nullary_history_depth (GeneralRuleJobs.Job.selected_rule valid.1) fragment.2]
+      rw [valid.2.1.nullary_history_depth (GeneralRuleJobs.Job.selected_rule valid.1) fragment.2.1]
       exact Nat.zero_le _
     obtain ⟨work, packet, receipt, logged, finished, _, _, _, observed⟩ :=
-      CollectionOccurrenceMachine.receipt_eventually_published valid fragment.1 (.nullary fragment.2) depth bounded
+      CollectionOccurrenceMachine.receipt_eventually_published valid fragment.2.2 fragment.1
+        (.nullary fragment.2.1) depth bounded
     rw [← sameSource] at logged
     refine ⟨work, receipt, ?_, observed.symm.trans sameTarget⟩
     exact List.mem_filterMap.mpr ⟨packet, logged, finished⟩

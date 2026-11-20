@@ -58,7 +58,7 @@ theorem original_guard_prefix_is_retained : ¬ guardedPair.Holds A label emptySt
   cases incorrect
 
 def consume : RuleInstance (Term signature) := ⟨[.const 0], [], [], [], []⟩
-def checkAbsent : RuleInstance (Term signature) := ⟨[], [], [], [.absent (.const 0)], []⟩
+def checkNone : RuleInstance (Term signature) := ⟨[], [], [], [.predicate .none (.const 0)], []⟩
 def consumeThree : Selection Nat := ⟨[3], [], []⟩
 def oneBlocker : Configuration (Term signature) Nat := ⟨[], {3}⟩
 
@@ -73,28 +73,28 @@ theorem consume_valid : consumeThree.Valid A Controls.blockerLabel consume oneBl
     rfl
   · simp [consume]
 
-theorem absence_valid_after_consume : noneSelected.Valid A Controls.blockerLabel checkAbsent
+theorem none_valid_after_consume : noneSelected.Valid A Controls.blockerLabel checkNone
     (consumeThree.result Controls.blockerLabel consume oneBlocker) := by
   refine ⟨by decide, by decide, rfl, rfl, rfl, by decide, ?_, ?_⟩
   · exact consume_valid.consistent
   · intro check member σ model
-    have same : check = Check.absent (.const (σ := signature) 0) := by simpa [checkAbsent] using member
+    have same : check = Check.predicate .none (.const (σ := signature) 0) := by simpa [checkNone] using member
     subst check
     intro o inWorld
     simp [Selection.result, fire, Selection.commit, consumeThree, oneBlocker] at inWorld
 
-theorem absence_pair_is_admitted :
-    (ConditionalComposite.compilePair Controls.blockerLabel consume checkAbsent
+theorem none_pair_is_admitted :
+    (ConditionalComposite.compilePair Controls.blockerLabel consume checkNone
       consumeThree noneSelected).Holds A Controls.blockerLabel oneBlocker :=
-  (ConditionalComposite.holds_pair_iff A Controls.blockerLabel consume checkAbsent
-    consumeThree noneSelected oneBlocker).mpr ⟨consume_valid, absence_valid_after_consume⟩
+  (ConditionalComposite.holds_pair_iff A Controls.blockerLabel consume checkNone
+    consumeThree noneSelected oneBlocker).mpr ⟨consume_valid, none_valid_after_consume⟩
 
-theorem absence_pair_reaches_the_same_configuration :
-    (ConditionalComposite.compilePair Controls.blockerLabel consume checkAbsent
+theorem none_pair_reaches_the_same_configuration :
+    (ConditionalComposite.compilePair Controls.blockerLabel consume checkNone
       consumeThree noneSelected).result oneBlocker =
-      noneSelected.result Controls.blockerLabel checkAbsent
+      noneSelected.result Controls.blockerLabel checkNone
         (consumeThree.result Controls.blockerLabel consume oneBlocker) :=
-  ConditionalComposite.result_pair A Controls.blockerLabel consume checkAbsent
-    consumeThree noneSelected oneBlocker absence_pair_is_admitted
+  ConditionalComposite.result_pair A Controls.blockerLabel consume checkNone
+    consumeThree noneSelected oneBlocker none_pair_is_admitted
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.CompositionControls

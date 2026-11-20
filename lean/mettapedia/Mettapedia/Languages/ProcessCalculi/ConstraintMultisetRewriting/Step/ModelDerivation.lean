@@ -6,13 +6,14 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.FirstOrde
 
 Henkin completeness needs three things: a syntax, a derivability relation and a model class.
 
-* **Syntax**: the checks of the first-order run layer (equality, absence, count), read as guard
+* **Syntax**: the checks of the first-order run layer (equality, none queries, count), read as guard
   formulas by `checkGuard`.
 * **Derivability** (`CertainChecks.Derives problem label world check`): the certain-check calculus.
   Its rules read the principal answer of the occurs-checked unifier `unifyTotal` and refute
   candidate matches by unification (`FirstOrderChecks.compatible`):
   - `equal`: the answer identifies both sides;
-  - `absent`: no occurrence of the region is compatible with the pattern;
+  - `any`: some occurrence of the region matches the pattern at the most general answer;
+  - `none`: no occurrence of the region is compatible with the pattern;
   - `count`: the answer matches exactly `number` occurrences, and every other occurrence of the
     region is incompatible with the pattern.
   The calculus is the existing executable `acceptsCertainCheck` (`derives_iff_accepts`).
@@ -63,10 +64,14 @@ inductive Derives (problem : EquationStore (Term σ)) (label : O → Term σ) (w
   | equal {answer : Subst σ} {left right : Term σ} :
       unifyTotal problem = some answer → answer.applyTerm left = answer.applyTerm right →
       Derives problem label world (.equal left right)
-  | absent {answer : Subst σ} {pattern : Term σ} :
+  | any {answer : Subst σ} {pattern : Term σ} :
+      unifyTotal problem = some answer →
+      (∃ o ∈ world, answer.applyTerm pattern = answer.applyTerm (label o)) →
+      Derives problem label world (.predicate .any pattern)
+  | none {answer : Subst σ} {pattern : Term σ} :
       unifyTotal problem = some answer →
       (∀ o ∈ world, compatible problem pattern (label o) = false) →
-      Derives problem label world (.absent pattern)
+      Derives problem label world (.predicate .none pattern)
   | count {answer : Subst σ} {pattern : Term σ} {number : Nat} :
       unifyTotal problem = some answer →
       (certain answer label world pattern).card = number →
@@ -93,7 +98,11 @@ theorem derives_iff_accepts (problem : EquationStore (Term σ)) (label : O → T
     cases derivation with
     | equal computed same =>
         simp only [acceptsCertainCheck, computed, same, decide_true]
-    | @absent _ pattern computed refuted =>
+    | @any answer pattern computed witness =>
+        simp only [acceptsCertainCheck, computed, decide_eq_true_eq]
+        obtain ⟨o, member, same⟩ := witness
+        exact ⟨o, Finset.mem_filter.mpr ⟨member, same⟩⟩
+    | @none _ pattern computed refuted =>
         simp only [acceptsCertainCheck, computed, decide_eq_true_eq]
         apply Finset.filter_eq_empty_iff.mpr
         intro o member
@@ -116,11 +125,17 @@ theorem derives_iff_accepts (problem : EquationStore (Term σ)) (label : O → T
         | equal left right =>
             simp only [acceptsCertainCheck, computed, decide_eq_true_eq] at accepted
             exact .equal computed accepted
-        | absent pattern =>
-            simp only [acceptsCertainCheck, computed, decide_eq_true_eq] at accepted
-            refine .absent computed fun o member => ?_
-            have outside := Finset.filter_eq_empty_iff.mp accepted member
-            simpa using outside
+        | predicate quantifier pattern =>
+            cases quantifier with
+            | any =>
+                simp only [acceptsCertainCheck, computed, decide_eq_true_eq] at accepted
+                obtain ⟨o, member⟩ := accepted
+                exact .any computed ⟨o, (Finset.mem_filter.mp member).1, (Finset.mem_filter.mp member).2⟩
+            | none =>
+                simp only [acceptsCertainCheck, computed, decide_eq_true_eq] at accepted
+                refine .none computed fun o member => ?_
+                have outside := Finset.filter_eq_empty_iff.mp accepted member
+                simpa using outside
         | count pattern number =>
             simp only [acceptsCertainCheck, computed, decide_eq_true_eq] at accepted
             obtain ⟨card, same⟩ := accepted

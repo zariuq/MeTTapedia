@@ -13,7 +13,8 @@ translation of that same expression (`Translation.translateHE`).
 
 ## Results
 
-* `expression_triangle_reached_store` (H1's encoding, corrected): for a program loaded as `atoms` and
+* `expression_triangle_reached_store` (the encoding of `HEOnTheStep.Triangle`, corrected): for a
+  program loaded as `atoms` and
   an expression whose translated PeTTa run requests only reads, every run of HE on the step from a
   store representing HE's entry configuration of the expression reaches the world that PeTTa's run
   of the translation reaches.
@@ -25,7 +26,7 @@ translation of that same expression (`Translation.translateHE`).
 
 ## Controls
 
-* `Untied.untied_is_vacuous` (negative): H1's `triangle_double` applies verbatim to an HE
+* `Untied.untied_is_vacuous` (negative): `HEOnTheStep.Triangle.triangle_double` applies verbatim to an HE
   configuration that evaluates `(remove-atom &self (p a))`, while PeTTa's evaluation of that removal
   takes the row `(p a)` and changes the store. Untied, the statement certifies agreement where there
   is none. The tied statement does not apply there: that evaluation's request is not a read.
@@ -80,7 +81,8 @@ def pettaReached (registry : SpaceSemantics.Program) (atoms : List Atom) (expres
 variable {dispatch : Mettapedia.Languages.MeTTa.HE.Spec.Eval.GroundedDispatch} {lookup : CastLookup}
   {policy : Policy}
 
-/-- **The triangle on the store reached, for one expression** (H1's encoding, corrected). When the
+/-- **The triangle on the store reached, for one expression** (the encoding of
+`HEOnTheStep.Triangle`, corrected). When the
 PeTTa run of the expression's translation requests only reads, every run of HE on the step from a
 store representing HE's entry configuration of that expression reaches the world PeTTa's run
 reaches. -/
@@ -153,9 +155,10 @@ open RunsAsFirings.Controls (p a doubling doubleEquation callDouble shape)
 /-- `(remove-atom &self (p a))`. -/
 def removePa : Atom := .expression [.symbol "remove-atom", .symbol "&self", p a]
 
-/-- **Negative control: untied, the triangle certifies agreement where there is none.** H1's
-`triangle_double` applies verbatim to the HE configuration that evaluates
-`(remove-atom &self (p a))`, since its space holds H1's program `{(p a), (= (double $x) (+ $x $x))}`;
+/-- **Negative control: untied, the triangle certifies agreement where there is none.**
+`HEOnTheStep.Triangle.triangle_double` applies verbatim to the HE configuration that evaluates
+`(remove-atom &self (p a))`, since its space holds that module's program
+`{(p a), (= (double $x) (+ $x $x))}`;
 but PeTTa's evaluation of that removal takes the row `(p a)` and leaves the store
 `{(= (double $x) (+ $x $x))}`. The tied statement (`expression_triangle_reached_store`) does not
 apply there: its hypothesis fails, as that evaluation's request takes a row. -/

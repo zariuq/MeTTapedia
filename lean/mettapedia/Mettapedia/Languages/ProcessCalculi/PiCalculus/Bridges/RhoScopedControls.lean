@@ -93,7 +93,7 @@ theorem allocation_binds_client_subject :
     simp [namedHandler, replyBody, encode, rhoOutput, rhoDrop, piNameToRhoName,
       closeFVar, semanticCommSubst, RhoScopedAllocation.seedCode_normalized,
       semanticSubstProc, semanticSubstName, semanticSubstNameMark,
-      semanticNormalizeName, RhoScopedAllocation.allocatedName]
+      semanticNormalizeName, RhoScopedAllocation.allocatedName, Canonical.canonicalize]
   obtain ⟨path⟩ := RhoScopedAllocation.client_reduces
     allocatorSelf allocatorState allocatorRequest allocatorReply
     (namedHandler replyBody_free "r" "ns" "value") 7
@@ -171,7 +171,7 @@ theorem observer_can_receive_on_generated_name :
     (elements := [send (RhoScopedAllocation.allocatedName 7) RhoScopedAllocation.zero,
       receive (RhoScopedAllocation.allocatedName 7) (parallel [])])
     (inputIndex := 1) (outputIndex := 0) (free := rhoAtomicNameContext)
-    (by simp) (by simp) (by rfl) (by rfl) (.parallel .nil) .unit
+    (by simp) (by simp) (by rfl) (by rfl) (.parallel .nil) rfl .unit
   simpa [semanticCommSubst, semanticSubstProc, semanticSubstProcList,
     rhoReflectivePresentation] using fired
 

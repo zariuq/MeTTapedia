@@ -225,9 +225,9 @@ theorem step_quiescent {process : Pattern} {budget : Nat} {state : Pattern}
       have none := no_depth_one_step typed sealed published complete
       obtain ⟨lexTyped, lexSealed⟩ := closed_lexCanon typed sealed
       refine ⟨rfl, fun target reduction => ?_, fun target reduction => ?_⟩
-      · obtain ⟨target', depthOne, _⟩ := lexStep_complete typed sealed reduction
+      · obtain ⟨target', depthOne, _⟩ := lexStep_complete typed reduction
         exact none target' depthOne
-      · obtain ⟨target', depthOne, _⟩ := lexStep_complete lexTyped lexSealed reduction
+      · obtain ⟨target', depthOne, _⟩ := lexStep_complete lexTyped reduction
         rw [lexCanon_idempotent] at depthOne
         exact none target' depthOne
     · cases quiet
@@ -1717,7 +1717,7 @@ theorem public_step_receipt {source target : RhoProcess}
       lexCanon receipt.target = lexCanon target.1 := by
   obtain ⟨redex, contractum, sourceEq, reduction, targetEq⟩ := step
   have redexClosed := (rhoClosedTermWellSorted_process_iff _).mp redex.2
-  obtain ⟨next, actual, same⟩ := lexStep_complete redexClosed.1 redexClosed.2 reduction
+  obtain ⟨next, actual, same⟩ := lexStep_complete redexClosed.1 reduction
   have sourceLex : lexCanon source.1 = lexCanon redex.1 := (lexCanon_eq_iff _ _).mpr sourceEq
   rw [← sourceLex] at actual
   have closed := (rhoClosedTermWellSorted_process_iff _).mp source.2

@@ -308,6 +308,31 @@ theorem bounds_failure_guard_iff (write : Bool) (width : P1Source.Width) (region
         (before (.register pointer)) displacement width.bytes = none := by
   cases write <;> simp [boundsFailureRecipe, Memory.capabilityKeys, Bool.and_eq_true]
 
+theorem bounds_failure_rewrite_iff (write : Bool) (width : P1Source.Width) (region : Nat) (pointer : Reg)
+    (displacement : Int) (keys : Finset Key) (before : Key → Word) (world : Multiset (Cell Key)) :
+    (profile [boundsFailureRecipe write width region pointer displacement]).theory.rewrites
+      (encode keys before) world ↔
+      (boundsFailureRecipe write width region pointer displacement).support ⊆ keys ∧
+      (if write then before (.capabilityMode region) = 2
+       else before (.capabilityMode region) = 1 ∨ before (.capabilityMode region) = 2) ∧
+      Memory.access? (before (.capabilityBase region)) (before (.capabilityLength region))
+        (before (.register pointer)) displacement width.bytes = none ∧ world = encode keys before := by
+  rw [profile_rewrite_iff]
+  have unchanged (after : Key → Word) :
+      overwrite (boundsFailureRecipe write width region pointer displacement).writes before after = before := by
+    funext key
+    simp [overwrite,Recipe.writes,boundsFailureRecipe]
+  constructor
+  · rintro ⟨effect,member,after,included,guarded,endpoint⟩
+    have same : effect = boundsFailureRecipe write width region pointer displacement := by simpa using member
+    subst effect
+    obtain ⟨mode,access⟩ := (bounds_failure_guard_iff write width region pointer displacement before after).mp guarded
+    exact ⟨included,mode,access,by simpa only [unchanged] using endpoint⟩
+  · rintro ⟨included,mode,access,endpoint⟩
+    exact ⟨boundsFailureRecipe write width region pointer displacement,by simp,before,included,
+      (bounds_failure_guard_iff write width region pointer displacement before before).mpr ⟨mode,access⟩,
+      by simpa only [unchanged] using endpoint⟩
+
 def loadBooleanFailureRecipe (ty : TypeTag) (width : P1Source.Width) (region : Nat) (pointer : Reg)
     (displacement : Int) (address : Nat) : Recipe Key where
   inputs := Memory.capabilityKeys region ++ .register pointer :: Memory.byteKeys address width.bytes

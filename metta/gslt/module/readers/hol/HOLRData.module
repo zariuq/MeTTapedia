@@ -1,0 +1,37 @@
+import "../bytes/ByteRecords.module" as records
+import "../bytes/ByteScalars.module" as scalars
+
+Module HOLRData {
+  Theory Data(r: records.ReaderInterface) {
+    r Types { HOLRHeader; HOLRReason; HOLRTerminal; }
+    Terms {
+      HOLRPrefix . Bytes ::= "holr_prefix";
+      HOLRKernelId . Bytes ::= "holr_kernel_id";
+      HOLRSchema . Schemas ::= "holr_schema";
+      BytesEqual . Bit ::= "bytes_equal" "(" Bytes "," Bytes ")";
+      BytesEqualNext . Bit ::= "bytes_equal_next" "(" Ordering "," Bytes "," Bytes ")";
+      HOLRHeaderBytes . HOLRHeader ::= "holr_header" "(" Bytes "," Nat "," Nat "," Nat "," Nat ")";
+      HOLRPrefixOK . HOLRTerminal ::= "prefix_ok";
+      HOLRPrefixError . HOLRTerminal ::= "prefix_error" "(" HOLRReason ")";
+      HOLRPrefixIncomplete . HOLRTerminal ::= "prefix_incomplete";
+      HOLRDecoded . CodecState ::= "holr_decoded" "(" HOLRHeader "," Records "," HOLRTerminal ")";
+      ReadHOLRPrefix . CodecState ::= "holr_prefix_read" "(" Bytes ")";
+      BadHeader . HOLRReason ::= "reason_BadHeader";
+      BadVersion . HOLRReason ::= "reason_BadVersion";
+      BadOpcode . HOLRReason ::= "reason_BadOpcode";
+      BadCount . HOLRReason ::= "reason_BadCount";
+      BadChecksum . HOLRReason ::= "reason_BadChecksum";
+      TrailingBytes . HOLRReason ::= "reason_TrailingBytes";
+      MissingEnd . HOLRReason ::= "reason_MissingEnd";
+      Truncated . HOLRReason ::= "reason_Truncated";
+      IntegerEncoding . HOLRReason ::= "reason_IntegerEncoding";
+      FieldLimit . HOLRReason ::= "reason_FieldLimit";
+      HOLRAccepted . CodecState ::= "holr_accepted" "(" HOLRHeader "," Records ")";
+      HOLRMalformed . CodecState ::= "holr_malformed" "(" HOLRReason ")";
+      ReadHOLRStream . CodecState ::= "holr_stream" "(" Bytes ")";
+      HOLRLoop . CodecState ::= "holr_loop" "(" Bytes "," HOLRHeader "," Nat "," Bytes ")";
+      EndCount . CodecState ::= "end_count" "(" Bytes "," HOLRHeader "," Nat "," Bytes "," CodecState ")";
+    }
+  }
+  theory Data(records.Data(scalars.Values()))
+}

@@ -4,7 +4,8 @@ import Mettapedia.Data.List.RetainedOccurrenceAllocation
 /-!
 # Existing store programs with a retained-identity allocation profile
 
-The same ordered tcalc interpreter uses the stronger concrete allocator.
+The same interpreter over the ordered occurrence store (`OrderedStore.publish`)
+uses the stronger concrete allocator.
 Value observations and actual event realization remain the existing source
 contracts. Once retired held IDs are absent from a store, every later command
 keeps them absent. Retention is a caller-supplied finite live inventory; release

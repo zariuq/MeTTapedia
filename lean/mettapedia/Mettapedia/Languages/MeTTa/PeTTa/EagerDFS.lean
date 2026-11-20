@@ -1,6 +1,7 @@
 import Mettapedia.Languages.MeTTa.HE.Spec.Type.Presentation.BindingTheory
 import Mettapedia.Languages.MeTTa.HE.Spec.Type.Presentation.ApplicationEquivariance
 import Mettapedia.Languages.MeTTa.PeTTa.ProgramReplay
+import Mettapedia.Languages.MeTTa.PeTTa.StdLibCalls
 import Mettapedia.Logic.LP.UnificationIdempotence
 import Mettapedia.GSLT.Distinction.ProductiveBlocks
 import Mettapedia.Util.LinearHash
@@ -67,6 +68,9 @@ inductive Frame where
   | bind (bindings : Subst) (pattern body : Atom)
   | select (bindings : Subst) (cases : Cases)
   | branch (bindings : Subst) (yes no : Atom)
+  /-- A surface `match` waiting for its space value: `body` runs once for each row the
+  pattern matches, under that row's bindings. -/
+  | query (bindings : Subst) (pattern body : Atom)
   deriving Repr
 
 inductive Control where
@@ -112,10 +116,16 @@ inductive Movement where
   | answer (value : Atom)
   deriving Repr
 
-/-- The control syntax of this profile. It treats `match` as a primitive call whose
-template is returned as data, as `StdLib.apply` does; the list-valued machine of
-`Eval` runs a three-argument `match` body once per row (`DeclarativeSpec.controlForm`).
-Bringing this profile's `match` in line with that is open. -/
+/-- The control syntax of this profile: the same forms as `DeclarativeSpec.controlForm`.
+Both arities of `if` are control, and a two-branch `if` runs its branch only for a `True`
+condition (`if_without_else`). `(unique e)` and the three-argument `(match space pattern
+body)` are control as well, because PeTTa's translator compiles them as source forms:
+`unique` is rewritten to `(superpose (unique-atom (collapse e)))`, so it sees every answer
+of `e` before releasing the distinct ones, and `match` runs its body once per matching
+row under that row's bindings. Read as calls they would instead deduplicate each answer
+alone and return the instantiated template as data. CeTTa's `--lang petta` agrees:
+`(collapse (unique (superpose (1 2 1 3 2))))` is `(1 2 3)` and
+`(collapse (match &self (foo $x) (+ $x 1)))` over rows `(foo 1) (foo 2)` is `(2 3)`. -/
 def eagerControlForm : Atom → Bool
   | .expression [.symbol "let", _, _, _]
   | .expression [.symbol "let*", .expression _, _]
@@ -123,10 +133,25 @@ def eagerControlForm : Atom → Bool
   | .expression [.symbol "if", _, _]
   | .expression [.symbol "if", _, _, _]
   | .expression [.symbol "collapse", _]
+  | .expression [.symbol "unique", _]
   | .expression [.symbol "superpose", .expression _]
   | .expression [.symbol "empty"]
-  | .expression [.symbol "quote", _] => true
+  | .expression [.symbol "quote", _]
+  | .expression [.symbol "match", _, _, _] => true
   | _ => false
+
+/-- The caller frames of `(unique e)`: the collected answers of `e` are deduplicated by the
+`unique-atom` primitive and released one at a time by the `superpose` primitive. -/
+def uniqueFrames (bindings : Subst) : List Frame :=
+  [.argument bindings (.function "unique-atom") [] [] 0,
+    .argument bindings (.function "superpose") [] [] 0]
+
+/-- The alternatives of one query over the rows of a space: `body` under each row binding,
+in row order, as `Eval.queryBodies` selects them. -/
+def queryBranches (bindings : Subst) (rows : List Atom) (pattern body : Atom)
+    (frames : List Frame) : List Branch :=
+  rows.filterMap fun row =>
+    (SpaceSemantics.matchValue bindings pattern row).map fun bound => ⟨.evaluate bound body, frames⟩
 
 /-- Existing equation selection can only return evaluation controls. This
 adapter retains the selected bindings, body and the new scalar continuation. -/
@@ -205,6 +230,10 @@ def localStep (program : Program) (world : World) (branch : Branch) :
             (alternatives.map fun expression => ⟨.evaluate bindings expression, branch.frames⟩))
       | .expression [.symbol "empty"] => some (world, .alternatives [])
       | .expression [.symbol "quote", expression] => replace (.returned (applySubst bindings expression))
+      | .expression [.symbol "unique", expression] =>
+          some (world, .collect bindings expression (uniqueFrames bindings ++ branch.frames))
+      | .expression [.symbol "match", space, pattern, body] =>
+          push (.query bindings pattern body) bindings space
       | .expression (.symbol head :: arguments) =>
           if Eval.ioHead head || StdLib.known head || program.equations.any (·.head == head) then
             replace (.arguments bindings (.function head) arguments [] 0)
@@ -227,6 +256,10 @@ def localStep (program : Program) (world : World) (branch : Branch) :
               | none => some (world, .alternatives [])
           | .branch bindings yes no =>
               resume (.evaluate bindings (if value == Effects.boolean true then yes else no)) rest
+          | .query bindings pattern body =>
+              match Effects.readHandle value >>= world.state.read with
+              | some rows => some (world, .alternatives (queryBranches bindings rows pattern body rest))
+              | none => resume (.fault .invalidSpace) rest
 
 /-- Install a local reduction at the head of the current scope. Choice puts
 the authorized branches before the saved alternatives. -/
@@ -414,6 +447,13 @@ inductive LocalTransition (program : Program) : World → Branch → World → M
   | quote_enter {world bindings expression frames} :
       LocalTransition program world ⟨.evaluate bindings (.expression [.symbol "quote", expression]), frames⟩
         world (.next ⟨.returned (applySubst bindings expression), frames⟩)
+  | unique_enter {world bindings expression frames} :
+      LocalTransition program world ⟨.evaluate bindings (.expression [.symbol "unique", expression]), frames⟩
+        world (.collect bindings expression (uniqueFrames bindings ++ frames))
+  | query_enter {world bindings space pattern body frames} :
+      LocalTransition program world
+        ⟨.evaluate bindings (.expression [.symbol "match", space, pattern, body]), frames⟩
+        world (.next ⟨.evaluate bindings space, .query bindings pattern body :: frames⟩)
   | call_enter {world bindings head arguments frames}
       (notControl : eagerControlForm (.expression (.symbol head :: arguments)) = false)
       (callable : (Eval.ioHead head || StdLib.known head || program.equations.any (·.head == head)) = true) :
@@ -453,6 +493,14 @@ inductive LocalTransition (program : Program) : World → Branch → World → M
   | if_return {world value bindings yes no rest} :
       LocalTransition program world ⟨.returned value, .branch bindings yes no :: rest⟩
         world (.next ⟨.evaluate bindings (if value == Effects.boolean true then yes else no), rest⟩)
+  | query_return {world value bindings pattern body rows rest}
+      (space : (Effects.readHandle value >>= world.state.read) = some rows) :
+      LocalTransition program world ⟨.returned value, .query bindings pattern body :: rest⟩
+        world (.alternatives (queryBranches bindings rows pattern body rest))
+  | query_fault {world value bindings pattern body rest}
+      (invalid : (Effects.readHandle value >>= world.state.read) = none) :
+      LocalTransition program world ⟨.returned value, .query bindings pattern body :: rest⟩
+        world (.next ⟨.fault .invalidSpace, rest⟩)
 
 inductive Transition (program : Program) : Configuration → Configuration → Prop where
   | branch {world after scope parents branch pending movement}
@@ -471,6 +519,8 @@ theorem local_transition_step {program : Program} {world after : World}
   all_goals try solve | simp_all [localStep, Eval.ioHead]
   case bind_return matched =>
     simp only [localStep, matched]
+  case query_fault invalid =>
+    simp only [localStep, invalid]
   case call_enter =>
     simp only [localStep]
     split <;> simp_all [eagerControlForm] <;> aesop
@@ -615,6 +665,10 @@ theorem local_step_transition {program : Program} {world after : World}
             exact .empty_enter
           · rcases Option.some.inj computed with ⟨rfl, rfl⟩
             exact .quote_enter
+          · rcases Option.some.inj computed with ⟨rfl, rfl⟩
+            exact .unique_enter
+          · rcases Option.some.inj computed with ⟨rfl, rfl⟩
+            exact .query_enter
           · split at computed
             · rcases Option.some.inj computed with ⟨rfl, rfl⟩
               apply LocalTransition.call_enter _ (by assumption)
@@ -662,6 +716,15 @@ theorem local_step_transition {program : Program} {world after : World}
                   simp only [localStep, Option.some.injEq, Prod.mk.injEq] at computed
                   rcases computed with ⟨rfl, rfl⟩
                   exact .if_return
+              | query bindings pattern body =>
+                  simp only [localStep] at computed
+                  split at computed
+                  · simp only [Option.some.injEq, Prod.mk.injEq] at computed
+                    rcases computed with ⟨rfl, rfl⟩
+                    exact .query_return (by assumption)
+                  · simp only [Option.some.injEq, Prod.mk.injEq] at computed
+                    rcases computed with ⟨rfl, rfl⟩
+                    exact .query_fault (by assumption)
 
 theorem step_transition {program : Program} {source target : Configuration}
     (computed : step program source = some target) : Transition program source target := by
@@ -909,8 +972,9 @@ theorem transition_scopes_valid {program : Program} {source target : Configurati
   cases transition with
   | branch frontier derivation =>
       cases derivation <;> simp only [install]
-      all_goals try exact valid.replace_head _ _
-      exact .nested _ _ _ (valid.replace_head _ _)
+      all_goals first
+        | exact valid.replace_head _ _
+        | exact .nested _ _ _ (valid.replace_head _ _)
   | collapse_return =>
       cases valid with
       | nested _ _ _ parentValid => exact parentValid.replace_head _ _
@@ -1037,6 +1101,7 @@ def frameWithin (allowed : String → Bool) : Frame → Bool
   | .bind _ _ body => Eval.codeWithin allowed body
   | .select _ cases => cases.all (fun row => Eval.codeWithin allowed row.2)
   | .branch _ yes no => Eval.codeWithin allowed yes && Eval.codeWithin allowed no
+  | .query _ _ body => Eval.codeWithin allowed body
 
 def branchWithin (allowed : String → Bool) (branch : Branch) : Bool :=
   controlWithin allowed branch.control && branch.frames.all (frameWithin allowed)
@@ -1083,7 +1148,17 @@ theorem local_transition_within {allowed : String → Bool} {program : Program}
     simp_all [movementWithin, branchWithin, controlWithin, controlImage, frameWithin,
       Eval.controlWithin, Eval.targetWithin, Eval.codeWithin,
       Eval.atomsWithin, Eval.expressionHeadWithin, Bool.and_eq_true, returnedBranches,
-      List.all_map]
+      List.all_map, uniqueFrames]
+  case query_return =>
+    -- Every query branch runs the body held by the frame under a row's bindings.
+    simp only [branchWithin, controlWithin, controlImage, Eval.controlWithin, Bool.true_and,
+      List.all_cons, frameWithin, Bool.and_eq_true] at within
+    simp only [movementWithin, queryBranches, List.all_eq_true]
+    intro branch member
+    obtain ⟨row, _, mapped⟩ := List.mem_filterMap.mp member
+    obtain ⟨bound, _, rfl⟩ := Option.map_eq_some_iff.mp mapped
+    simp only [branchWithin, controlWithin, controlImage, Eval.controlWithin, Bool.and_eq_true]
+    exact ⟨within.1, within.2⟩
   case equations bindings head index frames values _ _ =>
     simp only [branchWithin, controlWithin, controlImage, Eval.controlWithin,
       Eval.targetWithin, Eval.atomsWithin, Bool.and_true, Bool.and_eq_true] at within
@@ -1225,7 +1300,8 @@ theorem chunks_loaded_store_reconstruction (program : Program) (fuels : List Nat
     (code : Eval.codeWithin ProgramReplay.readOnlyHead expression = true) :
     let reached := chunks program fuels (start (Effects.loaded program) expression input)
     NamedSpaces.Store.reconstruct reached.world.state.core [] reached.world.state.spacesPrefix
-      (reached.world.state.cellRows []) = reached.world.state := by
+      (reached.world.state.cellRows []) reached.world.state.namedSpaces
+        reached.world.state.namedEmpty = reached.world.state := by
   dsimp only
   have initial : configurationWithin ProgramReplay.readOnlyHead
       (start (Effects.loaded program) expression input) := by
@@ -4182,6 +4258,10 @@ theorem represented_new (allocator : Allocator) (globals : List String) (core : 
       cases Option.some.inj present
       exact represented atom member
     | privateSpace index => simp [Store.new, Store.read] at present
+    | namedSpace name =>
+      simp only [Store.new_named_read, Option.some.injEq] at present
+      subst rows
+      exact (List.not_mem_nil member).elim
   · intro cell atom present
     simp [Store.new] at present
 
@@ -7881,7 +7961,6 @@ namespace Mettapedia.Languages.MeTTa.PeTTa.EagerDFS.Collection
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 open Mettapedia.Languages.MeTTa.MetavariableFrameStore.Shared
 open NamedSpaces (Handle)
-open _root_.Mettapedia.Languages.MeTTa.PeTTa.Effects (readHandle)
 
 /-- A successful actual insertion preserves the identity inventory precisely
 when its new row has that inventory. No whole-execution premise is used. -/
@@ -7939,15 +8018,8 @@ private theorem primitive_state_origin {state after : Effects.State}
         cases rest with
         | cons _ _ => change Except.error _ = Except.ok _ at returned; cases returned
         | nil =>
-          change (match readHandle location >>= fun handle => Effects.insert state handle value with
-            | some after => Except.ok (after, [Effects.boolean true])
-            | none => Except.error Effects.Fault.invalidSpace) = _ at returned
-          split at returned
-          · rename_i after' inserted
-            cases returned
-            obtain ⟨handle, _, insertion⟩ := Option.bind_eq_some_iff.mp inserted
-            exact Or.inr (Or.inr (Or.inl ⟨handle, value, by simp, insertion⟩))
-          · cases returned
+          obtain ⟨handle, _, _, insertion⟩ := StdLib.add_atom_success returned
+          exact Or.inr (Or.inr (Or.inl ⟨handle, value, by simp, insertion⟩))
   by_cases notRemove : head = "remove-atom"
   · subst head
     cases arguments with
@@ -7959,27 +8031,8 @@ private theorem primitive_state_origin {state after : Effects.State}
         cases rest with
         | cons _ _ => change Except.error _ = Except.ok _ at returned; cases returned
         | nil =>
-          change (match readHandle location with
-            | none => Except.error Effects.Fault.invalidSpace
-            | some handle => match state.read handle with
-              | none => Except.error Effects.Fault.invalidSpace
-              | some _ => match value with
-                | .var _ => Except.ok (state, [Effects.boolean true])
-                | .expression (_ :: _) => match Effects.erase state handle value with
-                  | some after => Except.ok (after, [Effects.boolean true])
-                  | none => Except.error Effects.Fault.invalidSpace
-                | _ => Except.ok (state, [])) = _ at returned
-          split at returned
-          · cases returned
-          · split at returned
-            · cases returned
-            · split at returned
-              · cases returned; exact Or.inl rfl
-              · split at returned
-                · cases returned
-                  exact Or.inr (Or.inr (Or.inr (Or.inl ⟨_, _, by assumption⟩)))
-                · cases returned
-              · cases returned; exact Or.inl rfl
+          obtain ⟨handle, _, erased⟩ := StdLib.remove_atom_success returned
+          exact Or.inr (Or.inr (Or.inr (Or.inl ⟨handle, value, erased⟩)))
   by_cases notChange : head = "change-state!"
   · subst head
     cases arguments with

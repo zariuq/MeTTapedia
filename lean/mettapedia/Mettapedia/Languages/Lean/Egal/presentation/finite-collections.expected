@@ -1,0 +1,26 @@
+The sum of the numbers below eleven
+  Lean     (Finset.range 11).sum id
+  MeTTa    (Finset.sum (Nat.instAddCommMonoid) (Finset.range 11) itself)
+  result   55
+  checked  as a theorem of the Egal reading:
+Theorem Lean_test_29 : (Lean_Finset_sum Lean_Nat Lean_Nat Lean_Nat_instAddCommMonoid (Lean_Finset_range (LeanNum 11)) (Sigma Lean_Nat (Lean_id Lean_Nat))) = (LeanNum 55).
+  The statement's right side is the reading of the result.
+
+How many numbers below twenty are multiples of three
+  Lean     (Finset.filter (fun x => x % 3 = 0) (Finset.range 20)).card
+  MeTTa    (Finset.card (Finset.filter multiple-of-three (Finset.range 20)))
+  result   7
+  checked  as a theorem of the Egal reading:
+Theorem Lean_test_30 : (Lean_Finset_card Lean_Nat (Lean_Finset_filter Lean_Nat (fun v_x :e Lean_Nat => (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0))) (fun v_a :e Lean_Nat =>
+    (Lean_instDecidableEqNat (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0))) (Lean_Finset_range (LeanNum 20)))) = (LeanNum 7).
+  The statement's right side is the reading of the result.
+
+The first call cited with the theorem of the second
+  Lean     (Finset.range 11).sum id
+  MeTTa    (Finset.sum (Nat.instAddCommMonoid) (Finset.range 11) itself)
+  result   55
+  checked  as a theorem of the Egal reading:
+Theorem Lean_test_30 : (Lean_Finset_card Lean_Nat (Lean_Finset_filter Lean_Nat (fun v_x :e Lean_Nat => (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0))) (fun v_a :e Lean_Nat =>
+    (Lean_instDecidableEqNat (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0))) (Lean_Finset_range (LeanNum 20)))) = (LeanNum 7).
+  NOT THE SAME: the statement's right side is not the reading of the result.
+

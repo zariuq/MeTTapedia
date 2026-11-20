@@ -187,6 +187,71 @@ theorem OrderedStateFlatMapRel.split
           obtain ⟨middle,earlier,later,rfl,before,after⟩ := ih remaining
           exact ⟨middle,_,later,(List.append_assoc _ _ _).symm,.cons first before,after⟩
 
+/-- A completed two-child traversal can be exchanged when the reversed
+order reaches the same state and returns the same multiset of results.
+The intermediate state and the two result blocks need not be equal. -/
+def OrderedStateFlatMapRel.BagSwap
+    (step : source → state → List result → state → Prop) (first second : source) : Prop :=
+  ∀ {before middle after firstRows secondRows},
+    step first before firstRows middle → step second middle secondRows after →
+    ∃ reached secondRows' firstRows', step second before secondRows' reached ∧
+      step first reached firstRows' after ∧ (secondRows' ++ firstRows').Perm (firstRows ++ secondRows)
+
+/-- Exchanges preserve the whole reached state as well as answer
+multiplicity. The equal-item case keeps the original run, not just a
+single copy of the item. This is a law about completed traversals;
+neither equal costs nor equivalence of ordered prefixes is implied. -/
+theorem OrderedStateFlatMapRel.permute
+    {step : source → state → List result → state → Prop} {items reordered : List source}
+    (schedule : items.Perm reordered)
+    (swap : ∀ a ∈ items, ∀ b ∈ items, a ≠ b → BagSwap step a b)
+    {before after : state} {rows : List result}
+    (run : OrderedStateFlatMapRel step items before rows after) :
+    ∃ output, OrderedStateFlatMapRel step reordered before output after ∧ output.Perm rows := by
+  induction schedule generalizing before rows with
+  | nil => exact ⟨_,run,.refl _⟩
+  | cons item schedule ih =>
+    cases run with
+    | cons first rest =>
+      obtain ⟨_, next, same⟩ := ih
+        (fun a ha b hb ne => swap a (List.mem_cons_of_mem _ ha) b (List.mem_cons_of_mem _ hb) ne) rest
+      exact ⟨_, .cons first next, same.append_left _⟩
+  | swap second first tail =>
+    by_cases equal : first = second
+    · subst second
+      exact ⟨_,run,.refl _⟩
+    · cases run with
+      | cons earlier rest =>
+        cases rest with
+        | cons later suffix =>
+          obtain ⟨_,_,_, reversedFirst, reversedSecond, same⟩ :=
+            swap first (by simp) second (by simp) equal earlier later
+          exact ⟨_, .cons reversedFirst (.cons reversedSecond suffix),
+            by simpa only [List.append_assoc] using same.append_right _⟩
+  | trans first _ ihFirst ihSecond =>
+    obtain ⟨_, middle, earlier⟩ := ihFirst swap run
+    obtain ⟨_, output, later⟩ := ihSecond
+      (fun a ha b hb ne => swap a (first.mem_iff.mpr ha) b (first.mem_iff.mpr hb) ne) middle
+    exact ⟨_,output,later.trans earlier⟩
+
+/-- Reordering becomes an equivalence for the completed-bag observer.
+Transporting the exchange licence along the permutation handles the converse. -/
+theorem OrderedStateFlatMapRel.permute_bag_iff
+    {step : source → state → List result → state → Prop} {items reordered : List source}
+    (schedule : items.Perm reordered)
+    (swap : ∀ a ∈ items, ∀ b ∈ items, a ≠ b → BagSwap step a b)
+    (before after : state) (rows : List result) :
+    (∃ output, OrderedStateFlatMapRel step items before output after ∧ output.Perm rows) ↔
+      ∃ output, OrderedStateFlatMapRel step reordered before output after ∧ output.Perm rows := by
+  constructor
+  · rintro ⟨_,run,same⟩
+    obtain ⟨_,replayed,bag⟩ := run.permute schedule swap
+    exact ⟨_,replayed,bag.trans same⟩
+  · rintro ⟨_,run,same⟩
+    obtain ⟨_,replayed,bag⟩ := run.permute schedule.symm
+      (fun a ha b hb ne => swap a (schedule.mem_iff.mpr ha) b (schedule.mem_iff.mpr hb) ne)
+    exact ⟨_,replayed,bag.trans same⟩
+
 /-- Local child refinement lifts to the whole ordered traversal. Sources
 and results may change representation; their occurrences are still mapped
 one for one. Only a relation between worlds is required. -/

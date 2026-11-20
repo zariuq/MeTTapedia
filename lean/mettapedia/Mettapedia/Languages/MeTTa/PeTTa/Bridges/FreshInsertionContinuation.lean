@@ -41,7 +41,7 @@ theorem returns_using (program : Program) (condition insertion : Atom) (temporar
     (before after : Effects.State) (answers : List Atom)
     (testLaw : ∀ rows, before.read target = some rows →
       PureReturns program bindings before condition before (Effects.boolean (decide (row ∉ rows))))
-    (insertLaw : ∀ middle, Effects.insert before target row = some middle →
+    (insertLaw : ∀ middle, row.isVariable = false → Effects.insert before target row = some middle →
       PureReturns program bindings before insertion middle (Effects.boolean true))
     (fresh : Subst.lookup bindings temporary = none)
     (law : ∀ current next values,
@@ -68,10 +68,9 @@ theorem returns_using (program : Program) (condition insertion : Atom) (temporar
       have missing : row ∉ rows := by
         intro present
         simp [present] at flag
-      have written : Effects.insert before target row = some middle := by
-        have plain := FreshInsertionSource.unchanged_update update
-        simpa [GuardedInsertionSource.update, snapshot, missing] using plain
-      have insertedSource := insertLaw middle written
+      obtain ⟨value, written⟩ := GuardedInsertionSource.absent_update_inserts snapshot missing
+        (FreshInsertionSource.unchanged_update update)
+      have insertedSource := insertLaw middle value written
       have tail := law middle after answers later
       have letSource := let_answers program bindings ((temporary, Effects.boolean true) :: bindings)
         before middle after (.var temporary) _ continuation (Effects.boolean true) answers insertedSource
@@ -94,19 +93,19 @@ theorem returns (program : Program) (spaceName rowName temporary : String) (cont
   returns_using program _ _ temporary continuation target row body bindings before after answers
     (fun rows snapshot => GuardedInsertionSource.absent_returns program bindings before spaceName rowName target row rows
       location bound snapshot)
-    (fun middle written => GuardedInsertionSource.insert_returns program bindings before middle spaceName rowName
-      target row location bound written) fresh law completed
+    (fun middle value written => GuardedInsertionSource.insert_returns program bindings before middle spaceName rowName
+      target row location bound value written) fresh law completed
 
 theorem held_row_skips_body (target : Handle) (row : Atom) (temporary : String) (body : Body)
     (bindings : Subst) (state : Effects.State) (rows : List Atom)
     (snapshot : state.read target = some rows) (present : row ∈ rows) :
     run target row temporary body bindings state = some (state, []) := by
-  simp [run, FreshInsertionSource.update, snapshot, present]
+  simp [run, FreshInsertionSource.update, GuardedInsertionSource.updateWithProgress, snapshot, present]
 
 theorem missing_read_is_not_an_empty_result (target : Handle) (row : Atom) (temporary : String) (body : Body)
     (bindings : Subst) (state : Effects.State) (missing : state.read target = none) :
     run target row temporary body bindings state = none := by
-  simp [run, FreshInsertionSource.update, missing]
+  simp [run, FreshInsertionSource.missing_is_not_zero_progress state target row missing]
 
 /-- Every successful fresh branch enters its continuation with the row already
 visible. This retains the recursive cycle-breaking point. -/

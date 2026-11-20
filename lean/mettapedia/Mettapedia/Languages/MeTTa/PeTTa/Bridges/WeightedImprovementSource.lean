@@ -153,8 +153,10 @@ theorem write_silent (before after : Effects.State) (target : Handle) (head : St
       by_cases better : candidate < previous
       · rw [write, if_pos better] at completed
         obtain ⟨_, _, tail⟩ := Option.bind_eq_some_iff.mp completed
-        obtain ⟨_, _, impossible⟩ := Option.bind_eq_some_iff.mp tail
-        cases impossible
+        split at tail
+        · obtain ⟨_, _, impossible⟩ := Option.bind_eq_some_iff.mp tail
+          cases impossible
+        · cases tail
       · exact (Prod.mk.inj (Option.some.inj (by simpa only [write, if_neg better] using completed))).1
 
 theorem run_silent (names : Names) (head : String) (target : Handle) (key candidate : Nat)

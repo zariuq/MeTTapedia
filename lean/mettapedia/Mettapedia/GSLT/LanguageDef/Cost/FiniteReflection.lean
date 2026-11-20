@@ -21,7 +21,9 @@ open StructuralMorphism ReflectionExtension
 namespace ReflectiveWitnessTransport
 
 /-- Transport the existing validator witness through a signature inclusion
-and a name-preserving equation map that retains the quote/drop shape. -/
+and a name-preserving equation map that retains the quote/drop shape.  The
+constructors the inclusion adds never spell a closure context constructor, so
+that constructor stays outside the larger signature. -/
 def extend {source target : LanguageDef} {declaration : ReflectivePresentationDecl}
     (types : ∀ name ∈ source.typeNames, name ∈ target.typeNames)
     (terms : ∀ term ∈ source.terms, term ∈ target.terms)
@@ -32,6 +34,8 @@ def extend {source target : LanguageDef} {declaration : ReflectivePresentationDe
     (equations : ∀ equation ∈ source.equations, mapEquation equation ∈ target.equations)
     (shape : ∀ equation, LanguageDef.QuoteDropShape declaration equation →
       LanguageDef.QuoteDropShape declaration (mapEquation equation))
+    (addedFresh : ∀ constructor, declaration.quoteScope.contextConstructor? = some constructor →
+      ∀ term ∈ target.terms, term.label = constructor → term ∈ source.terms)
     (witness : LanguageDef.ReflectivePresentationWitness source declaration) :
     LanguageDef.ReflectivePresentationWitness target declaration := by
   have termUnique (term : GrammarRule) (name : String)
@@ -55,7 +59,7 @@ def extend {source target : LanguageDef} {declaration : ReflectivePresentationDe
     dropParameter := witness.dropParameter
     processSort := types _ witness.processSort
     nameSort := types _ witness.nameSort
-    sortsDistinct := witness.sortsDistinct
+    quoteDropDistinct := witness.quoteDropDistinct
     quoteUnique := termUnique _ _ witness.quoteUnique
     quoteCategory := witness.quoteCategory
     quoteParameters := witness.quoteParameters
@@ -66,12 +70,45 @@ def extend {source target : LanguageDef} {declaration : ReflectivePresentationDe
     unitCategory := witness.unitCategory
     unitParameters := witness.unitParameters
     equationUnique := ?_
-    equationShape := shape _ witness.equationShape }
-  simpa only [equationNames, named] using LanguageDef.filter_equations_by_name_eq_singleton
-    target.equations (mapEquation witness.equation) equationNamesNodup
-    (equations _ (List.mem_filter.mp selected).1)
+    equationShape := shape _ witness.equationShape
+    contextFresh := ?_ }
+  · simpa only [equationNames, named] using LanguageDef.filter_equations_by_name_eq_singleton
+      target.equations (mapEquation witness.equation) equationNamesNodup
+      (equations _ (List.mem_filter.mp selected).1)
+  · intro constructor found
+    apply Bool.eq_false_iff.mpr
+    intro present
+    obtain ⟨term, member, labelled⟩ := List.any_eq_true.mp present
+    have inSource := addedFresh constructor found term member (beq_iff_eq.mp labelled)
+    have sourcePresent : source.terms.any (fun term => term.label == constructor) = true :=
+      List.any_eq_true.mpr ⟨term, inSource, labelled⟩
+    rw [witness.contextFresh constructor found] at sourcePresent
+    exact Bool.false_ne_true sourcePresent
 
 end ReflectiveWitnessTransport
+
+/-- A base-colored presentation's closure context constructor carries the base
+tag, so it is never an apparatus constructor. -/
+theorem costBaseReflectivePresentationDecl_context_not_apparatus (declaration : ReflectivePresentationDecl) :
+    ∀ constructor, (costBaseReflectivePresentationDecl declaration).quoteScope.contextConstructor? =
+      some constructor → ∀ suffix, constructor ≠ costApparatusConstructorName suffix := by
+  intro constructor found suffix
+  simp only [costBaseReflectivePresentationDecl, mapReflectivePresentation, mapQuoteScope_contextConstructor?,
+    Option.map_eq_some_iff] at found
+  obtain ⟨context, _, rfl⟩ := found
+  exact costBaseConstructorName_ne_apparatus context suffix
+
+/-- A wrapped-colored presentation's closure context constructor carries the
+wrapped tag, so it is never an apparatus constructor. -/
+theorem costWrappedReflectivePresentationDecl_context_not_apparatus (theory : IGSLT)
+    (declaration : ReflectivePresentationDecl) :
+    ∀ constructor, (costWrappedReflectivePresentationDecl theory declaration).quoteScope.contextConstructor? =
+      some constructor → ∀ suffix, constructor ≠ costApparatusConstructorName suffix := by
+  intro constructor found suffix
+  simp only [costWrappedReflectivePresentationDecl, mapReflectivePresentation,
+    mapQuoteScope_contextConstructor?, Option.map_eq_some_iff] at found
+  obtain ⟨context, _, rfl⟩ := found
+  exact costWrappedConstructorName_ne_apparatus context suffix
 
 namespace ContinuationDecorationProfile
 
@@ -113,6 +150,8 @@ theorem costInteractionReflectiveRuleNames_nodup (profile : ContinuationDecorati
 the apparatus extension and the existing source-variable namespace map. -/
 def extendReflectiveWitness (profile : ContinuationDecorationProfile cut)
     (noDuplicates : profile.constructorClosure.Nodup) (declaration : ReflectivePresentationDecl)
+    (contextTagged : ∀ constructor, declaration.quoteScope.contextConstructor? = some constructor →
+      ∀ suffix, constructor ≠ costApparatusConstructorName suffix)
     (witness : LanguageDef.ReflectivePresentationWitness
       profile.reflectiveRetypingLanguage declaration) :
     LanguageDef.ReflectivePresentationWitness profile.costWholeLanguage declaration :=
@@ -130,7 +169,21 @@ def extendReflectiveWitness (profile : ContinuationDecorationProfile cut)
         exact List.mem_append_left _ (List.mem_map.mpr ⟨original, originalMember, rfl⟩)
       · obtain ⟨original, originalMember, rfl⟩ := List.mem_map.mp wrapped
         exact List.mem_append_right _ (List.mem_map.mpr ⟨original, originalMember, rfl⟩))
-    (quoteDropShape_mapEquationSchemaNames costSourceSchemaName declaration) witness
+    (quoteDropShape_mapEquationSchemaNames costSourceSchemaName declaration)
+    (by
+      intro constructor found term member labelled
+      rcases List.mem_append.mp member with generated | apparatus
+      · exact generated
+      · have labels : (costCoreConstructors theory.presentation.interactingSort.1.name).map (·.label) =
+            costCoreConstructorSuffixes.map costApparatusConstructorName := by
+          have whole := profile.costCoreConstructorLabels
+          simp only [costCoreLanguage, List.map_append] at whole
+          exact List.append_cancel_left whole
+        have named : term.label ∈ costCoreConstructorSuffixes.map costApparatusConstructorName :=
+          labels ▸ List.mem_map.mpr ⟨term, apparatus, rfl⟩
+        obtain ⟨suffix, _, spelled⟩ := List.mem_map.mp named
+        exact absurd (labelled.symm.trans spelled.symm) (contextTagged constructor found suffix))
+    witness
 
 theorem costInteractionReflectiveRule_validate (profile : ContinuationDecorationProfile cut)
     (reflection : AdmittedProfile theory.presentation.presentation.language)
@@ -203,10 +256,12 @@ theorem costWholeReflectionProfile_validate (profile : ContinuationDecorationPro
     rcases List.mem_append.mp member with base | wrapped
     · obtain ⟨original, originalMember, rfl⟩ := List.mem_map.mp base
       obtain ⟨witness⟩ := (retyped original originalMember).1
-      exact (profile.extendReflectiveWitness noDuplicates _ witness).validate
+      exact (profile.extendReflectiveWitness noDuplicates _
+        (costBaseReflectivePresentationDecl_context_not_apparatus original) witness).validate
     · obtain ⟨original, originalMember, rfl⟩ := List.mem_map.mp wrapped
       obtain ⟨witness⟩ := (retyped original originalMember).2
-      exact (profile.extendReflectiveWitness noDuplicates _ witness).validate
+      exact (profile.extendReflectiveWitness noDuplicates _
+        (costWrappedReflectivePresentationDecl_context_not_apparatus theory original) witness).validate
   · apply List.flatMap_eq_nil_iff.mpr
     exact profile.costInteractionReflectiveRule_validate reflection
 
@@ -293,12 +348,14 @@ theorem costStaticReflectivePresentation_validate (source : WrappableIGSLT)
     obtain ⟨witness⟩ := LanguageDef.reflectivePresentationWitness_of_validate_eq_nil _ _
       (source.reflectivePresentationsRetypable original originalMember).1
     exact ((ofRetypingPlan source.continuationRetyping).extendReflectiveWitness
-      source.continuationRetyping.noDuplicates _ witness).validate
+      source.continuationRetyping.noDuplicates _
+      (costBaseReflectivePresentationDecl_context_not_apparatus original) witness).validate
   · obtain ⟨original, originalMember, rfl⟩ := List.mem_map.mp wrapped
     obtain ⟨witness⟩ := LanguageDef.reflectivePresentationWitness_of_validate_eq_nil _ _
       (source.reflectivePresentationsRetypable original originalMember).2
     exact ((ofRetypingPlan source.continuationRetyping).extendReflectiveWitness
-      source.continuationRetyping.noDuplicates _ witness).validate
+      source.continuationRetyping.noDuplicates _
+      (costWrappedReflectivePresentationDecl_context_not_apparatus _ original) witness).validate
 
 /-- The generic Cost interaction is an ordinary validated language
 presentation: its only reduction authority is the generated whole-redex

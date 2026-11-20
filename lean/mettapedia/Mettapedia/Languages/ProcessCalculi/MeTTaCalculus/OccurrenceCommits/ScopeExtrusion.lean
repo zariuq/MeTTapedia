@@ -29,7 +29,7 @@ says which laws of `ChannelAddressing` survive.
   process alike, with the same growth of rights, and stay in agreement on the set. The scope of
   a process is the least closed set of names containing its rights.
 * **Predicate queries outside another process's closed scope stay stable**
-  (`DynamicRun.read_stable_outside_closed`): an absence, or any other predicate query, at names
+  (`DynamicRun.read_stable_outside_closed`): a none query, or any other predicate query, at names
   outside a closed set containing the other process's rights survives every run of that process.
 
 ## What fails
@@ -38,7 +38,7 @@ Static non-interference fails. Agreement on the *initial* rights is not enough: 
 held channel can carry a name, and after taking it the process sees and writes a region it did
 not hold (`Controls.extrusion_breaks_static_noninterference`). The predicate query of the name's
 owner, answered under the closed world of its scope, is then falsified by one send
-(`Controls.extruded_send_falsifies_absence`). Extrusion is
+(`Controls.extruded_send_falsifies_none`). Extrusion is
 exactly the way into a scope: if no occurrence in the process's closed scope carries a name, the
 process never acquires it.
 -/
@@ -256,14 +256,14 @@ theorem extrusion_breaks_static_noninterference :
             decide
 
 /-- **The owner's predicate query falls once the name is extruded**: extrusion opens the closed
-world of its scope. The absence at name `0` holds at `{300}`; the process that learns name `0` from
-the message sends on it and falsifies the absence. A process whose closed scope excludes name `0`
+world of its scope. The none query at name `0` holds at `{300}`; the process that learns name `0` from
+the message sends on it and falsifies the none query. A process whose closed scope excludes name `0`
 could not. -/
-theorem extruded_send_falsifies_absence :
-    AbsenceHolds extrusionLabel (fun r => r.1 == 0) {300} ∧
+theorem extruded_send_falsifies_none :
+    NoneHolds extrusionLabel (fun r => r.1 == 0) {300} ∧
       DynamicRun extrusionLabel Prod.fst carried ∅ {300} {1} [takeMessage, extrudedSend] {302} {1, 0} ∧
-      ¬ AbsenceHolds extrusionLabel (fun r => r.1 == 0) {302} := by
-  refine ⟨by unfold AbsenceHolds; decide, ?_, by unfold AbsenceHolds; decide⟩
+      ¬ NoneHolds extrusionLabel (fun r => r.1 == 0) {302} := by
+  refine ⟨by unfold NoneHolds; decide, ?_, by unfold NoneHolds; decide⟩
   refine .cons ⟨by decide, by decide, by decide, by decide, by simp [takeMessage]⟩
     ⟨by decide, by simp [takeMessage], by simp [takeMessage], by simp [takeMessage]⟩
     (by simp [BuildsFromHeld, takeMessage]) ?_

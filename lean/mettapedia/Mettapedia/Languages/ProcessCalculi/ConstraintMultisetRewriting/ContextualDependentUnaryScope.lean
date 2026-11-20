@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 # Two independent arguments force a normal body out of their scope
 
 If a typed normal body gives equal results when its parameter is sent to
-either of two fresh variables, the parameter is absent from its support.
+either of two fresh variables, the parameter is missing from its support.
 Weakening inversion therefore succeeds and recovers the body in the outer
 context. That context and the expected codomain need not be normal or have
 closed inhabitants.

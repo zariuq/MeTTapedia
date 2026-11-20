@@ -1,4 +1,4 @@
-import Mettapedia.Languages.MeTTa.PrimeComparisons
+import Mettapedia.Languages.MeTTa.PrimeCandidates.Index.Specification
 import Mettapedia.Languages.MeTTa.PrimeCandidates.Index.DevelopmentPlan
 
 /-! Readout of the broad candidate-specification inventory. This is not the
@@ -56,10 +56,6 @@ def reportStudy : IO Unit := do
   for decision in decisions do
     let current := study decision
     IO.println s!"  {repr decision}: claims {current.constraints.map (·.id)}; selection {repr current.selection}"
-  IO.println s!"Unproved inspected CeTTa correspondences: {repr PrimeComparisons.remainingCorrespondences}"
-  IO.println s!"No inspected comparison: {repr PrimeComparisons.decisionsWithoutInspectedComparison}"
-  IO.println s!"Experimental draft review: {PrimeCeTTaCurrent.ScopedJudgmentDraft.reviewedProbes.length} probe topics; {PrimeCeTTaCurrent.ScopedJudgmentDraft.recordedRuns.length} recorded runs; {(PrimeCeTTaCurrent.ScopedJudgmentDraft.recordedRuns.map (fun run => run.outputs.length)).sum} literal outputs."
-  IO.println s!"Later draft inspection: {PrimeCeTTaCurrent.ScopedJudgmentDraftSecondPass.observations.length} source observations and {PrimeCeTTaCurrent.ScopedJudgmentDraftSecondPass.recordedRuns.length} isolated existing-binary probe with {PrimeCeTTaCurrent.ScopedJudgmentDraftSecondPass.rawRecordRun.outputs.length} literal outputs; no C rebuild or full gate."
   IO.println s!"Original family-only semantic collection: {PrimeCandidates.SharedJudgmentSemanticRequirements.requirements.length} native clauses plus {PrimeCandidates.SharedJudgmentSemanticRequirements.declarationRequirements.length} declaration clauses, indexed by the same assembly/formed-context interpretation/universe/type/service/declaration data."
   for requirement in PrimeCandidates.SharedJudgmentSemanticRequirements.requirements do
     IO.println s!"  {requirement.id}: source references {PrimeCandidates.SharedJudgmentSemanticRequirements.Requirement.references requirement}"

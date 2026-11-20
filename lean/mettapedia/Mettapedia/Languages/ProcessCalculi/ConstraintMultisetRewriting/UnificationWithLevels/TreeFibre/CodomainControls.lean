@@ -12,7 +12,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Unificati
   store: **a principal answer** (`cod_principal`).
 * **The over store** (`overCod_principal`): `X ≐ Π (y : Y). Y` over `X : U1, Y : U2` gets a principal answer by the
   same rule.
-* **Where the rule's conditions fail** (`codOccurs_absent_fails`, `codMisfitHead_fails`): `X ≐ Π (_ : U0). X` (the
+* **Where the rule's conditions fail** (`codOccurs_occurs_check_fails`, `codMisfitHead_fails`): `X ≐ Π (_ : U0). X` (the
   unknown at its own codomain) and `X ≐ Π (_ : U1). Y` over `X : U1` (a head of `U2`) are not narrowed.
 * **The solver with codomains** (`flexCodTowerSolver`, `flexCodTower_decided`), kernel runs: both stores above commit;
   `X ≐ Π (_ : U0). X` is refuted by the occurs check at its codomain (`occ_refuted`); `X ≐ Π (_ : U1). Y` is refuted by
@@ -82,10 +82,10 @@ theorem U0_typed_below_U1 : ∃ k, setting.R.headTyping U0 k ∧ setting.R.cumul
 
 theorem ctxCod_universes : AllUniverseDecls ctxCod := allUniverseDecls_of_B (by decide +kernel)
 
-/-- **The conditions of the rule hold**: `X` is absent from the code, its head `U0` is typed below `U1`, every
+/-- **The conditions of the rule hold**: `X` is missing from the code, its head `U0` is typed below `U1`, every
 declaration is a universe, and the misfit `Y : U2` has a greatest lower bound with `U1`. -/
 theorem codSolvable : CodSolvable (S := setting) LevelGlb.towerGlb codView where
-  absent := by
+  notMem := by
     change (1 : Fin ctxCod.arity) ∉ codEquation.2.2.code.support
     rw [codRight_code]
     decide +kernel
@@ -145,7 +145,7 @@ theorem flexCodTower_decided {Θ : Context setting.R} {original : EquationStore 
       run flexCodTowerSolver original larger = run flexCodTowerSolver original fuel ∧
         ((∃ state finished, run flexCodTowerSolver original larger = .solved state finished ∧
             (frames setting.levels).Principal original state.answer) ∨
-          (∃ absent, run flexCodTowerSolver original larger = .refuted absent)) :=
+          (∃ missing, run flexCodTowerSolver original larger = .refuted missing)) :=
   flexCod_decided (S := setting) ExecutableTowerChoices.choices LevelGlb.towerGlb
     (fun found => LevelGlb.towerGlb_isGlb found) TowerModel.facts TowerModel.roots TowerModel.heads
     TowerModel.algebra ContextualDependentPiSpine.Controls.rigid TowerModel.complete
@@ -261,7 +261,7 @@ def overViewCod : FlexCod (S := setting) overEquation where
 theorem ctxOneTwo_universes : AllUniverseDecls ctxOneTwo := allUniverseDecls_of_B (by decide +kernel)
 
 theorem overSolvableCod : CodSolvable (S := setting) LevelGlb.towerGlb overViewCod where
-  absent := by
+  notMem := by
     change (1 : Fin ctxOneTwo.arity) ∉ overEquation.2.2.code.support
     rw [overRight_code]
     decide +kernel
@@ -300,8 +300,8 @@ theorem over_outside_flexRigidGlb : inFlexRigidGlbB ExecutableTowerChoices.choic
 
 /-! ## Where the rule's conditions fail -/
 
-/-- `X ≐ Π (_ : U0). X`: `X` at its own codomain; the rule's condition that `X` be absent fails. -/
-theorem codOccurs_absent_fails :
+/-- `X ≐ Π (_ : U0). X`: `X` at its own codomain; the rule's condition that `X` not be present fails. -/
+theorem codOccurs_occurs_check_fails :
     (1 : Fin 2) ∈ (Tm.pi (.head U0) (Presentation.rename wk (Tm.var (1 : Fin 2))) : Tm Tower.Head 2).support := by
   decide +kernel
 

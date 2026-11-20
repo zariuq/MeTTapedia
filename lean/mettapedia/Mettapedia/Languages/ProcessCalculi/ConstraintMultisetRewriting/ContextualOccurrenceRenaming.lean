@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 
 Only live occurrences must have corresponding conditional rows. Matching
 still retains every row's latent equations and caller references. The
-physical image preserves absence and occurrence counts, rather than
+physical image preserves predicate queries and occurrence counts, rather than
 identifying rows with equal values or relying on a ground matcher.
 -/
 
@@ -50,14 +50,28 @@ theorem holds_iff (name : O → P) (injective : Function.Injective name) (candid
     Holds locals candidate represented (world.image name) check ↔ Holds locals candidate rows world check := by
   cases check with
   | equal _ _ => rfl
-  | absent pattern =>
-      constructor
-      · intro absent occurrence present matched
-        exact absent (name occurrence) (Finset.mem_image_of_mem name present)
-          ((agrees occurrence present).symm ▸ matched)
-      · intro absent physical present matched
-        obtain ⟨occurrence, sourcePresent, rfl⟩ := Finset.mem_image.mp present
-        exact absent occurrence sourcePresent (agrees occurrence sourcePresent ▸ matched)
+  | predicate quantifier pattern =>
+      have same : ∀ occurrence ∈ world,
+          Matches locals captures candidate (instantiate candidate pattern) (represented (name occurrence)) ↔
+            Matches locals captures candidate (instantiate candidate pattern) (rows occurrence) :=
+        fun occurrence present => by rw [agrees occurrence present]
+      cases quantifier with
+      | any =>
+          constructor
+          · rintro ⟨physical, present, matched⟩
+            obtain ⟨occurrence, sourcePresent, rfl⟩ := Finset.mem_image.mp present
+            exact ⟨occurrence, sourcePresent, (same occurrence sourcePresent).mp matched⟩
+          · rintro ⟨occurrence, present, matched⟩
+            exact ⟨name occurrence, Finset.mem_image_of_mem name present,
+              (same occurrence present).mpr matched⟩
+      | none =>
+          constructor
+          · intro missing occurrence present matched
+            exact missing (name occurrence) (Finset.mem_image_of_mem name present)
+              ((same occurrence present).mpr matched)
+          · intro missing physical present matched
+            obtain ⟨occurrence, sourcePresent, rfl⟩ := Finset.mem_image.mp present
+            exact missing occurrence sourcePresent ((same occurrence sourcePresent).mp matched)
   | count pattern cardinality =>
       rw [Holds, Holds, region_image locals name candidate rows represented world agrees pattern,
         Finset.card_image_of_injective _ injective]

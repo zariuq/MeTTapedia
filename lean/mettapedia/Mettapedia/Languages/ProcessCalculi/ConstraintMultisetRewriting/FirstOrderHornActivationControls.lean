@@ -10,7 +10,7 @@ captured variable. A scoped solution constructs an actual physical layout,
 then a logical proof retaining both original schema/scope receipts.
 
 Reusing one scope forces the two different inputs equal and is rejected.
-An absent successful activation or installed schema cannot supply a receipt.
+A missing successful activation or installed schema cannot supply a receipt.
 -/
 
 set_option autoImplicit false

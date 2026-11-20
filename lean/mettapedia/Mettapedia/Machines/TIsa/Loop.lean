@@ -7,6 +7,8 @@ The bound register is read at entry and immutable throughout the body. Thus
 its resource is already the captured bound; no extra snapshot register is
 introduced. Entry and latch are ordinary finite cell recipes. The latch's
 natural-number rank decreases without a machine-word wraparound.
+Admitted header and latch updates are realized by actual resource firings;
+the fired latch retains the same strict rank decrease.
 -/
 
 set_option autoImplicit false
@@ -148,6 +150,128 @@ theorem Loop.latch_wellFounded (loop : Loop Key) :
   intro next before step
   exact loop.latchStep_decreases before next step
 
+def Loop.entryValues (loop : Loop Key) (before : Location Key → Word) : Location Key → Word :=
+  Function.update (Function.update before (.inl loop.activation) loop.headerPoint) (.inr loop.index) 0
+
+theorem Loop.entryValues_guard (loop : Loop Key) (before : Location Key → Word)
+    (checked : loop.check = true) (current : before (.inl loop.activation) = loop.entryPoint)
+    (bounded : (before (.inr loop.bound)).toNat ≤ loop.maximum) :
+    loop.entry.guard (loop.entry.inputs.map before) (loop.entry.outputs.map (loop.entryValues before)) = true := by
+  apply (loop.entry_guard_iff before _).mpr
+  exact ⟨checked,current,by simp [entryValues],by simp [entryValues],bounded⟩
+
+theorem Loop.entry_overwrite (loop : Loop Key) (before : Location Key → Word) :
+    overwrite loop.entry.writes before (loop.entryValues before) = loop.entryValues before := by
+  funext location
+  cases location with
+  | inl activation =>
+    by_cases same : activation = loop.activation
+    · subst activation
+      simp [overwrite,Recipe.writes,entry,entryValues]
+    · simp [overwrite,Recipe.writes,entry,entryValues,same]
+  | inr key =>
+    by_cases same : key = loop.index
+    · subst key
+      simp [overwrite,Recipe.writes,entry,entryValues]
+    · simp [overwrite,Recipe.writes,entry,entryValues,same]
+
+theorem Loop.entry_realized (loop : Loop Key) (keys : Finset (Location Key))
+    (before : Location Key → Word) (included : loop.entry.support ⊆ keys)
+    (checked : loop.check = true) (current : before (.inl loop.activation) = loop.entryPoint)
+    (bounded : (before (.inr loop.bound)).toNat ≤ loop.maximum) :
+    ∃ invocation : Invocation loop.entry,
+      CellEffects.system.Enables (encode keys before) invocation ∧
+      CellEffects.system.fire (encode keys before) invocation = encode keys (loop.entryValues before) := by
+  obtain ⟨invocation,enabled,fired⟩ := effect_realized loop.entry keys before (loop.entryValues before) included
+    (loop.entryValues_guard before checked current bounded)
+  rw [loop.entry_overwrite] at fired
+  exact ⟨invocation,enabled,fired⟩
+
+theorem Loop.entry_refuses_excess (loop : Loop Key) (before after : Location Key → Word)
+    (excess : loop.maximum < (before (.inr loop.bound)).toNat) :
+    loop.entry.guard (loop.entry.inputs.map before) (loop.entry.outputs.map after) ≠ true := by
+  intro guarded
+  have bounded := (loop.entry_guard_iff before after).mp guarded
+  omega
+
+def Loop.latchValues (loop : Loop Key) (before : Location Key → Word) : Location Key → Word :=
+  Function.update (Function.update before (.inl loop.activation) loop.headerPoint)
+    (.inr loop.index) (before (.inr loop.index) + 1)
+
+theorem Loop.latchValues_guard (loop : Loop Key) (before : Location Key → Word)
+    (checked : loop.check = true) (current : before (.inl loop.activation) = loop.latchPoint)
+    (less : (before (.inr loop.index)).toNat < (before (.inr loop.bound)).toNat)
+    (bounded : (before (.inr loop.bound)).toNat ≤ loop.maximum) :
+    loop.latch.guard (loop.latch.inputs.map before) (loop.latch.outputs.map (loop.latchValues before)) = true := by
+  apply (loop.latch_guard_iff before _).mpr
+  exact ⟨checked, current, by simp [latchValues], less, bounded, by simp [latchValues]⟩
+
+theorem Loop.latch_overwrite (loop : Loop Key) (before : Location Key → Word) :
+    overwrite loop.latch.writes before (loop.latchValues before) = loop.latchValues before := by
+  funext location
+  cases location with
+  | inl activation =>
+    by_cases same : activation = loop.activation
+    · subst activation
+      simp [overwrite, Recipe.writes, latch, latchValues]
+    · simp [overwrite, Recipe.writes, latch, latchValues, same]
+  | inr key =>
+    by_cases same : key = loop.index
+    · subst key
+      simp [overwrite, Recipe.writes, latch, latchValues]
+    · simp [overwrite, Recipe.writes, latch, latchValues, same]
+
+theorem Loop.latch_realized (loop : Loop Key) (keys : Finset (Location Key))
+    (before : Location Key → Word) (included : loop.latch.support ⊆ keys)
+    (checked : loop.check = true) (current : before (.inl loop.activation) = loop.latchPoint)
+    (less : (before (.inr loop.index)).toNat < (before (.inr loop.bound)).toNat)
+    (bounded : (before (.inr loop.bound)).toNat ≤ loop.maximum) :
+    ∃ invocation : Invocation loop.latch,
+      CellEffects.system.Enables (encode keys before) invocation ∧
+      CellEffects.system.fire (encode keys before) invocation = encode keys (loop.latchValues before) ∧
+      loop.rank (loop.latchValues before) < loop.rank before := by
+  have guarded := loop.latchValues_guard before checked current less bounded
+  obtain ⟨invocation, enabled, fired⟩ := effect_realized loop.latch keys before (loop.latchValues before) included guarded
+  rw [loop.latch_overwrite] at fired
+  refine ⟨invocation, enabled, fired, ?_⟩
+  apply loop.latchStep_decreases before (loop.latchValues before)
+  exact ⟨loop.latchValues before, guarded, (loop.latch_overwrite before).symm⟩
+
+def Loop.headerValues (loop : Loop Key) (before : Location Key → Word) : Location Key → Word :=
+  Function.update before (.inl loop.activation)
+    (loop.headerTarget (before (.inr loop.index)) (before (.inr loop.bound)))
+
+theorem Loop.headerValues_guard (loop : Loop Key) (before : Location Key → Word)
+    (checked : loop.check = true) (current : before (.inl loop.activation) = loop.headerPoint)
+    (ordered : (before (.inr loop.index)).toNat ≤ (before (.inr loop.bound)).toNat)
+    (bounded : (before (.inr loop.bound)).toNat ≤ loop.maximum) :
+    loop.header.guard (loop.header.inputs.map before) (loop.header.outputs.map (loop.headerValues before)) = true := by
+  apply (loop.header_guard_iff before _).mpr
+  exact ⟨checked, current, ordered, bounded, by simp [headerValues]⟩
+
+theorem Loop.header_overwrite (loop : Loop Key) (before : Location Key → Word) :
+    overwrite loop.header.writes before (loop.headerValues before) = loop.headerValues before := by
+  funext location
+  cases location with
+  | inl activation =>
+    by_cases same : activation = loop.activation
+    · subst activation
+      simp [overwrite, Recipe.writes, header, headerValues]
+    · simp [overwrite, Recipe.writes, header, headerValues, same]
+  | inr key => simp [overwrite, Recipe.writes, header, headerValues]
+
+theorem Loop.header_realized (loop : Loop Key) (keys : Finset (Location Key))
+    (before : Location Key → Word) (included : loop.header.support ⊆ keys)
+    (checked : loop.check = true) (current : before (.inl loop.activation) = loop.headerPoint)
+    (ordered : (before (.inr loop.index)).toNat ≤ (before (.inr loop.bound)).toNat)
+    (bounded : (before (.inr loop.bound)).toNat ≤ loop.maximum) :
+    ∃ invocation : Invocation loop.header,
+      CellEffects.system.Enables (encode keys before) invocation ∧
+      CellEffects.system.fire (encode keys before) invocation = encode keys (loop.headerValues before) := by
+  obtain ⟨invocation, enabled, fired⟩ := effect_realized loop.header keys before (loop.headerValues before) included
+    (loop.headerValues_guard before checked current ordered bounded)
+  exact ⟨invocation, enabled, by simpa only [loop.header_overwrite] using fired⟩
+
 namespace LoopControls
 
 private def loop : Loop Nat := ⟨0, 1, 2, 3, 4, 5, 0, 1, 10⟩
@@ -159,6 +283,31 @@ example : loop.header.guard [2, 9, 10] [4] = true := by decide
 example : loop.latch.guard [3, 9, 10] [2, 10] = true := by decide
 example : loop.latch.guard [3, 10, 10] [2, 11] = false := by decide
 example : ({ loop with bound := 0 }).check = false := by decide
+
+private def keys : Finset (Location Nat) := {.inl 0,.inr 0,.inr 1}
+private def lastIteration : Location Nat → Word
+  | .inl _ => 3
+  | .inr 0 => 9
+  | .inr _ => 10
+private def zeroBound : Location Nat → Word
+  | .inl _ => 2
+  | .inr _ => 0
+
+theorem last_latch_fires : ∃ invocation : Invocation loop.latch,
+    CellEffects.system.Enables (encode keys lastIteration) invocation ∧
+    CellEffects.system.fire (encode keys lastIteration) invocation = encode keys (loop.latchValues lastIteration) ∧
+    loop.rank (loop.latchValues lastIteration) = 0 := by
+  obtain ⟨invocation, enabled, fired, _⟩ := loop.latch_realized keys lastIteration
+    (by decide) (by decide) (by rfl) (by decide) (by decide)
+  exact ⟨invocation, enabled, fired, by decide⟩
+
+theorem zero_bound_exits : ∃ invocation : Invocation loop.header,
+    CellEffects.system.Enables (encode keys zeroBound) invocation ∧
+    CellEffects.system.fire (encode keys zeroBound) invocation = encode keys (loop.headerValues zeroBound) ∧
+    loop.headerValues zeroBound (.inl 0) = loop.exitPoint := by
+  obtain ⟨invocation, enabled, fired⟩ := loop.header_realized keys zeroBound
+    (by decide) (by decide) (by rfl) (by decide) (by decide)
+  exact ⟨invocation, enabled, fired, by decide⟩
 
 end LoopControls
 

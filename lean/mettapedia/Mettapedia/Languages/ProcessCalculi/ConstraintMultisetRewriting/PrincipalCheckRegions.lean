@@ -97,23 +97,43 @@ theorem count_iff_regions (A : SubstitutionAction T S)
     rw [equalRegions]
     exact baseline
 
-theorem absent_iff_possible_empty (A : SubstitutionAction T S) (problem : EquationStore T)
+theorem none_iff_possible_empty (A : SubstitutionAction T S) (problem : EquationStore T)
     (label : O → T) (world : Finset O) (pattern : T) :
-    A.Entails problem (fun assignment => (Check.absent pattern).Holds A assignment label world) ↔
+    A.Entails problem (fun assignment => (Check.predicate .none pattern).Holds A assignment label world) ↔
       possibleRegion A problem label world pattern = ∅ := by
   classical
   constructor
-  · intro absent
+  · intro missing
     apply Finset.eq_empty_iff_forall_notMem.mpr
     intro occurrence member
     obtain ⟨present, assignment, solved, same⟩ :=
       (possible_member_iff A problem label world pattern occurrence).mp member
-    exact absent assignment solved occurrence present same
+    exact missing assignment solved occurrence present same
   · intro empty assignment solved occurrence present same
     have member := (possible_member_iff A problem label world pattern occurrence).mpr
       ⟨present, assignment, solved, same⟩
     rw [empty] at member
     exact Finset.notMem_empty occurrence member
+
+/-- `any` is entailed exactly when some row matches at the principal answer: that answer is a model,
+and its matches persist in every model, which factors through it. -/
+theorem any_iff_principal_nonempty (A : SubstitutionAction T S)
+    {problem : EquationStore T} {answer : S} {observed : List T}
+    (principal : A.PrincipalOn problem answer observed)
+    (label : O → T) (world : Finset O) (pattern : T)
+    (argument : pattern ∈ observed)
+    (values : ∀ occurrence ∈ world, label occurrence ∈ observed) :
+    A.Entails problem (fun assignment => (Check.predicate .any pattern).Holds A assignment label world) ↔
+      (Check.matches A answer label world pattern).Nonempty := by
+  classical
+  constructor
+  · intro entailed
+    obtain ⟨occurrence, present, same⟩ := entailed answer principal.sound
+    exact ⟨occurrence, Finset.mem_filter.mpr ⟨present, same⟩⟩
+  · rintro ⟨occurrence, member⟩ assignment solved
+    obtain ⟨present, same⟩ := Finset.mem_filter.mp
+      (principal_region_subset A principal label world pattern argument values solved member)
+    exact ⟨occurrence, present, same⟩
 
 theorem equal_iff_principal_answer (A : SubstitutionAction T S)
     {problem : EquationStore T} {answer : S} {observed : List T}

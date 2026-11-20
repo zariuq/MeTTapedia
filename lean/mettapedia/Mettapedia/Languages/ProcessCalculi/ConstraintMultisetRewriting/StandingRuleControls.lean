@@ -2,10 +2,10 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.StandingR
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.EquationWakeupControls
 
 /-!
-# An installed absence rule wakes on equations and survives its firing
+# An installed none rule wakes on equations and survives its firing
 
 The rule is a physical occurrence beside f(x). Telling x = 1 changes no
-physical row, but makes the absence of f(0) certain. A physical-only wake
+physical row, but makes the none query of f(0) certain. A physical-only wake
 index misses this enabling. The reference index wakes it, and its actual
 candidate firing keeps the installation while producing its answer.
 -/
@@ -68,7 +68,7 @@ theorem body_cannot_fire_before (selection : Selection Nat) : ¬ selection.Valid
   intro valid
   have noTake : selection.taken = [] := List.length_eq_zero_iff.mp valid.take_length.symm
   have noRead : selection.read = [] := List.length_eq_zero_iff.mp valid.read_length.symm
-  have asked := valid.checks (.absent (f zeroTerm)) (by simp [body, EquationWakeupControls.pending])
+  have asked := valid.checks (.predicate .none (f zeroTerm)) (by simp [body, EquationWakeupControls.pending])
   have held := asked ConstraintMultisetRewriting.Controls.zero (by
     simp [Selection.problem, Selection.equations, noTake, noRead, body, EquationWakeupControls.pending, beforeWorld])
   exact held 0 (by decide +kernel) rfl
@@ -84,7 +84,7 @@ theorem body_can_fire_after : picked.Valid A label body afterWorld := by
     subst equation
     rfl
   · intro check member assignment model
-    have only : check = .absent (f zeroTerm) := by simpa [body, EquationWakeupControls.pending] using member
+    have only : check = .predicate .none (f zeroTerm) := by simpa [body, EquationWakeupControls.pending] using member
     subst check
     have value := model (x, oneTerm) (by
       simp [Selection.problem, Selection.equations, Selection.result, picked, body, afterWorld,

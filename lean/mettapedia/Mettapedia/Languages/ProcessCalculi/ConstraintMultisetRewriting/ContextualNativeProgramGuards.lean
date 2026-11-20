@@ -3,9 +3,10 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 /-!
 # Every authored guard compiles to the native program's query list
 
-Equality checks compare terms at the saved information cut. Absence reads
-surviving actual inputs and checks prefix creations. Counts validate a
-conditional input table and add authored creations. The finite query list
+Equality checks compare terms at the saved information cut. A `none` check has the fixed
+answer "no row": it reads surviving actual inputs and checks prefix creations. An `any` check
+and a count have no fixed answer: they validate a conditional input table, add authored
+creations, and accept a nonzero total or the stated number. The finite query list
 is computed from all authored cuts before successful admission is known.
 -/
 
@@ -46,9 +47,14 @@ noncomputable def producerCheckQueries (body : Body S O Γ sort before after) (o
     (produced : List (Term (signature S (queryFamily body.bindingLocals body.guardFamily)) Γ sort))
     (index : body.CutIndex) : Check (Term (signature S after.declarations) Γ sort) → List body.ProducerQuery
   | .equal left right => [body.producerEqualityQuery index left right]
-  | .absent pattern =>
+  | .predicate .none pattern =>
       [body.nativeCutMatchingQuery index pattern ((body.entryCutAt index).taken.image some) ∅,
-        body.nativeVirtualAbsenceQuery index pattern]
+        body.nativeVirtualNoneQuery index pattern]
+  | .predicate .any pattern =>
+      let table := body.nativeCountTable index occupied produced [] pattern
+        ((body.entryCutAt index).taken.image some)
+      [table.query (body.nativeCountPredicate index pattern ((body.entryCutAt index).taken.image some)),
+        body.nativeAnyCheckQuery index pattern table]
   | .count pattern number =>
       let table := body.nativeCountTable index occupied produced [] pattern
         ((body.entryCutAt index).taken.image some)
@@ -90,10 +96,16 @@ theorem producer_check_queries_iff (body : Body S O Γ sort before after)
       change _ ↔ ∀ query ∈ [body.producerEqualityQuery index left right], _
       rw [List.forall_mem_singleton]
       exact (body.producer_equality_query_iff shapes resources consistent occupied produced index left right).symm
-  | absent pattern =>
-      change _ ↔ ∀ query ∈ [_, _], _
-      rw [all_pair]
-      exact body.native_entry_absence_iff index shapes resources consistent occupied produced [] pattern
+  | predicate quantifier pattern =>
+      cases quantifier with
+      | none =>
+          change _ ↔ ∀ query ∈ [_, _], _
+          rw [all_pair]
+          exact body.native_entry_none_iff index shapes resources consistent occupied produced [] pattern
+      | any =>
+          change _ ↔ ∀ query ∈ [_, _], _
+          rw [all_pair]
+          exact body.native_entry_any_iff index shapes resources consistent occupied produced [] pattern
   | count pattern number =>
       change _ ↔ ∀ query ∈ [_, _], _
       rw [all_pair]

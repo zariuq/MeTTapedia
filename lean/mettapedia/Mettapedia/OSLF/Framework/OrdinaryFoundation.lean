@@ -104,7 +104,7 @@ import Mettapedia.OSLF.Syntax.RhoScopedParallelReactiveControls
 import Mettapedia.OSLF.Syntax.RhoScopedParallelModalMetricControls
 import Mettapedia.OSLF.Syntax.RhoScopedScopeUnnamedControls
 import Mettapedia.OSLF.Syntax.RhoScopedFiniteSuccessorControls
-import Mettapedia.OSLF.Syntax.RhoScopedNativeAbsenceControls
+import Mettapedia.OSLF.Syntax.RhoScopedNativeNoneControls
 import Mettapedia.OSLF.Syntax.SortedConstructorPaddingCongruence
 import Mettapedia.TypeTheory.Calculi.NativeDependent.RepresentableGuardedFamilyControls
 import Mettapedia.TypeTheory.Calculi.NativeDependent.RepresentableIndexedSubstitutionControls

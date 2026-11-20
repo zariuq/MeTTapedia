@@ -136,7 +136,7 @@ theorem guardSees_along {W : Type} {next : W → MetaArity S}
         (ContextualConditionalExecution.guardRows s.locals s.state.declarations s.state.rows) check o := by
   cases check with
   | equal first second => exact Iff.rfl
-  | absent pattern => exact matches_along e ρ present pattern
+  | predicate quantifier pattern => exact matches_along e ρ present pattern
   | count pattern cardinality => exact matches_along e ρ present pattern
 
 omit [DecidableEq O] [DecidableEq S.Srt] [∀ result, DecidableEq (S.Op result)] in
@@ -165,7 +165,7 @@ theorem guardSees_inclusion {Extra : Type} (unused : Extra → MetaArity S) {W :
       GuardSees s.locals σ (ContextualConditionalExecution.guardRows s.locals s.state.declarations s.state.rows) check o := by
   cases check with
   | equal first second => exact Iff.rfl
-  | absent pattern => exact matches_inclusion unused σ present pattern
+  | predicate quantifier pattern => exact matches_inclusion unused σ present pattern
   | count pattern cardinality => exact matches_inclusion unused σ present pattern
 
 omit [DecidableEq O] [DecidableEq S.Srt] [∀ result, DecidableEq (S.Op result)] in
@@ -183,7 +183,7 @@ theorem seesOutput_inclusion {V Extra : Type} {declaration : V → MetaArity S} 
     exact ⟨ContextualPrefixModels.inclusion_injective unused next _ _, congrArg _⟩
   cases check with
   | equal first second => exact Iff.rfl
-  | absent pattern => exact equal pattern
+  | predicate quantifier pattern => exact equal pattern
   | count pattern cardinality => exact equal pattern
 
 omit [DecidableEq O] [DecidableEq S.Srt] [∀ result, DecidableEq (S.Op result)] in

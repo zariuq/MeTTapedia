@@ -1,5 +1,6 @@
 import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HECollectionProbeSource
 import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HECollectionMarkedControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.HEOnTheStep.HEMachine
 
 /-!
 # Closed executions of the whole authored collection probe
@@ -53,6 +54,39 @@ theorem the_authored_probe_executes_for_every_bound (world : World) (upper : Int
   rw [same]
   simpa using HECollectionProbeSource.source minimal policy external active primitive subtypes
     world policy caller [] [] 0 upper 0 "l" "a" "b" (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
+
+open Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.HEOnTheStep
+  (Fired Represents toWorldConfig heWorldMachine he_world_completed_ordered_iff exists_represents
+    Cell publication worldsOf)
+open Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits (labels)
+open Mettapedia.Machines.ProgressObservation (observePath)
+
+private def authoredEntry (world : World) (upper : Int) : WorldConfiguration Space World :=
+  ⟨world, sourceSpace, .work (.atom [] [] (Entry.Value.ofAtom (CollectionStdlibSource.probe upper))
+    Atom.undefinedType caller), [], []⟩
+
+/-- The whole existing authored execution lifts, including the final fold
+after forcing and binding the collection. The terminal occurrence
+certifies a completed publication, not a prefix with a waiting caller. -/
+theorem authored_collection_on_the_step (world : World) (upper : Int) :
+    let machine := heWorldMachine (current).view (current).services (current).dispatch (current).lookup
+      policy sourceSpace (current).arguments
+    ∃ (afterWorld : World) (after : Frame) (first last : Fired machine) (path : Quiver.Path first last),
+      Represents first (toWorldConfig (authoredEntry world upper)) ∧
+      Cell.control (.returning []) 0 ∈ labels Prod.fst last.present ∧
+      observePath (publication machine) path =
+        [(number ((squareValues 0 upper.toNat).foldl (· + ·) 0), after)] ∧
+      worldsOf (labels Prod.fst last.present) = {afterWorld} := by
+  intro machine
+  obtain ⟨afterWorld, after, evaluated⟩ :=
+    the_authored_probe_executes_for_every_bound minimal external active primitive subtypes world upper
+  obtain ⟨first, represented⟩ := exists_represents (toWorldConfig (authoredEntry world upper))
+  have derived : (authoredEntry world upper).SourceRel current policy
+      [(number ((squareValues 0 upper.toNat).foldl (· + ·) 0), after)] afterWorld :=
+    ⟨_, _, _, .work evaluated, .nil _, rfl⟩
+  obtain ⟨last, path, terminal, word, reached⟩ :=
+    (he_world_completed_ordered_iff (policy := policy) current represented _ _).mp derived
+  exact ⟨afterWorld, after, first, last, path, represented, terminal, word, reached⟩
 
 theorem the_whole_probe_runs_its_saved_caller (world : World) :
     ∃ afterWorld after, WorldSteps (current).view (current).services (current).dispatch (current).lookup policy

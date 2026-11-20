@@ -29,8 +29,8 @@ A guard that scans the whole store costs the size of the store, which the other 
 Two independent firings, one making two occurrences and one reading, are runs in both orders and
 end in the same configuration; priced by the scan, one order costs `2` and the other `4`, so a
 purse of `3` funds one interleaving of the history and refuses the other (`scan_price_order`).
-The guard's cost must be charged by what the firing observes (its own certificate, or the census
-of its predicate query, `AnnotatedRuns.census_region_card`), not by the store it runs against.
+The guard's cost must be charged by what the firing observes (its own certificate, or the collect query
+of its predicate query, `AnnotatedRuns.seen_region_card`), not by the store it runs against.
 -/
 
 set_option autoImplicit false

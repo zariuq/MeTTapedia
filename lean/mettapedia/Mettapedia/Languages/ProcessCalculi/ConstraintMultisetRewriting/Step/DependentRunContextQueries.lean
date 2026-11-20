@@ -3,10 +3,10 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.LogicOver
 /-!
 # Query conditions for placing dependent runs in a larger context
 
-Only newly added occurrences can change a census. An extra context may share
-already present matching rows without changing an absence/count observation.
+Only newly added occurrences can change a collect query. An extra context may share
+already present matching rows without changing a none query/count observation.
 For an already valid exact count, excluding new matches is both necessary
-and sufficient, with no fresh-row supply assumption. Arbitrary census answer
+and sufficient, with no fresh-row supply assumption. Arbitrary collect answer
 predicates have the same sufficient stability law.
 -/
 

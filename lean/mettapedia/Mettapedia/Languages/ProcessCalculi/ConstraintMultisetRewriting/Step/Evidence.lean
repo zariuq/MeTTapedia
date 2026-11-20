@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.RegionQueryAdapters
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DisequalityControls
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.FirstOrderChecks
 
@@ -34,16 +35,16 @@ ends in consistent knowledge (`firstOrder_run_consistent`).
 One minimized family of states of the step with disequations (`Disequality.step`), over rows
 `opp(a)` (row `1`) and `p(X)` (row `2`):
 
-| member | state | absence guard "no `p(a)`" | read `opp(a)` | tell `X = a` | read `p(a)` |
+| member | state | none guard "no `p(a)`" | read `opp(a)` | tell `X = a` | read `p(a)` |
 |---|---|---|---|---|---|
-| covered absence | nothing present | admitted | refused | admitted | refused |
+| covered none queries | nothing present | admitted | refused | admitted | refused |
 | refutation row | `opp(a)` present | admitted | admitted | admitted | refused |
 | incomplete search | `p(X)` present, `X` open | refused | refused | admitted | admitted |
 | disequality | `p(X)` present, `X ≠ a` | admitted | refused | refused | refused |
 
 `table` proves the sixteen verdicts and `profiles_distinct` that no two members have the same
 outcome on these four probes. At the incomplete member a scan that skips the open row would license
-the absence (`incomplete_scan_would_license`), and it lacks coverage (`skipping_scan_not_covering`).
+the none query (`incomplete_scan_would_license`), and it lacks coverage (`skipping_scan_not_covering`).
 -/
 
 set_option autoImplicit false
@@ -125,7 +126,7 @@ def makeOpposition : Fir := ⟨⟨[], [], [], [], [rows 1]⟩, [], ⟨[], [], [1
 /-- Read both rows and record the conflict. -/
 def weigh : Fir := ⟨⟨[], [rows 0, rows 1], [], [], [rows 2]⟩, [], ⟨[], [0, 1], [2]⟩⟩
 /-- Read the evidence when no opposition is present, and record acceptance. -/
-def accept : Fir := ⟨⟨[], [rows 0], [], [.absent (rows 1)], [rows 3]⟩, [], ⟨[], [0], [3]⟩⟩
+def accept : Fir := ⟨⟨[], [rows 0], [], [.predicate .none (rows 1)], [rows 3]⟩, [], ⟨[], [0], [3]⟩⟩
 /-- Tell `X = v`. -/
 def tellTruth (v : Nat) : Fir := ⟨⟨[], [], [(X, .const v)], [], []⟩, [], ⟨[], [], []⟩⟩
 
@@ -140,14 +141,14 @@ theorem identity_models (store : EquationStore (Term signature))
   rw [reflexive e member]
 
 theorem makeEvidence_admitted : P.Admits (s := start) makeEvidence :=
-  (PredicateQueryAdmission.valid_empty_iff _ _ _ _ _).mpr
+  (Interface.RegionQueryAdapters.valid_empty_iff _ _ _ _ _).mpr
     ⟨by decide, by decide, rfl, rfl, rfl, by decide, ⟨_, identity_models _ (by
       intro e member
       simp [makeEvidence, Selection.problem, Selection.equations, start] at member)⟩,
       by simp [makeEvidence]⟩
 
 theorem makeOpposition_admitted : P.Admits (s := withEvidence) makeOpposition :=
-  (PredicateQueryAdmission.valid_empty_iff _ _ _ _ _).mpr
+  (Interface.RegionQueryAdapters.valid_empty_iff _ _ _ _ _).mpr
     ⟨by decide, by decide, rfl, rfl, rfl, by decide, ⟨_, identity_models _ (by
       intro e member
       simp [makeOpposition, makeEvidence, withEvidence, AnnotatedRuns.Firing.result, Selection.result,
@@ -155,7 +156,7 @@ theorem makeOpposition_admitted : P.Admits (s := withEvidence) makeOpposition :=
       by simp [makeOpposition]⟩
 
 theorem weigh_admitted : P.Admits (s := withBoth) weigh :=
-  (PredicateQueryAdmission.valid_empty_iff _ _ _ _ _).mpr
+  (Interface.RegionQueryAdapters.valid_empty_iff _ _ _ _ _).mpr
     ⟨by decide, by decide, rfl, rfl, rfl, by decide, ⟨_, identity_models _ (by
       intro e member
       simp [weigh, makeOpposition, makeEvidence, withBoth, withEvidence, AnnotatedRuns.Firing.result,
@@ -188,7 +189,7 @@ theorem weigh_refused_without_opposition : ¬ P.Admits (s := withEvidence) weigh
   fun admitted => absurd admitted.firing.occurrences.kept_subset (by decide)
 
 theorem accept_admitted_with_evidence : P.Admits (s := withEvidence) accept := by
-  refine (PredicateQueryAdmission.valid_empty_iff _ _ _ _ _).mpr
+  refine (Interface.RegionQueryAdapters.valid_empty_iff _ _ _ _ _).mpr
     ⟨by decide, by decide, rfl, rfl, rfl, by decide, ⟨_, identity_models _ (by
       intro e member
       simp [accept, makeEvidence, withEvidence, AnnotatedRuns.Firing.result, Selection.result,
@@ -209,13 +210,13 @@ theorem accept_admitted_with_evidence : P.Admits (s := withEvidence) accept := b
 theorem accept_refused_with_opposition : ¬ P.Admits (s := withBoth) accept := by
   intro admitted
   obtain ⟨σ, model⟩ := admitted.firing.consistent
-  exact admitted.firing.checks (.absent (rows 1)) (by simp [accept]) σ model 1 (by decide) rfl
+  exact admitted.firing.checks (.predicate .none (rows 1)) (by simp [accept]) σ model 1 (by decide) rfl
 
 /-- The configuration after `X = v`. -/
 def told (v : Nat) : Configuration (Term signature) Nat := (tellTruth v).result rows start
 
 theorem tellTruth_admitted (v : Nat) : P.Admits (s := start) (tellTruth v) :=
-  (PredicateQueryAdmission.valid_empty_iff _ _ _ _ _).mpr
+  (Interface.RegionQueryAdapters.valid_empty_iff _ _ _ _ _).mpr
     ⟨List.nodup_nil, List.nodup_nil, rfl, rfl, rfl, enabled_empty _, ⟨bind (.const v), by
       intro e member
       simp [tellTruth, Selection.problem, Selection.equations, start] at member
@@ -283,7 +284,7 @@ inductive Member
 
 /-- The four probes. -/
 inductive Probe
-  | absentP
+  | noP
   | readOpp
   | bindA
   | findP
@@ -298,7 +299,7 @@ def state : Member → State A Nat
 
 /-- The first-order firing of each probe. -/
 def probe : Probe → AnnotatedRuns.Firing (Term signature) (Subst signature) Nat
-  | .absentP => ⟨⟨[], [], [], [.absent (app 0 a)], [rows 10]⟩, [], ⟨[], [], [10]⟩⟩
+  | .noP => ⟨⟨[], [], [], [.predicate .none (app 0 a)], [rows 10]⟩, [], ⟨[], [], [10]⟩⟩
   | .readOpp => ⟨⟨[], [app 1 a], [], [], []⟩, [], ⟨[], [1], []⟩⟩
   | .bindA => ⟨⟨[], [], [(X, a)], [], []⟩, [], ⟨[], [], []⟩⟩
   | .findP => ⟨⟨[], [app 0 a], [], [], []⟩, [], ⟨[], [2], []⟩⟩
@@ -315,22 +316,22 @@ theorem separates_target' (m : Member) (π : Probe) (σ : Subst signature) :
   show Separates A σ ((state m).disequations.1 ++ []) ↔ _
   rw [List.append_nil]
 
-/-! ### The absence guard -/
+/-! ### The none guard -/
 
-theorem absentP_admitted (m : Member) (fresh : 10 ∉ (state m).configuration.present)
+theorem noP_admitted (m : Member) (fresh : 10 ∉ (state m).configuration.present)
     (clear : ∀ σ, Separates A σ (state m).disequations.1 → ∀ o ∈ (state m).configuration.present,
-      A.apply σ (app 0 a) ≠ A.apply σ (rows o)) : profile m .absentP := by
+      A.apply σ (app 0 a) ≠ A.apply σ (rows o)) : profile m .noP := by
   refine ⟨List.nodup_nil, List.nodup_singleton _, rfl, rfl, rfl, enabled_make fresh,
     ⟨A.identity, ?_, ?_⟩, fun σ _ separated => ⟨?_, by simp [probe, Firing.ofBase]⟩⟩
   · intro e member
     simp [Selection.problem, Selection.equations, probe, Firing.ofBase, equations_nil] at member
-  · exact (separates_target' m .absentP _).mpr (state m).disequations.2
+  · exact (separates_target' m .noP _).mpr (state m).disequations.2
   · intro check member
     simp only [probe, Firing.ofBase, List.mem_singleton] at member
     subst member
-    exact clear σ ((separates_target' m .absentP σ).mp separated)
+    exact clear σ ((separates_target' m .noP σ).mp separated)
 
-theorem absentP_incomplete_refused : ¬ profile .incomplete .absentP := by
+theorem noP_incomplete_refused : ¬ profile .incomplete .noP := by
   rintro ⟨-, -, -, -, -, -, -, asks⟩
   refine (asks (bind a) (by
     intro e member
@@ -412,20 +413,20 @@ theorem findP_disequal_refused : ¬ profile .disequal .findP := by
 
 /-- **The sixteen verdicts.** -/
 theorem table :
-    (profile .covered .absentP ∧ ¬ profile .covered .readOpp ∧ profile .covered .bindA ∧
+    (profile .covered .noP ∧ ¬ profile .covered .readOpp ∧ profile .covered .bindA ∧
       ¬ profile .covered .findP) ∧
-    (profile .refuted .absentP ∧ profile .refuted .readOpp ∧ profile .refuted .bindA ∧
+    (profile .refuted .noP ∧ profile .refuted .readOpp ∧ profile .refuted .bindA ∧
       ¬ profile .refuted .findP) ∧
-    (¬ profile .incomplete .absentP ∧ ¬ profile .incomplete .readOpp ∧
+    (¬ profile .incomplete .noP ∧ ¬ profile .incomplete .readOpp ∧
       profile .incomplete .bindA ∧ profile .incomplete .findP) ∧
-    (profile .disequal .absentP ∧ ¬ profile .disequal .readOpp ∧ ¬ profile .disequal .bindA ∧
+    (profile .disequal .noP ∧ ¬ profile .disequal .readOpp ∧ ¬ profile .disequal .bindA ∧
       ¬ profile .disequal .findP) := by
   refine ⟨⟨?_, ?_, ?_, ?_⟩, ⟨?_, ?_, ?_, ?_⟩, ⟨?_, ?_, ?_, ?_⟩, ⟨?_, ?_, ?_, ?_⟩⟩
-  · exact absentP_admitted .covered (by simp [state, plain]) (by simp [state, plain])
+  · exact noP_admitted .covered (by simp [state, plain]) (by simp [state, plain])
   · exact readOpp_refused .covered (by simp [state, plain])
   · exact bindA_admitted .covered rfl
   · exact findP_refused .covered (by simp [state, plain])
-  · refine absentP_admitted .refuted (by simp [state, plain]) ?_
+  · refine noP_admitted .refuted (by simp [state, plain]) ?_
     intro σ _ o present
     simp only [state, plain, Finset.mem_singleton] at present
     subst present
@@ -433,11 +434,11 @@ theorem table :
   · exact readOpp_refuted_admitted
   · exact bindA_admitted .refuted rfl
   · exact findP_refused .refuted (by simp [state, plain])
-  · exact absentP_incomplete_refused
+  · exact noP_incomplete_refused
   · exact readOpp_refused .incomplete (by simp [state, plain])
   · exact bindA_admitted .incomplete rfl
   · exact findP_incomplete_admitted
-  · refine absentP_admitted .disequal (by simp [state]) ?_
+  · refine noP_admitted .disequal (by simp [state]) ?_
     intro σ separated o present
     simp only [state, Finset.mem_singleton] at present
     subst present
@@ -461,27 +462,27 @@ theorem profiles_distinct (m₁ m₂ : Member) (different : m₁ ≠ m₂) : pro
   all_goals first
     | exact different rfl
     | exact c2 ((at_ .readOpp).mpr r2)
-    | exact i1 ((at_ .absentP).mp c1)
+    | exact i1 ((at_ .noP).mp c1)
     | exact d3 ((at_ .bindA).mp c3)
     | exact c2 ((at_ .readOpp).mp r2)
-    | exact i1 ((at_ .absentP).mp r1)
+    | exact i1 ((at_ .noP).mp r1)
     | exact d3 ((at_ .bindA).mp r3)
-    | exact i1 ((at_ .absentP).mpr c1)
-    | exact i1 ((at_ .absentP).mpr r1)
-    | exact i1 ((at_ .absentP).mpr d1)
+    | exact i1 ((at_ .noP).mpr c1)
+    | exact i1 ((at_ .noP).mpr r1)
+    | exact i1 ((at_ .noP).mpr d1)
     | exact d3 ((at_ .bindA).mpr c3)
     | exact d3 ((at_ .bindA).mpr r3)
-    | exact i1 ((at_ .absentP).mp d1)
+    | exact i1 ((at_ .noP).mp d1)
 
 /-! ### Incomplete search -/
 
-/-- **A scan that skips the open row would license the absence** that the step refuses at the
+/-- **A scan that skips the open row would license the none query** that the step refuses at the
 incomplete member, while the covering scan does not. -/
 theorem incomplete_scan_would_license :
-    FirstOrderChecks.acceptsCertainCheck (signature := signature) [] rows ∅ (.absent (app 0 a)) = true ∧
-      FirstOrderChecks.acceptsCertainCheck (signature := signature) [] rows {2} (.absent (app 0 a)) = false ∧
-      ¬ profile .incomplete .absentP := by
-  refine ⟨by cbv, by cbv, absentP_incomplete_refused⟩
+    FirstOrderChecks.acceptsCertainCheck (signature := signature) [] rows ∅ (.predicate .none (app 0 a)) = true ∧
+      FirstOrderChecks.acceptsCertainCheck (signature := signature) [] rows {2} (.predicate .none (app 0 a)) = false ∧
+      ¬ profile .incomplete .noP := by
+  refine ⟨by cbv, by cbv, noP_incomplete_refused⟩
 
 /-- The skipping scan lacks coverage. -/
 theorem skipping_scan_not_covering :

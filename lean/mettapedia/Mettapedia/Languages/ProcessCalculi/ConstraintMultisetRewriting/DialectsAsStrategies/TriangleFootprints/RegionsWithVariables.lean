@@ -2,14 +2,15 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsA
 import Mettapedia.Languages.MeTTa.HE.Spec.Match.Completeness
 
 /-!
-# Regions with pattern variables: HE's and PeTTa's regions agree outside H2's two separators
+# Regions with pattern variables: HE's and PeTTa's regions agree outside the two separating programs
 
 `GroundFragment` proved that HE's region of an equation query and PeTTa's region of a call agree
 when every equation's left side is a literal. Here the left sides may carry variables: a row
 `(= (f p₁ … pₙ) rhs)` whose head is a symbol and whose argument patterns have no `cons` list view
 (`ConsFree`, `ConsFreeHeads`); variables may repeat. The call is `(f v₁ … vₙ)` with variable-free
-values. These are exactly the rows outside H2's two separating programs (a head that is not a
-symbol, a `cons` list view).
+values. These are exactly the rows outside the two separating programs
+(`ReadWordTriangle.Instance.region_disagreement`, `GroundFragment.Controls.cons_view_distinguishes`:
+a head that is not a symbol, a `cons` list view).
 
 ## Results
 
@@ -32,17 +33,19 @@ symbol, a `cons` list view).
   `cons`-free equations.** This extends `GroundFragment.footprints_coincide` from literal left sides
   to patterns with variables.
 * `whole_run_rows_consFree`: the whole-run rows of `WholeRunWords` agree on that fragment;
-  `Controls.h1_whole_run` is H1's own program `{(p a), (= (double $x) (+ $x $x))}`.
+  `Controls.factDouble_whole_run` is the program `{(p a), (= (double $x) (+ $x $x))}` of
+  `HEOnTheStep.Triangle`.
 * The linear versions (`completes`, `he_region_sub_petta`, `regions_agree_linear`, …) were the first
   steps and remain as corollaries; `he_rows_sub_petta` states the inclusion as a sublist of rows.
 
 ## Controls
 
-* `Controls.h1_row_inside_both`: H1's row `(= (double $x) (+ $x $x))` is in both regions of
+* `Controls.factDouble_row_inside_both`: the row `(= (double $x) (+ $x $x))` is in both regions of
   `(double 4)`.
 * `Controls.repeated_variable` (positive and negative): on `(= (same $x $x) yes)` the call
   `(same 1 1)` is in HE's region, `(same 1 2)` is not, at every activation.
-* `Controls.cons_row_outside_fragment`: H2's `cons` list-view row lies outside the fragment, and
+* `Controls.cons_row_outside_fragment`: the `cons` list-view row of
+  `GroundFragment.Controls.cons_view_distinguishes` lies outside the fragment, and
   there the regions part: PeTTa's region holds it, HE's does not.
 -/
 
@@ -731,8 +734,8 @@ theorem he_region_sub_petta_consFree (live : List Atom) {head : String} {values 
   simp [pettaCallRegion, LiveEquations.equationOfRow, matched]
 
 /-- **The two regions agree on symbol-headed, `cons`-free equations**, at every satisfiable incoming
-binding record, repeated variables included. The only rows left out are H2's two separators: a head
-that is not a symbol, and a `cons` list view. -/
+binding record, repeated variables included. The only rows left out are those of the two separating
+programs: a head that is not a symbol, and a `cons` list view. -/
 theorem regions_agree_consFree (live : List Atom) {head : String} {values : List Atom}
     (ground : ∀ value ∈ values, TypeSubst.typeVars value = []) {incoming : Bindings}
     (satisfiable : ∃ model : String → Atom,
@@ -830,17 +833,17 @@ theorem whole_run_rows_linear {atoms : List Atom} {f : String} {args : List Atom
 
 namespace Controls
 
-open Instance (h1_inside)
+open Instance (factDouble_inside)
 
-/-- **Positive control: H1's row is in both regions.** `(= (double $x) (+ $x $x))` is in the
+/-- **Positive control: the `double` row is in both regions.** `(= (double $x) (+ $x $x))` is in the
 fragment, in HE's region of `(double 4)` (for scopes that do not show `$x`), and so in PeTTa's. -/
-theorem h1_row_inside_both (live : List Atom)
+theorem factDouble_row_inside_both (live : List Atom)
     (fresh : ∀ atom ∈ live, ¬ Mettapedia.Languages.MeTTa.HE.Spec.Match.Merge.AtomOccurs atom "x") :
     LinearHeads RunsAsFirings.Controls.doubleEquation ∧
       eqRegion live RunsAsFirings.Controls.callDouble Bindings.empty
         RunsAsFirings.Controls.doubleEquation = true ∧
       pettaCallRegion "double" [.grounded (.int 4)] RunsAsFirings.Controls.doubleEquation = true := by
-  have inside := h1_inside live fresh
+  have inside := factDouble_inside live fresh
   refine ⟨?_, inside, ?_⟩
   · intro lhs rhs same
     cases same
@@ -856,8 +859,8 @@ theorem h1_row_inside_both (live : List Atom)
         subst member
         exact .var _) (by decide) inside
 
-/-- H1's program is in the fragment. -/
-theorem h1_program_linear : ∀ row ∈ [RunsAsFirings.Controls.p RunsAsFirings.Controls.a,
+/-- The program `{(p a), (= (double $x) (+ $x $x))}` is in the fragment. -/
+theorem factDouble_program_linear : ∀ row ∈ [RunsAsFirings.Controls.p RunsAsFirings.Controls.a,
     RunsAsFirings.Controls.doubleEquation], LinearHeads row := by
   intro row member lhs rhs same
   simp only [List.mem_cons, List.not_mem_nil, or_false] at member
@@ -869,12 +872,13 @@ theorem h1_program_linear : ∀ row ∈ [RunsAsFirings.Controls.p RunsAsFirings.
       subst member
       exact .var _, by decide⟩
 
-/-- **H1's own program over the whole run.** On `{(p a), (= (double $x) (+ $x $x))}` and the call
+/-- **The program of `HEOnTheStep.Triangle` over the whole run.** On
+`{(p a), (= (double $x) (+ $x $x))}` and the call
 `(double 4)`, HE's machine runs from its entry configuration to the call with the declared word of
 `EntryToQuery`, under any policy and dispatch, and the rows HE reads from the entry through the
-query are exactly PeTTa's request rows: the equation at position `1`. H1's `reads_differ` found HE
-reading the whole space on this program. -/
-theorem h1_whole_run (dispatch : Mettapedia.Languages.MeTTa.HE.Spec.Eval.GroundedDispatch)
+query are exactly PeTTa's request rows: the equation at position `1`.
+`HEOnTheStep.Triangle.reads_differ` found HE reading the whole space on this program. -/
+theorem factDouble_whole_run (dispatch : Mettapedia.Languages.MeTTa.HE.Spec.Eval.GroundedDispatch)
     (policy : Mettapedia.Languages.MeTTa.HE.Spec.Eval.Completed.Policy) :
     EntryToQuery.Traced ServiceFootprints.rawDeclared dispatch policy
         (entry [RunsAsFirings.Controls.p RunsAsFirings.Controls.a,
@@ -896,8 +900,8 @@ theorem h1_whole_run (dispatch : Mettapedia.Languages.MeTTa.HE.Spec.Eval.Grounde
   refine ⟨EntryToQuery.entry_traced (dispatch := dispatch) (policy := policy)
     ServiceFootprints.rawDeclared EntryToQuery.raw_answers WholeRunWords.Double.double_data untyped,
     ?_⟩
-  rw [whole_run_rows_linear WholeRunWords.Double.double_data undeclared h1_program_linear]
-  exact (Instance.h1_triangle [] (by simp)).2
+  rw [whole_run_rows_linear WholeRunWords.Double.double_data undeclared factDouble_program_linear]
+  exact (Instance.factDouble_triangle [] (by simp)).2
 
 /-- `(= (same $x $x) yes)`: a left side with a repeated variable. -/
 def sameRow : Atom :=
@@ -968,9 +972,9 @@ end Controls
 #print axioms regions_agree_consFree
 #print axioms footprints_coincide_consFree
 #print axioms whole_run_rows_consFree
-#print axioms Controls.h1_row_inside_both
+#print axioms Controls.factDouble_row_inside_both
 #print axioms Controls.repeated_variable
-#print axioms Controls.h1_whole_run
+#print axioms Controls.factDouble_whole_run
 #print axioms Controls.cons_row_outside_fragment
 
 end RegionsWithVariables

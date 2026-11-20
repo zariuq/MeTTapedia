@@ -112,7 +112,7 @@ theorem unsolvable_of_endingTop {fuel rounds : Nat} {Γ : Context setting.R} {st
     (read : endingTop fuel rounds Γ store = .refuted) : ¬ (frames setting.levels).Solvable store := by
   rw [← endingTop_run] at read
   cases outcome : run (elimSigmaTower.solver fuel) store rounds with
-  | refuted absent => exact absent
+  | refuted missing => exact missing
   | solved _ _ => rw [outcome] at read; cases read
   | stuck _ => rw [outcome] at read; cases read
   | cutoff _ => rw [outcome] at read; cases read

@@ -1,5 +1,6 @@
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.GeneralPremiseMachineExecution
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.GeneralScopedMatchExecution
+import Mettapedia.Tools.KernelReflexivity
 
 /-! Source clauses and admission for the original finite premise environment. -/
 
@@ -136,7 +137,7 @@ theorem helper_clause (program : Program) (agreement : ProgramAgreementOn ownedH
     clauses program helper.head values = [.evaluate (callee helper values) (equation helper).body] := by
   apply PureData.selected_clause_agreement agreement (helper_supported helper)
   apply PureData.named_equation_clause runtime helper.head (equation helper) helper.names values
-  · cases helper <;> rfl
+  · cases helper <;> kernel_reflexivity
   · cases helper <;> decide +kernel
   · cases helper <;> decide
   · exact length
@@ -191,7 +192,7 @@ theorem data_template (program : Program) (agreement : ProgramAgreementOn ownedH
     have checked : dataHeads.all (fun name => decide
         ((ioHead name || StdLib.known name || runtime.equations.any (·.head == name)) = false ∧
           name ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"])) = true := by
-      rfl
+      decide +kernel
     have row := List.all_eq_true.mp checked head member
     rw [decide_eq_true_eq] at row
     exact row.1
@@ -1563,19 +1564,19 @@ theorem member_closed : ProgramClosed memberHeads MatchAutomataProgram.program :
   · intro equation member supported
     have checked : MatchAutomataProgram.program.equations.all (fun equation =>
         !memberHeads equation.head || codeWithin memberHeads equation.body) = true := by
-      rfl
+      decide +kernel
     have row := List.all_eq_true.mp checked equation member
     simpa only [supported, Bool.not_true, Bool.false_or] using row
 
 theorem member_retained_equations :
     MatchAutomataProgram.program.equations.filter (fun equation => memberHeads equation.head) =
     RuleExecutionProgram.scopedMachineProgram.equations.filter (fun equation => memberHeads equation.head) := by
-  rfl
+  kernel_reflexivity
 
 theorem member_retained_declarations :
     MatchAutomataProgram.program.declarations.filter (retainedCallDeclaration memberHeads) =
     RuleExecutionProgram.scopedMachineProgram.declarations.filter (retainedCallDeclaration memberHeads) := by
-  rfl
+  kernel_reflexivity
 
 theorem member_agreement : ProgramAgreementOn memberHeads MatchAutomataProgram.program RuleExecutionProgram.scopedMachineProgram :=
   Eval.programAgreementOn_of_retained_rows _ _ _ member_retained_equations member_retained_declarations
@@ -1586,19 +1587,19 @@ theorem metadata_closed : ProgramClosed metadataHeads RuleExecutionProgram.progr
   · intro equation member supported
     have checked : RuleExecutionProgram.program.equations.all (fun equation =>
         !metadataHeads equation.head || codeWithin metadataHeads equation.body) = true := by
-      rfl
+      decide +kernel
     have row := List.all_eq_true.mp checked equation member
     simpa only [supported, Bool.not_true, Bool.false_or] using row
 
 theorem metadata_retained_equations :
     RuleExecutionProgram.program.equations.filter (fun equation => metadataHeads equation.head) =
     RuleExecutionProgram.scopedMachineProgram.equations.filter (fun equation => metadataHeads equation.head) := by
-  rfl
+  kernel_reflexivity
 
 theorem metadata_retained_declarations :
     RuleExecutionProgram.program.declarations.filter (retainedCallDeclaration metadataHeads) =
     RuleExecutionProgram.scopedMachineProgram.declarations.filter (retainedCallDeclaration metadataHeads) := by
-  rfl
+  kernel_reflexivity
 
 theorem metadata_agreement : ProgramAgreementOn metadataHeads RuleExecutionProgram.program RuleExecutionProgram.scopedMachineProgram :=
   Eval.programAgreementOn_of_retained_rows _ _ _ metadata_retained_equations metadata_retained_declarations
@@ -1609,19 +1610,19 @@ theorem ground_closed : ProgramClosed groundHeads premiseRuntimeProgram := by
   · intro equation member supported
     have checked : premiseRuntimeProgram.equations.all (fun equation =>
         !groundHeads equation.head || codeWithin groundHeads equation.body) = true := by
-      rfl
+      decide +kernel
     have row := List.all_eq_true.mp checked equation member
     simpa only [supported, Bool.not_true, Bool.false_or] using row
 
 theorem ground_retained_equations :
     premiseRuntimeProgram.equations.filter (fun equation => groundHeads equation.head) =
     RuleExecutionProgram.scopedMachineProgram.equations.filter (fun equation => groundHeads equation.head) := by
-  rfl
+  kernel_reflexivity
 
 theorem ground_retained_declarations :
     premiseRuntimeProgram.declarations.filter (retainedCallDeclaration groundHeads) =
     RuleExecutionProgram.scopedMachineProgram.declarations.filter (retainedCallDeclaration groundHeads) := by
-  rfl
+  kernel_reflexivity
 
 theorem ground_agreement : ProgramAgreementOn groundHeads premiseRuntimeProgram RuleExecutionProgram.scopedMachineProgram :=
   Eval.programAgreementOn_of_retained_rows _ _ _ ground_retained_equations ground_retained_declarations
@@ -1804,12 +1805,12 @@ theorem operations : EnvironmentExecution.AdmissionOperations RuleExecutionProgr
 theorem retained_equations :
     EnvironmentExecution.runtime.equations.filter (fun equation => EnvironmentExecution.ownedHeads equation.head) =
     RuleExecutionProgram.scopedMachineProgram.equations.filter (fun equation => EnvironmentExecution.ownedHeads equation.head) := by
-  rfl
+  kernel_reflexivity
 
 theorem retained_declarations :
     EnvironmentExecution.runtime.declarations.filter (retainedCallDeclaration EnvironmentExecution.ownedHeads) =
     RuleExecutionProgram.scopedMachineProgram.declarations.filter (retainedCallDeclaration EnvironmentExecution.ownedHeads) := by
-  rfl
+  kernel_reflexivity
 
 theorem agreement : ProgramAgreementOn EnvironmentExecution.ownedHeads EnvironmentExecution.runtime RuleExecutionProgram.scopedMachineProgram :=
   Eval.programAgreementOn_of_retained_rows _ _ _ retained_equations retained_declarations

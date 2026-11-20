@@ -24,18 +24,10 @@ def source (spaceName rowName : String) : Atom :=
 
 def answers (changed : Bool) : List Atom := if changed then [Effects.boolean true] else []
 
-def update (before : Effects.State) (handle : Handle) (row : Atom) : Option (Effects.State × Bool) := do
-  let rows ← before.read handle
-  if row ∈ rows then some (before, false)
-  else (Effects.insert before handle row).map (fun after => (after, true))
+abbrev update := GuardedInsertionSource.updateWithProgress
 
 theorem forget_progress (before : Effects.State) (handle : Handle) (row : Atom) :
-    (update before handle row).map Prod.fst = GuardedInsertionSource.update before handle row := by
-  unfold update GuardedInsertionSource.update
-  cases snapshot : before.read handle with
-  | none => rfl
-  | some rows =>
-      by_cases present : row ∈ rows <;> simp [present, Option.map_map, Function.comp_def]
+    (update before handle row).map Prod.fst = GuardedInsertionSource.update before handle row := rfl
 
 theorem unchanged_update {before after : Effects.State} {handle : Handle} {row : Atom} {changed : Bool}
     (completed : update before handle row = some (after, changed)) :
@@ -50,13 +42,13 @@ theorem update_reads_back {before after : Effects.State} {handle : Handle} {row 
       changed = decide (row ∉ rows) := by
   obtain ⟨rows, snapshot, afterRead⟩ := GuardedInsertionSource.update_reads_back (unchanged_update completed)
   refine ⟨rows, snapshot, afterRead, ?_⟩
-  unfold update at completed
-  simp only [snapshot] at completed
   by_cases present : row ∈ rows
-  · have same : (before, false) = (after, changed) := by simpa [present] using completed
+  · have same : (before, false) = (after, changed) := by
+      simpa [update, GuardedInsertionSource.updateWithProgress, snapshot, present] using completed
     simpa [present] using (Prod.mk.inj same).2.symm
-  · have mapped : (Effects.insert before handle row).map (fun next => (next, true)) = some (after, changed) := by
-      simpa [present] using completed
+  · have value := (GuardedInsertionSource.absent_update_inserts snapshot present (unchanged_update completed)).1
+    have mapped : (Effects.insert before handle row).map (fun next => (next, true)) = some (after, changed) := by
+      simpa [update, GuardedInsertionSource.updateWithProgress, snapshot, present, value] using completed
     obtain ⟨middle, _, same⟩ := Option.map_eq_some_iff.mp mapped
     simpa [present] using (Prod.mk.inj same).2.symm
 
@@ -71,7 +63,7 @@ theorem source_returns (program : Program) (bindings : Subst) (before after : Ef
   have plain := unchanged_update completed
   by_cases present : row ∈ rows
   · have flag : changed = false := by simpa [present] using progress
-    have same : before = after := by simpa [GuardedInsertionSource.update, snapshot, present] using plain
+    have same := Option.some.inj ((GuardedInsertionSource.update_of_present snapshot present).symm.trans plain)
     subst after
     rw [flag]
     change Returns program bindings before (source spaceName rowName) before []
@@ -79,22 +71,22 @@ theorem source_returns (program : Program) (bindings : Subst) (before after : Ef
       (by simpa [present] using tested)
     simpa [Effects.boolean] using empty_returns program bindings before
   · have flag : changed = true := by simpa [present] using progress
-    have inserted : Effects.insert before handle row = some after := by
-      simpa [GuardedInsertionSource.update, snapshot, present] using plain
+    obtain ⟨value, inserted⟩ := GuardedInsertionSource.absent_update_inserts snapshot present plain
     rw [flag]
     change Returns program bindings before (source spaceName rowName) after [Effects.boolean true]
     apply if_answers program bindings before before after _ (Effects.boolean true) _ _ [Effects.boolean true]
       (by simpa [present] using tested)
     simpa using GuardedInsertionSource.insert_returns program bindings before after spaceName rowName handle row
-      location bound inserted
+      location bound value inserted
 
 theorem missing_is_not_zero_progress (before : Effects.State) (handle : Handle) (row : Atom)
-    (missing : before.read handle = none) : update before handle row = none := by simp [update, missing]
+    (missing : before.read handle = none) : update before handle row = none := by
+  simp [update, GuardedInsertionSource.updateWithProgress, missing]
 
 theorem update_exists {before : Effects.State} {handle : Handle} {rows : List Atom}
-    (snapshot : before.read handle = some rows) (row : Atom) :
+    (snapshot : before.read handle = some rows) (row : Atom) (value : row.isVariable = false) :
     ∃ after changed, update before handle row = some (after, changed) := by
-  obtain ⟨after, computed⟩ := GuardedInsertionSource.update_exists snapshot row
+  obtain ⟨after, computed⟩ := GuardedInsertionSource.update_exists snapshot row value
   have projected : (update before handle row).map Prod.fst = some after :=
     (forget_progress before handle row).trans computed
   obtain ⟨receipt, updated, _⟩ := Option.map_eq_some_iff.mp projected
@@ -116,7 +108,7 @@ theorem zero_progress_preserves_state {before after : Effects.State} {handle : H
     by_contra absent
     simp [absent] at flag
   have plain := unchanged_update completed
-  simpa [GuardedInsertionSource.update, snapshot, present] using plain
+  exact Option.some.inj ((GuardedInsertionSource.update_of_present snapshot present).symm.trans plain)
 
 namespace Controls
 

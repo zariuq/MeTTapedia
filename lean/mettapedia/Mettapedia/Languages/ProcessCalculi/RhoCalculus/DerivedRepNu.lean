@@ -567,25 +567,11 @@ private theorem hasDerivedHead_semanticSubstName_false
     (hname : hasDerivedHead name = false) :
     hasDerivedHead (semanticSubstName k replacementName name) = false := by
   unfold semanticSubstName semanticSubstNameMark
-  have hnorm : hasDerivedHead (semanticNormalizeName name) = false :=
-    hasDerivedHead_semanticNormalizeName_false hname
-  cases hnm : semanticNormalizeName name with
-  | bvar n =>
-      by_cases hnk : n = k
-      · simp [hnk, hrepl]
-      · simp [hnk, hasDerivedHead]
-  | fvar x =>
-      simpa [hnm] using hnorm
-  | apply c args =>
-      simpa [hnm] using hnorm
-  | lambda nm body =>
-      simpa [hnm] using hnorm
-  | multiLambda n nms body =>
-      simpa [hnm] using hnorm
-  | subst body repl =>
-      simpa [hnm] using hnorm
-  | collection ct elems rest =>
-      simpa [hnm] using hnorm
+  by_cases hit : Canonical.canonicalize name = .bvar k
+  · rw [if_pos hit]
+    exact hrepl
+  · rw [if_neg hit]
+    exact hasDerivedHead_semanticNormalizeName_false hname
 
 mutual
   private theorem hasDerivedHead_semanticSubstProc_false

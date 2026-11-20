@@ -97,10 +97,11 @@ private theorem sc_apply_two (f : String) {a a' b b' : Pattern} (ha : a ≡ a') 
       exact absurd (Nat.lt_of_succ_lt_succ (Nat.lt_of_succ_lt_succ h₁)) (Nat.not_lt_zero n)
 
 /-- A collapsing drop, in closed form: the substituted quote's process where
-the normalised name is the bound name, the normalised drop elsewhere. -/
+the canonical form of the name is the bound name, the normalised drop
+elsewhere. -/
 theorem substProc_drop_quote (k : Nat) (a name : Pattern) :
     semanticSubstProc k (.apply "NQuote" [a]) (.apply "PDrop" [name]) =
-      if semanticNormalizeName name = .bvar k then a
+      if Canonical.canonicalize name = .bvar k then a
       else .apply "PDrop" [semanticNormalizeName name] := by
   rw [semanticSubstProc.eq_4, substNameMark_eq]
   split_ifs

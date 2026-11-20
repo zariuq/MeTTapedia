@@ -4,7 +4,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 /-!
 # Narrowing universe declarations
 
-The cumulative row of the census, `λ x. F x ≐ λ x. N` with `x : U0` where `F` declares `U1`, is read by comparing the
+The cumulative row of the classification, `λ x. F x ≐ λ x. N` with `x : U0` where `F` declares `U1`, is read by comparing the
 equation's local telescope with `F`'s binders up to cumulativity. Its exactness rests on comparing judgments in two
 contexts that differ only at universe declarations.
 

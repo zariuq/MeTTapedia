@@ -9,7 +9,8 @@ reached from the original result by a forward chain of quote-drop and wrapper st
 (`instantiateWith?_wrapper`), when its collection rests are rests, no explicit substitution lies under a
 binder, and each explicit substitution has an ordinary captured body occurring with a variable spine and
 an explicit quotation as replacement (`RightShaped`), and the binder operation respects wrapper normal
-bodies (`BinderRespectsWrapper`): the ordinary one always, the reflective one when its result is closed.
+bodies (`BinderRespectsWrapper`): the ordinary one always, the reflective one of a closed quote scope
+when its result is closed.
 Below binders, where no substitution occurs, the result moves by a forward chain without any scope
 condition (`instantiateWith?_plain`).
 -/
@@ -147,20 +148,24 @@ theorem binderRespectsWrapper_ordinary : BinderRespectsWrapper laws declaration 
   fun forwardPayload _ => instantiateBVar_qwForward (qwForward_apply _ (.cons forwardPayload .nil))
     (QWForward.ofWrapper (to_wrapperNormal _))
 
-theorem binderRespectsWrapper_reflective (distinct : declaration.dropConstructor ≠ declaration.quoteConstructor) :
+theorem binderRespectsWrapper_reflective (distinct : declaration.dropConstructor ≠ declaration.quoteConstructor)
+    (closedScope : declaration.quoteScope = .closed)
+    (compatible : BinderWrapperCompatible laws declaration) :
     BinderRespectsWrapper laws declaration (ScopedRuleInstantiation.reflectiveOperation declaration) :=
-  fun forwardPayload inScope => reflectiveOperation_wrapper distinct forwardPayload _ inScope
+  fun forwardPayload inScope =>
+    reflectiveOperation_wrapper distinct closedScope compatible forwardPayload _ inScope
 
 theorem binderRespectsWrapper_binderOperation (distinct : declaration.dropConstructor ≠ declaration.quoteConstructor)
     {profile : Reflection.ReflectionProfile} {rule : RewriteRule}
     (selection : substitutionPresentationForRule? profile rule = none ∨
-      substitutionPresentationForRule? profile rule = some declaration) :
+      (substitutionPresentationForRule? profile rule = some declaration ∧
+        declaration.quoteScope = .closed ∧ BinderWrapperCompatible laws declaration)) :
     BinderRespectsWrapper laws declaration (ScopedReflectiveExecution.binderOperation profile rule) := by
-  rcases selection with ordinary | reflective
+  rcases selection with ordinary | ⟨reflective, closedScope, compatible⟩
   · simp only [ScopedReflectiveExecution.binderOperation, ordinary]
     exact binderRespectsWrapper_ordinary
   · simp only [ScopedReflectiveExecution.binderOperation, reflective]
-    exact binderRespectsWrapper_reflective distinct
+    exact binderRespectsWrapper_reflective distinct closedScope compatible
 
 /-! ## Instantiation -/
 

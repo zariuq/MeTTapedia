@@ -110,7 +110,6 @@ import Mettapedia.Languages.MeTTa.MetavariableFrameLineage
 import Mettapedia.Languages.MeTTa.Bridges.GSLT.CeTTaFrameWriteback
 import Mettapedia.Languages.MeTTa.MetavariableFrameStoreGrowth
 import Mettapedia.Languages.MeTTa.MetavariableFrameReclamation
-import Mettapedia.Languages.MeTTa.Bridges.GSLT.CeTTaNeedHistory
 import Mettapedia.Languages.MeTTa.FreshFrameOccursCheck
 import Mettapedia.Languages.MeTTa.PatternSelection
 import Mettapedia.Languages.MeTTa.AnswerProducerHandoff

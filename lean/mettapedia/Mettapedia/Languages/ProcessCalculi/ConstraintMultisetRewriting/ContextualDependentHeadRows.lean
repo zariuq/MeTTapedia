@@ -1,12 +1,12 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentHeadView
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentCensusReadsSigma
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentClassificationReadsSigma
 
 /-!
-# Every census head has two views, and the rows read by shape
+# Every classified head has two views, and the rows read by shape
 
-**The opened sides of a census head have views** (`census_views`). The η-long opened sides of an equation with normal
+**The opened sides of a classified head have views** (`classification_views`). The η-long opened sides of an equation with normal
 codes and equal annotations are typed (`openNormal_typed`) and normal, so by canonical forms each has a view. The
-classification `ContextualDependentHeadView.classify` therefore applies to every census head: a census head is in
+classification `ContextualDependentHeadView.classify` therefore applies to every classified head: a classified head is in
 one of its seventeen rows, whatever its shape.
 
 **Rows read, stated on the views.**
@@ -20,10 +20,10 @@ one of its seventeen rows, whatever its shape.
   read by the decomposition at every base type (`spineRow_covered`).
 
 **A conditional decision, with the hypothesis on views** (`tower_base_decided_of_rows`). The base family decides every
-store of the fragment provided every census head of a constant preparation is read whose two views are in neither row
+store of the fragment provided every classified head of a constant preparation is read whose two views are in neither row
 above and which no other row read covers. Compared with `tower_base_decided_of_uncovered`, the hypothesis hands over
 the two views, so a proof of it could proceed by the classification's pattern matching, and it excludes the two rows
-by shape; the rows read by the executable readings of formers and pairs are excluded through `CensusCoveredHead`, not
+by shape; the rows read by the executable readings of formers and pairs are excluded through `ClassifiedCoveredHead`, not
 by shape. At the tower the hypothesis fails: the conclusion would decide `crossStore`, solvable and without principal
 answer (`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`). For every store, runs are exact; on
 `crossStore` they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`).
@@ -44,7 +44,7 @@ open ContextualDependentConstantHeads ContextualDependentMillerClosure
 open ContextualDependentIntersectionGeneral.DeadControls ContextualDependentPatternFiring.Controls
 open ContextualDependentAcceptance4
 open ContextualDependentHeadView
-open ContextualDependentCensus (openNormal)
+open ContextualDependentClassification (openNormal)
 open ContextualDependentPatternSolver (lamDepth)
 
 section Shapes
@@ -175,7 +175,7 @@ end Typed
 /-! ## The tower -/
 
 /-- **The η-long opened sides of an equation with normal codes and equal annotations have views.** -/
-theorem census_views {Γ : Context setting.R} (equation : Equation (TotalTerm Γ))
+theorem classification_views {Γ : Context setting.R} (equation : Equation (TotalTerm Γ))
     (normal : ContextualDependentNormalizing.NormalEquation (fun _ => (0 : Nat)) equation)
     (types : TypeEq setting.R Γ.raw equation.1.1.code equation.2.1.code) :
     ∃ left right : View Tower.Head (Γ.arity + piCount equation.1.1.code),
@@ -190,19 +190,19 @@ theorem census_views {Γ : Context setting.R} (equation : Equation (TotalTerm Γ
   obtain ⟨_, _, formedRight, openedRight⟩ :=
     openNormal_typed (S := setting) _ Γ.formed typedRight (lamDepth_expandTo _ _)
   obtain ⟨left, foundLeft⟩ := view_of_typed_normal (S := setting) TowerModel.facts formedLeft openedLeft
-    (ContextualDependentCensus.openNormal_normal empty (normal_expandTo empty _ normal.2.1) _)
+    (ContextualDependentClassification.openNormal_normal empty (normal_expandTo empty _ normal.2.1) _)
   obtain ⟨right, foundRight⟩ := view_of_typed_normal (S := setting) TowerModel.facts formedRight openedRight
-    (ContextualDependentCensus.openNormal_normal empty (normal_expandTo empty _ normal.2.2.2) _)
+    (ContextualDependentClassification.openNormal_normal empty (normal_expandTo empty _ normal.2.2.2) _)
   exact ⟨left, right, foundLeft, foundRight⟩
 
-/-- **A census head in the clash row is in a row read**: the skeleton clash rule refutes it. -/
+/-- **A classified head in the clash row is in a row read**: the skeleton clash rule refutes it. -/
 theorem clashRow_covered {Γ : Context setting.R} {equation : Equation (TotalTerm Γ)}
     {left right : View Tower.Head (Γ.arity + piCount equation.1.1.code)}
     (foundLeft : view? (openNormal (piCount equation.1.1.code)
       (expandTo (piCount equation.1.1.code) equation.1.2.code)) = some left)
     (foundRight : view? (openNormal (piCount equation.1.1.code)
       (expandTo (piCount equation.1.1.code) equation.2.2.code)) = some right)
-    (clash : ClashRow (piCount equation.1.1.code) left right) : CensusCoveredHead equation := by
+    (clash : ClashRow (piCount equation.1.1.code) left right) : ClassifiedCoveredHead equation := by
   obtain ⟨s, s', skeletonLeft, skeletonRight, differ⟩ := clash
   refine .inl (.inl (.inl (.inr (.inr ?_))))
   refine skeletonClash_of_opened le_rfl (lamDepth_expandTo _ _) (lamDepth_expandTo _ _) (.base ?_ ?_ differ)
@@ -211,7 +211,7 @@ theorem clashRow_covered {Γ : Context setting.R} {equation : Equation (TotalTer
   · rw [← view?_code foundRight, fixedSkeleton_code]
     exact skeletonRight
 
-/-- **A census head in the spine row at a base type as it stands is in a row read**: the decomposition at every base
+/-- **A classified head in the spine row at a base type as it stands is in a row read**: the decomposition at every base
 type reads it. -/
 theorem spineRow_covered {Γ : Context setting.R} {equation : Equation (TotalTerm Γ)}
     {left right : View Tower.Head (Γ.arity + piCount equation.1.1.code)}
@@ -220,7 +220,7 @@ theorem spineRow_covered {Γ : Context setting.R} {equation : Equation (TotalTer
     (foundRight : view? (openNormal (piCount equation.1.1.code)
       (expandTo (piCount equation.1.1.code) equation.2.2.code)) = some right)
     (base : anyBase (piOpen (piCount equation.1.1.code) equation.1.1.code) = true)
-    (spines : SpineRow (piCount equation.1.1.code) left right) : CensusCoveredHead equation := by
+    (spines : SpineRow (piCount equation.1.1.code) left right) : ClassifiedCoveredHead equation := by
   obtain ⟨index, as, bs, bound, nonempty, same, shape⟩ := spines
   refine .inl (.inr ?_)
   refine anySpines_of_opened le_rfl (lamDepth_expandTo _ _) (lamDepth_expandTo _ _) ?_
@@ -233,7 +233,7 @@ theorem spineRow_covered {Γ : Context setting.R} {equation : Equation (TotalTer
     · exact .proj (first := false) base bound nonempty same
     · exact .proj (first := true) base bound nonempty same
 
-/-- **Conditional decision for the tower's base family, with the hypothesis on views**: if every census head of a
+/-- **Conditional decision for the tower's base family, with the hypothesis on views**: if every classified head of a
 constant preparation is read whose η-long opened sides have views outside the clash row and, at a base type as it
 stands, outside the spine row, and which is outside the rows read, then the family decides every store of the dynamic
 pattern fragment, with a principal answer or a certified refutation, constant at every larger budget. At the tower the
@@ -246,7 +246,7 @@ theorem tower_base_decided_of_rows
       PermutedMiller setting.levels problem → problem ≠ [] → ∀ threshold,
         (∀ larger, threshold ≤ larger → towerPrepare larger problem = towerPrepare threshold problem) →
         ∀ equation ∈ (towerPrepare threshold problem).remaining,
-          ContextualDependentNormalizing.NormalEquation (fun _ => (0 : Nat)) equation → CensusHead equation →
+          ContextualDependentNormalizing.NormalEquation (fun _ => (0 : Nat)) equation → ClassifiedHead equation →
           ContextualDependentShortClosure.FragmentSidesMiller equation →
           ∀ left right : View Tower.Head ((towerPrepare threshold problem).target.arity + piCount equation.1.1.code),
             view? (openNormal (piCount equation.1.1.code)
@@ -256,16 +256,16 @@ theorem tower_base_decided_of_rows
             ¬ ClashRow (piCount equation.1.1.code) left right →
             ¬ (anyBase (piOpen (piCount equation.1.1.code) equation.1.1.code) = true ∧
               SpineRow (piCount equation.1.1.code) left right) →
-            ¬ CensusCoveredHead equation → ∃ bound, ∀ larger, bound ≤ larger → TowerBaseReads larger problem)
+            ¬ ClassifiedCoveredHead equation → ∃ bound, ∀ larger, bound ≤ larger → TowerBaseReads larger problem)
     {Θ : Context setting.R} {problem : EquationStore (TotalTerm Θ)} (inside : InFragmentStore problem) :
     ∃ budget, ∀ larger, budget ≤ larger →
       run (baseTower.solver larger) problem larger = run (baseTower.solver budget) problem budget ∧
       ((∃ state finished, run (baseTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ absent, run (baseTower.solver larger) problem larger = .refuted absent)) :=
+        (∃ missing, run (baseTower.solver larger) problem larger = .refuted missing)) :=
   tower_base_decided_of_uncovered
     (fun permuted nonempty threshold constant equation member normal head sides _ uncovered => by
-      obtain ⟨left, right, foundLeft, foundRight⟩ := census_views equation normal head.1
+      obtain ⟨left, right, foundLeft, foundRight⟩ := classification_views equation normal head.1
       exact rows permuted nonempty threshold constant equation member normal head sides left right foundLeft
         foundRight (fun clash => uncovered (clashRow_covered foundLeft foundRight clash))
         (fun spines => uncovered (spineRow_covered foundLeft foundRight spines.1 spines.2)) uncovered)

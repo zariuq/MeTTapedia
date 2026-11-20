@@ -1,4 +1,4 @@
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.CensusSourceCompilation
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.PredicateQuerySourceCompilation
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ConditionalSchedule
 
 /-!
@@ -126,7 +126,7 @@ theorem observation_cons_iff (action : SubstitutionAction T S) (label : O → T)
       exact law.mpr (holds original present)
 
 /-- The compiler retains the exact readiness of every private source step,
-including a census made before later equations or effects exist. -/
+including a predicate query made before later equations or effects exist. -/
 theorem compile_exact (action : SubstitutionAction T S) (label : O → T) :
     ∀ (code : List (Instruction T S O)) (before : Configuration T O),
       (compile label code).Holds action label before ↔ Executable action label before code
@@ -140,9 +140,9 @@ theorem compile_exact (action : SubstitutionAction T S) (label : O → T) :
         cases member
   | instruction :: rest, before => by
       constructor
-      · rintro ⟨raw, censuses⟩
+      · rintro ⟨raw, queriesHold⟩
         have source := (ConditionalSchedule.compile_holds_iff action label before _).mp raw
-        obtain ⟨current, later⟩ := (observation_cons_iff action label instruction rest before).mp censuses
+        obtain ⟨current, later⟩ := (observation_cons_iff action label instruction rest before).mp queriesHold
         refine ⟨⟨source.1, current⟩, ?_⟩
         apply (compile_exact action label rest _).mp
         exact ⟨(ConditionalSchedule.compile_holds_iff action label _ _).mpr source.2, later⟩
@@ -193,8 +193,8 @@ theorem realize_net_under_retained_admission (action : SubstitutionAction T S) (
     (code : List (Instruction T S O)) (before : Configuration T O)
     (ready : (compile label code).Holds action label before) :
     let plan := (compile label code).raw
-    let selected := CensusSourceCompilation.selection plan.effect
-    let rule := CensusSourceCompilation.rule label plan.effect plan.equations
+    let selected := PredicateQuerySourceCompilation.selection plan.effect
+    let rule := PredicateQuerySourceCompilation.rule label plan.effect plan.equations
     PredicateQueryAdmission.Valid action label rule (plan.effect.queries.map PredicateQueryAdmission.Query.fixed) before selected ∧
       action.Equivalent (selected.result label rule before).equations
         (ConditionalSchedule.follow label before (code.map Instruction.raw)).equations ∧
@@ -204,14 +204,14 @@ theorem realize_net_under_retained_admission (action : SubstitutionAction T S) (
     before.present ready.1.2.1
   have same := ConditionalSchedule.compile_result action label before _
     ((compile_exact action label code before).mp ready).raw
-  refine ⟨CensusSourceCompilation.realize_commit action label (compile label code).raw.effect
+  refine ⟨PredicateQuerySourceCompilation.realize_commit action label (compile label code).raw.effect
     (compile label code).raw.equations before enabled ready.1.2.2.1, ?_, ?_⟩
   · intro candidate
     rw [← same]
-    exact CensusSourceCompilation.models_problem_iff action candidate label (compile label code).raw.effect
+    exact PredicateQuerySourceCompilation.models_problem_iff action candidate label (compile label code).raw.effect
       (compile label code).raw.equations before
   · rw [← same]
-    exact CensusSourceCompilation.physical_result label (compile label code).raw.effect
+    exact PredicateQuerySourceCompilation.physical_result label (compile label code).raw.effect
       (compile label code).raw.equations before
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.StagedSourceEffects

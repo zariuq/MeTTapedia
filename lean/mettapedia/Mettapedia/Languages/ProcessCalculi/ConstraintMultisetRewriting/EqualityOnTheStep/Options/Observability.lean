@@ -3,20 +3,20 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.EqualityO
 /-!
 # Queries observe the equality of the knowledge
 
-On the step, absence and counting are asked of the present rows through the knowledge: a query's
-region at a solution is the set of rows the solution equates with its pattern (`Query.absent`,
+On the step, none queries and counting are asked of the present rows through the knowledge: a query's
+region at a solution is the set of rows the solution equates with its pattern (`Query.predicate`,
 `Query.count`). So the equality the knowledge decides is observable, and every extension of it that
 identifies two rows not identified before changes the answer of a count query.
 
-**Under a relation** (`CountUnder`, `AbsentUnder`). For relations `E ≤ E'` on rows:
+**Under a relation** (`CountUnder`, `NoneMatchUnder`). For relations `E ≤ E'` on rows:
 
 * `count_changes`: if `E'` relates the pattern to a present row that `E` does not, no number counts
   the pattern under both;
-* `absence_changes`: if `E'` relates the pattern to a present row, its absence fails under `E'`;
-* `count_conservative_iff`, `absence_conservative_iff`: **`E'` leaves every count (every absence)
+* `none_changes`: if `E'` relates the pattern to a present row, its none query fails under `E'`;
+* `count_conservative_iff`, `none_conservative_iff`: **`E'` leaves every count (every none queries)
   answer unchanged exactly when it relates nothing that `E` does not relate**.
 
-**Under a knowledge** (`EntailsEqual`, `CountAnswer`, `AbsentAnswer`), for any frames of the step's
+**Under a knowledge** (`EntailsEqual`, `CountAnswer`, `NoneMatchAnswer`), for any frames of the step's
 interface. A store's answer to a query holds when the query holds at every solution of the store.
 
 * `extension_observed`: if a store `K'` entails an equation `s ≐ t` that `K` does not entail, the
@@ -32,9 +32,9 @@ knowledge `K'`.
 **The designs, read through it.**
 
 * *Evidence rows (the built design)*: a transport firing's information has the solutions of the
-  knowledge it starts from (`transportBy_equivalent`), so every count and absence answer about any
-  rows is the one the old knowledge gives (`transport_answers`). This is why absence does not
-  transport (`Controls.absence_does_not_transport`): nothing was identified.
+  knowledge it starts from (`transportBy_equivalent`), so every count and none answer about any
+  rows is the one the old knowledge gives (`transport_answers`). This is why the none query does not
+  transport (`Controls.none_does_not_transport`): nothing was identified.
 * *Class names*: the evidence-free tell of `Quotient.unwitnessedTell` is observed: the count of
   `(S, q₂)` that `Quotient.countBefore_refused` refuses is admitted after it (`unwitnessed_tell_observed`).
   An unwitnessed class equation is therefore not harmless; it changes answers.
@@ -61,7 +61,7 @@ open ProgrammingOnTheStep.SetExtensionality (small U0 sCode tCode setType swapCo
 
 universe uR uO uObj uTm uHom
 
-/-! ## Counting and absence under a relation -/
+/-! ## Counting and none queries under a relation -/
 
 section Relations
 
@@ -73,7 +73,7 @@ def CountUnder (E : R → R → Prop) (pattern : R) (present : Finset O) (row : 
   ∃ seen : Finset O, (∀ o, o ∈ seen ↔ o ∈ present ∧ E pattern (row o)) ∧ seen.card = number
 
 /-- **No present row is related to the pattern.** -/
-def AbsentUnder (E : R → R → Prop) (pattern : R) (present : Finset O) (row : O → R) : Prop :=
+def NoneMatchUnder (E : R → R → Prop) (pattern : R) (present : Finset O) (row : O → R) : Prop :=
   ∀ o ∈ present, ¬ E pattern (row o)
 
 /-- **An extension that relates the pattern to one more present row changes every count of it.** -/
@@ -92,10 +92,10 @@ theorem count_changes {E E' : R → R → Prop} (extension : ∀ a b, E a b → 
   have smaller := Finset.card_lt_card strict
   omega
 
-/-- **An extension that relates the pattern to a present row loses its absence.** -/
-theorem absence_changes {E' : R → R → Prop} {pattern : R} {present : Finset O} {row : O → R} {o : O}
-    (inside : o ∈ present) (identified : E' pattern (row o)) : ¬ AbsentUnder E' pattern present row :=
-  fun absent => absent o inside identified
+/-- **An extension that relates the pattern to a present row loses its none query.** -/
+theorem none_changes {E' : R → R → Prop} {pattern : R} {present : Finset O} {row : O → R} {o : O}
+    (inside : o ∈ present) (identified : E' pattern (row o)) : ¬ NoneMatchUnder E' pattern present row :=
+  fun missing => missing o inside identified
 
 /-- With one present row `b` apart from the pattern `a`, the count of `a` is `0`. -/
 theorem count_zero_of_apart {E : R → R → Prop} {a b : R} (o : O) (apart : ¬ E a b) :
@@ -119,18 +119,18 @@ theorem count_conservative_iff (o : O) {E E' : R → R → Prop} (extension : �
     subst equal
     exact fun _ _ _ _ => Iff.rfl
 
-/-- **Exactness for absence**: the same, for the absence answers. -/
-theorem absence_conservative_iff (o : O) {E E' : R → R → Prop} (extension : ∀ a b, E a b → E' a b) :
+/-- **Exactness for none queries**: the same, for the none answers. -/
+theorem none_conservative_iff (o : O) {E E' : R → R → Prop} (extension : ∀ a b, E a b → E' a b) :
     (∀ (pattern : R) (present : Finset O) (row : O → R),
-        AbsentUnder E pattern present row ↔ AbsentUnder E' pattern present row) ↔
+        NoneMatchUnder E pattern present row ↔ NoneMatchUnder E' pattern present row) ↔
       ∀ a b, E' a b → E a b := by
   constructor
   · intro same a b identified
     by_contra apart
-    have before : AbsentUnder E a {o} (fun _ => b) := by
+    have before : NoneMatchUnder E a {o} (fun _ => b) := by
       intro x _
       exact apart
-    exact absence_changes (Finset.mem_singleton_self o) identified ((same a {o} (fun _ => b)).mp before)
+    exact none_changes (Finset.mem_singleton_self o) identified ((same a {o} (fun _ => b)).mp before)
   · intro back
     have equal : E = E' := funext fun a => funext fun b => propext ⟨extension a b, back a b⟩
     subst equal
@@ -138,7 +138,7 @@ theorem absence_conservative_iff (o : O) {E E' : R → R → Prop} (extension : 
 
 end Relations
 
-/-! ## Counting and absence under a knowledge -/
+/-! ## Counting and none queries under a knowledge -/
 
 section Knowledge
 
@@ -154,10 +154,10 @@ def CountAnswer {a : Obj} (K : EquationStore (Tm a)) (pattern : Tm a) (present :
     (row : O → Tm a) (number : Nat) : Prop :=
   X.Entails K (fun _ f => CountUnder (fun s t => X.E (X.act f s) (X.act f t)) pattern present row number)
 
-/-- **A store's absence answer**: the absence holds at every solution of the store. -/
-def AbsentAnswer {a : Obj} (K : EquationStore (Tm a)) (pattern : Tm a) (present : Finset O)
+/-- **A store's none answer**: the none query holds at every solution of the store. -/
+def NoneMatchAnswer {a : Obj} (K : EquationStore (Tm a)) (pattern : Tm a) (present : Finset O)
     (row : O → Tm a) : Prop :=
-  X.Entails K (fun _ f => AbsentUnder (fun s t => X.E (X.act f s) (X.act f t)) pattern present row)
+  X.Entails K (fun _ f => NoneMatchUnder (fun s t => X.E (X.act f s) (X.act f t)) pattern present row)
 
 /-- **A store that entails one more equation answers a count differently**: the count of `s` among
 the one row `t` is `1` under `K'` and is not `1` under `K`. -/
@@ -175,12 +175,12 @@ theorem extension_observed {a : Obj} {K K' : EquationStore (Tm a)} {s t : Tm a}
     have inside : x ∈ seen := by rw [single]; exact Finset.mem_singleton_self x
     exact ((members x).mp inside).2
 
-/-- **The absence form**: if `K` entails that `s` and `t` are apart and a solvable `K'` entails
-`s ≐ t`, the absence of `s` beside the row `t` holds under `K` and fails under `K'`. -/
-theorem extension_observed_absence {a : Obj} {K K' : EquationStore (Tm a)} {s t : Tm a}
+/-- **The none query form**: if `K` entails that `s` and `t` are apart and a solvable `K'` entails
+`s ≐ t`, the none query of `s` beside the row `t` holds under `K` and fails under `K'`. -/
+theorem extension_observed_none {a : Obj} {K K' : EquationStore (Tm a)} {s t : Tm a}
     (identifies : EntailsEqual X K' s t) (solvable : X.Solvable K')
     (apart : X.Entails K (fun _ f => ¬ X.E (X.act f s) (X.act f t))) (o : O) :
-    AbsentAnswer X K s {o} (fun _ => t) ∧ ¬ AbsentAnswer X K' s {o} (fun _ => t) := by
+    NoneMatchAnswer X K s {o} (fun _ => t) ∧ ¬ NoneMatchAnswer X K' s {o} (fun _ => t) := by
   constructor
   · intro b f solved x _
     exact apart b f solved
@@ -188,11 +188,11 @@ theorem extension_observed_absence {a : Obj} {K K' : EquationStore (Tm a)} {s t 
     obtain ⟨b, f, solved⟩ := solvable
     exact answer b f solved o (Finset.mem_singleton_self o) (identifies b f solved)
 
-/-- **Stores with the same solutions give the same count and absence answers.** -/
+/-- **Stores with the same solutions give the same count and none answers.** -/
 theorem answers_of_equivalent {a : Obj} {K K' : EquationStore (Tm a)} (same : X.Equivalent K K')
     (pattern : Tm a) (present : Finset O) (row : O → Tm a) :
     (∀ number, CountAnswer X K pattern present row number ↔ CountAnswer X K' pattern present row number) ∧
-      (AbsentAnswer X K pattern present row ↔ AbsentAnswer X K' pattern present row) :=
+      (NoneMatchAnswer X K pattern present row ↔ NoneMatchAnswer X K' pattern present row) :=
   ⟨fun _ => ⟨fun h b f solved => h b f ((same b f).mpr solved), fun h b f solved => h b f ((same b f).mp solved)⟩,
     ⟨fun h b f solved => h b f ((same b f).mpr solved), fun h b f solved => h b f ((same b f).mp solved)⟩⟩
 
@@ -319,14 +319,14 @@ theorem transportBy_equivalent (st : State Tower.rules Nat) (i j k : Nat) (σ : 
     · exact absurd told List.not_mem_nil
 
 /-- **Transport changes no answer through the knowledge**: after a transport firing, the knowledge
-answers every count and every absence as the knowledge before it did. Only the rows change. -/
+answers every count and every none queries as the knowledge before it did. Only the rows change. -/
 theorem transport_answers (st : State Tower.rules Nat) (i j k : Nat) (σ : st.frame ⟶ Transport.Omega)
     (admitted : (step setting.levels Nat).Admits (Transport.transportBy st i j k σ))
     (pattern : TotalTerm st.frame) (present : Finset Nat) (row : Nat → TotalTerm st.frame) :
     (∀ number, CountAnswer (frames setting.levels) ((step setting.levels Nat).result _ admitted).knowledge
         pattern present row number ↔ CountAnswer (frames setting.levels) st.knowledge pattern present row number) ∧
-      (AbsentAnswer (frames setting.levels) ((step setting.levels Nat).result _ admitted).knowledge
-        pattern present row ↔ AbsentAnswer (frames setting.levels) st.knowledge pattern present row) :=
+      (NoneMatchAnswer (frames setting.levels) ((step setting.levels Nat).result _ admitted).knowledge
+        pattern present row ↔ NoneMatchAnswer (frames setting.levels) st.knowledge pattern present row) :=
   answers_of_equivalent (frames setting.levels) (transportBy_equivalent st i j k σ) pattern present row
 
 /-! ## An unwitnessed class equation is observed -/
@@ -481,9 +481,9 @@ end EqualityOnTheStep.Options.Observability
 
 #print axioms EqualityOnTheStep.Options.Observability.count_changes
 #print axioms EqualityOnTheStep.Options.Observability.count_conservative_iff
-#print axioms EqualityOnTheStep.Options.Observability.absence_conservative_iff
+#print axioms EqualityOnTheStep.Options.Observability.none_conservative_iff
 #print axioms EqualityOnTheStep.Options.Observability.extension_observed
-#print axioms EqualityOnTheStep.Options.Observability.extension_observed_absence
+#print axioms EqualityOnTheStep.Options.Observability.extension_observed_none
 #print axioms EqualityOnTheStep.Options.Observability.conservative_iff
 #print axioms EqualityOnTheStep.Options.Observability.countFiring_admits_iff
 #print axioms EqualityOnTheStep.Options.Observability.knowledge_observed

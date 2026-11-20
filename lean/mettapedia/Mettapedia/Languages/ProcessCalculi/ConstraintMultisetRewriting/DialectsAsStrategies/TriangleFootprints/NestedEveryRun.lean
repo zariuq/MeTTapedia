@@ -17,15 +17,20 @@ relation determines the atoms on nested calls.
   activation, returns the call itself when the region is empty and the bodies' answers otherwise;
 * `nested_determined`: compositionally, a nested call's answers are determined by its arguments'
   answers and the queries of its combinations;
-* `nested_every_run`: every complete run of HE from the entry configuration of a nested call
-  publishes exactly the values of PeTTa's streaming run from some fuel on.
+* `nested_every_run`: a complete run of HE from the entry configuration of a nested call exists, and
+  every complete run publishes the bag of the values of PeTTa's streaming run from some fuel on.
+
+Answers are compared as bags. The model's runs publish a nested call's answers in PeTTa's order;
+HE publishes a nested argument's alternatives in reverse order, the same on every run: with
+`(f a)` answering `1, 2, 2`, HE gives `(g (f a))` as `(pair 2 2), (pair 2 2), (pair 1 1)`.
 
 ## Controls
 
 * `Controls.coin_settled`, `Controls.flip_query`: `(coin)` and `(flip heads)`, `(flip tails)` are
   determined.
-* `Controls.flip_coin_every_run` (positive): every complete run of `(flip (coin))` publishes
-  `tails`, `heads`.
+* `Controls.flip_coin_every_run` (positive): a complete run of `(flip (coin))` exists and every
+  complete run publishes the bag of `heads` and `tails`; HE answers `[heads, tails]`, the model's
+  runs list `tails`, `heads` (`Controls.flip_coin_model_list`).
 -/
 
 set_option autoImplicit false
@@ -398,11 +403,14 @@ theorem nested_determined {atoms : List Atom} {f : String} {ts : List Atom}
       have exhausted := chosen.undefined_exact storage
       simp at exhausted
 
-/-- **Every complete run of a nested call publishes PeTTa's answers.** Under the hypotheses of
-`NestedArguments.nested_agree` (with HE's historical lookup), and with each argument and each
-combination's query determined: there is a fuel from which on PeTTa's streaming run yields
-`(combos Ls).flatMap Q`, and every run of HE's machine from the entry configuration of
-`(f t₁ … tₙ)` to a completed phase publishes exactly these atoms. -/
+/-- **Every complete run of a nested call publishes PeTTa's answers, as a bag.** Under the hypotheses
+of `NestedArguments.nested_agree` (with HE's historical lookup), and with each argument and each
+combination's query determined: a complete run of HE's machine from the entry configuration of
+`(f t₁ … tₙ)` exists; there is a fuel from which on PeTTa's streaming run yields the list
+`(combos Ls).flatMap Q`; and every complete run of HE publishes the bag of these atoms. HE itself
+publishes a nested argument's alternatives in another order, the same on every run
+(`(g (f a))` with `(f a)` answering `1, 2, 2` gives `(pair 2 2), (pair 2 2), (pair 1 1)`), so the bag
+is what is HE's. -/
 theorem nested_every_run (dispatch : GroundedDispatch) (policy : Policy) {atoms : List Atom}
     {f : String} {ts : List Atom} {Ls : List (List Atom)} (head : DataAtom (.symbol f))
     (untyped : (Space.ofList atoms).atoms.filter (typeRegion (.symbol f)) = [])
@@ -421,6 +429,10 @@ theorem nested_every_run (dispatch : GroundedDispatch) (policy : Policy) {atoms 
       HEQuery dispatch Completed.rawLookup policy atoms f vals (Q vals) ∧
       PeTTaApplies atoms (.function f) vals (Q vals) ∧
       QueryDetermined dispatch policy atoms f vals (Q vals)) :
+    (∃ heAnswers : List Result,
+      Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy)
+        (load (Space.ofList atoms) (.expression (.symbol f :: ts)) Atom.undefinedType)
+        ⟨Space.ofList atoms, .returning [], [], heAnswers⟩) ∧
     ∃ N : Nat, ∀ n, N ≤ n →
       Streaming.values (Streaming.advance (translate atoms) n
         (Streaming.enter { state := store atoms } (.expression (.symbol f :: ts)))) =
@@ -429,17 +441,19 @@ theorem nested_every_run (dispatch : GroundedDispatch) (policy : Policy) {atoms 
         Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy)
             (load (Space.ofList atoms) (.expression (.symbol f :: ts)) Atom.undefinedType)
             ⟨Space.ofList atoms, .returning [], [], emitted⟩ →
-          emitted.map (fun r => r.1.erase) = (combos Ls).flatMap Q := by
+          ((emitted.map (fun r => r.1.erase) : List Atom) : Multiset Atom) =
+            (((combos Ls).flatMap Q : List Atom) : Multiset Atom) := by
   have joint := nested_agree (dispatch := dispatch) (policy := policy) raw_answers head untyped
     notCollapse notOnce notControl notIO notNative closed defined
     (args.imp fun _ _ both => both.1) Q
     (fun vals member => ⟨(apps vals member).1, (apps vals member).2.1, (apps vals member).2.2.1⟩)
-  obtain ⟨_, N, _, _, _, stable⟩ := nested_complete ground joint
+  obtain ⟨heAnswers, N, path, _, _, stable⟩ := nested_complete ground joint
   have determined := nested_determined head untyped closed
     (args.imp fun _ _ both => ⟨both.1.1, both.2⟩) Q
     (fun vals member => ⟨(apps vals member).1, (apps vals member).2.2.2⟩)
-  exact ⟨N, fun n bigger => ⟨stable n bigger, fun emitted run =>
-    determined.2 _ _ _ _ (complete_source run)⟩⟩
+  exact ⟨⟨heAnswers, path⟩, N, fun n bigger => ⟨stable n bigger, fun emitted run =>
+    congrArg (fun l : List Atom => (l : Multiset Atom))
+      (determined.2 _ _ _ _ (complete_source run))⟩⟩
 
 /-! ## Controls -/
 
@@ -497,8 +511,8 @@ theorem flip_query (policy : Policy) (side : String) (sideData : DataAtom (sym s
       exact answerable_of_data sideData) related nonempty
   rwa [flatten_singletons] at query
 
-/-- **Positive control: every complete run of `(flip (coin))` publishes `tails`, `heads`.** -/
-theorem flip_coin_every_run (policy : Policy) (emitted : List Result)
+/-- The model's list for `(flip (coin))`: `tails`, `heads`. -/
+theorem flip_coin_model_list (policy : Policy) (emitted : List Result)
     (run : Relation.ReflTransGen (HEStep noHost Completed.rawLookup policy)
       (load (Space.ofList flipRows) (app "flip" [app "coin" []]) Atom.undefinedType)
       ⟨Space.ofList flipRows, .returning [], [], emitted⟩) :
@@ -556,6 +570,26 @@ theorem flip_coin_every_run (policy : Policy) (emitted : List Result)
     rfl
   rw [nested.2 _ _ _ _ (complete_source run), answersEq]
 
+/-- **Positive control: `(flip (coin))` on every run, as a bag.** A complete run exists, and every
+complete run publishes the bag of `heads` and `tails`, which is HE's answer `[heads, tails]` as a bag
+(the model's runs list it as `tails`, `heads`, `flip_coin_model_list`). -/
+theorem flip_coin_every_run (policy : Policy) :
+    (∃ heAnswers : List Result,
+      Relation.ReflTransGen (HEStep noHost Completed.rawLookup policy)
+        (load (Space.ofList flipRows) (app "flip" [app "coin" []]) Atom.undefinedType)
+        ⟨Space.ofList flipRows, .returning [], [], heAnswers⟩) ∧
+      ∀ emitted : List Result,
+        Relation.ReflTransGen (HEStep noHost Completed.rawLookup policy)
+          (load (Space.ofList flipRows) (app "flip" [app "coin" []]) Atom.undefinedType)
+          ⟨Space.ofList flipRows, .returning [], [], emitted⟩ →
+        ((emitted.map (fun r => r.1.erase) : List Atom) : Multiset Atom) =
+          (([sym "heads", sym "tails"] : List Atom) : Multiset Atom) := by
+  obtain ⟨⟨heAnswers, path, _⟩, _⟩ :=
+    NestedArguments.Controls.flip_coin_agrees raw_answers policy
+  refine ⟨⟨heAnswers, path⟩, fun emitted run => ?_⟩
+  rw [flip_coin_model_list policy emitted run]
+  exact Multiset.coe_eq_coe.mpr (List.Perm.swap _ _ [])
+
 end Controls
 
 #print axioms query_absent
@@ -567,6 +601,7 @@ end Controls
 #print axioms nested_every_run
 #print axioms Controls.coin_settled
 #print axioms Controls.flip_query
+#print axioms Controls.flip_coin_model_list
 #print axioms Controls.flip_coin_every_run
 
 end NestedEveryRun

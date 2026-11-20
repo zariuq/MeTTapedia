@@ -5,10 +5,10 @@ import Lean.Elab.Tactic.Omega
 /-!
 # Scoped occurrence guards as nonbinding future-model asks
 
-Equality, absence and counts reuse the existing `Check` constructors. A row
+Equality, none queries and counts reuse the existing `Check` constructors. A row
 contributes one physical identity when it has a local instance, independently
 of the number of local witnesses. Admission observes every later-family model
-of the equation store. Pointwise absence is not such an admission decision.
+of the equation store. Pointwise the none query is not such an admission decision.
 -/
 
 set_option autoImplicit false
@@ -34,8 +34,7 @@ def Holds (candidate : Assignment captures next) {Γ : Ctx S} {sort : S.Srt}
     (rows : O → ContextualStoredRows.Row locals captures Γ sort) (world : Finset O) :
     Check (Term (signature S captures) Γ sort) → Prop
   | .equal left right => instantiate candidate left = instantiate candidate right
-  | .absent pattern => ∀ occurrence ∈ world,
-      ¬ Matches locals candidate (instantiate candidate pattern) (rows occurrence)
+  | .predicate quantifier pattern => quantifier.Holds world fun occurrence => Matches locals candidate (instantiate candidate pattern) (rows occurrence)
   | .count pattern number => (region locals candidate rows world pattern).card = number
 
 theorem mem_region (candidate : Assignment captures next) {Γ : Ctx S} {sort : S.Srt}
@@ -46,12 +45,12 @@ theorem mem_region (candidate : Assignment captures next) {Γ : Ctx S} {sort : S
   classical
   simp only [region, Finset.mem_filter]
 
-theorem absent_iff_empty (candidate : Assignment captures next) {Γ : Ctx S} {sort : S.Srt}
+theorem none_iff_empty (candidate : Assignment captures next) {Γ : Ctx S} {sort : S.Srt}
     (rows : O → ContextualStoredRows.Row locals captures Γ sort) (world : Finset O)
     (pattern : Term (signature S captures) Γ sort) :
-    Holds locals candidate rows world (.absent pattern) ↔ region locals candidate rows world pattern = ∅ := by
+    Holds locals candidate rows world (.predicate .none pattern) ↔ region locals candidate rows world pattern = ∅ := by
   classical
-  simp only [Holds, Finset.eq_empty_iff_forall_notMem, mem_region, not_and]
+  simp only [Holds, Quantifier.holds_none, Finset.eq_empty_iff_forall_notMem, mem_region, not_and]
 
 theorem region_singleton [DecidableEq O] (candidate : Assignment captures next)
     {Γ : Ctx S} {sort : S.Srt} (rows : O → ContextualStoredRows.Row locals captures Γ sort)
@@ -82,7 +81,7 @@ theorem holds_shared [DecidableEq O] (candidate : Assignment captures captures)
       check.Holds (ContextualFamilies.action captures Γ sort) candidate label world := by
   cases check with
   | equal left right => rfl
-  | absent pattern => rfl
+  | predicate quantifier pattern => rfl
   | count pattern number => rw [Holds, Check.Holds, region_shared]
 
 theorem region_after_capture_transport (change : Assignment captures later) (candidate : Assignment later next)
@@ -103,7 +102,7 @@ theorem holds_after_capture_transport (change : Assignment captures later) (cand
       Holds locals (Assignment.compose candidate change) rows world check := by
   cases check with
   | equal left right => simp only [Holds, Check.map, Assignment.instantiate_compose]
-  | absent pattern =>
+  | predicate quantifier pattern =>
       simp only [Holds, Check.map, matches_after_capture_transport, Assignment.instantiate_compose]
   | count pattern number => simp only [Holds, Check.map, region_after_capture_transport]
 
@@ -180,16 +179,16 @@ theorem region_erase [DecidableEq O] (candidate : Assignment captures next) {Γ 
   classical
   simp only [region, Finset.filter_erase]
 
-theorem absent_after_erase_iff_count_one [DecidableEq O] (candidate : Assignment captures next)
+theorem none_after_erase_iff_count_one [DecidableEq O] (candidate : Assignment captures next)
     {Γ : Ctx S} {sort : S.Srt} (rows : O → ContextualStoredRows.Row locals captures Γ sort)
     (world : Finset O) (pattern : Term (signature S captures) Γ sort) (occurrence : O)
     (present : occurrence ∈ world)
     (matched : Matches locals candidate (instantiate candidate pattern) (rows occurrence)) :
-    Holds locals candidate rows (world.erase occurrence) (.absent pattern) ↔
+    Holds locals candidate rows (world.erase occurrence) (.predicate .none pattern) ↔
       Holds locals candidate rows world (.count pattern 1) := by
   classical
   have member := (mem_region locals candidate rows world pattern occurrence).mpr ⟨present, matched⟩
-  rw [absent_iff_empty, region_erase, ← Finset.card_eq_zero, Finset.card_erase_of_mem member]
+  rw [none_iff_empty, region_erase, ← Finset.card_eq_zero, Finset.card_erase_of_mem member]
   change (region locals candidate rows world pattern).card - 1 = 0 ↔
     (region locals candidate rows world pattern).card = 1
   have positive := Finset.card_pos.mpr ⟨occurrence, member⟩

@@ -1,5 +1,6 @@
 import Mathlib.Data.List.Perm.Basic
 import Mathlib.Tactic
+import Mettapedia.Data.List.OrderedPrefilter
 
 /-!
 # Exact and general buckets as a complete candidate index
@@ -88,15 +89,9 @@ def Covers (route : Row → Option Key) (matchRow : Key → Row → Option Answe
 
 theorem filter_before_match (route : Row → Option Key) (matchRow : Key → Row → Option Answer)
     (coverage : Covers route matchRow) (rows : List Row) (key : Key) :
-    (rows.filter (eligible route key)).filterMap (matchRow key) = rows.filterMap (matchRow key) := by
-  induction rows with
-  | nil => rfl
-  | cons row rest ih =>
-    cases matched : matchRow key row with
-    | none =>
-      by_cases inside : eligible route key row = true <;> simp [inside, matched, ih]
-    | some answer =>
-      simp [coverage key row answer matched, matched, ih]
+    (rows.filter (eligible route key)).filterMap (matchRow key) = rows.filterMap (matchRow key) :=
+  Mettapedia.Data.List.OrderedPrefilter.filter_filterMap_eq
+    (eligible route key) (matchRow key) rows (fun row _ => coverage key row)
 
 /-- Full answer multiplicity follows from candidate coverage and real matching. -/
 theorem indexed_answers_bag (route : Row → Option Key) (matchRow : Key → Row → Option Answer)

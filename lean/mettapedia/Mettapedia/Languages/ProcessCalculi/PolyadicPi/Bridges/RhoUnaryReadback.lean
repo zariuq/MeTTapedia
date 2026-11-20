@@ -149,8 +149,7 @@ theorem readOne {Γ : Ctx sig} {initialWorld : SeedWorld Γ}
   have redexImage : Canonical.canonicalize redex.1 = canonicalParallel (headers world.world activities) :=
     before.symm.trans represented
   obtain ⟨selected, suppliedEndpoint⟩ := representative_selection_of_step
-    (headers_typed world.world activities) (headers_safe world.world activities)
-    redexFormation.1 redexFormation.2 redexImage firing
+    (headers_typed world.world activities) redexFormation.1 redexImage firing
   obtain ⟨result⟩ := RhoUnaryReadbackStep.selection world activities inventory selected
   have endImage : Canonical.canonicalize next.1 =
       Canonical.canonicalize (actual result.world.world result.activities) := by

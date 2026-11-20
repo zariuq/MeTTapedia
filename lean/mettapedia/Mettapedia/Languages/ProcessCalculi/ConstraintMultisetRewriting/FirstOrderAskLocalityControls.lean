@@ -2,7 +2,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.FirstOrde
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.EquationWakeupControls
 
 /-!
-# An unrelated binding preserves a shared-row absence verdict
+# An unrelated binding preserves a shared-row none verdict
 
 The query is closed, but its observed row contains a shared variable. A tell
 about another variable preserves the verdict; a tell about the row's variable
@@ -20,10 +20,10 @@ open EquationWakeupControls (signature A f x zeroTerm oneTerm label before after
 def component : Set Nat := {0}
 def unrelated : EquationStore (Term signature) := [(.var 1, .const 2)]
 def observation (assignment : Subst signature) : Prop :=
-  (Check.absent (f zeroTerm)).Holds A assignment label before.present
+  (Check.predicate .none (f zeroTerm)).Holds A assignment label before.present
 
-theorem absence_reads_the_row_component : ReadsOnly component observation := by
-  apply absent_reads_query_and_rows component label before.present (f zeroTerm)
+theorem none_reads_the_row_component : ReadsOnly component observation := by
+  apply none_reads_query_and_rows component label before.present (f zeroTerm)
   · intro name member
     simp [f, ConstraintMultisetRewriting.Controls.f, zeroTerm, Term.freeVars] at member
   · intro occurrence present name member
@@ -58,7 +58,7 @@ theorem unrelated_tell_keeps_both_verdicts :
       (A.Entails unrelated (fun assignment => ¬ observation assignment) ↔
         A.Entails [] (fun assignment => ¬ observation assignment)) :=
   verdicts_local component [] unrelated empty_store_is_closed unrelated_avoids_component
-    unrelated_is_consistent observation absence_reads_the_row_component
+    unrelated_is_consistent observation none_reads_the_row_component
 
 theorem query_is_closed : (f zeroTerm).freeVars = ∅ := by
   simp [f, ConstraintMultisetRewriting.Controls.f, zeroTerm, Term.freeVars]
@@ -66,7 +66,7 @@ theorem query_is_closed : (f zeroTerm).freeVars = ∅ := by
 theorem query_support_alone_is_insufficient : ¬ ReadsOnly (∅ : Set Nat) observation := by
   intro reads
   have oneHolds : observation ConstraintMultisetRewriting.Controls.one := by
-    apply EquationWakeupControls.pending_can_fire_after.checks (.absent (f zeroTerm)) (by simp [pending])
+    apply EquationWakeupControls.pending_can_fire_after.checks (.predicate .none (f zeroTerm)) (by simp [pending])
     intro equation member
     have same : equation = (x, oneTerm) := by
       simpa [Selection.problem, Selection.equations, Selection.result, pendingSelection, pending,

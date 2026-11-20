@@ -1,0 +1,62 @@
+import "HOLRPrefix.module" as prefix
+import "HOLREquality.module" as equality
+import "HOLRData.module" as data
+import "../bytes/ByteRecords.module" as records
+import "../bytes/ByteScalars.module" as scalars
+
+Module HOLRHeader {
+  Theory Signature(h: data.Data) {
+    h Terms {
+      HeaderSplit . CodecState ::= "header_split" "(" Bytes "," CodecState ")";
+      HeaderGuard . CodecState ::= "header_guard" "(" Bit "," Bytes "," Bytes ")";
+      HeaderVersion . CodecState ::= "header_version" "(" Bytes "," CodecState ")";
+      HeaderVersionCheck . CodecState ::= "header_version_check" "(" Ordering "," Bytes "," Bytes ")";
+      HeaderProfile . CodecState ::= "header_profile" "(" Bytes "," CodecState ")";
+      HeaderProfileCheck . CodecState ::= "header_profile_check" "(" Ordering "," Bytes "," Bytes ")";
+      HeaderPolicy . CodecState ::= "header_policy" "(" Bytes "," CodecState ")";
+      HeaderPolicyCheck . CodecState ::= "header_policy_check" "(" Ordering "," Bytes "," Nat "," Bytes ")";
+      HeaderFlags . CodecState ::= "header_flags" "(" Bytes "," Nat "," CodecState ")";
+      HeaderFlagsCheck . CodecState ::= "header_flags_check" "(" Ordering "," Bytes "," Nat "," Nat "," Bytes ")";
+    }
+  }
+  Theory Format(r: Signature) {
+    r Rewrites {
+      Start: (ReadHOLRPrefix xs) ~> (HeaderSplit xs (TakeBytes (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatBit (Bit0) (NatBit (Bit1) (NatZero))))))) xs));
+      HeaderSplitDone: (HeaderSplit full (Taken prefix rest)) ~> (HeaderGuard (BytesEqual prefix (HOLRPrefix)) full rest);
+      HeaderMatch: (HeaderGuard (Bit1) full rest) ~> (HeaderVersion full (ReadULEB62 rest));
+      HeaderMismatch: (HeaderGuard (Bit0) full rest) ~> (HOLRMalformed (BadHeader));
+      VersionRead: (HeaderVersion full (DecodedWord n rest)) ~> (HeaderVersionCheck (NatCompare n (NatBit (Bit1) (NatZero))) full rest);
+      VersionEqual: (HeaderVersionCheck (Equal) full rest) ~> (HeaderProfile full (ReadULEB62 rest));
+      VersionLess: (HeaderVersionCheck (Less) full rest) ~> (HOLRMalformed (BadVersion));
+      VersionGreater: (HeaderVersionCheck (Greater) full rest) ~> (HOLRMalformed (BadVersion));
+      ProfileRead: (HeaderProfile full (DecodedWord n rest)) ~> (HeaderProfileCheck (NatCompare n (NatZero)) full rest);
+      ProfileEqual: (HeaderProfileCheck (Equal) full rest) ~> (HeaderPolicy full (ReadULEB62 rest));
+      ProfileLess: (HeaderProfileCheck (Less) full rest) ~> (HOLRMalformed (BadHeader));
+      ProfileGreater: (HeaderProfileCheck (Greater) full rest) ~> (HOLRMalformed (BadHeader));
+      PolicyRead: (HeaderPolicy full (DecodedWord n rest)) ~> (HeaderPolicyCheck (NatCompare n (NatBit (Bit0) (NatBit (Bit1) (NatZero)))) full n rest);
+      PolicyLess: (HeaderPolicyCheck (Less) full n rest) ~> (HeaderFlags full n (ReadULEB62 rest));
+      PolicyEqual: (HeaderPolicyCheck (Equal) full n rest) ~> (HeaderFlags full n (ReadULEB62 rest));
+      PolicyGreater: (HeaderPolicyCheck (Greater) full n rest) ~> (HOLRMalformed (BadHeader));
+      FlagsRead: (HeaderFlags full policy (DecodedWord n rest)) ~> (HeaderFlagsCheck (NatCompare n (NatBit (Bit1) (NatZero))) full policy n rest);
+      FlagsLess: (HeaderFlagsCheck (Less) full policy flags rest) ~> (HOLRLoop full (HOLRHeaderBytes (HOLRKernelId) (NatBit (Bit1) (NatZero)) (NatZero) policy flags) (NatZero) rest);
+      FlagsEqual: (HeaderFlagsCheck (Equal) full policy flags rest) ~> (HOLRLoop full (HOLRHeaderBytes (HOLRKernelId) (NatBit (Bit1) (NatZero)) (NatZero) policy flags) (NatZero) rest);
+      FlagsGreater: (HeaderFlagsCheck (Greater) full policy flags rest) ~> (HOLRMalformed (BadHeader));
+      HeaderSplitNeedInput: (HeaderSplit full (NeedInput)) ~> (NeedInput);
+      HeaderSplitBadInteger: (HeaderSplit full (BadInteger)) ~> (HOLRMalformed (IntegerEncoding));
+      HeaderSplitLimitExceeded: (HeaderSplit full (LimitExceeded)) ~> (HOLRMalformed (FieldLimit));
+      HeaderVersionNeedInput: (HeaderVersion full (NeedInput)) ~> (NeedInput);
+      HeaderVersionBadInteger: (HeaderVersion full (BadInteger)) ~> (HOLRMalformed (IntegerEncoding));
+      HeaderVersionLimitExceeded: (HeaderVersion full (LimitExceeded)) ~> (HOLRMalformed (FieldLimit));
+      HeaderProfileNeedInput: (HeaderProfile full (NeedInput)) ~> (NeedInput);
+      HeaderProfileBadInteger: (HeaderProfile full (BadInteger)) ~> (HOLRMalformed (IntegerEncoding));
+      HeaderProfileLimitExceeded: (HeaderProfile full (LimitExceeded)) ~> (HOLRMalformed (FieldLimit));
+      HeaderPolicyNeedInput: (HeaderPolicy full (NeedInput)) ~> (NeedInput);
+      HeaderPolicyBadInteger: (HeaderPolicy full (BadInteger)) ~> (HOLRMalformed (IntegerEncoding));
+      HeaderPolicyLimitExceeded: (HeaderPolicy full (LimitExceeded)) ~> (HOLRMalformed (FieldLimit));
+      HeaderFlagsNeedInput: (HeaderFlags full policy (NeedInput)) ~> (NeedInput);
+      HeaderFlagsBadInteger: (HeaderFlags full policy (BadInteger)) ~> (HOLRMalformed (IntegerEncoding));
+      HeaderFlagsLimitExceeded: (HeaderFlags full policy (LimitExceeded)) ~> (HOLRMalformed (FieldLimit));
+    }
+  }
+  theory Format(Signature(data.Data(records.ReaderInterface(scalars.Values()))))
+}

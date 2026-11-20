@@ -93,12 +93,70 @@ mutual
           normalize_list_quoteFree processesTyped unquoted.2]
 end
 
+private theorem noLiteralQuoteList_mem {patterns : List Pattern}
+    (none : rhoNoLiteralQuoteList patterns = true) :
+    ∀ pattern ∈ patterns, rhoNoLiteralQuote pattern = true := by
+  induction patterns with
+  | nil => simp
+  | cons first rest ih =>
+    simp only [rhoNoLiteralQuoteList, Bool.and_eq_true] at none
+    intro pattern member
+    rcases List.mem_cons.mp member with rfl | member
+    · exact none.1
+    · exact ih none.2 pattern member
+
+/-- Code without any quotation lies in the literal-quotation fiber. -/
+private theorem literal_of_noLiteralQuote (pattern : Pattern) :
+    rhoNoLiteralQuote pattern = true → Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral rhoReflectivePresentation pattern = true := by
+  induction pattern using Pattern.inductionOn with
+  | hbvar _ => intro _; rfl
+  | hfvar _ => intro _; rfl
+  | happly constructor arguments ih =>
+    intro none
+    by_cases quoted : constructor = "NQuote"
+    · subst quoted
+      simp [rhoNoLiteralQuote] at none
+    · have listNone : rhoNoLiteralQuoteList arguments = true := by
+        simpa [rhoNoLiteralQuote, quoted] using none
+      have each := noLiteralQuoteList_mem listNone
+      match arguments, ih, each with
+      | [], _, _ => rfl
+      | [payload], ih, each =>
+        have notQuote : constructor ≠
+            (rhoReflectivePresentation : Mettapedia.OSLF.MeTTaIL.Syntax.ReflectivePresentationDecl).quoteConstructor :=
+          quoted
+        simp only [Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral, Bool.and_eq_true,
+          Bool.or_eq_true, bne_iff_ne, ne_eq]
+        exact ⟨.inl notQuote, ih payload (by simp) (each payload (by simp))⟩
+      | first :: second :: rest, ih, each =>
+        simp only [Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral]
+        rw [Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteralList_iff]
+        exact fun argument member => ih argument member (each argument member)
+  | hlambda _ body ih =>
+    intro none
+    exact ih (by simpa [rhoNoLiteralQuote] using none)
+  | hmultiLambda _ _ body ih =>
+    intro none
+    exact ih (by simpa [rhoNoLiteralQuote] using none)
+  | hsubst body value ihBody ihValue =>
+    intro none
+    simp only [rhoNoLiteralQuote, Bool.and_eq_true] at none
+    simp only [Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral, Bool.and_eq_true]
+    exact ⟨ihBody none.1, ihValue none.2⟩
+  | hcollection kind elements rest ih =>
+    intro none
+    have each := noLiteralQuoteList_mem (by simpa [rhoNoLiteralQuote] using none)
+    simp only [Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral]
+    rw [Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteralList_iff]
+    exact fun element member => ih element member (each element member)
+
 /-- Every named source channel has the authored rho name sort. -/
 def atomicChannel (name : String) : Channel rhoAtomicNameContext where
   term := .fvar name
   typed := .fvar rfl
   safe := rfl
   normalized := rfl
+  literal := rfl
 
 /-- The request binder closes the actual maintained compilation of the body. -/
 def namedHandler {body : Process} (free : RestrictionFree body)
@@ -108,6 +166,8 @@ def namedHandler {body : Process} (free : RestrictionFree body)
   safe := close_encode_binderSafe free binder namespaceName valueName
   normalized := normalize_proc_quoteFree
     (close_encode_procWellSorted free binder namespaceName valueName)
+    (by rw [rhoNoLiteralQuote_closeFVar]; exact encode_rf_rhoNoLiteralQuote free _ _)
+  literal := literal_of_noLiteralQuote _
     (by rw [rhoNoLiteralQuote_closeFVar]; exact encode_rf_rhoNoLiteralQuote free _ _)
 
 /-- The installed persistent receiver uses only authored core rho syntax. -/

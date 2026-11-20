@@ -50,10 +50,10 @@ theorem closeSeed_term {depth : Nat} (seed : Nat) (name : NameValue (depth + 1))
   cases name with
   | bound index =>
       by_cases hit : index.val = depth
+      · simp [semanticSubstName, semanticSubstNameMark, 
+          NameValue.term, closeSeed, hit, Canonical.canonicalize, ↓reduceIte]
       · simp [semanticSubstName, semanticSubstNameMark, semanticNormalizeName,
-          NameValue.term, closeSeed, hit]
-      · simp [semanticSubstName, semanticSubstNameMark, semanticNormalizeName,
-          NameValue.term, closeSeed, hit]
+          NameValue.term, closeSeed, hit, Canonical.canonicalize, Pattern.bvar.injEq, ↓reduceIte]
   | atom label | reserved channel => rfl
   | allocated index =>
       simpa [NameValue.term, closeSeed] using
@@ -69,9 +69,9 @@ theorem closeSeed_payload {depth : Nat} (seed : Nat) (name : NameValue (depth + 
   | bound index =>
       by_cases hit : index.val = depth
       · simp [NameValue.payload, NameValue.term, closeSeed, semanticSubstProc,
-          semanticSubstNameMark, semanticNormalizeName, hit, allocatedName]
+          semanticSubstNameMark, hit, allocatedName, Canonical.canonicalize, ↓reduceIte]
       · simp [NameValue.payload, NameValue.term, closeSeed, semanticSubstProc,
-          semanticSubstNameMark, semanticNormalizeName, hit]
+          semanticSubstNameMark, semanticNormalizeName, hit, Canonical.canonicalize, Pattern.bvar.injEq, ↓reduceIte]
   | atom label | reserved channel => rfl
   | allocated index =>
       simpa [NameValue.payload, closeSeed] using
@@ -129,7 +129,7 @@ theorem storedCode_close {depth : Nat} (seed : Nat) (channel : NameValue (depth 
     semanticSubstProc, semanticSubstProcList, bodyEq]
   rw [channelEq]
   simp only [NameValue.term, NameValue.payload, semanticSubstProc, semanticSubstName,
-    semanticSubstNameMark, semanticNormalizeName, beq_iff_eq, selfMiss, codeMiss, inputMiss, ↓reduceIte]
+    semanticSubstNameMark, semanticNormalizeName, selfMiss, codeMiss, inputMiss, ↓reduceIte, Canonical.canonicalize, Pattern.bvar.injEq, ↓reduceIte]
 
 /-- Server installation accounts for both the retained code template and the
 request-dependent continuation at their different target scopes. -/
@@ -149,7 +149,7 @@ theorem waitingServer_close {depth : Nat} (seed : Nat) (channel : NameValue (dep
     storedCode_close seed channel storedHandler closedStored storedEq]
   rw [channelEq]
   simp only [NameValue.term, semanticSubstName, semanticSubstNameMark,
-    semanticNormalizeName, beq_iff_eq, selfMiss, ↓reduceIte]
+    semanticNormalizeName, selfMiss, ↓reduceIte, Canonical.canonicalize, Pattern.bvar.injEq, ↓reduceIte]
 
 /-- Compiling after an allocated-name closing gives the actual semantic
 substitution endpoint, for every process in the scoped guarded fragment. -/
@@ -210,7 +210,7 @@ theorem compile_closeSeed {Γ : Ctx sig} {process : Proc Γ} (guarded : GuardedU
         by simp only [Code.reserve, Code.par, Code.sendName, Code.emit, Code.datum,
           Code.listen, semanticSubstProc, semanticSubstProcList, NameValue.term,
           NameValue.payload, semanticSubstName, semanticSubstNameMark,
-          semanticNormalizeName, closedTerm]⟩
+          semanticNormalizeName, closedTerm, Canonical.canonicalize, reduceCtorEq, ↓reduceIte]⟩
   | server channel bodyGuarded ih =>
       intro depth world seed code compiled
       obtain ⟨handler, handlerEq⟩ := compile_guarded bodyGuarded (serverHandlerWorld world)
@@ -230,7 +230,7 @@ theorem compile_closeSeed {Γ : Ctx sig} {process : Proc Γ} (guarded : GuardedU
       · simp only [Code.reserve, Code.par, Code.sendName, Code.emit, Code.datum,
           Code.listen, semanticSubstProc, semanticSubstProcList, NameValue.term,
           NameValue.payload, semanticSubstName, semanticSubstNameMark,
-          semanticNormalizeName]
+          semanticNormalizeName, Canonical.canonicalize, reduceCtorEq, ↓reduceIte]
         simp only [waitingServer_close seed _ handler closedHandler storedHandler closedStored
           handlerClosed storedClosed, evalName_close]
 

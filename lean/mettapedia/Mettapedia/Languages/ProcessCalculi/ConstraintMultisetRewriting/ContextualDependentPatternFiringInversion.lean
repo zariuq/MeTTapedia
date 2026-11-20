@@ -4,7 +4,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 /-!
 # Firing on the inversion row
 
-**The inversion row of the census** (`InversionRow`), read from the store: the normal opening of the left side is
+**The inversion row of the classification** (`InversionRow`), read from the store: the normal opening of the left side is
 the newest metavariable `F` applied to distinct locals `x̄`; every variable of the normal opening of the right side
 is an older metavariable or one of `x̄`; and the declared types agree: each local's declared type is the
 corresponding binder type of `F`, and the annotation's result type is `F`'s result type at `x̄`, up to conversion.
@@ -62,7 +62,7 @@ theorem locals_of_rigid {Γ : Context rules} {type : TypeOver Γ} (scope : Spine
       obtain ⟨positions, read⟩ := locals_of_rigid scope rest fun other member => locals other (List.mem_cons_of_mem _ member)
       exact ⟨position :: positions, by rw [List.map_cons, located, read]⟩
 
-/-- **The inversion row of the census**, read from the store. -/
+/-- **The inversion row of the classification**, read from the store. -/
 def InversionRow {Γ : Context rules} {type : TypeOver Γ} (equation : Equation (TotalTerm (extend Γ type))) : Prop :=
   ∀ left right,
     Star (R := rules) (openCode (ContextualDependentPatternSolver.lamDepth equation.1.2.code) equation.1.2.code) left →

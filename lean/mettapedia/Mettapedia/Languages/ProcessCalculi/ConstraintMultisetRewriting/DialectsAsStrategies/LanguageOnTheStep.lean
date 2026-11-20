@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Sear
 /-!
 # A language is a step, a strategy over its runs, and an observation
 
-The calculus has no evaluation default. A **language** (`Language`) adds two things to a step:
+The step has no evaluation default. A **language** (`Language`) adds two things to a step:
 
 * a **strategy**, which selects runs of the step. A run is a word of many firings, so a strategy
   spans many steps: it is a selection on the free category of runs, not a property of one firing;

@@ -419,7 +419,7 @@ theorem flex_decided :
       run (family.solver larger) flexFlexStore larger = run (family.solver budget) flexFlexStore budget ∧
       ((∃ state finished, run (family.solver larger) flexFlexStore larger = .solved state finished ∧
           (frames setting.levels).Principal flexFlexStore state.answer) ∨
-        (∃ absent, run (family.solver larger) flexFlexStore larger = .refuted absent)) :=
+        (∃ missing, run (family.solver larger) flexFlexStore larger = .refuted missing)) :=
   flexSettled.decided (Or.inr rfl)
 
 /-- The store is solvable, so the decided outcome is the principal answer. -/
@@ -437,9 +437,9 @@ theorem flex_decided_principal :
   refine ⟨flexFlex_in_fragment, ?_⟩
   obtain ⟨budget, decided⟩ := flex_decided
   refine ⟨budget, fun larger enough => ⟨(decided larger enough).1, ?_⟩⟩
-  rcases (decided larger enough).2 with principal | ⟨absent, _⟩
+  rcases (decided larger enough).2 with principal | ⟨missing, _⟩
   · exact principal
-  · exact absurd flex_solvable absent
+  · exact absurd flex_solvable missing
 
 end ContextualDependentDecisiveFragment.Controls
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting

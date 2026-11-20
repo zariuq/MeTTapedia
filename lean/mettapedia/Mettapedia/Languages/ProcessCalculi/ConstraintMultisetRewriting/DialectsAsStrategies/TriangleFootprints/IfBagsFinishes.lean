@@ -4,10 +4,10 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsA
 # Every run of `(if c y n)` on a nondeterministic condition finishes
 
 `IfBags.bag_every_run` shows that, for a condition with several Boolean answers `Lc`, a complete HE run
-of `(if c y n)` exists and every complete run publishes `answersOf Lc Ly Ln` (per condition answer in
-order, the selected branch's answers). Here **every run finishes**: HE's machine has no infinite run
-from the entry, every reachable configuration steps or is final, and a final one publishes those
-answers, so the bags agree on every run, with multiplicity.
+of `(if c y n)` exists and every complete run publishes the bag of `answersOf Lc Ly Ln` (per
+condition answer, the selected branch's answers). Here **every run finishes**: HE's machine has no
+infinite run from the entry, every reachable configuration steps or is final, and a final one
+publishes that bag, so the bags agree on every run, with multiplicity.
 
 * `fine_condition_branches`: the argument branches over the condition's answers, one packet each.
 * `fine_bag_calls`: the calls over the assembled call values, each by `IfCallFinishes.fine_call_query`.
@@ -16,7 +16,7 @@ answers, so the bags agree on every run, with multiplicity.
 ## Controls
 
 * `Controls.coin_pair_finishes` (`(if (coin) (half 4) (pair a b))`): every run finishes, publishing
-  `[two, (pair a b)]`.
+  the bag of `(pair a b)` and `two`.
 * `Controls.coin_twice_finishes` (`(if (coin2) yes no)`, two `True` rows): every run finishes,
   publishing `yes` twice.
 -/
@@ -303,9 +303,9 @@ theorem bag_fine (notHost : ¬ dispatch.executable (.symbol "if")) (policy : Pol
           exact fine_top _ _
 
 /-- **Every run of `(if c y n)` on a nondeterministic condition finishes, and every finished run
-publishes `answersOf Lc Ly Ln`.** Under the hypotheses of `IfBags.bag_every_run`: HE's step relation
-is well founded from the entry, every reachable configuration steps or is final, a final one
-publishes exactly `answersOf Lc Ly Ln`, and PeTTa yields the same list from some fuel on. -/
+publishes the bag of `answersOf Lc Ly Ln`.** Under the hypotheses of `IfBags.bag_every_run`: HE's
+step relation is well founded from the entry, every reachable configuration steps or is final, a
+final one publishes the bag of `answersOf Lc Ly Ln`, and PeTTa yields that list from some fuel on. -/
 theorem bag_every_run_finishes (dispatch : GroundedDispatch)
     (notHost : ¬ dispatch.executable (.symbol "if")) (policy : Policy) {atoms : List Atom}
     (program : IfCallProgram atoms) {c y n : Atom} {Lc Ly Ln : List Atom}
@@ -316,7 +316,8 @@ theorem bag_every_run_finishes (dispatch : GroundedDispatch)
           (load (Space.ofList atoms) (callC c y n) Atom.undefinedType) x →
         (∃ z, HEStep dispatch Completed.rawLookup policy x z) ∨
           ∃ emitted : List Result, x = ⟨Space.ofList atoms, .returning [], [], emitted⟩ ∧
-            emitted.map (fun r => r.1.erase) = answersOf Lc Ly Ln) ∧
+            ((emitted.map (fun r => r.1.erase) : List Atom) : Multiset Atom) =
+              ((answersOf Lc Ly Ln : List Atom) : Multiset Atom)) ∧
       ∃ N : Nat, ∀ k, N ≤ k → Streaming.values (Streaming.advance (translate atoms) k
         (Streaming.enter { state := store atoms } (callC c y n))) = answersOf Lc Ly Ln := by
   have fine := bag_fine notHost policy program bag
@@ -327,7 +328,8 @@ theorem bag_every_run_finishes (dispatch : GroundedDispatch)
     simp only [load, Mettapedia.Languages.MeTTa.HE.RecursiveTasks.Contextual.Configuration.initial]
       at sameSpace
     subst sameSpace
-    exact Or.inr ⟨emitted, rfl, bag_source program bag (complete_source path)⟩
+    exact Or.inr ⟨emitted, rfl, congrArg (fun l : List Atom => (l : Multiset Atom))
+      (bag_source program bag (complete_source path))⟩
 
 /-! ## Controls -/
 
@@ -338,7 +340,7 @@ open IfComputed.Controls (num)
 open IfBags.Controls (coinRows coin_program coin_bag coin2_bag)
 
 /-- **`(if (coin) (half 4) (pair a b))`, every run**: no infinite run from the entry, and every final
-configuration publishes `[two, (pair a b)]`. -/
+configuration publishes the bag of `(pair a b)` and `two` (HE answers `[(pair a b), two]`). -/
 theorem coin_pair_finishes (policy : Policy) :
     Acc (fun later earlier => HEStep noHost Completed.rawLookup policy earlier later)
         (load (Space.ofList coinRows)
@@ -350,14 +352,20 @@ theorem coin_pair_finishes (policy : Policy) :
             Atom.undefinedType) x →
         (∃ z, HEStep noHost Completed.rawLookup policy x z) ∨
           ∃ emitted : List Result, x = ⟨Space.ofList coinRows, .returning [], [], emitted⟩ ∧
-            emitted.map (fun r => r.1.erase) = [sym "two", app "pair" [sym "a", sym "b"]] := by
+            ((emitted.map (fun r => r.1.erase) : List Atom) : Multiset Atom) =
+              (([app "pair" [sym "a", sym "b"], sym "two"] : List Atom) : Multiset Atom) := by
   obtain ⟨acc, every, -⟩ := bag_every_run_finishes noHost (fun impossible => impossible) policy
     coin_program coin_bag
   have answers : answersOf [.grounded (.bool true), .grounded (.bool false)] [sym "two"]
       [app "pair" [sym "a", sym "b"]] = [sym "two", app "pair" [sym "a", sym "b"]] := by
     decide +kernel
   rw [answers] at every
-  exact ⟨acc, every⟩
+  refine ⟨acc, fun x path => ?_⟩
+  rcases every x path with moves | ⟨emitted, same, bag⟩
+  · exact Or.inl moves
+  · refine Or.inr ⟨emitted, same, ?_⟩
+    rw [bag]
+    exact Multiset.coe_eq_coe.mpr (List.Perm.swap _ _ [])
 
 /-- **`(if (coin2) yes no)`, every run**: no infinite run, and every final configuration publishes
 `yes` twice. -/
@@ -377,7 +385,11 @@ theorem coin_twice_finishes (policy : Policy) :
       [sym "no"] = [sym "yes", sym "yes"] := by
     decide +kernel
   rw [answers] at every
-  exact ⟨acc, every⟩
+  refine ⟨acc, fun x path => ?_⟩
+  rcases every x path with moves | ⟨emitted, same, bag⟩
+  · exact Or.inl moves
+  · exact Or.inr ⟨emitted, same,
+      (List.perm_replicate (n := 2) (a := sym "yes")).mp (Multiset.coe_eq_coe.mp bag)⟩
 
 end Controls
 

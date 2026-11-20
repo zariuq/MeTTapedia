@@ -12,6 +12,9 @@ driver repeats passes until the program is idle or its fuel is spent.
 * `call_executable`, `pass_executable`, `drive_executable`: a call, a pass and a drive are
   executable words from a known configuration, and what they leave knows the store the
   model leaves. Every firing of the word is a rule of the program with fresh variables.
+* `InProgram`: the rule instances of a program. Each of the three words is `Numbered` for
+  them: every firing, where it fires, is a rule of the program written with the variables
+  of a number above every number its configuration mentions.
 * `drive_is_run`: **a drive is one run of `firstOrder atomAction label`.** At its end the
   knowledge is consistent and, under every solution of it, the labels of the last rows are
   the atoms of the store the driver returns. **If the program is idle at that store, no
@@ -85,6 +88,10 @@ def OfProgram (program : List MadeRule)
   ∀ f ∈ word, ∃ r ∈ program, ∃ m,
     f.rule = (madeRule r.pats r.absents r.template).map (rename m) ∧ f.queries = []
 
+/-- The rule instances of a program, as written. -/
+def InProgram (program : List MadeRule) (rule : RuleInstance Atom) : Prop :=
+  ∃ r ∈ program, rule = madeRule r.pats r.absents r.template
+
 /-- A call of a rule from a known configuration. -/
 theorem call_executable {label : O → Atom}
     (supply : ∀ (X : Finset O) (t : Atom), ∃ o, o ∉ X ∧ label o = t)
@@ -95,16 +102,17 @@ theorem call_executable {label : O → Atom}
       Executable atomAction label ⟨K, rows.toFinset⟩ word ∧
       follow label ⟨K, rows.toFinset⟩ word = ⟨K', rows'.toFinset⟩ ∧
       Knows label K' n' rows' ((transformInto r.sources r.template s).drain).2 ∧
-      OfProgram [r] word := by
-  obtain ⟨word, rows', K', n', exec, ends, knows', rules, _⟩ :=
+      OfProgram [r] word ∧ Numbered label (InProgram [r]) ⟨K, rows.toFinset⟩ word := by
+  obtain ⟨word, rows', K', n', exec, ends, knows', rules, _, numbered⟩ :=
     made_fold_executable supply r.pats r.absents r.template closed _
       (fun g member => guarded_proposal_fits knows.ground member) ([], s) rows K n knows
-  refine ⟨word, rows', K', n', exec, ends, ?_, ?_⟩
+  refine ⟨word, rows', K', n', exec, ends, ?_, ?_, ?_⟩
   · rw [transformInto, transformWith_drain]
     exact knows'
   · intro f member
     obtain ⟨m, isRule, noQueries⟩ := rules f member
     exact ⟨r, List.mem_singleton_self _, m, isRule, noQueries⟩
+  · exact numbered.mono fun rule same => ⟨r, List.mem_singleton_self _, same⟩
 
 /-- A pass of a program from a known configuration. -/
 theorem pass_executable {label : O → Atom}
@@ -117,17 +125,24 @@ theorem pass_executable {label : O → Atom}
           (rows' : List O) (K' : EquationStore Atom) (n' : Nat),
           Executable atomAction label ⟨K, rows.toFinset⟩ word ∧
           follow label ⟨K, rows.toFinset⟩ word = ⟨K', rows'.toFinset⟩ ∧
-          Knows label K' n' rows' (pass rules s) ∧ OfProgram program word
+          Knows label K' n' rows' (pass rules s) ∧ OfProgram program word ∧
+          Numbered label (InProgram program) ⟨K, rows.toFinset⟩ word
   | [], _, _, K, n, rows, s, knows =>
-      ⟨[], rows, K, n, knows.consistent, rfl, knows, fun f member => by simp at member⟩
+      ⟨[], rows, K, n, knows.consistent, rfl, knows, fun f member => by simp at member, trivial⟩
   | r :: rules, program, good, K, n, rows, s, knows => by
-      obtain ⟨first, mid, K₁, n₁, exec₁, ends₁, knows₁, ofRule⟩ :=
+      obtain ⟨first, mid, K₁, n₁, exec₁, ends₁, knows₁, ofRule, numbered₁⟩ :=
         call_executable supply knows r (good r (List.mem_cons_self ..)).2
-      obtain ⟨second, rows', K', n', exec₂, ends₂, knows₂, ofRest⟩ :=
+      obtain ⟨second, rows', K', n', exec₂, ends₂, knows₂, ofRest, numbered₂⟩ :=
         pass_executable supply rules program
           (fun r' member => good r' (List.mem_cons_of_mem _ member)) knows₁
       obtain ⟨exec, ends⟩ := executable_append first exec₁ ends₁ exec₂
-      refine ⟨first ++ second, rows', K', n', exec, ends.trans ends₂, ?_, ?_⟩
+      have inProgram : ∀ rule, InProgram [r] rule → InProgram program rule := by
+        rintro rule ⟨r', isR, same⟩
+        rw [List.mem_singleton] at isR
+        subst isR
+        exact ⟨r', (good r' (List.mem_cons_self ..)).1, same⟩
+      refine ⟨first ++ second, rows', K', n', exec, ends.trans ends₂, ?_, ?_,
+        Numbered.append first (numbered₁.mono inProgram) ends₁ numbered₂⟩
       · show Knows label K' n' rows' (pass rules
           ((transformInto r.sources r.template s).drain).2)
         exact knows₂
@@ -149,21 +164,24 @@ theorem drive_executable {label : O → Atom}
         (rows' : List O) (K' : EquationStore Atom) (n' : Nat),
         Executable atomAction label ⟨K, rows.toFinset⟩ word ∧
         follow label ⟨K, rows.toFinset⟩ word = ⟨K', rows'.toFinset⟩ ∧
-        Knows label K' n' rows' (drive fuel program s) ∧ OfProgram program word
+        Knows label K' n' rows' (drive fuel program s) ∧ OfProgram program word ∧
+        Numbered label (InProgram program) ⟨K, rows.toFinset⟩ word
   | 0, K, n, rows, s, knows =>
-      ⟨[], rows, K, n, knows.consistent, rfl, knows, fun f member => by simp at member⟩
+      ⟨[], rows, K, n, knows.consistent, rfl, knows, fun f member => by simp at member, trivial⟩
   | fuel + 1, K, n, rows, s, knows => by
       by_cases idle : Idle program s
-      · refine ⟨[], rows, K, n, knows.consistent, rfl, ?_, fun f member => by simp at member⟩
+      · refine ⟨[], rows, K, n, knows.consistent, rfl, ?_, fun f member => by simp at member,
+          trivial⟩
         simp only [drive, idle, if_true]
         exact knows
-      · obtain ⟨first, mid, K₁, n₁, exec₁, ends₁, knows₁, ofFirst⟩ :=
+      · obtain ⟨first, mid, K₁, n₁, exec₁, ends₁, knows₁, ofFirst, numbered₁⟩ :=
           pass_executable supply program program
             (fun r member => ⟨member, closed r member⟩) knows
-        obtain ⟨second, rows', K', n', exec₂, ends₂, knows₂, ofSecond⟩ :=
+        obtain ⟨second, rows', K', n', exec₂, ends₂, knows₂, ofSecond, numbered₂⟩ :=
           drive_executable supply program closed fuel knows₁
         obtain ⟨exec, ends⟩ := executable_append first exec₁ ends₁ exec₂
-        refine ⟨first ++ second, rows', K', n', exec, ends.trans ends₂, ?_, ?_⟩
+        refine ⟨first ++ second, rows', K', n', exec, ends.trans ends₂, ?_, ?_,
+          Numbered.append first numbered₁ ends₁ numbered₂⟩
         · simp only [drive, idle, if_false]
           exact knows₂
         · intro f member

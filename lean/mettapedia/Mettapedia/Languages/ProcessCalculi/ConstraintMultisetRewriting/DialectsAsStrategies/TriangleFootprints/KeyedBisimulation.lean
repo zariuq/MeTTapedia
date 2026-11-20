@@ -1,12 +1,14 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.TriangleFootprints.HonestWrites
 
 /-!
-# HE's writing machine on keyed rows is bisimilar to HE's writing machine on its spaces
+# HE's writing machine on keyed rows is bisimilar to the model's writing machine on its spaces
 
 `HonestWrites` runs HE's world machine on keyed rows (`KeyedWorld`: atoms with stable identities),
 so that an add writes one fresh row and a removal takes one row. Here that keyed machine is
-compared with HE's world machine on HE's own spaces, whose `add-atom` and `remove-atom` are
-`HE.Space.add` (the new atom in front) and `HE.Space.remove` (the first occurrence):
+compared with HE's world machine on the model's spaces, whose `add-atom` and `remove-atom` are
+`HE.Space.add` (the new atom in front) and `HE.Space.remove` (the first occurrence). HE itself keeps a
+space in insertion order and adds at the back; the two orders hold the same bag of rows
+(`Controls.back_add_is_insertion_order`), and the bisimulation below is with the model's order:
 
 * `spaceServices`: HE's writing services on spaces;
 * `keyed_to_space`, `space_to_keyed`: every move of the keyed machine is a move of the space
@@ -29,9 +31,11 @@ positions, or with works recording identities.
 
 * `Controls.identities_invisible`: two keyed worlds with different identities present the same
   space, so the bisimulation is not a bijection of worlds.
-* `Controls.back_add_not_he` (negative): a keyed add placing the new row at the back would present a
-  different space than HE's add, which puts it in front; the keyed services' choice of the front is
-  what makes the bisimulation hold.
+* `Controls.back_add_is_insertion_order`: a keyed add placing the new row at the back presents the
+  space in HE's insertion order, `[(p a), (q b)]`, which differs as a list from the model's add in
+  front, `[(q b), (p a)]`, and equals it as a bag. The keyed services' choice of the front is what
+  makes the bisimulation with the model hold; with HE's order the rows and the answers they give
+  are the same bag.
 -/
 
 set_option autoImplicit false
@@ -224,12 +228,20 @@ theorem identities_invisible :
       ([(WorldRemoval.pa, 0)] : KeyedWorld) ≠ [(WorldRemoval.pa, 5)] :=
   ⟨rfl, by decide⟩
 
-/-- **Negative control: the front matters.** Adding `(q b)` as a new row at the back of the keyed
-world holding `(p a)` presents a different space than HE's add, which puts `(q b)` in front. -/
-theorem back_add_not_he :
-    keyedView ([(WorldRemoval.pa, 0)] ++ [(qb, 1)]) () ≠
-      (keyedView [(WorldRemoval.pa, 0)] ()).add qb := by
-  simp [keyedView, Space.add, WorldRemoval.pa, qb]
+/-- **The order of an add: HE's insertion order against the model's front.** Adding `(q b)` as a new
+row at the back of the keyed world holding `(p a)` presents `[(p a), (q b)]`, HE's insertion order;
+the model's add puts `(q b)` in front, `[(q b), (p a)]`. The two spaces differ as lists and hold the
+same bag of atoms. -/
+theorem back_add_is_insertion_order :
+    (keyedView ([(WorldRemoval.pa, 0)] ++ [(qb, 1)]) ()).atoms = [WorldRemoval.pa, qb] ∧
+      ((keyedView [(WorldRemoval.pa, 0)] ()).add qb).atoms = [qb, WorldRemoval.pa] ∧
+      keyedView ([(WorldRemoval.pa, 0)] ++ [(qb, 1)]) () ≠
+        (keyedView [(WorldRemoval.pa, 0)] ()).add qb ∧
+      ((keyedView ([(WorldRemoval.pa, 0)] ++ [(qb, 1)]) ()).atoms : Multiset Atom) =
+        (((keyedView [(WorldRemoval.pa, 0)] ()).add qb).atoms : Multiset Atom) := by
+  refine ⟨rfl, rfl, by simp [keyedView, Space.add, WorldRemoval.pa, qb], ?_⟩
+  show ((([WorldRemoval.pa, qb] : List Atom)) : Multiset Atom) = (([qb, WorldRemoval.pa] : List Atom) : Multiset Atom)
+  exact Multiset.coe_eq_coe.mpr (List.Perm.swap _ _ [])
 
 end Controls
 
@@ -238,7 +250,7 @@ end Controls
 #print axioms space_to_keyed
 #print axioms keyed_bisimulation
 #print axioms Controls.identities_invisible
-#print axioms Controls.back_add_not_he
+#print axioms Controls.back_add_is_insertion_order
 
 end KeyedBisimulation
 

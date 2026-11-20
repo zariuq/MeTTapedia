@@ -21,7 +21,7 @@ Two ways to resolve a location to facets:
 * **A public name gives every process the holder's facets** (`public_name_gives_holder`), even a
   process with no atoms and no handles (`Public.builds`). So a board region named by a public
   symbol has as many minters as processes (`public_board_others_send`), and its universal reads
-  are falsified by any of them (`OwnedReads.absence_falsified_of_other_send`).
+  are falsified by any of them (`OwnedReads.none_falsified_of_other_send`).
 * **A fresh name gives nothing to a non-holder of its atom** (`fresh_name_handles_only`): the two
   rules agree there. A region created fresh and never given a public name is protected under both.
 

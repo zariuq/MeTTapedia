@@ -6,7 +6,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Specializ
 * **Micromath's `substitute1`** (four reads whose side conditions are repeated locals, one make):
   admitted on four theorems that meet the side conditions, with the theorem it derives made under
   the next identity; refused as unsolvable when one side condition fails.
-* **Guards**: an absence whose pattern has a guard-only local refuses when some present label
+* **Guards**: a none query whose pattern has a guard-only local refuses when some present label
   matches it and admits otherwise; a count of a determined pattern; a fresh name in a make.
 * **Planted faults the theorems forbid**:
   - `skipRepeated`: the program without the equality tests of repeated locals admits the failing
@@ -105,7 +105,7 @@ def guarded : Rule where
   makes := [.app 3 [loc 0]]
   tells := []
   aparts := []
-  guards := [.absent (.app 2 [loc 0, loc 1])]
+  guards := [.none (.app 2 [loc 0, loc 1])]
 
 def blocked : St where
   vars := 0
@@ -116,7 +116,7 @@ def blocked : St where
 
 def free : St := { blocked with present := [⟨1, .app 1 [code 7]⟩, ⟨2, .app 2 [code 8, code 9]⟩] }
 
-/-- Positive and negative for an absence with a guard-only local. -/
+/-- Positive and negative for a none query with a guard-only local. -/
 example : (compile guarded).fire ⟨[], [1]⟩ blocked = (.refused (.guard 0), blocked, []) := by decide +kernel
 example : (compile guarded).fire ⟨[], [1]⟩ free =
     (.admitted,

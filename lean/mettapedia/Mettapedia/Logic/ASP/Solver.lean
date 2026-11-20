@@ -77,7 +77,7 @@ has no variable either: its literal is over an atom (`Program.isVar_lit`).
 
 Each rule reads the trail (and the nogood database) and writes one new trail
 entry or one learned nogood; nothing is consumed except the trail suffix a
-backjump or restart discards. In the transform calculus of
+backjump or restart discards. In the constraint multiset rewriting of
 `ConstraintMultisetRewriting.Step`, propagation is a firing that reads the
 assignment, checks a nogood and makes a justified literal; decisions are firings
 with no premise; learning makes a justified nogood. Linear take is reserved for

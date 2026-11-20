@@ -1,18 +1,16 @@
 import Mettapedia.Machines.CMemory.Lift
-import Mettapedia.Machines.OrderedDependencyCSource
 
 /-!
 # Block loads for dependency fields and indexed identity arrays
 
-The split-array representation supplies actual typed loads, rather than a
-caller-provided field oracle. The load specifications retain every framed
+Reads from the block-memory representation of a dependency store
+(`CMemory.Lift`). The representation supplies the typed loads; no field value
+is supplied by the observer. The load specifications retain every framed
 resource. Reading an active identity follows the pointer stored in the array
 field and loads the indexed cell of that block; no list value is substituted
 for a memory operation.
 
-Offsets are the existing cell-granular layout, not a claim about a compiler's
-byte ABI. Whole-runtime synchronization and the reserve/preparation programs
-remain separate obligations.
+Offsets are cell-granular field positions of the layout, not a byte layout.
 -/
 
 set_option autoImplicit false
@@ -139,6 +137,12 @@ theorem load_item_refines {items count capacity : Ptr} (A : Array32 Id)
       obtain ⟨x, y, separate, rfl, fields, frame⟩ := holds
       exact ⟨x, y, separate, rfl, ⟨within, some p, fields⟩, frame⟩
 
+/-- The two link directions of a module: its dependencies and its importers. -/
+inductive Direction where
+  | forward
+  | reverse
+  deriving DecidableEq, Repr
+
 /-- A member may be read without discarding the rest of the store. -/
 theorem store_member_split [DecidableEq Id] (layout : SpaceLayout) {D : List Id}
     (H : SplitHeap Id) {owner : Id} (member : owner ∈ D) :
@@ -149,12 +153,12 @@ theorem store_member_split [DecidableEq Id] (layout : SpaceLayout) {D : List Id}
     List.map_cons, bigSep_cons]
   rfl
 
-def selectedArray (H : SplitHeap Id) (owner : Id) : OrderedDependencyCSource.ArrayField →
+def selectedArray (H : SplitHeap Id) (owner : Id) : Direction →
     Array32 Id
   | .forward => H.forward owner
   | .reverse => H.reverse owner
 
-def arrayOffsets (layout : SpaceLayout) : OrderedDependencyCSource.ArrayField →
+def arrayOffsets (layout : SpaceLayout) : Direction →
     Nat × Nat × Nat
   | .forward => (layout.deps, layout.depCount, layout.depCap)
   | .reverse => (layout.importers, layout.importerCount, layout.importerCap)
@@ -163,7 +167,7 @@ def arrayOffsets (layout : SpaceLayout) : OrderedDependencyCSource.ArrayField �
 and every other module. No dependency view is copied for this observation. -/
 theorem store_array_split [DecidableEq Id] (layout : SpaceLayout) {D : List Id}
     (H : SplitHeap Id) {owner : Id} (member : owner ∈ D)
-    (direction : OrderedDependencyCSource.ArrayField) :
+    (direction : Direction) :
     ∃ F : Heap L → Prop, StoreRep addr layout D H =
       (CountedArray addr (addr owner + (arrayOffsets layout direction).1)
         (addr owner + (arrayOffsets layout direction).2.1)
@@ -180,7 +184,7 @@ theorem store_array_split [DecidableEq Id] (layout : SpaceLayout) {D : List Id}
 typed reader. The entire current store is retained unchanged. -/
 theorem store_count_load [DecidableEq Id] (layout : SpaceLayout) {D : List Id}
     (H : SplitHeap Id) {owner : Id} (member : owner ∈ D)
-    (direction : OrderedDependencyCSource.ArrayField) (F : Heap L → Prop) :
+    (direction : Direction) (F : Heap L → Prop) :
     CTriple (StoreRep addr layout D H ∗ F)
       (CProg.loadU32 (addr owner + (arrayOffsets layout direction).2.1))
       (fun r σ => r = (selectedArray H owner direction).count ∧
@@ -193,7 +197,7 @@ theorem store_count_load [DecidableEq Id] (layout : SpaceLayout) {D : List Id}
 
 theorem store_capacity_load [DecidableEq Id] (layout : SpaceLayout) {D : List Id}
     (H : SplitHeap Id) {owner : Id} (member : owner ∈ D)
-    (direction : OrderedDependencyCSource.ArrayField) (F : Heap L → Prop) :
+    (direction : Direction) (F : Heap L → Prop) :
     CTriple (StoreRep addr layout D H ∗ F)
       (CProg.loadU32 (addr owner + (arrayOffsets layout direction).2.2))
       (fun r σ => r = UInt32.ofNat (selectedArray H owner direction).slots.length ∧
@@ -215,7 +219,7 @@ theorem capacity_toNat_is_extent (A : Array32 Id) (sized : A.Sized) :
 
 theorem store_capacity_load_is_exact [DecidableEq Id] (layout : SpaceLayout) {D : List Id}
     (H : SplitHeap Id) {owner : Id} (member : owner ∈ D)
-    (direction : OrderedDependencyCSource.ArrayField)
+    (direction : Direction)
     (sized : (selectedArray H owner direction).Sized) (F : Heap L → Prop) :
     CTriple (StoreRep addr layout D H ∗ F)
       (CProg.loadU32 (addr owner + (arrayOffsets layout direction).2.2))
@@ -248,9 +252,9 @@ theorem counted_pointer_field_is_whole {items count capacity : Ptr} {A : Array32
   simpa only [Nat.add_zero, atBlock_same, List.map_cons, List.map_nil,
     List.getElem_cons_zero] using atCell
 
-/-- The representation enforces module-address injectivity on its domain.
-Preparation may therefore connect physical pointer equality to module identity
-without assuming an inverse-address oracle. -/
+/-- The representation enforces module-address injectivity on its domain:
+pointer equality of represented modules is module identity, without an
+inverse-address map. -/
 theorem represented_module_addresses_are_distinct [DecidableEq Id] (layout : SpaceLayout)
     {D : List Id} (H : SplitHeap Id) {left right : Id} (leftIn : left ∈ D)
     (rightIn : right ∈ D) (different : left ≠ right) {σ : Heap L}
@@ -269,7 +273,7 @@ theorem represented_module_addresses_are_distinct [DecidableEq Id] (layout : Spa
 
 theorem store_item_load [DecidableEq Id] (layout : SpaceLayout) {D : List Id}
     (H : SplitHeap Id) {owner : Id} (member : owner ∈ D)
-    (direction : OrderedDependencyCSource.ArrayField) (index : UInt32)
+    (direction : Direction) (index : UInt32)
     (inside : index.toNat < (selectedArray H owner direction).active.length)
     (F : Heap L → Prop) :
     CTriple (StoreRep addr layout D H ∗ F)

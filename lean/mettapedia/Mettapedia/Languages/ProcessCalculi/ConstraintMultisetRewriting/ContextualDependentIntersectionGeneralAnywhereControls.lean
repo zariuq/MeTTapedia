@@ -16,7 +16,7 @@ At budget 16 and eight rounds, over the context of the reorder witness
 The first round answers `X` in place and puts the twin first; the anywhere rule then intersects `G` at the second
 equation, which makes the twin's annotations equal.
 
-Wherever the last family decides, the anywhere family decides the same way (`anywhere_of_final`), so the census
+Wherever the last family decides, the anywhere family decides the same way (`anywhere_of_final`), so the classification
 results of `ContextualDependentAcceptance3Controls` hold for it as well.
 -/
 
@@ -69,7 +69,7 @@ theorem reorderDiagonal_refuted : (run anywhereOnly reorderDiagonalStore 8).read
 theorem reorderDiagonal_unsolvable : ¬ (frames setting.levels).Solvable reorderDiagonalStore :=
   Outcome.readout_eq_refuted reorderDiagonal_refuted
 
-/-! ## The census -/
+/-! ## The classification -/
 
 /-- **Every store the last family decides at budget 16, the anywhere family decides the same way.** -/
 theorem anywhere_of_final {Θ : Context setting.R} {problem : EquationStore (TotalTerm Θ)}

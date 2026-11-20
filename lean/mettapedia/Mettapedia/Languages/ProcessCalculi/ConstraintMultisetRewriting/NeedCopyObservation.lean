@@ -75,7 +75,7 @@ def projection (protocol : Protocol) : SpanMap (controlledSpan protocol) (heapSp
   target_comm _ := rfl
 
 /-- Every heap event starting at the projected world has a genuine
-controlled firing, including its original absence check and equation history. -/
+controlled firing, including its original none check and equation history. -/
 theorem projection_source_lifts (protocol : Protocol) : (projection protocol).SourceLifts := by
   intro before event starts
   have heapStep := event.firing

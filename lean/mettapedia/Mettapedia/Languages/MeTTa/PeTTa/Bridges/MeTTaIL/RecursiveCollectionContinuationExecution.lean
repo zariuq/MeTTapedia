@@ -976,12 +976,12 @@ def viewProgram : Program where
     [(RuleExecutionProgram.interpretedPremiseSupportSources[1]'(by decide +kernel)).program.equations[4]'(by decide +kernel),
       (RuleExecutionProgram.interpretedPremiseSupportSources[8]'(by decide +kernel)).program.equations[5]'(by decide +kernel)] ++
     CollectionOccurrenceSearchExecution.SelectedNativeSource.continuationSource.program.equations ++
-    [RuleExecutionProgram.scopedProgram.equations[220]'(by decide +kernel)]
+    [RuleExecutionProgram.scopedProgram.equations[229]'(by decide +kernel)]
   declarations :=
     [(RuleExecutionProgram.interpretedPremiseSupportSources[1]'(by decide +kernel)).program.declarations[4]'(by decide +kernel),
       (RuleExecutionProgram.interpretedPremiseSupportSources[8]'(by decide +kernel)).program.declarations[5]'(by decide +kernel)] ++
     CollectionOccurrenceSearchExecution.SelectedNativeSource.continuationSource.program.declarations ++
-    [RuleExecutionProgram.scopedProgram.declarations[220]'(by decide +kernel)]
+    [RuleExecutionProgram.scopedProgram.declarations[229]'(by decide +kernel)]
 
 def viewLibrary : Library := ⟨{equations := [], declarations := []}, viewProgram, ["gslt:"]⟩
 def lowerNames : List String := ["gslt:descent:continue-root-answer",

@@ -1,5 +1,4 @@
 import Mettapedia.OSLF.MeTTaIL.Substitution
-import Mettapedia.Languages.MeTTa.HE.CeTTaRuntimeContracts
 import Provenance.Util.ValueTypeString
 import Mettapedia.OSLF.MeTTaIL.DecimalNames
 import Init.Data.List.Lemmas

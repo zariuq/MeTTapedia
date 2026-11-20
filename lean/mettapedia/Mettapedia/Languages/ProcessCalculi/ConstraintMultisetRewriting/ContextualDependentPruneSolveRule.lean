@@ -202,9 +202,9 @@ def tryContext (fuel : Nat) {Γ₀ : Context S.R} (older : TypeOver Γ₀) (newe
                                             | none => none
                                             | some (.solved solved smaller) =>
                                                 some (.solved ((pruned.then exchanged).then solved) smaller)
-                                            | some (.refuted absent) =>
+                                            | some (.refuted missing) =>
                                                 some (.refuted fun solvable =>
-                                                  absent ((pruned.then exchanged).solvable_iff.mp solvable))
+                                                  missing ((pruned.then exchanged).solvable_iff.mp solvable))
                                           else none
                                         else none
                                         else none
@@ -323,7 +323,7 @@ def pruneSolveRound (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (To
       match pruneSolveRule facts roots heads algebra rigid complete declared choices reducer root normalizes
           certifyNormal headTypingUnique fuel problem with
       | some (.solved update smaller) => .progress update (below_of_arity facts roots heads algebra rigid complete smaller)
-      | some (.refuted absent) => .refuted absent
+      | some (.refuted missing) => .refuted missing
       | none => .stuck
   | other => other
 

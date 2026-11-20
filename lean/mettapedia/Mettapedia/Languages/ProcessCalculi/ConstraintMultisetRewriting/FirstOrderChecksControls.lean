@@ -4,8 +4,8 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Controls
 /-!
 # Executable guard controls for open bindings and duplicate occurrences
 
-The checks distinguish certain equality from mere unifiability. Open absence
-and counts remain unaccepted; a genuine incompatibility establishes absence.
+The checks distinguish certain equality from mere unifiability. Open none query
+and counts remain unaccepted; a genuine incompatibility establishes none queries.
 An ordinary consumption retains its binding equation and leaves the second
 equal-valued occurrence. An inconsistent store never licenses a firing check.
 -/
@@ -37,11 +37,11 @@ theorem an_open_count_is_not_generalized_from_one_answer :
     acceptsCertainCheck (signature := signature) [] label {1, 4} (.count (.const 0) 0) = false ∧
       acceptsCertainCheck (signature := signature) [] label {1, 4} (.count (.const 0) 2) = false := by cbv
 
-theorem open_absence_remains_unaccepted :
-    acceptsCertainCheck (signature := signature) [] label {1, 4} (.absent (.const 0)) = false := by cbv
+theorem open_none_remains_unaccepted :
+    acceptsCertainCheck (signature := signature) [] label {1, 4} (.predicate .none (.const 0)) = false := by cbv
 
-theorem genuine_incompatibility_establishes_absence_and_zero_count :
-    acceptsCertainCheck (signature := signature) boundOne label {1, 4} (.absent (.const 0)) = true ∧
+theorem genuine_incompatibility_establishes_none_and_zero_count :
+    acceptsCertainCheck (signature := signature) boundOne label {1, 4} (.predicate .none (.const 0)) = true ∧
       acceptsCertainCheck (signature := signature) boundOne label {1, 4} (.count (.const 0) 0) = true := by cbv
 
 def consume : RuleInstance (Term signature) := ⟨[.const 0], [], [], [], []⟩
@@ -67,16 +67,16 @@ theorem after_consumption_the_remaining_occurrence_and_binding_are_retained :
     after.present = {4} ∧ after.equations = [(Term.const (σ := signature) 0, .var 0)] := by
   with_unfolding_all decide
 
-theorem consuming_one_of_two_does_not_establish_absence :
-    acceptsCertainCheck (signature := signature) after.equations label after.present (.absent (.const 0)) = false ∧
+theorem consuming_one_of_two_does_not_establish_none :
+    acceptsCertainCheck (signature := signature) after.equations label after.present (.predicate .none (.const 0)) = false ∧
       acceptsCertainCheck (signature := signature) after.equations label after.present (.count (.const 0) 1) = true ∧
         acceptsCertainCheck (signature := signature) after.equations label after.present (.count (.const 0) 0) = false := by cbv
 
 def singletonBefore : Configuration (Term signature) Nat := ⟨[], {1}⟩
 def singletonAfter := selection.result label consume singletonBefore
 
-theorem consuming_the_only_occurrence_does_establish_absence :
-    acceptsCertainCheck (signature := signature) singletonAfter.equations label singletonAfter.present (.absent (.const 0)) = true ∧
+theorem consuming_the_only_occurrence_does_establish_none :
+    acceptsCertainCheck (signature := signature) singletonAfter.equations label singletonAfter.present (.predicate .none (.const 0)) = true ∧
       acceptsCertainCheck (signature := signature) singletonAfter.equations label singletonAfter.present (.count (.const 0) 1) = false := by cbv
 
 theorem an_inconsistent_store_cannot_license_a_check :
@@ -91,9 +91,9 @@ theorem the_computed_count_is_a_universal_judgment :
       (fun assignment => (Check.count (.const 0) 1).Holds (FirstOrder.action signature)
         assignment label after.present) :=
   (accepts_iff after.equations label after.present (.count (.const 0) 1)).mp
-    consuming_one_of_two_does_not_establish_absence.2.1 |>.2
+    consuming_one_of_two_does_not_establish_none.2.1 |>.2
 
-namespace OpenAbsence
+namespace OpenNone
 
 open ConstraintMultisetRewriting.Controls (f one)
 
@@ -109,7 +109,7 @@ def rows : Nat → Term signature
 def query : Term signature := f (.var 0)
 def initial : Configuration (Term signature) Nat := ⟨[], {0, 1, 2}⟩
 def askRule : RuleInstance (Term signature) :=
-  ⟨[.const 10], [], [], [.absent query], [rows 3]⟩
+  ⟨[.const 10], [], [], [.predicate .none query], [rows 3]⟩
 def askSelection : Selection Nat := ⟨[1], [], [3]⟩
 def bindRule (value : Nat) : RuleInstance (Term signature) :=
   ⟨[.const 11], [], [(.var 0, .const value)], [], []⟩
@@ -117,13 +117,13 @@ def bindSelection : Selection Nat := ⟨[2], [], []⟩
 def afterBind (value : Nat) := bindSelection.result rows (bindRule value) initial
 
 theorem the_three_guard_verdicts :
-    acceptsCertainCheck (signature := signature) [] rows initial.present (.absent query) = false ∧
-    acceptsCertainCheck (signature := signature) boundOne rows initial.present (.absent query) = true ∧
-    acceptsCertainCheck (signature := signature) boundZero rows initial.present (.absent query) = false := by cbv
+    acceptsCertainCheck (signature := signature) [] rows initial.present (.predicate .none query) = false ∧
+    acceptsCertainCheck (signature := signature) boundOne rows initial.present (.predicate .none query) = true ∧
+    acceptsCertainCheck (signature := signature) boundZero rows initial.present (.predicate .none query) = false := by cbv
 
 theorem a_partial_empty_scan_would_give_the_wrong_verdict :
-    acceptsCertainCheck (signature := signature) boundZero rows ∅ (.absent query) = true ∧
-    acceptsCertainCheck (signature := signature) boundZero rows initial.present (.absent query) = false := by cbv
+    acceptsCertainCheck (signature := signature) boundZero rows ∅ (.predicate .none query) = true ∧
+    acceptsCertainCheck (signature := signature) boundZero rows initial.present (.predicate .none query) = false := by cbv
 
 theorem the_partial_scan_lacks_coverage :
     ¬ Check.CoversMatches (FirstOrder.action signature) boundZero rows ∅ initial.present query := by
@@ -136,8 +136,8 @@ theorem the_partial_scan_lacks_coverage :
   exact Finset.notMem_empty 0 impossible
 
 theorem relevant_and_unrelated_insertions_differ :
-    acceptsCertainCheck (signature := signature) boundOne rows {0, 1, 2, 4} (.absent query) = false ∧
-    acceptsCertainCheck (signature := signature) boundOne rows {0, 1, 2, 5} (.absent query) = true := by cbv
+    acceptsCertainCheck (signature := signature) boundOne rows {0, 1, 2, 4} (.predicate .none query) = false ∧
+    acceptsCertainCheck (signature := signature) boundOne rows {0, 1, 2, 5} (.predicate .none query) = true := by cbv
 
 theorem either_binding_step_is_available (value : Nat) :
     bindSelection.Valid (FirstOrder.action signature) rows (bindRule value) initial := by
@@ -151,13 +151,13 @@ theorem either_binding_step_is_available (value : Nat) :
 theorem the_unbound_guard_does_not_admit_the_step :
     ¬ askSelection.Valid (FirstOrder.action signature) rows askRule initial := by
   intro admitted
-  have absent := admitted.checks (.absent query) (by simp [askRule]) zero (by
+  have missing := admitted.checks (.predicate .none query) (by simp [askRule]) zero (by
     intro equation member
     have only : equation = (Term.const (σ := signature) 10, .const 10) := by
       simpa [Selection.problem, Selection.equations, askSelection, askRule, initial, rows] using member
     subst equation
     rfl)
-  exact absent 0 (by decide) rfl
+  exact missing 0 (by decide) rfl
 
 theorem binding_to_one_enables_the_step :
     askSelection.Valid (FirstOrder.action signature) rows askRule (afterBind 1) := by
@@ -167,7 +167,7 @@ theorem binding_to_one_enables_the_step :
       askSelection, askRule, bindSelection, bindRule, initial, rows] at member
     rcases member with rfl | rfl | rfl <;> rfl
   · intro check member assignment model
-    have only : check = Check.absent query := by simpa [askRule] using member
+    have only : check = Check.predicate .none query := by simpa [askRule] using member
     subst check
     have bound : assignment 0 = Term.const (σ := signature) 1 := model (.var 0, .const 1) (by
       simp [afterBind, Selection.result, Selection.problem, Selection.equations,
@@ -188,12 +188,12 @@ theorem binding_to_one_enables_the_step :
 theorem binding_to_zero_refuses_the_step :
     ¬ askSelection.Valid (FirstOrder.action signature) rows askRule (afterBind 0) := by
   intro admitted
-  have absent := admitted.checks (.absent query) (by simp [askRule]) zero (by
+  have missing := admitted.checks (.predicate .none query) (by simp [askRule]) zero (by
     intro equation member
     simp [afterBind, Selection.result, Selection.problem, Selection.equations,
       askSelection, askRule, bindSelection, bindRule, initial, rows] at member
     rcases member with rfl | rfl | rfl <;> rfl)
-  exact absent 0 (by decide) rfl
+  exact missing 0 (by decide) rfl
 
 theorem a_later_equation_enables_an_actual_interaction :
     Step (FirstOrder.action signature) rows (bindRule 1) initial (afterBind 1) ∧
@@ -204,6 +204,6 @@ theorem a_later_equation_enables_an_actual_interaction :
     ⟨askSelection, binding_to_one_enables_the_step, rfl⟩,
     the_unbound_guard_does_not_admit_the_step⟩
 
-end OpenAbsence
+end OpenNone
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.FirstOrderChecks.Controls

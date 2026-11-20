@@ -10,6 +10,8 @@ program whose answers differ between the model and the variant machine (a declar
 needs runs of the variant machine built directly. This module gives the combinators for that, in the
 same continuation form as `EveryRunFinishes`:
 
+* `goodv_of_model`: a configuration from which the model steps, all of whose model successors are
+  good, is good: a proof over every step of the model carries over as it stands.
 * `GoodRuns`, `GoodQuery`: every run of the variant machine from pending work on a value (from a
   query of a call) goes on to the target, under every continuation good on the answers.
 * `goodv_data`: a data atom; `goodv_cast`: a data atom's cast under any demand, whose continuation
@@ -84,6 +86,15 @@ def GoodQuery (dispatch : GroundedDispatch) (lookup : CastLookup) (policy : Poli
         GoodV dispatch lookup policy target ⟨Space.ofList atoms, .returning R, stack, emitted⟩) →
       GoodV dispatch lookup policy target ⟨Space.ofList atoms,
         .work (.call live scope value Atom.undefinedType activation), stack, emitted⟩
+
+/-- **A configuration from which the model steps, all of whose model successors are good, is good**:
+the variant machine steps wherever the model does, and each of its steps is a step of the model. So a
+proof that quantifies over every step of the model needs nothing about the frontier's records. -/
+theorem goodv_of_model {x : HEConfig} (moves : ∃ y, HEStep dispatch lookup policy x y)
+    (all : ∀ y, HEStep dispatch lookup policy x y → GoodV dispatch lookup policy target y) :
+    GoodV dispatch lookup policy target x := by
+  obtain ⟨y, step⟩ := moves
+  exact .step (vstep_total step) fun z moved => all z moved.1
 
 /-- **From the entry of a term**: the top level drains the answers. -/
 theorem goodv_entry {atoms : List Atom} {c : Atom} {L : List Atom}
@@ -803,6 +814,7 @@ theorem target_fixed (policy : Policy) :
 
 end Controls
 
+#print axioms goodv_of_model
 #print axioms goodv_entry
 #print axioms goodv_data
 #print axioms goodv_cast

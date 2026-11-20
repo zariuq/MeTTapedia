@@ -1,5 +1,5 @@
 import Mettapedia.OSLF.Framework.RhoScopeMinimumReceiptTransport
-import Mettapedia.OSLF.Syntax.RhoScopedNativeAbsence
+import Mettapedia.OSLF.Syntax.RhoScopedNativeNone
 
 /-!
 # Generated scopes with original operational atoms
@@ -21,7 +21,7 @@ namespace Mettapedia.OSLF.Framework.RhoScopeOperationalFutures
 open Mettapedia.OSLF.Binding
 open _root_.CategoryTheory RhoSchema RhoQuotationClassFibres RhoEquationConstructorControls
 open BindingSubstitutionAlgebra BindingConstructorPredicates
-open RhoScopedParallelEvents RhoScopedNativeAbsence SyntacticRetractionContexts
+open RhoScopedParallelEvents RhoScopedNativeNone SyntacticRetractionContexts
 open RhoEquationGeneratedScope RhoGeneratedScopeSubstitution RhoScopeMinimumReceipts
 open RhoScopeMinimumReceiptTransport
 

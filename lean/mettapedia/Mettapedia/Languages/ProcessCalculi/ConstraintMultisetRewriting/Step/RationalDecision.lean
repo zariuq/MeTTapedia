@@ -405,7 +405,7 @@ theorem rawStore_rstore : rawStore (G.rstore E) = G.store E := by
   rfl
 
 omit [DecidableEq N] [DecidableEq (Head σ)] in
-/-- **Rational unifiability is the absence of a refutation on nodes.** -/
+/-- **Rational unifiability is the none query of a refutation on nodes.** -/
 theorem consistent_rstore_iff :
     (rationalAction σ).Consistent (G.rstore E) ↔ ¬ G.NodeClash E := by
   rw [consistent_iff_not_refuted, Refuted, rawStore_rstore, clash_iff]

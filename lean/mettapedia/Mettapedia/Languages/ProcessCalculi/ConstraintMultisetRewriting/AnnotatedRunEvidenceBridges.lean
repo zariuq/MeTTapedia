@@ -13,9 +13,9 @@ that the executed rule is its lowering.  This module projects those records
 to the thin firing alphabet used by `AnnotatedRuns`; it does not copy or alter
 the contextual execution structures.
 
-Predicate-census observations are not invented by these bridges.  Their thin
+Predicate-collect observations are not invented by these bridges.  Their thin
 projection therefore has an empty `queries` field.  A source compiler that has
-actual census observations must attach them in its own evidence adapter.
+actual collect observations must attach them in its own evidence adapter.
 -/
 
 set_option autoImplicit false
@@ -184,7 +184,7 @@ variable [DecidableEq Local] [DecidableEq Shared] [DecidableEq O]
   [DecidableEq S.Srt] [∀ result, DecidableEq (S.Op result)]
 
 /-- Turn an actual non-firing contextual attempt into an attempt-history
-record.  The answer table is the actual finite census table, and the theorem
+record.  The answer table is the actual finite collect query table, and the theorem
 below connects its zero-state-change interpretation to the source attempt. -/
 def attemptRecord {Query : Type} (queries : Query → MetaArity S)
     (locals : Local → MetaArity S) (captures : Shared → MetaArity S)

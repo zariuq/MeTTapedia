@@ -6,8 +6,8 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Prog
 Every equation of the strategy's step program has a Miller-pattern left-hand side when the root
 program does (`strategy_patterns`): plugging, raising along a context or a path, and filling a path
 with fresh sibling holes keep Miller patterns. So the guard of an innermost firing is decided by the
-existing guard refuter, as the absence of a matching equation is (`ProgramBindersAbsence`):
-- **sound** (`innermost_of_certified`): a certified absence admits the firing;
+existing guard refuter, as the none query of a matching equation is (`ProgramBindersNone`):
+- **sound** (`innermost_of_certified`): a certified the none query admits the firing;
 - **complete** (`innermost_redex_certified`): at a state in the pattern fragment, an innermost redex has
   a certifying budget;
 - **controls:** at `(f (λy. (g y)))` the inner firing is certified, and the waiting root firing is never
@@ -41,7 +41,7 @@ theorem strategy_patterns (patterns : ∀ index, Pattern sig (program index).ari
 
 variable [Fintype ι] [DecidableEq ι]
 
-/-- **Soundness.** A certified absence turns an admitted plain firing into an admitted innermost one. -/
+/-- **Soundness.** A certified none query turns an admitted plain firing into an admitted innermost one. -/
 theorem innermost_of_certified (budget : FireKey Γ ι ⊕ CheckKey Γ ι → Nat) (state : State (strategyProgram program))
     (key : InnermostKey Γ ι) (plain : Admitted (strategyProgram program) state (fireOf key))
     (accepted : certifiesGuarded (strategyProgram program) budget state (fireOf key) (carriersOf key) = true) :
@@ -49,7 +49,7 @@ theorem innermost_of_certified (budget : FireKey Γ ι ⊕ CheckKey Γ ι → Na
   certified_guarded budget state _ _ plain accepted
 
 /-- **Completeness.** For a Miller-pattern program at a state in the pattern fragment, an innermost
-redex, at the bound of its size, has a budget that certifies the absence of every carrier. -/
+redex, at the bound of its size, has a budget that certifies the none query of every carrier. -/
 theorem innermost_redex_certified (patterns : ∀ index, Pattern sig (program index).arity (program index).lhs)
     (state : State (strategyProgram program)) (call : Term sig Γ .term)
     (determined : Determines (strategyProgram program) state call) (patterned : PatternState state)
@@ -60,11 +60,11 @@ theorem innermost_redex_certified (patterns : ∀ index, Pattern sig (program in
   have valid := (innermost_admitted_iff program state call determined ⟨Δ, context, index, termSize inner⟩).mpr
     ⟨inner, isCall, matched, normal, bounded_size inner⟩
   obtain ⟨⟨Future, future, solution, ⟨value, holds, _, _⟩⟩, _⟩ := determined
-  have absent : CarriersAbsent (strategyProgram program) state (fireOf ⟨Δ, context, index, termSize inner⟩)
+  have missing : NoCarrier (strategyProgram program) state (fireOf ⟨Δ, context, index, termSize inner⟩)
       (carriersOf ⟨Δ, context, index, termSize inner⟩) :=
     ((guarded_admitted_iff state value holds _ _ (fire_apart _)).mp valid).2
-  exact certifies_guarded_of_absent state patterned _ (strategy_patterns program patterns _) _
-    (fun carrier _ => strategy_patterns program patterns carrier) (fire_apart _) absent
+  exact certifies_guarded_of_noCarrier state patterned _ (strategy_patterns program patterns _) _
+    (fun carrier _ => strategy_patterns program patterns carrier) (fire_apart _) missing
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ProgramBinders.Strategy
 

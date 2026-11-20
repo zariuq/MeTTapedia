@@ -64,7 +64,7 @@ theorem Ask.completed_prefix_update_iff {Γ : Ctx S} {sort : S.Srt}
 
 end ContextualGuardSemantics
 
-namespace ContextualConjunctiveAbsence
+namespace ContextualConjunctiveNone
 
 variable {Query : Type} (queries : Query → MetaArity S)
 
@@ -108,6 +108,6 @@ theorem Ask.completed_prefix_update_iff {Γ : Ctx S} {sort : S.Srt}
   Ask.prefix_principal_transport_iff locals queries prefixProblem extra update.answer
     (ContextualComputedFreshFrame.completed_is_principal prefixProblem update finished) patterns rows world
 
-end ContextualConjunctiveAbsence
+end ContextualConjunctiveNone
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting

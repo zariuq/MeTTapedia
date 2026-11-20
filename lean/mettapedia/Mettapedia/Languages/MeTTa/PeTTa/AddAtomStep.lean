@@ -42,6 +42,7 @@ theorem add_atom_transition (registry : SpaceSemantics.Program)
     (control : source.control =
       .arguments bindings (.function "add-atom") [] [location, atom] index)
     (resolved : Effects.readHandle (resolve bindings location) = some handle)
+    (specified : (resolve bindings atom).isVariable = false)
     (inserted : Effects.insert source.state handle (resolve bindings atom) = some after) :
     Unifying.Transition registry source
       { source with
@@ -52,7 +53,7 @@ theorem add_atom_transition (registry : SpaceSemantics.Program)
     (bindings := bindings) (head := "add-atom") (index := index) (held := [location, atom])
     (answers := [Effects.boolean true]) (after := after) control (by decide) (by decide)
     (by decide) (by decide)
-    (by simp [Unifying.primitiveInputs, resolved, inserted])
+    (by simp [Unifying.primitiveInputs, resolved, specified, inserted])
   simpa [Unifying.primitiveOutputs, Unifying.primitiveUses, Unifying.primitiveCopies] using step
 
 /-- The machine is deterministic: from that configuration it takes no other step. -/
@@ -62,6 +63,7 @@ theorem add_atom_transition_unique (registry : SpaceSemantics.Program)
     (control : source.control =
       .arguments bindings (.function "add-atom") [] [location, atom] index)
     (resolved : Effects.readHandle (resolve bindings location) = some handle)
+    (specified : (resolve bindings atom).isVariable = false)
     (inserted : Effects.insert source.state handle (resolve bindings atom) = some after)
     (step : Unifying.Transition registry source target) :
     target =
@@ -71,7 +73,7 @@ theorem add_atom_transition_unique (registry : SpaceSemantics.Program)
         uses := source.uses } := by
   have mine := (Unifying.step_iff_transition registry source _).mpr
     (add_atom_transition registry source bindings index location atom handle after control
-      resolved inserted)
+      resolved specified inserted)
   have theirs := (Unifying.step_iff_transition registry source target).mpr step
   rw [mine] at theirs
   exact (Option.some.inj theirs).symm
@@ -107,6 +109,7 @@ theorem add_atom_is_append (registry : SpaceSemantics.Program)
     (control : source.control =
       .arguments bindings (.function "add-atom") [] [location, atom] index)
     (resolved : Effects.readHandle (resolve bindings location) = some handle)
+    (specified : (resolve bindings atom).isVariable = false)
     (opened : source.state.read handle = some (ids.map label))
     (unique : ids.Nodup) (isFresh : fresh ∉ ids)
     (labelled : label fresh = resolve bindings atom)
@@ -135,7 +138,7 @@ theorem add_atom_is_append (registry : SpaceSemantics.Program)
   have admitted := addRequest_admitted label knowledge ids fresh unique isFresh consistent
   refine ⟨after,
     add_atom_transition registry source bindings index location atom handle after control
-      resolved inserted, ?_, admitted, ?_⟩
+      resolved specified inserted, ?_, admitted, ?_⟩
   · rw [nowOpen, sameRows, List.map_append, List.map_singleton, labelled]
   · refine Prod.ext rfl ?_
     show ((OrderedStore.step atomFrames PUnit.unit label).result (addRequest fresh) admitted).2 =
@@ -145,6 +148,6 @@ theorem add_atom_is_append (registry : SpaceSemantics.Program)
 
 /-- Where the location is not a space, the insertion has no result, so the hypotheses of
 `add_atom_transition` cannot be met. -/
-theorem add_atom_needs_a_space : Effects.readHandle (.symbol "nowhere") = none := rfl
+theorem add_atom_needs_a_space : Effects.readHandle (.grounded (.int 0)) = none := rfl
 
 end Mettapedia.Languages.MeTTa.PeTTa.AddAtomStep

@@ -1,5 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentIdEndpointsArguments
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentCensusControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentClassificationControls
 
 /-!
 # The occurs check at spine arguments, on concrete stores
@@ -10,7 +10,7 @@ Over `A : U0, F : (U0 → U0) → U0`, at `(U0 → U0) → U0`:
   have no solution. The projections solver leaves them suspended; the arguments solver refutes them with a
   certificate.
 
-**Regressions** keep their readouts, and the three census rows still unread stay suspended at budget 16:
+**Regressions** keep their readouts, and the three classification rows still unread stay suspended at budget 16:
 a spine at a flexible base type, nested projections, and a projection applied to arguments.
 
 Every run is the actual solver in the actual driver, evaluated by the kernel.
@@ -30,8 +30,8 @@ open ContextualDependentGeneralPattern.Controls ContextualDependentPatternSolver
 open ContextualDependentFragment.Controls ContextualDependentOccursCheck.Controls
 open ContextualDependentFragment ContextualDependentGeneralPattern ContextualDependentDynamicFragment
 open ContextualDependentSpinesMany.Controls ContextualDependentFragmentDecisive.ClashControls
-open ContextualDependentConstantHeads.Controls ContextualDependentCensusPairEta.Controls
-open ContextualDependentConstantHeadsProjections.Controls ContextualDependentCensus.Controls
+open ContextualDependentConstantHeads.Controls ContextualDependentClassificationPairEta.Controls
+open ContextualDependentConstantHeadsProjections.Controls ContextualDependentClassification.Controls
 
 /-- The arguments solver of the tower controls, as a fuel-indexed family. -/
 noncomputable def argumentsTower : ContextualDependentDecisiveDriver.Family setting.levels :=
@@ -81,7 +81,7 @@ theorem sameHeads_arguments_committed : (run argumentsOnly sameHeadsStore 8).rea
 theorem flexibleBase_arguments_suspended : (run argumentsOnly flexibleBaseStore 8).readout = .suspended := by
   decide +kernel
 theorem nested_arguments_suspended :
-    (run argumentsOnly ContextualDependentCensus.Controls.nestedStore 8).readout = .suspended := by decide +kernel
+    (run argumentsOnly ContextualDependentClassification.Controls.nestedStore 8).readout = .suspended := by decide +kernel
 theorem applied_arguments_suspended : (run argumentsOnly appliedStore 8).readout = .suspended := by decide +kernel
 
 end ContextualDependentIdEndpointsArguments.Controls

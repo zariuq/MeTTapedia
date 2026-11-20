@@ -75,6 +75,10 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsA
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.TriangleFootprints.VariantRuns
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.TriangleFootprints.DeclaredBranchVariant
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.TriangleFootprints.DeclaredTrees
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.TriangleFootprints.LetVariant
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.TriangleFootprints.TypeQueryFragment
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.TriangleFootprints.ErrorAlternatives
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.TriangleFootprints.ThreeDifferences
 
 /-!
 # The HE–PeTTa–step triangle with honest read footprints
@@ -85,7 +89,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsA
   `PredicateQueryAdmission`). For a world-local machine this is a strong bisimulation, and what a
   firing reads is exactly its region's rows.
 * `HEFootprints`: HE's read-only machine with honest footprints. An equation query reads the rows
-  that are not inert for it, together with the absence guard of its region; moves through the cast
+  that are not inert for it, together with the none guard of its region; moves through the cast
   lookup, the argument admission service, the context payload or a completed native return read the
   whole space; every other move reads nothing. All 81 transition rules depend on the space only
   through their footprint, so the bisimulation of `HEOnTheStep` is kept.
@@ -97,7 +101,8 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsA
   and on HE's equation region.
 * `ReadWordTriangle`: on a loaded program the two read words coincide exactly when the two regions
   agree on the program's rows. They agree on `{(p a), (= (double 4) 8)}`, where both machines answer
-  `8`, and on H1's program `{(p a), (= (double $x) (+ $x $x))}`. The variable-headed equation
+  `8`, and on the program `{(p a), (= (double $x) (+ $x $x))}` of `HEOnTheStep.Triangle`. The
+  variable-headed equation
   `(= ($h 4) 8)` is a program on which HE and PeTTa differ.
 * `ExpressionTriangle`: the triangle tied to one expression. HE starts from its own entry
   configuration of the expression and PeTTa runs that expression's translation. This supersedes
@@ -118,48 +123,60 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsA
 * `EntryToQuery`: HE's run from its entry configuration of a flat ground call reaches and fires the
   equation query, with HE's own services, and with the declared region of every firing.
 * `WholeRunWords`: on the literal-head ground fragment of flat calls, the rows HE reads from the
-  entry through the query are PeTTa's request rows; the words differ exactly by HE's absence guards
+  entry through the query are PeTTa's request rows; the words differ exactly by HE's none guards
   over the call's declarations, and adding a declaration races with HE but commutes with PeTTa.
 * `HonestWrites`: rows with stable identities on HE's world machine: add and remove write exactly
-  one row, the race holds on HE's world machine, and positions as identities make every add write
-  every row.
-* `CompleteRun`: H2's tied instance `(double 4)` to its published answer: the whole run reads only
+  one row, and the race holds on HE's world machine. Positions are no identities: a removal
+  renumbers every later row, so its positional write touches a query it has nothing to do with
+  (HE keeps insertion order, so an add at the back renumbers nothing; the model's add in front
+  renumbers every row).
+* `CompleteRun`: the tied instance `(double 4)` of `ExpressionTriangle` to its published answer: the
+  whole run reads only
   `(= (double 4) 8)`, as PeTTa's run does, and both answer `8`.
 * `RegionsWithVariables`: at every activation frame the two regions agree on symbol-headed
   equations with `cons`-free argument patterns, repeated variables included, so the footprints and
-  the whole-run rows coincide on programs with pattern variables, H1's own program among them. The
-  rows left out are exactly H2's two separators: a head that is not a symbol, a `cons` list view.
+  the whole-run rows coincide on programs with pattern variables, the program of
+  `HEOnTheStep.Triangle` among them. The rows left out are exactly those of the two separating
+  programs: a head that is not a symbol, a `cons` list view.
 
 ## Answers
 
-* `AnswerBags`: HE's complete run from its entry configuration and PeTTa's streaming run of the
-  translation (PeTTa's own loader) give the same answers, as a list and so as a bag, for every term
-  that settles in a program of symbol-headed, `cons`-free equations: several matching equations,
-  bodies that are calls, recursion with termination and coverage stated on the program.
+* `AnswerBags`: the model's complete run from HE's entry configuration and PeTTa's streaming run of
+  the translation (PeTTa's own loader) give the same answers for every term that settles in a
+  program of symbol-headed, `cons`-free equations: several matching equations, bodies that are
+  calls, recursion with termination and coverage stated on the program. One list is shared by the
+  model's run and PeTTa's (`settles_agree`, the model's order); HE publishes the alternatives of a
+  body that is a nondeterministic call in another order, so `answers_agree` states the bag, which
+  is what is HE's.
 * `NestedArguments`: arguments that are calls themselves. HE builds the whole argument product
   before its first query; PeTTa streams each combination through its argument frames. The answers
   agree, compositionally.
 * `DeclaredHeads`: with `(: f (-> Number Number))` and `(: b Bool)` in the space, HE's admission
-  rejects `(f b)` with a type error while PeTTa answers the equation's body: the declaration guard
-  changes the answer.
+  rejects `(f b)` with a type error: the declaration guard changes the answer. The PeTTa model
+  reads no declaration; the PeTTa hosts check the head's declaration and answer nothing, so the
+  PeTTa side is stated on the program without the head's declaration (`headUndeclared`), where the
+  model's `yes` is the hosts' answer.
 * `FragmentDifferences`: each way a terminating call of the fragment can fail to settle separates
   the dialects: an uncovered call, a body `NotReducible`, a call of an arity no equation has.
 * `CompleteRunReads`: over a complete run of a settling call on a program without declarations,
   HE reads exactly, query by query, the rows of PeTTa's complete call request of each call it
   queries, and nothing else.
 * `EveryRun`: HE's machine is a relation and branches on the fragment (tuple entry or fallback,
-  cast and query frames), yet **every** complete run publishes PeTTa's answers: a complete run is a
-  derivation of HE's completed relation, and that relation determines the atoms on settling terms
-  under every type lookup meeting a two-clause contract, which both of HE's lookups meet. The
-  named differences hold on every run too. A lookup that may answer the empty type list fails the
-  contract and admits a second bag.
+  cast and query frames), yet **every** complete run publishes the bag of PeTTa's answers: a
+  complete run is a derivation of HE's completed relation, and that relation determines the atoms
+  on settling terms under every type lookup meeting a two-clause contract, which both of HE's
+  lookups meet. The named differences hold on every run too. A lookup that may answer the empty
+  type list fails the contract and admits a second bag.
 * `NestedEveryRun`: the same for nested arguments: HE's tuple returns one row per combination of
-  argument answers whatever frames it reaches, and every complete run publishes PeTTa's answers.
-* `DeclaredEveryRun`: the declaration guard changes the answer on every run: every complete run of
-  `(f b)` publishes HE's type error, PeTTa answers `yes`.
+  argument answers whatever frames it reaches, and every complete run publishes the bag of PeTTa's
+  answers; HE lists a nested argument's alternatives in reverse order, the same on every run.
+* `DeclaredEveryRun`: the declaration guard changes the answer on every run: a complete run exists
+  and every complete run of `(f b)` publishes HE's type error; PeTTa answers `yes` on the program
+  without `f`'s declaration, and the PeTTa hosts answer nothing on the declared one.
 * `KeyedBisimulation`: HE's writing machine on keyed rows is strongly bisimilar to HE's writing
-  machine on its own spaces (add in front, remove the first occurrence), with equal controls,
-  stacks and publications; identities are invisible to HE's machine.
+  machine on the model's spaces (add in front, remove the first occurrence), with equal controls,
+  stacks and publications; identities are invisible to HE's machine. HE itself adds at the back;
+  the two orders hold the same bag of rows.
 
 ## Bodies that use their variables, and grounded operations
 
@@ -181,20 +198,38 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsA
   run, so `(fresh)` on `{(= (fresh) $y)}` publishes `$u` on one complete run and `$v` on another
   (no answer list is published by every run), and two such rows may share one fresh name; PeTTa
   numbers the rows' uses, `$y#1`, `$y#2`.
-* `GroundedTables`: HE's integer dispatch (the tree's `executeGroundedOp`) and PeTTa's primitive
-  table agree on `+ - * < <= > >=` over integers; the differences are named with their reasons
-  (division, remainder sign, division by zero, non-numeric and non-ground arguments, equality on
-  symbols; neither has overflow).
+* `GroundedTables`: two HE tables. The model's (`heDispatch`, from the tree's `executeGroundedOp`:
+  no width, `ediv`/`emod`, no `==` on symbols) and HE's (`measuredDispatch`: 64-bit integers with
+  `IntegerOverflow`, truncating `/` and `%`, `DivisionByZero`, `==` on any atoms, `not`/`and`/`or`/
+  `xor`). They agree on in-range `+ - * < <= > >=` and on `/`, `%` with a non-negative dividend
+  and positive divisor, and part at named calls. Against PeTTa's table: the remainder's sign, the
+  zero divisor, overflow and non-numeric arguments differ; `==` on symbols agrees; the PeTTa model
+  lacks `/`, which the PeTTa hosts have. A grounded table is the pair of what it executes and its
+  outcome relation (`GroundedTable`); its contract is a verdict on every call of an operator it
+  executes (answer, decline, error), and both tables meet it. HE's types of its operations
+  (`measuredSignature`, measured with `get-type`) give the stated region `TypedRegion` where the
+  model's untyped grounded calls are HE's.
 * `GroundedRuns`: HE's grounded calls are rules of its world machine only; every contextual step is
-  a world step. Both machines agree on terms that settle with integer operations, and
-  `(double 4)` on `{(= (double $x) (+ $x $x))}` is `8` on both.
+  a world step, for any dispatch. For every grounded table both machines agree on the terms that
+  settle with integer operations the table answers; on HE's table `(double 4)` on
+  `{(= (double $x) (+ $x $x))}` is `8` on both.
 * `GroundedEveryRun`: the same on every complete run of HE's world machine, through its stateful
-  source semantics; `(double 4)` is `8` on every complete run.
-* `GroundedDifferences`: an operation without a value (`(+ a 4)`, `(% 7 0)`) is the unreduced call on
-  every complete HE run, while PeTTa stops at an uncaught fault with no value.
+  source semantics, as bags, for every table; `(double 4)` is `8` on every complete run on HE's
+  table. The entry lemmas hold for any dispatch.
+* `GroundedDifferences`: on HE's table, every complete run publishes `(Error (% 7 0) DivisionByZero)`,
+  `(Error (/ 7 0) DivisionByZero)`, `(Error (+ 9223372036854775807 1) IntegerOverflow)` and the
+  declined `(+ a 4)` itself, a complete run existing each time; PeTTa stops at a fault or answers
+  `9223372036854775808`. The grounded-head rule: a host operation that declines its arguments
+  returns the call, and the equations of its name are never consulted. A table's verdict on one
+  call is what every complete run publishes (`verdict_every_run`), and the model's machine reads no
+  type of the arguments (`machine_reads_no_argument_types`); outside `TypedRegion` the model's
+  answer is not HE's (eight measured controls), inside it is (four). The parting run of the two
+  tables: `(+ 9223372036854775807 1)` is in the model table's class and outside HE's.
 * `PrimitiveNames`: PeTTa applies its primitive table to every call of a primitive's name in place of
-  the program's equations; HE reads the equations of a name its dispatch does not execute. On
-  `{(= (not Yes) No)}` every complete HE run publishes `No`, PeTTa stops at `invalidArguments`.
+  the program's equations; HE reads the equations of a name its own table does not execute. On
+  `{(= (cons Yes No) Both)}` every complete HE run publishes `Both`, PeTTa stops at
+  `invalidArguments`; on `{(= (not Yes) No)}`, `not` is HE's own operation, which declines `Yes`,
+  so every complete HE run publishes `(not Yes)`; neither dialect answers `No`.
 
 ## Compound values, nested arithmetic, and runs that finish
 
@@ -217,13 +252,20 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsA
   (compound bindings, nested calls, integer operations anywhere). On every configuration that is not
   a host call (or another world-only control) the world machine steps exactly as the contextual one
   (`world_core`); the host call has only the host step, whatever frame the native merge renews.
+* `TypeQueryFragment`: HE's type query unifies declaration subjects and reads `(:< A B)` rows; the
+  model's compares subjects literally and has no subtype rows, so the model's type answers are HE's
+  on programs with ground declaration subjects and no subtype row. The typed theorems state that
+  their programs lie in that fragment; a control shows each condition is needed.
 * `TypedEveryRun`: the well-typed declared path on every run: on
   `{(: f (-> Number Number)), (: b Bool), (= (f $x) yes)}` every complete run of `(f 4)` publishes
-  `yes`, as PeTTa does, through HE's admission, function application, argument casts, typed query and
-  return cast.
+  `yes`, through HE's admission, function application, argument casts, typed query and return cast.
+  PeTTa answers `yes` without `f`'s declaration; the PeTTa hosts answer nothing with it.
 * `DeclaredErrors`: the error path of a declared head at any arity: a complete run exists, and every
   complete run publishes exactly the `BadArgType` error of the first ill-typed argument position;
-  later arguments are checked against no frame. PeTTa checks no declared type.
+  later arguments are checked against no frame. The PeTTa model checks no declared type (it reads
+  only which parameters are `Atom`), the PeTTa hosts do (`petta_model_reads_no_declaration`, on
+  declarations without an `Atom` parameter); with `(:< Bool Number)` HE answers `yes` where the
+  model keeps the error (`subtype_row_needed`).
 * `AtomDemands`: HE's `Atom` demand (the branch positions of its standard-library `if`) passes every
   atom unevaluated, on every derivation and every run; `(loop)` finishes under `Atom` and diverges
   under `%Undefined%`. PeTTa's `if`, a special form, leaves the branch it does not take alone and
@@ -256,9 +298,10 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsA
   the plain branch and it is evaluated under `$t`; `(if (isZero 0) (half 4) (loop))` publishes `two`
   on every complete run, as PeTTa does.
 * `IfBags`: a condition with several Boolean answers. HE delivers the branches and queries `if` once
-  per answer; PeTTa's branch frame takes, per answer, the branch it selects. Every complete HE run and
-  PeTTa publish, per condition answer in order, the selected branch's answers: equal lists, hence equal
-  bags. `(if (coin) (half 4) (pair a b))` gives `[two, (pair a b)]`; `(if (coin2) yes no)` with two
+  per answer; PeTTa's branch frame takes, per answer, the branch it selects. Every complete HE run
+  publishes the bag of the selected branches' answers, which PeTTa lists per condition answer in
+  order; HE takes the condition's alternatives in reverse order. `(if (coin) (half 4) (pair a b))`
+  gives the bag of `two` and `(pair a b)` (HE: `[(pair a b), two]`); `(if (coin2) yes no)` with two
   `True` rows gives `yes` twice in both dialects, so multiplicity is kept.
 * `IfUncovered`: a named difference. With only `(= (isZero 0) True)`, the condition of
   `(if (isZero 1) yes no)` has no matching row: HE evaluates it to the call `(isZero 1)` itself, no row
@@ -270,13 +313,15 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsA
   equation variable may be named `t` (`(= (choose $b) (if $b 1 2))` on `(choose True)` admits the
   variant binding `t := True`, at which `$t` rejects `Number`). Branches without declared type are
   unaffected; the scoped lookup, which selects fresh arrows, removes both effects.
-* `IfFinishes`: every run of `(if b y n)` finishes. With H6's logical relation carried along `if`'s
+* `IfFinishes`: every run of `(if b y n)` finishes. With the logical relation of `EveryRunFinishes`
+  carried along `if`'s
   function application and typed query, HE's machine has no infinite run from the entry, every
   reachable configuration steps or is final, and a final one publishes the taken branch:
   `(if True yes (loop))` finishes on every run, while `(loop)` alone does not.
-* `DemandSpineFinishes`: H6's logical relation with the demand as a parameter; every run of a settling
-  term under a transparent demand that casts its data answers as they are finishes, with those
-  answers. The arguments reuse H6's theorems under `%Undefined%`.
+* `DemandSpineFinishes`: the logical relation of `EveryRunFinishes` with the demand as a parameter;
+  every run of a settling term under a transparent demand that casts its data answers as they are
+  finishes, with those answers. The arguments reuse the theorems of `EveryRunFinishes` under
+  `%Undefined%`.
 * `IfComputedFinishes`, `IfCallFinishes`: every run of `(if c y n)` with a computed condition finishes,
   with a taken branch that is a value (`(if (isZero 0) yes (loop))`, `(if (isZero 1) (loop) (pair a b))`)
   or any settling term (`(if (isZero 0) (half 4) (loop))`); in the same programs `(loop)` alone has an
@@ -302,7 +347,8 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsA
   have the same steps, runs and well-foundedness, for every dispatch without minimal services, and the
   every-run theorems of nested calls, nested values, compound bindings, every run finishing and the
   declared paths hold on the scoped lookup at once. HE's `if` program is not closed, and there the two
-  lookups differ.
+  lookups differ. The every-run bundles state bags (`Publishes`, `Finishes`); the model's order is
+  kept in `PublishesInOrder` and `FinishesInOrder` for the variant machine, which is built from it.
 * `ScopedIf`: HE's `if` on the scoped lookup, at every frame: each admission selects a fresh copy
   `$u` of the arrow (outside the frame's names), the operator meets it by `u = w` with its own fresh
   copy, and every derivation publishes the taken branch while every run finishes, with no condition
@@ -362,9 +408,10 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsA
   `(let (pair $a $b) (pair 1 2) (pair $b $a))` yields `[(pair 2 1)]`, `(let (pair $a $a) (pair 1 2)
   yes)` yields `[]`.
 * `LetPeTTaTemplates`: PeTTa's `if` under tracked bindings (`petta_if_under`), and the comparison of
-  the two dialects on `(let $x d b)` with PeTTa's side through that interface (`let_agree_under`):
-  `(let $x True (if $x yes no))` gives `[yes]` on every HE run and on PeTTa;
-  `(let (pair $c $v) (pair True 5) (if $c $v 0))` yields `[5]` on PeTTa.
+  the two dialects on `(let $x d b)` with PeTTa's side through that interface (`let_agree_under`).
+  `let_if_agree`: for every name, every Boolean literal `b` and data branches forming an `if` node
+  of the settling class, `(let $x b (if $x y n))` gives the branch of `b` on every HE run and on
+  PeTTa. `(let (pair $c $v) (pair True 5) (if $c $v 0))` yields `[5]` on PeTTa.
 * `LetPeTTaCalls`: values and conditions that are calls whose matching clause binds no name: the call
   returns its body with the bindings unchanged, one use per candidate clause later
   (`PeTTaReturnsLater`, `returns_call`, `petta_let_later`, `petta_if_later`). With
@@ -386,9 +433,11 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsA
 * `VariantRuns`: the continuation combinators for runs of the variant machine (data, casts, tuples,
   calls, queries with closed bodies, constructor nodes).
 * `DeclaredBranchVariant`: on the variant machine, every run of `(if b y n)` with a Boolean literal
-  and a data taken branch, declared (a symbolic type) or undeclared, finishes with the taken branch,
-  at every frame: the operator's cast leaves exactly one more equality `u = w`, the row's match is
-  exactly `{then' := y, else' := n}`, and at the syntactic record the class of `u` has no value.
+  and a data taken branch, declared (a closed type that is no variable and no wildcard: `Number`,
+  `(List Nat)`) or undeclared, finishes with the taken branch, at every frame: the operator's cast
+  leaves exactly one more equality `u = w`, the row's match is exactly `{then' := y, else' := n}`,
+  and at the syntactic record the class of `u` has no value. At the entry that record is the one
+  output of HE's executable merge.
   Every run of `(pair (if True 1 2) (if True True False))` finishes with `[(pair 1 True)]`
   (`Controls.pair_if_every_run`), which the model does not give (`DeclaredBranchGap`). Its module text
   states the proposed change to the model.
@@ -396,4 +445,27 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsA
   calls of defined functions with closed bodies): the variant machine and PeTTa agree on every run.
   `(twice)` with `(= (twice) (pair (if True 1 2) (if True True False)))` gives `[(pair 1 True)]` in
   both.
+* `LetVariant`: `let` on the variant machine. The run of `LetFine` quantifies over every step of the
+  model, so it holds for the variant machine (`VariantRuns.goodv_of_model`) with the instance's
+  contract stated there. For a template whose instance is a tree with declared `if`, every run of
+  `(let $x d b)` finishes with the instance's answers; `(let $x b (if $x 1 2))` gives the branch of
+  `b` on every run and on PeTTa, for both Booleans.
+
+## Error answers among alternatives
+
+* `ErrorAlternatives`: HE publishes an expression's successful answers when there are any, and its
+  errors only when all answers are errors (success priority at publication). On
+  `{(= (g) 1), (= (g) (Error foo bar))}` every complete HE run publishes `1`, while PeTTa yields `1`
+  and `(Error foo bar)`. HE's answers are not the union over the alternatives: with only one of the
+  two equations it publishes `1`, respectively `(Error foo bar)`.
+
+## Three named differences, on the models and on the hosts
+
+* `ThreeDifferences`: two declared rows (each model answers as the other dialect's host: HE's
+  evaluator once per row, PeTTa's machine once per call, holding an argument for the whole call
+  when one row has `Atom` there); partial application and the equation that removes an answer
+  (HE's contextual machine answers `(co7-wrap 1 2)` with itself and, with the new equation,
+  `added` on every run; PeTTa's machine gives the partial value and `added` as the host does, and
+  faults on over-application where the host answers `old`); an `Atom` parameter used twice with a
+  choice (both models answer as their hosts).
 -/

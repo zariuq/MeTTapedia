@@ -4,35 +4,18 @@ import Mettapedia.Machines.OrderedDependencyCapacity
 /-!
 # Dynamic arrays and the specification of `reserve`
 
-`DynArray a cap xs` is the array of the B1 plan, `Array a cap xs`: either `a`
-is null, the capacity is zero and there are no contents, or `a` is the base of
-a live block of exactly `cap` cells whose first `|xs|` cells hold `xs` and whose
-remaining cells are allocated with arbitrary contents.  (It is not named
-`Array`, which is Lean's own array type.)
+`DynArray a cap xs` is a dynamic array: either `a` is null, the capacity is
+zero and there are no contents, or `a` is the base of a live block of exactly
+`cap` cells whose first `|xs|` cells hold `xs` and whose remaining cells are
+allocated with arbitrary contents. (It is not named `Array`, which is Lean's
+own array type.)
 
-`reserve` is the C helper `space_module_link_reserve` of CeTTa's `space.c`,
-written in the command language over block memory:
-
-```c
-static bool space_module_link_reserve(Space ***items, uint32_t *capacity,
-                                       uint32_t required) {
-    if (required <= *capacity) return true;
-    uint32_t next = *capacity ? *capacity : 4u;
-    while (next < required) { ... next *= 2u; ... }   // Co5's growth loop
-    if ((uint64_t)next * sizeof(**items) > SIZE_MAX) return false;
-    Space **grown = realloc(*items, sizeof(**items) * (size_t)next);
-    if (!grown) return false;
-    *items = grown;
-    *capacity = next;
-    return true;
-}
-```
-
-The growth loop is replaced by its value, `OrderedDependencyCapacity.grow`:
-Co5 proved that the retained C loop computes exactly that function
-(`OrderedDependencyCReserveGrowth.executed_growth_supplies_allocator_request`).
-Cells count elements, so the byte size `sizeof(**items) * next` is `next`
-cells; the size guard keeps its byte arithmetic through `pointerBytes`.
+`reserve` is the standard growth step of a dynamic array held in two fields,
+an array pointer and a 32-bit capacity: if `required` fits, succeed without
+change; otherwise choose the next capacity by geometric growth from the
+current one (from 4 when it is zero, `OrderedDependencyCapacity.grow`), refuse
+when its byte size exceeds the size limit, and reallocate. Cells count
+elements; the size guard keeps its byte arithmetic through `pointerBytes`.
 
 **The specification** (`reserve_spec`), from the two fields and the array:
 
@@ -441,8 +424,8 @@ theorem nextCapacity_toNat (required cap : UInt32) :
   change nextCapacity required cap < 4294967296
   omega
 
-/-- **`space_module_link_reserve`** over block memory: `items` is the address of
-the array pointer field and `capacity` the address of the capacity field. -/
+/-- **`reserve`** over block memory: `items` is the address of the array
+pointer field and `capacity` the address of the capacity field. -/
 def reserve (pointerBytes sizeMaximum : ℕ) (items capacity : Ptr) (required : UInt32) :
     CProg CVal Bool := do
   let cap ← CProg.loadU32 capacity

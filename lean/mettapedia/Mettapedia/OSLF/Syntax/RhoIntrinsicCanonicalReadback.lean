@@ -23,12 +23,12 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Canonical
 mutual
 theorem name_canonical_readout {free : FreeSortContext} :
     ∀ {bound : List String} {pattern : Pattern},
-      NameWellSorted rhoReflectivePresentation free bound pattern →
+      NameWellSorted rhoApplyPresentation free bound pattern →
       ∀ context : Ctx sig,
         readNameClass context (canonicalize pattern) = readNameClass context pattern
   | _, _, .bvar _, _ => rfl
   | _, _, .fvar _, _ => rfl
-  | _, _, .quote typed, context => by
+  | _, _, .quote typed _, context => by
     change readNameClass context (normalizeQuote (canonicalize _)) =
       readNameClass context (.apply "NQuote" [_])
     rw [readNameClass_normalizeQuote, readNameClass_quote,
@@ -36,7 +36,7 @@ theorem name_canonical_readout {free : FreeSortContext} :
 
 theorem process_canonical_readout {free : FreeSortContext} :
     ∀ {bound : List String} {pattern : Pattern},
-      ProcWellSorted rhoReflectivePresentation free bound pattern →
+      ProcWellSorted rhoApplyPresentation free bound pattern →
       ∀ context : Ctx sig,
         readProcessClass context (canonicalize pattern) = readProcessClass context pattern
   | _, _, .bvar _, _ => rfl
@@ -74,7 +74,7 @@ theorem process_canonical_readout {free : FreeSortContext} :
 
 theorem processes_canonical_readout {free : FreeSortContext} :
     ∀ {bound : List String} {patterns : List Pattern},
-      ProcListWellSorted rhoReflectivePresentation free bound patterns →
+      ProcListWellSorted rhoApplyPresentation free bound patterns →
       ∀ context : Ctx sig,
         readProcessesClass context (canonicalizeList patterns) = readProcessesClass context patterns
   | _, _, .nil, _ => rfl

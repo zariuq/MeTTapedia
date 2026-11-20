@@ -852,7 +852,7 @@ def main():
         if all(root_passed.get(root, False) for root in roots):
             passed_gates.append(gate)
     before_branches = len(failures)
-    for root in [CANDIDATE + ".Index.Specification", CANDIDATE + ".Index.DevelopmentPlan", CURRENT]:
+    for root in [CANDIDATE + ".Index.Specification", CANDIDATE + ".Index.DevelopmentPlan"]:
         if root not in graph:
             failures.append(f"Missing independent entry: {root}")
     for root in graph:

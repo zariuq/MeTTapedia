@@ -101,7 +101,7 @@ private def observedRules : List RewriteRule := [
     (metta_sexpr% petta "(?result)")
     [metta_sexpr% petta "(BNFAlternativesNullableV1 ?alternatives ?nullable ?lexicals ?result)"],
   observed "bnf-alternatives-nullable-nil-v1"
-    (metta_sexpr% petta "(BNFAlternativesNullableV1 (metta-nullary bnf-v1:alternatives-nil) ?nullable ?lexicals)")
+    (metta_sexpr% petta "(BNFAlternativesNullableV1 (bnf-v1:alternatives-nil) ?nullable ?lexicals)")
     (metta_sexpr% petta "(BNFNoV1)"),
   observed "bnf-alternatives-nullable-cons-v1"
     (metta_sexpr% petta "(BNFAlternativesNullableV1 (bnf-v1:alternatives-cons ?alternative ?tail) ?nullable ?lexicals)")
@@ -120,7 +120,7 @@ private def observedRules : List RewriteRule := [
     (metta_sexpr% petta "(?result)")
     [metta_sexpr% petta "(BNFElementsNullableV1 ?elements ?nullable ?lexicals ?result)"],
   observed "bnf-elements-nullable-nil-v1"
-    (metta_sexpr% petta "(BNFElementsNullableV1 (metta-nullary bnf-v1:elements-nil) ?nullable ?lexicals)")
+    (metta_sexpr% petta "(BNFElementsNullableV1 (bnf-v1:elements-nil) ?nullable ?lexicals)")
     (metta_sexpr% petta "(BNFYesV1)"),
   observed "bnf-elements-nullable-cons-v1"
     (metta_sexpr% petta "(BNFElementsNullableV1 (bnf-v1:elements-cons ?element ?tail) ?nullable ?lexicals)")
@@ -135,7 +135,7 @@ private def observedRules : List RewriteRule := [
     (metta_sexpr% petta "(?result)")
     [metta_sexpr% petta "(BNFElementsNullableV1 ?tail ?nullable ?lexicals ?result)"],
   observed "bnf-empty-literal-nullable-v1"
-    (metta_sexpr% petta "(BNFElementNullableV1 (bnf-v1:literal (metta-nullary bnf-v1:text-nil) ?span) ?nullable ?lexicals)")
+    (metta_sexpr% petta "(BNFElementNullableV1 (bnf-v1:literal (bnf-v1:text-nil) ?span) ?nullable ?lexicals)")
     (metta_sexpr% petta "(BNFYesV1)"),
   observed "bnf-nonempty-literal-not-nullable-v1"
     (metta_sexpr% petta "(BNFElementNullableV1 (bnf-v1:literal (bnf-v1:text-cons ?head ?tail) ?span) ?nullable ?lexicals)")

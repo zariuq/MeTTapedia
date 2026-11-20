@@ -56,11 +56,11 @@ theorem below_wf : WellFounded Below := (Prod.lex Nat.lt_wfRel Nat.lt_wfRel).wf
 variable (levels : LevelModel rules L)
 
 /-- **The outcome of one round** on a residual store. Progress carries the decrease of the
-rank; refutation carries the absence of solutions; stuck claims nothing. -/
+rank; refutation carries the lack of solutions; stuck claims nothing. -/
 inductive Round (rank : {Γ : Context rules} → EquationStore (TotalTerm Γ) → Nat × Nat)
     {Γ : Context rules} (problem : EquationStore (TotalTerm Γ)) : Type where
   | progress (update : Update levels problem) (smaller : Below (rank update.remaining) (rank problem))
-  | refuted (absent : ¬ (frames levels).Solvable problem)
+  | refuted (missing : ¬ (frames levels).Solvable problem)
   | stuck
 
 /-- **A solver step**: a rank of stores and one round at every store. -/
@@ -74,7 +74,7 @@ structure Solver where
 update from the original store to the reported residual store. -/
 inductive Outcome {Γ : Context rules} (original : EquationStore (TotalTerm Γ)) : Type where
   | solved (state : Update levels original) (finished : state.remaining = [])
-  | refuted (absent : ¬ (frames levels).Solvable original)
+  | refuted (missing : ¬ (frames levels).Solvable original)
   | stuck (state : Update levels original)
   | cutoff (state : Update levels original)
 
@@ -93,7 +93,7 @@ def advance (solver : Solver levels) {Γ : Context rules} {original : EquationSt
   | _ :: _ =>
       match solver.round state.remaining with
       | .progress update _ => .next (state.then update)
-      | .refuted absent => .done (.refuted fun solvable => absent (state.solvable_iff.mp solvable))
+      | .refuted missing => .done (.refuted fun solvable => missing (state.solvable_iff.mp solvable))
       | .stuck => .done (.stuck state)
 
 /-- **The driver** with a budget of rounds. -/
@@ -156,7 +156,7 @@ def readout : Outcome levels original → Search.Outcome.Verdict
 theorem readout_eq_refuted {outcome : Outcome levels original}
     (refuted : outcome.readout = .refuted) : ¬ (frames levels).Solvable original := by
   cases outcome with
-  | refuted absent => exact absent
+  | refuted missing => exact missing
   | solved _ _ => cases refuted
   | stuck _ => cases refuted
   | cutoff _ => cases refuted
@@ -284,7 +284,7 @@ theorem drive_no_loss (fuel : Nat) (start : Update levels original) {Δ : Contex
         ∀ term : TotalTerm Γ,
           (frames levels).E (term.reindex solution) (term.reindex (residual ≫ state.answer)) := by
   cases outcome : drive solver fuel start with
-  | refuted absent => exact absurd ⟨Δ, solution, solved⟩ absent
+  | refuted missing => exact absurd ⟨Δ, solution, solved⟩ missing
   | solved state _ => exact ⟨state, rfl, state.complete Δ solution solved⟩
   | stuck state => exact ⟨state, rfl, state.complete Δ solution solved⟩
   | cutoff state => exact ⟨state, rfl, state.complete Δ solution solved⟩
@@ -365,7 +365,7 @@ theorem decided (inside : fragment.holds original) :
       run solver original larger = run solver original fuel ∧
       ((∃ state finished, run solver original larger = .solved state finished ∧
           (frames levels).Principal original state.answer) ∨
-        (∃ absent, run solver original larger = .refuted absent)) := by
+        (∃ missing, run solver original larger = .refuted missing)) := by
   obtain ⟨fuel, reached⟩ := fragment.decides (Update.pending levels original) inside
   refine ⟨fuel, fun larger enough => ?_⟩
   have same := drive_mono solver fuel _ reached.finished larger enough
@@ -374,7 +374,7 @@ theorem decided (inside : fragment.holds original) :
   rw [same]
   cases outcome : drive solver fuel (Update.pending levels original) with
   | solved state finished => exact .inl ⟨state, finished, rfl, state.completed finished⟩
-  | refuted absent => exact .inr ⟨absent, rfl⟩
+  | refuted missing => exact .inr ⟨missing, rfl⟩
   | stuck _ => rw [outcome] at reached; exact False.elim reached
   | cutoff _ => rw [outcome] at reached; exact False.elim reached
 
@@ -387,8 +387,8 @@ one of its rounds progresses to a store it decides. -/
 inductive Reaches : {Γ : Context rules} → EquationStore (TotalTerm Γ) → Prop where
   | empty {Γ : Context rules} : Reaches (Γ := Γ) []
   | refuted {Γ : Context rules} {problem : EquationStore (TotalTerm Γ)}
-      {absent : ¬ (frames levels).Solvable problem} :
-      solver.round problem = .refuted absent → Reaches problem
+      {missing : ¬ (frames levels).Solvable problem} :
+      solver.round problem = .refuted missing → Reaches problem
   | progress {Γ : Context rules} {problem : EquationStore (TotalTerm Γ)}
       {update : Update levels problem}
       {smaller : Below (solver.rank update.remaining) (solver.rank problem)} :

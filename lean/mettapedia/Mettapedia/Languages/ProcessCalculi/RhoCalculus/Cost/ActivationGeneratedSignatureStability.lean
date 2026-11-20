@@ -202,30 +202,62 @@ mutual
 end
 
 mutual
-  theorem _root_.Mettapedia.GSLT.LanguageDef.Cost.SignatureSyntax.LiteralKeySyntax.substitute_identity {source : Pattern} (grammar : LiteralKeySyntax source)
-      (depth : Nat) (replacement : Pattern) :
-      substituteReflective wrappedRhoDeclaration depth replacement source = source := by
+  theorem _root_.Mettapedia.GSLT.LanguageDef.Cost.SignatureSyntax.LiteralKeySyntax.resolve_identity {source : Pattern} (grammar : LiteralKeySyntax source) :
+      resolveQuotes wrappedRhoDeclaration source = source := by
     cases grammar with
     | leaf => rfl
     | branch left right =>
-      simp [substituteReflective, substituteReflectiveList,
-        left.substitute_identity depth replacement, right.substitute_identity depth replacement]
+      simp [resolveQuotes, resolveQuotesList, finishResolveApply,
+        left.resolve_identity, right.resolve_identity]
 
-  theorem _root_.Mettapedia.GSLT.LanguageDef.Cost.SignatureSyntax.LiteralSignatureSyntax.substitute_identity {source : Pattern} (grammar : LiteralSignatureSyntax source)
-      (depth : Nat) (replacement : Pattern) :
-      substituteReflective wrappedRhoDeclaration depth replacement source = source := by
+  theorem _root_.Mettapedia.GSLT.LanguageDef.Cost.SignatureSyntax.LiteralSignatureSyntax.resolve_identity {source : Pattern} (grammar : LiteralSignatureSyntax source) :
+      resolveQuotes wrappedRhoDeclaration source = source := by
     cases grammar with
     | unit => rfl
     | product left right =>
-      simp [substituteReflective, substituteReflectiveList,
-        left.substitute_identity depth replacement, right.substitute_identity depth replacement]
+      simp [resolveQuotes, resolveQuotesList, finishResolveApply,
+        left.resolve_identity, right.resolve_identity]
+    | commit key =>
+      have notQuote : costSignatureCommitConstructorName ≠ wrappedRhoDeclaration.quoteConstructor := by
+        decide +kernel
+      simp [resolveQuotes, resolveQuotesList, finishResolveApply, notQuote, key.resolve_identity]
+end
+
+mutual
+  theorem _root_.Mettapedia.GSLT.LanguageDef.Cost.SignatureSyntax.LiteralKeySyntax.substituteResolved_identity {source : Pattern} (grammar : LiteralKeySyntax source)
+      (atIndex : Nat → Nat → Pattern) (depth : Nat) :
+      substituteResolved wrappedRhoDeclaration atIndex depth source = source := by
+    cases grammar with
+    | leaf => rfl
+    | branch left right =>
+      simp [substituteResolved, substituteResolvedList,
+        left.substituteResolved_identity atIndex depth, right.substituteResolved_identity atIndex depth]
+
+  theorem _root_.Mettapedia.GSLT.LanguageDef.Cost.SignatureSyntax.LiteralSignatureSyntax.substituteResolved_identity {source : Pattern} (grammar : LiteralSignatureSyntax source)
+      (atIndex : Nat → Nat → Pattern) (depth : Nat) :
+      substituteResolved wrappedRhoDeclaration atIndex depth source = source := by
+    cases grammar with
+    | unit => rfl
+    | product left right =>
+      simp [substituteResolved, substituteResolvedList,
+        left.substituteResolved_identity atIndex depth, right.substituteResolved_identity atIndex depth]
     | commit key =>
       have notQuote : costSignatureCommitConstructorName ≠ wrappedRhoDeclaration.quoteConstructor := by
         decide +kernel
       have notDrop : costSignatureCommitConstructorName ≠ wrappedRhoDeclaration.dropConstructor := by
         decide +kernel
-      simp [substituteReflective, notQuote, notDrop, key.substitute_identity depth replacement]
+      simp [substituteResolved, notQuote, notDrop, key.substituteResolved_identity atIndex depth]
 end
+
+theorem _root_.Mettapedia.GSLT.LanguageDef.Cost.SignatureSyntax.LiteralKeySyntax.substitute_identity {source : Pattern} (grammar : LiteralKeySyntax source)
+    (depth : Nat) (replacement : Pattern) :
+    substituteReflective wrappedRhoDeclaration depth replacement source = source := by
+  rw [substituteReflective, grammar.resolve_identity, grammar.substituteResolved_identity]
+
+theorem _root_.Mettapedia.GSLT.LanguageDef.Cost.SignatureSyntax.LiteralSignatureSyntax.substitute_identity {source : Pattern} (grammar : LiteralSignatureSyntax source)
+    (depth : Nat) (replacement : Pattern) :
+    substituteReflective wrappedRhoDeclaration depth replacement source = source := by
+  rw [substituteReflective, grammar.resolve_identity, grammar.substituteResolved_identity]
 
 theorem _root_.Mettapedia.GSLT.LanguageDef.Cost.SignatureSyntax.LegacyLiteralSignatureSyntax.normalize_identity {source : Pattern}
     (grammar : LegacyLiteralSignatureSyntax source) :

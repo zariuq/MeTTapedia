@@ -9,18 +9,16 @@ The canonical stepper fires COMM on the canonical representative of a
 process, so its contractum substitutes the canonical payload into the
 canonical body.  Any other representative substitutes some other spelling of
 the same payload into some other spelling of the same body.  This module
-proves that the two contracta have the same canonical form, for the
-well-sorted, binder-safe bodies of the closed rho carrier.
+proves that the two contracta have the same canonical form on the
+well-sorted pure rho syntax, including noncanonical whole-name spellings.
 
 Two facts carry the argument.  First, canonicalization absorbs the quote/drop
 normalization performed during substitution, so a name and its canonical
 form behave identically at every substitution site: they are the same bound
-variable, or neither is a bound variable.  Second, substitution is a bag
+variable class, or both comparisons miss. Second, substitution is a bag
 homomorphism (it fixes the unit and maps a parallel bag pointwise), so it
 commutes with flattening, unit absorption, and sorting up to canonical form.
-Binder safety is essential: a bound name never occurs under a quotation, so
-substitution never has to look inside quoted code, which canonicalization
-may reshape.
+The matched name is replaced as a whole; literal code is not opened.
 -/
 
 namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.SubstitutionCanonicalCommutation
@@ -154,60 +152,21 @@ theorem canonicalize_ne_bvar_of_nameWellSorted
 
 /-! ## Substitution sites agree between a name and its canonical form -/
 
-/-- At a substitution site a well-sorted binder-safe name and its canonical
-form are the same bound variable, or both are unmatched with canonically
-equal results. -/
-theorem semanticSubstNameMark_canonicalize
-    {free : FreeSortContext} {context : List String} {name : Pattern}
-    (typed : NameWellSorted rhoReflectivePresentation free context name)
-    {depth : Nat} (safe : binderSafeAt "NQuote" depth name = true)
-    (k : Nat) (replacement : Pattern) :
+/-- Both names have the same whole-name match. On a miss, their unchanged
+semantic normalizations are in the same equation class. No binder-safety
+condition on the spelling is required for this equational law. -/
+theorem semanticSubstNameMark_canonicalize {name : Pattern}
+    (pure : HashSetFree name) (k : Nat) (replacement : Pattern) :
     (semanticSubstNameMark k replacement name).2 =
         (semanticSubstNameMark k replacement (canonicalize name)).2 ∧
       canonicalize (semanticSubstNameMark k replacement name).1 =
         canonicalize (semanticSubstNameMark k replacement (canonicalize name)).1 := by
-  by_cases isBvar : ∃ index, name = .bvar index
-  · obtain ⟨index, rfl⟩ := isBvar
-    simp [canonicalize]
-  · have notBvar : ∀ index, name ≠ .bvar index := fun index equal => isBvar ⟨index, equal⟩
-    have nameFree : HashSetFree name := rhoNameWellSorted_hashSetFree typed
-    have canonicalTyped := canonicalize_nameWellSorted context typed
-    have canonicalSafe := canonicalize_binderSafeAt name depth safe
-    have canonicalNotBvar := canonicalize_ne_bvar_of_nameWellSorted typed safe notBvar
-    have unmatched : ∀ index, semanticNormalizeName name ≠ .bvar index :=
-      semanticNormalizeName_ne_bvar_of_nameWellSorted typed safe notBvar
-    have unmatchedCanonical :
-        ∀ index, semanticNormalizeName (canonicalize name) ≠ .bvar index :=
-      semanticNormalizeName_ne_bvar_of_nameWellSorted canonicalTyped canonicalSafe
-        canonicalNotBvar
-    have leftMark : semanticSubstNameMark k replacement name =
-        (semanticNormalizeName name, false) := by
-      unfold semanticSubstNameMark
-      cases normalized : semanticNormalizeName name with
-      | bvar index => exact absurd normalized (unmatched index)
-      | fvar _ => rfl
-      | apply _ _ => rfl
-      | lambda _ _ => rfl
-      | multiLambda _ _ _ => rfl
-      | subst _ _ => rfl
-      | collection _ _ _ => rfl
-    have rightMark : semanticSubstNameMark k replacement (canonicalize name) =
-        (semanticNormalizeName (canonicalize name), false) := by
-      unfold semanticSubstNameMark
-      cases normalized : semanticNormalizeName (canonicalize name) with
-      | bvar index => exact absurd normalized (unmatchedCanonical index)
-      | fvar _ => rfl
-      | apply _ _ => rfl
-      | lambda _ _ => rfl
-      | multiLambda _ _ _ => rfl
-      | subst _ _ => rfl
-      | collection _ _ _ => rfl
-    rw [leftMark, rightMark]
-    refine ⟨rfl, ?_⟩
-    simp only
-    rw [canonicalize_semanticNormalizeName nameFree,
-      canonicalize_semanticNormalizeName (hashSetFree_canonicalize nameFree),
-      canonicalize_idempotent]
+  unfold semanticSubstNameMark
+  simp only [canonicalize_idempotent]
+  by_cases hit : canonicalize name = .bvar k
+  · simp [hit]
+  · simp [hit, canonicalize_semanticNormalizeName pure,
+      canonicalize_semanticNormalizeName (hashSetFree_canonicalize pure), canonicalize_idempotent]
 
 /-! ## Substitution is a bag homomorphism -/
 
@@ -326,25 +285,6 @@ theorem normalizeBagElements_map_hom (transform : Pattern → Pattern)
 
 /-! ## Substitution sites under two payloads -/
 
-/-- A matched substitution site returns the replacement. -/
-theorem semanticSubstNameMark_true {k : Nat} {replacement name name' : Pattern}
-    (mark : semanticSubstNameMark k replacement name = (name', true)) :
-    name' = replacement := by
-  unfold semanticSubstNameMark at mark
-  generalize semanticNormalizeName name = normalized at mark
-  cases normalized with
-  | bvar index =>
-      by_cases equal : index = k
-      · simp [equal] at mark
-        exact mark.symm
-      · simp [equal] at mark
-  | fvar _ => simp at mark
-  | apply _ _ => simp at mark
-  | lambda _ _ => simp at mark
-  | multiLambda _ _ _ => simp at mark
-  | subst _ _ => simp at mark
-  | collection _ _ _ => simp at mark
-
 /-- Two canonically equal payloads produce the same match and canonically
 equal names at every substitution site. -/
 theorem semanticSubstNameMark_payload (k : Nat) {payload payload' : Pattern}
@@ -353,20 +293,9 @@ theorem semanticSubstNameMark_payload (k : Nat) {payload payload' : Pattern}
         (semanticSubstNameMark k (.apply "NQuote" [payload']) name).2 ∧
       canonicalize (semanticSubstNameMark k (.apply "NQuote" [payload]) name).1 =
         canonicalize (semanticSubstNameMark k (.apply "NQuote" [payload']) name).1 := by
-  unfold semanticSubstNameMark
-  generalize semanticNormalizeName name = normalized
-  cases normalized with
-  | bvar index =>
-      by_cases equal : index = k
-      · subst equal
-        simp [canonicalize, payloadEq]
-      · simp [equal]
-  | fvar _ => exact ⟨rfl, rfl⟩
-  | apply _ _ => exact ⟨rfl, rfl⟩
-  | lambda _ _ => exact ⟨rfl, rfl⟩
-  | multiLambda _ _ _ => exact ⟨rfl, rfl⟩
-  | subst _ _ => exact ⟨rfl, rfl⟩
-  | collection _ _ _ => exact ⟨rfl, rfl⟩
+  by_cases hit : canonicalize name = .bvar k
+  · simp [semanticSubstNameMark, hit, canonicalize, payloadEq]
+  · simp [semanticSubstNameMark, hit]
 
 theorem canonicalize_semanticSubstName_payload (k : Nat) {payload payload' : Pattern}
     (payloadEq : canonicalize payload = canonicalize payload') (name : Pattern) :
@@ -399,12 +328,12 @@ theorem canonicalize_drop_of_marks {k : Nat} {replacement replacement' name name
         canonicalize_apply_general "PDrop" _ (by simp)]
       simp [canonicalizeList, values]
   | true =>
-      have leftIs := semanticSubstNameMark_true leftMark
-      have rightIs := semanticSubstNameMark_true rightMark
+      have leftIs := semanticSubstNameMark_true_eq_replacement _ _ _ _ leftMark
+      have rightIs := semanticSubstNameMark_true_eq_replacement _ _ _ _ rightMark
       subst leftIs
       subst rightIs
       simp only [semanticSubstProc, leftMark, rightMark]
-      simpa [semanticSubstProc, semanticSubstNameMark, semanticNormalizeName] using matchedAgree
+      simpa [semanticSubstProc, semanticSubstNameMark, canonicalize] using matchedAgree
 
 /-- Binder safety of an output is binder safety of its components. -/
 theorem binderSafe_of_output {depth : Nat} {channel payload : Pattern}
@@ -450,7 +379,7 @@ mutual
         simp only [rhoReflectivePresentation]
         obtain ⟨flags, values⟩ := semanticSubstNameMark_payload k payloadEq name
         exact canonicalize_drop_of_marks
-          (by simpa [semanticSubstProc, semanticSubstNameMark, semanticNormalizeName]
+          (by simpa [semanticSubstProc, semanticSubstNameMark, canonicalize]
             using payloadEq)
           flags values
     | @output _ channel payload₀ channelTyped payloadTyped =>
@@ -529,19 +458,17 @@ theorem canonicalize_hom_collapseBag (transform : Pattern → Pattern)
       rw [transformBag]
       simp only [canonicalize, canonicalizeList_eq_map, List.map_map]
 
-/-- Substituting into a well-sorted, binder-safe body or into its canonical
+/-- Substituting into a well-sorted body or into its canonical
 form gives canonically equal results, together with the pointwise list form. -/
 theorem canonicalize_semanticSubstProc_canonicalize_all
     {free : FreeSortContext} (replacement : Pattern) :
     (∀ {bound : List String} {process : Pattern},
       ProcWellSorted rhoReflectivePresentation free bound process →
-      ∀ depth, binderSafeAt "NQuote" depth process = true →
-        ∀ k, canonicalize (semanticSubstProc k replacement process) =
+       ∀ k, canonicalize (semanticSubstProc k replacement process) =
           canonicalize (semanticSubstProc k replacement (canonicalize process))) ∧
     (∀ {bound : List String} {processes : List Pattern},
       ProcListWellSorted rhoReflectivePresentation free bound processes →
-      ∀ depth, binderSafeListAt "NQuote" depth processes = true →
-        ∀ k, ∀ process ∈ processes,
+       ∀ k, ∀ process ∈ processes,
           canonicalize (semanticSubstProc k replacement process) =
             canonicalize (semanticSubstProc k replacement (canonicalize process))) := by
   refine ⟨fun {bound} {process} typed => ?_, fun {bound} {processes} typed => ?_⟩
@@ -551,24 +478,20 @@ theorem canonicalize_semanticSubstProc_canonicalize_all
         (presentation := rhoReflectivePresentation) (free := free) (t := typed)
         (motive_1 := fun _ _ _ => True)
         (motive_2 := fun _ process _ =>
-          ∀ depth, binderSafeAt "NQuote" depth process = true →
-            ∀ k, canonicalize (semanticSubstProc k replacement process) =
+           ∀ k, canonicalize (semanticSubstProc k replacement process) =
               canonicalize (semanticSubstProc k replacement (canonicalize process)))
         (motive_3 := fun _ processes _ =>
-          ∀ depth, binderSafeListAt "NQuote" depth processes = true →
-            ∀ k, ∀ process ∈ processes,
+           ∀ k, ∀ process ∈ processes,
               canonicalize (semanticSubstProc k replacement process) =
                 canonicalize (semanticSubstProc k replacement (canonicalize process)))
     | apply ProcListWellSorted.rec
         (presentation := rhoReflectivePresentation) (free := free) (t := typed)
         (motive_1 := fun _ _ _ => True)
         (motive_2 := fun _ process _ =>
-          ∀ depth, binderSafeAt "NQuote" depth process = true →
-            ∀ k, canonicalize (semanticSubstProc k replacement process) =
+           ∀ k, canonicalize (semanticSubstProc k replacement process) =
               canonicalize (semanticSubstProc k replacement (canonicalize process)))
         (motive_3 := fun _ processes _ =>
-          ∀ depth, binderSafeListAt "NQuote" depth processes = true →
-            ∀ k, ∀ process ∈ processes,
+           ∀ k, ∀ process ∈ processes,
               canonicalize (semanticSubstProc k replacement process) =
                 canonicalize (semanticSubstProc k replacement (canonicalize process)))
   all_goals
@@ -576,55 +499,51 @@ theorem canonicalize_semanticSubstProc_canonicalize_all
   all_goals
     first
     | -- process bound variable
-      (intro _ index _ _ _ k
+      (intro _ index _ k
        simp [canonicalize]
        done)
     | -- process free variable
-      (intro _ _ _ _ _ k
+      (intro _ _ _ k
        simp [canonicalize]
        done)
     | -- unit
-      (intro _ _ _ k
+      (intro _ k
        simp [semanticSubstProc, rhoReflectivePresentation, canonicalize, canonicalizeList]
        done)
     | -- drop
-      (intro _ name nameTyped _ depth safe k
-       simp only [rhoReflectivePresentation] at safe ⊢
-       have nameSafe := binderSafe_of_drop safe
+      (intro _ name nameTyped _ k
+       simp only [rhoReflectivePresentation]
        obtain ⟨flags, values⟩ :=
-         semanticSubstNameMark_canonicalize nameTyped nameSafe k replacement
+         semanticSubstNameMark_canonicalize (rhoNameWellSorted_hashSetFree nameTyped) k replacement
        rw [canonicalize_apply_general "PDrop" _ (by simp)]
        simp only [canonicalizeList]
        exact canonicalize_drop_of_marks rfl flags values)
     | -- output
-      (intro _ channel payload channelTyped _ _ payloadIH depth safe k
-       simp only [rhoReflectivePresentation] at safe ⊢
-       obtain ⟨channelSafe, payloadSafe⟩ := binderSafe_of_output safe
+      (intro _ channel payload channelTyped _ _ payloadIH k
+       simp only [rhoReflectivePresentation]
        have channelAgreement :=
-         (semanticSubstNameMark_canonicalize channelTyped channelSafe k replacement).2
+         (semanticSubstNameMark_canonicalize (rhoNameWellSorted_hashSetFree channelTyped) k replacement).2
        rw [canonicalize_apply_general "POutput" _ (by simp)]
        simp only [canonicalizeList, semanticSubstProc]
        rw [canonicalize_apply_general "POutput" _ (by simp),
          canonicalize_apply_general "POutput" _ (by simp)]
        simp only [canonicalizeList, semanticSubstName]
-       rw [channelAgreement, payloadIH depth payloadSafe k])
+       rw [channelAgreement, payloadIH k])
     | -- input
-      (intro _ channel body channelTyped _ _ bodyIH depth safe k
-       simp only [rhoReflectivePresentation] at safe ⊢
-       obtain ⟨channelSafe, bodySafe⟩ := binderSafe_of_input safe
+      (intro _ channel body channelTyped _ _ bodyIH k
+       simp only [rhoReflectivePresentation]
        have channelAgreement :=
-         (semanticSubstNameMark_canonicalize channelTyped channelSafe k replacement).2
+         (semanticSubstNameMark_canonicalize (rhoNameWellSorted_hashSetFree channelTyped) k replacement).2
        rw [canonicalize_apply_general "PInput" _ (by simp)]
        simp only [canonicalizeList, canonicalize, semanticSubstProc]
        rw [canonicalize_apply_general "PInput" _ (by simp),
          canonicalize_apply_general "PInput" _ (by simp)]
        simp only [canonicalizeList, canonicalize, semanticSubstName]
-       rw [channelAgreement, bodyIH (depth + 1) bodySafe (k + 1)])
+       rw [channelAgreement, bodyIH (k + 1)])
     | -- parallel
-      (intro _ processes _ listIH depth safe k
-       simp only [rhoReflectivePresentation] at safe ⊢
-       have elementsSafe := binderSafe_of_parallel safe
-       have pointwise := listIH depth elementsSafe k
+      (intro _ processes _ listIH k
+       simp only [rhoReflectivePresentation]
+       have pointwise := listIH k
        have leftForm : canonicalize (semanticSubstProc k replacement
            (.collection .hashBag processes none)) =
              collapseBag (normalizeBagElements
@@ -643,33 +562,28 @@ theorem canonicalize_semanticSubstProc_canonicalize_all
        congr 2
        exact List.map_congr_left fun process membership => pointwise process membership)
     | -- cons
-      (intro _ process processes _ _ processIH listIH depth safe k element membership
-       have componentsSafe : binderSafeAt "NQuote" depth process = true ∧
-           binderSafeListAt "NQuote" depth processes = true := by
-         simpa [binderSafeListAt] using safe
+      (intro _ process processes _ _ processIH listIH k element membership
        simp only [List.mem_cons] at membership
        rcases membership with rfl | membership
-       · exact processIH depth componentsSafe.1 k
-       · exact listIH depth componentsSafe.2 k element membership)
+       · exact processIH k
+       · exact listIH k element membership)
 
 theorem canonicalize_semanticSubstProc_canonicalize
     {free : FreeSortContext} {bound : List String} {process : Pattern}
     (typed : ProcWellSorted rhoReflectivePresentation free bound process)
-    (replacement : Pattern) {depth : Nat}
-    (safe : binderSafeAt "NQuote" depth process = true) (k : Nat) :
+    (replacement : Pattern) (k : Nat) :
     canonicalize (semanticSubstProc k replacement process) =
       canonicalize (semanticSubstProc k replacement (canonicalize process)) :=
-  (canonicalize_semanticSubstProc_canonicalize_all replacement).1 typed depth safe k
+  (canonicalize_semanticSubstProc_canonicalize_all replacement).1 typed k
 
 /-! ## The COMM contractum -/
 
 /-- COMM substitution of the canonical payload into the canonical body has the
 canonical form of COMM substitution of the original payload into the original
-body, for well-sorted binder-safe bodies and hash-set-free payloads. -/
+body, for well-sorted bodies and hash-set-free payloads. -/
 theorem canonicalize_semanticCommSubst_canonicalize
     {free : FreeSortContext} {bound : List String} {body payload : Pattern}
     (bodyTyped : ProcWellSorted rhoReflectivePresentation free bound body)
-    {depth : Nat} (bodySafe : binderSafeAt "NQuote" depth body = true)
     (payloadFree : HashSetFree payload) :
     canonicalize (semanticCommSubst (canonicalize body) (canonicalize payload)) =
       canonicalize (semanticCommSubst body payload) := by
@@ -681,6 +595,40 @@ theorem canonicalize_semanticCommSubst_canonicalize
   rw [canonicalize_semanticSubstProc_payload (canonicalize_procWellSorted bound bodyTyped)
     payloadEq 0]
   exact (canonicalize_semanticSubstProc_canonicalize bodyTyped
-    (.apply "NQuote" [semanticNormalizeProc payload]) bodySafe 0).symm
+    (.apply "NQuote" [semanticNormalizeProc payload]) 0).symm
+
+
+/-- Resolving quotations of drops in a COMM body does not change the canonical
+form of its paper-facing COMM result. -/
+theorem canonicalize_semanticCommSubst_resolveQuotes
+    {free : FreeSortContext} {bound : List String} {body payload : Pattern}
+    (bodyTyped : ProcWellSorted rhoReflectivePresentation free bound body)
+    (payloadFree : HashSetFree payload) :
+    canonicalize (semanticCommSubst
+        (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body)
+        payload) =
+      canonicalize (semanticCommSubst body payload) := by
+  have inner : canonicalize
+      (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body) =
+      canonicalize body := by
+    rw [← CanonicalMatch.derivedCanonicalize_eq, ← CanonicalMatch.derivedCanonicalize_eq,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.canonicalize_resolveQuotes]
+  rw [← canonicalize_semanticCommSubst_canonicalize
+      (LanguageDefAdequacy.rhoProc_resolveQuotes_typed bodyTyped) payloadFree,
+    ← canonicalize_semanticCommSubst_canonicalize bodyTyped payloadFree, inner]
+
+/-- The compiled COMM result of a body, which resolves its quotations of drops,
+is structurally congruent to the paper-facing COMM result. -/
+theorem semanticCommSubst_resolveQuotes_structuralCongruence
+    {free : FreeSortContext} {bound : List String} {body payload : Pattern}
+    (bodyTyped : ProcWellSorted rhoReflectivePresentation free bound body)
+    (payloadFree : HashSetFree payload) :
+    StructuralCongruence
+      (semanticCommSubst
+        (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body)
+        payload)
+      (semanticCommSubst body payload) :=
+  structuralCongruence_of_canonicalize_eq
+    (canonicalize_semanticCommSubst_resolveQuotes bodyTyped payloadFree)
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.SubstitutionCanonicalCommutation

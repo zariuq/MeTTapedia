@@ -36,7 +36,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLP
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLTraceControls
 
 /-!
-# Transform calculus: shared contracts and interpreted profiles
+# Effect interfaces, event observers and source interpretations
 
 This entry joins the effect/admission interface, actual event observers and
 the authored source interpretations. It is an import boundary, not a claim

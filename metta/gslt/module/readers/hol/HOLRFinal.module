@@ -1,0 +1,28 @@
+import "HOLRData.module" as data
+import "../bytes/ByteRecords.module" as records
+import "../bytes/ByteScalars.module" as scalars
+
+Module HOLRFinal {
+  Theory Signature(h: data.Data) {
+    h Terms {
+      ReadHOLRFile . CodecState ::= "holr_file" "(" Bytes ")";
+      HOLRFinal . CodecState ::= "holr_final" "(" CodecState ")";
+      ValidateHOLRPrefix . CodecState ::= "validate_prefix" "(" CodecState ")";
+    }
+  }
+  Theory Format(r: Signature) {
+    r Rewrites {
+      StreamRead: (ReadHOLRStream xs) ~> (ValidateHOLRPrefix (ReadHOLRPrefix xs));
+      PrefixAccepted: (ValidateHOLRPrefix (HOLRDecoded header records (HOLRPrefixOK))) ~> (HOLRAccepted header records);
+      PrefixRejected: (ValidateHOLRPrefix (HOLRDecoded header records (HOLRPrefixError reason))) ~> (HOLRMalformed reason);
+      PrefixIncomplete: (ValidateHOLRPrefix (HOLRDecoded header records (HOLRPrefixIncomplete))) ~> (NeedInput);
+      PrefixHeaderRejected: (ValidateHOLRPrefix (HOLRMalformed reason)) ~> (HOLRMalformed reason);
+      PrefixHeaderIncomplete: (ValidateHOLRPrefix (NeedInput)) ~> (NeedInput);
+      FileRead: (ReadHOLRFile xs) ~> (HOLRFinal (ReadHOLRStream xs));
+      FileAccept: (HOLRFinal (HOLRAccepted header records)) ~> (HOLRAccepted header records);
+      FileBad: (HOLRFinal (HOLRMalformed reason)) ~> (HOLRMalformed reason);
+      FileShort: (HOLRFinal (NeedInput)) ~> (HOLRMalformed (Truncated));
+    }
+  }
+  theory Format(Signature(data.Data(records.ReaderInterface(scalars.Values()))))
+}

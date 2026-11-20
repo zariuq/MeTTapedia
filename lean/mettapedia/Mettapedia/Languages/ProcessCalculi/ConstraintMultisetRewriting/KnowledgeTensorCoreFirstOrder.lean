@@ -140,10 +140,10 @@ def guardTransportAt_of_guardsOnly (A : SubstitutionAction T S) (label : O → T
     have asked' : (∀ check ∈ f.rule.checks,
           check.Holds A (A.compose σ A.identity) label left.present) ∧
         ∀ query ∈ f.queries,
-          (query.atSolution (A.compose σ A.identity)).Holds label left.present := asked
+          query.Holds (A.compose σ A.identity) label left.present := asked
     show (∀ check ∈ f.rule.checks,
         check.Holds A σ label (AnnotatedRuns.tensor left right).present) ∧
-      ∀ query ∈ f.queries, (query.atSolution σ).Holds label (AnnotatedRuns.tensor left right).present
+      ∀ query ∈ f.queries, query.Holds σ label (AnnotatedRuns.tensor left right).present
     refine ⟨fun check member => ?_, fun query member => ?_⟩
     · obtain ⟨one, two, rfl⟩ := guards check member
       have here : A.E (A.apply (A.compose σ A.identity) one) (A.apply (A.compose σ A.identity) two) :=
@@ -272,5 +272,13 @@ theorem framed_swap_one_trace (A : SubstitutionAction T S) (label : O → T)
   native_transposition A label _ _ before suffix f g
     ((plan_sites A label PUnit.unit one plan).trans straight)
     ((plan_sites A label PUnit.unit two plan').trans swapped)
+
+#print axioms native_run_iff_zoned_proof
+#print axioms stableAt_of_guardsOnly
+#print axioms guardTransportAt_of_guardsOnly
+#print axioms contextChecks_iff_holdsOn
+#print axioms native_tensor_is_zoned_proof
+#print axioms native_transposition
+#print axioms framed_swap_one_trace
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.KnowledgeTensorCore.FirstOrder

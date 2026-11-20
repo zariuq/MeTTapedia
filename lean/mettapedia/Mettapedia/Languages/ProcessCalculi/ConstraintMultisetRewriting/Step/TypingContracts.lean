@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.RegionQueryAdapters
 import Mettapedia.Logic.ConstraintTypes.CallTyping
 import Mettapedia.Logic.ConstraintTypes.OpenTyping
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.AnnotatedRuns
@@ -496,8 +497,8 @@ theorem checked_admits_iff (label : O → Term Ctx V A Q C Sym typeArity valueAr
         ∀ check ∈ checks, (action decls reserved).Entails (C₀.equations ++ tells)
           (fun σ => check.Holds (action decls reserved) σ label C₀.present) := by
   have problem := empty_problem (Q := Q) (C := C) label ⟨[], [], tells, checks, []⟩ rfl rfl C₀
-  show PredicateQueryAdmission.Valid _ _ _ [] _ _ ↔ _
-  rw [PredicateQueryAdmission.valid_empty_iff]
+  show PredicateQueryAdmission.RegionValid _ _ _ [] _ _ ↔ _
+  rw [Interface.RegionQueryAdapters.valid_empty_iff]
   show Selection.Valid (action decls reserved) (⟨[], [], []⟩ : Selection O) label
     ⟨[], [], tells, checks, []⟩ C₀ ↔ _
   constructor

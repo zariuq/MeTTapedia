@@ -1,13 +1,15 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualTransportedActivation
 import Mettapedia.OSLF.Syntax.ClosedCommunicationInstances
+import Mettapedia.OSLF.Syntax.RhoPayloadPresentation
 
 /-!
 # Communication as a contextual occurrence rule
 
-The rule uses the existing rho binding signature. Its channel and payload
-are nullary rule locals; its continuation is a process local open in one
-name. The receiver and sender are consumed as two physical occurrences.
-The produced process applies that same continuation to the quoted payload.
+The channel and payload are nullary rule locals; the continuation is a process
+local open in the declared received sort. One rule constructor serves both
+existing binding signatures. The name-binding signature applies the
+continuation to the quoted payload. The payload-binding signature applies it
+to the received process itself. Both consume two physical occurrences.
 
 The constrained form adds a visible payload equation. That extra equation
 is separate from the pure communication rule.
@@ -33,10 +35,75 @@ inductive Port where
   | continuation
   deriving DecidableEq, Repr
 
-def locals : Port → MetaArity base
-  | .channel => ([], .nm)
-  | .payload => ([], .pr)
-  | .continuation => ([.nm], .pr)
+section CommunicationSchema
+
+variable {S : Signature} {V W : Type}
+
+/-- The received argument's sort is independent of the channel's sort.
+Name-binding and payload-binding communication use the same local identities. -/
+abbrev portArities (name process received : S.Srt) : Port → MetaArity S
+  | .channel => ([], name)
+  | .payload => ([], process)
+  | .continuation => ([received], process)
+
+abbrev schemaSource (name process received : S.Srt) (captures : V → MetaArity S) :=
+  ContextualActivatedStep.source (portArities name process received) captures
+
+def channelFor (name process received : S.Srt) (captures : V → MetaArity S)
+    {Γ : Ctx S} : Term (signature S (schemaSource name process received captures)) Γ name :=
+  .op (.inr (Operator.mk (declaration := schemaSource name process received captures)
+    (.inl .channel))) .nil
+
+def payloadFor (name process received : S.Srt) (captures : V → MetaArity S)
+    {Γ : Ctx S} : Term (signature S (schemaSource name process received captures)) Γ process :=
+  .op (.inr (Operator.mk (declaration := schemaSource name process received captures)
+    (.inl .payload))) .nil
+
+def continuationFor (name process received : S.Srt) (captures : V → MetaArity S)
+    {Γ : Ctx S} (argument : Term (signature S (schemaSource name process received captures)) Γ received) :
+    Term (signature S (schemaSource name process received captures)) Γ process :=
+  .op (.inr (Operator.mk (declaration := schemaSource name process received captures)
+    (.inl .continuation))) (.cons argument .nil)
+
+/-- Construct a two-occurrence communication rule using the source signature's
+own constructors and its declared payload-to-argument operation. -/
+def communicationRule (name process received : S.Srt) (captures : V → MetaArity S)
+    (input : {Γ : Ctx S} → Term (signature S (schemaSource name process received captures)) Γ name →
+      Term (signature S (schemaSource name process received captures)) (received :: Γ) process →
+      Term (signature S (schemaSource name process received captures)) Γ process)
+    (output : {Γ : Ctx S} → Term (signature S (schemaSource name process received captures)) Γ name →
+      Term (signature S (schemaSource name process received captures)) Γ process →
+      Term (signature S (schemaSource name process received captures)) Γ process)
+    (receive : {Γ : Ctx S} → Term (signature S (schemaSource name process received captures)) Γ process →
+      Term (signature S (schemaSource name process received captures)) Γ received) :
+    RuleInstance (Term (signature S (schemaSource name process received captures)) [] process) where
+  take := [input (channelFor name process received captures)
+      (continuationFor name process received captures (.var .zero)),
+    output (channelFor name process received captures) (payloadFor name process received captures)]
+  read := []
+  tell := []
+  checks := []
+  produce := [continuationFor name process received captures (receive (payloadFor name process received captures))]
+
+theorem instantiate_continuationFor (name process received : S.Srt)
+    (captures : V → MetaArity S) {next : W → MetaArity S}
+    (assignment : Assignment (schemaSource name process received captures) next)
+    (argument : Term (signature S (schemaSource name process received captures)) [] received) :
+    instantiate assignment (continuationFor name process received captures argument) =
+      inst (assignment (.inl .continuation)) (instantiate assignment argument) := by
+  change bind (argsToSub (.cons (instantiate assignment argument) .nil))
+    (assignment (.inl .continuation)) =
+      bind (extend (instantiate assignment argument)) (assignment (.inl .continuation))
+  apply congrArg (fun environment : Sub (signature S next) [received] [] =>
+    bind environment (assignment (.inl .continuation)))
+  funext sort position
+  cases position with
+  | zero => rfl
+  | succ impossible => cases impossible
+
+end CommunicationSchema
+
+def locals : Port → MetaArity base := portArities (S := base) .nm .pr .nm
 
 variable {V W : Type} {declaration : V → MetaArity base} {next : W → MetaArity base}
 
@@ -83,19 +150,15 @@ abbrev source := ContextualActivatedStep.source (S := base) locals captures
 abbrev target := ContextualActivatedStep.target (S := base) locals captures
 
 def channel {Γ : Ctx base} : Term (signature base (source captures)) Γ .nm :=
-  .op (.inr (Operator.mk (declaration := source captures) (.inl .channel))) .nil
+  channelFor (S := base) .nm .pr .nm captures
 def payload {Γ : Ctx base} : Term (signature base (source captures)) Γ .pr :=
-  .op (.inr (Operator.mk (declaration := source captures) (.inl .payload))) .nil
+  payloadFor (S := base) .nm .pr .nm captures
 def continuation {Γ : Ctx base} (name : Term (signature base (source captures)) Γ .nm) :
     Term (signature base (source captures)) Γ .pr :=
-  .op (.inr (Operator.mk (declaration := source captures) (.inl .continuation))) (.cons name .nil)
+  continuationFor (S := base) .nm .pr .nm captures name
 
-def rule : RuleInstance (Term (signature base (source captures)) [] .pr) where
-  take := [input (channel captures) (continuation captures (.var .zero)), output (channel captures) (payload captures)]
-  read := []
-  tell := []
-  checks := []
-  produce := [continuation captures (quote (payload captures))]
+def rule : RuleInstance (Term (signature base (source captures)) [] .pr) :=
+  communicationRule (S := base) .nm .pr .nm captures input output quote
 
 def constrainedRule (expected : Term (signature base (source captures)) [] .pr) :
     RuleInstance (Term (signature base (source captures)) [] .pr) :=
@@ -107,18 +170,10 @@ theorem the_payload_constraint_is_explicit (expected : Term (signature base (sou
 theorem instantiate_result (assignment : Assignment (source captures) next) :
     instantiate assignment (continuation captures (quote (payload captures))) =
       inst (assignment (.inl .continuation)) (quote (assignment (.inl .payload))) := by
-  have payloadImage : instantiate assignment (payload captures (Γ := [])) = assignment (.inl .payload) :=
-    instantiate_generator assignment (.inl .payload)
-  change bind (argsToSub (.cons (instantiate assignment (quote (payload captures))) .nil))
-    (assignment (.inl .continuation)) =
-      bind (extend (quote (assignment (.inl .payload)))) (assignment (.inl .continuation))
-  apply congrArg (fun environment : Sub (signature base next) [.nm] [] =>
-    bind environment (assignment (.inl .continuation)))
-  funext sort position
-  cases position with
-  | zero =>
-      exact congrArg (fun value : Term (signature base next) [] .pr => quote value) payloadImage
-  | succ impossible => cases impossible
+  exact (instantiate_continuationFor (S := base) .nm .pr .nm captures assignment
+    (quote (payload captures))).trans
+      (congrArg (inst (assignment (.inl .continuation)))
+        (congrArg quote (instantiate_generator assignment (.inl .payload))))
 
 /-- When a selected sender is fixed by the model, the two-sided equation
 is exactly its older one-way matching condition. -/
@@ -128,5 +183,70 @@ theorem one_way_of_fixed (assignment : Assignment declaration declaration) {Γ :
     (ContextualFamilies.action declaration Γ .pr).Solves assignment (pattern, sender) ↔
       instantiate assignment pattern = sender :=
   Selection.solves_iff_matching_of_fixed (ContextualFamilies.action declaration Γ .pr) assignment pattern sender fixed
+
+namespace Payload
+
+abbrev base := RhoPayloadPresentation.sig
+abbrev locals := portArities (S := base) .nm .pr .pr
+
+variable {V W : Type} (captures : V → MetaArity base) {next : W → MetaArity base}
+
+abbrev source := ContextualActivatedStep.source locals captures
+abbrev target := ContextualActivatedStep.target locals captures
+
+def input {declaration : V → MetaArity base} {Γ : Ctx base}
+    (channel : Term (signature base declaration) Γ .nm)
+    (body : Term (signature base declaration) (.pr :: Γ) .pr) :
+    Term (signature base declaration) Γ .pr :=
+  .op (.inl .inp) (.cons channel (.cons body .nil))
+
+def output {declaration : V → MetaArity base} {Γ : Ctx base}
+    (channel : Term (signature base declaration) Γ .nm)
+    (body : Term (signature base declaration) Γ .pr) :
+    Term (signature base declaration) Γ .pr :=
+  .op (.inl .out) (.cons channel (.cons body .nil))
+
+private def inputFields {declaration : V → MetaArity base} {Γ : Ctx base} :
+    Term (signature base declaration) Γ .pr →
+      Option (Term (signature base declaration) Γ .nm ×
+        Term (signature base declaration) (.pr :: Γ) .pr)
+  | .op (.inl .inp) (.cons channel (.cons body .nil)) => some (channel, body)
+  | _ => none
+
+private def outputFields {declaration : V → MetaArity base} {Γ : Ctx base} :
+    Term (signature base declaration) Γ .pr →
+      Option (Term (signature base declaration) Γ .nm × Term (signature base declaration) Γ .pr)
+  | .op (.inl .out) (.cons channel (.cons body .nil)) => some (channel, body)
+  | _ => none
+
+theorem input_fields {declaration : V → MetaArity base} {Γ : Ctx base}
+    {channel other : Term (signature base declaration) Γ .nm}
+    {body rest : Term (signature base declaration) (.pr :: Γ) .pr}
+    (same : input channel body = input other rest) : channel = other ∧ body = rest := by
+  have fields := Option.some.inj (congrArg inputFields same)
+  exact ⟨congrArg Prod.fst fields, congrArg Prod.snd fields⟩
+
+theorem output_fields {declaration : V → MetaArity base} {Γ : Ctx base}
+    {channel other : Term (signature base declaration) Γ .nm}
+    {body rest : Term (signature base declaration) Γ .pr}
+    (same : output channel body = output other rest) : channel = other ∧ body = rest := by
+  have fields := Option.some.inj (congrArg outputFields same)
+  exact ⟨congrArg Prod.fst fields, congrArg Prod.snd fields⟩
+
+/-- The received process itself is the continuation argument. Quotation and
+literal drop retain the distinct rules of the payload-binding source. -/
+def rule : RuleInstance (Term (signature base (source captures)) [] .pr) :=
+  communicationRule (S := base) .nm .pr .pr captures input output (fun payload => payload)
+
+theorem instantiate_result (assignment : Assignment (source captures) next) :
+    instantiate assignment (continuationFor (S := base) .nm .pr .pr captures
+      (payloadFor (S := base) .nm .pr .pr captures)) =
+      inst (assignment (.inl .continuation)) (assignment (.inl .payload)) := by
+  exact (instantiate_continuationFor (S := base) .nm .pr .pr captures assignment
+    (payloadFor (S := base) .nm .pr .pr captures)).trans
+      (congrArg (inst (assignment (.inl .continuation)))
+        (instantiate_generator assignment (.inl .payload)))
+
+end Payload
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualCommunication

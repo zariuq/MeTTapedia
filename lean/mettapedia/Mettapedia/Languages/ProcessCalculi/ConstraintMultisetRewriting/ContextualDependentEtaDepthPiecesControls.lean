@@ -10,7 +10,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
   (`pairStore`): in the dynamic pattern fragment (`pair_in_fragment`), solvable by `X := A` (`pair_solvable`), and the
   skeleton family is stuck in its first round on it (`pair_skeleton_stuck`), its second piece being annotated by
   `Id U0 ((λ k. k X) (λ w. w)) ((λ k. k X) (λ w. w))`.
-* It keeps the outcomes of the η-long prepared and skeleton families on their controls, and decides R119's 44 census
+* It keeps the outcomes of the η-long prepared and skeleton families on their controls, and decides R119's 44 classification
   stores as the in-place family does (`piece_of_final`).
 -/
 
@@ -99,9 +99,9 @@ theorem flexible_piece_refuted :
     (run (pieceTower.solver 16) ContextualDependentEtaDepth.Controls.flexibleStore 8).readout = .refuted := by
   decide +kernel
 
-/-! ## R119's census -/
+/-! ## R119's classification -/
 
-/-- **R119's census under the piece family.** -/
+/-- **R119's classification under the piece family.** -/
 theorem piece_of_final {Θ : Context setting.R} {problem : EquationStore (TotalTerm Θ)}
     (final : ContextualDependentAcceptance3.Controls.finalDecided problem = true) :
     (run inPlaceOnly problem 8).Decided ∧ run (pieceTower.solver 16) problem 8 = run inPlaceOnly problem 8 := by

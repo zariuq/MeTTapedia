@@ -27,8 +27,8 @@ writes (`evaluations`).
   `|written| · |parked|`, and exactly the number of registrations on the written keys.
 * **The index loses no wakeup** (`index_complete`): a guard on a key whose truth a commit changes
   is registered on a key the commit writes (K's `woken_requires_write`), so it is evaluated at that
-  commit. By guard kind (`index_complete_positive`, `index_complete_absence`): a positive guard
-  needs only the arrival queues (keys of what is made), an absence guard only the removal queues
+  commit. By guard kind (`index_complete_positive`, `index_complete_none`): a positive guard
+  needs only the arrival queues (keys of what is made), a none guard only the removal queues
   (keys of what is taken), a predicate query every write.
 * **Parked memory is bounded by the parked firings, not by time** (`entries_card`): with eager
   withdrawal (a firing that fires leaves all its queues), the index holds exactly the
@@ -238,14 +238,14 @@ theorem index_complete_positive {store : Finset O} {d : Commit O R} {g : K} {tes
   obtain ⟨o, made, inRegion⟩ := positive_woken_by_make upward before after
   exact Finset.mem_image.mpr ⟨o, made, by simpa using inRegion⟩
 
-/-- An absence (downward-closed) guard is woken only through a removal queue, a key of something
+/-- A none query (downward-closed) guard is woken only through a removal queue, a key of something
 taken. -/
-theorem index_complete_absence {store : Finset O} {d : Commit O R} {g : K} {test : Finset O → Prop}
+theorem index_complete_none {store : Finset O} {d : Commit O R} {g : K} {test : Finset O → Prop}
     (downward : ∀ ⦃small large : Finset O⦄, small ⊆ large → test large → test small)
     (before : ¬ test (regionOf label store fun r => decide (key r = g)))
     (after : test (regionOf label (fire store d) fun r => decide (key r = g))) :
     g ∈ takenKeys label key d := by
-  obtain ⟨o, taken, inRegion⟩ := absence_woken_by_take downward before after
+  obtain ⟨o, taken, inRegion⟩ := none_woken_by_take downward before after
   exact Finset.mem_image.mpr ⟨o, taken, by simpa using inRegion⟩
 
 omit [DecidableEq F] in

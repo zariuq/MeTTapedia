@@ -1,0 +1,43 @@
+import "ByteScalars.module" as scalars
+import "ByteDecode.module" as decode
+import "ByteArithmetic.module" as arithmetic
+
+Module ByteViews {
+  Theory Signature(a: scalars.Values) {
+    a Terms {
+      ByteSliceAt . CodecState ::= "slice_at" "(" Bytes "," Nat "," Nat ")";
+      SliceGuard . CodecState ::= "slice_guard" "(" Ordering "," Bytes "," Nat "," Nat ")";
+      SliceDrop . CodecState ::= "slice_drop" "(" Nat "," CodecState ")";
+      SliceMake . CodecState ::= "slice_make" "(" CodecState ")";
+      ByteSlice . CodecState ::= "byte_slice" "(" Bytes ")";
+      ByteBoundsRefused . CodecState ::= "byte_bounds_refused";
+      ReadWordAt . CodecState ::= "read_word_at" "(" Bytes "," Nat "," Nat ")";
+      WordAtSlice . CodecState ::= "word_at_slice" "(" Nat "," CodecState ")";
+      WordAtResult . CodecState ::= "word_at_result" "(" CodecState ")";
+      WordAt . CodecState ::= "word_at" "(" Nat ")";
+    }
+  }
+  Theory Operations(v: Signature) {
+    v Rewrites {
+      SliceStart: (ByteSliceAt full offset count)
+        ~> (SliceGuard (NatCompare (NatAdd offset count) (ByteLength full)) full offset count);
+      SliceLess: (SliceGuard (Less) full offset count) ~> (SliceDrop count (TakeBytes offset full));
+      SliceEqual: (SliceGuard (Equal) full offset count) ~> (SliceDrop count (TakeBytes offset full));
+      SliceGreater: (SliceGuard (Greater) full offset count) ~> (ByteBoundsRefused);
+      SliceDropped: (SliceDrop count (Taken ignored rest)) ~> (SliceMake (TakeBytes count rest));
+      SliceDroppedShort: (SliceDrop count (NeedInput)) ~> (NeedInput);
+      SliceProduced: (SliceMake (Taken bytes rest)) ~> (ByteSlice bytes);
+      SliceProducedShort: (SliceMake (NeedInput)) ~> (NeedInput);
+      AtStart: (ReadWordAt full offset width) ~> (WordAtSlice width (ByteSliceAt full offset width));
+      AtSlice: (WordAtSlice width (ByteSlice bytes)) ~> (WordAtResult (ReadFixedLE width bytes));
+      AtBounds: (WordAtSlice width (ByteBoundsRefused)) ~> (ByteBoundsRefused);
+      AtShort: (WordAtSlice width (NeedInput)) ~> (NeedInput);
+      AtValue: (WordAtResult (DecodedWord n (BNil))) ~> (WordAt n);
+      AtValueShort: (WordAtResult (NeedInput)) ~> (NeedInput);
+    }
+  }
+  Theory Format(a: scalars.Values) {
+    let v = Signature(a) in ({decode.Decoder(a) \/ arithmetic.Arithmetic(a) \/ arithmetic.FixedWords(a) \/ Operations(v)})
+  }
+  theory Format(scalars.Values())
+}

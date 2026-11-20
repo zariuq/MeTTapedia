@@ -20,7 +20,7 @@ Over any step and any discipline `D`, the **ledger step** has states that carry 
 far and firings that carry the names they issue. Its frames, knowledge, store, preparation and
 settlement are the base step's; admission is the base admission together with `D`; the result adds
 the issued names to the ledger (`withLedger_result`). Its runs are runs of the base step
-(`forget`, `forget_last`). The discipline of the calculus is `Issues`:
+(`forget`, `forget_last`). The issuing discipline is `Issues`:
 
 * the issued names are pairwise distinct and new to the ledger (`IssuesFresh`);
 * every name the firing writes was issued before, or is issued by this firing (`ChecksUses`).
@@ -242,7 +242,7 @@ theorem no_use_before_issue (uses : ChecksUses M D) :
         exact uses σ.1 σ.2 f.1 f.2 admitted.2
       · exact no_use_before_issue uses rest x later
 
-/-- **The calculus's discipline keeps the invariant along every run.** -/
+/-- **The issuing discipline keeps the invariant along every run.** -/
 theorem issues_invariant_last {σ : State × Set N} (r : (withLedger P (Issues M)).Run σ)
     (invariant : Invariant M σ) : Invariant M r.last :=
   invariant_last (issues_checksUses M) r invariant

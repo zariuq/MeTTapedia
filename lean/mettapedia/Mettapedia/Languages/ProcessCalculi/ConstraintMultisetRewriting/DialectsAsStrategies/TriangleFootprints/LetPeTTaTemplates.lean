@@ -17,6 +17,9 @@ it does depends on the bindings. This module runs it through the tracked interfa
   `LetEveryRun.let_every_run_he` (any instance meeting the source and finishing contracts), PeTTa
   whenever the renamed template runs under PeTTa's binding of the renamed `$x`.
   `let_settles_agree_under`: with the instance in `IfInBodies.SettlesIf`.
+* `let_if_agree`: **`(let $x b (if $x y n))` in both dialects, for every name `x`, every Boolean
+  literal `b` and data branches forming an `if` node of the settling class**: every HE run finishes
+  with the branch of `b`, and PeTTa yields the same; no hypothesis on PeTTa's side remains.
 
 ## Controls
 
@@ -28,6 +31,8 @@ On HE's `let` and `if` programs (`LetEveryRun.Controls.letIfRows`):
 * `Controls.structured_if` (positive, a structured pattern feeding the condition and the branch,
   PeTTa): `(let (pair $c $v) (pair True 5) (if $c $v 0))` yields `[5]`; HE's `metta-repl` answers
   `[5]`.
+* `Controls.let_in_branch` (positive, `let` inside a branch of `if`, PeTTa):
+  `(if True (let $x 1 $x) 2)` yields `[1]`; HE's `metta-repl` answers `[1]`.
 * `Controls.if_template_not_no` (negative): PeTTa does not yield `[no]` on the first.
 * `Controls.condition_must_be_bound` (negative): under bindings that hold nothing for the condition's
   name, the condition is no item: `petta_if_under`'s premise is about the bindings.
@@ -132,6 +137,109 @@ theorem let_settles_agree_under (notHost : ¬ dispatch.executable (.symbol "if")
   let_agree_under notLet notUnify policy letProgram call
     (LetEveryRun.instance_source_of_settles ifProgram settles)
     (LetEveryRun.instance_fine_of_settles notHost ifProgram settles) bound body
+
+/-! ## `let` binding the condition of `if`, both dialects, for every name and every Boolean -/
+
+/-- The instance of the template `(if $x y n)` at the value `c`, for data branches. -/
+theorem inst_if (x : String) (c : Atom) {y n : Atom} (dataY : DataAtom y) (dataN : DataAtom n) :
+    LetSource.inst x c (IfComputed.callC (.var x) y n) = IfComputed.callC c y n := by
+  have fixedY := LetSource.ground_apply dataY (fun z => if z = x then c else .var z)
+  have fixedN := LetSource.ground_apply dataN (fun z => if z = x then c else .var z)
+  simp [LetSource.inst, Mettapedia.Languages.MeTTa.HE.Spec.Type.RuntimeRefinement.applyTypeValuation,
+    IfComputed.callC, AnswerBags.Controls.app, fixedY, fixedN]
+
+/-- PeTTa's bindings after binding the renamed `$x` to a Boolean are tracked from use `1` on. -/
+theorem boolean_tracked (x : String) (b : Bool) :
+    Tracked 1 [(Unifying.freshName 0 x, .grounded (.bool b))] :=
+  ⟨fun binding member => by
+      rw [List.mem_singleton] at member
+      subst member
+      rfl,
+    PeTTaRuns.freshFor_renamed (use := 0) (next := 1) (bound := [(x, .grounded (.bool b))])
+      (σ := []) (by decide) (fun _ _ => rfl)⟩
+
+/-- **PeTTa on `(let $x b (if $x y n))`**, for every name, every Boolean literal and data branches:
+from some fuel on its values are the branch of `b`. -/
+theorem petta_let_if (atoms : List Atom) (x : String) (b : Bool) {y n : Atom} (dataY : DataAtom y)
+    (dataN : DataAtom n) :
+    ∃ N : Nat, ∀ n', N ≤ n' → Streaming.values (Streaming.advance (translate atoms) n'
+      (Streaming.enter { state := store atoms }
+        (LetSource.letCall x (.grounded (.bool b)) (IfComputed.callC (.var x) y n)))) =
+      [IfBranches.pick b y n] := by
+  have groundY : isGroundAtom y = true := (answerable_of_data dataY).ground
+  have groundN : isGroundAtom n = true := (answerable_of_data dataN).ground
+  have takenData : DataAtom (IfBranches.pick b y n) := by
+    cases b
+    · exact dataN
+    · exact dataY
+  have renamed : Unifying.rename 0 (IfComputed.callC (.var x) y n) =
+      IfComputed.callC (.var (Unifying.freshName 0 x)) y n := by
+    simp [IfComputed.callC, AnswerBags.Controls.app, Unifying.rename, Unifying.rename.renameList,
+      Unifying.rename_ground 0 y groundY, Unifying.rename_ground 0 n groundN]
+  have held : applySubst [(Unifying.freshName 0 x, Atom.grounded (.bool b))]
+      (.var (Unifying.freshName 0 x)) = .grounded (.bool b) := by
+    simp [applySubst, Mettapedia.Languages.ProcessCalculi.MORK.Subst.lookup]
+  refine petta_let_entry (d := .grounded (.bool b))
+    (σ' := [(Unifying.freshName 0 x, .grounded (.bool b))]) (fun a member => ?_)
+    (returns_item ⟨.grounded _, Or.inl rfl⟩) rfl ?_
+  · rw [List.mem_singleton] at member
+    subst member
+    exact answerable_of_data takenData
+  · rw [renamed]
+    exact petta_if_under (returns_item ⟨.grounded _, Or.inr ⟨_, rfl, held⟩⟩)
+      (under_of_evaluates (boolean_tracked x b) (PeTTaRuns.petta_data atoms takenData))
+
+/-- **HE and PeTTa agree on `(let $x b (if $x y n))` on every run**, for every name `x`, every
+Boolean literal `b` and data branches `y`, `n` forming an `if` node of the settling class: a
+complete HE run exists, every complete HE run publishes the branch of `b`, every HE run finishes,
+and PeTTa's streaming run yields the same from some fuel on. No hypothesis on PeTTa's side
+remains. -/
+theorem let_if_agree (notHost : ¬ dispatch.executable (.symbol "if"))
+    (notLet : ¬ dispatch.executable (.symbol "let"))
+    (notUnify : ¬ dispatch.executable (.symbol "unify")) (policy : Completed.Policy)
+    {atoms : List Atom} (letProgram : LetSource.LetProgram atoms)
+    (ifProgram : IfBranches.IfProgram atoms) (x : String) {b : Bool} {y n : Atom}
+    (node : IfInBodies.IfNode dispatch atoms (.grounded (.bool b)) b y n) :
+    Publishes dispatch Completed.scopedLookup policy (Space.ofList atoms)
+        (LetSource.letCall x (.grounded (.bool b)) (IfComputed.callC (.var x) y n))
+        [IfBranches.pick b y n] ∧
+      Finishes dispatch Completed.scopedLookup policy (Space.ofList atoms)
+        (LetSource.letCall x (.grounded (.bool b)) (IfComputed.callC (.var x) y n))
+        [IfBranches.pick b y n] ∧
+      ∃ N : Nat, ∀ n', N ≤ n' → Streaming.values (Streaming.advance (translate atoms) n'
+        (Streaming.enter { state := store atoms }
+          (LetSource.letCall x (.grounded (.bool b)) (IfComputed.callC (.var x) y n)))) =
+        [IfBranches.pick b y n] := by
+  have dataY := node.dataYes
+  have dataN := node.dataNo
+  have groundY : isGroundAtom y = true := (answerable_of_data dataY).ground
+  have groundN : isGroundAtom n = true := (answerable_of_data dataN).ground
+  have call : LetSource.LetCall atoms x (.grounded (.bool b)) (IfComputed.callC (.var x) y n) := by
+    refine ⟨.grounded _, ⟨_, IfBranches.bool_types_in _ b, rfl⟩, fun z member => ?_, ⟨_, _, rfl⟩⟩
+    have closedY := HERuns.ground_typeVars (answerable_of_data dataY)
+    have closedN := HERuns.ground_typeVars (answerable_of_data dataN)
+    simpa [IfComputed.callC, AnswerBags.Controls.app,
+      Mettapedia.Languages.MeTTa.HE.Spec.Type.Presentation.TypeSubst.typeVars,
+      Mettapedia.Languages.MeTTa.HE.Spec.Type.Presentation.TypeSubst.typeVarsList, closedY,
+      closedN] using member
+  have settles : IfInBodies.SettlesIf dispatch atoms
+      (LetSource.inst x (.grounded (.bool b)) (IfComputed.callC (.var x) y n))
+      [IfBranches.pick b y n] := by
+    rw [inst_if x _ dataY dataN]
+    exact .ifNode node
+  have renamed : Unifying.rename 0 (IfComputed.callC (.var x) y n) =
+      IfComputed.callC (.var (Unifying.freshName 0 x)) y n := by
+    simp [IfComputed.callC, AnswerBags.Controls.app, Unifying.rename, Unifying.rename.renameList,
+      Unifying.rename_ground 0 y groundY, Unifying.rename_ground 0 n groundN]
+  have held : applySubst [(Unifying.freshName 0 x, Atom.grounded (.bool b))]
+      (.var (Unifying.freshName 0 x)) = .grounded (.bool b) := by
+    simp [applySubst, Mettapedia.Languages.ProcessCalculi.MORK.Subst.lookup]
+  refine let_settles_agree_under notHost notLet notUnify policy letProgram ifProgram call settles
+    (σ' := [(Unifying.freshName 0 x, .grounded (.bool b))]) rfl ?_
+  rw [renamed]
+  exact petta_if_under (returns_item ⟨.grounded _, Or.inr ⟨_, rfl, held⟩⟩)
+    (under_of_evaluates (boolean_tracked x b)
+      (PeTTaRuns.petta_data atoms node.branches.branches.takenData))
 
 /-! ## Controls -/
 
@@ -262,6 +370,37 @@ theorem structured_if : ∃ N, ∀ n, N ≤ n →
     exact petta_if_under (b := true) (returns_item ⟨.grounded _, Or.inr ⟨"c#0", rfl, rfl⟩⟩)
       (under_variable pair_tracked rfl)
 
+abbrev one : Atom := .grounded (.int 1)
+abbrev two : Atom := .grounded (.int 2)
+
+theorem one_tracked : Tracked 1 [("x#0", one)] :=
+  ⟨fun binding member => by
+      rw [List.mem_singleton] at member
+      subst member
+      rfl,
+    PeTTaRuns.freshFor_renamed (use := 0) (next := 1) (bound := [("x", one)]) (σ := [])
+      (by decide) (fun _ _ => rfl)⟩
+
+/-- **Positive control, `let` inside a branch of `if`**: PeTTa on `(if True (let $x 1 $x) 2)` yields
+`[1]`: the two special forms compose through the tracked interface. HE's `metta-repl` answers
+`[1]`. -/
+theorem let_in_branch : ∃ N, ∀ n, N ≤ n →
+    Streaming.values (Streaming.advance (translate letIfRows) n
+      (Streaming.enter { state := store letIfRows }
+        (app "if" [tru, .expression [.symbol "let", .var "x", one, .var "x"], two]))) = [one] := by
+  apply values_of_under (fun a member => by
+    rw [List.mem_singleton] at member
+    subst member
+    exact answerable_of_data (.grounded _))
+  have renamed : Unifying.rename 0
+      (app "if" [tru, .expression [.symbol "let", .var "x", one, .var "x"], two]) =
+      IfComputed.callC tru (.expression [.symbol "let", .var "x#0", one, .var "x#0"]) two := by
+    decide
+  rw [renamed]
+  refine petta_if_under (b := true) (returns_item ⟨.grounded _, Or.inl rfl⟩) ?_
+  exact petta_let_under (d := one) (σ' := [("x#0", one)])
+    (returns_item ⟨.grounded _, Or.inl rfl⟩) rfl (under_variable one_tracked rfl)
+
 /-- **Negative control**: under bindings that hold nothing for the condition's name, the condition
 is no item: it does not present a Boolean. -/
 theorem condition_must_be_bound (b : Bool) :
@@ -278,11 +417,14 @@ end Controls
 #print axioms petta_if_under
 #print axioms let_agree_under
 #print axioms let_settles_agree_under
+#print axioms petta_let_if
+#print axioms let_if_agree
 #print axioms Controls.if_template_under
 #print axioms Controls.if_template_agree
 #print axioms Controls.if_template_false
 #print axioms Controls.if_template_not_no
 #print axioms Controls.structured_if
+#print axioms Controls.let_in_branch
 #print axioms Controls.condition_must_be_bound
 
 end LetPeTTaTemplates

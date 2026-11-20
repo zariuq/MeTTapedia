@@ -177,7 +177,7 @@ def observedRules : List RewriteRule :=
       (metta_sexpr% petta "(BNFGraphTrieLookupV1 ?key BNFGraphTrieEmptyV1)")
       (metta_sexpr% petta "(BNFIndexMissingV1)"),
     observedRule "bnf-graph-trie-lookup-value-v1"
-      (metta_sexpr% petta "(BNFGraphTrieLookupV1 (metta-nullary bnf-v1:text-nil) (BNFGraphTrieV1 ?value ?edges))")
+      (metta_sexpr% petta "(BNFGraphTrieLookupV1 (bnf-v1:text-nil) (BNFGraphTrieV1 ?value ?edges))")
       (metta_sexpr% petta "(?value)"),
     observedRule "bnf-graph-trie-lookup-cons-v1"
       (metta_sexpr% petta "(BNFGraphTrieLookupV1 (bnf-v1:text-cons ?head ?tail) (BNFGraphTrieV1 ?value ?edges))")
@@ -204,7 +204,7 @@ def observedRules : List RewriteRule :=
       [.congruence (pattern (metta_sexpr% petta "(BNFGraphTrieInsertFirstV1 ?key ?value (BNFGraphTrieV1 BNFIndexMissingV1 BNFGraphTrieEdgesNilV1))"))
         (pattern (metta_sexpr% petta "(?result)"))],
     observedRule "bnf-graph-trie-insert-value-v1"
-      (metta_sexpr% petta "(BNFGraphTrieInsertFirstV1 (metta-nullary bnf-v1:text-nil) ?value (BNFGraphTrieV1 ?old ?edges))")
+      (metta_sexpr% petta "(BNFGraphTrieInsertFirstV1 (bnf-v1:text-nil) ?value (BNFGraphTrieV1 ?old ?edges))")
       (metta_sexpr% petta "((BNFGraphTrieV1 ?next ?edges))")
       [.congruence (pattern (metta_sexpr% petta "(BNFGraphTrieFirstValueV1 ?old ?value)"))
         (pattern (metta_sexpr% petta "(?next)"))],

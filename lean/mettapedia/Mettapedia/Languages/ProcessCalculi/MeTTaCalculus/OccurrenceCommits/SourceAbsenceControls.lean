@@ -1,7 +1,7 @@
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits.SourceAbsence
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits.CommutativeMatching
 
-/-! # Absence of a correlated query is not absence of each of its sources -/
+/-! # The none query of a correlated query is not none queries of each of its sources -/
 
 set_option autoImplicit false
 
@@ -34,26 +34,26 @@ def joined : SourceList ℕ Value Pattern :=
 def unrelated : Finset Occurrence := {(message .a, 0), (acknowledgement .b, 1)}
 def related : Finset Occurrence := {(message .a, 0), (acknowledgement .a, 1)}
 
-/-- Both component searches succeed, but their shared-variable join is absent. -/
+/-- Both component searches succeed, but their shared-variable join is not present. -/
 theorem correlated_absence :
     (stepRows matcher label unrelated (.read messagePattern) empty).card = 1 ∧
       (stepRows matcher label unrelated (.read acknowledgementPattern) empty).card = 1 ∧
       (absenceRows layer matcher label unrelated joined empty).card = 1 := by
   decide +kernel
 
-/-- A matching acknowledgement disables the absence result. -/
+/-- A matching acknowledgement disables the none query result. -/
 theorem matching_join_refuses_absence :
     (rows layer matcher label related [] joined empty).card = 1 ∧
       (absenceRows layer matcher label related joined empty).card = 0 := by
   decide +kernel
 
-/-- The empty conjunction has one successful row; its absence is false. -/
+/-- The empty conjunction has one successful row; its none query is false. -/
 theorem empty_conjunction_not_absent :
     (absenceRows layer matcher label (∅ : Finset Occurrence) .done empty).card = 0 := by
   decide +kernel
 
 /-- An empty `every` still has its amalgamated row. It must not be mistaken
-for no row by an enclosing absence query. -/
+for no row by an enclosing none query. -/
 theorem vacuous_every_not_absent :
     (absenceRows layer matcher label (∅ : Finset Occurrence)
       (.every (.cons (.read messagePattern) .done)) empty).card = 0 := by
@@ -65,7 +65,7 @@ theorem duplicate_witnesses_retained :
       {(message .a, 0), (message .a, 2), (acknowledgement .a, 1)} [] joined empty).card = 2 := by
   decide +kernel
 
-/-- A matcher that silently drops every answer would incorrectly report absence. -/
+/-- A matcher that silently drops every answer would incorrectly report none queries. -/
 theorem incomplete_matcher_false_absence :
     (absenceRows layer (fun _ _ _ => []) label related joined empty).card = 1 ∧
       (absenceRows layer matcher label related joined empty).card = 0 := by
@@ -84,7 +84,7 @@ theorem query_bindings_do_not_escape :
       row.1 0 = some (.leaf .b) := by
   decide +kernel
 
-/-- Nested absence observes whether its inner query actually has a row. -/
+/-- Nested none query observes whether its inner query actually has a row. -/
 theorem nested_absence :
     (rows layer matcher label unrelated []
       (.absent (.absent joined .done) .done) empty).card = 0 ∧
@@ -98,7 +98,7 @@ theorem computed_row_not_absent :
       (.absent (.cons (.letBind (.var 0) (fun _ => [.leaf .a])) .done) .done) empty).card = 0 := by
   decide +kernel
 
-/-- Continued absence does not validate an old exact observation: even an
+/-- Continued the none query does not validate an old exact observation: even an
 additional nonjoining acknowledgement changes the retained query snapshot. -/
 theorem absence_can_hold_with_stale_evidence :
     let changed := insert (acknowledgement .b, 2) unrelated

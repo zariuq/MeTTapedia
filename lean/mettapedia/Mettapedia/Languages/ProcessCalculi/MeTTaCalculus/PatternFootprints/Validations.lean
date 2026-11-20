@@ -39,7 +39,7 @@ Results.
   the state that of a serial run of the published alternatives
   (`publishAll_committed_state`) and lets stale answers through.  Installation
   lets through a state that no serial run reaches
-  (`ValidationControls.write_skew`): two additions, each guarded by the absence of
+  (`ValidationControls.write_skew`): two additions, each guarded by the none query of
   what the other adds.
 * **For a monotone region the answers under either validation are answers of the
   serial run**, in order, and the serial run may have more

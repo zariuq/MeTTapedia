@@ -251,7 +251,7 @@ for implementations that mix:
 \code{SeedRematchContract.lean} & \code{space\_subst\_match\_with\_seed} & seeded rematch extends seed, rejects loops, imported binding parity \\
 \code{CacheCorrectness.lean} & \code{table\_store.c} & revision-based query reuse and invalidation \\
 \code{IncrementalTableSemantics.lean} & future \code{table\_store.c} & partial table soundness, answer monotonicity, completion \\
-\code{CeTTaRuntimeContracts.lean} & \code{term\_canon.c}, \code{session.c} & canonicalization safety, rollback, effect/profile contracts \\
+\code{CoReferencePreservation.lean} & \code{term\_canon.c} & canonicalization is an injective renaming: co-reference and \code{==} preserved \\
 \code{SpaceQuerySupport.lean} & backend interface & support-level agreement target \\
 \bottomrule
 \end{tabular}
@@ -268,7 +268,7 @@ This paper should carry the full backend-correctness story:
 \item co-reference-preserving canonical storage;
 \item revision-based cache correctness;
 \item incremental tabling soundness (\code{IncrementalTableSemantics.lean});
-\item runtime contracts: canonicalization, rollback, effect classification (\code{CeTTaRuntimeContracts.lean});
+\item canonicalization as an injective renaming (\code{CoReferencePreservation.lean}) and choice-point rollback (\code{ProducerChoicePoint.lean});
 \item theorem-to-runtime seam mapping.
 \end{enumerate}
 

@@ -589,9 +589,9 @@ theorem source_instruction_iff_supported_plan (program : Program) (stores : Nat 
   · intro instruction
     cases chosen : selectForModel program stores control with
     | none =>
-        have absent := no_selection_next_none chosen
+        have notMem := no_selection_next_none chosen
         have present := CallTimeChoiceInstructions.next_complete instruction
-        rw [absent] at present
+        rw [notMem] at present
         cases present
     | some intent =>
         have properties := selectForModel_spec chosen

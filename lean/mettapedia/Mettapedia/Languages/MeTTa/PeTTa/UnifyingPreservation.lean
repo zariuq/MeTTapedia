@@ -24,28 +24,25 @@ theorem removeRows_supported (allowed : String → Prop) (state after : Effects.
   unfold removeRows at removed
   split at removed
   · cases removed
-  · rename_i handle decoded
-    cases read : state.read handle with
-    | none => simp [read] at removed
-    | some rows =>
+  · cases decoded : Effects.readHandle location with
+    | none => simp [decoded] at removed
+    | some handle =>
+      simp only [decoded] at removed
+      cases read : state.read handle with
+      | none => simp [read] at removed
+      | some rows =>
         simp only [read] at removed
-        split at removed
-        · cases removed
-          exact ⟨rfl,by simp [Effects.boolean]⟩
-        · rename_i _ head tail
-          cases survived : survivors (.expression (head :: tail)) use rows with
-          | none => simp [survived] at removed
-          | some kept =>
-              simp only [survived,Option.map_some] at removed
-              cases written : state.write handle kept with
-              | none => simp [written] at removed
-              | some changed =>
-                  simp only [written,Option.some.injEq,Except.ok.injEq,Prod.mk.injEq] at removed
-                  obtain ⟨rfl,rfl,rfl⟩ := removed
-                  exact ⟨NamedSpaces.Store.write_preserves_cells state handle kept changed written,
-                    by simp [Effects.boolean]⟩
-        · cases removed
-          exact ⟨rfl,by simp⟩
+        cases survived : survivors pattern use rows with
+        | none => simp [survived] at removed
+        | some kept =>
+          simp only [survived, Option.map_some] at removed
+          cases written : state.write handle kept with
+          | none => simp [written] at removed
+          | some changed =>
+            simp only [written, Option.some.injEq, Except.ok.injEq, Prod.mk.injEq] at removed
+            obtain ⟨rfl, rfl, rfl⟩ := removed
+            exact ⟨NamedSpaces.Store.write_preserves_cells state handle kept changed written,
+              by simp [Effects.boolean]⟩
 
 theorem primitive_loaded_entry (scope : Nat) (code : List SpaceSemantics.Equation)
     (program : SpaceSemantics.Program) (expression : Atom) :

@@ -49,7 +49,7 @@ of `RationalComplexAmplitude`, and its Born weight is the norm `born`.
 * **At a cut, a guard needs a complete predicate query of the region.**
   * With a predicate query of the region among the firing's queries, every verdict on the region's
     paths at the cut is the verdict on the paths its query saw (`verdict_iff_query`, mirroring
-    `argmax_iff_census`), and a path arriving in the region refuses the firing
+    `argmax_iff_seen`), and a path arriving in the region refuses the firing
     (`query_refuses_arrival`).
   * Without one, a firing whose guards are equations (`StoreGuard`, such as a verdict decided on
     the rows it read) and which is admitted where the region cancels stays admitted one arriving
@@ -764,18 +764,19 @@ theorem regionOf_union_singleton (region : T → Bool) (present : Finset O) {o :
 
 /-- **A path arriving in the region joins its paths.** -/
 theorem regionPaths_arrival (region : T → Bool) (C : Configuration T O) {o : O}
-    (absent : o ∉ C.present) (inRegion : region (label o) = true) :
+    (missing : o ∉ C.present) (inRegion : region (label o) = true) :
     regionPaths label wave region ⟨C.equations, C.present ∪ {o}⟩ =
       wave (label o) ::ₘ regionPaths label wave region C := by
   unfold regionPaths
   rw [regionOf_union_singleton label region C.present inRegion]
-  exact pathsOf_insert label wave fun member => absent (mem_regionOf.mp member).1
+  exact pathsOf_insert label wave fun member => missing (mem_regionOf.mp member).1
 
-/-- **With a predicate query of the region, every verdict on the region's paths at the cut is a
-verdict on the paths its query saw.** This is `argmax_iff_census` for any comparison of paths. -/
+/-- **With an exact query of the region, every verdict on the region's paths at the cut is a
+verdict on the paths its query saw.** This is `argmax_iff_seen` for any comparison of paths. One
+exact query suffices, through the membership of its exact image; a seen set is exact data. -/
 theorem verdict_iff_query (verdict : Multiset Amplitude → Prop) {f : Firing T S O}
     {C : Configuration T O} (valid : f.Valid A label C) {query : PredicateQuery O T}
-    (member : PredicateQueryAdmission.Query.fixed query ∈ f.queries) :
+    (member : (PredicateQueryAdmission.Query.fixed query).toRegion ∈ f.queries) :
     verdict (regionPaths label wave query.region C) ↔ verdict (pathsOf label wave query.seen) := by
   obtain ⟨σ, solved⟩ := valid.firing.consistent
   have saw : regionOf label C.present query.region = query.seen :=
@@ -785,7 +786,7 @@ theorem verdict_iff_query (verdict : Multiset Amplitude → Prop) {f : Firing T 
 
 /-- **Cancellation with a predicate query of the region is a test of the paths the query saw.** -/
 theorem destructive_iff_query {f : Firing T S O} {C : Configuration T O} (valid : f.Valid A label C)
-    {query : PredicateQuery O T} (member : PredicateQueryAdmission.Query.fixed query ∈ f.queries) :
+    {query : PredicateQuery O T} (member : (PredicateQueryAdmission.Query.fixed query).toRegion ∈ f.queries) :
     Destructive (regionPaths label wave query.region C) ↔
       Destructive (pathsOf label wave query.seen) :=
   verdict_iff_query A label wave Destructive valid member
@@ -793,14 +794,14 @@ theorem destructive_iff_query {f : Firing T S O} {C : Configuration T O} (valid 
 /-- **Reinforcement with a predicate query of the region is a test of the paths the query saw.** -/
 theorem constructive_iff_query {f : Firing T S O} {C : Configuration T O}
     (valid : f.Valid A label C) {query : PredicateQuery O T}
-    (member : PredicateQueryAdmission.Query.fixed query ∈ f.queries) :
+    (member : (PredicateQueryAdmission.Query.fixed query).toRegion ∈ f.queries) :
     Constructive (regionPaths label wave query.region C) ↔
       Constructive (pathsOf label wave query.seen) :=
   verdict_iff_query A label wave Constructive valid member
 
 /-- **The regional amplitude at the cut is the coherent sum of the paths the query saw.** -/
 theorem coherent_query {f : Firing T S O} {C : Configuration T O} (valid : f.Valid A label C)
-    {query : PredicateQuery O T} (member : PredicateQueryAdmission.Query.fixed query ∈ f.queries) :
+    {query : PredicateQuery O T} (member : (PredicateQueryAdmission.Query.fixed query).toRegion ∈ f.queries) :
     coherent (regionPaths label wave query.region C) =
       coherent (pathsOf label wave query.seen) := by
   obtain ⟨σ, solved⟩ := valid.firing.consistent
@@ -813,8 +814,8 @@ theorem coherent_query {f : Firing T S O} {C : Configuration T O} (valid : f.Val
 admitted only where its query saw the whole region, so the guard is decided again at the new
 cut. -/
 theorem query_refuses_arrival {f : Firing T S O} {C : Configuration T O} (valid : f.Valid A label C)
-    {query : PredicateQuery O T} (member : PredicateQueryAdmission.Query.fixed query ∈ f.queries) {o : O}
-    (absent : o ∉ C.present) (inRegion : query.region (label o) = true) :
+    {query : PredicateQuery O T} (member : (PredicateQueryAdmission.Query.fixed query).toRegion ∈ f.queries) {o : O}
+    (missing : o ∉ C.present) (inRegion : query.region (label o) = true) :
     ¬ f.Valid A label ⟨C.equations, C.present ∪ {o}⟩ := by
   intro after
   obtain ⟨σ, solved⟩ := valid.firing.consistent
@@ -828,7 +829,7 @@ theorem query_refuses_arrival {f : Firing T S O} {C : Configuration T O} (valid 
     rw [← later]
     exact Finset.mem_insert_self o _
   rw [← before] at seen
-  exact absent (mem_regionOf.mp seen).1
+  exact missing (mem_regionOf.mp seen).1
 
 omit [DecidableEq O] in
 /-- A guard that reads only the solutions of the store: an equation. Guards decided at instance
@@ -862,12 +863,12 @@ theorem reads_cannot_certify_cancellation {f : Firing T S O} {C : Configuration 
     (region : T → Bool) (guards : ∀ check ∈ f.rule.checks, StoreGuard check)
     (queries : f.queries = []) (valid : f.Valid A label C)
     (cancels : Destructive (regionPaths label wave region C)) {o : O}
-    (absent : o ∉ C.present) (unmade : o ∉ f.selection.made) (inRegion : region (label o) = true)
+    (missing : o ∉ C.present) (unmade : o ∉ f.selection.made) (inRegion : region (label o) = true)
     (nonzero : wave (label o) ≠ 0) :
     f.Valid A label ⟨C.equations, C.present ∪ {o}⟩ ∧
       ¬ Destructive (regionPaths label wave region ⟨C.equations, C.present ∪ {o}⟩) := by
   refine ⟨storeGuards_valid_frame A label guards queries valid unmade, ?_⟩
-  rw [regionPaths_arrival label wave region C absent inRegion]
+  rw [regionPaths_arrival label wave region C missing inRegion]
   exact destructive_refuted_by_arrival cancels nonzero
 
 /-- **What a firing reads cannot certify a reinforcement.** A firing whose guards are equations and
@@ -875,13 +876,13 @@ which has no predicate query stays admitted when the negation of the region's am
 in the region; there the region does not reinforce. -/
 theorem reads_cannot_certify_reinforcement {f : Firing T S O} {C : Configuration T O}
     (region : T → Bool) (guards : ∀ check ∈ f.rule.checks, StoreGuard check)
-    (queries : f.queries = []) (valid : f.Valid A label C) {o : O} (absent : o ∉ C.present)
+    (queries : f.queries = []) (valid : f.Valid A label C) {o : O} (missing : o ∉ C.present)
     (unmade : o ∉ f.selection.made) (inRegion : region (label o) = true)
     (negated : wave (label o) = -coherent (regionPaths label wave region C)) :
     f.Valid A label ⟨C.equations, C.present ∪ {o}⟩ ∧
       ¬ Constructive (regionPaths label wave region ⟨C.equations, C.present ∪ {o}⟩) := by
   refine ⟨storeGuards_valid_frame A label guards queries valid unmade, ?_⟩
-  rw [regionPaths_arrival label wave region C absent inRegion, negated]
+  rw [regionPaths_arrival label wave region C missing inRegion, negated]
   exact not_constructive_after_negated_sum _
 
 end Cut

@@ -1,4 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalStepperCompleteness
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LiteralQuotationFiber
 
 /-!
 # Occurrence inversion for guarded core-rho frontiers
@@ -151,6 +152,15 @@ def Selection.contractum {headers : List Header} (selected : Selection headers) 
   .collection .hashBag
     (semanticCommSubst selected.body selected.payload :: selected.residue.map Header.pattern) none
 
+/-- The target of the compiled COMM firing of a selection: the paper-facing
+COMM result of the body with its quotations of drops resolved. It is
+structurally congruent to `contractum`, and equal to it on the
+literal-quotation fiber. -/
+def Selection.firing {headers : List Header} (selected : Selection headers) : Pattern :=
+  .collection .hashBag
+    (semanticCommSubst (resolveQuotes rhoReflectivePresentation selected.body) selected.payload ::
+      selected.residue.map Header.pattern) none
+
 /-- The selected substitution and untouched occurrences remain in the
 sorted, scope-safe core domain. -/
 theorem Selection.contractum_preserves {free : FreeSortContext} {headers : List Header}
@@ -235,7 +245,7 @@ theorem step_top_level {headers : List Header} {fuel : Nat} {target : Pattern}
 theorem selection_of_step {free : FreeSortContext} {headers : List Header}
     (typed : ∀ header ∈ headers, header.Typed free) {fuel : Nat} {target : Pattern}
     (step : RhoStepAt fuel (parallel headers) target) :
-    ∃ selected : Selection headers, target = selected.contractum := by
+    ∃ selected : Selection headers, target = selected.firing := by
   obtain ⟨bindings, matched, applied⟩ := step_top_level step
   obtain ⟨elements, rest, i, hi, j, hj, channel, body, metadata, other, payload,
     sourceEq, inputEq, outputEq, channels, bindingsEq⟩ := rhoComm_match_shape matched
@@ -261,16 +271,104 @@ theorem selection_of_step {free : FreeSortContext} {headers : List Header}
     exact fact.2
   refine ⟨selected, ?_⟩
   rw [bindingsEq] at applied
-  have application := apply_commBindingsAt bodyTyped payloadTyped
+  have application := apply_commBindingsAt_resolved bodyTyped payloadTyped
     (headers.map Header.pattern) i j channel
   simp only [commBindingsAt] at application
   rw [applied] at application
-  simpa [selected, Selection.contractum, Selection.residue, List.eraseIdx_map] using application
+  simpa [selected, Selection.firing, Selection.residue, List.eraseIdx_map] using application
 
-/-- Every selected pair really fires by the authored COMM rule. -/
+private theorem Selection.endpoints_typed {free : FreeSortContext} {headers : List Header}
+    (selected : Selection headers) (typed : ∀ header ∈ headers, header.Typed free) :
+    ProcWellSorted rhoReflectivePresentation free ["Name"] selected.body ∧
+      ProcWellSorted rhoReflectivePresentation free [] selected.payload := by
+  have inputBound := selected.inputBound
+  have outputBound := selected.outputBound
+  have inputTyped := typed headers[selected.inputIndex] (List.getElem_mem selected.inputBound)
+  have outputTyped := typed (headers.eraseIdx selected.inputIndex)[selected.outputIndex]
+    (List.mem_of_mem_eraseIdx (List.getElem_mem selected.outputBound))
+  rw [selected.inputEq] at inputTyped
+  rw [selected.outputEq] at outputTyped
+  exact ⟨inputTyped.2, outputTyped.2⟩
+
+/-- The compiled firing is structurally congruent to the paper-facing
+contractum. -/
+theorem Selection.firing_structuralCongruence {free : FreeSortContext} {headers : List Header}
+    (selected : Selection headers) (typed : ∀ header ∈ headers, header.Typed free) :
+    StructuralCongruence selected.firing selected.contractum := by
+  have endpoints := selected.endpoints_typed typed
+  exact collectionCongruence_of_forall₂ .hashBag none
+    (.cons (SubstitutionCanonicalCommutation.semanticCommSubst_resolveQuotes_structuralCongruence
+        endpoints.1 (rhoProcWellSorted_hashSetFree endpoints.2))
+      (List.forall₂_same.mpr fun _ _ => .refl _))
+
+/-- On the literal-quotation fiber the compiled firing is the paper-facing
+contractum. -/
+theorem Selection.firing_eq_contractum {free : FreeSortContext} {headers : List Header}
+    (selected : Selection headers) (typed : ∀ header ∈ headers, header.Typed free)
+    (fiber : Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral rhoReflectivePresentation
+      selected.body = true) :
+    selected.firing = selected.contractum := by
+  have endpoints := selected.endpoints_typed typed
+  rw [Selection.firing, Selection.contractum,
+    semanticCommSubst_resolveQuotes_of_fiber endpoints.1 fiber endpoints.2]
+
+/-- A selection from literal headers has a literal continuation. -/
+theorem Selection.body_literal {headers : List Header} (selected : Selection headers)
+    (literal : ∀ header ∈ headers, Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral rhoReflectivePresentation header.pattern = true) : Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral rhoReflectivePresentation selected.body = true := by
+  have inputBound := selected.inputBound
+  have inputLiteral := literal headers[selected.inputIndex] (List.getElem_mem selected.inputBound)
+  rw [selected.inputEq] at inputLiteral
+  simp only [Header.pattern, Mettapedia.Languages.ProcessCalculi.RhoCalculus.LiteralQuotationFiber.quotesLiteral_input,
+    Bool.and_eq_true] at inputLiteral
+  exact inputLiteral.2
+
+/-- Over literal headers the compiled firing is the paper-facing contractum. -/
+theorem Selection.firing_eq_contractum_of_literal {free : FreeSortContext} {headers : List Header}
+    (selected : Selection headers) (typed : ∀ header ∈ headers, header.Typed free)
+    (literal : ∀ header ∈ headers, Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral rhoReflectivePresentation header.pattern = true) :
+    selected.firing = selected.contractum :=
+  selected.firing_eq_contractum typed (selected.body_literal literal)
+
+/-- The compiled firing stays in the sorted, scope-safe core domain. -/
+theorem Selection.firing_preserves {free : FreeSortContext} {headers : List Header}
+    (selected : Selection headers) (typed : ∀ header ∈ headers, header.Typed free)
+    (safe : ∀ header ∈ headers, header.Safe) :
+    ProcWellSorted rhoReflectivePresentation free [] selected.firing ∧
+      binderSafeAt "NQuote" 0 selected.firing = true := by
+  have inputBound := selected.inputBound
+  have outputBound := selected.outputBound
+  have inputTyped := typed headers[selected.inputIndex] (List.getElem_mem inputBound)
+  have inputSafe := safe headers[selected.inputIndex] (List.getElem_mem inputBound)
+  rw [selected.inputEq] at inputTyped inputSafe
+  have outputMember : (headers.eraseIdx selected.inputIndex)[selected.outputIndex] ∈ headers :=
+    List.mem_of_mem_eraseIdx (List.getElem_mem outputBound)
+  have outputTyped := typed _ outputMember
+  have outputSafe := safe _ outputMember
+  rw [selected.outputEq] at outputTyped outputSafe
+  have opened := ScopedSemanticSubstitution.semanticCommSubst_preserves
+    (rhoProc_resolveQuotes_typed inputTyped.2)
+    (Mettapedia.OSLF.MeTTaIL.ReflectiveInstantiation.resolveQuotes_binderSafeAt
+      rhoReflectivePresentation inputSafe.2)
+    outputTyped.2 outputSafe.2
+  have residueMember : ∀ header ∈ selected.residue, header ∈ headers := by
+    intro header member
+    exact List.mem_of_mem_eraseIdx (List.mem_of_mem_eraseIdx member)
+  have residueTyped := parallel_typed (fun header member => typed header (residueMember header member))
+  have residueSafe := parallel_safe (fun header member => safe header (residueMember header member))
+  refine ⟨ProcWellSorted.parallel (.cons opened.1 ?_), ?_⟩
+  · exact (rho_parallel_wellSorted_inv residueTyped).2
+  · change (binderSafeAt "NQuote" 0
+        (semanticCommSubst (resolveQuotes rhoReflectivePresentation selected.body) selected.payload) &&
+      binderSafeListAt "NQuote" 0 (selected.residue.map Header.pattern)) = true
+    change binderSafeListAt "NQuote" 0 (selected.residue.map Header.pattern) = true at residueSafe
+    rw [opened.2, residueSafe]
+    rfl
+
+/-- Every selected pair really fires by the authored COMM rule, to the
+compiled firing. -/
 theorem Selection.authored {free : FreeSortContext} {headers : List Header}
     (selected : Selection headers) (typed : ∀ header ∈ headers, header.Typed free) :
-    RhoStepAt 1 (parallel headers) selected.contractum := by
+    RhoStepAt 1 (parallel headers) selected.firing := by
   have inputBound := selected.inputBound
   have outputBound := selected.outputBound
   have inputTyped := typed headers[selected.inputIndex] (List.getElem_mem selected.inputBound)
@@ -288,8 +386,8 @@ theorem Selection.authored {free : FreeSortContext} {headers : List Header}
     (by simpa only [List.eraseIdx_map, List.getElem_map, Header.pattern] using
       congrArg Header.pattern selected.outputEq)
     selected.channels
-  rw [apply_commBindingsAt inputTyped.2 outputTyped.2] at firing
-  simpa [parallel, Selection.contractum, Selection.residue, List.eraseIdx_map] using firing
+  rw [apply_commBindingsAt_resolved inputTyped.2 outputTyped.2] at firing
+  simpa [parallel, Selection.firing, Selection.residue, List.eraseIdx_map] using firing
 
 theorem canonicalParallel_eq (headers : List Header) :
     canonicalParallel headers = collapseBag
@@ -384,8 +482,7 @@ private theorem canonical_output_shape {header : Header} {channel payload : Patt
 residual order is forgotten; the supplied endpoint's canonical form is
 that of the original body's actual semantic substitution and residue. -/
 theorem canonical_selection_of_step {free : FreeSortContext} {headers : List Header}
-    (typed : ∀ header ∈ headers, header.Typed free)
-    (safe : ∀ header ∈ headers, header.Safe) {fuel : Nat} {target : Pattern}
+    (typed : ∀ header ∈ headers, header.Typed free) {fuel : Nat} {target : Pattern}
     (step : RhoStepAt fuel (canonicalParallel headers) target) :
     ∃ selected : Selection headers,
       Canonical.canonicalize target = Canonical.canonicalize selected.contractum := by
@@ -437,29 +534,27 @@ theorem canonical_selection_of_step {free : FreeSortContext} {headers : List Hea
     have fact := typed headers[i] (List.getElem_mem ib)
     rw [sourceInput] at fact
     exact fact.2
-  have bodySafe : binderSafeAt "NQuote" 1 sourceBody = true := by
-    have fact := safe headers[i] (List.getElem_mem ib)
-    rw [sourceInput] at fact
-    exact fact.2
   have payloadTyped : ProcWellSorted rhoReflectivePresentation free [] sourcePayload := by
     have fact := typed (headers.eraseIdx i)[j]
       (List.mem_of_mem_eraseIdx (List.getElem_mem jb))
     rw [sourceOutput] at fact
     exact fact.2
   let matcherResidue := (elements.eraseIdx inputIndex).eraseIdx outputIndex
+  have canonicalBodyTyped := canonicalize_procWellSorted ["Name"] bodyTyped
+  have canonicalPayloadTyped := canonicalize_procWellSorted [] payloadTyped
   have exactTarget : target = .collection .hashBag
-      (semanticCommSubst (Canonical.canonicalize sourceBody)
+      (semanticCommSubst (resolveQuotes rhoReflectivePresentation (Canonical.canonicalize sourceBody))
         (Canonical.canonicalize sourcePayload) :: matcherResidue) none := by
     rw [bindingsEq] at applied
-    have application := apply_commBindingsAt
-      (canonicalize_procWellSorted ["Name"] bodyTyped)
-      (canonicalize_procWellSorted [] payloadTyped)
+    have application := apply_commBindingsAt_resolved canonicalBodyTyped canonicalPayloadTyped
       elements inputIndex outputIndex (Canonical.canonicalize sourceChannel)
     simp only [commBindingsAt] at application
     rw [applied] at application
     exact application
-  have heads := canonicalize_semanticCommSubst_canonicalize bodyTyped bodySafe
-    (rhoProcWellSorted_hashSetFree payloadTyped)
+  have heads := (SubstitutionCanonicalCommutation.canonicalize_semanticCommSubst_resolveQuotes
+      canonicalBodyTyped (rhoProcWellSorted_hashSetFree canonicalPayloadTyped)).trans
+    (canonicalize_semanticCommSubst_canonicalize bodyTyped
+      (rhoProcWellSorted_hashSetFree payloadTyped))
   have tails : (bagContents (matcherResidue.map Canonical.canonicalize)).Perm
       (bagContents ((selected.residue.map Header.pattern).map Canonical.canonicalize)) := by
     have mapped := residuePermutation.symm.map Canonical.canonicalize
@@ -477,32 +572,28 @@ same frontier class selects the same original occurrence inventory. The
 compiler invariant can therefore use canonical equality without prescribing
 the runtime's concrete parallel bracketing or element order. -/
 theorem representative_selection_of_step {free : FreeSortContext} {headers : List Header}
-    (typed : ∀ header ∈ headers, header.Typed free)
-    (safe : ∀ header ∈ headers, header.Safe) {source target : Pattern}
+    (typed : ∀ header ∈ headers, header.Typed free) {source target : Pattern}
     (sourceTyped : ProcWellSorted rhoReflectivePresentation free [] source)
-    (sourceSafe : binderSafeAt "NQuote" 0 source = true)
     (represented : Canonical.canonicalize source = canonicalParallel headers)
     (step : RhoStep source target) :
     ∃ selected : Selection headers,
       Canonical.canonicalize target = Canonical.canonicalize selected.contractum := by
   obtain ⟨canonicalTarget, canonicalStep, endpoint⟩ :=
-    canonicalStep_complete_of_rhoStep sourceTyped sourceSafe step
+    canonicalStep_complete_of_rhoStep sourceTyped step
   rw [represented] at canonicalStep
-  obtain ⟨selected, contractum⟩ := canonical_selection_of_step typed safe canonicalStep
+  obtain ⟨selected, contractum⟩ := canonical_selection_of_step typed canonicalStep
   exact ⟨selected, endpoint.symm.trans contractum⟩
 
 /-- Structural equations supply that frontier class for typed pure-rho
 representatives. No execution back-condition is assumed. -/
 theorem equivalent_selection_of_step {free : FreeSortContext} {headers : List Header}
-    (typed : ∀ header ∈ headers, header.Typed free)
-    (safe : ∀ header ∈ headers, header.Safe) {source target : Pattern}
+    (typed : ∀ header ∈ headers, header.Typed free) {source target : Pattern}
     (sourceTyped : ProcWellSorted rhoReflectivePresentation free [] source)
-    (sourceSafe : binderSafeAt "NQuote" 0 source = true)
     (equations : StructuralCongruence source (parallel headers))
     (step : RhoStep source target) :
     ∃ selected : Selection headers,
       Canonical.canonicalize target = Canonical.canonicalize selected.contractum := by
-  apply representative_selection_of_step typed safe sourceTyped sourceSafe ?_ step
+  apply representative_selection_of_step typed sourceTyped ?_ step
   exact canonicalize_eq_of_structuralCongruence equations
     (rhoProcWellSorted_hashSetFree sourceTyped)
     (rhoProcWellSorted_hashSetFree (parallel_typed typed))

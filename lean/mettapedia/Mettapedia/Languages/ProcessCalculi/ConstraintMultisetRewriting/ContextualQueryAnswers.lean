@@ -22,7 +22,7 @@ the existing driver proves that finite per-tuple budgets suffice. This is a
 query observation at the specified problem and row cut; promoting it to a
 different cut requires retaining that dependency.
 
-This is a finite reference census. Its exact source-match characterization
+This is a finite reference collect query. Its exact source-match characterization
 is the refinement contract for indexed or factored enumerators; the theorem
 does not prescribe materializing a Cartesian product in a native runtime.
 -/
@@ -74,7 +74,7 @@ def certifies [DecidableEq O] {Γ : Ctx S} {sort : S.Srt}
     (patterns : List (Term (signature S (queryFamily queries captures)) Γ sort))
     (rows : O → ContextualStoredRows.Row locals captures Γ sort) (world : Finset O)
     (budget : (Fin patterns.length → O) → Nat) : Bool :=
-  decide (∀ chosen ∈ ContextualConjunctiveAbsence.candidates world patterns.length,
+  decide (∀ chosen ∈ ContextualConjunctiveNone.candidates world patterns.length,
     closed (scan queries locals captures problem patterns rows budget chosen) = true)
 
 def answers [DecidableEq O] {Γ : Ctx S} {sort : S.Srt}
@@ -82,7 +82,7 @@ def answers [DecidableEq O] {Γ : Ctx S} {sort : S.Srt}
     (patterns : List (Term (signature S (queryFamily queries captures)) Γ sort))
     (rows : O → ContextualStoredRows.Row locals captures Γ sort) (world : Finset O)
     (budget : (Fin patterns.length → O) → Nat) : Finset (Fin patterns.length → O) :=
-  (ContextualConjunctiveAbsence.candidates world patterns.length).filter fun chosen =>
+  (ContextualConjunctiveNone.candidates world patterns.length).filter fun chosen =>
     successful (scan queries locals captures problem patterns rows budget chosen) = true
 
 theorem actual_answer_iff [DecidableEq O] {Γ : Ctx S} {sort : S.Srt}
@@ -99,7 +99,7 @@ theorem actual_answer_iff [DecidableEq O] {Γ : Ctx S} {sort : S.Srt}
           ContextualFrameUnifier.Models candidate problem ∧
             ContextualConjunctiveQueries.Matches queries locals captures candidate patterns rows chosen := by
   have finished := of_decide_eq_true accepted
-  simp only [answers, Finset.mem_filter, ContextualConjunctiveAbsence.mem_candidates]
+  simp only [answers, Finset.mem_filter, ContextualConjunctiveNone.mem_candidates]
   constructor
   · rintro ⟨present, success⟩
     cases computed : scan queries locals captures problem patterns rows budget chosen with
@@ -115,7 +115,7 @@ theorem actual_answer_iff [DecidableEq O] {Γ : Ctx S} {sort : S.Srt}
     obtain ⟨Later, later, combined, jointModel⟩ :=
       match_gives_joint_model queries locals captures candidate problem patterns rows chosen solved matched
     have model := (ContextualResidual.models_observeProblem combined _).mpr jointModel
-    have complete := finished chosen ((ContextualConjunctiveAbsence.mem_candidates world chosen).mpr present)
+    have complete := finished chosen ((ContextualConjunctiveNone.mem_candidates world chosen).mpr present)
     cases computed : scan queries locals captures problem patterns rows budget chosen with
     | refuted impossible => exact False.elim (impossible later combined model)
     | residual update => simpa only [computed, closed, successful] using complete
@@ -150,11 +150,11 @@ theorem complete_budgets_exist [DecidableEq O] {Γ : Ctx S} {sort : S.Srt}
     (problem : EquationStore (Term (signature S captures) Γ sort))
     (patterns : List (Term (signature S (queryFamily queries captures)) Γ sort))
     (rows : O → ContextualStoredRows.Row locals captures Γ sort) (world : Finset O)
-    (patterned : ∀ chosen ∈ ContextualConjunctiveAbsence.candidates world patterns.length,
+    (patterned : ∀ chosen ∈ ContextualConjunctiveNone.candidates world patterns.length,
       ContextualPatternFragment.ProblemPattern (problemAt queries locals captures problem patterns rows chosen)) :
     ∃ budget, certifies queries locals captures problem patterns rows world budget = true := by
   classical
-  have each : ∀ chosen ∈ ContextualConjunctiveAbsence.candidates world patterns.length,
+  have each : ∀ chosen ∈ ContextualConjunctiveNone.candidates world patterns.length,
       ∃ fuel, closed (ContextualFrameWorklist.run fuel (family queries locals captures)
         (problemAt queries locals captures problem patterns rows chosen)) = true := by
     intro chosen present
@@ -166,7 +166,7 @@ theorem complete_budgets_exist [DecidableEq O] {Γ : Ctx S} {sort : S.Srt}
     cases finished with
     | refuted impossible => rfl
     | solved update empty => simp only [closed, empty, List.isEmpty_nil]
-  let budget := fun chosen => if present : chosen ∈ ContextualConjunctiveAbsence.candidates world patterns.length
+  let budget := fun chosen => if present : chosen ∈ ContextualConjunctiveNone.candidates world patterns.length
     then Classical.choose (each chosen present) else 0
   refine ⟨budget, ?_⟩
   apply decide_eq_true

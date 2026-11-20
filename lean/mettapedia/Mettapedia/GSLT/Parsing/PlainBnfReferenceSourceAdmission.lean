@@ -129,13 +129,13 @@ private theorem graphOperators6_encoded :
   decide
 
 private def graphOperators7 : List Operator :=
-  (((operatorRows graphSyntax).drop 70).take 10).filterMap decodeOperator
+  ((operatorRows graphSyntax).drop 70).filterMap decodeOperator
 private theorem graphOperators7_decoded :
-    decodeList decodeOperator (((operatorRows graphSyntax).drop 70).take 10) = some graphOperators7 := by
+    decodeList decodeOperator ((operatorRows graphSyntax).drop 70) = some graphOperators7 := by
   dsimp only [graphOperators7, operatorRows, graphSyntax, List.drop, List.take]
   simp [decodeList, decodeOperator, atomToken?]
 private theorem graphOperators7_encoded :
-    graphOperators7.map encodeOperator = ((operatorRows graphSyntax).drop 70).take 10 := by
+    graphOperators7.map encodeOperator = (operatorRows graphSyntax).drop 70 := by
   dsimp only [graphOperators7, operatorRows, graphSyntax, List.drop, List.take]
   simp [decodeOperator, atomToken?, encodeOperator, encodeAtomToken]
   decide
@@ -143,7 +143,7 @@ private theorem graphOperators7_encoded :
 def graphOperators : List Operator :=
   graphOperators0 ++ graphOperators1 ++ graphOperators2 ++ graphOperators3 ++ graphOperators4 ++ graphOperators5 ++ graphOperators6 ++ graphOperators7
 private theorem graphOperators_partition : operatorRows graphSyntax =
-    ((operatorRows graphSyntax).drop 0).take 10 ++ ((operatorRows graphSyntax).drop 10).take 10 ++ ((operatorRows graphSyntax).drop 20).take 10 ++ ((operatorRows graphSyntax).drop 30).take 10 ++ ((operatorRows graphSyntax).drop 40).take 10 ++ ((operatorRows graphSyntax).drop 50).take 10 ++ ((operatorRows graphSyntax).drop 60).take 10 ++ ((operatorRows graphSyntax).drop 70).take 10 := rfl
+    ((operatorRows graphSyntax).drop 0).take 10 ++ ((operatorRows graphSyntax).drop 10).take 10 ++ ((operatorRows graphSyntax).drop 20).take 10 ++ ((operatorRows graphSyntax).drop 30).take 10 ++ ((operatorRows graphSyntax).drop 40).take 10 ++ ((operatorRows graphSyntax).drop 50).take 10 ++ ((operatorRows graphSyntax).drop 60).take 10 ++ (operatorRows graphSyntax).drop 70 := rfl
 theorem graphOperators_decoded : decodeList decodeOperator (operatorRows graphSyntax) =
     some graphOperators := by
   conv_lhs => rw [graphOperators_partition]
@@ -261,10 +261,10 @@ def graphSource : Source := ⟨"PlainBnfGraphAnalysisV1", graphOperators, [], gr
 /-- Includes the FIFO entry, rotation and reverse accumulator; no appended
 source row is omitted by the chunked decoder. -/
 theorem graph_source_size :
-    graphSource.operators.length = 80 ∧ graphSource.rewrites.length = 97 := by
+    graphSource.operators.length = 84 ∧ graphSource.rewrites.length = 97 := by
   constructor
   · have lengths := congrArg List.length graphOperators_encoded
-    have raw : (operatorRows graphSyntax).length = 80 := rfl
+    have raw : (operatorRows graphSyntax).length = 84 := rfl
     simpa only [List.length_map, raw, graphSource] using lengths
   · rfl
 private theorem graph_envelope : graphSyntax =
@@ -365,13 +365,13 @@ private theorem admissionOperators6_encoded :
   decide
 
 private def admissionOperators7 : List Operator :=
-  (((operatorRows admissionSyntax).drop 70).take 10).filterMap decodeOperator
+  ((operatorRows admissionSyntax).drop 70).filterMap decodeOperator
 private theorem admissionOperators7_decoded :
-    decodeList decodeOperator (((operatorRows admissionSyntax).drop 70).take 10) = some admissionOperators7 := by
+    decodeList decodeOperator ((operatorRows admissionSyntax).drop 70) = some admissionOperators7 := by
   dsimp only [admissionOperators7, operatorRows, admissionSyntax, PlainBnfScalarOrderSource.sourceSyntax, List.drop, List.take]
   simp [decodeList, decodeOperator, atomToken?]
 private theorem admissionOperators7_encoded :
-    admissionOperators7.map encodeOperator = ((operatorRows admissionSyntax).drop 70).take 10 := by
+    admissionOperators7.map encodeOperator = (operatorRows admissionSyntax).drop 70 := by
   dsimp only [admissionOperators7, operatorRows, admissionSyntax, PlainBnfScalarOrderSource.sourceSyntax, List.drop, List.take]
   simp [decodeOperator, atomToken?, encodeOperator, encodeAtomToken]
   decide
@@ -379,7 +379,7 @@ private theorem admissionOperators7_encoded :
 def admissionOperators : List Operator :=
   admissionOperators0 ++ admissionOperators1 ++ admissionOperators2 ++ admissionOperators3 ++ admissionOperators4 ++ admissionOperators5 ++ admissionOperators6 ++ admissionOperators7
 private theorem admissionOperators_partition : operatorRows admissionSyntax =
-    ((operatorRows admissionSyntax).drop 0).take 10 ++ ((operatorRows admissionSyntax).drop 10).take 10 ++ ((operatorRows admissionSyntax).drop 20).take 10 ++ ((operatorRows admissionSyntax).drop 30).take 10 ++ ((operatorRows admissionSyntax).drop 40).take 10 ++ ((operatorRows admissionSyntax).drop 50).take 10 ++ ((operatorRows admissionSyntax).drop 60).take 10 ++ ((operatorRows admissionSyntax).drop 70).take 10 := rfl
+    ((operatorRows admissionSyntax).drop 0).take 10 ++ ((operatorRows admissionSyntax).drop 10).take 10 ++ ((operatorRows admissionSyntax).drop 20).take 10 ++ ((operatorRows admissionSyntax).drop 30).take 10 ++ ((operatorRows admissionSyntax).drop 40).take 10 ++ ((operatorRows admissionSyntax).drop 50).take 10 ++ ((operatorRows admissionSyntax).drop 60).take 10 ++ (operatorRows admissionSyntax).drop 70 := rfl
 theorem admissionOperators_decoded : decodeList decodeOperator (operatorRows admissionSyntax) =
     some admissionOperators := by
   conv_lhs => rw [admissionOperators_partition]

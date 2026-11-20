@@ -30,11 +30,11 @@ def duplicateMessages : List Header :=
 
 private theorem channel_typed :
     NameWellSorted rhoReflectivePresentation (fun _ => none) [] channel :=
-  .quote .unit
+  .quote .unit (by decide)
 
 private theorem forwarding_typed :
     ProcWellSorted rhoReflectivePresentation (fun _ => none) ["Name"] forwardingBody :=
-  .output (.quote .unit) (.drop (.bvar rfl))
+  .output (.quote .unit (by decide)) (.drop (.bvar rfl))
 
 theorem duplicateMessages_typed :
     ∀ header ∈ duplicateMessages, header.Typed (fun _ => none) := by
@@ -94,7 +94,8 @@ theorem forwarding_receives_actual_payload :
     semanticCommSubst forwardingBody zero = .apply "POutput" [channel, zero] := by
   simp [semanticCommSubst, forwardingBody, channel, zero,
     semanticNormalizeProc, semanticNormalizeName, semanticSubstProc,
-    semanticSubstName, semanticSubstNameMark]
+    semanticSubstName, semanticSubstNameMark, Canonical.canonicalize,
+    Canonical.canonicalizeList, Canonical.normalizeQuote]
 
 /-- Canonical inversion returns an original occurrence selection and the
 supplied endpoint class for this concrete well-sorted duplicate frontier. -/
@@ -102,7 +103,7 @@ theorem canonical_duplicate_endpoint {fuel : Nat} {target : Pattern}
     (step : RhoStepAt fuel (canonicalParallel duplicateMessages) target) :
     ∃ selected : Selection duplicateMessages,
       Canonical.canonicalize target = Canonical.canonicalize selected.contractum :=
-  canonical_selection_of_step duplicateMessages_typed duplicateMessages_safe step
+  canonical_selection_of_step duplicateMessages_typed step
 
 def suspendedReaction : Header :=
   .input channel (parallel duplicateMessages)

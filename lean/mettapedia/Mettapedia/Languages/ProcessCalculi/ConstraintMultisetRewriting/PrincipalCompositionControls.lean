@@ -7,7 +7,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Compositi
 
 The first step binds the selected call while two reads share occurrence 1.
 The second step sees two remaining equal-valued occurrences and observes that
-the consumed call is absent. The compiled conditional pair preserves admission
+the consumed call is not present. The compiled conditional pair preserves admission
 under its actual principal answer. A later binding cannot supply the principal
 interface of an earlier empty equation prefix.
 -/
@@ -24,7 +24,7 @@ open PrincipalStep.Controls (initial selected rule problem problem_models_iff ha
 def afterFirst := selected.result label rule initial
 def right : Selection Nat := ⟨[], [], []⟩
 def second : RuleInstance (Term signature) :=
-  ⟨[], [], [], [.count (.var 0) 2, .absent (f (.const 0))], []⟩
+  ⟨[], [], [], [.count (.var 0) 2, .predicate .none (f (.const 0))], []⟩
 
 theorem after_first_membership (occurrence : Nat) :
     occurrence ∈ afterFirst.present ↔ occurrence = 1 ∨ occurrence = 2 ∨ occurrence = 4 := by
@@ -58,7 +58,7 @@ theorem second_firing_is_valid : right.Valid A label second afterFirst := by
     ordinary_firing_is_valid.consistent, ?_⟩
   intro check member assignment solved
   change A.Models assignment problem at solved
-  change check ∈ [Check.count (.var 0) 2, .absent (f (.const 0))] at member
+  change check ∈ [Check.count (.var 0) 2, .predicate .none (f (.const 0))] at member
   rcases List.mem_cons.mp member with rfl | member
   · change (Check.matches A assignment label afterFirst.present (.var 0)).card = 2
     rw [after_first_region assignment solved]

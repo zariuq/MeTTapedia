@@ -18,12 +18,12 @@ or refuted.
 * **Reads.** One occurrence serves two successive reads and survives both
   (`one_occurrence_serves_two_reads`); it is not duplicated (`a_read_is_not_duplicated`), and a
   leftover is not discarded (`a_leftover_is_not_discarded`).
-* **Absence.** The firing guarded by the absence of `c` fires alone (`absence_fires_alone`), is
-  refused beside `c` (`absence_refuses_the_frame`), so it has no additive tensor reading
-  (`absence_has_no_additive_tensor_reading`). Its proof carries the grade `c ∉ frame`
-  (`absence_proof_is_graded`) and no proof admits every frame
-  (`absence_has_no_proof_for_all_frames`). It admits every frame outside its region
-  (`absence_admits_frames_outside_its_region`).
+* **The none query.** The firing guarded by the none query of `c` fires alone (`none_fires_alone`), is
+  refused beside `c` (`none_refuses_the_frame`), so it has no additive tensor reading
+  (`none_has_no_additive_tensor_reading`). Its proof carries the grade `c ∉ frame`
+  (`none_proof_is_graded`) and no proof admits every frame
+  (`none_has_no_proof_for_all_frames`). It admits every frame outside its region
+  (`none_admits_frames_outside_its_region`).
 * **Counting.** The firing guarded by exactly one `c` in the frame is refused with none and with
   two (`counting_refuses_less`, `counting_refuses_more`): it is neither stable under growth nor
   under shrinking of the frame, and it has no additive tensor reading
@@ -178,9 +178,9 @@ theorem a_leftover_is_not_discarded {known known' : Knowledge} {after : Multiset
   have one : (countOf c) (({a} : Multiset Item) + {c}) = 1 := by decide
   exact same.symm.trans one
 
-/-! ## Absence -/
+/-! ## The none query -/
 
-def absence : CheckedSystem Knowledge Item Unit where
+def noneGuarded : CheckedSystem Knowledge Item Unit where
   take := fun _ => {a}
   read := fun _ => 0
   make := fun _ => {b}
@@ -188,67 +188,67 @@ def absence : CheckedSystem Knowledge Item Unit where
   check := fun _ _ frame => c ∉ frame
   check_mono := fun _ _ _ _ _ holds => holds
 
-theorem absence_fires_alone :
-    absence.Run Set.univ (absence.premises ()) [()] (Set.univ ⊓ Set.univ) (absence.conclusions ()) := by
-  have fires : absence.Fires () Set.univ (absence.premises ()) (Set.univ ⊓ Set.univ)
-      (absence.conclusions ()) :=
+theorem none_fires_alone :
+    noneGuarded.Run Set.univ (noneGuarded.premises ()) [()] (Set.univ ⊓ Set.univ) (noneGuarded.conclusions ()) := by
+  have fires : noneGuarded.Fires () Set.univ (noneGuarded.premises ()) (Set.univ ⊓ Set.univ)
+      (noneGuarded.conclusions ()) :=
     ⟨0, (add_zero _).symm, Multiset.notMem_zero c, rfl, (add_zero _).symm⟩
   exact CheckedSystem.Run.fire fires (CheckedSystem.Run.done _ _)
 
-theorem absence_refuses_the_frame {known : Knowledge} {after : Multiset Item} :
-    ¬ absence.Fires () Set.univ (absence.premises () + {c}) known after := by
+theorem none_refuses_the_frame {known : Knowledge} {after : Multiset Item} :
+    ¬ noneGuarded.Fires () Set.univ (noneGuarded.premises () + {c}) known after := by
   rintro ⟨frame, source, checked, _, _⟩
   have same : ({c} : Multiset Item) = frame := add_left_cancel source
   rw [← same] at checked
   exact checked (Multiset.mem_singleton_self c)
 
-theorem absence_blocked {known' : Knowledge} {before after : Multiset Item} {uses : List Unit}
-    (run : absence.Run Set.univ before uses known' after)
-    (atStart : before = absence.premises () + {c}) (atFinish : after = absence.conclusions () + {c}) :
+theorem none_blocked {known' : Knowledge} {before after : Multiset Item} {uses : List Unit}
+    (run : noneGuarded.Run Set.univ before uses known' after)
+    (atStart : before = noneGuarded.premises () + {c}) (atFinish : after = noneGuarded.conclusions () + {c}) :
     False := by
   cases run with
   | done =>
-      have equal : absence.premises () = absence.conclusions () :=
+      have equal : noneGuarded.premises () = noneGuarded.conclusions () :=
         add_right_cancel (atStart.symm.trans atFinish)
       have counts := congrArg (Multiset.count a) equal
       exact absurd counts (by decide)
   | fire fires later =>
       subst atStart
-      exact absence_refuses_the_frame fires
+      exact none_refuses_the_frame fires
 
-/-- **Absence has no additive tensor reading**, over any knowledge and any atoms. -/
-theorem absence_has_no_additive_tensor_reading {K' : Type*} {Atom' : Type*} {Rule' : Type*}
-    [SemilatticeInf K'] (logic : System K' Atom' Rule') (reading : HomomorphicReading absence logic) :
+/-- **The none query has no additive tensor reading**, over any knowledge and any atoms. -/
+theorem none_has_no_additive_tensor_reading {K' : Type*} {Atom' : Type*} {Rule' : Type*}
+    [SemilatticeInf K'] (logic : System K' Atom' Rule') (reading : HomomorphicReading noneGuarded logic) :
     False :=
-  reading.false_of_frame_failure ⟨[()], absence_fires_alone⟩ (extra := {c})
-    (fun ⟨_, run⟩ => absence_blocked run rfl rfl)
+  reading.false_of_frame_failure ⟨[()], none_fires_alone⟩ (extra := {c})
+    (fun ⟨_, run⟩ => none_blocked run rfl rfl)
 
-theorem absence_proof_is_graded :
-    absence.Proves Set.univ (absence.premises ()) (fun frame => c ∉ frame) [()]
-      (Set.univ ⊓ Set.univ) (absence.conclusions ()) :=
+theorem none_proof_is_graded :
+    noneGuarded.Proves Set.univ (noneGuarded.premises ()) (fun frame => c ∉ frame) [()]
+      (Set.univ ⊓ Set.univ) (noneGuarded.conclusions ()) :=
   CheckedSystem.Proves.rule () Set.univ
 
-theorem absence_has_no_proof_for_all_frames :
-    ¬ absence.Proves Set.univ (absence.premises ()) (fun _ => True) [()]
-      (Set.univ ⊓ Set.univ) (absence.conclusions ()) := by
+theorem none_has_no_proof_for_all_frames :
+    ¬ noneGuarded.Proves Set.univ (noneGuarded.premises ()) (fun _ => True) [()]
+      (Set.univ ⊓ Set.univ) (noneGuarded.conclusions ()) := by
   intro proof
-  exact absence_blocked (CheckedSystem.Proves.run proof {c} True.intro) rfl rfl
+  exact none_blocked (CheckedSystem.Proves.run proof {c} True.intro) rfl rfl
 
-theorem absence_reads_only_its_region : absence.ReadsOnly (fun item => item = c) := by
+theorem none_reads_only_its_region : noneGuarded.ReadsOnly (fun item => item = c) := by
   intro _ _ frame
   exact ⟨fun clear member => clear (Multiset.mem_filter.mp member).1,
     fun clear member => clear (Multiset.mem_filter.mpr ⟨member, rfl⟩)⟩
 
-theorem absence_admits_frames_outside_its_region :
-    absence.Run Set.univ (absence.premises () + {d}) [()] (Set.univ ⊓ Set.univ)
-      (absence.conclusions () + {d}) :=
-  CheckedSystem.Run.frame_outside (fun item => item = c) absence_reads_only_its_region
+theorem none_admits_frames_outside_its_region :
+    noneGuarded.Run Set.univ (noneGuarded.premises () + {d}) [()] (Set.univ ⊓ Set.univ)
+      (noneGuarded.conclusions () + {d}) :=
+  CheckedSystem.Run.frame_outside (fun item => item = c) none_reads_only_its_region
     (by
       intro item member
       rw [Multiset.mem_singleton] at member
       rw [member]
       exact (by decide : (d : Item) ≠ c))
-    absence_fires_alone
+    none_fires_alone
 
 /-! ## Counting -/
 

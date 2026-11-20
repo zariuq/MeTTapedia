@@ -196,7 +196,7 @@ theorem exclusion_checker_sound {Key Value : Type} [DecidableEq Key] (key : Key)
   rw [point_empty_iff]
   simpa [excludes, List.all_eq_true] using checked
 
-theorem unrelated_insert_preserves_absence {Key Value : Type} [DecidableEq Key]
+theorem unrelated_insert_preserves_empty {Key Value : Type} [DecidableEq Key]
     (query other : Key) (value : Value) (rows : List (Key × Value))
     (different : query ≠ other) :
     (point query ((other, value) :: rows)).Empty ↔ (point query rows).Empty := by
@@ -246,7 +246,7 @@ theorem empty_left_pending_three_right :
       (choice left right).completion = .pending ∧ ¬ (choice left right).Empty := by
   simp [choice, values, qualify, Frontier.Completion.merge, Report.Empty]
 
--- Existing step theory's refusal is candidate-local, rather than global absence.
+-- Existing step theory's refusal is candidate-local, rather than global none query.
 theorem empty_answer_is_not_no_successor
     {Obj : Type} {Tm : Obj → Type} {Hom : Obj → Obj → Type}
     {X : Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Frames Tm Hom}

@@ -1,0 +1,19 @@
+import "HOLRData.module" as data
+import "../bytes/ByteRecords.module" as records
+import "../bytes/ByteScalars.module" as scalars
+
+Module HOLRPrefix {
+  Theory Signature(s: scalars.Values) {
+    s Terms {
+      HOLRPrefix . Bytes ::= "holr_prefix";
+      HOLRKernelId . Bytes ::= "holr_kernel_id";
+    }
+  }
+  Theory Format(r: Signature) {
+    r Rewrites {
+      PinnedPrefix: (HOLRPrefix) ~> (BCons (Byte8 (Bit0) (Bit1) (Bit0) (Bit0) (Bit1) (Bit0) (Bit0) (Bit0)) (BCons (Byte8 (Bit0) (Bit1) (Bit0) (Bit0) (Bit1) (Bit1) (Bit1) (Bit1)) (BCons (Byte8 (Bit0) (Bit1) (Bit0) (Bit0) (Bit1) (Bit1) (Bit0) (Bit0)) (BCons (Byte8 (Bit0) (Bit1) (Bit0) (Bit1) (Bit0) (Bit0) (Bit1) (Bit0)) (BCons (Byte8 (Bit0) (Bit1) (Bit0) (Bit1) (Bit0) (Bit0) (Bit0) (Bit0)) (BCons (Byte8 (Bit0) (Bit1) (Bit0) (Bit0) (Bit1) (Bit1) (Bit0) (Bit0)) (BCons (Byte8 (Bit0) (Bit1) (Bit0) (Bit1) (Bit1) (Bit0) (Bit0) (Bit1)) (BCons (Byte8 (Bit0) (Bit0) (Bit1) (Bit1) (Bit0) (Bit0) (Bit0) (Bit1)) (HOLRKernelId)))))))));
+      PinnedKernel: (HOLRKernelId) ~> (BCons (Byte8 (Bit0) (Bit0) (Bit1) (Bit0) (Bit1) (Bit0) (Bit0) (Bit1)) (BCons (Byte8 (Bit0) (Bit1) (Bit0) (Bit1) (Bit0) (Bit1) (Bit0) (Bit0)) (BCons (Byte8 (Bit0) (Bit1) (Bit0) (Bit0) (Bit1) (Bit0) (Bit1) (Bit1)) (BCons (Byte8 (Bit1) (Bit1) (Bit1) (Bit0) (Bit1) (Bit0) (Bit0) (Bit1)) (BCons (Byte8 (Bit0) (Bit0) (Bit1) (Bit0) (Bit1) (Bit1) (Bit0) (Bit1)) (BCons (Byte8 (Bit1) (Bit0) (Bit0) (Bit1) (Bit1) (Bit1) (Bit0) (Bit0)) (BCons (Byte8 (Bit1) (Bit1) (Bit0) (Bit0) (Bit0) (Bit0) (Bit0) (Bit1)) (BCons (Byte8 (Bit1) (Bit1) (Bit1) (Bit0) (Bit0) (Bit1) (Bit1) (Bit0)) (BCons (Byte8 (Bit1) (Bit0) (Bit1) (Bit1) (Bit0) (Bit0) (Bit1) (Bit1)) (BCons (Byte8 (Bit1) (Bit0) (Bit1) (Bit1) (Bit0) (Bit1) (Bit0) (Bit1)) (BCons (Byte8 (Bit1) (Bit0) (Bit0) (Bit1) (Bit1) (Bit0) (Bit1) (Bit1)) (BCons (Byte8 (Bit1) (Bit0) (Bit1) (Bit0) (Bit0) (Bit1) (Bit0) (Bit1)) (BCons (Byte8 (Bit1) (Bit0) (Bit1) (Bit1) (Bit0) (Bit0) (Bit1) (Bit0)) (BCons (Byte8 (Bit0) (Bit0) (Bit0) (Bit1) (Bit0) (Bit0) (Bit0) (Bit0)) (BCons (Byte8 (Bit0) (Bit1) (Bit1) (Bit0) (Bit0) (Bit0) (Bit0) (Bit0)) (BCons (Byte8 (Bit0) (Bit1) (Bit0) (Bit0) (Bit1) (Bit0) (Bit1) (Bit1)) (BCons (Byte8 (Bit1) (Bit0) (Bit0) (Bit1) (Bit1) (Bit0) (Bit1) (Bit0)) (BCons (Byte8 (Bit0) (Bit1) (Bit1) (Bit1) (Bit0) (Bit1) (Bit0) (Bit0)) (BCons (Byte8 (Bit1) (Bit0) (Bit0) (Bit0) (Bit0) (Bit0) (Bit1) (Bit1)) (BCons (Byte8 (Bit0) (Bit1) (Bit1) (Bit0) (Bit0) (Bit1) (Bit1) (Bit0)) (BCons (Byte8 (Bit1) (Bit0) (Bit1) (Bit0) (Bit0) (Bit1) (Bit1) (Bit0)) (BCons (Byte8 (Bit1) (Bit0) (Bit0) (Bit0) (Bit1) (Bit0) (Bit1) (Bit1)) (BCons (Byte8 (Bit0) (Bit0) (Bit1) (Bit1) (Bit1) (Bit0) (Bit1) (Bit1)) (BCons (Byte8 (Bit1) (Bit1) (Bit0) (Bit0) (Bit1) (Bit1) (Bit0) (Bit1)) (BCons (Byte8 (Bit1) (Bit1) (Bit0) (Bit0) (Bit0) (Bit0) (Bit1) (Bit0)) (BCons (Byte8 (Bit0) (Bit1) (Bit1) (Bit0) (Bit0) (Bit0) (Bit0) (Bit1)) (BCons (Byte8 (Bit1) (Bit0) (Bit0) (Bit1) (Bit0) (Bit1) (Bit1) (Bit1)) (BCons (Byte8 (Bit0) (Bit0) (Bit0) (Bit1) (Bit0) (Bit1) (Bit1) (Bit1)) (BCons (Byte8 (Bit1) (Bit1) (Bit0) (Bit1) (Bit0) (Bit1) (Bit1) (Bit0)) (BCons (Byte8 (Bit1) (Bit0) (Bit0) (Bit0) (Bit1) (Bit1) (Bit1) (Bit1)) (BCons (Byte8 (Bit1) (Bit1) (Bit0) (Bit1) (Bit1) (Bit0) (Bit0) (Bit1)) (BCons (Byte8 (Bit1) (Bit0) (Bit0) (Bit0) (Bit1) (Bit0) (Bit1) (Bit0)) (BNil)))))))))))))))))))))))))))))))));
+    }
+  }
+  theory Format(Signature(scalars.Values()))
+}

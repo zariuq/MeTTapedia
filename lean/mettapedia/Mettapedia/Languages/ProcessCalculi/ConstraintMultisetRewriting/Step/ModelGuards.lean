@@ -7,7 +7,7 @@ The interface leaves a firing's guards opaque (`Step.Holds` is any predicate of 
 module gives them a syntax, as a fibre: opaque guards stay the general case, and a step whose guards
 are written in the syntax (`Step.GuardedBy`) has the existing semantics.
 
-* **Guard formulas** (`GuardFormula T O`): equations, absence and count of a pattern among the labels
+* **Guard formulas** (`GuardFormula T O`): equations, none queries and count of a pattern among the labels
   of a finite region of occurrences, `⊤`, `⊥`, `¬`, `∧`, `∨`, `→`. A formula is read at one solution.
   Its truth depends only on which equations hold there: `GuardFormula.Sat R` reads it relative to any
   relation `R` on terms (`sat_congr`), and carrying the terms along a map is reading the relation back
@@ -16,7 +16,7 @@ are written in the syntax (`Step.GuardedBy`) has the existing semantics.
   hold up to the frame equivalence (`Frames.kernel`). Agreeing solutions satisfy the same guards
   (`satisfies_congr`); a guard carried along a morphism is the guard read at the composite
   (`satisfies_carry`). **Positive** guards (equations, `⊤`, `⊥`, `∧`, `∨`) persist along later
-  instantiation (`Satisfies.persist`); absence and count do not.
+  instantiation (`Satisfies.persist`); none queries and count do not.
 * **Asks** (`Ask`, `Frames.Asks`): quantifiers over the solutions of a store: at every solution, at some
   solution, and the same over closed solutions into a designated frame. Solvability is the ask
   `some ⊤` (`solvable_iff_some_top`).
@@ -36,13 +36,14 @@ open Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits (Enable
 
 universe uO uT uH uOcc uU uS uF
 
-/-- **Guard formulas** over terms `T`: equations, absence and count of a pattern among the labels of a
-finite region of occurrences, and the propositional connectives. A formula is read at one solution. -/
+/-- **Guard formulas** over terms `T`: equations, a predicate query and a count of a pattern among the
+labels of a finite region of occurrences, and the propositional connectives. A formula is read at one
+solution. -/
 inductive GuardFormula (T : Type uT) (O : Type uOcc) : Type (max uT uOcc)
   | top
   | bot
   | eq (left right : T)
-  | absent (pattern : T) (region : Finset O) (label : O → T)
+  | predicate (quantifier : Quantifier) (pattern : T) (region : Finset O) (label : O → T)
   | count (pattern : T) (region : Finset O) (label : O → T) (number : Nat)
   | not (φ : GuardFormula T O)
   | and (φ ψ : GuardFormula T O)
@@ -69,7 +70,7 @@ def Sat (R : T → T → Prop) : GuardFormula T O → Prop
   | .top => True
   | .bot => False
   | .eq s t => R s t
-  | .absent p W label => ∀ o ∈ W, ¬ R p (label o)
+  | .predicate q p W label => q.Holds W fun o => R p (label o)
   | .count p W label n => (matching R p W label).card = n
   | .not φ => ¬ Sat R φ
   | .and φ ψ => Sat R φ ∧ Sat R ψ
@@ -88,7 +89,7 @@ theorem sat_congr {R R' : T → T → Prop} (same : ∀ s t, R s t ↔ R' s t) :
   | .top => Iff.rfl
   | .bot => Iff.rfl
   | .eq s t => same s t
-  | .absent p _ label => forall₂_congr fun o _ => not_congr (same p (label o))
+  | .predicate q p _ label => q.holds_congr fun o _ => same p (label o)
   | .count p W label n => by
       show (matching R p W label).card = n ↔ (matching R' p W label).card = n
       rw [matching_congr same]
@@ -102,7 +103,7 @@ def map {U : Type uU} (g : T → U) : GuardFormula T O → GuardFormula U O
   | .top => .top
   | .bot => .bot
   | .eq s t => .eq (g s) (g t)
-  | .absent p W label => .absent (g p) W (g ∘ label)
+  | .predicate q p W label => .predicate q (g p) W (g ∘ label)
   | .count p W label n => .count (g p) W (g ∘ label) n
   | .not φ => .not (map g φ)
   | .and φ ψ => .and (map g φ) (map g ψ)
@@ -115,7 +116,7 @@ theorem sat_map {U : Type uU} (g : T → U) (R : U → U → Prop) :
   | .top => Iff.rfl
   | .bot => Iff.rfl
   | .eq _ _ => Iff.rfl
-  | .absent _ _ _ => Iff.rfl
+  | .predicate _ _ _ _ => Iff.rfl
   | .count p W label n => by
       show (matching R (g p) W (g ∘ label)).card = n ↔
         (matching (fun s t => R (g s) (g t)) p W label).card = n
@@ -286,7 +287,7 @@ variable {T : Type uT} {S : Type uS} {O : Type uO}
 /-- A check as a guard formula over a labelled region. -/
 def checkGuard (label : O → T) (W : Finset O) : Check T → GuardFormula T O
   | .equal left right => .eq left right
-  | .absent pattern => .absent pattern W label
+  | .predicate q pattern => .predicate q pattern W label
   | .count pattern number => .count pattern W label number
 
 /-- A list of checks as the conjunction of their guard formulas. -/
@@ -301,7 +302,7 @@ theorem checkGuard_sat (A : SubstitutionAction T S) (σ : S) (label : O → T) (
       check.Holds A σ label W := by
   cases check with
   | equal left right => exact Iff.rfl
-  | absent pattern => exact Iff.rfl
+  | predicate quantifier pattern => exact Iff.rfl
   | count pattern number =>
       show (GuardFormula.matching _ pattern W label).card = number ↔
         (Check.«matches» A σ label W pattern).card = number
@@ -335,7 +336,7 @@ theorem firstOrder_holds_iff_guard {C : Configuration T O} {f : Firing T S O} (n
     (firstOrder A label).Holds (s := C) f b σ ↔
       (Frames.ofSubstitution A).Satisfies (a := PUnit.unit) (b := b) σ (firingGuard label C f) := by
   show ((∀ check ∈ f.rule.checks, check.Holds A σ label C.present) ∧
-      ∀ query ∈ f.queries, (query.atSolution σ).Holds label C.present) ↔ _
+      ∀ query ∈ f.queries, query.Holds σ label C.present) ↔ _
   constructor
   · rintro ⟨checks, _⟩
     exact (checksGuard_sat A σ label C.present f.rule.checks).mpr checks

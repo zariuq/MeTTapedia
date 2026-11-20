@@ -37,7 +37,7 @@ def payload : Pattern := output channel zero
 
 theorem input_prime : IsPrime (input channel body) := by
   refine ⟨(rhoClosedTermWellSorted_process_iff _).mpr
-    ⟨.input (.quote .unit) (.drop (.bvar rfl)), ?_⟩, ?_, ?_, ?_⟩
+    ⟨.input (.quote .unit (by decide)) (.drop (.bvar rfl)), ?_⟩, ?_, ?_, ?_⟩
   · rfl
   · simp [input, channel, body, zero, IsCanonical, IsCanonicalList]
   · simp [input]
@@ -46,7 +46,7 @@ theorem input_prime : IsPrime (input channel body) := by
 
 theorem output_prime : IsPrime (output channel payload) := by
   refine ⟨(rhoClosedTermWellSorted_process_iff _).mpr
-    ⟨.output (.quote .unit) (.output (.quote .unit) .unit), ?_⟩, ?_, ?_, ?_⟩
+    ⟨.output (.quote .unit (by decide)) (.output (.quote .unit (by decide)) .unit), ?_⟩, ?_, ?_, ?_⟩
   · rfl
   · simp [output, channel, payload, zero, IsCanonical, IsCanonicalList]
   · simp [output]
@@ -233,7 +233,7 @@ def alternateSource : RhoProcess :=
     simp only [List.mem_cons, List.not_mem_nil, or_false] at membership
     rcases membership with rfl | rfl
     · apply (rhoClosedTermWellSorted_process_iff _).mpr
-      exact ⟨.input (.quote (.drop (.quote .unit))) (.drop (.bvar rfl)), rfl⟩
+      exact ⟨.input (.quote (.drop (.quote .unit (by decide))) (by decide)) (.drop (.bvar rfl)), rfl⟩
     · exact output_prime.1)
 
 theorem equation_retains_reaction_inventory :
@@ -266,7 +266,7 @@ def newerBody : Pattern := input channel (output (.bvar 0) zero)
 
 theorem older_input_prime : IsPrime (input channel olderBody) := by
   refine ⟨(rhoClosedTermWellSorted_process_iff _).mpr
-    ⟨.input (.quote .unit) (.input (.quote .unit) (.output (.bvar rfl) .unit)), ?_⟩,
+    ⟨.input (.quote .unit (by decide)) (.input (.quote .unit (by decide)) (.output (.bvar rfl) .unit)), ?_⟩,
     ?_, ?_, ?_⟩
   · rfl
   · simp [input, output, olderBody, channel, zero, IsCanonical, IsCanonicalList]
@@ -276,7 +276,7 @@ theorem older_input_prime : IsPrime (input channel olderBody) := by
 
 theorem newer_input_prime : IsPrime (input channel newerBody) := by
   refine ⟨(rhoClosedTermWellSorted_process_iff _).mpr
-    ⟨.input (.quote .unit) (.input (.quote .unit) (.output (.bvar rfl) .unit)), ?_⟩,
+    ⟨.input (.quote .unit (by decide)) (.input (.quote .unit (by decide)) (.output (.bvar rfl) .unit)), ?_⟩,
     ?_, ?_, ?_⟩
   · rfl
   · simp [input, output, newerBody, channel, zero, IsCanonical, IsCanonicalList]

@@ -526,7 +526,9 @@ theorem modelClass_literal_not_control (program : Program) (head : String)
 
 /-- Every control form of the eager driver is a control form of the
 declarative rules, so an expression that is not one there is not one in the
-driver either. -/
+driver either. The two control sets are in fact the same PeTTa source forms
+(`DeclarativeSpec.controlForm`), including `if` with two or three arguments,
+`unique`, and the three-argument `match`. -/
 private theorem eager_not_control {atom : Atom}
     (notControl : DeclarativeSpec.controlForm atom = false) :
     EagerDFS.eagerControlForm atom = false := by

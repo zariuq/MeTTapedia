@@ -157,7 +157,8 @@ theorem named_equations (head : String) :
     (fun row selected => by
       have same : row.head = head := by simpa using selected
       exact congrArg (fun name => !matching name) same)
-  simp only [RuleExecutionProgram.interpretedPremiseProgram, append_equations, fold_equations,
+  simp only [RuleExecutionProgram.interpretedPremiseProgram, RuleExecutionProgram.interpretedPremiseBase.selected,
+      RuleExecutionProgram.interpretedPremiseMatching.selected, append_equations, fold_equations,
     RuleExecutionProgram.callFragmentWhere, List.filter_append]
   change _ ++ supportEquations.filter _ = (_ ++ supportEquations.filter _) ++ _
   rw [show (fun row : Equation => row.head.startsWith "gslt:premise:matching-") =
@@ -181,7 +182,8 @@ theorem named_declarations (head : String) :
   have no := filtered_constant RuleExecutionProgram.scopedProgram.declarations
     (retainedCallDeclaration (fun name => !matching name)) (retainedCallDeclaration (fun name => name == head))
     (!matching head) (fun row selected => declaration_constant (fun name => !matching name) head row selected)
-  simp only [RuleExecutionProgram.interpretedPremiseProgram, append_declarations, fold_declarations,
+  simp only [RuleExecutionProgram.interpretedPremiseProgram, RuleExecutionProgram.interpretedPremiseBase.selected,
+      RuleExecutionProgram.interpretedPremiseMatching.selected, append_declarations, fold_declarations,
     RuleExecutionProgram.callFragmentWhere, List.filter_append]
   change _ ++ supportDeclarations.filter _ = (_ ++ supportDeclarations.filter _) ++ _
   rw [show (fun name => name.startsWith "gslt:premise:matching-") = matching from rfl]
@@ -295,10 +297,10 @@ private def completeScopedMetadataEquations : List Equation := [
     RuleExecutionProgram.scopedProgram.equations[173]'(by decide +kernel),
     RuleExecutionProgram.scopedProgram.equations[174]'(by decide +kernel),
     RuleExecutionProgram.scopedProgram.equations[179]'(by decide +kernel),
-    RuleExecutionProgram.scopedProgram.equations[196]'(by decide +kernel),
-    RuleExecutionProgram.scopedProgram.equations[198]'(by decide +kernel),
-    RuleExecutionProgram.scopedProgram.equations[218]'(by decide +kernel),
-    RuleExecutionProgram.scopedProgram.equations[219]'(by decide +kernel)
+    RuleExecutionProgram.scopedProgram.equations[205]'(by decide +kernel),
+    RuleExecutionProgram.scopedProgram.equations[207]'(by decide +kernel),
+    RuleExecutionProgram.scopedProgram.equations[227]'(by decide +kernel),
+    RuleExecutionProgram.scopedProgram.equations[228]'(by decide +kernel)
   ]
 
 private def completeTypedMetadataEquations : List Equation := [
@@ -323,10 +325,10 @@ private def completeScopedMetadataDeclarations : List Atom := [
     RuleExecutionProgram.scopedProgram.declarations[173]'(by decide +kernel),
     RuleExecutionProgram.scopedProgram.declarations[174]'(by decide +kernel),
     RuleExecutionProgram.scopedProgram.declarations[179]'(by decide +kernel),
-    RuleExecutionProgram.scopedProgram.declarations[196]'(by decide +kernel),
-    RuleExecutionProgram.scopedProgram.declarations[198]'(by decide +kernel),
-    RuleExecutionProgram.scopedProgram.declarations[218]'(by decide +kernel),
-    RuleExecutionProgram.scopedProgram.declarations[219]'(by decide +kernel)
+    RuleExecutionProgram.scopedProgram.declarations[205]'(by decide +kernel),
+    RuleExecutionProgram.scopedProgram.declarations[207]'(by decide +kernel),
+    RuleExecutionProgram.scopedProgram.declarations[227]'(by decide +kernel),
+    RuleExecutionProgram.scopedProgram.declarations[228]'(by decide +kernel)
   ]
 
 private def completeTypedMetadataDeclarations : List Atom := [
@@ -424,7 +426,7 @@ theorem source_filter_indices {α : Type} (rows : List α) (keep : α → Bool) 
 
 private theorem completeScoped_equations_indices :
     (List.finRange RuleExecutionProgram.scopedProgram.equations.length).filter (fun index => (fun row => completeProofHeads row.head) (RuleExecutionProgram.scopedProgram.equations.get index)) =
-      [⟨0, by decide +kernel⟩, ⟨1, by decide +kernel⟩, ⟨2, by decide +kernel⟩, ⟨118, by decide +kernel⟩, ⟨146, by decide +kernel⟩, ⟨148, by decide +kernel⟩, ⟨173, by decide +kernel⟩, ⟨174, by decide +kernel⟩, ⟨179, by decide +kernel⟩, ⟨196, by decide +kernel⟩, ⟨198, by decide +kernel⟩, ⟨218, by decide +kernel⟩, ⟨219, by decide +kernel⟩] := by decide +kernel
+      [⟨0, by decide +kernel⟩, ⟨1, by decide +kernel⟩, ⟨2, by decide +kernel⟩, ⟨118, by decide +kernel⟩, ⟨146, by decide +kernel⟩, ⟨148, by decide +kernel⟩, ⟨173, by decide +kernel⟩, ⟨174, by decide +kernel⟩, ⟨179, by decide +kernel⟩, ⟨205, by decide +kernel⟩, ⟨207, by decide +kernel⟩, ⟨227, by decide +kernel⟩, ⟨228, by decide +kernel⟩] := by decide +kernel
 
 private theorem completeScoped_equations :
     RuleExecutionProgram.scopedProgram.equations.filter (fun row => completeProofHeads row.head) = completeScopedMetadataEquations := by
@@ -433,7 +435,7 @@ private theorem completeScoped_equations :
 
 private theorem completeScoped_declarations_indices :
     (List.finRange RuleExecutionProgram.scopedProgram.declarations.length).filter (fun index => (retainedCallDeclaration completeProofHeads) (RuleExecutionProgram.scopedProgram.declarations.get index)) =
-      [⟨0, by decide +kernel⟩, ⟨1, by decide +kernel⟩, ⟨2, by decide +kernel⟩, ⟨118, by decide +kernel⟩, ⟨146, by decide +kernel⟩, ⟨148, by decide +kernel⟩, ⟨173, by decide +kernel⟩, ⟨174, by decide +kernel⟩, ⟨179, by decide +kernel⟩, ⟨196, by decide +kernel⟩, ⟨198, by decide +kernel⟩, ⟨218, by decide +kernel⟩, ⟨219, by decide +kernel⟩] := by decide +kernel
+      [⟨0, by decide +kernel⟩, ⟨1, by decide +kernel⟩, ⟨2, by decide +kernel⟩, ⟨118, by decide +kernel⟩, ⟨146, by decide +kernel⟩, ⟨148, by decide +kernel⟩, ⟨173, by decide +kernel⟩, ⟨174, by decide +kernel⟩, ⟨179, by decide +kernel⟩, ⟨205, by decide +kernel⟩, ⟨207, by decide +kernel⟩, ⟨227, by decide +kernel⟩, ⟨228, by decide +kernel⟩] := by decide +kernel
 
 private theorem completeScoped_declarations :
     RuleExecutionProgram.scopedProgram.declarations.filter (retainedCallDeclaration completeProofHeads) = completeScopedMetadataDeclarations := by
@@ -663,16 +665,16 @@ private def descentScopedMetadataEquations : List Equation := [
     RuleExecutionProgram.scopedProgram.equations[156]'(by decide +kernel),
     RuleExecutionProgram.scopedProgram.equations[166]'(by decide +kernel),
     RuleExecutionProgram.scopedProgram.equations[169]'(by decide +kernel),
-    RuleExecutionProgram.scopedProgram.equations[196]'(by decide +kernel),
-    RuleExecutionProgram.scopedProgram.equations[198]'(by decide +kernel),
-    RuleExecutionProgram.scopedProgram.equations[203]'(by decide +kernel),
-    RuleExecutionProgram.scopedProgram.equations[213]'(by decide +kernel),
-    RuleExecutionProgram.scopedProgram.equations[214]'(by decide +kernel),
-    RuleExecutionProgram.scopedProgram.equations[220]'(by decide +kernel),
-    RuleExecutionProgram.scopedProgram.equations[221]'(by decide +kernel),
+    RuleExecutionProgram.scopedProgram.equations[205]'(by decide +kernel),
+    RuleExecutionProgram.scopedProgram.equations[207]'(by decide +kernel),
+    RuleExecutionProgram.scopedProgram.equations[212]'(by decide +kernel),
     RuleExecutionProgram.scopedProgram.equations[222]'(by decide +kernel),
     RuleExecutionProgram.scopedProgram.equations[223]'(by decide +kernel),
-    RuleExecutionProgram.scopedProgram.equations[224]'(by decide +kernel)
+    RuleExecutionProgram.scopedProgram.equations[229]'(by decide +kernel),
+    RuleExecutionProgram.scopedProgram.equations[230]'(by decide +kernel),
+    RuleExecutionProgram.scopedProgram.equations[231]'(by decide +kernel),
+    RuleExecutionProgram.scopedProgram.equations[232]'(by decide +kernel),
+    RuleExecutionProgram.scopedProgram.equations[233]'(by decide +kernel)
   ]
 
 private def descentScopedMetadataDeclarations : List Atom := [
@@ -693,16 +695,16 @@ private def descentScopedMetadataDeclarations : List Atom := [
     RuleExecutionProgram.scopedProgram.declarations[156]'(by decide +kernel),
     RuleExecutionProgram.scopedProgram.declarations[166]'(by decide +kernel),
     RuleExecutionProgram.scopedProgram.declarations[169]'(by decide +kernel),
-    RuleExecutionProgram.scopedProgram.declarations[196]'(by decide +kernel),
-    RuleExecutionProgram.scopedProgram.declarations[198]'(by decide +kernel),
-    RuleExecutionProgram.scopedProgram.declarations[203]'(by decide +kernel),
-    RuleExecutionProgram.scopedProgram.declarations[213]'(by decide +kernel),
-    RuleExecutionProgram.scopedProgram.declarations[214]'(by decide +kernel),
-    RuleExecutionProgram.scopedProgram.declarations[220]'(by decide +kernel),
-    RuleExecutionProgram.scopedProgram.declarations[221]'(by decide +kernel),
+    RuleExecutionProgram.scopedProgram.declarations[205]'(by decide +kernel),
+    RuleExecutionProgram.scopedProgram.declarations[207]'(by decide +kernel),
+    RuleExecutionProgram.scopedProgram.declarations[212]'(by decide +kernel),
     RuleExecutionProgram.scopedProgram.declarations[222]'(by decide +kernel),
     RuleExecutionProgram.scopedProgram.declarations[223]'(by decide +kernel),
-    RuleExecutionProgram.scopedProgram.declarations[224]'(by decide +kernel)
+    RuleExecutionProgram.scopedProgram.declarations[229]'(by decide +kernel),
+    RuleExecutionProgram.scopedProgram.declarations[230]'(by decide +kernel),
+    RuleExecutionProgram.scopedProgram.declarations[231]'(by decide +kernel),
+    RuleExecutionProgram.scopedProgram.declarations[232]'(by decide +kernel),
+    RuleExecutionProgram.scopedProgram.declarations[233]'(by decide +kernel)
   ]
 
 private def descentMetadataBase : Program where
@@ -759,7 +761,7 @@ private def descentLateSources : List ProgramQuotation.QuotedProgram :=
 
 private theorem descentScoped_equations_indices :
     (List.finRange RuleExecutionProgram.scopedProgram.equations.length).filter (fun index => (fun row => descentProofHeads row.head) (RuleExecutionProgram.scopedProgram.equations.get index)) =
-      [⟨0, by decide +kernel⟩, ⟨1, by decide +kernel⟩, ⟨32, by decide +kernel⟩, ⟨65, by decide +kernel⟩, ⟨92, by decide +kernel⟩, ⟨126, by decide +kernel⟩, ⟨130, by decide +kernel⟩, ⟨132, by decide +kernel⟩, ⟨133, by decide +kernel⟩, ⟨146, by decide +kernel⟩, ⟨148, by decide +kernel⟩, ⟨149, by decide +kernel⟩, ⟨150, by decide +kernel⟩, ⟨155, by decide +kernel⟩, ⟨156, by decide +kernel⟩, ⟨166, by decide +kernel⟩, ⟨169, by decide +kernel⟩, ⟨196, by decide +kernel⟩, ⟨198, by decide +kernel⟩, ⟨203, by decide +kernel⟩, ⟨213, by decide +kernel⟩, ⟨214, by decide +kernel⟩, ⟨220, by decide +kernel⟩, ⟨221, by decide +kernel⟩, ⟨222, by decide +kernel⟩, ⟨223, by decide +kernel⟩, ⟨224, by decide +kernel⟩] := by decide +kernel
+      [⟨0, by decide +kernel⟩, ⟨1, by decide +kernel⟩, ⟨32, by decide +kernel⟩, ⟨65, by decide +kernel⟩, ⟨92, by decide +kernel⟩, ⟨126, by decide +kernel⟩, ⟨130, by decide +kernel⟩, ⟨132, by decide +kernel⟩, ⟨133, by decide +kernel⟩, ⟨146, by decide +kernel⟩, ⟨148, by decide +kernel⟩, ⟨149, by decide +kernel⟩, ⟨150, by decide +kernel⟩, ⟨155, by decide +kernel⟩, ⟨156, by decide +kernel⟩, ⟨166, by decide +kernel⟩, ⟨169, by decide +kernel⟩, ⟨205, by decide +kernel⟩, ⟨207, by decide +kernel⟩, ⟨212, by decide +kernel⟩, ⟨222, by decide +kernel⟩, ⟨223, by decide +kernel⟩, ⟨229, by decide +kernel⟩, ⟨230, by decide +kernel⟩, ⟨231, by decide +kernel⟩, ⟨232, by decide +kernel⟩, ⟨233, by decide +kernel⟩] := by decide +kernel
 
 private theorem descentScoped_equations :
     RuleExecutionProgram.scopedProgram.equations.filter (fun row => descentProofHeads row.head) = descentScopedMetadataEquations := by
@@ -806,7 +808,7 @@ theorem descentProof_physical_equations : descentProofLibrary.runtime.equations 
 
 private theorem descentScoped_declarations_indices :
     (List.finRange RuleExecutionProgram.scopedProgram.declarations.length).filter (fun index => (retainedCallDeclaration descentProofHeads) (RuleExecutionProgram.scopedProgram.declarations.get index)) =
-      [⟨0, by decide +kernel⟩, ⟨1, by decide +kernel⟩, ⟨32, by decide +kernel⟩, ⟨65, by decide +kernel⟩, ⟨92, by decide +kernel⟩, ⟨126, by decide +kernel⟩, ⟨130, by decide +kernel⟩, ⟨132, by decide +kernel⟩, ⟨133, by decide +kernel⟩, ⟨146, by decide +kernel⟩, ⟨148, by decide +kernel⟩, ⟨149, by decide +kernel⟩, ⟨150, by decide +kernel⟩, ⟨155, by decide +kernel⟩, ⟨156, by decide +kernel⟩, ⟨166, by decide +kernel⟩, ⟨169, by decide +kernel⟩, ⟨196, by decide +kernel⟩, ⟨198, by decide +kernel⟩, ⟨203, by decide +kernel⟩, ⟨213, by decide +kernel⟩, ⟨214, by decide +kernel⟩, ⟨220, by decide +kernel⟩, ⟨221, by decide +kernel⟩, ⟨222, by decide +kernel⟩, ⟨223, by decide +kernel⟩, ⟨224, by decide +kernel⟩] := by decide +kernel
+      [⟨0, by decide +kernel⟩, ⟨1, by decide +kernel⟩, ⟨32, by decide +kernel⟩, ⟨65, by decide +kernel⟩, ⟨92, by decide +kernel⟩, ⟨126, by decide +kernel⟩, ⟨130, by decide +kernel⟩, ⟨132, by decide +kernel⟩, ⟨133, by decide +kernel⟩, ⟨146, by decide +kernel⟩, ⟨148, by decide +kernel⟩, ⟨149, by decide +kernel⟩, ⟨150, by decide +kernel⟩, ⟨155, by decide +kernel⟩, ⟨156, by decide +kernel⟩, ⟨166, by decide +kernel⟩, ⟨169, by decide +kernel⟩, ⟨205, by decide +kernel⟩, ⟨207, by decide +kernel⟩, ⟨212, by decide +kernel⟩, ⟨222, by decide +kernel⟩, ⟨223, by decide +kernel⟩, ⟨229, by decide +kernel⟩, ⟨230, by decide +kernel⟩, ⟨231, by decide +kernel⟩, ⟨232, by decide +kernel⟩, ⟨233, by decide +kernel⟩] := by decide +kernel
 
 private theorem descentScoped_declarations :
     RuleExecutionProgram.scopedProgram.declarations.filter (retainedCallDeclaration descentProofHeads) = descentScopedMetadataDeclarations := by
@@ -943,11 +945,9 @@ def sources : List ProgramQuotation.QuotedProgram :=
   oldSources.take 13 ++ [continuationSource] ++ (oldSources.drop 14).take 3 ++
     [collectorSource] ++ (oldSources.drop 18).take 2 ++ [occurrenceSource] ++ oldSources.drop 21
 def runtime : Program :=
-  let base := RuleExecutionProgram.callFragmentWhere
-    (fun head => !head.startsWith "gslt:premise:matching-") RuleExecutionProgram.scopedProgram
-  let support := sources.foldl (fun loaded part => loaded.append part.program) base
-  support.append (RuleExecutionProgram.callFragmentWhere
-    (fun head => head.startsWith "gslt:premise:matching-") RuleExecutionProgram.scopedProgram)
+  let support := sources.foldl (fun loaded part => loaded.append part.program)
+    RuleExecutionProgram.interpretedPremiseBase
+  support.append RuleExecutionProgram.interpretedPremiseMatching
 def excluded : List String := ["gslt:collection-continuation:begin", "gslt:collection-continuation:publication", "gslt:collection-continuation:results", "gslt:collection-continuation:run", "gslt:explore:begin", "gslt:explore:children", "gslt:explore:edges", "gslt:explore:expand", "gslt:explore:expand-all", "gslt:explore:node-edges", "gslt:explore:receipt-edges", "gslt:explore:rounds", "gslt:explore:settled", "gslt:explore:step", "gslt:occurrence-batch:advance-frames", "gslt:occurrence-batch:frame-begin", "gslt:occurrence-batch:frame-publication", "gslt:occurrence-batch:frame-run", "gslt:occurrence-batch:resume", "gslt:occurrence-batch:run", "gslt:occurrence-collector:advance-lane", "gslt:occurrence-collector:advance-lanes", "gslt:occurrence-collector:allocate", "gslt:occurrence-collector:collect", "gslt:occurrence-machine:round", "gslt:occurrence-machine:run", "gslt:occurrence-search:finish", "gslt:occurrence-search:frames-idle", "gslt:occurrence-search:frames-resolved", "gslt:occurrence-search:lanes-complete", "gslt:occurrence-search:publication", "gslt:occurrence-search:read-committed", "gslt:occurrence-search:read-log", "gslt:occurrence-search:resume", "gslt:occurrence-search:run", "gslt:occurrence-search:status", "gslt:occurrence-search:target", "gslt:occurrence-search:with-state", "gslt:runner:advance", "gslt:runner:begin", "gslt:runner:target", "gslt:runner:tick", "gslt:search:publication", "gslt:search:resume", "gslt:search:run", "gslt:search:status", "gslt:search:target", "gslt:occurrence-search:key-event", "gslt:occurrence-search:key-history", "gslt:occurrence-search:key-elements", "gslt:occurrence-search:key-binding", "gslt:occurrence-search:key-values", "gslt:occurrence-search:key-extract", "gslt:occurrence-search:key-project", "gslt:occurrence-search:key-unique", "gslt:occurrence-search:key-binary", "gslt:occurrence-search:key-conclusions", "gslt:occurrence-search:key-bag", "gslt:occurrence-search:key-facts"]
 def lowerHeads (head : String) : Bool := !excluded.contains head && !head.startsWith "native-probe:"
 
@@ -1006,12 +1006,14 @@ theorem lower_agreement : ProgramAgreementOn lowerHeads RuleExecutionProgram.int
   apply programAgreementOn_of_retained_rows
   · have same := support_equations_agree
     unfold oldSources at same
-    simp only [RuleExecutionProgram.interpretedPremiseProgram, runtime, append_equations,
+    simp only [RuleExecutionProgram.interpretedPremiseProgram, RuleExecutionProgram.interpretedPremiseBase.selected,
+      RuleExecutionProgram.interpretedPremiseMatching.selected, runtime, append_equations,
       CompleteExecution.PhysicalSourceAgreement.fold_equations, List.filter_append]
     rw [same]
   · have same := support_declarations_agree
     unfold oldSources at same
-    simp only [RuleExecutionProgram.interpretedPremiseProgram, runtime, append_declarations,
+    simp only [RuleExecutionProgram.interpretedPremiseProgram, RuleExecutionProgram.interpretedPremiseBase.selected,
+      RuleExecutionProgram.interpretedPremiseMatching.selected, runtime, append_declarations,
       CompleteExecution.PhysicalSourceAgreement.fold_declarations, List.filter_append]
     rw [same]
 
@@ -1237,9 +1239,9 @@ theorem transport_lower {caller : Mettapedia.Languages.ProcessCalculi.MORK.Subst
   transport lower_closed lower_agreement within returned
 
 
-theorem runtime_equation_count : runtime.equations.length = 579 := by decide +kernel
+theorem runtime_equation_count : runtime.equations.length = 588 := by decide +kernel
 
-theorem runtime_declaration_count : runtime.declarations.length = 579 := by decide +kernel
+theorem runtime_declaration_count : runtime.declarations.length = 588 := by decide +kernel
 
 theorem observer_heads_not_lower :
     (occurrenceSource.program.equations.drop 12).all (fun row => !lowerHeads row.head) = true := by
@@ -1669,7 +1671,8 @@ theorem named_equations (head : String) :
     (fun row selected => by
       have same : row.head = head := by simpa using selected
       exact congrArg (fun name => !matching name) same)
-  simp only [SelectedNativeSource.runtime, append_equations, fold_equations,
+  simp only [SelectedNativeSource.runtime, RuleExecutionProgram.interpretedPremiseBase.selected,
+    RuleExecutionProgram.interpretedPremiseMatching.selected, append_equations, fold_equations,
     RuleExecutionProgram.callFragmentWhere, List.filter_append]
   change _ ++ supportEquations.filter _ = (_ ++ supportEquations.filter _) ++ _
   rw [show (fun row : Equation => row.head.startsWith "gslt:premise:matching-") =
@@ -1693,7 +1696,8 @@ theorem named_declarations (head : String) :
   have no := filtered_constant RuleExecutionProgram.scopedProgram.declarations
     (retainedCallDeclaration (fun name => !matching name)) (retainedCallDeclaration (fun name => name == head))
     (!matching head) (fun row selected => declaration_constant (fun name => !matching name) head row selected)
-  simp only [SelectedNativeSource.runtime, append_declarations, fold_declarations,
+  simp only [SelectedNativeSource.runtime, RuleExecutionProgram.interpretedPremiseBase.selected,
+    RuleExecutionProgram.interpretedPremiseMatching.selected, append_declarations, fold_declarations,
     RuleExecutionProgram.callFragmentWhere, List.filter_append]
   change _ ++ supportDeclarations.filter _ = (_ ++ supportDeclarations.filter _) ++ _
   rw [show (fun name => name.startsWith "gslt:premise:matching-") = matching from rfl]

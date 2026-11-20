@@ -80,8 +80,13 @@ theorem unrelated_state_is_preserved_not_replaced :
   have value : prepared.values = [integer 4] := by decide +kernel
   simp [Certified.region, valid, value]
 
-theorem missing_space_is_not_certified_empty :
-    (prepare 12 program [] state (query (.symbol "not-a-space"))).isNone = true := by decide +kernel
+theorem unallocated_private_space_is_not_certified_empty :
+    (prepare 12 program [] state (query (Effects.handleValue (.privateSpace 0)))).isNone = true := by
+  decide +kernel
+
+theorem unused_ordinary_name_is_certified_empty :
+    (prepare 12 program [] state (query (.symbol "unused"))).map (·.values) = some [] := by
+  decide +kernel
 
 theorem empty_space_is_successfully_empty :
     (prepare 12 program [] (NamedSpaces.Store.new [] []) counted).map (·.values) = some [integer 0] := by decide +kernel

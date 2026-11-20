@@ -85,10 +85,10 @@ theorem pure_firing (taken made : List Site) : Pure (firing (S := S) τ taken ma
 same records, and the second firing has an empty causal past in the first run and the first firing
 in its causal past in the second. -/
 theorem records_blind_to_causality (A : SubstitutionAction T S) {C D : Configuration T Site} :
-    ((AnnotatedRuns.choiceEscape A (label τ)).records (s := C) (takeA (S := S) τ) ++
-        (AnnotatedRuns.choiceEscape A (label τ)).records (s := C) (takeB (S := S) τ) =
-      (AnnotatedRuns.choiceEscape A (label τ)).records (s := D) (takeAmakeB (S := S) τ) ++
-        (AnnotatedRuns.choiceEscape A (label τ)).records (s := D) (takeB (S := S) τ)) ∧
+    ((AnnotatedRuns.choiceEscape A (label τ)).records (s := C) ⟨takeA (S := S) τ,⟨[],rfl⟩⟩ ++
+        (AnnotatedRuns.choiceEscape A (label τ)).records (s := C) ⟨takeB (S := S) τ,⟨[],rfl⟩⟩ =
+      (AnnotatedRuns.choiceEscape A (label τ)).records (s := D) ⟨takeAmakeB (S := S) τ,⟨[],rfl⟩⟩ ++
+        (AnnotatedRuns.choiceEscape A (label τ)).records (s := D) ⟨takeB (S := S) τ,⟨[],rfl⟩⟩) ∧
       past (label τ) [(takeA (S := S) τ, (∅ : Finset ℕ))] (takeB τ) = ∅ ∧
       0 ∈ past (label τ) [(takeAmakeB (S := S) τ, (∅ : Finset ℕ))] (takeB τ) := by
   have : Nonempty S := ⟨A.identity⟩

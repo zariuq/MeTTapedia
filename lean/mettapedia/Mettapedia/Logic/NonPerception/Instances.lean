@@ -1,6 +1,6 @@
 import Mettapedia.Logic.NonPerception
-import Mettapedia.GSLT.Topos.PresheafEventAbsence
-import Mettapedia.OSLF.Syntax.RhoScopedNativeAbsence
+import Mettapedia.GSLT.Topos.PresheafEventNone
+import Mettapedia.OSLF.Syntax.RhoScopedNativeNone
 import Mettapedia.OSLF.NativeTypes.Decision.Reference.Core
 import Mettapedia.GSLT.Logic.ObserverBubble
 import Mettapedia.Logic.Propositions.Totality
@@ -54,7 +54,7 @@ open Mettapedia.Logic.NonPerception
 
 section Presheaf
 
-open _root_.CategoryTheory Mettapedia.GSLT.Topos.PresheafEventAbsence
+open _root_.CategoryTheory Mettapedia.GSLT.Topos.PresheafEventNone
 
 universe u v w
 
@@ -72,9 +72,9 @@ def presheafFrame (source : E ⟶ P) (admitted : Subfunctor E) :
 /-- Native absence is the frame's absence. -/
 theorem presheaf_absent_iff (source : E ⟶ P) (admitted : Subfunctor E)
     (world : Cᵒᵖ) (program : P.obj world) :
-    program ∈ (absent source admitted).obj world ↔
+    program ∈ (noneEnabled source admitted).obj world ↔
       (presheafFrame source admitted).Absent ⟨world, program⟩ := by
-  rw [mem_absent]
+  rw [mem_noneEnabled]
   constructor
   · intro holds later future perceived
     obtain ⟨change, equal⟩ := future
@@ -99,7 +99,7 @@ theorem reflectsAvailability_iff_perceptible (source : E ⟶ P) (admitted : Subf
 /-- **Present absence is native negation under reflection**, from the law. -/
 theorem presheaf_absent_iff_present (source : E ⟶ P) (admitted : Subfunctor E)
     (reflection : ReflectsAvailability source admitted) (world : Cᵒᵖ) (program : P.obj world) :
-    program ∈ (absent source admitted).obj world ↔
+    program ∈ (noneEnabled source admitted).obj world ↔
       ¬ ∃ event : E.obj world, event ∈ admitted.obj world ∧ source.app world event = program := by
   rw [presheaf_absent_iff]
   exact Frame.absent_iff_not_perceived
@@ -111,16 +111,16 @@ end Presheaf
 
 section Rho
 
-open _root_.CategoryTheory Mettapedia.GSLT.Topos.PresheafEventAbsence
+open _root_.CategoryTheory Mettapedia.GSLT.Topos.PresheafEventNone
 open Mettapedia.OSLF.Binding RhoSchema RhoQuotationClassFibres RhoScopedParallelEvents
-open RhoScopedEventPresheaf SyntacticRetractionContexts SyntacticRetractionEventAbsence
-open RhoScopedNativeAbsence
+open RhoScopedEventPresheaf SyntacticRetractionContexts SyntacticRetractionEventNone
+open RhoScopedNativeNone
 
 /-- **Native absence of a reaction over retractable futures is current
 non-enabledness**: the law on the restricted site, whose source fibres reflect. -/
 theorem rho_permitted_absence_iff_current (admitted : SourceRule → Prop)
     (world : (Object sig)ᵒᵖ) (process : Process world.unop.context.vars) :
-    process ∈ (permittedAbsent admitted).obj world ↔ ¬ Enabled admitted process := by
+    process ∈ (permittedNone admitted).obj world ↔ ¬ Enabled admitted process := by
   have law := presheaf_absent_iff_present (restrictSource (source admitted)) ⊤
     (source_fibre_reflection (source admitted)) world process
   simp only [Subfunctor.top_obj, Set.top_eq_univ, Set.mem_univ, true_and] at law

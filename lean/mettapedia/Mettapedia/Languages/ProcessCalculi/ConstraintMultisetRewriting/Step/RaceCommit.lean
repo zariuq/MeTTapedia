@@ -77,10 +77,8 @@ def CommitsWithRecord (competitors : List (Firing T S O)) (r : Record O)
 queries. -/
 theorem choiceEscape_records (A : SubstitutionAction T S) (label : O → T) {C : Configuration T O}
     {f : Firing T S O} (noQueries : f.queries = []) :
-    (AnnotatedRuns.choiceEscape A label).records (s := C) f = Record.references f.selection.taken := by
-  show Observation.querySightings f.queries ++ _ = _
-  rw [noQueries]
-  rfl
+    (AnnotatedRuns.choiceEscape A label).records (s := C) ⟨f,⟨[],noQueries⟩⟩ =
+      Record.references f.selection.taken := rfl
 
 omit [DecidableEq O] in
 /-- **The record-carrying commit is equivariant**: when the competitors are closed under a renaming,

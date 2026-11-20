@@ -76,19 +76,19 @@ def acquisition : Pattern := .apply "NQuote" [output spent zero]
 def trigger : Pattern := output pop zero
 
 theorem metabolic_typed (bound : List String) :
-    NameWellSorted rhoReflectivePresentation FreeSortContext.empty bound metabolic := .quote .unit
+    NameWellSorted rhoReflectivePresentation FreeSortContext.empty bound metabolic := .quote .unit (by decide)
 
 theorem pop_typed (bound : List String) :
     NameWellSorted rhoReflectivePresentation FreeSortContext.empty bound pop :=
-  .quote (.output (metabolic_typed _) .unit)
+  .quote (.output (metabolic_typed _) .unit) (by decide)
 
 theorem spent_typed (bound : List String) :
     NameWellSorted rhoReflectivePresentation FreeSortContext.empty bound spent :=
-  .quote (.output (pop_typed _) .unit)
+  .quote (.output (pop_typed _) .unit) (by decide)
 
 theorem acquisition_typed (bound : List String) :
     NameWellSorted rhoReflectivePresentation FreeSortContext.empty bound acquisition :=
-  .quote (.output (spent_typed _) .unit)
+  .quote (.output (spent_typed _) .unit) (by decide)
 
 theorem names_safe (depth : Nat) :
     binderSafeAt "NQuote" depth metabolic = true ∧
@@ -159,7 +159,8 @@ theorem payload_substitution (encoding : Encoding Head) (stack : Stack Head)
   | cell head tail ih =>
       simp [payload, input, output, pop, metabolic, spent, zero,
         semanticSubstProc, semanticSubstProcList, semanticSubstName, semanticSubstNameMark,
-        semanticNormalizeName, semanticNormalizeProc, ih, encoding.substitution]
+        semanticNormalizeName, semanticNormalizeProc, canonicalize, canonicalizeList, normalizeQuote,
+        ih, encoding.substitution]
 
 theorem owner_typed (count : Nat) (bound : List String) :
     ProcWellSorted rhoReflectivePresentation FreeSortContext.empty bound (owner count) := by
@@ -190,7 +191,7 @@ theorem owner_substitution (count index : Nat) (replacement : Pattern) :
   | succ count ih =>
       simp [owner, input, trigger, output, metabolic, pop, zero,
         semanticSubstProc, semanticSubstProcList, semanticSubstName, semanticSubstNameMark,
-        semanticNormalizeName, semanticNormalizeProc, ih]
+        semanticNormalizeName, semanticNormalizeProc, canonicalize, canonicalizeList, normalizeQuote, ih]
 
 theorem owner_body_typed (count : Nat) :
     ProcWellSorted rhoReflectivePresentation FreeSortContext.empty [rhoReflectivePresentation.nameSort]
@@ -205,6 +206,7 @@ theorem reclaim_substitution (encoding : Encoding Head) (stack : Stack Head) (co
       .collection .hashBag [payload encoding stack, trigger, owner count] none := by
   simp [semanticCommSubst, semanticSubstProc, semanticSubstProcList,
     semanticSubstName, semanticSubstNameMark, semanticNormalizeName, semanticNormalizeProc,
+    canonicalize, canonicalizeList, normalizeQuote,
     payload_normalize, owner_substitution, trigger, pop, metabolic, output, zero]
 
 theorem pop_substitution (encoding : Encoding Head) (head : Head) (tail : Stack Head) :
@@ -213,12 +215,14 @@ theorem pop_substitution (encoding : Encoding Head) (head : Head) (tail : Stack 
       .collection .hashBag [message encoding tail, burned encoding head] none := by
   simp [semanticCommSubst, semanticSubstProc, semanticSubstProcList,
     semanticSubstName, semanticSubstNameMark, semanticNormalizeName, semanticNormalizeProc,
+    canonicalize, canonicalizeList, normalizeQuote,
     message, burned, metabolic, spent, pop, output, zero, payload_substitution, encoding.substitution]
 
 theorem acquisition_substitution (encoding : Encoding Head) (stack : Stack Head) :
     semanticCommSubst (output metabolic (.apply "PDrop" [.bvar 0])) (payload encoding stack) =
       message encoding stack := by
   simp [semanticCommSubst, semanticSubstProc, semanticSubstName, semanticSubstNameMark,
+    canonicalize, canonicalizeList, normalizeQuote,
     semanticNormalizeName, semanticNormalizeProc, payload_normalize, message, output, metabolic, zero]
 
 def closedProcess (pattern : Pattern)

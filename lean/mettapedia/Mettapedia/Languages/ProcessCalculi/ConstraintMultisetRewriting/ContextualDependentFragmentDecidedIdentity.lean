@@ -149,16 +149,16 @@ theorem identityFirm_kept {Θ : Context S.R} (equation : Equation (TotalTerm Θ)
             obtain ⟨closedFirm, clash⟩ := afterForm
             have closedKept := readingFirm_kept facts roots heads algebra declared choices reducer root stable
               firstClosed.equation closedFirm larger enough
-            obtain ⟨absent, clashRun⟩ := Option.isSome_iff_exists.mp clash
+            obtain ⟨missing, clashRun⟩ := Option.isSome_iff_exists.mp clash
             have clashKept : ContextualDependentRigidDecomposition.localsClash rigid complete facts roots heads
                 algebra declared choices reducer root larger firstClosed.equation (secondClosed.equation :: rest) =
-                  some absent := by
+                  some missing := by
               rw [← clashRun]
               unfold ContextualDependentRigidDecomposition.localsClash
               erw [closedKept]
             have localsFire : ContextualDependentRigidDecomposition.localsRule rigid complete facts roots heads algebra
                 declared choices reducer root larger (firstClosed.equation :: secondClosed.equation :: rest) =
-                  some absent := by
+                  some missing := by
               simp only [ContextualDependentRigidDecomposition.localsRule, clashKept]
             rw [localsFire]
             rfl
@@ -200,7 +200,7 @@ theorem identityRound_view (fuel : Nat) {Θ : Context S.R} (problem : EquationSt
   split
   · rename_i update smaller computed
     simp only [computed, roundView, foundView, Option.map_some]
-  · rename_i absent computed
+  · rename_i missing computed
     simp only [computed, roundView, foundView, Option.map_none]
   · rename_i computed
     first | rfl | simp only [computed, foundView]
@@ -213,34 +213,34 @@ theorem identityRound_refuted_of_firm {Θ : Context S.R} (equation : Equation (T
     (codes : ∀ other ∈ [equation], StoppedTerm root other.1 ∧ StoppedTerm root other.2) {budget : Nat}
     (firm : identityFirm facts roots heads algebra declared choices reducer rigid complete root budget equation [] =
       true) :
-    ∀ larger, budget ≤ larger → ∃ absent,
+    ∀ larger, budget ≤ larger → ∃ missing,
       identityRound facts roots heads algebra declared choices reducer rigid complete root normalizes certifyNormal
-        headTypingUnique rootComplete larger [equation] = .refuted absent := by
+        headTypingUnique rootComplete larger [equation] = .refuted missing := by
   intro larger enough
   have refutes := identityFirm_kept facts roots heads algebra declared choices reducer rigid complete root
     normalizes certifyNormal stable equation [] firm larger enough
-  obtain ⟨absent, refuted⟩ : ∃ absent, idDecomposeEquation facts roots heads algebra declared choices reducer rigid
-      complete root normalizes certifyNormal larger equation [] = some (.refuted absent) := by
+  obtain ⟨missing, refuted⟩ : ∃ missing, idDecomposeEquation facts roots heads algebra declared choices reducer rigid
+      complete root normalizes certifyNormal larger equation [] = some (.refuted missing) := by
     cases computed : idDecomposeEquation facts roots heads algebra declared choices reducer rigid complete root
         normalizes certifyNormal larger equation [] with
     | none => rw [computed] at refutes; cases refutes
     | some found =>
         cases found with
         | solved update smaller => rw [computed] at refutes; cases refutes
-        | refuted absent => exact ⟨absent, rfl⟩
-  have searched : ∃ absent, idDecomposeSearch facts roots heads algebra declared choices reducer rigid complete root
+        | refuted missing => exact ⟨missing, rfl⟩
+  have searched : ∃ missing, idDecomposeSearch facts roots heads algebra declared choices reducer rigid complete root
       normalizes certifyNormal larger (ContextualDependentNormalizing.prepare root rootComplete facts roots heads larger
-        [equation]).remaining = some (.refuted absent) := by
+        [equation]).remaining = some (.refuted missing) := by
     rw [prepare_stopped root rootComplete facts roots heads larger [equation] context codes]
-    exact ⟨absent, by simp only [Update.pending, idDecomposeSearch, refuted]⟩
-  obtain ⟨absent', computed⟩ := searched
+    exact ⟨missing, by simp only [Update.pending, idDecomposeSearch, refuted]⟩
+  obtain ⟨missing', computed⟩ := searched
   unfold identityRound
   split
   · rename_i update smaller found
     rw [computed] at found
     cases found
-  · rename_i absent'' _
-    exact ⟨fun solvable => absent'' ((ContextualDependentNormalizing.prepare root rootComplete facts roots heads larger
+  · rename_i missing'' _
+    exact ⟨fun solvable => missing'' ((ContextualDependentNormalizing.prepare root rootComplete facts roots heads larger
       [equation]).solvable_iff.mp solvable), rfl⟩
   · rename_i found
     rw [computed] at found
@@ -265,7 +265,7 @@ def identitySettled {Θ : Context S.R} (equation : Equation (TotalTerm Θ))
     subst isStore
     have refutes := identityRound_refuted_of_firm facts roots heads algebra declared choices reducer rigid complete
       root normalizes certifyNormal headTypingUnique stable rootComplete equation context codes firm
-    obtain ⟨absent, atBudget⟩ := refutes budget le_rfl
+    obtain ⟨missing, atBudget⟩ := refutes budget le_rfl
     refine ⟨budget, ?_, fun fuel enough => ?_, ?_⟩
     · change identityRound facts roots heads algebra declared choices reducer rigid complete root normalizes
         certifyNormal headTypingUnique rootComplete budget [equation] ≠ .stuck
@@ -276,7 +276,7 @@ def identitySettled {Θ : Context S.R} (equation : Equation (TotalTerm Θ))
         certifyNormal headTypingUnique rootComplete fuel [equation] =
           identityRound facts roots heads algebra declared choices reducer rigid complete root normalizes certifyNormal
             headTypingUnique rootComplete budget [equation]
-      obtain ⟨absent', atFuel⟩ := refutes fuel enough
+      obtain ⟨missing', atFuel⟩ := refutes fuel enough
       rw [atFuel, atBudget]
     · intro update smaller progressed
       change identityRound facts roots heads algebra declared choices reducer rigid complete root normalizes

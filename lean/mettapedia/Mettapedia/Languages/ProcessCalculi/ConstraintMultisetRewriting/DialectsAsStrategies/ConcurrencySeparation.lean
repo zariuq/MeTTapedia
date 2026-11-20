@@ -58,9 +58,9 @@ In CALM's terms (Hellerstein; Ameloot, Neven and Van den Bussche): a match estab
 snapshot that does not protect its region; the lock and the atomic firing are the two ways to
 protect it.
 
-* **Absence in a snapshot races too** (`snapshot_absence_races`): two threads that never remove,
+* **The none query in a snapshot races too** (`snapshot_none_races`): two threads that never remove,
   each adding an atom and then matching the other's, both answer under interleaving, while run one
-  after the other at most one answers. A match that comes back empty observes absence in its
+  after the other at most one answers. A match that comes back empty observes none queries in its
   snapshot, so in PeTTa even reading and adding needs coordination. The step's rules that read and
   make, whose reads wait for their atoms, need none: they reach the same facts in every order
   (`MonotoneInference.confluent`, used in `LanguageOnTheStep`). That is sufficiency; no theorem here
@@ -199,9 +199,9 @@ theorem run_remove_present (pol : Removal) {a : α} {s : Multiset α} (present :
   · rfl
   · rw [if_pos rfl, filter_ne_eq_erase (single h)]
 
-theorem run_remove_absent (pol : Removal) {a : α} {s : Multiset α} (absent : a ∉ s) :
+theorem run_remove_not_present (pol : Removal) {a : α} {s : Multiset α} (notMem : a ∉ s) :
     (Op.remove a).run pol s = if pol.checked then none else some s := by
-  simp only [Op.run, Removal.apply, if_neg absent]
+  simp only [Op.run, Removal.apply, if_neg notMem]
 
 theorem run_query_pass (pol : Removal) {l : List α} {s : Multiset α} (present : ∀ a ∈ l, a ∈ s) :
     (Op.query l).run pol s = some s := by
@@ -699,21 +699,21 @@ theorem race (pol : Removal) :
   cases checked : pol.checked
   · -- unchecked removals: both threads go on, both answer, both outputs are made
     have a1 : (Op.remove 1).run pol (0 : Multiset ℕ) = some 0 := by
-      rw [run_remove_absent pol (by decide)]; simp [checked]
+      rw [run_remove_not_present pol (by decide)]; simp [checked]
     have a0 : (Op.remove 0).run pol ({2} : Multiset ℕ) = some {2} := by
-      rw [run_remove_absent pol (by decide)]; simp [checked]
+      rw [run_remove_not_present pol (by decide)]; simp [checked]
     refine ⟨({2, 1}, {3, 2}), common.trans ?_, notKept _ (by decide) _⟩
     exact .head (.op a1) <| .head (.op rfl) <| .head .finish <| .head (.op a0) <|
       .head (.op rfl) <| .single .finish
   · -- checked removals: both threads die, both atoms are lost, nothing is made
     have d1 : (Op.remove 1).run pol (0 : Multiset ℕ) = none := by
-      rw [run_remove_absent pol (by decide)]; simp [checked]
+      rw [run_remove_not_present pol (by decide)]; simp [checked]
     have d0 : (Op.remove 0).run pol (0 : Multiset ℕ) = none := by
-      rw [run_remove_absent pol (by decide)]; simp [checked]
+      rw [run_remove_not_present pol (by decide)]; simp [checked]
     refine ⟨(0, 0), common.trans ?_, notKept _ (by decide) _⟩
     exact .head (.die d1) <| .single (.die d0)
 
-/-! ## Absence in a snapshot races too -/
+/-! ## The none query in a snapshot races too -/
 
 theorem run_query_fail (pol : Removal) {l : List α} {s : Multiset α} (missing : ¬ ∀ a ∈ l, a ∈ s) :
     (Op.query l).run pol s = none := by
@@ -828,12 +828,12 @@ theorem oneWriter_step (pol : Removal) {x y : SConfig ℕ (List (Op ℕ) × ℕ)
         rfl
       · exact absurd hp (List.cons_ne_nil t ts)
 
-/-- **Absence in a snapshot races too.** Two threads that never remove anything, each adding an atom
+/-- **The none query in a snapshot races too.** Two threads that never remove anything, each adding an atom
 and then matching the other's, answer both under interleaving; one after the other, at most one
-answers. A match that comes back empty observes absence in its snapshot, so even reading and adding
+answers. A match that comes back empty observes none queries in its snapshot, so even reading and adding
 needs coordination in PeTTa; the coordination-free fragment is the one whose reads wait for their
 atoms, the step's monotone rules (`MonotoneInference.confluent`). -/
-theorem snapshot_absence_races (pol : Removal) :
+theorem snapshot_none_races (pol : Removal) :
     ∃ o ∈ interleavedOutcomes pol 0 [writeA, writeB],
       o ∉ serialOutcomes (bodies pol) Prod.snd 0 [writeA, writeB] := by
   have q2 : (Op.query [2]).run pol (2 ::ₘ 1 ::ₘ 0 : Multiset ℕ) = some (2 ::ₘ 1 ::ₘ 0) :=
@@ -894,7 +894,7 @@ theorem repeated_atom_inexact (pol : Removal) :
   have r : (Op.remove 0).run pol ({0} : Multiset ℕ) = some 0 :=
     (run_remove_present pol (by decide) (fun _ => by decide)).trans (by decide)
   have again : (Op.remove 0).run pol (0 : Multiset ℕ) = if pol.checked then none else some 0 :=
-    run_remove_absent pol (by decide)
+    run_remove_not_present pol (by decide)
   have code : twice.encode = [Op.query [0, 0], Op.remove 0, Op.remove 0, Op.add 1] := rfl
   rw [code, runOps_cons_some q, runOps_cons_some r]
   cases checked : pol.checked
@@ -950,7 +950,7 @@ end Controls
 #print axioms global_lock_exact
 #print axioms serial_sub_interleaved
 #print axioms race
-#print axioms snapshot_absence_races
+#print axioms snapshot_none_races
 #print axioms atomic_parallel
 #print axioms Controls.repeated_atom_inexact
 #print axioms Controls.remove_all_loses_copy

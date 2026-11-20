@@ -432,7 +432,7 @@ theorem closedReacts_of_step {source target : RhoProcess}
   obtain ⟨redex, contractum, sourceEquation, derivedStep, targetEquation⟩ := step
   have redexClosed := (rhoClosedTermWellSorted_process_iff redex.1).mp redex.2
   obtain ⟨reached, depthOne, reachedEq⟩ :=
-    canonicalStep_complete_of_rhoStep redexClosed.1 redexClosed.2 derivedStep
+    canonicalStep_complete_of_rhoStep redexClosed.1 derivedStep
   obtain ⟨bindings, matched, applied⟩ := rhoStepAt_one_inv depthOne
   obtain ⟨elements, termRest, inputIndex, inputBound, outputIndex, outputBound,
     inputChannel, body, inputBinder, outputChannel, payload, shape,
@@ -503,14 +503,16 @@ theorem closedReacts_of_step {source target : RhoProcess}
       ← Multiset.cons_coe, ← Multiset.cons_coe, Multiset.insert_eq_cons, Multiset.cons_add,
       Multiset.singleton_add, Multiset.cons_swap]
   · have reachedShape :
-        reached = .collection .hashBag (semanticCommSubst body payload :: residue) none := by
+        reached = .collection .hashBag (semanticCommSubst (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body) payload :: residue) none := by
       rw [← applied, bindingsEq]
-      exact apply_commBindingsAt bodyTyped payloadTyped elements inputIndex outputIndex
+      exact apply_commBindingsAt_resolved bodyTyped payloadTyped elements inputIndex outputIndex
         outputChannel
     have targetEq : canonicalize target.1 = canonicalize reached :=
       targetEquation.symm.trans reachedEq.symm
     rw [components_eq_iff_canonicalize_eq.mpr targetEq, reachedShape, components_parallel,
-      List.map_cons, List.sum_cons, residueSum]
+      List.map_cons, List.sum_cons, residueSum,
+      components_eq_iff_canonicalize_eq.mpr (Mettapedia.Languages.ProcessCalculi.RhoCalculus.SubstitutionCanonicalCommutation.canonicalize_semanticCommSubst_resolveQuotes bodyTyped
+        (rhoProcWellSorted_hashSetFree payloadTyped))]
 
 /-- Every reaction of a closed COMM instance on the components of a closed
 process is realized by a step of the established rho GSLT. -/
@@ -528,7 +530,6 @@ theorem step_of_closedReacts {source : RhoProcess} {channel body payload : Patte
     (List.mem_cons_of_mem _ List.mem_cons_self)
   obtain ⟨_, payloadTyped⟩ := rho_output_wellSorted_inv outputClosed.1
   obtain ⟨-, _, bodyTyped⟩ := rho_input_wellSorted_inv inputClosed.1
-  have bodySafe := (binderSafe_of_input inputClosed.2).2
   have perm : List.Perm (normalizeBagElements ([source.1].map canonicalize))
       (.apply "PInput" [canonicalize channel, .lambda none (canonicalize body)] ::
         .apply "POutput" [canonicalize channel, canonicalize payload] :: residue) := by
@@ -537,25 +538,29 @@ theorem step_of_closedReacts {source : RhoProcess} {channel body payload : Patte
     change components source.1 = _
     rw [sourceEq, components_commSource, ← Multiset.cons_coe, ← Multiset.cons_coe,
       Multiset.insert_eq_cons, Multiset.cons_add, Multiset.singleton_add, Multiset.cons_swap]
-  obtain ⟨tail, fired, tailPerm⟩ := canonical_comm_of_pair
-    (canonicalize_procWellSorted _ bodyTyped) (canonicalize_procWellSorted _ payloadTyped)
+  have canonicalBodyTyped := canonicalize_procWellSorted _ bodyTyped
+  have canonicalPayloadTyped := canonicalize_procWellSorted _ payloadTyped
+  obtain ⟨tail, fired, tailPerm⟩ := canonical_comm_of_pair_resolved
+    canonicalBodyTyped canonicalPayloadTyped
     ((rhoCanonicalEquivalent_iff _ _).mpr rfl) perm
   rw [canonicalize_parallel_singleton] at fired
   have derived : RhoStep (RhoClosedTerm.canonicalize source).1
       (.collection .hashBag
-        (semanticCommSubst (canonicalize body) (canonicalize payload) :: tail) none) :=
+        (semanticCommSubst (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation (canonicalize body)) (canonicalize payload) :: tail) none) :=
     ⟨1, fired⟩
   refine ⟨(RhoClosedTerm.canonicalize source).stepTarget derived,
     ⟨RhoClosedTerm.canonicalize source, (RhoClosedTerm.canonicalize source).stepTarget derived,
       (canonicalize_idempotent source.1).symm, derived, rfl⟩, ?_⟩
   change components (.collection .hashBag
-      (semanticCommSubst (canonicalize body) (canonicalize payload) :: tail) none) = _
+      (semanticCommSubst (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation (canonicalize body)) (canonicalize payload) :: tail) none) = _
   have tailSum : (tail.map components).sum = residue := by
     rw [← Multiset.coe_eq_coe.mpr tailPerm, coe_bagContents_eq_sum, List.map_map]
     rfl
   rw [components_parallel, List.map_cons, List.sum_cons, tailSum,
-    components_eq_iff_canonicalize_eq.mpr (canonicalize_semanticCommSubst_canonicalize
-      bodyTyped bodySafe (rhoProcWellSorted_hashSetFree payloadTyped))]
+    components_eq_iff_canonicalize_eq.mpr ((Mettapedia.Languages.ProcessCalculi.RhoCalculus.SubstitutionCanonicalCommutation.canonicalize_semanticCommSubst_resolveQuotes canonicalBodyTyped
+        (rhoProcWellSorted_hashSetFree canonicalPayloadTyped)).trans
+      (canonicalize_semanticCommSubst_canonicalize
+        bodyTyped (rhoProcWellSorted_hashSetFree payloadTyped)))]
 
 /-- **Adequacy of the bag reactive system for the established rho GSLT.**  A
 closed process steps to a target, modulo the rho equations, exactly when its
@@ -579,7 +584,7 @@ process. -/
 theorem sharedChannelSource_closed :
     RhoClosedTermWellSorted rhoProc (commSource closedNilName.1 inert inert) :=
   (rhoClosedTermWellSorted_process_iff _).mpr
-    ⟨.parallel (.cons (.output (.quote .unit) .unit) (.cons (.input (.quote .unit) .unit) .nil)),
+    ⟨.parallel (.cons (.output (.quote .unit (by decide)) .unit) (.cons (.input (.quote .unit (by decide)) .unit) .nil)),
       by decide⟩
 
 /-- **Positive control.**  COMM on the shared channel `@0` reacts, with the
@@ -638,8 +643,8 @@ def mismatchedChannels : RhoProcess :=
   ⟨.collection .hashBag
       [outputPartner.1, .apply "PInput" [otherName, .lambda none inert]] none,
     (rhoClosedTermWellSorted_process_iff _).mpr
-      ⟨.parallel (.cons (.output (.quote .unit) .unit)
-        (.cons (.input (.quote (.output (.quote .unit) .unit)) .unit) .nil)), by decide⟩⟩
+      ⟨.parallel (.cons (.output (.quote .unit (by decide)) .unit)
+        (.cons (.input (.quote (.output (.quote .unit (by decide)) .unit) (by decide)) .unit) .nil)), by decide⟩⟩
 
 /-- No COMM redex is among the components of `mismatchedChannels`. -/
 theorem mismatchedChannels_no_commRedex :
@@ -678,9 +683,9 @@ theorem mismatchedChannels_not_step (target : RhoProcess) :
 def guardedComm : RhoProcess :=
   ⟨.apply "PInput" [otherName, .lambda none (commSource closedNilName.1 inert inert)],
     (rhoClosedTermWellSorted_process_iff _).mpr
-      ⟨.input (.quote (.output (.quote .unit) .unit))
-        (.parallel (.cons (.output (.quote .unit) .unit)
-          (.cons (.input (.quote .unit) .unit) .nil))), by decide⟩⟩
+      ⟨.input (.quote (.output (.quote .unit (by decide)) .unit) (by decide))
+        (.parallel (.cons (.output (.quote .unit (by decide)) .unit)
+          (.cons (.input (.quote .unit (by decide)) .unit) .nil))), by decide⟩⟩
 
 /-- A prefixed process is one component, and that component is an input. -/
 theorem guardedComm_no_commRedex :

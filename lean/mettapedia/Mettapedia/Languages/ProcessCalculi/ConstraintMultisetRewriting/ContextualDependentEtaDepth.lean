@@ -1,11 +1,11 @@
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentCensusReads
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentClassificationReads
 
 /-!
 # Equal abstraction depths by η-expansion
 
 The readers of codes at depth 0 (the head clash, the decompositions) read both sides under their common abstractions,
 so they need both sides to have the same abstraction structure. A store equation can have sides of different depths,
-`λ g. g ≐ λ g x. x`, and the census opens both at the left side's depth only. Such fragment stores leave the
+`λ g. g ≐ λ g x. x`, and the classification opens both at the left side's depth only. Such fragment stores leave the
 under-binder round stuck (`ContextualDependentEtaDepthGap`).
 
 **η-expansion to a depth** (`expandTo`) keeps leading abstractions and applies a side that is not an abstraction to
@@ -86,7 +86,7 @@ theorem expand_equal : ∀ (count : Nat) {n : Nat} {Γ : Ctx Head n} {t T : Tm H
 
 section Reducts
 
-open ContextualDependentCumulativeClosure ContextualDependentExecutableJoin ContextualDependentCensus
+open ContextualDependentCumulativeClosure ContextualDependentExecutableJoin ContextualDependentClassification
 open ContextualDependentGeneralPattern (liftFlexible)
 
 variable {R : Rules Head}

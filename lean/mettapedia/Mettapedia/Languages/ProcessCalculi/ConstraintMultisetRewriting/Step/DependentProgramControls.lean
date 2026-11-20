@@ -267,7 +267,7 @@ def reusedOutput : Candidate table middle where
 
 theorem existing_output_identity_refuses : ¬ reusedOutput.schema.Admits reusedOutput.pick := by
   intro accepted
-  have absent := accepted.2.1.2.2.2 7 (List.mem_singleton_self _)
-  exact absent (by decide)
+  have missing := accepted.2.1.2.2.2 7 (List.mem_singleton_self _)
+  exact missing (by decide)
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.DependentProgram.Controls

@@ -112,7 +112,7 @@ theorem finished_flags (state : State) (base : Int) (operation : DefinedOperatio
 
 local instance : MemoryPrimitives := X86Memory.ordinary
 
-theorem expected_trace (other : OtherOpcodeHandlers) (vector : VectorOpcodeHandlers)
+theorem expected_trace_with_pointers (other : OtherOpcodeHandlers) (vector : VectorOpcodeHandlers)
     (operation : DefinedOperation) (destination left right : Fin 12)
     (state : State) (origin : X86LegacyFetch.Basis state)
     (upper : origin.address.toInt + 9 < (2 ^ 47 : Int))
@@ -129,7 +129,9 @@ theorem expected_trace (other : OtherOpcodeHandlers) (vector : VectorOpcodeHandl
       RegisterFrame (clobbers destination) state first ∧
       RegisterFrame (clobbers destination) state second ∧
       RegisterFrame (clobbers destination) state
-        (finished state origin.address.toInt operation destination leftValue rightValue flags output) := by
+        (finished state origin.address.toInt operation destination leftValue rightValue flags output) ∧
+      first.regs.get? .rip = some ((address origin.address.toInt 3).signExtend 64) ∧
+      second.regs.get? .rip = some ((address origin.address.toInt 6).signExtend 64) := by
   let : OtherOpcodeHandlers := linkedHandlers other
   let : VectorOpcodeHandlers := vector
   let first := copied state scratch leftValue (address origin.address.toInt 3)
@@ -178,7 +180,31 @@ theorem expected_trace (other : OtherOpcodeHandlers) (vector : VectorOpcodeHandl
     apply (firstLocal.trans (calculated_local_frame first _ _ _)).mono
     simp [clobbers]
   exact ⟨output, first, second, firstRun, secondStep, finalRun, firstLocal, secondLocal,
-    finished_frame state origin.address.toInt operation destination leftValue rightValue flags output⟩
+    finished_frame state origin.address.toInt operation destination leftValue rightValue flags output,
+    copied_rip _ _ _ _,calculated_rip _ _ _ _⟩
+
+theorem expected_trace (other : OtherOpcodeHandlers) (vector : VectorOpcodeHandlers)
+    (operation : DefinedOperation) (destination left right : Fin 12)
+    (state : State) (origin : X86LegacyFetch.Basis state)
+    (upper : origin.address.toInt + 9 < (2 ^ 47 : Int))
+    (loaded : codeLoaded state origin.address.toInt (expected operation destination left right))
+    (leftValue rightValue : Word) (flags : BitVec 32)
+    (leftKnown : lookup state (physical left) = some leftValue)
+    (rightKnown : lookup state (physical right) = some rightValue)
+    (flagsKnown : state.regs.get? .rflags = some flags)
+    (quiet : state.regs.get? .log_register_writes = some false) :
+    letI : OtherOpcodeHandlers := linkedHandlers other
+    letI : VectorOpcodeHandlers := vector
+    ∃ output first second, Step state first ∧ Step first second ∧
+      Step second (finished state origin.address.toInt operation destination leftValue rightValue flags output) ∧
+      RegisterFrame (clobbers destination) state first ∧
+      RegisterFrame (clobbers destination) state second ∧
+      RegisterFrame (clobbers destination) state
+        (finished state origin.address.toInt operation destination leftValue rightValue flags output) := by
+  obtain ⟨output,first,second,one,two,three,firstFrame,secondFrame,frame,_,_⟩ :=
+    expected_trace_with_pointers other vector operation destination left right state origin upper loaded
+      leftValue rightValue flags leftKnown rightKnown flagsKnown quiet
+  exact ⟨output,first,second,one,two,three,firstFrame,secondFrame,frame⟩
 
 theorem expected_executes (other : OtherOpcodeHandlers) (vector : VectorOpcodeHandlers)
     (operation : DefinedOperation) (destination left right : Fin 12)

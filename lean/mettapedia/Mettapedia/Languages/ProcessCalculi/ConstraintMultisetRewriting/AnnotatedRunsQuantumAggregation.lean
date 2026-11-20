@@ -9,12 +9,12 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Annotated
 * A configuration class keeps its present occurrences (`presentOf`), so the end of a causal
   history determines which occurrences are present at the cut (`presentOf_classEnd`).
 * **Records separate ends** (`injOn_of_records`): if every causal history that ends in `Q` has a
-  record, an occurrence present at its end and absent at the end of every other history of the
+  record, an occurrence present at its end and not present at the end of every other history of the
   region, then no two of them reach the same configuration class.
 * **Records destroy interference** (`records_destroy_interference`): then the record-respecting
   readout is the incoherent weight, the classical sum of the branch weights.
 * Control (`Superposed.records_found`): R27's superposed alternatives make the answer rows `20`
-  and `21`; each is present at the end of its own history and absent at the other's, so they are
+  and `21`; each is present at the end of its own history and not present at the other's, so they are
   records, and the readout of the amplitudes `1` and `-1` is `2`.
 * Control (`Superposed.nominal_interferes`): read with the nominal end, which renames occurrence
   identities, the same two histories have one end and the amplitudes `1` and `-1` read `0`.
@@ -64,7 +64,7 @@ theorem presentOf_classEnd (w : List (Firing T S O)) :
     presentOf A (classEnd A label root (Quot.mk _ w)) = (follow label root w).present := rfl
 
 /-- **Records separate ends.** If every causal history that ends in `Q` has a record, present at
-its end and absent at the end of every other history of the region, no two of them reach the same
+its end and not present at the end of every other history of the region, no two of them reach the same
 configuration class. -/
 theorem injOn_of_records (record : CausalClass A label root → O)
     (observed : ∀ trace ∈ regionBranches A label catalogue budget root Q,

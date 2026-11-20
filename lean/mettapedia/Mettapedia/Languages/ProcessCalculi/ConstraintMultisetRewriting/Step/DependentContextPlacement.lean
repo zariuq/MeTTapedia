@@ -37,10 +37,30 @@ def QueryClear (extra : Finset O) {state : State rules O} (candidate : HelperFir
       ∀ query ∈ candidate.toFiring.queries,
         ContextQueries.NewClear query state.present extra candidate.toFiring.row solution
 
+/-- A query may accept a changed collect query as well as an unchanged one. The
+condition is local to its answer predicate, independently of full admission. -/
+def QueryStable (extra : Finset O) {state : State rules O} (candidate : HelperFiring levels O state) : Prop :=
+  ∀ (observer : Context rules) (solution : observer ⟶ candidate.helpers.frame),
+    (frames levels).Models solution candidate.toFiring.information →
+      ∀ query ∈ candidate.toFiring.queries,
+        query.Holds state.present candidate.toFiring.row solution →
+          query.Holds (state.present ∪ extra) candidate.toFiring.row solution
+
+theorem QueryClear.stable {extra : Finset O} {state : State rules O}
+    {candidate : HelperFiring levels O state} (clear : QueryClear extra candidate) :
+    QueryStable extra candidate := by
+  intro observer solution solved query member holds
+  exact (ContextQueries.holds_union_iff (clear observer solution solved query member)).mpr holds
+
 structure Safe (extra : Finset O) {state : State rules O} (candidate : HelperFiring levels O state) : Prop where
   retained : Disjoint candidate.toFiring.taken.toFinset extra
   fresh : Disjoint candidate.toFiring.made.toFinset extra
-  queries : QueryClear extra candidate
+  queries : QueryStable extra candidate
+
+theorem Safe.of_clear {extra : Finset O} {state : State rules O} {candidate : HelperFiring levels O state}
+    (retained : Disjoint candidate.toFiring.taken.toFinset extra)
+    (fresh : Disjoint candidate.toFiring.made.toFinset extra) (clear : QueryClear extra candidate) :
+    Safe extra candidate := ⟨retained, fresh, clear.stable⟩
 
 theorem information_kept (extra : Finset O) {state : State rules O}
     (candidate : HelperFiring levels O state) :
@@ -48,7 +68,7 @@ theorem information_kept (extra : Finset O) {state : State rules O}
 
 theorem admits (extra : Finset O) {state : State rules O} (candidate : HelperFiring levels O state)
     (accepted : (helperStep levels O).Admits candidate)
-    (fresh : Disjoint candidate.toFiring.made.toFinset extra) (clear : QueryClear extra candidate) :
+    (fresh : Disjoint candidate.toFiring.made.toFinset extra) (stable : QueryStable extra candidate) :
     (helperStep levels O).Admits (firing extra candidate) := by
   obtain ⟨shapes, enabled, solvable, holds⟩ := accepted
   refine ⟨shapes, ?_, solvable, ?_⟩
@@ -56,8 +76,7 @@ theorem admits (extra : Finset O) {state : State rules O} (candidate : HelperFir
   · intro observer solution solved
     obtain ⟨guards, queries⟩ := holds observer solution solved
     refine ⟨guards, fun query member => ?_⟩
-    exact (ContextQueries.holds_union_iff (clear observer solution solved query member)).mpr
-      (queries query member)
+    exact stable observer solution solved query member (queries query member)
 
 theorem result (extra : Finset O) {state : State rules O} (candidate : HelperFiring levels O state)
     (accepted : (helperStep levels O).Admits candidate) (safe : Safe extra candidate) :
@@ -91,7 +110,7 @@ theorem placeIso_trans (extra : Finset O) {source middle target : State rules O}
 
 theorem safe_empty {state : State rules O} (candidate : HelperFiring levels O state) :
     Safe ∅ candidate := by
-  refine ⟨Finset.disjoint_empty_right _, Finset.disjoint_empty_right _, ?_⟩
+  refine Safe.of_clear (Finset.disjoint_empty_right _) (Finset.disjoint_empty_right _) ?_
   intro observer solution solved query member occurrence inside
   exact False.elim (Finset.notMem_empty occurrence inside)
 

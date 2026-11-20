@@ -347,15 +347,28 @@ theorem existing_probes_agree (p : Probe Tm (Subst signature) ℕ) (named : p.na
   | check guard =>
       cases guard with
       | equal left right => exact Iff.rfl
-      | absent pattern =>
-          show A.Entails [] (fun σ => ∀ o ∈ twoX.present,
-              ¬ A.E (A.apply σ pattern) (A.apply σ (label o))) ↔
-            A.Entails [] (fun σ => ∀ o ∈ twoY.present,
-              ¬ A.E (A.apply σ pattern) (A.apply σ (label o)))
-          rw [entails_nil, entails_nil]
-          refine forall_congr' fun σ => ?_
-          exact (forall_twoX fun t => ¬ A.E (A.apply σ pattern) (A.apply σ t)).trans
-            (forall_twoY fun t => ¬ A.E (A.apply σ pattern) (A.apply σ t)).symm
+      | predicate quantifier pattern =>
+          cases quantifier with
+          | any =>
+              show A.Entails [] (fun σ => ∃ o ∈ twoX.present,
+                  A.E (A.apply σ pattern) (A.apply σ (label o))) ↔
+                A.Entails [] (fun σ => ∃ o ∈ twoY.present,
+                  A.E (A.apply σ pattern) (A.apply σ (label o)))
+              rw [entails_nil, entails_nil]
+              refine forall_congr' fun σ => ?_
+              rw [← not_iff_not]
+              simp only [not_exists, not_and]
+              exact (forall_twoX fun t => ¬ A.E (A.apply σ pattern) (A.apply σ t)).trans
+                (forall_twoY fun t => ¬ A.E (A.apply σ pattern) (A.apply σ t)).symm
+          | none =>
+              show A.Entails [] (fun σ => ∀ o ∈ twoX.present,
+                  ¬ A.E (A.apply σ pattern) (A.apply σ (label o))) ↔
+                A.Entails [] (fun σ => ∀ o ∈ twoY.present,
+                  ¬ A.E (A.apply σ pattern) (A.apply σ (label o)))
+              rw [entails_nil, entails_nil]
+              refine forall_congr' fun σ => ?_
+              exact (forall_twoX fun t => ¬ A.E (A.apply σ pattern) (A.apply σ t)).trans
+                (forall_twoY fun t => ¬ A.E (A.apply σ pattern) (A.apply σ t)).symm
       | count pattern number =>
           show A.Entails [] (fun σ => (Check.matches A σ label twoX.present pattern).card = number) ↔
             A.Entails [] (fun σ => (Check.matches A σ label twoY.present pattern).card = number)

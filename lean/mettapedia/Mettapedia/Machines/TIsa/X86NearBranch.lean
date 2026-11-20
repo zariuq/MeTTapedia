@@ -53,9 +53,9 @@ theorem delta_exact (displacement : BitVec 32) :
   · have := BitVec.le_toInt displacement; omega
   · have := BitVec.toInt_lt (x := displacement); omega
 
-theorem handler (condition : X86BranchCondition.Condition) (state : State)
+theorem handler_with_condition (opcode : BitVec 8) (taken : Bool) (state : State)
     (start base finish target : BitVec 48) (prefixes : BitVec 52) (rex : BitVec 8)
-    (attributes : Vector (BitVec 16) 6) (pointer : Word) (flags : BitVec 32) (displacement : BitVec 32)
+    (attributes : Vector (BitVec 16) 6) (pointer : Word) (displacement : BitVec 32)
     (first : base.toInt = start.toInt + 2)
     (advance : base.toInt + 4 = finish.toInt)
     (jump : target.toInt = finish.toInt + displacement.toInt)
@@ -63,14 +63,14 @@ theorem handler (condition : X86BranchCondition.Condition) (state : State)
     (segments : state.regs.get? .seg_hidden_attrs = some attributes)
     (application : state.regs.get? .app_view = some true)
     (rip : state.regs.get? .rip = some pointer)
-    (flagsKnown : state.regs.get? .rflags = some flags)
+    (readCondition : (Functions.jcc_cmovcc_setcc_spec opcode).run state = .ok taken state)
     (quiet : state.regs.get? .log_register_writes = some false)
     (present : ∀ index < 4,
       state.mem.get? ((X86Execution.address base.toInt index).signExtend 52).toNat =
         some (displacement.extractLsb' (8 * index) 8)) :
-    (Functions.x86_two_byte_jcc .Mode_64bit start base prefixes rex (X86BranchCondition.opcode condition)
+    (Functions.x86_two_byte_jcc .Mode_64bit start base prefixes rex opcode
       (0#8) (0#8)).run state =
-        .ok () (X86Move.putPointer state (if X86BranchCondition.value condition flags then target else finish)) := by
+        .ok () (X86Move.putPointer state (if taken then target else finish)) := by
   have addressSize : Functions.select_address_size .Mode_64bit (some prefixes) = (pure 8 : SailM Int) := by
     simp [Functions.select_address_size, Functions.in_64bit_mode, addressOverride]
   have codeUpper : base.toInt + 4 ≤ (2 ^ 47 : Int) := by
@@ -83,9 +83,9 @@ theorem handler (condition : X86BranchCondition.Condition) (state : State)
   simp only [pure_bind]
   rw [show Functions.bits_of_int 4 3 = (4#3) from rfl, length_six start base finish first advance]
   rw [if_neg (by decide : ¬Functions.is_some (none : Option Int) = true)]
-  rw [run_bind, X86BranchCondition.executes condition state flags flagsKnown]
+  rw [run_bind, readCondition]
   dsimp only
-  cases chosen : X86BranchCondition.value condition flags with
+  cases taken with
   | false =>
     rw [if_neg (by decide : ¬false = true)]
     rw [run_bind, X86PrefixRead.add_pointer_checked state base (Functions.bits_of_int 4 48) finish
@@ -105,6 +105,29 @@ theorem handler (condition : X86BranchCondition.Condition) (state : State)
       (by rw [delta_exact]; omega)]
     dsimp only
     exact X86Move.write_pointer64 state target quiet
+
+theorem handler (condition : X86BranchCondition.Condition) (state : State)
+    (start base finish target : BitVec 48) (prefixes : BitVec 52) (rex : BitVec 8)
+    (attributes : Vector (BitVec 16) 6) (pointer : Word) (flags : BitVec 32) (displacement : BitVec 32)
+    (first : base.toInt = start.toInt + 2)
+    (advance : base.toInt + 4 = finish.toInt)
+    (jump : target.toInt = finish.toInt + displacement.toInt)
+    (addressOverride : Functions._get_prefixes_adr prefixes = (0#8))
+    (segments : state.regs.get? .seg_hidden_attrs = some attributes)
+    (application : state.regs.get? .app_view = some true)
+    (rip : state.regs.get? .rip = some pointer)
+    (flagsKnown : state.regs.get? .rflags = some flags)
+    (quiet : state.regs.get? .log_register_writes = some false)
+    (present : ∀ index < 4,
+      state.mem.get? ((X86Execution.address base.toInt index).signExtend 52).toNat =
+        some (displacement.extractLsb' (8 * index) 8)) :
+    (Functions.x86_two_byte_jcc .Mode_64bit start base prefixes rex (X86BranchCondition.opcode condition)
+      (0#8) (0#8)).run state =
+        .ok () (X86Move.putPointer state (if X86BranchCondition.value condition flags then target else finish)) :=
+  handler_with_condition (X86BranchCondition.opcode condition) (X86BranchCondition.value condition flags)
+    state start base finish target prefixes rex attributes pointer displacement first advance jump
+    addressOverride segments application rip (X86BranchCondition.executes condition state flags flagsKnown)
+    quiet present
 
 namespace Controls
 

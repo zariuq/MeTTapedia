@@ -7,11 +7,11 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Depe
 Every occurrence is at space `2`. At `triple` with no rows, the firing `makeGround` makes the row
 `Ground` (occurrence `1`).
 
-* **Shared: one make spoils the absence** (`shared_absence_spoiled`): with `send` at space `2` the
-  make is admitted and permitted, and the absence of `Ground` at space `2` is no longer entailed.
+* **Shared: one make spoils the none query** (`shared_none_spoiled`): with `send` at space `2` the
+  make is admitted and permitted, and the none query of `Ground` at space `2` is no longer entailed.
 * **Owned: the make is refused** (`owned_make_refused`): without `send` at space `2`.
-* **Owned: the absence survives every permitted firing** (`owned_absence_survives`), by
-  `dependent_absence_preserved`.
+* **Owned: the none query survives every permitted firing** (`owned_none_survives`), by
+  `dependent_none_preserved`.
 -/
 
 set_option autoImplicit false
@@ -59,21 +59,21 @@ theorem make_admitted : P.Admits make := by
   obtain rfl := List.mem_singleton.mp member
   exact Make.ofRow_wellTyped _
 
-/-- The absence of `Ground` at space `2`, at a solution. -/
-abbrev AbsentGround {s : State Tower.rules Nat} (p : TotalTerm s.frame) {b : Context Tower.rules}
+/-- The none query of `Ground` at space `2`, at a solution. -/
+abbrev NoGround {s : State Tower.rules Nat} (p : TotalTerm s.frame) {b : Context Tower.rules}
     (σ : b ⟶ s.frame) : Prop :=
-  AbsentAt P space (dependentLabels Nat) 2 p σ
+  NoneMatchAt P space (dependentLabels Nat) 2 p σ
 
 /-- **Owned: the make is refused** without `send` at space `2`. -/
 theorem owned_make_refused : ¬ (Permissions.permitted P space owned).Admits make :=
   Permissions.refused_without_send P space owned (o := 1) (List.mem_singleton_self 1) rfl
 
-/-- **Shared: one make spoils the absence.** -/
-theorem shared_absence_spoiled :
+/-- **Shared: one make spoils the none query.** -/
+theorem shared_none_spoiled :
     Permissions.Permitted P space shared make ∧
-      (X).Entails start.knowledge (fun _ σ => AbsentGround (s := start) groundUniverse σ) ∧
+      (X).Entails start.knowledge (fun _ σ => NoGround (s := start) groundUniverse σ) ∧
       ¬ (X).Entails (P.result make make_admitted).knowledge
-        (fun _ τ => AbsentGround (s := P.result make make_admitted)
+        (fun _ τ => NoGround (s := P.result make make_admitted)
           ((X).act (P.along make make_admitted) groundUniverse) τ) := by
   refine ⟨⟨fun _ _ => rfl, fun _ _ => rfl, fun _ _ => rfl, fun _ _ _ _ => rfl⟩, ?_, ?_⟩
   · intro _ _ _ o present
@@ -88,17 +88,17 @@ theorem shared_absence_spoiled :
       X.act_id _
     exact (congrArg₂ X.E moved labelled).mpr ((X.equivalence triple).refl _)
 
-/-- **Owned: the absence survives every permitted firing.** -/
-theorem owned_absence_survives {f : Firing setting.levels start} (admitted : P.Admits f)
+/-- **Owned: the none query survives every permitted firing.** -/
+theorem owned_none_survives {f : Firing setting.levels start} (admitted : P.Admits f)
     (formed : Permissions.Permitted P space owned f) :
     (X).Entails (P.result f admitted).knowledge
-      (fun _ τ => AbsentGround (s := P.result f admitted) ((X).act (P.along f admitted) groundUniverse) τ) :=
-  dependent_absence_preserved space owned admitted formed (h := 2) rfl
+      (fun _ τ => NoGround (s := P.result f admitted) ((X).act (P.along f admitted) groundUniverse) τ) :=
+  dependent_none_preserved space owned admitted formed (h := 2) rfl
     fun _ _ _ o present => absurd present (Finset.notMem_empty o)
 
 #print axioms make_admitted
 #print axioms owned_make_refused
-#print axioms shared_absence_spoiled
-#print axioms owned_absence_survives
+#print axioms shared_none_spoiled
+#print axioms owned_none_survives
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.PermissionsInterface.DependentControls

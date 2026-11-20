@@ -413,6 +413,17 @@ exact SepE2 1 (fun z => P t) (Lean_Nat_rec 0 0 t) (Lean_Nat_rec_type (fun t => {
 Qed.
 
 
+Theorem Lean_Nat_rec_proof_ok : forall motive:set -> set,
+  0 :e (motive Lean_Nat_zero_node) ->
+  0 :e (Pi_ x0 :e Lean_Nat, (Pi_ y0 :e (motive x0), (motive (Lean_Nat_succ_node x0)))) ->
+  forall t :e Lean_Nat, 0 :e (motive t).
+let motive. assume H0. assume H1.
+apply Lean_Nat_ind.
+  - exact H0.
+  - let x0. assume Hx0. assume IH0. exact (Pi_0_ap (motive x0) (fun y0 => (motive (Lean_Nat_succ_node x0))) (Pi_0_ap Lean_Nat (fun x0 => (Pi_ y0 :e (motive x0), (motive (Lean_Nat_succ_node x0)))) H1
+    x0 Hx0) 0 IH0).
+Qed.
+
 
 Theorem Lean_Nat_noconf0_1 : forall y0, Lean_Nat_zero_node <> (Lean_Nat_succ_node y0).
 let y0. assume H: Lean_Nat_zero_node = (Lean_Nat_succ_node y0).
@@ -736,6 +747,16 @@ exact SepE2 1 (fun z => P t) (Lean_Bool_rec 0 0 t) (Lean_Bool_rec_type (fun t =>
 Qed.
 
 
+Theorem Lean_Bool_rec_proof_ok : forall motive:set -> set,
+  0 :e (motive Lean_Bool_false_node) ->
+  0 :e (motive Lean_Bool_true_node) ->
+  forall t :e Lean_Bool, 0 :e (motive t).
+let motive. assume H0. assume H1.
+apply Lean_Bool_ind.
+  - exact H0.
+  - exact H1.
+Qed.
+
 
 Theorem Lean_Bool_noconf0_1 : Lean_Bool_false_node <> Lean_Bool_true_node.
 assume H: Lean_Bool_false_node = Lean_Bool_true_node.
@@ -917,6 +938,7 @@ Qed.
 
 
 
+
 Theorem Lean_Eq_ind : forall P:set -> set -> prop, (P P1 Lean_Eq_refl_node) -> forall i, forall t :e Lean_Eq i, P i t.
 let P. assume H0.
 claim M0: 0 :e {z :e 1 | P P1 Lean_Eq_refl_node}.
@@ -943,7 +965,7 @@ let i. exact PowerI 1 (Lean_Eq_Prop i) (Sep_Subq 1 (fun x:set => exists w, w :e 
 Qed.
 Definition Lean_Eq_refl_proof : set := 0.
 Theorem Lean_Eq_refl_proof_ok : 0 :e (Lean_Eq_Prop P1).
-exact SepI 1 (fun x:set => exists w, w :e Lean_Eq P1) 0 In_0_1 (fun p H => H (Lean_Eq_refl_node) (Lean_Eq_refl_typed )).
+exact SepI 1 (fun x:set => exists w, w :e Lean_Eq P1) 0 In_0_1 (fun p H => H (Lean_Eq_refl_node ) (Lean_Eq_refl_typed )).
 Qed.
 Theorem Lean_Eq_refl_proof_type : Lean_Eq_refl_proof :e (Lean_Eq_Prop P1).
 exact (Lean_Eq_refl_proof_ok ).
@@ -1042,6 +1064,20 @@ rewrite IndRec_iota Lean_Eq_K Lean_Eq_T Lean_Eq_N Lean_Eq_R Lean_Eq_F Lean_Eq_Ix
     (ordsuccI2 0) (TupArgs 0 SeqNil) Lean_Eq_refl_args.
 prove SeqAt (SeqCons (h0) SeqNil) 0 = h0.
 rewrite SeqAt_0. reflexivity.
+Qed.
+Theorem Lean_Eq_rec_proof_ok : forall motive:set -> set -> set,
+  0 :e (motive P1 0) ->
+  forall i0, 0 :e (Lean_Eq_Prop i0) -> 0 :e (motive i0 0).
+let motive. assume H0.
+claim L: forall i, forall w :e Lean_Eq i, 0 :e (motive i 0).
+{ apply Lean_Eq_ind.
+
+    exact H0.
+}
+let i0. assume Ht: 0 :e Lean_Eq_Prop i0.
+apply SepE2 1 (fun x:set => exists w, w :e Lean_Eq i0) 0 Ht.
+let w. assume Hw: w :e Lean_Eq i0.
+exact L i0 w Hw.
 Qed.
 
 End Lean_Eq_Section.
@@ -1423,6 +1459,7 @@ Qed.
 
 
 
+
 Theorem Lean_Nat_le_ind : forall P:set -> set -> prop, (P P0 Lean_Nat_le_refl_node) -> (forall x0 :e Lean_Nat, forall x1 :e (Lean_Nat_le x0), P x0 x1 -> P (Lean_Nat_succ_node x0)
     (Lean_Nat_le_step_node x0 x1)) -> forall i, forall t :e Lean_Nat_le i, P i t.
 let P. assume H0. assume H1.
@@ -1489,19 +1526,19 @@ let i. exact PowerI 1 (Lean_Nat_le_Prop i) (Sep_Subq 1 (fun x:set => exists w, w
 Qed.
 Definition Lean_Nat_le_refl_proof : set := 0.
 Theorem Lean_Nat_le_refl_proof_ok : 0 :e (Lean_Nat_le_Prop P0).
-exact SepI 1 (fun x:set => exists w, w :e Lean_Nat_le P0) 0 In_0_1 (fun p H => H (Lean_Nat_le_refl_node) (Lean_Nat_le_refl_typed )).
+exact SepI 1 (fun x:set => exists w, w :e Lean_Nat_le P0) 0 In_0_1 (fun p H => H (Lean_Nat_le_refl_node ) (Lean_Nat_le_refl_typed )).
 Qed.
 Theorem Lean_Nat_le_refl_proof_type : Lean_Nat_le_refl_proof :e (Lean_Nat_le_Prop P0).
 exact (Lean_Nat_le_refl_proof_ok ).
 Qed.
-Definition Lean_Nat_le_step_proof : set := (fun x0 :e Lean_Nat => (fun x1 :e (Lean_Nat_le x0) => 0)).
-Theorem Lean_Nat_le_step_proof_ok : forall x0 :e Lean_Nat, forall x1 :e (Lean_Nat_le x0), 0 :e (Lean_Nat_le_Prop (Lean_Nat_succ_node x0)).
-let x0. assume H0: x0 :e Lean_Nat. let x1. assume H1: x1 :e (Lean_Nat_le x0). exact SepI 1 (fun x:set => exists w, w :e Lean_Nat_le (Lean_Nat_succ_node x0)) 0 In_0_1 (fun p H => H
-    (Lean_Nat_le_step_node x0 x1) (Lean_Nat_le_step_typed x0 H0 x1 H1)).
+Definition Lean_Nat_le_step_proof : set := (fun x0 :e Lean_Nat => (fun x1 :e (Lean_Nat_le_Prop x0) => 0)).
+Theorem Lean_Nat_le_step_proof_ok : forall x0 :e Lean_Nat, forall x1 :e (Lean_Nat_le_Prop x0), 0 :e (Lean_Nat_le_Prop (Lean_Nat_succ_node x0)).
+let x0. assume H0: x0 :e Lean_Nat. let x1. assume H1: x1 :e (Lean_Nat_le_Prop x0). apply SepE2 1 (fun x:set => exists w, w :e (Lean_Nat_le x0)) x1 H1. let w1. assume W1: w1 :e (Lean_Nat_le x0).
+exact SepI 1 (fun x:set => exists w, w :e Lean_Nat_le (Lean_Nat_succ_node x0)) 0 In_0_1 (fun p H => H (Lean_Nat_le_step_node x0 w1) (Lean_Nat_le_step_typed x0 H0 w1 W1)).
 Qed.
-Theorem Lean_Nat_le_step_proof_type : Lean_Nat_le_step_proof :e (Pi_ x0 :e Lean_Nat, (Pi_ x1 :e (Lean_Nat_le x0), (Lean_Nat_le_Prop (Lean_Nat_succ_node x0)))).
-exact (lam_Pi Lean_Nat (fun x0 => (Pi_ x1 :e (Lean_Nat_le x0), (Lean_Nat_le_Prop (Lean_Nat_succ_node x0)))) (fun x0 => (fun x1 :e (Lean_Nat_le x0) => 0)) (fun x0 H0 => (lam_Pi (Lean_Nat_le x0) (fun
-    x1 => (Lean_Nat_le_Prop (Lean_Nat_succ_node x0))) (fun x1 => 0) (fun x1 H1 => (Lean_Nat_le_step_proof_ok x0 H0 x1 H1))))).
+Theorem Lean_Nat_le_step_proof_type : Lean_Nat_le_step_proof :e (Pi_ x0 :e Lean_Nat, (Pi_ x1 :e (Lean_Nat_le_Prop x0), (Lean_Nat_le_Prop (Lean_Nat_succ_node x0)))).
+exact (lam_Pi Lean_Nat (fun x0 => (Pi_ x1 :e (Lean_Nat_le_Prop x0), (Lean_Nat_le_Prop (Lean_Nat_succ_node x0)))) (fun x0 => (fun x1 :e (Lean_Nat_le_Prop x0) => 0)) (fun x0 H0 => (lam_Pi
+    (Lean_Nat_le_Prop x0) (fun x1 => (Lean_Nat_le_Prop (Lean_Nat_succ_node x0))) (fun x1 => 0) (fun x1 H1 => (Lean_Nat_le_step_proof_ok x0 H0 x1 H1))))).
 Qed.
 Definition Lean_Nat_le_prec : set -> set -> set -> set -> set := fun h0 h1 i t => IndRec Lean_Nat_le_K Lean_Nat_le_T Lean_Nat_le_N Lean_Nat_le_R Lean_Nat_le_F Lean_Nat_le_Ix Lean_Nat_le_O
     Lean_Nat_le_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (r 1))) SeqNil)) k) (Eps_i (fun w:set => w :e (Lean_Nat_le i))).
@@ -1623,6 +1660,28 @@ exact In_fam_eq (fun z:set => C i z) 0 t (eq_sym_i t 0 Ht0) (IndRec Lean_Nat_le_
     Lean_Nat_le_N Lean_Nat_le_R Lean_Nat_le_F Lean_Nat_le_Ix Lean_Nat_le_O Lean_Nat_le_B x = i) (Eps_i (fun w:set => w :e (Lean_Nat_le i))) Hw0) (IndRec Lean_Nat_le_K Lean_Nat_le_T Lean_Nat_le_N
     Lean_Nat_le_R Lean_Nat_le_F Lean_Nat_le_Ix Lean_Nat_le_O Lean_Nat_le_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (a 1) (r 1))) SeqNil)) k) (Eps_i (fun w:set => w :e (Lean_Nat_le
     i)))) L).
+Qed.
+Theorem Lean_Nat_le_rec_proof_ok : forall motive:set -> set -> set,
+  0 :e (motive P0 0) ->
+  0 :e (Pi_ x0 :e Lean_Nat, (Pi_ x1 :e (Lean_Nat_le_Prop x0), (Pi_ y1 :e (motive x0 x1), (motive (Lean_Nat_succ_node x0) 0)))) ->
+  forall i0, 0 :e (Lean_Nat_le_Prop i0) -> 0 :e (motive i0 0).
+let motive. assume H0. assume H1.
+claim L: forall i, forall w :e Lean_Nat_le i, 0 :e (motive i 0).
+{ apply Lean_Nat_le_ind.
+  -
+    exact H0.
+  - let x0. assume Hx0. let x1. assume Hx1. assume IH1.
+    claim P1: 0 :e (Lean_Nat_le_Prop x0).
+    { exact SepI 1 (fun x:set => exists w, w :e (Lean_Nat_le x0)) 0 In_0_1 (fun p H => H x1 Hx1). }
+    claim Y1: 0 :e (motive x0 0).
+    { exact IH1. }
+    exact (Pi_0_ap (motive x0 0) (fun y1 => (motive (Lean_Nat_succ_node x0) 0)) (Pi_0_ap (Lean_Nat_le_Prop x0) (fun x1 => (Pi_ y1 :e (motive x0 x1), (motive (Lean_Nat_succ_node x0) 0))) (Pi_0_ap
+    Lean_Nat (fun x0 => (Pi_ x1 :e (Lean_Nat_le_Prop x0), (Pi_ y1 :e (motive x0 x1), (motive (Lean_Nat_succ_node x0) 0)))) H1 x0 Hx0) 0 P1) 0 Y1).
+}
+let i0. assume Ht: 0 :e Lean_Nat_le_Prop i0.
+apply SepE2 1 (fun x:set => exists w, w :e Lean_Nat_le i0) 0 Ht.
+let w. assume Hw: w :e Lean_Nat_le i0.
+exact L i0 w Hw.
 Qed.
 
 End Lean_Nat_le_Section.
@@ -2089,6 +2148,17 @@ let t. assume Ht: t :e Lean_List.
 exact SepE2 1 (fun z => P t) (Lean_List_rec 0 0 t) (Lean_List_rec_type (fun t => {z :e 1 | P t}) 0 M0 0 M1 t Ht).
 Qed.
 
+
+Theorem Lean_List_rec_proof_ok : forall motive:set -> set,
+  0 :e (motive Lean_List_nil_node) ->
+  0 :e (Pi_ x0 :e P0, (Pi_ x1 :e Lean_List, (Pi_ y1 :e (motive x1), (motive (Lean_List_cons_node x0 x1))))) ->
+  forall t :e Lean_List, 0 :e (motive t).
+let motive. assume H0. assume H1.
+apply Lean_List_ind.
+  - exact H0.
+  - let x0. assume Hx0. let x1. assume Hx1. assume IH1. exact (Pi_0_ap (motive x1) (fun y1 => (motive (Lean_List_cons_node x0 x1))) (Pi_0_ap Lean_List (fun x1 => (Pi_ y1 :e (motive x1), (motive
+    (Lean_List_cons_node x0 x1)))) (Pi_0_ap P0 (fun x0 => (Pi_ x1 :e Lean_List, (Pi_ y1 :e (motive x1), (motive (Lean_List_cons_node x0 x1))))) H1 x0 Hx0) x1 Hx1) 0 IH1).
+Qed.
 
 
 Theorem Lean_List_noconf0_1 : forall y0 y1, Lean_List_nil_node <> (Lean_List_cons_node y0 y1).

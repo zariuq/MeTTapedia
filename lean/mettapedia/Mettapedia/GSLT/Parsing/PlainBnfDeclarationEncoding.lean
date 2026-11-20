@@ -30,7 +30,7 @@ def encodeEntry : Entry GroundTerm GroundTerm GroundTerm GroundTerm → GroundTe
   | .blank span => .app "bnf-v1:blank" (GroundTerms.ofList [span])
 
 def encodeEntries : List (Entry GroundTerm GroundTerm GroundTerm GroundTerm) → GroundTerm
-  | [] => .app "metta-nullary" (.cons (.atom "bnf-v1:entries-nil") .nil)
+  | [] => .app "bnf-v1:entries-nil" .nil
   | head :: tail => .app "bnf-v1:entries-cons"
       (GroundTerms.ofList [encodeEntry head, encodeEntries tail])
 

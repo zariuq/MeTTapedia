@@ -5,7 +5,7 @@ import Mettapedia.Logic.LinearLogic.KnowledgeTensorInitial
 # The first-order step on occurrence identities: runs are zoned proofs
 
 The reading of the first-order step on labels needs a supply of fresh occurrences and excludes
-predicate queries that saw identities. On the step itself the atoms are the occurrence
+region queries (an exact query sees identities). On the step itself the atoms are the occurrence
 identities. Read on identities, the first-order step is a zoned system at one frame:
 
 * knowledge is the set of solutions of the store, and telling adds the matching equations and
@@ -13,7 +13,7 @@ identities. Read on identities, the first-order step is a zoned system at one fr
 * a firing takes, reads and makes the identities of its selection;
 * its guard holds the shape conditions, which do not depend on the state;
 * its check reads every present identity: the outputs are fresh, and every check and every
-  predicate query holds at every solution of the knowledge after the tell.
+  region query holds at every solution of the knowledge after the tell.
 
 ## Results
 
@@ -22,7 +22,7 @@ identities. Read on identities, the first-order step is a zoned system at one fr
 * `native_run_iff_zoned_proof_on_identities`: **native runs that end in consistent knowledge are
   exactly the graded proofs** whose grade admits the empty extra context and whose final
   knowledge is consistent, with the same firings in the same order. Every kind of check and
-  every predicate query is included, and no supply of occurrences is assumed.
+  every region query, whatever it observes, is included, and no supply of occurrences is assumed.
 -/
 
 set_option autoImplicit false
@@ -79,7 +79,7 @@ abbrev identityZoned : KnowledgeTensor.ZonedSystem Unit (KnowledgeTensor.Const (
       (∀ check ∈ f.rule.checks, ∀ σ ∈ known,
         check.Holds A σ label (f.selection.taken.toFinset ∪ rest.toFinset)) ∧
       ∀ query ∈ f.queries, ∀ σ ∈ known,
-        (query.atSolution σ).Holds label (f.selection.taken.toFinset ∪ rest.toFinset)
+        query.Holds σ label (f.selection.taken.toFinset ∪ rest.toFinset)
   check_mono := fun _ _ _ _ refines holds =>
     ⟨holds.1, fun check member σ inside => holds.2.1 check member σ (refines inside),
       fun query member σ inside => holds.2.2 query member σ (refines inside)⟩
@@ -145,7 +145,7 @@ theorem firesUnder_of_valid {C : Configuration T O} {f : Firing T S O} (valid : 
       exact here
     · intro query member σ known
       have here := valid.observations query member σ (models_problem_of_mem A label C f σ known)
-      show (query.atSolution σ).Holds label
+      show query.Holds σ label
         (f.selection.taken.toFinset ∪ ((C.present \ f.selection.taken.toFinset).val + 0).toFinset)
       rw [store]
       exact here
@@ -187,7 +187,7 @@ theorem valid_of_firesUnder (C : Configuration T O) (f : Firing T S O) {reached 
             ((C.present \ f.selection.taken.toFinset).val + 0).toFinset)) ∧
       ∀ query ∈ f.queries,
         ∀ σ ∈ (knowledge A C ⊓ {σ | A.Models σ (added label f.rule f.selection)} : Set S),
-          (query.atSolution σ).Holds label (f.selection.taken.toFinset ∪
+          query.Holds σ label (f.selection.taken.toFinset ∪
             ((C.present \ f.selection.taken.toFinset).val + 0).toFinset) := checked
   rw [store] at checks
   have reaches : reached = knowledge A (f.result label C) :=
@@ -280,5 +280,9 @@ theorem native_run_iff_zoned_proof_on_identities (C : Configuration T O)
     have zoned := KnowledgeTensor.ZonedSystem.Proves.run proof 0 atZero
     rw [add_zero] at zoned
     exact native_run_of_runUnder A label word zoned consistent
+
+#print axioms firesUnder_of_valid
+#print axioms valid_of_firesUnder
+#print axioms native_run_iff_zoned_proof_on_identities
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.KnowledgeTensorCore.FirstOrder

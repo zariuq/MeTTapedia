@@ -71,7 +71,8 @@ theorem selected_operator {Context World : Type} (environment : WorldEnvironment
     exact queried
   obtain ⟨completed, run, resultBindings, resultEnvironment⟩ := HEOperatorAliasPublication.source_operator
     environment policy label world live scope selected "CompletionCoupled" left right ["->"] ["CompletionResult"]
-      (.symbol "Expression") (by decide) rfl selectedRead isolated assigned rightSelected actualQuery
+      (.symbol "Expression") (by decide) (by simp [Entry.Value.erase, TypeSubst.typeVars]) selectedRead isolated
+      (by simpa [Entry.Value.erase] using assigned) rightSelected actualQuery
   refine ⟨left, right, selected, completed, chosen, run, ?_, ?_, leftFresh, rightFresh, different, ?_, ?_⟩
   · rw [resultBindings, bindings]
   · rw [resultEnvironment, annotated]

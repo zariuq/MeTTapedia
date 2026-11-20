@@ -151,7 +151,7 @@ structure Obligations (fuel : Nat) : Prop where
     fuel problem
   collapse : UpdateKeeps holds fun problem => ContextualDependentTwinsUnder.collapse facts roots heads algebra reducer
     fuel problem
-  expanded : UpdateKeeps holds fun problem => ContextualDependentCensusPairEta.preparedExpanded facts roots heads
+  expanded : UpdateKeeps holds fun problem => ContextualDependentClassificationPairEta.preparedExpanded facts roots heads
     algebra declared choices reducer root rootComplete fuel problem
   any : ∀ ⦃Θ : Context S.R⦄ (problem : EquationStore (TotalTerm Θ)), holds problem →
     DecomposedKeeps holds facts roots heads algebra rigid complete
@@ -236,14 +236,14 @@ theorem pairsRound_keeps (fuel : Nat)
     (obligations : Obligations holds facts roots heads algebra rigid complete declared choices reducer root normalizes
       certifyNormal headTypingUnique rootComplete fuel) :
     LayerKeeps holds fun problem =>
-      ContextualDependentCensusPairEta.pairsRound facts roots heads algebra rigid complete declared choices reducer root
+      ContextualDependentClassificationPairEta.pairsRound facts roots heads algebra rigid complete declared choices reducer root
         normalizes certifyNormal headTypingUnique rootComplete fuel problem := by
   intro Θ problem held
   have headsKeep := headsRound_keeps facts roots heads algebra rigid complete declared choices reducer root normalizes
     certifyNormal headTypingUnique rootComplete fuel obligations
-  rw [ContextualDependentCensusPairEta.pairsRound_view]
+  rw [ContextualDependentClassificationPairEta.pairsRound_view]
   refine (headsKeep problem held).or ?_
-  unfold ContextualDependentCensusPairEta.pairsRest
+  unfold ContextualDependentClassificationPairEta.pairsRest
   rw [ContextualDependentTwinsUnder.liftCollapsed_view]
   exact ViewKeeps.lifted (headsKeep _ (obligations.expanded problem held))
 

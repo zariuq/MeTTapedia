@@ -36,7 +36,7 @@ travels.
 
 * `Controls.misrouted_take_refused`: a take of an occurrence homed elsewhere is not enabled at a
   location that does not keep it.
-* `Controls.remote_absence_not_atomic`: an absence read of a region that receives messages from
+* `Controls.remote_none_not_atomic`: a none read of a region that receives messages from
   another location holds locally while a message for that region is in flight, so the commit is not
   an atomic step of the whole store. Closed regions are necessary.
 * `Controls.reply_travels`: a commit that takes at its home and replies to another location is an
@@ -458,16 +458,16 @@ def remoteFlag : Commit ℕ Spot := ⟨∅, ∅, {2}, []⟩
 /-- At `false`, make an output when no flag is present. -/
 def unlessFlag : Commit ℕ Spot := ⟨∅, ∅, {3}, [⟨isFlag, ∅⟩]⟩
 
-/-- **An absence read of a region written from elsewhere is not atomic**: while the flag made at
-`true` is in flight, the absence read at `false` holds locally, and fails for the whole store. -/
-theorem remote_absence_not_atomic :
+/-- **A none read of a region written from elsewhere is not atomic**: while the flag made at
+`true` is in flight, the none read at `false` holds locally, and fails for the whole store. -/
+theorem remote_none_not_atomic :
     let flagFlying := step spot spotHome start (.commit ⟨remoteFlag, true⟩)
     flagFlying.inflight = {2} ∧ Accepts spot flagFlying ⟨unlessFlag, false⟩ ∧
       ¬ Enabled spot (whole flagFlying) unlessFlag := by
   decide
 
 /-- That program's reads are not closed. -/
-theorem remote_absence_not_closed :
+theorem remote_none_not_closed :
     ¬ ClosedQueries spot [⟨remoteFlag, true⟩, ⟨unlessFlag, false⟩] := by
   intro closed
   have := closed ⟨remoteFlag, true⟩ (by simp) ⟨unlessFlag, false⟩ (by simp) ⟨isFlag, ∅⟩
@@ -484,8 +484,8 @@ theorem takeAndReply_homed : HomedAt spot spotHome ⟨takeAndReply, true⟩ :=
 theorem takeAndReply_misplaced_not_homed : ¬ HomedAt spot spotHome ⟨takeAndReply, false⟩ :=
   fun homed => absurd (homed.1 0 (by simp [takeAndReply])) (by decide)
 
-/-- **Positive control**: with the flag maker at the flag's home `false`, where the absence query
-also runs, the queried region is closed. (`remote_absence_not_closed` is the negative control.) -/
+/-- **Positive control**: with the flag maker at the flag's home `false`, where the none query
+also runs, the queried region is closed. (`remote_none_not_closed` is the negative control.) -/
 theorem colocated_flag_closed : ClosedQueries spot [⟨remoteFlag, false⟩, ⟨unlessFlag, false⟩] := by
   intro p member q member' _ _ _ _ _
   simp only [List.mem_cons, List.not_mem_nil, or_false] at member member'

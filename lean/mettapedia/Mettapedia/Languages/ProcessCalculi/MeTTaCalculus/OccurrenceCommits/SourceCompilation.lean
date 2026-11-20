@@ -19,7 +19,7 @@ transform and a store into the ground commits of `Commits`, through a matcher (`
   bag of its labels is folded into one value, which the pattern `q` matches.
 * `let p eval` (`letBind`): a computed value matched by `p`; no footprint.
 * conjunction: sources in sequence, bindings flowing left to right (`SourceList.cons`).
-* absence of sources (`SourceList.absent`): the complete inner query has no row;
+* none queries of sources (`SourceList.absent`): the complete inner query has no row;
   retain its completeness observations and continue without its local bindings.
 * `every rest`: from here on, every row fires in one commit (`SourceList.every`).
 

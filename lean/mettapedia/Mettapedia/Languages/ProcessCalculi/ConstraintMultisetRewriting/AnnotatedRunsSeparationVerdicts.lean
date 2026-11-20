@@ -16,7 +16,7 @@ amplitudes (`regionPaths_eq_regionValues`). With `AmplitudeRuns.verdict_iff_quer
 
 A frame that brings a nonzero path into the region refutes a cancellation
 (`AmplitudeRuns.destructive_refuted_by_arrival`), and such a frame is refused by the query
-(`census_frame_iff`): the query's side condition and the stability of its verdicts are one
+(`query_frame_iff`): the query's side condition and the stability of its verdicts are one
 condition.
 -/
 
@@ -45,7 +45,7 @@ theorem regionPaths_eq_regionValues (region : T → Bool) (C : Configuration T O
 `verdict_iff_query` at the framed cut. -/
 theorem verdict_frame (verdict : Multiset Amplitude → Prop) {f : Firing T S O}
     {C E : Configuration T O} {query : PredicateQuery O T}
-    (member : PredicateQueryAdmission.Query.fixed query ∈ f.queries)
+    (member : (PredicateQueryAdmission.Query.fixed query).toRegion ∈ f.queries)
     (framed : f.Valid A label (tensor C E)) :
     verdict (regionPaths label wave query.region (tensor C E)) ↔
       verdict (pathsOf label wave query.seen) :=
@@ -53,7 +53,9 @@ theorem verdict_frame (verdict : Multiset Amplitude → Prop) {f : Firing T S O}
 
 /-- **A query admits exactly the frames that change no interference verdict on its region.** -/
 theorem frame_admitted_iff_verdicts {f : Firing T S O} {C E : Configuration T O}
-    {query : PredicateQuery O T} (only : f.queries = [PredicateQueryAdmission.Query.fixed query])
+    {query : PredicateQuery O T}
+    (only : f.queries = [PredicateQueryAdmission.Query.fixed query].map
+      PredicateQueryAdmission.Query.toRegion)
     (guards : ∀ check ∈ f.rule.checks, ∃ left right, check = .equal left right)
     (valid : f.Valid A label C) (apart : Disjoint C.present E.present)
     (after : Separable A (f.result label C) E) :
@@ -65,7 +67,7 @@ theorem frame_admitted_iff_verdicts {f : Firing T S O} {C E : Configuration T O}
 
 /-- **A cancellation holds beside an admitted frame exactly when it holds without it.** -/
 theorem destructive_frame {f : Firing T S O} {C E : Configuration T O} {query : PredicateQuery O T}
-    (member : PredicateQueryAdmission.Query.fixed query ∈ f.queries) (valid : f.Valid A label C)
+    (member : (PredicateQueryAdmission.Query.fixed query).toRegion ∈ f.queries) (valid : f.Valid A label C)
     (framed : f.Valid A label (tensor C E)) :
     Destructive (regionPaths label wave query.region (tensor C E)) ↔
       Destructive (regionPaths label wave query.region C) :=

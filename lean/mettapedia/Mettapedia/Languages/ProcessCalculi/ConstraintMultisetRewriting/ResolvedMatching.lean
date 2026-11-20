@@ -40,8 +40,9 @@ def resolvedCheck (A : SubstitutionAction T S) (σ : S) : Check T →
     Mettapedia.Languages.ProcessCalculi.GuardedMultisetRewriting.Check Empty T T
   | .equal left right => ⟨A.apply σ left,
       fun _ _ => A.E (A.apply σ left) (A.apply σ right)⟩
-  | .absent pattern =>
-      Mettapedia.Languages.ProcessCalculi.GuardedMultisetRewriting.Check.absent (A.apply σ pattern)
+  | .predicate .any pattern => ⟨A.apply σ pattern, fun _ bag => bag ≠ 0⟩
+  | .predicate .none pattern =>
+      Mettapedia.Languages.ProcessCalculi.GuardedMultisetRewriting.Check.noneMatch (A.apply σ pattern)
   | .count pattern n =>
       Mettapedia.Languages.ProcessCalculi.GuardedMultisetRewriting.Check.count (A.apply σ pattern) n
 
@@ -92,20 +93,31 @@ private theorem check_observation (A : SubstitutionAction T S) (σ : S) (label :
   constructor
   · change regionOf _ _ _ = _
     have patternEq : (resolvedCheck A σ check).pattern = A.apply σ check.pattern := by
-      cases check <;> rfl
+      rcases check with _ | ⟨_ | _, _⟩ | _ <;> rfl
     rw [patternEq, resolved_region]
   · cases check with
     | equal _ _ => exact holds
-    | absent pattern =>
-      have empty : Check.matches A σ label store pattern = ∅ := by
-        ext o
-        simp only [Finset.notMem_empty, iff_false]
-        intro member
-        have split := Finset.mem_filter.mp member
-        exact holds o split.1 split.2
-      change labels _ (Check.matches A σ label store pattern) = 0
-      rw [empty]
-      rfl
+    | predicate quantifier pattern =>
+      cases quantifier with
+      | any =>
+        obtain ⟨o, present, same⟩ := holds
+        change labels _ (Check.matches A σ label store pattern) ≠ 0
+        intro zero
+        have member : o ∈ Check.matches A σ label store pattern :=
+          Finset.mem_filter.mpr ⟨present, same⟩
+        simp only [labels, Multiset.map_eq_zero, Finset.val_eq_zero] at zero
+        rw [zero] at member
+        exact Finset.notMem_empty o member
+      | none =>
+        have empty : Check.matches A σ label store pattern = ∅ := by
+          ext o
+          simp only [Finset.notMem_empty, iff_false]
+          intro member
+          have split := Finset.mem_filter.mp member
+          exact holds o split.1 split.2
+        change labels _ (Check.matches A σ label store pattern) = 0
+        rw [empty]
+        rfl
     | count pattern n =>
       change Multiset.card (labels _ (Check.matches A σ label store pattern)) = n
       change (Check.matches A σ label store pattern).card = n at holds

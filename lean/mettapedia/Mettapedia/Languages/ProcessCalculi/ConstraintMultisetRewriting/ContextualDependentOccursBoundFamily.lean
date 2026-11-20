@@ -58,8 +58,8 @@ variable (facts : FormFacts S.R S.roles) (roots : RootPreserving S.R) (heads : H
 /-- The occurs rule at a bound variable on an update of the store, read back as a refutation of the store. -/
 def boundOf {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)} (prepared : Update S.levels problem) :
     Option (PLift (¬ (frames S.levels).Solvable problem)) :=
-  (boundSearch facts roots heads algebra rigid complete prepared.remaining).map fun absent =>
-    ⟨fun solvable => absent.down (prepared.solvable_iff.mp solvable)⟩
+  (boundSearch facts roots heads algebra rigid complete prepared.remaining).map fun missing =>
+    ⟨fun solvable => missing.down (prepared.solvable_iff.mp solvable)⟩
 
 /-- **The occurs rule at a bound variable on the η-long prepared store η-expanded at Σ bases.** -/
 noncomputable def boundRefuted (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ)) :
@@ -95,7 +95,7 @@ theorem boundRound_eq_of_elimSigma (fuel : Nat) {Θ : Context S.R} {problem : Eq
       certifyNormal headTypingUnique rootComplete strengthening fuel problem with
   | stuck => exact absurd computed moving
   | progress update smaller => rfl
-  | refuted absent => rfl
+  | refuted missing => rfl
 
 /-- **Every run that the family below decides, this family decides with the same outcome.** -/
 theorem bound_run_of_elimSigma (fuel rounds : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ))
@@ -120,7 +120,7 @@ theorem boundRound_not_stuck_of_refuted (fuel : Nat) {Θ : Context S.R} {problem
     boundRound facts roots heads algebra rigid complete declared choices reducer root normalizes certifyNormal
       headTypingUnique rootComplete strengthening fuel problem ≠ .stuck := by
   unfold boundRound
-  obtain ⟨absent, computed⟩ := Option.isSome_iff_exists.mp read
+  obtain ⟨missing, computed⟩ := Option.isSome_iff_exists.mp read
   cases elimSigmaRound facts roots heads algebra rigid complete declared choices reducer root normalizes
       certifyNormal headTypingUnique rootComplete strengthening fuel problem with
   | stuck =>
@@ -129,7 +129,7 @@ theorem boundRound_not_stuck_of_refuted (fuel : Nat) {Θ : Context S.R} {problem
       rw [computed]
       exact fun impossible => by cases impossible
   | progress update smaller => exact fun impossible => by cases impossible
-  | refuted absent => exact fun impossible => by cases impossible
+  | refuted missing => exact fun impossible => by cases impossible
 
 /-- **The family's readers**: a reader of the family below, or the occurs rule at a bound variable. -/
 def BoundReads (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ)) : Prop :=
@@ -216,7 +216,7 @@ theorem boundRound_closure (fuel : Nat) :
       | none =>
           rw [refuted] at fired
           cases fired
-      | some absent =>
+      | some missing =>
           rw [refuted] at fired
           cases fired
   | progress first firstSmaller =>
@@ -224,7 +224,7 @@ theorem boundRound_closure (fuel : Nat) :
       cases fired
       exact elimSigmaRound_closure facts roots heads algebra rigid complete declared choices reducer root normalizes
         certifyNormal headTypingUnique rootComplete strengthening sn directed fuel _ _ _ permuted computed
-  | refuted absent =>
+  | refuted missing =>
       rw [computed] at fired
       cases fired
 
@@ -248,9 +248,9 @@ theorem bound_decided_of_firing
       ((∃ state finished, run ((boundFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening).solver larger) problem larger =
               .solved state finished ∧ (frames S.levels).Principal problem state.answer) ∨
-        (∃ absent, run ((boundFamily facts roots heads algebra rigid complete declared choices reducer root
+        (∃ missing, run ((boundFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening).solver larger) problem larger =
-              .refuted absent)) :=
+              .refuted missing)) :=
   (boundSettledOfConst facts roots heads algebra rigid complete declared choices reducer root normalizes
     certifyNormal headTypingUnique rootComplete strengthening stable (fun problem => PermutedMiller S.levels problem)
     (fun held nonempty => by
@@ -316,7 +316,7 @@ theorem tower_bound_decided_of_firing
       run (boundTower.solver larger) problem larger = run (boundTower.solver budget) problem budget ∧
       ((∃ state finished, run (boundTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ absent, run (boundTower.solver larger) problem larger = .refuted absent)) :=
+        (∃ missing, run (boundTower.solver larger) problem larger = .refuted missing)) :=
   bound_decided_of_firing (S := setting) TowerModel.facts TowerModel.roots TowerModel.heads TowerModel.algebra
     ContextualDependentPiSpine.Controls.rigid TowerModel.complete
     ContextualDependentInversion.Controls.declarations_formed ExecutableTowerChoices.choices
@@ -337,7 +337,7 @@ theorem tower_bound_decided_of_reads
       run (boundTower.solver larger) problem larger = run (boundTower.solver budget) problem budget ∧
       ((∃ state finished, run (boundTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ absent, run (boundTower.solver larger) problem larger = .refuted absent)) :=
+        (∃ missing, run (boundTower.solver larger) problem larger = .refuted missing)) :=
   tower_bound_decided_of_firing (fun held nonempty => by
     obtain ⟨bound, read⟩ := reads held nonempty
     exact ⟨bound, fun larger enough => boundRound_not_stuck_of_reads (S := setting) TowerModel.facts TowerModel.roots

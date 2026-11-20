@@ -17,7 +17,7 @@ An actor is the set `K` of terms it holds. A selection of the candidate step is 
 * every occurrence the selection takes or reads lies at a name `K` reaches before the step
   (`Reach`, the least set of names closed under reading at reached names);
 * the selection's own problem resolves every space position of the rule (take, read, produce,
-  absence, count). Ports of one firing may resolve one another's spaces, and an unbound space
+  none queries, count). Ports of one firing may resolve one another's spaces, and an unbound space
   variable of a take or read port ranges over the actor's reach.
 
 The step is the candidate step on such a selection (`ReachStep.step`): no second step relation.
@@ -30,7 +30,7 @@ The step is the candidate step on such a selection (`ReachStep.step`): no second
   distinguish no name the actor could not reach. Hence every space position lands in reach
   (`ReachAdmits.space_reached`), and so does every made occurrence (`ReachAdmits.made_reached`).
 * **Every effect lies in reach** (`ReachAdmits.effects_in_reach`): taken, read and made
-  occurrences, and every occurrence an absence or count check can match
+  occurrences, and every occurrence a none query or count check can match
   (`ReachAdmits.check_matches_reached`).
 * **No name, no effect, no observation.** Outside reach nothing leaves, nothing arrives and no
   space position resolves there (`unreached_no_effect`). Validity depends only on the store and
@@ -66,9 +66,9 @@ The step is the candidate step on such a selection (`ReachStep.step`): no second
 * *The withdrawn law's own example*: of the two selections of the ambient take, both valid for the
   candidate step, the actor holding space 1 is admitted the one at 1 and refused the one at 2
   (`ambient_take_within_reach`).
-* *Why every check space must resolve*: in the candidate step an absence check at an unbound space
-  observes `thm` (`candidate_absence_observes_thm`); the reach step refuses it
-  (`reach_refuses_unbound_absence`).
+* *Why every check space must resolve*: in the candidate step a none check at an unbound space
+  observes `thm` (`candidate_none_observes_thm`); the reach step refuses it
+  (`reach_refuses_unbound_none`).
 -/
 
 set_option autoImplicit false
@@ -424,7 +424,7 @@ theorem AgreeOnReach.symm {D : Configuration T O} (agree : AgreeOnReach ns K spa
   exact (agree.2 o ⟨k, reachedC, agree.1 ▸ at_k⟩).symm
 
 /-- **The core of locality.** A valid selection whose taken and read occurrences lie at reached
-names, and whose absence and count spaces its problem resolves to reached names, stays valid in a
+names, and whose none query and count spaces its problem resolves to reached names, stays valid in a
 well-located configuration that agrees on the reach. -/
 theorem valid_of_agree_on_reach {D : Configuration T O}
     (valid : selection.Valid A (located sts space payload) (r.toRule sts) C)
@@ -477,11 +477,18 @@ theorem valid_of_agree_on_reach {D : Configuration T O}
       fun same => List.mem_filterMap.mpr ⟨locatedCheck, checkMember, same⟩
     cases locatedCheck with
     | equal l r => exact holdsC
-    | absent s p =>
-        intro o presentD matching
-        obtain ⟨m, at_m⟩ := wellD o presentD
-        exact holdsC o ((same o (matchedAt (spaceMember rfl) solved at_m matching)).mpr presentD)
-          matching
+    | predicate q s p =>
+        cases q with
+        | any =>
+            obtain ⟨o, presentC, matching⟩ := holdsC
+            obtain ⟨m, at_m⟩ := wellC o presentC
+            exact ⟨o, (same o (matchedAt (spaceMember rfl) solved at_m matching)).mp presentC,
+              matching⟩
+        | none =>
+            intro o presentD matching
+            obtain ⟨m, at_m⟩ := wellD o presentD
+            exact holdsC o ((same o (matchedAt (spaceMember rfl) solved at_m matching)).mpr presentD)
+              matching
     | count s p k =>
         change (Check.matches A σ (located sts space payload) P' (sts.atSpace s p)).card = k
         have sameMatches : Check.matches A σ (located sts space payload) P' (sts.atSpace s p) =
@@ -1314,14 +1321,14 @@ theorem ambient_take_within_reach :
 
 /-! ### Why every check space must resolve -/
 
-/-- An absence check at an unbound space, then an output at `pub`. -/
-def probe : LocatedRule Tm := ⟨[], [], [], [.absent (.var 5) (.sym "p")], [(.nm 2, .sym "probe")]⟩
+/-- A none check at an unbound space, then an output at `pub`. -/
+def probe : LocatedRule Tm := ⟨[], [], [], [.predicate .none (.var 5) (.sym "p")], [(.nm 2, .sym "probe")]⟩
 
 def probeSel : Selection Nat := ⟨[], [], [9]⟩
 
 /-- **In the candidate step an unbound check observes `thm`**: the probe fires when `thm` is
 empty and not when `thm` holds `p`, and the two worlds differ only at `thm`. -/
-theorem candidate_absence_observes_thm :
+theorem candidate_none_observes_thm :
     probeSel.Valid action (located spaces guestSpace guestPayload) (probe.toRule spaces)
         guestWorldNoP ∧
       ¬ probeSel.Valid action (located spaces guestSpace guestPayload) (probe.toRule spaces)
@@ -1341,7 +1348,7 @@ theorem candidate_absence_observes_thm :
     subst present
     simp [spaces, located, guestSpace, guestPayload, Tm.subst]
   · intro valid
-    have holds := valid.checks (.absent (spaces.atSpace (.var 5) (.sym "p")))
+    have holds := valid.checks (.predicate .none (spaces.atSpace (.var 5) (.sym "p")))
       (by simp [probe, LocatedRule.toRule, LocatedCheck.toCheck]) (fun _ => .nm 3)
       (by simp [Selection.problem, Selection.equations, probe, LocatedRule.toRule, guestWorld,
         probeSel])
@@ -1349,7 +1356,7 @@ theorem candidate_absence_observes_thm :
       Tm.subst])
 
 /-- **The reach step refuses it**: the check's space is resolved by nothing in the firing. -/
-theorem reach_refuses_unbound_absence (K : Set Tm) (C : Configuration Tm Nat)
+theorem reach_refuses_unbound_none (K : Set Tm) (C : Configuration Tm Nat)
     (store : C.equations = []) (selection : Selection Nat) :
     ¬ ReachAdmits names K guestSpace guestPayload probe C selection := by
   intro admits
@@ -1438,8 +1445,8 @@ open Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NamedSpaces
 #print axioms ReachControls.guest_cannot_select_at_thm
 #print axioms ReachControls.guest_cannot_affect_thm
 #print axioms ReachControls.one_port_search_separates
-#print axioms ReachControls.candidate_absence_observes_thm
-#print axioms ReachControls.reach_refuses_unbound_absence
+#print axioms ReachControls.candidate_none_observes_thm
+#print axioms ReachControls.reach_refuses_unbound_none
 #print axioms ReachControls.holderOfOne_names
 #print axioms ReachControls.ambient_take_within_reach
 

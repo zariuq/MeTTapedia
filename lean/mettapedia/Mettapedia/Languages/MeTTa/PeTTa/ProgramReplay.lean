@@ -201,7 +201,8 @@ theorem chunks_preserve_state (program : Program) (fuels : List Nat) (source : C
 unallocated private-space tail and every absent named cell. -/
 theorem loaded_store_reconstruction (program : Program) :
     NamedSpaces.Store.reconstruct (Effects.loaded program).core []
-      (Effects.loaded program).spacesPrefix ((Effects.loaded program).cellRows []) =
+      (Effects.loaded program).spacesPrefix ((Effects.loaded program).cellRows [])
+        (Effects.loaded program).namedSpaces (Effects.loaded program).namedEmpty =
       Effects.loaded program := by
   apply NamedSpaces.Store.reconstruct_exact
   · exact Effects.loaded_empty_tail program
@@ -218,7 +219,7 @@ theorem chunks_loaded_store_reconstruction (program : Program) (fuels : List Nat
         input }
     let reached := chunks program fuels initial
     NamedSpaces.Store.reconstruct reached.state.core [] reached.state.spacesPrefix
-      (reached.state.cellRows []) = reached.state := by
+      (reached.state.cellRows []) reached.state.namedSpaces reached.state.namedEmpty = reached.state := by
   dsimp only
   have same := chunks_preserve_state program fuels
     { state := Effects.loaded program, control := .evaluate [] expression, input }
@@ -518,6 +519,8 @@ structure Snapshot where
   frames : List Frame
   input : List Atom
   output : List Atom
+  namedSpaces : List (String × List Atom) := []
+  namedEmpty : List Atom := []
 deriving Repr, DecidableEq
 
 namespace Snapshot
@@ -525,6 +528,7 @@ namespace Snapshot
 /-- The existing generic store reconstruction supplies every function field. -/
 def decode (snapshot : Snapshot) : Configuration :=
   { state := NamedSpaces.Store.reconstruct snapshot.core [] snapshot.spaces snapshot.cells
+      snapshot.namedSpaces snapshot.namedEmpty
     control := snapshot.control
     frames := snapshot.frames
     input := snapshot.input
@@ -564,7 +568,9 @@ def snapshot (names : List String) (configuration : Configuration) : Snapshot :=
     control := configuration.control
     frames := configuration.frames
     input := configuration.input
-    output := configuration.output }
+    output := configuration.output
+    namedSpaces := configuration.state.namedSpaces
+    namedEmpty := configuration.state.namedEmpty }
 
 /-- Every retained cell and the entire allocated/unallocated space function
 are reconstructed. This law includes effectful configurations and faults. -/
@@ -630,6 +636,7 @@ def Equivalent (first second : Snapshot) : Prop :=
   first.core = second.core ∧ first.spaces = second.spaces ∧
     first.control = second.control ∧ first.frames = second.frames ∧
     first.input = second.input ∧ first.output = second.output ∧
+    first.namedSpaces = second.namedSpaces ∧ first.namedEmpty = second.namedEmpty ∧
     ∀ name ∈ first.cellNames ++ second.cellNames,
       (first.cells.lookup name).join = (second.cells.lookup name).join
 
@@ -643,7 +650,7 @@ algorithm is assumed. -/
 theorem equivalent_iff_decode (first second : Snapshot) :
     Equivalent first second ↔ first.decode = second.decode := by
   constructor
-  · rintro ⟨core, spaces, control, frames, input, output, cells⟩
+  · rintro ⟨core, spaces, control, frames, input, output, namedRows, namedEmpty, cells⟩
     have cellsEqual : first.decode.state.cells = second.decode.state.cells := by
       funext name
       by_cases member : name ∈ first.cellNames ++ second.cellNames
@@ -655,11 +662,13 @@ theorem equivalent_iff_decode (first second : Snapshot) :
     simp only [decode, Configuration.mk.injEq]
     refine ⟨?_, control, frames, input, output⟩
     simp only [NamedSpaces.Store.reconstruct, NamedSpaces.Store.mk.injEq]
-    exact ⟨core, congrArg List.length spaces, by simp [spaces], cellsEqual⟩
+    exact ⟨core, congrArg List.length spaces, by simp [spaces], cellsEqual, namedRows, namedEmpty⟩
   · intro equal
     refine ⟨congrArg (fun c : Configuration => c.state.core) equal, ?_,
       congrArg Configuration.control equal, congrArg Configuration.frames equal,
-      congrArg Configuration.input equal, congrArg Configuration.output equal, ?_⟩
+      congrArg Configuration.input equal, congrArg Configuration.output equal,
+      congrArg (fun c : Configuration => c.state.namedSpaces) equal,
+      congrArg (fun c : Configuration => c.state.namedEmpty) equal, ?_⟩
     · have actual := congrArg (fun c : Configuration => c.state.spacesPrefix) equal
       simpa using actual
     · intro name _

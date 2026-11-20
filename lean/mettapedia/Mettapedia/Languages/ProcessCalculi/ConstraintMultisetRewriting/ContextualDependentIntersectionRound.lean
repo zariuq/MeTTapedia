@@ -58,7 +58,7 @@ theorem intersectRound_eq_of_reorder (fuel : Nat) {Θ : Context S.R} {problem : 
       certifyNormal headTypingUnique rootComplete fuel problem with
   | stuck => exact absurd computed moving
   | progress update smaller => rfl
-  | refuted absent => rfl
+  | refuted missing => rfl
 
 /-- **Every run that the reorder family decides, the intersection family decides with the same outcome.** -/
 theorem intersect_run_of_reorder (fuel rounds : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ))
@@ -105,7 +105,7 @@ theorem intersectRound_not_stuck_of_rule (fuel : Nat) {Θ : Context S.R} {proble
       rw [computed]
       exact fun impossible => by cases impossible
   | progress update smaller => exact fun impossible => by cases impossible
-  | refuted absent => exact fun impossible => by cases impossible
+  | refuted missing => exact fun impossible => by cases impossible
 
 /-! ## Eventual constancy -/
 
@@ -303,7 +303,7 @@ theorem intersectRound_view (fuel : Nat) {Θ : Context S.R} (problem : EquationS
       | some found => rfl
       | none => rfl
   | progress update smaller => rfl
-  | refuted absent => rfl
+  | refuted missing => rfl
 
 include stable in
 /-- **The intersection round is eventually constant on every store.** -/

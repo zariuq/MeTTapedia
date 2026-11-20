@@ -10,7 +10,8 @@ channel-communication fragment (`peek_outside`). It is not rho: from the store o
 `x!(0) | for(y <- x) 0`, the peek leaves the message in place, while the only rho step from that
 process consumes the message and the receiver together and leaves nothing (`peek_not_rho`).
 Representation is therefore not a bisimulation for the peek rule set, and the restriction under which
-the step is rho excludes reads, as it excludes absence.
+the step is bisimilar to rho's communication with ordinary substitution
+(`RhoChannelFragment.channel_fragment_bisimulation`) excludes reads, as it excludes none queries.
 -/
 
 set_option autoImplicit false

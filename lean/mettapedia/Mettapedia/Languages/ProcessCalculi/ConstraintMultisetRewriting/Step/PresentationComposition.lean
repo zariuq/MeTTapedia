@@ -47,8 +47,9 @@ theorem shared_types_once : (authoredLanguage.types.map (·.name)).Nodup := by d
 
 theorem constructors_once : (authoredLanguage.terms.map (·.label)).Nodup := by decide +kernel
 
-/-- The shared syntax occupies the same first 25 row positions in the entry. -/
-theorem structural_prefix : authoredLanguage.terms.take 25 = Payloads.dataLanguage.terms := rfl
+/-- The shared syntax occupies the same first 27 row positions in the entry (its 25 term rows and the
+two quantifier rows `TcAny` and `TcNone` of predicate queries). -/
+theorem structural_prefix : authoredLanguage.terms.take 27 = Payloads.dataLanguage.terms := rfl
 
 /-- The only executable rewrite is exactly the authored transition interface's rule. -/
 theorem authored_rewrites : authoredLanguage.rewrites = language.rewrites := rfl

@@ -55,19 +55,19 @@ def cue : RhoProcess := outputPartner
 def note : RhoProcess :=
   ⟨.apply "POutput" [.apply "NQuote" [cue.1], .apply "PZero" []],
     (rhoClosedTermWellSorted_process_iff _).mpr
-      ⟨.output (.quote (.output (.quote .unit) .unit)) .unit, by decide⟩⟩
+      ⟨.output (.quote (.output (.quote .unit (by decide)) .unit) (by decide)) .unit, by decide⟩⟩
 
 /-- An unrelated message on a third channel: neither a cue nor a note. -/
 def wrongCue : RhoProcess :=
   ⟨.apply "POutput" [.apply "NQuote" [waitingInput.1], .apply "PZero" []],
     (rhoClosedTermWellSorted_process_iff _).mpr
-      ⟨.output (.quote (.input (.quote .unit) .unit)) .unit, by decide⟩⟩
+      ⟨.output (.quote (.input (.quote .unit (by decide)) .unit) (by decide)) .unit, by decide⟩⟩
 
 /-- `cue?(x).note!(0)`: the cue's payload is unused in this fragment. -/
 def performer : RhoProcess :=
   ⟨.apply "PInput" [closedNilName.1, .lambda none note.1],
     (rhoClosedTermWellSorted_process_iff _).mpr
-      ⟨.input (.quote .unit) (.output (.quote (.output (.quote .unit) .unit)) .unit),
+      ⟨.input (.quote .unit (by decide)) (.output (.quote (.output (.quote .unit (by decide)) .unit) (by decide)) .unit),
         by decide⟩⟩
 
 /-- Will one interaction of this performer with the environment emit the note? -/
@@ -83,16 +83,19 @@ theorem performer_cue_step : rhoLanguageDefGSLT.Step (par performer cue) note :=
   let target : RhoProcess :=
     ⟨.collection .hashBag [note.1] none,
       (rhoClosedTermWellSorted_process_iff _).mpr
-        ⟨.parallel (.cons (.output (.quote (.output (.quote .unit) .unit)) .unit) .nil),
+        ⟨.parallel (.cons (.output (.quote (.output (.quote .unit (by decide)) .unit) (by decide)) .unit) .nil),
           by decide⟩⟩
   have step : rhoRewriteSystem.Reduces (par performer cue) target := by
     have comm := RhoStep.comm (free := FreeSortContext.empty) (bound := [])
       closedNilName.1 note.1 (.apply "PZero" []) []
-      (.output (.quote (.output (.quote .unit) .unit)) .unit) .unit
+      (.output (.quote (.output (.quote .unit (by decide)) .unit) (by decide)) .unit) .unit
     change RhoStep (par performer cue).1 target.1
     simpa [target, par, performer, note, cue, outputPartner, closedNilName,
       semanticCommSubst, semanticSubstProc, semanticSubstName, semanticSubstNameMark,
-      semanticNormalizeName, semanticNormalizeProc, semanticNormalizeProcList] using comm
+      semanticNormalizeName, semanticNormalizeProc, semanticNormalizeProcList,
+      Mettapedia.Languages.ProcessCalculi.RhoCalculus.Canonical.canonicalize,
+      Mettapedia.Languages.ProcessCalculi.RhoCalculus.Canonical.canonicalizeList,
+      Mettapedia.Languages.ProcessCalculi.RhoCalculus.Canonical.normalizeQuote] using comm
   exact rhoLanguageDefGSLT.rewrites_resp_right
     (rhoRewriteSystem_reduces_to_gsltStep step) (canonicalize_parallel_singleton note.1)
 

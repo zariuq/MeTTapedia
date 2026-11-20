@@ -89,7 +89,7 @@ theorem wrapperFires : RulesFireAtWrapper (Normalized.laws GeneralRho.Standard.p
     presentation := by
   intro declaration ordinal member rule spec selected specified
   obtain ⟨rfl, rfl, rfl⟩ := rule_at member selected specified
-  refine ⟨rfl, ["rest"], ?_, ?_, ?_, .inr GeneralRho.substitution_selected⟩
+  refine ⟨rfl, ["rest"], ?_, ?_, ?_, .inr ⟨GeneralRho.substitution_selected, ?_⟩⟩
   · rw [comm_left, laws_eq]
     decide +kernel
   · decide +kernel
@@ -102,6 +102,10 @@ theorem wrapperFires : RulesFireAtWrapper (Normalized.laws GeneralRho.Standard.p
     · exact ⟨fun _ => trivial, fun member => by simp at member⟩
     · exact ⟨fun _ => trivial, fun member => by simp at member⟩
     · exact ⟨fun notRest => absurd (by simp) notRest, fun _ => .inr ⟨.hashBag, .base "Proc", rfl, trivial⟩⟩
+  · refine ⟨rfl, ?_⟩
+    intro kind law found
+    obtain ⟨rfl, rfl⟩ := laws_found found
+    exact ⟨rfl, fun unit => (Option.some.inj unit).symm⟩
 
 /-- **The explorer is complete for rho modulo its declared collection algebra and the name equation**:
 every closed process reachable from a closed process by finitely many steps modulo the parallel laws,

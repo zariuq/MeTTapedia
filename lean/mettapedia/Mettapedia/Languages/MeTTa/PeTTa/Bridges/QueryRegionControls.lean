@@ -64,10 +64,14 @@ theorem unrelated_cells_preserve_admission :
     rfl
   simp [Prepared.region, same, count_is_three_not_two]
 
-def invalidCaller : Subst := [("s", .symbol "not-a-space")]
+def unallocatedCaller : Subst := [("s", Effects.handleValue (.privateSpace 0))]
 
-theorem missing_space_is_not_empty_space :
-    (prepare 7 program invalidCaller "s" pattern body state).isNone = true := by decide +kernel
+theorem unallocated_private_space_is_not_empty_space :
+    (prepare 7 program unallocatedCaller "s" pattern body state).isNone = true := by decide +kernel
+
+theorem unused_ordinary_name_is_an_empty_space :
+    (prepare 7 program [("s", .symbol "unused")] "s" pattern body state).map
+      (fun p => p.value .count) = some (integer 0) := by decide +kernel
 
 def emptyState : Effects.State := NamedSpaces.Store.new [] []
 

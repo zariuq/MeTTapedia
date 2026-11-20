@@ -3,10 +3,10 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsA
 /-!
 # The well-typed declared path on every run
 
-`DeclaredHeads.typed_agrees` gives one complete run of HE's machine on
+`DeclaredHeads.typed_answers` gives one complete run of HE's machine on
 `{(: f (-> Number Number)), (: b Bool), (= (f $x) yes)}` in which the well-typed call `(f 4)` takes
-HE's function path and answers `yes`, as PeTTa does. Here **every** complete run is covered, through
-HE's completed relation (`EveryRun.complete_source`), by inverting each part of the function path:
+HE's function path and answers `yes`. Here **every** complete run is covered, through HE's completed
+relation (`EveryRun.complete_source`), by inverting each part of the function path:
 
 * `typed_selection`: every admission of `(f 4)` selects `f`'s arrow with exactly one activation (the
   argument check of `4` against `Number` and the return check both accept, whatever frame renewal
@@ -18,9 +18,12 @@ HE's completed relation (`EveryRun.complete_source`), by inverting each part of 
   returns `yes`;
 * `typed_source`: every derivation for `(f 4)` publishes `yes`.
 
-`typed_every_run`: a complete run exists, every complete run publishes `yes`, and PeTTa's run gives
-`yes`. With `DeclaredEveryRun.declared_every_run` (`(f b)`: every run publishes the type error), the
-declared head's guard is now settled on every run in both directions on this program.
+`typed_every_run`: a complete run exists and every complete run publishes `yes`. PeTTa's side is
+stated on the program without `f`'s declaration, where its answer `yes` is the PeTTa hosts' answer;
+with the declaration both hosts check the result `yes` against `Number` and answer nothing, so on
+the declared program HE's `yes` is a difference from PeTTa, not an agreement. With
+`DeclaredEveryRun.declared_every_run` (`(f b)`: every run publishes the type error), the declared
+head's guard is settled on every HE run in both directions on this program.
 
 ## Controls
 
@@ -425,13 +428,16 @@ theorem typed_source {results : List Result}
 /-! ## Every complete run -/
 
 /-- **The well-typed declared path on every run.** On `{(: f (-> Number Number)), (: b Bool),
-(= (f $x) yes)}`, with HE's historical lookup, any policy and any dispatch that does not execute `f`:
-a complete run of HE from the entry of `(f 4)` exists, every complete run publishes exactly `yes`,
-and PeTTa's run yields `yes` from fuel `40` on. -/
+(= (f $x) yes)}`, a program in the measured type fragment
+(`TypeQueryFragment.MeasuredTypeFragment`), with HE's historical lookup, any policy and any dispatch
+that does not execute `f`: a complete run of HE from the entry of `(f 4)` exists, and every complete
+run publishes exactly `yes`. On the program without `f`'s declaration PeTTa yields `yes` from fuel
+`40` on, as the PeTTa hosts do; on the declared program the hosts answer nothing. -/
 theorem typed_every_run (dispatch : GroundedDispatch) (notHost : ¬ dispatch.executable (.symbol "f"))
     (policy : Policy) :
-    (∃ heAnswers : List Result,
-      Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy)
+    TypeQueryFragment.MeasuredTypeFragment declaredRows ∧
+      (∃ heAnswers : List Result,
+        Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy)
           (load (Space.ofList declaredRows) typedCall Atom.undefinedType)
           ⟨Space.ofList declaredRows, .returning [], [], heAnswers⟩) ∧
       (∀ emitted : List Result,
@@ -439,11 +445,12 @@ theorem typed_every_run (dispatch : GroundedDispatch) (notHost : ¬ dispatch.exe
             (load (Space.ofList declaredRows) typedCall Atom.undefinedType)
             ⟨Space.ofList declaredRows, .returning [], [], emitted⟩ →
           emitted.map (fun r => r.1.erase) = [sym "yes"]) ∧
-      ∀ n, 40 ≤ n → Streaming.values (Streaming.advance (translate declaredRows) n
-        (Streaming.enter { state := store declaredRows } typedCall)) = [sym "yes"] := by
-  obtain ⟨⟨heAnswers, path, _⟩, computed, finished⟩ := typed_agrees dispatch notHost policy
-  refine ⟨⟨heAnswers, path⟩, fun emitted run => typed_source (complete_source run),
-    fun n bigger => ?_⟩
+      ∀ n, 40 ≤ n → Streaming.values (Streaming.advance (translate (headUndeclared declaredRows "f"))
+        n (Streaming.enter { state := store (headUndeclared declaredRows "f") } typedCall)) =
+          [sym "yes"] := by
+  obtain ⟨⟨heAnswers, path, _⟩, computed, finished⟩ := typed_answers dispatch notHost policy
+  refine ⟨TypeQueryFragment.fragment_declaredRows, ⟨heAnswers, path⟩,
+    fun emitted run => typed_source (complete_source run), fun n bigger => ?_⟩
   rw [advance_stable (List.eq_nil_of_length_eq_zero finished) n bigger]
   exact computed
 
@@ -459,8 +466,7 @@ theorem no_tuple_entry :
   (well_typed_takes_function (dispatch := WholeRunWords.Double.noHost) Policy.ready).2
 
 /-- **The same program, both directions on every run**: the well-typed `(f 4)` answers `yes` on every
-complete HE run as in PeTTa, while the ill-typed `(f b)` answers HE's type error on every complete
-run where PeTTa answers `yes`. -/
+complete HE run, while the ill-typed `(f b)` answers HE's type error on every complete run. -/
 theorem guard_both_ways (policy : Policy) :
     (∀ emitted : List Result,
       Relation.ReflTransGen (HEStep WholeRunWords.Double.noHost Completed.rawLookup policy)
@@ -472,8 +478,8 @@ theorem guard_both_ways (policy : Policy) :
             (load (Space.ofList declaredRows) declaredCall Atom.undefinedType)
             ⟨Space.ofList declaredRows, .returning [], [], emitted⟩ →
           emitted.map (fun r => r.1.erase) = [badArgument]) :=
-  ⟨(typed_every_run WholeRunWords.Double.noHost (fun impossible => impossible) policy).2.1,
-    (declared_every_run WholeRunWords.Double.noHost policy).1⟩
+  ⟨(typed_every_run WholeRunWords.Double.noHost (fun impossible => impossible) policy).2.2.1,
+    (declared_every_run WholeRunWords.Double.noHost policy).2.2.1⟩
 
 end Controls
 

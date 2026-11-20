@@ -133,12 +133,12 @@ theorem query_of_present (store : Store K) (key : K) (index : Nat) (known : stor
     simp [eq_comm]
   · simp [query, same]
 
-theorem query_of_absent (store : Store K) (key : K) (absent : store.lookup key = none) : store.query key = ∅ := by
+theorem query_of_lookup_none (store : Store K) (key : K) (missing : store.lookup key = none) : store.query key = ∅ := by
   ext row
   obtain ⟨index, other⟩ := row
   by_cases same : other = key
   · subst other
-    simp [query, store.represented index key, show store.registry.lookup key = none from absent]
+    simp [query, store.represented index key, show store.registry.lookup key = none from missing]
   · simp [query, same]
 
 theorem successful_read_has_one_witness (store : Store K) (key : K) (index : Nat) (known : store.lookup key = some index) :

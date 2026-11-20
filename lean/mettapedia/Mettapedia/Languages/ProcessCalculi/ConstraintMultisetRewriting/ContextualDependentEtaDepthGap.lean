@@ -8,7 +8,7 @@ Over `A : U0`, at `(U0 → U0) → U0 → U0`:
 
 * **`λ g. g ≐ λ g x. x`** (`shallowStore`, the right side deeper) and **`λ g x. x ≐ λ g. g`** (`deepStore`, the left
   side deeper) are in the dynamic pattern fragment, and the under-binder family's first round is stuck on them at
-  budgets 16, 64 and 256 (16 and 64 for `deepStore`). The census opens at the left side's depth, and the readers of
+  budgets 16, 64 and 256 (16 and 64 for `deepStore`). The classification opens at the left side's depth, and the readers of
   codes need both sides at the same depth. R110's η reorientation reads only the right-deeper case, and only through
   the clash test, the first pattern, prune and exchange rules and the in-place rule.
 * **`λ g. g ≐ λ g x. g (g x)`** and, at `(U0 → U0) → (U0 → U0) → U0 → U0`, **`λ g h. g ≐ λ g h x. h x`**: stuck at
@@ -17,7 +17,7 @@ Over `A : U0`, at `(U0 → U0) → U0 → U0`:
   by `F := λ g x. x`.
 
 **The η-depth family** (`ContextualDependentEtaDepth.longTower`) refutes the four unsolvable stores, with certified
-refutations (so they are unsolvable), and commits on the solvable one. It keeps R119's 44 census stores' outcomes
+refutations (so they are unsolvable), and commits on the solvable one. It keeps R119's 44 classification stores' outcomes
 (`long_of_final`).
 
 **A gap that remains.** At the flexible base `(A → A) → A → A`, **`λ g. g ≐ λ g x. x`** (`flexibleStore`) is in the
@@ -172,7 +172,7 @@ theorem twice_unsolvable : ¬ (frames setting.levels).Solvable twiceStore :=
 theorem other_unsolvable : ¬ (frames setting.levels).Solvable otherStore :=
   Outcome.readout_eq_refuted other_long_refuted
 
-/-- **R119's census**: the η-depth family decides the 44 census stores as the in-place family does. -/
+/-- **R119's classification**: the η-depth family decides the 44 classification stores as the in-place family does. -/
 theorem long_of_final {Θ : Context setting.R} {problem : EquationStore (TotalTerm Θ)}
     (final : ContextualDependentAcceptance3.Controls.finalDecided problem = true) :
     (run inPlaceOnly problem 8).Decided ∧ run (longTower.solver 16) problem 8 = run inPlaceOnly problem 8 := by

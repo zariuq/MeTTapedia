@@ -39,7 +39,7 @@ theorem candidate_is_fixed {Γ : Ctx S} {sort : S.Srt}
   obtain ⟨residual, components⟩ := binding.principal.factors next candidate models
   have factors : candidate = Assignment.compose residual (answer binding) := funext components
   have idempotent : Assignment.compose (answer binding) (answer binding) = answer binding :=
-    ContextualBinding.answer_idempotent binding.chosen binding.body binding.absent
+    ContextualBinding.answer_idempotent binding.chosen binding.body binding.notInBody
   rw [factors, ← Assignment.compose_associative, idempotent]
 
 theorem source_name_is_active {Γ : Ctx S} {sort : S.Srt}
@@ -74,7 +74,7 @@ theorem model_progress {Γ : Ctx S} {sort : S.Srt}
     fun pair member => solved pair (List.mem_cons_of_mem _ member)
   refine ⟨(models_of_components candidate _ candidate components rest).mp restSolved, components, ?_⟩
   exact binding_active_potential_decreases binding.chosen binding.body rest (active full)
-    (active_tail_subset _ rest) (body_is_covered binding full List.mem_cons_self) binding.absent
+    (active_tail_subset _ rest) (body_is_covered binding full List.mem_cons_self) binding.notInBody
     (source_name_is_active binding full List.mem_cons_self) candidate
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualBindingCaseProgress

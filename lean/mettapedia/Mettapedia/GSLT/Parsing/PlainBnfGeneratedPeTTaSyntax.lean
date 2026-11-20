@@ -30,20 +30,34 @@ def variableToken (token : String) : String :=
   | _ => token
 
 mutual
-  /-- Render source templates structurally. This does not visit substituted
-  runtime values, so it is not an evaluator or a payload translation. -/
-  def sourceTerm? : SExpr → Option SExpr
+  /-- One structural renderer with an explicit source-data/target-code context.
+  It visits templates, never substituted runtime values. -/
+  def termInContext? (targetSyntax : Bool) : SExpr → Option SExpr
     | .atom token => some (.atom (variableToken token))
-    | .list [.atom "metta-nullary", .atom token] =>
-        some (.list [.atom (variableToken token)])
     | .list [] => none
-    | .list terms => SExpr.list <$> sourceTerms? terms
+    | .list terms =>
+        if targetSyntax then
+          match terms with
+          | [.atom "metta-nullary", target] =>
+              match target with
+              | .atom token => some (.list [.atom (variableToken token)])
+              | _ => none
+          | _ => SExpr.list <$> termsInContext? targetSyntax terms
+        else SExpr.list <$> termsInContext? targetSyntax terms
 
-  def sourceTerms? : List SExpr → Option (List SExpr)
+  def termsInContext? (targetSyntax : Bool) : List SExpr → Option (List SExpr)
     | [] => some []
     | term :: terms => do
-        return (← sourceTerm? term) :: (← sourceTerms? terms)
+        return (← termInContext? targetSyntax term) :: (← termsInContext? targetSyntax terms)
 end
+
+/-- Source constructors remain free data, including `metta-nullary`. -/
+def sourceTerm? : SExpr → Option SExpr := termInContext? false
+
+def sourceTerms? : List SExpr → Option (List SExpr) := termsInContext? false
+
+/-- Authored target equations explicitly opt into target-code notation. -/
+def targetTerm? : SExpr → Option SExpr := termInContext? true
 
 def modeBits (inputs outputs : Nat) : String :=
   String.ofList (List.replicate inputs '1' ++ List.replicate outputs '0')
@@ -116,7 +130,7 @@ def generatedEquations? : List Rewrite → Option (List SExpr)
     sourceTerm? (.atom token) = some (.atom (variableToken token)) := rfl
 
 @[simp] theorem sourceTerm_nullary (token : String) :
-    sourceTerm? (.list [.atom "metta-nullary", .atom token]) =
+    sourceTerm? (.list [.atom token]) =
       some (.list [.atom (variableToken token)]) := rfl
 
 @[simp] theorem body_nil (result : SExpr) :
@@ -323,7 +337,7 @@ example : variableToken "?_" = "$_" := by decide
 example : variableToken "?x" = variableToken "$x" := by decide
 example : sourceTerm? (.list []) = none := rfl
 example : sourceTerm? (.atom "x") ≠ sourceTerm? (.list [.atom "metta-nullary", .atom "x"]) := by
-  simp [sourceTerm?]
+  simp [sourceTerm?, termInContext?, termsInContext?]
 example : workerCall? (.list [.atom "BNFGraphTrieLookupV1", .atom "missing-arguments"]) = none := by
   decide
 example : premise? (.list [.atom "unknown", .atom "x"]) (.atom "next") = none := by

@@ -44,10 +44,10 @@ theorem reflective_reduct {ambient : Nat} {channel body payload : Pattern} {rest
 
 /-- The stored input body and old source RHS readout agree for all closed
 ambient bodies and payloads. Intervening input binders remain arbitrary. -/
-theorem reflective_reduct_original {free : FreeSortContext} {channel body payload : Pattern}
+theorem reflective_reduct_original {scope : QuoteScope} {free : FreeSortContext} {channel body payload : Pattern}
     {rest : List Pattern}
-    (bodyTyped : ProcWellSorted rhoReflectivePresentation free ["Name"] body)
-    (payloadTyped : ProcWellSorted rhoReflectivePresentation free [] payload)
+    (bodyTyped : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free ["Name"] body)
+    (payloadTyped : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free [] payload)
     (restSafe : Pattern.isWellScopedListAt 0 rest = true) :
     ScopedRuleMatching.reductWith? (ScopedReflectiveExecution.binderOperation rhoReflectionProfile comm)
       comm Mettapedia.GSLT.Examples.ScopedRhoBinding.scopedCommBindingSpec 0
@@ -64,17 +64,37 @@ theorem reflective_reduct_original {free : FreeSortContext} {channel body payloa
   unfold reflectiveBody
   rw [closed_agreement rhoReflectivePresentation.toReflectivePresentationDecl bodySafe replacementSafe]
 
-theorem reflective_reduct_semantic {free : FreeSortContext} {channel body payload : Pattern}
+/-- The compiled reduct is the paper-facing COMM reduct of the resolved body,
+for every closed derived body and payload. -/
+theorem reflective_reduct_resolved {scope : QuoteScope} {free : FreeSortContext} {channel body payload : Pattern}
     {rest : List Pattern}
-    (bodyTyped : ProcWellSorted rhoReflectivePresentation free ["Name"] body)
-    (payloadTyped : ProcWellSorted rhoReflectivePresentation free [] payload)
+    (bodyTyped : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free ["Name"] body)
+    (payloadTyped : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free [] payload)
     (restSafe : Pattern.isWellScopedListAt 0 rest = true) :
+    ScopedRuleMatching.reductWith? (ScopedReflectiveExecution.binderOperation rhoReflectionProfile comm)
+      comm Mettapedia.GSLT.Examples.ScopedRhoBinding.scopedCommBindingSpec 0
+      (captured 0 channel body payload rest) =
+      some (.collection .hashBag
+        (semanticCommSubst (resolveQuotes rhoReflectivePresentation body) payload :: rest) none) := by
+  rw [reflective_reduct_original bodyTyped payloadTyped restSafe,
+    applyBindingsForRule_rhoComm_eq_resolved bodyTyped payloadTyped]
+
+/-- The compiled reduct is the paper-facing COMM reduct when the received body
+lies in the literal-quotation fiber (decided automatically for concrete
+bodies); see `LanguageDefAdequacy.hiddenQuoteDrop_comm_differs` for a body
+outside it. -/
+theorem reflective_reduct_semantic {scope : QuoteScope} {free : FreeSortContext} {channel body payload : Pattern}
+    {rest : List Pattern}
+    (bodyTyped : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free ["Name"] body)
+    (payloadTyped : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free [] payload)
+    (restSafe : Pattern.isWellScopedListAt 0 rest = true)
+    (fiber : ReflectiveCoherent.quotesLiteral rhoReflectivePresentation body = true := by decide) :
     ScopedRuleMatching.reductWith? (ScopedReflectiveExecution.binderOperation rhoReflectionProfile comm)
       comm Mettapedia.GSLT.Examples.ScopedRhoBinding.scopedCommBindingSpec 0
       (captured 0 channel body payload rest) =
       some (.collection .hashBag (semanticCommSubst body payload :: rest) none) := by
   rw [reflective_reduct_original bodyTyped payloadTyped restSafe,
-    applyBindingsForRule_rhoComm_agrees_derived bodyTyped payloadTyped]
+    applyBindingsForRule_rhoComm_agrees_derived bodyTyped fiber payloadTyped]
 
 private theorem derived_name_atomic {free : FreeSortContext} {bound : List String} {name : Pattern}
     (typed : NameWellSorted rhoReflectivePresentation free bound name)
@@ -172,8 +192,9 @@ result retains the existing static quote/drop normalization of that payload. -/
 theorem reflective_body_received_drop (payload : Pattern) :
     reflectiveBody (.apply "PDrop" [.bvar 0]) payload =
       normalizeReflective rhoReflectivePresentation.toReflectivePresentationDecl payload := by
-  simp [reflectiveBody, instantiate, nameMark, normalizeReflective, Substitution.instantiateBVarAt,
-    Substitution.liftBVars_zero, rhoReflectivePresentation]
+  simp [reflectiveBody, instantiate, resolveQuotes, resolveQuotesList, finishResolveApply,
+    substituteResolved, receive, Substitution.instantiateBVarAt, Substitution.liftBVars_zero,
+    rhoReflectivePresentation]
 
 theorem received_drop_changes_body :
     reflectiveBody (.apply "PDrop" [.bvar 0]) (.apply "PZero" []) ≠

@@ -64,7 +64,7 @@ theorem entries_exact (search : Search queries locals captures (O := O) (Γ := �
 Only the converse completeness assertion needs the whole-table certificate. -/
 theorem entry_sound (search : Search queries locals captures (O := O) (Γ := Γ) (sort := sort))
     (chosen : Fin search.patterns.length → O) (member : chosen ∈ search.entries) : search.SourceMatch chosen := by
-  have present := (ContextualConjunctiveAbsence.mem_candidates search.world chosen).mp
+  have present := (ContextualConjunctiveNone.mem_candidates search.world chosen).mp
     (Finset.mem_filter.mp member).1
   obtain ⟨update, _, empty, _⟩ := ContextualQueryAnswers.answer_factors queries locals captures search.equations
     search.patterns search.rows search.world search.budget chosen member
@@ -82,21 +82,21 @@ theorem complete_empty_iff (search : Search queries locals captures (O := O) (Γ
     have member := (search.entries_exact complete chosen).mpr matched
     rw [empty] at member
     simp at member
-  · intro absent
+  · intro notMem
     apply Finset.eq_empty_of_forall_notMem
     intro chosen member
-    exact absent ⟨chosen, (search.entries_exact complete chosen).mp member⟩
+    exact notMem ⟨chosen, (search.entries_exact complete chosen).mp member⟩
 
 /-- Failure of the complete-table check identifies an actual unfinished
 job, rather than a refuted match or an empty successful table. -/
 theorem unfinished_job (search : Search queries locals captures (O := O) (Γ := Γ) (sort := sort))
     (unfinished : search.complete = false) :
-    ∃ chosen ∈ ContextualConjunctiveAbsence.candidates search.world search.patterns.length,
+    ∃ chosen ∈ ContextualConjunctiveNone.candidates search.world search.patterns.length,
       ∃ update : ContextualFrameUpdate.Update
         (ContextualQueryAnswers.problemAt queries locals captures search.equations search.patterns search.rows chosen),
         ContextualQueryAnswers.scan queries locals captures search.equations search.patterns search.rows search.budget chosen =
           .residual update ∧ update.remaining ≠ [] := by
-  have missing : ¬ ∀ chosen ∈ ContextualConjunctiveAbsence.candidates search.world search.patterns.length,
+  have missing : ¬ ∀ chosen ∈ ContextualConjunctiveNone.candidates search.world search.patterns.length,
       ContextualQueryAnswers.closed
         (ContextualQueryAnswers.scan queries locals captures search.equations search.patterns search.rows search.budget chosen) = true := by
     intro all
@@ -197,7 +197,7 @@ theorem whole_table_never_reports_none : ¬ Attempt search .every action label c
   | none impossible _ _ => cases impossible
 
 /-- Successful attempts are actual source sub-runs and have the compiled
-entry's retained guard and census conditions, in addition to source readiness. -/
+entry's retained guard and collect query conditions, in addition to source readiness. -/
 theorem fired_retains_admission (attempt : Attempt search mode action label code before .fired after) :
     SourceReady search mode ∧ (StagedSourceEffects.compile label code).Holds action label before ∧
       after = ConditionalSchedule.follow label before (code.map StagedSourceEffects.Instruction.raw) := by
@@ -206,8 +206,8 @@ theorem fired_retains_admission (attempt : Attempt search mode action label code
 
 theorem fired_has_one_atomic_realization (attempt : Attempt search mode action label code before .fired after) :
     let plan := (StagedSourceEffects.compile label code).raw
-    let selected := CensusSourceCompilation.selection plan.effect
-    let rule := CensusSourceCompilation.rule label plan.effect plan.equations
+    let selected := PredicateQuerySourceCompilation.selection plan.effect
+    let rule := PredicateQuerySourceCompilation.rule label plan.effect plan.equations
     PredicateQueryAdmission.Valid action label rule (plan.effect.queries.map PredicateQueryAdmission.Query.fixed) before selected ∧
       action.Equivalent (selected.result label rule before).equations after.equations ∧
       (selected.result label rule before).present = after.present := by

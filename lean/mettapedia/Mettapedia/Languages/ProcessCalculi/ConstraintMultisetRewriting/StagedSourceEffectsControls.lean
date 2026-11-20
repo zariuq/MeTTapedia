@@ -23,17 +23,17 @@ def isToken : Term signature → Bool
 def isBlocker : Term signature → Bool
   | .const value => value == 2
   | _ => false
-def tokenCensus : PredicateQuery Nat (Term signature) := ⟨isToken, {0}⟩
-def blockerCensus : PredicateQuery Nat (Term signature) := ⟨isBlocker, ∅⟩
+def tokenQuery : PredicateQuery Nat (Term signature) := ⟨isToken, {0}⟩
+def blockerQuery : PredicateQuery Nat (Term signature) := ⟨isBlocker, ∅⟩
 
 def takeRule : RuleInstance (Term signature) := ⟨[token], [], [], [.count token 1], []⟩
 def takeSelection : Selection Nat := ⟨[0], [], []⟩
-def publishRule : RuleInstance (Term signature) := ⟨[], [], [], [.absent blocker], [receipt]⟩
+def publishRule : RuleInstance (Term signature) := ⟨[], [], [], [.predicate .none blocker], [receipt]⟩
 def publishSelection : Selection Nat := ⟨[], [], [1]⟩
 def takeInstruction : Instruction (Term signature) (Subst signature) Nat :=
-  ⟨takeRule, takeSelection, [PredicateQueryAdmission.Query.fixed tokenCensus]⟩
+  ⟨takeRule, takeSelection, [PredicateQueryAdmission.Query.fixed tokenQuery]⟩
 def publishInstruction : Instruction (Term signature) (Subst signature) Nat :=
-  ⟨publishRule, publishSelection, [PredicateQueryAdmission.Query.fixed blockerCensus]⟩
+  ⟨publishRule, publishSelection, [PredicateQueryAdmission.Query.fixed blockerQuery]⟩
 def code := [takeInstruction, publishInstruction]
 
 theorem take_ready (world : Finset Nat) (present : 0 ∈ world) :
@@ -65,12 +65,12 @@ theorem take_ready (world : Finset Nat) (present : 0 ∈ world) :
     rfl
 
 theorem take_good : PredicateQueryAdmission.Valid A label takeRule takeInstruction.observations good takeSelection := by
-  apply (PredicateQueryAdmission.valid_fixed_iff _ _ _ [tokenCensus] _ _).mpr
+  apply (PredicateQueryAdmission.valid_fixed_iff _ _ _ [tokenQuery] _ _).mpr
   exact ⟨take_ready good.present (by decide), fun query member =>
     (List.mem_singleton.mp member) ▸ (by decide +kernel)⟩
 
 theorem take_bad : PredicateQueryAdmission.Valid A label takeRule takeInstruction.observations bad takeSelection := by
-  apply (PredicateQueryAdmission.valid_fixed_iff _ _ _ [tokenCensus] _ _).mpr
+  apply (PredicateQueryAdmission.valid_fixed_iff _ _ _ [tokenQuery] _ _).mpr
   exact ⟨take_ready bad.present (by decide), fun query member =>
     (List.mem_singleton.mp member) ▸ (by decide +kernel)⟩
 
@@ -78,7 +78,7 @@ def afterGood := takeSelection.result label takeRule good
 def afterBad := takeSelection.result label takeRule bad
 
 theorem publish_good : PredicateQueryAdmission.Valid A label publishRule publishInstruction.observations afterGood publishSelection := by
-  apply (PredicateQueryAdmission.valid_fixed_iff _ _ _ [blockerCensus] _ _).mpr
+  apply (PredicateQueryAdmission.valid_fixed_iff _ _ _ [blockerQuery] _ _).mpr
   refine ⟨?_, fun query member => (List.mem_singleton.mp member) ▸ (by decide +kernel)⟩
   refine ⟨by decide, by decide, rfl, rfl, rfl, by decide, ?_, ?_⟩
   · refine ⟨A.identity, ?_⟩
@@ -99,7 +99,7 @@ theorem publish_bad : ¬ publishSelection.Valid A label publishRule afterBad := 
     change equation ∈ [(token, token)] at member
     obtain rfl := List.mem_singleton.mp member
     rfl
-  have forbidden := ready.checks (.absent blocker) (List.mem_singleton_self _) A.identity solved 2 (by decide +kernel)
+  have forbidden := ready.checks (.predicate .none blocker) (List.mem_singleton_self _) A.identity solved 2 (by decide +kernel)
   exact forbidden rfl
 
 theorem good_code_executes : Executable A label good code := by
@@ -137,11 +137,11 @@ theorem successful_block_publishes_once :
       (ConditionalSchedule.follow label good (code.map Instruction.raw)).present = {1} := by
   exact ⟨(compiled_result_iff_source A label code _ _).mpr (.inl ⟨good_code_executes, rfl⟩), by decide +kernel⟩
 
-/-- The first census is true before the take and false afterward. Keeping
+/-- The first predicate query is true before the take and false afterward. Keeping
 its original cut is required even on this successful staged block. -/
-theorem the_original_census_cut_is_required :
+theorem the_original_query_cut_is_required :
     (compile label code).Holds A label good ∧
-      ¬ tokenCensus.Holds label (ConditionalSchedule.follow label good (code.map Instruction.raw)).present := by
+      ¬ tokenQuery.Holds label (ConditionalSchedule.follow label good (code.map Instruction.raw)).present := by
   exact ⟨(compile_exact A label code good).mpr good_code_executes, by decide +kernel⟩
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.StagedSourceEffects.Controls

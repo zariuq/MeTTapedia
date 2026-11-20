@@ -393,7 +393,7 @@ theorem round_paths_one_trace :
 
 /-- **Negative control.** A writer into the space a predicate query observes, then the query, is no path:
 the only path of the two firings has the query first, so no tile can relate two orders
-(`AnnotatedRuns.Controls.census_writer_one_order`). -/
+(`AnnotatedRuns.Controls.query_writer_one_order`). -/
 theorem query_writer_no_second_path (y : (theory A label).Term) :
     ¬ ∃ q : OccurrencePath (presentation A label) (classOf A label AnnotatedRuns.Controls.empty) y,
       OccurrencePath.sites q = [AnnotatedRuns.Controls.maker, AnnotatedRuns.Controls.observer] := by
@@ -401,7 +401,7 @@ theorem query_writer_no_second_path (y : (theory A label).Term) :
   have runs := executable_of_path A label q AnnotatedRuns.Controls.empty rfl
     ⟨Subst.id signature, by intro e member; cases member⟩
   rw [qSites] at runs
-  exact (AnnotatedRuns.Controls.census_writer_one_order).2.2.2.2 runs
+  exact (AnnotatedRuns.Controls.query_writer_one_order).2.2.2.2 runs
 
 end PathControls
 

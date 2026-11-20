@@ -1,5 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentIdEndpoints
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentCensusPairEtaControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentClassificationPairEtaControls
 
 /-!
 # The occurs check at identity endpoints, on concrete stores
@@ -32,7 +32,7 @@ open ContextualDependentGeneralPattern.Controls ContextualDependentPatternSolver
 open ContextualDependentFragment.Controls ContextualDependentOccursCheck.Controls
 open ContextualDependentFragment ContextualDependentGeneralPattern ContextualDependentDynamicFragment
 open ContextualDependentSpinesMany.Controls ContextualDependentFragmentDecisive.ClashControls
-open ContextualDependentConstantHeads.Controls ContextualDependentCensusPairEta.Controls
+open ContextualDependentConstantHeads.Controls ContextualDependentClassificationPairEta.Controls
 
 /-- The endpoints solver of the tower controls, as a fuel-indexed family. -/
 noncomputable def endpointsTower : ContextualDependentDecisiveDriver.Family setting.levels :=

@@ -5,9 +5,9 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 # A conditional decision for the family that reads every equation at its least annotation, from the rows not read
 
 The reduction of `ContextualDependentEtaDepth.tower_bound_decided_of_uncovered`, for the family above it. The
-remaining hypothesis asks a reader of **this** family on every census head outside the rows read: a reader of the
+remaining hypothesis asks a reader of **this** family on every classified head outside the rows read: a reader of the
 family below on the store, **or on the store with every equation at its least annotation**
-(`tower_least_decided_of_uncovered`). So a census head whose annotation is raised above the universe of both its
+(`tower_least_decided_of_uncovered`). So a classified head whose annotation is raised above the universe of both its
 sides no longer has to be read as it stands.
 
 A reader of the family below is a reader of this family (`towerLeastReads_of_bound`), so the hypothesis of the
@@ -40,9 +40,9 @@ theorem towerLeastReads_of_bound {fuel : Nat} {Θ : Context setting.R} {problem 
 theorem towerLeastReads_of_lowered {fuel : Nat} {Θ : Context setting.R} {problem : EquationStore (TotalTerm Θ)}
     (reads : TowerBoundReads fuel (towerLower fuel problem).remaining) : TowerLeastReads fuel problem := .inr reads
 
-/-- **Conditional decision for the tower's family that reads every equation at its least annotation, from the census
-rows outside the rows read**: if every census head of a constant preparation whose η-long opened sides are of a
-census kind and outside the rows read is read by a reader of the family from some budget on, the family decides
+/-- **Conditional decision for the tower's family that reads every equation at its least annotation, from the classification
+rows outside the rows read**: if every classified head of a constant preparation whose η-long opened sides are of a
+classified kind and outside the rows read is read by a reader of the family from some budget on, the family decides
 every store of the dynamic pattern fragment, with a principal answer or a certified refutation, constant at every
 larger budget. At the tower the hypothesis fails: the conclusion would decide `crossStore`
 (`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`,
@@ -53,12 +53,12 @@ theorem tower_least_decided_of_uncovered
       PermutedMiller setting.levels problem → problem ≠ [] → ∀ threshold,
         (∀ larger, threshold ≤ larger → towerPrepare larger problem = towerPrepare threshold problem) →
         ∀ equation ∈ (towerPrepare threshold problem).remaining,
-          ContextualDependentNormalizing.NormalEquation (fun _ => (0 : Nat)) equation → CensusHead equation →
+          ContextualDependentNormalizing.NormalEquation (fun _ => (0 : Nat)) equation → ClassifiedHead equation →
           ContextualDependentShortClosure.FragmentSidesMiller equation →
           Kind (openedFlexible (piCount equation.1.1.code))
-            (ContextualDependentCensus.openNormal (piCount equation.1.1.code)
+            (ContextualDependentClassification.openNormal (piCount equation.1.1.code)
               (expandTo (piCount equation.1.1.code) equation.1.2.code))
-            (ContextualDependentCensus.openNormal (piCount equation.1.1.code)
+            (ContextualDependentClassification.openNormal (piCount equation.1.1.code)
               (expandTo (piCount equation.1.1.code) equation.2.2.code)) →
           ¬ MixedCoveredHead equation → ∃ bound, ∀ larger, bound ≤ larger → TowerLeastReads larger problem)
     {Θ : Context setting.R} {problem : EquationStore (TotalTerm Θ)} (inside : InFragmentStore problem) :
@@ -66,9 +66,9 @@ theorem tower_least_decided_of_uncovered
       run (leastTower.solver larger) problem larger = run (leastTower.solver budget) problem budget ∧
       ((∃ state finished, run (leastTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ absent, run (leastTower.solver larger) problem larger = .refuted absent)) :=
+        (∃ missing, run (leastTower.solver larger) problem larger = .refuted missing)) :=
   tower_least_decided_of_reads (fun {_} {problem} permuted nonempty => by
-      obtain ⟨threshold, constant, equation, member, normal, head⟩ := tower_stable_census_head permuted nonempty
+      obtain ⟨threshold, constant, equation, member, normal, head⟩ := tower_stable_classified_head permuted nonempty
       by_cases covered : MixedCoveredHead equation
       · obtain ⟨bound, mixed⟩ := tower_mixedReads_of_covered constant member normal head.1 covered
         exact ⟨bound, fun larger enough => .inl (.inl (.inl (mixed larger enough)))⟩

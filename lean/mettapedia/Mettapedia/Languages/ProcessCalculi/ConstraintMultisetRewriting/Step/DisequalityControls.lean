@@ -14,14 +14,14 @@ knowledge has no equations and whose disequations are `X ≠ a`, the binding `X 
 (`other_admitted`) and the binding `X = a` is refused (`same_refused`): no solution separates.
 `disequality_checked` runs this from the empty state.
 
-## A disequality is not the absence of a row
+## A disequality is not the none query of a row
 
-* **Absence changes with the space.** With no row recording `X = a`, the absence guard of that row
-  is admitted (`absent_record_admitted`) and so is the binding `X = a` (`same_admitted_open`).
-  After the row is made, the guard is refused (`absent_record_refused`).
+* **The none query changes with the space.** With no row recording `X = a`, the none guard of that row
+  is admitted (`noRecord_admitted`) and so is the binding `X = a` (`same_admitted_open`).
+  After the row is made, the guard is refused (`noRecord_refused`).
 * **The disequation does not.** After the same insertion at the disequal state the binding `X = a`
   stays refused (`apart_persists_after_insert`): the disequation lives in the knowledge, not in the
-  space. `absence_vs_disequality` collects the four verdicts.
+  space. `none_vs_disequality` collects the four verdicts.
 
 ## Principal answers
 
@@ -111,12 +111,12 @@ theorem enabled_empty {label : Nat → Term signature} (store : Finset Nat) :
   ⟨by simp [Selection.commit], by simp [Selection.commit], by simp [Selection.commit],
     by simp [Selection.commit], by simp [Selection.commit]⟩
 
-/-- A selection that only makes `o` is enabled where `o` is absent. -/
+/-- A selection that only makes `o` is enabled where `o` is not present. -/
 theorem enabled_make {label : Nat → Term signature} {store : Finset Nat} {o : Nat}
-    (absent : o ∉ store) :
+    (missing : o ∉ store) :
     Enabled label store ((⟨[], [], [o]⟩ : Selection Nat).commit (T := Term signature)) :=
   ⟨by simp [Selection.commit], by simp [Selection.commit], by simp [Selection.commit],
-    by simpa [Selection.commit] using absent, by simp [Selection.commit]⟩
+    by simpa [Selection.commit] using missing, by simp [Selection.commit]⟩
 
 /-! ## States and firings -/
 
@@ -147,9 +147,9 @@ def tellApart (s : State A Nat) (empty : s.disequations.1 = []) : Firing A Nat s
 def insertRecord (s : State A Nat) : Firing A Nat s :=
   Firing.ofBase s ⟨⟨[], [], [], [], [rows 0]⟩, [], ⟨[], [], [0]⟩⟩
 
-/-- A firing guarded by the absence of the record of `X = a`; it makes the marker. -/
-def absentRecord (s : State A Nat) : Firing A Nat s :=
-  Firing.ofBase s ⟨⟨[], [], [], [.absent (rows 0)], [rows 1]⟩, [], ⟨[], [], [1]⟩⟩
+/-- A firing guarded by the none query of the record of `X = a`; it makes the marker. -/
+def noRecord (s : State A Nat) : Firing A Nat s :=
+  Firing.ofBase s ⟨⟨[], [], [], [.predicate .none (rows 0)], [rows 1]⟩, [], ⟨[], [], [1]⟩⟩
 
 /-! ## A disequality is checked by later bindings -/
 
@@ -201,7 +201,7 @@ theorem disequality_checked :
     other_admitted afterApart afterApart_equations afterApart_disequations,
     same_refused afterApart (by rw [afterApart_disequations]; exact List.mem_singleton_self _)⟩
 
-/-! ## Absence changes with the space; the disequation does not -/
+/-! ## The none query changes with the space; the disequation does not -/
 
 /-- With nothing known, the binding `X = a` is admitted. -/
 theorem same_admitted_open : P.Admits (tellEq openState a) := by
@@ -213,18 +213,18 @@ theorem same_admitted_open : P.Admits (tellEq openState a) := by
   · show Separates A (bind a) ([] ++ [])
     simp
 
-/-- With no record of `X = a` present, its absence guard is admitted. -/
-theorem absent_record_admitted (s : State A Nat) (equations : s.configuration.equations = [])
+/-- With no record of `X = a` present, its none guard is admitted. -/
+theorem noRecord_admitted (s : State A Nat) (equations : s.configuration.equations = [])
     (empty : s.configuration.present = ∅) (consistent : Separates A A.identity s.disequations.1) :
-    P.Admits (absentRecord s) := by
+    P.Admits (noRecord s) := by
   refine ⟨List.nodup_nil, List.nodup_singleton _, rfl, rfl, rfl, enabled_make (by simp [empty]),
-    ⟨A.identity, ?_, ?_⟩, fun _ _ _ => ⟨?_, by simp [absentRecord, Firing.ofBase]⟩⟩
+    ⟨A.identity, ?_, ?_⟩, fun _ _ _ => ⟨?_, by simp [noRecord, Firing.ofBase]⟩⟩
   · intro e member
-    simp [Selection.problem, Selection.equations, absentRecord, Firing.ofBase, equations] at member
+    simp [Selection.problem, Selection.equations, noRecord, Firing.ofBase, equations] at member
   · show Separates A A.identity (s.disequations.1 ++ [])
     simpa using consistent
   · intro check member
-    simp only [absentRecord, Firing.ofBase, List.mem_singleton] at member
+    simp only [noRecord, Firing.ofBase, List.mem_singleton] at member
     subst member
     intro o present
     simp [empty] at present
@@ -241,9 +241,9 @@ theorem insert_admitted (s : State A Nat) (equations : s.configuration.equations
   · show Separates A A.identity (s.disequations.1 ++ [])
     simpa using consistent
 
-/-- Once the record of `X = a` is present, its absence guard is refused. -/
-theorem absent_record_refused (s : State A Nat) (present : 0 ∈ s.configuration.present) :
-    ¬ P.Admits (absentRecord s) := by
+/-- Once the record of `X = a` is present, its none guard is refused. -/
+theorem noRecord_refused (s : State A Nat) (present : 0 ∈ s.configuration.present) :
+    ¬ P.Admits (noRecord s) := by
   rintro ⟨-, -, -, -, -, -, ⟨σ, solved, separated⟩, asks⟩
   exact (asks σ solved separated).1 _ (List.mem_singleton_self _) 0 present rfl
 
@@ -263,16 +263,16 @@ theorem openInserted_present : 0 ∈ openInserted.configuration.present := by
 
 theorem apartInserted_disequations : apartInserted.disequations.1 = [(X, a)] := rfl
 
-/-- **A disequality is not the absence of a row.** Without disequations, the absence guard of the
+/-- **A disequality is not the none query of a row.** Without disequations, the none guard of the
 record of `X = a` is admitted and so is the binding `X = a`; after the record is made, the guard is
-refused. Under `X ≠ a`, the binding `X = a` is refused before and after the same insertion: absence
+refused. Under `X ≠ a`, the binding `X = a` is refused before and after the same insertion: none queries
 changed with the space, the disequation did not. -/
-theorem absence_vs_disequality :
-    P.Admits (absentRecord openState) ∧ P.Admits (tellEq openState a) ∧
-      ¬ P.Admits (absentRecord openInserted) ∧
+theorem none_vs_disequality :
+    P.Admits (noRecord openState) ∧ P.Admits (tellEq openState a) ∧
+      ¬ P.Admits (noRecord openInserted) ∧
       ¬ P.Admits (tellEq afterApart a) ∧ ¬ P.Admits (tellEq apartInserted a) :=
-  ⟨absent_record_admitted openState rfl rfl (by simp [Separates, openState, plain]),
-    same_admitted_open, absent_record_refused openInserted openInserted_present,
+  ⟨noRecord_admitted openState rfl rfl (by simp [Separates, openState, plain]),
+    same_admitted_open, noRecord_refused openInserted openInserted_present,
     same_refused afterApart (by rw [afterApart_disequations]; exact List.mem_singleton_self _),
     same_refused apartInserted (by rw [apartInserted_disequations]; exact List.mem_singleton_self _)⟩
 
@@ -299,10 +299,10 @@ theorem identity_principal_at_apart :
 #print axioms same_refused
 #print axioms disequality_checked
 #print axioms same_admitted_open
-#print axioms absent_record_admitted
+#print axioms noRecord_admitted
 #print axioms insert_admitted
-#print axioms absent_record_refused
-#print axioms absence_vs_disequality
+#print axioms noRecord_refused
+#print axioms none_vs_disequality
 #print axioms no_presenting_answer
 #print axioms identity_principal_at_apart
 

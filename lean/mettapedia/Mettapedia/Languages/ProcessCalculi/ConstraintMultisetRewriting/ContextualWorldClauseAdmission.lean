@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 
 All-future guards are transferred at the original world, using joint model
 coverage and conditional row agreement. Fresh extensions preserve both
-positive matches and their absence, so coverage does not weaken a negative
+positive matches and their none query, so coverage does not weaken a negative
 guard or identify an unfinished search with a negative answer.
 -/
 
@@ -28,7 +28,7 @@ theorem evaluated_extension_iff (extension : Extension next) (candidate : Assign
   cases check with
   | equal first second =>
       exact ⟨fun same => extension.instantiate_injective same, congrArg (instantiate extension.assignment)⟩
-  | absent pattern => simp only [Check.map, EvaluatedHolds, matches_extension_iff]
+  | predicate quantifier pattern => simp only [Check.map, EvaluatedHolds, matches_extension_iff]
   | count pattern cardinality =>
       have regions : evaluatedRegion locals captures (Assignment.compose extension.assignment candidate) rows world
           (instantiate extension.assignment pattern) = evaluatedRegion locals captures candidate rows world pattern := by
@@ -62,13 +62,10 @@ theorem Related.evaluated_iff (related : Related left leftEnv right rightEnv lef
       EvaluatedHolds rights right.declarations rightModel right.rows right.present check := by
   cases check with
   | equal _ _ => rfl
-  | absent pattern =>
-      constructor
-      · intro absent occurrence member matched
-        have present : occurrence ∈ left.present := by rwa [physical]
-        exact absent occurrence present ((related.current_rows pattern occurrence present).mpr matched)
-      · intro absent occurrence member matched
-        exact absent occurrence (by rwa [← physical]) ((related.current_rows pattern occurrence member).mp matched)
+  | predicate quantifier pattern =>
+      show quantifier.Holds left.present _ ↔ quantifier.Holds right.present _
+      rw [← physical]
+      exact quantifier.holds_congr fun occurrence present => related.current_rows pattern occurrence present
   | count pattern cardinality =>
       have regions : evaluatedRegion lefts left.declarations leftModel left.rows left.present pattern =
           evaluatedRegion rights right.declarations rightModel right.rows right.present pattern := by

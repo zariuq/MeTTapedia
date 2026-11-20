@@ -250,26 +250,10 @@ theorem queryBodies_returning {name : String} (expected : Atom) (bindings : MORK
     (returns : ReturnsVariable name body) : ∀ use rows continued,
     queryBodies bindings pattern body use rows = some continued →
       ∀ control ∈ continued, ReturnControl name expected control := by
-  intro use rows
-  induction rows generalizing use with
-  | nil => intro continued chosen; simp [queryBodies] at chosen; subst continued; simp
-  | cons row rest ih =>
-      intro continued chosen
-      simp only [queryBodies] at chosen
-      cases tailRun : queryBodies bindings pattern body (use + 1) rest with
-      | none => simp [tailRun] at chosen
-      | some tail =>
-          simp only [tailRun] at chosen
-          cases unified : unify bindings pattern (rename use row) with
-          | exhausted => simp [unified] at chosen
-          | clash => simp [unified] at chosen; subst continued; exact ih _ _ tailRun
-          | ok bound =>
-              simp [unified] at chosen
-              subst continued
-              intro control member
-              rcases List.mem_cons.mp member with rfl | present
-              · exact .evaluate bound returns
-              · exact ih _ _ tailRun control present
+  intro use rows continued chosen control member
+  obtain ⟨_,_,bound,_,rfl⟩ := queryRows_member id (fun _ bound => Control.evaluate bound body)
+    bindings pattern use rows chosen control member
+  exact .evaluate bound returns
 
 theorem queries_returning {name : String} (expected : Atom) (state : Effects.State) (pattern body : Atom)
     (returns : ReturnsVariable name body) : ∀ use answers continued used,
@@ -287,10 +271,11 @@ theorem queries_returning {name : String} (expected : Atom) (state : Effects.Sta
       simp only [queries] at chosen
       split at chosen
       · rename_i rows read
-        cases here : queryBodies answer.bindings pattern body use rows with
+        cases here : queryBatch answer.bindings pattern body use rows with
         | none => simp [here] at chosen
-        | some controls =>
-            cases there : queries state pattern body (use + rows.length) rest with
+        | some batch =>
+            rcases batch with ⟨controls,spent⟩
+            cases there : queries state pattern body (use + spent) rest with
             | none => simp [here, there] at chosen
             | some tail =>
                 obtain ⟨others, count⟩ := tail
@@ -298,7 +283,9 @@ theorem queries_returning {name : String} (expected : Atom) (state : Effects.Sta
                 obtain ⟨rfl, rfl⟩ := chosen
                 intro control member
                 rcases List.mem_append.mp member with present | present
-                · exact queryBodies_returning expected _ _ _ returns _ _ _ here control present
+                · obtain ⟨_, _, rfl⟩ := queryBatch_ready here
+                  obtain ⟨packet, _, rfl⟩ := List.mem_map.mp present
+                  exact .evaluate packet.2 returns
                 · exact ih _ _ _ there control present
       · cases there : queries state pattern body use rest with
         | none => simp [there] at chosen

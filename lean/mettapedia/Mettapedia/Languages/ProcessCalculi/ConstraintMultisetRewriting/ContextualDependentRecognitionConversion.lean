@@ -143,14 +143,14 @@ def tryActiveConv (fuel : Nat) {Γ : Context S.R} (type : TypeOver Γ) {scopeTyp
                   if smaller : (reading.combine rest moved).target.arity < (extend Γ type).arity then
                     some (.solved (reading.combine rest moved) smaller)
                   else none
-              | .refuted absent =>
+              | .refuted missing =>
                   some (.refuted (reading.refutes (fun solution held =>
-                    absent solution ((recognized.holds_iff solution).mp held)) rest))
+                    missing solution ((recognized.holds_iff solution).mp held)) rest))
               | .pending =>
                   match occursCheck rigid complete normalizes recognized.pattern recognized.right with
-                  | some absent =>
+                  | some missing =>
                       some (.refuted (reading.refutes (fun solution held =>
-                        absent.down solution ((recognized.holds_iff solution).mp held)) rest))
+                        missing.down solution ((recognized.holds_iff solution).mp held)) rest))
                   | none => none
 
 /-- The conversion pattern rule on one store equation, in both orientations. -/

@@ -3,11 +3,11 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentShortClosureControls
 
 /-!
-# The census under the last family
+# The classification under the last family
 
 The last family is the in-place family (`ContextualDependentIntersectionGeneral.inPlaceFamily`): the cumulative family,
 then general intersection at the newest metavariable, after rotation, and in place. On every control store of the
-census (R86 through R116, the gap witnesses `twiceStore` and the twin store included), at budget 16:
+classification (R86 through R116, the gap witnesses `twiceStore` and the twin store included), at budget 16:
 
 * the run of eight rounds is **decided** (committed or refuted, never suspended), and
 * the residual store after each of the first eight rounds, whenever the run is cut off there, has Miller sides
@@ -16,7 +16,7 @@ census (R86 through R116, the gap witnesses `twiceStore` and the twin store incl
 These are runs at one budget, the evidence the class and the family are built against. They are not a decision
 theorem. The reduction `inPlace_decided_of_settling_miller` is conditional on firing and closure on the Miller class,
 and at the tower that hypothesis fails: the fragment holds `crossStore`, solvable and without principal answer
-(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`). The census is split over this module and `…Acceptance3ControlsHeads`, `…Acceptance3ControlsRest`, to keep each
+(`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`). The classification is split over this module and `…Acceptance3ControlsHeads`, `…Acceptance3ControlsRest`, to keep each
 check within its memory budget.
 -/
 
@@ -53,9 +53,9 @@ theorem intersection_final : finalDecided intersectionStore = true := by decide 
 theorem flexible_final : finalDecided flexibleStore = true := by decide +kernel
 theorem prunable_final : finalDecided prunableStore = true := by decide +kernel
 theorem matching_final : finalDecided matchingStore = true := by decide +kernel
-theorem flexibleBase_final : finalDecided ContextualDependentCensus.Controls.flexibleBaseStore = true := by
+theorem flexibleBase_final : finalDecided ContextualDependentClassification.Controls.flexibleBaseStore = true := by
   decide +kernel
-theorem nested_final : finalDecided ContextualDependentCensus.Controls.nestedStore = true := by decide +kernel
-theorem applied_final : finalDecided ContextualDependentCensus.Controls.appliedStore = true := by decide +kernel
+theorem nested_final : finalDecided ContextualDependentClassification.Controls.nestedStore = true := by decide +kernel
+theorem applied_final : finalDecided ContextualDependentClassification.Controls.appliedStore = true := by decide +kernel
 end ContextualDependentAcceptance3.Controls
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting

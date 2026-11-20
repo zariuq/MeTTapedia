@@ -100,4 +100,182 @@ theorem declared_output_space (base : SubstitutionAction T S) (location : O → 
 
 end Selections
 
+/-! ## Rigid scope and return authority
+
+Which row is at a site, and which occurrence owns a result, are resource
+facts. Phases can change without changing the ticket. The ledger below
+uses the ordinary occurrence commit, with an additional non-reuse
+condition on logical identities. A physical allocator may recycle its
+addresses by using generation-qualified occurrence identities.
+-/
+
+namespace Authority
+
+open Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits (Enabled fire mem_fire)
+
+structure Ticket (Id : Type*) where
+  key : Id
+  owner : Id
+  parent : Option Id
+  deriving DecidableEq
+
+inductive Mark (Id Phase : Type*) where
+  | cell (place : Option Id)
+  | control (ticket : Ticket Id) (phase : Phase)
+  deriving DecidableEq
+
+def Mark.ticket {Id Phase : Type*} : Mark Id Phase → Option (Ticket Id)
+  | .cell _ => none
+  | .control t _ => some t
+
+structure Ledger (Id Phase : Type*) where
+  mark : Id → Option (Mark Id Phase)
+  issued : Finset Id
+
+theorem Ledger.eq_of_parts {Id Phase : Type*} {left right : Ledger Id Phase}
+    (marks : left.mark = right.mark) (history : left.issued = right.issued) : left = right := by
+  cases left
+  cases right
+  cases marks
+  cases history
+  rfl
+
+variable {Id Phase : Type*} [DecidableEq Id]
+
+def Ledger.root (present : Finset Id) : Ledger Id Phase :=
+  ⟨fun o => if o ∈ present then some (.cell none) else none, present⟩
+
+def Ledger.Fresh (before : Ledger Id Phase) (selection : Selection Id) : Prop :=
+  Disjoint selection.made.toFinset before.issued
+
+/-- Install the tags on the actual produced identities in their selected
+order, discard dead tags, and keep the issuance history even at a return. -/
+def Ledger.advance (before : Ledger Id Phase) (present : Finset Id) (selection : Selection Id)
+    (out : Vector (Mark Id Phase) selection.made.length) : Ledger Id Phase :=
+  let after := fire present (selection.commit (T := Unit))
+  let written := selection.made.zip out.toList
+  ⟨fun o => if o ∈ after then (written.lookup o).orElse (fun _ => before.mark o) else none,
+    before.issued ∪ selection.made.toFinset⟩
+
+def Ledger.Covers (ledger : Ledger Id Phase) (present : Finset Id) : Prop :=
+  present ⊆ ledger.issued ∧ ∀ o, o ∈ present ↔ (ledger.mark o).isSome
+
+theorem Ledger.root_covers (present : Finset Id) :
+    (Ledger.root (Phase := Phase) present).Covers present := by
+  refine ⟨fun _ member => member, fun o => ?_⟩
+  by_cases live : o ∈ present <;> simp [Ledger.root, live]
+
+theorem Ledger.issued_mono (before : Ledger Id Phase) (present : Finset Id)
+    (selection : Selection Id) (out : Vector (Mark Id Phase) selection.made.length) :
+    before.issued ⊆ (before.advance present selection out).issued :=
+  Finset.subset_union_left
+
+theorem Ledger.fresh_not_issued {before : Ledger Id Phase} {selection : Selection Id}
+    (fresh : before.Fresh selection) {o : Id} (made : o ∈ selection.made) : o ∉ before.issued :=
+  fun prior => Finset.disjoint_left.mp fresh (List.mem_toFinset.mpr made) prior
+
+omit [DecidableEq Id] in
+private theorem written_keys (selection : Selection Id) (out : Vector (Mark Id Phase) selection.made.length) :
+    (selection.made.zip out.toList).map Prod.fst = selection.made := by
+  exact List.map_fst_zip (by simp)
+
+omit [DecidableEq Id] in
+/-- Reading an occurrence from an ordered, uniquely keyed publication. -/
+theorem lookup_write [BEq Id] [LawfulBEq Id] {Value : Type*} {o : Id} {tag : Value} :
+    ∀ (writes : List (Id × Value)), (writes.map Prod.fst).Nodup →
+      (o, tag) ∈ writes → writes.lookup o = some tag
+  | [], _, member => nomatch member
+  | (key, value) :: writes, distinct, member => by
+    rcases List.mem_cons.mp member with same | inside
+    · cases same
+      simp
+    · have apart := List.nodup_cons.mp distinct
+      have keyIn : o ∈ writes.map Prod.fst := List.mem_map_of_mem (f := Prod.fst) inside
+      have other : o ≠ key := fun same => apart.1 (same ▸ keyIn)
+      have unequal : (o == key) = false := by simpa using other
+      simp only [List.lookup_cons, unequal, lookup_write writes apart.2 inside]
+
+theorem Ledger.mark_installed (before : Ledger Id Phase) (present : Finset Id) {selection : Selection Id}
+    (out : Vector (Mark Id Phase) selection.made.length) (distinct : selection.made.Nodup)
+    {o : Id} {tag : Mark Id Phase} (written : (o, tag) ∈ selection.made.zip out.toList) :
+    (before.advance present selection out).mark o = some tag := by
+  have live : o ∈ fire present (selection.commit (T := Unit)) :=
+    mem_fire.mpr (.inr (List.mem_toFinset.mpr (List.of_mem_zip written).1))
+  have selected : (selection.made.zip out.toList).lookup o = some tag :=
+    lookup_write _ (by rwa [written_keys]) written
+  simp [Ledger.advance, live, selected]
+
+/-- Independent of payload values, a live occurrence outside the made
+set carries its old mark. -/
+theorem Ledger.mark_retained (before : Ledger Id Phase) {present : Finset Id}
+    {selection : Selection Id} (out : Vector (Mark Id Phase) selection.made.length) {o : Id}
+    (live : o ∈ fire present (selection.commit (T := Unit))) (old : o ∉ selection.made) :
+    (before.advance present selection out).mark o = before.mark o := by
+  have unwritten : (selection.made.zip out.toList).lookup o = none := by
+    apply List.lookup_eq_none_iff.mpr
+    intro pair member
+    have key := List.mem_map_of_mem (f := Prod.fst) member
+    rw [written_keys] at key
+    simpa using (fun equal : o = pair.1 => old (equal.symm ▸ key))
+  simp [Ledger.advance, live, unwritten]
+
+theorem Ledger.covers_advance {before : Ledger Id Phase} {present : Finset Id} {selection : Selection Id}
+    (out : Vector (Mark Id Phase) selection.made.length) (covered : before.Covers present) :
+    (before.advance present selection out).Covers (fire present (selection.commit (T := Unit))) := by
+  refine ⟨?_, fun o => ?_⟩
+  · intro o live
+    rcases mem_fire.mp live with ⟨survived, _⟩ | made
+    · exact Finset.mem_union_left _ (covered.1 survived)
+    · exact Finset.mem_union_right _ (by simpa only [Selection.commit] using made)
+  · by_cases live : o ∈ fire present (selection.commit (T := Unit))
+    · by_cases made : o ∈ selection.made
+      · have inKeys : o ∈ (selection.made.zip out.toList).map Prod.fst := by
+          rwa [written_keys]
+        obtain ⟨pair, existsPair, equal⟩ := List.mem_map.mp inKeys
+        have found : ((selection.made.zip out.toList).lookup o).isSome :=
+          List.lookup_isSome_iff.mpr ⟨pair, existsPair, by simp [equal]⟩
+        cases checked : (selection.made.zip out.toList).lookup o with
+        | none => simp [checked] at found
+        | some mark => simp [Ledger.advance, live, checked]
+      · have survived : o ∈ present := by
+          rcases mem_fire.mp live with ⟨old, _⟩ | n
+          · exact old
+          · exact (made (by simpa only [Selection.commit, List.mem_toFinset] using n)).elim
+        rw [Ledger.mark_retained before out live made]
+        exact iff_of_true live ((covered.2 o).mp survived)
+    · simp [Ledger.advance, live]
+
+/-- Every live mark after a commit comes either from a fresh made
+occurrence or from a retained one. In particular, advancing cannot
+silently change the tag of a surviving old occurrence. -/
+theorem Ledger.mark_advance_iff {before : Ledger Id Phase} {present : Finset Id} {selection : Selection Id}
+    (out : Vector (Mark Id Phase) selection.made.length) (covered : before.Covers present)
+    (fresh : before.Fresh selection) (distinct : selection.made.Nodup) {o : Id} {mark : Mark Id Phase} :
+    (before.advance present selection out).mark o = some mark ↔
+      (o, mark) ∈ selection.made.zip out.toList ∨
+        (o ∈ present ∧ o ∉ selection.taken ∧ before.mark o = some mark) := by
+  constructor
+  · intro marked
+    have live := ((Ledger.covers_advance out covered).2 o).mpr (by rw [marked]; rfl)
+    rcases mem_fire.mp live with ⟨old, notTaken⟩ | new
+    · have notMade : o ∉ selection.made := fun made => (Ledger.fresh_not_issued fresh made) (covered.1 old)
+      exact .inr ⟨old, fun selected => notTaken (List.mem_toFinset.mpr selected),
+        (Ledger.mark_retained before out live notMade).symm.trans marked⟩
+    · have wrote : o ∈ (selection.made.zip out.toList).map Prod.fst := by
+        rw [written_keys]
+        exact List.mem_toFinset.mp new
+      obtain ⟨⟨key, tag⟩, member, sameKey⟩ := List.mem_map.mp wrote
+      change key = o at sameKey
+      subst key
+      have sameTag := Option.some.inj ((Ledger.mark_installed before present out distinct member).symm.trans marked)
+      exact .inl (sameTag ▸ member)
+  · rintro (made | ⟨old, notTaken, same⟩)
+    · exact Ledger.mark_installed before present out distinct made
+    · have live : o ∈ fire present (selection.commit (T := Unit)) :=
+        mem_fire.mpr (.inl ⟨old, fun taken => notTaken (List.mem_toFinset.mp taken)⟩)
+      have notMade : o ∉ selection.made := fun made => (Ledger.fresh_not_issued fresh made) (covered.1 old)
+      exact (Ledger.mark_retained before out live notMade).trans same
+
+end Authority
+
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.LocatedSubstitution

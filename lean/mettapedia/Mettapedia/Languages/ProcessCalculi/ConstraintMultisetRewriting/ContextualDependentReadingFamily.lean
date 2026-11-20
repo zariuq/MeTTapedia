@@ -78,7 +78,7 @@ theorem readRound_eq_of_below (fuel : Nat) {Θ : Context S.R} {problem : Equatio
   cases computed : below fuel problem with
   | stuck => exact absurd computed moving
   | progress update smaller => rfl
-  | refuted absent => rfl
+  | refuted missing => rfl
 
 /-- **Every run that the family below decides, the family above decides with the same outcome.** -/
 theorem read_run_of_below (fuel rounds : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ))
@@ -103,7 +103,7 @@ theorem readRound_not_stuck_of_read (fuel : Nat) {Θ : Context S.R} {problem : E
   | stuck =>
       exact liftCollapsed_not_stuck facts roots heads algebra rigid complete _ (readingRank fuel problem) moving
   | progress update smaller => exact fun impossible => by cases impossible
-  | refuted absent => exact fun impossible => by cases impossible
+  | refuted missing => exact fun impossible => by cases impossible
 
 /-! ## Eventual constancy -/
 
@@ -164,7 +164,7 @@ theorem readRound_closure (fuel : Nat) :
       rw [computed] at fired
       cases fired
       exact belowClosure fuel _ _ _ permuted computed
-  | refuted absent =>
+  | refuted missing =>
       rw [computed] at fired
       cases fired
 
@@ -187,9 +187,9 @@ theorem read_decided_of_firing
       ((∃ state finished,
           run ((readFamily facts roots heads algebra rigid complete below reading readingRank).solver larger)
             problem larger = .solved state finished ∧ (frames S.levels).Principal problem state.answer) ∨
-        (∃ absent,
+        (∃ missing,
           run ((readFamily facts roots heads algebra rigid complete below reading readingRank).solver larger)
-            problem larger = .refuted absent)) :=
+            problem larger = .refuted missing)) :=
   (Settled.ofConst (readFamily facts roots heads algebra rigid complete below reading readingRank)
     (fun problem => readRound_const facts roots heads algebra rigid complete below reading readingRank belowConst
       readingConst problem)

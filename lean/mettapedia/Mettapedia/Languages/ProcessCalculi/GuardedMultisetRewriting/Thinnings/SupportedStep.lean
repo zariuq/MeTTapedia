@@ -79,7 +79,7 @@ theorem template_substitute {assignment : Subst V (Term Head)}
         rfl
 
 /-- The check obligation concerns the actual observed bags after substitution.
-Scope support alone does not establish it for absence, counts or data predicates. -/
+Scope support alone does not establish it for none queries, counts or data predicates. -/
 def ChecksTransport (rule : Rule V (Term Head) (Pattern Head V))
     (before : Multiset (Term Head)) (target : Nat) (σ : Nat → Term Head) : Prop :=
   ∀ assignment, BindsOnlyGathers layer rule assignment → ∀ check ∈ rule.checks,
@@ -168,7 +168,7 @@ theorem collapsed_covers (assignment : Subst Nat (Term Nat)) (t : Term Nat) :
   · rintro rfl
     exact ⟨assignment, Extends.refl _, fun _ _ => rfl, (solves_iff _ _ _).mpr rfl⟩
 
-theorem absent_before (assignment : Subst Nat (Term Nat)) :
+theorem none_before (assignment : Subst Nat (Term Nat)) :
     matchesIn layer assignment variablePattern {Controls.seven} = 0 := by
   simp [matchesIn, semRegion_eq_true, variable_covers, Controls.seven]
 
@@ -176,18 +176,18 @@ theorem present_after (assignment : Subst Nat (Term Nat)) :
     matchesIn layer assignment collapsedPattern {Controls.seven} = {Controls.seven} := by
   simp [matchesIn, semRegion_eq_true, collapsed_covers]
 
-def absenceRule : Rule Nat (Term Nat) (Pattern Nat Nat) where
+def noneRule : Rule Nat (Term Nat) (Pattern Nat Nat) where
   take := []
   read := []
-  checks := [Check.absent variablePattern]
+  checks := [Check.noneMatch variablePattern]
   produce := []
 
-/-- A support-respecting contraction can create a match and invalidate absence. -/
-theorem support_alone_does_not_transport_absence :
-    ¬ChecksTransport absenceRule {Controls.seven} 0 (fun _ => Controls.seven) := by
+/-- A support-respecting contraction can create a match and invalidate none queries. -/
+theorem support_alone_does_not_transport_none :
+    ¬ChecksTransport noneRule {Controls.seven} 0 (fun _ => Controls.seven) := by
   intro transport
   have allowed := transport (fun _ => none) (by intro v _; rfl)
-    (Check.absent variablePattern) (by simp [absenceRule]) (absent_before _)
+    (Check.noneMatch variablePattern) (by simp [noneRule]) (none_before _)
   change matchesIn layer (fun _ => none) collapsedPattern
     (({Controls.seven} : Multiset (Term Nat)).map (Term.substituteMany (fun _ => Controls.seven))) = 0 at allowed
   have unchanged : Term.substituteMany (fun _ => Controls.seven) Controls.seven = Controls.seven := rfl

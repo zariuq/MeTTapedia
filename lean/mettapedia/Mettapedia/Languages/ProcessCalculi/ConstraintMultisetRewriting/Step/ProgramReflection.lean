@@ -165,7 +165,7 @@ def semanticQuoted (seen : Finset Occ) : Semantic.SemanticQuery A Occ :=
 
 /-- A firing that only asks one predicate query. -/
 def queryFiring (query : PredicateQueryAdmission.Query Tm (Subst rows) Occ) : AnnotatedRuns.Firing Tm (Subst rows) Occ :=
-  ⟨⟨[], [], [], [], []⟩, [query], ⟨[], [], []⟩⟩
+  ⟨⟨[], [], [], [], []⟩, [query.toRegion], ⟨[], [], []⟩⟩
 
 /-- The quoted value of the collision: `code a nil`. -/
 def quotedValue : Sx := code (atom ka) nil
@@ -256,7 +256,7 @@ theorem queryFiring_valid_iff (query : PredicateQueryAdmission.Query Tm (Subst r
     simp [queryFiring, Selection.problem, Selection.equations]
   constructor
   · intro valid
-    have := valid.observations query (List.mem_singleton_self _)
+    have := valid.observations query.toRegion (List.mem_singleton_self _)
     rwa [problem] at this
   · intro asked
     refine ⟨⟨List.nodup_nil, List.nodup_nil, rfl, rfl, rfl, ⟨?_, ?_, ?_, ?_, ?_⟩, ?_, ?_⟩, ?_⟩

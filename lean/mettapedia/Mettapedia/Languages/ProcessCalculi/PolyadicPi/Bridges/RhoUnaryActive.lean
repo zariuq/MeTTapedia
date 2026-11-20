@@ -158,7 +158,7 @@ theorem Activity.header_typed {Γ : Ctx sig} (world : World Γ 0) (activity : Ac
       exact typed_input_body (code_typed (seedChannel rhoAtomicNameContext self)
         (world channel).channel (ordinary guarded world).handler)
   | sendCode channel body guarded self =>
-      exact ⟨.quote (seedCode_typed rhoAtomicNameContext self),
+      exact ⟨NameWellSorted.quoteOfSafe (seedCode_typed rhoAtomicNameContext self) (seedCode_safe self 0),
         code_typed (seedChannel rhoAtomicNameContext self) (world channel).channel
           (ordinary guarded world).handler⟩
   | request => exact ⟨allocatorRequest.typed, .drop allocatorReply.typed⟩
@@ -200,6 +200,45 @@ theorem Activity.header_safe {Γ : Ctx sig} (world : World Γ 0) (activity : Act
   | seedInput => exact safe_input_body (seedReceiver_safe allocatorState allocatorReply)
   | token seed => exact ⟨allocatorState.safe, seedCode_safe seed 0⟩
 
+private theorem literal_output {channel payload : Pattern}
+    (channelLiteral : Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral rhoReflectivePresentation channel = true) (payloadLiteral : Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral rhoReflectivePresentation payload = true) :
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral rhoReflectivePresentation (Header.output channel payload).pattern = true := by
+  simp [Header.pattern, channelLiteral, payloadLiteral]
+
+/-- Every rendered header quotes only literal code. -/
+theorem Activity.header_literal {Γ : Ctx sig} (world : World Γ 0) (activity : Activity Γ) :
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral rhoReflectivePresentation (activity.header world).pattern = true := by
+  cases activity with
+  | output channel datum => exact literal_output (world channel).literal (world datum).payload_literal
+  | input channel body guarded =>
+      simp [Activity.header, Header.pattern, (world channel).literal, (ordinary guarded world).literal]
+  | privateScope body guarded =>
+      simp [Activity.header, Header.pattern, allocatorReply.literal, (ordinary guarded world).literal]
+  | install channel body guarded =>
+      simp [Activity.header, Header.pattern, allocatorReply.literal,
+        (installBody channel guarded world).literal]
+  | ready channel body guarded self =>
+      exact idle_literal (seedChannel rhoAtomicNameContext self) (world channel).channel
+        (ordinary guarded world).handler
+  | rearm channel body guarded self =>
+      exact code_literal (seedChannel rhoAtomicNameContext self) (world channel).channel
+        (ordinary guarded world).handler
+  | sendCode channel body guarded self =>
+      exact literal_output (allocatedName_literal self)
+        (code_literal (seedChannel rhoAtomicNameContext self) (world channel).channel
+          (ordinary guarded world).handler)
+  | request =>
+      exact literal_output allocatorRequest.literal
+        (NameValue.reserved Reserved.reply : NameValue 0).payload_literal
+  | reply seed => exact literal_output allocatorReply.literal (seedCode_literal seed)
+  | allocatorReady => exact idle_literal allocatorSelf allocatorRequest (allocationHandler allocatorState)
+  | allocatorRearm => exact code_literal allocatorSelf allocatorRequest (allocationHandler allocatorState)
+  | allocatorSendCode =>
+      exact literal_output allocatorSelf.literal
+        (code_literal allocatorSelf allocatorRequest (allocationHandler allocatorState))
+  | seedInput => exact seedReceiver_literal allocatorState allocatorReply
+  | token seed => exact literal_output allocatorState.literal (seedCode_literal seed)
+
 noncomputable def headers {Γ : Ctx sig} (world : World Γ 0) (activities : List (Activity Γ)) :
     List Header := activities.map (Activity.header world)
 
@@ -220,5 +259,11 @@ theorem headers_safe {Γ : Ctx sig} (world : World Γ 0) (activities : List (Act
   intro header member
   obtain ⟨activity, _, rfl⟩ := List.mem_map.mp member
   exact activity.header_safe world
+
+theorem headers_literal {Γ : Ctx sig} (world : World Γ 0) (activities : List (Activity Γ)) :
+    ∀ header ∈ headers world activities, Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral rhoReflectivePresentation header.pattern = true := by
+  intro header member
+  obtain ⟨activity, _, rfl⟩ := List.mem_map.mp member
+  exact activity.header_literal world
 
 end Mettapedia.Languages.ProcessCalculi.PolyadicPi.Bridges.RhoUnaryActive

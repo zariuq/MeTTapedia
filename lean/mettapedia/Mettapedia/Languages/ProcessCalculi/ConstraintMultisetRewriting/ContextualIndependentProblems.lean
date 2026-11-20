@@ -103,7 +103,7 @@ theorem holds_extension_iff {Local Shared O : Type} (locals : Local → MetaArit
         instantiate candidate first = instantiate candidate second
       rw [Assignment.instantiate_compose, Assignment.instantiate_compose]
       exact ⟨fun same => extension.instantiate_injective same, congrArg (instantiate extension.assignment)⟩
-  | absent pattern =>
+  | predicate quantifier pattern =>
       simp only [ContextualConditionalGuards.Holds, Assignment.instantiate_compose,
         ContextualConditionalRealizations.matches_extension_iff]
   | count pattern cardinality =>

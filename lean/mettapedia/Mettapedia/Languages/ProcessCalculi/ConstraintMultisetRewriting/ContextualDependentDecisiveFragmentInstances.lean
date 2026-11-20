@@ -72,8 +72,8 @@ theorem distinct_decided {Θ : Context (LevelTower.rules L)} {problem : Equation
         run ((towerFamily valuation rigid normalizes certifyNormal).solver budget) problem budget ∧
       ((∃ state finished, run ((towerFamily valuation rigid normalizes certifyNormal).solver larger) problem larger =
           .solved state finished ∧ (frames (TowerModel.setting valuation).levels).Principal problem state.answer) ∨
-        (∃ absent, run ((towerFamily valuation rigid normalizes certifyNormal).solver larger) problem larger =
-          .refuted absent)) :=
+        (∃ missing, run ((towerFamily valuation rigid normalizes certifyNormal).solver larger) problem larger =
+          .refuted missing)) :=
   (distinctSettled valuation rigid normalizes certifyNormal).decided inside
 
 end ContextualDependentDecisiveFragment

@@ -102,7 +102,7 @@ theorem variable_binding_available (identity : V) {Γ : Ctx S}
   have recovered : strengthenT (RenamingInverse.strengthener (S := signature S source) rho injective)
       (Term.var (S := signature S source) (rho _ formal)) = some (Term.var (S := signature S source) formal) := by
     exact strengthenT_rename (S := signature S source) _ (Term.var (S := signature S source) formal)
-  have absent : identity ∉ support (Term.var (S := signature S source) formal) := by
+  have missing : identity ∉ support (Term.var (S := signature S source) formal) := by
     intro member
     cases member
   intro declined
@@ -123,7 +123,7 @@ theorem variable_binding_available (identity : V) {Γ : Ctx S}
         split at declined
         · cases declined
         · rename_i impossible
-          exact impossible absent
+          exact impossible missing
     · rename_i impossible
       exact impossible distinct
 

@@ -38,17 +38,24 @@ theorem canonicalize_quoteDrop (name : Pattern) :
     canonicalize (.apply "NQuote" [.apply "PDrop" [name]]) = canonicalize name := by
   simp [canonicalize, canonicalizeList, normalizeQuote]
 
+/-- Canonicalization keeps the bound index a whole name denotes. -/
+theorem nameHead_canonicalize (name : Pattern) : nameHead (canonicalize name) = nameHead name := by
+  cases head : nameHead name with
+  | some k =>
+      rw [(canonicalize_eq_bvar_iff_nameHead name k).mpr head]
+      rfl
+  | none =>
+      cases canonicalHead : nameHead (canonicalize name) with
+      | none => rfl
+      | some k =>
+          have hit := (canonicalize_eq_bvar_iff_nameHead _ k).mpr canonicalHead
+          rw [Mettapedia.Languages.ProcessCalculi.RhoCalculus.Canonical.canonicalize_idempotent] at hit
+          rw [(canonicalize_eq_bvar_iff_nameHead name k).mp hit] at head
+          cases head
+
 theorem nameHead_canonicalize_of_some {name : Pattern} {k : Nat}
-    (h : nameHead name = some k) : nameHead (canonicalize name) = some k := by
-  induction name using nameHead.induct with
-  | case1 j => simpa [canonicalize] using h
-  | case2 m ih =>
-      rw [canonicalize_quoteDrop]
-      rw [nameHead.eq_2] at h
-      exact ih h
-  | case3 x hbvar hquoteDrop =>
-      rw [nameHead.eq_3 x hbvar hquoteDrop] at h
-      cases h
+    (h : nameHead name = some k) : nameHead (canonicalize name) = some k :=
+  (nameHead_canonicalize name).trans h
 
 theorem tProcs_bagSplice {x : Pattern} {x₀ : Term sig Γ Srt.pr}
     (hx : tProc ρ x = some x₀) :
@@ -153,7 +160,7 @@ theorem translate_canonicalize :
         ∃ t', tProc ρ (canonicalize p) = some t' ∧ EqClosure equations t' t)
     (fun {Γ} ρ ps => ∀ t : Term sig Γ Srt.pr, tProcs ρ ps = some t →
         ∃ t', tProcs ρ (canonicalizeList ps) = some t' ∧ EqClosure equations t' t)
-    ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_
+    ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_
   · intro Γ ρ k c h
     have hcanon : canonicalize (.bvar k) = .bvar k := by simp [canonicalize]
     rw [hcanon]
@@ -164,17 +171,21 @@ theorem translate_canonicalize :
     exact ⟨rfl, c, h, .refl c⟩
   · intro Γ ρ name ih c h
     rw [tName.eq_3] at h
-    rw [canonicalize_quoteDrop, nameHead.eq_2]
+    rw [canonicalize_quoteDrop, nameHead_quoteDrop]
     exact ih c h
-  · intro Γ ρ code hcode ih c h
-    rw [tName.eq_4 _ _ hcode] at h
+  · intro Γ ρ code hcode k head _ c h
+    rw [(canonicalize_eq_bvar_iff_nameHead _ k).mpr head, nameHead_bvar, head]
+    rw [tName_quote_of_nameHead _ hcode head] at h
+    obtain ⟨_, _, h⟩ := Option.bind_eq_some_iff.mp h
+    exact ⟨rfl, c, h, .refl c⟩
+  · intro Γ ρ code hcode hhead ih c h
+    rw [tName_quote _ hcode hhead] at h
     obtain ⟨code₀, hcode₀, rfl⟩ := Option.map_eq_some_iff.mp h
     obtain ⟨code', hcode', equiv⟩ := ih code₀ hcode₀
     have hcanon : canonicalize (.apply "NQuote" [code]) =
         normalizeQuote (canonicalize code) := by
       simp [canonicalize]
-    have hhead : nameHead (.apply "NQuote" [code]) = none :=
-      nameHead.eq_3 _ (by simp) (fun m e => hcode m (by simpa using e))
+    have canonicalHead := nameHead_canonicalize (.apply "NQuote" [code])
     rw [hcanon, hhead]
     have hlift : EqClosure equations (quoT (lift0 (Γ := Γ) code'))
         (nameOf (lift0 code₀)) :=
@@ -184,18 +195,21 @@ theorem translate_canonicalize :
     · obtain ⟨x, hx⟩ := hdrop
       rw [hx] at hcode' ⊢
       simp only [normalizeQuote]
-      rw [tProc.eq_2] at hcode'
       cases hxh : nameHead x with
-      | some k => simp [hxh, Env.empty] at hcode'
+      | some k =>
+          rw [tProc_drop_of_nameHead _ hxh] at hcode'
+          obtain ⟨_, _, hk⟩ := Option.bind_eq_some_iff.mp hcode'
+          cases hk
       | none =>
-          simp only [hxh] at hcode'
+          rw [tProc_drop_of_nameHead_none _ hxh] at hcode'
           obtain ⟨x₀, hx₀, rfl⟩ := Option.map_eq_some_iff.mp hcode'
           exact ⟨rfl, lift0 x₀, tName_closed hx₀ ρ,
             (quoteDrop_equiv (lift0 x₀)).symm.trans hlift⟩
     · have hnd : ∀ x, canonicalize code ≠ .apply "PDrop" [x] := fun x e => hdrop ⟨x, e⟩
       rw [normalizeQuote_eq_quote_of_not_drop hnd]
-      refine ⟨nameHead.eq_3 _ (by simp) (fun m e => hnd m (by simpa using e)), ?_⟩
-      rw [tName.eq_4 _ _ (fun m e => hnd m e), hcode', Option.map_some]
+      rw [hcanon, normalizeQuote_eq_quote_of_not_drop hnd, hhead] at canonicalHead
+      refine ⟨canonicalHead, ?_⟩
+      rw [tName_quote _ (fun m e => hnd m e) canonicalHead, hcode', Option.map_some]
       exact ⟨_, rfl, (nameOf_equiv _).trans hlift⟩
   · intro x Γ ρ hbvar hfvar hquoteDrop hquote c h
     rw [tName.eq_5 _ _ hbvar hfvar hquoteDrop hquote] at h
@@ -205,13 +219,15 @@ theorem translate_canonicalize :
       simp [canonicalize, canonicalizeList]
     rw [hcanon]
     exact ⟨t, h, .refl t⟩
-  · intro Γ ρ name k hk t h
+  · intro Γ ρ name k hk ih t h
     have hcanon : canonicalize (.apply "PDrop" [name]) =
         .apply "PDrop" [canonicalize name] := by
       simp [canonicalize, canonicalizeList]
-    rw [hcanon, tProc.eq_2, nameHead_canonicalize_of_some hk]
-    simp only [tProc.eq_2, hk] at h
-    exact ⟨t, h, .refl t⟩
+    rw [hcanon, tProc_drop_of_nameHead _ (nameHead_canonicalize_of_some hk)]
+    rw [tProc_drop_of_nameHead _ hk] at h
+    obtain ⟨m, hm, received⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨-, m', hm', -⟩ := ih m hm
+    exact ⟨t, by rw [hm', Option.bind_some, received], .refl t⟩
   · intro Γ ρ name hk ih t h
     have hcanon : canonicalize (.apply "PDrop" [name]) =
         .apply "PDrop" [canonicalize name] := by
@@ -280,6 +296,352 @@ theorem tName_equiv_of_canonicalize_eq {n m : Pattern} {c d : Term sig Γ Srt.nm
 
 end Canonical
 
+/-! ## Resolving quotations of drops translates to an equal class -/
+
+section Resolution
+
+open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution (resolveQuotes resolveQuotesList
+  finishResolveApply exposedDrop? parallelLeaves parallelLeavesList_eq_flatMap)
+open Mettapedia.OSLF.MeTTaIL.Syntax (rhoReflectivePresentation)
+
+private theorem resolve_canonicalize (p : Pattern) :
+    canonicalize (resolveQuotes rhoReflectivePresentation p) = canonicalize p := by
+  rw [← Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalMatch.derivedCanonicalize_eq,
+    ← Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalMatch.derivedCanonicalize_eq,
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.canonicalize_resolveQuotes]
+
+private theorem nameHead_resolve (n : Pattern) :
+    nameHead (resolveQuotes rhoReflectivePresentation n) = nameHead n := by
+  cases head : nameHead n with
+  | some k =>
+    exact (canonicalize_eq_bvar_iff_nameHead _ k).mp
+      ((resolve_canonicalize n).trans ((canonicalize_eq_bvar_iff_nameHead _ k).mpr head))
+  | none =>
+    cases resolvedHead : nameHead (resolveQuotes rhoReflectivePresentation n) with
+    | none => rfl
+    | some k =>
+      have original := (canonicalize_eq_bvar_iff_nameHead _ k).mp
+        ((resolve_canonicalize n).symm.trans ((canonicalize_eq_bvar_iff_nameHead _ k).mpr resolvedHead))
+      rw [head] at original
+      cases original
+
+private theorem resolve_quote (code : Pattern) :
+    resolveQuotes rhoReflectivePresentation (.apply "NQuote" [code]) =
+      match exposedDrop? rhoReflectivePresentation (resolveQuotes rhoReflectivePresentation code) with
+      | some name => name
+      | none => .apply "NQuote" [resolveQuotes rhoReflectivePresentation code] := by
+  simp only [resolveQuotes, resolveQuotesList, finishResolveApply]
+  rfl
+
+private theorem resolve_drop (name : Pattern) :
+    resolveQuotes rhoReflectivePresentation (.apply "PDrop" [name]) =
+      .apply "PDrop" [resolveQuotes rhoReflectivePresentation name] := by
+  simp only [resolveQuotes, resolveQuotesList, finishResolveApply]
+  rfl
+
+private theorem resolve_quoteDrop (name : Pattern) :
+    resolveQuotes rhoReflectivePresentation (.apply "NQuote" [.apply "PDrop" [name]]) =
+      resolveQuotes rhoReflectivePresentation name := by
+  rw [resolve_quote, resolve_drop]
+  rfl
+
+private theorem tProcs_isSome_mem {Γ : Ctx sig} (ρ : Env Γ) :
+    ∀ (patterns : List Pattern), (tProcs ρ patterns).isSome = true →
+      ∀ pattern ∈ patterns, (tProc ρ pattern).isSome = true
+  | [], _, _, member => by simp at member
+  | first :: rest, defined, pattern, member => by
+    rw [tProcs.eq_2] at defined
+    have headDefined : (tProc ρ first).isSome = true := by
+      cases translated : tProc ρ first with
+      | none => simp [translated] at defined
+      | some _ => rfl
+    have tailDefined : (tProcs ρ rest).isSome = true := by
+      cases translated : tProc ρ first with
+      | none => simp [translated] at defined
+      | some _ =>
+        cases tail : tProcs ρ rest with
+        | none => simp [translated, tail] at defined
+        | some _ => rfl
+    rcases List.mem_cons.mp member with rfl | member
+    · exact headDefined
+    · exact tProcs_isSome_mem ρ rest tailDefined pattern member
+
+private theorem tProc_leaves {Γ : Ctx sig} (ρ : Env Γ) (p : Pattern) :
+    (tProc ρ p).isSome = true →
+      ∀ q ∈ parallelLeaves rhoReflectivePresentation p, (tProc ρ q).isSome = true := by
+  have parallelKind :
+      (rhoReflectivePresentation : Mettapedia.OSLF.MeTTaIL.Syntax.ReflectivePresentationDecl).parallelCollection =
+        .hashBag := rfl
+  induction p using Pattern.inductionOn with
+  | hcollection kind elements rest ih =>
+    intro defined q member
+    cases rest with
+    | some label =>
+      simp only [parallelLeaves, List.mem_singleton] at member
+      subst member; exact defined
+    | none =>
+      by_cases bag : kind = .hashBag
+      · subst bag
+        have each := tProcs_isSome_mem ρ elements (by rwa [tProc.eq_5] at defined)
+        simp only [parallelLeaves, parallelKind, if_true, parallelLeavesList_eq_flatMap,
+          List.mem_flatMap] at member
+        obtain ⟨element, elementMember, leafMember⟩ := member
+        exact ih element elementMember (each element elementMember) q leafMember
+      · simp only [parallelLeaves, parallelKind, bag, if_false, List.mem_singleton] at member
+        subst member; exact defined
+  | happly constructor arguments _ =>
+    intro defined q member
+    cases arguments with
+    | nil =>
+      simp only [parallelLeaves] at member
+      split at member
+      · simp at member
+      · simp only [List.mem_singleton] at member; subst member; exact defined
+    | cons first rest =>
+      simp only [parallelLeaves, List.mem_singleton] at member; subst member; exact defined
+  | hbvar index =>
+    intro defined q member
+    simp only [parallelLeaves, List.mem_singleton] at member; subst member; exact defined
+  | hfvar name =>
+    intro defined q member
+    simp only [parallelLeaves, List.mem_singleton] at member; subst member; exact defined
+  | hlambda binder body _ =>
+    intro defined q member
+    simp only [parallelLeaves, List.mem_singleton] at member; subst member; exact defined
+  | hmultiLambda arity binders body _ =>
+    intro defined q member
+    simp only [parallelLeaves, List.mem_singleton] at member; subst member; exact defined
+  | hsubst body value _ _ =>
+    intro defined q member
+    simp only [parallelLeaves, List.mem_singleton] at member; subst member; exact defined
+
+private theorem tName_of_drop {Γ : Ctx sig} (ρ : Env Γ) {name : Pattern}
+    (defined : (tProc ρ (.apply "PDrop" [name])).isSome = true) : (tName ρ name).isSome = true := by
+  cases head : nameHead name with
+  | some k =>
+    rw [tProc_drop_of_nameHead ρ head] at defined
+    cases translated : tName ρ name with
+    | none => simp [translated] at defined
+    | some _ => rfl
+  | none =>
+    rw [tProc_drop_of_nameHead_none ρ head] at defined
+    cases translated : tName ρ name with
+    | none => simp [translated] at defined
+    | some _ => rfl
+
+private theorem exposed_name {Γ : Ctx sig} (ρ : Env Γ) {code name : Pattern}
+    (defined : (tProc ρ code).isSome = true)
+    (exposed : exposedDrop? rhoReflectivePresentation code = some name) :
+    (tName ρ name).isSome = true := by
+  have leaves := (Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.exposedDrop?_eq_some_iff).mp exposed
+  have dropDefined := tProc_leaves ρ code defined (.apply "PDrop" [name]) (by
+    rw [leaves]; exact List.mem_singleton_self _)
+  exact tName_of_drop ρ dropDefined
+
+private theorem not_drop_of_unexposed {code : Pattern}
+    (unexposed : exposedDrop? rhoReflectivePresentation code = none) :
+    ∀ name, code = .apply "PDrop" [name] → False := by
+  intro name equal
+  subst equal
+  simp [exposedDrop?, parallelLeaves] at unexposed
+  exact unexposed rfl
+
+/-- Resolution keeps every translatable name and process translatable. -/
+private theorem resolve_translates :
+    (∀ {Γ : Ctx sig} (ρ : Env Γ) (n : Pattern),
+      (tName ρ n).isSome = true →
+        (tName ρ (resolveQuotes rhoReflectivePresentation n)).isSome = true) ∧
+    (∀ {Γ : Ctx sig} (ρ : Env Γ) (p : Pattern),
+      (tProc ρ p).isSome = true →
+        (tProc ρ (resolveQuotes rhoReflectivePresentation p)).isSome = true) ∧
+    (∀ {Γ : Ctx sig} (ρ : Env Γ) (ps : List Pattern),
+      (tProcs ρ ps).isSome = true →
+        (tProcs ρ (resolveQuotesList rhoReflectivePresentation ps)).isSome = true) := by
+  refine tName.mutual_induct
+    (fun {Γ} ρ n => (tName ρ n).isSome = true →
+      (tName ρ (resolveQuotes rhoReflectivePresentation n)).isSome = true)
+    (fun {Γ} ρ p => (tProc ρ p).isSome = true →
+      (tProc ρ (resolveQuotes rhoReflectivePresentation p)).isSome = true)
+    (fun {Γ} ρ ps => (tProcs ρ ps).isSome = true →
+      (tProcs ρ (resolveQuotesList rhoReflectivePresentation ps)).isSome = true)
+    ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_
+  · intro Γ ρ k defined
+    exact defined
+  · intro Γ ρ label defined
+    exact defined
+  · intro Γ ρ name ih defined
+    rw [tName.eq_3] at defined
+    rw [resolve_quoteDrop]
+    exact ih defined
+  · intro Γ ρ code hcode k head ih defined
+    rw [tName_quote_of_nameHead ρ hcode head] at defined
+    have codeDefined : (tProc ρ code).isSome = true := by
+      cases translated : tProc ρ code with
+      | none => simp [translated] at defined
+      | some _ => rfl
+    have binderDefined : (ρ k).isSome = true := by
+      cases translated : tProc ρ code with
+      | none => simp [translated] at defined
+      | some _ =>
+        cases bound : ρ k with
+        | none => simp [translated, bound] at defined
+        | some _ => rfl
+    have resolvedDefined := ih codeDefined
+    rw [resolve_quote]
+    cases exposed : exposedDrop? rhoReflectivePresentation (resolveQuotes rhoReflectivePresentation code) with
+    | some name => exact exposed_name ρ resolvedDefined exposed
+    | none =>
+      have resolvedHead :
+          nameHead (.apply "NQuote" [resolveQuotes rhoReflectivePresentation code]) = some k := by
+        have invariant := nameHead_resolve (.apply "NQuote" [code])
+        rw [resolve_quote, exposed] at invariant
+        exact invariant.trans head
+      simp only
+      rw [tName_quote_of_nameHead ρ (not_drop_of_unexposed exposed) resolvedHead]
+      obtain ⟨translated, htranslated⟩ := Option.isSome_iff_exists.mp resolvedDefined
+      obtain ⟨received, hreceived⟩ := Option.isSome_iff_exists.mp binderDefined
+      simp [htranslated, hreceived]
+  · intro Γ ρ code hcode hhead ih defined
+    rw [tName_quote ρ hcode hhead] at defined
+    have codeDefined : (tProc (Env.empty []) code).isSome = true := by
+      cases translated : tProc (Env.empty []) code with
+      | none => simp [translated] at defined
+      | some _ => rfl
+    have resolvedDefined := ih codeDefined
+    rw [resolve_quote]
+    cases exposed : exposedDrop? rhoReflectivePresentation (resolveQuotes rhoReflectivePresentation code) with
+    | some name =>
+      obtain ⟨closedName, hclosed⟩ := Option.isSome_iff_exists.mp
+        (exposed_name (Env.empty []) resolvedDefined exposed)
+      simp [tName_closed hclosed ρ]
+    | none =>
+      have resolvedHead :
+          nameHead (.apply "NQuote" [resolveQuotes rhoReflectivePresentation code]) = none := by
+        have invariant := nameHead_resolve (.apply "NQuote" [code])
+        rw [resolve_quote, exposed] at invariant
+        exact invariant.trans hhead
+      simp only
+      rw [tName_quote ρ (not_drop_of_unexposed exposed) resolvedHead]
+      obtain ⟨translated, htranslated⟩ := Option.isSome_iff_exists.mp resolvedDefined
+      simp [htranslated]
+  · intro x Γ ρ hbvar hfvar hquoteDrop hquote defined
+    rw [tName.eq_5 _ _ hbvar hfvar hquoteDrop hquote] at defined
+    cases defined
+  · intro Γ ρ defined
+    simpa [resolveQuotes, resolveQuotesList, finishResolveApply] using defined
+  · intro Γ ρ name k hk ih defined
+    rw [tProc_drop_of_nameHead ρ hk] at defined
+    have nameDefined : (tName ρ name).isSome = true := by
+      cases translated : tName ρ name with
+      | none => simp [translated] at defined
+      | some _ => rfl
+    have binderDefined : (ρ k).isSome = true := by
+      cases translated : tName ρ name with
+      | none => simp [translated] at defined
+      | some _ =>
+        cases bound : ρ k with
+        | none => simp [translated, bound] at defined
+        | some _ => rfl
+    rw [resolve_drop, tProc_drop_of_nameHead ρ ((nameHead_resolve name).trans hk)]
+    obtain ⟨translated, htranslated⟩ := Option.isSome_iff_exists.mp (ih nameDefined)
+    obtain ⟨received, hreceived⟩ := Option.isSome_iff_exists.mp binderDefined
+    simp [htranslated, hreceived]
+  · intro Γ ρ name hk ih defined
+    rw [tProc_drop_of_nameHead_none ρ hk] at defined
+    have nameDefined : (tName ρ name).isSome = true := by
+      cases translated : tName ρ name with
+      | none => simp [translated] at defined
+      | some _ => rfl
+    rw [resolve_drop, tProc_drop_of_nameHead_none ρ ((nameHead_resolve name).trans hk)]
+    obtain ⟨translated, htranslated⟩ := Option.isSome_iff_exists.mp (ih nameDefined)
+    simp [htranslated]
+  · intro Γ ρ name payload ihn ihp defined
+    rw [tProc.eq_3] at defined
+    have nameDefined : (tName ρ name).isSome = true := by
+      cases translated : tName ρ name with
+      | none => simp [translated] at defined
+      | some _ => rfl
+    have payloadDefined : (tProc ρ payload).isSome = true := by
+      cases translated : tName ρ name with
+      | none => simp [translated] at defined
+      | some _ =>
+        cases inner : tProc ρ payload with
+        | none => simp [translated, inner] at defined
+        | some _ => rfl
+    have resolved : resolveQuotes rhoReflectivePresentation (.apply "POutput" [name, payload]) =
+        .apply "POutput" [resolveQuotes rhoReflectivePresentation name,
+          resolveQuotes rhoReflectivePresentation payload] := by
+      simp only [resolveQuotes, resolveQuotesList, finishResolveApply]
+    rw [resolved, tProc.eq_3]
+    obtain ⟨c, hc⟩ := Option.isSome_iff_exists.mp (ihn nameDefined)
+    obtain ⟨q, hq⟩ := Option.isSome_iff_exists.mp (ihp payloadDefined)
+    simp [hc, hq]
+  · intro Γ ρ name body ihn ihb defined
+    rw [tProc.eq_4] at defined
+    have nameDefined : (tName ρ name).isSome = true := by
+      cases translated : tName ρ name with
+      | none => simp [translated] at defined
+      | some _ => rfl
+    have bodyDefined : (tProc ρ.up body).isSome = true := by
+      cases translated : tName ρ name with
+      | none => simp [translated] at defined
+      | some _ =>
+        cases inner : tProc ρ.up body with
+        | none => simp [translated, inner] at defined
+        | some _ => rfl
+    have resolved : resolveQuotes rhoReflectivePresentation (.apply "PInput" [name, .lambda none body]) =
+        .apply "PInput" [resolveQuotes rhoReflectivePresentation name,
+          .lambda none (resolveQuotes rhoReflectivePresentation body)] := by
+      simp only [resolveQuotes, resolveQuotesList, finishResolveApply]
+    rw [resolved, tProc.eq_4]
+    obtain ⟨c, hc⟩ := Option.isSome_iff_exists.mp (ihn nameDefined)
+    obtain ⟨K, hK⟩ := Option.isSome_iff_exists.mp (ihb bodyDefined)
+    simp [hc, hK]
+  · intro Γ ρ elements ih defined
+    rw [tProc.eq_5] at defined
+    have resolved : resolveQuotes rhoReflectivePresentation (.collection .hashBag elements none) =
+        .collection .hashBag (resolveQuotesList rhoReflectivePresentation elements) none := by
+      simp only [resolveQuotes]
+    rw [resolved, tProc.eq_5]
+    exact ih defined
+  · intro x Γ ρ hzero hdrop hout hinp hbag defined
+    rw [tProc.eq_6 _ _ hzero hdrop hout hinp hbag] at defined
+    cases defined
+  · intro Γ ρ _
+    simp [resolveQuotesList, tProcs.eq_1]
+  · intro Γ ρ process rest ihp ihr defined
+    rw [tProcs.eq_2] at defined
+    have headDefined : (tProc ρ process).isSome = true := by
+      cases translated : tProc ρ process with
+      | none => simp [translated] at defined
+      | some _ => rfl
+    have tailDefined : (tProcs ρ rest).isSome = true := by
+      cases translated : tProc ρ process with
+      | none => simp [translated] at defined
+      | some _ =>
+        cases tail : tProcs ρ rest with
+        | none => simp [translated, tail] at defined
+        | some _ => rfl
+    simp only [resolveQuotesList, tProcs.eq_2]
+    obtain ⟨head, hhead⟩ := Option.isSome_iff_exists.mp (ihp headDefined)
+    obtain ⟨tail, htail⟩ := Option.isSome_iff_exists.mp (ihr tailDefined)
+    simp [hhead, htail]
+
+/-- **Resolution translates to an equal class.** -/
+theorem translate_resolveQuotes {Γ : Ctx sig} (ρ : Env Γ) (p : Pattern) (t : Term sig Γ Srt.pr)
+    (translated : tProc ρ p = some t) :
+    ∃ t', tProc ρ (resolveQuotes rhoReflectivePresentation p) = some t' ∧
+      EqClosure equations t' t := by
+  obtain ⟨t', ht'⟩ := Option.isSome_iff_exists.mp
+    (resolve_translates.2.1 ρ p (by simp [translated]))
+  obtain ⟨u', hu', equiv'⟩ := translate_canonicalize.2.1 ρ _ t' ht'
+  obtain ⟨u, hu, equiv⟩ := translate_canonicalize.2.1 ρ p t translated
+  rw [resolve_canonicalize, hu] at hu'
+  cases hu'
+  exact ⟨t', ht', equiv'.symm.trans equiv⟩
+
+end Resolution
+
 /-! ## Inverting the authored executor -/
 
 section Executor
@@ -300,7 +662,8 @@ open Mettapedia.OSLF.Binding.RhoSchema.Authored
 open Mettapedia.OSLF.Binding.IntrinsicScopedConditionalPolynomial (Rule)
 
 /-- An executed COMM selects an input and an output on channels with one
-canonical form, and continues with the executor's semantic substitution. -/
+canonical form, and continues with the executor's semantic substitution into
+the body with its quotations of drops resolved. -/
 theorem commApplication {free : FreeSortContext} {bound : List String}
     {source target : Pattern} {initial : Bindings}
     (sourceTyped : ProcWellSorted rhoReflectivePresentation free bound source)
@@ -313,7 +676,7 @@ theorem commApplication {free : FreeSortContext} {bound : List String}
       elements[inputIndex] = .apply "PInput" [inputChannel, .lambda none body] ∧
       (elements.eraseIdx inputIndex)[outputIndex] = .apply "POutput" [outputChannel, payload] ∧
       canonicalize inputChannel = canonicalize outputChannel ∧
-      target = .collection .hashBag (semanticCommSubst body payload ::
+      target = .collection .hashBag (semanticCommSubst (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes Mettapedia.OSLF.MeTTaIL.Syntax.rhoReflectivePresentation body) payload ::
         (elements.eraseIdx inputIndex).eraseIdx outputIndex) none := by
   obtain ⟨elements, termRest, inputIndex, inputBound, outputIndex, outputBound,
     inputChannel, body, inputBinder, outputChannel, payload, sourceEq,
@@ -336,7 +699,7 @@ theorem commApplication {free : FreeSortContext} {bound : List String}
     outputChannel, body, payload, rfl, inputEq, outputEq, channelsEquivalent, ?_⟩
   let residue := (elements.eraseIdx inputIndex).eraseIdx outputIndex
   have compiledAgreement :=
-    LanguageDefAdequacy.applyBindingsForRule_rhoComm_agrees_derived
+    LanguageDefAdequacy.applyBindingsForRule_rhoComm_eq_resolved
       bodyTyped payloadTyped inputChannel residue
   rw [← targetEq]
   have reordered :
@@ -414,27 +777,27 @@ theorem tProc_dropQuote {code : Pattern} {s : Term sig [] Srt.pr}
     (h : tProc (Env.empty []) (.apply "PDrop" [.apply "NQuote" [code]]) = some s) :
     ∃ code₀, tProc (Env.empty []) code = some code₀ ∧
       EqClosure equations s (drpT (quoT code₀)) := by
-  rw [tProc.eq_2] at h
-  by_cases hdrop : ∃ n, code = .apply "PDrop" [n]
-  · obtain ⟨n, rfl⟩ := hdrop
-    rw [nameHead.eq_2] at h
-    cases hn : nameHead n with
-    | some k => simp [hn, Env.empty] at h
-    | none =>
-        simp only [hn, tName.eq_3] at h
+  cases hhead : nameHead (.apply "NQuote" [code]) with
+  | some k =>
+      rw [tProc_drop_of_nameHead _ hhead] at h
+      obtain ⟨_, _, hk⟩ := Option.bind_eq_some_iff.mp h
+      cases hk
+  | none =>
+      rw [tProc_drop_of_nameHead_none _ hhead] at h
+      by_cases hdrop : ∃ n, code = .apply "PDrop" [n]
+      · obtain ⟨n, rfl⟩ := hdrop
+        rw [nameHead_quoteDrop] at hhead
+        rw [tName.eq_3] at h
         obtain ⟨n₀, hn₀, rfl⟩ := Option.map_eq_some_iff.mp h
         refine ⟨drpT n₀, ?_, equiv_drpT (quoteDrop_equiv n₀).symm⟩
-        rw [tProc.eq_2, hn]
-        simp only [hn₀, Option.map_some]
-  · have hnot : ∀ n, code = .apply "PDrop" [n] → False := fun n e => hdrop ⟨n, e⟩
-    have hhead : nameHead (.apply "NQuote" [code]) = none :=
-      nameHead.eq_3 _ (by simp) (fun m e => hnot m (by simpa using e))
-    simp only [hhead, tName.eq_4 _ _ hnot] at h
-    obtain ⟨name, hname, rfl⟩ := Option.map_eq_some_iff.mp h
-    obtain ⟨code₀, hcode₀, rfl⟩ := Option.map_eq_some_iff.mp hname
-    refine ⟨code₀, hcode₀, ?_⟩
-    rw [lift0_nil]
-    exact equiv_drpT (nameOf_equiv code₀)
+        rw [tProc_drop_of_nameHead_none _ hhead, hn₀, Option.map_some]
+      · have hnot : ∀ n, code = .apply "PDrop" [n] → False := fun n e => hdrop ⟨n, e⟩
+        rw [tName_quote _ hnot hhead] at h
+        obtain ⟨name, hname, rfl⟩ := Option.map_eq_some_iff.mp h
+        obtain ⟨code₀, hcode₀, rfl⟩ := Option.map_eq_some_iff.mp hname
+        refine ⟨code₀, hcode₀, ?_⟩
+        rw [lift0_nil]
+        exact equiv_drpT (nameOf_equiv code₀)
 
 /-- **One executor step is one step of the presented calculus.** A step of
 the authored executor for a rule list of COMM, ParCong and possibly Drop,
@@ -477,14 +840,15 @@ theorem simulation (language : LanguageDef) (rest : List (Rule sig metas))
         obtain ⟨cO, q₀, hcO, hq₀, rfl⟩ := tProc_output_inv hO
         have channels : EqClosure equations cO cI :=
           tName_equiv_of_canonicalize_eq _ hcO hcI hsame.symm
-        obtain ⟨T, hT, eT⟩ := translate_semanticCommSubst hK hq₀
+        obtain ⟨K', hK', eK⟩ := translate_resolveQuotes _ body K hK
+        obtain ⟨T, hT, eT⟩ := translate_semanticCommSubst hK' hq₀
         refine ⟨parT T R₂, ?_, ?_⟩
         · rw [tProc.eq_5, tProcs.eq_2, hT, Option.bind_some, hR₂, Option.map_some]
         · refine steps_of_equiv ?_ (equiv_parT eT.symm (.refl R₂))
-            (steps_parCong rest R₂ (steps_comm rest cI q₀ K))
+            (steps_parCong rest R₂ (steps_comm rest cI q₀ K'))
           refine e₁.trans ((equiv_parT (.refl _) e₂).trans ?_)
-          refine (equiv_parT (.refl _) (equiv_parT (equiv_outT channels (.refl q₀))
-            (.refl R₂))).trans ?_
+          refine (equiv_parT (equiv_inpT (.refl cI) eK.symm)
+            (equiv_parT (equiv_outT channels (.refl q₀)) (.refl R₂))).trans ?_
           exact (parT_assoc _ _ _).symm.trans
             (equiv_parT (parT_comm _ _) (.refl R₂))
       · obtain ⟨elements, termRest, index, hindex, selected, rfl, hselected, rfl⟩ :=
@@ -607,20 +971,10 @@ private theorem safe_input {d : Nat} {name body : Pattern}
 drop cannot reach an enclosing binder. -/
 theorem nameHead_lt_of_safe {name : Pattern} {k : Nat} (h : nameHead name = some k) :
     ∀ {d : Nat}, binderSafeAt "NQuote" d name = true → k < d := by
-  induction name using nameHead.induct with
-  | case1 j =>
-      intro d safe
-      simp only [nameHead, Option.some.injEq] at h
-      subst h
-      simpa [binderSafeAt] using safe
-  | case2 m ih =>
-      intro d safe
-      rw [nameHead.eq_2] at h
-      have inner : binderSafeAt "NQuote" 0 m = true := safe_drop (safe_quote safe)
-      exact absurd (ih h inner) (Nat.not_lt_zero _)
-  | case3 x hbvar hquoteDrop =>
-      rw [nameHead.eq_3 x hbvar hquoteDrop] at h
-      cases h
+  intro d safe
+  have inScope := isWellScopedAt_of_binderSafeAt "NQuote" safe
+  rw [nameHead_wellScoped h] at inScope
+  exact of_decide_eq_true inScope
 
 /-- **Coverage.** A well-sorted process whose literal quotes are closed, with
 no process variables, translates in every environment that supplies the
@@ -652,7 +1006,7 @@ theorem translate_covers {free : FreeSortContext}
     exact ⟨nameOf t, by rw [tName.eq_1, ht, Option.map_some]⟩
   · intro bound name _ _ d Γ ρ _ _
     exact ⟨freeT name, tName.eq_2 ρ name⟩
-  · intro bound process _ ih hb d Γ ρ _ safe
+  · intro bound process _ _ ih hb d Γ ρ _ safe
     change binderSafeAt "NQuote" d (.apply "NQuote" [process]) = true at safe
     show ∃ c, tName ρ (.apply "NQuote" [process]) = some c
     have safe0 := safe_quote safe
@@ -661,15 +1015,14 @@ theorem translate_covers {free : FreeSortContext}
     by_cases hdrop : ∃ m, process = .apply "PDrop" [m]
     · obtain ⟨m, rfl⟩ := hdrop
       rw [tName.eq_3]
-      rw [tProc.eq_2] at hcode₀
-      cases hm : nameHead m with
-      | some k => simp [hm, Env.empty] at hcode₀
-      | none =>
-          simp only [hm] at hcode₀
-          obtain ⟨m₀, hm₀, _⟩ := Option.map_eq_some_iff.mp hcode₀
-          exact ⟨lift0 m₀, tName_closed hm₀ ρ⟩
+      have closed := nameHead_quote_of_closed hcode₀
+      rw [nameHead_quoteDrop] at closed
+      rw [tProc_drop_of_nameHead_none _ closed] at hcode₀
+      obtain ⟨m₀, hm₀, _⟩ := Option.map_eq_some_iff.mp hcode₀
+      exact ⟨lift0 m₀, tName_closed hm₀ ρ⟩
     · have hnot : ∀ m, process = .apply "PDrop" [m] → False := fun m e => hdrop ⟨m, e⟩
-      exact ⟨nameOf (lift0 code₀), by rw [tName.eq_4 _ _ hnot, hcode₀, Option.map_some]⟩
+      exact ⟨nameOf (lift0 code₀), by
+        rw [tName_quote _ hnot (nameHead_quote_of_closed hcode₀), hcode₀, Option.map_some]⟩
   · intro bound index lookup hb
     exact absurd lookup (hb index)
   · intro bound name lookup _
@@ -679,13 +1032,13 @@ theorem translate_covers {free : FreeSortContext}
   · intro bound name _ ih hb d Γ ρ hρ safe
     change binderSafeAt "NQuote" d (.apply "PDrop" [name]) = true at safe
     show ∃ t, tProc ρ (.apply "PDrop" [name]) = some t
-    rw [tProc.eq_2]
+    obtain ⟨c, hc⟩ := ih hb d ρ hρ (safe_drop safe)
     cases hk : nameHead name with
     | some k =>
-        exact hρ k (nameHead_lt_of_safe hk (safe_drop safe))
+        obtain ⟨t, ht⟩ := hρ k (nameHead_lt_of_safe hk (safe_drop safe))
+        exact ⟨t, by rw [tProc_drop_of_nameHead _ hk, hc, Option.bind_some, ht]⟩
     | none =>
-        obtain ⟨c, hc⟩ := ih hb d ρ hρ (safe_drop safe)
-        exact ⟨drpT c, by simp only [hc, Option.map_some]⟩
+        exact ⟨drpT c, by rw [tProc_drop_of_nameHead_none _ hk, hc, Option.map_some]⟩
   · intro bound channel payload _ _ ihc ihp hb d Γ ρ hρ safe
     change binderSafeAt "NQuote" d (.apply "POutput" [channel, payload]) = true at safe
     show ∃ t, tProc ρ (.apply "POutput" [channel, payload]) = some t
@@ -937,17 +1290,8 @@ theorem VarEnv.empty : VarEnv (Env.empty ([] : Ctx sig)) := by
 /-- A name that denotes a bound index is congruent to that index. -/
 theorem sc_of_nameHead {name : Pattern} {k : Nat} (h : nameHead name = some k) :
     StructuralCongruence name (.bvar k) := by
-  induction name using nameHead.induct with
-  | case1 j =>
-      simp only [nameHead, Option.some.injEq] at h
-      subst h
-      exact .refl _
-  | case2 m ih =>
-      rw [nameHead.eq_2] at h
-      exact .trans _ _ _ (StructuralCongruence.quote_drop m) (ih h)
-  | case3 x hbvar hquoteDrop =>
-      rw [nameHead.eq_3 x hbvar hquoteDrop] at h
-      cases h
+  have sound := Canonical.canonicalize_sound name
+  rwa [(canonicalize_eq_bvar_iff_nameHead name k).mpr h] at sound
 
 /-- **A translated pattern reads back to itself**, up to structural
 congruence, in every environment of variables. -/
@@ -966,7 +1310,7 @@ theorem readback_translate :
       VarEnv ρ → tProc ρ p = some t → StructuralCongruence (readback t) p)
     (fun {Γ} ρ ps => ∀ t : Term sig Γ Srt.pr, VarEnv ρ → tProcs ρ ps = some t →
       StructuralCongruence (readback t) (.collection .hashBag ps none))
-    ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_
+    ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_
   · intro Γ ρ k c hρ h
     rw [tName.eq_1] at h
     obtain ⟨u, hu, rfl⟩ := Option.map_eq_some_iff.mp h
@@ -981,8 +1325,16 @@ theorem readback_translate :
   · intro Γ ρ name ih c hρ h
     rw [tName.eq_3] at h
     exact .trans _ _ _ (ih c hρ h) (.symm _ _ (StructuralCongruence.quote_drop name))
-  · intro Γ ρ code hcode ih c _ h
-    rw [tName.eq_4 _ _ hcode] at h
+  · intro Γ ρ code hcode k head _ c hρ h
+    rw [tName_quote_of_nameHead _ hcode head] at h
+    obtain ⟨_, _, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨u, hu, rfl⟩ := Option.map_eq_some_iff.mp h
+    obtain ⟨v, rfl, hv⟩ := hρ k u hu
+    change StructuralCongruence (.apply "NQuote" [.apply "PDrop" [.bvar (varIndex v)]]) _
+    rw [hv]
+    exact .trans _ _ _ (StructuralCongruence.quote_drop _) (.symm _ _ (sc_of_nameHead head))
+  · intro Γ ρ code hcode head ih c _ h
+    rw [tName_quote _ hcode head] at h
     obtain ⟨code₀, hcode₀, rfl⟩ := Option.map_eq_some_iff.mp h
     refine .trans _ _ _ (readback_nameOf _) ?_
     rw [readback_lift0]
@@ -994,8 +1346,9 @@ theorem readback_translate :
     rw [tProc.eq_1] at h
     cases h
     exact .refl _
-  · intro Γ ρ name k hk t hρ h
-    simp only [tProc.eq_2, hk] at h
+  · intro Γ ρ name k hk _ t hρ h
+    rw [tProc_drop_of_nameHead _ hk] at h
+    obtain ⟨_, _, h⟩ := Option.bind_eq_some_iff.mp h
     obtain ⟨v, rfl, hv⟩ := hρ k t h
     change StructuralCongruence (.apply "PDrop" [.bvar (varIndex v)]) _
     rw [hv]
@@ -1181,6 +1534,7 @@ theorem tProc_shape {Γ : Ctx sig} {ρ : Env Γ} {e : Pattern} {t : Term sig Γ 
     cases hk : nameHead name with
     | some k =>
         simp only [hk] at h
+        obtain ⟨_, _, h⟩ := Option.bind_eq_some_iff.mp h
         exact .inr (.inl ⟨name, k, rfl, hk, h⟩)
     | none =>
         simp only [hk] at h
@@ -1439,8 +1793,8 @@ theorem comm_reflection {free : FreeSortContext} {P : Pattern}
   let rest := L'.map Prod.fst
   refine ⟨.collection .hashBag
       ([.apply "PInput" [chI, .lambda none body], .apply "POutput" [chI, pl]] ++ rest) none,
-    .collection .hashBag (semanticCommSubst body pl :: rest) none, ?_,
-    RhoStep.comm chI body pl rest bodyTyped payloadTyped, ?_⟩
+    .collection .hashBag (semanticCommSubst (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes Mettapedia.OSLF.MeTTaIL.Syntax.rhoReflectivePresentation body) pl :: rest) none, ?_,
+    RhoStep.comm_resolved chI body pl rest bodyTyped payloadTyped, ?_⟩
   · have flat := sc_flatAtoms.1 P
     rw [← hLfst] at flat
     refine flat.trans _ _ _ ?_
@@ -1449,14 +1803,16 @@ theorem comm_reflection {free : FreeSortContext} {P : Pattern}
     change StructuralCongruence (.collection .hashBag (xi.1 :: xo.1 :: rest) none) _
     rw [hxo1, hxi1]
     exact sc_second rest (sc_apply2 _ channels (.refl pl))
-  · obtain ⟨T, hT, eT⟩ := translate_semanticCommSubst hK' hq'
+  · obtain ⟨K'', hK'', eK''⟩ := translate_resolveQuotes _ body K' hK'
+    obtain ⟨T, hT, eT⟩ := translate_semanticCommSubst hK'' hq'
     obtain ⟨R, hR, hRatoms⟩ := tProcs_atoms hρ L' (fun x hx => hLtr x (memL' x hx))
       (fun x hx => atomAt x (memL' x hx))
     refine ⟨parT T R, ?_, ?_⟩
     · rw [tProc.eq_5, tProcs.eq_2, hT, Option.bind_some, hR, Option.map_some]
     · apply cls_eq_of_atoms_eq
       change atoms T + atoms R = atoms u
-      rw [atoms_invariant (eT.trans (inst_equiv (cls_eq_iff.mp eK') (cls_eq_iff.mp eq'))),
+      rw [atoms_invariant (eT.trans (inst_equiv (eK''.trans (cls_eq_iff.mp eK'))
+          (cls_eq_iff.mp eq'))),
         hRatoms, hL', htgt]
 
 /-- **Reflection of strict steps.** Every step of the presented strict core
@@ -1581,7 +1937,7 @@ theorem drop_source (name : Pattern) {n₀ : Term sig [] Srt.nm} {code : Term si
       by_cases hqd : ∃ name', name = .apply "NQuote" [.apply "PDrop" [name']]
       · obtain ⟨name', rfl⟩ := hqd
         rw [tName.eq_3] at h
-        rw [nameHead.eq_2] at hn
+        rw [nameHead_quoteDrop] at hn
         have hsize : sizeOf name' < sizeOf (Pattern.apply "NQuote" [.apply "PDrop" [name']]) := by
           simp only [Pattern.apply.sizeOf_spec, List.cons.sizeOf_spec]
           omega
@@ -1590,7 +1946,7 @@ theorem drop_source (name : Pattern) {n₀ : Term sig [] Srt.nm} {code : Term si
       by_cases hlit : ∃ P0, name = .apply "NQuote" [P0]
       · obtain ⟨P0, rfl⟩ := hlit
         have hnot : ∀ m, P0 = .apply "PDrop" [m] → False := fun m e => hqd ⟨m, by rw [e]⟩
-        rw [tName.eq_4 _ _ hnot] at h
+        rw [tName_quote _ hnot hn] at h
         obtain ⟨X, hX, rfl⟩ := Option.map_eq_some_iff.mp h
         rw [lift0_nil, nameOf_translate_of_not_drop hX hnot, qcore_quo] at hn0
         cases hX' : key X with
@@ -1642,7 +1998,8 @@ theorem drop_source (name : Pattern) {n₀ : Term sig [] Srt.nm} {code : Term si
           cases hn0
         · have hbvar : ∀ k, name = .bvar k → False := fun k e => by
             subst e
-            simp [nameHead] at hn
+            rw [nameHead_bvar] at hn
+            cases hn
           rw [tName.eq_5 _ _ hbvar (fun label e => hfree ⟨label, e⟩)
             (fun name' e => hqd ⟨name', e⟩) (fun P0 e => hlit ⟨P0, e⟩)] at h
           cases h

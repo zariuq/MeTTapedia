@@ -1,6 +1,6 @@
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.SerializedPublication.RevisionValidation
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits.Liveness.OptimisticRetries
-import Mettapedia.Languages.MeTTa.Bridges.GSLT.CeTTaResourceWave
+import Mettapedia.GSLT.Causality.PreparationFootprint
 import Mettapedia.Machines.ReadOnlyQuery
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits.SourceQueryExecution
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits.SourceQueryControls
@@ -46,9 +46,9 @@ open attempt of `c` invalid. Two properties matter.
   every write of the writer invalidates every open attempt of the reader
   (`Controls.widened_reader_invalidated`), which is the schedule of
   `OptimisticRetries.Controls.optimistic_starvation`.
-* **Preparation waves are not commit waves.** On the native preparation footprint the resource
+* **Preparation waves are not commit waves.** On the preparation footprint the resource
   selector admits exactly the first `workers` tasks of the agenda and defers the rest
-  (`preparation_selectWave`, from `CeTTaResourceWave.Preparation.enabled_iff`): the maximal
+  (`preparation_selectWave`, from `PreparationFootprint.enabled_iff`): the maximal
   admitted wave is a prefix cut by the worker credits, and no read, take or write of the tasks
   enters the decision. Carrying the two rival takers of one token, an admitted wave has no
   executable order (`preparation_wave_not_commit_wave`). Serialized revision-validated
@@ -66,7 +66,7 @@ open attempt of `c` invalid. Two properties matter.
 * **Executed read dependencies.** `SourceReads` supplies that justification for the existing
   pure adaptive query compiler with a concrete ordered scanner. A clear local check preserves
   its entire observation and source rows; under the matcher laws it also preserves declarative
-  absence. Effectful sources and the concrete concurrency boundary remain separate.
+  none query. Effectful sources and the concrete concurrency boundary remain separate.
 -/
 
 set_option autoImplicit false
@@ -330,7 +330,7 @@ end Controls
 
 section Preparation
 
-open Mettapedia.Languages.MeTTa.Bridges.GSLT.CeTTaResourceWave
+open Mettapedia.GSLT.Causality
 open Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits.Controls (Atom)
 
 /-- The commits the two prepared tasks of the control carry: the two rival takers of one
@@ -344,29 +344,29 @@ theorem preparation_full_defers (owner instanceId revision : BitVec 64)
     (catalogue : List (BitVec 64)) (workers : ℕ) (done : List (BitVec 64))
     (full : workers ≤ done.length) :
     ∀ rest : List (BitVec 64),
-      (Preparation.system owner instanceId revision).selectWaveAux
-          (Preparation.supply owner instanceId revision catalogue workers)
-          (Preparation.entries owner instanceId revision done)
-          (Preparation.entries owner instanceId revision rest) =
-        ([], Preparation.entries owner instanceId revision rest)
+      (PreparationFootprint.system owner instanceId revision).selectWaveAux
+          (PreparationFootprint.supply owner instanceId revision catalogue workers)
+          (PreparationFootprint.entries owner instanceId revision done)
+          (PreparationFootprint.entries owner instanceId revision rest) =
+        ([], PreparationFootprint.entries owner instanceId revision rest)
   | [] => by
-      simp [Preparation.entries, Mettapedia.GSLT.Causality.ResourceInteraction.System.selectWaveAux]
+      simp [PreparationFootprint.entries, Mettapedia.GSLT.Causality.ResourceInteraction.System.selectWaveAux]
   | x :: rest => by
-      have refused : ¬ (Preparation.system owner instanceId revision).StepEnables
-          (Preparation.supply owner instanceId revision catalogue workers)
-          ((Preparation.entries owner instanceId revision done ++
-            [Preparation.entry owner instanceId revision x] : List _) : Multiset _) := by
-        have appended : Preparation.entries owner instanceId revision done ++
-            [Preparation.entry owner instanceId revision x] =
-            Preparation.entries owner instanceId revision (done ++ [x]) := by
-          simp [Preparation.entries]
-        rw [appended, Preparation.enabled_iff]
+      have refused : ¬ (PreparationFootprint.system owner instanceId revision).StepEnables
+          (PreparationFootprint.supply owner instanceId revision catalogue workers)
+          ((PreparationFootprint.entries owner instanceId revision done ++
+            [PreparationFootprint.entry owner instanceId revision x] : List _) : Multiset _) := by
+        have appended : PreparationFootprint.entries owner instanceId revision done ++
+            [PreparationFootprint.entry owner instanceId revision x] =
+            PreparationFootprint.entries owner instanceId revision (done ++ [x]) := by
+          simp [PreparationFootprint.entries]
+        rw [appended, PreparationFootprint.enabled_iff]
         rintro ⟨_, tooMany⟩
         simp at tooMany
         omega
-      change (Preparation.system owner instanceId revision).selectWaveAux _ _
-          (Preparation.entry owner instanceId revision x ::
-            Preparation.entries owner instanceId revision rest) = _
+      change (PreparationFootprint.system owner instanceId revision).selectWaveAux _ _
+          (PreparationFootprint.entry owner instanceId revision x ::
+            PreparationFootprint.entries owner instanceId revision rest) = _
       rw [Mettapedia.GSLT.Causality.ResourceInteraction.System.selectWaveAux, if_neg refused,
         preparation_full_defers owner instanceId revision catalogue workers done full rest]
       rfl
@@ -375,29 +375,29 @@ theorem preparation_full_defers (owner instanceId revision : BitVec 64)
 theorem preparation_selectWaveAux (owner instanceId revision : BitVec 64)
     (catalogue : List (BitVec 64)) (workers : ℕ) :
     ∀ (rest done : List (BitVec 64)), done ++ rest = catalogue → done.length ≤ workers →
-      (Preparation.system owner instanceId revision).selectWaveAux
-          (Preparation.supply owner instanceId revision catalogue workers)
-          (Preparation.entries owner instanceId revision done)
-          (Preparation.entries owner instanceId revision rest) =
-        (Preparation.entries owner instanceId revision (rest.take (workers - done.length)),
-          Preparation.entries owner instanceId revision (rest.drop (workers - done.length)))
+      (PreparationFootprint.system owner instanceId revision).selectWaveAux
+          (PreparationFootprint.supply owner instanceId revision catalogue workers)
+          (PreparationFootprint.entries owner instanceId revision done)
+          (PreparationFootprint.entries owner instanceId revision rest) =
+        (PreparationFootprint.entries owner instanceId revision (rest.take (workers - done.length)),
+          PreparationFootprint.entries owner instanceId revision (rest.drop (workers - done.length)))
   | [], _, _, _ => by
-      simp [Preparation.entries, Mettapedia.GSLT.Causality.ResourceInteraction.System.selectWaveAux]
+      simp [PreparationFootprint.entries, Mettapedia.GSLT.Causality.ResourceInteraction.System.selectWaveAux]
   | x :: rest, done, whole, bound => by
       by_cases room : done.length < workers
       · have prefixLe : ((done ++ [x] : List (BitVec 64)) : Multiset (BitVec 64)) ≤ catalogue := by
           rw [← whole]
           exact Multiset.coe_le.mpr
             ((List.Sublist.append_left (List.singleton_sublist.mpr List.mem_cons_self) done).subperm)
-        have appended : Preparation.entries owner instanceId revision done ++
-            [Preparation.entry owner instanceId revision x] =
-            Preparation.entries owner instanceId revision (done ++ [x]) := by
-          simp [Preparation.entries]
-        have admitted : (Preparation.system owner instanceId revision).StepEnables
-            (Preparation.supply owner instanceId revision catalogue workers)
-            ((Preparation.entries owner instanceId revision done ++
-              [Preparation.entry owner instanceId revision x] : List _) : Multiset _) := by
-          rw [appended, Preparation.enabled_iff]
+        have appended : PreparationFootprint.entries owner instanceId revision done ++
+            [PreparationFootprint.entry owner instanceId revision x] =
+            PreparationFootprint.entries owner instanceId revision (done ++ [x]) := by
+          simp [PreparationFootprint.entries]
+        have admitted : (PreparationFootprint.system owner instanceId revision).StepEnables
+            (PreparationFootprint.supply owner instanceId revision catalogue workers)
+            ((PreparationFootprint.entries owner instanceId revision done ++
+              [PreparationFootprint.entry owner instanceId revision x] : List _) : Multiset _) := by
+          rw [appended, PreparationFootprint.enabled_iff]
           exact ⟨prefixLe, by simp; omega⟩
         have later := preparation_selectWaveAux owner instanceId revision catalogue workers rest
           (done ++ [x]) (by simpa using whole) (by simp; omega)
@@ -405,9 +405,9 @@ theorem preparation_selectWaveAux (owner instanceId revision : BitVec 64)
         obtain ⟨k, hk⟩ : ∃ k, workers - done.length = k + 1 := ⟨workers - done.length - 1, by omega⟩
         have hk' : workers - (done ++ [x]).length = k := by simp; omega
         rw [hk'] at later
-        change (Preparation.system owner instanceId revision).selectWaveAux _ _
-            (Preparation.entry owner instanceId revision x ::
-              Preparation.entries owner instanceId revision rest) = _
+        change (PreparationFootprint.system owner instanceId revision).selectWaveAux _ _
+            (PreparationFootprint.entry owner instanceId revision x ::
+              PreparationFootprint.entries owner instanceId revision rest) = _
         rw [Mettapedia.GSLT.Causality.ResourceInteraction.System.selectWaveAux, if_pos admitted,
           later, hk]
         rfl
@@ -415,33 +415,33 @@ theorem preparation_selectWaveAux (owner instanceId revision : BitVec 64)
         have deferred := preparation_full_defers owner instanceId revision catalogue workers done
           (by omega) (x :: rest)
         rw [deferred, full]
-        simp [Preparation.entries]
+        simp [PreparationFootprint.entries]
 
 /-- **The maximal admitted preparation wave is the first `workers` tasks of the agenda.** The
-selector, run on the native preparation footprint, admits exactly the prefix of the catalogue
+selector, run on the preparation footprint, admits exactly the prefix of the catalogue
 that fits the worker credits and defers the rest; nothing about the tasks' reads, takes or
 writes enters the decision. -/
 theorem preparation_selectWave (owner instanceId revision : BitVec 64)
     (catalogue : List (BitVec 64)) (workers : ℕ) :
-    (Preparation.system owner instanceId revision).selectWave
-        (Preparation.supply owner instanceId revision catalogue workers)
-        (Preparation.entries owner instanceId revision catalogue) =
-      (Preparation.entries owner instanceId revision (catalogue.take workers),
-        Preparation.entries owner instanceId revision (catalogue.drop workers)) := by
+    (PreparationFootprint.system owner instanceId revision).selectWave
+        (PreparationFootprint.supply owner instanceId revision catalogue workers)
+        (PreparationFootprint.entries owner instanceId revision catalogue) =
+      (PreparationFootprint.entries owner instanceId revision (catalogue.take workers),
+        PreparationFootprint.entries owner instanceId revision (catalogue.drop workers)) := by
   have := preparation_selectWaveAux owner instanceId revision catalogue workers catalogue []
     (by simp) (by simp)
   simpa [Mettapedia.GSLT.Causality.ResourceInteraction.System.selectWave,
-    Preparation.entries] using this
+    PreparationFootprint.entries] using this
 
-/-- **A preparation wave is not a commit wave.** The native preparation footprint admits tasks
+/-- **A preparation wave is not a commit wave.** The preparation footprint admits tasks
 `1` and `2` together on two worker credits; carrying the two rival takers of one token, their
 commits have no executable order at the snapshot where both were matched. -/
 theorem preparation_wave_not_commit_wave :
-    (Preparation.system 7 9 11).StepEnables (Preparation.supply 7 9 11 [1, 2] 2)
-        (Preparation.entries 7 9 11 [1, 2]) ∧
+    (PreparationFootprint.system 7 9 11).StepEnables (PreparationFootprint.supply 7 9 11 [1, 2] 2)
+        (PreparationFootprint.entries 7 9 11 [1, 2]) ∧
       (∀ c ∈ [1, 2].map taskCommit, Enabled OccurrenceCommits.Controls.label {0} c) ∧
       ¬ ∃ l, l.Perm ([1, 2].map taskCommit) ∧ Executable OccurrenceCommits.Controls.label {0} l := by
-  refine ⟨Preparation.occurrence_and_shared_read_controls.1, ?_, ?_⟩
+  refine ⟨PreparationFootprint.Controls.occurrence_and_shared_read.1, ?_, ?_⟩
   · simpa [taskCommit] using OccurrenceCommits.Controls.takers_enabled
   · simpa [taskCommit] using OccurrenceCommits.Controls.takers_batch_no_order
 
@@ -597,7 +597,7 @@ def answer (pending : ReadOnlyQuery.Retained.State Nat Bool (Bool × Bool)) : Op
   | .read _ _ => none
 
 /-- Each read uses the actual descriptor decision, but the combined answer
-is absent from both instantaneous stores. No partial writer is involved. -/
+is missing from both instantaneous stores. No partial writer is involved. -/
 theorem mixed_read :
     answer (execute before after [.read, .publish, .read] initial).2 = some (false, true) := by
   rfl
@@ -799,7 +799,7 @@ namespace Controls
 
 /-- The first coordinate is a predicate; the second is its argument. -/
 def label (occurrence : Nat) : Nat × Nat := (0, occurrence)
-def absence : Commit Nat (Nat × Nat) := ⟨∅, ∅, ∅, [⟨fun x => x == (0, 0), ∅⟩]⟩
+def noneRead : Commit Nat (Nat × Nat) := ⟨∅, ∅, ∅, [⟨fun x => x == (0, 0), ∅⟩]⟩
 def fullRead : Commit Nat (Nat × Nat) := ⟨∅, ∅, ∅, [⟨fun x => x == (0, 0), {0}⟩]⟩
 
 theorem distinct_same_predicate :
@@ -833,7 +833,7 @@ theorem fresh_identity_clash :
   decide
 
 theorem matching_insertion_into_empty_query :
-    obstructs label (Commit.makeOne 0) absence = true := by
+    obstructs label (Commit.makeOne 0) noneRead = true := by
   rw [obstructs_iff]
   unfold Clash Spoils WritesInto
   decide
@@ -845,7 +845,7 @@ theorem matching_removal_from_full_query :
   decide
 
 theorem unrelated_same_predicate_query_write :
-    obstructs label (Commit.makeOne 1) absence = false := by
+    obstructs label (Commit.makeOne 1) noneRead = false := by
   rw [clear_iff]
   unfold Clash Spoils WritesInto
   decide
@@ -862,9 +862,9 @@ theorem duplicate_payloads_remain_distinct :
 #guard obstructs label (Commit.takeOne 0) (Commit.takeOne 0) == true
 #guard obstructs label (Commit.takeOne 0) (Commit.keepOne 0) == true
 #guard obstructs label (Commit.makeOne 0) (Commit.makeOne 0) == true
-#guard obstructs label (Commit.makeOne 0) absence == true
+#guard obstructs label (Commit.makeOne 0) noneRead == true
 #guard obstructs label (Commit.takeOne 0) fullRead == true
-#guard obstructs label (Commit.makeOne 1) absence == false
+#guard obstructs label (Commit.makeOne 1) noneRead == false
 #guard obstructs (fun _ : Nat => (0, 7)) (Commit.takeOne 0) (Commit.takeOne 1) == false
 
 end Controls
@@ -953,8 +953,8 @@ theorem clear_preserves_source_rows {V P : Type v}
   simpa only [Sources.Query.run_compile L matcher label _ _ (scan_complete label _)] using answers
 
 /-- With the independent matcher and pure-computation laws, the same local
-check preserves absence in the declarative source semantics. -/
-theorem clear_preserves_declarative_absence {V P : Type v} [DecidableEq V]
+check preserves none queries in the declarative source semantics. -/
+theorem clear_preserves_declarative_none {V P : Type v} [DecidableEq V]
     (L : Sources.TermLayer V R P) (matcher : Sources.Matcher V R P)
     (label : O → R) (store : Finset O) (published : Commit O R)
     (sound : Sources.Matcher.Sound L matcher) (complete : Sources.Matcher.Complete L matcher)
@@ -1185,7 +1185,7 @@ theorem delivered_ready_change_cannot_sleep (label : O → R) (captured current 
   exact notified_never_sleeps ⟨generation, .armed⟩ later (by simp) same
 
 /-- The existing source cursor, including its explicit completion inspection,
-supplies the same recheck consumer. Arming implies absence in the independent
+supplies the same recheck consumer. Arming implies none queries in the independent
 source judgment at the current store. Scanner and matcher laws retain their
 own scope; no Boolean guard-correctness premise replaces this construction. -/
 theorem armed_source_has_no_row {O V T P : Type u} [DecidableEq O] [DecidableEq V]
@@ -1242,10 +1242,10 @@ theorem new_source_row_requires_notice {O V T P : Type u} [LinearOrder O] [Decid
     have same := Cursor.ReadOnlyQuery.validated_completion before (scan label (fire current published)) fuel
       (Sources.Query.compile L matcher label [] source bindings) observation finished
       ((ReadOnlyQuery.checkReads_iff _ _).mpr afterAgrees)
-    have absent := (Sources.Query.run_empty_iff_no_declarative L matcher label (fire current published)
+    have missing := (Sources.Query.run_empty_iff_no_declarative L matcher label (fire current published)
       (scan label (fire current published)) (scan_complete label _) sound complete minimal source respects bindings).mp
     exfalso
-    apply absent ?_ appeared
+    apply missing ?_ appeared
     rw [same]
     cases listEq : observation.answer with
     | nil => rfl
@@ -1982,7 +1982,7 @@ inductive Observation (O V T : Type) where
   | complete (result : ReadOnlyQuery.Observation (T → Bool) (List O) (List (Row O V T)))
 
 /-- Completion and current validation are distinct from an empty answer.
-Faults and unfinished source work cannot masquerade as guard absence. -/
+Faults and unfinished source work cannot masquerade as guard none queries. -/
 def observe [DecidableEq O] (current : (T → Bool) → List O)
     (state : State (O := O) (V := V) (T := T) (P := P) (Answer := Answer) authority required) : Observation O V T :=
   match OwnWrite.completed authority required state.producer with
@@ -1998,7 +1998,7 @@ def observe [DecidableEq O] (current : (T → Bool) → List O)
               if ReadOnlyQuery.checkReads current result.reads then .complete result else .stale
 
 /-- Keep the selected list occurrence. Only a complete current observation
-can yield a proposal; None alone does not establish guard absence. -/
+can yield a proposal; None alone does not establish guard none queries. -/
 def select [DecidableEq O] (current : (T → Bool) → List O) (index : Nat)
     (state : State (O := O) (V := V) (T := T) (P := P) (Answer := Answer) authority required) : Option (Row O V T) :=
   match observe authority required current state with
@@ -2352,7 +2352,7 @@ theorem captured_recipe_source [DecidableEq O]
     (buildRecipe L matcher label transform bindings body) producer initial after first later paid recipe finished
   exact ⟨environment, produced, same.symm⟩
 
-/-- A genuinely complete empty guard is absence in the independent source
+/-- A genuinely complete empty guard is the none query in the independent source
 relation. Unstarted, partial and stale observations cannot prove this result. -/
 theorem observed_empty_declarative [DecidableEq O] [DecidableEq V]
     (L : Sources.TermLayer V T P) (matcher : Sources.Matcher V T P) (label : O → T)
@@ -2429,7 +2429,7 @@ def completion (state : State (O := O) (V := V) (T := T) (P := P) (Answer := Ans
     state.attempt.bind fun ⟨view, packet⟩ => Cursor.ReadOnlyQuery.completed? view packet.2
 
 /-- Recheck the actual exclusively acquired driver in its installed question.
-An absent completion does not arm the waiter. Producer faults are exposed by
+A missing completion does not arm the waiter. Producer faults are exposed by
 observe and remain distinct from a complete empty guard. -/
 def recheckOwned [DecidableEq O] (current : (T → Bool) → List O)
     (key : AsyncWait.Identity) (use : Use)
@@ -2713,7 +2713,7 @@ theorem producer_finishes_saved_suffix_once :
     (recipe? revocationWorlds writeRequirement completed).isSome = true ∧ completed.producer.1 = 2 ∧
       OrderedDependencyStore.query (OwnWrite.current revocationWorlds writeRequirement completed.producer).store 0 = [7] := by decide +kernel
 
-theorem partial_guard_is_not_absence :
+theorem partial_guard_is_not_none :
     isChecking beforeView halfway = true ∧ answerCount beforeView halfway = none ∧
       select revocationWorlds writeRequirement beforeView 0 halfway = none ∧
       queryInvoice revocationWorlds writeRequirement halfway = 1 ∧ answerCount beforeView emptyGuard = some 0 := by decide +kernel
@@ -2910,7 +2910,7 @@ def rearmOwned (current : (T → Bool) → List O) (key : AsyncWait.Identity) (u
 
 /-- Advance the guarded program stored in the acquired entry. Stale reads
 return false with the actual refused packet; zero allowance does no query
-validation. The reply does not classify readiness or declarative absence. -/
+validation. The reply does not classify readiness or declarative none query. -/
 def resumeOwnedGuard (current : (T → Bool) → List O) (fuel : Nat) (key : AsyncWait.Identity) (use : Use)
     (pool : Registration.State Holder Use
       (State (O := O) (V := V) (T := T) (P := P) (Answer := Answer) authority required)) :=
@@ -3005,7 +3005,7 @@ structure Selection (O V T : Type) where
   made : Finset O
 
 /-- All tests are finite. The issued set includes retired identities, so an
-output cannot recycle an old identity merely because it is currently absent. -/
+output cannot recycle an old identity merely because it is currently missing. -/
 def eligible (label : O → T) (store born : Finset O) (selected : Selection O V T) : Prop :=
   let footprint := Sources.footprintOf selected.row.2
   footprint.Linear ∧ footprint.Holds label store ∧
@@ -3144,7 +3144,7 @@ theorem applySelection_eq_fire (label : O → T) (store : Finset O)
   simp only [applySelection, fire, formed.taken, outputs]
 
 omit [DecidableEq T] in
-theorem consumed_absent (label : O → T) (store born : Finset O)
+theorem consumed_not_present (label : O → T) (store born : Finset O)
     (selected : Selection O V T) (valid : eligible label store born selected)
     (occurrence : O) (taken : occurrence ∈ (Sources.footprintOf selected.row.2).takes) :
     occurrence ∉ applySelection store selected := by
@@ -3423,10 +3423,10 @@ theorem equal_alternatives_retain_their_selected_position :
 
 theorem admission_checks_kept_and_complete_observations :
     let kept : Selection Nat Nat Value := ⟨0, (Sources.AbsenceControls.empty, [.keep 1]), ∅⟩
-    let absent : Selection Nat Nat Value :=
+    let missing : Selection Nat Nat Value :=
       ⟨0, (Sources.AbsenceControls.empty, [.query ⟨fun _ => true, ∅⟩ false]), ∅⟩
     ¬ eligible Reactive.Controls.label {0} {0, 1} kept ∧
-      ¬ eligible Reactive.Controls.label {0} {0} absent := by decide +kernel
+      ¬ eligible Reactive.Controls.label {0} {0} missing := by decide +kernel
 
 /-- Installation, acquisition, readiness recheck and actual queue service
 produce this claimed registration; no test supplies the claimed phase. -/
@@ -3809,7 +3809,7 @@ def cut (store : Finset Nat) (fuel : Nat) :=
 
 def ready (rows : List Nat) : Bool := !rows.isEmpty
 
-theorem completed_current_absence_arms :
+theorem completed_current_none_arms :
     recheck id {2} 1 ready ⟨1, .checking⟩ (cut {2} 2) = ⟨1, .armed⟩ := by
   simp [recheck, recheckCompleted, cut, ready, ReadOnlyQuery.Retained.resume,
     ReadOnlyQuery.Retained.begin, ReadOnlyQuery.pausePrefix, SourceReads.Controls.adaptive,
@@ -3841,7 +3841,7 @@ theorem matching_arrival_makes_source_ready :
 theorem matching_arrival_produces_notice :
     notice id (Commit.makeOne 12) 1 (cut {2} 2).1 = some 1 := by
   apply becomes_ready_requires_notice id {2} {2} 1 2 SourceReads.Controls.adaptive ready
-    (Commit.makeOne 12) completed_current_absence_arms
+    (Commit.makeOne 12) completed_current_none_arms
   have afterStore : fire {2} (Commit.makeOne 12 : Commit Nat Nat) = {2, 12} := by decide
   rw [afterStore]
   exact matching_arrival_makes_source_ready

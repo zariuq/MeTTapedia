@@ -438,6 +438,12 @@ theorem matchCovered_stable (depth extra : Nat) (request : MatchRequest)
   Mettapedia.Machines.ReadOnlyQuery.depthCovered_stable
     MatchDepth.body evalMatch MatchDepth.unfold_eval depth extra request covered
 
+theorem matchCovered_mono (depth extra : Nat) (request : MatchRequest)
+    (covered : matchCovered depth request = true) :
+    matchCovered (depth + extra) request = true :=
+  Mettapedia.Machines.ReadOnlyQuery.depthCovered_mono
+    MatchDepth.body evalMatch MatchDepth.unfold_eval depth extra request covered
+
 namespace MatchDepth.Controls
 
 /-- A completed mismatch is licensed even though its answer is empty. -/

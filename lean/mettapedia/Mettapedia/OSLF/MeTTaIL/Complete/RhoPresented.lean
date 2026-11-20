@@ -67,6 +67,18 @@ theorem increasingSpines_of_short {rule : RewriteRule} {spec : RuleBindingSpec}
 
 theorem laws_eq : Normalized.laws GeneralRho.Standard.plan = [⟨.hashBag, some "PZero"⟩] := by decide
 
+theorem comm_binder_compatible :
+    BinderLawsFor (Normalized.laws GeneralRho.Standard.plan)
+      (GeneralPlanEnvironment.environment GeneralRho.Standard.plan).reflection GeneralRho.comm := by
+  apply (checkBinderLawsFor_iff _ _ _).mp
+  rw [laws_eq]
+  decide +kernel
+
+theorem comm_conflicting_unit_refused :
+    checkBinderLawsFor [⟨.hashBag, some "Other"⟩]
+      (GeneralPlanEnvironment.environment GeneralRho.Standard.plan).reflection GeneralRho.comm = false := by
+  decide +kernel
+
 theorem extrusions_eq : Normalized.extrusions GeneralRho.Standard.plan = [] := by decide
 
 theorem checked : Predecessors.equationsChecked GeneralRho.Standard.plan = true := by decide
@@ -126,7 +138,8 @@ theorem canonical : CanonicalCoherence.RulesAdmissible GeneralRho.Standard.plan 
   refine ⟨by unfold CanonicalBags.NoSetDescent; decide,
     fun declaration ordinal member rule spec selected specified => ?_⟩
   obtain ⟨rfl, rfl, rfl⟩ := rule_at member selected specified
-  refine ⟨increasingSpines_of_short fun name dependencies found => ?_, rfl, by decide⟩
+  refine ⟨increasingSpines_of_short fun name dependencies found => ?_, rfl, by decide,
+    (checkBinderLawsFor_iff _ _ _).mp (by decide +kernel)⟩
   rcases comm_dependencies found with rfl | rfl <;> simp
 
 /-- The language's terms, one by one. -/
@@ -232,7 +245,8 @@ theorem comm_sorts {name : String} {sort : TypeExpr} (found : GeneralRho.comm.ty
 theorem rules : LawCoherence.LawRulesAdmissible GeneralRho.Standard.plan := by
   intro declaration ordinal member rule spec selected specified
   obtain ⟨rfl, rfl, rfl⟩ := rule_at member selected specified
-  refine ⟨comm_flatSafe, rfl, fun name sort found => ?_, fun name dependencies found entry inside => ?_⟩
+  refine ⟨comm_flatSafe, rfl, fun name sort found => ?_, fun name dependencies found entry inside => ?_,
+    comm_binder_compatible⟩
   · rcases comm_sorts found with rfl | rfl | rfl
     · trivial
     · trivial

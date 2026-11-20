@@ -212,9 +212,9 @@ theorem piece_decided (k : Piece) {Θ : Context S.R} {original : EquationStore (
             run (pieceSolver choices facts roots heads algebra rigid complete normalizes inh headsTyped declared strengthening join joinSound
                 glb spec k) original larger = .solved state finished ∧
               (frames S.levels).Principal original state.answer) ∨
-          (∃ absent,
+          (∃ missing,
             run (pieceSolver choices facts roots heads algebra rigid complete normalizes inh headsTyped declared strengthening join joinSound
-              glb spec k) original larger = .refuted absent)) := by
+              glb spec k) original larger = .refuted missing)) := by
   cases k with
   | miller =>
       exact Miller.millerGlb_decided facts roots heads algebra rigid complete normalizes inh headsTyped glb spec
@@ -246,9 +246,9 @@ theorem unionRun_decided (classify : ∀ {Θ : Context S.R}, EquationStore (Tota
             unionRun choices facts roots heads algebra rigid complete normalizes inh headsTyped declared strengthening join joinSound glb
                 spec classify original larger = .solved state finished ∧
               (frames S.levels).Principal original state.answer) ∨
-          (∃ absent,
+          (∃ missing,
             unionRun choices facts roots heads algebra rigid complete normalizes inh headsTyped declared strengthening join joinSound glb
-              spec classify original larger = .refuted absent)) := by
+              spec classify original larger = .refuted missing)) := by
   obtain ⟨fuel, ends⟩ := piece_decided choices facts roots heads algebra rigid complete normalizes inh headsTyped
     declared strengthening join joinSound glb spec joinTotal glbTotal k (sound picked)
   refine ⟨fuel, fun larger enough => ?_⟩
@@ -309,9 +309,9 @@ theorem union_decided {Θ : Context S.R} {original : EquationStore (TotalTerm Θ
             unionRun choices facts roots heads algebra rigid complete normalizes inh headsTyped declared strengthening join joinSound glb
                 spec (firstPiece choices) original larger = .solved state finished ∧
               (frames S.levels).Principal original state.answer) ∨
-          (∃ absent,
+          (∃ missing,
             unionRun choices facts roots heads algebra rigid complete normalizes inh headsTyped declared strengthening join joinSound glb
-              spec (firstPiece choices) original larger = .refuted absent)) := by
+              spec (firstPiece choices) original larger = .refuted missing)) := by
   obtain ⟨k, inside⟩ := inside
   obtain ⟨k', picked⟩ := firstPiece_complete choices inside
   exact unionRun_decided choices facts roots heads algebra rigid complete normalizes inh headsTyped declared strengthening join joinSound glb

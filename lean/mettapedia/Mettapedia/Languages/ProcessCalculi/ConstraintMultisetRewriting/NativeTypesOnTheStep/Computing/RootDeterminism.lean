@@ -287,10 +287,10 @@ theorem spine_step_mentions {n : Nat} {t t' : Tower.Tm n}
 
 /-- A spine without `lookup` is normal in the loop package. -/
 theorem spine_normal {n : Nat} {t : Tower.Tm n} (spine : Spine t)
-    (absent : mentionsConst lookupN t = false) : ConstructorSystem.Normal lrules t := by
+    (missing : mentionsConst lookupN t = false) : ConstructorSystem.Normal lrules t := by
   intro t' step
   have mentions := spine_step_mentions step spine
-  rw [absent] at mentions
+  rw [missing] at mentions
   cases mentions
 
 theorem one_spine : Spine (one : Tower.Tm 0) := .app (.const _) (.const _)

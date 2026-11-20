@@ -104,7 +104,7 @@ private def observedRules : List RewriteRule :=
     (metta_sexpr% petta "(?result)")
     [metta_sexpr% petta "(BNFAlternativesProductiveV1 ?alternatives ?productive ?lexicals ?result)"],
    observed "bnf-alternatives-productive-nil-v1"
-    (metta_sexpr% petta "(BNFAlternativesProductiveV1 (metta-nullary bnf-v1:alternatives-nil) ?productive ?lexicals)")
+    (metta_sexpr% petta "(BNFAlternativesProductiveV1 (bnf-v1:alternatives-nil) ?productive ?lexicals)")
     (metta_sexpr% petta "(BNFNoV1)"),
    observed "bnf-alternatives-productive-cons-v1"
     (metta_sexpr% petta "(BNFAlternativesProductiveV1 (bnf-v1:alternatives-cons ?alternative ?tail) ?productive ?lexicals)")
@@ -123,7 +123,7 @@ private def observedRules : List RewriteRule :=
     (metta_sexpr% petta "(?result)")
     [metta_sexpr% petta "(BNFElementsProductiveV1 ?elements ?productive ?lexicals ?result)"],
    observed "bnf-elements-productive-nil-v1"
-    (metta_sexpr% petta "(BNFElementsProductiveV1 (metta-nullary bnf-v1:elements-nil) ?productive ?lexicals)")
+    (metta_sexpr% petta "(BNFElementsProductiveV1 (bnf-v1:elements-nil) ?productive ?lexicals)")
     (metta_sexpr% petta "(BNFYesV1)"),
    observed "bnf-elements-productive-cons-v1"
     (metta_sexpr% petta "(BNFElementsProductiveV1 (bnf-v1:elements-cons ?element ?tail) ?productive ?lexicals)")

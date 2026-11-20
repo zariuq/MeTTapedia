@@ -1,14 +1,17 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualCommunication
 import Mettapedia.OSLF.Syntax.ContextualRigidTerms
+import Mettapedia.OSLF.Syntax.RhoPayloadTranslation
 
 /-!
 # Closed rho communication as an ordinary occurrence step
 
-The same closed channel, payload and open continuation determine both the
-existing source rho reduction and an ordinary two-sided occurrence firing.
-The binding signature and plugging operation are unchanged. This comparison
-concerns one closed source instance; it does not erase the occurrence order
-or assert a converse for arbitrary contextual or guarded rules.
+The same closed channel, payload and open continuation determine both a source
+communication and an occurrence firing. The name-binding profile uses an
+instantiated ordinary rule. The payload-binding profile opens the schematic
+rule in a fresh scope, establishes actual activation admission, and reads its
+result under every solution of the generated equations. Each profile retains
+its existing binding signature and plugging operation. These are closed
+communication results, not whole-language correspondences.
 -/
 
 set_option autoImplicit false
@@ -143,5 +146,194 @@ theorem the_same_inputs_have_the_source_rho_reduction :
         (RhoSchema.ClosedCommunication.output channel payload))
       (inst body (RhoSchema.ClosedCommunication.quote payload)) :=
   RhoSchema.ClosedCommunication.source_order_comm channel payload body
+
+namespace Payload
+
+abbrev base := ContextualCommunication.Payload.base
+abbrev locals := ContextualCommunication.Payload.locals
+
+variable {V W : Type} (captures : V → MetaArity base)
+  (channel : Term base [] .nm) (payload : Term base [] .pr) (body : Term base [.pr] .pr)
+
+abbrev raw := ContextualCommunication.Payload.source captures
+abbrev active := ContextualCommunication.Payload.target captures
+
+def selection : Selection Nat := ⟨[0, 1], [], [2]⟩
+def before : Configuration (Term (signature base captures) [] .pr) Nat := ⟨[], {0, 1}⟩
+
+/-- Stored values retain the source's intrinsic binding, not a serialized name. -/
+def rows (occurrence : Nat) : ContextualStoredRows.Row locals captures [] .pr :=
+  .shared (Rigid.includeTerm captures
+    (if occurrence = 0 then RhoPayloadPresentation.inpT channel body
+    else if occurrence = 1 then RhoPayloadPresentation.outT channel payload
+    else RhoPayloadPresentation.nilT))
+
+def ruleScope (occupied : Finset Nat) :=
+  ContextualActivationScopes.scopeAt occupied (ContextualActivationScopes.rulePort selection)
+
+def outputs (occupied : Finset Nat) (_ : Nat) : Term (signature base (active captures)) [] .pr :=
+  ContextualFreshening.termAt locals captures (ruleScope occupied)
+    (continuationFor (S := base) .nm .pr .pr captures (payloadFor (S := base) .nm .pr .pr captures))
+
+def problem (occupied : Finset Nat) :=
+  ContextualActivatedStep.problem locals captures occupied selection
+    (ContextualCommunication.Payload.rule captures) (rows captures channel payload body) (before captures)
+
+theorem problem_equations (occupied : Finset Nat) :
+    problem captures channel payload body occupied =
+      [(ContextualFreshening.termAt locals captures (ruleScope occupied)
+          ((ContextualCommunication.Payload.rule captures).take[0]'(by change 0 < 2; decide)),
+        Rigid.includeTerm (active captures) (RhoPayloadPresentation.inpT channel body)),
+       (ContextualFreshening.termAt locals captures (ruleScope occupied)
+          ((ContextualCommunication.Payload.rule captures).take[1]'(by change 1 < 2; decide)),
+        Rigid.includeTerm (active captures) (RhoPayloadPresentation.outT channel payload))] := by
+  change [( _, instantiate _ (instantiate _ (Rigid.includeTerm captures _))),
+      (_, instantiate _ (instantiate _ (Rigid.includeTerm captures _)))] = _
+  simp only [Rigid.instantiate_include]
+  rfl
+
+def supply : Assignment (raw captures) captures
+  | .inl .channel => Rigid.includeTerm captures channel
+  | .inl .payload => Rigid.includeTerm captures payload
+  | .inl .continuation => Rigid.includeTerm captures body
+  | .inr identity => generator captures identity
+
+def witness : Assignment (active captures) captures
+  | .inl ⟨_, .channel⟩ => Rigid.includeTerm captures channel
+  | .inl ⟨_, .payload⟩ => Rigid.includeTerm captures payload
+  | .inl ⟨_, .continuation⟩ => Rigid.includeTerm captures body
+  | .inr identity => generator captures identity
+
+theorem instantiate_fresh (scope : Nat) {Γ : Ctx base} {sort : base.Srt}
+    (term : Term (signature base (raw captures)) Γ sort) :
+    instantiate (witness captures channel payload body)
+      (ContextualFreshening.termAt locals captures scope term) =
+        instantiate (supply captures channel payload body) term := by
+  rw [ContextualFreshening.termAt, instantiate_comp]
+  congr 1
+  funext identity
+  cases identity with
+  | inl port =>
+      change instantiate (witness captures channel payload body)
+        (generator (active captures) (.inl ⟨scope, port⟩)) = _
+      rw [instantiate_generator]
+      cases port <;> rfl
+  | inr identity =>
+      exact instantiate_generator (witness captures channel payload body) (.inr identity)
+
+theorem witness_models (occupied : Finset Nat) :
+    ContextualFrameUnifier.Models (witness captures channel payload body)
+      (problem captures channel payload body occupied) := by
+  intro equation member
+  rw [problem_equations] at member
+  rcases List.mem_cons.mp member with same | tail
+  · subst equation
+    rw [instantiate_fresh, Rigid.instantiate_include]
+    change ContextualCommunication.Payload.input
+      (instantiate (supply captures channel payload body) (generator (raw captures) (.inl .channel)))
+      (instantiate (supply captures channel payload body) (generator (raw captures) (.inl .continuation))) = _
+    erw [instantiate_generator, instantiate_generator]
+    rfl
+  · have same := List.mem_singleton.mp tail
+    subst equation
+    rw [instantiate_fresh, Rigid.instantiate_include]
+    change ContextualCommunication.Payload.output
+      (instantiate (supply captures channel payload body) (generator (raw captures) (.inl .channel)))
+      (instantiate (supply captures channel payload body) (generator (raw captures) (.inl .payload))) = _
+    erw [instantiate_generator, instantiate_generator]
+    rfl
+
+/-- Freshening and matching the actual schematic rule admits the communication;
+the rule is not replaced by a precomputed input/output instance. -/
+theorem activation_valid (occupied : Finset Nat) :
+    ContextualActivatedStep.Valid locals captures occupied selection
+      (ContextualCommunication.Payload.rule captures) (rows captures channel payload body)
+      (before captures) (outputs captures occupied) := by
+  refine ⟨rfl, by decide, by decide, rfl, rfl, rfl, ?_, ?_⟩
+  · refine ⟨?_, ?_, ?_, ?_, ?_⟩
+    · change ({0, 1} : Finset Nat) ⊆ {0, 1}
+      exact Finset.Subset.refl _
+    · exact Finset.empty_subset _
+    · exact Finset.disjoint_empty_right _
+    · change Disjoint ({2} : Finset Nat) {0, 1}
+      decide +kernel
+    · intro query member
+      cases member
+  · exact ⟨V, captures, witness captures channel payload body,
+      witness_models captures channel payload body occupied⟩
+
+theorem activated_step (occupied : Finset Nat) :
+    ContextualActivatedStep.Step locals captures occupied
+      (ContextualCommunication.Payload.rule captures) (rows captures channel payload body)
+      (before captures) (outputs captures occupied)
+      (ContextualActivatedStep.result locals captures occupied selection
+        (ContextualCommunication.Payload.rule captures) (rows captures channel payload body) (before captures))
+      (ContextualActivatedStep.resultRows locals captures selection (outputs captures occupied)
+        (rows captures channel payload body))
+      (ContextualActivationScopes.after occupied selection) :=
+  ⟨selection, activation_valid captures channel payload body occupied, rfl, rfl, rfl⟩
+
+theorem exact_occurrence_result (occupied : Finset Nat) :
+    (ContextualActivatedStep.result locals captures occupied selection
+      (ContextualCommunication.Payload.rule captures) (rows captures channel payload body) (before captures)).present = {2} := by
+  change (({0, 1} \ ({0, 1} : Finset Nat)) ∪ {2}) = {2}
+  decide +kernel
+
+/-- Every solution of the admitted equations reads the same source result.
+The statement ranges over further declaration families, not only the witness
+used to establish consistency. -/
+theorem result_in_every_solution (occupied : Finset Nat) (next : W → MetaArity base)
+    (assignment : Assignment (active captures) next)
+    (solved : ContextualFrameUnifier.Models assignment (problem captures channel payload body occupied)) :
+    instantiate assignment (outputs captures occupied 2) =
+      Rigid.includeTerm next (inst body payload) := by
+  have equations := problem_equations captures channel payload body occupied
+  have first := solved _ (equations ▸ List.mem_cons_self)
+  have second := solved _ (equations ▸ List.mem_cons_of_mem _ List.mem_cons_self)
+  rw [Rigid.instantiate_include] at first second
+  change ContextualCommunication.Payload.input
+    (instantiate assignment (generator (active captures) (.inl ⟨ruleScope occupied, .channel⟩)))
+    (instantiate assignment (generator (active captures) (.inl ⟨ruleScope occupied, .continuation⟩))) = _ at first
+  change ContextualCommunication.Payload.output
+    (instantiate assignment (generator (active captures) (.inl ⟨ruleScope occupied, .channel⟩)))
+    (instantiate assignment (generator (active captures) (.inl ⟨ruleScope occupied, .payload⟩))) = _ at second
+  erw [instantiate_generator, instantiate_generator] at first second
+  have continuationImage := (ContextualCommunication.Payload.input_fields first).2
+  have payloadImage := (ContextualCommunication.Payload.output_fields second).2
+  rw [outputs, ContextualFreshening.termAt, instantiate_comp,
+    ContextualCommunication.Payload.instantiate_result]
+  dsimp only [ContextualFreshening.assignment]
+  erw [instantiate_generator, instantiate_generator]
+  erw [continuationImage, payloadImage]
+  exact (Rigid.include_inst next body payload).symm
+
+theorem source_communication :
+    RhoPayloadPresentation.Steps RhoPayloadPresentation.strictRules
+      (RhoPayloadPresentation.parT (RhoPayloadPresentation.outT channel payload)
+        (RhoPayloadPresentation.inpT channel body)) (inst body payload) :=
+  RhoPayloadPresentation.steps_comm [] channel payload body
+
+/-- The same result agrees with the semantic COMM operation on the authored
+rho syntax whenever its continuation and payload have the stated translation.
+Agreement is at source equation classes, not raw quotation syntax. -/
+theorem semantic_comm_readback
+    {sourceBody sourcePayload : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern}
+    (bodyTranslation : RhoPayloadPresentation.tProc (RhoPayloadPresentation.Env.empty []).up
+      sourceBody = some body)
+    (payloadTranslation : RhoPayloadPresentation.tProc (RhoPayloadPresentation.Env.empty [])
+      sourcePayload = some payload)
+    (occupied : Finset Nat) (next : W → MetaArity base)
+    (assignment : Assignment (active captures) next)
+    (solved : ContextualFrameUnifier.Models assignment (problem captures channel payload body occupied)) :
+    ∃ translated, RhoPayloadPresentation.tProc (RhoPayloadPresentation.Env.empty [])
+        (Mettapedia.Languages.ProcessCalculi.RhoCalculus.semanticCommSubst sourceBody sourcePayload) = some translated ∧
+      ∃ result, instantiate assignment (outputs captures occupied 2) = Rigid.includeTerm next result ∧
+        EqClosure RhoPayloadPresentation.equations result translated := by
+  obtain ⟨translated, translation, agreement⟩ :=
+    RhoPayloadPresentation.translate_semanticCommSubst bodyTranslation payloadTranslation
+  exact ⟨translated, translation, inst body payload,
+    result_in_every_solution captures channel payload body occupied next assignment solved, agreement.symm⟩
+
+end Payload
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualCommunicationGround

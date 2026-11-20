@@ -6,7 +6,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Cong
 The ordinary step labelled by rules (`Semantic.ruleOffers`) offers every semantic firing under its
 rule. Among them is, for every configuration `F`, the firing that **is** the context `F`: it tells
 the knowledge of `F` and makes its occurrences (`contextFiring`). Fired at `C` with the occurrences of
-`F` absent, it leaves exactly the parallel composition `C ⊗ F` (`contextFiring_result`). So a
+`F` missing, it leaves exactly the parallel composition `C ⊗ F` (`contextFiring_result`). So a
 bisimulation already answers every context, and bisimilarity of the ordinary step is a congruence.
 
 The argument uses three properties of a program labelled by rules (`ContextClosed`): a firing
@@ -77,7 +77,7 @@ theorem problem_context (selection : Selection O) (C F : Configuration T O) :
     selection.problem label (contextRule label F) C = C.equations ++ F.equations := by
   simp [Selection.problem, Selection.equations, contextRule]
 
-/-- **The context firing is admitted** when its occurrences are absent and the composite knowledge
+/-- **The context firing is admitted** when its occurrences are not present and the composite knowledge
 is consistent. -/
 theorem contextFiring_valid {C F : Configuration T O} (apart : Disjoint C.present F.present)
     (consistent : A.Consistent (C.equations ++ F.equations)) :

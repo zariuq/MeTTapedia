@@ -16,10 +16,19 @@ run is covered, by the route of `EveryRun` on the world machine's own source sem
   outcome; only `callGroundedResume` applies; its native boundary returns the value, which is
   evaluated again and cast.
 
-`every_complete_run_G`: for every lookup meeting `LookupContract`, every complete run of HE's world
-machine from the entry configuration of a settling term publishes the values of PeTTa's streaming
-run from some fuel on. `Controls.double_every_run`: every complete run of `(double 4)` publishes
-`8`, and PeTTa gives `8`.
+`every_complete_run_G`: for every grounded table `T` and every lookup meeting `LookupContract`,
+every complete run of HE's world machine with `T` from the entry configuration of a term of
+`SettlesG T` publishes the bag of values of PeTTa's streaming run from some fuel on.
+`Controls.double_every_run`: on HE's table every complete run of `(double 4)` publishes `8`, and
+PeTTa gives `8`.
+
+The theorems are stated once, for every table; the table enters only through its answers at the
+class's grounded calls (`answer_source_W`). On HE's table (`GroundedTables.measuredTable`) the class
+holds the integer operations whose results fit in 64 bits; on the model's table
+(`GroundedTables.modelTable`) it holds them all, and the two part at
+`GroundedDifferences.Controls.model_overflow_every_run`. The entry lemmas hold for any grounded
+dispatch (`worldEnvOf`, `complete_source_of`, `data_source_of`, `tuple_source_of`,
+`call_source_of`); the `_W` forms are their instances on a table.
 -/
 
 set_option autoImplicit false
@@ -41,26 +50,41 @@ open Mettapedia.Languages.MeTTa.HE.RecursiveTasks.Contextual (Control Continuati
 open Mettapedia.Languages.MeTTa.PeTTa
 open ServiceFootprints EntryToQuery AnswerBags EveryRun BoundVariables GroundedTables GroundedRuns
 
-/-- **HE's world environment with the integer dispatch.** -/
-def worldEnv (minimal : Minimal.Services) (lookup : CastLookup) : WorldEnvironment Space Unit where
+/-- **HE's world environment with the grounded table `T`.** -/
+def worldEnv (minimal : Minimal.Services) (T : GroundedTable) (lookup : CastLookup) :
+    WorldEnvironment Space Unit where
   view := fun _ => id
-  services := services minimal
-  dispatch := heDispatch
+  services := services minimal T
+  dispatch := T.dispatch
   lookup := lookup
 
-variable {minimal : Minimal.Services} {policy : Policy}
+/-- **HE's read-only world environment with any grounded dispatch**: the host service produces the
+dispatch's outcome as fresh syntax. -/
+def worldEnvOf (minimal : Minimal.Services) (dispatch : GroundedDispatch) (lookup : CastLookup) :
+    WorldEnvironment Space Unit where
+  view := fun _ => id
+  services := WorldServices.readOnlyGrounded minimal dispatch
+  dispatch := dispatch
+  lookup := lookup
+
+theorem worldEnv_eq (minimal : Minimal.Services) (T : GroundedTable) (lookup : CastLookup) :
+    worldEnv minimal T lookup = worldEnvOf minimal T.dispatch lookup := rfl
+
+variable {minimal : Minimal.Services} {T : GroundedTable} {policy : Policy}
 
 /-! ## From complete runs to the world source semantics -/
 
-/-- **A complete world run is a stateful source derivation.** -/
-theorem complete_source_W {lookup : CastLookup} {space : Space} {c : Atom} {E : List Result}
-    (run : WorldSteps (fun (_ : Unit) => id) (services minimal) heDispatch lookup policy
+/-- **A complete world run is a stateful source derivation**, for any grounded dispatch. -/
+theorem complete_source_of {dispatch : GroundedDispatch} {lookup : CastLookup} {space : Space}
+    {c : Atom} {E : List Result}
+    (run : WorldSteps (fun (_ : Unit) => id) (WorldServices.readOnlyGrounded minimal dispatch)
+      dispatch lookup policy
       (WorldConfiguration.ofReadOnly (load space c Atom.undefinedType))
       (WorldConfiguration.ofReadOnly ⟨space, .returning [], [], E⟩)) :
-    Completed.Stateful.AtomRel (worldEnv minimal lookup) space () [] [] (Entry.Value.ofAtom c)
-      Atom.undefinedType Completed.Frame.empty E () (policy := policy) := by
+    Completed.Stateful.AtomRel (worldEnvOf minimal dispatch lookup) space () [] []
+      (Entry.Value.ofAtom c) Atom.undefinedType Completed.Frame.empty E () (policy := policy) := by
   have source := Mettapedia.Languages.MeTTa.HE.RecursiveExecution.Contextual.Stateful.finished_to_source
-    (environment := worldEnv minimal lookup) (policy := policy) run
+    (environment := worldEnvOf minimal dispatch lookup) (policy := policy) run
   obtain ⟨current, pending, childWorld, controlled, continued, same⟩ := source
   cases controlled with
   | work derived =>
@@ -71,13 +95,23 @@ theorem complete_source_W {lookup : CastLookup} {space : Space} {c : Atom} {E : 
       subst same
       exact derived
 
+/-- **A complete world run is a stateful source derivation.** -/
+theorem complete_source_W {lookup : CastLookup} {space : Space} {c : Atom} {E : List Result}
+    (run : WorldSteps (fun (_ : Unit) => id) (services minimal T) T.dispatch lookup policy
+      (WorldConfiguration.ofReadOnly (load space c Atom.undefinedType))
+      (WorldConfiguration.ofReadOnly ⟨space, .returning [], [], E⟩)) :
+    Completed.Stateful.AtomRel (worldEnv minimal T lookup) space () [] [] (Entry.Value.ofAtom c)
+      Atom.undefinedType Completed.Frame.empty E () (policy := policy) :=
+  complete_source_of run
+
 /-! ## The world source semantics on the fragment -/
 
-/-- **A data atom has one result, itself.** -/
-theorem data_source_W {lookup : CastLookup} (contract : LookupContract lookup) {space : Space}
+/-- **A data atom has one result, itself**, for any grounded dispatch. -/
+theorem data_source_of {dispatch : GroundedDispatch} {lookup : CastLookup}
+    (contract : LookupContract lookup) {space : Space}
     {world world' : Unit} {live : List Atom} {scope : List String} {d : Atom} (data : DataAtom d)
     {frame : Frame} {results : List Result}
-    (derived : Completed.Stateful.AtomRel (worldEnv minimal lookup) space world live scope
+    (derived : Completed.Stateful.AtomRel (worldEnvOf minimal dispatch lookup) space world live scope
       (Entry.Value.ofAtom d) Atom.undefinedType frame results world' (policy := policy)) :
     ∃ after : Frame, results = [(Entry.Value.ofAtom d, after)] := by
   have entry : Entry.Rel policy.reentry (frame.read policy (Entry.Value.ofAtom d)).status
@@ -106,12 +140,21 @@ theorem data_source_W {lookup : CastLookup} (contract : LookupContract lookup) {
   | fallback entered => cases Entry.functional entered entry
   | selectionFailed entered => cases Entry.functional entered entry
 
-/-- **The tuple of data atoms has one row**, the tuple itself. -/
-theorem tuple_source_W {lookup : CastLookup} (contract : LookupContract lookup) {space : Space}
-    {scope : List String} :
+/-- **A data atom has one result, itself.** -/
+theorem data_source_W {lookup : CastLookup} (contract : LookupContract lookup) {space : Space}
+    {world world' : Unit} {live : List Atom} {scope : List String} {d : Atom} (data : DataAtom d)
+    {frame : Frame} {results : List Result}
+    (derived : Completed.Stateful.AtomRel (worldEnv minimal T lookup) space world live scope
+      (Entry.Value.ofAtom d) Atom.undefinedType frame results world' (policy := policy)) :
+    ∃ after : Frame, results = [(Entry.Value.ofAtom d, after)] :=
+  data_source_of (dispatch := T.dispatch) contract data derived
+
+/-- **The tuple of data atoms has one row**, the tuple itself, for any grounded dispatch. -/
+theorem tuple_source_of {dispatch : GroundedDispatch} {lookup : CastLookup}
+    (contract : LookupContract lookup) {space : Space} {scope : List String} :
     ∀ (values : List Atom), values ≠ [] → (∀ v ∈ values, DataAtom v) →
       ∀ (world world' : Unit) (live : List Atom) (frame : Frame) (results : List Result),
-        Completed.Stateful.TupleRel (worldEnv minimal lookup) space world live scope
+        Completed.Stateful.TupleRel (worldEnvOf minimal dispatch lookup) space world live scope
           (values.map Entry.Value.ofAtom) frame results world' (policy := policy) →
         ∃ after : Frame,
           results = [(.expression .active (values.map Entry.Value.ofAtom), after)]
@@ -122,7 +165,7 @@ theorem tuple_source_W {lookup : CastLookup} (contract : LookupContract lookup) 
       simp only [List.map_cons, List.map_nil] at derived
       cases derived with
       | singleton heads =>
-          obtain ⟨after, rfl⟩ := data_source_W contract here heads
+          obtain ⟨after, rfl⟩ := data_source_of contract here heads
           refine ⟨after, ?_⟩
           rw [List.map_singleton, tupleSingleton_data here]
           rfl
@@ -134,32 +177,46 @@ theorem tuple_source_W {lookup : CastLookup} (contract : LookupContract lookup) 
       simp only [List.map_cons] at derived
       cases derived with
       | cons heads branches =>
-          obtain ⟨after, rfl⟩ := data_source_W contract here heads
+          obtain ⟨after, rfl⟩ := data_source_of contract here heads
           cases branches with
           | stopped stopped _ =>
               exact absurd (by simpa only [Entry.Value.erase_ofAtom] using stopped) here.not_stopped
           | continuing _ children tail =>
               cases tail
-              obtain ⟨after', rfl⟩ := tuple_source_W contract (next :: rest) (List.cons_ne_nil _ _)
+              obtain ⟨after', rfl⟩ := tuple_source_of contract (next :: rest) (List.cons_ne_nil _ _)
                 later _ _ _ _ _ children
               refine ⟨after', ?_⟩
               rw [List.map_singleton, List.append_nil,
                 tuplePrepend_data (later next List.mem_cons_self) rest]
               rfl
 
+/-- **The tuple of data atoms has one row**, the tuple itself. -/
+theorem tuple_source_W {lookup : CastLookup} (contract : LookupContract lookup) {space : Space}
+    {scope : List String} (values : List Atom) (nonempty : values ≠ [])
+    (data : ∀ v ∈ values, DataAtom v) (world world' : Unit) (live : List Atom) (frame : Frame)
+    (results : List Result)
+    (derived : Completed.Stateful.TupleRel (worldEnv minimal T lookup) space world live scope
+      (values.map Entry.Value.ofAtom) frame results world' (policy := policy)) :
+    ∃ after : Frame,
+      results = [(.expression .active (values.map Entry.Value.ofAtom), after)] :=
+  tuple_source_of (dispatch := T.dispatch) contract values nonempty data world world' live frame
+    results derived
+
 /-- **The entry of a call of data atoms with an undeclared head**, by the tuple entry or by the
-fallback: the published atoms are those of the batch the call's `CallRel` returns. -/
-theorem call_source_W {lookup : CastLookup} (contract : LookupContract lookup) {atoms : List Atom}
+fallback, for any grounded dispatch: the published atoms are those of the batch the call's
+`CallRel` returns, after success priority. -/
+theorem call_source_of {dispatch : GroundedDispatch} {lookup : CastLookup}
+    (contract : LookupContract lookup) {atoms : List Atom}
     {f : String} {args : List Atom} (head : DataAtom (.symbol f)) (arguments : ∀ a ∈ args, DataAtom a)
     (untyped : (Space.ofList atoms).atoms.filter (typeRegion (.symbol f)) = [])
     {world world' : Unit} {live : List Atom} {scope : List String} {frame : Frame}
     {results : List Result}
-    (derived : Completed.Stateful.AtomRel (worldEnv minimal lookup) (Space.ofList atoms) world live
-      scope (Entry.Value.ofAtom (.expression (.symbol f :: args))) Atom.undefinedType frame results
-      world' (policy := policy)) :
+    (derived : Completed.Stateful.AtomRel (worldEnvOf minimal dispatch lookup) (Space.ofList atoms)
+      world live scope (Entry.Value.ofAtom (.expression (.symbol f :: args))) Atom.undefinedType
+      frame results world' (policy := policy)) :
     ∃ (after : Frame) (children selected : List Result) (w₁ w₂ : Unit),
-      Completed.Stateful.CallRel (worldEnv minimal lookup) (Space.ofList atoms) w₁ live scope
-        (callValue f args) Atom.undefinedType after children w₂ (policy := policy) ∧
+      Completed.Stateful.CallRel (worldEnvOf minimal dispatch lookup) (Space.ofList atoms) w₁ live
+        scope (callValue f args) Atom.undefinedType after children w₂ (policy := policy) ∧
       Mettapedia.Machines.OrderedProtocol.Completion.SuccessPriorityRel
         (fun result : Result => isErrorAtom result.1.erase)
         (children.map (Completed.readResult policy)) selected ∧
@@ -196,16 +253,16 @@ theorem call_source_W {lookup : CastLookup} (contract : LookupContract lookup) {
   have rows : ∀ {operator : Entry.Value} {arguments : List Entry.Value} {rows raw : List Result}
       {w₀ w₁ w₂ : Unit},
       Entry.Value.ofAtom (.symbol f) = operator → args.map Entry.Value.ofAtom = arguments →
-      Completed.Stateful.TupleRel (worldEnv minimal lookup) (Space.ofList atoms) w₀
+      Completed.Stateful.TupleRel (worldEnvOf minimal dispatch lookup) (Space.ofList atoms) w₀
         (Atom.undefinedType :: live) scope (operator :: arguments) frame rows w₁ (policy := policy) →
-      Completed.Stateful.CallsRel (worldEnv minimal lookup) (Space.ofList atoms) w₁ live scope
-        Atom.undefinedType rows raw w₂ (policy := policy) →
-      ∃ (after : Frame) (v₁ v₂ : Unit), Completed.Stateful.CallRel (worldEnv minimal lookup)
+      Completed.Stateful.CallsRel (worldEnvOf minimal dispatch lookup) (Space.ofList atoms) w₁ live
+        scope Atom.undefinedType rows raw w₂ (policy := policy) →
+      ∃ (after : Frame) (v₁ v₂ : Unit), Completed.Stateful.CallRel (worldEnvOf minimal dispatch lookup)
         (Space.ofList atoms) v₁ live scope (callValue f args) Atom.undefinedType after raw v₂
           (policy := policy) := by
     intro operator arguments rows raw w₀ w₁ w₂ sameOperator sameArguments tuples calls
     subst sameOperator sameArguments
-    obtain ⟨after, rfl⟩ := tuple_source_W contract (Atom.symbol f :: args) (List.cons_ne_nil _ _)
+    obtain ⟨after, rfl⟩ := tuple_source_of contract (Atom.symbol f :: args) (List.cons_ne_nil _ _)
       data _ _ _ _ _ tuples
     cases calls with
     | cons called rest =>
@@ -249,26 +306,45 @@ theorem call_source_W {lookup : CastLookup} (contract : LookupContract lookup) {
       have exhausted := selectionExact chosen
       simp at exhausted
 
+/-- **The entry of a call of data atoms with an undeclared head**, by the tuple entry or by the
+fallback: the published atoms are those of the batch the call's `CallRel` returns. -/
+theorem call_source_W {lookup : CastLookup} (contract : LookupContract lookup) {atoms : List Atom}
+    {f : String} {args : List Atom} (head : DataAtom (.symbol f)) (arguments : ∀ a ∈ args, DataAtom a)
+    (untyped : (Space.ofList atoms).atoms.filter (typeRegion (.symbol f)) = [])
+    {world world' : Unit} {live : List Atom} {scope : List String} {frame : Frame}
+    {results : List Result}
+    (derived : Completed.Stateful.AtomRel (worldEnv minimal T lookup) (Space.ofList atoms) world live
+      scope (Entry.Value.ofAtom (.expression (.symbol f :: args))) Atom.undefinedType frame results
+      world' (policy := policy)) :
+    ∃ (after : Frame) (children selected : List Result) (w₁ w₂ : Unit),
+      Completed.Stateful.CallRel (worldEnv minimal T lookup) (Space.ofList atoms) w₁ live scope
+        (callValue f args) Atom.undefinedType after children w₂ (policy := policy) ∧
+      Mettapedia.Machines.OrderedProtocol.Completion.SuccessPriorityRel
+        (fun result : Result => isErrorAtom result.1.erase)
+        (children.map (Completed.readResult policy)) selected ∧
+      results.map (fun r => r.1.erase) = selected.map (fun r => r.1.erase) :=
+  call_source_of (dispatch := T.dispatch) contract head arguments untyped derived
+
 /-- **The batch of an ordinary call on the world machine**: the call itself when its region is
 empty; otherwise its frontier and the bodies' derivations. -/
 theorem callRel_source_W {lookup : CastLookup} {atoms : List Atom} (program : BoundProgram atoms)
-    {f : String} {args : List Atom} (ordinary : Ordinary heDispatch atoms f args)
+    {f : String} {args : List Atom} (ordinary : Ordinary T.dispatch atoms f args)
     {live : List Atom} {scope : List String} {after : Frame} {children : List Result}
     {w₁ w₂ : Unit}
-    (called : Completed.Stateful.CallRel (worldEnv minimal lookup) (Space.ofList atoms) w₁ live scope
+    (called : Completed.Stateful.CallRel (worldEnv minimal T lookup) (Space.ofList atoms) w₁ live scope
       (callValue f args) Atom.undefinedType after children w₂ (policy := policy)) :
     (children = [(callValue f args, after)] ∧ regionSides atoms f args = []) ∨
       ∃ works : List EquationWork, works ≠ [] ∧
         EquationFrontierRel (Space.ofList atoms) (Atom.undefinedType :: live)
           (.expression (.symbol f :: args)) after.bindings works ∧
-        Completed.Stateful.EquationBodiesRel (worldEnv minimal lookup) (Space.ofList atoms) w₁ live
+        Completed.Stateful.EquationBodiesRel (worldEnv minimal T lookup) (Space.ofList atoms) w₁ live
           scope (callValue f args) Atom.undefinedType after works children w₂ (policy := policy) := by
   have ground : ∀ v ∈ args,
       Mettapedia.Languages.MeTTa.HE.Spec.Type.Presentation.TypeSubst.typeVars v = [] :=
     fun v member => HERuns.ground_typeVars (answerable_of_data (ordinary.arguments v member))
   have notExecutable : ∀ {operator : Atom} {arguments : List Atom},
       (callValue f args).erase = .expression (operator :: arguments) →
-      ¬ heDispatch.executable operator := by
+      ¬ T.dispatch.executable operator := by
     intro operator arguments shaped executable
     rw [callValue_erase] at shaped
     simp only [Atom.expression.injEq, List.cons.injEq] at shaped
@@ -296,7 +372,7 @@ theorem bodies_source_W {lookup : CastLookup} {atoms : List Atom} {live : List A
     (determined : List Atom → Atom → List Atom → Prop)
     (sound : ∀ {L : List Atom} {i : Atom}, determined live i L → ∀ {w₀ w₁ : Unit} {output : Frame}
       {results : List Result},
-      Completed.Stateful.AtomRel (worldEnv minimal lookup) (Space.ofList atoms) w₀ live scope
+      Completed.Stateful.AtomRel (worldEnv minimal T lookup) (Space.ofList atoms) w₀ live scope
         (Entry.Value.ofAtom i) Atom.undefinedType output results w₁ (policy := policy) →
       results.map (fun r => r.1.erase) = L) :
     ∀ (works : List EquationWork) (Ls : List (List Atom)),
@@ -304,7 +380,7 @@ theorem bodies_source_W {lookup : CastLookup} {atoms : List Atom} {live : List A
           output.read policy (Entry.Value.ofAtom w.body) = Entry.Value.ofAtom i) ∧
         determined live i L ∧ BodyFacts i) works Ls →
       ∀ {results : List Result} {w₀ w₁ : Unit},
-        Completed.Stateful.EquationBodiesRel (worldEnv minimal lookup) (Space.ofList atoms) w₀ live
+        Completed.Stateful.EquationBodiesRel (worldEnv minimal T lookup) (Space.ofList atoms) w₀ live
           scope original Atom.undefinedType frame works results w₁ (policy := policy) →
         results.map (fun r => r.1.erase) = Ls.flatten
   | [], _, related, _, _, _, derived => by
@@ -336,96 +412,115 @@ theorem bodies_source_W {lookup : CastLookup} {atoms : List Atom} {live : List A
                           rw [List.append_nil, List.map_append, sound determinedI evaluated,
                             bodies_source_W determined sound ws Ls' rest later, List.flatten_cons]
 
-/-- **The grounded call on the world machine**: the host service and the integer dispatch fix the
-outcome; only `callGroundedResume` applies, and its native boundary returns the value, evaluated
+/-- **A call the table answers, on the world source semantics**: the host service and the table fix
+the outcome; only `callGroundedResume` applies, and its native boundary returns the value, evaluated
 again and cast. -/
-theorem grounded_source_W {lookup : CastLookup} (contract : LookupContract lookup)
-    {atoms : List Atom} {op : String} (known : IntOp op) (a b : Int) {live : List Atom}
-    {scope : List String} {after : Frame} {children : List Result} {w₁ w₂ : Unit}
-    (called : Completed.Stateful.CallRel (worldEnv minimal lookup) (Space.ofList atoms) w₁ live scope
-      (callValue op [num a, num b]) Atom.undefinedType after children w₂ (policy := policy)) :
-    children.map (fun r => r.1.erase) = [intValue op a b] := by
-  have host : Minimal.HostCall heDispatch (callValue op [num a, num b]).erase :=
-    ⟨.symbol op, [num a, num b], callValue_erase op [num a, num b], he_executable known⟩
-  have rData := intValue_dataAtom known a b
+theorem answer_source_W {lookup : CastLookup} (contract : LookupContract lookup)
+    {atoms : List Atom} {op : String} {args : List Atom} {v : Atom} (head : DataAtom (.symbol op))
+    (rData : DataAtom v) (notRefused : v ≠ Atom.notReducible) (table : T.Answers (.symbol op) args v)
+    {live : List Atom} {scope : List String} {after : Frame} {children : List Result} {w₁ w₂ : Unit}
+    (called : Completed.Stateful.CallRel (worldEnv minimal T lookup) (Space.ofList atoms) w₁ live scope
+      (callValue op args) Atom.undefinedType after children w₂ (policy := policy)) :
+    children.map (fun r => r.1.erase) = [v] := by
+  have host : Minimal.HostCall T.dispatch (callValue op args).erase :=
+    ⟨.symbol op, args, callValue_erase op args, table.1⟩
   have outcomeOf : ∀ {outcome : GroundedResult Entry.Value} {w₃ w₄ : Unit},
-      (services minimal).groundedAt (Space.ofList atoms) w₃ live scope after
-        (callValue op [num a, num b]) outcome w₄ →
-      outcome = .ok [(Entry.Value.ofAtom (intValue op a b), Bindings.empty)] := by
+      (services minimal T).groundedAt (Space.ofList atoms) w₃ live scope after
+        (callValue op args) outcome w₄ →
+      outcome = .ok [(Entry.Value.ofAtom v, Bindings.empty)] := by
     intro outcome w₃ w₄ produced
     obtain ⟨operator, arguments, raw, shaped, executed, rfl⟩ := produced
     rw [callValue_erase] at shaped
     simp only [Atom.expression.injEq, List.cons.injEq] at shaped
     obtain ⟨rfl, rfl⟩ := shaped
-    rw [(he_outcome_exact known a b raw).mp executed]
+    rw [(table.2 raw).mp executed]
     rfl
   cases called with
   | error failed =>
-      exact absurd failed (HERuns.value_not_error (intOp_head known) (callValue_erase op _))
+      exact absurd failed (HERuns.value_not_error head (callValue_erase op _))
   | embedded _ notHost _ _ _ => exact absurd host notHost
   | absent _ nonGrounded _ => exact absurd host nonGrounded.1
   | equations _ nonGrounded _ _ _ => exact absurd host nonGrounded.1
   | groundedDone _ _ _ produced planned =>
+      -- The table's single row carries no bindings, so it merges with the caller's satisfiable
+      -- frame: the reply resumes, it is never the `Empty` marker of a fully rejected batch.
       rw [outcomeOf produced] at planned
-      cases planned
+      obtain ⟨rows, paired, planned⟩ := Completed.NativeOutcomeRel.ok_iff_rows.mp planned
+      cases paired with
+      | rejected impossible _ =>
+          exact absurd ⟨_, ⟨Mettapedia.Languages.MeTTa.HE.BindingSourceAgreement.refl _,
+            after.certified.satisfiable⟩⟩ impossible
+      | cons _ _ => simp [Completed.NativeReplyPlan.afterRows] at planned
   | groundedResume _ _ _ produced planned batch =>
       rw [outcomeOf produced] at planned
-      cases planned with
-      | success rows =>
-          cases rows with
-          | rejected impossible _ =>
-              exact absurd ⟨_, ⟨Mettapedia.Languages.MeTTa.HE.BindingSourceAgreement.refl _,
-                after.certified.satisfiable⟩⟩ impossible
-          | cons renewed rest =>
-              cases rest
-              have native : ∀ (operator : Atom) (arguments : List Atom) (frame' : Frame)
-                  (value : Entry.Value),
-                  Completed.nativeValue policy (worldEnv minimal lookup).dispatch operator arguments
-                    frame' value = value := fun _ _ _ _ => rfl
-              have provenance : ∀ (operator : Atom) (arguments : List Atom),
-                  (worldEnv minimal lookup).dispatch.valueProvenance operator arguments = .emitted :=
-                fun _ _ => rfl
-              simp only [native, provenance] at batch
-              have single := (Completed.Stateful.BoundaryBatchRel.single_iff).mp batch
-              cases single with
-              | nativeEmittedReturn producer returnedBatch =>
-                  cases producer with
-                  | producerFunction pending _ =>
-                      obtain ⟨⟨body, same⟩, _⟩ := pending
-                      rw [Entry.Value.erase_ofAtom] at same
-                      rw [same] at rData
-                      cases rData
-                  | producerRaw _ =>
-                      have answered := (Completed.Stateful.BoundaryBatchRel.single_iff).mp
-                        returnedBatch
-                      cases answered with
-                      | returned returned =>
-                          cases returned with
-                          | notReducible same =>
-                              exact absurd (by simpa only [Entry.Value.erase_ofAtom] using same)
-                                (intValue_notRefused known a b)
-                          | stopped stopped =>
-                              exact absurd (by simpa only [Entry.Value.erase_ofAtom] using stopped)
-                                rData.not_stopped
-                          | evaluate _ _ evaluated =>
-                              obtain ⟨after', rfl⟩ := data_source_W contract rData evaluated
-                              simp
+      obtain ⟨rows, paired, planned⟩ := Completed.NativeOutcomeRel.ok_iff_rows.mp planned
+      cases paired with
+      | rejected impossible _ =>
+          exact absurd ⟨_, ⟨Mettapedia.Languages.MeTTa.HE.BindingSourceAgreement.refl _,
+            after.certified.satisfiable⟩⟩ impossible
+      | cons renewed rest =>
+          cases rest
+          simp only [Completed.NativeReplyPlan.afterRows,
+            Completed.NativeReplyPlan.resume.injEq] at planned
+          subst planned
+          have native : ∀ (operator : Atom) (arguments : List Atom) (frame' : Frame)
+              (value : Entry.Value),
+              Completed.nativeValue policy (worldEnv minimal T lookup).dispatch operator arguments
+                frame' value = value := fun _ _ _ _ => rfl
+          have provenance : ∀ (operator : Atom) (arguments : List Atom),
+              (worldEnv minimal T lookup).dispatch.valueProvenance operator arguments = .emitted :=
+            fun _ _ => rfl
+          simp only [native, provenance] at batch
+          have single := (Completed.Stateful.BoundaryBatchRel.single_iff).mp batch
+          cases single with
+          | nativeEmittedReturn producer returnedBatch =>
+              cases producer with
+              | producerFunction pending _ =>
+                  obtain ⟨⟨body, same⟩, _⟩ := pending
+                  rw [Entry.Value.erase_ofAtom] at same
+                  rw [same] at rData
+                  cases rData
+              | producerRaw _ =>
+                  have answered := (Completed.Stateful.BoundaryBatchRel.single_iff).mp
+                    returnedBatch
+                  cases answered with
+                  | returned returned =>
+                      cases returned with
+                      | notReducible same =>
+                          exact absurd (by simpa only [Entry.Value.erase_ofAtom] using same)
+                            notRefused
+                      | stopped stopped =>
+                          exact absurd (by simpa only [Entry.Value.erase_ofAtom] using stopped)
+                            rData.not_stopped
+                      | evaluate _ _ evaluated =>
+                          obtain ⟨after', rfl⟩ := data_source_W contract rData evaluated
+                          simp
 
-/-- **On the extended fragment, HE's world source semantics determines the published atoms**, for
-every lookup meeting the contract. -/
-def DeterminedW (minimal : Minimal.Services) (lookup : CastLookup) (policy : Policy)
-    (atoms : List Atom) (t : Atom) (L : List Atom) : Prop :=
+/-- **An integer operation the table answers, on the world source semantics.** -/
+theorem grounded_source_W {lookup : CastLookup} (contract : LookupContract lookup)
+    {atoms : List Atom} {op : String} (known : IntOp op) (a b : Int)
+    (table : T.Answers (.symbol op) [num a, num b] (intValue op a b)) {live : List Atom}
+    {scope : List String} {after : Frame} {children : List Result} {w₁ w₂ : Unit}
+    (called : Completed.Stateful.CallRel (worldEnv minimal T lookup) (Space.ofList atoms) w₁ live scope
+      (callValue op [num a, num b]) Atom.undefinedType after children w₂ (policy := policy)) :
+    children.map (fun r => r.1.erase) = [intValue op a b] :=
+  answer_source_W contract (intOp_head known) (intValue_dataAtom known a b)
+    (intValue_notRefused known a b) table called
+
+/-- **HE's world source semantics with the table `T` determines the published atoms** of `t`. -/
+def DeterminedW (minimal : Minimal.Services) (T : GroundedTable) (lookup : CastLookup)
+    (policy : Policy) (atoms : List Atom) (t : Atom) (L : List Atom) : Prop :=
   ∀ (world world' : Unit) (live : List Atom) (scope : List String) (frame : Frame)
     (results : List Result),
-    Completed.Stateful.AtomRel (worldEnv minimal lookup) (Space.ofList atoms) world live scope
+    Completed.Stateful.AtomRel (worldEnv minimal T lookup) (Space.ofList atoms) world live scope
       (Entry.Value.ofAtom t) Atom.undefinedType frame results world' (policy := policy) →
     results.map (fun r => r.1.erase) = L
 
 /-- A batch selected from the call itself publishes the call (the world version of
 `EveryRun.single_call_published`). -/
 theorem settlesG_determined_W {lookup : CastLookup} (contract : LookupContract lookup)
-    {atoms : List Atom} (program : BoundProgram atoms) {t : Atom} (settles : SettlesG atoms t) :
-    ∃ L : List Atom, (∀ a ∈ L, Answerable a) ∧ DeterminedW minimal lookup policy atoms t L := by
+    {atoms : List Atom} (program : BoundProgram atoms) {t : Atom} (settles : SettlesG T atoms t) :
+    ∃ L : List Atom, (∀ a ∈ L, Answerable a) ∧ DeterminedW minimal T lookup policy atoms t L := by
   induction settles with
   | @data d data notRefused =>
       refine ⟨[d], fun a member => ?_, fun world world' live scope frame results derived => ?_⟩
@@ -469,7 +564,7 @@ theorem settlesG_determined_W {lookup : CastLookup} (contract : LookupContract l
           exact absurd (List.map_eq_nil_iff.mp sidesEq) nonemptyWorks
   | @call f args ordinary nonempty settled ih =>
       have each : ∀ b ∈ regionInstances atoms f args, ∃ L : List Atom,
-          SettlesG atoms b ∧ (∀ a ∈ L, Answerable a) ∧ DeterminedW minimal lookup policy atoms b L := by
+          SettlesG T atoms b ∧ (∀ a ∈ L, Answerable a) ∧ DeterminedW minimal T lookup policy atoms b L := by
         intro b member
         obtain ⟨L, clean, determined⟩ := ih b member
         exact ⟨L, settled b member, clean, determined⟩
@@ -492,13 +587,13 @@ theorem settlesG_determined_W {lookup : CastLookup} (contract : LookupContract l
         have onWorks : List.Forall₂ (fun w L => ∃ i, (∀ output : Frame,
               output.bindings = w.bindings →
                 output.read policy (Entry.Value.ofAtom w.body) = Entry.Value.ofAtom i) ∧
-            DeterminedW minimal lookup policy atoms i L ∧ BodyFacts i) works Ls :=
+            DeterminedW minimal T lookup policy atoms i L ∧ BodyFacts i) works Ls :=
           (forall₂_comp instances related).imp fun _ _ both => by
             obtain ⟨i, ⟨_, reads⟩, settlesI, _, determined⟩ := both
             exact ⟨i, reads, determined, settlesG_facts settlesI⟩
         have erasedChildren := bodies_source_W (minimal := minimal) (policy := policy)
           (lookup := lookup) (atoms := atoms) (live := live) (scope := scope)
-          (fun _ i L => DeterminedW minimal lookup policy atoms i L)
+          (fun _ i L => DeterminedW minimal T lookup policy atoms i L)
           (fun determined _ _ _ _ evaluated => determined _ _ _ _ _ _ evaluated)
           works Ls (onWorks.imp fun _ _ both => both) equations
         have clean : ∀ r ∈ children, Answerable r.1.erase := by
@@ -512,7 +607,7 @@ theorem settlesG_determined_W {lookup : CastLookup} (contract : LookupContract l
         have same := Mettapedia.Machines.OrderedProtocol.Completion.SuccessPriorityRel.functional
           chosen (HERuns.success_all children fun r member => (clean r member).notError)
         rw [erased, same, erasedChildren]
-  | @grounded op a b known untyped =>
+  | @grounded op a b known table untyped =>
       refine ⟨[intValue op a b], fun x member => ?_, fun world world' live scope frame results
         derived => ?_⟩
       · rw [List.mem_singleton] at member
@@ -521,7 +616,7 @@ theorem settlesG_determined_W {lookup : CastLookup} (contract : LookupContract l
       · obtain ⟨after, children, selected, w₁, w₂, called, chosen, erased⟩ :=
           call_source_W contract (intOp_head known)
             (fun x member => intOp_items known a b x (List.mem_cons_of_mem _ member)) untyped derived
-        have erasedChildren := grounded_source_W contract known a b called
+        have erasedChildren := grounded_source_W contract known a b table called
         have clean : ∀ r ∈ children, Answerable r.1.erase := by
           intro r member
           have inside : r.1.erase ∈ [intValue op a b] := by
@@ -537,17 +632,19 @@ theorem settlesG_determined_W {lookup : CastLookup} (contract : LookupContract l
           chosen (HERuns.success_all children fun r member => (clean r member).notError)
         rw [erased, same, erasedChildren]
 
-/-- **Every complete run of HE's world machine publishes PeTTa's answers**, with grounded integer
-operations, bodies that use their variables, under any lookup meeting the contract. -/
+/-- **Every complete run of HE's world machine publishes PeTTa's answers**, with any grounded table
+`T`, the integer operations `T` answers, bodies that use their variables, under any lookup meeting
+the contract. -/
 theorem every_complete_run_G (minimal : Minimal.Services) {lookup : CastLookup}
     (answers : AnswersUndefined lookup) (contract : LookupContract lookup) (policy : Policy)
-    {atoms : List Atom} (program : BoundProgram atoms) {c : Atom} (settles : SettlesG atoms c) :
+    {atoms : List Atom} (program : BoundProgram atoms) {c : Atom} (settles : SettlesG T atoms c) :
     ∃ N : Nat, ∀ n, N ≤ n → ∀ emitted : List Result,
-      WorldSteps (fun (_ : Unit) => id) (services minimal) heDispatch lookup policy
+      WorldSteps (fun (_ : Unit) => id) (services minimal T) T.dispatch lookup policy
           (WorldConfiguration.ofReadOnly (load (Space.ofList atoms) c Atom.undefinedType))
           (WorldConfiguration.ofReadOnly ⟨Space.ofList atoms, .returning [], [], emitted⟩) →
-        Streaming.values (Streaming.advance (translate atoms) n
-          (Streaming.enter { state := store atoms } c)) = emitted.map (fun r => r.1.erase) := by
+        ((Streaming.values (Streaming.advance (translate atoms) n
+          (Streaming.enter { state := store atoms } c)) : List Atom) : Multiset Atom) =
+          ((emitted.map (fun r => r.1.erase) : List Atom) : Multiset Atom) := by
   obtain ⟨L, _, determined⟩ := settlesG_determined_W (minimal := minimal) (policy := policy) contract
     program settles
   obtain ⟨heAnswers, N, path, _, agree⟩ := answersG_agree minimal (policy := policy) answers program
@@ -559,15 +656,15 @@ theorem every_complete_run_G (minimal : Minimal.Services) {lookup : CastLookup}
 /-- **The answer bags agree for every complete run, with grounded operations** (HE's raw lookup): a
 complete run exists, and every complete run publishes the bag PeTTa yields. -/
 theorem answer_bags_every_run_G (minimal : Minimal.Services) (policy : Policy) {atoms : List Atom}
-    (program : BoundProgram atoms) {c : Atom} (settles : SettlesG atoms c) :
+    (program : BoundProgram atoms) {c : Atom} (settles : SettlesG T atoms c) :
     (∃ heAnswers : List Result,
-      WorldSteps (fun (_ : Unit) => id) (services minimal) heDispatch Completed.rawLookup policy
+      WorldSteps (fun (_ : Unit) => id) (services minimal T) T.dispatch Completed.rawLookup policy
           (WorldConfiguration.ofReadOnly (load (Space.ofList atoms) c Atom.undefinedType))
           (WorldConfiguration.ofReadOnly ⟨Space.ofList atoms, .returning [], [], heAnswers⟩) ∧
         worldObserve (WorldConfiguration.ofReadOnly
           ⟨Space.ofList atoms, .returning [], [], heAnswers⟩) = some heAnswers) ∧
       ∃ N : Nat, ∀ n, N ≤ n → ∀ emitted : List Result,
-        WorldSteps (fun (_ : Unit) => id) (services minimal) heDispatch Completed.rawLookup policy
+        WorldSteps (fun (_ : Unit) => id) (services minimal T) T.dispatch Completed.rawLookup policy
             (WorldConfiguration.ofReadOnly (load (Space.ofList atoms) c Atom.undefinedType))
             (WorldConfiguration.ofReadOnly ⟨Space.ofList atoms, .returning [], [], emitted⟩) →
           ((emitted.map fun r => r.1.erase : List Atom) : Multiset Atom) =
@@ -584,17 +681,21 @@ namespace Controls
 open AnswerBags.Controls (app)
 open GroundedRuns.Controls (doubleRows double_program double_settles)
 
-/-- **H1's program end to end, on every complete run**: `(double 4)` on
-`{(= (double $x) (+ $x $x))}`. A complete run of HE's world machine exists, every complete run
-publishes `8`, and PeTTa's streaming run gives `8`. -/
+/-- **The `double` program end to end, on every complete run**: `(double 4)` on
+`{(= (double $x) (+ $x $x))}`. Its grounded call `(+ 4 4)` is in HE's typed region; with HE's table
+a complete run of HE's world machine exists, every complete run publishes `8`, and PeTTa's streaming
+run gives `8`. -/
 theorem double_every_run (minimal : Minimal.Services) (policy : Policy) :
+    TypedRegion doubleRows "+" [num 4, num 4] ∧
     ((∃ heAnswers : List Result,
-        WorldSteps (fun (_ : Unit) => id) (services minimal) heDispatch Completed.rawLookup policy
+        WorldSteps (fun (_ : Unit) => id) (services minimal measuredTable) measuredTable.dispatch
+          Completed.rawLookup policy
           (WorldConfiguration.ofReadOnly
             (load (Space.ofList doubleRows) (app "double" [num 4]) Atom.undefinedType))
           (WorldConfiguration.ofReadOnly ⟨Space.ofList doubleRows, .returning [], [], heAnswers⟩)) ∧
       ∀ emitted : List Result,
-        WorldSteps (fun (_ : Unit) => id) (services minimal) heDispatch Completed.rawLookup policy
+        WorldSteps (fun (_ : Unit) => id) (services minimal measuredTable) measuredTable.dispatch
+          Completed.rawLookup policy
           (WorldConfiguration.ofReadOnly
             (load (Space.ofList doubleRows) (app "double" [num 4]) Atom.undefinedType))
           (WorldConfiguration.ofReadOnly ⟨Space.ofList doubleRows, .returning [], [], emitted⟩) →
@@ -611,19 +712,24 @@ theorem double_every_run (minimal : Minimal.Services) (policy : Policy) :
     double_settles
   obtain ⟨N, every⟩ := every_complete_run_G minimal raw_answers raw_contract policy double_program
     double_settles
-  refine ⟨⟨⟨heAnswers, path⟩, fun emitted run => ?_⟩, computed⟩
+  refine ⟨by decide +kernel, ⟨⟨heAnswers, path⟩, fun emitted run => ?_⟩, computed⟩
   have later := every (max N 60) (le_max_left _ _) emitted run
   rw [advance_stable (List.eq_nil_of_length_eq_zero finished) _ (le_max_right _ _), computed] at later
-  exact later.symm
+  exact List.perm_singleton.mp (Multiset.coe_eq_coe.mp later.symm)
 
 end Controls
 
+#print axioms complete_source_of
+#print axioms data_source_of
+#print axioms tuple_source_of
+#print axioms call_source_of
 #print axioms complete_source_W
 #print axioms data_source_W
 #print axioms tuple_source_W
 #print axioms call_source_W
 #print axioms callRel_source_W
 #print axioms bodies_source_W
+#print axioms answer_source_W
 #print axioms grounded_source_W
 #print axioms settlesG_determined_W
 #print axioms every_complete_run_G

@@ -4,7 +4,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 /-!
 # Binding and result equivalence do not establish guard admission
 
-A private prefix creates a row that refutes a later absence query. The
+A private prefix creates a row that refutes a later none query. The
 source body is refused, but its binding/resource producer still executes.
 The complete compiler must attach the original-cut data queries before
 claiming an admission comparison.

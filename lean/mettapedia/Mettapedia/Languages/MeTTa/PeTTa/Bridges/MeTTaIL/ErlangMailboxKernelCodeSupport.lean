@@ -31,6 +31,6 @@ theorem bodies_supported (allowed : String → Bool) (wire : WirePlanSupport.Sup
     CompleteExecution.classSearchBackend, plan, normal, letAllowed, letStarAllowed, quoteAllowed, caseAllowed,
     pendingAllowed, doneAllowed, machineAllowed, advanceAllowed, beginAllowed, kernelBeginAllowed, kernelResumeAllowed,
     Bool.true_and, Bool.and_true]
-  decide +kernel
+  simp [CompleteEmission.beginHead, name]
 
 end Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.ErlangMailboxKernelCodeSupport

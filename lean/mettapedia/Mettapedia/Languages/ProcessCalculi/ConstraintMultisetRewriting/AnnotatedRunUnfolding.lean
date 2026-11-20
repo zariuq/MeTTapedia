@@ -49,7 +49,7 @@ noncomputable def frontier (catalogue : List (Firing T S O)) :
       (frontier catalogue depth (firing.result label cut)).map (firing :: ·)
 
 /-- Soundness and completeness for every history in the declared finite
-candidate universe, including guards and exact predicate censuses. -/
+candidate universe, including guards and region queries, whatever they observe. -/
 theorem mem_frontier (catalogue : List (Firing T S O)) (depth : Nat)
     (cut : Configuration T O) (word : List (Firing T S O)) :
     word ∈ frontier A label catalogue depth cut ↔
@@ -201,8 +201,12 @@ theorem noReadBeforeTake_iff (first second : Firing T S O) :
   simp [ReadBeforeTake, GuardFreeProcessOrders.NoAsym, Firing.plain]
 
 /-- This is an actual inhibition theorem at the new information cut, not
-merely a name for a structural footprint overlap. -/
+merely a name for a structural footprint overlap. The observer's queries are exact, through the
+explicit embedding `exact`: the inhibiting query may be any of them, and an inhibition through a
+count need not refuse (`AnnotatedRuns.RoundControls.count_kept_after_a_write_into_its_region`). -/
 theorem inhibition_refuses {cut : Configuration T O} {writer observer : Firing T S O}
+    {queries : List (PredicateQueryAdmission.Query T S O)}
+    (exact : observer.queries = queries.map PredicateQueryAdmission.Query.toRegion)
     (valid : observer.Valid A label cut)
     (writerEnabled : MeTTaCalculus.OccurrenceCommits.Enabled label cut.present
       (writer.selection.commit (T := T))) {candidate : S}
@@ -210,7 +214,10 @@ theorem inhibition_refuses {cut : Configuration T O} {writer observer : Firing T
       (writer.result label cut))) (inhibits : InhibitsAt label candidate writer observer) :
     ¬ observer.Valid A label (writer.result label cut) := by
   obtain ⟨query, member, occurrence, written, inside⟩ := inhibits
-  exact census_refused_after_writer A label valid writerEnabled member solved written inside
+  have listed := member
+  rw [exact] at listed
+  obtain ⟨original, -, rfl⟩ := List.mem_map.mp listed
+  exact query_refused_after_writer A label valid writerEnabled member solved written inside
 
 /-- At a node of the unfolding, maximality compares every enabled contender,
 including contenders that the chosen scheduler did not run. -/
@@ -260,9 +267,9 @@ theorem pending_empty_iff (catalogue : List (Firing T S O)) (check : Firing T S 
     cases result : check firing with
     | none => exact False.elim (closed firing ⟨member, result⟩)
     | some answer => exact ⟨answer, rfl⟩
-  · intro closed firing ⟨member, absent⟩
+  · intro closed firing ⟨member, missing⟩
     obtain ⟨answer, result⟩ := closed firing member
-    rw [absent] at result
+    rw [missing] at result
     cases result
 
 /-- Calibration of completed Boolean replies only. It grants no result to

@@ -97,7 +97,7 @@ theorem longRound_eq_of_under (fuel : Nat) {Θ : Context S.R} {problem : Equatio
       certifyNormal headTypingUnique rootComplete strengthening fuel problem with
   | stuck => exact absurd computed moving
   | progress update smaller => rfl
-  | refuted absent => rfl
+  | refuted missing => rfl
 
 /-- **Every run that the under-binder family decides, the η-depth family decides with the same outcome.** -/
 theorem long_run_of_under (fuel rounds : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ))
@@ -141,7 +141,7 @@ theorem longRound_not_stuck_of_expanded (fuel : Nat) {Θ : Context S.R} {problem
       rw [Ne, transferRound_stuck]
       exact moving
   | progress update smaller => exact fun impossible => by cases impossible
-  | refuted absent => exact fun impossible => by cases impossible
+  | refuted missing => exact fun impossible => by cases impossible
 
 /-- **The η-depth family's readers**: an under-binder reader on the store or on its η-long store. -/
 def LongReads (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ)) : Prop :=
@@ -249,7 +249,7 @@ theorem longRound_closure (fuel : Nat) :
       cases fired
       exact underRound_closure facts roots heads algebra rigid complete declared choices reducer root normalizes
         certifyNormal headTypingUnique rootComplete strengthening sn directed fuel _ _ _ permuted computed
-  | refuted absent =>
+  | refuted missing =>
       rw [computed] at fired
       cases fired
 
@@ -275,9 +275,9 @@ theorem long_decided_of_firing
       ((∃ state finished, run ((longFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening).solver larger) problem larger =
               .solved state finished ∧ (frames S.levels).Principal problem state.answer) ∨
-        (∃ absent, run ((longFamily facts roots heads algebra rigid complete declared choices reducer root
+        (∃ missing, run ((longFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening).solver larger) problem larger =
-              .refuted absent)) :=
+              .refuted missing)) :=
   (longSettledOfConst facts roots heads algebra rigid complete declared choices reducer root normalizes
     certifyNormal headTypingUnique rootComplete strengthening stable (fun problem => PermutedMiller S.levels problem)
     (fun held nonempty => by
@@ -306,9 +306,9 @@ theorem long_decided_of_longReads
       ((∃ state finished, run ((longFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening).solver larger) problem larger =
               .solved state finished ∧ (frames S.levels).Principal problem state.answer) ∨
-        (∃ absent, run ((longFamily facts roots heads algebra rigid complete declared choices reducer root
+        (∃ missing, run ((longFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening).solver larger) problem larger =
-              .refuted absent)) :=
+              .refuted missing)) :=
   long_decided_of_firing facts roots heads algebra rigid complete declared choices reducer root normalizes
     certifyNormal headTypingUnique rootComplete strengthening stable sn directed
     (fun permuted nonempty => by
@@ -359,7 +359,7 @@ theorem tower_long_decided_of_firing
       run (longTower.solver larger) problem larger = run (longTower.solver budget) problem budget ∧
       ((∃ state finished, run (longTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ absent, run (longTower.solver larger) problem larger = .refuted absent)) :=
+        (∃ missing, run (longTower.solver larger) problem larger = .refuted missing)) :=
   long_decided_of_firing (S := setting) TowerModel.facts TowerModel.roots TowerModel.heads TowerModel.algebra
     ContextualDependentPiSpine.Controls.rigid TowerModel.complete
     ContextualDependentInversion.Controls.declarations_formed ExecutableTowerChoices.choices
@@ -382,7 +382,7 @@ theorem tower_long_decided_of_longReads
       run (longTower.solver larger) problem larger = run (longTower.solver budget) problem budget ∧
       ((∃ state finished, run (longTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ absent, run (longTower.solver larger) problem larger = .refuted absent)) :=
+        (∃ missing, run (longTower.solver larger) problem larger = .refuted missing)) :=
   long_decided_of_longReads (S := setting) TowerModel.facts TowerModel.roots TowerModel.heads TowerModel.algebra
     ContextualDependentPiSpine.Controls.rigid TowerModel.complete
     ContextualDependentInversion.Controls.declarations_formed ExecutableTowerChoices.choices

@@ -106,6 +106,7 @@ theorem Interpreted.RootFiring.replay_collection_guards {environment : Environme
     (fired : GeneralPremise.RootFiring environment bound type source index trace captured completed history target)
     (selected : environment.language.rewrites[index]? = some rule)
     (specified : specification? environment index = some spec)
+    (binderOk : BinderLawsFor [] environment.reflection rule)
     (guards : CollectionGuardFragment environment.provider ⟨index, rule, spec, bound, 0, 0⟩ rule.premises)
     (increasing : IncreasingSpines rule spec)
     (sameSource : Same source other)
@@ -114,9 +115,9 @@ theorem Interpreted.RootFiring.replay_collection_guards {environment : Environme
     ∃ target', GeneralPremise.RootFiring environment bound type other index replay (canonAssignment captured)
         (canonAssignment completed) history target' ∧ Same target target' := by
   cases guards with
-  | nullary guards => exact fired.replay_nullary selected specified guards sameSource matching
+  | nullary guards => exact fired.replay_nullary selected specified binderOk guards sameSource matching
   | queries finite rows guards =>
-    exact fired.replay_canonical_queries selected specified increasing finite rows guards sameSource matching
+    exact fired.replay_canonical_queries selected specified binderOk increasing finite rows guards sameSource matching
 
 theorem Interpreted.RootFiring.collection_guards_history_depth {environment : Environment} {bound : List TypeExpr}
     {type : TypeExpr} {source target : Pattern} {index : Nat} {rule : RewriteRule} {spec : RuleBindingSpec}

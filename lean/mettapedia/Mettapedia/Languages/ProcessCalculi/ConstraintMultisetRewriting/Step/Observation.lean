@@ -1,4 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.AnnotatedRuns
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ExactQueryAlphabet
 
 /-!
 # Client-respecting observation: escape and private renaming
@@ -42,7 +43,7 @@ escaped identities (`mono`), and it descends to configuration classes (`ClassEqu
 ## Clients respect it
 
 A **probe** (`Probe`) observes a state through a held reference (is it present?), a predicate query
-(the existing `PredicateQueryAdmission.Query.Ask`), or a guard (`Check`: an equation, an absence or a count,
+(the existing `PredicateQueryAdmission.Query.Ask`), or a guard (`Check`: an equation, a none query or a count,
 asked at every solution). Its names are the reference or the identities the query claims to have seen.
 
 * **Equivariance of probes** (`Probe.observes_rename`), from `holds_rename` and `queryHolds_rename`.
@@ -131,12 +132,13 @@ theorem mem_sighted {o : O} :
       simp only [List.mem_cons, exists_eq_or_imp]
 
 /-- The identities the predicate queries of a run sighted. -/
-def runSighted : List (Firing T S O) → Finset O
+def runSighted : List (ExactQueryAlphabet.Alphabet T S O) → Finset O
   | [] => ∅
-  | f :: rest => sighted f.queries ∪ runSighted rest
+  | f :: rest => sighted f.2.queries ∪ runSighted rest
 
 theorem mem_runSighted {o : O} :
-    ∀ {w : List (Firing T S O)}, o ∈ runSighted w ↔ ∃ f ∈ w, ∃ query ∈ f.queries, o ∈ query.seen
+    ∀ {w : List (ExactQueryAlphabet.Alphabet T S O)},
+      o ∈ runSighted w ↔ ∃ f ∈ w, ∃ query ∈ f.2.queries, o ∈ query.seen
   | [] => by simp [runSighted]
   | f :: rest => by
       rw [runSighted, Finset.mem_union, mem_sighted, mem_runSighted]
@@ -173,12 +175,13 @@ theorem published_escaped (c : Client O) : c.published ⊆ c.escaped := by
   simp [escaped, member]
 
 /-- The client after watching a run: the run's sightings join its own. -/
-def watch (c : Client O) (w : List (Firing T S O)) : Client O :=
+def watch (c : Client O) (w : List (ExactQueryAlphabet.Alphabet T S O)) : Client O :=
   { c with sighted := c.sighted ∪ runSighted w }
 
 /-- **Every identity a watched run's predicate queries sighted has escaped.** -/
-theorem watch_escaped (c : Client O) {w : List (Firing T S O)} {f : Firing T S O} (inRun : f ∈ w)
-    {query : PredicateQueryAdmission.Query T S O} (asked : query ∈ f.queries) :
+theorem watch_escaped (c : Client O) {w : List (ExactQueryAlphabet.Alphabet T S O)}
+    {f : ExactQueryAlphabet.Alphabet T S O} (inRun : f ∈ w)
+    {query : PredicateQueryAdmission.Query T S O} (asked : query ∈ f.2.queries) :
     query.seen ⊆ (c.watch w).escaped := by
   intro o member
   have inRun : o ∈ runSighted w := mem_runSighted.mpr ⟨f, inRun, query, asked, member⟩
@@ -420,22 +423,21 @@ variable {A : SubstitutionAction T S} {label : O → T} {E : Finset O}
 /-- **The identities a firing names**: those it takes, reads and makes, and those its predicate
 queries sighted. -/
 def _root_.Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.AnnotatedRuns.Firing.names
-    (f : Firing T S O) : Finset O :=
+    (f : Firing T S O) (supports : Interface.RegionQuerySupport.Supports f.queries) : Finset O :=
   f.selection.taken.toFinset ∪ f.selection.read.toFinset ∪ f.selection.made.toFinset ∪
-    sighted f.queries
+    Interface.RegionQuerySupport.names f.queries supports
 
 /-- **A firing that names only fixed identities is its own renaming.** -/
 theorem _root_.Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.AnnotatedRuns.Firing.rename_eq_self
-    (f : Firing T S O) {π : O ≃ O} (fixes : ∀ o ∈ f.names, π o = o) :
+    (f : Firing T S O) (supports : Interface.RegionQuerySupport.Supports f.queries)
+    {π : O ≃ O} (fixes : ∀ o ∈ f.names supports, π o = o) :
     f.rename π = f := by
   obtain ⟨rule, queries, ⟨taken, read, made⟩⟩ := f
   simp only [Firing.names, Finset.mem_union, List.mem_toFinset] at fixes
-  have queriesFixed : queries.map (renameQuery π) = queries := by
-    refine list_map_eq_self fun query member => ?_
-    show (⟨query.region, query.seen.map π.toEmbedding⟩ : PredicateQueryAdmission.Query T S O) = query
-    rw [finset_map_eq_self π fun o seen =>
-      fixes o (Or.inr (mem_sighted.mpr ⟨query, member, seen⟩))]
-  show (⟨rule, queries.map (renameQuery π), ⟨taken.map π, read.map π, made.map π⟩⟩ :
+  have queriesFixed : queries.map (PredicateQueryAdmission.RegionQuery.rename π) = queries :=
+    Interface.RegionQuerySupport.rename_queries_fixed queries supports π
+      (fun occurrence member => fixes occurrence (Or.inr member))
+  show (⟨rule, queries.map (PredicateQueryAdmission.RegionQuery.rename π), ⟨taken.map π, read.map π, made.map π⟩⟩ :
     Firing T S O) = ⟨rule, queries, ⟨taken, read, made⟩⟩
   rw [queriesFixed,
     list_map_eq_self (g := ⇑π) (l := taken) fun o member => fixes o (Or.inl (Or.inl (Or.inl member))),
@@ -467,11 +469,11 @@ theorem firing {C D : Configuration T O} (h : PrivatelyEquivalent A label E C D)
 
 /-- **Firings that name only escaped identities keep the equivalence.** -/
 theorem named_firing {C D : Configuration T O} (h : PrivatelyEquivalent A label E C D)
-    {f : Firing T S O} (named : f.names ⊆ E) :
+    {f : Firing T S O} (supports : Interface.RegionQuerySupport.Supports f.queries) (named : f.names supports ⊆ E) :
     (f.Valid A label C ↔ f.Valid A label D) ∧
       PrivatelyEquivalent A label E (f.result label C) (f.result label D) := by
   obtain ⟨π, priv, same⟩ := h
-  have fixed : f.rename π = f := f.rename_eq_self fun o member => priv.fixes o (named member)
+  have fixed : f.rename π = f := f.rename_eq_self supports fun o member => priv.fixes o (named member)
   refine ⟨?_, π, priv, ?_⟩
   · have valid := valid_renamed priv.keeps same f
     rw [fixed] at valid
@@ -481,12 +483,14 @@ theorem named_firing {C D : Configuration T O} (h : PrivatelyEquivalent A label 
 
 /-- **Runs that name only escaped identities keep the equivalence.** -/
 theorem named_run {C D : Configuration T O} (h : PrivatelyEquivalent A label E C D)
-    {w : List (Firing T S O)} (named : ∀ f ∈ w, f.names ⊆ E) :
+    {w : List (Firing T S O)}
+    (supports : ∀ f ∈ w, Interface.RegionQuerySupport.Supports f.queries)
+    (named : ∀ (f : Firing T S O) (member : f ∈ w), f.names (supports f member) ⊆ E) :
     (Executable A label C w ↔ Executable A label D w) ∧
       PrivatelyEquivalent A label E (follow label C w) (follow label D w) := by
   obtain ⟨π, priv, same⟩ := h
   have fixed : w.map (Firing.rename π) = w := list_map_eq_self fun f member =>
-    f.rename_eq_self fun o inNames => priv.fixes o (named f member inNames)
+    f.rename_eq_self (supports f member) fun o inNames => priv.fixes o (named f member inNames)
   refine ⟨?_, π, priv, ?_⟩
   · calc Executable A label C w
         ↔ Executable A label (renameConfiguration π C) (w.map (Firing.rename π)) :=
@@ -505,7 +509,7 @@ end Firings
 /-! ## Clients respect private equivalence -/
 
 /-- **A probe of a client**: whether a held reference is present, a predicate query asked at every
-solution of the knowledge, or a guard (an equation, an absence or a count) asked at every
+solution of the knowledge, or a guard (an equation, a none query or a count) asked at every
 solution. -/
 inductive Probe (T : Type uT) (S : Type uS) (O : Type uO) where
   | present (reference : O)
@@ -523,7 +527,7 @@ def names : Probe T S O → Finset O
 /-- Rename the identities a probe names. -/
 def rename (π : O ≃ O) : Probe T S O → Probe T S O
   | present reference => present (π reference)
-  | ask query => ask (renameQuery π query)
+  | ask query => ask (ExactQueryAlphabet.renameQuery π query)
   | check guard => check guard
 
 variable (A : SubstitutionAction T S) (label : O → T)
@@ -544,7 +548,10 @@ theorem observes_rename {π : O ≃ O} (keeps : ∀ o, label (π o) = label o) (
   cases p with
   | present reference => exact Finset.mem_map' π.toEmbedding
   | ask query =>
-      exact forall_congr' fun σ => imp_congr_right fun _ => queryHolds_rename keeps σ C.present query
+      refine forall_congr' fun σ => imp_congr_right fun _ => ?_
+      have moved := queryHolds_rename keeps σ C.present query.toRegion
+      rw [← ExactQueryAlphabet.renameQuery_toRegion π query] at moved
+      exact moved
   | check guard =>
       exact forall_congr' fun σ => imp_congr_right fun _ => holds_rename A keeps σ C.present guard
 
@@ -734,37 +741,37 @@ theorem made_fresh (valid : f.Valid A label C) (made : r ∈ f.selection.made) :
   Finset.disjoint_left.mp valid.firing.occurrences.fresh (by simpa [Selection.commit] using made)
 
 theorem swap_fixes_state (valid : f.Valid A label C) (made : r ∈ f.selection.made)
-    (absent : r' ∉ C.present) : renameConfiguration (Equiv.swap r r') C = C := by
+    (missing : r' ∉ C.present) : renameConfiguration (Equiv.swap r r') C = C := by
   obtain ⟨equations, present⟩ := C
   show (⟨equations, present.map (Equiv.swap r r').toEmbedding⟩ : Configuration T O) = ⟨equations, present⟩
   rw [finset_map_eq_self _ fun o member => Equiv.swap_apply_of_ne_of_ne
     (fun isR => made_fresh valid made (by rw [← isR]; exact member))
-    (fun isR' => absent (by rw [← isR']; exact member))]
+    (fun isR' => missing (by rw [← isR']; exact member))]
 
 /-- **The alternative under a fresh name is admitted at the same state.** -/
 theorem fresh_alternative_valid (valid : f.Valid A label C) (made : r ∈ f.selection.made)
-    (absent : r' ∉ C.present) (same : label r' = label r) :
+    (missing : r' ∉ C.present) (same : label r' = label r) :
     (f.rename (Equiv.swap r r')).Valid A label C := by
   have admitted := (Firing.valid_rename A (swap_keeps same) f C).mpr valid
-  rwa [swap_fixes_state valid made absent] at admitted
+  rwa [swap_fixes_state valid made missing] at admitted
 
 /-- **Its result is the renamed result.** -/
 theorem fresh_alternative_result (valid : f.Valid A label C) (made : r ∈ f.selection.made)
-    (absent : r' ∉ C.present) (same : label r' = label r) :
+    (missing : r' ∉ C.present) (same : label r' = label r) :
     (f.rename (Equiv.swap r r')).result label C =
       renameConfiguration (Equiv.swap r r') (f.result label C) := by
   have result := Firing.result_rename (swap_keeps same) f C
-  rwa [swap_fixes_state valid made absent] at result
+  rwa [swap_fixes_state valid made missing] at result
 
 /-- **Unseen fresh names interfere**: for every set of escaped identities containing neither name,
 the original's result and the alternative's are privately equivalent. -/
 theorem fresh_alternative_equivalent (valid : f.Valid A label C) (made : r ∈ f.selection.made)
-    (absent : r' ∉ C.present) (same : label r' = label r) (unseen : r ∉ E) (unseen' : r' ∉ E) :
+    (missing : r' ∉ C.present) (same : label r' = label r) (unseen : r ∉ E) (unseen' : r' ∉ E) :
     PrivatelyEquivalent A label E (f.result label C) ((f.rename (Equiv.swap r r')).result label C) := by
   refine ⟨Equiv.swap r r', ⟨swap_keeps same, fun o escaped => ?_⟩, ?_⟩
   · exact Equiv.swap_apply_of_ne_of_ne (fun isR => unseen (isR ▸ escaped))
       (fun isR' => unseen' (isR' ▸ escaped))
-  · rw [fresh_alternative_result valid made absent same]
+  · rw [fresh_alternative_result valid made missing same]
     exact SameUpTo.refl A _
 
 theorem result_present_iff {o : O} :
@@ -773,22 +780,22 @@ theorem result_present_iff {o : O} :
   simp [MeTTaCalculus.OccurrenceCommits.mem_fire, Selection.commit]
 
 /-- **A seen fresh name records the alternative**: a client holding `r` separates the original's
-result from the alternative's when `r'` is new to the firing. -/
+result from the alternative's when `r'` is not another made identity. -/
 theorem fresh_alternative_separated (valid : f.Valid A label C) (made : r ∈ f.selection.made)
-    (absent : r' ∉ C.present) (same : label r' = label r) (new : r' ∉ f.names) (seen : r ∈ E) :
+    (missing : r' ∉ C.present) (same : label r' = label r) (new : r' ∉ f.selection.made) (seen : r ∈ E) :
     ¬ PrivatelyEquivalent A label E (f.result label C) ((f.rename (Equiv.swap r r')).result label C) := by
   intro h
   have here : r ∈ (f.result label C).present := result_present_iff.mpr (Or.inr made)
   have there := (h.escaped_iff seen).mp here
-  rw [fresh_alternative_result valid made absent same] at there
+  rw [fresh_alternative_result valid made missing same] at there
   obtain ⟨a, member, moved⟩ := Finset.mem_map.mp there
   have isR' : a = r' := by
     rw [Equiv.coe_toEmbedding, Equiv.swap_apply_eq_iff, Equiv.swap_apply_left] at moved
     exact moved
   rw [isR'] at member
-  have notMade : r' ∉ f.selection.made := fun inMade => new (by simp [Firing.names, inMade])
+  have notMade : r' ∉ f.selection.made := new
   rcases result_present_iff.mp member with ⟨present, -⟩ | inMade
-  · exact absent present
+  · exact missing present
   · exact notMade inMade
 
 end Alternatives

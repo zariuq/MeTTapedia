@@ -270,7 +270,7 @@ def settledWhereFiring (holds : {Γ : Context S.R} → EquationStore (TotalTerm 
       rw [localsAt larger enough]
       cases locals : ContextualDependentRigidDecomposition.localsRule rigid complete facts roots heads algebra declared
           choices reducer root threshold problem with
-      | some absent => rfl
+      | some missing => rfl
       | none =>
           dsimp only
           unfold fullRound
@@ -287,7 +287,7 @@ def settledWhereFiring (holds : {Γ : Context S.R} → EquationStore (TotalTerm 
       unfold ContextualDependentRigidDecomposition.rigidRound
       cases locals : ContextualDependentRigidDecomposition.localsRule rigid complete facts roots heads algebra declared
           choices reducer root threshold problem with
-      | some absent => intro impossible; cases impossible
+      | some missing => intro impossible; cases impossible
       | none =>
           dsimp only
           unfold fullRound
@@ -303,7 +303,7 @@ def settledWhereFiring (holds : {Γ : Context S.R} → EquationStore (TotalTerm 
       unfold ContextualDependentRigidDecomposition.rigidRound at progressed
       cases locals : ContextualDependentRigidDecomposition.localsRule rigid complete facts roots heads algebra declared
           choices reducer root threshold problem with
-      | some absent => rw [locals] at progressed; cases progressed
+      | some missing => rw [locals] at progressed; cases progressed
       | none =>
           rw [locals] at progressed
           dsimp only at progressed
@@ -319,7 +319,7 @@ def settledWhereFiring (holds : {Γ : Context S.R} → EquationStore (TotalTerm 
                     rw [pattern] at progressed
                     cases progressed
                     exact closed pattern
-                | refuted absent => rw [pattern] at progressed; cases progressed
+                | refuted missing => rw [pattern] at progressed; cases progressed
 
 end Settle
 

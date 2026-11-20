@@ -7,8 +7,8 @@ import Mettapedia.Languages.MeTTa.PeTTa.Bridges.EffectfulQuerySource
 The match captures its occurrences before any removal. Each captured body
 runs even when an earlier removal already deleted its payload. The returned
 producer count therefore differs from both distinct payloads and successful
-removal flags. The primitive answer here is the pinned evaluator's `true`;
-no correspondence with a different removal-answer profile is asserted.
+removal flags. Both a changing and an unchanged removal return one Boolean;
+only the former returns true.
 -/
 
 set_option autoImplicit false
@@ -23,8 +23,24 @@ def removal (spaceName : String) (fields : List Atom) : Atom :=
   .expression [.symbol "remove-atom", .var spaceName, .expression fields]
 
 def erase (target : Handle) (fields : List Atom) : Body := fun bindings before =>
-  (Effects.erase before target (applySubst bindings (.expression fields))).map
-    (fun after => (after, [Effects.boolean true]))
+  let pattern := applySubst bindings (.expression fields)
+  if Effects.removalNeedsValue pattern then none else
+    (Effects.erase before target pattern).map
+      (fun after => (after, [Effects.boolean (Effects.erasureChanged before after target)]))
+
+private theorem erase_executed {target : Handle} {fields : List Atom} {bindings : Subst}
+    {before after : Effects.State} {answers : List Atom}
+    (completed : erase target fields bindings before = some (after, answers)) :
+    Effects.removalNeedsValue (applySubst bindings (.expression fields)) = false ∧
+      Effects.erase before target (applySubst bindings (.expression fields)) = some after ∧
+      answers = [Effects.boolean (Effects.erasureChanged before after target)] := by
+  cases specified : Effects.removalNeedsValue (applySubst bindings (.expression fields)) with
+  | true => simp [erase, specified] at completed
+  | false =>
+      simp only [erase, specified, Bool.false_eq_true, ↓reduceIte] at completed
+      obtain ⟨middle, written, same⟩ := Option.map_eq_some_iff.mp completed
+      obtain ⟨rfl, rfl⟩ := Prod.mk.inj same
+      exact ⟨rfl, written, rfl⟩
 
 def eraseRows (target : Handle) : List Atom → Effects.State → Option Effects.State
   | [], before => some before
@@ -43,29 +59,47 @@ theorem retained_cons (pattern : Atom) (patterns rows : List Atom) :
     cases patterns.any (fun item => Effects.removalMatches item row) <;> rfl
 
 theorem erase_returns (program : Program) (spaceName : String) (target : Handle) (fields : List Atom)
-    (nonempty : fields ≠ []) (bindings : Subst) (before after : Effects.State) (answers : List Atom)
+    (bindings : Subst) (before after : Effects.State) (answers : List Atom)
     (location : Subst.lookup bindings spaceName = some (Effects.handleValue target))
     (completed : erase target fields bindings before = some (after, answers)) :
     Returns program bindings before (removal spaceName fields) after answers := by
-  obtain ⟨next, erased, same⟩ := Option.map_eq_some_iff.mp completed
-  obtain ⟨rfl, rfl⟩ := Prod.mk.inj same
-  exact KeyedImprovementSource.remove_returns program bindings before next spaceName (.expression fields) target
-    (applySubst.applySubstList bindings fields) location rfl
-    (by cases fields <;> simp_all [applySubst.applySubstList]) erased
+  obtain ⟨specified, erased, rfl⟩ := erase_executed completed
+  exact KeyedImprovementSource.remove_returns program bindings before after spaceName (.expression fields) target
+    location specified erased
 
+/-- A licensed removal body can omit materializing the Boolean when only
+the final store is observed. It still runs once per captured occurrence. -/
 theorem traverse_erase_exact (target : Handle) (fields : List Atom) (captured : List Subst)
-    (before : Effects.State) (collected : List Atom) :
-    traverse (erase target fields) captured (before, collected) =
-      (eraseRows target (captured.map (fun bindings => applySubst bindings (.expression fields))) before).map
-        (fun after => (after, collected ++ List.replicate captured.length (Effects.boolean true))) := by
+    (before : Effects.State) (collected : List Atom)
+    (specified : ∀ bindings ∈ captured,
+      Effects.removalNeedsValue (applySubst bindings (.expression fields)) = false) :
+    (traverse (erase target fields) captured (before, collected)).map Prod.fst =
+      eraseRows target (captured.map (fun bindings => applySubst bindings (.expression fields))) before := by
   induction captured generalizing before collected with
-  | nil => simp [EffectfulQuerySource.traverse, eraseRows]
+  | nil => rfl
   | cons bindings rest ih =>
-      simp only [EffectfulQuerySource.traverse, erase, List.map_cons, eraseRows, Option.bind_map, Option.map_bind,
-        Function.comp_def, ih]
+      simp only [EffectfulQuerySource.traverse, erase, specified bindings List.mem_cons_self,
+        Bool.false_eq_true, ↓reduceIte, List.map_cons, eraseRows, Option.bind_map, Option.map_bind, Function.comp_def]
       apply congrArg ((Effects.erase before target (applySubst bindings (.expression fields))).bind)
       funext middle
-      simp [List.replicate_succ, List.append_assoc]
+      exact ih middle _ (fun localBindings member => specified localBindings (List.mem_cons_of_mem _ member))
+
+theorem traverse_erase_receipt (target : Handle) (fields : List Atom) (captured : List Subst)
+    (before after : Effects.State) (collected answers : List Atom)
+    (completed : traverse (erase target fields) captured (before, collected) = some (after, answers)) :
+    eraseRows target (captured.map (fun bindings => applySubst bindings (.expression fields))) before = some after ∧
+      answers.length = collected.length + captured.length := by
+  induction captured generalizing before collected with
+  | nil =>
+      obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Option.some.inj completed)
+      exact ⟨rfl, by simp⟩
+  | cons bindings rest ih =>
+      obtain ⟨⟨middle, published⟩, erased, later⟩ := Option.bind_eq_some_iff.mp completed
+      obtain ⟨_, written, rfl⟩ := erase_executed erased
+      obtain ⟨final, count⟩ := ih middle _ later
+      simp only [List.map_cons, eraseRows, written, Option.bind_some, final, true_and,
+        List.length_append, List.length_cons, List.length_nil] at count ⊢
+      omega
 
 theorem eraseRows_exists (target : Handle) (patterns : List Atom) (before : Effects.State) (rows : List Atom)
     (snapshot : before.read target = some rows) : ∃ after, eraseRows target patterns before = some after := by
@@ -104,7 +138,7 @@ def run (target : Handle) (pattern : Atom) (fields : List Atom) : Body := fun ca
   traverse (erase target fields) (choices caller pattern rows) (before, [])
 
 theorem source_returns (program : Program) (spaceName : String) (target : Handle)
-    (pattern : Atom) (fields : List Atom) (nonempty : fields ≠ [])
+    (pattern : Atom) (fields : List Atom)
     (caller : Subst) (before after : Effects.State) (answers : List Atom)
     (location : Subst.lookup caller spaceName = some (Effects.handleValue target))
     (completed : run target pattern fields caller before = some (after, answers)) :
@@ -117,7 +151,7 @@ theorem source_returns (program : Program) (spaceName : String) (target : Handle
     · simpa [applySubst, location] using variable_returns program caller before spaceName
     · simp [snapshot]
     · intro bindings member current next values executed
-      exact erase_returns program spaceName target fields nonempty bindings current next values
+      exact erase_returns program spaceName target fields bindings current next values
         (choices_extend caller pattern rows bindings member spaceName _ location) executed
     · exact traversed
   have collected := collapse_returns program caller before after _ _ queried
@@ -129,13 +163,12 @@ theorem run_receipt (target : Handle) (pattern : Atom) (fields : List Atom) (cal
     (completed : run target pattern fields caller before = some (after, answers)) :
     after.read target = some (retained
       ((choices caller pattern rows).map (fun bindings => applySubst bindings (.expression fields))) rows) ∧
-      answers = List.replicate (choices caller pattern rows).length (Effects.boolean true) ∧
+      answers.length = (choices caller pattern rows).length ∧
       (∀ other, other ≠ target → after.read other = before.read other) ∧ after.cells = before.cells := by
-  simp only [run, snapshot, traverse_erase_exact] at completed
-  obtain ⟨finish, erased, same⟩ := Option.map_eq_some_iff.mp completed
-  obtain ⟨rfl, rfl⟩ := Prod.mk.inj same
-  obtain ⟨reading, others, cells⟩ := eraseRows_receipt target _ before finish rows snapshot erased
-  exact ⟨reading, rfl, others, cells⟩
+  simp only [run, snapshot] at completed
+  obtain ⟨erased, count⟩ := traverse_erase_receipt target fields _ before after [] answers completed
+  obtain ⟨reading, others, cells⟩ := eraseRows_receipt target _ before after rows snapshot erased
+  exact ⟨reading, by simpa using count, others, cells⟩
 
 theorem unavailable_space_refuses (target : Handle) (pattern : Atom) (fields : List Atom)
     (caller : Subst) (state : Effects.State) (missing : state.read target = none) :
@@ -148,6 +181,17 @@ def factPayload : Atom → Bool
       head != "=" && head != ":" &&
         Mettapedia.Languages.ProcessCalculi.MORK.isGroundAtom (.expression (.symbol head :: fields))
   | _ => false
+
+theorem factPayload_has_value {pattern : Atom} (admitted : factPayload pattern = true) :
+    Effects.removalNeedsValue pattern = false := by
+  unfold factPayload at admitted
+  split at admitted
+  next head _ =>
+    simp only [Bool.and_eq_true, bne_iff_ne] at admitted
+    have ordinary : head ≠ "=" := admitted.1.1
+    unfold Effects.removalNeedsValue
+    split <;> simp_all
+  next => cases admitted
 
 def execute (spaceName : String) (target : Handle) (pattern : Atom) (fields : List Atom)
     (caller : Subst) (before : Effects.State) : Option (Effects.State × List Atom) := do
@@ -170,7 +214,7 @@ theorem execute_source (program : Program) (spaceName : String) (target : Handle
     obtain ⟨rows, _, rest⟩ := Option.bind_eq_some_iff.mp completed
     dsimp only at rest
     split at rest
-    · exact source_returns program spaceName target pattern fields valid.2 caller before after answers valid.1 rest
+    · exact source_returns program spaceName target pattern fields caller before after answers valid.1 rest
     · cases rest
   next => cases completed
 

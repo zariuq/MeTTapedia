@@ -26,8 +26,8 @@ open Mettapedia.GSLT.LanguageDef.ReflectionExtension (rhoReflectionProfile)
 open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution (applyBindingsForRuleUsing)
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedContextualStep (rhoBasePremises rho_input_wellSorted_inv
   rho_output_wellSorted_inv)
-open Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalStepperCompleteness (commBindingsAt apply_commBindingsAt
-  rho_parallel_wellSorted_inv closed_member)
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalStepperCompleteness (commBindingsAt
+  apply_commBindingsAt_resolved rho_parallel_wellSorted_inv closed_member)
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalTyping (procListWellSorted_iff_forall_mem)
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus (semanticCommSubst)
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedContextualStep (rhoParCong_no_substitutionPresentation)
@@ -108,7 +108,7 @@ theorem rootFiring_step {source : Pattern} {index : ℕ} {trace : List GeneralSc
     have outputTyped := procListWellSorted_iff_forall_mem.mp elementsTyped _
       (List.mem_of_mem_eraseIdx (List.mem_of_getElem? outputAt))
     obtain ⟨_, payloadTyped⟩ := rho_output_wellSorted_inv outputTyped
-    have semantic := GeneralRho.reflective_reduct_semantic (channel := channel) bodyTyped payloadTyped residueSafe
+    have semantic := GeneralRho.reflective_reduct_resolved (channel := channel) bodyTyped payloadTyped residueSafe
     have localTarget := Option.some.inj (reduct.symm.trans semantic)
     subst localTarget
     obtain ⟨inputBound, inputEq⟩ := List.getElem?_eq_some_iff.mp inputAt
@@ -120,7 +120,7 @@ theorem rootFiring_step {source : Pattern} {index : ℕ} {trace : List GeneralSc
     · show _ ∈ (if carrier (.collection .hashBag elements none) then _ else [])
       rw [if_pos (by simp [carrier, sorted_of_plan sourceSorted, safe])]
       exact comm_matches inputBound outputBound inputEq outputEq
-    · exact apply_commBindingsAt bodyTyped payloadTyped elements inputIndex outputIndex channel
+    · exact apply_commBindingsAt_resolved bodyTyped payloadTyped elements inputIndex outputIndex channel
 
 
 /-! ## A firing inside a bag is a congruence -/
@@ -292,7 +292,8 @@ theorem comm_receipt {elements : List Pattern} {inputIndex outputIndex : ℕ}
         receipt.target = applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
           (commBindingsAt elements inputIndex outputIndex channel body payload) := by
   obtain ⟨sortedSource, safe⟩ := Bool.and_eq_true_iff.mp admitted
-  have typed := Complete.RhoReference.procWellSorted_of_sorted (plan_of_sorted sortedSource)
+  have typed := DerivedPresentationSyntax.ProcWellSorted.ofSealed (presentation := rhoReflectivePresentation)
+    (Complete.RhoReference.procWellSorted_of_sorted (plan_of_sorted sortedSource)) safe
   obtain ⟨_, elementsTyped⟩ := rho_parallel_wellSorted_inv typed
   have inputMember := List.getElem_mem inputBound
   have outputMember := List.mem_of_mem_eraseIdx (List.getElem_mem outputBound)
@@ -325,25 +326,25 @@ theorem comm_receipt {elements : List Pattern} {inputIndex outputIndex : ℕ}
     simp at memberSafe
     exact memberSafe.2
   have names := GeneralRho.derived_names_admitted bodyTyped bodySealed
-  have semantic := GeneralRho.reflective_reduct_semantic (channel := channel) bodyTyped payloadTyped residueSafe
+  have semantic := GeneralRho.reflective_reduct_resolved (channel := channel) bodyTyped payloadTyped residueSafe
   have literal := GeneralRho.reflective_reduct (ambient := 0) (channel := channel) bodySafe payloadSafe residueSafe
-  have bodiesEq : GeneralRho.reflectiveBody body payload = semanticCommSubst body payload := by
+  have bodiesEq : GeneralRho.reflectiveBody body payload = semanticCommSubst (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body) payload := by
     have both := literal.symm.trans semantic
     simp only [Option.some.injEq, Pattern.collection.injEq, List.cons.injEq] at both
     exact both.2.1.1
   have targetBodyOpen := GeneralRho.reflective_body_open bodyOpen bodySealed names payloadOpen
   rw [bodiesEq] at targetBodyOpen
   have targetTyped : HasType GeneralRho.language (GeneralRho.typeFree fun _ => none) []
-      (.collection .hashBag (semanticCommSubst body payload :: (elements.eraseIdx inputIndex).eraseIdx outputIndex) none)
+      (.collection .hashBag (semanticCommSubst (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body) payload :: (elements.eraseIdx inputIndex).eraseIdx outputIndex) none)
       (.base "Proc") := GeneralRho.parallel_typed (.cons targetBodyOpen.1 residueOpen)
   have targetRepresented : GeneralRho.Represented
-      (.collection .hashBag (semanticCommSubst body payload :: (elements.eraseIdx inputIndex).eraseIdx outputIndex) none) :=
+      (.collection .hashBag (semanticCommSubst (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body) payload :: (elements.eraseIdx inputIndex).eraseIdx outputIndex) none) :=
     (GeneralRho.represented_collection_iff _ _).mpr fun pattern member => by
       rcases List.mem_cons.mp member with rfl | member
       · exact ⟨targetBodyOpen.2.1, targetBodyOpen.2.2.1⟩
       · exact residueRepresented pattern member
   have targetOpen : OpenPatternWellSorted GeneralRho.language (GeneralRho.typeFree fun _ => none) [] (.base "Proc")
-      (.collection .hashBag (semanticCommSubst body payload :: (elements.eraseIdx inputIndex).eraseIdx outputIndex) none) :=
+      (.collection .hashBag (semanticCommSubst (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body) payload :: (elements.eraseIdx inputIndex).eraseIdx outputIndex) none) :=
     ⟨targetTyped, targetRepresented.1, targetRepresented.2, targetTyped.isWellScopedAt⟩
   have position : plan.rules[0]? = some GeneralRho.declaration := by rw [GeneralRho.Standard.compiled_rules]; rfl
   have captureTyped := GeneralRho.captured_typed channelOpen.1 bodyOpen.1 payloadOpen.1 residueOpen
@@ -355,7 +356,7 @@ theorem comm_receipt {elements : List Pattern} {inputIndex outputIndex : ℕ}
       [{ path := [0], selected := inputIndex }, { path := [1], selected := outputIndex }]
       (GeneralRho.captured 0 channel body payload ((elements.eraseIdx inputIndex).eraseIdx outputIndex))
       (GeneralRho.captured 0 channel body payload ((elements.eraseIdx inputIndex).eraseIdx outputIndex)) []
-      (.collection .hashBag (semanticCommSubst body payload :: (elements.eraseIdx inputIndex).eraseIdx outputIndex)
+      (.collection .hashBag (semanticCommSubst (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body) payload :: (elements.eraseIdx inputIndex).eraseIdx outputIndex)
         none) := by
     refine .fire (GeneralPlanEnvironment.selected_rule plan position)
       (GeneralPlanEnvironment.selected_specification plan position) GeneralRho.comm_admitted sourceInPlan
@@ -372,17 +373,18 @@ theorem comm_receipt {elements : List Pattern} {inputIndex outputIndex : ℕ}
     [{ path := [0], selected := inputIndex }, { path := [1], selected := outputIndex }],
     GeneralRho.captured 0 channel body payload ((elements.eraseIdx inputIndex).eraseIdx outputIndex),
     GeneralRho.captured 0 channel body payload ((elements.eraseIdx inputIndex).eraseIdx outputIndex), [],
-    .collection .hashBag (semanticCommSubst body payload :: (elements.eraseIdx inputIndex).eraseIdx outputIndex) none,
-    .collection .hashBag (semanticCommSubst body payload :: (elements.eraseIdx inputIndex).eraseIdx outputIndex) none⟩,
+    .collection .hashBag (semanticCommSubst (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body) payload :: (elements.eraseIdx inputIndex).eraseIdx outputIndex) none,
+    .collection .hashBag (semanticCommSubst (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body) payload :: (elements.eraseIdx inputIndex).eraseIdx outputIndex) none⟩,
     ⟨⟨by rw [GeneralRho.Standard.compiled_rules]; simp, .here rfl sourceInPlan.2.2.1 sourceInPlan.1⟩, firing, rfl, rfl,
       (GeneralPlanEnvironment.typing_iff plan _ _ _).mpr targetOpen⟩, ?_⟩
-  exact (apply_commBindingsAt bodyTyped payloadTyped elements inputIndex outputIndex channel).symm
+  exact (apply_commBindingsAt_resolved bodyTyped payloadTyped elements inputIndex outputIndex channel).symm
 
 
 /-! ## A step inside a member is a firing at a bag site -/
 
 open Mettapedia.OSLF.MeTTaIL.DerivedPresentationSyntax (ProcWellSorted ProcListWellSorted) in
-theorem sorted_of_rho {term : Pattern} (typed : ProcWellSorted rhoReflectivePresentation (fun _ => none) [] term) :
+theorem sorted_of_rho {scope : QuoteScope} {term : Pattern}
+    (typed : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) (fun _ => none) [] term) :
     sorted term = true :=
   sorted_of_plan ((GeneralPlanEnvironment.typing_iff plan [] proc _).mpr (GeneralRho.derived_process_open typed))
 
@@ -395,7 +397,8 @@ theorem bag_replace_sorted {elements : List Pattern} {index : ℕ}
   have rho := Complete.RhoReference.procWellSorted_of_sorted (plan_of_sorted typed)
   obtain ⟨_, elementsTyped⟩ := rho_parallel_wellSorted_inv rho
   have replacementTyped := Complete.RhoReference.procWellSorted_of_sorted (plan_of_sorted replacementSorted)
-  refine sorted_of_rho (.parallel (procListWellSorted_iff_forall_mem.mpr fun member found => ?_))
+  refine sorted_of_rho (scope := .reaching .apply)
+    (.parallel (procListWellSorted_iff_forall_mem.mpr fun member found => ?_))
   simp only [List.mem_append, List.mem_cons] at found
   rcases found with inTake | rfl | inDrop
   · exact procListWellSorted_iff_forall_mem.mp elementsTyped _ (List.mem_of_mem_take inTake)
@@ -588,7 +591,8 @@ theorem step_carrier {fuel : ℕ} {source target : Pattern} (admitted : carrier 
   obtain ⟨sortedSource, safe⟩ := Bool.and_eq_true_iff.mp admitted
   have rho := Complete.RhoReference.procWellSorted_of_sorted (plan_of_sorted sortedSource)
   obtain ⟨typed, sealedTarget⟩ :=
-    Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedContextualStep.rhoStep_preserves_closed rho safe
+    Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedContextualStep.rhoStep_preserves_closed
+      (DerivedPresentationSyntax.ProcWellSorted.ofSealed (presentation := rhoReflectivePresentation) rho safe) safe
       (step_rho fuel step)
   simp only [carrier, Bool.and_eq_true]
   exact ⟨sorted_of_rho typed, sealedTarget⟩

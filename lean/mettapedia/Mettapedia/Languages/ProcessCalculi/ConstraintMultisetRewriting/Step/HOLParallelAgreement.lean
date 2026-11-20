@@ -7,7 +7,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Coex
 
 The equation-list representation maps to the existing HOL membership
 predicate. Occurrence identities map to the inhabited raw domain, whose
-invalid sentinel remains absent. Both loaded parallel operations agree
+invalid sentinel remains not present. Both loaded parallel operations agree
 with actual native configuration coexistence over arbitrary frames.
 -/
 
@@ -81,9 +81,9 @@ theorem models_tensor (X : Frames Tm Hom) {a b : Obj} (map : Hom a b)
     (original_equations model equations) map _).trans (Coexistence.models_tensor X map left right)
 
 omit [DecidableEq O] in
-theorem invalid_occurrence_absent (occurrences : HOLOccurrenceCoding.Coding model O) (state : Finset O) :
+theorem invalid_occurrence_false (occurrences : HOLOccurrenceCoding.Coding model O) (state : Finset O) :
     ¬(HOLOccurrenceCoding.finiteValue model occurrences state (occurrences.symm none)).down :=
-  HOLOccurrenceCoding.invalid_absent model occurrences state
+  HOLOccurrenceCoding.invalid_code_false model occurrences state
 
 theorem constructed_agreement
     (other : TypeFamilySemantics.OperatorFamilies.{max uO uT uH uOcc})

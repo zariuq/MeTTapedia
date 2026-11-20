@@ -148,21 +148,6 @@ theorem ofPattern_complete (handle : NamedSpaces.Handle) (pattern : Atom)
 theorem conjunction_refuses (handle : NamedSpaces.Handle) (patterns : List Atom) (payload : Atom) :
     ofPattern handle (.expression (.symbol "," :: patterns)) payload = none := rfl
 
-theorem handle_readback (value : Atom) (handle : NamedSpaces.Handle)
-    (read : Effects.readHandle value = some handle) : Effects.handleValue handle = value := by
-  unfold Effects.readHandle at read
-  split at read
-  · cases Option.some.inj read
-    rfl
-  · split at read
-    · rename_i token equal
-      cases Option.some.inj read
-      change Atom.grounded (.custom "PeTTa.Space" (String.replicate token.length '#')) =
-        Atom.grounded (.custom "PeTTa.Space" token)
-      exact congrArg (fun text => Atom.grounded (.custom "PeTTa.Space" text)) equal.symm
-    · contradiction
-  · contradiction
-
 /-- Recognition retains the exact source syntax. Dynamic handle expressions
 and nonliteral patterns require a separate operand-evaluation certificate. -/
 def parse : Atom → Option Request
@@ -182,7 +167,7 @@ theorem parse_exact (atom : Atom) (request : Request) (parsed : parse atom = som
     · split at selected
       · split at selected
         · cases Option.some.inj selected
-          simp only [expression, query, handle_readback location handle found]
+          simp only [expression, query, Effects.handleValue_of_readHandle found]
         · contradiction
       · contradiction
     · contradiction

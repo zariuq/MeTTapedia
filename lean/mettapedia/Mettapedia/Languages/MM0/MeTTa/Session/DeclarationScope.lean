@@ -118,7 +118,7 @@ private theorem active_body_enters (before : State) (handle : Handle) (stored : 
     (by simp [cacheEnvironment, applySubst, Subst.lookup])
     (by simp [SpaceClearing.cachePattern, cacheEnvironment, checkingEnvironment,
       currentEnvironment, environment, applySubst, applySubst.applySubstList, Subst.lookup])
-    ⟨_, _, rfl⟩ (SpaceClearing.cache_pattern_selects shaped)
+    rfl (SpaceClearing.cache_pattern_selects shaped)
   refine ⟨after, ?_, empty, others, cells⟩
   rw [active_body_shape]
   have reached : (theory program).MultiStep
@@ -700,7 +700,7 @@ theorem refused_finish_returns (bindings : Subst) (before : State)
   apply authored_variable_call_returns program bindings [] before before "mm0:finish" []
     finishEquation.body _ (by decide) (by decide) (by decide +kernel) _ body (by decide)
   rw [clauses_use_only_the_named_equations, finish_unique]
-  simp [finish_formals, SpaceSemantics.matchValue, SpaceSemantics.matchValue.matchValues]
+  simp [finish_formals, SpaceSemantics.matchValue.matchValues]
 
 theorem refusal_cannot_reopen (bindings : Subst) (before : State) (command : Atom)
     (name : String) (captured : applySubst bindings (.var name) = command)

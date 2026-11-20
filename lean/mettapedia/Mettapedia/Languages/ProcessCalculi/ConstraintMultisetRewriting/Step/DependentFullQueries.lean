@@ -12,9 +12,9 @@ region at a solution `τ` is the test on the patterns and the row, both read alo
 
 **Natural queries move along substitutions** (`NaturalQuery.move`): the patterns are read along the
 substitution, the test and the answer stay. Moving is functorial (`move_id`, `move_comp`), and a
-moved query at a solution is the query at the composite (`region_move`, `holds_move`). Absence and
+moved query at a solution is the query at the composite (`region_move`, `holds_move`). The none query and
 counting of a pattern are natural (`absent`, `count`), with the regions and answers of R91's
-`Query.absent` and `Query.count` (`absent_holds_iff`, `count_holds_iff`).
+`Query.predicate` and `Query.count` (`predicate_holds_iff`, `count_holds_iff`).
 
 **Firings carried along a morphism of frames** (`Natural`, `Natural.move`, `Local.move`). A firing
 without helpers whose queries are natural moves along `σ : Δ' ⟶ Δ`: its patterns, made rows, tells
@@ -135,7 +135,7 @@ theorem holds_move (σ : Δ' ⟶ Δ) (q : NaturalQuery levels O Δ) (present : F
   · rintro ⟨seen, members, answer⟩
     exact ⟨seen, fun o => (members o).trans (and_congr Iff.rfl (region_move σ q τ (row o)).symm), answer⟩
 
-/-! ### Absence and counting are natural -/
+/-! ### The none query and counting are natural -/
 
 variable (levels) in
 /-- A row matches one of the patterns. -/
@@ -149,9 +149,9 @@ theorem matchesAny_reads {Θ : Context rules} (ps : List (TotalTerm Θ)) {s t : 
       ⟨p, member, ((frames levels).equivalence Θ).trans matched (((frames levels).equivalence Θ).symm same)⟩⟩
 
 variable (levels O) in
-/-- **The natural absence query of a pattern.** -/
-def absent (pattern : TotalTerm Δ) : NaturalQuery levels O Δ :=
-  ⟨[pattern], matchesAny levels, matchesAny_reads, fun seen => seen = ∅⟩
+/-- **The natural predicate query of a pattern.** -/
+def predicate (quantifier : Quantifier) (pattern : TotalTerm Δ) : NaturalQuery levels O Δ :=
+  ⟨[pattern], matchesAny levels, matchesAny_reads, fun seen => quantifier.Accepts seen⟩
 
 variable (levels O) in
 /-- **The natural counting query of a pattern.** -/
@@ -164,11 +164,11 @@ theorem matchesAny_singleton {Θ : Context rules} (p t : TotalTerm Θ) :
     obtain rfl := List.mem_singleton.mp member
     exact matched, fun matched => ⟨p, List.mem_singleton_self p, matched⟩⟩
 
-/-- **The natural absence query is R91's absence query.** -/
-theorem absent_holds_iff (pattern : TotalTerm Δ) (present : Finset O) (row : O → TotalTerm Δ)
-    {Θ : Context rules} (τ : Θ ⟶ Δ) :
-    (absent levels O pattern).toQuery.Holds present row τ ↔
-      (Query.absent levels O pattern).Holds present row τ :=
+/-- **The natural predicate query is R91's predicate query.** -/
+theorem predicate_holds_iff (quantifier : Quantifier) (pattern : TotalTerm Δ) (present : Finset O)
+    (row : O → TotalTerm Δ) {Θ : Context rules} (τ : Θ ⟶ Δ) :
+    (predicate levels O quantifier pattern).toQuery.Holds present row τ ↔
+      (Query.predicate levels O quantifier pattern).Holds present row τ :=
   Query.holds_congr (fun _ => matchesAny_singleton _ _) fun _ => Iff.rfl
 
 /-- **The natural counting query is R91's counting query.** -/
@@ -178,9 +178,9 @@ theorem count_holds_iff (pattern : TotalTerm Δ) (number : Nat) (present : Finse
       (Query.count levels O pattern number).Holds present row τ :=
   Query.holds_congr (fun _ => matchesAny_singleton _ _) fun _ => Iff.rfl
 
-/-- Moving the absence query of a pattern is the absence query of the moved pattern. -/
-theorem move_absent (σ : Δ' ⟶ Δ) (pattern : TotalTerm Δ) :
-    (absent levels O pattern).move σ = absent levels O ((frames levels).act σ pattern) := rfl
+/-- Moving the predicate query of a pattern is the predicate query of the moved pattern. -/
+theorem move_predicate (σ : Δ' ⟶ Δ) (quantifier : Quantifier) (pattern : TotalTerm Δ) :
+    (predicate levels O quantifier pattern).move σ = predicate levels O quantifier ((frames levels).act σ pattern) := rfl
 
 theorem move_count (σ : Δ' ⟶ Δ) (pattern : TotalTerm Δ) (number : Nat) :
     (count levels O pattern number).move σ = count levels O ((frames levels).act σ pattern) number := rfl
@@ -396,7 +396,7 @@ end DependentFull
 #print axioms DependentFull.NaturalQuery.move_comp
 #print axioms DependentFull.NaturalQuery.region_move
 #print axioms DependentFull.NaturalQuery.holds_move
-#print axioms DependentFull.NaturalQuery.absent_holds_iff
+#print axioms DependentFull.NaturalQuery.predicate_holds_iff
 #print axioms DependentFull.NaturalQuery.count_holds_iff
 #print axioms DependentFull.Make.row_reindex
 #print axioms DependentFull.Natural.information_move

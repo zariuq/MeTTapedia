@@ -467,10 +467,10 @@ theorem millerGlb_initial {Θ : Context S.R} {original : EquationStore (TotalTer
       ¬ (frames S.levels).Solvable original := by
   obtain ⟨fuel, decided⟩ :=
     millerGlb_decided facts roots heads algebra rigid complete normalizes inh headTypingUnique glb spec total inside
-  rcases (decided fuel le_rfl).2 with ⟨state, finished, solved, _⟩ | ⟨absent, _⟩
+  rcases (decided fuel le_rfl).2 with ⟨state, finished, solved, _⟩ | ⟨missing, _⟩
   · exact .inl (millerGlb_solved_initial facts roots heads algebra rigid complete normalizes inh headTypingUnique glb
       spec inside solved)
-  · exact .inr absent
+  · exact .inr missing
 
 end Rounds
 

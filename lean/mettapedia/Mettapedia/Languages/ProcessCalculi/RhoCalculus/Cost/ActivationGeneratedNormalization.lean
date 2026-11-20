@@ -1,4 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ActivationGenerated
+import Mettapedia.OSLF.MeTTaIL.ReflectiveResolution
 
 /-!
 # Generated reflective normalization through the pure erasure readout
@@ -184,5 +185,57 @@ theorem eraseGenerated_normalizeReflectiveReplacement (replacement : Pattern) :
               (.cons (eraseGenerated_normalizeReflective payload) .nil)
         · simpa only [normalizeReflectiveReplacement, beq_iff_eq, quote, ite_false] using
             eraseGenerated_normalizeReflective (.apply constructor [payload])
+
+
+private theorem eraseGeneratedList_eq_map (sources : List Pattern) :
+    eraseGeneratedList sources = sources.map eraseGenerated := by
+  induction sources with
+  | nil => rfl
+  | cons source sources induction => simp [eraseGeneratedList, induction]
+
+/-- Structural congruence after erasure has the parallel monoid laws and
+quote-drop at the wrapped constructors. -/
+def erasedCongruence :
+    Mettapedia.OSLF.MeTTaIL.ReflectiveResolution.QuoteDropCongruence wrappedRhoDeclaration where
+  rel left right := StructuralCongruence (eraseGenerated left) (eraseGenerated right)
+  equivalence := ⟨fun _ => .refl _, fun related => .symm _ _ related,
+    fun first second => .trans _ _ _ first second⟩
+  apply_congr constructor _ _ related := eraseGenerated_apply_congruent constructor related
+  lambda_congr binder _ _ related := .lambda_cong binder _ _ related
+  multiLambda_congr arity binders _ _ related := .multiLambda_cong arity binders _ _ related
+  subst_congr relatedBody relatedValue := .subst_cong _ _ _ _ relatedBody relatedValue
+  collection_congr kind rest _ _ related :=
+    collectionCongruence_of_forall₂ kind rest (eraseGeneratedList_congruent related)
+  parallel_perm {members members'} perm := by
+    change StructuralCongruence (.collection .hashBag (eraseGeneratedList members) none)
+      (.collection .hashBag (eraseGeneratedList members') none)
+    rw [eraseGeneratedList_eq_map, eraseGeneratedList_eq_map]
+    exact .par_perm _ _ (perm.map eraseGenerated)
+  parallel_unit members := by
+    change StructuralCongruence
+      (.collection .hashBag (.apply "PZero" [] :: eraseGeneratedList members) none)
+      (.collection .hashBag (eraseGeneratedList members) none)
+    exact .trans _ _ _
+      (collectionCongruence_of_forall₂ .hashBag none
+        (.cons (.symm _ _ .par_empty)
+          (List.forall₂_same.mpr fun _ _ => .refl _)))
+      (by simpa using hashBagSpliceHead [] (eraseGeneratedList members))
+  parallel_assoc inner outer := by
+    change StructuralCongruence
+      (.collection .hashBag
+        (.collection .hashBag (eraseGeneratedList inner) none :: eraseGeneratedList outer) none)
+      (.collection .hashBag (eraseGeneratedList (inner ++ outer)) none)
+    rw [eraseGeneratedList_eq_map, eraseGeneratedList_eq_map, eraseGeneratedList_eq_map,
+      List.map_append]
+    exact hashBagSpliceHead _ _
+  parallel_single member := .par_singleton _
+  quote_drop name := .quote_drop _
+
+/-- Resolving generated quotations of drops preserves the pure observation up
+to structural congruence. -/
+theorem eraseGenerated_resolveQuotes (source : Pattern) :
+    StructuralCongruence (eraseGenerated (resolveQuotes wrappedRhoDeclaration source))
+      (eraseGenerated source) :=
+  .symm _ _ (erasedCongruence.related_resolveQuotes source)
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ActivationGenerated

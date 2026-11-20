@@ -182,7 +182,7 @@ namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost
 #print axioms CostStepPath.eraseCanonical_rhoRewritePath_length_eq_demands
 #print axioms CostStepPath.exists_eraseCanonical_rhoLanguageDefRewritePath
 #print axioms exists_wellSorted_signatureEncoding_not_closed
-#print axioms semanticSubstNameMark_matched_false_of_rhoNameCoreShape_noBVar
+#print axioms semanticSubstNameMark_matched_false_of_noBVar
 #print axioms CostTerm.sectionRepresentative_value
 #print axioms CostTerm.sectionEmbedding_sectionRepresentative
 #print axioms CostTerm.erase_structurallyCongruent_sectionRepresentative

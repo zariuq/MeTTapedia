@@ -17,7 +17,7 @@ variable {T : Type u} {U : Type v}
 
 def Check.traverse? (read : T → Option U) : Check T → Option (Check U)
   | .equal left right => do return .equal (← read left) (← read right)
-  | .absent term => Check.absent <$> read term
+  | .predicate quantifier term => Check.predicate quantifier <$> read term
   | .count term number => (fun value => Check.count value number) <$> read term
 
 def RuleInstance.traverse? (read : T → Option U) (rule : RuleInstance T) : Option (RuleInstance U) := do

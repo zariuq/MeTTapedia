@@ -1,5 +1,6 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RhoContinuationSealing
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SemanticSubstitution
+import Mettapedia.OSLF.Syntax.RhoQuotationClassFibres
 
 /-!
 # Name, activation and sealing controls for compiled rho continuations
@@ -107,5 +108,62 @@ theorem unsafe_quote_depends_on_the_receiver :
     compileName (received (Rigid.includeTerm noMetas RhoSchema.nilP)) crossingQuote ≠
       compileName (received (Rigid.includeTerm noMetas payload)) crossingQuote := by
   decide +kernel
+
+/-! ## Name classes do not determine the received process origin -/
+
+namespace Origins
+
+open Mettapedia.OSLF.Binding.RhoQuotationClassFibres
+
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus
+open RhoSchema.IntrinsicEncoding
+
+theorem the_two_payloads_are_admitted_intrinsic_sources :
+    intrinsicQuoteSafe 0 RhoSourceOutputPredicate.output = true ∧
+      intrinsicQuoteSafe 0 suspendedRaw = true := by decide +kernel
+
+theorem the_two_payloads_transmit_equivalent_names :
+    NameEquiv (.apply "NQuote" [encodeTerm suspendedRaw])
+      (.apply "NQuote" [encodeTerm RhoSourceOutputPredicate.output]) := .quote_drop _
+
+theorem the_two_origins_give_distinct_semantic_results :
+    semanticCommSubst (.apply "PDrop" [.bvar 0])
+        (encodeTerm RhoSourceOutputPredicate.output) = encodeTerm RhoSourceOutputPredicate.output ∧
+      semanticCommSubst (.apply "PDrop" [.bvar 0])
+        (encodeTerm suspendedRaw) = encodeTerm suspendedRaw ∧
+      ¬ StructuralCongruence (encodeTerm suspendedRaw) (encodeTerm RhoSourceOutputPredicate.output) := by
+  refine ⟨rfl, rfl, fun same => ?_⟩
+  have keys := Canonical.canonicalize_eq_of_structuralCongruence same
+    (by simp [suspendedRaw, dropRaw, quoteRaw, RhoSourceOutputPredicate.output,
+      encodeTerm, RhoSchema.IntrinsicEncoding.encodeArgs, wrapBinders, RhoSchema.chan, RhoSchema.nilP,
+      Canonical.HashSetFree, Canonical.HashSetFreeList])
+    (by simp [RhoSourceOutputPredicate.output, encodeTerm, RhoSchema.IntrinsicEncoding.encodeArgs, wrapBinders,
+      RhoSchema.chan, RhoSchema.nilP, Canonical.HashSetFree, Canonical.HashSetFreeList])
+  exact (show Canonical.canonicalize (encodeTerm suspendedRaw) ≠
+    Canonical.canonicalize (encodeTerm RhoSourceOutputPredicate.output) from by decide +kernel) keys
+
+/-- Respect for name equivalence and recovery of both actual COMM origins
+cannot be satisfied by one name-only operation, even up to process equations. -/
+theorem no_name_equivariant_activation_realizes_both_origins :
+    ¬ ∃ activate : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Mettapedia.OSLF.MeTTaIL.Syntax.Pattern,
+      (∀ first second, NameEquiv first second → StructuralCongruence (activate first) (activate second)) ∧
+      StructuralCongruence
+        (activate (.apply "NQuote" [encodeTerm suspendedRaw]))
+        (semanticCommSubst (.apply "PDrop" [.bvar 0]) (encodeTerm suspendedRaw)) ∧
+      StructuralCongruence
+        (activate (.apply "NQuote" [encodeTerm RhoSourceOutputPredicate.output]))
+        (semanticCommSubst (.apply "PDrop" [.bvar 0]) (encodeTerm RhoSourceOutputPredicate.output)) := by
+  rintro ⟨activate, respects, first, second⟩
+  have compared := respects _ _ the_two_payloads_transmit_equivalent_names
+  rw [the_two_origins_give_distinct_semantic_results.1] at second
+  rw [the_two_origins_give_distinct_semantic_results.2.1] at first
+  exact the_two_origins_give_distinct_semantic_results.2.2
+    (StructuralCongruence.trans _ _ _ (StructuralCongruence.symm _ _ first)
+      (StructuralCongruence.trans _ _ _ compared second))
+
+#print axioms the_two_origins_give_distinct_semantic_results
+#print axioms no_name_equivariant_activation_realizes_both_origins
+
+end Origins
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RhoContinuation.Controls

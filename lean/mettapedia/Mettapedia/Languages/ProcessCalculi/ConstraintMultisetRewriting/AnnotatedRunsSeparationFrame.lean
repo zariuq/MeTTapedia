@@ -40,16 +40,18 @@ frame knowing `X = 2` are each fine and cannot meet (`SeparationControls.knowled
 
 ## Predicate queries break locality, exactly where the frame enters their region
 
-* **Exactness** (`census_frame_iff`): a firing with equation guards admitted at `C` is admitted at
-  `C ⊗ E` exactly when no query region contains an occurrence of `E` at a solution of the framed
-  cut. It is the frame analogue of `census_after_iff`. For fixed queries: exactly when the frame
-  changes no query region (`fixed_frame_iff`).
-* **Regions are a homomorphism of the separation algebra** (`regionOf_tensor`): absence is
-  multiplicative (`absent_tensor_iff`) and counts are additive (`count_tensor`).
+* **Exactness** (`query_frame_iff`): a firing with equation guards and exact queries admitted at
+  `C` is admitted at `C ⊗ E` exactly when no query region contains an occurrence of `E` at a
+  solution of the framed cut. It is the frame analogue of `query_after_iff`. Whatever the queries
+  observe, a frame outside their regions keeps the admission (`valid_tensor_of_outside`). For
+  fixed queries: exactly when the frame changes no query region (`fixed_frame_iff`).
+* **Regions are a homomorphism of the separation algebra** (`regionOf_tensor`): the none query is
+  multiplicative (`none_tensor_iff`) and counts are additive (`count_tensor`).
 * **The anti-frame** (`valid_restrict`): removing occurrences outside a firing's takes, reads and
-  sightings never refuses it, when the removed part tells nothing and the firing has no count
-  guard. Absence and queries are stable under restriction where positive reads are stable under
-  extension.
+  sightings never refuses it, when the removed part tells nothing and every guard of the firing
+  survives removing rows (`AntitoneGuards`: equations and `none` queries, not counts or `any`
+  queries). `none` queries and exact queries are stable under restriction where positive reads are
+  stable under extension.
 * **Verdicts on a region** (`regionValues`, `frame_admitted_iff_values`): a firing whose one predicate
   query is a fixed query of a region is admitted beside a frame exactly when no verdict on the
   values the region carries changes. `AnnotatedRunsSeparationVerdicts` instantiates it at R33's
@@ -297,12 +299,53 @@ end Runs
 
 /-! ## Predicate queries: exactness, regions, the anti-frame -/
 
+omit [DecidableEq O] in
+/-- **Every guard survives removing rows**: each check is an equation or a `none` query, which keep
+holding when occurrences are removed. A `count` and an `any` query need not: a count of one fails
+once its row is removed, and an `any` query fails once its only matching row is removed. -/
+def AntitoneGuards (f : Firing T S O) : Prop :=
+  ∀ check ∈ f.rule.checks, (∀ pattern number, check ≠ .count pattern number) ∧
+    ∀ pattern, check ≠ .predicate .any pattern
+
 section Queries
 
 variable (A : SubstitutionAction T S) (label : O → T)
 
-/-- **A query is local exactly where the frame avoids its region**, at the framed cut. -/
-theorem census_frame_iff {f : Firing T S O} {C E : Configuration T O}
+/-- **A frame outside the query regions keeps the admission**, whatever the queries observe: a
+firing with equation guards admitted at `C` is admitted at `C ⊗ E` when no query region contains an
+occurrence of `E` at a solution of the framed cut. -/
+theorem valid_tensor_of_outside {f : Firing T S O} {C E : Configuration T O}
+    (guards : ∀ check ∈ f.rule.checks, ∃ left right, check = .equal left right)
+    (valid : f.Valid A label C) (after : Separable A (f.result label C) E)
+    (outside : ∀ query ∈ f.queries, ∀ σ, A.Models σ (f.selection.problem label f.rule (tensor C E)) →
+      ∀ o ∈ E.present, query.region σ (label o) = false) :
+    f.Valid A label (tensor C E) := by
+  have older : ∀ σ, A.Models σ (f.selection.problem label f.rule (tensor C E)) →
+      A.Models σ (f.selection.problem label f.rule C) := by
+    intro σ solved
+    rw [Firing.problem_eq', A.models_append] at solved ⊢
+    exact ⟨((A.models_append σ _ _).mp solved.1).1, solved.2⟩
+  have firing := valid.firing
+  have positive : f.selection.Valid A label f.rule (tensor C E) := by
+    refine ⟨firing.take_distinct, firing.output_distinct, firing.take_length, firing.read_length,
+      firing.outputs, firing.occurrences.frame_of_positive rfl (made_disjoint_frame label after.1),
+      consistent_problem_tensor A label after.2, ?_⟩
+    intro check member σ solved
+    obtain ⟨left, right, rfl⟩ := guards check member
+    exact firing.checks _ member σ (older σ solved)
+  refine ⟨positive, fun query member σ solved => ?_⟩
+  show query.Holds σ label (C.present ∪ E.present)
+  exact query_holds_union label (outside query member σ solved)
+    (valid.observations query member σ (older σ solved))
+
+/-- **An exact query is local exactly where the frame avoids its region**, at the framed cut. Every
+query must be exact, through the explicit embedding `exact`: the forward direction concludes that
+the frame avoids EVERY query region, and an observation that a frame inside its region leaves
+accepting refutes that. The backward direction holds for every observation
+(`valid_tensor_of_outside`). -/
+theorem query_frame_iff {f : Firing T S O} {C E : Configuration T O}
+    {queries : List (PredicateQueryAdmission.Query T S O)}
+    (exact : f.queries = queries.map PredicateQueryAdmission.Query.toRegion)
     (guards : ∀ check ∈ f.rule.checks, ∃ left right, check = .equal left right)
     (valid : f.Valid A label C) (apart : Disjoint C.present E.present)
     (after : Separable A (f.result label C) E) :
@@ -316,32 +359,25 @@ theorem census_frame_iff {f : Firing T S O} {C E : Configuration T O}
     exact ⟨((A.models_append σ _ _).mp solved.1).1, solved.2⟩
   constructor
   · intro framed query member σ solved o inE
-    cases inside : query.region σ (label o) with
+    have listed := member
+    rw [exact] at listed
+    obtain ⟨original, -, rfl⟩ := List.mem_map.mp listed
+    show original.region σ (label o) = false
+    cases inside : original.region σ (label o) with
     | false => rfl
     | true =>
         exfalso
-        have framedSaw : regionOf label (C.present ∪ E.present) (query.region σ) = query.seen :=
-          framed.observations query member σ solved
-        have saw : regionOf label C.present (query.region σ) = query.seen :=
-          valid.observations query member σ (older σ solved)
-        have seen : o ∈ query.seen := by
+        have framedSaw : regionOf label (C.present ∪ E.present) (original.region σ) =
+            original.seen :=
+          framed.observations _ member σ solved
+        have saw : regionOf label C.present (original.region σ) = original.seen :=
+          valid.observations _ member σ (older σ solved)
+        have seen : o ∈ original.seen := by
           rw [← framedSaw]
           exact mem_regionOf.mpr ⟨Finset.mem_union_right _ inE, inside⟩
         rw [← saw] at seen
         exact Finset.disjoint_left.mp apart (mem_regionOf.mp seen).1 inE
-  · intro outside
-    have firing := valid.firing
-    have positive : f.selection.Valid A label f.rule (tensor C E) := by
-      refine ⟨firing.take_distinct, firing.output_distinct, firing.take_length, firing.read_length,
-        firing.outputs, firing.occurrences.frame_of_positive rfl (made_disjoint_frame label after.1),
-        consistent_problem_tensor A label after.2, ?_⟩
-      intro check member σ solved
-      obtain ⟨left, right, rfl⟩ := guards check member
-      exact firing.checks _ member σ (older σ solved)
-    refine ⟨positive, fun query member σ solved => ?_⟩
-    change regionOf label (C.present ∪ E.present) (query.region σ) = query.seen
-    exact query_holds_union label (outside query member σ solved)
-      (valid.observations query member σ (older σ solved))
+  · exact valid_tensor_of_outside A label guards valid after
 
 /-- **Regions are a homomorphism of the separation algebra.** -/
 theorem regionOf_tensor (region : T → Bool) (C E : Configuration T O) :
@@ -350,8 +386,8 @@ theorem regionOf_tensor (region : T → Bool) (C E : Configuration T O) :
   ext o
   simp only [mem_regionOf, tensor, Finset.mem_union, or_and_right]
 
-/-- **Absence is multiplicative.** -/
-theorem absent_tensor_iff (region : T → Bool) (C E : Configuration T O) :
+/-- **The none query is multiplicative.** -/
+theorem none_tensor_iff (region : T → Bool) (C E : Configuration T O) :
     regionOf label (tensor C E).present region = ∅ ↔
       regionOf label C.present region = ∅ ∧ regionOf label E.present region = ∅ := by
   rw [regionOf_tensor, Finset.union_eq_empty]
@@ -369,20 +405,21 @@ theorem count_tensor (region : T → Bool) {C E : Configuration T O}
 region.** -/
 theorem fixed_frame_iff {f : Firing T S O} {C E : Configuration T O}
     {queries : List (PredicateQuery O T)}
-    (fixed : f.queries = queries.map PredicateQueryAdmission.Query.fixed)
+    (fixed : f.queries = (queries.map PredicateQueryAdmission.Query.fixed).map
+      PredicateQueryAdmission.Query.toRegion)
     (guards : ∀ check ∈ f.rule.checks, ∃ left right, check = .equal left right)
     (valid : f.Valid A label C) (apart : Disjoint C.present E.present)
     (after : Separable A (f.result label C) E) :
     f.Valid A label (tensor C E) ↔
       ∀ query ∈ queries,
         regionOf label (tensor C E).present query.region = regionOf label C.present query.region := by
-  rw [census_frame_iff A label guards valid apart after]
+  rw [query_frame_iff A label fixed guards valid apart after]
   obtain ⟨σ₀, solved₀⟩ := consistent_problem_tensor A label after.2
   constructor
   · intro outside query member
-    have inF : PredicateQueryAdmission.Query.fixed query ∈ f.queries := by
+    have inF : (PredicateQueryAdmission.Query.fixed query).toRegion ∈ f.queries := by
       rw [fixed]
-      exact List.mem_map_of_mem member
+      exact List.mem_map_of_mem (List.mem_map_of_mem member)
     rw [regionOf_tensor]
     refine Finset.union_eq_left.mpr fun o inRegion => ?_
     have none := outside _ inF σ₀ solved₀ o (mem_regionOf.mp inRegion).1
@@ -391,7 +428,8 @@ theorem fixed_frame_iff {f : Firing T S O} {C E : Configuration T O}
     cases none
   · intro unchanged query member σ _ o inE
     rw [fixed] at member
-    obtain ⟨q, inQ, rfl⟩ := List.mem_map.mp member
+    obtain ⟨q', inQ', rfl⟩ := List.mem_map.mp member
+    obtain ⟨q, inQ, rfl⟩ := List.mem_map.mp inQ'
     change q.region (label o) = false
     cases inside : q.region (label o) with
     | false => rfl
@@ -403,13 +441,16 @@ theorem fixed_frame_iff {f : Firing T S O} {C E : Configuration T O}
         exact Finset.disjoint_left.mp apart (mem_regionOf.mp inTensor).1 inE
 
 /-- **The anti-frame.** A firing admitted beside a frame that tells nothing, whose takes, reads and
-query sightings lie on one side, is admitted on that side. Absence, and every predicate query
-whose sightings stay, survive the removal of occurrences. -/
+query sightings lie on one side, and whose guards survive removing rows, is admitted on that side.
+`none` queries, and every exact query whose sightings stay, survive the removal of occurrences.
+Sightings are seen sets: every query is exact, through the explicit embedding `exact`. -/
 theorem valid_restrict {f : Firing T S O} {C E : Configuration T O}
+    {queries : List (PredicateQueryAdmission.Query T S O)}
+    (exact : f.queries = queries.map PredicateQueryAdmission.Query.toRegion)
     (framed : f.Valid A label (tensor C E)) (noKnowledge : A.Equivalent E.equations [])
     (taken : ∀ o ∈ f.selection.taken, o ∈ C.present) (read : ∀ o ∈ f.selection.read, o ∈ C.present)
-    (seen : ∀ query ∈ f.queries, query.seen ⊆ C.present)
-    (noCount : ∀ check ∈ f.rule.checks, ∀ pattern number, check ≠ .count pattern number) :
+    (seen : ∀ query ∈ queries, query.seen ⊆ C.present)
+    (antitone : AntitoneGuards f) :
     f.Valid A label C := by
   have newer : ∀ σ, A.Models σ (f.selection.problem label f.rule C) →
       A.Models σ (f.selection.problem label f.rule (tensor C E)) := by
@@ -433,14 +474,20 @@ theorem valid_restrict {f : Firing T S O} {C E : Configuration T O}
     have holds := firing.checks check member σ (newer σ solved)
     cases check with
     | equal left right => exact holds
-    | absent pattern =>
-        intro o present
-        exact holds o (Finset.mem_union_left _ present)
-    | count pattern number => exact absurd rfl (noCount _ member pattern number)
+    | predicate quantifier pattern =>
+        cases quantifier with
+        | any => exact absurd rfl ((antitone _ member).2 pattern)
+        | none =>
+            intro o present
+            exact holds o (Finset.mem_union_left _ present)
+    | count pattern number => exact absurd rfl ((antitone _ member).1 pattern number)
   · intro query member σ solved
-    have framedSaw : regionOf label (C.present ∪ E.present) (query.region σ) = query.seen :=
-      framed.observations query member σ (newer σ solved)
-    change regionOf label C.present (query.region σ) = query.seen
+    have listed := member
+    rw [exact] at listed
+    obtain ⟨original, inOriginal, rfl⟩ := List.mem_map.mp listed
+    have framedSaw : regionOf label (C.present ∪ E.present) (original.region σ) = original.seen :=
+      framed.observations _ member σ (newer σ solved)
+    change regionOf label C.present (original.region σ) = original.seen
     ext o
     constructor
     · intro inRegion
@@ -448,10 +495,10 @@ theorem valid_restrict {f : Firing T S O} {C E : Configuration T O}
       exact mem_regionOf.mpr ⟨Finset.mem_union_left _ (mem_regionOf.mp inRegion).1,
         (mem_regionOf.mp inRegion).2⟩
     · intro inSeen
-      have inFramed : o ∈ regionOf label (C.present ∪ E.present) (query.region σ) := by
+      have inFramed : o ∈ regionOf label (C.present ∪ E.present) (original.region σ) := by
         rw [framedSaw]
         exact inSeen
-      exact mem_regionOf.mpr ⟨seen query member inSeen, (mem_regionOf.mp inFramed).2⟩
+      exact mem_regionOf.mpr ⟨seen original inOriginal inSeen, (mem_regionOf.mp inFramed).2⟩
 
 end Queries
 
@@ -478,7 +525,9 @@ theorem card_regionValues (region : T → Bool) (C : Configuration T O) :
 one predicate query is a fixed query of a region, the framed firing is admitted exactly when every
 verdict on the values the region carries is the same beside the frame as without it. -/
 theorem frame_admitted_iff_values {f : Firing T S O} {C E : Configuration T O}
-    {query : PredicateQuery O T} (only : f.queries = [PredicateQueryAdmission.Query.fixed query])
+    {query : PredicateQuery O T}
+    (only : f.queries = [PredicateQueryAdmission.Query.fixed query].map
+      PredicateQueryAdmission.Query.toRegion)
     (guards : ∀ check ∈ f.rule.checks, ∃ left right, check = .equal left right)
     (valid : f.Valid A label C) (apart : Disjoint C.present E.present)
     (after : Separable A (f.result label C) E) :
@@ -524,9 +573,10 @@ open SeparationRuns
 #print axioms frame_rule_spatial
 #print axioms frame_rule_known
 #print axioms frame_rule_renamed
-#print axioms census_frame_iff
+#print axioms query_frame_iff
+#print axioms valid_tensor_of_outside
 #print axioms regionOf_tensor
-#print axioms absent_tensor_iff
+#print axioms none_tensor_iff
 #print axioms count_tensor
 #print axioms fixed_frame_iff
 #print axioms valid_restrict

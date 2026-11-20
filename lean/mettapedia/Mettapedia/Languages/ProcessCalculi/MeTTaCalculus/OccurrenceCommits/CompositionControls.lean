@@ -62,14 +62,14 @@ theorem restored_input_is_retained :
 
 def emptyRegion : PredicateQuery ℕ ℕ := ⟨fun n => decide (n = 1), ∅⟩
 
-/-- An absence condition can become true because the matching item was consumed. -/
-theorem absence_after_consumption :
+/-- A none condition can become true because the matching item was consumed. -/
+theorem none_after_consumption :
     ¬ emptyRegion.Holds id {1} ∧ emptyRegion.Holds id (fire {1} takeOccurrence) ∧
       (emptyRegion.pullback id takeOccurrence).seen = {1} ∧
       (emptyRegion.pullback id takeOccurrence).Holds id {1} := by
   decide
 
-/-- An update that creates a member cannot satisfy absence of its region. -/
+/-- An update that creates a member cannot satisfy none queries of its region. -/
 theorem incompatible_output_refused :
     ¬ emptyRegion.Compatible id makeOccurrence ∧
       ¬ emptyRegion.Holds id (fire ∅ makeOccurrence) := by
@@ -87,7 +87,7 @@ theorem repeated_queries_retained :
   rfl
 
 def readObserver : Commit ℕ ℕ := ⟨∅, {1}, {2}, []⟩
-def absenceObserver : Commit ℕ ℕ := ⟨∅, ∅, {2}, [emptyRegion]⟩
+def noneObserver : Commit ℕ ℕ := ⟨∅, ∅, {2}, [emptyRegion]⟩
 
 /-- A positive reader can observe an intermediate output that net-effect
 composition removes. It cannot run before or after the atomic composite. -/
@@ -105,11 +105,11 @@ the first step makes nothing, yet an observer sees the removal window. -/
 theorem fusion_can_hide_removal_window :
     takeOccurrence.made = ∅ ∧
       Enabled id {1} takeOccurrence ∧
-      Enabled id (fire {1} takeOccurrence) absenceObserver ∧
-      Enabled id (fire (fire {1} takeOccurrence) absenceObserver) makeOccurrence ∧
-      ¬ Enabled id {1} absenceObserver ∧
-      ¬ Enabled id (fire {1} (takeOccurrence.compose makeOccurrence)) absenceObserver ∧
-      fire (fire (fire {1} takeOccurrence) absenceObserver) makeOccurrence = {1, 2} := by
+      Enabled id (fire {1} takeOccurrence) noneObserver ∧
+      Enabled id (fire (fire {1} takeOccurrence) noneObserver) makeOccurrence ∧
+      ¬ Enabled id {1} noneObserver ∧
+      ¬ Enabled id (fire {1} (takeOccurrence.compose makeOccurrence)) noneObserver ∧
+      fire (fire (fire {1} takeOccurrence) noneObserver) makeOccurrence = {1, 2} := by
   decide
 
 def independentObserver : Commit ℕ ℕ := ⟨∅, {3}, {4}, []⟩

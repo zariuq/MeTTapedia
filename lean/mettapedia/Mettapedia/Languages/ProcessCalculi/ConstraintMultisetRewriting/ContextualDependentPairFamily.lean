@@ -14,8 +14,8 @@ The family above the family that reads every equation at its least annotation th
 * `tower_pair_run_of_within`: it decides every run that `withinTower` decides, with the same outcome.
 * `PairReached`, **`tower_pair_decided_of_uncovered_exact`**: a conditional decision for it on the stores of the
   dynamic pattern fragment with exact arguments. Its one hypothesis: on every store reached by the family from a
-  store of the fragment with exact arguments, every census head of a constant preparation whose η-long opened
-  sides are of a census kind and outside the rows read is read by a reader of the family from some budget on.
+  store of the fragment with exact arguments, every classified head of a constant preparation whose η-long opened
+  sides are of a classified kind and outside the rows read is read by a reader of the family from some budget on.
   A reader of the family is a reader of `withinTower` or the refutation of this module.
 
 Not proved: the hypothesis, and that the stores of `PairReached` have exact arguments. Against the hypothesis:
@@ -150,9 +150,9 @@ theorem PairReached.permuted {Γ : Context setting.R} {problem : EquationStore (
   | start inside _ => exact permutedMiller_of_fragment inside
   | step fuel _ fired ih => exact tower_pairRound_closure fuel _ _ _ ih fired
 
-/-- **Conditional decision for the top family on stores of the fragment with exact arguments, from the census rows
+/-- **Conditional decision for the top family on stores of the fragment with exact arguments, from the classification rows
 outside the rows read**: if, on every store reached by the family from a store of the fragment with exact
-arguments, every census head of a constant preparation whose η-long opened sides are of a census kind and outside
+arguments, every classified head of a constant preparation whose η-long opened sides are of a classified kind and outside
 the rows read is read by a reader of the family from some budget on, then the family decides every store of the
 dynamic pattern fragment with exact arguments, with a principal answer or a certified refutation, constant at every
 larger budget. The hypothesis is not proved, and the narrowing witness stands against it: `narrowStore`, exact and
@@ -164,12 +164,12 @@ theorem tower_pair_decided_of_uncovered_exact
       PairReached problem → problem ≠ [] → ∀ threshold,
         (∀ larger, threshold ≤ larger → towerPrepare larger problem = towerPrepare threshold problem) →
         ∀ equation ∈ (towerPrepare threshold problem).remaining,
-          ContextualDependentNormalizing.NormalEquation (fun _ => (0 : Nat)) equation → CensusHead equation →
+          ContextualDependentNormalizing.NormalEquation (fun _ => (0 : Nat)) equation → ClassifiedHead equation →
           ContextualDependentShortClosure.FragmentSidesMiller equation →
           Kind (openedFlexible (piCount equation.1.1.code))
-            (ContextualDependentCensus.openNormal (piCount equation.1.1.code)
+            (ContextualDependentClassification.openNormal (piCount equation.1.1.code)
               (expandTo (piCount equation.1.1.code) equation.1.2.code))
-            (ContextualDependentCensus.openNormal (piCount equation.1.1.code)
+            (ContextualDependentClassification.openNormal (piCount equation.1.1.code)
               (expandTo (piCount equation.1.1.code) equation.2.2.code)) →
           ¬ MixedCoveredHead equation → ∃ bound, ∀ larger, bound ≤ larger → TowerPairReads larger problem)
     {Θ : Context setting.R} {problem : EquationStore (TotalTerm Θ)} (inside : InFragmentStore problem)
@@ -178,13 +178,13 @@ theorem tower_pair_decided_of_uncovered_exact
       run (pairTower.solver larger) problem larger = run (pairTower.solver budget) problem budget ∧
       ((∃ state finished, run (pairTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ absent, run (pairTower.solver larger) problem larger = .refuted absent)) :=
+        (∃ missing, run (pairTower.solver larger) problem larger = .refuted missing)) :=
   (Settled.ofConst pairTower (fun problem => tower_pairRound_const problem)
     (fun problem => PairReached problem)
     (fun {_} {problem} held nonempty => by
       have permuted := held.permuted
       have reads : ∃ bound, ∀ larger, bound ≤ larger → TowerPairReads larger problem := by
-        obtain ⟨threshold, constant, equation, member, normal, head⟩ := tower_stable_census_head permuted nonempty
+        obtain ⟨threshold, constant, equation, member, normal, head⟩ := tower_stable_classified_head permuted nonempty
         by_cases covered : MixedCoveredHead equation
         · obtain ⟨bound, mixed⟩ := tower_mixedReads_of_covered constant member normal head.1 covered
           exact ⟨bound, fun larger enough => .inl (.inl (.inl (.inl (.inl (.inl (mixed larger enough))))))⟩

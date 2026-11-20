@@ -15,7 +15,7 @@ decomposition at every base type and committed by the base family:
 **Negative control of the reading.** At a Σ base the reading reads nothing (`sigma_spines_none`): a Σ type is not a
 base type, and that store is the Σ family's.
 
-R119's census keeps its outcomes under the base family (`base_of_final`).
+R119's classification keeps its outcomes under the base family (`base_of_final`).
 -/
 
 set_option autoImplicit false
@@ -55,10 +55,10 @@ theorem sigma_spines_none : spinesUnderN (S := setting) ContextualDependentInver
     SigmaControls.sigmaEquation.1.1.code SigmaControls.sigmaEquation.1.2.code
     SigmaControls.sigmaEquation.2.2.code = none := by decide +kernel
 
-/-! ## R119's census -/
+/-! ## R119's classification -/
 
 open ContextualDependentIntersectionGeneral.InPlaceControls ContextualDependentIntersectionGeneral.DeadControls in
-/-- **R119's census under the base family.** -/
+/-- **R119's classification under the base family.** -/
 theorem base_of_final {Θ : Context setting.R} {problem : EquationStore (TotalTerm Θ)}
     (final : ContextualDependentAcceptance3.Controls.finalDecided problem = true) :
     (run inPlaceOnly problem 8).Decided ∧ run (baseTower.solver 16) problem 8 = run inPlaceOnly problem 8 := by

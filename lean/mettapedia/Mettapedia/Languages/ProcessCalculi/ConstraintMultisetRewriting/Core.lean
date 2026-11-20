@@ -9,11 +9,11 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Schematic
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.SchematicReachPublication
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualPublicationPlan
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.PredicateQueryAdmission
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.CensusSourceCompilation
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.PredicateQuerySourceCompilation
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualQueryAnswers
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualCensusPublication
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualCollectPublication
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.StagedSourceEffects
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.StratifiedCensusCollection
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.StratifiedQueryCollection
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualAttemptOutcomes
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.OrderedPredicateQueryAdmission
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualClausePublication
@@ -223,7 +223,7 @@ source evaluator. The exposed observation profile is explicit. This does
 not supply a total automatic guard decision, select a textual scope policy
 or impose runtime snapshot copying. Selected ordinary/shared bodies and
 mixed bodies with selectively captured productions have the single-firing
-comparison below. Complete-census program composition, arbitrary active
+comparison below. Complete-collect query program composition, arbitrary active
 evaluator contexts and program-context joins remain open.
 
 `ContextualPrefixIsolation` records a necessary distinction for that fusion:
@@ -261,7 +261,7 @@ only its new creation. No core identity type, source numeric atom, space
 handle or query-variable ownership policy is changed. The subsequent native
 program construction joins conditional ordinary/shared rows and guards.
 
-`ContextualOccurrenceRenaming` preserves conditional absence and occurrence
+`ContextualOccurrenceRenaming` preserves conditional none queries and occurrence
 counts under an injective physical renaming with corresponding shared rows.
 `ContextualScheduleCutRenaming` uses each private prefix's own allocation
 map, retaining its information and watched world; all compiled original-cut
@@ -328,7 +328,7 @@ original-world guard views, shapes and resource preconditions preserve and
 reflect source admission. Every actual bounded solver return preserves
 those guard verdicts, including a countermodel to an earlier guard that a
 later caller binding would otherwise erase. The following native views join
-equality, absence and count to actual entry data; the native program
+equality, none queries and count to actual entry data; the native program
 construction then joins them with the actual conditional producer.
 
 `ContextualScheduleInputModels` computes which entry schemas the renamed
@@ -359,11 +359,11 @@ Created identities remain separate from the original input identities.
 `ContextualNativeGuardViews` interprets the captures of actual native input
 labels in the selected saved-cut block. Every original-cut model extends
 through the actual native information, so later bindings cannot remove its
-countermodels. Equality uses the existing native guard. Absence splits into
+countermodels. Equality uses the existing native guard. The none query splits into
 a complete actual-row query for surviving entry inputs and a finite check
 of authored prefix creations. The latter is program data, not a replacement
 for reading the entry inventory. Together they have exactly the compiled
-source absence meaning. The controls distinguish earlier from later cuts,
+source none query meaning. The controls distinguish earlier from later cuts,
 retain a clause's own tell, detect a matching insertion, permit an unrelated
 one, and reject an internal creation missed by an entry-only query.
 These are comparisons at the constructed entry world and fixed selection.
@@ -452,7 +452,7 @@ forbidden entry identities, retaining freshness of intermediate creations
 even when they disappear from the net output. Only port shapes and the
 store-independent possibility flag use a point condition. The finite list
 in `ContextualNativeProgramGuards` additionally checks every equality,
-absence and conditional count at its original cut.
+none queries and conditional count at its original cut.
 
 `ContextualNativeProgramExecution` proves, for every compiled body and
 producer, that source admission is equivalent to one actual query-admitted
@@ -475,7 +475,7 @@ by two correlated reads, incompatible reuse, preservation of an earlier
 schema, refusal of an earlier guard despite a later tell, and a count at
 its clause's own equation cut. An invalid make-then-take prefix has an
 enabled net effect but fails the complete source resource condition and
-the native absence query. Starting with an empty entry admits that same
+the native none query. Starting with an empty entry admits that same
 internal make/take program. Fresh invocation installation, arbitrary raw selections/program observers and full
 active-evaluator/collection composition remain open. No total higher-order
 matching or guard-decision algorithm is supplied by semantic query support.
@@ -485,7 +485,7 @@ body using the existing take operation. The invocation control is appended after
 preserving their opening ordinals and those of the data reads. No output
 recreates the control. The joined `source_iff_completed_invocation` theorem
 retains actual execution and source-world equivalence while proving control
-absence and a strict drop of the pending indicator. Any next admission
+none queries and a strict drop of the pending indicator. Any next admission
 requiring that control is impossible, including after arbitrary data steps
 that do not produce a control. New control production is an explicit
 boundary; global installation, cancellation and retries remain separate
@@ -529,7 +529,7 @@ shared logical occurrence, and no permitted later event can recreate that
 identity. Hence at most one arm can claim it, without fairness assumptions.
 Reusable program code remains separate from the pending continuation.
 
-`ContextualSourceCensus` constructs the finite physical candidate coverage
+`ContextualSourceRejection` constructs the finite physical candidate coverage
 for resolved source alternatives. Its rejection certificates account for
 take aliasing, take/read conflicts, actual solver refutations and guard
 countermodels. Incoming and per-use latent conditions remain in the whole
@@ -538,17 +538,17 @@ Certificate soundness is general; semantic completeness uses the proved
 terminating equation fragment and explicit guard countermodels, not a guard
 decision oracle. `ContextualFallback` compiles the independently stated
 no-primary source judgment and fallback body into actual publication with
-that census retained at its entry cut. The body's own equations cannot
+that collect query retained at its entry cut. The body's own equations cannot
 retroactively justify fallback. A new matching row excludes it. Whole
 reactive source equivalence and deadline arms retain their own comparisons.
 
 Complete queries require more than the fixed five-port restriction.
 `PredicateQueryAdmission` extends admission of the same equation/occurrence update
 with complete region observations. A query predicate may perform local
-matching independently of the caller's substitution; the census must hold
+matching independently of the caller's substitution; the collect query must hold
 for every joint solution at its original observation cut. Fixed predicates
 recover the existing occurrence-commit predicate queries. No queries recovers
-exactly the old step. `CensusSourceCompilation` connects the existing complete
+exactly the old step. `PredicateQuerySourceCompilation` connects the existing complete
 source compiler and its independent declarative semantics to this admission,
 with retained equations, explicit tells and exact produced bags (or the
 source's declared value equality). Its multiset `every` and the separately
@@ -560,23 +560,23 @@ exactly the source matches over all later declaration families. Each answer
 factors every original solution, so alternatives are not conjoined and an
 open schema need not be enumerated into all ground instances. In the checked
 structural-pattern fragment, finite completing budgets exist without a
-supplied model. `ContextualCensusPublication` packs the actual returned
+supplied model. `ContextualCollectPublication` packs the actual returned
 families separately and constructs one checked schematic publication of
 the complete table. Every physical tuple has its own output; equal values
 are not deduplicated. Later matching has exactly the original problem and
-template instances. A new matching tuple invalidates the old census. This
+template instances. A new matching tuple invalidates the old collect query. This
 table-materialization profile does not by itself compile arbitrary folds
 or consuming compound sources. Ordered collections need an ordered scanner
-contract; the finite census alone fixes no order.
+contract; the finite collect query alone fixes no order.
 
 `StagedSourceEffects` compiles finite source sub-runs over a common prepared
-interface, retaining each guard and census at its actual private prefix cut.
+interface, retaining each guard and collect query at its actual private prefix cut.
 Its readiness and final result agree in both directions with that source
 execution. Refusal publishes no prefix effects. The retained conditions
 cannot be replaced by the bare net effect. Family-changing episodes and a
 source expression evaluator require their own compilation bridges.
-`StratifiedCensusCollection` connects the existing source query to the role
-collection laws, retaining its scanner transcript and complete census.
+`StratifiedQueryCollection` connects the existing source query to the role
+collection laws, retaining its scanner transcript and complete collect query.
 Collection after the determining constraints is invariant under their
 permutation. It imposes no textual source-scoping default.
 
@@ -590,7 +590,7 @@ procedure for arbitrary higher-order guards.
 
 For queries that promise order, `OrderedPredicateQueryAdmission` additionally retains
 and validates the existing adaptive query program's ordered read transcript
-at the firing cut. Its complete reads contribute ordinary census queries;
+at the firing cut. Its complete reads contribute ordinary collect queries;
 those queries alone do not recover the order. Validated source rows have
 actual candidate firings and exact produced bags. Ordinary unordered queries
 do not acquire an ordered-scanner requirement.
@@ -612,7 +612,7 @@ those uses share the producer's variables instead of freshening them as
 schemas. The complete second problem retains the first event's equations.
 `realize_ordered_pair` recovers the independently available-input profile.
 `realize_two_orders` constructs both orders and preserves and reflects all
-final equality, absence and occurrence-count questions over the common event
+final equality, none queries and occurrence-count questions over the common event
 interface. It retains original and intermediate guard obligations, and is
 restricted to independently available inputs in the structural-pattern
 fragment. Arbitrary surrounding continuations, joined-schema guards,
@@ -640,7 +640,7 @@ sharing from ordinary unrestricted beta reduction.
 paths of the declared intrinsic rho profile with retained occurrence
 firings. Its ordinary substitution and optional free Drop must remain
 distinct from paper-faithful semantic COMM substitution. The profile
-controls show that a public absence observer distinguishes communication
+controls show that a public none observer distinguishes communication
 from a later activation stage. `QuotedLambdaRetained.finite_execution_with_solvers_iff`
 now supplies the mixed lambda/quotation profile: lexical captures survive,
 quotation is inert, and explicit activation runs through the same retained
@@ -724,7 +724,7 @@ theorem independently_ready_commute
   simpa only [result_equations] using jointModels σ
 
 /-- Equal endpoint observations preserve admission of arbitrary fixed
-continuations, including their later equality, absence and count checks. -/
+continuations, including their later equality, none queries and count checks. -/
 theorem continuation_after_commuting
     (first second : ConditionalSchedule.Firing T O) (before : Configuration T O)
     (same : SameUpTo A (second.2.result label second.1 (first.2.result label first.1 before))

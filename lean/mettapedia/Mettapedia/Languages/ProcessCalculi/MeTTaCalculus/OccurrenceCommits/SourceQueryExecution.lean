@@ -84,7 +84,7 @@ theorem paused_has_no_answer (scan : (T → Bool) → List O)
       (Cursor.ReadOnlyQuery.client (Answer := List (Subst V T × List (Pick O T)))) .unit) :
     Cursor.ReadOnlyQuery.completed? scan (.paused pending) = none := rfl
 
-/-- A completed negative result is exactly absence in the independent
+/-- A completed negative result is exactly none queries in the independent
 source relation, with its matcher and pure-computation hypotheses explicit. -/
 theorem completed_absence [DecidableEq V]
     (L : TermLayer V T P) (m : Matcher V T P) (label : O → T) (S : Finset O)

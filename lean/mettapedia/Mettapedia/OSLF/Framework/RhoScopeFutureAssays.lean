@@ -23,7 +23,7 @@ noncomputable section
 namespace Mettapedia.OSLF.Framework.RhoScopeFutureAssays
 
 open _root_.CategoryTheory Mettapedia.OSLF.Binding
-open RhoSchema RhoQuotationClassFibres RhoScopedNativeAbsence SyntacticRetractionContexts
+open RhoSchema RhoQuotationClassFibres RhoScopedNativeNone SyntacticRetractionContexts
 open RhoScopedParallelEvents
 open RhoScopeOperationalFutures RhoEquationGeneratedScope RhoGeneratedScopeDecision
 open RhoScopeMinimumReceipts RhoGeneratedScopeMinimum

@@ -28,7 +28,7 @@ def partialSearch : Search queries locals captures (O := Nat) (Γ := []) (sort :
 theorem completeSearch_ready : SourceReady completeSearch .one := by
   refine ⟨tuple 1, ?_⟩
   apply Finset.mem_filter.mpr
-  exact ⟨(ContextualConjunctiveAbsence.mem_candidates domain _).mpr (fun _ => by change 1 ∈ domain; decide +kernel),
+  exact ⟨(ContextualConjunctiveNone.mem_candidates domain _).mpr (fun _ => by change 1 ∈ domain; decide +kernel),
     (actual_jobs_finish 1 (by decide +kernel)).2⟩
 
 theorem completed_empty_search_reports_none :
@@ -63,17 +63,17 @@ theorem every_fires_on_a_complete_empty_source :
 theorem partial_search_has_one_ready_answer : SourceReady partialSearch .one := by
   refine ⟨tuple 1, ?_⟩
   apply Finset.mem_filter.mpr
-  exact ⟨(ContextualConjunctiveAbsence.mem_candidates domain _).mpr (fun _ => by change 1 ∈ domain; decide +kernel),
+  exact ⟨(ContextualConjunctiveNone.mem_candidates domain _).mpr (fun _ => by change 1 ∈ domain; decide +kernel),
     (actual_jobs_finish 1 (by decide +kernel)).2⟩
 
 theorem partial_search_is_not_a_complete_table : partialSearch.complete = false := by
   cases test : partialSearch.complete with
   | false => rfl
   | true =>
-      have all : ∀ chosen ∈ ContextualConjunctiveAbsence.candidates domain single.length,
+      have all : ∀ chosen ∈ ContextualConjunctiveNone.candidates domain single.length,
           ContextualQueryAnswers.closed (ContextualQueryAnswers.scan queries locals captures [] single alternatives
             partialSearch.budget chosen) = true := of_decide_eq_true test
-      have second := all (tuple 2) ((ContextualConjunctiveAbsence.mem_candidates domain _).mpr
+      have second := all (tuple 2) ((ContextualConjunctiveNone.mem_candidates domain _).mpr
         (fun _ => by change 2 ∈ domain; decide +kernel))
       have unfinished : ContextualQueryAnswers.closed (ContextualQueryAnswers.scan queries locals captures [] single alternatives
           partialSearch.budget (tuple 2)) = false := by

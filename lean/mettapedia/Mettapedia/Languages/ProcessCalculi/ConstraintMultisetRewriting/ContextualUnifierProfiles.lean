@@ -24,11 +24,11 @@ variable {S : Signature}
 theorem binding {V : Type} [DecidableEq V] {declaration : V → MetaArity S}
     (identity : V)
     (body : Term (signature S declaration) (declaration identity).1 (declaration identity).2)
-    (absent : identity ∉ support body) :
+    (missing : identity ∉ support body) :
     ContextualFrameUnifier.Principal [(generator declaration identity, body)]
       (ContextualBinding.answer identity body) := by
   constructor
-  · exact (ContextualBinding.principal identity body absent).sound
+  · exact (ContextualBinding.principal identity body missing).sound
   · intro Variables next candidate solved
     have same := solved (generator declaration identity, body) (by simp)
     rw [instantiate_generator] at same
@@ -38,12 +38,12 @@ theorem binding_on_spine {V : Type} [DecidableEq V] {declaration : V → MetaAri
     (identity : V) {Γ : Ctx S} (rho : Ren S (declaration identity).1 Γ)
     (inverse : Strengthener (S := signature S declaration) rho)
     (body : Term (signature S declaration) (declaration identity).1 (declaration identity).2)
-    (absent : identity ∉ support body) :
+    (missing : identity ∉ support body) :
     ContextualFrameUnifier.Principal
       [(rename (S := signature S declaration) rho (generator declaration identity),
         rename (S := signature S declaration) rho body)] (ContextualBinding.answer identity body) := by
   constructor
-  · exact (ContextualPatternBinding.principal_on_spine identity rho inverse body absent).sound
+  · exact (ContextualPatternBinding.principal_on_spine identity rho inverse body missing).sound
   · intro Variables next candidate solved
     have same := solved
       (rename (S := signature S declaration) rho (generator declaration identity),

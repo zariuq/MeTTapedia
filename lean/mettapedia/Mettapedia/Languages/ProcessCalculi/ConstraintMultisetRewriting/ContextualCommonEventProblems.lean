@@ -475,7 +475,7 @@ theorem second_result_rows [DecidableEq O]
     exact congrFun (second_guard_rows locals captures virtualLedger relocation rows firstSelection firstRule before
       firstOutputs update) occurrence
 
-/-- Every all-future equality, absence or occurrence-count query on the
+/-- Every all-future equality, none queries or occurrence-count query on the
 common final interface is preserved and reflected after the second
 activation. The first event's constraints remain in the joint problem. -/
 theorem second_result_ask_iff_common [DecidableEq O]

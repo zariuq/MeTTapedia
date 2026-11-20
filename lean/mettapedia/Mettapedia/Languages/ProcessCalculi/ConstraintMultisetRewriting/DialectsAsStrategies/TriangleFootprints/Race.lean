@@ -208,10 +208,10 @@ rows it was asked over. -/
 theorem readRequest_commit (label : O → Tm a) (select : Tm a → Bool) (rows : List O) :
     (StoreOperations.readRequest (a := a) label select rows).commit =
       queryCommit select (regionOf label rows.toFinset select) := by
-  have census := StoreOperations.census_holds (a := a) label select rows
+  have collect := StoreOperations.collect_holds (a := a) label select rows
   change regionOf label rows.toFinset select =
-    (rows.filter fun occurrence => select (label occurrence)).toFinset at census
-  rw [census]
+    (rows.filter fun occurrence => select (label occurrence)).toFinset at collect
+  rw [collect]
   rfl
 
 end Requests

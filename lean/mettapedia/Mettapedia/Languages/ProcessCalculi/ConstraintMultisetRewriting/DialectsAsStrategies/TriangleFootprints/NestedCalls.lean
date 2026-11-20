@@ -25,7 +25,9 @@ variable may sit under a call of a defined head, and further variables may follo
   answers is a list of data atoms and has a nonempty region of settling instances (`call`).
 * `settlesC_agree`: HE evaluates `t` to `L`, PeTTa evaluates every presentation of `t` to `L`.
 * `settlesC_determined`, `every_complete_run_c`: every complete run of HE (historical lookup)
-  publishes `L`, which PeTTa's run yields from some fuel on.
+  publishes the bag of `L`, which PeTTa's run yields as a list from some fuel on. The model's runs
+  publish `L` in PeTTa's order (`settlesC_determined`); HE's own order differs where a body is itself
+  a nondeterministic call, so in general only the bag is HE's.
 * Controls: `(id2 Yes)` gives `Yes`, `(keep Yes)` gives `(pair No Yes)`, `(tag Yes)` gives
   `(pair a Yes)`, `(pair b Yes)` (a variable after a call with two answers) on every run;
   `(id2 Yes)` lies outside `NestedValues`'s fragment.
@@ -905,7 +907,8 @@ section Joint
 variable {lookup : CastLookup} {policy : Policy}
 
 /-- **Both machines evaluate every settling term to its answers**, PeTTa on every presentation
-under extending bindings. -/
+under extending bindings. The list is the model's order, which is PeTTa's; HE's claim is the bag
+(`every_complete_run_c`). -/
 theorem settlesC_agree (answers : AnswersUndefined lookup) {atoms : List Atom}
     (program : CallProgram atoms) {t : Atom} {L : List Atom} (settles : SettlesC dispatch atoms t L) :
     HEEvaluates dispatch lookup policy atoms t L ∧ PeTTaOver atoms t L := by
@@ -1021,9 +1024,10 @@ theorem settlesC_determined {policy : Policy} {atoms : List Atom} (program : Cal
             (forall₂_of_zip (lengths vals member) fun p inside =>
               ⟨ihBodies vals member p inside, settlesC_facts (bodies vals member p inside)⟩)⟩).2
 
-/-- **Every complete run of HE publishes PeTTa's answers, with nested calls in bodies** (historical
-lookup): a complete run exists; from some fuel on PeTTa's streaming run yields `L`; every complete
-run of HE publishes `L`. -/
+/-- **Every complete run of HE publishes PeTTa's answers, as a bag, with nested calls in bodies**
+(historical lookup): a complete run exists; from some fuel on PeTTa's streaming run yields the list
+`L`; every complete run of HE publishes the bag of `L`. HE's own order differs from the model's
+where a body is itself a nondeterministic call (the same on every run). -/
 theorem every_complete_run_c (policy : Policy) {atoms : List Atom} (program : CallProgram atoms)
     {c : Atom} {L : List Atom} (settles : SettlesC dispatch atoms c L) :
     (∃ heAnswers : List Result,
@@ -1037,7 +1041,8 @@ theorem every_complete_run_c (policy : Policy) {atoms : List Atom} (program : Ca
             Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy)
                 (load (Space.ofList atoms) c Atom.undefinedType)
                 ⟨Space.ofList atoms, .returning [], [], emitted⟩ →
-              emitted.map (fun r => r.1.erase) = L := by
+              ((emitted.map (fun r => r.1.erase) : List Atom) : Multiset Atom) =
+                ((L : List Atom) : Multiset Atom) := by
   obtain ⟨he, petta⟩ := settlesC_agree (lookup := Completed.rawLookup) (policy := policy)
     raw_answers program settles
   have shape := settlesC_shape settles
@@ -1046,7 +1051,27 @@ theorem every_complete_run_c (policy : Policy) {atoms : List Atom} (program : Ca
     (over_root petta fun σ => shows_ground shape.tree shape.answerable)
   have determined := settlesC_determined (policy := policy) program settles
   exact ⟨⟨R, path⟩, N, fun n bigger =>
-    ⟨stable n bigger, fun emitted run => determined _ _ _ _ (complete_source run)⟩⟩
+    ⟨stable n bigger, fun emitted run => congrArg (fun l : List Atom => (l : Multiset Atom))
+      (determined _ _ _ _ (complete_source run))⟩⟩
+
+/-- `every_complete_run_c` for one answer, which is its own list. -/
+theorem every_complete_run_c_single (policy : Policy) {atoms : List Atom}
+    (program : CallProgram atoms) {c a : Atom} (settles : SettlesC dispatch atoms c [a]) :
+    (∃ heAnswers : List Result,
+      Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy)
+          (load (Space.ofList atoms) c Atom.undefinedType)
+          ⟨Space.ofList atoms, .returning [], [], heAnswers⟩) ∧
+      ∃ N : Nat, ∀ n, N ≤ n →
+        Streaming.values (Streaming.advance (translate atoms) n
+            (Streaming.enter { state := store atoms } c)) = [a] ∧
+          ∀ emitted : List Result,
+            Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy)
+                (load (Space.ofList atoms) c Atom.undefinedType)
+                ⟨Space.ofList atoms, .returning [], [], emitted⟩ →
+              emitted.map (fun r => r.1.erase) = [a] := by
+  obtain ⟨complete, N, every⟩ := every_complete_run_c policy program settles
+  exact ⟨complete, N, fun n bigger => ⟨(every n bigger).1, fun emitted run =>
+    List.perm_singleton.mp (Multiset.coe_eq_coe.mp ((every n bigger).2 emitted run))⟩⟩
 
 /-! ## Flat calls -/
 
@@ -1336,7 +1361,7 @@ theorem id2_every_run (policy : Policy) :
         emitted.map (fun r => r.1.erase) = [sym "Yes"]) ∧
       Streaming.values (Streaming.advance (translate negRows) 120
         (Streaming.enter { state := store negRows } (app "id2" [sym "Yes"]))) = [sym "Yes"] := by
-  obtain ⟨complete, N, every⟩ := every_complete_run_c policy neg_program id2_yes
+  obtain ⟨complete, N, every⟩ := every_complete_run_c_single policy neg_program id2_yes
   exact ⟨⟨complete, (every N le_rfl).2⟩, id2_value⟩
 
 /-- **Positive control: a variable after a call that extends PeTTa's bindings.** `(keep Yes)` on
@@ -1353,7 +1378,7 @@ theorem keep_every_run (policy : Policy) :
       Streaming.values (Streaming.advance (translate negRows) 120
         (Streaming.enter { state := store negRows } (app "keep" [sym "Yes"]))) =
         [app "pair" [sym "No", sym "Yes"]] := by
-  obtain ⟨complete, N, every⟩ := every_complete_run_c policy neg_program keep_yes
+  obtain ⟨complete, N, every⟩ := every_complete_run_c_single policy neg_program keep_yes
   exact ⟨⟨complete, (every N le_rfl).2⟩, keep_value⟩
 
 /-- **Negative control: the extension is strict.** `(id2 Yes)` does not settle in
@@ -1530,7 +1555,8 @@ theorem tag_value : Streaming.values (Streaming.advance (translate chooseRows) 1
 /-- **Positive control: a variable after a call with two answers.** `(tag Yes)` on
 `{(= (choose) a), (= (choose) b), (= (tag $x) (pair (choose) $x))}`: PeTTa answers each clause of
 `(choose)` under that clause's bindings and still reads `$x` as `Yes` after each; every complete HE
-run publishes `(pair a Yes)`, `(pair b Yes)`, in that order, as PeTTa does. -/
+run publishes `(pair a Yes)`, `(pair b Yes)`, in that order, as PeTTa does and as HE answers (here
+HE's two reversals, the argument's and the body's, cancel). -/
 theorem tag_every_run (policy : Policy) :
     ((∃ heAnswers : List Result, Relation.ReflTransGen (HEStep noHost Completed.rawLookup policy)
         (load (Space.ofList chooseRows) (app "tag" [sym "Yes"]) Atom.undefinedType)
@@ -1543,8 +1569,9 @@ theorem tag_every_run (policy : Policy) :
       Streaming.values (Streaming.advance (translate chooseRows) 120
         (Streaming.enter { state := store chooseRows } (app "tag" [sym "Yes"]))) =
         [app "pair" [sym "a", sym "Yes"], app "pair" [sym "b", sym "Yes"]] := by
-  obtain ⟨complete, N, every⟩ := every_complete_run_c policy choose_program tag_yes
-  exact ⟨⟨complete, (every N le_rfl).2⟩, tag_value⟩
+  obtain ⟨complete, _, _⟩ := every_complete_run_c policy choose_program tag_yes
+  have determined := settlesC_determined (policy := policy) choose_program tag_yes
+  exact ⟨⟨complete, fun emitted run => determined _ _ _ _ (complete_source run)⟩, tag_value⟩
 
 end Controls
 
@@ -1559,6 +1586,7 @@ end Controls
 #print axioms settlesC_agree
 #print axioms settlesC_determined
 #print axioms every_complete_run_c
+#print axioms every_complete_run_c_single
 #print axioms Controls.id2_every_run
 #print axioms Controls.keep_every_run
 #print axioms Controls.id2_not_settlesN

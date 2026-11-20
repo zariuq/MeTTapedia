@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.RegionQueryAdapters
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Spaces
 
 /-!
@@ -162,7 +163,7 @@ def takeMarker : Fir := ⟨⟨[(1, .const 0)], [], [], [], []⟩, [], ⟨[0], []
 theorem make_admitted (C : Configuration (Nat × Term signature) Nat) (made : List Nat)
     (nodup : made.Nodup) (equations : C.equations = []) (fresh : ∀ o ∈ made, o ∉ C.present) :
     L.Admits (s := C) (make made) :=
-  (PredicateQueryAdmission.valid_empty_iff _ _ _ _ _).mpr
+  (Interface.RegionQueryAdapters.valid_empty_iff _ _ _ _ _).mpr
     ⟨List.nodup_nil, nodup, rfl, rfl, rfl,
       ⟨by simp [make, Selection.commit], by simp [make, Selection.commit],
         by simp [make, Selection.commit], by

@@ -20,13 +20,17 @@ the taken branch, at every frame, and that every run of that term finishes with 
   `{then' := y, else' := n}`, with both names outside the names visible to the query.
 * `frontier_hits`: every work of a variant frontier is a hit of its row with the syntactic merge.
 * `declared_cast`: at the record `{then' := y, else' := n} ++ before + {u = w}` the class of `u` has
-  no value, so `$u` meets a symbolic type `s`, and the result has a model.
+  no value, so `$u` meets a declared type (closed, no variable, no wildcard:
+  `expected_variable_closed`), and the result has a model.
+* `native_merge_entry`: at the entry (`before` empty) that record is the one output of HE's
+  executable merge of the match with `{u = w}`.
 
 ## The run
 
 * `DeclaredBranches`: the conditions on the program and the call: both branches are data atoms with
-  one closed stored type each, the taken branch's type is a symbol other than `%Undefined%` and
-  `Atom`, and the call's region is HE's row for the condition. `UndeclaredBranches`: the same with
+  one closed stored type each, the taken branch's type is closed, no variable, and neither
+  `%Undefined%` nor `Atom` (a symbol such as `Number`, or an expression such as `(List Nat)`), and
+  the call's region is HE's row for the condition. `UndeclaredBranches`: the same with
   an undeclared taken branch. `IfWalk`: what the run needs of either: the taken branch's cast against
   the fresh return name at a frame recording one more equality.
 * `goodv_function_declared`, `goodv_query_walk`, `goodv_if_walk`: **every run of `(if b y n)` under
@@ -60,9 +64,11 @@ records of `DeclaredBranchGap` it is exactly the one output of the model's execu
 either argument order, while the circular record is not an output
 (`SyntacticMerge.Controls.native_merge_is_variant`, `native_merge_not_cycle`). Taking the outputs of
 the executable merge as the hit's records is the alternative form of the change; the two forms are
-compared here on that example only. Where the match binds a name that the incoming record also
-binds, the concatenation holds both assignments, and HE's merge reconciles them. No call in this
-development reaches that case (a query is read at its frame first); the comparison there is open.
+compared here on that example and, for the names of an actual run, at the entry
+(`native_merge_entry`: the executable merge of the row's match with `{u = w}` returns exactly the
+syntactic record). Where the match binds a name that the incoming record also binds, the
+concatenation holds both assignments, and HE's merge reconciles them. No call in this development
+reaches that case (a query is read at its frame first); the comparison there is open.
 
 The rule for primitive `unify` takes a logical merge in the same way, with the same circular record
 among its candidates (`UnifyCandidateGap`); the same change belongs in that rule. The run proved
@@ -76,8 +82,12 @@ here passes through no `unify`.
   `metta-repl` answers `[(pair 1 True)]`.
 * `Controls.pair_if_not_other` (negative): that term does not go on to `[(pair 2 False)]`.
 * `Controls.yes_every_run` (positive, an undeclared taken branch): `(if b yes no)` on every run.
+* `Controls.list_every_run` (positive, a declared type that is an expression): with
+  `(: xs (List Nat))`, `(if True xs nil)` on every run gives `[xs]`; HE's `metta-repl` answers `[xs]`.
 * `Controls.undeclared_outside` (negative): an undeclared branch (`yes`) is outside
   `DeclaredBranches`; it meets `UndeclaredBranches` (`Controls.yes_branches`).
+  `Controls.declared_not_undeclared` (negative): the declared branch `1` is outside
+  `UndeclaredBranches`.
 * `Controls.second_name_needed` (negative): the record's freshness matters: at a record that binds
   the return name `u` to `Bool`, the class of `u` has a value, and `declared_cast`'s premise fails.
 -/
@@ -358,22 +368,84 @@ theorem merged_support {before : Bindings} {t e x : String} {y n : Atom}
     List.mem_append, List.mem_cons] at member outside
   tauto
 
+/-- **At the entry, the syntactic record is the one output of HE's executable merge**: for the
+row's match `{t := y, e := n}` and the record `{u = w}` that the operator's cast leaves from the
+empty record, with `u`, `w` apart from `t`, `e`, the executable merge of the match with the record
+returns exactly their syntactic merge, at every fuel from `2` on. -/
+theorem native_merge_entry {t e u w : String} {y n : Atom}
+    (groundY : TypeSubst.typeVars y = []) (groundN : TypeSubst.typeVars n = [])
+    (uT : u ≠ t) (uE : u ≠ e) (wT : w ≠ t) (wE : w ≠ e) (different : u ≠ w) (fuel : Nat) :
+    Mettapedia.Languages.MeTTa.HE.mergeBindings ⟨[(t, y), (e, n)], []⟩
+        (Bindings.empty.addEquality u w) (fuel + 2) =
+      [merge ⟨[(t, y), (e, n)], []⟩ (Bindings.empty.addEquality u w)] := by
+  have noNames : ∀ x : String, x ∉ specBindingVars Bindings.empty := by
+    intro x member
+    simp [specBindingVars, Bindings.empty] at member
+  have freshU := merged_support (before := Bindings.empty) groundY groundN uT uE (noNames u)
+  have freshW := merged_support (before := Bindings.empty) groundY groundN wT wE (noNames w)
+  have unvalued : ((⟨[(t, y), (e, n)], []⟩ : Bindings).addEquality u w).classValues u = [] := by
+    have classes := classValues_fresh_pair freshU freshW different
+    simpa [Bindings.empty] using classes
+  have added : Mettapedia.Languages.MeTTa.HE.addVarEquality ⟨[(t, y), (e, n)], []⟩ u w (fuel + 1) =
+      [(⟨[(t, y), (e, n)], []⟩ : Bindings).addEquality u w] := by
+    simp [Mettapedia.Languages.MeTTa.HE.addVarEquality, unvalued, Bindings.valuesConsistent]
+  simp [Mettapedia.Languages.MeTTa.HE.mergeBindings, added, merge, Bindings.empty,
+    Bindings.addEquality]
+
 theorem assign_unbound {b : Bindings} {x : String} {val : Atom} (unbound : b.lookup x = none) :
     b.assign x val = ⟨b.assignments ++ [(x, val)], b.equalities⟩ := by
   simp [Bindings.assign, Bindings.isBound, unbound]
 
-/-- A model of `rest + {u = w}`, sent to `s` at both fresh names, models the assignment of `s`. -/
-theorem assigned_model {v0 : String → Atom} {rest : Bindings} {u w s : String}
+/-- Every valuation fixes a closed atom. -/
+theorem closed_apply {T : Atom} (closed : TypeSubst.typeVars T = []) (v : String → Atom) :
+    applyTypeValuation v T = T := by
+  have same : applyTypeValuation v T = applyTypeValuation (fun name => .var name) T := by
+    apply Mettapedia.Languages.MeTTa.HE.Spec.Bindings.ScopeObservation.applyTypeValuation_congr_of_typeVars
+    intro y member
+    rw [closed] at member
+    cases member
+  rw [same,
+    Mettapedia.Languages.MeTTa.HE.Spec.Type.Presentation.Theory.applyTypeValuation_var_identity]
+
+/-- **A name whose class has no value meets a closed type that is no variable and no wildcard**,
+recording the type as its value. For a symbolic type this is
+`TypeMatchRel.expected_variable_symbol`. -/
+theorem expected_variable_closed (name : String) {T : Atom} (before : Bindings)
+    (notUndefined : T ≠ Atom.undefinedType) (notAtom : T ≠ Atom.atomType)
+    (notVariable : isVariableB T = false) (closedT : TypeSubst.typeVars T = [])
+    (unvalued : before.classValues name = []) :
+    TypeMatchRel (.var name) T before (before.assign name T) := by
+  have notOccurs : ¬ AtomOccurs T name := by
+    intro occurs
+    have member :=
+      (Mettapedia.Languages.MeTTa.HE.Spec.Eval.Steps.atomOccurs_iff_mem_typeVars T name).mp occurs
+    rw [closedT] at member
+    cases member
+  apply TypeMatchRel.structural (matched := Bindings.empty.assign name T)
+  · intro same; cases same
+  · intro same; cases same
+  · exact notUndefined
+  · exact notAtom
+  · exact .varNonVar notVariable
+      (Mettapedia.Languages.MeTTa.HE.Spec.Match.Merge.semanticLoopFree_single_assignment notOccurs)
+  · apply MergeRel.mk (order := [.value name T])
+    · exact List.Perm.of_eq (DeclaredBranchGap.constraints_assign name T).symm
+    · exact .value (.fresh unvalued) .nil
+
+/-- A model of `rest + {u = w}`, sent to the closed type `T` at both fresh names, models the
+assignment of `T`. -/
+theorem assigned_model {v0 : String → Atom} {rest : Bindings} {u w : String} {T : Atom}
     (freshU : u ∉ specBindingVars rest) (freshW : w ∉ specBindingVars rest)
+    (closedT : TypeSubst.typeVars T = [])
     (sat : TypeBindingSatisfied v0 (rest.addEquality u w)) :
-    TypeBindingSatisfied (fun x => if x = u ∨ x = w then Atom.symbol s else v0 x)
-      ((rest.addEquality u w).assign u (.symbol s)) := by
+    TypeBindingSatisfied (fun x => if x = u ∨ x = w then T else v0 x)
+      ((rest.addEquality u w).assign u T) := by
   have unbound : (rest.addEquality u w).lookup u = none := by
     change rest.lookup u = none
     exact lookup_none_of_outside freshU
   rw [assign_unbound unbound]
   have agree : Mettapedia.Languages.MeTTa.HE.Spec.Bindings.ScopeObservation.ValuationsAgreeOn
-      (specBindingVars rest) v0 (fun x => if x = u ∨ x = w then Atom.symbol s else v0 x) := by
+      (specBindingVars rest) v0 (fun x => if x = u ∨ x = w then T else v0 x) := by
     intro name member
     have notU : name ≠ u := fun same => freshU (same ▸ member)
     have notW : name ≠ w := fun same => freshW (same ▸ member)
@@ -388,79 +460,88 @@ theorem assigned_model {v0 : String → Atom} {rest : Bindings} {u w s : String}
   · simp only [Bindings.addEquality, List.mem_append, List.mem_singleton, Prod.mk.injEq] at member
     rcases member with inRest | ⟨rfl, rfl⟩
     · exact satNew.1 name value inRest
-    · simp [applyTypeValuation]
+    · rw [closed_apply closedT]
+      simp
   · simp only [Bindings.addEquality, List.mem_append, List.mem_singleton, Prod.mk.injEq] at member
     rcases member with inRest | ⟨rfl, rfl⟩
     · exact satNew.2 left right inRest
     · simp
 
-/-- **A fresh return name meets a symbolic type** at a frame `rest + {u = w}` with both names
-outside `rest`: the match exists under either policy, and its result has a model. -/
-theorem declared_accepts (policy : Policy) {G : Frame} {rest : Bindings} {u w s : String}
+/-- **A fresh return name meets a declared type** (closed, no variable, no wildcard) at a frame
+`rest + {u = w}` with both names outside `rest`: the match exists under either policy, and its
+result has a model. -/
+theorem declared_accepts (policy : Policy) {G : Frame} {rest : Bindings} {u w : String} {T : Atom}
     (record : G.bindings = rest.addEquality u w) (freshU : u ∉ specBindingVars rest)
-    (freshW : w ∉ specBindingVars rest) (different : u ≠ w) (notUndefined : s ≠ "%Undefined%")
-    (notAtom : s ≠ "Atom") :
-    ∃ output, policy.matching.Rel (.var u) (.symbol s) G.bindings output ∧
+    (freshW : w ∉ specBindingVars rest) (different : u ≠ w)
+    (notUndefined : T ≠ Atom.undefinedType) (notAtom : T ≠ Atom.atomType)
+    (notVariable : isVariableB T = false) (closedT : TypeSubst.typeVars T = []) :
+    ∃ output, policy.matching.Rel (.var u) T G.bindings output ∧
       ∃ v : String → Atom, TypeBindingSatisfied v output := by
   obtain ⟨v0, sat0⟩ := G.certified.satisfiable
   rw [record] at sat0
   have empty : G.bindings.classValues u = [] := by
     rw [record]
     exact classValues_fresh_pair freshU freshW different
-  have matched := TypeMatchRel.expected_variable_symbol u s G.bindings notUndefined notAtom empty
-  have model : ∃ v : String → Atom, TypeBindingSatisfied v (G.bindings.assign u (.symbol s)) := by
+  have matched := expected_variable_closed u G.bindings notUndefined notAtom notVariable closedT
+    empty
+  have model : ∃ v : String → Atom, TypeBindingSatisfied v (G.bindings.assign u T) := by
     rw [record]
-    exact ⟨_, assigned_model freshU freshW sat0⟩
+    exact ⟨_, assigned_model freshU freshW closedT sat0⟩
   refine ⟨_, ?_, model⟩
   cases policy.matching with
   | raw => exact matched
   | finite => exact ⟨matched, model⟩
 
-/-- **At the syntactic record of `if`'s hit, the fresh return name meets a symbolic type.** -/
-theorem declared_cast (policy : Policy) {s : String} (notUndefined : s ≠ "%Undefined%")
-    (notAtom : s ≠ "Atom") {G : Frame} {before : Bindings} {t e u w : String} {y n : Atom}
+/-- **At the syntactic record of `if`'s hit, the fresh return name meets a declared type.** -/
+theorem declared_cast (policy : Policy) {T : Atom} (notUndefined : T ≠ Atom.undefinedType)
+    (notAtom : T ≠ Atom.atomType) (notVariable : isVariableB T = false)
+    (closedT : TypeSubst.typeVars T = []) {G : Frame} {before : Bindings} {t e u w : String}
+    {y n : Atom}
     (record : G.bindings = merge ⟨[(t, y), (e, n)], []⟩ (before.addEquality u w))
     (groundY : TypeSubst.typeVars y = []) (groundN : TypeSubst.typeVars n = [])
     (uT : u ≠ t) (uE : u ≠ e) (wT : w ≠ t) (wE : w ≠ e)
     (freshU : u ∉ specBindingVars before) (freshW : w ∉ specBindingVars before)
     (different : u ≠ w) :
-    ∃ output, policy.matching.Rel (.var u) (.symbol s) G.bindings output ∧
+    ∃ output, policy.matching.Rel (.var u) T G.bindings output ∧
       ∃ v : String → Atom, TypeBindingSatisfied v output :=
   declared_accepts policy (rest := ⟨[(t, y), (e, n)] ++ before.assignments, before.equalities⟩)
     record (merged_support groundY groundN uT uE freshU) (merged_support groundY groundN wT wE freshW)
-    different notUndefined notAtom
+    different notUndefined notAtom notVariable closedT
 
 /-- The first step of the declared branch's cast. -/
-theorem declared_first (policy : Policy) {space : Space} {P : List String} {d : Atom} {s u : String}
-    (stored : StorageTypesRel space d [.symbol s]) {G : Frame}
-    (accepted : ∃ output, policy.matching.Rel (.var u) (.symbol s) G.bindings output ∧
+theorem declared_first (policy : Policy) {space : Space} {P : List String} {d T : Atom} {u : String}
+    (stored : StorageTypesRel space d [T]) (closedT : TypeSubst.typeVars T = []) {G : Frame}
+    (accepted : ∃ output, policy.matching.Rel (.var u) T G.bindings output ∧
       ∃ v : String → Atom, TypeBindingSatisfied v output) :
-    ∃ (T : Atom) (after : Frame), Completed.scopedLookup P space G.bindings d (.var u) [T] ∧
-      Completed.Frame.TypeRenewRel policy (.var u) T G after := by
+    ∃ (T' : Atom) (after : Frame), Completed.scopedLookup P space G.bindings d (.var u) [T'] ∧
+      Completed.Frame.TypeRenewRel policy (.var u) T' G after := by
   obtain ⟨output, matched, model⟩ := accepted
   obtain ⟨after, _, renewal⟩ := Completed.Frame.TypeRenewRel.of_modelled_match G matched model
-  exact ⟨.symbol s, after, scoped_closed_answers stored rfl, renewal⟩
+  exact ⟨T, after, scoped_closed_answers stored closedT, renewal⟩
 
 /-! ## `(if b y n)` with a declared taken branch -/
 
 /-- **The branches of `(if b y n)` with a declared taken branch**: both branches are data atoms with
-one closed stored type each; the taken branch's stored type is a symbol other than the two wildcard
-types; and the call's region is HE's row for `b`. -/
-structure DeclaredBranches (atoms : List Atom) (b : Bool) (y n : Atom) (s : String) : Prop where
+one closed stored type each; the taken branch's stored type `T` is closed, no variable, and neither
+of the two wildcard types (a symbol such as `Number`, or an expression such as `(List Nat)`); and the
+call's region is HE's row for `b`. -/
+structure DeclaredBranches (atoms : List Atom) (b : Bool) (y n : Atom) (T : Atom) : Prop where
   dataYes : DataAtom y
   dataNo : DataAtom n
   takenNotRefused : pick b y n ≠ Atom.notReducible
-  takenType : StorageTypesRel (Space.ofList atoms) (pick b y n) [.symbol s]
-  notUndefined : s ≠ "%Undefined%"
-  notAtom : s ≠ "Atom"
+  takenType : StorageTypesRel (Space.ofList atoms) (pick b y n) [T]
+  notUndefined : T ≠ Atom.undefinedType
+  notAtom : T ≠ Atom.atomType
+  notVariable : isVariableB T = false
+  closedType : TypeSubst.typeVars T = []
   typedYes : ∃ T, StorageTypesRel (Space.ofList atoms) y [T] ∧ TypeSubst.typeVars T = []
   typedNo : ∃ T, StorageTypesRel (Space.ofList atoms) n [T] ∧ TypeSubst.typeVars T = []
   region : regionInstances atoms "if" [.grounded (.bool b), y, n] = [pick b y n]
   sides : regionSides atoms "if" [.grounded (.bool b), y, n] =
     [(app "if" [.grounded (.bool b), .var "then", .var "else"], pick b (.var "then") (.var "else"))]
 
-theorem DeclaredBranches.takenData {atoms : List Atom} {b : Bool} {y n : Atom} {s : String}
-    (branches : DeclaredBranches atoms b y n s) : DataAtom (pick b y n) := by
+theorem DeclaredBranches.takenData {atoms : List Atom} {b : Bool} {y n T : Atom}
+    (branches : DeclaredBranches atoms b y n T) : DataAtom (pick b y n) := by
   cases b
   · exact branches.dataNo
   · exact branches.dataYes
@@ -509,8 +590,8 @@ theorem IfWalk.takenData {atoms : List Atom} {b : Bool} {y n : Atom}
   · exact walk.dataYes
 
 /-- A declared taken branch meets the fresh return name at the syntactic record. -/
-theorem DeclaredBranches.walk {atoms : List Atom} {b : Bool} {y n : Atom} {s : String}
-    (branches : DeclaredBranches atoms b y n s) (policy : Policy) : IfWalk policy atoms b y n where
+theorem DeclaredBranches.walk {atoms : List Atom} {b : Bool} {y n T : Atom}
+    (branches : DeclaredBranches atoms b y n T) (policy : Policy) : IfWalk policy atoms b y n where
   dataYes := branches.dataYes
   dataNo := branches.dataNo
   takenNotRefused := branches.takenNotRefused
@@ -520,9 +601,9 @@ theorem DeclaredBranches.walk {atoms : List Atom} {b : Bool} {y n : Atom} {s : S
   sides := branches.sides
   cast := fun P G rest u w record freshU freshW different => by
     obtain ⟨output, matched, model⟩ := declared_accepts policy record freshU freshW different
-      branches.notUndefined branches.notAtom
-    exact ⟨declared_first policy branches.takenType ⟨output, matched, model⟩,
-      closed_accepts branches.takenType rfl ⟨output, matched⟩⟩
+      branches.notUndefined branches.notAtom branches.notVariable branches.closedType
+    exact ⟨declared_first policy branches.takenType branches.closedType ⟨output, matched, model⟩,
+      closed_accepts branches.takenType branches.closedType ⟨output, matched⟩⟩
 
 /-- An undeclared taken branch meets every return name at every frame. -/
 theorem UndeclaredBranches.walk {atoms : List Atom} {b : Bool} {y n : Atom}
@@ -894,8 +975,8 @@ theorem goodv_if_walk (notHost : ¬ dispatch.executable (.symbol "if")) {atoms :
 and under every continuation, goes on with the taken branch, on the variant machine and the scoped
 lookup.** -/
 theorem goodv_if_declared (notHost : ¬ dispatch.executable (.symbol "if")) {atoms : List Atom}
-    (program : IfProgram atoms) {b : Bool} {y n : Atom} {s : String}
-    (branches : DeclaredBranches atoms b y n s) :
+    (program : IfProgram atoms) {b : Bool} {y n T : Atom}
+    (branches : DeclaredBranches atoms b y n T) :
     GoodRuns dispatch Completed.scopedLookup policy target atoms
       (Entry.Value.ofAtom (callOf b y n)) [pick b y n] :=
   goodv_if_walk notHost program (branches.walk policy)
@@ -912,8 +993,8 @@ theorem goodv_if_undeclared (notHost : ¬ dispatch.executable (.symbol "if")) {a
 /-- **From the entry, every run of the variant machine on `(if b y n)` with a declared taken branch
 finishes and publishes the taken branch, and a complete run exists.** -/
 theorem declared_if_every_run (notHost : ¬ dispatch.executable (.symbol "if")) (policy : Policy)
-    {atoms : List Atom} (program : IfProgram atoms) {b : Bool} {y n : Atom} {s : String}
-    (branches : DeclaredBranches atoms b y n s) :
+    {atoms : List Atom} (program : IfProgram atoms) {b : Bool} {y n T : Atom}
+    (branches : DeclaredBranches atoms b y n T) :
     EveryRunV dispatch Completed.scopedLookup policy (Space.ofList atoms) (callOf b y n)
       [pick b y n] :=
   (goodv_entry (goodv_if_declared notHost program branches)).every_run
@@ -938,26 +1019,30 @@ theorem number_types (k : Int) :
   .groundedKnown (.int k) (by simp [Atom.undefinedType])
 
 /-- The branches of `(if b 1 2)`: both are `Number`. -/
-theorem number_branches (b : Bool) : DeclaredBranches ifProgram b one two "Number" where
+theorem number_branches (b : Bool) : DeclaredBranches ifProgram b one two (sym "Number") where
   dataYes := .grounded _
   dataNo := .grounded _
   takenNotRefused := by cases b <;> simp [pick, Atom.notReducible]
   takenType := by cases b <;> exact number_types _
   notUndefined := by decide
   notAtom := by decide
+  notVariable := rfl
+  closedType := rfl
   typedYes := ⟨_, number_types 1, rfl⟩
   typedNo := ⟨_, number_types 2, rfl⟩
   region := by cases b <;> decide +kernel
   sides := by cases b <;> decide +kernel
 
 /-- The branches of `(if True True False)`: both are `Bool`. -/
-theorem bool_branches : DeclaredBranches ifProgram true tru fls "Bool" where
+theorem bool_branches : DeclaredBranches ifProgram true tru fls (sym "Bool") where
   dataYes := .grounded _
   dataNo := .grounded _
   takenNotRefused := by simp [pick, Atom.notReducible]
   takenType := bool_types_in _ true
   notUndefined := by decide
   notAtom := by decide
+  notVariable := rfl
+  closedType := rfl
   typedYes := ⟨_, bool_types_in _ true, rfl⟩
   typedNo := ⟨_, bool_types_in _ false, rfl⟩
   region := by decide +kernel
@@ -1071,14 +1156,68 @@ theorem pair_if_not_other (policy : Policy) :
 
 /-- **Negative control**: an undeclared branch is outside `DeclaredBranches`: the stored type of
 `yes` is `%Undefined%`. It meets `UndeclaredBranches` (`yes_branches`). -/
-theorem undeclared_outside (s : String) :
-    ¬ DeclaredBranches ifProgram true (sym "yes") (sym "no") s := by
+theorem undeclared_outside (T : Atom) :
+    ¬ DeclaredBranches ifProgram true (sym "yes") (sym "no") T := by
   intro branches
   have same := Mettapedia.Languages.MeTTa.HE.Spec.Type.StorageTypesRel.unique branches.takenType
     yes_types'
   simp only [List.cons.injEq, and_true] at same
-  apply branches.notUndefined
-  simpa [Atom.undefinedType] using same
+  exact branches.notUndefined same
+
+/-- **Negative control**: a declared branch is outside `UndeclaredBranches`: the stored type of `1`
+is `Number`. -/
+theorem declared_not_undeclared : ¬ UndeclaredBranches ifProgram true one two := by
+  intro branches
+  have same := Mettapedia.Languages.MeTTa.HE.Spec.Type.StorageTypesRel.unique
+    branches.takenUndeclared (number_types 1)
+  simp [Atom.undefinedType] at same
+
+/-- HE's `if` program with `(: xs (List Nat))`: a symbol whose declared type is an expression. -/
+abbrev listRows : List Atom :=
+  ifProgram ++ [.expression [.symbol ":", sym "xs", app "List" [sym "Nat"]]]
+
+theorem list_program : IfProgram listRows := by
+  refine ⟨IfInBodies.Controls.if_types_of (by decide), ?_⟩
+  intro row member
+  rcases List.mem_append.mp member with inIf | inDeclaration
+  · exact if_program row inIf
+  · simp only [List.mem_singleton] at inDeclaration
+    subst inDeclaration
+    exact ⟨fun lhs rhs same => by simp at same, fun lhs rhs same => by simp at same⟩
+
+theorem xs_types :
+    StorageTypesRel (Space.ofList listRows) (sym "xs") [app "List" [sym "Nat"]] := by
+  have extracted := Mettapedia.Languages.MeTTa.HE.Spec.Type.AnnotationTypesRel.complete
+    (.symbol "xs") listRows
+  have computed : listRows.filterMap
+      (Mettapedia.Languages.MeTTa.HE.Spec.Type.annotationType? (.symbol "xs")) =
+        [app "List" [sym "Nat"]] := by decide
+  rw [computed] at extracted
+  exact .symbolKnown extracted (by simp)
+
+/-- The branches of `(if True xs nil)`: the taken branch has the expression type `(List Nat)`. -/
+theorem list_branches :
+    DeclaredBranches listRows true (sym "xs") (sym "nil") (app "List" [sym "Nat"]) where
+  dataYes := .symbol (by decide) (by decide)
+  dataNo := .symbol (by decide) (by decide)
+  takenNotRefused := by simp [pick, Atom.notReducible]
+  takenType := xs_types
+  notUndefined := by decide
+  notAtom := by decide
+  notVariable := rfl
+  closedType := by simp [TypeSubst.typeVars, TypeSubst.typeVarsList]
+  typedYes := ⟨_, xs_types, by simp [TypeSubst.typeVars, TypeSubst.typeVarsList]⟩
+  typedNo := ⟨_, IfInBodies.Controls.undeclared_of (by decide), rfl⟩
+  region := by decide +kernel
+  sides := by decide +kernel
+
+/-- **Positive control, a declared type that is an expression**: with `(: xs (List Nat))`, every run
+of `(if True xs nil)` on the variant machine finishes with `[xs]`. HE's `metta-repl` answers
+`[xs]`. -/
+theorem list_every_run (policy : Policy) :
+    EveryRunV noHost Completed.scopedLookup policy (Space.ofList listRows)
+      (callOf true (sym "xs") (sym "nil")) [sym "xs"] :=
+  declared_if_every_run (fun impossible => impossible) policy list_program list_branches
 
 /-- **Negative control**: the freshness of the return name matters: at a record that already gives
 the return name `u` the value `Bool`, the class of `u` has a value. -/
@@ -1092,6 +1231,7 @@ end Controls
 #print axioms row_match_out
 #print axioms frontier_hits
 #print axioms if_record
+#print axioms native_merge_entry
 #print axioms declared_accepts
 #print axioms declared_cast
 #print axioms goodv_function_declared
@@ -1111,6 +1251,9 @@ end Controls
 #print axioms Controls.pair_if_every_run
 #print axioms Controls.pair_if_not_other
 #print axioms Controls.undeclared_outside
+#print axioms Controls.declared_not_undeclared
+#print axioms Controls.list_branches
+#print axioms Controls.list_every_run
 #print axioms Controls.second_name_needed
 
 end DeclaredBranchVariant

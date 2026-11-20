@@ -68,7 +68,7 @@ store. Every progress of the rule removes a declaration; its refutations are cer
 def extendRound (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ)) : Round S.levels size problem :=
   match base fuel problem with
   | .progress update smaller => .progress update smaller
-  | .refuted absent => .refuted absent
+  | .refuted missing => .refuted missing
   | .stuck =>
       match rule fuel (ContextualDependentNormalizing.prepare root rootComplete facts roots heads fuel problem).remaining with
       | some (.solved update smaller) =>
@@ -77,9 +77,9 @@ def extendRound (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (TotalT
               have same := prepare_arity facts roots heads root rootComplete fuel problem
               change update.target.arity < Θ.arity
               omega))
-      | some (.refuted absent) =>
+      | some (.refuted missing) =>
           .refuted fun solvable =>
-            absent ((ContextualDependentNormalizing.prepare root rootComplete facts roots heads fuel problem).solvable_iff.mp
+            missing ((ContextualDependentNormalizing.prepare root rootComplete facts roots heads fuel problem).solvable_iff.mp
               solvable)
       | none => .stuck
 
@@ -97,13 +97,13 @@ theorem extendRound_view (fuel : Nat) {Θ : Context S.R} (problem : EquationStor
   split
   · rename_i update smaller computed
     simp only [computed, roundView, Option.or]
-  · rename_i absent computed
+  · rename_i missing computed
     simp only [computed, roundView, Option.or]
   · rename_i computed
     split
     · rename_i update smaller found
       simp only [computed, found, roundView, foundView, Option.or, Option.map_some]
-    · rename_i absent found
+    · rename_i missing found
       simp only [computed, found, roundView, foundView, Option.or, Option.map_some, Option.map_none]
     · rename_i found
       simp only [computed, found, roundView, foundView, Option.or, Option.map_none]
@@ -134,20 +134,20 @@ omit [DecidableEq Head] [DecidableRel S.R.headEq] [∀ head, Decidable (S.R.isUn
 /-- **Every refutation of an extended round is certified**: the base round's, or the rule's on the
 prepared store. -/
 theorem extendRound_refuted {fuel : Nat} {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)}
-    {absent : ¬ (frames S.levels).Solvable problem}
-    (refuted : extendRound root rootComplete facts roots heads base rule fuel problem = .refuted absent) :
-    (∃ absent', base fuel problem = .refuted absent') ∨
-      ∃ absent', rule fuel (ContextualDependentNormalizing.prepare root rootComplete facts roots heads fuel
-        problem).remaining = some (.refuted absent') := by
+    {missing : ¬ (frames S.levels).Solvable problem}
+    (refuted : extendRound root rootComplete facts roots heads base rule fuel problem = .refuted missing) :
+    (∃ missing', base fuel problem = .refuted missing') ∨
+      ∃ missing', rule fuel (ContextualDependentNormalizing.prepare root rootComplete facts roots heads fuel
+        problem).remaining = some (.refuted missing') := by
   unfold extendRound at refuted
   split at refuted
   · cases refuted
-  · rename_i absent' computed
-    exact .inl ⟨absent', computed⟩
+  · rename_i missing' computed
+    exact .inl ⟨missing', computed⟩
   · split at refuted
     · cases refuted
-    · rename_i absent' computed
-      exact .inr ⟨absent', computed⟩
+    · rename_i missing' computed
+      exact .inr ⟨missing', computed⟩
     · cases refuted
 
 end Extend

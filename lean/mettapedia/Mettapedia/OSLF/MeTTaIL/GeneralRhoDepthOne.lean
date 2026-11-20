@@ -335,14 +335,14 @@ theorem receipt_step {free : FreeSortContext} {source : Pattern} {receipt : Gene
     have outputTyped := procListWellSorted_iff_forall_mem.mp elementsTyped _
       (List.mem_of_mem_eraseIdx (List.mem_of_getElem? outputAt))
     obtain ⟨_, payloadTyped⟩ := rho_output_wellSorted_inv outputTyped
-    have semantic := reflective_reduct_semantic (channel := channel) bodyTyped payloadTyped residueSafe
+    have semantic := reflective_reduct_resolved (channel := channel) bodyTyped payloadTyped residueSafe
     have localTarget := Option.some.inj (reduct.symm.trans semantic)
     rw [filled, DerivedContexts.OneHoleContext.fill, localTarget]
     obtain ⟨inputBound, inputEq⟩ := List.getElem?_eq_some_iff.mp inputAt
     obtain ⟨outputBound, outputEq⟩ := List.getElem?_eq_some_iff.mp outputAt
     have step := rhoStepAt_one_comm inputBound outputBound inputEq outputEq
       ((rhoCanonicalEquivalent_iff channel channel).mpr rfl)
-    rwa [apply_commBindingsAt bodyTyped payloadTyped elements inputIndex outputIndex channel] at step
+    rwa [apply_commBindingsAt_resolved bodyTyped payloadTyped elements inputIndex outputIndex channel] at step
 
 /-! ## Every authored depth-one step on a canonical source is a root receipt
 
@@ -481,25 +481,25 @@ theorem step_receipt {source target : Pattern}
     simp at memberSafe
     exact memberSafe.2
   have names := derived_names_admitted bodyTyped bodySealed
-  have semantic := reflective_reduct_semantic (channel := inputChannel) bodyTyped payloadTyped residueSafe
+  have semantic := reflective_reduct_resolved (channel := inputChannel) bodyTyped payloadTyped residueSafe
   have literal := reflective_reduct (ambient := 0) (channel := inputChannel) bodySafe payloadSafe residueSafe
-  have bodiesEq : reflectiveBody body payload = semanticCommSubst body payload := by
+  have bodiesEq : reflectiveBody body payload = semanticCommSubst (ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body) payload := by
     have both := literal.symm.trans semantic
     simp only [Option.some.injEq, Pattern.collection.injEq, List.cons.injEq] at both
     exact both.2.1.1
   have targetBodyOpen := reflective_body_open bodyOpen bodySealed names payloadOpen
   rw [bodiesEq] at targetBodyOpen
   have targetTyped : HasType language (typeFree fun _ => none) []
-      (.collection .hashBag (semanticCommSubst body payload :: (elements.eraseIdx inputIndex).eraseIdx outputIndex) none)
+      (.collection .hashBag (semanticCommSubst (ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body) payload :: (elements.eraseIdx inputIndex).eraseIdx outputIndex) none)
       (.base "Proc") := parallel_typed (.cons targetBodyOpen.1 residueOpen)
   have targetRepresented : Represented
-      (.collection .hashBag (semanticCommSubst body payload :: (elements.eraseIdx inputIndex).eraseIdx outputIndex) none) :=
+      (.collection .hashBag (semanticCommSubst (ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body) payload :: (elements.eraseIdx inputIndex).eraseIdx outputIndex) none) :=
     (represented_collection_iff _ _).mpr fun pattern member => by
       rcases List.mem_cons.mp member with rfl | member
       · exact ⟨targetBodyOpen.2.1, targetBodyOpen.2.2.1⟩
       · exact residueRepresented pattern member
   have targetOpen : OpenPatternWellSorted language (typeFree fun _ => none) [] (.base "Proc")
-      (.collection .hashBag (semanticCommSubst body payload :: (elements.eraseIdx inputIndex).eraseIdx outputIndex) none) :=
+      (.collection .hashBag (semanticCommSubst (ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body) payload :: (elements.eraseIdx inputIndex).eraseIdx outputIndex) none) :=
     ⟨targetTyped, targetRepresented.1, targetRepresented.2, targetTyped.isWellScopedAt⟩
   have position : plan.rules[0]? = some declaration := by rw [compiled_rules]; rfl
   have captureTyped := captured_typed channelOpen.1 bodyOpen.1 payloadOpen.1 residueOpen
@@ -511,7 +511,7 @@ theorem step_receipt {source target : Pattern}
       [{ path := [0], selected := inputIndex }, { path := [1], selected := outputIndex }]
       (captured 0 inputChannel body payload ((elements.eraseIdx inputIndex).eraseIdx outputIndex))
       (captured 0 inputChannel body payload ((elements.eraseIdx inputIndex).eraseIdx outputIndex)) []
-      (.collection .hashBag (semanticCommSubst body payload :: (elements.eraseIdx inputIndex).eraseIdx outputIndex)
+      (.collection .hashBag (semanticCommSubst (ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body) payload :: (elements.eraseIdx inputIndex).eraseIdx outputIndex)
         none) := by
     refine .fire (GeneralPlanEnvironment.selected_rule plan position)
       (GeneralPlanEnvironment.selected_specification plan position) comm_admitted sourceInPlan
@@ -527,12 +527,12 @@ theorem step_receipt {source target : Pattern}
     [{ path := [0], selected := inputIndex }, { path := [1], selected := outputIndex }],
     captured 0 inputChannel body payload ((elements.eraseIdx inputIndex).eraseIdx outputIndex),
     captured 0 inputChannel body payload ((elements.eraseIdx inputIndex).eraseIdx outputIndex), [],
-    .collection .hashBag (semanticCommSubst body payload :: (elements.eraseIdx inputIndex).eraseIdx outputIndex) none,
-    .collection .hashBag (semanticCommSubst body payload :: (elements.eraseIdx inputIndex).eraseIdx outputIndex) none⟩,
+    .collection .hashBag (semanticCommSubst (ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body) payload :: (elements.eraseIdx inputIndex).eraseIdx outputIndex) none,
+    .collection .hashBag (semanticCommSubst (ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body) payload :: (elements.eraseIdx inputIndex).eraseIdx outputIndex) none⟩,
     ⟨⟨by rw [compiled_rules]; simp, .here rfl sourceInPlan.2.2.1 sourceInPlan.1⟩, firing, rfl, rfl,
       (GeneralPlanEnvironment.typing_iff plan _ _ _).mpr targetOpen⟩, ?_⟩
   rw [← applied]
-  exact (apply_commBindingsAt bodyTyped payloadTyped elements inputIndex outputIndex inputChannel).symm
+  exact (apply_commBindingsAt_resolved bodyTyped payloadTyped elements inputIndex outputIndex inputChannel).symm
 
 /-- **The depth-one join.** On a closed, quotation-sealed source whose canonically equivalent channels
 are equal, the steps of the depth-one plan's GSLT are exactly the authored depth-one rho steps. -/

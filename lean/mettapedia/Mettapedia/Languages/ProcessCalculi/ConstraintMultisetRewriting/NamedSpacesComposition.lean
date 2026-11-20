@@ -7,7 +7,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NamedSpac
 Two located firings whose resolved spaces are disjoint touch disjoint occurrence identities: no
 identity is taken by both, made by both, or taken by one and read by the other
 (`disjoint_spaces_independent`). By the per-identity laws of `Exactness`
-(`independent_iff_both_orders`, `fire_comm`) their resources commute, and their absence and count
+(`independent_iff_both_orders`, `fire_comm`) their resources commute, and their none query and count
 checks ignore each other's writes (`disjoint_spaces_ignore_writes`). What remains of the
 hypotheses of `Core.independently_ready_commute` is information: the joint equations must be
 consistent (`disjoint_spaces_commute`).
@@ -149,7 +149,7 @@ theorem disjoint_spaces_ignore_writes {first second : LocatedRule T}
     exact apart k₁ foot₁ foot₂
   cases located_check with
   | equal l r => trivial
-  | absent s p =>
+  | predicate _ s p =>
       obtain ⟨k, at_k⟩ := resolved₁ s (check_space_mem checkMember rfl)
       exact apartAt s p ⟨k, ⟨s, check_space_mem checkMember rfl, at_k⟩, at_k⟩
   | count s p n =>

@@ -134,115 +134,153 @@ theorem normalize_represented (declaration : ReflectivePresentationDecl) {patter
       obtain ⟨original, sourceMember, rfl⟩ := List.mem_map.mp member
       exact ih original sourceMember ((represented_collection_iff _ _).mp represented original sourceMember)
 
-private theorem nameMark_represented (declaration : ReflectivePresentationDecl) (depth : Nat)
-    {replacement name : Pattern} (replacementRepresented : Represented replacement)
-    (nameRepresented : Represented name) :
-    Represented (nameMark declaration depth replacement name).1 := by
-  have normalized := normalize_represented declaration nameRepresented
-  unfold nameMark
-  generalize normalizeReflective declaration name = actual at normalized ⊢
-  cases actual <;> try exact normalized
-  exact instantiate_variable_represented depth replacementRepresented _
+private theorem leaves_represented (declaration : ReflectivePresentationDecl) {pattern member : Pattern}
+    (represented : Represented pattern) (membership : member ∈ parallelLeaves declaration pattern) :
+    Represented member := by
+  induction pattern using Pattern.inductionOn with
+  | hcollection kind elements rest ih =>
+      cases rest with
+      | some rest =>
+          simp only [parallelLeaves, List.mem_singleton] at membership; subst membership; exact represented
+      | none =>
+          by_cases parallel : kind = declaration.parallelCollection
+          · simp only [parallelLeaves, parallel, if_true, parallelLeavesList_eq_flatMap,
+              List.mem_flatMap] at membership
+            obtain ⟨element, elementMember, membership⟩ := membership
+            exact ih element elementMember
+              ((represented_collection_iff _ _).mp represented element elementMember) membership
+          · simp only [parallelLeaves, parallel, if_false, List.mem_singleton] at membership
+            subst membership; exact represented
+  | happly constructor arguments ih =>
+      cases arguments with
+      | nil =>
+          by_cases unit : constructor = declaration.parallelUnitConstructor
+          · simp [parallelLeaves, unit] at membership
+          · simp only [parallelLeaves, unit, if_false, List.mem_singleton] at membership
+            subst membership; exact represented
+      | cons argument arguments =>
+          simp only [parallelLeaves, List.mem_singleton] at membership; subst membership; exact represented
+  | hbvar index => simp only [parallelLeaves, List.mem_singleton] at membership; subst membership; exact represented
+  | hfvar name => simp only [parallelLeaves, List.mem_singleton] at membership; subst membership; exact represented
+  | hlambda binder body ih =>
+      simp only [parallelLeaves, List.mem_singleton] at membership; subst membership; exact represented
+  | hmultiLambda arity binders body ih =>
+      simp only [parallelLeaves, List.mem_singleton] at membership; subst membership; exact represented
+  | hsubst body replacement ihBody ihReplacement =>
+      simp only [parallelLeaves, List.mem_singleton] at membership; subst membership; exact represented
 
-private def dropResult (declaration : ReflectivePresentationDecl) (constructor : String)
-    (name : Pattern) (changed : Bool) : Pattern :=
-  match name, changed with
-  | .apply quote [process], true =>
-      if quote == declaration.quoteConstructor then process else .apply constructor [name]
-  | _, _ => .apply constructor [name]
-
-private theorem finish_drop_represented (declaration : ReflectivePresentationDecl)
-    (constructor : String) {name : Pattern} (changed : Bool)
-    (represented : Represented name) :
-    Represented (dropResult declaration constructor name changed) := by
-  have rebuilt : Represented (.apply constructor [name]) :=
-    (represented_apply_iff _ _).mpr (by simpa using represented)
-  unfold dropResult
-  cases changed with
-  | false =>
-      cases name <;> try exact rebuilt
-      rename_i quote processes
-      cases processes with
-      | nil => exact rebuilt
-      | cons process processes =>
-          cases processes <;> exact rebuilt
-  | true =>
-      cases name <;> try exact rebuilt
-      rename_i quote processes
-      cases processes with
-      | nil => exact rebuilt
-      | cons process processes =>
-          cases processes with
-          | nil =>
-              change Represented (if quote == declaration.quoteConstructor then process
-                else .apply constructor [.apply quote [process]])
-              split
-              · exact (represented_apply_iff quote [process]).mp represented process (by simp)
-              · exact rebuilt
-          | cons _ _ => exact rebuilt
-
-private theorem instantiate_list_map (declaration : ReflectivePresentationDecl)
-    (depth : Nat) (replacement : Pattern) (patterns : List Pattern) :
-    instantiateList declaration depth replacement patterns = patterns.map (instantiate declaration depth replacement) := by
-  induction patterns with
-  | nil => rfl
-  | cons head tail ih => simp [instantiateList, ih]
-
-theorem instantiate_represented (declaration : ReflectivePresentationDecl) (depth : Nat)
-    {replacement pattern : Pattern} (replacementRepresented : Represented replacement)
-    (represented : Represented pattern) :
-    Represented (instantiate declaration depth replacement pattern) := by
-  induction pattern using Pattern.inductionOn generalizing depth with
-  | hbvar index => exact instantiate_variable_represented depth replacementRepresented index
-  | hfvar _ => exact represented
+private theorem resolve_represented (declaration : ReflectivePresentationDecl) {pattern : Pattern}
+    (represented : Represented pattern) : Represented (resolveQuotes declaration pattern) := by
+  induction pattern using Pattern.inductionOn with
+  | hbvar _ | hfvar _ => exact represented
   | happly constructor arguments ih =>
       have each := (represented_apply_iff _ _).mp represented
-      have listResult : ∀ pattern ∈ instantiateList declaration depth replacement arguments, Represented pattern := by
-        rw [instantiate_list_map]
+      have mapped : ∀ pattern ∈ arguments.map (resolveQuotes declaration), Represented pattern := by
         rintro result member
         obtain ⟨original, sourceMember, rfl⟩ := List.mem_map.mp member
-        exact ih original sourceMember depth (each original sourceMember)
-      cases arguments with
-      | nil => exact ⟨rfl, rfl⟩
-      | cons first rest =>
-          cases rest with
-          | nil =>
-              simp only [instantiate]
-              split
-              · exact nameMark_represented declaration depth replacementRepresented represented
-              · split
-                · have marked := nameMark_represented declaration depth replacementRepresented (each first (by simp))
-                  generalize nameMark declaration depth replacement first = actual at marked ⊢
-                  cases actual with
-                  | mk name changed => exact finish_drop_represented declaration constructor changed marked
-                · exact (represented_apply_iff _ _).mpr (by
-                    simpa using ih first (by simp) depth (each first (by simp)))
-          | cons _ _ => exact (represented_apply_iff _ _).mpr listResult
+        exact ih original sourceMember (each original sourceMember)
+      simp only [resolveQuotes, resolveQuotesList_eq_map]
+      generalize arguments.map (resolveQuotes declaration) = resolved at mapped
+      match resolved, mapped with
+      | [], _ => exact ⟨rfl, rfl⟩
+      | first :: second :: rest, mapped => exact (represented_apply_iff _ _).mpr mapped
+      | [payload], mapped =>
+          simp only [finishResolveApply]
+          split
+          · split
+            · rename_i name exposed
+              have dropRepresented := leaves_represented declaration (mapped payload (by simp))
+                (by rw [ReflectiveCoherent.exposedDrop?_eq_some_iff.mp exposed]; exact List.mem_singleton_self _)
+              exact (represented_apply_iff _ _).mp dropRepresented name (by simp)
+            · exact (represented_apply_iff _ _).mpr mapped
+          · exact (represented_apply_iff _ _).mpr mapped
   | hlambda binder body ih =>
-      simp only [instantiate, Represented, Pattern.hasCanonicalBinderMetadata, Bool.and_eq_true,
-        isObjectPattern] at represented ⊢
-      have result := ih (depth + 1) ⟨represented.1.2, represented.2⟩
+      simp only [resolveQuotes, Represented, Pattern.hasCanonicalBinderMetadata,
+        Bool.and_eq_true, isObjectPattern] at represented ⊢
+      have result := ih ⟨represented.1.2, represented.2⟩
       exact ⟨⟨represented.1.1, result.1⟩, result.2⟩
   | hmultiLambda arity binders body ih =>
-      simp only [instantiate, Represented, Pattern.hasCanonicalBinderMetadata, Bool.and_eq_true,
-        isObjectPattern] at represented ⊢
-      have result := ih (depth + arity) ⟨represented.1.2, represented.2⟩
+      simp only [resolveQuotes, Represented, Pattern.hasCanonicalBinderMetadata,
+        Bool.and_eq_true, isObjectPattern] at represented ⊢
+      have result := ih ⟨represented.1.2, represented.2⟩
       exact ⟨⟨represented.1.1, result.1⟩, result.2⟩
   | hsubst _ _ _ _ => simp [Represented, isObjectPattern] at represented
   | hcollection kind elements rest ih =>
       have restNone : rest = none := by cases rest <;> simp_all [Represented, isObjectPattern]
       subst rest
       apply (represented_collection_iff _ _).mpr
-      rw [instantiate_list_map]
+      simp only [resolveQuotesList_eq_map]
       rintro result member
       obtain ⟨original, sourceMember, rfl⟩ := List.mem_map.mp member
-      exact ih original sourceMember depth ((represented_collection_iff _ _).mp represented original sourceMember)
+      exact ih original sourceMember ((represented_collection_iff _ _).mp represented original sourceMember)
+
+private theorem receive_represented (declaration : ReflectivePresentationDecl) (constructor : String)
+    {name : Pattern} (represented : Represented name) :
+    Represented (receive declaration constructor name) := by
+  rcases ReflectiveCoherent.receive_cases (declaration := declaration) constructor name with
+    plain | ⟨process, rfl, ran⟩
+  · rw [plain]; exact (represented_apply_iff _ _).mpr (by simpa using represented)
+  · rw [ran]; exact (represented_apply_iff _ _).mp represented process (by simp)
+
+theorem instantiate_represented (declaration : ReflectivePresentationDecl) (depth : Nat)
+    {replacement pattern : Pattern} (replacementRepresented : Represented replacement)
+    (represented : Represented pattern) :
+    Represented (instantiate declaration depth replacement pattern) := by
+  unfold instantiate
+  have resolved := resolve_represented declaration represented
+  generalize resolveQuotes declaration pattern = body at resolved
+  clear represented pattern
+  induction body using Pattern.inductionOn generalizing depth with
+  | hbvar index => exact instantiate_variable_represented depth replacementRepresented index
+  | hfvar _ => exact resolved
+  | happly constructor arguments ih =>
+      have each := (represented_apply_iff _ _).mp resolved
+      match arguments, each, resolved, ih with
+      | [], _, resolved, _ => exact resolved
+      | first :: second :: rest, each, _, ih =>
+          simp only [substituteResolved, substituteResolvedList_eq_map]
+          apply (represented_apply_iff _ _).mpr
+          rintro result member
+          obtain ⟨original, sourceMember, rfl⟩ := List.mem_map.mp member
+          exact ih original sourceMember depth (each original sourceMember)
+      | [payload], each, resolved, ih =>
+          have through : Represented (.apply constructor [substituteResolved declaration
+              (fun level index => instantiateBVarAt level replacement (.bvar index)) depth payload]) :=
+            (represented_apply_iff _ _).mpr (by simpa using ih payload (by simp) depth (each payload (by simp)))
+          simp only [substituteResolved]
+          split
+          · exact resolved
+          · split
+            · split
+              · exact receive_represented declaration constructor
+                  (instantiate_variable_represented depth replacementRepresented depth)
+              · exact through
+            · exact through
+  | hlambda binder body ih =>
+      simp only [substituteResolved, Represented, Pattern.hasCanonicalBinderMetadata, Bool.and_eq_true,
+        isObjectPattern] at resolved ⊢
+      have result := ih (depth + 1) ⟨resolved.1.2, resolved.2⟩
+      exact ⟨⟨resolved.1.1, result.1⟩, result.2⟩
+  | hmultiLambda arity binders body ih =>
+      simp only [substituteResolved, Represented, Pattern.hasCanonicalBinderMetadata, Bool.and_eq_true,
+        isObjectPattern] at resolved ⊢
+      have result := ih (depth + arity) ⟨resolved.1.2, resolved.2⟩
+      exact ⟨⟨resolved.1.1, result.1⟩, result.2⟩
+  | hsubst _ _ _ _ => simp [Represented, isObjectPattern] at resolved
+  | hcollection kind elements rest ih =>
+      have restNone : rest = none := by cases rest <;> simp_all [Represented, isObjectPattern]
+      subst rest
+      apply (represented_collection_iff _ _).mpr
+      simp only [substituteResolvedList_eq_map]
+      rintro result member
+      obtain ⟨original, sourceMember, rfl⟩ := List.mem_map.mp member
+      exact ih original sourceMember depth ((represented_collection_iff _ _).mp resolved original sourceMember)
 
 open DerivedPresentationSyntax
 
 mutual
-theorem derived_name_data {free : FreeSortContext} {bound : List String} {name : Pattern}
-    (typed : NameWellSorted rhoReflectivePresentation free bound name) : HasType language (typeFree free) (typeBound bound) name (.base "Name") ∧ Represented name := by
+theorem derived_name_data {scope : QuoteScope} {free : FreeSortContext} {bound : List String} {name : Pattern}
+    (typed : NameWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound name) : HasType language (typeFree free) (typeBound bound) name (.base "Name") ∧ Represented name := by
   refine ⟨derived_name_typed typed, ?_⟩
   cases typed with
   | bvar _ | fvar _ => exact ⟨rfl, rfl⟩
@@ -251,8 +289,8 @@ theorem derived_name_data {free : FreeSortContext} {bound : List String} {name :
       simpa using (derived_process_data process).2
 termination_by sizeOf name
 
-theorem derived_process_data {free : FreeSortContext} {bound : List String} {process : Pattern}
-    (typed : ProcWellSorted rhoReflectivePresentation free bound process) : HasType language (typeFree free) (typeBound bound) process (.base "Proc") ∧ Represented process := by
+theorem derived_process_data {scope : QuoteScope} {free : FreeSortContext} {bound : List String} {process : Pattern}
+    (typed : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound process) : HasType language (typeFree free) (typeBound bound) process (.base "Proc") ∧ Represented process := by
   refine ⟨derived_process_typed typed, ?_⟩
   cases typed with
   | bvar _ | fvar _ | unit => exact ⟨rfl, rfl⟩
@@ -276,8 +314,8 @@ theorem derived_process_data {free : FreeSortContext} {bound : List String} {pro
       exact (represented_collection_iff _ _).mpr ((derived_processes_data processes).2)
 termination_by sizeOf process
 
-theorem derived_processes_data {free : FreeSortContext} {bound : List String} {processes : List Pattern}
-    (typed : ProcListWellSorted rhoReflectivePresentation free bound processes) :
+theorem derived_processes_data {scope : QuoteScope} {free : FreeSortContext} {bound : List String} {processes : List Pattern}
+    (typed : ProcListWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound processes) :
     ElementsHaveType language (typeFree free) (typeBound bound) processes (.base "Proc") ∧
       (∀ process ∈ processes, Represented process) := by
   refine ⟨derived_processes_typed typed, ?_⟩
@@ -291,26 +329,26 @@ theorem derived_processes_data {free : FreeSortContext} {bound : List String} {p
 termination_by sizeOf processes
 end
 
-theorem derived_name_represented {free : FreeSortContext} {bound : List String} {name : Pattern}
-    (typed : NameWellSorted rhoReflectivePresentation free bound name) : Represented name :=
+theorem derived_name_represented {scope : QuoteScope} {free : FreeSortContext} {bound : List String} {name : Pattern}
+    (typed : NameWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound name) : Represented name :=
   (derived_name_data typed).2
 
-theorem derived_process_represented {free : FreeSortContext} {bound : List String} {process : Pattern}
-    (typed : ProcWellSorted rhoReflectivePresentation free bound process) : Represented process :=
+theorem derived_process_represented {scope : QuoteScope} {free : FreeSortContext} {bound : List String} {process : Pattern}
+    (typed : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound process) : Represented process :=
   (derived_process_data typed).2
 
-theorem derived_processes_represented {free : FreeSortContext} {bound : List String} {processes : List Pattern}
-    (typed : ProcListWellSorted rhoReflectivePresentation free bound processes) :
+theorem derived_processes_represented {scope : QuoteScope} {free : FreeSortContext} {bound : List String} {processes : List Pattern}
+    (typed : ProcListWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound processes) :
     ∀ process ∈ processes, Represented process := (derived_processes_data typed).2
 
-theorem derived_name_open {free : FreeSortContext} {bound : List String} {name : Pattern}
-    (typed : NameWellSorted rhoReflectivePresentation free bound name) :
+theorem derived_name_open {scope : QuoteScope} {free : FreeSortContext} {bound : List String} {name : Pattern}
+    (typed : NameWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound name) :
     OpenPatternWellSorted language (typeFree free) (typeBound bound) (.base "Name") name :=
   ⟨derived_name_typed typed, (derived_name_represented typed).1,
     (derived_name_represented typed).2, (derived_name_typed typed).isWellScopedAt⟩
 
-theorem derived_process_open {free : FreeSortContext} {bound : List String} {process : Pattern}
-    (typed : ProcWellSorted rhoReflectivePresentation free bound process) :
+theorem derived_process_open {scope : QuoteScope} {free : FreeSortContext} {bound : List String} {process : Pattern}
+    (typed : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound process) :
     OpenPatternWellSorted language (typeFree free) (typeBound bound) (.base "Proc") process :=
   ⟨derived_process_typed typed, (derived_process_represented typed).1,
     (derived_process_represented typed).2, (derived_process_typed typed).isWellScopedAt⟩

@@ -26,7 +26,7 @@ call, in this order) is not stated here.
   exactly the two rows of PeTTa's request for `(toss)`.
 * `Controls.declared_read` (negative): with `(: b Bool)` in the program, HE's cast of `b` reads that
   row and PeTTa's call region of `(f b)` leaves it out, so the hypothesis of no declarations is
-  needed (H3's absence guards).
+  needed (the none guards of `WholeRunWords.whole_run_guards`).
 -/
 
 set_option autoImplicit false
@@ -633,7 +633,8 @@ abbrev guardRows : List Atom :=
   [.expression [.symbol ":", sym "b", sym "Bool"], rule (app "f" [.var "x"]) (sym "yes")]
 
 /-- **Negative control: the hypothesis of no declarations is needed.** With `(: b Bool)` in the
-program, HE's cast of `b` reads that row (H3's absence guards), and PeTTa's call region of `(f b)`
+program, HE's cast of `b` reads that row (the none guards of `WholeRunWords.whole_run_guards`),
+and PeTTa's call region of `(f b)`
 leaves it out. -/
 theorem declared_read :
     ¬ NoDeclarations guardRows ∧

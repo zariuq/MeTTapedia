@@ -1,13 +1,13 @@
-import Mettapedia.OSLF.MeTTaIL.PatternCode
 import Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
+import Mettapedia.OSLF.MeTTaIL.ScopedPattern
 
 /-!
 # Canonical matching compiled from reflective presentation data
 
 `ReflectivePresentationDecl` already names the quote/drop equation, parallel
-collection, and parallel unit of a reflective calculus.  This module compiles
-that authored data into a canonical representative and uses it only for
-repeated metavariable checks in the declaration's selected rewrite rule.
+collection, and parallel unit of a reflective calculus. This module
+qualifies the shared canonicalizer and uses it for repeated metavariable
+checks in the declaration's selected rewrite rule.
 
 Languages and rules without a unique matching declaration continue to call
 the original structural matcher directly.
@@ -19,63 +19,6 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 open Mettapedia.OSLF.MeTTaIL.Reflection
-
-/-- Splice a normalized occurrence of the declared parallel collection into
-its parent parallel collection. -/
-def parallelSplice (declaration : ReflectivePresentationDecl) : Pattern → List Pattern
-  | pattern@(.collection collectionType elements none) =>
-      if collectionType == declaration.parallelCollection then elements else [pattern]
-  | pattern => [pattern]
-
-/-- Normalize an already-recursively-normalized parallel element list. -/
-def normalizeParallelElements
-    (declaration : ReflectivePresentationDecl) (patterns : List Pattern) : List Pattern :=
-  PatternCode.sortPatterns
-    ((patterns.flatMap (parallelSplice declaration)).filter fun pattern =>
-      pattern ≠ .apply declaration.parallelUnitConstructor [])
-
-/-- Rebuild the declared parallel composition without representation-only
-empty and singleton wrappers. -/
-def collapseParallel (declaration : ReflectivePresentationDecl) : List Pattern → Pattern
-  | [] => .apply declaration.parallelUnitConstructor []
-  | [pattern] => pattern
-  | patterns => .collection declaration.parallelCollection patterns none
-
-mutual
-  /-- Canonical representative compiled solely from a reflective declaration.
-
-  It recursively orients the declaration's quote/drop equation and presents
-  its parallel collection as a flattened, unit-free, structurally sorted bag.
-  No executable drop step is introduced. -/
-  def canonicalize
-      (declaration : ReflectivePresentationDecl) : Pattern → Pattern
-    | .bvar index => .bvar index
-    | .fvar name => .fvar name
-    | .apply constructor arguments =>
-        finishNormalizeReflectiveApply declaration constructor
-          (canonicalizeList declaration arguments)
-    | .lambda binderName body =>
-        .lambda binderName (canonicalize declaration body)
-    | .multiLambda arity binderNames body =>
-        .multiLambda arity binderNames (canonicalize declaration body)
-    | .subst body replacement =>
-        .subst (canonicalize declaration body) (canonicalize declaration replacement)
-    | .collection collectionType elements none =>
-        let normalizedElements := canonicalizeList declaration elements
-        if collectionType == declaration.parallelCollection then
-          collapseParallel declaration
-            (normalizeParallelElements declaration normalizedElements)
-        else
-          .collection collectionType normalizedElements none
-    | .collection collectionType elements rest =>
-        .collection collectionType (canonicalizeList declaration elements) rest
-
-  def canonicalizeList
-      (declaration : ReflectivePresentationDecl) : List Pattern → List Pattern
-    | [] => []
-    | pattern :: patterns =>
-        canonicalize declaration pattern :: canonicalizeList declaration patterns
-end
 
 /-! ## Generic normal-form invariant -/
 
@@ -587,6 +530,73 @@ theorem canonicalizeList_eq_map (declaration : ReflectivePresentationDecl)
   | nil => rfl
   | cons pattern patterns inductionHypothesis =>
       simp [canonicalizeList, inductionHypothesis]
+
+open ScopedPattern in
+/-- Static quote/drop cancellation cannot introduce a bound index. -/
+theorem finishNormalizeReflectiveApply_scoped
+    (declaration : ReflectivePresentationDecl) (constructor : String)
+    {arguments : List Pattern} {depth : Nat}
+    (safe : Pattern.isWellScopedListAt depth arguments = true) :
+    (finishNormalizeReflectiveApply declaration constructor arguments).isWellScopedAt
+      depth = true := by
+  unfold finishNormalizeReflectiveApply
+  split
+  · split
+    · split
+      · simpa [Pattern.isWellScopedAt, Pattern.isWellScopedListAt] using safe
+      · exact safe
+    · exact safe
+  · exact safe
+
+open ScopedPattern in
+/-- Recognizing a whole binder modulo the declaration's equations cannot
+invent an index, even on surface syntax not yet in sealed-quote form. -/
+theorem canonicalize_scoped (declaration : ReflectivePresentationDecl)
+    {pattern : Pattern} {depth : Nat} (safe : pattern.isWellScopedAt depth = true) :
+    (canonicalize declaration pattern).isWellScopedAt depth = true := by
+  induction pattern using Pattern.inductionOn generalizing depth with
+  | hbvar index => exact safe
+  | hfvar name => rfl
+  | happly constructor arguments ih =>
+      apply finishNormalizeReflectiveApply_scoped
+      rw [canonicalizeList_eq_map, isWellScopedListAt_eq_true_iff]
+      intro result member
+      obtain ⟨original, occurs, rfl⟩ := List.mem_map.mp member
+      exact ih original occurs ((isWellScopedListAt_eq_true_iff _ _).mp safe original occurs)
+  | hlambda binder body ih => exact ih safe
+  | hmultiLambda arity binders body ih => exact ih safe
+  | hsubst body replacement bodyIH replacementIH =>
+      simp only [canonicalize, Pattern.isWellScopedAt, Bool.and_eq_true] at safe ⊢
+      exact ⟨bodyIH safe.1, replacementIH safe.2⟩
+  | hcollection kind elements rest ih =>
+      have elementSafe : ∀ p ∈ canonicalizeList declaration elements,
+          p.isWellScopedAt depth = true := by
+        rw [canonicalizeList_eq_map]
+        intro result member
+        obtain ⟨original, occurs, rfl⟩ := List.mem_map.mp member
+        exact ih original occurs ((isWellScopedListAt_eq_true_iff _ _).mp safe original occurs)
+      have listSafe := (isWellScopedListAt_eq_true_iff _ _).mpr elementSafe
+      cases rest with
+      | some rest => exact listSafe
+      | none =>
+          simp only [canonicalize]
+          split
+          · have splicedSafe : ∀ p ∈ normalizeParallelElements declaration
+                (canonicalizeList declaration elements), p.isWellScopedAt depth = true := by
+              intro p member
+              obtain ⟨source, occurs, splice⟩ := normalizeParallelElements_mem_source member
+              rcases mem_parallelSplice splice with ⟨inner, rfl, inInner⟩ | ⟨rfl, _⟩
+              · exact (isWellScopedListAt_eq_true_iff _ _).mp (elementSafe _ occurs) p inInner
+              · exact elementSafe _ occurs
+            generalize shape : normalizeParallelElements declaration
+              (canonicalizeList declaration elements) = result at splicedSafe ⊢
+            cases result with
+            | nil => rfl
+            | cons first tail =>
+                cases tail with
+                | nil => exact splicedSafe first (by simp)
+                | cons second more => exact (isWellScopedListAt_eq_true_iff _ _).mpr splicedSafe
+          · exact listSafe
 
 /-! ## Free-variable support of reflective representatives -/
 
@@ -1157,26 +1167,15 @@ theorem canonicalize_parallel_flatten
       normalizeParallelElements_eq_of_perm declaration
         (List.perm_append_comm (l₁ := nested') (l₂ := leading'))
 
-/-- A validated reflective presentation cannot identify quote and drop: their
-unique declarations have opposite source and target sorts, while validation
-requires those sorts to be distinct. -/
+/-- A validated reflective presentation cannot identify quote and drop:
+validation checks that their constructor labels differ. -/
 theorem quoteConstructor_ne_dropConstructor_of_validate
     (language : LanguageDef) (declaration : ReflectivePresentationDecl)
     (valid : language.validateReflectivePresentation declaration = []) :
     declaration.quoteConstructor ≠ declaration.dropConstructor := by
   rcases LanguageDef.reflectivePresentationWitness_of_validate_eq_nil
       language declaration valid with ⟨witness⟩
-  intro sameConstructor
-  have sameTerm : witness.quote = witness.drop := by
-    have singletonEquality : [witness.quote] = [witness.drop] := by
-      rw [← witness.quoteUnique, ← witness.dropUnique, sameConstructor]
-    simpa using singletonEquality
-  apply witness.sortsDistinct
-  calc
-    declaration.processSort = witness.drop.category :=
-      witness.dropCategory.symm
-    _ = witness.quote.category := congrArg GrammarRule.category sameTerm.symm
-    _ = declaration.nameSort := witness.quoteCategory
+  exact witness.quoteDropDistinct
 
 /-- Boolean equality of representatives compiled from one declaration. -/
 def canonicalEquivalent
@@ -1282,5 +1281,181 @@ private def rhoProfile : ReflectionProfile :=
 -- It still rejects a genuinely distinct channel.
 #guard (matchPatternForRuleUsing rhoProfile rhoCommRewrite
   (commCandidate distinctChannel)).isEmpty
+
+/-! ## Whole-binder observation -/
+
+namespace BinderHead
+
+open ReflectiveSubstitution.BinderHead
+
+/-- Read the relevant head of a representative without performing another
+normalization. The only recursive position is the name under a drop. -/
+def read (declaration : ReflectivePresentationDecl) : Pattern → ReflectiveSubstitution.BinderHead
+  | .bvar level => .index level
+  | .apply constructor [] => rigid declaration constructor []
+  | .apply constructor [argument] => rigid declaration constructor [read declaration argument]
+  | _ => .opaque
+
+private theorem read_unit_iff (declaration : ReflectivePresentationDecl) (pattern : Pattern) :
+    read declaration pattern = .unit ↔
+      pattern = .apply declaration.parallelUnitConstructor [] := by
+  cases pattern <;> try simp [read]
+  case apply constructor arguments =>
+    cases arguments with
+    | nil => by_cases same : constructor = declaration.parallelUnitConstructor <;> simp [read, rigid, same]
+    | cons first rest =>
+      cases rest with
+      | nil => by_cases drop : constructor = declaration.dropConstructor <;> simp [read, rigid, drop]
+      | cons second more => simp [read]
+
+private theorem read_index_iff (declaration : ReflectivePresentationDecl) (pattern : Pattern) (index : Nat) :
+    read declaration pattern = .index index ↔ pattern = .bvar index := by
+  cases pattern <;> try simp [read]
+  case apply constructor arguments =>
+    cases arguments with
+    | nil => by_cases unit : constructor = declaration.parallelUnitConstructor <;> simp [read, rigid, unit]
+    | cons first rest =>
+      cases rest with
+      | nil => by_cases drop : constructor = declaration.dropConstructor <;> simp [read, rigid, drop]
+      | cons second more => simp [read]
+
+private theorem read_finish (declaration : ReflectivePresentationDecl)
+    (constructor : String) (arguments : List Pattern) :
+    read declaration (finishNormalizeReflectiveApply declaration constructor arguments) =
+      ReflectiveSubstitution.BinderHead.apply declaration constructor (arguments.map (read declaration)) := by
+  cases arguments with
+  | nil => simp [finishNormalizeReflectiveApply, read, ReflectiveSubstitution.BinderHead.apply]
+  | cons arg tail =>
+    cases tail with
+    | cons next rest =>
+      simp [finishNormalizeReflectiveApply, read, ReflectiveSubstitution.BinderHead.apply, rigid]
+    | nil =>
+      cases arg <;> try simp [finishNormalizeReflectiveApply, read, ReflectiveSubstitution.BinderHead.apply]
+      case apply inner args =>
+        cases args with
+        | nil =>
+          by_cases unit : inner = declaration.parallelUnitConstructor <;>
+            simp [read, rigid, unit]
+        | cons payload rest =>
+          cases rest with
+          | cons second more => simp [read]
+          | nil =>
+            by_cases drop : inner = declaration.dropConstructor <;>
+              by_cases quote : constructor = declaration.quoteConstructor <;>
+                simp [read, rigid, drop, quote]
+
+private def observeBag (declaration : ReflectivePresentationDecl) (patterns : List Pattern) :
+    ReflectiveSubstitution.BinderHead :=
+  (patterns.map (read declaration)).foldr join .unit
+
+private theorem observeBag_append (declaration : ReflectivePresentationDecl) (left right : List Pattern) :
+    observeBag declaration (left ++ right) =
+      join (observeBag declaration left) (observeBag declaration right) := by
+  simp only [observeBag, List.map_append, fold_append]
+
+private theorem observeBag_two (declaration : ReflectivePresentationDecl) {patterns : List Pattern}
+    (nonunit : ∀ pattern ∈ patterns, pattern ≠ .apply declaration.parallelUnitConstructor [])
+    (many : 2 ≤ patterns.length) :
+    observeBag declaration patterns = .opaque := by
+  obtain ⟨first, second, more, rfl⟩ : ∃ first second more, patterns = first :: second :: more := by
+    cases patterns with
+    | nil => simp at many
+    | cons first tail =>
+      cases tail with
+      | nil => simp at many
+      | cons second more => exact ⟨first, second, more, rfl⟩
+  have h₁ : read declaration first ≠ .unit := (read_unit_iff declaration first).not.mpr (nonunit _ (by simp))
+  have h₂ : read declaration second ≠ .unit := (read_unit_iff declaration second).not.mpr (nonunit _ (by simp))
+  simp only [observeBag, List.map_cons, List.foldr_cons, ← join_assoc, join_of_ne_unit h₁ h₂, opaque_join]
+
+private theorem read_collapseParallel (declaration : ReflectivePresentationDecl) {patterns : List Pattern}
+    (nonunit : ∀ pattern ∈ patterns, pattern ≠ .apply declaration.parallelUnitConstructor []) :
+    read declaration (collapseParallel declaration patterns) = observeBag declaration patterns := by
+  cases patterns with
+  | nil => simp [collapseParallel, read, rigid, observeBag]
+  | cons first tail =>
+    cases tail with
+    | nil => simp [collapseParallel, observeBag]
+    | cons second more =>
+      exact (observeBag_two declaration nonunit (by simp)).symm
+
+private theorem observeBag_filter (declaration : ReflectivePresentationDecl) (patterns : List Pattern) :
+    observeBag declaration (patterns.filter fun pattern => pattern ≠ .apply declaration.parallelUnitConstructor []) =
+      observeBag declaration patterns := by
+  induction patterns with
+  | nil => rfl
+  | cons first tail ih =>
+    by_cases unit : first = .apply declaration.parallelUnitConstructor []
+    · subst first
+      simpa [observeBag, read, rigid] using ih
+    · simpa [unit, observeBag] using congrArg (join (read declaration first)) ih
+
+private theorem observeBag_splice (declaration : ReflectivePresentationDecl)
+    {patterns : List Pattern} (canonical : IsCanonicalList declaration patterns) :
+    observeBag declaration (patterns.flatMap (parallelSplice declaration)) = observeBag declaration patterns := by
+  induction patterns with
+  | nil => rfl
+  | cons first tail ih =>
+    simp only [List.flatMap_cons, observeBag_append, ih canonical.2]
+    suffices head : observeBag declaration (parallelSplice declaration first) = read declaration first by
+      rw [head]
+      rfl
+    cases first with
+    | collection kind elements rest =>
+      cases rest with
+      | some rest => simp [parallelSplice, observeBag]
+      | none =>
+        by_cases parallel : kind = declaration.parallelCollection
+        · subst kind
+          have shape := canonical.1.2 ⟨rfl, rfl⟩
+          simpa only [parallelSplice, beq_self_eq_true, if_true, read] using
+            observeBag_two declaration (fun term member => (shape.2.2 term member).1) shape.1
+        · simp [parallelSplice, parallel, observeBag]
+    | _ => simp [parallelSplice, observeBag]
+
+private theorem observeBag_normalize (declaration : ReflectivePresentationDecl)
+    {patterns : List Pattern} (canonical : IsCanonicalList declaration patterns) :
+    observeBag declaration (normalizeParallelElements declaration patterns) = observeBag declaration patterns := by
+  unfold normalizeParallelElements
+  rw [show observeBag declaration (PatternCode.sortPatterns _) = observeBag declaration _ from
+    fold_perm ((sortPatterns_perm _).map (read declaration))]
+  rw [observeBag_filter, observeBag_splice declaration canonical]
+
+/-- Canonicalization and the unsorted head computation expose the same
+binding information, on the complete raw carrier. -/
+theorem read_canonicalize (declaration : ReflectivePresentationDecl) (term : Pattern) :
+    read declaration (canonicalize declaration term) = ofPattern declaration term := by
+  induction term using Pattern.inductionOn with
+  | hbvar index => rfl
+  | hfvar name => rfl
+  | happly constructor arguments ih =>
+    simp only [canonicalize, read_finish, ofPattern, canonicalizeList_eq_map, List.map_map, ofList_eq_map]
+    congr 1
+    exact List.map_congr_left ih
+  | hlambda name body ih => rfl
+  | hmultiLambda arity names body ih => rfl
+  | hsubst body replacement ihBody ihReplacement => rfl
+  | hcollection kind elements rest ih =>
+    cases rest with
+    | some rest => rfl
+    | none =>
+      by_cases parallel : kind = declaration.parallelCollection
+      · subst kind
+        simp only [canonicalize, beq_self_eq_true, if_true, ofPattern]
+        rw [read_collapseParallel declaration (fun _ member => normalizeParallelElements_no_unit member),
+          observeBag_normalize declaration (canonicalizeList_isCanonical declaration elements)]
+        simp only [observeBag, canonicalizeList_eq_map, List.map_map, ofList_eq_map]
+        congr 1
+        exact List.map_congr_left ih
+      · simp [canonicalize, ofPattern, parallel, read]
+
+/-- The unsorted observer is an exact decision for whole-name lookup,
+not an approximation to equality of arbitrary terms. -/
+theorem ofPattern_index_iff (declaration : ReflectivePresentationDecl) (term : Pattern) (index : Nat) :
+    ofPattern declaration term = .index index ↔ canonicalize declaration term = .bvar index := by
+  rw [← read_canonicalize]
+  exact read_index_iff _ _ _
+
+end BinderHead
 
 end Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical

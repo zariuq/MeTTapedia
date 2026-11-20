@@ -1,4 +1,5 @@
 import Mathlib.Data.List.Basic
+import Mathlib.Data.List.Forall2
 
 /-! Successful optional traversal preserves ordered input/output relations
 and every projection respected by each individual result.
@@ -28,6 +29,20 @@ theorem option_mapM_forall₂ {α : Type u} {β : Type v} (emit : α → Option 
           have same : head :: tail = outputs := by simpa [List.mapM_cons, firstRead, restRead] using read
           subst outputs
           exact .cons firstRead (ih tail restRead)
+
+/-- A successful traversal assigns each output to its input occurrence,
+including the shared out-of-bounds case. -/
+theorem option_mapM_getElem? {α : Type u} {β : Type v} (emit : α → Option β)
+    {inputs : List α} {outputs : List β} (read : inputs.mapM emit = some outputs) (i : Nat) :
+    inputs[i]?.bind emit = outputs[i]? := by
+  have graph := option_mapM_forall₂ emit inputs outputs read
+  by_cases source : i < inputs.length
+  · have target : i < outputs.length := graph.length_eq ▸ source
+    rw [List.getElem?_eq_getElem source, List.getElem?_eq_getElem target, Option.bind_some]
+    exact graph.get source target
+  · have sourceEnd := Nat.le_of_not_gt source
+    have targetEnd : outputs.length ≤ i := graph.length_eq ▸ sourceEnd
+    simp [List.getElem?_eq_none sourceEnd, List.getElem?_eq_none targetEnd]
 
 theorem option_mapM_input {α : Type u} {β : Type v} (emit : α → Option β) (inputs : List α)
     {outputs : List β} (read : inputs.mapM emit = some outputs) (input : α) (member : input ∈ inputs) :
@@ -77,6 +92,7 @@ theorem option_mapM_exists {α : Type u} {β : Type v} (emit : α → Option β)
       exact ⟨head :: tail, by simp [List.mapM_cons, computed, remaining]⟩
 
 #print axioms option_mapM_forall₂
+#print axioms option_mapM_getElem?
 #print axioms option_mapM_input
 #print axioms option_mapM_origin
 #print axioms option_mapM_projection

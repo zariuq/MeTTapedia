@@ -201,7 +201,7 @@ depend on a store only through its solutions. -/
 def Decision.ofEquivalent {Δ : Context rules} {I J : EquationStore (TotalTerm Δ)}
     (same : (frames levels).Equivalent I J) : Decision levels J → Decision levels I
   | .settled M σ initial => .settled M σ ((initialSolution_congr levels same σ).mpr initial)
-  | .refuted absent => .refuted fun ⟨b, f, solved⟩ => absent ⟨b, f, (same b f).mp solved⟩
+  | .refuted missing => .refuted fun ⟨b, f, solved⟩ => missing ⟨b, f, (same b f).mp solved⟩
   | .undecided => .undecided
 
 theorem Decision.ofEquivalent_decisive {Δ : Context rules} {I J : EquationStore (TotalTerm Δ)}

@@ -203,7 +203,7 @@ theorem renamed_valid_of {label : O → Atom} {rows : List O} {s : Store}
         fixed _ o (real.read_present o member)]
   · -- checks: a solution of everything is, untagged, a solution of the firing's equations
     intro check member ρ models
-    change check ∈ (absents.map Check.absent).map (Check.map (rename n)) at member
+    change check ∈ (absents.map (Check.predicate .none)).map (Check.map (rename n)) at member
     obtain ⟨plainCheck, inChecks, rfl⟩ := List.mem_map.mp member
     obtain ⟨p, inside, rfl⟩ := List.mem_map.mp inChecks
     have parts : atomAction.Models ρ

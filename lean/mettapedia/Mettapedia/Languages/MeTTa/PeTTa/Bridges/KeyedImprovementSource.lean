@@ -92,8 +92,10 @@ def write (before : Effects.State) (target : Handle) (head : String) (key candid
       pure (after, [number key])
   | some previous => if candidate < previous then do
       let middle ← Effects.erase before target (row head (number key) (number previous))
-      let after ← Effects.insert middle target (row head (number key) (number candidate))
-      pure (after, [number key])
+      if Effects.erasureChanged before middle target then
+        let after ← Effects.insert middle target (row head (number key) (number candidate))
+        pure (after, [number key])
+      else none
     else some (before, [])
 
 def run (names : Names) (head : String) (target : Handle) (key candidate : Nat)
@@ -127,37 +129,24 @@ theorem query_returns (names : Names) (head : String) (program : Program) (calle
   simpa only [query, values, ← List.map_eq_flatMap] using returned
 
 theorem remove_returns (program : Program) (caller : Subst) (before after : Effects.State)
-    (space : String) (pattern : Atom) (target : Handle) (fields : List Atom)
+    (space : String) (pattern : Atom) (target : Handle)
     (location : Subst.lookup caller space = some (Effects.handleValue target))
-    (rendered : applySubst caller pattern = .expression fields) (nonempty : fields ≠ [])
-    (erased : Effects.erase before target (.expression fields) = some after) :
+    (specified : Effects.removalNeedsValue (applySubst caller pattern) = false)
+    (erased : Effects.erase before target (applySubst caller pattern) = some after) :
     PureReturns program caller before (.expression [.symbol "remove-atom", .var space, pattern])
-      after (Effects.boolean true) := by
-  obtain ⟨rows, snapshot, _⟩ := Effects.erase_reads_back erased
+      after (Effects.boolean (Effects.erasureChanged before after target)) := by
+  let reply := Effects.boolean (Effects.erasureChanged before after target)
   have applied : StdLib.apply before "remove-atom" [Effects.handleValue target, applySubst caller pattern] =
-      .ok (after, [Effects.boolean true]) := by
-    cases fields with
-    | nil => contradiction
-    | cons first rest =>
-        change (match Effects.readHandle (Effects.handleValue target) with
-          | none => Except.error Effects.Fault.invalidSpace
-          | some handle => match before.read handle with
-            | none => Except.error Effects.Fault.invalidSpace
-            | some _ => match applySubst caller pattern with
-              | .var _ => Except.ok (before, [Effects.boolean true])
-              | .expression (_ :: _) => match Effects.erase before handle (applySubst caller pattern) with
-                | some result => Except.ok (result, [Effects.boolean true])
-                | none => Except.error Effects.Fault.invalidSpace
-              | _ => Except.ok (before, [])) = _
-        simp [rendered, snapshot, erased]
+      .ok (after, [reply]) :=
+    StdLib.remove_atom_applies_of_erased specified erased
   have native := native_function_arguments_return program caller before after "remove-atom"
-    [Effects.handleValue target, applySubst caller pattern] 2 (Effects.boolean true) (by decide) (by decide) applied
+    [Effects.handleValue target, applySubst caller pattern] 2 reply (by decide) (by decide) applied
   have raw := raw_argument_answers program caller before after "remove-atom" pattern []
-    [Effects.handleValue target] 1 [Effects.boolean true]
+    [Effects.handleValue target] 1 [reply]
     (by simp [argumentIsRaw, StdLib.known, StdLib.rawArgument]) native
   have arguments := variable_prefix_arguments_answers program caller before after (.function "remove-atom")
-    [space] [pattern] [] 0 [Effects.boolean true] (by simpa [applySubst, location] using raw)
-  exact call_returns program caller before after "remove-atom" [.var space, pattern] (Effects.boolean true)
+    [space] [pattern] [] 0 [reply] (by simpa [applySubst, location] using raw)
+  exact call_returns program caller before after "remove-atom" [.var space, pattern] reply
     (by simp [StdLib.known]) arguments (by decide)
 
 theorem comparison_returns (names : Names) (program : Program) (caller : Subst) (state : Effects.State)
@@ -205,7 +194,7 @@ theorem insert_body_returns (names : Names) (head : String) (program : Program) 
     (written : Effects.insert before target (row head (number key) (number candidate)) = some after) :
     PureReturns program caller before (insertBody names head) after (number key) := by
   have inserted := FreshConstructorSource.insert_returns program caller before after names.space
-    (row head (.var names.vertex) (.var names.candidate)) target location
+    (row head (.var names.vertex) (.var names.candidate)) target location rfl
     (by simpa only [render_row caller head names.vertex names.candidate key candidate keyRead candidateRead] using written)
   exact let_returns program caller bound before after after (.var names.discard) _ (.var names.vertex) _ _ inserted matched
     (by simpa [applySubst, resultRead] using variable_returns program bound after names.vertex)
@@ -221,11 +210,17 @@ theorem replace_body_returns (names : Names) (head : String) (program : Program)
     (markedCandidate : Subst.lookup marked names.candidate = some (number candidate))
     (markedDiscard : Subst.lookup marked names.discard = some (Effects.boolean true))
     (erased : Effects.erase before target (row head (number key) (number previous)) = some middle)
+    (changed : Effects.erasureChanged before middle target = true)
     (written : Effects.insert middle target (row head (number key) (number candidate)) = some after) :
     PureReturns program caller before (replaceBody names head) after (number key) := by
+  have rendered := render_row caller head names.vertex names.previous key previous keyRead previousRead
   have removed := remove_returns program caller before middle names.space
-    (row head (.var names.vertex) (.var names.previous)) target _ location
-    (render_row caller head names.vertex names.previous key previous keyRead previousRead) (by simp) erased
+    (row head (.var names.vertex) (.var names.previous)) target location
+    (by
+      rw [rendered]
+      unfold row number Effects.removalNeedsValue
+      split <;> simp_all) (by simpa only [rendered] using erased)
+  rw [changed] at removed
   have inserted := insert_body_returns names head program marked marked target key candidate middle after
     markedLocation markedKey markedCandidate
     (by simp [matchBinding, matchValue, Mettapedia.Languages.ProcessCalculi.MORK.matchAtom, markedDiscard]) markedKey written
@@ -289,14 +284,17 @@ theorem write_returns (names : Names) (head : String) (program : Program) (targe
         by_cases better : candidate < previous
         · rw [write, if_pos better] at completed
           obtain ⟨middle, erased, tail⟩ := Option.bind_eq_some_iff.mp completed
-          obtain ⟨result, written, same⟩ := Option.bind_eq_some_iff.mp tail
-          obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Option.some.inj same)
-          apply if_answers program _ before before result _ (Effects.boolean true) _ _ _ (by simpa [better] using compare)
-          simp only [beq_self_eq_true, ↓reduceIte]
-          apply replace_body_returns names head program _ ((names.discard, Effects.boolean true) :: held names target key candidate previous)
-            target key candidate previous before middle result
-          all_goals simp_all [held, collected, bindings, Subst.lookup, matchBinding, matchValue,
-            Mettapedia.Languages.ProcessCalculi.MORK.matchAtom]
+          split at tail
+          next changed =>
+            obtain ⟨result, written, same⟩ := Option.bind_eq_some_iff.mp tail
+            obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Option.some.inj same)
+            apply if_answers program _ before before result _ (Effects.boolean true) _ _ _ (by simpa [better] using compare)
+            simp only [beq_self_eq_true, ↓reduceIte]
+            apply replace_body_returns names head program _ ((names.discard, Effects.boolean true) :: held names target key candidate previous)
+              target key candidate previous before middle result
+            all_goals simp_all [held, collected, bindings, Subst.lookup, matchBinding, matchValue,
+              Mettapedia.Languages.ProcessCalculi.MORK.matchAtom]
+          next => cases tail
         · have same : (before, []) = (after, answers) := Option.some.inj (by simpa only [write, if_neg better] using completed)
           obtain ⟨rfl, rfl⟩ := Prod.mk.inj same
           apply if_answers program _ before before before _ (Effects.boolean false) _ _ _ (by simpa [better] using compare)
@@ -354,6 +352,7 @@ theorem write_observation (before after : Effects.State) (target : Handle) (head
       by_cases better : candidate < previous
       · rw [write, if_pos better] at completed
         obtain ⟨middle, erased, tail⟩ := Option.bind_eq_some_iff.mp completed
+        split at tail <;> try contradiction
         obtain ⟨result, written, same⟩ := Option.bind_eq_some_iff.mp tail
         obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Option.some.inj same)
         have literal : Literal (row head (number key) (number previous)) := by

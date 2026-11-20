@@ -153,7 +153,7 @@ theorem absent_check_holds {label : O → Atom} {rows : List O} {s : Store}
     (rep : Represents label rows s) (ground : ∀ a ∈ s, isGroundAtom a = true)
     {σ : Subst} {p : Atom} (none : matchesIn s σ p = [])
     {ρ : Mettapedia.Languages.MeTTa.SubstitutionAlgebra.Subst} (agrees : Agrees ρ σ) :
-    (Check.absent p).Holds atomAction ρ label rows.toFinset := by
+    (Check.predicate .none p).Holds atomAction ρ label rows.toFinset := by
   intro o present equal
   have stored : label o ∈ s := by
     rw [← rep.labels]
@@ -178,7 +178,7 @@ def absentsOf (ps : List Atom) : List Conj := ps.map fun p => .absent (.one p)
 
 /-- The rule instance of a kernel of reads and takes guarded by absences. -/
 def guardedRule (pats : Footprint) (absents : List Atom) : RuleInstance Atom :=
-  ⟨takes pats, reads pats, [], absents.map Check.absent, []⟩
+  ⟨takes pats, reads pats, [], absents.map (Check.predicate .none), []⟩
 
 /-- The rows of a list of absences: the bindings as they are and no footprint, when every
 absence holds; none otherwise. -/

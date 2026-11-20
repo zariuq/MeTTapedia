@@ -175,34 +175,34 @@ structure WF (t : Raw σ) : Prop where
   root : t [] ≠ none
   shaped : Shaped t
 
-/-- Below an absent node nothing is present. -/
-theorem Shaped.none_append {t : Raw σ} (shaped : Shaped t) {p : List ℕ} (absent : t p = none) :
+/-- Below a missing node nothing is present. -/
+theorem Shaped.none_append {t : Raw σ} (shaped : Shaped t) {p : List ℕ} (missing : t p = none) :
     ∀ q, t (p ++ q) = none := by
   intro q
   induction q generalizing p with
-  | nil => simpa using absent
+  | nil => simpa using missing
   | cons j q ih =>
     have next : t (p ++ [j]) = none := by
       by_contra present
       obtain ⟨h, found, _⟩ := (shaped p j).mp present
-      rw [absent] at found
+      rw [missing] at found
       cases found
     simpa [List.append_assoc] using ih next
 
 theorem WF.root_some {t : Raw σ} (w : WF t) : ∃ h, t [] = some h :=
   Option.ne_none_iff_exists'.mp w.root
 
-/-- Children beyond the root's arity are absent. -/
+/-- Children beyond the root's arity are not present. -/
 theorem WF.child_eq_bot {t : Raw σ} (w : WF t) {h : Head σ} (root : t [] = some h) {i : ℕ}
     (outside : h.arity ≤ i) : child i t = bot := by
-  have absent : t [i] = none := by
+  have missing : t [i] = none := by
     by_contra present
     obtain ⟨h', found, small⟩ := (w.shaped [] i).mp present
     rw [root] at found
     cases found
     omega
   funext q
-  exact w.shaped.none_append (p := [i]) absent q
+  exact w.shaped.none_append (p := [i]) missing q
 
 /-- Children below the root's arity are well formed. -/
 theorem WF.child_wf {t : Raw σ} (w : WF t) {h : Head σ} (root : t [] = some h) {i : ℕ}

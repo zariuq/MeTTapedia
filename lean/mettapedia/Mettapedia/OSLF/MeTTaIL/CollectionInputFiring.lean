@@ -23,6 +23,7 @@ theorem Interpreted.RootFiring.replay_collection_inputs {environment : Environme
     (fired : GeneralPremise.RootFiring environment bound type source index trace captured completed history target)
     (selected : environment.language.rewrites[index]? = some rule)
     (specified : specification? environment index = some spec)
+    (binderOk : BinderLawsFor [] environment.reflection rule)
     (finite : environment.provider.dynamicRelations = [])
     (rows : CanonicalProviderRows environment.provider)
     (guarded : CollectionInputGuards environment.provider ⟨index, rule, spec, bound, 0, 0⟩ rule.premises)
@@ -40,7 +41,7 @@ theorem Interpreted.RootFiring.replay_collection_inputs {environment : Environme
     cases specSame
     obtain ⟨target', reduced', sameTarget⟩ := instantiateWith?_same rule spec bound.length
       (ScopedReflectiveExecution.binderOperation environment.reflection rule)
-      (binderOperation_same _ rule) rule.right .right [] 0 completed (canonAssignment completed)
+      (binderOperation_same _ rule binderOk) rule.right .right [] 0 completed (canonAssignment completed)
       target (assignSame_canon completed) reduced
     refine ⟨target', ?_, sameTarget⟩
     exact .fire selected specified admitted
@@ -72,6 +73,7 @@ theorem Interpreted.RootFiring.replay_canonical_queries {environment : Environme
     (fired : GeneralPremise.RootFiring environment bound type source index trace captured completed history target)
     (selected : environment.language.rewrites[index]? = some rule)
     (specified : specification? environment index = some spec)
+    (binderOk : BinderLawsFor [] environment.reflection rule)
     (increasing : IncreasingSpines rule spec)
     (finite : environment.provider.dynamicRelations = [])
     (rows : CanonicalProviderRows environment.provider)
@@ -90,7 +92,7 @@ theorem Interpreted.RootFiring.replay_canonical_queries {environment : Environme
     cases specSame
     obtain ⟨target', reduced', sameTarget⟩ := instantiateWith?_same rule spec bound.length
       (ScopedReflectiveExecution.binderOperation environment.reflection rule)
-      (binderOperation_same _ rule) rule.right .right [] 0 completed (canonAssignment completed)
+      (binderOperation_same _ rule binderOk) rule.right .right [] 0 completed (canonAssignment completed)
       target (assignSame_canon completed) reduced
     refine ⟨target', ?_, sameTarget⟩
     exact .fire selected specified admitted

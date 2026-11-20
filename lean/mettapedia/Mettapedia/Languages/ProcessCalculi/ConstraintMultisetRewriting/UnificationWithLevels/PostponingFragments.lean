@@ -167,7 +167,7 @@ theorem outcome {Γ : Context rules} {original : EquationStore (TotalTerm Γ)} (
       run solver original larger = run solver original fuel ∧
       ((∃ state finished, run solver original larger = .solved state finished ∧
           (frames levels).Principal original state.answer) ∨
-        (∃ absent, run solver original larger = .refuted absent) ∨
+        (∃ missing, run solver original larger = .refuted missing) ∨
         (∃ state, run solver original larger = .stuck state ∧ state.remaining ≠ [] ∧
           Exact (frames levels) original state.answer state.remaining ∧ NoPrincipal levels state.remaining)) := by
   obtain ⟨fuel, finished, stuck⟩ := fragment.ends (Update.pending levels original) inside
@@ -178,7 +178,7 @@ theorem outcome {Γ : Context rules} {original : EquationStore (TotalTerm Γ)} (
   rw [same]
   cases result : drive solver fuel (Update.pending levels original) with
   | solved state finished => exact .inl ⟨state, finished, rfl, state.completed finished⟩
-  | refuted absent => exact .inr (.inl ⟨absent, rfl⟩)
+  | refuted missing => exact .inr (.inl ⟨missing, rfl⟩)
   | stuck state =>
       obtain ⟨nonempty, none⟩ := stuck state result
       exact .inr (.inr ⟨state, rfl, nonempty, update_exact state, none⟩)
@@ -203,9 +203,9 @@ theorem cross_run_postponed
     fun answer => fragment_without_principal_answer.2.2 answer
   obtain ⟨fuel, ends⟩ := (noPrincipal solver).outcome none
   refine ⟨fuel, fun larger enough => ⟨(ends larger enough).1, ?_⟩⟩
-  rcases (ends larger enough).2 with ⟨state, _, _, principal⟩ | ⟨absent, _⟩ | stuck
+  rcases (ends larger enough).2 with ⟨state, _, _, principal⟩ | ⟨missing, _⟩ | stuck
   · exact absurd principal (none state.answer)
-  · exact absurd fragment_without_principal_answer.2.1 absent
+  · exact absurd fragment_without_principal_answer.2.1 missing
   · exact stuck
 
 end DependentFibre

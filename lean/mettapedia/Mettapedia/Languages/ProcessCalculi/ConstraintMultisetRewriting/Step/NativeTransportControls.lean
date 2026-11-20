@@ -10,7 +10,7 @@ region with the sightings (`Interface.renameQuery`).
 * **A query that reads an identity** (`marker`, selecting the occurrence `0`) holds at `{0}`
   (`marker_holds`), and its native renaming holds at the renamed world (`renamed_marker_holds`).
 * **Renaming only the sightings breaks it** (`sightings_only_fails`): the first-order renaming
-  (`AnnotatedRuns.renameQuery`) keeps the region and renames the sightings, which is sound for the
+  (`PredicateQueryAdmission.RegionQuery.rename`) keeps the region and renames the sightings, which is sound for the
   first-order step, whose labels carry no identities, and unsound for native labels.
 -/
 
@@ -35,8 +35,11 @@ theorem renamed_marker_holds :
 
 /-- **Renaming only the sightings breaks the query.** -/
 theorem sightings_only_fails :
-    ¬ ((AnnotatedRuns.renameQuery swap marker).atSolution ()).Holds (fun o => (o, ()))
+    ¬ (marker.toRegion.rename swap).Holds () (fun o => (o, ()))
       (({0} : Finset ℕ).map swap.toEmbedding) := by
+  simp [PredicateQueryAdmission.RegionQuery.Holds,PredicateQueryAdmission.RegionQuery.rename,
+    PredicateQueryAdmission.Query.toRegion,PredicateQueryAdmission.RegionQuery.exact,
+    marker,swap,MeTTaCalculus.OccurrenceCommits.regionOf]
   decide
 
 #print axioms marker_holds

@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.RegionQueryAdapters
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationRuleGrammar
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Reindex
 
@@ -28,7 +29,7 @@ def step (label : Nat → Term) :=
 theorem admits_iff (label : Nat → Term) (rule : RuleInstance Term) (selection : Selection Nat)
     (before : State) : (step label).Admits (s := before) (rule, selection) ↔
       selection.Valid BindingTrees.action label rule before :=
-  PredicateQueryAdmission.valid_empty_iff BindingTrees.action label rule before selection
+  Interface.RegionQueryAdapters.valid_empty_iff BindingTrees.action label rule before selection
 
 theorem result_eq (label : Nat → Term) (rule : RuleInstance Term) (selection : Selection Nat)
     (before : State) (permitted : (step label).Admits (s := before) (rule, selection)) :
@@ -118,7 +119,7 @@ theorem occurrence_effect_is_nontrivial : before.present = {0} ∧ after.present
   simp [before, after, Selection.result, selection, Selection.commit,
     MeTTaCalculus.OccurrenceCommits.fire]
 
-def refusedRule : RuleInstance Term := { rule with checks := [.absent (label 0)] }
+def refusedRule : RuleInstance Term := { rule with checks := [.predicate .none (label 0)] }
 
 theorem refused_rule_prepares : (step label).Prepares (s := before) (refusedRule, selection) := by
   change (step label).Prepares (s := before) (rule, selection)
@@ -128,8 +129,8 @@ theorem refused_rule_not_admitted : ¬ (step label).Admits (s := before) (refuse
   intro permitted
   have accepted := (admits_iff label refusedRule selection before).mp permitted
   obtain ⟨substitution, solved⟩ := accepted.consistent
-  have absent := accepted.checks (.absent (label 0)) (List.mem_singleton_self _) substitution solved
-  exact absent 0 (by simp [before]) rfl
+  have missing := accepted.checks (.predicate .none (label 0)) (List.mem_singleton_self _) substitution solved
+  exact missing 0 (by simp [before]) rfl
 
 theorem no_encoded_guard_bypass (target : State) :
     ¬ Executes label (rulePattern refusedRule) (selectionPattern selection)

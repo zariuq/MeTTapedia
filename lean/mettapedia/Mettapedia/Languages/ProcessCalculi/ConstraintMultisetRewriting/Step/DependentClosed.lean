@@ -194,8 +194,8 @@ theorem closedAdmits_iff {s : State rules O} (f : Firing s) :
     have holds : (frames rules).Models (extendSolution f c' ≫ projectionHom s.frame f.helper) f.guards :=
       asked (extendSolution f c') (extendSolution_models f c' solved')
     rwa [extendSolution_restrict] at holds
-  · rintro ⟨⟨c, solved⟩, absent, asked⟩
-    exact ⟨List.nodup_singleton _, (enabled_iff f).mpr absent,
+  · rintro ⟨⟨c, solved⟩, missing, asked⟩
+    exact ⟨List.nodup_singleton _, (enabled_iff f).mpr missing,
       ⟨extendSolution f c, extendSolution_models f c solved⟩,
       fun c' solved' => asked _ (restrict_models f c' solved')⟩
 
@@ -208,8 +208,8 @@ theorem closedAdmits_iff_admits {s : State rules O} (f : Firing s) (guardFree : 
     (helperStep (rules := rules) (O := O)).toStep.ClosedAdmits (empty rules) f ↔ (helperStep (rules := rules)).Admits f := by
   rw [closedAdmits_iff, admits_iff, guardFree,
     Frames.closedSolvable_iff_of_principal (X := frames rules) principal inhabited]
-  exact ⟨fun ⟨solvable, absent, _⟩ => ⟨solvable, absent, fun _ _ _ => Frames.models_nil _⟩,
-    fun ⟨solvable, absent, _⟩ => ⟨solvable, absent, fun _ _ => Frames.models_nil _⟩⟩
+  exact ⟨fun ⟨solvable, missing, _⟩ => ⟨solvable, missing, fun _ _ _ => Frames.models_nil _⟩,
+    fun ⟨solvable, missing, _⟩ => ⟨solvable, missing, fun _ _ => Frames.models_nil _⟩⟩
 
 /-- **The trap at the helper step**: at an obligation `x : A` of a type with no closed term, every
 helper firing with a fresh occurrence and no guards is admitted, and none is closed-admitted. -/

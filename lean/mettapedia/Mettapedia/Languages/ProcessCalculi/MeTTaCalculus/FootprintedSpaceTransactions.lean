@@ -55,11 +55,11 @@ Positive: removing and adding one atom of a space are local rules, and they are
 exactly the located consume step and the addition of a one-atom delta
 (`SpaceRules.removeAtom_fires_iff`, `SpaceRules.addAtom_fires_iff`).
 
-Negative: a guard that asks for the *absence* of an atom elsewhere reads that
+Negative: a guard that asks for the *none queries* of an atom elsewhere reads that
 location.  Without declaring the read there is no certificate
 (`SpaceRules.addUnless_needs_its_read`), and with two instances whose written
 locations and matches are disjoint the diamond fails
-(`SpaceRules.absence_guard_breaks_diamond`).  A test that the whole bag is empty
+(`SpaceRules.none_guard_breaks_diamond`).  A test that the whole bag is empty
 reads every location, and over an infinite alphabet it has no finite footprint
 at all (`emptinessTest_not_effectFootprinted`).
 
@@ -1182,7 +1182,7 @@ other computation of the result are already done in `produced`; anything the
 firing changes — including an allocator, a counter or an index kept in the
 state — is part of `consumed` and `produced`, which vanish outside `writes`.
 Every other condition on firing — a side condition of matching, a lookup modulo
-equations, a freshness or absence check, the answer of an external service — is
+equations, a freshness or none check, the answer of an external service — is
 `guard`, which sees nothing outside `reads ∪ writes`.  A condition that cannot
 be put in this form (one that reads the whole state, say) makes the rule
 non-local, and then it has no instance of this structure. -/
@@ -1385,11 +1385,11 @@ theorem addAtom_removeAtom_independent {location location' : Location}
 
 /-- Add `atom` at `location` unless `absent` occurs at `watched`.  The guard
 reads `watched`, and declares it. -/
-def addUnless (location watched : Location) (atom absent : Atom) :
+def addUnless (location watched : Location) (atom missing : Atom) :
     LocalRule Location (Multiset Atom) where
   consumed := 0
   produced := Pi.single location {atom}
-  guard state := absent ∉ state watched
+  guard state := missing ∉ state watched
   reads := {watched}
   writes := {location}
   consumed_outside _ _ := rfl
@@ -1399,35 +1399,35 @@ def addUnless (location watched : Location) (atom absent : Atom) :
   guard_local agrees holds := by
     rwa [← agrees _ (Finset.mem_union_left _ (Finset.mem_singleton_self _))]
 
-/-- **The read of an absence guard is load-bearing.**  Certified with the
+/-- **The read of a none guard is load-bearing.**  Certified with the
 written location only, the rule has no certificate: a surrounding change at the
 watched location disables it. -/
 theorem addUnless_needs_its_read {location watched : Location}
-    (different : watched ≠ location) (atom absent : Atom) :
-    ¬ EffectFootprinted (addUnless location watched atom absent).Fires ∅ {location} := by
+    (different : watched ≠ location) (atom missing : Atom) :
+    ¬ EffectFootprinted (addUnless location watched atom missing).Fires ∅ {location} := by
   intro certified
-  have fires : (addUnless location watched atom absent).Fires 0 (Pi.single location {atom}) :=
+  have fires : (addUnless location watched atom missing).Fires 0 (Pi.single location {atom}) :=
     ⟨by simp [addUnless], 0, fun _ => trivial, fun _ => trivial, by simp [addUnless],
       by simp [addUnless]⟩
   obtain ⟨_, ⟨guarded, -⟩, -, -⟩ :=
-    certified.frame fires (Pi.single watched {absent}) (by
+    certified.frame fires (Pi.single watched {missing}) (by
       intro other inside
       have same : other = location := by simpa using inside
       subst same
       simp [Ne.symm different])
   simp [addUnless] at guarded
 
-/-- **An absence guard breaks the diamond** even when the written locations and
+/-- **A none guard breaks the diamond** even when the written locations and
 the matches of the two instances are disjoint: adding `absent` at the watched
 location disables the guarded addition. -/
-theorem absence_guard_breaks_diamond {location watched : Location}
-    (different : watched ≠ location) (atom absent : Atom) :
-    Disjoint (addUnless location watched atom absent).writes (addAtom watched absent).writes ∧
-      (addUnless location watched atom absent).Fires 0 (Pi.single location {atom}) ∧
-      (addAtom watched absent).Fires 0 (Pi.single watched {absent}) ∧
+theorem none_guard_breaks_diamond {location watched : Location}
+    (different : watched ≠ location) (atom missing : Atom) :
+    Disjoint (addUnless location watched atom missing).writes (addAtom watched missing).writes ∧
+      (addUnless location watched atom missing).Fires 0 (Pi.single location {atom}) ∧
+      (addAtom watched missing).Fires 0 (Pi.single watched {missing}) ∧
       ¬ ∃ joined,
-        (addAtom watched absent).Fires (Pi.single location {atom}) joined ∧
-          (addUnless location watched atom absent).Fires (Pi.single watched {absent}) joined := by
+        (addAtom watched missing).Fires (Pi.single location {atom}) joined ∧
+          (addUnless location watched atom missing).Fires (Pi.single watched {missing}) joined := by
   refine ⟨?_, ⟨by simp [addUnless], 0, fun _ => trivial, fun _ => trivial,
       by simp [addUnless], by simp [addUnless]⟩, (addAtom_fires_iff _ _ _ _).mpr (by simp), ?_⟩
   · simpa [addUnless, addAtom, LocalRule.unguarded] using different.symm
@@ -1435,10 +1435,10 @@ theorem absence_guard_breaks_diamond {location watched : Location}
     simp [addUnless] at guarded
 
 /-- And the certificates see it: the two instances are not independent. -/
-theorem absence_guard_not_independent {location watched : Location} (atom absent : Atom) :
-    ¬ IndependentEffects (addUnless location watched atom absent).reads
-      (addUnless location watched atom absent).writes
-      (addAtom watched absent).reads (addAtom watched absent).writes := by
+theorem none_guard_not_independent {location watched : Location} (atom missing : Atom) :
+    ¬ IndependentEffects (addUnless location watched atom missing).reads
+      (addUnless location watched atom missing).writes
+      (addAtom watched missing).reads (addAtom watched missing).writes := by
   simp [IndependentEffects, addUnless, addAtom, LocalRule.unguarded]
 
 end SpaceRules
@@ -1619,7 +1619,7 @@ end Marking
 #print axioms SpaceRules.removeAtom_fires_iff
 #print axioms SpaceRules.addAtom_fires_iff
 #print axioms SpaceRules.addUnless_needs_its_read
-#print axioms SpaceRules.absence_guard_breaks_diamond
+#print axioms SpaceRules.none_guard_breaks_diamond
 #print axioms emptinessTest_not_effectFootprinted
 #print axioms bagRule_iff_fires
 #print axioms exists_marking_of_fires

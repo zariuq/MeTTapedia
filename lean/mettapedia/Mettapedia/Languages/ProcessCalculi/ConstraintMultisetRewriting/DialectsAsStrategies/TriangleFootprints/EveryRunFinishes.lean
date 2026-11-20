@@ -1062,6 +1062,7 @@ theorem every_run_finishes_k (policy : Policy) {atoms : List Atom} (program : Ca
         (Streaming.enter { state := store atoms } c)) = L := by
   have fine := fine_entry (policy := policy) raw_answers raw_contract program settles
   obtain ⟨_, N, every⟩ := every_complete_run_k policy program settles
+  have determined := (CompoundBindings.settlesK_determined (policy := policy) program settles).plain
   refine ⟨fine.acc, fun y path => ?_, N, fun n bigger => (every n bigger).1⟩
   rcases (fine.reaches path).progress with moves | ⟨space, emitted, rfl⟩
   · exact Or.inl moves
@@ -1069,7 +1070,7 @@ theorem every_run_finishes_k (policy : Policy) {atoms : List Atom} (program : Ca
     simp only [load, Mettapedia.Languages.MeTTa.HE.RecursiveTasks.Contextual.Configuration.initial]
       at sameSpace
     subst sameSpace
-    exact Or.inr ⟨emitted, rfl, (every N le_rfl).2 emitted path⟩
+    exact Or.inr ⟨emitted, rfl, determined _ _ _ _ (complete_source path)⟩
 
 /-- **A cycle defeats well-foundedness**: if every configuration satisfying `P` reaches another one
 in at least one step, then no configuration from which the step relation is well founded reaches a
@@ -1111,18 +1112,18 @@ theorem add_every_run_finishes (policy : Policy) :
   obtain ⟨acc, every, _⟩ := every_run_finishes_k policy peano_program add_ssz_sz
   exact ⟨acc, every⟩
 
-/-- **Negative control: a stuck configuration is not `Fine`.** On HE's contextual machine with the
-integer dispatch, the host call `(+ 4 4)` has no step and is not final. -/
+/-- **Negative control: a stuck configuration is not `Fine`.** On HE's contextual machine with HE's
+table, the host call `(+ 4 4)` has no step and is not final. -/
 theorem host_call_not_fine {lookup : CastLookup} {policy : Policy} (space : Space)
     (live : List Atom) (scope : List String) (expected : Atom) (activation : Frame)
     (stack : List Continuation) (emitted : List Result) :
-    ¬ Fine GroundedTables.heDispatch lookup policy ⟨space,
+    ¬ Fine GroundedTables.measuredTable.dispatch lookup policy ⟨space,
       .work (.call live scope (callValue "+" [GroundedTables.num 4, GroundedTables.num 4]) expected
         activation), stack, emitted⟩ := by
   intro fine
   rcases fine.progress with moves | ⟨_, _, same⟩
-  · exact GroundedRuns.Controls.contextual_stuck space live scope expected activation stack emitted
-      moves
+  · exact GroundedRuns.Controls.contextual_stuck (GroundedTables.measured_executable .plus) space
+      live scope expected activation stack emitted moves
   · cases same
 
 /-- Pending work on `(loop)`, anywhere. -/

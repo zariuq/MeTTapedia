@@ -50,8 +50,8 @@ theorem adaptive_dependency_is_bound :
         (ReadOnlyQuery.run (scan before) (compile layer matcher label [] joined empty)).reads = true := by
   decide +kernel
 
-/-- The source absence row additionally retains its declared completeness
-regions. Continued absence does not justify that stronger old footprint. -/
+/-- The source none query row additionally retains its declared completeness
+regions. Continued the none query does not justify that stronger old footprint. -/
 theorem absence_row_retains_full_footprint :
     answerCount (.absent joined .done) (before ++ [(acknowledgement .b, 3)]) 5 = some 1 ∧
       ReadOnlyQuery.checkReads (scan (before ++ [(acknowledgement .b, 3)]))
@@ -73,7 +73,7 @@ theorem vacuous_rows_are_present :
 def repeatedTake : SourceList ℕ Value Pattern :=
   .cons (.take messagePattern) (.cons (.take messagePattern) .done)
 
-/-- Absence concerns source matches, before the separate linear-admission
+/-- The none query concerns source matches, before the separate linear-admission
 check. A conflicting resource use does not make a matching row disappear. -/
 theorem nonlinear_match_is_still_a_row :
     answerCount repeatedTake [(message .a, 0)] 3 = some 1 ∧

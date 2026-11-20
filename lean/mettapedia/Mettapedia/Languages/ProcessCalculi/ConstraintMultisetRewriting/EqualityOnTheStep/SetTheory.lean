@@ -311,7 +311,7 @@ theorem union_inl_typed :
     .cumul (.piForm (.headType (.sort _)) (.sort _) bodyFormed (.sort _) (.sorts _ _)) large_of_one_zero
   exact .lamIntro allFormed (.sort _) (.lamIntro bodyFormed (.sort _) (.lamIntro restFormed (.sort _) applied))
 
-/-! ## Negation transports; absence does not (`Controls`) -/
+/-! ## Negation transports; the none query does not (`Controls`) -/
 
 theorem large_of_zero_one : Tower.rules.cumulative (.sort (.max Tower.zero (.succ Tower.zero))) large := by
   change LevelTower.Cumulative (.sort (.max Tower.zero (.succ Tower.zero))) (.sort (.succ Tower.zero))
@@ -384,7 +384,7 @@ theorem neg_transported_typed :
 
 /-- **Non-membership respects extensional equality**, by the backward map: `λS T e n m. n (snd (e X) m)`
 is a respect term for `λS. S X → ⊥`. So `X ∉ S` transports to `X ∉ T` by `Transport.transportBy`,
-while the absence of rows of `S X` does not transport (`Controls.absence_does_not_transport`). -/
+while the none query of rows of `S X` does not transport (`Controls.none_does_not_transport`). -/
 theorem negRespect_typed :
     Typed Tower.rules triple.raw negRespect (respType (negFamily (.var 2 : Tower.Tm 3))) := by
   have tP : Typed Tower.rules triple.raw (negFamily (.var 2 : Tower.Tm 3)) famType :=

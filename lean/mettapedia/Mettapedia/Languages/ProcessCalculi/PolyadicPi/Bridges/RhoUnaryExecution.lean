@@ -117,7 +117,7 @@ theorem communication_authored {Γ : Ctx sig} (channel : Name Γ) (datum : Var �
     (elements := [send (evalName world channel).term (seedCode seed),
       receive (evalName world channel).term bodyCode.term])
     (inputIndex := 1) (outputIndex := 0) (by simp) (by simp)
-    (by rfl) (by rfl) bodyCode.typed (seedCode_typed rhoAtomicNameContext seed)
+    (by rfl) (by rfl) bodyCode.typed bodyCode.literal (seedCode_typed rhoAtomicNameContext seed)
   simpa [received] using fired
 
 abbrev allocatorSelf := reservedChannel .code
@@ -189,7 +189,7 @@ theorem storedCode_installed (channel : NameValue 0) (seed : Nat)
   rw [requestInert, handlerInert]
   simp [NameValue.term, NameValue.payload, semanticSubstProc, semanticSubstName,
     semanticSubstNameMark, semanticNormalizeName,
-    GuardedReplication.code, GuardedReplication.body]
+    GuardedReplication.code, GuardedReplication.body, Canonical.canonicalize, Pattern.bvar.injEq, ↓reduceIte]
 
 /-- The compiler's installation continuation produces the actual guarded
 rho server with the source-dependent handler, not a synthetic replication. -/
@@ -209,7 +209,7 @@ theorem server_install_received (channel : NameValue 0) (seed : Nat)
     semanticSubstProc, semanticSubstProcList, handlerEq]
   rw [requestInert, storedCode_installed channel seed ordinary stored storedEq, handlerInert]
   simp [NameValue.term, semanticSubstName, semanticSubstNameMark,
-    semanticNormalizeName, GuardedReplication.idle]
+    GuardedReplication.idle, Canonical.canonicalize, ↓reduceIte]
 
 /-- A source persistent receiver's own compiler result installs a retained
 core-rho server through exactly four allocator/client communications. -/

@@ -67,10 +67,20 @@ theorem equationsRoute_tree (values : EquationStore Term) :
     ((syntaxAlgebra rules).evaluate (equationsRoute values)).tree = equationsPattern values :=
   listRoute_tree _ _ equationRoute equationPattern _ _ rfl (fun _ _ => rfl) equationRoute_tree values
 
+def quantifierRoute : Quantifier → Route "TcQuantifier"
+  | .any => .apply (.at ⟨25, by decide +kernel⟩) .nil
+  | .none => .apply (.at ⟨26, by decide +kernel⟩) .nil
+
+theorem quantifierRoute_tree (quantifier : Quantifier) :
+    ((syntaxAlgebra rules).evaluate (quantifierRoute quantifier)).tree =
+      quantifierPattern quantifier := by
+  cases quantifier <;> rfl
+
 def checkRoute : Check Term → Route "TcCheck"
   | .equal left right => .apply (.at ⟨15, by decide +kernel⟩)
       (.cons (termRoute left) (.cons (termRoute right) .nil))
-  | .absent term => .apply (.at ⟨16, by decide +kernel⟩) (.cons (termRoute term) .nil)
+  | .predicate quantifier term => .apply (.at ⟨16, by decide +kernel⟩)
+      (.cons (quantifierRoute quantifier) (.cons (termRoute term) .nil))
   | .count term count => .apply (.at ⟨17, by decide +kernel⟩)
       (.cons (termRoute term) (.cons (indexRoute count) .nil))
 
@@ -82,9 +92,11 @@ theorem checkRoute_tree (check : Check Term) :
       ((syntaxAlgebra rules).evaluate (termRoute right)).tree] = _
     rw [termRoute_tree, termRoute_tree]
     rfl
-  | absent term =>
-    change Pattern.apply "TcAbsent" [((syntaxAlgebra rules).evaluate (termRoute term)).tree] = _
-    rw [termRoute_tree]
+  | predicate quantifier term =>
+    change Pattern.apply "TcPredicate"
+      [((syntaxAlgebra rules).evaluate (quantifierRoute quantifier)).tree,
+        ((syntaxAlgebra rules).evaluate (termRoute term)).tree] = _
+    rw [quantifierRoute_tree, termRoute_tree]
     rfl
   | count term count =>
     change Pattern.apply "TcCount" [((syntaxAlgebra rules).evaluate (termRoute term)).tree,

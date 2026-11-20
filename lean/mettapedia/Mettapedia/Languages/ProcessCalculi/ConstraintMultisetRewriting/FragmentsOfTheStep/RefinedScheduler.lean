@@ -111,13 +111,14 @@ abbrev priority (program : List (RuleInstance Expr)) : Scheduler base where
 
 theorem valid_of_admits {C : Conf} {f : Fir} (noQueries : f.queries = [])
     (admitted : base.Admits (s := C) f) : f.selection.Valid ground Prod.fst f.rule C := by
-  have valid : PredicateQueryAdmission.Valid ground Prod.fst f.rule f.queries C f.selection := admitted
+  have valid : PredicateQueryAdmission.RegionValid ground Prod.fst f.rule f.queries C f.selection :=
+    admitted
   rw [noQueries] at valid
-  exact (PredicateQueryAdmission.valid_empty_iff ground Prod.fst _ _ _).mp valid
+  exact PredicateQueryAdmission.regionValid_nil_iff.mp valid
 
 theorem admits_of_valid {C : Conf} {r : RuleInstance Expr} {sel : Selection Occ}
     (valid : sel.Valid ground Prod.fst r C) : base.Admits (s := C) (⟨r, [], sel⟩ : Fir) :=
-  (PredicateQueryAdmission.valid_empty_iff ground Prod.fst _ _ _).mpr valid
+  PredicateQueryAdmission.regionValid_nil_iff.mpr valid
 
 end RefinedScheduler
 

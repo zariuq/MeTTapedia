@@ -1,5 +1,7 @@
 import Mettapedia.OSLF.MeTTaIL.ScopedDerivedPresentationSyntax
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SemanticSubstitution
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalTyping
+import Mettapedia.OSLF.MeTTaIL.ReflectiveQuoteAdmission
 
 /-!
 # Scope and sort preservation for semantic COMM substitution
@@ -31,6 +33,16 @@ private theorem drop_wellSorted_inv
 
 /-! ## Semantic normalization -/
 
+/-- A quotation whose code is closed at the quote boundary is a rho name in every
+sort context. -/
+private theorem quote_of_binderSafe {free : FreeSortContext} {bound : List String} {process : Pattern}
+    (typed : ProcWellSorted rhoReflectivePresentation free bound process)
+    (safe : binderSafeAt "NQuote" 0 process = true) :
+    NameWellSorted rhoReflectivePresentation free bound (.apply "NQuote" [process]) := by
+  have closed : ProcWellSorted rhoReflectivePresentation free [] process := by
+    simpa using procWellSorted_restrictToBinderPrefix (depth := 0) (tail := bound) typed safe
+  exact NameWellSorted.quoteOfClosed (by decide) closed
+
 mutual
   /-- Semantic name normalization preserves both the derived name sort and
   quote-aware scope safety. -/
@@ -51,8 +63,8 @@ mutual
         exact ⟨by simpa [semanticNormalizeName] using
             (NameWellSorted.fvar lookup),
           by simpa [semanticNormalizeName] using safe⟩
-    | quote processTyped =>
-        rename_i process
+    | quote processTyped _ =>
+        rename_i process _
         change
           NameWellSorted rhoReflectivePresentation free bound
               (semanticNormalizeName (.apply "NQuote" [process])) ∧
@@ -80,7 +92,7 @@ mutual
           have normalized :=
             semanticNormalizeProc_preserves bound processTyped 0 processSafe
           rw [semanticNormalizeName.eq_4 process notDrop]
-          exact ⟨NameWellSorted.quote normalized.1,
+          exact ⟨quote_of_binderSafe normalized.1 normalized.2,
             by simpa [binderSafeAt] using normalized.2⟩
 
   /-- Process form of semantic-normalization preservation. -/
@@ -224,53 +236,45 @@ theorem semanticSubstName_preserves
         (semanticSubstName index replacement name) ∧
       binderSafeAt "NQuote" index
         (semanticSubstName index replacement name) = true := by
-  have normalization := semanticNormalizeName_preserves
-    (List.replicate (index + 1) rhoReflectivePresentation.nameSort)
-    typed (index + 1) safe
-  have normalizedTyped := normalization.1
-  have normalizedSafe := normalization.2
-  unfold semanticSubstName semanticSubstNameMark
-  generalize normalizedEq : semanticNormalizeName name = normalizedName at normalizedTyped normalizedSafe ⊢
-  cases normalizedTyped with
+  cases typed with
   | bvar lookup =>
-      rename_i boundIndex
-      have within : boundIndex < index + 1 := by
-        simpa [binderSafeAt] using normalizedSafe
-      by_cases hit : boundIndex = index
-      · subst boundIndex
-        exact ⟨by
-            simpa using replacementTyped.weakenBoundRight
-              (List.replicate index rhoReflectivePresentation.nameSort),
-          by
-            simpa using binderSafeAt_mono "NQuote" replacementSafe
-              (Nat.zero_le index)⟩
-      · have below : boundIndex < index := by omega
-        simp only [beq_iff_eq, hit, ↓reduceIte]
-        exact ⟨by
-            apply NameWellSorted.bvar
-            simp [below],
-          by simp [binderSafeAt, below]⟩
-  | fvar lookup =>
-      exact ⟨by simpa using (NameWellSorted.fvar lookup),
-        by simp [binderSafeAt]⟩
-  | quote processTyped =>
-      rename_i process
-      have processSafe : binderSafeAt "NQuote" 0 process = true := by
-        simpa [binderSafeAt, rhoReflectivePresentation] using normalizedSafe
-      have processClosed :
-          ProcWellSorted rhoReflectivePresentation free [] process := by
-        simpa using
-          (procWellSorted_restrictToBinderPrefix
-            (depth := 0)
-            (tail := List.replicate (index + 1)
-              rhoReflectivePresentation.nameSort)
-            processTyped processSafe)
+    rename_i boundIndex
+    have within : boundIndex < index + 1 := by simpa [binderSafeAt] using safe
+    by_cases hit : boundIndex = index
+    · subst boundIndex
+      simp only [semanticSubstName, semanticSubstNameMark, Canonical.canonicalize, if_true]
       exact ⟨by
-          simpa [rhoReflectivePresentation] using
-            (NameWellSorted.quote
-              (processClosed.weakenBoundRight
-                (List.replicate index rhoReflectivePresentation.nameSort))),
-        by simpa [binderSafeAt, rhoReflectivePresentation] using processSafe⟩
+          simpa using replacementTyped.weakenBoundRight
+            (List.replicate index rhoReflectivePresentation.nameSort),
+        binderSafeAt_mono "NQuote" replacementSafe (Nat.zero_le index)⟩
+    · have below : boundIndex < index := by omega
+      simp only [semanticSubstName, semanticSubstNameMark, Canonical.canonicalize,
+        Pattern.bvar.injEq, if_neg hit, semanticNormalizeName]
+      exact ⟨.bvar (by simp [below]), by simp [binderSafeAt, below]⟩
+  | fvar lookup =>
+    simp only [semanticSubstName, semanticSubstNameMark, Canonical.canonicalize, reduceCtorEq,
+      if_false, semanticNormalizeName]
+    exact ⟨.fvar lookup, by simp [binderSafeAt]⟩
+  | quote processTyped _ =>
+    rename_i process _
+    have localScope : binderSafeAt "NQuote" 0 process = true := by
+      simpa [binderSafeAt, rhoReflectivePresentation] using safe
+    have closed : ProcWellSorted rhoReflectivePresentation free [] process := by
+      simpa using procWellSorted_restrictToBinderPrefix
+        (depth := 0) (tail := List.replicate (index + 1) rhoReflectivePresentation.nameSort)
+        processTyped localScope
+    have sealed : binderSafeAt "NQuote" 0 (.apply "NQuote" [process]) = true := by
+      simpa [binderSafeAt] using localScope
+    have miss : Canonical.canonicalize (.apply "NQuote" [process]) ≠ .bvar index :=
+      fun hit => (Nat.not_lt_zero index) (CanonicalTyping.canonical_bound_index_lt sealed hit)
+    have remains : semanticSubstName index replacement (.apply rhoReflectivePresentation.quoteConstructor [process]) =
+        semanticNormalizeName (.apply rhoReflectivePresentation.quoteConstructor [process]) := by
+      unfold semanticSubstName semanticSubstNameMark
+      rw [if_neg (show Canonical.canonicalize (.apply rhoReflectivePresentation.quoteConstructor [process]) ≠
+        .bvar index from miss)]
+    rw [remains]
+    have normalized := semanticNormalizeName_preserves [] (NameWellSorted.quoteOfClosed (by decide) closed) 0 sealed
+    exact ⟨normalized.1.weakenBoundRight _, binderSafeAt_mono "NQuote" normalized.2 (Nat.zero_le index)⟩
 
 mutual
   /-- Process substitution removes one communication-name binder while
@@ -357,8 +361,8 @@ mutual
                 by
                   simp [semanticSubstProc, markedEq, binderSafeAt,
                     binderSafeListAt, rhoReflectivePresentation]⟩
-        | quote quotedTyped =>
-            rename_i quotedProcess
+        | quote quotedTyped _ =>
+            rename_i quotedProcess _
             have quotedSafe :
                 binderSafeAt "NQuote" 0 quotedProcess = true := by
               simpa [binderSafeAt, rhoReflectivePresentation] using
@@ -369,7 +373,7 @@ mutual
                     simpa [semanticSubstProc, markedEq,
                       rhoReflectivePresentation] using
                       (ProcWellSorted.drop
-                        (NameWellSorted.quote quotedTyped)),
+                        (quote_of_binderSafe quotedTyped quotedSafe)),
                   by
                     simpa [semanticSubstProc, markedEq, binderSafeAt,
                       binderSafeListAt, rhoReflectivePresentation] using
@@ -499,7 +503,7 @@ theorem semanticCommSubst_preserves
     .apply "NQuote" [semanticNormalizeProc payload]
   have replacementTyped :
       NameWellSorted rhoReflectivePresentation free [] replacement := by
-    exact NameWellSorted.quote payloadNormalized.1
+    exact NameWellSorted.quoteOfClosed (by decide) payloadNormalized.1
   have replacementSafe : binderSafeAt "NQuote" 0 replacement = true := by
     simpa [replacement, binderSafeAt] using payloadNormalized.2
   have bodyTyped' :

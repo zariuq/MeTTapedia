@@ -1,6 +1,7 @@
 import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HECollectionLetSource
 import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HECollectionCollapseSource
 import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HECollectionHeldTypeRead
+import Mettapedia.Languages.MeTTa.ContextualTransform.HEArgumentContexts
 
 /-!
 # The authored collection probe, from typed ingress through its consumer
@@ -23,6 +24,9 @@ open HECollectionWorld (World environment)
 open HECollectionNumericFold (number numbers number_closed numbers_closed)
 open HECollectionLetCapture (template)
 open Mettapedia.Machines.OrderedProtocol.Completion
+open Mettapedia.Languages.MeTTa.ContextualTransform.HEArgumentContexts
+  (let_arguments_exact finishForcedThenHeld_of_ordinary finishLastArgument_of_ordinary
+    unchanged_error_is_not_argument_stop)
 
 def squareValues (lower : Int) (count : Nat) : List Int :=
   (List.range count).map fun (index : Nat) => (lower + index) * (lower + index)
@@ -44,7 +48,8 @@ def requests (lower upper init : Int) (listName left right : String) : List Argu
     (template listName left right init, Atom.atomType)]
 
 def signature : SelectedTypePolicy := ⟨CollectionStdlibSource.letType,
-  [Atom.atomType, Atom.undefinedType, Atom.atomType], Atom.undefinedType, rfl⟩
+  [Atom.atomType, Atom.undefinedType, Atom.atomType], Atom.undefinedType,
+  CollectionStdlibSource.let_declared_arguments⟩
 
 theorem authored_probe_erasure (upper : Int) : (query 0 upper 0 "l" "a" "b").erase = CollectionStdlibSource.probe upper := by
   simp [query, template, HECollectionCollapseFrontier.call, HECollectionSquareRange.call,
@@ -149,44 +154,20 @@ theorem arguments (world : World) (policy : Policy) (before : Frame) (live : Lis
   have templateFixed : after.read policy pending = pending := HECollectionLetCapture.template_read policy after _ _ _ _ init
     (fixed after listName freshList) (fixed after left freshLeft) (fixed after right freshRight)
   let tuple := Entry.Value.expression mark (numbers (squareValues lower (upper - lower).toNat))
-  have finalArgument : Stateful.ArgumentsRel current sourceSpace afterWorld
-      (tuple.erase :: (.var listName : Atom) :: live) scope [(pending, Atom.atomType)] after
-      [(Entry.Value.argumentPacket [pending], after)] afterWorld (policy := policy) := by
-    apply DeliveredArgumentPackets.source current policy sourceSpace afterWorld scope after [(pending, Atom.atomType)]
-    · intro request member
-      have same : request = (pending, Atom.atomType) := List.mem_singleton.mp member
-      subst request
-      exact templateFixed
-    · intro request member
-      have same : request = (pending, Atom.atomType) := List.mem_singleton.mp member
-      subst request
-      exact Entry.atom_demand _ _ _
-  have middleArguments : Stateful.ArgumentsRel current sourceSpace world ((.var listName : Atom) :: live) scope
-      [(HECollectionCollapseFrontier.call lower upper, Atom.undefinedType), (pending, Atom.atomType)] before
-      [(Entry.Value.argumentPacket [tuple, pending], after)] afterWorld (policy := policy) := by
-    apply Stateful.ArgumentsRel.cons
-    · simpa only [collapseLive, tuple, numbers_squares] using collapseRun
-    · simpa only [List.map_cons, List.map_nil, List.append_nil, argumentPrepend_packet, tuple, numbers_squares] using
-        (Stateful.ArgumentBranchesRel.continuing (original := HECollectionCollapseFrontier.call lower upper) (head := (tuple, after))
-          (fun stopped => numeric_tuple_not_stopped mark _ stopped.1) finalArgument .nil)
-  have firstArgument : Stateful.AtomRel current sourceSpace world
-      (argumentScope [(HECollectionCollapseFrontier.call lower upper, Atom.undefinedType), (pending, Atom.atomType)] ++ live)
-      scope (.var listName) Atom.atomType before [(.var listName, before)] world (policy := policy) := by
-    simpa only [fixed before listName listFresh] using
-      (Stateful.AtomRel.delivered (environment := current) (label := sourceSpace) (world0 := world)
-        (value := .var listName) (frame := before) (policy := policy)
-        (by rw [fixed before listName listFresh]; exact Entry.atom_demand _ _ _))
+  have firstRead := fixed before listName listFresh
+  have holdPattern : ¬ArgumentStopped (.var listName) (before.read policy (.var listName), before) := by
+    rw [firstRead]
+    exact unchanged_error_is_not_argument_stop _ _
+  have holdTemplate := unchanged_error_is_not_argument_stop pending after
+  have ordinary : ¬ArgumentStopped (HECollectionCollapseFrontier.call lower upper) (tuple, after) :=
+    fun stop => numeric_tuple_not_stopped mark _ stop.1
   refine ⟨afterWorld, after, mark, ?_, fixed after listName freshList, fixed after left freshLeft, fixed after right freshRight⟩
-  apply Stateful.ArgumentsRel.cons firstArgument
-  have continuation : Stateful.ArgumentsRel current sourceSpace world
-      ((Entry.Value.var listName).erase :: live) scope
-      [(HECollectionCollapseFrontier.call lower upper, Atom.undefinedType), (pending, Atom.atomType)] before
-      [(Entry.Value.argumentPacket [tuple, pending], after)] afterWorld (policy := policy) := by
-    simpa only [Entry.Value.erase] using middleArguments
-  have branches := Stateful.ArgumentBranchesRel.continuing (original := .var listName)
-    (head := (.var listName, before)) (heads := []) (rest := [])
-    (by simp [ArgumentStopped]) continuation Stateful.ArgumentBranchesRel.nil
-  simpa only [List.map_cons, List.map_nil, List.append_nil, argumentPrepend_packet, pending, tuple] using branches
+  apply (let_arguments_exact (template := pending) holdPattern).mpr
+  refine ⟨[(tuple, after)], ?_, ?_⟩
+  · simpa only [collapseLive, firstRead, Entry.Value.erase, tuple, numbers_squares] using collapseRun
+  · simp only [List.map_cons, List.map_nil, finishForcedThenHeld_of_ordinary policy pending ordinary,
+      finishLastArgument_of_ordinary holdTemplate, templateFixed, argumentPrepend_packet, firstRead,
+      pending, tuple]
 
 theorem source (world : World) (policy : Policy) (before : Frame) (live : List Atom) (scope : List String)
     (lower upper init : Int) (listName left right : String)

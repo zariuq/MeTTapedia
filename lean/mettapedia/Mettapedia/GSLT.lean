@@ -19,6 +19,8 @@ import Mettapedia.GSLT.Core.ContextualPseudoCwfBasePseudofunctor
 import Mettapedia.GSLT.Core.ContextualProfileInclusions
 import Mettapedia.GSLT.Core.BranchingTemporal
 import Mettapedia.GSLT.Causality.ResourceFrontier
+import Mettapedia.GSLT.Causality.FixedWidthDemand
+import Mettapedia.GSLT.Causality.PreparationFootprint
 import Mettapedia.GSLT.Causality.FactLinearResources
 import Mettapedia.GSLT.Causality.SpaceRemovalContracts
 import Mettapedia.GSLT.Causality.MatchRemoveRealization

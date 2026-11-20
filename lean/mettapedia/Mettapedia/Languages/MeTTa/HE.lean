@@ -32,6 +32,7 @@ import Mettapedia.Languages.MeTTa.HE.Certification
 import Mettapedia.Languages.MeTTa.HE.SemanticForms
 import Mettapedia.Languages.MeTTa.HE.CoreFragment
 import Mettapedia.Languages.MeTTa.HE.LetChainResumption
+import Mettapedia.Languages.MeTTa.HE.CollapseCollector
 import Mettapedia.Languages.MeTTa.HE.ArgTraversal
 import Mettapedia.Languages.MeTTa.HE.ArgTraversalControls
 import Mettapedia.Languages.MeTTa.HE.TypedApplyDataExecution

@@ -14,7 +14,7 @@ and checks, atoms it does not use and does not make change neither its admission
 
 ## The minimal step
 
-Under the label `(ℓ, M)` a configuration moves when `M` is a set of ports, absent from it, used by
+Under the label `(ℓ, M)` a configuration moves when `M` is a set of ports, missing from it, used by
 a firing offered under `ℓ`, and the configuration with `M` added admits that firing
 (`MinimalMoves`). The label is then exactly what the firing uses and the configuration lacks
 (`minimal_eq`), and it is contained in every context that admits the firing (`minimal_least`).
@@ -138,7 +138,7 @@ section Minimal
 variable (A : SubstitutionAction T S) (label : O → T) (offers : L → Firing T S O → Prop)
   (ports : O → Prop)
 
-/-- **A move under a minimal trigger set**: under `(ℓ, M)`, with `M` a set of ports absent from the
+/-- **A move under a minimal trigger set**: under `(ℓ, M)`, with `M` a set of ports missing from the
 configuration and used by a firing offered under `ℓ`, the configuration with `M` added fires that
 firing. -/
 def MinimalMoves (C : Configuration T O) (lab : L × Finset O) (D : Configuration T O) : Prop :=

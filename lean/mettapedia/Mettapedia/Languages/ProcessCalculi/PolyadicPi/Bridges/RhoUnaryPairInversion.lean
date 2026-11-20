@@ -80,6 +80,8 @@ theorem pair_of_step {Γ : Ctx sig} (world : SeedWorld Γ)
         ((activities.eraseIdx selected.inputIndex)[selected.outputIndex]'
           (by simpa [headers, List.eraseIdx_map] using selected.outputBound)) := by
   obtain ⟨selected, endpoint⟩ := selection_of_step (headers_typed world.world activities) step
+  rw [selected.firing_eq_contractum_of_literal (headers_typed world.world activities)
+    (headers_literal world.world activities)] at endpoint
   exact ⟨selected, endpoint, selected_pair world activities fresh selected⟩
 
 /-- Sorting the actual frontier also preserves the classification of its
@@ -95,7 +97,7 @@ theorem pair_of_canonical_step {Γ : Ctx sig} (world : SeedWorld Γ)
         ((activities.eraseIdx selected.inputIndex)[selected.outputIndex]'
           (by simpa [headers, List.eraseIdx_map] using selected.outputBound)) := by
   obtain ⟨selected, endpoint⟩ := canonical_selection_of_step
-    (headers_typed world.world activities) (headers_safe world.world activities) step
+    (headers_typed world.world activities) step
   exact ⟨selected, endpoint, selected_pair world activities fresh selected⟩
 
 end Mettapedia.Languages.ProcessCalculi.PolyadicPi.Bridges.RhoUnaryPairInversion

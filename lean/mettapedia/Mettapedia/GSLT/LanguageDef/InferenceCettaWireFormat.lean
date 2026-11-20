@@ -801,20 +801,56 @@ decoding data grants no execution or rewriting permission.
 
 namespace AuthoredRule
 
+/-- The quote scope of a presentation: `QuoteClosed`, or `QuoteReaching` with a
+view `QuoteApply`, `QuoteFreeze` with its spelling, or `QuoteClosure` with its
+context constructor. -/
+def quoteScopeTerm : QuoteScope → CettaTerm
+  | .closed => .symbol "QuoteClosed"
+  | .reaching .apply => .application "QuoteReaching" [.symbol "QuoteApply"]
+  | .reaching (.freeze frozen) =>
+      .application "QuoteReaching" [.application "QuoteFreeze" [encodePattern frozen.spelling]]
+  | .reaching (.closure context) =>
+      .application "QuoteReaching" [.application "QuoteClosure" [.string context]]
+
+def decodeQuoteScope? : CettaTerm → Option QuoteScope
+  | .symbol "QuoteClosed" => some .closed
+  | .application "QuoteReaching" [.symbol "QuoteApply"] => some (.reaching .apply)
+  | .application "QuoteReaching" [.application "QuoteFreeze" [spelling]] =>
+      match decodePattern spelling with
+      | some pattern =>
+          if ground : pattern.freeFvarNames = [] ∧ pattern.isWellScopedAt 0 = true then
+            some (.reaching (.freeze ⟨pattern, ground⟩))
+          else none
+      | none => none
+  | .application "QuoteReaching" [.application "QuoteClosure" [.string context]] =>
+      some (.reaching (.closure context))
+  | _ => none
+
+@[simp] theorem decodeQuoteScope?_quoteScopeTerm (scope : QuoteScope) :
+    decodeQuoteScope? (quoteScopeTerm scope) = some scope := by
+  rcases scope with _ | (_ | ⟨spelling, ground⟩ | context)
+  · simp [quoteScopeTerm, decodeQuoteScope?]
+  · simp [quoteScopeTerm, decodeQuoteScope?]
+  · simp [quoteScopeTerm, decodeQuoteScope?, decodePattern_encodePattern, ground]
+  · simp [quoteScopeTerm, decodeQuoteScope?]
+
 /-- Reflective presentation data retain every authored constructor and equation
-name. This codec supplies data; it does not license a binder operation. -/
+name and the quote scope. This codec supplies data; it does not license a
+binder operation. -/
 def reflectivePresentationTerm (declaration : ReflectivePresentationDecl) : CettaTerm :=
   .application "ReflectivePresentation" [.string declaration.name, .string declaration.processSort,
     .string declaration.nameSort, .string declaration.quoteConstructor, .string declaration.dropConstructor,
     encodeCollectionType declaration.parallelCollection,
-    .string declaration.parallelUnitConstructor, .string declaration.quoteDropEquation]
+    .string declaration.parallelUnitConstructor, .string declaration.quoteDropEquation,
+    quoteScopeTerm declaration.quoteScope]
 
 def decodeReflectivePresentation? : CettaTerm → Option ReflectivePresentationDecl
   | .application "ReflectivePresentation" [.string name, .string processSort, .string nameSort,
       .string quoteConstructor, .string dropConstructor, parallelCollection,
-      .string parallelUnitConstructor, .string quoteDropEquation] => do
+      .string parallelUnitConstructor, .string quoteDropEquation, quoteScope] => do
       pure ⟨name, processSort, nameSort, quoteConstructor, dropConstructor,
-        ← decodeCollectionType parallelCollection, parallelUnitConstructor, quoteDropEquation⟩
+        ← decodeCollectionType parallelCollection, parallelUnitConstructor, quoteDropEquation,
+        ← decodeQuoteScope? quoteScope⟩
   | _ => none
 
 @[simp] theorem decodeReflectivePresentation?_reflectivePresentationTerm

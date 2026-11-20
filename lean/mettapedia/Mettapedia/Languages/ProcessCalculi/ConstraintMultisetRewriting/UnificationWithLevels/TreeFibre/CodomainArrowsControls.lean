@@ -55,7 +55,7 @@ theorem arrowCodTower_decided {Θ : Context setting.R} {original : EquationStore
       run arrowCodTowerSolver original larger = run arrowCodTowerSolver original fuel ∧
         ((∃ state finished, run arrowCodTowerSolver original larger = .solved state finished ∧
             (frames setting.levels).Principal original state.answer) ∨
-          (∃ absent, run arrowCodTowerSolver original larger = .refuted absent)) :=
+          (∃ missing, run arrowCodTowerSolver original larger = .refuted missing)) :=
   arrowsCod_decided (S := setting) ExecutableTowerChoices.choices LevelGlb.towerGlb
     (fun found => LevelGlb.towerGlb_isGlb found) TowerModel.facts TowerModel.roots TowerModel.heads
     TowerModel.algebra ContextualDependentPiSpine.Controls.rigid TowerModel.complete

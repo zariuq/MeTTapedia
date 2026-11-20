@@ -175,7 +175,7 @@ theorem reflective_operation_free_within (footprint : List String)
     (original : ∀ free ∈ body.freeFvarNames, free ∈ footprint) :
     ∀ free ∈ (ScopedRuleInstantiation.reflectiveOperation declaration replacement body).freeFvarNames,
       free ∈ footprint := by
-  apply reflective_instantiate_free_within footprint declaration 0 _ body _ original
+  apply reflective_instantiateDeclared_free_within footprint declaration 0 _ body _ original
   rw [normalize_replacement_free_names]
   exact inserted
 
@@ -205,7 +205,9 @@ namespace FootprintControls
 def declaration : ReflectivePresentationDecl :=
   { name := "footprint-reflection", processSort := "Proc", nameSort := "Name"
     quoteConstructor := "Quote", dropConstructor := "Drop", parallelCollection := .hashBag
-    parallelUnitConstructor := "Zero", quoteDropEquation := "quote-drop" }
+    parallelUnitConstructor := "Zero", quoteDropEquation := "quote-drop",
+    -- Closed: the footprint controls exercise the closed binder operation.
+    quoteScope := .closed }
 
 def bindings : RuleBindingSpec :=
   { dependencies := [("B", [.base "Name"]), ("P", []), ("R", [])]
@@ -251,7 +253,8 @@ theorem selected_collection_success (kind : CollType) :
     ScopedReflectiveExecution.binderOperation, profile, declaration,
     substitutionPresentationForRule?, reflectiveRuleForRule?, presentationNamed?,
     ScopedRuleInstantiation.reflectiveOperation, ReflectiveInstantiation.instantiate,
-    ReflectiveInstantiation.nameMark, normalizeReflectiveReplacement, normalizeReflective,
+    resolveQuotes, resolveQuotesList, finishResolveApply, substituteResolved, receive,
+    normalizeReflectiveReplacement, normalizeReflective,
     Substitution.instantiateBVarAt,
     Substitution.liftBVars]
 
@@ -284,11 +287,19 @@ theorem literal_drop_quote_remains :
       .apply "Drop" [.apply "Quote" [.fvar "literal"]] := by
   decide
 
+/-- Quoted code that mentions the eliminated binder is not admitted by the
+closed scope, so the binder operation is never asked to look inside it. -/
+theorem quoted_binder_not_admitted :
+    ¬ QuotesClosed declaration (.apply "Quote" [.apply "F" [.bvar 0, .fvar "literal"]]) := by
+  decide
+
+/-- Admitted quoted code keeps its free names while the binder outside it is
+replaced. -/
 theorem opaque_quote_keeps_name :
     ScopedRuleInstantiation.reflectiveOperation declaration (.fvar "inserted")
-      (.apply "Quote" [.apply "F" [.bvar 0, .fvar "literal"]]) =
-      .apply "Quote" [.apply "F" [.bvar 0, .fvar "literal"]] := by
-  decide
+      (.apply "Pair" [.bvar 0, .apply "Quote" [.apply "F" [.fvar "literal"]]]) =
+      .apply "Pair" [.fvar "inserted", .apply "Quote" [.apply "F" [.fvar "literal"]]] := by
+  decide +kernel
 
 theorem static_quote_drop_keeps_names :
     (normalizeReflective declaration
@@ -378,6 +389,7 @@ end FootprintControls
 #print axioms Mettapedia.OSLF.MeTTaIL.ScopedReflectiveExecution.FootprintControls.selected_collection_earned_coverage
 #print axioms Mettapedia.OSLF.MeTTaIL.ScopedReflectiveExecution.FootprintControls.residual_order_retained
 #print axioms Mettapedia.OSLF.MeTTaIL.ScopedReflectiveExecution.FootprintControls.literal_drop_quote_remains
+#print axioms Mettapedia.OSLF.MeTTaIL.ScopedReflectiveExecution.FootprintControls.quoted_binder_not_admitted
 #print axioms Mettapedia.OSLF.MeTTaIL.ScopedReflectiveExecution.FootprintControls.opaque_quote_keeps_name
 #print axioms Mettapedia.OSLF.MeTTaIL.ScopedReflectiveExecution.FootprintControls.static_quote_drop_keeps_names
 #print axioms Mettapedia.OSLF.MeTTaIL.ScopedReflectiveExecution.FootprintControls.openArgumentBindings

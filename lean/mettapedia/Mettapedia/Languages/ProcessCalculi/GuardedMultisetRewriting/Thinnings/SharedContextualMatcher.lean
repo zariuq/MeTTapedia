@@ -41,9 +41,9 @@ theorem matchShared_spec {store : Store Head} (canonical : Canonical store)
   rw [Scope.check_spec canonical valid]
   cases matched : matchR p.tree store (fun _ => none) source with
   | none =>
-    have absent : matchT p.tree (fun _ => none) (unfold store source) = none := by
+    have missing : matchT p.tree (fun _ => none) (unfold store source) = none := by
       simpa [matched] using structural.symm
-    simp [absent]
+    simp [missing]
   | some targets =>
     have found : matchT p.tree (fun _ => none) (unfold store source) =
         some (unfoldSubst store targets) := by simpa [matched] using structural.symm

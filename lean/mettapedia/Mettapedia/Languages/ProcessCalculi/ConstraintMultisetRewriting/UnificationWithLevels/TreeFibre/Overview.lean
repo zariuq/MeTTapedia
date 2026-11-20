@@ -129,6 +129,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Unificati
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.UnificationWithLevels.TreeFibre.PermutedJoinControls
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.UnificationWithLevels.TreeFibre.PhasesInitial
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.UnificationWithLevels.TreeFibre.PhasesInitialControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.UnificationWithLevels.TreeFibre.Budgets.All
 
 /-!
 # Unification in the tree's own dependent fibre
@@ -1530,7 +1531,7 @@ namespace Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Unific
 #print axioms TreeFibre.PiCode.rename
 #print axioms TreeFibre.PiCode.normal
 #print axioms TreeFibre.holdsAt_of_support
-#print axioms TreeFibre.subst_solveSub_absent
+#print axioms TreeFibre.subst_solveSub_of_notMem
 #print axioms TreeFibre.arrowCod_typed
 #print axioms TreeFibre.codNarrowed_typed
 #print axioms TreeFibre.codNarrowSolve_typed
@@ -1735,7 +1736,7 @@ namespace Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Unific
 #print axioms TreeFibre.Controls.overCod_exact
 #print axioms TreeFibre.Controls.overCod_principal
 #print axioms TreeFibre.Controls.over_outside_flexRigidGlb
-#print axioms TreeFibre.Controls.codOccurs_absent_fails
+#print axioms TreeFibre.Controls.codOccurs_occurs_check_fails
 #print axioms TreeFibre.Controls.codMisfitHead_fails
 
 -- CommonRank: one rank for the Miller rules and the rules of arrow codes

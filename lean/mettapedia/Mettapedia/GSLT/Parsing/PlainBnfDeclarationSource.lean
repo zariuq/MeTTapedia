@@ -68,7 +68,7 @@ def declarationRules : Program :=
            .atom "BNFDiagnosticsNilV1"]], []⟩
   , ⟨"bnf-collect-definitions-nil-v1",
       atom "BNFCollectDefinitionsV1"
-        [app "metta-nullary" [.atom "bnf-v1:entries-nil"],
+        [app "bnf-v1:entries-nil" [],
          .var 0, .var 0, .atom "BNFDiagnosticsNilV1"], []⟩
   , ⟨"bnf-collect-definitions-comment-v1",
       atom "BNFCollectDefinitionsV1"

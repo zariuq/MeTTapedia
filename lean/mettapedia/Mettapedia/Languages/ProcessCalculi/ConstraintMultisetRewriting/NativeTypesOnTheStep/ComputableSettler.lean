@@ -386,7 +386,7 @@ def driverFamily (solver : ContextualDependentWorklist.Solver levels) (fuel : Na
         if cover : VariableCover state.answer then
           .settled state.target state.answer (initial_of_cover levels (state.completed finished) cover)
         else .undecided
-    | .refuted absent => .refuted absent
+    | .refuted missing => .refuted missing
     | .stuck _ => .undecided
     | .cutoff _ => .undecided
 

@@ -23,7 +23,7 @@ its history left (`JointModuloEquivalent`): one renaming relates the states and 
 * **One renaming for the firing and the results** (`modulo_step_witness`,
   `ModuloEquivalent.semantic_counterpart_witness`): the renaming that moves a semantic firing to its
   counterpart also relates the results.
-* **Semantic firings preserve the client equivalence** (`ModuloEquivalent.client_firing` when the
+* **Semantic exact-query firings preserve the client equivalence** (`ModuloEquivalent.client_firing` when the
   made identities avoid the other state; `ModuloEquivalent.client_counterpart` with a fresh supply of
   the made labels): from states equivalent for a client, an admitted semantic firing and its
   counterpart lead to equivalent joint ends, with the client having watched each firing. Renaming a
@@ -50,34 +50,34 @@ section Clients
 
 theorem sighted_rename [DecidableEq O] (π : O ≃ O) :
     ∀ queries : List (PredicateQueryAdmission.Query T S O),
-      sighted (queries.map (renameQuery π)) = (sighted queries).map π.toEmbedding
+      sighted (queries.map (ExactQueryAlphabet.renameQuery π)) = (sighted queries).map π.toEmbedding
   | [] => (Finset.map_empty _).symm
   | q :: rest => by
-      show (renameQuery π q).seen ∪ sighted (rest.map (renameQuery π)) =
+      show (ExactQueryAlphabet.renameQuery π q).seen ∪ sighted (rest.map (ExactQueryAlphabet.renameQuery π)) =
         (q.seen ∪ sighted rest).map π.toEmbedding
       rw [sighted_rename π rest, Finset.map_union]
       rfl
 
 theorem runSighted_rename [DecidableEq O] (π : O ≃ O) :
-    ∀ w : List (Firing T S O), runSighted (w.map (Firing.rename π)) = (runSighted w).map π.toEmbedding
+    ∀ w : List (ExactQueryAlphabet.Alphabet T S O), runSighted (w.map (ExactQueryAlphabet.rename π)) = (runSighted w).map π.toEmbedding
   | [] => (Finset.map_empty _).symm
   | f :: rest => by
-      show sighted (f.queries.map (renameQuery π)) ∪ runSighted (rest.map (Firing.rename π)) =
-        (sighted f.queries ∪ runSighted rest).map π.toEmbedding
+      show sighted (f.2.queries.map (ExactQueryAlphabet.renameQuery π)) ∪ runSighted (rest.map (ExactQueryAlphabet.rename π)) =
+        (sighted f.2.queries ∪ runSighted rest).map π.toEmbedding
       rw [sighted_rename, runSighted_rename π rest, Finset.map_union]
 
 /-- **Renaming a client that watched a run is watching the renamed run**, for a renaming that fixes the
 client's own identities. -/
 theorem Client.watch_rename [DecidableEq O] (c : Client O) {π : O ≃ O}
-    (fixes : ∀ o ∈ c.escaped, π o = o) (w : List (Firing T S O)) :
-    (c.watch w).rename π = c.watch (w.map (Firing.rename π)) := by
+    (fixes : ∀ o ∈ c.escaped, π o = o) (w : List (ExactQueryAlphabet.Alphabet T S O)) :
+    (c.watch w).rename π = c.watch (w.map (ExactQueryAlphabet.rename π)) := by
   have same := c.rename_eq_self fixes
   obtain ⟨held, seen, evidence, published⟩ := c
   simp only [Client.rename, Client.mk.injEq] at same
   obtain ⟨heldSame, seenSame, evidenceSame, publishedSame⟩ := same
   show Client.mk (held.map π) ((seen ∪ runSighted w).map π.toEmbedding)
       (evidence.map π.toEmbedding) (published.map π.toEmbedding) =
-    Client.mk held (seen ∪ runSighted (w.map (Firing.rename π))) evidence published
+    Client.mk held (seen ∪ runSighted (w.map (ExactQueryAlphabet.rename π))) evidence published
   rw [heldSame, evidenceSame, publishedSame, Finset.map_union, seenSame, runSighted_rename]
 
 /-- The escaped identities of a renamed client are the renamed escaped identities. -/
@@ -161,7 +161,7 @@ theorem JointModuloEquivalent.respects [DecidableEq O] {E : Finset O}
 
 end Probes
 
-/-! ## Semantic firings preserve the client equivalence -/
+/-! ## Semantic exact-query firings preserve the client equivalence -/
 
 section Firings
 
@@ -195,15 +195,15 @@ theorem ModuloEquivalent.semantic_counterpart_witness [DecidableEq O] {C D : Con
       SameUpTo A (renameConfiguration τ (f.result label C)) ((f.rename τ).result label D) := by
   classical
   let M := f.selection.made.toFinset.filter (· ∈ D.present)
-  let F := C.present ∪ D.present ∪ E ∪ f.names
+  let F := C.present ∪ D.present ∪ E ∪ f.selection.made.toFinset
   have inF_C : ∀ {o}, o ∈ C.present → o ∈ F := fun inC =>
     Finset.mem_union_left _ (Finset.mem_union_left _ (Finset.mem_union_left _ inC))
   have inF_D : ∀ {o}, o ∈ D.present → o ∈ F := fun inD =>
     Finset.mem_union_left _ (Finset.mem_union_left _ (Finset.mem_union_right _ inD))
   have inF_E : ∀ {o}, o ∈ E → o ∈ F := fun inE =>
     Finset.mem_union_left _ (Finset.mem_union_right _ inE)
-  have madeNamed : ∀ {o}, o ∈ f.selection.made → o ∈ f.names := fun made => by
-    simp [Firing.names, made]
+  have madeNamed : ∀ {o}, o ∈ f.selection.made → o ∈ f.selection.made.toFinset :=
+    List.mem_toFinset.mpr
   have madeOfM : ∀ {o}, o ∈ M → o ∈ f.selection.made := fun inM =>
     List.mem_toFinset.mp (Finset.mem_filter.mp inM).1
   have sub : M ⊆ F := fun o inM => inF_D (Finset.mem_filter.mp inM).2
@@ -251,29 +251,29 @@ theorem ModuloEquivalent.semantic_counterpart_witness [DecidableEq O] {C D : Con
   · rw [renameConfiguration_trans, ← gResult, Firing.rename_trans]
     exact sameResult
 
-/-- **Semantic firings preserve the client equivalence**, when the made identities avoid the other
+/-- **Semantic exact-query firings preserve the client equivalence**, when the made identities avoid the other
 state: the joint ends, each client having watched its firing, are equivalent. -/
 theorem ModuloEquivalent.client_firing [DecidableEq O] (c : Client O) {C D : Configuration T O}
-    (h : ModuloEquivalent A label c.escaped C D) {f : Firing T S O} (valid : f.Valid A label C)
-    (reads : IsSemantic A f) (avoids : ∀ r ∈ f.selection.made, r ∉ D.present) :
-    ∃ π : O ≃ O, (f.rename π).Valid A label D ∧
-      JointModuloEquivalent A label c.escaped (f.result label C, c.watch [f])
-        ((f.rename π).result label D, c.watch [f.rename π]) := by
+    (h : ModuloEquivalent A label c.escaped C D) {f : ExactQueryAlphabet.Alphabet T S O} (valid : f.1.Valid A label C)
+    (reads : IsSemantic A f.1) (avoids : ∀ r ∈ f.1.selection.made, r ∉ D.present) :
+    ∃ π : O ≃ O, (f.1.rename π).Valid A label D ∧
+      JointModuloEquivalent A label c.escaped (f.1.result label C, c.watch [f])
+        ((f.1.rename π).result label D, c.watch [ExactQueryAlphabet.rename π f]) := by
   obtain ⟨π, k, same, support⟩ := h.supported
   obtain ⟨admits, kResult, sameResult⟩ := modulo_step_witness k same
     (fun r member => support r (made_fresh valid member) (avoids r member)) reads
   exact ⟨π, admits.mpr valid, π, kResult, sameResult,
     c.watch_rename (fun o member => k.fixes o member) [f]⟩
 
-/-- **Semantic firings preserve the client equivalence**, given a fresh supply of the made labels. -/
+/-- **Semantic exact-query firings preserve the client equivalence**, given a fresh supply of the made labels. -/
 theorem ModuloEquivalent.client_counterpart [DecidableEq O] (c : Client O) {C D : Configuration T O}
-    (h : ModuloEquivalent A label c.escaped C D) {f : Firing T S O} (valid : f.Valid A label C)
-    (reads : IsSemantic A f)
-    (supply : ∀ r ∈ f.selection.made, ∀ G : Finset O, ∃ o, o ∉ G ∧ label o = label r) :
-    ∃ τ : O ≃ O, (f.rename τ).Valid A label D ∧
-      JointModuloEquivalent A label c.escaped (f.result label C, c.watch [f])
-        ((f.rename τ).result label D, c.watch [f.rename τ]) := by
-  obtain ⟨τ, admitted, k, same⟩ := h.semantic_counterpart_witness valid reads supply
+    (h : ModuloEquivalent A label c.escaped C D) {f : ExactQueryAlphabet.Alphabet T S O} (valid : f.1.Valid A label C)
+    (reads : IsSemantic A f.1)
+    (supply : ∀ r ∈ f.1.selection.made, ∀ G : Finset O, ∃ o, o ∉ G ∧ label o = label r) :
+    ∃ τ : O ≃ O, (f.1.rename τ).Valid A label D ∧
+      JointModuloEquivalent A label c.escaped (f.1.result label C, c.watch [f])
+        ((f.1.rename τ).result label D, c.watch [ExactQueryAlphabet.rename τ f]) := by
+  obtain ⟨τ, admitted, k, same⟩ := h.semantic_counterpart_witness (f := f.1) valid reads supply
   exact ⟨τ, admitted, τ, k, same, c.watch_rename (fun o member => k.fixes o member) [f]⟩
 
 end Firings

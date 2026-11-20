@@ -43,6 +43,7 @@ open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 open Mettapedia.Languages.ProcessCalculi.MORK
   (Subst matchAtom MatchAtomRel matchAtom_sound matchAtom_complete)
 open Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting
+open Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits (Enabled)
 open Interface
 open Mettapedia.Languages.MeTTa.ContextualTransform
 open PeTTaStoreSelection (atomFrames)
@@ -338,6 +339,154 @@ theorem keptTuples_observed (s : Store) (ps : List Atom) :
   intro atom inTuple
   rw [List.count_filter (tuple_met s ps [] t member atom inTuple)]
 
+/-! ## Candidate order on a fixed physical view -/
+
+/-- Traversing the same rows in a different order preserves every joint
+binding/tuple occurrence, including duplicates. -/
+theorem jointIn_perm {s t : Store} (order : s.Perm t) :
+    ∀ (ps : List Atom) (σ : Subst), (jointIn s σ ps).Perm (jointIn t σ ps)
+  | [], _ => .refl _
+  | p :: ps, σ => by
+    have selected : (matchesIn s σ p).Perm (matchesIn t σ p) := order.filterMap _
+    exact (selected.flatMap_right _).trans
+      (List.Perm.flatMap_left _ fun row _ => (jointIn_perm order ps row.1).map _)
+
+/-- Absence and uniqueness are stable under traversal reordering. An authored
+`collect` is excluded because its ordered result can be a later pattern. -/
+theorem walk_perm_of_no_collect {s t : Store} (order : s.Perm t) (firing : Bool) :
+    ∀ (cs : List Conj) (σ : Subst),
+      (∀ m q c, Conj.collect m q c ∉ cs) →
+      (walk s firing σ cs).Perm (walk t firing σ cs)
+  | [], _, _ => .refl _
+  | c :: cs, σ, noCollect => by
+    have tail (τ : Subst) := walk_perm_of_no_collect order firing cs τ
+      (fun m q value member => noCollect m q value (List.mem_cons_of_mem c member))
+    cases c with
+    | pat m p =>
+        have selected : (matchesIn s σ p).Perm (matchesIn t σ p) := order.filterMap _
+        exact (selected.flatMap_right _).trans
+          (List.Perm.flatMap_left _ fun row _ => (tail row.1).map _)
+    | absent q =>
+        have same := jointIn_perm order q.parts σ
+        have empty : (jointIn s σ q.parts = []) = (jointIn t σ q.parts = []) :=
+          propext ⟨fun e => (e ▸ same).nil_eq.symm, fun e => (e ▸ same).eq_nil⟩
+        simp only [walk, empty]
+        split
+        · exact tail σ
+        · rfl
+    | unique m q =>
+        have same := jointIn_perm order q.parts σ
+        cases selected : jointIn s σ q.parts with
+        | nil =>
+            have none : jointIn t σ q.parts = [] := (selected ▸ same).nil_eq.symm
+            simp [walk, selected, none]
+        | cons row rest =>
+            cases rest with
+            | nil =>
+                have singleton : jointIn t σ q.parts = [row] := (selected ▸ same).singleton_eq.symm
+                simpa only [walk, selected, singleton] using (tail row.1).map
+                  (fun w => (w.1, row.2.map (fun a => (m, a)) ++ w.2))
+            | cons next remaining =>
+                cases other : jointIn t σ q.parts with
+                | nil => simp [selected, other] at same
+                | cons first rest =>
+                    cases rest with
+                    | nil => simp [selected, other] at same
+                    | cons second more => simp [walk, selected, other]
+    | collect m q value => exact absurd List.mem_cons_self (noCollect m q value)
+    | as p a =>
+        simp only [walk]
+        split
+        · rfl
+        · exact tail _
+
+/-- For a fixed guide with no order-observing collection in its search,
+reordering the store enumeration cannot turn success into refusal. It may
+change which valid witness a first-valid policy selects. -/
+theorem fire_admitted_perm_of_no_collect {s t : Store} (order : s.Perm t)
+    (g : Footprint) (src : Sources) {A : Type} (emit : Subst → List A)
+    (kernel : ∀ m q c, Conj.collect m q c ∉ guided src.kernel g ++ src.choice)
+    (extension : ∀ ext, src.every = some ext → ∀ m q c, Conj.collect m q c ∉ ext) :
+    (LibTransform.fire s g src emit).isSome = (LibTransform.fire t g src emit).isSome := by
+  have verdict {first second : Store} (perm : first.Perm second)
+      (c d : Candidate) (sameKernel : c.kernel = d.kernel)
+      (sameRows : c.rows.Perm d.rows) :
+      valid first c.footprint = true ↔ valid second d.footprint = true := by
+    have footprint : c.footprint.Perm d.footprint := by
+      simp only [Candidate.footprint, sameKernel]
+      exact (sameRows.flatMap_right Prod.snd).append_left _
+    have takesSame : (takes c.footprint).Perm (takes d.footprint) := footprint.filterMap _
+    have readsSame : (reads c.footprint).Perm (reads d.footprint) := footprint.filterMap _
+    have takeCounts (a : Atom) : (takes c.footprint).count a = (takes d.footprint).count a :=
+      takesSame.count_eq a
+    have tmem (a : Atom) : a ∈ takes c.footprint ↔ a ∈ takes d.footprint := takesSame.mem_iff
+    have rmem (a : Atom) : (a ∈ reads c.footprint) = (a ∈ reads d.footprint) :=
+      propext readsSame.mem_iff
+    rw [valid_iff, valid_iff]
+    simp only [takeCounts, rmem, perm.count_eq, tmem]
+  have forward {first second : Store} (perm : first.Perm second)
+      (admitted : (LibTransform.fire first g src emit).isSome = true) :
+      (LibTransform.fire second g src emit).isSome = true := by
+    simp only [LibTransform.fire, Option.isSome_map, List.find?_isSome] at admitted ⊢
+    obtain ⟨c, generated, ok⟩ := admitted
+    obtain ⟨row, inFirst, rfl⟩ := List.mem_map.mp generated
+    have inSecond := (walk_perm_of_no_collect perm true _ [] kernel).mem_iff.mp inFirst
+    let packet (store : Store) : Candidate :=
+      ⟨row.2, match src.every with
+        | none => [(row.1, [])]
+        | some ext => walk store true row.1 ext⟩
+    have sameRows : (packet first).rows.Perm (packet second).rows := by
+      cases ext : src.every with
+      | none => simp [packet, ext]
+      | some other =>
+          simpa only [packet, ext] using walk_perm_of_no_collect perm true other row.1 (extension other ext)
+    exact ⟨packet second, List.mem_map.mpr ⟨row, inSecond, rfl⟩,
+      (verdict perm (packet first) (packet second) rfl sameRows).mp ok⟩
+  exact Bool.eq_iff_iff.mpr ⟨forward order, forward order.symm⟩
+
+private theorem guided_no_collect :
+    ∀ (cs : List Conj) (guide : Footprint), (∀ m q c, Conj.collect m q c ∉ cs) →
+      ∀ m q c, Conj.collect m q c ∉ guided cs guide
+  | [], _, _, _, _, _ => List.not_mem_nil
+  | head :: tail, guide, noCollect, m, q, c => by
+    have tailClean : ∀ m q c, Conj.collect m q c ∉ tail :=
+      fun use query pattern member => noCollect use query pattern (List.mem_cons_of_mem head member)
+    cases head with
+    | pat use pattern =>
+        cases guide with
+        | nil => simpa [guided] using guided_no_collect tail [] tailClean m q c
+        | cons selected rest =>
+            obtain ⟨mode, atom⟩ := selected
+            simpa [guided] using guided_no_collect tail rest tailClean m q c
+    | unique use query =>
+        have gone := guided_no_collect tail (guide.drop query.parts.length) tailClean m q c
+        simp [guided, asParts, List.mem_map, gone]
+    | absent query => simpa [guided] using guided_no_collect tail guide tailClean m q c
+    | collect use query pattern => exact absurd List.mem_cons_self (noCollect use query pattern)
+    | as pattern atom => simpa [guided] using guided_no_collect tail guide tailClean m q c
+
+/-- Reordering the complete proposal scan preserves the existence of a
+commit, including a successful commit that emits no answers. This does not
+reorder a sequence of commits on changing worlds. -/
+theorem fireFirst_admitted_perm_of_no_collect {s t : Store} (order : s.Perm t)
+    (src : Sources) {A : Type} (emit : Subst → List A)
+    (kernel : ∀ m q c, Conj.collect m q c ∉ src.kernel)
+    (choice : ∀ m q c, Conj.collect m q c ∉ src.choice)
+    (extension : ∀ ext, src.every = some ext → ∀ m q c, Conj.collect m q c ∉ ext) :
+    (fireFirst s src emit).isSome = (fireFirst t src emit).isSome := by
+  have transport {first second : Store} (perm : first.Perm second) :
+      (fireFirst first src emit).isSome = true → (fireFirst second src emit).isSome = true := by
+    simp only [fireFirst, List.findSome?_isSome_iff]
+    rintro ⟨guide, member, fired⟩
+    have scanned : (proposals first src).Perm (proposals second src) :=
+      (walk_perm_of_no_collect perm false src.kernel [] kernel).map Prod.snd
+    refine ⟨guide, scanned.mem_iff.mp member, ?_⟩
+    rw [← fire_admitted_perm_of_no_collect perm guide src emit
+      (fun m q c => by
+        simp [List.mem_append, guided_no_collect src.kernel guide kernel m q c, choice m q c]) extension]
+    exact fired
+  exact Bool.eq_iff_iff.mpr ⟨transport order, transport order.symm⟩
+
 namespace Controls
 
 /-- Rows 0 and 1 hold `(p a)` and `(q a)`. -/
@@ -371,6 +520,75 @@ theorem parts_present_joint_absent :
   refine ⟨by decide, by decide, ?_⟩
   rw [walk_absent_reads]
   decide
+
+private def edge (left right : Atom) : Atom := .expression [.symbol "edge", left, right]
+private def blocked (node : Atom) : Atom := .expression [.symbol "blocked", node]
+
+private def guardedRows : Store :=
+  [edge a b, edge b (.symbol "c"), blocked b, edge a (.symbol "d"), edge (.symbol "d") (.symbol "c")]
+
+private def unguardedPair : List Conj :=
+  [.pat .take (edge a (.var "mid")), .pat .take (edge (.var "mid") (.symbol "c"))]
+
+private def routeGuard : Conj := .absent (.one (blocked (.var "mid")))
+private def guardedPair : Sources := ⟨[], unguardedPair ++ [routeGuard], none⟩
+private def emitMid : Subst → Answers := instances (.var "mid")
+
+/-- Testing the first joined candidate would refuse, although there is a
+valid guarded pair. The real search takes both edges of that pair together. -/
+theorem bad_first_candidate_does_not_block_the_later_pair :
+    ((candidates guardedRows [] ⟨[], unguardedPair, none⟩).head?.map fun candidate =>
+      (candidate.instances emitMid, valid guardedRows candidate.footprint,
+        candidate.rows.any fun row => !(walk guardedRows true row.1 [routeGuard]).isEmpty)) =
+      some ([b], true, false) ∧
+    LibTransform.fire guardedRows [] guardedPair emitMid =
+      some ([edge a b, edge b (.symbol "c"), blocked b], [.symbol "d"]) := by
+  decide +kernel
+
+/-- If no guarded pair exists, the library neither consumes the first edge
+nor reroutes an answer from a partial join. -/
+theorem blocked_pair_cannot_consume_an_edge :
+    let rows := [edge a b, edge b (.symbol "c"), blocked b]
+    firing guardedPair emitMid [] rows = .done rows := by
+  rfl
+
+private def numberedGuardedRow (n : Nat) : Atom :=
+  guardedRows[n]?.getD (.symbol "outside")
+
+/-- The concrete result has a single enabled occurrence commit with exactly
+two distinct takes, both drawn from the same space. -/
+theorem guarded_pair_has_one_two_take_commit :
+    ∃ selection : Selection Nat,
+      selection.taken.Nodup ∧ selection.taken.map numberedGuardedRow =
+        [edge a (.symbol "d"), edge (.symbol "d") (.symbol "c")] ∧
+      Enabled numberedGuardedRow {0, 1, 2, 3, 4} (selection.commit (T := Atom)) := by
+  have starts : Represents numberedGuardedRow [0, 1, 2, 3, 4] guardedRows := ⟨by decide, rfl⟩
+  obtain ⟨candidate, member, selection, _, real, enabled, _, _, _, _⟩ :=
+    fire_publishes starts bad_first_candidate_does_not_block_the_later_pair.2
+  have footprints : (candidates guardedRows [] guardedPair).map (fun c => takes c.footprint) =
+      [[edge a (.symbol "d"), edge (.symbol "d") (.symbol "c")]] := by decide +kernel
+  have found := List.mem_map_of_mem (f := fun c => takes c.footprint) member
+  rw [footprints, List.mem_singleton] at found
+  exact ⟨selection, real.taken_distinct, real.taken_labels.trans found, enabled⟩
+
+/-- With both pairs allowed, the reordered search still commits but can
+choose the other pair and leave a different store. -/
+theorem traversal_can_change_the_committed_pair :
+    let src : Sources := ⟨[], unguardedPair, none⟩
+    fireFirst guardedRows src emitMid =
+      some ([blocked b, edge a (.symbol "d"), edge (.symbol "d") (.symbol "c")], [b]) ∧
+    fireFirst guardedRows.reverse src emitMid =
+      some ([blocked b, edge b (.symbol "c"), edge a b], [.symbol "d"]) := by
+  decide +kernel
+
+/-- A reordering law for guards cannot silently quotient an authored
+collection that is itself compared with ordered data. -/
+theorem ordered_collection_can_change_admission :
+    let src : Sources := ⟨[.collect .read (.one (.var "item")) (.expression [a, b])], [], none⟩
+    ([a, b] : Store).Perm [b, a] ∧
+      (LibTransform.fire [a, b] [] src emitMid).isSome = true ∧
+      (LibTransform.fire [b, a] [] src emitMid).isSome = false := by
+  exact ⟨List.Perm.swap .., by decide +kernel, by decide +kernel⟩
 
 end Controls
 

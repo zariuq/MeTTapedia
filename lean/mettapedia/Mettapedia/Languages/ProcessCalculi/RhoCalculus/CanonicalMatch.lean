@@ -50,7 +50,7 @@ private theorem normalizeParallelElements_agreement (patterns : List Pattern) :
             quoteConstructor := "NQuote", dropConstructor := "PDrop",
             parallelCollection := .hashBag,
             parallelUnitConstructor := "PZero",
-            quoteDropEquation := "QuoteDrop" }) =
+            quoteDropEquation := "QuoteDrop", quoteScope := .closed }) =
       patterns.flatMap Canonical.bagSplice by
         apply List.flatMap_congr
         intro pattern membership

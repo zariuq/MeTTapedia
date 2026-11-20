@@ -31,7 +31,7 @@ binds `$x` to `(S Z)` and `$y` to `(S Z)`, values that are themselves expression
 * `settlesK_determined`: every derivation of HE's completed relation from every marked presentation
   returns `L`.
 * `every_complete_run_k`: a complete HE run exists; every complete HE run (historical lookup, any
-  policy) publishes `L`; PeTTa's streaming run yields `L` from some fuel on.
+  policy) publishes the bag of `L`; PeTTa's streaming run yields the list `L` from some fuel on.
 * `settlesC_settlesK`: the extension is conservative.
 
 ## Controls
@@ -843,7 +843,8 @@ section Joint
 variable {lookup : CastLookup} {policy : Policy}
 
 /-- **Both machines evaluate every settling term to its answers**: HE every marked presentation,
-PeTTa every presentation under extending bindings. -/
+PeTTa every presentation under extending bindings. The list is the model's order, which is PeTTa's;
+HE's claim is the bag (`every_complete_run_k`). -/
 theorem settlesK_agree (answers : AnswersUndefined lookup) {atoms : List Atom}
     (program : CallProgram atoms) {t : Atom} {L : List Atom}
     (settles : SettlesK dispatch atoms t L) :
@@ -1032,9 +1033,9 @@ theorem settlesK_determined {policy : Policy} {atoms : List Atom} (program : Cal
           simp only [List.map_cons, Entry.Value.erase] at value
           exact (value_not_defined defined value).elim)
 
-/-- **Every complete run of HE publishes PeTTa's answers, with variables bound to compound values**
-(historical lookup, any policy): a complete run exists; from some fuel on PeTTa's streaming run
-yields `L`; every complete run of HE publishes `L`. -/
+/-- **Every complete run of HE publishes PeTTa's answers, as a bag, with variables bound to compound
+values** (historical lookup, any policy): a complete run exists; from some fuel on PeTTa's streaming
+run yields the list `L`; every complete run of HE publishes the bag of `L`. -/
 theorem every_complete_run_k (policy : Policy) {atoms : List Atom} (program : CallProgram atoms)
     {c : Atom} {L : List Atom} (settles : SettlesK dispatch atoms c L) :
     (∃ heAnswers : List Result,
@@ -1048,7 +1049,8 @@ theorem every_complete_run_k (policy : Policy) {atoms : List Atom} (program : Ca
             Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy)
                 (load (Space.ofList atoms) c Atom.undefinedType)
                 ⟨Space.ofList atoms, .returning [], [], emitted⟩ →
-              emitted.map (fun r => r.1.erase) = L := by
+              ((emitted.map (fun r => r.1.erase) : List Atom) : Multiset Atom) =
+                ((L : List Atom) : Multiset Atom) := by
   obtain ⟨he, petta⟩ := settlesK_agree (lookup := Completed.rawLookup) (policy := policy)
     raw_answers program settles
   have shape := (settlesK_shape settles).1
@@ -1057,7 +1059,27 @@ theorem every_complete_run_k (policy : Policy) {atoms : List Atom} (program : Ca
     (over_root_K petta fun σ => shows_ground_K shape.tree shape.answerable)
   have determined := (settlesK_determined (policy := policy) program settles).plain
   exact ⟨⟨R, path⟩, N, fun n bigger =>
-    ⟨stable n bigger, fun emitted run => determined _ _ _ _ (complete_source run)⟩⟩
+    ⟨stable n bigger, fun emitted run => congrArg (fun l : List Atom => (l : Multiset Atom))
+      (determined _ _ _ _ (complete_source run))⟩⟩
+
+/-- `every_complete_run_k` for one answer, which is its own list. -/
+theorem every_complete_run_k_single (policy : Policy) {atoms : List Atom}
+    (program : CallProgram atoms) {c a : Atom} (settles : SettlesK dispatch atoms c [a]) :
+    (∃ heAnswers : List Result,
+      Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy)
+          (load (Space.ofList atoms) c Atom.undefinedType)
+          ⟨Space.ofList atoms, .returning [], [], heAnswers⟩) ∧
+      ∃ N : Nat, ∀ n, N ≤ n →
+        Streaming.values (Streaming.advance (translate atoms) n
+            (Streaming.enter { state := store atoms } c)) = [a] ∧
+          ∀ emitted : List Result,
+            Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy)
+                (load (Space.ofList atoms) c Atom.undefinedType)
+                ⟨Space.ofList atoms, .returning [], [], emitted⟩ →
+              emitted.map (fun r => r.1.erase) = [a] := by
+  obtain ⟨complete, N, every⟩ := every_complete_run_k policy program settles
+  exact ⟨complete, N, fun n bigger => ⟨(every n bigger).1, fun emitted run =>
+    List.perm_singleton.mp (Multiset.coe_eq_coe.mp ((every n bigger).2 emitted run))⟩⟩
 
 /-! ## Controls -/
 
@@ -1222,7 +1244,7 @@ theorem add_every_run (policy : Policy) :
         emitted.map (fun r => r.1.erase) = [SSSZ]) ∧
       Streaming.values (Streaming.advance (translate peanoRows) 80
         (Streaming.enter { state := store peanoRows } (app "add" [SSZ, SZ]))) = [SSSZ] := by
-  obtain ⟨complete, N, every⟩ := every_complete_run_k policy peano_program add_ssz_sz
+  obtain ⟨complete, N, every⟩ := every_complete_run_k_single policy peano_program add_ssz_sz
   exact ⟨⟨complete, (every N le_rfl).2⟩, add_value⟩
 
 /-- **Positive control: a body that is a variable bound to a compound value.** `(add Z (S Z))`
@@ -1237,7 +1259,7 @@ theorem add_z_every_run (policy : Policy) :
         emitted.map (fun r => r.1.erase) = [SZ]) ∧
       Streaming.values (Streaming.advance (translate peanoRows) 80
         (Streaming.enter { state := store peanoRows } (app "add" [Z, SZ]))) = [SZ] := by
-  obtain ⟨complete, N, every⟩ := every_complete_run_k policy peano_program add_z_sz
+  obtain ⟨complete, N, every⟩ := every_complete_run_k_single policy peano_program add_z_sz
   exact ⟨⟨complete, (every N le_rfl).2⟩, add_z_value⟩
 
 /-- **Negative control: the extension is strict.** `(add (S (S Z)) (S Z))` does not settle in

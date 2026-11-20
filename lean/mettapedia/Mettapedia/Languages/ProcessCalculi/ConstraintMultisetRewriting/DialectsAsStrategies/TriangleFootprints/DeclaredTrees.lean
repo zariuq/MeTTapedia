@@ -8,10 +8,10 @@ taken branch, or an undeclared one, goes on with that branch, at every frame. Th
 that node under the two ways a program composes terms, and compares the result with PeTTa.
 
 * `SettlesDeclared`: **the class**: a data atom; `(if b y n)` with a Boolean literal and a taken
-  branch that is declared (a symbolic type) or undeclared; a constructor applied to terms of the
-  class; a call on data of a defined function whose rows' bodies are closed terms of the class. Like
-  `IfInBodies.SettlesIf`, it is a condition on the program's call graph, never on an answer or a
-  run.
+  branch that is declared (a closed type, no variable, no wildcard) or undeclared; a constructor
+  applied to terms of the class; a call on data of a defined function whose rows' bodies are closed
+  terms of the class. Like `IfInBodies.SettlesIf`, it is a condition on the program's call graph,
+  never on an answer or a run.
 * `settlesDeclared_shape`: its answers are answerable and its terms meet the facts of a body.
 * `settlesDeclared_good`: every run of the variant machine on a term of the class goes on with its
   answers, at every frame and under every continuation.
@@ -31,6 +31,9 @@ that node under the two ways a program composes terms, and compares the result w
   `metta-repl` answers `[(pair 1 True)]`.
 * `Controls.mixed_agree` (positive): `(pair (if True 1 2) (if False yes no))`, a declared and an
   undeclared taken branch in one term, gives `[(pair 1 no)]` on every run and on PeTTa.
+* `Controls.list_agree` (positive): with `(: xs (List Nat))`,
+  `(pair (if True xs nil) (if True 1 2))` gives `[(pair xs 1)]` on every run and on PeTTa: a declared
+  type that is an expression. HE's `metta-repl` answers `[(pair xs 1)]`.
 * `Controls.computed_condition_not_in_class` (negative, the class's boundary): `(if (isTrue) 1 2)`
   is not in the class: its condition is no Boolean literal.
 -/
@@ -73,7 +76,7 @@ coincide), and all of whose bodies are in the class. -/
 inductive SettlesDeclared (dispatch : GroundedDispatch) (atoms : List Atom) :
     Atom → List Atom → Prop
   | data {d : Atom} : DataAtom d → d ≠ Atom.notReducible → SettlesDeclared dispatch atoms d [d]
-  | declaredIf {b : Bool} {y n : Atom} {s : String} : DeclaredBranches atoms b y n s →
+  | declaredIf {b : Bool} {y n T : Atom} : DeclaredBranches atoms b y n T →
       SettlesDeclared dispatch atoms (callOf b y n) [pick b y n]
   | plainIf {b : Bool} {y n : Atom} : UndeclaredBranches atoms b y n →
       SettlesDeclared dispatch atoms (callOf b y n) [pick b y n]
@@ -342,25 +345,29 @@ theorem twice_number_types (k : Int) :
     StorageTypesRel (Space.ofList twiceRows) (.grounded (.int k)) [sym "Number"] :=
   .groundedKnown (.int k) (by simp [Atom.undefinedType])
 
-theorem twice_number_branches : DeclaredBranches twiceRows true one two "Number" where
+theorem twice_number_branches : DeclaredBranches twiceRows true one two (sym "Number") where
   dataYes := .grounded _
   dataNo := .grounded _
   takenNotRefused := by simp [pick, Atom.notReducible]
   takenType := twice_number_types 1
   notUndefined := by decide
   notAtom := by decide
+  notVariable := rfl
+  closedType := rfl
   typedYes := ⟨_, twice_number_types 1, rfl⟩
   typedNo := ⟨_, twice_number_types 2, rfl⟩
   region := by decide +kernel
   sides := by decide +kernel
 
-theorem twice_bool_branches : DeclaredBranches twiceRows true tru fls "Bool" where
+theorem twice_bool_branches : DeclaredBranches twiceRows true tru fls (sym "Bool") where
   dataYes := .grounded _
   dataNo := .grounded _
   takenNotRefused := by simp [pick, Atom.notReducible]
   takenType := bool_types_in _ true
   notUndefined := by decide
   notAtom := by decide
+  notVariable := rfl
+  closedType := rfl
   typedYes := ⟨_, bool_types_in _ true, rfl⟩
   typedNo := ⟨_, bool_types_in _ false, rfl⟩
   region := by decide +kernel
@@ -441,6 +448,57 @@ theorem mixed_agree (policy : Policy) :
   declared_trees_every_run noHost (fun impossible => impossible) policy if_program_full
     mixed_settles
 
+theorem list_number_branches :
+    DeclaredBranches DeclaredBranchVariant.Controls.listRows true one two (sym "Number") where
+  dataYes := .grounded _
+  dataNo := .grounded _
+  takenNotRefused := by simp [pick, Atom.notReducible]
+  takenType := .groundedKnown (.int 1) (by simp [Atom.undefinedType])
+  notUndefined := by decide
+  notAtom := by decide
+  notVariable := rfl
+  closedType := rfl
+  typedYes := ⟨_, .groundedKnown (.int 1) (by simp [Atom.undefinedType]), rfl⟩
+  typedNo := ⟨_, .groundedKnown (.int 2) (by simp [Atom.undefinedType]), rfl⟩
+  region := by decide +kernel
+  sides := by decide +kernel
+
+/-- `(pair (if True xs nil) (if True 1 2))` with `(: xs (List Nat))`: an expression type and a
+symbolic type in one term. -/
+theorem list_settles : SettlesDeclared noHost DeclaredBranchVariant.Controls.listRows
+    (app "pair" [callOf true (sym "xs") (sym "nil"), callOf true one two])
+    [app "pair" [sym "xs", one]] := by
+  have pairHead : NodeHead noHost DeclaredBranchVariant.Controls.listRows "pair" :=
+    ⟨.symbol (by decide) (by decide), by decide +kernel, fun impossible => impossible, by decide,
+      by decide, by decide, by decide⟩
+  have built := SettlesDeclared.build (dispatch := noHost)
+    (atoms := DeclaredBranchVariant.Controls.listRows) pairHead (by decide +kernel)
+    (ts := [callOf true (sym "xs") (sym "nil"), callOf true one two])
+    (Ls := [[sym "xs"], [one]]) rfl
+    (fun p member => by
+      simp only [List.zip_cons_cons, List.zip_nil_right, List.mem_cons, List.not_mem_nil,
+        or_false] at member
+      rcases member with rfl | rfl
+      · exact .declaredIf DeclaredBranchVariant.Controls.list_branches
+      · exact .declaredIf list_number_branches)
+  simpa [combos] using built
+
+/-- **Positive control, both dialects, a declared type that is an expression**: with
+`(: xs (List Nat))`, `(pair (if True xs nil) (if True 1 2))` gives `[(pair xs 1)]` on every run of
+the variant machine and on PeTTa. HE's `metta-repl` answers `[(pair xs 1)]`. -/
+theorem list_agree (policy : Policy) :
+    EveryRunV noHost Completed.scopedLookup policy
+        (Space.ofList DeclaredBranchVariant.Controls.listRows)
+        (app "pair" [callOf true (sym "xs") (sym "nil"), callOf true one two])
+        [app "pair" [sym "xs", one]] ∧
+      ∃ N : Nat, ∀ n, N ≤ n → Streaming.values
+        (Streaming.advance (translate DeclaredBranchVariant.Controls.listRows) n
+          (Streaming.enter { state := store DeclaredBranchVariant.Controls.listRows }
+            (app "pair" [callOf true (sym "xs") (sym "nil"), callOf true one two]))) =
+        [app "pair" [sym "xs", one]] :=
+  declared_trees_every_run noHost (fun impossible => impossible) policy
+    DeclaredBranchVariant.Controls.list_program list_settles
+
 /-- **Negative control, the class's boundary**: `(if (isTrue) 1 2)` is not in the class: its
 condition is no Boolean literal, `if` has a declared type (so it is no constructor head), and `if`
 is no ordinary head. Computed conditions are covered on the model for undeclared branches
@@ -483,6 +541,8 @@ end Controls
 #print axioms Controls.twice_agree
 #print axioms Controls.mixed_settles
 #print axioms Controls.mixed_agree
+#print axioms Controls.list_settles
+#print axioms Controls.list_agree
 #print axioms Controls.computed_condition_not_in_class
 
 end DeclaredTrees

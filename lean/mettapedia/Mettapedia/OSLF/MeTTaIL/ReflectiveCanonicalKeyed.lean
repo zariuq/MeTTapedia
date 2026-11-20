@@ -916,6 +916,8 @@ private def keyedFixtureDeclaration : ReflectivePresentationDecl where
   parallelCollection := .hashBag
   parallelUnitConstructor := "zero"
   quoteDropEquation := "quote-drop"
+  -- Closed: the canaries depend only on the keyed order of closed terms.
+  quoteScope := .closed
 
 private def keyedFixturePattern : Pattern :=
   .collection .hashBag [.fvar "a", .fvar "b"] none

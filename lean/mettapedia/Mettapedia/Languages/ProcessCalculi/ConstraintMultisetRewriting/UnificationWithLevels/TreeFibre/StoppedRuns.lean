@@ -84,7 +84,7 @@ theorem stopped_empty {a m : Context S.R} {problem : EquationStore (TotalTerm a)
   have notStuck := familyRound_ne_stuck facts roots heads algebra rigid complete insideR nonempty
   cases h : familyRound facts roots heads algebra rigid complete R with
   | progress update smaller => exact stopped.1 update.target update.answer update.remaining (.round h)
-  | refuted absent => exact familyRound_ne_refuted facts roots heads algebra rigid complete R absent h
+  | refuted missing => exact familyRound_ne_refuted facts roots heads algebra rigid complete R missing h
   | stuck => exact notStuck h
 
 /-- **A stopped run from the fragment ends with a principal answer.** -/

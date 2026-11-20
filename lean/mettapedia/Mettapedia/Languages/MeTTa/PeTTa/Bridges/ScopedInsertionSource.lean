@@ -105,12 +105,12 @@ theorem source_prefix {Context : Type} (program : SpaceSemantics.Program)
     rw [LiteralQuerySource.read_handle] at bound
     exact bound.symm
   obtain ⟨rows, snapshot, _⟩ := Effects.insert_reads_back inserted
-  have applied : StdLib.apply world.state "add-atom" [Effects.handleValue handle, payload] =
-      .ok (after, [Effects.boolean true]) := by
-    change (match Effects.readHandle (Effects.handleValue handle) >>= fun target => Effects.insert world.state target payload with
-      | some state => Except.ok (state, [Effects.boolean true])
-      | none => Except.error Effects.Fault.invalidSpace) = _
-    simp [inserted]
+  have value : payload.isVariable = false := by
+    cases payload with
+    | var => simp [ScopedQuerySource.mutationPayload,
+        Mettapedia.Languages.ProcessCalculi.MORK.isGroundAtom] at ordinaryPayload
+    | _ => rfl
+  have applied := StdLib.add_atom_applies_of_inserted value inserted
   have primitive := ScopedMutationSource.primitive_prefix .relational program allocator world
     {scope with frontier := (ready caller destination handle payloadCode, context, origins) :: pending} parents
     (ready caller destination handle payloadCode) context origins pending "add-atom"

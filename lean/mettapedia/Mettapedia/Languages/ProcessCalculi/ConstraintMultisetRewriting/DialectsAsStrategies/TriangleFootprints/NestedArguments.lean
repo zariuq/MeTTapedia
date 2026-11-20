@@ -16,7 +16,8 @@ differently:
   `t₁` is produced (`args_run`, by delivery through the frames).
 
 The answers are the same list: for each combination in lexicographic order, the answers of `f` on
-it (`nested_agree`, `nested_constructor_agree`). The comparison is compositional: it takes the joint
+it (`nested_agree`, `nested_constructor_agree`). That list is the model's order, which is PeTTa's;
+HE's order can differ, and HE's claim is the bag (`NestedEveryRun.nested_every_run`). The comparison is compositional: it takes the joint
 evaluation of each argument and of `f` on each combination of argument answers, and gives the joint
 evaluation of the nested call. `nested_complete` reads it on complete runs from both entries.
 -/
@@ -883,17 +884,20 @@ theorem flip_app {lookup : CastLookup} (answers : AnswersUndefined lookup) (poli
     (by rw [bodies]; simp) related
   rwa [flatten_singletons, bodies] at query
 
-/-- **Nested positive control: `(flip (coin))`.** Both dialects answer `tails`, `heads`: the coin's
-answers in order, each flipped. HE gets there by evaluating `(coin)` to both answers before its
-first query of `flip`; PeTTa by flipping `heads` before it evaluates the coin's second body
-(after twelve steps it has recorded `tails` with one job, the coin's `tails` body, still pending). -/
+/-- **Nested positive control: `(flip (coin))`.** Both dialects answer the bag of `tails` and `heads`.
+PeTTa answers `tails`, `heads`: the coin's answers in order, each flipped, by flipping `heads` before
+it evaluates the coin's second body (after twelve steps it has recorded `tails` with one job, the
+coin's `tails` body, still pending). HE evaluates `(coin)` to both answers before its first query of
+`flip`; the model's run publishes them in PeTTa's order, and HE itself publishes `heads`, `tails`,
+a nested argument's alternatives in reverse order, so only the bag is HE's. -/
 theorem flip_coin_agrees {lookup : CastLookup} (answers : AnswersUndefined lookup)
     (policy : Policy) :
     (∃ heAnswers : List Result,
       Relation.ReflTransGen (HEStep noHost lookup policy)
           (load (Space.ofList flipRows) (app "flip" [app "coin" []]) Atom.undefinedType)
           ⟨Space.ofList flipRows, .returning [], [], heAnswers⟩ ∧
-        heAnswers.map (fun r => r.1.erase) = [sym "tails", sym "heads"]) ∧
+        ((heAnswers.map (fun r => r.1.erase) : List Atom) : Multiset Atom) =
+          (([sym "heads", sym "tails"] : List Atom) : Multiset Atom)) ∧
       Streaming.values (Streaming.advance (translate flipRows) 80
         (Streaming.enter { state := store flipRows } (app "flip" [app "coin" []]))) =
         [sym "tails", sym "heads"] ∧
@@ -948,7 +952,11 @@ theorem flip_coin_agrees {lookup : CastLookup} (answers : AnswersUndefined looku
     simp [Q]
   rw [answersEq] at nested
   obtain ⟨R, N, path, _, erased, stable⟩ := nested_complete (by decide +kernel) nested
-  refine ⟨⟨R, path, erased⟩, ?_, by decide +kernel, by decide +kernel⟩
+  have bag : ((R.map (fun r => r.1.erase) : List Atom) : Multiset Atom) =
+      (([sym "heads", sym "tails"] : List Atom) : Multiset Atom) := by
+    rw [erased]
+    exact Multiset.coe_eq_coe.mpr (List.Perm.swap _ _ [])
+  refine ⟨⟨R, path, bag⟩, ?_, by decide +kernel, by decide +kernel⟩
   have finished : (Streaming.advance (translate flipRows) 80
       (Streaming.enter { state := store flipRows }
         (app "flip" [app "coin" []]))).agenda.length = 0 := by

@@ -573,9 +573,14 @@ theorem mapReflectivePresentation_costBase {source target : WrappableIGSLT}
       costBaseReflectivePresentationDecl
         (mapReflectivePresentation morphism.reflectiveSymbols declaration) := by
   cases declaration
-  simp [costBaseReflectivePresentationDecl, mapReflectivePresentation,
-    costBaseStaticReflectiveSymbols, costBaseStaticSymbols,
-    costBaseLanguageDefSymbolMap, costReflectiveSymbols, reflectiveSymbols]
+  simp only [costBaseReflectivePresentationDecl, mapReflectivePresentation]
+  congr 1
+  all_goals first
+    | exact mapQuoteScope_natural (fun constructor => by
+        simp [costBaseStaticReflectiveSymbols, costBaseStaticSymbols,
+          costBaseLanguageDefSymbolMap, costReflectiveSymbols, reflectiveSymbols]) _
+    | simp [costBaseStaticReflectiveSymbols, costBaseStaticSymbols,
+        costBaseLanguageDefSymbolMap, costReflectiveSymbols, reflectiveSymbols]
 
 /-- Wrapped reflective presentations are natural because maps of wrappable
 theories preserve and reflect the distinguished interacting sort. -/
@@ -588,10 +593,14 @@ theorem mapReflectivePresentation_costWrapped {source target : WrappableIGSLT}
       costWrappedReflectivePresentationDecl target.theory
         (mapReflectivePresentation morphism.reflectiveSymbols declaration) := by
   cases declaration
-  simp [costWrappedReflectivePresentationDecl, mapReflectivePresentation,
-    costWrappedStaticReflectiveSymbols, costWrappedStaticSymbols,
-    costReflectiveSymbols, reflectiveSymbols,
-    morphism.map_costWrappedCategory]
+  simp only [costWrappedReflectivePresentationDecl, mapReflectivePresentation]
+  congr 1
+  all_goals first
+    | exact mapQuoteScope_natural (fun constructor => by
+        simp [costWrappedStaticReflectiveSymbols, costWrappedStaticSymbols,
+          costReflectiveSymbols, reflectiveSymbols]) _
+    | simp [costWrappedStaticReflectiveSymbols, costWrappedStaticSymbols,
+        costReflectiveSymbols, reflectiveSymbols, morphism.map_costWrappedCategory]
 
 /-- Rule-local reflective selections commute with the structural maps:
 the whole-redex rewrite is fixed, while the source presentation references

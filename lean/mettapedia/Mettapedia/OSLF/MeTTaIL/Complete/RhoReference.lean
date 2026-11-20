@@ -39,7 +39,8 @@ open _root_.Mettapedia.OSLF.MeTTaIL.Syntax GeneralExecutionAdmission CanonicalBa
 open Mettapedia.GSLT.LanguageDef.WellSorted
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus (StructuralCongruence semanticCommSubst)
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Canonical (HashSetFree HashSetFreeList)
-open Mettapedia.Languages.ProcessCalculi.RhoCalculus.PureBoundary (rhoProcWellSorted_hashSetFree)
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus.PureBoundary (rhoProcWellSorted_hashSetFree
+  rhoProcWellSorted_hashSetFree_at)
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction (Reduces)
 open Mettapedia.GSLT.LanguageDef.GeneralTypedOccurrence GeneralTypedSites DerivedPresentationSyntax
 
@@ -245,13 +246,14 @@ theorem modelEquiv_sc {bound : List TypeExpr} {expected : TypeExpr} {left right 
 
 /-! ## Steps -/
 
-/-- A well-sorted closed process of the plan is well-sorted in rho's own sorting. -/
+/-- A well-sorted closed process of the plan is sorted by rho's derived judgment when binders
+reach into quotations (the apply view): the plan's typing places no restriction on quoted code. -/
 theorem procWellSorted_of_sorted {pattern : Pattern}
     (sorted : OpenPatternWellSorted (GeneralPlanEnvironment.environment GeneralRho.Standard.plan).language
       GeneralRho.Standard.plan.snapshot.free [] (.base "Proc") pattern) :
-    ProcWellSorted rhoReflectivePresentation FreeSortContext.empty [] pattern := by
+    ProcWellSorted rhoApplyPresentation FreeSortContext.empty [] pattern := by
   obtain ⟨typed, metadata, object, _⟩ := sorted
-  apply Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefTypingAgreement.languageDefHasSort_to_procWellSorted
+  apply Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefTypingAgreement.languageDefHasSort_to_procWellSorted_apply
     _ object metadata
   have freeEq : GeneralRho.Standard.plan.snapshot.free =
       Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefTypingAgreement.liftFreeSortContext
@@ -295,7 +297,7 @@ theorem rootFiring_reduces {bound : List TypeExpr} {type : TypeExpr} {source : P
     have outputTyped := Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalTyping.procListWellSorted_iff_forall_mem.mp
       elementsTyped _ (List.mem_of_mem_eraseIdx (List.mem_of_getElem? outputAt))
     obtain ⟨_, payloadTyped⟩ := Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedContextualStep.rho_output_wellSorted_inv outputTyped
-    have semantic := GeneralRho.reflective_reduct_semantic (channel := channel) bodyTyped payloadTyped residueSafe
+    have semantic := GeneralRho.reflective_reduct_resolved (channel := channel) bodyTyped payloadTyped residueSafe
     have localTarget := Option.some.inj (reduct.symm.trans semantic)
     subst localTarget
     obtain ⟨inputBound, inputEq⟩ := List.getElem?_eq_some_iff.mp inputAt
@@ -307,7 +309,20 @@ theorem rootFiring_reduces {bound : List TypeExpr} {type : TypeExpr} {source : P
     have arranged : elements.Perm ([GeneralRho.output channel payload, .apply "PInput" [channel, .lambda none body]] ++
         (elements.eraseIdx inputIndex).eraseIdx outputIndex) :=
       firstPerm.symm.trans ((List.Perm.cons _ secondPerm.symm).trans (List.Perm.swap _ _ _))
-    exact ⟨.equiv (.par_perm _ _ arranged) .comm (.refl _)⟩
+    have resolved : StructuralCongruence
+        (.collection .hashBag ([GeneralRho.output channel payload, .apply "PInput" [channel, .lambda none body]] ++
+          (elements.eraseIdx inputIndex).eraseIdx outputIndex) none)
+        (.collection .hashBag ([GeneralRho.output channel payload, .apply "PInput" [channel, .lambda none
+          (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body)]] ++
+          (elements.eraseIdx inputIndex).eraseIdx outputIndex) none) :=
+      Mettapedia.Languages.ProcessCalculi.RhoCalculus.Canonical.collectionCongruence_of_forall₂ .hashBag none
+        (.cons (.refl _)
+          (.cons (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Canonical.applyCongruence_of_forall₂ "PInput"
+              (.cons (.refl _) (.cons (.lambda_cong none _ _
+                (Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefAdequacy.resolveQuotes_structuralCongruence
+                  body)) .nil)))
+            (List.forall₂_same.mpr fun _ _ => .refl _)))
+    exact ⟨.equiv (.trans _ _ _ (.par_perm _ _ arranged) resolved) .comm (.refl _)⟩
 
 /-- **The standard reduction contexts are nested parallel compositions**: a reduction at the focus
 of a licensed site of a process is a reduction of the process. -/
@@ -374,7 +389,7 @@ theorem primitive_reduces {source : Pattern} {receipt : GeneralRuleJobs.Receipt}
 theorem primitive_target_hashSetFree {source : Pattern} {receipt : GeneralRuleJobs.Receipt}
     (fired : GeneralOccurrenceSemantics.Primitive GeneralRho.Standard.plan [] (.base "Proc") source receipt) :
     HashSetFree receipt.target :=
-  rhoProcWellSorted_hashSetFree (procWellSorted_of_sorted fired.2.2.2.2)
+  rhoProcWellSorted_hashSetFree_at (.reaching .apply) (procWellSorted_of_sorted fired.2.2.2.2)
 
 /-- **Every step modulo rho's model with the name equation is a reference reduction**, from an
 object term. -/

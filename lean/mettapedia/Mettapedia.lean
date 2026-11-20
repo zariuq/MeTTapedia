@@ -419,6 +419,7 @@ import Mettapedia.Languages.Megalodon.PreambleFragmentVertical
 import Mettapedia.Languages.Megalodon.PreambleDependencyRestriction
 import Mettapedia.Languages.Megalodon.ReductionBubbleElaboration
 import Mettapedia.Languages.Megalodon.DirectedSearchGradedCheck
+import Mettapedia.Languages.Megalodon.RuleModuleBindings
 import Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.TowerTheoryNode
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Instances.CumulativeRegularity
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Examples.DeclarationFormation

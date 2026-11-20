@@ -90,6 +90,38 @@ theorem selection [MemoryPrimitives] (condition : X86BranchCondition.Condition)
 
 local instance : MemoryPrimitives := X86Memory.ordinary
 
+theorem decode_to_branch_opcode (opcode : BitVec 8) (state : State)
+    (start opcodeAddress base : BitVec 48) (rex : BitVec 8)
+    (attributes : Vector (BitVec 16) 6) (pointer : Word)
+    (advance : opcodeAddress.toInt + 1 = base.toInt)
+    (segments : state.regs.get? .seg_hidden_attrs = some attributes)
+    (application : state.regs.get? .app_view = some true)
+    (rip : state.regs.get? .rip = some pointer)
+    (mandatory : Functions.compute_mandatory_prefix_for_two_byte_opcode .Mode_64bit opcode escapePacket = (0#8))
+    (noModRM : Functions.two_byte_opcode_modr_m_p .Mode_64bit (0#8) opcode = false)
+    (selected : Functions.two_byte_opcode_execute .Mode_64bit start base escapePacket (0#8) rex opcode (0#8) (0#8) =
+      Functions.x86_two_byte_jcc .Mode_64bit start base escapePacket rex opcode (0#8) (0#8))
+    (present : state.mem.get? (opcodeAddress.signExtend 52).toNat =
+      some opcode) :
+    (Functions.two_byte_opcode_decode_and_execute .Mode_64bit start opcodeAddress escapePacket rex (0x0f#8)).run state =
+      (Functions.x86_two_byte_jcc .Mode_64bit start base escapePacket rex
+        opcode (0#8) (0#8)).run state := by
+  have addressSize : Functions.select_address_size .Mode_64bit (some escapePacket) = (pure 8 : SailM Int) := rfl
+  unfold Functions.two_byte_opcode_decode_and_execute
+  rw [addressSize]
+  simp only [pure_bind]
+  rw [show Int.toNat (8 : Int) = 8 from rfl,
+    show Sail.BitVec.signExtend opcodeAddress 64 = opcodeAddress.signExtend 64 from rfl,
+    run_bind, X86EffectiveFetch.effective_read_exact state opcodeAddress pointer attributes
+      opcode segments application rip present]
+  dsimp only
+  rw [run_bind, X86PrefixRead.add_pointer_checked state opcodeAddress (1#48) base (by simpa using advance)]
+  dsimp only
+  rw [mandatory, noModRM]
+  simp only [Bool.false_eq_true, ite_false, pure_bind,
+    Functions.Mk_modr_m, Functions.Mk_sib, Bool.false_and]
+  rw [selected]
+
 theorem decode_to_branch (condition : X86BranchCondition.Condition) (state : State)
     (start opcodeAddress base : BitVec 48) (rex : BitVec 8)
     (attributes : Vector (BitVec 16) 6) (pointer : Word)
@@ -101,22 +133,10 @@ theorem decode_to_branch (condition : X86BranchCondition.Condition) (state : Sta
       some (X86BranchCondition.opcode condition)) :
     (Functions.two_byte_opcode_decode_and_execute .Mode_64bit start opcodeAddress escapePacket rex (0x0f#8)).run state =
       (Functions.x86_two_byte_jcc .Mode_64bit start base escapePacket rex
-        (X86BranchCondition.opcode condition) (0#8) (0#8)).run state := by
-  have addressSize : Functions.select_address_size .Mode_64bit (some escapePacket) = (pure 8 : SailM Int) := rfl
-  unfold Functions.two_byte_opcode_decode_and_execute
-  rw [addressSize]
-  simp only [pure_bind]
-  rw [show Int.toNat (8 : Int) = 8 from rfl,
-    show Sail.BitVec.signExtend opcodeAddress 64 = opcodeAddress.signExtend 64 from rfl,
-    run_bind, X86EffectiveFetch.effective_read_exact state opcodeAddress pointer attributes
-      (X86BranchCondition.opcode condition) segments application rip present]
-  dsimp only
-  rw [run_bind, X86PrefixRead.add_pointer_checked state opcodeAddress (1#48) base (by simpa using advance)]
-  dsimp only
-  rw [mandatory_zero, no_modrm]
-  simp only [Bool.false_eq_true, ite_false, pure_bind,
-    Functions.Mk_modr_m, Functions.Mk_sib, Bool.false_and]
-  rw [selection]
+        (X86BranchCondition.opcode condition) (0#8) (0#8)).run state :=
+  decode_to_branch_opcode (X86BranchCondition.opcode condition) state start opcodeAddress base rex attributes
+    pointer advance segments application rip (mandatory_zero condition) (no_modrm condition)
+    (selection condition start base rex) present
 
 theorem decode_register
     (state : State) (start opcodeAddress modrmAddress finish : BitVec 48)

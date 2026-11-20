@@ -71,7 +71,7 @@ theorem enabled_iff {free : FreeSortContext} (query name body payload : Pattern)
     obtain ⟨redex, contractum, before, raw, _⟩ := ParameterizedRewriteSystem.step_iff.mp step
     have beforeSC := (ParameterizedRewriteSystem.equations_iff_structuralCongruence _ _).mp before
     have formed := (ParameterizedRewriteSystem.process_iff _ _).mp redex.2
-    obtain ⟨selected, _⟩ := equivalent_selection_of_step typed safe formed.1 formed.2
+    obtain ⟨selected, _⟩ := equivalent_selection_of_step typed formed.1
       beforeSC.symm raw
     exact selected_channels selected
   · intro equal

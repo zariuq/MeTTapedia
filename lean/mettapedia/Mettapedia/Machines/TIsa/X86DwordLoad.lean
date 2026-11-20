@@ -152,6 +152,49 @@ theorem effective_memory (state : State) (wide : Bool) (destination base : Fin 1
   exact effective_disp32 state wide destination base noSib displacementAddress attributes pointer baseValue
     displacement upper segments application rip baseKnown present
 
+theorem operand_dword_checked (state : State) (destination base : Fin 16) (noSib : base.val % 8 ≠ 4)
+    (displacementAddress dataAddress : BitVec 48)
+    (prefixes : BitVec 52) (attributes visible : Vector (BitVec 16) 6) (controls : Vector (BitVec 64) 17)
+    (pointer baseValue : Word) (value : BitVec 32) (flags : BitVec 32) (displacement : BitVec 32)
+    (addressOverride : Functions._get_prefixes_adr prefixes = (0#8))
+    (codeUpper : displacementAddress.toInt + 4 ≤ (2 ^ 47 : Int))
+    (dataUpper : dataAddress.toInt + 4 ≤ (2 ^ 47 : Int))
+    (segments : state.regs.get? .seg_hidden_attrs = some attributes)
+    (application : state.regs.get? .app_view = some true)
+    (rip : state.regs.get? .rip = some pointer)
+    (baseKnown : lookup state base = some baseValue)
+    (controlKnown : state.regs.get? .ctrs = some controls)
+    (flagsKnown : state.regs.get? .rflags = some flags)
+    (visibleKnown : state.regs.get? .seg_visibles = some visible)
+    (effective : baseValue + displacement.signExtend 64 = dataAddress.signExtend 64)
+    (safe : X86FrameLoad.alignmentEnabled controls flags visible = false ∨ dataAddress &&& (3#48) = (0#48))
+    (codePresent : ∀ index < 4,
+      state.mem.get? ((X86Execution.address displacementAddress.toInt index).signExtend 52).toNat =
+        some (displacement.extractLsb' (8 * index) 8))
+    (dataPresent : ∀ index < 4,
+      state.mem.get? ((X86Execution.address dataAddress.toInt index).signExtend 52).toNat =
+        some (value.extractLsb' (8 * index) 8)) :
+    (Functions.x86_operand_from_modr_m_and_sib_bytes .Mode_64bit (0#1) 4 true false 3 prefixes
+      displacementAddress (loadRex false destination base) (BitVec.ofNat 3 base.val) (2#2) (0#8) (0#3)).run state =
+      .ok (value.zeroExtend 128, (4 : Int), dataAddress.signExtend 64) state := by
+  unfold Functions.x86_operand_from_modr_m_and_sib_bytes
+  simp only [show ((2#2) == (3#2)) = false from rfl, Bool.false_eq_true, ite_false]
+  rw [run_bind, effective_memory state false destination base noSib displacementAddress prefixes attributes
+    pointer baseValue displacement addressOverride codeUpper segments application rip baseKnown codePresent]
+  dsimp only
+  rw [effective]
+  simp only [bind_assoc, pure_bind, Bool.true_and]
+  rw [run_bind, X86FrameLoad.alignment_exact state controls flags visible controlKnown flagsKnown visibleKnown]
+  dsimp only
+  have size : Functions.select_address_size .Mode_64bit (some prefixes) = (pure 8 : SailM Int) := by
+    simp [Functions.select_address_size, Functions.in_64bit_mode, addressOverride]
+  rw [size]
+  simp only [pure_bind, Functions.select_base_register, show Int.toNat (8 : Int) = 8 from rfl]
+  unfold Functions.rme_size
+  rw [run_bind, run_bind, load_dword_exact state dataAddress none attributes pointer value ":R"
+    (X86FrameLoad.alignmentEnabled controls flags visible) dataUpper segments application rip safe dataPresent]
+  rfl
+
 theorem operand_dword (state : State) (destination base : Fin 16) (noSib : base.val % 8 ≠ 4)
     (displacementAddress dataAddress : BitVec 48)
     (prefixes : BitVec 52) (attributes visible : Vector (BitVec 16) 6) (controls : Vector (BitVec 64) 17)
@@ -177,23 +220,10 @@ theorem operand_dword (state : State) (destination base : Fin 16) (noSib : base.
     (Functions.x86_operand_from_modr_m_and_sib_bytes .Mode_64bit (0#1) 4 true false 3 prefixes
       displacementAddress (loadRex false destination base) (BitVec.ofNat 3 base.val) (2#2) (0#8) (0#3)).run state =
       .ok (value.zeroExtend 128, (4 : Int), dataAddress.signExtend 64) state := by
-  unfold Functions.x86_operand_from_modr_m_and_sib_bytes
-  simp only [show ((2#2) == (3#2)) = false from rfl, Bool.false_eq_true, ite_false]
-  rw [run_bind, effective_memory state false destination base noSib displacementAddress prefixes attributes
-    pointer baseValue displacement addressOverride codeUpper segments application rip baseKnown codePresent]
-  dsimp only
-  rw [effective]
-  simp only [bind_assoc, pure_bind, Bool.true_and]
-  rw [run_bind, X86FrameLoad.alignment_exact state controls flags visible controlKnown flagsKnown visibleKnown]
-  dsimp only
-  have size : Functions.select_address_size .Mode_64bit (some prefixes) = (pure 8 : SailM Int) := by
-    simp [Functions.select_address_size, Functions.in_64bit_mode, addressOverride]
-  rw [size]
-  simp only [pure_bind, Functions.select_base_register, show Int.toNat (8 : Int) = 8 from rfl]
-  unfold Functions.rme_size
-  rw [run_bind, run_bind, load_dword_exact state dataAddress none attributes pointer value ":R"
-    (X86FrameLoad.alignmentEnabled controls flags visible) dataUpper segments application rip (Or.inr aligned) dataPresent]
-  rfl
+  exact operand_dword_checked state destination base noSib displacementAddress dataAddress prefixes
+    attributes visible controls pointer baseValue value flags displacement addressOverride codeUpper
+    dataUpper segments application rip baseKnown controlKnown flagsKnown visibleKnown effective
+    (Or.inr aligned) codePresent dataPresent
 
 theorem cut32 (value : BitVec 32) :
     Sail.BitVec.truncate (value.zeroExtend 64) 32 = value := by
@@ -238,6 +268,58 @@ theorem segment_data (prefixes : BitVec 52) (base : Fin 16)
   simp [Functions.select_segment_register, Functions.select_address_size, Functions.in_64bit_mode,
     segmentOverride, addressOverride, Functions.eq_bits_nat, Sail.BitVec.toNatInt, stackBits, sibBits]
 
+theorem handler_dword_checked (state : State) (destination base : Fin 16)
+    (noSib : base.val % 8 ≠ 4) (noStack : base.val % 8 ≠ 5)
+    (start displacementAddress next dataAddress : BitVec 48)
+    (prefixes : BitVec 52) (attributes visible : Vector (BitVec 16) 6) (controls : Vector (BitVec 64) 17)
+    (pointer baseValue : Word) (value : BitVec 32) (flags : BitVec 32) (displacement : BitVec 32)
+    (segmentOverride : Functions._get_prefixes_seg prefixes = (0#8))
+    (addressOverride : Functions._get_prefixes_adr prefixes = (0#8))
+    (operandOverride : Functions._get_prefixes_opr prefixes = (0#8))
+    (advance : displacementAddress.toInt + 4 = next.toInt)
+    (length : Functions.check_instruction_length start next (0#3) = none)
+    (codeUpper : displacementAddress.toInt + 4 ≤ (2 ^ 47 : Int))
+    (dataUpper : dataAddress.toInt + 4 ≤ (2 ^ 47 : Int))
+    (segments : state.regs.get? .seg_hidden_attrs = some attributes)
+    (application : state.regs.get? .app_view = some true)
+    (rip : state.regs.get? .rip = some pointer)
+    (baseKnown : lookup state base = some baseValue)
+    (controlKnown : state.regs.get? .ctrs = some controls)
+    (flagsKnown : state.regs.get? .rflags = some flags)
+    (visibleKnown : state.regs.get? .seg_visibles = some visible)
+    (quiet : state.regs.get? .log_register_writes = some false)
+    (effective : baseValue + displacement.signExtend 64 = dataAddress.signExtend 64)
+    (safe : X86FrameLoad.alignmentEnabled controls flags visible = false ∨ dataAddress &&& (3#48) = (0#48))
+    (codePresent : ∀ index < 4,
+      state.mem.get? ((X86Execution.address displacementAddress.toInt index).signExtend 52).toNat =
+        some (displacement.extractLsb' (8 * index) 8))
+    (dataPresent : ∀ index < 4,
+      state.mem.get? ((X86Execution.address dataAddress.toInt index).signExtend 52).toNat =
+        some (value.extractLsb' (8 * index) 8)) :
+    (Functions.x86_mov_op_en_rm .Mode_64bit start displacementAddress prefixes (loadRex false destination base)
+      (0x8b#8) (loadModRM destination base) (0#8)).run state =
+      .ok () (X86Move.putPointer (put state destination (value.zeroExtend 64)) next) := by
+  unfold Functions.x86_mov_op_en_rm
+  dsimp only
+  rw [show ((0x8b#8) == (0x8a#8)) = false from rfl,
+    operand_size32 destination base prefixes operandOverride, run_bind, run_pure]
+  dsimp only
+  rw [load_mod, load_rm, segment_data prefixes base noSib noStack segmentOverride addressOverride, run_bind, run_pure]
+  dsimp only
+  rw [show Int.toNat (4 : Int) = 4 from rfl, run_bind,
+    operand_dword_checked state destination base noSib displacementAddress dataAddress prefixes attributes visible controls pointer
+      baseValue value flags displacement addressOverride codeUpper dataUpper segments application rip baseKnown
+      controlKnown flagsKnown visibleKnown effective safe codePresent dataPresent]
+  dsimp only
+  rw [show Sail.BitVec.zeroExtend (Functions.bits_of_int 4 3) 48 = (4#48) from rfl,
+    run_bind, X86PrefixRead.add_pointer_checked state displacementAddress (4#48) next (by simpa using advance)]
+  dsimp only
+  rw [length, if_neg (by decide : ¬Functions.is_some (none : Option Int) = true)]
+  rw [show Functions.bits_of_int 4 4 = (4#4) from rfl, load_destination, cut128]
+  rw [run_bind, write_destination32 state destination base value quiet]
+  change (Functions.write_iptr .Mode_64bit next).run (put state destination (value.zeroExtend 64)) = _
+  exact X86Move.write_pointer64 _ next (by simpa only [diagnostic_put] using quiet)
+
 theorem handler_dword (state : State) (destination base : Fin 16)
     (noSib : base.val % 8 ≠ 4) (noStack : base.val % 8 ≠ 5)
     (start displacementAddress next dataAddress : BitVec 48)
@@ -269,26 +351,11 @@ theorem handler_dword (state : State) (destination base : Fin 16)
     (Functions.x86_mov_op_en_rm .Mode_64bit start displacementAddress prefixes (loadRex false destination base)
       (0x8b#8) (loadModRM destination base) (0#8)).run state =
       .ok () (X86Move.putPointer (put state destination (value.zeroExtend 64)) next) := by
-  unfold Functions.x86_mov_op_en_rm
-  dsimp only
-  rw [show ((0x8b#8) == (0x8a#8)) = false from rfl,
-    operand_size32 destination base prefixes operandOverride, run_bind, run_pure]
-  dsimp only
-  rw [load_mod, load_rm, segment_data prefixes base noSib noStack segmentOverride addressOverride, run_bind, run_pure]
-  dsimp only
-  rw [show Int.toNat (4 : Int) = 4 from rfl, run_bind,
-    operand_dword state destination base noSib displacementAddress dataAddress prefixes attributes visible controls pointer
-      baseValue value flags displacement addressOverride codeUpper dataUpper segments application rip baseKnown
-      controlKnown flagsKnown visibleKnown effective aligned codePresent dataPresent]
-  dsimp only
-  rw [show Sail.BitVec.zeroExtend (Functions.bits_of_int 4 3) 48 = (4#48) from rfl,
-    run_bind, X86PrefixRead.add_pointer_checked state displacementAddress (4#48) next (by simpa using advance)]
-  dsimp only
-  rw [length, if_neg (by decide : ¬Functions.is_some (none : Option Int) = true)]
-  rw [show Functions.bits_of_int 4 4 = (4#4) from rfl, load_destination, cut128]
-  rw [run_bind, write_destination32 state destination base value quiet]
-  change (Functions.write_iptr .Mode_64bit next).run (put state destination (value.zeroExtend 64)) = _
-  exact X86Move.write_pointer64 _ next (by simpa only [diagnostic_put] using quiet)
+  exact handler_dword_checked state destination base noSib noStack start displacementAddress next
+    dataAddress prefixes attributes visible controls pointer baseValue value flags displacement
+    segmentOverride addressOverride operandOverride advance length codeUpper dataUpper segments
+    application rip baseKnown controlKnown flagsKnown visibleKnown quiet effective (Or.inr aligned)
+    codePresent dataPresent
 
 theorem no_sib (destination base : Fin 16) (noSib : base.val % 8 ≠ 4) (address16 : Bool) :
     Functions.x86_decode_sib_p (loadModRM destination base) address16 = false := by
@@ -305,6 +372,66 @@ theorem dispatch_load (other : OtherOpcodeHandlers) (rexByte modrm : BitVec 8)
       rexByte (0x8b#8) modrm (0#8) =
       Functions.x86_mov_op_en_rm .Mode_64bit start displacementAddress (X86LegacyFetch.packet (0x8b#8))
         rexByte (0x8b#8) modrm (0#8) := by rfl
+
+theorem fetched_dword_checked (other : OtherOpcodeHandlers) (vector : VectorOpcodeHandlers)
+    (state : State) (destination base : Fin 16) (noSib : base.val % 8 ≠ 4) (noStack : base.val % 8 ≠ 5)
+    (origin : X86LegacyFetch.Basis state) (finish dataAddress : BitVec 48)
+    (visible : Vector (BitVec 16) 6) (controls : Vector (BitVec 64) 17)
+    (baseValue : Word) (value : BitVec 32) (flags : BitVec 32) (displacement : BitVec 32)
+    (advance : origin.next.toInt + 4 = finish.toInt)
+    (dataUpper : dataAddress.toInt + 4 ≤ (2 ^ 47 : Int))
+    (baseKnown : lookup state base = some baseValue)
+    (controlKnown : state.regs.get? .ctrs = some controls)
+    (flagsKnown : state.regs.get? .rflags = some flags)
+    (visibleKnown : state.regs.get? .seg_visibles = some visible)
+    (quiet : state.regs.get? .log_register_writes = some false)
+    (effective : baseValue + displacement.signExtend 64 = dataAddress.signExtend 64)
+    (safe : X86FrameLoad.alignmentEnabled controls flags visible = false ∨ dataAddress &&& (3#48) = (0#48))
+    (prefixByte : state.mem.get? (origin.address.signExtend 52).toNat = some (loadRex false destination base))
+    (opcodeByte : state.mem.get? (origin.opcodeAddress.signExtend 52).toNat = some (0x8b#8))
+    (modrmByte : state.mem.get? (origin.modrmAddress.signExtend 52).toNat = some (loadModRM destination base))
+    (codePresent : ∀ index < 4,
+      state.mem.get? ((X86Execution.address origin.next.toInt index).signExtend 52).toNat =
+        some (displacement.extractLsb' (8 * index) 8))
+    (dataPresent : ∀ index < 4,
+      state.mem.get? ((X86Execution.address dataAddress.toInt index).signExtend 52).toNat =
+        some (value.extractLsb' (8 * index) 8)) :
+    letI : OtherOpcodeHandlers := X86FrameLoad.linkedHandlers other
+    letI : VectorOpcodeHandlers := vector
+    (Functions.x86_fetch_decode_execute ()).run state =
+      .ok () (X86Move.putPointer (put state destination (value.zeroExtend 64)) finish) := by
+  let : OtherOpcodeHandlers := X86FrameLoad.linkedHandlers other
+  let : VectorOpcodeHandlers := vector
+  have shape : X86LegacyFetch.RegularOpcode (0x8b#8) := (X86LegacyFetch.checkOpcode_iff _).mp (by decide)
+  rw [X86LegacyFetch.fetch_to_dispatch_no_sib (0x8b#8) shape false state origin.address origin.opcodeAddress
+    origin.modrmAddress origin.next origin.control origin.attributes destination base (loadModRM destination base)
+    (no_sib destination base noSib) origin.step1 origin.step2 origin.step3 origin.status origin.fault origin.msrs
+    origin.segments origin.longMode origin.codeMode origin.application origin.rip prefixByte opcodeByte modrmByte]
+  rw [dispatch_load other (loadRex false destination base) (loadModRM destination base)]
+  apply handler_dword_checked state destination base noSib noStack origin.address origin.next finish dataAddress
+    (X86LegacyFetch.packet (0x8b#8)) origin.attributes visible controls (origin.address.signExtend 64)
+    baseValue value flags displacement (X86LegacyFetch.packet_segment _) (X86LegacyFetch.packet_address _)
+    (packet_operand _) advance
+  · apply X86FrameLoad.length_from_distance _ _ 7 (by decide)
+    have := origin.step2
+    have := origin.step3
+    omega
+  · have := BitVec.toInt_lt (x := finish)
+    omega
+  · exact dataUpper
+  · exact origin.segments
+  · exact origin.application
+  · exact origin.rip
+  · exact baseKnown
+  · exact controlKnown
+  · exact flagsKnown
+  · exact visibleKnown
+  · exact quiet
+  · exact effective
+  · exact safe
+  · exact codePresent
+  · exact dataPresent
+
 
 theorem fetched_dword (other : OtherOpcodeHandlers) (vector : VectorOpcodeHandlers)
     (state : State) (destination base : Fin 16) (noSib : base.val % 8 ≠ 4) (noStack : base.val % 8 ≠ 5)
@@ -333,37 +460,10 @@ theorem fetched_dword (other : OtherOpcodeHandlers) (vector : VectorOpcodeHandle
     letI : VectorOpcodeHandlers := vector
     (Functions.x86_fetch_decode_execute ()).run state =
       .ok () (X86Move.putPointer (put state destination (value.zeroExtend 64)) finish) := by
-  let : OtherOpcodeHandlers := X86FrameLoad.linkedHandlers other
-  let : VectorOpcodeHandlers := vector
-  have shape : X86LegacyFetch.RegularOpcode (0x8b#8) := (X86LegacyFetch.checkOpcode_iff _).mp (by decide)
-  rw [X86LegacyFetch.fetch_to_dispatch_no_sib (0x8b#8) shape false state origin.address origin.opcodeAddress
-    origin.modrmAddress origin.next origin.control origin.attributes destination base (loadModRM destination base)
-    (no_sib destination base noSib) origin.step1 origin.step2 origin.step3 origin.status origin.fault origin.msrs
-    origin.segments origin.longMode origin.codeMode origin.application origin.rip prefixByte opcodeByte modrmByte]
-  rw [dispatch_load other (loadRex false destination base) (loadModRM destination base)]
-  apply handler_dword state destination base noSib noStack origin.address origin.next finish dataAddress
-    (X86LegacyFetch.packet (0x8b#8)) origin.attributes visible controls (origin.address.signExtend 64)
-    baseValue value flags displacement (X86LegacyFetch.packet_segment _) (X86LegacyFetch.packet_address _)
-    (packet_operand _) advance
-  · apply X86FrameLoad.length_from_distance _ _ 7 (by decide)
-    have := origin.step2
-    have := origin.step3
-    omega
-  · have := BitVec.toInt_lt (x := finish)
-    omega
-  · exact dataUpper
-  · exact origin.segments
-  · exact origin.application
-  · exact origin.rip
-  · exact baseKnown
-  · exact controlKnown
-  · exact flagsKnown
-  · exact visibleKnown
-  · exact quiet
-  · exact effective
-  · exact aligned
-  · exact codePresent
-  · exact dataPresent
+  exact fetched_dword_checked other vector state destination base noSib noStack origin finish
+    dataAddress visible controls baseValue value flags displacement advance dataUpper baseKnown
+    controlKnown flagsKnown visibleKnown quiet effective (Or.inr aligned) prefixByte opcodeByte
+    modrmByte codePresent dataPresent
 
 theorem result_frame (state : State) (destination : Fin 16) (value : BitVec 32) (finish : BitVec 48) :
     X86Execution.RegisterFrame {key destination, Register.rip} state

@@ -3,22 +3,27 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.LogicOver
 import Mettapedia.OSLF.Syntax.RhoCommunicationEncoding
 
 /-!
-# The step's OSLF types against rho's native types
+# Modal types over the step against rho's modal types
 
 Rho is presented by a binding signature in which the input former binds the name it receives
-(`RhoSchema`), with its communication schema; the step hosts it as the channel-communication
-fragment, and reading a heated store as one process (`FragmentsOfTheStep.NarrowingToRho.narrow`) is
-an onto functional bisimulation.
+(`RhoSchema`), with its communication schema. Its communication with ordinary substitution
+(`FragmentsOfTheStep.RhoChannelFragment.RhoStep`; the semantic-substitution profile is not covered)
+is placed on the step by the rules of the channel-communication fragment, one rule instance per
+redex, and reading a heated store as one process (`FragmentsOfTheStep.NarrowingToRho.narrow`) is an
+onto functional bisimulation.
 
 **The generated logic** (`Formula`): atoms, Boolean connectives, OSLF's possibility, successor
 necessity and predecessor necessity, interpreted on any reduction system through OSLF's derived
-modalities on its span (`interp`).
+modalities on its span (`interp`). A type here is the meaning of a formula: a modal type over a
+reduction system. These are not native types in the sense of native type theory: no type is
+generated from a term constructor, and there are no spatial types. In the declaration names
+`rho_native_types` and `knowledge_not_native`, "native" means only this.
 
 * **Every formula pulls back, with the past read over fibres** (`pb_interp`): along any onto
   functional bisimulation `h`, the pullback of a formula's meaning is its meaning on the source with
   atoms pulled back and predecessor necessity taken over the fibres of `h` (`interpFibre`). For
   formulas without the past the fibres play no role (`pb_interp_of_pastFree`).
-* **Rho** (`rho_native_types`, `rho_native_types_pastFree`): every native type of rho built in the
+* **Rho** (`rho_native_types`, `rho_native_types_pastFree`): every modal type of rho built in the
   generated logic, over arbitrary predicates on processes, binder-sensitive ones included, is the
   pullback of the step's type of the same formula; the past is taken over the heating class.
 
@@ -30,7 +35,7 @@ modalities on its span (`interp`).
 * **History** (`knowledge_not_native`): a predicate on heated stores is the pullback of a predicate on
   processes exactly when it is constant on the fibres of the narrowing (`eq_pb_iff_fibreInvariant`).
   "The knowledge is empty" is not: two heated stores with one process, one with and one without
-  knowledge. The step's types see history; rho's native types cannot.
+  knowledge. The step's types see history; rho's modal types cannot.
 * **The authored presentation** (`authored_intrinsic_divergence`): the narrowing reaches the intrinsic
   binding-signature presentation. The authored MeTTa-IL rho (`rhoCalc`) contracts the round trip
   `*@q` while substituting the received name, so on a closed communication the two reducts are not
@@ -191,7 +196,7 @@ open Formula
 
 variable {context : Ctx sig} {Atom : Type u}
 
-/-- **Rho's native types are the step's types along the narrowing**: every formula of the generated
+/-- **Rho's modal types are the step's types along the narrowing**: every formula of the generated
 logic, over any predicates on processes, with predecessor necessity over the heating class. -/
 theorem rho_native_types (val : Atom → Process context → Prop) (φ : Formula Atom) :
     pb narrow (interp RhoStep val φ) =
@@ -220,8 +225,8 @@ theorem same_process_different_knowledge :
   obtain ⟨C₁, moved, image⟩ := narrowing_functionalBisimulation.zag step
   exact ⟨C₀, C₁, image.symm, empty, channelStep_learns moved⟩
 
-/-- **History is not a native type of rho**: "the knowledge is empty" is a predicate of the step that
-is the pullback of no predicate on processes. -/
+/-- **History is not a type of rho**: "the knowledge is empty" is a predicate of the step that is the
+pullback of no predicate on processes. -/
 theorem knowledge_not_native :
     ¬ ∃ φ : Process [] → Prop, (fun C : HeatedStore [] => C.1.equations = []) = pb narrow φ := by
   intro native

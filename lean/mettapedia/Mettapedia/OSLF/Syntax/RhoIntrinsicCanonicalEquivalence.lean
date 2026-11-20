@@ -23,22 +23,22 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Canonical
 
 def Sorted (context : Ctx sig) (sort : Srt) (pattern : Pattern) : Prop :=
   match sort with
-  | .nm => NameWellSorted rhoReflectivePresentation FreeSortContext.empty
+  | .nm => NameWellSorted rhoApplyPresentation FreeSortContext.empty
       (contextLabels context) pattern
-  | .pr => ProcWellSorted rhoReflectivePresentation FreeSortContext.empty
+  | .pr => ProcWellSorted rhoApplyPresentation FreeSortContext.empty
       (contextLabels context) pattern
 
 theorem Sorted.hashSetFree {context : Ctx sig} {sort : Srt} {pattern : Pattern}
     (typed : Sorted context sort pattern) : HashSetFree pattern := by
   cases sort with
-  | nm => exact PureBoundary.rhoNameWellSorted_hashSetFree typed
-  | pr => exact PureBoundary.rhoProcWellSorted_hashSetFree typed
+  | nm => exact PureBoundary.rhoNameWellSorted_hashSetFree_at (.reaching .apply) typed
+  | pr => exact PureBoundary.rhoProcWellSorted_hashSetFree_at (.reaching .apply) typed
 
 theorem Sorted.canonicalize {context : Ctx sig} {sort : Srt} {pattern : Pattern}
     (typed : Sorted context sort pattern) : Sorted context sort (canonicalize pattern) := by
   cases sort with
-  | nm => exact CanonicalTyping.canonicalize_nameWellSorted _ typed
-  | pr => exact CanonicalTyping.canonicalize_procWellSorted _ typed
+  | nm => exact CanonicalTyping.canonicalize_nameWellSorted_at (.reaching .apply) _ typed
+  | pr => exact CanonicalTyping.canonicalize_procWellSorted_at (.reaching .apply) _ typed
 
 theorem sorted_coverage {context : Ctx sig} {sort : Srt} {pattern : Pattern}
     (typed : Sorted context sort pattern) :

@@ -3,7 +3,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Occurrenc
 /-!
 # Complete region observations at the same atomic admission
 
-A census records every physical occurrence selected by a predicate. Its
+A predicate query records every physical occurrence selected by a predicate. Its
 query-local matching can range over several substitutions; it need not be
 equality to one instance of a port pattern. Predicates may also depend on the
 caller's solution. Such an observation must hold for every solution at the
@@ -17,7 +17,7 @@ occurrence-commit predicate queries, including their bag multiplicities.
 A source compiler must still connect its produced values to these complete
 observations. A predicate, an arbitrary output and a certificate alone do not
 establish that connection. Ordered answer streams additionally retain the
-ordered scanner's certificate; an occurrence census by itself fixes a bag.
+ordered scanner's certificate; an occurrence predicate query by itself fixes a bag.
 -/
 
 set_option autoImplicit false
@@ -166,7 +166,7 @@ theorem Valid.after {A : SubstitutionAction T S} {label : O → T} {rule : RuleI
   exact valid.observations query member candidate (refines candidate solved)
 
 /-- Observation checks and effects use one before-state. No public
-intermediate state is introduced by the census. -/
+intermediate state is introduced by the predicate query. -/
 theorem result_present (selection : Selection O) (queries : List (Query T S O)) (candidate : S)
     (label : O → T) (rule : RuleInstance T) (before : Configuration T O) :
     (selection.result label rule before).present = fire before.present (commit selection queries candidate) := rfl

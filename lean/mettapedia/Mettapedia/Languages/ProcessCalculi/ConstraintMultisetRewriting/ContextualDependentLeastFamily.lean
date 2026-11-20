@@ -99,7 +99,7 @@ theorem leastRound_eq_of_bound (fuel : Nat) {Θ : Context S.R} {problem : Equati
       certifyNormal headTypingUnique rootComplete strengthening fuel problem with
   | stuck => exact absurd computed moving
   | progress update smaller => rfl
-  | refuted absent => rfl
+  | refuted missing => rfl
 
 /-- **Every run that the family below decides, this family decides with the same outcome.** -/
 theorem least_run_of_bound (fuel rounds : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ))
@@ -135,7 +135,7 @@ theorem leastRound_not_stuck_of_lowered (fuel : Nat) {Θ : Context S.R} {problem
         (lowerUpdate_rank facts roots heads algebra rigid complete declared choices reducer candidates fuel problem)
         moving
   | progress update smaller => exact fun impossible => by cases impossible
-  | refuted absent => exact fun impossible => by cases impossible
+  | refuted missing => exact fun impossible => by cases impossible
 
 /-- **The family's readers**: a reader of the family below, on the store or on the store at its least
 annotations. -/
@@ -268,7 +268,7 @@ theorem leastRound_closure (fuel : Nat) :
       cases fired
       exact boundRound_closure facts roots heads algebra rigid complete declared choices reducer root normalizes
         certifyNormal headTypingUnique rootComplete strengthening sn directed fuel _ _ _ permuted computed
-  | refuted absent =>
+  | refuted missing =>
       rw [computed] at fired
       cases fired
 
@@ -292,9 +292,9 @@ theorem least_decided_of_firing
       ((∃ state finished, run ((leastFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening candidates).solver larger) problem
               larger = .solved state finished ∧ (frames S.levels).Principal problem state.answer) ∨
-        (∃ absent, run ((leastFamily facts roots heads algebra rigid complete declared choices reducer root
+        (∃ missing, run ((leastFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening candidates).solver larger) problem
-              larger = .refuted absent)) :=
+              larger = .refuted missing)) :=
   (leastSettledOfConst facts roots heads algebra rigid complete declared choices reducer root normalizes
     certifyNormal headTypingUnique rootComplete strengthening candidates stable
     (fun problem => PermutedMiller S.levels problem)
@@ -380,7 +380,7 @@ theorem tower_least_decided_of_firing
       run (leastTower.solver larger) problem larger = run (leastTower.solver budget) problem budget ∧
       ((∃ state finished, run (leastTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ absent, run (leastTower.solver larger) problem larger = .refuted absent)) :=
+        (∃ missing, run (leastTower.solver larger) problem larger = .refuted missing)) :=
   least_decided_of_firing (S := setting) TowerModel.facts TowerModel.roots TowerModel.heads TowerModel.algebra
     ContextualDependentPiSpine.Controls.rigid TowerModel.complete
     ContextualDependentInversion.Controls.declarations_formed ExecutableTowerChoices.choices
@@ -401,7 +401,7 @@ theorem tower_least_decided_of_reads
       run (leastTower.solver larger) problem larger = run (leastTower.solver budget) problem budget ∧
       ((∃ state finished, run (leastTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ absent, run (leastTower.solver larger) problem larger = .refuted absent)) :=
+        (∃ missing, run (leastTower.solver larger) problem larger = .refuted missing)) :=
   tower_least_decided_of_firing (fun held nonempty => by
     obtain ⟨bound, read⟩ := reads held nonempty
     exact ⟨bound, fun larger enough => leastRound_not_stuck_of_reads (S := setting) TowerModel.facts TowerModel.roots

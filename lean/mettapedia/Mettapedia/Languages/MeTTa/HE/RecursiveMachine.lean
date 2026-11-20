@@ -1573,9 +1573,11 @@ namespace WorldStep
 export WorldStepWith (internal publish)
 end WorldStep
 
-theorem WorldStep.preserves_context {Context World : Type} {view services dispatch lookup policy}
+theorem WorldStep.preserves_context {Context World : Type} {admission : Completed.ArgumentService}
+    {view services dispatch lookup policy}
     {before after : WorldConfiguration Context World}
-    (step : WorldStep view services dispatch lookup policy before after) : after.context = before.context := by
+    (step : WorldStep (admission := admission) view services dispatch lookup policy before after) :
+    after.context = before.context := by
   cases step <;> rfl
 
 theorem WorldStep.history_extension {Context World : Type} {view services dispatch lookup policy}

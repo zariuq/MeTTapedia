@@ -492,10 +492,10 @@ theorem coherentPlain (relEnv : RelationEnv) :
   have redexAdmitted := process_of_rhoStep (invariant stateAdmitted before) valid.2
   have sameCanon : canonicalize redex = state :=
     (canonicalize_eq_of_objectEquivalent before).symm.trans canonState
-  obtain ⟨typed, sealed⟩ := procWellSorted_of_process redexAdmitted
+  obtain ⟨typed, _⟩ := procWellSorted_of_process redexAdmitted
   obtain ⟨target, topStep, canonTarget⟩ :=
     Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalStepperCompleteness.canonicalStep_complete_of_rhoStep
-      typed sealed valid.2
+      typed valid.2
   rw [sameCanon] at topStep
   refine ⟨(.base [], target), ?_, canonTarget⟩
   simp only [listedAt, List.singleton, List.flatMap_cons, List.flatMap_nil, List.append_nil, ruleSteps, reading]

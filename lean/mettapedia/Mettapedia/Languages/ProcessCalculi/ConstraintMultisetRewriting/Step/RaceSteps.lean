@@ -477,11 +477,11 @@ theorem staticIndependent_iff_provenance [Nonempty S] {e f : Firing T S O} (pe :
   constructor
   · rintro ⟨_, _, independent⟩
     obtain ⟨σ⟩ := ‹Nonempty S›
-    have trace := independent σ
+    have trace := independent σ ⟨[],∅⟩
     exact ⟨Finset.disjoint_of_subset_right (fun _ member => Finset.mem_union_left _ member) trace.2.1,
       Finset.disjoint_of_subset_right (fun _ member => Finset.mem_union_left _ member) trace.2.2⟩
   · rintro ⟨first, second⟩
-    refine ⟨eStatic, fStatic, fun σ => ⟨⟨?_, ?_, ?_⟩, ?_, ?_⟩⟩
+    refine ⟨eStatic, fStatic, fun σ C => ⟨⟨?_, ?_, ?_⟩, ?_, ?_⟩⟩
     · rintro (clash | clash)
       · exact clash takes
       · exact clash makes

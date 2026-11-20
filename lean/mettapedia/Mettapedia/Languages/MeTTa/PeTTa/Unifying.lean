@@ -55,9 +55,9 @@ produced it** (`Answer`). In `(let $r (z $u) ($r $u))` with `(= (z 0) yes)` and
 * **`collapse`** collects copies of its answers, as Prolog's `findall`: each
   copy is resolved and renamed apart, and no binding made inside leaves it.
 * **`remove-atom`** removes every row of the space that unifies with its
-  argument, the row renamed apart and nothing bound (`retractall`). For an `=`
-  row it answers whether some row was removed (SWI-PeTTa `e1db30d`), otherwise
-  `True`.
+  argument, the row renamed apart and nothing bound. It answers whether any
+  row was removed, including scalar data. An unbound operand or equation head
+  raises an instantiation fault rather than silently erasing definitions.
 * **Runtime heads.** Runtime-dispatch sites receive a computed head and strict
   supplied arguments. Function lookup and arity read the live equations. A
   private partial reuses its resolved captures without evaluating them again;
@@ -414,53 +414,366 @@ def survivors (pattern : Atom) : Nat → List Atom → Option (List Atom)
       | .clash => some (row :: kept)
       | .exhausted => none
 
-/-- `remove-atom` by unification. A variable removes nothing and answers
-`True`, and a symbol or a number removes nothing and has no answer, as in
-`StdLib.apply`. -/
+/-- `remove-atom` by scoped unification, with presence-sensitive Boolean
+answers and native operand admission before any row is inspected. -/
 def removeRows (state : State) (location pattern : Atom) (use : Nat) :
     Option (Except Fault (State × List Atom × Nat)) :=
+  if Effects.removalNeedsValue pattern then some (.error .instantiation) else
   match Effects.readHandle location with
   | none => some (.error .invalidSpace)
   | some handle =>
       match state.read handle with
       | none => some (.error .invalidSpace)
       | some rows =>
-          match pattern with
-          | .var _ => some (.ok (state, [Effects.boolean true], 0))
-          | .expression (_ :: _) =>
-              (survivors pattern use rows).map fun kept =>
-                match state.write handle kept with
-                | some after =>
-                    let answer := if equationRow pattern then kept.length < rows.length else true
-                    .ok (after, [Effects.boolean answer], rows.length)
-                | none => .error .invalidSpace
-          | _ => some (.ok (state, [], 0))
+          (survivors pattern use rows).map fun kept =>
+            match state.write handle kept with
+            | some after => .ok (after, [Effects.boolean (kept.length < rows.length)], rows.length)
+            | none => .error .invalidSpace
 
-/-- The bodies a `match` runs on `rows`: the body once for each row that
-unifies with the pattern, the row renamed apart for its own use, in row order.
-`none` when a unification ran out of fuel. -/
-def queryBodies (bindings : Subst) (pattern body : Atom) :
-    Nat → List Atom → Option (List Control)
+/-- The common atomic scanner for the source and its occurrence-labelled
+store. `emit` may keep the selected identity; renaming, branch bindings,
+order, and exhaustion do not depend on the projection. -/
+def queryRows {Row Packet : Type} (label : Row → Atom) (emit : Row → Subst → Packet)
+    (bindings : Subst) (pattern : Atom) : Nat → List Row → Option (List Packet)
   | _, [] => some []
   | use, row :: rest => do
-      let others ← queryBodies bindings pattern body (use + 1) rest
-      match unify bindings pattern (rename use row) with
-      | .ok bound => some (.evaluate bound body :: others)
+      let others ← queryRows label emit bindings pattern (use + 1) rest
+      match unify bindings pattern (rename use (label row)) with
+      | .ok bound => some (emit row bound :: others)
       | .clash => some others
       | .exhausted => none
+
+/-- The source's single-pattern execution requests, in the row order of
+its supplied view. A failed matching budget is not a completed empty list. -/
+def queryBodies (bindings : Subst) (pattern body : Atom) :
+    Nat → List Atom → Option (List Control) :=
+  queryRows id (fun _ bound => .evaluate bound body) bindings pattern
+
+@[simp] theorem queryBodies_nil (bindings : Subst) (pattern body : Atom) (use : Nat) :
+    queryBodies bindings pattern body use [] = some [] := rfl
+
+theorem queryBodies_cons (bindings : Subst) (pattern body row : Atom) (use : Nat) (rest : List Atom) :
+    queryBodies bindings pattern body use (row :: rest) =
+      (do
+        let others ← queryBodies bindings pattern body (use + 1) rest
+        match unify bindings pattern (rename use row) with
+        | .ok bound => some (.evaluate bound body :: others)
+        | .clash => some others
+        | .exhausted => none) := rfl
+
+/-- Source projection does not re-open rows, allocate new use numbers,
+or change which attempted matcher call exhausted. -/
+theorem queryRows_natural {Row Packet OtherRow Other : Type}
+    (label : OtherRow → Atom) (left : Row → Subst → Packet) (right : OtherRow → Subst → Other)
+    (rowMap : Row → OtherRow) (output : Packet → Other)
+    (emits : ∀ row bound, right (rowMap row) bound = output (left row bound))
+    (bindings : Subst) (pattern : Atom) (use : Nat) (rows : List Row) :
+    queryRows label right bindings pattern use (rows.map rowMap) =
+      (queryRows (label ∘ rowMap) left bindings pattern use rows).map (List.map output) := by
+  induction rows generalizing use with
+  | nil => rfl
+  | cons row rest ih =>
+    simp only [List.map_cons, queryRows, ih, Function.comp_apply]
+    cases tail : queryRows (label ∘ rowMap) left bindings pattern (use + 1) rest with
+    | none => rfl
+    | some replies =>
+      cases unify bindings pattern (rename use (label (rowMap row))) <;>
+        simp [emits]
+
+/-! ### Joining successive reads without running their bodies
+
+These operations describe the captured-view policy. A later leg uses the
+bindings of its earlier leg and the *same* occurrence view. No source
+template executes while building this batch. Choosing a streaming cursor
+over the same view is a separate question about progress and demand.
+-/
+
+def queryLegs : Atom → List Atom
+  | .expression (.symbol "," :: legs) => legs
+  | pattern => [pattern]
+
+/-- Each selected row is opened at exactly its position in the attempted
+scan. The counter is not the number of hits. -/
+theorem queryRows_member {Row Packet : Type} (label : Row → Atom) (emit : Row → Subst → Packet)
+    (bindings : Subst) (pattern : Atom) :
+    ∀ (use : Nat) (rows : List Row) {packets : List Packet},
+      queryRows label emit bindings pattern use rows = some packets →
+      ∀ packet ∈ packets, ∃ i, ∃ h : i < rows.length, ∃ bound,
+        unify bindings pattern (rename (use + i) (label rows[i])) = .ok bound ∧
+          emit rows[i] bound = packet := by
+  intro use rows
+  induction rows generalizing use with
+  | nil =>
+    intro packets ready member found
+    cases ready
+    cases found
+  | cons row rest ih =>
+    intro packets ready packet found
+    simp only [queryRows, bind] at ready
+    cases later : queryRows label emit bindings pattern (use + 1) rest with
+    | none => simp [later] at ready
+    | some tail =>
+      have fromTail (member : packet ∈ tail) :
+          ∃ i, ∃ h : i < (row :: rest).length, ∃ bound,
+            unify bindings pattern (rename (use + i) (label ((row :: rest)[i]))) = .ok bound ∧
+              emit ((row :: rest)[i]) bound = packet := by
+        obtain ⟨i,hi,bound,realized,equal⟩ := ih (use + 1) later packet member
+        have index : use + (i + 1) = (use + 1) + i := by omega
+        exact ⟨i+1, by simp [hi], bound, by simpa only [List.getElem_cons_succ,index] using realized, equal⟩
+      cases chosen : unify bindings pattern (rename use (label row)) with
+      | exhausted => simp [later,chosen] at ready
+      | clash =>
+        simp [later, chosen] at ready
+        subst packets
+        exact fromTail found
+      | ok bound =>
+        simp [later, chosen] at ready
+        subst packets
+        rcases List.mem_cons.mp found with rfl | member
+        · exact ⟨0, by simp, bound, chosen, rfl⟩
+        · exact fromTail member
+
+/-- Traverse a sequence of selected alternatives, charging every child for
+its complete scan before the following child can open any row. -/
+def queryBranches {In Out : Type} (child : Nat → In → Option (List Out × Nat)) :
+    Nat → List In → Option (List Out × Nat)
+  | _, [] => some ([],0)
+  | use, first :: rest => do
+      let (here,used) ← child use first
+      let (later,more) ← queryBranches child (use + used) rest
+      some (here ++ later,used + more)
+
+theorem queryBranches_natural {In Out OtherIn OtherOut : Type}
+    (project : In → OtherIn) (output : Out → OtherOut)
+    {source : Nat → In → Option (List Out × Nat)}
+    {target : Nat → OtherIn → Option (List OtherOut × Nat)}
+    (child : ∀ use packet, target use (project packet) =
+      (source use packet).map fun (replies,used) => (replies.map output,used))
+    (use : Nat) (packets : List In) :
+    queryBranches target use (packets.map project) =
+      (queryBranches source use packets).map fun (replies,used) => (replies.map output,used) := by
+  induction packets generalizing use with
+  | nil => rfl
+  | cons first rest ih =>
+    simp only [List.map_cons, queryBranches, child]
+    cases head : source use first with
+    | none => rfl
+    | some chunk =>
+      rcases chunk with ⟨here,used⟩
+      simp only [Option.map_some, bind, Option.bind_some]
+      rw [ih]
+      cases tail : queryBranches source (use + used) rest <;> simp [List.map_append]
+
+/-- A published branch comes from a real child. That child's allocated
+range is within the actually charged range of the traversal. -/
+theorem queryBranches_member {In Out : Type} (child : Nat → In → Option (List Out × Nat)) :
+    ∀ (use : Nat) (inputs : List In) {outputs : List Out} {used : Nat},
+      queryBranches child use inputs = some (outputs,used) →
+      ∀ item ∈ outputs, ∃ input ∈ inputs, ∃ atUse replies charged,
+        child atUse input = some (replies,charged) ∧ item ∈ replies ∧
+          use ≤ atUse ∧ atUse + charged ≤ use + used := by
+  intro use inputs
+  induction inputs generalizing use with
+  | nil => intro outputs used run item member; cases run; cases member
+  | cons first rest ih =>
+    intro outputs used run item member
+    simp only [queryBranches, bind] at run
+    cases left : child use first with
+    | none => simp [left] at run
+    | some reply =>
+      rcases reply with ⟨earlier,spent⟩
+      cases right : queryBranches child (use + spent) rest with
+      | none => simp [left,right] at run
+      | some tail =>
+        rcases tail with ⟨later,more⟩
+        simp [left,right] at run
+        obtain ⟨rfl,rfl⟩ := run
+        rcases List.mem_append.mp member with here | there
+        · exact ⟨first, by simp, use, earlier, spent, left, here, le_rfl, by omega⟩
+        · obtain ⟨input,found,atUse,replies,charged,ran,hit,lo,hi⟩ :=
+            ih (use + spent) right item there
+          exact ⟨input, List.mem_cons_of_mem _ found, atUse, replies, charged, ran, hit,
+            by omega, by omega⟩
+
+private theorem queryBranches_unit {In Out : Type} (emit : In → Out)
+    (use : Nat) (packets : List In) :
+    queryBranches (fun _ packet => some ([emit packet],0)) use packets =
+      some (packets.map emit,0) := by
+  induction packets with
+  | nil => rfl
+  | cons first rest ih => simp [queryBranches, ih]
+
+/-- One packet for each successful tuple of occurrence choices. Equal
+payloads and repeated reads are not contracted. The returned use count also
+charges the attempted rows of covered searches that found no matches. -/
+def queryJoin {Row : Type} (label : Row → Atom) (rows : List Row) :
+    List Atom → Subst → Nat → Option (List (List Row × Subst) × Nat)
+  | [], bindings, _ => some ([([],bindings)],0)
+  | pattern :: rest, bindings, use => do
+      let hits ← queryRows label Prod.mk bindings pattern use rows
+      let (joined,used) ← queryBranches (fun next branch =>
+        (queryJoin label rows rest branch.2 next).map fun (tails,spent) =>
+          (tails.map fun tail => (branch.1 :: tail.1,tail.2),spent))
+        (use + rows.length) hits
+      some (joined,rows.length + used)
+
+/-- Joining a single leg is exactly the shared atomic scan with singleton
+occurrence witnesses. Its fresh-use count is the size of the input view,
+including rows that did not match. -/
+theorem queryJoin_singleton {Row : Type} (label : Row → Atom) (rows : List Row)
+    (pattern : Atom) (bindings : Subst) (use : Nat) :
+    queryJoin label rows [pattern] bindings use =
+      (queryRows label Prod.mk bindings pattern use rows).map fun hits =>
+        (hits.map fun (origin,bound) => ([origin],bound),rows.length) := by
+  simp only [queryJoin]
+  cases plan : queryRows label Prod.mk bindings pattern use rows with
+  | none => rfl
+  | some hits =>
+    simp only [bind, Option.bind_some, Option.map_some, List.map_cons, List.map_nil]
+    rw [queryBranches_unit (fun packet : Row × Subst => ([packet.1],packet.2))]
+    simp
+
+/-- Projecting occurrence witnesses to source rows commutes with the entire
+join, including all branch-local substitutions and the use counter. In
+particular this does not identify rows by their labels before the scan. -/
+theorem queryJoin_natural {Row Other : Type} (label : Other → Atom) (project : Row → Other)
+    (rows : List Row) (patterns : List Atom) (bindings : Subst) (use : Nat) :
+    queryJoin label (rows.map project) patterns bindings use =
+      (queryJoin (label ∘ project) rows patterns bindings use).map fun (packets,used) =>
+        (packets.map fun (origin,bound) => (origin.map project,bound),used) := by
+  induction patterns generalizing bindings use with
+  | nil => rfl
+  | cons pattern rest ih =>
+    simp only [queryJoin, List.length_map]
+    rw [queryRows_natural label Prod.mk Prod.mk project
+      (fun (origin,bound) => (project origin,bound)) (fun _ _ => rfl)]
+    cases head : queryRows (label ∘ project) Prod.mk bindings pattern use rows with
+    | none => rfl
+    | some hits =>
+      simp only [Option.map_some, bind, Option.bind_some]
+      let sourceChild (next : Nat) (branch : Row × Subst) : Option (List (List Row × Subst) × Nat) :=
+        (queryJoin (label ∘ project) rows rest branch.2 next).map
+          fun (tails,spent) => (tails.map fun piece : List Row × Subst => (branch.1 :: piece.1,piece.2),spent)
+      let targetChild (next : Nat) (branch : Other × Subst) : Option (List (List Other × Subst) × Nat) :=
+        (queryJoin label (rows.map project) rest branch.2 next).map
+          fun (tails,spent) => (tails.map fun piece : List Other × Subst => (branch.1 :: piece.1,piece.2),spent)
+      have children (next : Nat) (branch : Row × Subst) :
+          targetChild next (project branch.1,branch.2) =
+          (sourceChild next branch).map fun (packets,used) =>
+            (packets.map fun (origin,bound) => (origin.map project,bound),used) := by
+        dsimp only [sourceChild,targetChild]
+        rw [ih]
+        cases tail : queryJoin (label ∘ project) rows rest branch.2 next <;>
+          simp [List.map_map,Function.comp_def]
+      have commute := queryBranches_natural (fun (origin,bound) => (project origin,bound))
+        (fun (origin,bound) => (origin.map project,bound))
+        (source := sourceChild) (target := targetChild) children (use + rows.length) hits
+      change (queryBranches targetChild (use + rows.length)
+          (hits.map fun (origin,bound) => (project origin,bound))).bind _ =
+        ((queryBranches sourceChild (use + rows.length) hits).bind _).map _
+      rw [commute]
+      cases queryBranches sourceChild (use + rows.length) hits <;> rfl
+
+/-- Source binding invariants that are preserved by each properly scoped
+row match lift to a compound capture. Each returned witness lists exactly
+one occurrence per leg, and no occurrence outside the frozen view. -/
+theorem queryJoin_preserves {Row : Type} (label : Row → Atom) (rows : List Row)
+    (good : Subst → Prop) (ceiling : Nat) (patterns : List Atom) (bindings : Subst)
+    (incoming : good bindings)
+    (closed : ∀ pattern ∈ patterns, ∀ row ∈ rows, ∀ slot < ceiling, ∀ before after,
+      good before → unify before pattern (rename slot (label row)) = .ok after → good after)
+    (use : Nat) {packets : List (List Row × Subst)} {used : Nat}
+    (complete : queryJoin label rows patterns bindings use = some (packets,used))
+    (fits : use + used ≤ ceiling) :
+    ∀ packet ∈ packets, packet.1.length = patterns.length ∧
+      (∀ row ∈ packet.1, row ∈ rows) ∧ good packet.2 := by
+  induction patterns generalizing use bindings packets used with
+  | nil =>
+    cases complete
+    intro packet found
+    obtain rfl := List.mem_singleton.mp found
+    exact ⟨rfl,fun _ impossible => (List.not_mem_nil impossible).elim,incoming⟩
+  | cons pattern rest ih =>
+    simp only [queryJoin,bind] at complete
+    cases head : queryRows label Prod.mk bindings pattern use rows with
+    | none => simp [head] at complete
+    | some hits =>
+      let child (next : Nat) (branch : Row × Subst) : Option (List (List Row × Subst) × Nat) :=
+        (queryJoin label rows rest branch.2 next).map fun (tails,spent) =>
+          (tails.map fun tail : List Row × Subst => (branch.1 :: tail.1,tail.2),spent)
+      rw [head, Option.bind_some] at complete
+      change (queryBranches child (use + rows.length) hits).bind _ = some (packets,used) at complete
+      cases later : queryBranches child (use + rows.length) hits with
+      | none => simp [later] at complete
+      | some joined =>
+        rcases joined with ⟨outputs,spent⟩
+        simp [later] at complete
+        obtain ⟨rfl,rfl⟩ := complete
+        intro packet member
+        obtain ⟨branch,hit,next,replies,charged,replied,selected,_,limit⟩ :=
+          queryBranches_member child _ _ later packet member
+        obtain ⟨slot,position,bound,matched,same⟩ :=
+          queryRows_member label Prod.mk bindings pattern use rows head branch hit
+        obtain rfl := same
+        have inRows : rows[slot] ∈ rows := List.getElem_mem position
+        have nextGood : good bound :=
+          closed pattern (by simp) rows[slot] inRows (use + slot) (by omega) bindings bound incoming matched
+        cases childRun : queryJoin label rows rest bound next with
+        | none => simp [child,childRun] at replied
+        | some result =>
+          rcases result with ⟨tail,tailUsed⟩
+          simp [child,childRun] at replied
+          obtain ⟨rfl,rfl⟩ := replied
+          obtain ⟨origin,present,rfl⟩ := List.mem_map.mp selected
+          obtain ⟨length,origins,valid⟩ := ih bound nextGood
+            (fun leg found => closed leg (List.mem_cons_of_mem _ found)) next childRun
+            (by omega) origin present
+          refine ⟨by simp [length], ?_, valid⟩
+          intro row found
+          rcases List.mem_cons.mp found with rfl | inTail
+          · exact inRows
+          · exact origins row inTail
+
+/-- Preserve the original body, one request per joined binding. The row
+paths remain available to the occurrence observer, not to the body. -/
+def joinedBodies {Row : Type} (body : Atom) (packets : List (List Row × Subst)) : List Control :=
+  packets.map fun packet => .evaluate packet.2 body
+
+def queryBatch (bindings : Subst) (pattern body : Atom) (use : Nat) (rows : List Atom) :
+    Option (List Control × Nat) :=
+  (queryJoin id rows (queryLegs pattern) bindings use).map fun (joined,used) => (joinedBodies body joined,used)
+
+theorem queryBatch_from_join {Row : Type} (label : Row → Atom) (rows : List Row)
+    (bindings : Subst) (pattern body : Atom) (use : Nat) :
+    queryBatch bindings pattern body use (rows.map label) =
+      (queryJoin label rows (queryLegs pattern) bindings use).map
+        (fun (joined,used) => (joinedBodies body joined,used)) := by
+  unfold queryBatch
+  rw [queryJoin_natural id label]
+  change ((queryJoin label rows (queryLegs pattern) bindings use).map _).map _ =
+    (queryJoin label rows (queryLegs pattern) bindings use).map _
+  cases joined : queryJoin label rows (queryLegs pattern) bindings use with
+  | none => rfl
+  | some pair =>
+    rcases pair with ⟨packets,used⟩
+    simp [joinedBodies,List.map_map,Function.comp_def]
+
+theorem queryBatch_ready {bindings : Subst} {pattern body : Atom} {use : Nat} {rows : List Atom}
+    {bodies : List Control} {used : Nat}
+    (ready : queryBatch bindings pattern body use rows = some (bodies,used)) :
+    ∃ packets, queryJoin id rows (queryLegs pattern) bindings use = some (packets,used) ∧
+      joinedBodies body packets = bodies := by
+  obtain ⟨⟨packets,used'⟩,joined,same⟩ := Option.map_eq_some_iff.mp ready
+  simp only [Prod.mk.injEq] at same
+  obtain ⟨result,rfl⟩ := same
+  exact ⟨packets,joined,result⟩
 
 /-- Runtime `match` receives values: its template has already completed its
 argument evaluation. Return it under each row's unifier without evaluating it
 again. Open row variables are freshly copied and caller bindings escape. -/
 def matchAnswers (bindings : Subst) (pattern template : Atom) :
-    Nat → List Atom → Option (List Answer)
-  | _, [] => some []
-  | use, row :: rest => do
-      let others ← matchAnswers bindings pattern template (use + 1) rest
-      match unify bindings pattern (rename use row) with
-      | .ok bound => some (⟨resolve bound template,bound⟩ :: others)
-      | .clash => some others
-      | .exhausted => none
+    Nat → List Atom → Option (List Answer) :=
+  queryRows id (fun _ bound => ⟨resolve bound template,bound⟩) bindings pattern
 
 /-- The value-level native call differs from the written `match` control:
 the latter schedules body computation after each match. -/
@@ -482,9 +795,9 @@ def queries (state : State) (pattern body : Atom) :
   | use, answer :: rest =>
       match Effects.readHandle answer.value >>= state.read with
       | some rows => do
-          let here ← queryBodies answer.bindings pattern body use rows
-          let (others, used) ← queries state pattern body (use + rows.length) rest
-          some (here ++ others, rows.length + used)
+          let (here,spent) ← queryBatch answer.bindings pattern body use rows
+          let (others,used) ← queries state pattern body (use + spent) rest
+          some (here ++ others, spent + used)
       | none => do
           let (others, used) ← queries state pattern body use rest
           some (.fault .invalidSpace :: others, used)

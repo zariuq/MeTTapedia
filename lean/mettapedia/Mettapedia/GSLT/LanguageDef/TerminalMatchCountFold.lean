@@ -1,4 +1,5 @@
 import Mettapedia.GSLT.Dynamics.CollapseObservationContract
+import Mettapedia.Data.List.OrderedPrefilter
 
 /-!
 # Terminal match count folds
@@ -221,18 +222,7 @@ section Prefilter
 
 variable {Row : Type uRow}
 
-/-- A prefilter that never rejects a row that unifies leaves the unifying rows
-unchanged. -/
-theorem filter_filter_of_sound (mayUnify unifies : Row → Bool)
-    (sound : ∀ row, unifies row = true → mayUnify row = true)
-    (rows : List Row) :
-    (rows.filter mayUnify).filter unifies = rows.filter unifies := by
-  rw [List.filter_filter]
-  apply List.filter_congr
-  intro row _
-  cases unified : unifies row with
-  | false => simp
-  | true => simp [sound row unified]
+open Mettapedia.Data.List.OrderedPrefilter (filter_candidates)
 
 /-- Counting after such a prefilter counts every unifying row. -/
 theorem countP_filter_of_sound (mayUnify unifies : Row → Bool)
@@ -240,7 +230,7 @@ theorem countP_filter_of_sound (mayUnify unifies : Row → Bool)
     (rows : List Row) :
     (rows.filter mayUnify).countP unifies = rows.countP unifies := by
   rw [List.countP_eq_length_filter, List.countP_eq_length_filter,
-    filter_filter_of_sound mayUnify unifies sound]
+    filter_candidates mayUnify unifies sound]
 
 /-- The per-row execution over the prefiltered snapshot publishes the answers
 of the per-row execution over all candidates. -/
@@ -250,7 +240,7 @@ theorem perRow_filter_of_sound {Answer Receipt : Type}
     (after : Row → List (Obs Answer Receipt)) (rows : List Row) :
     perRow unifies after (rows.filter mayUnify) = perRow unifies after rows := by
   unfold perRow
-  rw [filter_filter_of_sound mayUnify unifies sound]
+  rw [filter_candidates mayUnify unifies sound]
 
 end Prefilter
 

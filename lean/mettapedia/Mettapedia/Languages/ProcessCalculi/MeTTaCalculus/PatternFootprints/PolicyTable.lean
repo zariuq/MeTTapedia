@@ -116,11 +116,11 @@ theorem Region.matchKinds_first_stillHas (candidates : List (Location × Answer)
     (List.mem_of_mem_head? (Option.mem_def.mpr first))
 
 /-- **All the answers of a match are a complete read.**  The addition of a
-candidate kind that was absent adds an answer: what an observation of every
+candidate kind that was not present adds an answer: what an observation of every
 answer returned is no longer what the match returns. -/
 theorem Region.matchKinds_answers_grow (candidates : List (Location × Answer))
     (state : Location → ℕ) {kind : Location} {answer : Answer}
-    (candidate : (kind, answer) ∈ candidates) (absent : state kind = 0) :
+    (candidate : (kind, answer) ∈ candidates) (missing : state kind = 0) :
     (((Region.matchKinds candidates).branchLocal state).map Prod.fst).length <
       (((Region.matchKinds candidates).branchLocal (state + Pi.single kind 1)).map
         Prod.fst).length := by
@@ -132,7 +132,7 @@ theorem Region.matchKinds_answers_grow (candidates : List (Location × Answer))
     show 0 < state kind + (Pi.single kind 1 : Location → ℕ) kind
     rw [Pi.single_eq_same]
     omega
-  · exact decide_eq_false (by rw [absent]; exact Nat.lt_irrefl 0)
+  · exact decide_eq_false (by rw [missing]; exact Nat.lt_irrefl 0)
 
 end MatchObserved
 

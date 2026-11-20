@@ -4,12 +4,19 @@ import Mathlib.Data.Multiset.AddSub
 import Mathlib.Data.Multiset.Filter
 
 /-!
-# The laws of PeTTa's transform library
+# An ordered-store transform profile and its laws
 
-CeTTa's PeTTa library `lib_transform_specs` specifies one operation over a space,
-`(transform SPACE SOURCES TEMPLATE [DESTINATION])`; `lib_transform` computes the same
-answers and leaves the same store. This module is a first-order model of that
-specification and proves the laws it promises.
+This first-order profile searches kernel proposals sequentially and has explicit
+first-choice and all-extension segments. Its laws concern the definitions below.
+Conformance of a library frontend is a separate obligation: a frontend that commits
+only one kernel per call must interpret that policy explicitly, rather than identify
+its call with this profile's traversal of proposals.
+
+In particular, the caller route below observes instantiated data; it does not model
+the evaluation of effectful templates or the library's syntactic quote protection.
+Agreeing pure-instance lists cannot justify quoting variables inside Atom-demand
+arguments. Actual source execution and its demand-sensitive counterexamples are
+handled by the source evaluator and its operational correspondence.
 
 ## The model
 
@@ -63,8 +70,8 @@ specification and proves the laws it promises.
   `superpose`, one firing per branch, then the route. `once` keeps the first answer.
 
 Modelled: one space; `absent`, `unique` and `collect` over one pattern and over a
-conjunction; the caller route (`toCaller`), whose instances are observed as data, since the
-evaluation of an instance is common to `transform` and `match`; and a destination space that
+conjunction; the caller route (`toCaller`), whose instances are observed as data;
+and a destination space that
 is the source store itself (`intoStore`), the case in which routing changes what later
 branches see. Not modelled: `let` conjuncts (evaluated code), named spaces `[S]`, and
 destinations that are functions or other spaces. A condition's pattern headed by `,` is
@@ -136,7 +143,7 @@ namespace Mettapedia.Languages.MeTTa.PeTTa.LibTransform
 
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 open Mettapedia.Languages.ProcessCalculi.MORK
-  (Subst matchAtom applySubst isGroundAtom MatchAtomRel matchAtom_complete matchAtom_sound
+  (Subst matchAtom applySubst applySubst_compose isGroundAtom MatchAtomRel matchAtom_complete matchAtom_sound
     matchAtom_lookupExtends)
 
 /-! ## Sequential search over a global store -/
@@ -458,14 +465,23 @@ def split : Atom → List Atom
   | .expression (.symbol "," :: items) => items
   | a => [a]
 
-/-- A candidate's instances: what `emit` makes of each row's bindings, in row order. -/
-def Candidate.instances (c : Candidate) (emit : Subst → Answers) : Answers :=
+/-- A candidate emits one ordered batch per row of bindings. Data instances
+and saved evaluation requests use the same selection and commit. -/
+def Candidate.instances {A : Type} (c : Candidate) (emit : Subst → List A) : List A :=
   c.rows.flatMap fun r => emit r.1
 
 /-- The instances of a row: the template under its bindings, split by the template's own
 syntax, so a value bound to a comma expression stays one instance. -/
 def instances (template : Atom) (ρ : Subst) : Answers :=
   (split template).map (applySubst ρ)
+
+/-- Instantiation can remain staged across two environments without changing
+the template's authored split or its occurrence multiplicity. -/
+theorem instances_compose (template : Atom) (earlier later : Subst) :
+    instances template (Subst.compose earlier later) =
+      (instances template earlier).map (applySubst later) := by
+  simp only [instances, List.map_map]
+  exact List.map_congr_left fun term _ => applySubst_compose earlier later term
 
 /-- The candidates of the branch with guide `g` against the store `s`: its guided kernel and
 its `once` conjuncts, fired from the empty substitution, each with the rows its `all`
@@ -477,10 +493,27 @@ def candidates (s : Store) (g : Footprint) (src : Sources) : List Candidate :=
       | some ext => walk s true k.1 ext⟩
 
 /-- One firing: the first candidate whose footprint validates is committed. -/
-def fire (s : Store) (g : Footprint) (src : Sources) (emit : Subst → Answers) :
-    Option (Store × Answers) :=
+def fire {A : Type} (s : Store) (g : Footprint) (src : Sources) (emit : Subst → List A) :
+    Option (Store × List A) :=
   ((candidates s g src).find? fun c => valid s c.footprint).map fun c =>
     (commit c.footprint s, c.instances emit)
+
+/-- First valid commit, not first routed answer. In particular an admitted
+kernel with no extension commits even though its emission list is empty. -/
+def fireFirst {A : Type} (s : Store) (src : Sources) (emit : Subst → List A) :
+    Option (Store × List A) :=
+  (proposals s src).findSome? fun guide => fire s guide src emit
+
+theorem fireFirst_eq_some_iff {A : Type} {s : Store} {src : Sources} {emit : Subst → List A}
+    {receipt : Store × List A} :
+    fireFirst s src emit = some receipt ↔
+      ∃ earlier guide later, proposals s src = earlier ++ guide :: later ∧
+        fire s guide src emit = some receipt ∧ ∀ g ∈ earlier, fire s g src emit = none :=
+  List.findSome?_eq_some_iff
+
+theorem fireFirst_eq_none_iff {A : Type} {s : Store} {src : Sources} {emit : Subst → List A} :
+    fireFirst s src emit = none ↔ ∀ guide ∈ proposals s src, fire s guide src emit = none :=
+  List.findSome?_eq_none_iff
 
 /-- A branch as a computation: one firing, answered once at the committed store, or
 nothing with the store unchanged. -/
@@ -1083,31 +1116,37 @@ theorem walk_guided_gone {s₀ s : Store} {a : Atom} (ground : isGroundAtom a = 
         · rfl
         · exact walk_guided_gone ground gone cs τ₁ τ g m h mem _
 
-/-- **A read proposal fires again as itself.** On a ground store, the guided kernel of a
-pattern conjunction's proposal has, against the same store, exactly that proposal's row: the
-same bindings and the same footprint, once for each choice of the stored copies. -/
-theorem walk_guided_reads {s : Store} (ground : ∀ a ∈ s, isGroundAtom a = true) :
+/-- **A retained read guide checks only its selected payloads.** A guided
+kernel proposed in a ground entry view still gives exactly the same binding
+and footprint in the reached store if every selected payload is present.
+The reached store need not equal, extend, or preserve the order of the
+entry view. Multiple equal live witnesses may give duplicate internal
+candidates, but none changes the binding or footprint of this guide. -/
+theorem walk_guided_reads {entry s : Store} (ground : ∀ a ∈ entry, isGroundAtom a = true) :
     ∀ (ps : List Atom) (ρ σ : Subst) (g : Footprint),
-      (σ, g) ∈ walk s false ρ (ps.map (.pat .read)) →
+      (σ, g) ∈ walk entry false ρ (ps.map (.pat .read)) →
+        (∀ e ∈ g, e.2 ∈ s) →
         (σ, g) ∈ walk s true ρ (guided (ps.map (.pat .read)) g) ∧
           ∀ w ∈ walk s true ρ (guided (ps.map (.pat .read)) g), w = (σ, g)
-  | [], ρ, σ, g, h => by
+  | [], ρ, σ, g, h, _ => by
       simp only [List.map_nil, walk, List.mem_singleton, Prod.mk.injEq] at h
       obtain ⟨rfl, rfl⟩ := h
       simp [guided, walk]
-  | p :: ps, ρ, σ, g, h => by
+  | p :: ps, ρ, σ, g, h, live => by
       obtain ⟨r, hr, v, hv, same⟩ := mem_walk_pat.mp h
       simp only [Prod.mk.injEq] at same
       obtain ⟨rfl, rfl⟩ := same
       obtain ⟨stored, matched⟩ := mem_matchesIn.mp hr
       have atomGround := ground _ stored
+      have here : r.2 ∈ s := live (.read, r.2) List.mem_cons_self
       obtain ⟨again, only⟩ := walk_guided_reads ground ps r.1 v.1 v.2 hv
+        (fun e he => live e (List.mem_cons_of_mem _ he))
       have asStep : walk s true ρ (.as p r.2 :: guided (ps.map (.pat .read)) v.2) =
           walk s true r.1 (guided (ps.map (.pat .read)) v.2) := by
         simp [walk, matched]
       simp only [List.map_cons, guided]
       constructor
-      · refine mem_walk_pat.mpr ⟨(ρ, r.2), (mem_matchesIn_ground atomGround).mpr ⟨rfl, stored⟩,
+      · refine mem_walk_pat.mpr ⟨(ρ, r.2), (mem_matchesIn_ground atomGround).mpr ⟨rfl, here⟩,
           (v.1, v.2), ?_, rfl⟩
         rw [asStep]
         exact again
@@ -1297,8 +1336,8 @@ theorem valid_of_reads {fp : Footprint} (reads : ∀ e ∈ fp, e.1 = .read) (s :
   simp
 
 /-- **A firing commits the first candidate that validates.** -/
-theorem fire_eq_some_iff {s s' : Store} {g : Footprint} {src : Sources} {emit : Subst → Answers}
-    {out : Answers} :
+theorem fire_eq_some_iff {A : Type} {s s' : Store} {g : Footprint} {src : Sources}
+    {emit : Subst → List A} {out : List A} :
     fire s g src emit = some (s', out) ↔
       ∃ pre c post, candidates s g src = pre ++ c :: post ∧
         (∀ d ∈ pre, valid s d.footprint = false) ∧ valid s c.footprint = true ∧
@@ -1317,14 +1356,15 @@ theorem fire_eq_some_iff {s s' : Store} {g : Footprint} {src : Sources} {emit : 
     simp [before d hd]
 
 /-- **A firing fires nothing exactly when no candidate validates.** -/
-theorem fire_eq_none_iff {s : Store} {g : Footprint} {src : Sources} {emit : Subst → Answers} :
+theorem fire_eq_none_iff {A : Type} {s : Store} {g : Footprint} {src : Sources}
+    {emit : Subst → List A} :
     fire s g src emit = none ↔ ∀ c ∈ candidates s g src, valid s c.footprint = false := by
   unfold fire
   rw [Option.map_eq_none_iff, List.find?_eq_none]
   simp
 
 /-- A firing whose first candidate validates commits that candidate. -/
-theorem fire_of_first {s : Store} {g : Footprint} {src : Sources} {emit : Subst → Answers}
+theorem fire_of_first {A : Type} {s : Store} {g : Footprint} {src : Sources} {emit : Subst → List A}
     {c : Candidate} {rest : List Candidate} (cands : candidates s g src = c :: rest)
     (ok : valid s c.footprint = true) :
     fire s g src emit = some (commit c.footprint s, c.instances emit) := by
@@ -1410,7 +1450,7 @@ theorem fire_isSome_iff {s : Store} {g : Footprint} {src : Sources} {emit : Subs
 /-- **A branch whose atom is gone fires nothing.** If a ground atom its proposal read, took
 or found `unique` is no longer stored when the branch runs (an earlier branch took it), the
 branch fires nothing. -/
-theorem fire_eq_none_of_gone {s₀ s : Store} {src : Sources} {emit : Subst → Answers}
+theorem fire_eq_none_of_gone {A : Type} {s₀ s : Store} {src : Sources} {emit : Subst → List A}
     {σ : Subst} {g : Footprint} {e : Mode × Atom}
     (proposed : (σ, g) ∈ walk s₀ false [] src.kernel) (mem : e ∈ g)
     (ground : isGroundAtom e.2 = true) (gone : e.2 ∉ s) : fire s g src emit = none := by
@@ -1548,13 +1588,16 @@ theorem walk_reads_entries {s : Store} {firing : Bool} :
       · rfl
       · exact walk_reads_entries hv e he
 
-/-- On a ground store, a read-only proposal fires at the store it came from, once,
-emitting for every extension of its bindings, and leaves the store as it is. -/
-theorem fire_reads {s : Store} (ground : ∀ a ∈ s, isGroundAtom a = true) {ps : List Atom}
-    {ext : Option (List Atom)} {emit : Subst → Answers} {σ : Subst} {g : Footprint}
-    (proposed : (σ, g) ∈ walk s false [] (ps.map (.pat .read))) :
+/-- A still-valid read proposal fires once at the reached store. Its
+kernel bindings are retained, but its `all` extension really queries
+the reached store. Neither operation consumes a row. -/
+theorem fire_retained_reads {A : Type} {entry s : Store}
+    (ground : ∀ a ∈ entry, isGroundAtom a = true) {ps : List Atom}
+    {ext : Option (List Atom)} {emit : Subst → List A} {σ : Subst} {g : Footprint}
+    (proposed : (σ, g) ∈ walk entry false [] (ps.map (.pat .read)))
+    (live : ∀ e ∈ g, e.2 ∈ s) :
     fire s g (readSources ps ext) emit = some (s, (matchConj s σ (ext.getD [])).flatMap emit) := by
-  obtain ⟨again, only⟩ := walk_guided_reads ground ps [] σ g proposed
+  obtain ⟨again, only⟩ := walk_guided_reads ground ps [] σ g proposed live
   obtain ⟨w, ws, cons⟩ := List.exists_cons_of_ne_nil (List.ne_nil_of_mem again)
   have head : w = (σ, g) := only w (by rw [cons]; exact List.mem_cons_self ..)
   subst head
@@ -1583,6 +1626,58 @@ theorem fire_reads {s : Store} (ground : ∀ a ∈ s, isGroundAtom a = true) {ps
       rw [fire_of_first cands (valid_of_reads allReads s), commit_of_reads allReads]
       simp only [Candidate.instances, Option.getD_some, ← walk_reads_fst s true e σ,
         List.flatMap_map]
+
+/-- Exact replacement for guided read-kernel re-matching. A caller may
+retain the enumerated bindings and check the selected payloads instead.
+This law does not freeze a later extension or authorize a physical take. -/
+theorem fire_retained_reads_check {A : Type} {entry s : Store}
+    (ground : ∀ a ∈ entry, isGroundAtom a = true) {ps : List Atom}
+    {ext : Option (List Atom)} {emit : Subst → List A} {σ : Subst} {g : Footprint}
+    (proposed : (σ, g) ∈ walk entry false [] (ps.map (.pat .read))) :
+    fire s g (readSources ps ext) emit =
+      if g.all (fun e => s.contains e.2) then
+        some (s, (matchConj s σ (ext.getD [])).flatMap emit)
+      else none := by
+  by_cases ready : g.all (fun e => s.contains e.2) = true
+  · rw [if_pos ready]
+    exact fire_retained_reads ground proposed (fun e member =>
+      List.contains_iff_mem.mp (List.all_eq_true.mp ready e member))
+  · rw [if_neg ready]
+    by_contra fired
+    apply ready
+    apply List.all_eq_true.mpr
+    intro e member
+    apply List.contains_iff_mem.mpr
+    by_contra absent
+    exact fired (fire_eq_none_of_gone (src := readSources ps ext) proposed member
+      (ground _ ((walk_sound proposed).2 e member)) absent)
+
+theorem fire_reads {A : Type} {s : Store} (ground : ∀ a ∈ s, isGroundAtom a = true) {ps : List Atom}
+    {ext : Option (List Atom)} {emit : Subst → List A} {σ : Subst} {g : Footprint}
+    (proposed : (σ, g) ∈ walk s false [] (ps.map (.pat .read))) :
+    fire s g (readSources ps ext) emit = some (s, (matchConj s σ (ext.getD [])).flatMap emit) :=
+  fire_retained_reads ground proposed (walk_sound proposed).2
+
+/-- Under first-commit delivery the first kernel row is the only chosen
+one. Its extension can contain several rows or none. This is not the
+per-guide search used by `transformWith`. -/
+theorem fireFirst_reads {A : Type} (s : Store) (ground : ∀ a ∈ s, isGroundAtom a = true)
+    (ps : List Atom) (ext : Option (List Atom)) (emit : Subst → List A) :
+    fireFirst s (readSources ps ext) emit =
+      (walk s false [] (ps.map (.pat .read))).head?.map (fun row =>
+        (s, (matchConj s row.1 (ext.getD [])).flatMap emit)) := by
+  unfold fireFirst
+  have kernel : proposals s (readSources ps ext) =
+      (walk s false [] (ps.map (.pat .read))).map Prod.snd := rfl
+  rw [kernel]
+  cases scanned : walk s false [] (ps.map (.pat .read)) with
+  | nil => rfl
+  | cons row rest =>
+    have proposed : row ∈ walk s false [] (ps.map (.pat .read)) := by
+      rw [scanned]
+      exact List.mem_cons_self
+    simp only [List.map_cons, List.findSome?_cons, List.head?_cons, Option.map_some,
+      fire_reads ground (ext := ext) (emit := emit) proposed]
 
 theorem foldl_branchStep_reads {s : Store} (ground : ∀ a ∈ s, isGroundAtom a = true)
     {ps : List Atom} {ext : Option (List Atom)} {emit : Subst → Answers} :

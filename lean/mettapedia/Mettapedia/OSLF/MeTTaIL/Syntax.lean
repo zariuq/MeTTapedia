@@ -910,85 +910,6 @@ structure RewriteRule where
   bindings : Option RuleBindingSpec := none
 deriving Repr
 
-/-! ## Declarative reflective substitution -/
-
-/-- Serializable data for the canonical core of a reflective presentation.
-
-The declaration identifies exactly the sorts and constructors needed to
-compile paper-style name equality and reflective substitution.  Input and
-output constructors are deliberately absent: they belong to a particular
-process syntax, while canonical matching and substitution also apply to
-derived presentations whose interaction constructors have been retyped.
-The pair `parallelCollection`/`parallelUnitConstructor` is also why a bare
-`CollType` is insufficient to infer monoidal equations: the collection tag
-supplies the immediate payload discipline, while this declaration selects the
-operator whose nested occurrences flatten and the term acting as its unit.
-The `quoteDropEquation` field links the compiler to an equation already
-authored in the same `LanguageDef`; it does not silently add an equation. -/
-structure ReflectivePresentationDecl where
-  name : String
-  processSort : String
-  nameSort : String
-  quoteConstructor : String
-  dropConstructor : String
-  parallelCollection : CollType
-  parallelUnitConstructor : String
-  quoteDropEquation : String
-deriving Repr, DecidableEq
-
-/-- The additional constructor roles needed for the mutually derived
-name/process sorting judgments of a communication calculus.  This is a
-proof-oriented enrichment of the canonical reflective presentation, not a
-second language definition. -/
-structure ReflectiveProcessSignature extends ReflectivePresentationDecl where
-  inputConstructor : String
-  outputConstructor : String
-deriving Repr, DecidableEq
-
-instance : Coe ReflectiveProcessSignature ReflectivePresentationDecl :=
-  ⟨ReflectiveProcessSignature.toReflectivePresentationDecl⟩
-
-/-- A rewrite selects one presentation for equivalence-aware matching and
-one for interpreting explicit substitution in its contractum.  They coincide
-for ordinary rho COMM and may differ after a typed theory transformation. -/
-structure ReflectiveRuleDecl where
-  name : String
-  rewriteRule : String
-  matchingPresentation : String
-  substitutionPresentation : String
-deriving Repr, DecidableEq
-
-namespace ReflectivePresentationDecl
-
-/-- Stable data rendering for the authored reflective-semantics declaration. -/
-def renderJson (declaration : ReflectivePresentationDecl) : String :=
-  "{\"name\":" ++ jsonStrSyntax declaration.name ++
-    ",\"process_sort\":" ++ jsonStrSyntax declaration.processSort ++
-    ",\"name_sort\":" ++ jsonStrSyntax declaration.nameSort ++
-    ",\"quote_constructor\":" ++ jsonStrSyntax declaration.quoteConstructor ++
-    ",\"drop_constructor\":" ++ jsonStrSyntax declaration.dropConstructor ++
-    ",\"parallel_collection\":" ++
-      jsonStrSyntax (match declaration.parallelCollection with
-        | .vec => "vec" | .hashBag => "hash_bag" | .hashSet => "hash_set") ++
-    ",\"parallel_unit_constructor\":" ++
-      jsonStrSyntax declaration.parallelUnitConstructor ++
-    ",\"quote_drop_equation\":" ++
-      jsonStrSyntax declaration.quoteDropEquation ++ "}"
-
-end ReflectivePresentationDecl
-
-namespace ReflectiveRuleDecl
-
-/-- Stable data rendering for rule-to-presentation selection. -/
-def renderJson (declaration : ReflectiveRuleDecl) : String :=
-  "{\"name\":" ++ jsonStrSyntax declaration.name ++
-    ",\"rewrite_rule\":" ++ jsonStrSyntax declaration.rewriteRule ++
-    ",\"matching_presentation\":" ++
-      jsonStrSyntax declaration.matchingPresentation ++
-    ",\"substitution_presentation\":" ++
-      jsonStrSyntax declaration.substitutionPresentation ++ "}"
-
-end ReflectiveRuleDecl
 
 /-! ## Proof-calculus declaration vocabulary
 
@@ -1542,6 +1463,157 @@ example :
   simp [AlphaEquiv, eraseBinderMetadata]
 
 end Pattern
+
+/-! ## Declarative reflective substitution -/
+
+/-- The spelling of a frozen binder: a global name, with no free metavariable and
+no dangling index. -/
+structure FrozenSpelling where
+  spelling : Pattern
+  ground : spelling.freeFvarNames = [] ∧ spelling.isWellScopedAt 0 = true
+
+instance : DecidableEq FrozenSpelling := fun left right =>
+  decidable_of_iff (left.spelling = right.spelling)
+    ⟨fun same => by cases left; cases right; cases same; rfl, fun same => same ▸ rfl⟩
+
+instance : Repr FrozenSpelling := ⟨fun frozen precedence => reprPrec frozen.spelling precedence⟩
+
+/-- What substitution does with an eliminated binder inside a genuine quotation,
+when a presentation's binders reach into quotations. -/
+inductive QuoteView where
+  /-- Substitution enters quotations like any other constructor, as in the
+  Rholang interpreter and in MetaML. -/
+  | apply
+  /-- Inside a quotation the eliminated binder becomes the declared spelling, a
+  global name. -/
+  | freeze (spelling : FrozenSpelling)
+  /-- Inside a quotation the eliminated binder keeps its value as explicit
+  context `κ(v)`. The context constructor `κ` lies outside the signature, as
+  CMTT's closure `clo(u, σ)` lies outside its object language. -/
+  | closure (context : String)
+deriving Repr, DecidableEq
+
+/-- Whether a presentation's binders reach into quotations. -/
+inductive QuoteScope where
+  /-- Quoted code is closed with respect to object binders: names inside a
+  quotation are global and are never substituted or renamed. This is the reading
+  of the reflective higher-order calculus of Meredith and Radestock (2005), and
+  the closedness of code under CMTT's `box`. -/
+  | closed
+  /-- Binders reach into quotations, and substitution acts there through the
+  view. -/
+  | reaching (view : QuoteView)
+deriving Repr, DecidableEq
+
+/-- The context constructor a quote scope introduces, if any. -/
+def QuoteScope.contextConstructor? : QuoteScope → Option String
+  | .reaching (.closure context) => some context
+  | _ => none
+
+@[simp] theorem QuoteScope.contextConstructor?_closed : QuoteScope.closed.contextConstructor? = none := rfl
+
+@[simp] theorem QuoteScope.contextConstructor?_apply :
+    (QuoteScope.reaching .apply).contextConstructor? = none := rfl
+
+@[simp] theorem QuoteScope.contextConstructor?_freeze (spelling : FrozenSpelling) :
+    (QuoteScope.reaching (.freeze spelling)).contextConstructor? = none := rfl
+
+@[simp] theorem QuoteScope.contextConstructor?_closure (context : String) :
+    (QuoteScope.reaching (.closure context)).contextConstructor? = some context := rfl
+
+
+/-- Serializable data for the canonical core of a reflective presentation.
+
+The declaration identifies exactly the sorts and constructors needed to
+compile paper-style name equality and reflective substitution.  Input and
+output constructors are deliberately absent: they belong to a particular
+process syntax, while canonical matching and substitution also apply to
+derived presentations whose interaction constructors have been retyped.
+The pair `parallelCollection`/`parallelUnitConstructor` is also why a bare
+`CollType` is insufficient to infer monoidal equations: the collection tag
+supplies the immediate payload discipline, while this declaration selects the
+operator whose nested occurrences flatten and the term acting as its unit.
+The `quoteDropEquation` field links the compiler to an equation already
+authored in the same `LanguageDef`; it does not silently add an equation.
+The `quoteScope` field states whether the presentation's binders reach into
+quotations. It has no default: every presentation says what its semantics is. -/
+structure ReflectivePresentationDecl where
+  name : String
+  processSort : String
+  nameSort : String
+  quoteConstructor : String
+  dropConstructor : String
+  parallelCollection : CollType
+  parallelUnitConstructor : String
+  quoteDropEquation : String
+  /-- Whether binders reach into quotations. Every presentation declares it;
+  there is no default. -/
+  quoteScope : QuoteScope
+deriving Repr, DecidableEq
+
+/-- The additional constructor roles needed for the mutually derived
+name/process sorting judgments of a communication calculus.  This is a
+proof-oriented enrichment of the canonical reflective presentation, not a
+second language definition. -/
+structure ReflectiveProcessSignature extends ReflectivePresentationDecl where
+  inputConstructor : String
+  outputConstructor : String
+deriving Repr, DecidableEq
+
+instance : Coe ReflectiveProcessSignature ReflectivePresentationDecl :=
+  ⟨ReflectiveProcessSignature.toReflectivePresentationDecl⟩
+
+/-- A rewrite selects one presentation for equivalence-aware matching and
+one for interpreting explicit substitution in its contractum.  They coincide
+for ordinary rho COMM and may differ after a typed theory transformation. -/
+structure ReflectiveRuleDecl where
+  name : String
+  rewriteRule : String
+  matchingPresentation : String
+  substitutionPresentation : String
+deriving Repr, DecidableEq
+
+namespace ReflectivePresentationDecl
+
+/-- Stable data rendering for the authored reflective-semantics declaration. -/
+def renderJson (declaration : ReflectivePresentationDecl) : String :=
+  "{\"name\":" ++ jsonStrSyntax declaration.name ++
+    ",\"process_sort\":" ++ jsonStrSyntax declaration.processSort ++
+    ",\"name_sort\":" ++ jsonStrSyntax declaration.nameSort ++
+    ",\"quote_constructor\":" ++ jsonStrSyntax declaration.quoteConstructor ++
+    ",\"drop_constructor\":" ++ jsonStrSyntax declaration.dropConstructor ++
+    ",\"parallel_collection\":" ++
+      jsonStrSyntax (match declaration.parallelCollection with
+        | .vec => "vec" | .hashBag => "hash_bag" | .hashSet => "hash_set") ++
+    ",\"parallel_unit_constructor\":" ++
+      jsonStrSyntax declaration.parallelUnitConstructor ++
+    ",\"quote_drop_equation\":" ++
+      jsonStrSyntax declaration.quoteDropEquation ++
+    ",\"quote_scope\":" ++
+      (match declaration.quoteScope with
+        | .closed => "{\"kind\":\"closed\"}"
+        | .reaching .apply => "{\"kind\":\"reaching\",\"view\":{\"kind\":\"apply\"}}"
+        | .reaching (.freeze spelling) =>
+            "{\"kind\":\"reaching\",\"view\":{\"kind\":\"freeze\",\"spelling\":" ++
+              spelling.spelling.renderJson ++ "}}"
+        | .reaching (.closure context) =>
+            "{\"kind\":\"reaching\",\"view\":{\"kind\":\"closure\",\"context\":" ++
+              jsonStrSyntax context ++ "}}") ++ "}"
+
+end ReflectivePresentationDecl
+
+namespace ReflectiveRuleDecl
+
+/-- Stable data rendering for rule-to-presentation selection. -/
+def renderJson (declaration : ReflectiveRuleDecl) : String :=
+  "{\"name\":" ++ jsonStrSyntax declaration.name ++
+    ",\"rewrite_rule\":" ++ jsonStrSyntax declaration.rewriteRule ++
+    ",\"matching_presentation\":" ++
+      jsonStrSyntax declaration.matchingPresentation ++
+    ",\"substitution_presentation\":" ++
+      jsonStrSyntax declaration.substitutionPresentation ++ "}"
+
+end ReflectiveRuleDecl
 
 namespace Premise
 
@@ -2241,6 +2313,19 @@ private def isQuoteDropEquation
     | _, _ => false
   forward || reverse
 
+/-- A closure view's context constructor must lie outside the signature: a body
+that already contains `κ(v)` would otherwise share its closure with a body that
+mentions the eliminated binder, while their apply views differ. -/
+private def reflectiveScopeErrors (lang : LanguageDef) (context : String) (scope : QuoteScope) :
+    List ValidationError :=
+  match scope.contextConstructor? with
+  | some constructor =>
+      if lang.terms.any (fun term => term.label == constructor) then
+        [mkValidationError context
+          s!"closure context constructor `{constructor}` must lie outside the signature"]
+      else []
+  | none => []
+
 /-- Cross-reference and signature checks for one authored reflective
 presentation.  These checks make the declaration data fail closed before an
 engine may interpret it. -/
@@ -2253,8 +2338,8 @@ def validateReflectivePresentation
       [mkValidationError context s!"unknown process sort `{declaration.processSort}`"]) ++
     (if declaration.nameSort ∈ lang.typeNames then [] else
       [mkValidationError context s!"unknown name sort `{declaration.nameSort}`"]) ++
-    (if declaration.processSort == declaration.nameSort then
-      [mkValidationError context "process and name sorts must be distinct"] else [])
+    (if declaration.quoteConstructor == declaration.dropConstructor then
+      [mkValidationError context "quote and drop constructors must be distinct"] else [])
   let quoteErrors := reflectiveConstructorErrors lang context "quote"
     declaration.quoteConstructor declaration.nameSort declaration.processSort
   let dropErrors := reflectiveConstructorErrors lang context "drop"
@@ -2272,12 +2357,14 @@ def validateReflectivePresentation
             s!"equation `{declaration.quoteDropEquation}` does not have the declared quote-drop shape"]
     | _ => [mkValidationError context
         s!"ambiguous quote-drop equation `{declaration.quoteDropEquation}`"]
-  sortErrors ++ quoteErrors ++ dropErrors ++ unitErrors ++ equationErrors
+  let scopeErrors := reflectiveScopeErrors lang context declaration.quoteScope
+  sortErrors ++ quoteErrors ++ dropErrors ++ unitErrors ++ equationErrors ++ scopeErrors
 
-/-- A reflective presentation passes the exact validator when its two sorts
-are distinct and present, its quote/drop/unit constructors are uniquely
-resolved with the declared profiles, and its named equation is uniquely
-resolved with the declared quote-drop shape.  This exposes the mathematical
+/-- A reflective presentation passes the exact validator when its sorts are
+present, its quote and drop labels differ, its quote/drop/unit constructors are uniquely
+resolved with the declared profiles, its named equation is uniquely
+resolved with the declared quote-drop shape, and a closure view's context
+constructor lies outside the signature.  This exposes the mathematical
 validation obligations without exposing the validator's private scan helpers. -/
 theorem validateReflectivePresentation_eq_nil_of_unique
     (lang : LanguageDef) (declaration : ReflectivePresentationDecl)
@@ -2285,7 +2372,7 @@ theorem validateReflectivePresentation_eq_nil_of_unique
     (quoteParameter dropParameter equationVariable : String)
     (processSort : declaration.processSort ∈ lang.typeNames)
     (nameSort : declaration.nameSort ∈ lang.typeNames)
-    (sortsDistinct : declaration.processSort ≠ declaration.nameSort)
+    (quoteDropDistinct : declaration.quoteConstructor ≠ declaration.dropConstructor)
     (quoteUnique :
       lang.terms.filter (fun term => term.label == declaration.quoteConstructor) =
         [quote])
@@ -2314,17 +2401,25 @@ theorem validateReflectivePresentation_eq_nil_of_unique
         equation.right = .fvar equationVariable) ∨
       (equation.right = .apply declaration.quoteConstructor
           [.apply declaration.dropConstructor [.fvar equationVariable]] ∧
-        equation.left = .fvar equationVariable)) :
+        equation.left = .fvar equationVariable))
+    (contextFresh : ∀ constructor, declaration.quoteScope.contextConstructor? = some constructor →
+      lang.terms.any (fun term => term.label == constructor) = false) :
     lang.validateReflectivePresentation declaration = [] := by
+  have scopeErrors : reflectiveScopeErrors lang s!"reflective presentation {declaration.name}"
+      declaration.quoteScope = [] := by
+    unfold reflectiveScopeErrors
+    cases found : declaration.quoteScope.contextConstructor? with
+    | none => rfl
+    | some constructor => simp [contextFresh constructor found]
   rcases equationShape with forward | reverse
-  · simp [validateReflectivePresentation, reflectiveConstructorErrors,
+  · simp [validateReflectivePresentation, reflectiveConstructorErrors, scopeErrors,
       reflectiveUnitErrors, isQuoteDropEquation, processSort, nameSort,
-      sortsDistinct, quoteUnique, quoteCategory, quoteParameters, dropUnique,
+      quoteDropDistinct, quoteUnique, quoteCategory, quoteParameters, dropUnique,
       dropCategory, dropParameters, unitUnique, unitCategory, unitParameters,
       equationUnique, forward.1, forward.2]
-  · simp [validateReflectivePresentation, reflectiveConstructorErrors,
+  · simp [validateReflectivePresentation, reflectiveConstructorErrors, scopeErrors,
       reflectiveUnitErrors, isQuoteDropEquation, processSort, nameSort,
-      sortsDistinct, quoteUnique, quoteCategory, quoteParameters, dropUnique,
+      quoteDropDistinct, quoteUnique, quoteCategory, quoteParameters, dropUnique,
       dropCategory, dropParameters, unitUnique, unitCategory, unitParameters,
       equationUnique, reverse.1, reverse.2]
 
@@ -2478,7 +2573,7 @@ structure ReflectivePresentationWitness (lang : LanguageDef)
   dropParameter : String
   processSort : declaration.processSort ∈ lang.typeNames
   nameSort : declaration.nameSort ∈ lang.typeNames
-  sortsDistinct : declaration.processSort ≠ declaration.nameSort
+  quoteDropDistinct : declaration.quoteConstructor ≠ declaration.dropConstructor
   quoteUnique :
     lang.terms.filter (fun term => term.label == declaration.quoteConstructor) =
       [quote]
@@ -2502,6 +2597,26 @@ structure ReflectivePresentationWitness (lang : LanguageDef)
         (fun candidate => candidate.name == declaration.quoteDropEquation) =
       [equation]
   equationShape : QuoteDropShape declaration equation
+  contextFresh : ∀ constructor, declaration.quoteScope.contextConstructor? = some constructor →
+    lang.terms.any (fun term => term.label == constructor) = false
+
+private theorem reflectiveScopeErrors_eq_nil_iff (lang : LanguageDef) (context : String)
+    (scope : QuoteScope) :
+    reflectiveScopeErrors lang context scope = [] ↔
+      ∀ constructor, scope.contextConstructor? = some constructor →
+        lang.terms.any (fun term => term.label == constructor) = false := by
+  unfold reflectiveScopeErrors
+  cases found : scope.contextConstructor? with
+  | none => simp
+  | some constructor =>
+      cases present : lang.terms.any (fun term => term.label == constructor) with
+      | true =>
+          exact ⟨fun clean => by simp [present] at clean, fun fresh => by
+            have absent := fresh constructor rfl
+            rw [present] at absent
+            cases absent⟩
+      | false =>
+          exact ⟨fun _ other same => by cases same; exact present, fun _ => by simp [present]⟩
 
 /-- The explicit witness is sufficient for the exact existing validator. -/
 theorem ReflectivePresentationWitness.validate
@@ -2510,9 +2625,11 @@ theorem ReflectivePresentationWitness.validate
     lang.validateReflectivePresentation declaration = [] := by
   have equationShape := witness.equationShape
   unfold QuoteDropShape at equationShape
-  simp [validateReflectivePresentation, reflectiveConstructorErrors,
+  have scopeErrors := (reflectiveScopeErrors_eq_nil_iff lang
+    s!"reflective presentation {declaration.name}" declaration.quoteScope).mpr witness.contextFresh
+  simp [validateReflectivePresentation, reflectiveConstructorErrors, scopeErrors,
     reflectiveUnitErrors, witness.processSort, witness.nameSort,
-    witness.sortsDistinct, witness.quoteUnique, witness.quoteCategory,
+    witness.quoteDropDistinct, witness.quoteUnique, witness.quoteCategory,
     witness.quoteParameters, witness.dropUnique, witness.dropCategory,
     witness.dropParameters, witness.unitUnique, witness.unitCategory,
     witness.unitParameters, witness.equationUnique, equationShape]
@@ -2648,21 +2765,22 @@ theorem reflectivePresentationWitness_of_validate_eq_nil
         (if declaration.nameSort ∈ lang.typeNames then [] else
           [mkValidationError s!"reflective presentation {declaration.name}"
             s!"unknown name sort `{declaration.nameSort}`"]) ++
-        (if declaration.processSort == declaration.nameSort then
+        (if declaration.quoteConstructor == declaration.dropConstructor then
           [mkValidationError s!"reflective presentation {declaration.name}"
-            "process and name sorts must be distinct"] else [])) = [] := by
+            "quote and drop constructors must be distinct"] else [])) = [] := by
     aesop
-  have quoteClean := clean.1.1.1.2
-  have dropClean := clean.1.1.2
-  have unitClean := clean.1.2
-  have equationClean := clean.2
+  have quoteClean := clean.1.1.1.1.2
+  have dropClean := clean.1.1.1.2
+  have unitClean := clean.1.1.2
+  have equationClean := clean.1.2
+  have contextFresh := (reflectiveScopeErrors_eq_nil_iff _ _ _).mp clean.2
   have processSort : declaration.processSort ∈ lang.typeNames := by
     by_contra absent
     simp [absent] at sortClean
   have nameSort : declaration.nameSort ∈ lang.typeNames := by
     by_contra absent
     simp [absent] at sortClean
-  have sortsDistinct : declaration.processSort ≠ declaration.nameSort := by
+  have quoteDropDistinct : declaration.quoteConstructor ≠ declaration.dropConstructor := by
     intro equality
     simp [equality] at sortClean
   rcases reflectiveConstructorWitness_of_errors_eq_nil _ _ "quote" _ _ _
@@ -2685,7 +2803,7 @@ theorem reflectivePresentationWitness_of_validate_eq_nil
     dropParameter := dropParameter
     processSort := processSort
     nameSort := nameSort
-    sortsDistinct := sortsDistinct
+    quoteDropDistinct := quoteDropDistinct
     quoteUnique := quoteUnique
     quoteCategory := quoteCategory
     quoteParameters := quoteParameters
@@ -2696,7 +2814,8 @@ theorem reflectivePresentationWitness_of_validate_eq_nil
     unitCategory := unitCategory
     unitParameters := unitParameters
     equationUnique := equationUnique
-    equationShape := equationShape }⟩
+    equationShape := equationShape
+    contextFresh := contextFresh }⟩
 
 private def reflectivePresentationReferenceErrors
     (presentations : List ReflectivePresentationDecl)
@@ -3578,6 +3697,13 @@ def rhoReflectivePresentation : ReflectiveProcessSignature where
   parallelCollection := .hashBag
   parallelUnitConstructor := "PZero"
   quoteDropEquation := "QuoteDrop"
+  -- Closed: rho's binders do not reach into quotations; names inside a
+  -- quotation are global, as in the 2005 reflective higher-order calculus.
+  quoteScope := .closed
+
+/-- Rho's binders do not reach into quotations. -/
+@[simp] theorem rhoReflectivePresentation_quoteScope :
+    rhoReflectivePresentation.quoteScope = .closed := rfl
 
 /-- COMM's authored selection of rho's reflective matching and substitution
 presentation.  The two selections are explicit even when they coincide. -/

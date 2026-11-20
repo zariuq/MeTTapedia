@@ -100,12 +100,12 @@ theorem mix_of_sol {R : Rule} {s : St} {p : List Tm} {o : List Nat} {σ : Nat �
 
 /-! ## The instance as a firing of the first-order step -/
 
-/-- An ask, an absence or a count as a check of the first-order step; a host is none. -/
+/-- An ask, a none query or a count as a check of the first-order step; a host is none. -/
 def Guard.toCheck? (f : Tm → Tm) : Guard → Option (Check Tm)
   | .ask a b => some (.equal (f a) (f b))
-  | .absent q => some (.absent (f q))
+  | .none q => some (.predicate .none (f q))
   | .count q n => some (.count (f q) n)
-  | .host _ _ => none
+  | .host _ _ => Option.none
 
 def instRule (R : Rule) (s : St) (p : List Tm) : RuleInstance Tm where
   take := R.takes.map (instTerm R s p)
@@ -387,7 +387,7 @@ theorem check_holds_iff (R : Rule) (s : St) (hs : WellFormed s) (p : List Tm)
       show synAction.apply σ (instTerm R s p a) = synAction.apply σ (instTerm R s p b) ↔ _
       rw [apply_instTerm R s p hp, apply_instTerm R s p hp]
       rfl
-  | .absent q, c, h => by
+  | .none q, c, h => by
       simp only [Guard.toCheck?, Option.some.injEq] at h
       subst h
       show (∀ o ∈ (conf s).present, ¬ synAction.apply σ (instTerm R s p q) = synAction.apply σ o.label) ↔
@@ -430,7 +430,7 @@ theorem firstOrder_admits_iff (R : Rule) (hR : InClass R) (s : St) (hs : WellFor
       (AnnotatedRuns.firstOrder synAction Row.label).Admits (s := conf s) (instFiring R s p o) := by
   have hfo : (AnnotatedRuns.firstOrder synAction Row.label).Admits (s := conf s) (instFiring R s p o) ↔
       (instSelection R s p o).Valid synAction Row.label (instRule R s p) (conf s) :=
-    PredicateQueryAdmission.valid_empty_iff _ _ _ _ _
+    PredicateQueryAdmission.regionValid_nil_iff
   rw [hfo]
   have hnodup := taken_nodup_iff R s p o
   constructor

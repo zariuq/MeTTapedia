@@ -66,7 +66,9 @@ variable (A : SubstitutionAction T S) (label : O → T) (space : T → Bool)
 `taken`, and the firing takes exactly those occurrences. -/
 def retractFiring (withdrawn : T → Bool) (taken : List O) : Firing T S O :=
   ⟨⟨taken.map label, [], [], [], []⟩,
-    [PredicateQueryAdmission.Query.fixed ⟨withdrawn, taken.toFinset⟩], ⟨taken, [], []⟩⟩
+    [PredicateQueryAdmission.Query.fixed ⟨withdrawn, taken.toFinset⟩].map
+      PredicateQueryAdmission.Query.toRegion,
+    ⟨taken, [], []⟩⟩
 
 omit [DecidableEq O] in
 theorem equations_self {e : Equation T} :
@@ -85,9 +87,10 @@ theorem retractFiring_valid_iff (withdrawn : T → Bool) (taken : List O) (C : C
     (retractFiring (S := S) label withdrawn taken).Valid A label C ↔
       regionOf label C.present withdrawn = taken.toFinset ∧ taken.Nodup ∧
         A.Consistent C.equations := by
-  change PredicateQueryAdmission.Valid A label _
-    ([(⟨withdrawn, taken.toFinset⟩ : PredicateQuery O T)].map PredicateQueryAdmission.Query.fixed) C _ ↔ _
-  rw [PredicateQueryAdmission.valid_fixed_iff]
+  change PredicateQueryAdmission.RegionValid A label _
+    (([(⟨withdrawn, taken.toFinset⟩ : PredicateQuery O T)].map PredicateQueryAdmission.Query.fixed).map
+      PredicateQueryAdmission.Query.toRegion) C _ ↔ _
+  rw [← PredicateQueryAdmission.valid_iff_regionValid, PredicateQueryAdmission.valid_fixed_iff]
   constructor
   · rintro ⟨firing, holds⟩
     refine ⟨holds _ (List.mem_singleton_self _), firing.take_distinct, ?_⟩

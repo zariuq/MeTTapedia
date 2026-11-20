@@ -7,9 +7,8 @@ import Mettapedia.OSLF.MeTTaIL.GeneralScopedMatchMachineComparison
 A rule fires at the canonical form of its focus when its captures have increasing spines, it
 has no premises, and its left side decomposes no set (`CanonicalFiringAdmissible`). The captures
 are the canonical forms of the original captures, and the reduct is a permutation of the original
-(`rootFiring_canon`). Every binder operation, ordinary or reflective, respects
-permutation-equality (`binderOperation_same`): a permutation is a law move of the empty set of
-declared laws.
+(`rootFiring_canon`). A selected reflective binder must distinguish
+parallel multiplicity from set equivalence (`binderOperation_same`).
 -/
 
 set_option autoImplicit false
@@ -39,13 +38,16 @@ theorem same_iff_lawSame_nil (left right : Pattern) : Same left right ↔ LawSam
   · exact fun related => Relation.EqvGen.mono (fun a b (step : BagStep a b) => step.lawStep []) _ _ related
   · exact fun related => Relation.EqvGen.mono (fun a b (step : LawStep [] a b) => step.bagStep_nil) _ _ related
 
-/-- **Every binder operation respects permutation-equality.** -/
+/-- A compatible binder operation respects bag permutations and set
+re-presentation in the other collection kinds. -/
 theorem binderOperation_same (profile : Reflection.ReflectionProfile) (rule : RewriteRule)
+    (compatible : BinderLawsFor [] profile rule)
     {replacement replacement' body body' : Pattern} (sameReplacement : Same replacement replacement')
     (sameBody : Same body body') :
     Same (ScopedReflectiveExecution.binderOperation profile rule replacement body)
       (ScopedReflectiveExecution.binderOperation profile rule replacement' body') :=
-  (same_iff_lawSame_nil _ _).mpr (binderOperation_lawSame profile rule ((same_iff_lawSame_nil _ _).mp sameReplacement)
+  (same_iff_lawSame_nil _ _).mpr (binderOperation_lawSame profile rule compatible
+    ((same_iff_lawSame_nil _ _).mp sameReplacement)
     ((same_iff_lawSame_nil _ _).mp sameBody))
 
 /-! ## Firing at the canonical focus -/
@@ -59,7 +61,8 @@ premises, and its left side decomposes no set. -/
 def CanonicalFiringAdmissible (environment : GeneralPremise.Environment) (index : Nat) : Prop :=
   ∀ rule spec, environment.language.rewrites[index]? = some rule →
     GeneralPremise.specification? environment index = some spec →
-    IncreasingSpines rule spec ∧ rule.premises = [] ∧ setFree rule.left = true
+    IncreasingSpines rule spec ∧ rule.premises = [] ∧ setFree rule.left = true ∧
+      BinderLawsFor [] environment.reflection rule
 
 /-- **A root firing has a counterpart at the canonical form of its focus**, with canonical
 captures and a permutation-equal result. -/
@@ -73,13 +76,14 @@ theorem rootFiring_canon {environment : GeneralPremise.Environment} {bound : Lis
   cases fired with
   | @fire _ _ _ _ _ rule spec _ _ _ _ selected specified admitted sourceSorted matched typed premises reduced
       targetSorted =>
-    obtain ⟨increasing, unconditional, setFreeLeft⟩ := admissible rule spec selected specified
+    obtain ⟨increasing, unconditional, setFreeLeft, binderOk⟩ :=
+      admissible rule spec selected specified
     rw [unconditional] at premises
     cases premises
     obtain ⟨trace', traced⟩ := GeneralScopedMatchMachine.traced_iff_matches.mpr
       (matches_canon increasing setFreeLeft (GeneralScopedMatchMachine.traced_iff_matches.mp ⟨_, matched⟩))
     obtain ⟨target', reduced', same⟩ := instantiateWith?_same rule spec bound.length
-      (ScopedReflectiveExecution.binderOperation environment.reflection rule) (binderOperation_same _ rule) rule.right
+      (ScopedReflectiveExecution.binderOperation environment.reflection rule) (binderOperation_same _ rule binderOk) rule.right
       .right [] 0
       captured (canonAssignment captured) target (assignSame_canon captured) reduced
     refine ⟨trace', target', ?_, same⟩

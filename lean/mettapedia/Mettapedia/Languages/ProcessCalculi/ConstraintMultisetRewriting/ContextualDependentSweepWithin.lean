@@ -121,7 +121,7 @@ theorem endingWithin_drive (fuel : Nat) : ∀ (rounds : Nat) {Γ : Context setti
             rw [endingWithin_cons fuel rounds notEmpty]
             split at decided
             · cases decided
-            · rename_i absent isRefuted
+            · rename_i missing isRefuted
               cases decided
               rw [(towerWithinRound_eq fuel state.remaining).trans isRefuted]
               rfl
@@ -178,7 +178,7 @@ theorem unsolvable_of_endingWithin {fuel rounds : Nat} {Γ : Context setting.R}
     ¬ (frames setting.levels).Solvable store := by
   rw [← endingWithin_run] at read
   cases outcome : run (withinTower.solver fuel) store rounds with
-  | refuted absent => exact absent
+  | refuted missing => exact missing
   | solved _ _ => rw [outcome] at read; cases read
   | stuck _ => rw [outcome] at read; cases read
   | cutoff _ => rw [outcome] at read; cases read

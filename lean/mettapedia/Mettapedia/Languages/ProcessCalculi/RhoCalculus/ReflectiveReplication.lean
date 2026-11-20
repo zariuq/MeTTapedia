@@ -32,15 +32,21 @@ the fixed point `run c c ⇝ run c c | P` for `c = D(x) | P`, which is
 `!P | P` up to structural congruence.  Without drop the received code can
 only be used as a channel; the negative control is in `DropFreeTermination`.
 
-The channel hypothesis `ChannelInert x` says that normalising `x` does not
-produce the bound name of the communication; every closed name satisfies it,
-in particular `@0` (`atZero_channelInert`).
+The channel hypothesis `ChannelInert x` says that `x` is not the bound name
+of the communication up to the structural equations, i.e. its canonical form
+is not that name, so substitution leaves `x` as its normal form.  Every name
+without a free occurrence of the bound index satisfies it
+(`channelInert_of_noBVar`), in particular `@0` (`atZero_channelInert`).
 
-**Bookkeeping, choice-free.**  `normalize_sc` shows that the normaliser used
-by communication is structurally congruent to the identity on names,
-processes and lists, following the normaliser's own recursion; `substName_eq`
-and `substNameMark_eq` give the name substitution in closed form.  With them
-every theorem here depends on `propext` and `Quot.sound` only.
+**Bookkeeping.**  `normalize_sc` shows that the normaliser used by
+communication is structurally congruent to the identity on names, processes
+and lists, following the normaliser's own recursion, so it uses no choice.
+`substName_eq` and `substNameMark_eq` give the name substitution in closed
+form: the replacement where the canonical form of the name is the bound name,
+the normalised name elsewhere.  The canonical form sorts parallel components
+by `PatternCode.patternCode`, whose definition uses `Classical.choice`, so the
+theorems about communication depend on `propext`, `Classical.choice` and
+`Quot.sound`.
 
 **Scope.**  The results concern the canonical relation `Reduces` (COMM, closed
 under structural congruence and parallel contexts) on raw patterns, for every
@@ -73,17 +79,25 @@ def duplicator (x : Pattern) : Pattern :=
 def replicate (x P : Pattern) : Pattern :=
   par [.apply "POutput" [x, par [duplicator x, P]], duplicator x]
 
-/-- The channel is not the bound name of a communication after
-normalisation, so substitution leaves it as its normal form. -/
+/-- The channel is not the bound name of a communication up to the
+structural equations (its canonical form is not that name), so substitution
+leaves it as its normal form. -/
 def ChannelInert (x : Pattern) : Prop :=
-  semanticNormalizeName x ≠ .bvar 0
+  Canonical.canonicalize x ≠ .bvar 0
+
+/-- A channel without a free occurrence of the bound index is inert:
+structural congruence cannot create one. -/
+theorem channelInert_of_noBVar {x : Pattern} (absent : noBVar 0 x = true) : ChannelInert x := by
+  intro hit
+  have same := (Canonical.canonicalize_sound x).noBVar_eq 0
+  rw [hit, absent] at same
+  simp [noBVar] at same
 
 /-- The closed name `@0`. -/
 def atZero : Pattern := .apply "NQuote" [.apply "PZero" []]
 
-theorem atZero_channelInert : ChannelInert atZero := by
-  intro normalizedIsBound
-  cases normalizedIsBound
+theorem atZero_channelInert : ChannelInert atZero :=
+  channelInert_of_noBVar rfl
 
 /-! ## Structural congruence bookkeeping
 
@@ -218,32 +232,19 @@ theorem normalizeName_sc (name : Pattern) : semanticNormalizeName name ≡ name 
 theorem normalizeProc_sc (process : Pattern) : semanticNormalizeProc process ≡ process :=
   normalize_sc.2.1 process
 
-/-- The marked name substitution, in closed form. -/
+/-- The marked name substitution, in closed form: the name is recognised up
+to the structural equations. -/
 theorem substNameMark_eq (k : Nat) (replacement name : Pattern) :
     semanticSubstNameMark k replacement name =
-      if semanticNormalizeName name = .bvar k then (replacement, true)
-      else (semanticNormalizeName name, false) := by
-  unfold semanticSubstNameMark
-  cases normalized : semanticNormalizeName name with
-  | bvar m =>
-      dsimp only
-      rcases Nat.decEq m k with differs | same
-      · rw [if_neg (fun hit => differs (beq_iff_eq.mp hit)),
-          if_neg (fun equal => differs (Pattern.bvar.inj equal))]
-      · subst same
-        rw [if_pos (beq_iff_eq.mpr rfl), if_pos rfl]
-  | fvar _ => exact (if_neg (fun equal => Pattern.noConfusion equal)).symm
-  | apply _ _ => exact (if_neg (fun equal => Pattern.noConfusion equal)).symm
-  | lambda _ _ => exact (if_neg (fun equal => Pattern.noConfusion equal)).symm
-  | multiLambda _ _ _ => exact (if_neg (fun equal => Pattern.noConfusion equal)).symm
-  | subst _ _ => exact (if_neg (fun equal => Pattern.noConfusion equal)).symm
-  | collection _ _ _ => exact (if_neg (fun equal => Pattern.noConfusion equal)).symm
+      if Canonical.canonicalize name = .bvar k then (replacement, true)
+      else (semanticNormalizeName name, false) :=
+  rfl
 
-/-- The name substitution, in closed form: the replacement if the normalised
-name is the bound name, the normalised name otherwise. -/
+/-- The name substitution, in closed form: the replacement if the canonical
+form of the name is the bound name, the normalised name otherwise. -/
 theorem substName_eq (k : Nat) (replacement name : Pattern) :
     semanticSubstName k replacement name =
-      if semanticNormalizeName name = .bvar k then replacement
+      if Canonical.canonicalize name = .bvar k then replacement
       else semanticNormalizeName name := by
   unfold semanticSubstName
   rw [substNameMark_eq]

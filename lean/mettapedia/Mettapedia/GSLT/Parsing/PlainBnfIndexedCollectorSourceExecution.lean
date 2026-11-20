@@ -82,7 +82,7 @@ private def observedCollector : List RewriteRule := [
     [.congruence (pattern (metta_sexpr% petta "(BNFDiscoveryCollectLoopV1 ?entries BNFGraphTrieEmptyV1 BNFDefinitionsNilV1)"))
       (pattern (metta_sexpr% petta "(?definitions ?diagnostics ?index)"))],
   observation "bnf-discovery-collect-nil-v1"
-    (metta_sexpr% petta "(BNFDiscoveryCollectLoopV1 (metta-nullary bnf-v1:entries-nil) ?index ?reversed)")
+    (metta_sexpr% petta "(BNFDiscoveryCollectLoopV1 (bnf-v1:entries-nil) ?index ?reversed)")
     (metta_sexpr% petta "(?definitions BNFDiagnosticsNilV1 ?index)")
     [.congruence (pattern (metta_sexpr% petta "(BNFDiscoveryReverseDefinitionsV1 ?reversed BNFDefinitionsNilV1)"))
       (pattern (metta_sexpr% petta "(?definitions)"))],

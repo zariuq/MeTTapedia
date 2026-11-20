@@ -177,7 +177,7 @@ theorem holds_reindexPrivate_iff (names : Local → Added) (injective : Function
       ContextualConditionalGuards.Holds locals candidate rows world check := by
   cases check with
   | equal first second => exact Iff.rfl
-  | absent pattern =>
+  | predicate quantifier pattern =>
       simp only [ContextualConditionalGuards.Holds,
         matches_reindexPrivate_iff locals added captures names injective preserves]
   | count pattern cardinality =>

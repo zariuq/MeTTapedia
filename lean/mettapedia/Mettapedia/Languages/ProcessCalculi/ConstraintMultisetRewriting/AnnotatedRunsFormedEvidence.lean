@@ -50,7 +50,7 @@ readout is a formed term in the source's `QTerm` class (`trunc_formedFiber`). Th
 and their costs, are what the truncation forgets: composition of evidence adds step counts
 (`stepCount_trans`), so equal classes do not imply equal costs.
 
-The root-code substitution is an input of the calculus (`RootAction`): an actual substitution of
+The root-code substitution is an input of the step (`RootAction`): an actual substitution of
 a decoder's root codes. Its naturality and functor laws are fields of the structure; every
 instance in the consumers proves them.
 -/
@@ -198,7 +198,7 @@ end Evidence
 section Substitution
 
 /-- **An actual substitution action on a decoder's root codes**, with its naturality and functor
-laws. This is an input of the calculus: each consumer supplies one with proofs. -/
+laws. This is an input of the step: each consumer supplies one with proofs. -/
 structure RootAction (decoder : RootDecoder R.computation) where
   substitute : {n m : Nat} → Sub Head n m → decoder.Code n → decoder.Code m
   natural : ∀ {n m : Nat} (σ : Sub Head n m) (code : decoder.Code n),

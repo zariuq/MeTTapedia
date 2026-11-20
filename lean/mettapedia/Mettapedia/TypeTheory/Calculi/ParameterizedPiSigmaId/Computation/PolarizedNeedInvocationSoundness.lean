@@ -167,7 +167,6 @@ private theorem eval_sound_step {limit : Nat} (ih : SoundBelow (Effect := Effect
       repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       have noEvents : kontEvents consumer = [] := returned_events consumer
       rw [noEvents]
-      repeat rw [List.append_nil]
       obtain ⟨rfl, rfl⟩ := consumer.returned_exact
       exact RunSegment.returnValue primitive _ stack value native values needs kont
   | nativeLambda body native values needs world =>
@@ -201,12 +200,10 @@ private theorem eval_sound_step {limit : Nat} (ih : SoundBelow (Effect := Effect
       exact RunSegment.call primitive _ stack operation argument native values needs kont
   | emit effect bodyEval =>
       dsimp only [evalEvents, forceEvents, kontEvents]
-      repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       exact (RunSegment.emit primitive world stack effect _ _ _ _ kont).trans
         (ih.eval bodyEval consumer stack)
   | forceNeed index forced =>
       dsimp only [evalEvents, forceEvents, kontEvents]
-      repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       exact (RunSegment.forceNeed primitive world stack index _ _ _ kont).trans
         ((ih.force forced (.resume (.finish kont) :: stack)).trans
           ((RunSegment.finish_resume primitive _ stack _ kont).trans (ih.kont consumer stack)))
@@ -215,60 +212,67 @@ private theorem eval_sound_step {limit : Nat} (ih : SoundBelow (Effect := Effect
       repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       exact (RunSegment.local_step primitive world stack _ _ rfl).trans
         (ih.eval function (.nativeApply _ _ bodyEval consumer) stack)
-  | nativeApplyMismatch argument function wrong =>
+  | @nativeApplyMismatch _ _ _ _ argument native _ _ _ _ _ function wrong =>
       dsimp only [evalEvents, forceEvents, kontEvents]
-      repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       have noEvents : kontEvents consumer = [] := retry_events consumer
       rw [noEvents]
       repeat rw [List.append_nil]
       obtain ⟨rfl, rfl⟩ := consumer.retry_exact
-      exact (RunSegment.local_step primitive world stack _ _ rfl).trans
-        (ih.eval function (.nativeMismatch (primitive := primitive) _ kont _ _ wrong) stack)
-  | nativeApplyFault argument function fault =>
+      refine (RunSegment.local_step primitive world stack _ _ rfl).trans ?_
+      simpa only [kontEvents, List.append_nil] using
+        ih.eval function
+          (.nativeMismatch (primitive := primitive) (subst native argument) kont _ _ wrong) stack
+  | @nativeApplyFault _ _ _ _ argument native _ _ _ _ _ function fault =>
       dsimp only [evalEvents, forceEvents, kontEvents]
-      repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       have noEvents : kontEvents consumer = [] := fault_events consumer fault
       rw [noEvents]
       repeat rw [List.append_nil]
       obtain ⟨rfl, rfl⟩ := consumer.fault_exact fault
       cases fault with
       | stableFault fault =>
-          exact (RunSegment.local_step primitive world stack _ _ rfl).trans
-            (ih.eval function (.stableFault (primitive := primitive) _ fault _) stack)
+          refine (RunSegment.local_step primitive world stack _ _ rfl).trans ?_
+          simpa only [kontEvents, List.append_nil] using
+            ih.eval function (.stableFault (primitive := primitive)
+              (.nativeApply (subst native argument) kont) fault _) stack
       | retryableFault reason =>
-          exact (RunSegment.local_step primitive world stack _ _ rfl).trans
-            (ih.eval function (.retryableFault (primitive := primitive) _ reason _) stack)
+          refine (RunSegment.local_step primitive world stack _ _ rfl).trans ?_
+          simpa only [kontEvents, List.append_nil] using
+            ih.eval function (.retryableFault (primitive := primitive)
+              (.nativeApply (subst native argument) kont) reason _) stack
   | valueApply argument function bodyEval =>
       dsimp only [evalEvents, forceEvents, kontEvents]
       repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       exact (RunSegment.local_step primitive world stack _ _ rfl).trans
         (ih.eval function (.valueApply _ _ bodyEval consumer) stack)
-  | valueApplyMismatch argument function wrong =>
+  | @valueApplyMismatch _ _ _ _ argument native values needs _ _ _ function wrong =>
       dsimp only [evalEvents, forceEvents, kontEvents]
-      repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       have noEvents : kontEvents consumer = [] := retry_events consumer
       rw [noEvents]
       repeat rw [List.append_nil]
       obtain ⟨rfl, rfl⟩ := consumer.retry_exact
-      exact (RunSegment.local_step primitive world stack _ _ rfl).trans
-        (ih.eval function (.valueMismatch (primitive := primitive) _ kont _ _ wrong) stack)
-  | valueApplyFault argument function fault =>
+      refine (RunSegment.local_step primitive world stack _ _ rfl).trans ?_
+      simpa only [kontEvents, List.append_nil] using
+        ih.eval function (.valueMismatch (primitive := primitive)
+          (captureValue native values needs argument) kont _ _ wrong) stack
+  | @valueApplyFault _ _ _ _ argument native values needs _ _ _ function fault =>
       dsimp only [evalEvents, forceEvents, kontEvents]
-      repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       have noEvents : kontEvents consumer = [] := fault_events consumer fault
       rw [noEvents]
       repeat rw [List.append_nil]
       obtain ⟨rfl, rfl⟩ := consumer.fault_exact fault
       cases fault with
       | stableFault fault =>
-          exact (RunSegment.local_step primitive world stack _ _ rfl).trans
-            (ih.eval function (.stableFault (primitive := primitive) _ fault _) stack)
+          refine (RunSegment.local_step primitive world stack _ _ rfl).trans ?_
+          simpa only [kontEvents, List.append_nil] using
+            ih.eval function (.stableFault (primitive := primitive)
+              (.valueApply (captureValue native values needs argument) kont) fault _) stack
       | retryableFault reason =>
-          exact (RunSegment.local_step primitive world stack _ _ rfl).trans
-            (ih.eval function (.retryableFault (primitive := primitive) _ reason _) stack)
+          refine (RunSegment.local_step primitive world stack _ _ rfl).trans ?_
+          simpa only [kontEvents, List.append_nil] using
+            ih.eval function (.retryableFault (primitive := primitive)
+              (.valueApply (captureValue native values needs argument) kont) reason _) stack
   | forceThunk value captured bodyEval =>
       dsimp only [evalEvents, forceEvents, kontEvents]
-      repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       exact (RunSegment.local_step primitive world stack _ _
         (by simp only [localStep, captured])).trans (ih.eval bodyEval consumer stack)
   | forceThunkMismatch value world wrong =>
@@ -276,14 +280,12 @@ private theorem eval_sound_step {limit : Nat} (ih : SoundBelow (Effect := Effect
       repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       have noEvents : kontEvents consumer = [] := retry_events consumer
       rw [noEvents]
-      repeat rw [List.append_nil]
       obtain ⟨rfl, rfl⟩ := consumer.retry_exact
       apply (RunSegment.local_step primitive _ stack _ _ ?_).trans
         (RunSegment.complete primitive _ stack (.retryableFault (.domain .expectedThunk)))
       simp only [localStep]
   | unpackNative value captured bodyEval =>
       dsimp only [evalEvents, forceEvents, kontEvents]
-      repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       exact (RunSegment.local_step primitive world stack _ _
         (by simp only [localStep, captured])).trans (ih.eval bodyEval consumer stack)
   | unpackNativeMismatch value body world wrong =>
@@ -291,7 +293,6 @@ private theorem eval_sound_step {limit : Nat} (ih : SoundBelow (Effect := Effect
       repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       have noEvents : kontEvents consumer = [] := retry_events consumer
       rw [noEvents]
-      repeat rw [List.append_nil]
       obtain ⟨rfl, rfl⟩ := consumer.retry_exact
       apply (RunSegment.local_step primitive _ stack _ _ ?_).trans
         (RunSegment.complete primitive _ stack (.retryableFault (.domain .expectedNativePair)))
@@ -306,7 +307,6 @@ private theorem eval_sound_step {limit : Nat} (ih : SoundBelow (Effect := Effect
               (ih.eval bodyEval consumer stack))))
   | bindNativeMismatch body allocated forced wrong =>
       dsimp only [evalEvents, forceEvents, kontEvents]
-      repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       have noEvents : kontEvents consumer = [] := retry_events consumer
       rw [noEvents]
       repeat rw [List.append_nil]
@@ -319,7 +319,6 @@ private theorem eval_sound_step {limit : Nat} (ih : SoundBelow (Effect := Effect
       exact RunSegment.complete primitive _ stack _
   | bindNativeFault body allocated forced fault =>
       dsimp only [evalEvents, forceEvents, kontEvents]
-      repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       have noEvents : kontEvents consumer = [] := fault_events consumer fault
       rw [noEvents]
       repeat rw [List.append_nil]
@@ -335,7 +334,6 @@ private theorem eval_sound_step {limit : Nat} (ih : SoundBelow (Effect := Effect
       repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       have noEvents : kontEvents consumer = [] := retry_events consumer
       rw [noEvents]
-      repeat rw [List.append_nil]
       obtain ⟨rfl, rfl⟩ := consumer.retry_exact
       exact allocation_failure world stack _ _ _ rfl rfl absent
   | bindValueValue allocated forced bodyEval =>
@@ -348,7 +346,6 @@ private theorem eval_sound_step {limit : Nat} (ih : SoundBelow (Effect := Effect
               (ih.eval bodyEval consumer stack))))
   | bindValueMismatch body allocated forced wrong =>
       dsimp only [evalEvents, forceEvents, kontEvents]
-      repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       have noEvents : kontEvents consumer = [] := retry_events consumer
       rw [noEvents]
       repeat rw [List.append_nil]
@@ -361,7 +358,6 @@ private theorem eval_sound_step {limit : Nat} (ih : SoundBelow (Effect := Effect
       exact RunSegment.complete primitive _ stack _
   | bindValueFault body allocated forced fault =>
       dsimp only [evalEvents, forceEvents, kontEvents]
-      repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       have noEvents : kontEvents consumer = [] := fault_events consumer fault
       rw [noEvents]
       repeat rw [List.append_nil]
@@ -377,7 +373,6 @@ private theorem eval_sound_step {limit : Nat} (ih : SoundBelow (Effect := Effect
       repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       have noEvents : kontEvents consumer = [] := retry_events consumer
       rw [noEvents]
-      repeat rw [List.append_nil]
       obtain ⟨rfl, rfl⟩ := consumer.retry_exact
       exact allocation_failure world stack _ _ _ rfl rfl absent
   | sequenceSigmaValue allocated forced bodyEval =>
@@ -394,7 +389,6 @@ private theorem eval_sound_step {limit : Nat} (ih : SoundBelow (Effect := Effect
               (ih.eval bodyEval paired.val stack))))
   | sequenceSigmaMismatch body allocated forced wrong =>
       dsimp only [evalEvents, forceEvents, kontEvents]
-      repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       have noEvents : kontEvents consumer = [] := retry_events consumer
       rw [noEvents]
       repeat rw [List.append_nil]
@@ -407,7 +401,6 @@ private theorem eval_sound_step {limit : Nat} (ih : SoundBelow (Effect := Effect
       exact RunSegment.complete primitive _ stack _
   | sequenceSigmaFault body allocated forced fault =>
       dsimp only [evalEvents, forceEvents, kontEvents]
-      repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       have noEvents : kontEvents consumer = [] := fault_events consumer fault
       rw [noEvents]
       repeat rw [List.append_nil]
@@ -423,12 +416,10 @@ private theorem eval_sound_step {limit : Nat} (ih : SoundBelow (Effect := Effect
       repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       have noEvents : kontEvents consumer = [] := retry_events consumer
       rw [noEvents]
-      repeat rw [List.append_nil]
       obtain ⟨rfl, rfl⟩ := consumer.retry_exact
       exact allocation_failure world stack _ _ _ rfl rfl absent
   | choose left right allocated forced =>
       dsimp only [evalEvents, forceEvents, kontEvents]
-      repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       exact (RunSegment.action_allocate primitive world stack _ _ (.finish kont) rfl rfl allocated).trans
         ((RunSegment.demand primitive _ stack _ _).trans
           ((ih.force forced (.resume (.finish kont) :: stack)).trans
@@ -438,12 +429,10 @@ private theorem eval_sound_step {limit : Nat} (ih : SoundBelow (Effect := Effect
       repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       have noEvents : kontEvents consumer = [] := retry_events consumer
       rw [noEvents]
-      repeat rw [List.append_nil]
       obtain ⟨rfl, rfl⟩ := consumer.retry_exact
       exact allocation_failure world stack _ _ _ rfl rfl absent
   | letNeed allocated bodyEval =>
       dsimp only [evalEvents, forceEvents, kontEvents]
-      repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       exact (RunSegment.action_allocate primitive world stack _ _ (.bindNeed _ kont) rfl rfl allocated).trans
         (ih.eval bodyEval consumer stack)
   | letNeedAllocationFailure body absent =>
@@ -451,7 +440,6 @@ private theorem eval_sound_step {limit : Nat} (ih : SoundBelow (Effect := Effect
       repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       have noEvents : kontEvents consumer = [] := retry_events consumer
       rw [noEvents]
-      repeat rw [List.append_nil]
       obtain ⟨rfl, rfl⟩ := consumer.retry_exact
       exact allocation_failure world stack _ _ _ rfl rfl absent
 
@@ -467,28 +455,25 @@ private theorem force_sound_step {limit : Nat} (ih : SoundBelow (Effect := Effec
   | cachedValue cached => exact RunSegment.cached_answer primitive world stack cell _ _ cached
   | cachedStable cached =>
       dsimp only [evalEvents, forceEvents, kontEvents]
-      repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       apply RunSegment.of_singleton (lookups := 1) (updates := 0) (receipts := 1) (allocations := 0)
       intro work
       simp only [NeedLocalSteps.step, NeedReference.step, cached, finished, recorded]
   | missing absent =>
       dsimp only [evalEvents, forceEvents, kontEvents]
-      repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       apply RunSegment.of_singleton (lookups := 1) (updates := 0) (receipts := 1) (allocations := 0)
       intro work
       simp only [NeedLocalSteps.step, NeedReference.step, absent, retryResult, retryMachine, finished, recorded]
   | evaluating cached =>
       dsimp only [evalEvents, forceEvents, kontEvents]
-      repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       apply RunSegment.of_singleton (lookups := 1) (updates := 0) (receipts := 1) (allocations := 0)
       intro work
       simp only [NeedLocalSteps.step, NeedReference.step, cached, retryResult, retryMachine, finished, recorded]
   | suspended cached selected bodyEval =>
       dsimp only [evalEvents, forceEvents, kontEvents]
-      repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
-      exact (force_entry primitive world stack selected cached).trans
-        ((ih.eval bodyEval (.done _ _) (.commit cell world.nextEvaluator :: stack)).trans
-          (finalize_commit primitive _ stack cell world.nextEvaluator _))
+      refine (force_entry primitive world stack selected cached).trans ?_
+      simpa only [kontEvents, List.append_nil] using
+        (ih.eval bodyEval (.done _ _) (.commit cell world.nextEvaluator :: stack)).trans
+          (finalize_commit primitive _ stack cell world.nextEvaluator _)
 
 private theorem kont_sound_step {limit : Nat} (ih : SoundBelow (Effect := Effect) primitive limit)
     {kont : Kont Head Operation Effect m}
@@ -503,7 +488,6 @@ private theorem kont_sound_step {limit : Nat} (ih : SoundBelow (Effect := Effect
   | pairNative first second rest => exact ih.kont rest stack
   | pairMismatch first rest answer world wrong =>
       dsimp only [evalEvents, forceEvents, kontEvents]
-      repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       cases answer with
       | returned value =>
           cases value with
@@ -515,7 +499,6 @@ private theorem kont_sound_step {limit : Nat} (ih : SoundBelow (Effect := Effect
   | nativeApply argument body evaluation rest => exact ih.eval evaluation rest stack
   | nativeMismatch argument rest answer world wrong =>
       dsimp only [evalEvents, forceEvents, kontEvents]
-      repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       cases answer with
       | returned _ => exact RunSegment.complete primitive world stack _
       | nativeFunction body => exact False.elim (wrong body rfl)
@@ -523,19 +506,16 @@ private theorem kont_sound_step {limit : Nat} (ih : SoundBelow (Effect := Effect
   | valueApply argument body evaluation rest => exact ih.eval evaluation rest stack
   | valueMismatch argument rest answer world wrong =>
       dsimp only [evalEvents, forceEvents, kontEvents]
-      repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       cases answer with
       | returned _ => exact RunSegment.complete primitive world stack _
       | nativeFunction _ => exact RunSegment.complete primitive world stack _
       | valueFunction body => exact False.elim (wrong body rfl)
   | stableFault kont fault world =>
       dsimp only [evalEvents, forceEvents, kontEvents]
-      repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       rw [deliver_stable]
       exact RunSegment.complete primitive world stack _
   | retryableFault kont reason world =>
       dsimp only [evalEvents, forceEvents, kontEvents]
-      repeat first | rw [List.nil_append] | rw [List.append_nil] | rw [List.append_assoc]
       rw [deliver_retry]
       exact RunSegment.complete primitive world stack _
 

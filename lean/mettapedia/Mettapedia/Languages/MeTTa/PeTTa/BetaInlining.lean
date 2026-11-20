@@ -473,8 +473,10 @@ def isExpr : Atom → Bool
 
 def shape : Atom → Bool
   | .expression [.symbol s, _, _, _] => s == "let" || s == "if" || s == "match"
-  | .expression [.symbol s, a, b] => (s == "let*" && isExpr a) || (s == "case" && isExpr b)
-  | .expression [.symbol s, a] => s == "collapse" || (s == "superpose" && isExpr a) || s == "quote"
+  | .expression [.symbol s, a, b] => (s == "let*" && isExpr a) || (s == "case" && isExpr b) ||
+      s == "if"
+  | .expression [.symbol s, a] => s == "collapse" || (s == "superpose" && isExpr a) ||
+      s == "quote" || s == "unique"
   | .expression [.symbol s] => s == "empty"
   | _ => false
 
@@ -935,6 +937,25 @@ theorem simulation (agree : Agree callee caller names vars) {program : Program}
           exact ⟨_, .if_enter (bindings := caller) (by simp),
             ⟨hs, hi, ho, .evaluate condition (items condition (by simp)),
               .cons (.branch yes no (items yes (by simp)) (items no (by simp))) hf⟩⟩
+  | if_without_else control =>
+      rw [control] at hc
+      cases hc with
+      | same => exact ⟨_, .if_without_else rfl, ⟨hs, hi, ho, .same _, .cons (.same _) hf⟩⟩
+      | evaluate e within =>
+          rename_i condition yes
+          have items := within_expression.mp within
+          have rowsWithin : ∀ row ∈ ifThenCases yes, Within vars row.1 ∧ Within vars row.2 := by
+            intro row member
+            simp only [ifThenCases, List.mem_singleton] at member
+            subst member
+            exact ⟨by simp [Within, freeVars, Effects.boolean], items yes (by simp)⟩
+          have renamedRows : renameCases names (ifThenCases yes) = ifThenCases (rename names yes) := by
+            simp [renameCases, ifThenCases, Effects.boolean]
+          refine ⟨_, .if_without_else (bindings := caller) (condition := rename names condition)
+              (yes := rename names yes) (by simp),
+            ⟨hs, hi, ho, .evaluate condition (items condition (by simp)), ?_⟩⟩
+          rw [← renamedRows]
+          exact .cons (.select _ rowsWithin) hf
   | collapse_enter control =>
       rw [control] at hc
       cases hc with
@@ -944,6 +965,19 @@ theorem simulation (agree : Agree callee caller names vars) {program : Program}
           have items := within_expression.mp within
           exact ⟨_, .collapse_enter (bindings := caller) (by simp),
             ⟨hs, hi, ho, .evaluate expression (items expression (by simp)), .cons (.same _) hf⟩⟩
+  | unique_enter control =>
+      rw [control] at hc
+      cases hc with
+      | same =>
+          exact ⟨_, .unique_enter rfl,
+            ⟨hs, hi, ho, .same _, .cons (.same _) (.cons (.same _) (.cons (.same _) hf))⟩⟩
+      | evaluate e within =>
+          rename_i expression
+          have items := within_expression.mp within
+          exact ⟨_, .unique_enter (bindings := caller) (by simp),
+            ⟨hs, hi, ho, .evaluate expression (items expression (by simp)),
+              .cons (.same _) (.cons (.argument _ _ _ _ (by simp))
+                (.cons (.argument _ _ _ _ (by simp)) hf))⟩⟩
   | superpose_enter control =>
       rw [control] at hc
       cases hc with

@@ -3,11 +3,11 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.CheckStab
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Controls
 
 /-!
-# A shared row wakes a ground absence query through bindings alone
+# A shared row wakes a ground none query through bindings alone
 
 The one physical row remains present. Its shared variable is constrained by
 an actual tell-only step. Every physical region has no write event, while
-the original universal absence check becomes certain. Equal equation counts
+the original universal none check becomes certain. Equal equation counts
 in different branches do not certify equal model sets.
 -/
 
@@ -31,7 +31,7 @@ def before : Configuration (Term signature) Nat := ⟨[], {0}⟩
 def tell : RuleInstance (Term signature) := ⟨[], [], [(x, oneTerm)], [], []⟩
 def tellSelection : Selection Nat := ⟨[], [], []⟩
 def after : Configuration (Term signature) Nat := tellSelection.result label tell before
-def pending : RuleInstance (Term signature) := ⟨[], [], [], [.absent (f zeroTerm)], [.const 2]⟩
+def pending : RuleInstance (Term signature) := ⟨[], [], [], [.predicate .none (f zeroTerm)], [.const 2]⟩
 def pendingSelection : Selection Nat := ⟨[], [], [1]⟩
 
 theorem tell_valid : tellSelection.Valid A label tell before := by
@@ -54,7 +54,7 @@ theorem no_region_writes (region : Term signature → Bool) :
 
 theorem pending_cannot_fire_before : ¬ pendingSelection.Valid A label pending before := by
   intro valid
-  have asked := valid.checks (.absent (f zeroTerm)) (by simp [pending])
+  have asked := valid.checks (.predicate .none (f zeroTerm)) (by simp [pending])
   have holds := asked Controls.zero (by
     intro equation member
     simp [Selection.problem, Selection.equations, pendingSelection, pending, before] at member)
@@ -70,7 +70,7 @@ theorem pending_can_fire_after : pendingSelection.Valid A label pending after :=
     subst equation
     rfl
   · intro check member assignment solved
-    have sameCheck : check = .absent (f zeroTerm) := by simpa [pending] using member
+    have sameCheck : check = .predicate .none (f zeroTerm) := by simpa [pending] using member
     subst check
     have value := solved (x, oneTerm) (by
       simp [Selection.problem, Selection.equations, Selection.result, pendingSelection, pending,

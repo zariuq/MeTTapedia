@@ -47,19 +47,19 @@ structure Witnessed (R : Rules Head) where
   type : Tm Head 0
   witness : Tm Head 0
   fresh : R.constantType name = none
-  typesAbsent : ∀ {d : DeclName} {T : Tm Head 0},
+  typesAvoidName : ∀ {d : DeclName} {T : Tm Head 0},
     R.constantType d = some T → T.allConstants (fun n => !(n == name)) = true
   /-- Replacing `name` by `witness` sends each root step to a root step.
   A root step is a substitution instance of a rule, so the new constant may
   stand in an argument of a step even when the rule itself does not mention
-  it; absence from every step term is sufficient (`Rules.computation_fixed`)
+  it; none queries from every step term is sufficient (`Rules.computation_fixed`)
   and this stability is what the instantiation uses. -/
   stepsStable : ∀ {k : Nat} {l r : Tm Head k},
     R.computation.step l r →
     R.computation.step
       (l.instConsts (fun d => cond (d == name) witness (.const d)))
       (r.instConsts (fun d => cond (d == name) witness (.const d)))
-  typeAbsent : type.allConstants (fun n => !(n == name)) = true
+  typeAvoidsName : type.allConstants (fun n => !(n == name)) = true
   universeHead : Head
   universeOk : R.isUniverse universeHead
   typeTyped : Typed R .nil type (.head universeHead)
@@ -150,7 +150,7 @@ theorem rulesInstance (W : Witnessed R) :
         have hT : W.type = T := by
           injection declared
         have typeId : (W.type.instConsts W.subst) = W.type :=
-          Tm.instConsts_of_allConstants W.subst W.fixes W.typeAbsent
+          Tm.instConsts_of_allConstants W.subst W.fixes W.typeAvoidsName
         have witnessSubst : W.subst d = W.witness := by
           simp only [subst, hb, cond_true]
         rw [← hT, typeId, witnessSubst]
@@ -162,7 +162,7 @@ theorem rulesInstance (W : Witnessed R) :
           rw [same] at declared
           exact declared
         have typeId : T.instConsts W.subst = T :=
-          Tm.instConsts_of_allConstants W.subst W.fixes (W.typesAbsent declaredR)
+          Tm.instConsts_of_allConstants W.subst W.fixes (W.typesAvoidName declaredR)
         rw [typeId] at formed ⊢
         have asConst : W.subst d = .const d := by
           simp only [subst, hb, cond_false]
@@ -183,24 +183,24 @@ theorem conserves (W : Witnessed R) {st : Statement Head}
 
 /-- A statement in which the new constant does not occur is derivable in `R`
 as it stands. -/
-theorem conserves_absent (W : Witnessed R) {st : Statement Head}
-    (absent : st.allConstants (fun n => !(n == W.name)) = true)
+theorem conserves_of_not_occurring (W : Witnessed R) {st : Statement Head}
+    (missing : st.allConstants (fun n => !(n == W.name)) = true)
     (derivation : Derivable (R.addConstant W.name W.type) st) :
     Derivable R st := by
   have moved := W.conserves derivation
-  rw [Statement.instConsts_of_allConstants W.subst W.fixes absent] at moved
+  rw [Statement.instConsts_of_allConstants W.subst W.fixes missing] at moved
   exact moved
 
 /-- **Consistency is kept.** A closed type in which the new constant does not
 occur gains no closed inhabitant. -/
 theorem consistent (W : Witnessed R) {E : Tm Head 0}
-    (absent : E.allConstants (fun n => !(n == W.name)) = true)
+    (missing : E.allConstants (fun n => !(n == W.name)) = true)
     (empty : ∀ t : Tm Head 0, ¬ Typed R .nil t E) {t : Tm Head 0} :
     ¬ Typed (R.addConstant W.name W.type) .nil t E := by
   intro typed
   have moved := Typed.instConsts W.rulesInstance typed
   have typeId : E.instConsts W.subst = E :=
-    Tm.instConsts_of_allConstants W.subst W.fixes absent
+    Tm.instConsts_of_allConstants W.subst W.fixes missing
   rw [typeId] at moved
   exact empty (t.instConsts W.subst) moved
 

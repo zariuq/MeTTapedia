@@ -14,6 +14,9 @@
 # Library/NatDecide.mg, Library/NatDiv.mg)
 # and the generated computations.  Each controls/reject_*.mg is appended to it and
 # must be refused by both, at the same source position, inside the control.
+# The worked use of the finite-collection computations
+# (presentation/finite-collections.metta) is run and compared with its
+# recorded text.
 #
 # Then the scaling checks: three workloads (scaling.metta: many independent
 # declarations, a growing notation table, one lemma cited many times), each
@@ -43,6 +46,7 @@ work=$(mktemp -d "${TMPDIR:-/tmp}/lean-in-egal.XXXXXX")
 cleanup() {
     rm -f -- "$work"/*.mg "$work"/*.tsv "$work"/evidence-*.txt "$work/Skipped.txt"
     rm -f -- "$work/answers-control.metta" "$work/answers-control-binary.txt" "$work/answers-control.log"
+    rm -f -- "$work/finite-collections.txt"
     rmdir -- "$work"
 }
 library=$work/library.mg
@@ -115,7 +119,7 @@ if "$mgcheck" --help 2>/dev/null | grep -q -- '--reference-conversion'; then
     out=$("$mgcheck" --verbose --reference-conversion -I "$preamble" "$library" 2>&1 || true)
     total=$(sed -n 's/^elaboration: \([0-9]*\) conversions$/\1/p' <<<"$out")
     most=$(sed -n 's/^theorem \([^ ]*\) line [0-9]*: .*, \([0-9]*\) conversions, .*/\2 \1/p' <<<"$out" |
-           LC_ALL=C sort -k1,1nr -k2,2 | head -3 | awk '{printf "%s%s %s", (NR > 1 ? ", " : ""), $2, $1}')
+           LC_ALL=C sort -k1,1nr -k2,2 | awk 'NR <= 3 {printf "%s%s %s", (NR > 1 ? ", " : ""), $2, $1}')
     echo "costs:     $total conversions as Megalodon makes them; the most in $most"
 fi
 
@@ -133,6 +137,24 @@ fi
 
 [[ $fail == 0 ]] || exit 1
 echo "receipts:  $(grep -c $'\tgenerated ' "$here/generated/ReceiptCoverage.tsv") generated candidates checked by both engines"
+
+# The worked use of the finite-collection computations
+# (presentation/finite-collections.metta).  Its calls run through the exported
+# rules of the code-equation slice, and each theorem it cites, of the document
+# checked above, must state the reading of the call's result.  What it prints
+# is compared with the recorded text, which also shows a wrong citation being
+# noticed.
+project=$(cd "$here/../../../.." && pwd)
+(cd "$here" && "$cetta" --lang petta --no-results "$project/Mettapedia/Languages/Lean/CodeEquations/prelude.metta" \
+    "$project/artifacts/lean-code-equations/core/rules.metta" presentation/finite-collections.metta) \
+    > "$work/finite-collections.txt" 2>&1 || true
+if cmp -s "$work/finite-collections.txt" "$here/presentation/finite-collections.expected" &&
+   grep -q '^Theorem Lean_test_29 :' "$library" && grep -q '^Theorem Lean_test_30 :' "$library"; then
+    agree=$(grep -c "^  The statement's right side is the reading of the result" "$work/finite-collections.txt")
+    echo "example:   finite collections: $agree calls agree with their checked theorems; a wrong citation is noticed"
+else
+    echo "FAIL example: presentation/finite-collections.metta does not print the recorded text"; fail=1
+fi
 
 offset=$(wc -l < "$library")
 "$cetta" --lang petta --quiet "$decls/families.metta" "$decls/terms.metta" \

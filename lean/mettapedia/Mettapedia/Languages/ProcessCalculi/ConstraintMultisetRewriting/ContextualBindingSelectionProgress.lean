@@ -48,7 +48,7 @@ theorem active_progress {problem : Problem source} (selection : ContextualBindin
   apply binding_active_potential_decreases selection.binding.chosen selection.binding.body
     (selection.before ++ selection.after) (active problem) (retained_active selection)
     (ContextualBindingCaseProgress.body_is_covered selection.binding problem (selected_member selection))
-    selection.binding.absent
+    selection.binding.notInBody
     (ContextualBindingCaseProgress.source_name_is_active selection.binding problem (selected_member selection))
 
 theorem removes_selected_declaration {problem : Problem source}
@@ -57,7 +57,7 @@ theorem removes_selected_declaration {problem : Problem source}
   binding_removes_selected_name selection.binding.chosen selection.binding.body
     (selection.before ++ selection.after) (active problem) (retained_active selection)
     (ContextualBindingCaseProgress.body_is_covered selection.binding problem (selected_member selection))
-    selection.binding.absent
+    selection.binding.notInBody
 
 theorem active_card_progress {problem : Problem source}
     (selection : ContextualBindingWorklist.Selection problem) :

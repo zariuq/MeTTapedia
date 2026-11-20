@@ -19,7 +19,7 @@ open _root_.CategoryTheory Mettapedia.OSLF.Binding Mettapedia.TypeTheory
 open RhoSchema RhoQuotationClassFibres RhoEquationConstructorControls RhoScopedParallelEvents
 open RhoScopedDependentEventFutures RhoScopedReactionReceiptControls
 open DisplayedPresheafTransport DisplayedPresheafComprehension PresheafEventCertificates
-open SyntacticRetractionContexts SyntacticRetractionEventAbsence
+open SyntacticRetractionContexts SyntacticRetractionEventNone
 
 def closedWorld : (Syntactic.Ctxt sig)ᵒᵖ := Opposite.op ⟨[]⟩
 

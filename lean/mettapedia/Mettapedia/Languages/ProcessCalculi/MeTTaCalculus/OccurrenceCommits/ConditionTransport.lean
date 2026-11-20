@@ -105,7 +105,7 @@ theorem subset_fire_iff (required store : Finset O) (c : Commit O R) :
     · exact Or.inr made
     · exact Or.inl ⟨present ⟨member, made⟩, apart ⟨member, made⟩⟩
 
-/-- An excluded occurrence after an update must be absent from the output;
+/-- An excluded occurrence after an update must not be present from the output;
 an old occurrence need only be excluded if it is not consumed. -/
 theorem disjoint_fire_iff (excluded store : Finset O) (c : Commit O R) :
     Disjoint excluded (fire store c) ↔

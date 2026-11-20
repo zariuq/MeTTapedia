@@ -84,6 +84,7 @@ theorem canonical_root_source_packet
     (free : ∀ schema ∈ schemas, setFree schema = true)
     (increasing : IncreasingSpines declaration.rule declaration.binding.spec)
     (unconditional : declaration.rule.premises = [])
+    (binderOk : BinderLawsFor [] (GeneralPlanEnvironment.environment plan).reflection declaration.rule)
     {trace : List GeneralScopedMatchMachine.BagChoice}
     {captured completed : ScopedRuleMatching.Assignment} {history : List GeneralPremise.Event}
     {target : Pattern}
@@ -124,7 +125,7 @@ theorem canonical_root_source_packet
       exact rootAnswer.property
     obtain ⟨target', reduced', sameTarget⟩ := instantiateWith?_same declaration.rule declaration.binding.spec 0
       (ScopedReflectiveExecution.binderOperation (GeneralPlanEnvironment.environment plan).reflection declaration.rule)
-      (binderOperation_same _ declaration.rule) declaration.rule.right .right [] 0
+      (binderOperation_same _ declaration.rule binderOk) declaration.rule.right .right [] 0
       captured (canonAssignment captured) target (assignSame_canon captured) reduced
     have transported : GeneralPremise.RootFiring (GeneralPlanEnvironment.environment plan) [] expected
         (CollectionMatcherCompatibility.ordinaryTarget request raw) ordinal rootAnswer.val.trace
@@ -149,6 +150,7 @@ theorem canonical_root_covered
     (free : ∀ schema ∈ schemas, setFree schema = true)
     (increasing : IncreasingSpines declaration.rule declaration.binding.spec)
     (unconditional : declaration.rule.premises = [])
+    (binderOk : BinderLawsFor [] (GeneralPlanEnvironment.environment plan).reflection declaration.rule)
     {trace : List GeneralScopedMatchMachine.BagChoice}
     {captured completed : ScopedRuleMatching.Assignment} {history : List GeneralPremise.Event}
     {target : Pattern}
@@ -161,7 +163,7 @@ theorem canonical_root_covered
       receipt.completed = canonAssignment completed ∧ receipt.history = history ∧
       canon receipt.target = canon target := by
   obtain ⟨receipt, valid, ordinalEq, capturesEq, completedEq, historyEq, same⟩ :=
-    canonical_root_source_packet profile expected selected unordered left free increasing unconditional held
+    canonical_root_source_packet profile expected selected unordered left free increasing unconditional binderOk held
   obtain ⟨work, published⟩ := source_coverage expected valid
   exact ⟨work, receipt, published, ordinalEq, capturesEq, completedEq, historyEq, same.symm⟩
 
@@ -175,11 +177,13 @@ private theorem licensed_root_eq
 
 /-- The local syntactic conditions used by canonical root coverage. These
 conditions describe the rule, not a supplied execution-correctness result. -/
-def CanonicalRootRule (declaration : GeneralExecutionAdmission.RulePlan) : Prop :=
+def CanonicalRootRule (reflection : Reflection.ReflectionProfile)
+    (declaration : GeneralExecutionAdmission.RulePlan) : Prop :=
   ∃ kind schemas rest, kind ≠ CollType.vec ∧
     declaration.rule.left = .collection kind schemas rest ∧
     (∀ schema ∈ schemas, setFree schema = true) ∧
-    IncreasingSpines declaration.rule declaration.binding.spec ∧ declaration.rule.premises = []
+    IncreasingSpines declaration.rule declaration.binding.spec ∧ declaration.rule.premises = [] ∧
+    BinderLawsFor [] reflection declaration.rule
 
 /-- Read the variable indices of an authored substitution, independently of
 the binder depth at which it will be used. -/
@@ -253,36 +257,39 @@ theorem checkBindingSpines_sound {rule : RewriteRule} {spec : RuleBindingSpec}
     | cons other rows => simp [rowsEq] at rest
 
 /-- Executable local root-rule admission. -/
-def canonicalRuleCheck (declaration : GeneralExecutionAdmission.RulePlan) : Bool :=
+def canonicalRuleCheck (reflection : Reflection.ReflectionProfile)
+    (declaration : GeneralExecutionAdmission.RulePlan) : Bool :=
   match declaration.rule.left with
   | .collection .vec _ _ => false
   | .collection _ schemas _ => setFreeList schemas && declaration.rule.premises.isEmpty &&
-      checkBindingSpines declaration.binding.spec
+      checkBindingSpines declaration.binding.spec && checkBinderLawsFor [] reflection declaration.rule
   | _ => false
 
-theorem canonicalRuleCheck_sound {declaration : GeneralExecutionAdmission.RulePlan}
-    (checked : canonicalRuleCheck declaration = true) : CanonicalRootRule declaration := by
+theorem canonicalRuleCheck_sound {reflection : Reflection.ReflectionProfile}
+    {declaration : GeneralExecutionAdmission.RulePlan}
+    (checked : canonicalRuleCheck reflection declaration = true) : CanonicalRootRule reflection declaration := by
   cases left : declaration.rule.left <;> simp [canonicalRuleCheck, left] at checked
   rename_i kind schemas rest
   cases kind with
   | vec => contradiction
   | hashBag | hashSet =>
     simp only [Bool.and_eq_true, List.isEmpty_iff] at checked
-    obtain ⟨⟨free, unconditional⟩, ordered⟩ := checked
+    obtain ⟨⟨⟨free, unconditional⟩, ordered⟩, compatible⟩ := checked
     exact ⟨_, schemas, rest, by decide, left, setFreeList_iff.mp free,
-      checkBindingSpines_sound ordered, unconditional⟩
+      checkBindingSpines_sound ordered, unconditional, (checkBinderLawsFor_iff _ _ _).mp compatible⟩
 
 /-- A recognized backend profile records local declaration and algebra
 conditions. Its source-coverage theorem is derived below, never supplied. -/
 structure CoverageProfile (plan : GeneralExecutionAdmission.Plan) where
   profile : Profile plan
-  rules : ∀ declaration ∈ plan.rules, CanonicalRootRule declaration
+  rules : ∀ declaration ∈ plan.rules,
+    CanonicalRootRule (GeneralPlanEnvironment.environment plan).reflection declaration
   noLaws : Complete.Normalized.laws plan = []
   noExtrusions : Complete.Normalized.extrusions plan = []
 
 def coverageProfile? (plan : GeneralExecutionAdmission.Plan) : Option (CoverageProfile plan) := do
   let profile ← profile? plan
-  if rules : plan.rules.all canonicalRuleCheck = true then
+  if rules : plan.rules.all (canonicalRuleCheck (GeneralPlanEnvironment.environment plan).reflection) = true then
     if laws : Complete.Normalized.laws plan = [] then
       if extrusions : Complete.Normalized.extrusions plan = [] then
         some ⟨profile, fun declaration member => canonicalRuleCheck_sound
@@ -295,7 +302,8 @@ def coverageProfile? (plan : GeneralExecutionAdmission.Plan) : Option (CoverageP
 the canonical source. Declaration position and captures remain identified. -/
 theorem canonical_primitive_covered
     {plan : GeneralExecutionAdmission.Plan} (profile : Profile plan) (expected : TypeExpr)
-    (rules : ∀ declaration ∈ plan.rules, CanonicalRootRule declaration)
+    (rules : ∀ declaration ∈ plan.rules,
+      CanonicalRootRule (GeneralPlanEnvironment.environment plan).reflection declaration)
     {source : Pattern} {original : GeneralRuleJobs.Receipt}
     (valid : original.Valid plan [] expected source) :
     ∃ work receipt, receipt ∈ (search (profile := profile) expected).publication
@@ -309,7 +317,7 @@ theorem canonical_primitive_covered
   rw [profile.rootOnly] at root
   have siteEq := licensed_root_eq root
   have position := List.mk_mem_zipIdx_iff_getElem?.mp licensed.1
-  obtain ⟨kind, schemas, rest, unordered, left, free, increasing, unconditional⟩ :=
+  obtain ⟨kind, schemas, rest, unordered, left, free, increasing, unconditional, binderOk⟩ :=
     rules original.job.declaration (List.fst_mem_of_mem_zipIdx licensed.1)
   have firing : GeneralPremise.RootFiring (GeneralPlanEnvironment.environment plan) [] expected source
       original.job.ordinal original.matcherTrace original.captured original.completed
@@ -334,7 +342,7 @@ theorem canonical_primitive_covered
       DerivedContexts.OneHoleContext.fill] using endpoint
   rw [sourceEq] at firing ⊢
   rw [targetEq]
-  exact canonical_root_covered profile expected position unordered left free increasing unconditional firing
+  exact canonical_root_covered profile expected position unordered left free increasing unconditional binderOk firing
 
 private theorem standardStep_bagStep_nil {left right : Pattern}
     (step : StandardStep [] [] left right) : BagStep left right := by
@@ -372,7 +380,8 @@ model equalities are the built-in bag/set equalities. The result is an actual
 published source packet; arbitrary equation proofs do not become occurrences. -/
 theorem presented_covered
     {plan : GeneralExecutionAdmission.Plan} (profile : Profile plan) (expected : TypeExpr)
-    (rules : ∀ declaration ∈ plan.rules, CanonicalRootRule declaration)
+    (rules : ∀ declaration ∈ plan.rules,
+      CanonicalRootRule (GeneralPlanEnvironment.environment plan).reflection declaration)
     (laws : Complete.Normalized.laws plan = []) (extrusions : Complete.Normalized.extrusions plan = [])
     {source target : Pattern} (stepped : (Complete.Presented.gslt plan [] expected).Step source target) :
     ∃ work receipt, receipt ∈ (search (profile := profile) expected).publication
@@ -391,7 +400,8 @@ successors. Occurrence conservation is separately provided by the retained
 per-allocation publication theorem, rather than by counting equality proofs. -/
 theorem presented_iff_published
     {plan : GeneralExecutionAdmission.Plan} (profile : Profile plan) (expected : TypeExpr)
-    (rules : ∀ declaration ∈ plan.rules, CanonicalRootRule declaration)
+    (rules : ∀ declaration ∈ plan.rules,
+      CanonicalRootRule (GeneralPlanEnvironment.environment plan).reflection declaration)
     (laws : Complete.Normalized.laws plan = []) (extrusions : Complete.Normalized.extrusions plan = [])
     (source target : Pattern) :
     (Complete.Presented.gslt plan [] expected).Step source (canon target) ↔

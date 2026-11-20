@@ -962,10 +962,10 @@ theorem validateReflectivePresentation_costBase_of_wrapped
            plan.generatedLanguage.typeNames
          exact plan.costBaseSortName_mem_generated declaration.nameSort
            witness.nameSort
-       sortsDistinct := by
-         change costBaseSortName declaration.processSort ≠
-           costBaseSortName declaration.nameSort
-         exact costBaseSortName_injective.ne witness.sortsDistinct
+       quoteDropDistinct := by
+         change costBaseConstructorName declaration.quoteConstructor ≠
+           costBaseConstructorName declaration.dropConstructor
+         exact costBaseConstructorName_injective.ne witness.quoteDropDistinct
        quoteUnique := targetQuoteUnique
        quoteCategory := by
          change costBaseSortName witness.quote.category =
@@ -1011,7 +1011,13 @@ theorem validateReflectivePresentation_costBase_of_wrapped
            (costBaseReflectivePresentationDecl declaration)
            (costBaseEquation witness.equation)
          exact quoteDropShape_mapEquationSymbols costBaseStaticReflectiveSymbols
-           declaration witness.equation witness.equationShape } :
+           declaration witness.equation witness.equationShape
+       contextFresh := by
+         intro constructor found
+         simp only [targetDeclaration, costBaseReflectivePresentationDecl, mapReflectivePresentation,
+           mapQuoteScope_contextConstructor?, Option.map_eq_some_iff] at found
+         obtain ⟨context, sourceFound, rfl⟩ := found
+         exact plan.costBaseConstructorName_fresh_generated (witness.contextFresh context sourceFound) } :
       LanguageDef.ReflectivePresentationWitness
         (reflectiveRetypingLanguage plan) targetDeclaration))
 
@@ -1173,37 +1179,10 @@ theorem validateReflectivePresentation_costWrapped_of_wrapped
            plan.generatedLanguage.typeNames
          exact (CostStaticColor.wrapped.mapGeneratedLangSort plan
            ⟨declaration.nameSort, witness.nameSort⟩).2
-       sortsDistinct := by
-         change (costWrappedStaticSymbols theory).sort
-             declaration.processSort ≠
-           (costWrappedStaticSymbols theory).sort declaration.nameSort
-         intro equality
-         by_cases processInteracting :
-             declaration.processSort =
-               theory.presentation.interactingSort.1.name
-         · by_cases nameInteracting :
-               declaration.nameSort =
-                 theory.presentation.interactingSort.1.name
-           · exact witness.sortsDistinct
-               (processInteracting.trans nameInteracting.symm)
-           · have impossible :
-                 costWrappedSortName =
-                   costBaseSortName declaration.nameSort := by
-               simpa [costWrappedStaticSymbols, processInteracting,
-                 nameInteracting] using equality
-             exact costBaseSortName_ne_wrapped _ impossible.symm
-         · by_cases nameInteracting :
-               declaration.nameSort =
-                 theory.presentation.interactingSort.1.name
-           · have impossible :
-                 costBaseSortName declaration.processSort =
-                   costWrappedSortName := by
-               simpa [costWrappedStaticSymbols, processInteracting,
-                 nameInteracting] using equality
-             exact costBaseSortName_ne_wrapped _ impossible
-           · exact witness.sortsDistinct (costBaseSortName_injective (by
-               simpa [costWrappedStaticSymbols, processInteracting,
-                 nameInteracting] using equality))
+       quoteDropDistinct := by
+         change costWrappedConstructorName declaration.quoteConstructor ≠
+           costWrappedConstructorName declaration.dropConstructor
+         exact costWrappedConstructorName_injective.ne witness.quoteDropDistinct
        quoteUnique := targetQuoteUnique
        quoteCategory := by
          change (if witness.quote.category =
@@ -1273,7 +1252,13 @@ theorem validateReflectivePresentation_costWrapped_of_wrapped
            (costWrappedEquation theory witness.equation)
          exact quoteDropShape_mapEquationSymbols
            (costWrappedStaticReflectiveSymbols theory) declaration witness.equation
-             witness.equationShape } :
+             witness.equationShape
+       contextFresh := by
+         intro constructor found
+         simp only [targetDeclaration, costWrappedReflectivePresentationDecl, mapReflectivePresentation,
+           mapQuoteScope_contextConstructor?, Option.map_eq_some_iff] at found
+         obtain ⟨context, sourceFound, rfl⟩ := found
+         exact plan.costWrappedConstructorName_fresh_generated (witness.contextFresh context sourceFound) } :
       LanguageDef.ReflectivePresentationWitness
         (reflectiveRetypingLanguage plan) targetDeclaration))
 

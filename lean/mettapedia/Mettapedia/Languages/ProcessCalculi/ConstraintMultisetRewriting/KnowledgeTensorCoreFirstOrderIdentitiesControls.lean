@@ -5,10 +5,14 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Knowledge
 # Controls for the reading on occurrence identities
 
 * **A predicate query that saw identities is inside the reading on identities.** The firing
-  `sees` asks a predicate query that saw exactly occurrence `1`. Every occurrence has the same
-  label. Where occurrence `1` is present its one-firing run is a graded proof
-  (`a_query_that_saw_an_identity_is_a_zoned_proof`); where occurrence `2` is present instead it
-  has none (`no_zoned_proof_at_another_identity`). On labels the two states are the same.
+  `sees` asks the exact region query of a predicate query that saw exactly occurrence `1`. Every
+  occurrence has the same label. Where occurrence `1` is present its one-firing run is a graded
+  proof (`a_query_that_saw_an_identity_is_a_zoned_proof`); where occurrence `2` is present instead
+  it has none (`no_zoned_proof_at_another_identity`). On labels the two states are the same.
+* **A count sees no identity.** The firing `countsOne` asks that its region, every label, hold one
+  occurrence. Its one-firing run is a graded proof where occurrence `1` is present and where
+  occurrence `2` is present instead (`a_count_is_a_zoned_proof_at_either_identity`), and it has
+  none where both are present (`no_zoned_proof_for_a_count_beside_two_occurrences`).
 * **Counting.** The run that counts and then adds and removes an occurrence is a graded proof on
   identities (`a_counting_run_is_a_zoned_proof_on_identities`).
 * **A word that does not run has no proof.** The word `turn`, `move`, whose uses run on labels,
@@ -19,8 +23,8 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Knowledge
   (`an_inconsistent_tell_is_a_zoned_proof_on_identities`).
 * **The context of a placement is a lent zone.** The run that reads, placed beside the
   occurrence `9`, is a graded proof with that occurrence lent
-  (`reads_beside_nine_is_a_lent_proof`); the firing that checks the absence of `9` has no graded
-  proof with it lent (`absence_has_no_proof_with_nine_lent`).
+  (`reads_beside_nine_is_a_lent_proof`); the firing that checks the none query of `9` has no graded
+  proof with it lent (`none_has_no_proof_with_nine_lent`).
 -/
 
 set_option autoImplicit false
@@ -31,15 +35,17 @@ open Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits
 open Mettapedia.Logic.LinearLogic
 open _root_.CategoryTheory
 open AnnotatedRuns (Firing firstOrder)
-open PredicateQueryAdmission (Query)
+open PredicateQueryAdmission (Query RegionQuery)
 open FirstOrderNativeRuns
 open KnowledgeTensorFirstOrder (knowledge)
 open KnowledgeTensorFirstOrderControls (plain sawOne)
 
 /-! ## A predicate query that saw identities -/
 
-/-- Asks a predicate query that saw exactly occurrence `1`; takes, reads and makes nothing. -/
-def sees : Firing Nat Unit Nat := ⟨⟨[], [], [], [], []⟩, [Query.fixed sawOne], ⟨[], [], []⟩⟩
+/-- Asks the exact region query of a predicate query that saw exactly occurrence `1`; takes, reads
+and makes nothing. -/
+def sees : Firing Nat Unit Nat :=
+  ⟨⟨[], [], [], [], []⟩, [Query.fixed sawOne].map Query.toRegion, ⟨[], [], []⟩⟩
 
 /-- Occurrence `1` is present. -/
 def holdsOne : Configuration Nat Nat := ⟨[], {1}⟩
@@ -58,7 +64,7 @@ theorem sees_admitted : sees.Valid plain (fun _ : Nat => 0) holdsOne := by
 
 theorem sees_refused : ¬ sees.Valid plain (fun _ : Nat => 0) holdsTwo := by
   intro valid
-  have asked := valid.observations (Query.fixed sawOne) (List.mem_singleton.mpr rfl) ()
+  have asked := valid.observations (Query.fixed sawOne).toRegion (List.mem_singleton.mpr rfl) ()
     (fun _ member => by cases member)
   exact KnowledgeTensorFirstOrderControls.a_predicate_query_observes_identities.2.1 asked
 
@@ -87,6 +93,82 @@ theorem no_zoned_proof_at_another_identity :
     (by rw [word]; exact List.cons_ne_nil _ _)
   rw [word] at executable
   exact sees_refused executable.1
+
+/-! ## A count sees no identity -/
+
+/-- Asks that its region, every label, hold one occurrence; takes, reads and makes nothing. -/
+def countsOne : Firing Nat Unit Nat :=
+  ⟨⟨[], [], [], [], []⟩, [RegionQuery.count (fun _ _ => true) 1], ⟨[], [], []⟩⟩
+
+/-- Occurrences `1` and `2` are both present. -/
+def holdsBoth : Configuration Nat Nat := ⟨[], {1, 2}⟩
+
+theorem countsOne_admitted_one : countsOne.Valid plain (fun _ : Nat => 0) holdsOne := by
+  refine ⟨⟨List.nodup_nil, List.nodup_nil, rfl, rfl, rfl, by decide,
+    ⟨(), fun _ member => by cases member⟩, ?_⟩, ?_⟩
+  · intro check member
+    cases member
+  · intro query member σ _
+    obtain rfl := List.mem_singleton.mp member
+    show (regionOf (fun _ : Nat => 0) holdsOne.present fun _ => true).card = 1
+    decide
+
+theorem countsOne_admitted_two : countsOne.Valid plain (fun _ : Nat => 0) holdsTwo := by
+  refine ⟨⟨List.nodup_nil, List.nodup_nil, rfl, rfl, rfl, by decide,
+    ⟨(), fun _ member => by cases member⟩, ?_⟩, ?_⟩
+  · intro check member
+    cases member
+  · intro query member σ _
+    obtain rfl := List.mem_singleton.mp member
+    show (regionOf (fun _ : Nat => 0) holdsTwo.present fun _ => true).card = 1
+    decide
+
+theorem countsOne_refused_both : ¬ countsOne.Valid plain (fun _ : Nat => 0) holdsBoth := by
+  intro valid
+  have asked : (regionOf (fun _ : Nat => 0) holdsBoth.present fun _ => true).card = 1 :=
+    valid.observations (RegionQuery.count (fun _ _ => true) 1) (List.mem_singleton.mpr rfl) ()
+      (fun _ member => by cases member)
+  exact absurd asked (by decide)
+
+/-- **A count sees no identity.** Where `sees` tells occurrence `1` from occurrence `2`, the count
+of one occurrence does not: its one-firing run is a graded proof at either identity. -/
+theorem a_count_is_a_zoned_proof_at_either_identity :
+    (∃ (along : (() : Unit) ⟶ ()) (reached : Set Unit) (left : Multiset Nat)
+      (grade : Multiset Nat → Prop), grade 0 ∧
+        (FirstOrder.identityZoned plain (fun _ : Nat => 0)).Proves () 0
+          (knowledge plain holdsOne) holdsOne.present.val grade
+          ([countsOne].map (Sigma.mk (β := KnowledgeTensor.Const (Firing Nat Unit Nat)) ())) () along
+          reached left ∧ reached.Nonempty) ∧
+      ∃ (along : (() : Unit) ⟶ ()) (reached : Set Unit) (left : Multiset Nat)
+        (grade : Multiset Nat → Prop), grade 0 ∧
+          (FirstOrder.identityZoned plain (fun _ : Nat => 0)).Proves () 0
+            (knowledge plain holdsTwo) holdsTwo.present.val grade
+            ([countsOne].map (Sigma.mk (β := KnowledgeTensor.Const (Firing Nat Unit Nat)) ())) ()
+            along reached left ∧ reached.Nonempty :=
+  ⟨(FirstOrder.native_run_iff_zoned_proof_on_identities plain (fun _ : Nat => 0) holdsOne
+      [countsOne]).mp
+    ⟨.cons countsOne countsOne_admitted_one (.nil _), rfl, ⟨(), fun _ member => by cases member⟩⟩,
+    (FirstOrder.native_run_iff_zoned_proof_on_identities plain (fun _ : Nat => 0) holdsTwo
+      [countsOne]).mp
+    ⟨.cons countsOne countsOne_admitted_two (.nil _), rfl, ⟨(), fun _ member => by cases member⟩⟩⟩
+
+/-- **The count still reads the store**: where both occurrences are present, its firing has no
+graded proof. -/
+theorem no_zoned_proof_for_a_count_beside_two_occurrences :
+    ¬ ∃ (along : (() : Unit) ⟶ ()) (reached : Set Unit) (left : Multiset Nat)
+      (grade : Multiset Nat → Prop), grade 0 ∧
+        (FirstOrder.identityZoned plain (fun _ : Nat => 0)).Proves () 0
+          (knowledge plain holdsBoth) holdsBoth.present.val grade
+          ([countsOne].map (Sigma.mk (β := KnowledgeTensor.Const (Firing Nat Unit Nat)) ())) () along
+          reached left ∧ reached.Nonempty := by
+  intro proof
+  obtain ⟨run, word, _⟩ :=
+    (FirstOrder.native_run_iff_zoned_proof_on_identities plain (fun _ : Nat => 0) holdsBoth
+      [countsOne]).mpr proof
+  have executable := executable_of_nonempty plain (fun _ : Nat => 0) run
+    (by rw [word]; exact List.cons_ne_nil _ _)
+  rw [word] at executable
+  exact countsOne_refused_both executable.1
 
 /-! ## Counting -/
 
@@ -199,9 +281,9 @@ theorem reads_beside_nine_is_a_lent_proof :
       reads_is_admitted_beside_nine⟩, trivial⟩
 
 open KnowledgeTensorFirstOrderControls (one) in
-/-- The firing that checks the absence of `9` has no graded proof with the occurrence `9` lent:
+/-- The firing that checks the none query of `9` has no graded proof with the occurrence `9` lent:
 a lent identity is seen by the check. -/
-theorem absence_has_no_proof_with_nine_lent :
+theorem none_has_no_proof_with_nine_lent :
     ¬ ∃ (along : (() : Unit) ⟶ ()) (reached : Set Unit) (left : Multiset Nat)
       (grade : Multiset Nat → Prop), grade 0 ∧
         (FirstOrder.identityZoned plain id).Proves () nine.present.val
@@ -218,5 +300,15 @@ theorem absence_has_no_proof_with_nine_lent :
     (by rw [word]; exact List.cons_ne_nil _ _)
   rw [word] at executable
   exact unless_nine_refused_beside_nine executable.1
+
+#print axioms sees_admitted
+#print axioms sees_refused
+#print axioms a_query_that_saw_an_identity_is_a_zoned_proof
+#print axioms no_zoned_proof_at_another_identity
+#print axioms countsOne_admitted_one
+#print axioms countsOne_admitted_two
+#print axioms countsOne_refused_both
+#print axioms a_count_is_a_zoned_proof_at_either_identity
+#print axioms no_zoned_proof_for_a_count_beside_two_occurrences
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.KnowledgeTensorCore.Controls

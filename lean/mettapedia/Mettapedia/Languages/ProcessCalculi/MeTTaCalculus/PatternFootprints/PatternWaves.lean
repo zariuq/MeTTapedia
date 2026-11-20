@@ -218,7 +218,7 @@ theorem toPatternDelta_independent_iff (first second : FootprintedDelta Location
   rw [sameReads first, sameReads second]
   exact setIndependentEffects_coe_iff
 
-/-! ## A guard that asks for the absence of a pattern -/
+/-! ## A guard that asks for the none query of a pattern -/
 
 /-- Add one occurrence at a location: a pattern delta that reads nothing. -/
 def addAt (kind : Location) : PatternDelta Location ℕ where
@@ -267,12 +267,12 @@ noncomputable def addWhereNoneOf (pattern : Location → Bool) (kind : Location)
         · cases fired
       frame := fun {source target} fired framedSource agrees => by
         split at fired
-        · next absent =>
+        · next missing =>
           cases fired
-          have framedAbsent : ∀ location, pattern location = true → framedSource location = 0 :=
+          have framedZero : ∀ location, pattern location = true → framedSource location = 0 :=
             fun location accepted =>
-              (agrees (Or.inl accepted)).symm.trans (absent location accepted)
-          refine ⟨framedSource + Pi.single kind 1, if_pos framedAbsent, fun location inside => ?_,
+              (agrees (Or.inl accepted)).symm.trans (missing location accepted)
+          refine ⟨framedSource + Pi.single kind 1, if_pos framedZero, fun location inside => ?_,
             fun location outside => ?_⟩
           · show _ + (Pi.single kind 1 : Location → ℕ) location =
               _ + (Pi.single kind 1 : Location → ℕ) location
@@ -292,12 +292,12 @@ theorem addWhereNoneOf_act_eq_some_iff (pattern : Location → Bool) (kind : Loc
   classical
   show (if ∀ location, pattern location = true → state location = 0 then
     some (state + Pi.single kind 1) else none) = some target ↔ _
-  by_cases absent : ∀ location, pattern location = true → state location = 0
-  · rw [if_pos absent]
-    exact ⟨fun same => ⟨absent, (Option.some.inj same).symm⟩,
+  by_cases missing : ∀ location, pattern location = true → state location = 0
+  · rw [if_pos missing]
+    exact ⟨fun same => ⟨missing, (Option.some.inj same).symm⟩,
       fun ⟨_, same⟩ => congrArg some same.symm⟩
-  · rw [if_neg absent]
-    exact ⟨fun fired => (by cases fired), fun ⟨holds, _⟩ => absurd holds absent⟩
+  · rw [if_neg missing]
+    exact ⟨fun fired => (by cases fired), fun ⟨holds, _⟩ => absurd holds missing⟩
 
 /-- **Every certificate of the guard covers every kind the pattern accepts.** -/
 theorem addWhereNoneOf_reads_all (pattern : Location → Bool) (kind : Location)
@@ -314,10 +314,10 @@ theorem addWhereNoneOf_reads_all (pattern : Location → Bool) (kind : Location)
       intro other inside
       have different : other ≠ accepted := fun same => outside (same ▸ inside)
       simp [different])
-  have absent :=
+  have missing :=
     ((addWhereNoneOf_act_eq_some_iff pattern kind _ framedTarget).mp framedFires).1 accepted
       isAccepted
-  simp at absent
+  simp at missing
 
 /-- **Where the pattern accepts infinitely many kinds the guard has no finite
 footprint.** -/
@@ -399,8 +399,8 @@ theorem guard_and_even :
     cases fired : (addWhereNoneOf evens 1).act (0 + Pi.single 2 1) with
     | none => rfl
     | some target =>
-        have absent := ((addWhereNoneOf_act_eq_some_iff evens 1 _ target).mp fired).1 2 rfl
-        simp at absent
+        have missing := ((addWhereNoneOf_act_eq_some_iff evens 1 _ target).mp fired).1 2 rfl
+        simp at missing
   · rw [(addWhereNoneOf_act_eq_some_iff evens 1 0 _).mpr ⟨fun _ _ => rfl, rfl⟩]
     rfl
 

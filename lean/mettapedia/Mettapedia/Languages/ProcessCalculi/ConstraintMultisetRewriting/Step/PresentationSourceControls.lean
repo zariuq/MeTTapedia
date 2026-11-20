@@ -52,9 +52,9 @@ def rawStateTokens : List String := ["(", "state"] ++
 theorem raw_state_derives : GrammarDerives.Derives authoredLanguage "State" rawStateTokens rawState := by
   have data := syntaxEmbedding.derives (evaluate_source_derives data_compiles rawConfigurationRoute)
   rw [raw_configuration_tree] at data
-  refine .rule authoredLanguage.terms[25] (by decide +kernel) "State" rfl _ _ ?_
+  refine .rule authoredLanguage.terms[27] (by decide +kernel) "State" rfl _ _ ?_
   refine .terminal _ "(" _ _ _ (.terminal _ "state" _ _ _ ?_)
-  refine .nonTerminal authoredLanguage.terms[25] "configuration" "TcConfiguration" rfl _ _ data _ _ _ ?_
+  refine .nonTerminal authoredLanguage.terms[27] "configuration" "TcConfiguration" rfl _ _ data _ _ _ ?_
   exact .terminal _ ")" _ _ _ (.nil _)
 
 def rawRequest : Pattern := request rawState (firingPattern ⟨before, candidate⟩)
@@ -62,11 +62,11 @@ def rawTokens : List String := "fire" :: (rawStateTokens ++ firingTokens ⟨befo
 def rawInput : List Nat := SyntaxSource.printTokens rawTokens
 
 theorem raw_request_derives : GrammarDerives.Derives authoredLanguage "Proc" rawTokens rawRequest := by
-  refine .rule authoredLanguage.terms[28] (by decide +kernel) "Proc" rfl _ _ ?_
+  refine .rule authoredLanguage.terms[30] (by decide +kernel) "Proc" rfl _ _ ?_
   refine .terminal _ "fire" _ _ _ ?_
-  refine .nonTerminal authoredLanguage.terms[28] "state" "State" rfl _ _ raw_state_derives _ _ _ ?_
+  refine .nonTerminal authoredLanguage.terms[30] "state" "State" rfl _ _ raw_state_derives _ _ _ ?_
   simpa only [List.append_nil] using
-    (GrammarDerives.DerivesItems.nonTerminal authoredLanguage.terms[28] "firing" "Firing" rfl _ _
+    (GrammarDerives.DerivesItems.nonTerminal authoredLanguage.terms[30] "firing" "Firing" rfl _ _
       (firing_derives ⟨before, candidate⟩) [] [] [] (.nil _))
 
 theorem raw_request_source : ∃ tree,

@@ -46,6 +46,7 @@ deriving instance ToExpr for Boundary
 deriving instance ToExpr for Span
 deriving instance ToExpr for P1Capture.Program
 deriving instance ToExpr for Bundle
+deriving instance ToExpr for AllowanceBundle
 
 private def require (condition : Bool) (reason : String) : Except String Unit :=
   if condition then .ok () else .error reason
@@ -114,7 +115,7 @@ private def span (json : Json) : Except String Span := do
         pure (some parts)
   pure ⟨← nat json "offset", ← nat json "length", ← text json "template", path⟩
 
-private def program (json : Json) : Except String P1Capture.Program := do
+private def program (imageCheck : P1Capture.Program → Bool) (json : Json) : Except String P1Capture.Program := do
   let spelling ← text json "program_sexpr"
   let source ← P1Source.readText spelling
   let printed ← match Algorithms.MeTTa.Simple.Parser.parseSExprWithDetailed
@@ -140,26 +141,53 @@ private def program (json : Json) : Except String P1Capture.Program := do
     ← cost.getObjValAs? Bool "max_receipt_fits", size, data, ← text image "sha256",
     ← (← array image "spans").mapM span⟩
   require result.sourceCheck ("p1 source metadata mismatch: " ++ result.name)
-  require result.imageCheck ("p1 image/span mismatch: " ++ result.name)
+  require (imageCheck result) ("p1 image/span mismatch: " ++ result.name)
   pure result
 
-def bundle (json : Json) : Except String Bundle := do
+private def checkSchema (json : Json) : Except String Unit := do
   require ((← text json "schema") == "tisa-x86-p1-programs-v2" &&
     (← nat json "schema_version") == 2 && (← text json "profile") == "t-isa-p1")
     "unknown p1 manifest schema"
-  let header ← boundary json
-  require header.check "p1 ABI boundary mismatch"
-  let programs ← (← array json "programs").mapM program
+
+private def bundlePrograms (header : Boundary) (imageCheck : P1Capture.Program → Bool)
+    (json : Json) : Except String Bundle := do
+  let programs ← (← array json "programs").mapM (program imageCheck)
   let declared ← nat json "program_count"
   require (declared == programs.length) "program count mismatch"
   require (decide (programs.map P1Capture.Program.name).Nodup) "duplicate program name"
   require (decide (programs.map P1Capture.Program.id).Nodup) "duplicate program ID"
   pure ⟨header, declared, programs⟩
 
+def bundle (json : Json) : Except String Bundle := do
+  checkSchema json
+  let header ← boundary json
+  require header.check "p1 ABI boundary mismatch"
+  bundlePrograms header P1Capture.Program.imageCheck json
+
+def allowanceBundle (json : Json) : Except String AllowanceBundle := do
+  checkSchema json
+  let header ← boundary json
+  let allowance ← text (← json.getObjVal? "x86_64") "allowance_register"
+  require (header.checkAllowance allowance) "p1 allowance ABI boundary mismatch"
+  pure ⟨← bundlePrograms header P1Capture.Program.allowanceImageCheck json, allowance⟩
+
 elab "tisa_p1_bundle% " file:str : term => do
   let contents ← IO.FS.readFile (System.FilePath.mk file.getString)
   match Json.parse contents >>= bundle with
   | .error reason => throwError "p1 native capture: {reason}"
   | .ok data => return toExpr data
+
+elab "tisa_p1_allowance_bundle% " file:str : term => do
+  let contents ← IO.FS.readFile (System.FilePath.mk file.getString)
+  match Json.parse contents >>= allowanceBundle with
+  | .error reason => throwError "p1 native allowance capture: {reason}"
+  | .ok data => return toExpr data
+
+/-- Quote the MeTTa parser's source forms for the structural rule checks. -/
+elab "tisa_source_forms% " file:str : term => do
+  let contents ← IO.FS.readFile (System.FilePath.mk file.getString)
+  match Algorithms.MeTTa.Simple.Parser.parseSExprProgramWithDetailed MeTTailCore.MeTTaSyntax.petta contents with
+  | .error reason => throwError "t-ISA source forms: {reason.render}"
+  | .ok forms => return toExpr (forms.map Prod.snd)
 
 end Mettapedia.Machines.TIsa.P1JsonImport

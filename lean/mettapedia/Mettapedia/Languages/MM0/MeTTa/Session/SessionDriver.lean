@@ -350,7 +350,7 @@ theorem active_finish_returns (spaces : Spaces) (logical : Kernel.SpecificationA
   apply authored_variable_call_returns program bindings [] before before "mm0:finish" []
     finishEquation.body _ (by decide) (by decide) (by decide +kernel) _ body (by decide)
   rw [clauses_use_only_the_named_equations, finish_unique]
-  simp [finish_formals, SpaceSemantics.matchValue, SpaceSemantics.matchValue.matchValues]
+  simp [finish_formals, SpaceSemantics.matchValue.matchValues]
 
 /-- Later ordinary submissions observe an already stored failure without
 executing their declaration. Successful active submissions use the same

@@ -10,7 +10,7 @@ row once.
 ## Declarative rows
 
 * A source steps from a substitution (`DStep`) when it picks an occurrence of the store whose label
-  its pattern solves modulo `E` (read, take), finds its **semantic region** empty (absent), finds
+  its pattern solves modulo `E` (read, take), finds its **semantic region** empty (`absent`), finds
   exactly one occurrence there (unique), or folds the whole region into a value its collection
   pattern solves (all); `let` takes a computed value. The semantic region (`semRegion`) is the set
   of values some step of the pattern reaches: no algorithm is involved.
@@ -19,9 +19,9 @@ row once.
   suffix's linear rows (`Transversal`): one representative of each model-level row, every such row
   represented, none twice. Rows are compared modulo `E` (`RowEquiv`): `E`-equivalent
   substitutions, the same picks, made labels related by `E`.
-* Absence of a source query means that no declarative inner row exists. It keeps
+* The none query of a source query means that no declarative inner row exists. It keeps
   the complete observation footprint and passes the original bindings to its
-  continuation. Nested absence uses the same rule.
+  continuation. Nested none query uses the same rule.
 
 ## Agreement (`agreement`)
 
@@ -730,14 +730,14 @@ theorem agreementFor (sound : Matcher.Sound L m) (complete : Matcher.Complete L 
           obtain ⟨z', member, _⟩ := (iq σ).2.1 σ (SubstEquiv.refl L.equivalence σ) z row
           simp [empty] at member
         · rw [complRegions_eq_sem sound complete]
-      · obtain ⟨absent, y', restRow, rfl⟩ := declared
+      · obtain ⟨missing, y', restRow, rfl⟩ := declared
         obtain ⟨x', inRest, equiv⟩ := (ir σ).2.1 σ' same y' restRow
         have empty : rows L m label S [] query σ = 0 := by
           apply Multiset.eq_zero_of_forall_notMem
           intro z member
           obtain ⟨z', inOther, _⟩ := (iq σ').2.1 σ (SubstEquiv.symm L.equivalence same)
             z ((iq σ).1 z member)
-          exact absent ⟨z', (iq σ').1 z' inOther⟩
+          exact missing ⟨z', (iq σ').1 z' inOther⟩
         refine ⟨(x'.1, .amalgam (complQueries label S (complRegions m query σ)) :: x'.2),
           mem_rows_absent.mpr ⟨empty, x', inRest, rfl⟩, equiv.1, ?_⟩
         apply List.Forall₂.cons _ equiv.2

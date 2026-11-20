@@ -26,7 +26,8 @@ def program : Program := {equations := [], declarations := []}
 
 theorem three_captured_removals :
     execute "space" .self pattern fields caller before =
-      some (after, List.replicate 3 (Effects.boolean true)) := by kernel_reflexivity
+      some (after, [Effects.boolean true, Effects.boolean false, Effects.boolean true]) := by
+  kernel_reflexivity
 
 theorem actual_drop_source :
     Eval.PureReturns program caller before (source "space" pattern fields) after (.grounded (.int 3)) :=

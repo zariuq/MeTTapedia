@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.WellSorted
-import Mettapedia.OSLF.MeTTaIL.DerivedPresentationSyntax
+import Mettapedia.OSLF.MeTTaIL.ReflectiveQuoteAdmission
 
 /-!
 # Agreement of generic LanguageDef sorting with rho sorting
@@ -7,7 +7,10 @@ import Mettapedia.OSLF.MeTTaIL.DerivedPresentationSyntax
 The generic judgment generated from constructor signatures accepts every term
 of the established reflective-presentation judgment.  This is the first half
 of the carrier agreement: it shows that moving to the generic structural
-category loses none of the already formalized rho terms.
+category loses none of the already formalized rho terms. Conversely the
+generic judgment reflects back on object patterns whose quotations are
+admitted: rho's binders do not reach into quotations, so the derived judgment
+admits only quoted code that is closed with respect to object binders.
 -/
 
 namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefTypingAgreement
@@ -15,6 +18,8 @@ namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefTypingAgree
 open Mettapedia.GSLT.LanguageDef.WellSorted
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.DerivedPresentationSyntax
+open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
+open Mettapedia.OSLF.MeTTaIL.ReflectiveQuoteAdmission
 
 /-- Embed the established free-variable sort assignment into the generic
 type-expression assignment. -/
@@ -177,6 +182,14 @@ end
 
 /-! ## Reflection on object patterns -/
 
+section ScopeGeneral
+
+/-! Rho's quote scope only decides quotation admission: a LanguageDef
+derivation reflects to rho's judgment under every scope, given admission where
+the scope is closed. -/
+
+variable {scope : QuoteScope}
+
 mutual
   /-- An object-pattern derivation whose result type is rho's name type
   reflects to the established name judgment.  Keeping the result type
@@ -189,8 +202,9 @@ mutual
         (liftBoundSortContext bound) name resultType)
       (resultType_eq : resultType = TypeExpr.name)
       (object : isObjectPattern name = true)
-      (canonical : name.hasCanonicalBinderMetadata = true) :
-      NameWellSorted rhoReflectivePresentation free bound name := by
+      (canonical : name.hasCanonicalBinderMetadata = true)
+      (admitted : scope = .closed → QuotesClosed rhoReflectivePresentation.toReflectivePresentationDecl name) :
+      NameWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound name := by
     cases typed with
     | @bvar _ index _ lookup =>
         cases resultType_eq
@@ -219,7 +233,11 @@ mutual
                 Pattern.hasCanonicalBinderMetadataList] at object canonical
               exact NameWellSorted.quote
                 (languageDefHasType_to_procWellSorted argumentTyped rfl
-                  object canonical)
+                  object canonical (fun closedScope => quotesClosed_of_quote (by decide) (admitted closedScope)))
+                (by
+                  cases scope with
+                  | closed => exact (quoteAdmits_of_closed rfl argument).mpr (admitted rfl)
+                  | reaching view => exact quoteAdmits_of_reaching rfl argument)
         · simp [TypeExpr.name, TypeExpr.baseType] at resultType_eq
         · simp [TypeExpr.name, TypeExpr.baseType] at resultType_eq
         · simp [TypeExpr.name, TypeExpr.baseType] at resultType_eq
@@ -248,8 +266,9 @@ mutual
         (liftBoundSortContext bound) process resultType)
       (resultType_eq : resultType = TypeExpr.proc)
       (object : isObjectPattern process = true)
-      (canonical : process.hasCanonicalBinderMetadata = true) :
-      ProcWellSorted rhoReflectivePresentation free bound process := by
+      (canonical : process.hasCanonicalBinderMetadata = true)
+      (admitted : scope = .closed → QuotesClosed rhoReflectivePresentation.toReflectivePresentationDecl process) :
+      ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound process := by
     cases typed with
     | @bvar _ index _ lookup =>
         cases resultType_eq
@@ -278,7 +297,7 @@ mutual
                 Pattern.hasCanonicalBinderMetadataList] at object canonical
               exact ProcWellSorted.drop
                 (languageDefHasType_to_nameWellSorted argumentTyped rfl
-                  object canonical)
+                  object canonical (fun closedScope => (quotesClosed_unary_of_ne (by decide) argument).mp (admitted closedScope)))
         · simp [TypeExpr.proc, TypeExpr.baseType] at resultType_eq
         · simp [UsesBareCollection, TypeExpr.bag, TypeExpr.proc,
             TypeExpr.baseType] at notBare
@@ -302,11 +321,12 @@ mutual
                   simp [isObjectPattern, isObjectPatternList,
                     Pattern.hasCanonicalBinderMetadata,
                     Pattern.hasCanonicalBinderMetadataList] at object canonical
+                  have each := fun closedScope => (quotesClosed_apply_long _ channel payload []).mp (admitted closedScope)
                   exact ProcWellSorted.output
                     (languageDefHasType_to_nameWellSorted channelTyped rfl
-                      object.1 canonical.1)
+                      object.1 canonical.1 (fun closedScope => each closedScope channel (by simp)))
                     (languageDefHasType_to_procWellSorted payloadTyped rfl
-                      object.2 canonical.2)
+                      object.2 canonical.2 (fun closedScope => each closedScope payload (by simp)))
         · cases argumentsTyped with
           | @cons _ channel arguments parameter parameters channelType
               channelRepresentation channelParameterType channelTyped
@@ -335,11 +355,14 @@ mutual
                               simp [isObjectPattern, isObjectPatternList] at object
                               simp [Pattern.hasCanonicalBinderMetadata,
                                 Pattern.hasCanonicalBinderMetadataList] at canonical
+                              have each := fun closedScope => (quotesClosed_apply_long _ channel
+                                (.lambda none body) []).mp (admitted closedScope)
                               exact ProcWellSorted.input
                                 (languageDefHasType_to_nameWellSorted channelTyped
-                                  rfl object.1 canonical.1)
+                                  rfl object.1 canonical.1 (fun closedScope => each closedScope channel (by simp)))
                                 (languageDefHasType_to_procWellSorted bodyTyped
-                                  rfl object.2 canonical.2)
+                                  rfl object.2 canonical.2
+                                  (fun closedScope => (quotesClosed_lambda none body).mp (each closedScope _ (by simp))))
                       | some binderName =>
                           simp [MatchesParameterRepresentation] at bodyRepresentation
                   | bvar index =>
@@ -374,7 +397,7 @@ mutual
               simp [Pattern.hasCanonicalBinderMetadata] at canonical
               exact ProcWellSorted.parallel
                 (languageDefElementsType_to_procListWellSorted elementsTyped rfl
-                  object canonical)
+                  object canonical (fun closedScope => (quotesClosed_collection _ _ _).mp (admitted closedScope)))
           | some restName =>
               simp [isObjectPattern] at object
         · simp at parameterShape
@@ -388,8 +411,10 @@ mutual
         (liftBoundSortContext bound) processes elementType)
       (elementType_eq : elementType = TypeExpr.proc)
       (object : isObjectPatternList processes = true)
-      (canonical : Pattern.hasCanonicalBinderMetadataList processes = true) :
-      ProcListWellSorted rhoReflectivePresentation free bound processes := by
+      (canonical : Pattern.hasCanonicalBinderMetadataList processes = true)
+      (admitted : scope = .closed → ∀ process ∈ processes,
+        QuotesClosed rhoReflectivePresentation.toReflectivePresentationDecl process) :
+      ProcListWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound processes := by
     cases typed with
     | nil => exact .nil
     | cons elementTyped elementsTyped =>
@@ -401,10 +426,13 @@ mutual
         obtain ⟨elementCanonical, elementsCanonical⟩ := canonical
         exact .cons
           (languageDefHasType_to_procWellSorted elementTyped rfl
-            elementObject elementCanonical)
+            elementObject elementCanonical (fun closedScope => admitted closedScope _ (by simp)))
           (languageDefElementsType_to_procListWellSorted elementsTyped rfl
-            elementsObject elementsCanonical)
+            elementsObject elementsCanonical fun closedScope process member =>
+              admitted closedScope process (by simp [member]))
 end
+
+end ScopeGeneral
 
 /-- On object patterns, generic sorting at rho's name sort reflects back to
 the established name judgment. -/
@@ -413,9 +441,10 @@ theorem languageDefHasSort_to_nameWellSorted
     (typed : HasSort rhoCalc (liftFreeSortContext free)
       (liftBoundSortContext bound) name "Name")
     (object : isObjectPattern name = true)
-    (canonical : name.hasCanonicalBinderMetadata = true) :
+    (canonical : name.hasCanonicalBinderMetadata = true)
+    (admitted : QuotesClosed rhoReflectivePresentation.toReflectivePresentationDecl name) :
     NameWellSorted rhoReflectivePresentation free bound name :=
-  languageDefHasType_to_nameWellSorted typed rfl object canonical
+  languageDefHasType_to_nameWellSorted typed rfl object canonical (fun _ => admitted)
 
 /-- On object patterns, generic sorting at rho's process sort reflects back
 to the established process judgment. -/
@@ -424,9 +453,10 @@ theorem languageDefHasSort_to_procWellSorted
     (typed : HasSort rhoCalc (liftFreeSortContext free)
       (liftBoundSortContext bound) process "Proc")
     (object : isObjectPattern process = true)
-    (canonical : process.hasCanonicalBinderMetadata = true) :
+    (canonical : process.hasCanonicalBinderMetadata = true)
+    (admitted : QuotesClosed rhoReflectivePresentation.toReflectivePresentationDecl process) :
     ProcWellSorted rhoReflectivePresentation free bound process :=
-  languageDefHasType_to_procWellSorted typed rfl object canonical
+  languageDefHasType_to_procWellSorted typed rfl object canonical (fun _ => admitted)
 
 /-- List reflection for rho's parallel collection. -/
 theorem languageDefElements_to_procListWellSorted
@@ -435,45 +465,63 @@ theorem languageDefElements_to_procListWellSorted
     (typed : ElementsHaveType rhoCalc (liftFreeSortContext free)
       (liftBoundSortContext bound) processes TypeExpr.proc)
     (object : isObjectPatternList processes = true)
-    (canonical : Pattern.hasCanonicalBinderMetadataList processes = true) :
+    (canonical : Pattern.hasCanonicalBinderMetadataList processes = true)
+    (admitted : ∀ process ∈ processes,
+      QuotesClosed rhoReflectivePresentation.toReflectivePresentationDecl process) :
     ProcListWellSorted rhoReflectivePresentation free bound processes :=
-  languageDefElementsType_to_procListWellSorted typed rfl object canonical
+  languageDefElementsType_to_procListWellSorted typed rfl object canonical (fun _ => admitted)
 
 /-! ## Exact carrier agreement -/
 
+/-- Under the apply view every LanguageDef-sorted rho process with canonical
+binder metadata is sorted by rho's derived judgment: admission is vacuous when
+binders reach into quotations. -/
+theorem languageDefHasSort_to_procWellSorted_apply
+    {free : FreeSortContext} {bound : List String} {process : Pattern}
+    (typed : HasSort rhoCalc (liftFreeSortContext free)
+      (liftBoundSortContext bound) process "Proc")
+    (object : isObjectPattern process = true)
+    (canonical : process.hasCanonicalBinderMetadata = true) :
+    ProcWellSorted rhoApplyPresentation free bound process :=
+  languageDefHasType_to_procWellSorted (scope := .reaching .apply) typed rfl object canonical
+    (fun closedScope => nomatch closedScope)
+
 /-- The established and declaration-derived rho name judgments coincide once
-the generic schema language is restricted to semantic object patterns. -/
+the generic schema language is restricted to semantic object patterns whose
+quotations are admitted. -/
 theorem nameWellSorted_iff_languageDefWellSorted
     {free : FreeSortContext} {bound : List String} {name : Pattern} :
     NameWellSorted rhoReflectivePresentation free bound name ↔
       HasSort rhoCalc (liftFreeSortContext free) (liftBoundSortContext bound)
           name "Name" ∧
         isObjectPattern name = true ∧
-        name.hasCanonicalBinderMetadata = true := by
+        name.hasCanonicalBinderMetadata = true ∧
+        QuotesClosed rhoReflectivePresentation.toReflectivePresentationDecl name := by
   constructor
   · intro typed
     have properties := nameWellSorted_object_canonical typed
     exact ⟨nameWellSorted_toLanguageDefHasSort typed, properties.1,
-      properties.2⟩
-  · rintro ⟨typed, object, canonical⟩
-    exact languageDefHasSort_to_nameWellSorted typed object canonical
+      properties.2, typed.quotesClosed rfl⟩
+  · rintro ⟨typed, object, canonical, admitted⟩
+    exact languageDefHasSort_to_nameWellSorted typed object canonical admitted
 
 /-- The established and declaration-derived rho process judgments coincide
-on exactly the same object-pattern boundary. -/
+on exactly the same admitted object-pattern boundary. -/
 theorem procWellSorted_iff_languageDefWellSorted
     {free : FreeSortContext} {bound : List String} {process : Pattern} :
     ProcWellSorted rhoReflectivePresentation free bound process ↔
       HasSort rhoCalc (liftFreeSortContext free) (liftBoundSortContext bound)
           process "Proc" ∧
         isObjectPattern process = true ∧
-        process.hasCanonicalBinderMetadata = true := by
+        process.hasCanonicalBinderMetadata = true ∧
+        QuotesClosed rhoReflectivePresentation.toReflectivePresentationDecl process := by
   constructor
   · intro typed
     have properties := procWellSorted_object_canonical typed
     exact ⟨procWellSorted_toLanguageDefHasSort typed, properties.1,
-      properties.2⟩
-  · rintro ⟨typed, object, canonical⟩
-    exact languageDefHasSort_to_procWellSorted typed object canonical
+      properties.2, typed.quotesClosed rfl (by decide)⟩
+  · rintro ⟨typed, object, canonical, admitted⟩
+    exact languageDefHasSort_to_procWellSorted typed object canonical admitted
 
 /-- Exact list-form agreement for rho's authored parallel collection. -/
 theorem procListWellSorted_iff_languageDefElements
@@ -483,14 +531,16 @@ theorem procListWellSorted_iff_languageDefElements
       ElementsHaveType rhoCalc (liftFreeSortContext free)
           (liftBoundSortContext bound) processes TypeExpr.proc ∧
         isObjectPatternList processes = true ∧
-        Pattern.hasCanonicalBinderMetadataList processes = true := by
+        Pattern.hasCanonicalBinderMetadataList processes = true ∧
+        ∀ process ∈ processes,
+          QuotesClosed rhoReflectivePresentation.toReflectivePresentationDecl process := by
   constructor
   · intro typed
     have properties := procListWellSorted_object_canonical typed
     exact ⟨procListWellSorted_toLanguageDefElementsHaveType typed,
-      properties.1, properties.2⟩
-  · rintro ⟨typed, object, canonical⟩
-    exact languageDefElements_to_procListWellSorted typed object canonical
+      properties.1, properties.2, typed.quotesClosed rfl (by decide)⟩
+  · rintro ⟨typed, object, canonical, admitted⟩
+    exact languageDefElements_to_procListWellSorted typed object canonical admitted
 
 /-! ## Positive control -/
 
@@ -507,9 +557,18 @@ example :
           [.apply "NQuote" [.apply "PZero" []],
             .lambda none (.apply "PZero" [])]) := by
     simpa [rhoReflectivePresentation] using
-      (ProcWellSorted.input (NameWellSorted.quote ProcWellSorted.unit)
+      (ProcWellSorted.input (NameWellSorted.quoteOfClosed (by decide) ProcWellSorted.unit)
         ProcWellSorted.unit)
   simpa [liftBoundSortContext] using
     procWellSorted_toLanguageDefHasSort typed
+
+/-- Negative control: the generic judgment sorts a quotation of code that
+mentions an enclosing input binder, `@(*y | *y)` under `y`, but the code is not
+closed, so the derived rho judgment does not admit it. -/
+example :
+    ¬ QuotesClosed rhoReflectivePresentation.toReflectivePresentationDecl
+      (.apply "NQuote" [.collection .hashBag
+        [.apply "PDrop" [.bvar 0], .apply "PDrop" [.bvar 0]] none]) := by
+  decide
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefTypingAgreement

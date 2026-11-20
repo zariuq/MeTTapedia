@@ -1,7 +1,7 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualBindingPermissions
 
 /-!
-# Binding footprints of contextual absence and count observations
+# Binding footprints of contextual none queries and count observations
 
 A guard depends on its query and the captures of every watched row. Schema
 locals remain per-use existential witnesses; captured variables in those
@@ -70,7 +70,7 @@ theorem matches_congr (first second : Assignment declarations future)
 noncomputable def guardNames (rows : O → ContextualStoredRows.Row locals declarations Γ sort)
     (world : Finset O) : Check (Term (signature S declarations) Γ sort) → List V
   | .equal left right => support left ++ support right
-  | .absent pattern | .count pattern _ =>
+  | .predicate _ pattern | .count pattern _ =>
       support pattern ++ world.toList.flatMap (fun occurrence => rowNames locals (rows occurrence))
 
 theorem region_congr (first second : Assignment declarations future)
@@ -100,13 +100,15 @@ theorem holds_congr (first second : Assignment declarations future)
   cases check with
   | equal left right =>
       exact equation_congr first second (left, right) agree
-  | absent pattern =>
-      rw [ContextualGuardSemantics.absent_iff_empty, ContextualGuardSemantics.absent_iff_empty]
-      rw [region_congr locals first second rows world pattern
+  | predicate quantifier pattern =>
+      have same := region_congr locals first second rows world pattern
         (fun name member => agree name (List.mem_append_left _ member)) (by
           intro occurrence present name member
           exact agree name (List.mem_append_right _ (List.mem_flatMap.mpr
-            ⟨occurrence, Finset.mem_toList.mpr present, member⟩)))]
+            ⟨occurrence, Finset.mem_toList.mpr present, member⟩)))
+      refine quantifier.holds_congr fun occurrence present => ?_
+      have member := Iff.of_eq (congrArg (occurrence ∈ ·) same)
+      simpa only [ContextualGuardSemantics.mem_region, present, true_and] using member
   | count pattern number =>
       change (ContextualGuardSemantics.region locals first rows world pattern).card = number ↔
         (ContextualGuardSemantics.region locals second rows world pattern).card = number

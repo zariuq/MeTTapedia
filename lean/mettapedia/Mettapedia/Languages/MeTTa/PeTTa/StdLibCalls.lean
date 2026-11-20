@@ -82,26 +82,64 @@ theorem new_space_call (state : State) :
 @[simp high]
 theorem add_atom_call (state : State) (location atom : Atom) :
     apply state "add-atom" [location, atom] =
-      (match readHandle location >>= fun handle => insert state handle atom with
+      (if atom.isVariable then .error .instantiation else
+       match readHandle location >>= fun handle => insert state handle atom with
        | some after => .ok (after, [boolean true])
        | none => .error .invalidSpace) := rfl
 
 @[simp high]
 theorem remove_atom_call (state : State) (location atom : Atom) :
     apply state "remove-atom" [location, atom] =
-      (match readHandle location with
+      (if removalNeedsValue atom then .error .instantiation else
+       match readHandle location with
        | none => .error .invalidSpace
        | some handle =>
            match state.read handle with
            | none => .error .invalidSpace
-           | some _ =>
-               match atom with
-               | .var _ => .ok (state, [boolean true])
-               | .expression (_ :: _) =>
-                   match erase state handle atom with
-                   | some after => .ok (after, [boolean true])
-                   | none => .error .invalidSpace
-               | _ => .ok (state, [])) := rfl
+           | some rows =>
+               match erase state handle atom with
+               | some after => .ok (after,
+                   [boolean (((after.read handle).getD []).length < rows.length)])
+               | none => .error .invalidSpace) := rfl
+
+/-- A successful add identifies the actual space and the value it inserted. -/
+theorem add_atom_success {state after : State} {location atom : Atom} {answers : List Atom}
+    (returned : apply state "add-atom" [location, atom] = .ok (after, answers)) :
+    ∃ handle, readHandle location = some handle ∧ atom.isVariable = false ∧
+      insert state handle atom = some after := by
+  have specified := successful_add_value returned
+  simp only [add_atom_call, specified, Bool.false_eq_true, ↓reduceIte] at returned
+  cases inserted : (readHandle location >>= fun handle => insert state handle atom) with
+  | none => simp [inserted] at returned
+  | some next =>
+      rw [inserted] at returned
+      obtain ⟨handle, resolved, written⟩ := Option.bind_eq_some_iff.mp inserted
+      cases returned
+      exact ⟨handle, resolved, specified, written⟩
+
+/-- A successful remove is the erasure at its selected address. Its reply
+can be false; that is distinct from rejecting a malformed request. -/
+theorem remove_atom_success {state after : State} {location atom : Atom} {answers : List Atom}
+    (returned : apply state "remove-atom" [location, atom] = .ok (after, answers)) :
+    ∃ handle, readHandle location = some handle ∧ erase state handle atom = some after := by
+  rw [remove_atom_call] at returned
+  cases needsValue : removalNeedsValue atom with
+  | true => simp [needsValue] at returned
+  | false =>
+      simp only [needsValue, Bool.false_eq_true, ↓reduceIte] at returned
+      cases resolved : readHandle location with
+      | none => simp [resolved] at returned
+      | some handle =>
+          cases opened : state.read handle with
+          | none => simp [resolved, opened] at returned
+          | some rows =>
+              simp only [resolved, opened] at returned
+              cases erased : erase state handle atom with
+              | none => simp [erased] at returned
+              | some next =>
+                  rw [erased] at returned
+                  cases returned
+                  exact ⟨handle, rfl, erased⟩
 
 @[simp high]
 theorem get_atoms_call (state : State) (location : Atom) :

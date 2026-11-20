@@ -1,3 +1,4 @@
+import Mettapedia.OSLF.MeTTaIL.ReflectiveQuoteAdmission
 import Mettapedia.OSLF.MeTTaIL.DerivedPresentationSyntax
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Canonical
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
@@ -26,47 +27,68 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
 
 /-! ## Derived syntax stays in the paper carrier -/
 
-/-- Every name admitted by the authored rho presentation is `hashSet`-free. -/
-theorem rhoNameWellSorted_hashSetFree
+/-- Every name rho sorts, under any quote scope, is `hashSet`-free. -/
+theorem rhoNameWellSorted_hashSetFree_at (scope : QuoteScope)
     {free : FreeSortContext} {bound : List String} {name : Pattern}
-    (typed : NameWellSorted rhoReflectivePresentation free bound name) :
+    (typed : NameWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound name) :
     HashSetFree name := by
   apply NameWellSorted.rec
-    (presentation := rhoReflectivePresentation) (free := free) (t := typed)
+    (presentation := rhoReflectivePresentation.withQuoteScope scope) (free := free) (t := typed)
     (motive_1 := fun _ name _ => HashSetFree name)
     (motive_2 := fun _ process _ => HashSetFree process)
     (motive_3 := fun _ processes _ => HashSetFreeList processes)
   all_goals
     intros
     simp_all [HashSetFree, HashSetFreeList, rhoReflectivePresentation]
+
+/-- Every process rho sorts, under any quote scope, is `hashSet`-free. -/
+theorem rhoProcWellSorted_hashSetFree_at (scope : QuoteScope)
+    {free : FreeSortContext} {bound : List String} {process : Pattern}
+    (typed : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound process) :
+    HashSetFree process := by
+  apply ProcWellSorted.rec
+    (presentation := rhoReflectivePresentation.withQuoteScope scope) (free := free) (t := typed)
+    (motive_1 := fun _ name _ => HashSetFree name)
+    (motive_2 := fun _ process _ => HashSetFree process)
+    (motive_3 := fun _ processes _ => HashSetFreeList processes)
+  all_goals
+    intros
+    simp_all [HashSetFree, HashSetFreeList, rhoReflectivePresentation]
+
+/-- List form, under any quote scope. -/
+theorem rhoProcListWellSorted_hashSetFree_at (scope : QuoteScope)
+    {free : FreeSortContext} {bound : List String} {processes : List Pattern}
+    (typed : ProcListWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound processes) :
+    HashSetFreeList processes := by
+  apply ProcListWellSorted.rec
+    (presentation := rhoReflectivePresentation.withQuoteScope scope) (free := free) (t := typed)
+    (motive_1 := fun _ name _ => HashSetFree name)
+    (motive_2 := fun _ process _ => HashSetFree process)
+    (motive_3 := fun _ processes _ => HashSetFreeList processes)
+  all_goals
+    intros
+    simp_all [HashSetFree, HashSetFreeList, rhoReflectivePresentation]
+
+/-- Every name admitted by the authored rho presentation is `hashSet`-free. -/
+theorem rhoNameWellSorted_hashSetFree
+    {free : FreeSortContext} {bound : List String} {name : Pattern}
+    (typed : NameWellSorted rhoReflectivePresentation free bound name) :
+    HashSetFree name :=
+  rhoNameWellSorted_hashSetFree_at .closed typed
 
 /-- Every process admitted by the authored rho presentation is `hashSet`-free. -/
 theorem rhoProcWellSorted_hashSetFree
     {free : FreeSortContext} {bound : List String} {process : Pattern}
     (typed : ProcWellSorted rhoReflectivePresentation free bound process) :
-    HashSetFree process := by
-  apply ProcWellSorted.rec
-    (presentation := rhoReflectivePresentation) (free := free) (t := typed)
-    (motive_1 := fun _ name _ => HashSetFree name)
-    (motive_2 := fun _ process _ => HashSetFree process)
-    (motive_3 := fun _ processes _ => HashSetFreeList processes)
-  all_goals
-    intros
-    simp_all [HashSetFree, HashSetFreeList, rhoReflectivePresentation]
+    HashSetFree process :=
+  rhoProcWellSorted_hashSetFree_at .closed typed
 
 /-- List form of `rhoProcWellSorted_hashSetFree`. -/
 theorem rhoProcListWellSorted_hashSetFree
     {free : FreeSortContext} {bound : List String} {processes : List Pattern}
     (typed : ProcListWellSorted rhoReflectivePresentation free bound processes) :
-    HashSetFreeList processes := by
-  apply ProcListWellSorted.rec
-    (presentation := rhoReflectivePresentation) (free := free) (t := typed)
-    (motive_1 := fun _ name _ => HashSetFree name)
-    (motive_2 := fun _ process _ => HashSetFree process)
-    (motive_3 := fun _ processes _ => HashSetFreeList processes)
-  all_goals
-    intros
-    simp_all [HashSetFree, HashSetFreeList, rhoReflectivePresentation]
+    HashSetFreeList processes :=
+  rhoProcListWellSorted_hashSetFree_at .closed typed
 
 /-! ## Semantic substitution preserves the boundary -/
 
@@ -158,8 +180,9 @@ theorem hashSetFree_semanticSubstName
     HashSetFree (semanticSubstName depth replacementName name) := by
   have normalizedFree := hashSetFree_semanticNormalizeName nameFree
   unfold semanticSubstName semanticSubstNameMark
-  dsimp only
-  split <;> (try split) <;> simp_all [HashSetFree]
+  split
+  · exact replacementFree
+  · exact normalizedFree
 
 mutual
   /-- Paper-faithful process substitution preserves the pure carrier when its

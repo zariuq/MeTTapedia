@@ -1,5 +1,6 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.AnnotatedRunsRounds
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Independence
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ExactQueryAlphabet
 
 /-!
 # Transport and independence in the one-frame instance
@@ -10,8 +11,8 @@ residuals as themselves (`firstOrderTransport`).
 
 * **Diamonds close** whenever both orders are admitted (`firstOrder_closes`), so semantic
   independence is the four admissions (`firstOrder_independent_iff`).
-* **It coincides with the static independence where that applies.** For firings without guards
-  whose query regions do not depend on the solution, once one order runs, semantic independence
+* **It coincides with the static independence for exact queries.** For firings without guards
+  whose supplied exact-query regions do not depend on the solution, once one order runs, semantic independence
   is exactly `StaticIndependent` (`firstOrder_independent_iff_static`).
 * **Footprints disjoint at every solution give independence** (`round_independent`): a round of two,
   whose members ignore each other's writes at every solution of the pair's cut, is independent.
@@ -21,8 +22,8 @@ residuals as themselves (`firstOrderTransport`).
   the pair is indeed dependent; the footprint at the disjoint solution alone would accept it.
 * **The first-order fibre decides independence** (`valid_iff_tests`, `decidableIndependent`): for
   static firings, admission is the shapes, the occurrences, one consistency test and one evaluation
-  per query; with decidable equality of terms and decidable consistency (first-order unification)
-  independence is decided.
+  per query; with supplied exact-query data, decidable equality of terms and decidable consistency
+  (first-order unification), independence is decided.
 * **Site accounts** are properties of the one-frame traces in every commutative monoid
   (`firstOrder_account_eq`).
 -/
@@ -118,10 +119,14 @@ theorem firstOrder_independent_iff {C : Configuration T O} {f g : Firing T S O} 
 /-- Both orders admitted, for firings with solution-independent query regions, give footprints that
 are trace independent at every solution. -/
 theorem independent_of_both_orders {C : Configuration T O} {f g : Firing T S O}
+    (fData : ExactQueryAlphabet.ExactData f) (gData : ExactQueryAlphabet.ExactData g)
     (fStatic : f.StaticQueries) (gStatic : g.StaticQueries)
     (fValid : f.Valid A label C) (gValid : g.Valid A label C)
     (gAfter : g.Valid A label (f.result label C)) (fAfter : f.Valid A label (g.result label C)) :
     Independent label f g := by
+  apply (AnnotatedRuns.independent_iff_of_exact fData.image gData.image).mpr
+  have fRegions := (Firing.staticQueries_iff_of_exact fData.image).mp fStatic
+  have gRegions := (Firing.staticQueries_iff_of_exact gData.image).mp gStatic
   have fEnabled := fValid.firing.occurrences
   have gEnabled := gValid.firing.occurrences
   have gFire := (MeTTaCalculus.OccurrenceCommits.enabled_fire_iff gEnabled fEnabled).mp
@@ -134,19 +139,21 @@ theorem independent_of_both_orders {C : Configuration T O} {f g : Firing T S O}
     · exact gFire.2 (Or.inl kept)
     · obtain ⟨query, member, rfl⟩ := List.mem_map.mp readMember
       obtain ⟨τ, solved⟩ := gAfter.firing.consistent
-      refine census_refused_after_writer A label gValid fEnabled member solved
+      refine query_refused_after_writer A label gValid fEnabled
+        (by rw [gData.image]; exact List.mem_map_of_mem member) solved
         (o := o) ?_ ?_ gAfter
-      · simpa [Firing.footprintAt, PredicateQueryAdmission.commit, Selection.commit] using written
-      · rw [gStatic query member τ σ]
+      · simpa [PredicateQueryAdmission.commit, Selection.commit] using written
+      · rw [gRegions query member τ σ]
         exact inRegion
   · rintro (kept | ⟨read, readMember, o, written, inRegion⟩)
     · exact fFire.2 (Or.inl kept)
     · obtain ⟨query, member, rfl⟩ := List.mem_map.mp readMember
       obtain ⟨τ, solved⟩ := fAfter.firing.consistent
-      refine census_refused_after_writer A label fValid gEnabled member solved
+      refine query_refused_after_writer A label fValid gEnabled
+        (by rw [fData.image]; exact List.mem_map_of_mem member) solved
         (o := o) ?_ ?_ fAfter
-      · simpa [Firing.footprintAt, PredicateQueryAdmission.commit, Selection.commit] using written
-      · rw [fStatic query member τ σ]
+      · simpa [PredicateQueryAdmission.commit, Selection.commit] using written
+      · rw [fRegions query member τ σ]
         exact inRegion
   · exact fEnabled.fresh.mono_right (Finset.union_subset gEnabled.taken_subset gEnabled.kept_subset)
   · exact gEnabled.fresh.mono_right (Finset.union_subset fEnabled.taken_subset fEnabled.kept_subset)
@@ -154,6 +161,7 @@ theorem independent_of_both_orders {C : Configuration T O} {f g : Firing T S O}
 /-- **Semantic independence coincides with the static independence where that applies**: for
 firings without guards whose query regions do not depend on the solution, once one order runs. -/
 theorem firstOrder_independent_iff_static {C : Configuration T O} {f g : Firing T S O}
+    (fData : ExactQueryAlphabet.ExactData f) (gData : ExactQueryAlphabet.ExactData g)
     (fStatic : f.Static) (gStatic : g.Static) (fValid : f.Valid A label C)
     (gAfter : g.Valid A label (f.result label C)) :
     (firstOrderTransport A label).Independent C f g ↔ StaticIndependent label f g := by
@@ -161,7 +169,7 @@ theorem firstOrder_independent_iff_static {C : Configuration T O} {f g : Firing 
   · intro independent
     obtain ⟨-, gValid, -, fAfter⟩ := (firstOrder_independent_iff A label).mp independent
     exact ⟨fStatic, gStatic,
-      independent_of_both_orders A label fStatic.queries gStatic.queries fValid gValid gAfter fAfter⟩
+      independent_of_both_orders A label fData gData fStatic.queries gStatic.queries fValid gValid gAfter fAfter⟩
   · intro independent
     obtain ⟨gValid, fAfter, -⟩ := swap_valid A label independent fValid gAfter
     exact (firstOrder_independent_iff A label).mpr ⟨fValid, gValid, gAfter, fAfter⟩
@@ -183,7 +191,7 @@ theorem firstOrder_account_eq {M : Type*} [CommMonoid M] (grade : Firing T S O �
   Transport.TraceEquiv.account_eq_comm _ (fun _ _ => rfl) (fun same => congrArg _ same)
     (fun _ _ _ => rfl) equivalent
 
-/-! ## Deciding independence in the static first-order fibre -/
+/-! ## Deciding independence in the static exact-query first-order fibre -/
 
 /-- **Admission of a static firing is a finite test**: its shapes, its occurrences, one consistency
 test, and one evaluation of each query, at any solution. -/
@@ -194,18 +202,16 @@ theorem valid_iff_tests {f : Firing T S O} {C : Configuration T O} (static : f.S
         f.selection.made.map label = f.rule.produce ∧
         MeTTaCalculus.OccurrenceCommits.Enabled label C.present (f.selection.commit (T := T)) ∧
         A.Consistent (f.selection.problem label f.rule C)) ∧
-      ∀ query ∈ f.queries, (query.atSolution σ₀).Holds label C.present := by
-  have region : ∀ query ∈ f.queries, ∀ σ : S, query.atSolution σ = query.atSolution σ₀ := by
-    intro query member σ
-    simp only [PredicateQueryAdmission.Query.atSolution, static.queries query member σ σ₀]
+      ∀ query ∈ f.queries, query.Holds σ₀ label C.present := by
+  have uniform : ∀ query ∈ f.queries, ∀ σ : S, query.Holds σ label C.present ↔ query.Holds σ₀ label C.present :=
+    fun query member σ => PredicateQueryAdmission.RegionQuery.Uniform.holds_iff (static.queries query member) σ σ₀ label C.present
   constructor
   · intro valid
     refine ⟨⟨valid.firing.take_distinct, valid.firing.output_distinct, valid.firing.take_length,
       valid.firing.read_length, valid.firing.outputs, valid.firing.occurrences,
       valid.firing.consistent⟩, fun query member => ?_⟩
     obtain ⟨τ, solved⟩ := valid.firing.consistent
-    rw [← region query member τ]
-    exact valid.observations query member τ solved
+    exact (uniform query member τ).mp (valid.observations query member τ solved)
   · rintro ⟨⟨takeDistinct, outputDistinct, takeLength, readLength, outputs, occurrences, consistent⟩,
       queries⟩
     refine ⟨⟨takeDistinct, outputDistinct, takeLength, readLength, outputs, occurrences, consistent,
@@ -214,25 +220,30 @@ theorem valid_iff_tests {f : Firing T S O} {C : Configuration T O} (static : f.S
       rw [static.checks] at member
       cases member
     · intro query member σ _
-      show (query.atSolution σ).Holds label C.present
-      rw [region query member σ]
-      exact queries query member
+      exact (uniform query member σ).mpr (queries query member)
 
 /-- **The first-order fibre decides admission of static firings**, with decidable equality of terms
 and decidable consistency (first-order unification). -/
 def decidableValid [DecidableEq T] [∀ store : EquationStore T, Decidable (A.Consistent store)]
-    {f : Firing T S O} (static : f.Static) (σ₀ : S) (C : Configuration T O) :
-    Decidable (f.Valid A label C) :=
+    {f : Firing T S O} (data : ExactQueryAlphabet.ExactData f) (static : f.Static) (σ₀ : S) (C : Configuration T O) :
+    Decidable (f.Valid A label C) := by
+  letI : Decidable (∀ query ∈ f.queries, query.Holds σ₀ label C.present) := by
+    rw [data.image,List.forall_mem_map]
+    change Decidable (∀ query ∈ data.queries,
+      MeTTaCalculus.OccurrenceCommits.regionOf label C.present (query.region σ₀) = query.seen)
+    infer_instance
+  exact
   decidable_of_iff _ (valid_iff_tests A label static σ₀).symm
 
 /-- **The first-order fibre decides independence of static firings.** -/
 def decidableIndependent [DecidableEq T] [∀ store : EquationStore T, Decidable (A.Consistent store)]
-    {f g : Firing T S O} (fStatic : f.Static) (gStatic : g.Static) (σ₀ : S) (C : Configuration T O) :
+    {f g : Firing T S O} (fData : ExactQueryAlphabet.ExactData f) (gData : ExactQueryAlphabet.ExactData g)
+    (fStatic : f.Static) (gStatic : g.Static) (σ₀ : S) (C : Configuration T O) :
     Decidable ((firstOrderTransport A label).Independent C f g) :=
-  letI := decidableValid A label fStatic σ₀ C
-  letI := decidableValid A label gStatic σ₀ C
-  letI := decidableValid A label gStatic σ₀ (f.result label C)
-  letI := decidableValid A label fStatic σ₀ (g.result label C)
+  letI := decidableValid A label fData fStatic σ₀ C
+  letI := decidableValid A label gData gStatic σ₀ C
+  letI := decidableValid A label gData gStatic σ₀ (f.result label C)
+  letI := decidableValid A label fData fStatic σ₀ (g.result label C)
   decidable_of_iff _ (firstOrder_independent_iff A label).symm
 
 end OneFrameTransport
@@ -257,12 +268,12 @@ def isOne : Term signature → Bool
   | _ => false
 
 /-- A query whose region depends on the solution: the labels `1`, when the solution sets `X` to
-`1`; nothing otherwise. Its census is empty. -/
+`1`; nothing otherwise. Its collect query is empty. -/
 def watched : PredicateQueryAdmission.Query (Term signature) (Subst signature) Nat :=
   ⟨fun σ t => isOne (Subst.applyTerm σ (.var 0)) && isOne t, ∅⟩
 
 /-- Queries the watched region and writes nothing. -/
-def watcher : Control := ⟨⟨[], [], [], [], []⟩, [watched], ⟨[], [], []⟩⟩
+def watcher : Control := ⟨⟨[], [], [], [], []⟩, [watched.toRegion], ⟨[], [], []⟩⟩
 
 /-- Makes occurrence `5`, labelled `1`. -/
 def writer : Control := ⟨⟨[], [], [], [], [.const 1]⟩, [], ⟨[], [], [5]⟩⟩
@@ -284,8 +295,8 @@ theorem watcher_valid : watcher.Valid A label start := by
     by simp [watcher]⟩, ?_⟩
   intro query member σ _
   obtain rfl := List.mem_singleton.mp member
-  simp [MeTTaCalculus.OccurrenceCommits.PredicateQuery.Holds, regionOf, start, watched,
-    PredicateQueryAdmission.Query.atSolution]
+  simp [regionOf, start, watched,
+    PredicateQueryAdmission.Query.toRegion, PredicateQueryAdmission.RegionQuery.exact, PredicateQueryAdmission.RegionQuery.Holds]
 
 theorem writer_valid : writer.Valid A label start := by
   refine ⟨⟨by decide, by decide, rfl, rfl, rfl, by decide,
@@ -299,6 +310,7 @@ theorem watcher_refused_after_writer : ¬ watcher.Valid A label (writer.result l
   have holds := valid.observations _ (List.mem_singleton_self _) one (by
     simp [Selection.problem, Selection.equations, Selection.result, Firing.result, start,
       watcher, writer])
+  change regionOf label (writer.result label start).present (watched.region one) = ∅ at holds
   revert holds
   decide
 
@@ -308,34 +320,34 @@ refuses the pair: it is not a compatible pair of a round, and its footprints are
 independent at every solution. The pair is indeed dependent. Reasoning from the footprint at
 `X = 2` alone would accept it, so authority over a query region has to be indexed by solutions. -/
 theorem overlap_at_one_solution_only :
-    TraceIndependent label (writer.footprintAt two) (watcher.footprintAt two) ∧
-      ¬ TraceIndependent label (writer.footprintAt one) (watcher.footprintAt one) ∧
+    TraceIndependent label (writer.footprintAt label two start) (watcher.footprintAt label two start) ∧
+      ¬ TraceIndependent label (writer.footprintAt label one start) (watcher.footprintAt label one start) ∧
       ¬ Independent label writer watcher ∧ ¬ Compatible A label start writer watcher ∧
       ¬ (firstOrderTransport A label).Independent start writer watcher ∧
       ¬ watcher.StaticQueries := by
-  have atTwo : TraceIndependent label (writer.footprintAt two) (watcher.footprintAt two) := by
+  have atTwo : TraceIndependent label (writer.footprintAt label two start) (watcher.footprintAt label two start) := by
     unfold TraceIndependent MeTTaCalculus.OccurrenceCommits.Independent
       MeTTaCalculus.OccurrenceCommits.Clash MeTTaCalculus.OccurrenceCommits.Spoils
       MeTTaCalculus.OccurrenceCommits.WritesInto MeTTaCalculus.OccurrenceCommits.Commit.uses
     simp only [Firing.footprintAt_taken, Firing.footprintAt_kept, Firing.footprintAt_made,
       Firing.footprintAt_queries, watcher, writer, List.map_cons, List.map_nil]
     decide
-  have atOne : ¬ TraceIndependent label (writer.footprintAt one) (watcher.footprintAt one) := by
+  have atOne : ¬ TraceIndependent label (writer.footprintAt label one start) (watcher.footprintAt label one start) := by
     unfold TraceIndependent MeTTaCalculus.OccurrenceCommits.Independent
       MeTTaCalculus.OccurrenceCommits.Clash MeTTaCalculus.OccurrenceCommits.Spoils
       MeTTaCalculus.OccurrenceCommits.WritesInto MeTTaCalculus.OccurrenceCommits.Commit.uses
     simp only [Firing.footprintAt_taken, Firing.footprintAt_kept, Firing.footprintAt_made,
       Firing.footprintAt_queries, watcher, writer, List.map_cons, List.map_nil]
     decide
-  refine ⟨atTwo, atOne, fun independent => atOne (independent one), fun compatible => ?_,
+  refine ⟨atTwo, atOne, fun independent => atOne (independent one start), fun compatible => ?_,
     fun independent => watcher_refused_after_writer
       ((firstOrder_independent_iff A label).mp independent).2.2.1, fun static => ?_⟩
-  · have ignored := compatible.2.2.2.2 watched (List.mem_singleton_self _) one (by
+  · have ignored := compatible.2.2.2.2 watched.toRegion (List.mem_singleton_self _) one (by
       simp [pairCut, Firing.added, GuardFreeProcessOrders.added, Selection.equations, start, watcher, writer]) 5
       (by simp [writer])
     revert ignored
     decide
-  · have same := congrFun (static watched (List.mem_singleton_self _) one two) (.const 1)
+  · have same := congrFun ((static watched.toRegion (List.mem_singleton_self _)).1 one two) (.const 1)
     revert same
     decide
 

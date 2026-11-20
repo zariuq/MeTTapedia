@@ -123,10 +123,10 @@ theorem count_unchanged_iff (σ : Hom a b) (label : O → Tm a) (pattern : Tm a)
         exact ⟨Or.inl present, matched⟩
     exact congrArg Finset.card sets
 
-theorem absence_stable_iff (σ : Hom a b) (label : O → Tm a) (pattern : Tm a)
-    (store context : Finset O) (absent : matchedOccurrences X σ label pattern store = ∅) :
+theorem none_stable_iff (σ : Hom a b) (label : O → Tm a) (pattern : Tm a)
+    (store context : Finset O) (missing : matchedOccurrences X σ label pattern store = ∅) :
     matchedOccurrences X σ label pattern (store ∪ context) = ∅ ↔ matchedOccurrences X σ label pattern context = ∅ := by
-  rw [matches_union, absent, Finset.empty_union]
+  rw [matches_union, missing, Finset.empty_union]
 
 /-- The exact criterion is checked only at solutions of the joint knowledge. -/
 theorem entails_count_iff (label : O → Tm a) (pattern : Tm a) (store context : Finset O)

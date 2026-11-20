@@ -30,7 +30,7 @@ physical C memory.
 * `CMemory.Assertions`: points-to, cell ranges, live and dead blocks, and the
   small axiom of every primitive.
 * `CMemory.Values`, `CMemory.Array`: scalar values and typed loads; dynamic
-  arrays and the specification of CeTTa's `space_module_link_reserve`.
+  arrays and the specification of their `reserve` growth step.
 * `CMemory.Examples`, `CMemory.Fractional`: positive and negative controls;
   fractional permissions for shared reading.
 

@@ -179,16 +179,16 @@ def ProgramStep (R : Readers V T P) (prog : List (Contract × Rule V T P)) (M M'
     Prop :=
   ∃ cr ∈ prog, Step (R.layer cr.1) cr.2 M M'
 
-/-- A rule's checks see the `E`-related matches of two states alike. Absence and counts always do; a fold does when
+/-- A rule's checks see the `E`-related matches of two states alike. The none query and counts always do; a fold does when
 it respects `E`. -/
 def ChecksRespect (L : TermLayer V T P) (r : Rule V T P) : Prop :=
   ∀ c ∈ r.checks, ∀ (σ : Subst V T) (m n : Multiset T), Multiset.Rel L.E m n → c.holds σ m →
     c.holds σ n
 
-/-- An absence check sees related matches alike, for any relation. -/
-theorem absent_respects (Rel : T → T → Prop) (p : P) (σ : Subst V T) {m n : Multiset T}
-    (rel : Multiset.Rel Rel m n) (holds : (Check.absent p : Check V T P).holds σ m) :
-    (Check.absent p : Check V T P).holds σ n := by
+/-- A none check sees related matches alike, for any relation. -/
+theorem noneMatch_respects (Rel : T → T → Prop) (p : P) (σ : Subst V T) {m n : Multiset T}
+    (rel : Multiset.Rel Rel m n) (holds : (Check.noneMatch p : Check V T P).holds σ m) :
+    (Check.noneMatch p : Check V T P).holds σ n := by
   change n = 0
   change m = 0 at holds
   subst holds
@@ -202,13 +202,13 @@ theorem count_respects (Rel : T → T → Prop) (p : P) (k : ℕ) (σ : Subst V 
   change Multiset.card m = k at holds
   rw [← Multiset.card_eq_card_of_rel rel, holds]
 
-/-- **A rule whose checks are absences and counts respects every theory.** -/
+/-- **A rule whose checks are none checks and counts respects every theory.** -/
 theorem checksRespect_of_counts (L : TermLayer V T P) (r : Rule V T P)
-    (counts : ∀ c ∈ r.checks, (∃ p, c = Check.absent p) ∨ ∃ p k, c = Check.count p k) :
+    (counts : ∀ c ∈ r.checks, (∃ p, c = Check.noneMatch p) ∨ ∃ p k, c = Check.count p k) :
     ChecksRespect L r := by
   intro c mem σ m n rel holds
   rcases counts c mem with ⟨p, rfl⟩ | ⟨p, k, rfl⟩
-  · exact absent_respects L.E p σ rel holds
+  · exact noneMatch_respects L.E p σ rel holds
   · exact count_respects L.E p k σ rel holds
 
 /-- **A rule is sealed from `A`**: none of its patterns, gathers or checks, reaches a value of

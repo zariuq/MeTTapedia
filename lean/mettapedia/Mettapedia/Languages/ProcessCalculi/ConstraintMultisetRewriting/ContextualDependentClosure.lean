@@ -1,4 +1,4 @@
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentCensus
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentClassification
 
 /-!
 # The stratified fragment: a closure class beyond the dynamic pattern fragment

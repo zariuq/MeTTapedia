@@ -9,7 +9,7 @@ HE's machine has no infinite run, and every configuration it reaches either step
 `y` or `n` a divergent call such as `(loop)`, this is the precise sense in which the branch left
 never runs: it is only delivered under the `Atom` demand, and nothing ever evaluates it.
 
-The proof is `EveryRunFinishes.Fine` (H6's continuation-passing logical relation) carried along
+The proof is `EveryRunFinishes.Fine` (a continuation-passing logical relation) carried along
 `if`'s function path:
 
 * frame lemmas for the function-application continuations (`invocations`, `function`,

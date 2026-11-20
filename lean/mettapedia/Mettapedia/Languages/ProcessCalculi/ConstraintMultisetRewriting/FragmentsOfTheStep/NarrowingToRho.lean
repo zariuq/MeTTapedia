@@ -5,7 +5,8 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Fragments
 
 The step sees the whole store. Reading a heated store as one rho process (`narrow`) is one
 observation of it; the identity observation is the whole-store view itself (`whole_store_view`). On
-the channel-communication fragment:
+the channel-communication fragment, and for rho's communication with ordinary substitution
+(`RhoChannelFragment.RhoStep`; the semantic-substitution profile is not covered):
 
 * `narrowing_functionalBisimulation`, `narrowing_onto`: the narrowing is a functional bisimulation
   from heated stores onto rho's communication, a map of transition systems that carries runs to runs
@@ -36,12 +37,12 @@ the channel-communication fragment:
 The narrowing is one choice of observation. Its target is closed under parallel composition
 (`RhoScopedParallelEvents.step_join`). On the ground step, a firing without predicate queries stays
 admitted beside every store put beside it (`KeptBeside`) when it has no check (`unguarded_kept`,
-from `Composition.positive_monotone`), and an absence-guarded one is refused beside a store holding
-its pattern (`absence_guarded_not_kept`, from `Composition.guarded_union_iff`): among such firings
-whose checks are none or one absence guard, `kept_iff_unguarded`. Firings with equality checks are
+from `Composition.positive_monotone`), and a none-guarded one is refused beside a store holding
+its pattern (`none_guarded_not_kept`, from `Composition.guarded_union_iff`): among such firings
+whose checks are empty or one none guard, `kept_iff_unguarded`. Firings with equality checks are
 kept as well (`LinearTake.union_monotone`), and reads alone are not carried by the narrowing
 (`RhoPeekOutside.peek_not_rho`), so being kept beside every store is not the same as being carried
-by the narrowing; no theorem links `KeptBeside` to the narrowing. Absence is seen by the whole-store
+by the narrowing; no theorem links `KeptBeside` to the narrowing. The none query is seen by the whole-store
 view.
 -/
 
@@ -191,8 +192,8 @@ theorem unguarded_kept {C : Conf} {f : Fir} (noChecks : f.rule.checks = []) (noQ
     (admitted : base.Admits (s := C) f) : KeptBeside C f :=
   fun _ fresh knowledge => NullsOnTheStep.Composition.positive_monotone noChecks noQueries admitted fresh knowledge
 
-/-- An absence-guarded firing is refused beside a store holding its pattern. -/
-theorem absence_guarded_not_kept {C : Conf} {f : Fir} {p : Expr} (guard : f.rule.checks = [.absent p])
+/-- A none-guarded firing is refused beside a store holding its pattern. -/
+theorem none_guarded_not_kept {C : Conf} {f : Fir} {p : Expr} (guard : f.rule.checks = [.predicate .none p])
     (noQueries : f.queries = []) (admitted : base.Admits (s := C) f) : ¬ KeptBeside C f := by
   intro kept
   obtain ⟨n, unused⟩ := Infinite.exists_notMem_finset ((f.selection.made.map Prod.snd).toFinset)
@@ -208,15 +209,15 @@ theorem absence_guarded_not_kept {C : Conf} {f : Fir} {p : Expr} (guard : f.rule
   exact clear (p, n) (Finset.mem_singleton_self _) rfl
 
 /-- **On the ground step, exactly the firings without a check are kept beside every store**, among
-firings without predicate queries whose checks are none or one absence guard. -/
+firings without predicate queries whose checks are empty or one none guard. -/
 theorem kept_iff_unguarded {C : Conf} {f : Fir}
-    (shape : f.rule.checks = [] ∨ ∃ p, f.rule.checks = [.absent p]) (noQueries : f.queries = [])
+    (shape : f.rule.checks = [] ∨ ∃ p, f.rule.checks = [.predicate .none p]) (noQueries : f.queries = [])
     (admitted : base.Admits (s := C) f) : KeptBeside C f ↔ f.rule.checks = [] := by
   constructor
   · intro kept
     rcases shape with none | ⟨p, guard⟩
     · exact none
-    · exact absurd kept (absence_guarded_not_kept guard noQueries admitted)
+    · exact absurd kept (none_guarded_not_kept guard noQueries admitted)
   · intro none
     exact unguarded_kept none noQueries admitted
 
@@ -255,12 +256,12 @@ def throughB : Selection Occ := ⟨[(msg valueB, 0), (relayer, 0)], [], [(msg va
 abbrev anything : Disc := fun _ _ _ _ => True
 
 theorem throughA_valid : throughA.Valid ground Prod.fst (relay valueA) start :=
-  (PredicateQueryAdmission.valid_empty_iff ground Prod.fst _ _ _).mp
+  PredicateQueryAdmission.regionValid_nil_iff.mp
     (admits_of (D := anything) (σ := (start, ∅)) (r := relay valueA) (sel := throughA) (fresh := []) (by decide) (by decide) rfl rfl rfl
       (by decide) (by decide) rfl (no_checks rfl) trivial).1
 
 theorem throughB_valid : throughB.Valid ground Prod.fst (relay valueB) start :=
-  (PredicateQueryAdmission.valid_empty_iff ground Prod.fst _ _ _).mp
+  PredicateQueryAdmission.regionValid_nil_iff.mp
     (admits_of (D := anything) (σ := (start, ∅)) (r := relay valueB) (sel := throughB) (fresh := []) (by decide) (by decide) rfl rfl rfl
       (by decide) (by decide) rfl (no_checks rfl) trivial).1
 

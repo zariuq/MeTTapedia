@@ -1,5 +1,5 @@
 import Mettapedia.OSLF.Framework.RhoScopeOperationalFutures
-import Mettapedia.OSLF.Syntax.RhoScopedNativeAbsenceControls
+import Mettapedia.OSLF.Syntax.RhoScopedNativeNoneControls
 
 /-!
 # Productive original scope atoms and their fresh-context grades
@@ -18,7 +18,7 @@ namespace Mettapedia.OSLF.Framework.RhoScopeOperationalFutureControls
 
 open Mettapedia.OSLF.Binding _root_.CategoryTheory
 open RhoSchema RhoQuotationClassFibres RhoEquationConstructorControls RhoScopedParallelEvents
-open RhoScopedNativeAbsence RhoScopedNativeAbsenceControls RhoScopedParallelReactiveControls
+open RhoScopedNativeNone RhoScopedNativeNoneControls RhoScopedParallelReactiveControls
 open SyntacticRetractionContexts RhoScopeOperationalFutures
 open RhoEquationGeneratedScope RhoGeneratedScopeStrata RhoGeneratedScopeMinimum
 open RhoScopeMinimumReceipts RhoGeneratedScopeSubstitution

@@ -35,7 +35,7 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus.PureBoundary
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.SubstitutionCanonicalCommutation
 open Mettapedia.OSLF.MeTTaIL.ScopedPattern
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalStepperCompleteness
-  (rhoStepAt_one_comm apply_commBindingsAt commBindingsAt rhoStepAt_succ_inv
+  (rhoStepAt_one_comm apply_commBindingsAt_resolved commBindingsAt rhoStepAt_succ_inv
     rhoStepAt_one_inv canonicalize_input canonicalize_output canonicalize_bag bagContents_eq_self
     canonicalize_bag_cons_congr locate_pair canonicalStep_complete_of_rhoStep)
 
@@ -135,6 +135,16 @@ private theorem bag_head_congr {first second : Pattern} (rest : List Pattern)
   | zero => exact related
   | succ index => exact .refl _
 
+/-- The compiled COMM contractum, which resolves the body's quotations of
+drops, is related to the semantic one by the rho equations. -/
+private theorem resolved_contractum {body : Process} (free : RestrictionFree body)
+    (binder datum : Name) (n v : String) :
+    semanticCommSubst (resolveQuotes rhoReflectivePresentation (closeFVar 0 binder (encode body n v)))
+        (.apply "PDrop" [.fvar datum]) ≡ᵨ
+      semanticCommSubst (closeFVar 0 binder (encode body n v)) (.apply "PDrop" [.fvar datum]) :=
+  semanticCommSubst_resolveQuotes_structuralCongruence
+    (close_encode_procWellSorted free binder n v) ⟨trivial, trivial⟩
+
 /-- Releasing a continuation into its active communication components uses
 only the maintained compiler's proved parallel equations. -/
 theorem release_equations {body : Process} (free : RestrictionFree body)
@@ -203,10 +213,11 @@ theorem rho_firing_reflects {processes : List Process} (flat : Flat processes)
   have residueFlat : Flat residue := fun process membership =>
     flat process (List.mem_of_mem_eraseIdx (List.mem_of_mem_eraseIdx membership))
   have exactTarget : target = .collection .hashBag
-      (semanticCommSubst (closeFVar 0 binder (encode continuation n v))
+      (semanticCommSubst (resolveQuotes rhoReflectivePresentation
+          (closeFVar 0 binder (encode continuation n v)))
         (.apply "PDrop" [.fvar datum]) :: residue.map (fun p => encode p n v)) none := by
     rw [bindingsEq] at applied
-    have application := apply_commBindingsAt (close_encode_procWellSorted bodyFree binder n v)
+    have application := apply_commBindingsAt_resolved (close_encode_procWellSorted bodyFree binder n v)
       (show ProcWellSorted rhoReflectivePresentation rhoAtomicNameContext []
         (.apply "PDrop" [.fvar datum]) from .drop (.fvar rfl))
       (processes.map (fun p => encode p n v)) i j (.fvar channel)
@@ -216,9 +227,10 @@ theorem rho_firing_reflects {processes : List Process} (flat : Flat processes)
   refine ⟨components (continuation.substitute binder datum) ++ residue,
     .comm i inputBound j outputBound channel binder datum continuation sourceInput sourceOutput, ?_⟩
   rw [exactTarget]
-  exact .trans _ _ _
-    (bag_head_congr _ (contractum_equations bodyFree binder datum n v commSafe.1 commSafe.2))
-    (release_equations (rf_substitute bodyFree binder datum) residueFlat n v)
+  exact .trans _ _ _ (bag_head_congr _ (resolved_contractum bodyFree binder datum n v))
+    (.trans _ _ _
+      (bag_head_congr _ (contractum_equations bodyFree binder datum n v commSafe.1 commSafe.2))
+      (release_equations (rf_substitute bodyFree binder datum) residueFlat n v))
 
 /-- Every selected source pair executes by the authored rho COMM rule. The
 actual target retains the source's other occurrences and agrees with the
@@ -237,7 +249,7 @@ theorem NetworkStep.rho_firing {source next : List Process}
         (output ▸ List.mem_of_mem_eraseIdx (List.getElem_mem hj))
       let residue := (source.eraseIdx i).eraseIdx j
       let target : Pattern := .collection .hashBag
-        (semanticCommSubst (closeFVar 0 binder (encode body n v))
+        (semanticCommSubst (resolveQuotes rhoReflectivePresentation (closeFVar 0 binder (encode body n v)))
           (.apply "PDrop" [.fvar datum]) :: residue.map (fun p => encode p n v)) none
       have firing := rhoStepAt_one_comm
         (elements := source.map (fun p => encode p n v))
@@ -247,7 +259,7 @@ theorem NetworkStep.rho_firing {source next : List Process}
         (by simpa [List.eraseIdx_map, encode, rhoOutput, rhoDrop, piNameToRhoName] using
           congrArg (fun p => encode p n v) output)
         (by simp [rhoCanonicalEquivalent, ReflectiveCanonical.canonicalEquivalent])
-      have application := apply_commBindingsAt (close_encode_procWellSorted bodyFree binder n v)
+      have application := apply_commBindingsAt_resolved (close_encode_procWellSorted bodyFree binder n v)
         (show ProcWellSorted rhoReflectivePresentation rhoAtomicNameContext []
           (.apply "PDrop" [.fvar datum]) from .drop (.fvar rfl))
         (source.map (fun p => encode p n v)) i j (.fvar channel)
@@ -255,9 +267,11 @@ theorem NetworkStep.rho_firing {source next : List Process}
         simpa only [application, List.eraseIdx_map, networkPattern, target, residue] using firing
       have residueFlat : Flat residue := fun process membership =>
         flat process (List.mem_of_mem_eraseIdx (List.mem_of_mem_eraseIdx membership))
-      exact ⟨target, firingExact, .trans _ _ _
-        (bag_head_congr _ (contractum_equations bodyFree binder datum n v commSafe.1 commSafe.2))
-        (release_equations (rf_substitute bodyFree binder datum) residueFlat n v)⟩
+      exact ⟨target, firingExact,
+        .trans _ _ _ (bag_head_congr _ (resolved_contractum bodyFree binder datum n v))
+          (.trans _ _ _
+            (bag_head_congr _ (contractum_equations bodyFree binder datum n v commSafe.1 commSafe.2))
+            (release_equations (rf_substitute bodyFree binder datum) residueFlat n v))⟩
 
 /-- This endpoint comparison reaches the source's already-authored pi GSLT,
 in addition to its named semantics. -/
@@ -361,7 +375,7 @@ theorem NetworkStep.canonical_firing {source next : List Process}
     CanonicalFiring (canonicalNetwork source n v) (canonicalNetwork next n v) := by
   obtain ⟨contractum, firing, equations⟩ := step.rho_firing flat safe n v
   obtain ⟨canonicalContractum, canonicalFiring, agreement⟩ := canonicalStep_complete_of_rhoStep
-    (network_procWellSorted flat n v) (network_binderSafe flat n v) ⟨1, firing⟩
+    (network_procWellSorted flat n v) ⟨1, firing⟩
   have endpoint := canonicalize_eq_of_structuralCongruence equations
     (firing_pure flat n v firing) (network_pure (step.flat flat) n v)
   exact ⟨canonicalContractum, canonicalFiring, agreement.trans endpoint⟩
@@ -464,11 +478,11 @@ theorem canonical_firing_contractum_reflects {processes : List Process}
   have sourceResidueFlat : Flat sourceResidue := fun process membership =>
     flat process (List.mem_of_mem_eraseIdx (List.mem_of_mem_eraseIdx membership))
   have exactTarget : target = .collection .hashBag
-      (semanticCommSubst
-        (Canonical.canonicalize (closeFVar 0 binder (encode continuation n v)))
+      (semanticCommSubst (resolveQuotes rhoReflectivePresentation
+          (Canonical.canonicalize (closeFVar 0 binder (encode continuation n v))))
         (.apply "PDrop" [.fvar datum]) :: matcherResidue) none := by
     rw [bindingsEq] at applied
-    have application := apply_commBindingsAt
+    have application := apply_commBindingsAt_resolved
       (canonicalize_procWellSorted ["Name"] (close_encode_procWellSorted bodyFree binder n v))
       (show ProcWellSorted rhoReflectivePresentation rhoAtomicNameContext []
         (.apply "PDrop" [.fvar datum]) from .drop (.fvar rfl))
@@ -480,15 +494,18 @@ theorem canonical_firing_contractum_reflects {processes : List Process}
     (semanticCommSubst (closeFVar 0 binder (encode continuation n v))
       (.apply "PDrop" [.fvar datum]) :: sourceResidue.map (fun p => encode p n v)) none
   have heads : Canonical.canonicalize
-      (semanticCommSubst
-        (Canonical.canonicalize (closeFVar 0 binder (encode continuation n v)))
+      (semanticCommSubst (resolveQuotes rhoReflectivePresentation
+          (Canonical.canonicalize (closeFVar 0 binder (encode continuation n v))))
         (.apply "PDrop" [.fvar datum])) =
       Canonical.canonicalize (semanticCommSubst (closeFVar 0 binder (encode continuation n v))
         (.apply "PDrop" [.fvar datum])) := by
-    have commute := canonicalize_semanticCommSubst_canonicalize
-      (close_encode_procWellSorted bodyFree binder n v) (close_encode_binderSafe bodyFree binder n v)
+    have resolved := canonicalize_semanticCommSubst_resolveQuotes
+      (canonicalize_procWellSorted ["Name"] (close_encode_procWellSorted bodyFree binder n v))
       (show HashSetFree (.apply "PDrop" [.fvar datum]) from ⟨trivial, trivial⟩)
-    exact commute
+    have commute := canonicalize_semanticCommSubst_canonicalize
+      (close_encode_procWellSorted bodyFree binder n v)
+      (show HashSetFree (.apply "PDrop" [.fvar datum]) from ⟨trivial, trivial⟩)
+    exact resolved.trans commute
   have tails : (bagContents (matcherResidue.map Canonical.canonicalize)).Perm
       (bagContents ((sourceResidue.map (fun p => encode p n v)).map Canonical.canonicalize)) := by
     have mapped := residuePermutation.symm.map Canonical.canonicalize

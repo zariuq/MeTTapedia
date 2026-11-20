@@ -143,6 +143,15 @@ theorem same_actual_name : quote suspended = quote visible := quote_drop (quote 
 theorem quotation_not_injective : ¬ Function.Injective (quote : Process [] → Name []) :=
   fun injective => suspended_not_visible (injective same_actual_name)
 
+/-- Name equality forgets which process was quoted. Recovering every process
+origin therefore requires more than the name class alone. -/
+theorem no_name_only_activation_recovers_every_origin :
+    ¬ ∃ activate : Name [] → Process [], ∀ process : Process [], activate (quote process) = process := by
+  rintro ⟨activate, recovers⟩
+  apply quotation_not_injective
+  intro first second same
+  exact (recovers first).symm.trans ((congrArg activate same).trans (recovers second))
+
 def visibleOrigin : Origin (quote visible) := ⟨visible, rfl⟩
 
 def suspendedOrigin : Origin (quote visible) := ⟨suspended, same_actual_name⟩

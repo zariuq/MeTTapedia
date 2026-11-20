@@ -138,7 +138,7 @@ theorem run_regions_reads (scan : (T → Bool) → List O) (rs : List (T → Boo
 
 /-- Lower all source constructors to ordered adaptive reads. An `every`
 always returns its one amalgamated row, including when its body has no rows.
-An absence query does not export bindings or resource picks from its body. -/
+A none query does not export bindings or resource picks from its body. -/
 def compile (L : TermLayer V T P) (m : Matcher V T P) (label : O → T) :
     List P → SourceList V T P → Subst V T → Code O T (List (Subst V T × List (Pick O T)))
   | template, .done, σ => .pure (match instTemplate L σ template with
@@ -196,7 +196,7 @@ theorem run_compile (L : TermLayer V T P) (m : Matcher V T P) (label : O → T)
       rw [← same]
       rfl
 
-/-- Completed emptiness means absence of an independently specified source
+/-- Completed emptiness means none queries of an independently specified source
 row only with the existing sound, complete and minimal matcher laws. -/
 theorem run_empty_iff_no_declarative [DecidableEq V]
     (L : TermLayer V T P) (m : Matcher V T P) (label : O → T) (S : Finset O)

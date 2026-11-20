@@ -17,12 +17,13 @@ firing, so it may read what the firing matched.
   arrive (`local_stable`), so it needs no complete observation.
 * **A comparing discipline needs one.** Maximum selection is not a filter
   (`GradedSelectionIrreducibility.not_pointwiseSelection_of_isMaxSelection`), so an arrival can
-  change its verdict on a candidate (`argmax_changed_by_arrival`). With a predicate query of
-  the candidate region, the census is the complete bag, and the verdict becomes a test of the
-  firing's own data (`argmax_iff_census`). A normalized discipline needs the race total
+  change its verdict on a candidate (`argmax_changed_by_arrival`). With an exact query of
+  the candidate region, the predicate query is the complete bag, and the verdict becomes a test of the
+  firing's own data (`argmax_iff_seen`). A normalized discipline needs the race total
   likewise (`GradedSelectionIrreducibility.normalizedShare_not_candidatewise`).
-* **A charge on the size of a firing's own census is a site charge** (`census_region_card`):
-  at an admitted firing the query region has the census's size at every solution of its cut.
+* **A charge on the size of a firing's own predicate query is a site charge** (`seen_region_card`):
+  at an admitted firing the region of an exact query has the predicate query's size at every solution
+  of its cut.
 
 ## Provenance
 
@@ -95,35 +96,41 @@ theorem argmax_not_local (weight : Candidate → ℕ) {low high : Candidate}
 
 end Disciplines
 
-section Census
+section ExactQuery
 
 variable (A : SubstitutionAction T S) (label : O → T)
 
-/-- **With a predicate query of the candidate region, maximum selection is a test of the
-firing's own census.** At an admitted firing the census is the region's complete answer, so
-an occurrence of the region is maximal there exactly when it is maximal in the census. -/
-theorem argmax_iff_census {f : Firing T S O} {C : Configuration T O}
+/-- **With an exact query of the candidate region, maximum selection is a test of the
+firing's own predicate query.** At an admitted firing the predicate query is the region's complete answer, so
+an occurrence of the region is maximal there exactly when it is maximal in the predicate query. One exact
+query suffices, through the membership of its exact image: a predicate query is a seen set; the firing's
+other queries may observe anything. -/
+theorem argmax_iff_seen {f : Firing T S O} {C : Configuration T O}
     (valid : f.Valid A label C)
     {query : MeTTaCalculus.OccurrenceCommits.PredicateQuery O T}
-    (member : PredicateQueryAdmission.Query.fixed query ∈ f.queries) (weight : T → ℕ) (o : O) :
+    (member : (PredicateQueryAdmission.Query.fixed query).toRegion ∈ f.queries) (weight : T → ℕ)
+    (o : O) :
     (o ∈ regionOf label C.present query.region ∧
         ∀ other ∈ regionOf label C.present query.region, weight (label other) ≤ weight (label o)) ↔
       (o ∈ query.seen ∧ ∀ other ∈ query.seen, weight (label other) ≤ weight (label o)) := by
   obtain ⟨σ, solved⟩ := valid.firing.consistent
-  have census : regionOf label C.present query.region = query.seen :=
+  have seenEq : regionOf label C.present query.region = query.seen :=
     valid.observations _ member σ solved
-  rw [census]
+  rw [seenEq]
 
-/-- **A charge on the size of a firing's own census is a site charge.** At an admitted
-firing, the region of a predicate query has exactly the census's size at every solution of the
-firing's cut, so the charge is a function of the firing. -/
-theorem census_region_card {f : Firing T S O} {C : Configuration T O}
-    (valid : f.Valid A label C) {query : PredicateQueryAdmission.Query T S O} (member : query ∈ f.queries)
-    {σ : S} (solved : A.Models σ (f.selection.problem label f.rule C)) :
+/-- **A charge on the size of a firing's own predicate query is a site charge.** At an admitted
+firing, the region of an exact query has exactly the predicate query's size at every solution of the
+firing's cut, so the charge is a function of the firing. One exact query suffices, through the
+membership of its exact image; a count fixes the size without fixing a predicate query. -/
+theorem seen_region_card {f : Firing T S O} {C : Configuration T O}
+    (valid : f.Valid A label C) {query : PredicateQueryAdmission.Query T S O}
+    (member : query.toRegion ∈ f.queries) {σ : S}
+    (solved : A.Models σ (f.selection.problem label f.rule C)) :
     (regionOf label C.present (query.region σ)).card = query.seen.card :=
-  (valid.observations query member).card solved
+  ((PredicateQueryAdmission.Query.toRegion_ask_iff query).mp
+    (valid.observations query.toRegion member)).card solved
 
-end Census
+end ExactQuery
 
 /-! ## Metering -/
 
@@ -423,8 +430,8 @@ end GradeControls
 #print axioms local_stable
 #print axioms argmax_changed_by_arrival
 #print axioms argmax_not_local
-#print axioms argmax_iff_census
-#print axioms census_region_card
+#print axioms argmax_iff_seen
+#print axioms seen_region_card
 #print axioms MeteredRun.funded
 #print axioms meteredRun_iff
 #print axioms funded_of_traceEquiv

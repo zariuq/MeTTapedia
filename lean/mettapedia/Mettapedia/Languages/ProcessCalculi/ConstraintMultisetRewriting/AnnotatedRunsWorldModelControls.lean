@@ -260,7 +260,7 @@ def swappedRun : List Run := [sightSecond, sightFirst, submitFirst, submitSecond
 /-- The two sightings are statically independent. -/
 theorem sightings_independent : StaticIndependent label sightFirst sightSecond := by
   refine ⟨⟨rfl, by simp [Firing.StaticQueries, sightFirst]⟩,
-    ⟨rfl, by simp [Firing.StaticQueries, sightSecond]⟩, fun _ => ?_⟩
+    ⟨rfl, by simp [Firing.StaticQueries, sightSecond]⟩, fun _ _ => ?_⟩
   unfold TraceIndependent MeTTaCalculus.OccurrenceCommits.Independent
     MeTTaCalculus.OccurrenceCommits.Clash MeTTaCalculus.OccurrenceCommits.Spoils
     MeTTaCalculus.OccurrenceCommits.WritesInto MeTTaCalculus.OccurrenceCommits.Commit.uses

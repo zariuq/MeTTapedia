@@ -1,5 +1,5 @@
 import Mettapedia.CategoryTheory.FinitePowerset
-import Mettapedia.GSLT.Topos.PresheafEventAbsence
+import Mettapedia.GSLT.Topos.PresheafEventNone
 import Mettapedia.TypeTheory.PresheafEventNativeLogic
 
 /-!
@@ -101,10 +101,10 @@ def sourceFibreEquiv (Origins : Type u) (action : Actions) (world : Cᵒᵖ)
   right_inv _ := rfl
 
 def enabled (Origins : Type u) (action : Actions) : Subfunctor P :=
-  PresheafEventAbsence.enabled (system.span Origins action).source ⊤
+  PresheafEventNone.enabled (system.span Origins action).source ⊤
 
 def absent (Origins : Type u) (action : Actions) : Subfunctor P :=
-  PresheafEventAbsence.absent (system.span Origins action).source ⊤
+  PresheafEventNone.noneEnabled (system.span Origins action).source ⊤
 
 /-- A supplied identifier and selected successor introduce actual availability;
 this operation does not choose or manufacture an identifier. -/
@@ -128,7 +128,7 @@ theorem enabled_iff [Nonempty Origins] (action : Actions) (world : Cᵒᵖ)
 context map identifies distinct values. The supplied future event's
 occurrence identifier is retained. -/
 theorem reflects_availability (action : Actions) :
-    PresheafEventAbsence.ReflectsAvailability (system.span Origins action).source ⊤ := by
+    PresheafEventNone.ReflectsAvailability (system.span Origins action).source ⊤ := by
   intro world future change source event _ over
   change event.source = P.map change source at over
   have member : event.target ∈ system.successors future (P.map change source) action := by
@@ -142,7 +142,7 @@ theorem absent_iff_empty [Nonempty Origins] (action : Actions) (world : Cᵒᵖ)
     (source : P.obj world) :
     source ∈ (system.absent Origins action).obj world ↔
       system.successors world source action = ∅ := by
-  rw [absent, PresheafEventAbsence.absent_iff_present _ _
+  rw [absent, PresheafEventNone.noneEnabled_iff_present _ _
     (system.reflects_availability (Origins := Origins) action)]
   change (¬ source ∈ (system.enabled Origins action).obj world) ↔ _
   rw [system.enabled_iff]

@@ -15,7 +15,7 @@ import Mettapedia.Machines.CMemory.Lift
 * `base_comparison_after_store`: comparing a struct's base pointer after a
   store into one of its fields.  Its validity comes from the well-formedness
   of the whole of memory, which the tactics carry across the store.
-* `reserve_spec_by_vcgen`: CeTTa's `space_module_link_reserve` meets the
+* `reserve_spec_by_vcgen`: the block-memory `reserve` meets the
   specification of `CMemory.Array.reserve_spec`, the same statement, re-proved
   with the tactics.
 * `publish_refines_by_vcgen`: the publisher loop of `CMemory.Lift`, the same
@@ -107,7 +107,7 @@ theorem base_comparison_after_store (base : Ptr) (k : ℕ) (v w : CVal) :
   cmem_vcgen
   exact ⟨wf, by cmem_exact⟩
 
-/-! ## `space_module_link_reserve`, re-proved -/
+/-! ## `reserve`, re-proved -/
 
 /-- **The specification of `reserve`**, the statement of `reserve_spec`,
 proved by symbolic execution. -/
@@ -163,16 +163,16 @@ whole batch, and it is ready for them. -/
 theorem publish_refines_by_vcgen [DecidableEq Id] (layout : SpaceLayout) {D : List Id}
     (distinct : D.Nodup) {reader : Id} (readerIn : reader ∈ D) :
     ∀ (pending : List Id) (H : SplitHeap Id), (∀ s ∈ pending, s ∈ D) → reader ∉ pending →
-      OrderedDependencyCArray.Ready H reader pending →
+      OrderedDependencyArrays.Ready H reader pending →
       CTriple (L := L) (StoreRep addr layout D H) (publishProg addr layout reader pending)
-        (fun _ σ => ∃ H', OrderedDependencyCArray.writeBatch H reader pending = some H' ∧
+        (fun _ σ => ∃ H', OrderedDependencyArrays.writeBatch H reader pending = some H' ∧
           StoreRep addr layout D H' σ) := by
   intro pending H pendingIn notSelf ready
   cmem_start σ h
   unfold publishProg
-  cmem_loop (fun rest _ σ => ∃ H₁, OrderedDependencyCArray.writeBatch H reader pending =
-      OrderedDependencyCArray.writeBatch H₁ reader rest ∧ (∀ s ∈ rest, s ∈ D) ∧
-      reader ∉ rest ∧ OrderedDependencyCArray.Ready H₁ reader rest ∧
+  cmem_loop (fun rest _ σ => ∃ H₁, OrderedDependencyArrays.writeBatch H reader pending =
+      OrderedDependencyArrays.writeBatch H₁ reader rest ∧ (∀ s ∈ rest, s ∈ D) ∧
+      reader ∉ rest ∧ OrderedDependencyArrays.Ready H₁ reader rest ∧
       StoreRep addr layout D H₁ σ)
   case invariant => exact ⟨H, rfl, pendingIn, notSelf, ready, h⟩
   case post =>
@@ -191,11 +191,11 @@ theorem publish_refines_by_vcgen [DecidableEq Id] (layout : SpaceLayout) {D : Li
       omega
     cmem_call writeLink_refines addr layout H₁ reader source different ready.1 forwardRoom
       (ready.2.2.2 source List.mem_cons_self) with - σ ⟨H₂, linked, h⟩
-    refine ⟨H₂, by rw [batch]; simp [OrderedDependencyCArray.writeBatch, linked],
+    refine ⟨H₂, by rw [batch]; simp [OrderedDependencyArrays.writeBatch, linked],
       fun s member => restIn s (List.mem_cons_of_mem _ member),
       fun member => notSelf (List.mem_cons_of_mem _ member),
-      OrderedDependencyCArray.ready_after_first ready linked, ?_⟩
-    obtain ⟨forward, reverse, -, -, rfl⟩ := OrderedDependencyCArray.writeLink_fields linked
+      OrderedDependencyArrays.ready_after_first ready linked, ?_⟩
+    obtain ⟨forward, reverse, -, -, rfl⟩ := OrderedDependencyArrays.writeLink_fields linked
     rw [storeRep_split addr layout _ readerIn sourceIn different,
       storeRep_congr addr layout (H := H₁)]
     · exact h

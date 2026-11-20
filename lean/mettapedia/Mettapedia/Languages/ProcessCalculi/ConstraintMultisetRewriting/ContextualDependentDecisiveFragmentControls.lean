@@ -272,7 +272,7 @@ theorem crossed_decided :
       run (family.solver larger) crossedStore larger = run (family.solver budget) crossedStore budget ∧
       ((∃ state finished, run (family.solver larger) crossedStore larger = .solved state finished ∧
           (frames setting.levels).Principal crossedStore state.answer) ∨
-        (∃ absent, run (family.solver larger) crossedStore larger = .refuted absent)) :=
+        (∃ missing, run (family.solver larger) crossedStore larger = .refuted missing)) :=
   crossedSettled.decided (Or.inr rfl)
 
 /-- The crossed store is solvable, so the decided outcome is the principal answer. -/
@@ -288,9 +288,9 @@ theorem crossed_decided_principal :
         (frames setting.levels).Principal crossedStore state.answer := by
   obtain ⟨budget, decided⟩ := crossed_decided
   refine ⟨budget, fun larger enough => ⟨(decided larger enough).1, ?_⟩⟩
-  rcases (decided larger enough).2 with principal | ⟨absent, _⟩
+  rcases (decided larger enough).2 with principal | ⟨missing, _⟩
   · exact principal
-  · exact absurd crossed_solvable absent
+  · exact absurd crossed_solvable missing
 
 end ContextualDependentDecisiveFragment.Controls
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting

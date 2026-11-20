@@ -7,7 +7,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 The tower's under-binder family commits on both firing gaps of the every-rule family, the dead binder under one live
 binder (`middle_under_committed`) and under two (`last_under_committed`), as well as on the dead-binder gap
 (`deadPattern_under_committed`) and on two dead binders in front (`twoDead_under_committed`); it refutes R119's
-unsolvable diagonal store (`annotatedDiagonal_under_refuted`), and decides R119's 44 census stores as the in-place
+unsolvable diagonal store (`annotatedDiagonal_under_refuted`), and decides R119's 44 classification stores as the in-place
 family does (`under_of_final`).
 
 An annotation that mentions a later declaration through a **used** binder, `λ p. F ≐ λ p. Id (Id G b b) p p` at
@@ -48,7 +48,7 @@ theorem annotatedDiagonal_under_refuted :
     (run (underTower.solver 16) annotatedDiagonalStore 8).readout = .refuted := by
   decide +kernel
 
-/-- **R119's census**: the under-binder family decides the 44 census stores as the in-place family does. -/
+/-- **R119's classification**: the under-binder family decides the 44 classification stores as the in-place family does. -/
 theorem under_of_final {Θ : Context setting.R} {problem : EquationStore (TotalTerm Θ)}
     (final : ContextualDependentAcceptance3.Controls.finalDecided problem = true) :
     (run inPlaceOnly problem 8).Decided ∧ run (underTower.solver 16) problem 8 = run inPlaceOnly problem 8 := by

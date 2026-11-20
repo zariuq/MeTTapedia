@@ -4,14 +4,11 @@ import Mettapedia.OSLF.MeTTaIL.QuoteDropTyping
 /-!
 # Wrapper normal forms through reflective substitution
 
-Reflective substitution looks at names through their quote-drop normal forms, which do not see the
-wrapper laws: `@{*z}` is opaque to it while `@(*z)` is the name `z`. A wrapper step therefore changes a
-term's quote-drop normal form by forward quote-drop and wrapper steps (`normal_qwForward`), and
-reflective binder elimination maps the wrapper normal form of its body and a forward chain of its
-quoted replacement to a forward chain of quote-drop and wrapper steps, whenever the original result is
-inScope (`instantiate_wrapper`). Scope rules out the one case where the two disagree beyond such a
-chain: a variable that only the collapsed wrapper exposes would be the eliminated one or a free one,
-and the original result would mention it unbound.
+Reflective substitution tests the whole name modulo its declared equations.
+The wrapper laws must therefore refer to that parallel collection and its
+unit (`BinderWrapperCompatible`). They may change the retained spelling of
+a miss, but not the binding decision. If a wrapper exposes an unmatched
+index, scope ensures that index is already below the binder being removed.
 
 Wrapper steps keep scope, binder metadata, object terms, substitution and index lifting; with the
 quote-drop steps they form the forward chains `QWForward`, which keep well-sortedness
@@ -459,32 +456,276 @@ theorem normal_qwForward_of_qwForward (distinct : declaration.dropConstructor �
 
 /-! ## Reflective binder elimination -/
 
-open ReflectiveInstantiation in
-/-- How a name is marked: through its normal form, an index or an opaque name. -/
-theorem nameMark_cases (depth : Nat) (replacement name : Pattern) :
-    (∃ index, normalizeReflective declaration name = .bvar index ∧
-      nameMark declaration depth replacement name =
-        (Substitution.instantiateBVarAt depth replacement (.bvar index), index == depth)) ∨
-    ((∀ index, normalizeReflective declaration name ≠ .bvar index) ∧
-      nameMark declaration depth replacement name = (normalizeReflective declaration name, false)) := by
-  unfold nameMark
-  cases normalIs : normalizeReflective declaration name with
-  | bvar index => exact .inl ⟨index, rfl, rfl⟩
-  | _ => exact .inr ⟨fun _ same => (nomatch same), rfl⟩
+/-- A wrapper may expose a whole name only using the declared reflective
+parallel composition. Unlike flattening, eliminating a wrapper of a
+different kind can turn an opaque term into a binding reference. -/
+def BinderWrapperCompatible (laws : List Laws) (declaration : ReflectivePresentationDecl) : Prop :=
+  ∀ {kind law}, lawFor laws kind = some law →
+    kind = declaration.parallelCollection ∧
+      ∀ {label}, law.unit = some label → label = declaration.parallelUnitConstructor
 
-open ReflectiveInstantiation in
-/-- **Reflective binder elimination maps the wrapper normal form of its body and a forward chain of its
-quoted replacement to a forward chain**, when the original result is inScope. -/
-theorem instantiate_wrapper (distinct : declaration.dropConstructor ≠ declaration.quoteConstructor)
-    {process process' : Pattern} (forwardProcess : QWForward laws declaration process process') (body : Pattern) :
-    ∀ depth, (instantiate declaration depth (.apply declaration.quoteConstructor [process]) body).isWellScopedAt depth →
-      QWForward laws declaration (instantiate declaration depth (.apply declaration.quoteConstructor [process]) body)
-        (instantiate declaration depth (.apply declaration.quoteConstructor [process']) (wrapperNormal laws body)) := by
+open BinderHead in
+theorem WrapperStep.binderHead_eq (compatible : BinderWrapperCompatible laws declaration)
+    {left right : Pattern} (step : WrapperStep laws left right) :
+    ofPattern declaration left = ofPattern declaration right := by
+  induction step with
+  | singleton found => simp [ofPattern, ofList, (compatible found).1]
+  | empty found unit =>
+    simp [ofPattern, ofList, BinderHead.apply, rigid, (compatible found).1, (compatible found).2 unit]
+  | apply inner ih => simp [ofPattern, ofList_eq_map, ih]
+  | lambda inner ih => rfl
+  | multiLambda inner ih => rfl
+  | substBody inner ih => rfl
+  | substReplacement inner ih => rfl
+  | @element kind before after element changed rest inner ih =>
+    cases rest with
+    | some rest => rfl
+    | none => simp [ofPattern, ofList_eq_map, ih]
+
+open BinderHead in
+/-- Removing a wrapper of the wrong kind or using a different empty value
+really changes the binding head of some raw term. -/
+theorem binderWrapperCompatible_iff :
+    BinderWrapperCompatible laws declaration ↔
+      ∀ {left right}, WrapperStep laws left right →
+        ofPattern declaration left = ofPattern declaration right := by
+  refine ⟨fun compatible {_ _} step => step.binderHead_eq compatible, ?_⟩
+  intro preserves kind law found
+  have parallel : kind = declaration.parallelCollection := by
+    by_contra otherKind
+    have different := preserves (WrapperStep.singleton (element := .bvar 0) found)
+    simp [ofPattern, otherKind] at different
+  refine ⟨parallel, ?_⟩
+  intro label unit
+  by_contra differentUnit
+  have different := preserves (WrapperStep.empty found unit)
+  simp [ofPattern, ofList, BinderHead.apply, rigid, parallel, differentUnit] at different
+
+theorem QWForward.matchesBinder_eq
+    (distinct : declaration.dropConstructor ≠ declaration.quoteConstructor)
+    (compatible : BinderWrapperCompatible laws declaration)
+    {left right : Pattern} (forward : QWForward laws declaration left right) (depth : Nat) :
+    matchesBinder declaration depth left = matchesBinder declaration depth right := by
+  induction forward with
+  | refl => rfl
+  | tail _ step ih =>
+    rw [ih]
+    rcases step with quoteDrop | wrapper
+    · unfold matchesBinder
+      rw [quoteDrop.binderHead_eq distinct]
+    · unfold matchesBinder
+      rw [wrapper.binderHead_eq compatible]
+
+open BinderHead in
+theorem WrapperForward.binderHead_eq (compatible : BinderWrapperCompatible laws declaration)
+    {left right : Pattern} (forward : WrapperForward laws left right) :
+    ofPattern declaration left = ofPattern declaration right := by
+  induction forward with
+  | refl => rfl
+  | tail _ step ih => exact ih.trans (step.binderHead_eq compatible)
+
+private theorem wrapperNormal_unary (label : String) (payload : Pattern) :
+    wrapperNormal laws (.apply label [payload]) = .apply label [wrapperNormal laws payload] := by
+  rw [wrapperNormal_apply]; rfl
+
+/-- Removing wrappers acts member by member on the declared parallel
+composition. -/
+theorem parallelLeaves_wrapperNormal (compatible : BinderWrapperCompatible laws declaration)
+    (pattern : Pattern) :
+    parallelLeaves declaration (wrapperNormal laws pattern) =
+      (parallelLeaves declaration pattern).map (wrapperNormal laws) := by
+  induction pattern using Pattern.inductionOn with
+  | hbvar index => simp [wrapperNormal_bvar, parallelLeaves]
+  | hfvar name => simp [wrapperNormal_fvar, parallelLeaves]
+  | hlambda binder body ih => simp [wrapperNormal_lambda, parallelLeaves]
+  | hmultiLambda arity binders body ih => simp [wrapperNormal_multiLambda, parallelLeaves]
+  | hsubst body value ihBody ihValue => simp [wrapperNormal_subst, parallelLeaves]
+  | happly label arguments ih =>
+    cases arguments with
+    | nil =>
+      by_cases unit : label = declaration.parallelUnitConstructor <;>
+        simp [parallelLeaves, unit, wrapperNormal_apply]
+    | cons argument arguments => simp [parallelLeaves, wrapperNormal_apply]
+  | hcollection kind elements rest ih =>
+    have plain : parallelLeaves declaration (.collection kind (elements.map (wrapperNormal laws)) rest) =
+        (parallelLeaves declaration (.collection kind elements rest)).map (wrapperNormal laws) := by
+      by_cases parallel : kind = declaration.parallelCollection ∧ rest = none
+      · obtain ⟨rfl, rfl⟩ := parallel
+        simp only [parallelLeaves, if_true, parallelLeavesList_eq_flatMap, List.flatMap_map,
+          List.map_flatMap]
+        exact List.flatMap_congr fun element member => ih element member
+      · have same : wrapperNormal laws (.collection kind elements rest) =
+            .collection kind (elements.map (wrapperNormal laws)) rest ∨
+            ∃ law, lawFor laws kind = some law := by
+          cases found : lawFor laws kind with
+          | none => exact .inl (wrapperNormal_plain found _ _)
+          | some law => exact .inr ⟨law, rfl⟩
+        cases rest with
+        | some rest =>
+          simp only [parallelLeaves, List.map_cons, List.map_nil, List.cons.injEq, and_true]
+          cases found : lawFor laws kind with
+          | none => rw [wrapperNormal_plain found]
+          | some law => rw [wrapperNormal_law found]; simp [wrapFinish]
+        | none =>
+          have notParallel : kind ≠ declaration.parallelCollection := fun h => parallel ⟨h, rfl⟩
+          have noLaw : lawFor laws kind = none := by
+            cases found : lawFor laws kind with
+            | none => rfl
+            | some law => exact absurd (compatible found).1 notParallel
+          simp [parallelLeaves, notParallel, wrapperNormal_plain noLaw]
+    cases found : lawFor laws kind with
+    | none => rw [wrapperNormal_plain found]; exact plain
+    | some law =>
+      obtain ⟨parallel, unitLabel⟩ := compatible found
+      subst parallel
+      rw [wrapperNormal_law found]
+      cases rest with
+      | some rest => simpa [wrapFinish] using plain
+      | none =>
+        match elements, ih, plain with
+        | [], _, _ =>
+          cases unit : law.unit with
+          | none => simp [wrapFinish, unit, parallelLeaves, parallelLeavesList]
+          | some label =>
+            rw [unitLabel unit] at unit
+            simp [wrapFinish, unit, parallelLeaves, parallelLeavesList]
+        | [element], ih, _ =>
+          simp only [wrapFinish, List.map_cons, List.map_nil]
+          rw [ih element (by simp)]
+          simp [parallelLeaves, parallelLeavesList]
+        | first :: second :: more, _, plain =>
+          simpa [wrapFinish] using plain
+
+private theorem exposedDrop?_wrapperNormal (compatible : BinderWrapperCompatible laws declaration)
+    (pattern : Pattern) :
+    exposedDrop? declaration (wrapperNormal laws pattern) =
+      (exposedDrop? declaration pattern).map (wrapperNormal laws) := by
+  have leaves := parallelLeaves_wrapperNormal compatible pattern
+  cases exposed : exposedDrop? declaration pattern with
+  | some name =>
+    have shaped := ReflectiveCoherent.exposedDrop?_eq_some_iff.mp exposed
+    rw [shaped] at leaves
+    simp only [List.map_cons, List.map_nil, wrapperNormal_unary] at leaves
+    exact ReflectiveCoherent.exposedDrop?_eq_some_iff.mpr leaves
+  | none =>
+    cases normalExposed : exposedDrop? declaration (wrapperNormal laws pattern) with
+    | none => rfl
+    | some name =>
+      exfalso
+      have shaped := ReflectiveCoherent.exposedDrop?_eq_some_iff.mp normalExposed
+      rw [leaves] at shaped
+      obtain ⟨member, memberLeaves, memberNormal⟩ := List.map_eq_singleton_iff.mp shaped
+      have memberShape : ∃ argument, member = .apply declaration.dropConstructor [argument] := by
+        cases member with
+        | apply label arguments =>
+          rw [wrapperNormal_apply] at memberNormal
+          simp only [Pattern.apply.injEq, List.map_eq_singleton_iff] at memberNormal
+          obtain ⟨rfl, argument, rfl, _⟩ := memberNormal
+          exact ⟨argument, rfl⟩
+        | collection kind elements rest =>
+          exfalso
+          have member' := ReflectiveCoherent.isMember_of_mem_parallelLeaves
+            (declaration := declaration) (pattern := pattern) (by rw [memberLeaves]; exact List.mem_singleton_self _)
+          cases found : lawFor laws kind with
+          | none => rw [wrapperNormal_plain found] at memberNormal; cases memberNormal
+          | some law =>
+            obtain ⟨parallel, _⟩ := compatible found
+            subst parallel
+            rw [wrapperNormal_law found] at memberNormal
+            unfold wrapFinish at memberNormal
+            split at memberNormal
+            · exact member'.2 _ rfl
+            · exact member'.2 _ rfl
+            · cases memberNormal
+        | bvar index => rw [wrapperNormal_bvar] at memberNormal; cases memberNormal
+        | fvar label => rw [wrapperNormal_fvar] at memberNormal; cases memberNormal
+        | lambda binder body => rw [wrapperNormal_lambda] at memberNormal; cases memberNormal
+        | multiLambda arity binders body => rw [wrapperNormal_multiLambda] at memberNormal; cases memberNormal
+        | subst body value => rw [wrapperNormal_subst] at memberNormal; cases memberNormal
+      obtain ⟨argument, rfl⟩ := memberShape
+      have back := ReflectiveCoherent.exposedDrop?_eq_some_iff.mpr memberLeaves
+      rw [exposed] at back
+      cases back
+
+/-- **Resolution commutes with removing wrappers** of the declared parallel
+composition. -/
+theorem resolveQuotes_wrapperNormal (compatible : BinderWrapperCompatible laws declaration)
+    (pattern : Pattern) :
+    resolveQuotes declaration (wrapperNormal laws pattern) =
+      wrapperNormal laws (resolveQuotes declaration pattern) := by
+  induction pattern using Pattern.inductionOn with
+  | hbvar index => simp [wrapperNormal_bvar, resolveQuotes]
+  | hfvar name => simp [wrapperNormal_fvar, resolveQuotes]
+  | hlambda binder body ih =>
+    rw [wrapperNormal_lambda]; simp only [resolveQuotes]; rw [ih, wrapperNormal_lambda]
+  | hmultiLambda arity binders body ih =>
+    rw [wrapperNormal_multiLambda]; simp only [resolveQuotes]; rw [ih, wrapperNormal_multiLambda]
+  | hsubst body value ihBody ihValue =>
+    rw [wrapperNormal_subst]; simp only [resolveQuotes]; rw [ihBody, ihValue, wrapperNormal_subst]
+  | hcollection kind elements rest ih =>
+    have mapped : (elements.map (wrapperNormal laws)).map (resolveQuotes declaration) =
+        (elements.map (resolveQuotes declaration)).map (wrapperNormal laws) := by
+      simp only [List.map_map]
+      exact List.map_congr_left fun p m => ih p m
+    cases found : lawFor laws kind with
+    | none =>
+      rw [wrapperNormal_plain found]
+      simp only [resolveQuotes, resolveQuotesList_eq_map]
+      rw [mapped, wrapperNormal_plain found]
+    | some law =>
+      rw [wrapperNormal_law found]
+      simp only [resolveQuotes, resolveQuotesList_eq_map]
+      rw [wrapperNormal_law found]
+      cases rest with
+      | some rest => simp [wrapFinish, resolveQuotes, resolveQuotesList_eq_map, mapped]
+      | none =>
+        match elements, ih, mapped with
+        | [], _, _ =>
+          cases unit : law.unit with
+          | none => simp [wrapFinish, unit, resolveQuotes, resolveQuotesList]
+          | some label => simp [wrapFinish, unit, resolveQuotes, resolveQuotesList, finishResolveApply]
+        | [element], ih, _ =>
+          simp only [wrapFinish, List.map_cons, List.map_nil]
+          exact ih element (by simp)
+        | first :: second :: more, _, mapped =>
+          simp only [wrapFinish, List.map_cons, resolveQuotes, resolveQuotesList_eq_map]
+          simp only [List.map_cons] at mapped
+          rw [mapped]
+  | happly label arguments ih =>
+    have mapped : (arguments.map (wrapperNormal laws)).map (resolveQuotes declaration) =
+        (arguments.map (resolveQuotes declaration)).map (wrapperNormal laws) := by
+      simp only [List.map_map]
+      exact List.map_congr_left fun p m => ih p m
+    rw [wrapperNormal_apply]
+    simp only [resolveQuotes, resolveQuotesList_eq_map]
+    rw [mapped]
+    generalize arguments.map (resolveQuotes declaration) = resolved
+    match resolved with
+    | [] => simp [finishResolveApply, wrapperNormal_apply]
+    | first :: second :: more => simp [finishResolveApply, wrapperNormal_apply]
+    | [payload] =>
+      simp only [List.map_cons, List.map_nil, finishResolveApply]
+      split
+      · rename_i quoted
+        rw [exposedDrop?_wrapperNormal compatible]
+        cases exposedDrop? declaration payload with
+        | some name => rfl
+        | none => simp [wrapperNormal_apply]
+      · simp [wrapperNormal_apply]
+
+/-- Structural elimination maps removal of wrappers in the body and a
+forward chain of the received process to a forward chain. -/
+private theorem substituteResolved_wrapper (compatible : BinderWrapperCompatible laws declaration)
+    {process process' : Pattern} (forwardProcess : QWForward laws declaration process process') :
+    ∀ (body : Pattern) (depth : Nat), QWForward laws declaration
+      (substituteResolved declaration (fun level index => Substitution.instantiateBVarAt level
+        (.apply declaration.quoteConstructor [process]) (.bvar index)) depth body)
+      (substituteResolved declaration (fun level index => Substitution.instantiateBVarAt level
+        (.apply declaration.quoteConstructor [process']) (.bvar index)) depth (wrapperNormal laws body)) := by
   have liftedReplacement : ∀ depth, QWForward laws declaration
       (Substitution.liftBVars 0 depth (.apply declaration.quoteConstructor [process]))
       (Substitution.liftBVars 0 depth (.apply declaration.quoteConstructor [process'])) := fun depth =>
     QWForward.liftBVars (qwForward_apply _ (.cons forwardProcess .nil)) 0 depth
-  -- the bound-variable case, shared by plain indices and by names normalizing to an index
   have atIndex : ∀ depth index, QWForward laws declaration
       (Substitution.instantiateBVarAt depth (.apply declaration.quoteConstructor [process]) (.bvar index))
       (Substitution.instantiateBVarAt depth (.apply declaration.quoteConstructor [process']) (.bvar index)) := by
@@ -495,211 +736,126 @@ theorem instantiate_wrapper (distinct : declaration.dropConstructor ≠ declarat
     · split
       · exact liftedReplacement depth
       · exact .refl
-  -- a name whose normal form moves forward to an index that the original result keeps unbound
-  have toIndex : ∀ depth {name : Pattern} {index : Nat}, name.isWellScopedAt depth = true →
-      QWForward laws declaration name (.bvar index) → index < depth := by
-    intro depth name index inScope forward
-    rw [forward.wellScoped depth] at inScope
-    simpa [Pattern.isWellScopedAt] using inScope
+  have lifted : ∀ depth (inner : Pattern), Substitution.instantiateBVarAt depth
+      (.apply declaration.quoteConstructor [inner]) (.bvar depth) =
+      .apply declaration.quoteConstructor [Substitution.liftBVars 0 depth inner] := by
+    intro depth inner
+    simp [Substitution.instantiateBVarAt, Substitution.liftBVars, Substitution.liftBVarsList_eq_map]
+  have received : ∀ depth (constructor : String), QWForward laws declaration
+      (receive declaration constructor (Substitution.instantiateBVarAt depth
+        (.apply declaration.quoteConstructor [process]) (.bvar depth)))
+      (receive declaration constructor (Substitution.instantiateBVarAt depth
+        (.apply declaration.quoteConstructor [process']) (.bvar depth))) := by
+    intro depth constructor
+    rw [lifted, lifted]
+    simp only [receive, if_true]
+    exact QWForward.liftBVars forwardProcess 0 _
+  intro body
   induction body using Pattern.inductionOn with
-  | hbvar index =>
-    intro depth _
-    rw [wrapperNormal_bvar]
-    simp only [instantiate]
-    exact atIndex depth index
-  | hfvar name => intro depth _; rw [wrapperNormal_fvar]; simp only [instantiate]; exact .refl
+  | hbvar index => intro depth; rw [wrapperNormal_bvar]; exact atIndex depth index
+  | hfvar name => intro depth; rw [wrapperNormal_fvar]; exact .refl
+  | hlambda binder body ih =>
+    intro depth; rw [wrapperNormal_lambda]; simp only [substituteResolved]
+    exact qwForward_lambda _ (ih _)
+  | hmultiLambda arity binders body ih =>
+    intro depth; rw [wrapperNormal_multiLambda]; simp only [substituteResolved]
+    exact qwForward_multiLambda _ _ (ih _)
+  | hsubst body value ihBody ihValue =>
+    intro depth; rw [wrapperNormal_subst]; simp only [substituteResolved]
+    exact qwForward_subst (ihBody _) (ihValue _)
   | happly label arguments ih =>
-    intro depth inScope
+    intro depth
     rw [wrapperNormal_apply]
-    by_cases single : arguments.length = 1
-    · match arguments, single with
-      | [payload], _ =>
-        have payloadForward : WrapperForward laws payload (wrapperNormal laws payload) := to_wrapperNormal payload
-        by_cases quoted : label = declaration.quoteConstructor
-        · subst quoted
-          simp only [List.map_cons, List.map_nil]
-          rw [instantiate_quote declaration depth _ payload (by simp)] at inScope
-          rw [instantiate_quote declaration depth _ payload (by simp),
-            instantiate_quote declaration depth _ (wrapperNormal laws payload) (by simp)]
-          have normalForward : QWForward laws declaration
-              (normalizeReflective declaration (.apply declaration.quoteConstructor [payload]))
-              (normalizeReflective declaration (.apply declaration.quoteConstructor [wrapperNormal laws payload])) :=
-            normal_qwForward_of_forward distinct (wrapperForward_apply _ (.cons payloadForward .nil))
-          rcases nameMark_cases (declaration := declaration) depth (.apply declaration.quoteConstructor [process])
-              (.apply declaration.quoteConstructor [payload]) with ⟨index, normalIs, marked⟩ | ⟨notIndex, marked⟩
-          · rw [normalIs] at normalForward
-            have movedIs := qwForward_bvar normalForward
-            rcases nameMark_cases (declaration := declaration) depth (.apply declaration.quoteConstructor [process'])
-                (.apply declaration.quoteConstructor [wrapperNormal laws payload]) with
-              ⟨index', normalIs', marked'⟩ | ⟨notIndex', _⟩
-            · rw [movedIs] at normalIs'
-              cases normalIs'
-              rw [marked, marked']
-              exact atIndex depth index
-            · exact absurd movedIs (notIndex' index)
-          · rw [marked] at inScope ⊢
-            rcases nameMark_cases (declaration := declaration) depth (.apply declaration.quoteConstructor [process'])
-                (.apply declaration.quoteConstructor [wrapperNormal laws payload]) with
-              ⟨index', normalIs', marked'⟩ | ⟨_, marked'⟩
-            · rw [normalIs'] at normalForward
-              have below := toIndex depth inScope normalForward
-              rw [marked']
-              simp only
-              unfold Substitution.instantiateBVarAt
-              rw [if_pos below]
-              exact normalForward
-            · rw [marked']
-              exact normalForward
-        · by_cases dropped : label = declaration.dropConstructor
-          · subst dropped
-            simp only [List.map_cons, List.map_nil]
-            rw [instantiate_drop declaration depth _ payload (beq_false_of_ne' distinct) (by simp)] at inScope
-            rw [instantiate_drop declaration depth _ payload (beq_false_of_ne' distinct) (by simp),
-              instantiate_drop declaration depth _ (wrapperNormal laws payload) (beq_false_of_ne' distinct) (by simp)]
-            have normalForward : QWForward laws declaration (normalizeReflective declaration payload)
-                (normalizeReflective declaration (wrapperNormal laws payload)) :=
-              normal_qwForward_of_forward distinct payloadForward
-            rcases nameMark_cases (declaration := declaration) depth (.apply declaration.quoteConstructor [process])
-                payload with ⟨index, normalIs, marked⟩ | ⟨notIndex, marked⟩
-            · rw [normalIs] at normalForward
-              have movedIs := qwForward_bvar normalForward
-              rcases nameMark_cases (declaration := declaration) depth (.apply declaration.quoteConstructor [process'])
-                  (wrapperNormal laws payload) with ⟨index', normalIs', marked'⟩ | ⟨notIndex', _⟩
-              · rw [movedIs] at normalIs'
-                cases normalIs'
-                rw [marked, marked']
-                simp only
-                by_cases same : index = depth
-                · subst same
-                  have lifted : ∀ inner : Pattern, Substitution.instantiateBVarAt index
-                      (.apply declaration.quoteConstructor [inner]) (.bvar index) =
-                      .apply declaration.quoteConstructor [Substitution.liftBVars 0 index inner] := by
-                    intro inner
-                    unfold Substitution.instantiateBVarAt
-                    simp [Substitution.liftBVars, Substitution.liftBVarsList_eq_map]
-                  rw [lifted, lifted]
-                  simp only [beq_self_eq_true, dropResult_shaped, if_true]
-                  exact QWForward.liftBVars forwardProcess 0 _
-                · have plain : ∀ inner : Pattern, Substitution.instantiateBVarAt depth
-                      (.apply declaration.quoteConstructor [inner]) (.bvar index) =
-                      if index < depth then .bvar index else .bvar (index - 1) := by
-                    intro inner
-                    unfold Substitution.instantiateBVarAt
-                    split <;> simp_all
-                  rw [plain, plain]
-              · exact absurd movedIs (notIndex' index)
-            · rw [marked] at inScope ⊢
-              simp only at inScope ⊢
-              rw [dropResult_plain _ _ (.inr rfl)] at inScope ⊢
-              have originalScoped : (normalizeReflective declaration payload).isWellScopedAt depth = true := by
-                simpa [Pattern.isWellScopedAt, Pattern.isWellScopedListAt] using inScope
-              rcases nameMark_cases (declaration := declaration) depth (.apply declaration.quoteConstructor [process'])
-                  (wrapperNormal laws payload) with ⟨index', normalIs', marked'⟩ | ⟨_, marked'⟩
-              · rw [normalIs'] at normalForward
-                have below := toIndex depth originalScoped normalForward
-                rw [marked']
-                simp only
-                have lowered : Substitution.instantiateBVarAt depth (.apply declaration.quoteConstructor [process'])
-                    (.bvar index') = .bvar index' := by
-                  unfold Substitution.instantiateBVarAt
-                  rw [if_pos below]
-                rw [lowered, dropResult_plain _ _ (.inr (by simp; omega))]
-                exact qwForward_apply _ (.cons normalForward .nil)
-              · rw [marked']
-                simp only
-                rw [dropResult_plain _ _ (.inr rfl)]
-                exact qwForward_apply _ (.cons normalForward .nil)
-          · simp only [List.map_cons, List.map_nil]
-            rw [instantiate_plainOne declaration depth _ payload (beq_false_of_ne' quoted) (beq_false_of_ne' dropped)]
-              at inScope
-            rw [instantiate_plainOne declaration depth _ payload (beq_false_of_ne' quoted) (beq_false_of_ne' dropped),
-              instantiate_plainOne declaration depth _ (wrapperNormal laws payload) (beq_false_of_ne' quoted)
-                (beq_false_of_ne' dropped)]
-            have inner : (instantiate declaration depth (.apply declaration.quoteConstructor [process]) payload).isWellScopedAt
-                depth = true := by
-              simpa [Pattern.isWellScopedAt, Pattern.isWellScopedListAt] using inScope
-            exact qwForward_apply _ (.cons (ih payload (by simp) depth inner) .nil)
-    · rw [instantiate_many declaration depth _ label single] at inScope
-      rw [instantiate_many declaration depth _ label single,
-        instantiate_many declaration depth _ label (by simpa using single)]
+    match arguments, ih with
+    | [], _ => exact .refl
+    | first :: second :: more, ih =>
+      simp only [List.map_cons, substituteResolved, substituteResolvedList_eq_map]
       apply qwForward_apply
+      refine .cons (ih first (by simp) depth) (.cons (ih second (by simp) depth) ?_)
       rw [List.map_map]
       apply List.forall₂_map_left_iff.mpr
       apply List.forall₂_map_right_iff.mpr
-      apply List.forall₂_same.mpr
-      intro argument member
-      have inner : (instantiate declaration depth (.apply declaration.quoteConstructor [process]) argument).isWellScopedAt
-          depth = true := by
-        simp only [Pattern.isWellScopedAt] at inScope
-        exact (ScopedPattern.isWellScopedListAt_eq_true_iff _ _).mp inScope _ (List.mem_map.mpr ⟨argument, member, rfl⟩)
-      exact ih argument member depth inner
-  | hlambda binder body ih =>
-    intro depth inScope
-    rw [wrapperNormal_lambda]
-    simp only [instantiate, Pattern.isWellScopedAt] at inScope ⊢
-    exact qwForward_lambda _ (ih (depth + 1) inScope)
-  | hmultiLambda arity binders body ih =>
-    intro depth inScope
-    rw [wrapperNormal_multiLambda]
-    simp only [instantiate, Pattern.isWellScopedAt] at inScope ⊢
-    exact qwForward_multiLambda _ _ (ih (depth + arity) inScope)
-  | hsubst body value bodyIH valueIH =>
-    intro depth inScope
-    rw [wrapperNormal_subst]
-    simp only [instantiate, Pattern.isWellScopedAt, Bool.and_eq_true] at inScope ⊢
-    exact qwForward_subst (bodyIH (depth + 1) inScope.1) (valueIH depth inScope.2)
+      exact List.forall₂_same.mpr fun item member => ih item (by simp [member]) depth
+    | [payload], ih =>
+      simp only [List.map_cons, List.map_nil, substituteResolved]
+      have decision : matchesBinder declaration depth payload =
+          matchesBinder declaration depth (wrapperNormal laws payload) := by
+        simp only [matchesBinder,
+          WrapperForward.binderHead_eq compatible (to_wrapperNormal payload)]
+      by_cases quoted : label = declaration.quoteConstructor
+      · simp only [quoted, if_true]
+        exact QWForward.ofWrapper (wrapperForward_apply _ (.cons (to_wrapperNormal payload) .nil))
+      · by_cases dropped : label = declaration.dropConstructor
+        · have notQuote : ¬ declaration.dropConstructor = declaration.quoteConstructor :=
+            fun same => quoted (dropped.trans same)
+          subst dropped
+          by_cases hit : matchesBinder declaration depth payload = true
+          · have hit' : matchesBinder declaration depth (wrapperNormal laws payload) = true := decision ▸ hit
+            simp only [notQuote, if_false, if_true, hit, hit']
+            exact received depth _
+          · have hit' : ¬ matchesBinder declaration depth (wrapperNormal laws payload) = true := decision ▸ hit
+            simp only [notQuote, if_false, if_true, hit, hit', Bool.false_eq_true]
+            exact qwForward_apply _ (.cons (ih payload (by simp) depth) .nil)
+        · simp only [quoted, dropped, if_false]
+          exact qwForward_apply _ (.cons (ih payload (by simp) depth) .nil)
   | hcollection kind elements rest ih =>
-    intro depth inScope
-    simp only [instantiate, instantiateList_map'] at inScope ⊢
-    have each : ∀ element ∈ elements, QWForward laws declaration
-        (instantiate declaration depth (.apply declaration.quoteConstructor [process]) element)
-        (instantiate declaration depth (.apply declaration.quoteConstructor [process']) (wrapperNormal laws element)) := by
-      intro element member
-      have inner : (instantiate declaration depth (.apply declaration.quoteConstructor [process]) element).isWellScopedAt
-          depth = true := by
-        simp only [Pattern.isWellScopedAt] at inScope
-        exact (ScopedPattern.isWellScopedListAt_eq_true_iff _ _).mp inScope _ (List.mem_map.mpr ⟨element, member, rfl⟩)
-      exact ih element member depth inner
+    intro depth
     have mapped : QWForward laws declaration
-        (.collection kind (elements.map (instantiate declaration depth (.apply declaration.quoteConstructor [process]))) rest)
-        (.collection kind ((elements.map (wrapperNormal laws)).map
-          (instantiate declaration depth (.apply declaration.quoteConstructor [process']))) rest) := by
+        (.collection kind (elements.map (substituteResolved declaration (fun level index =>
+          Substitution.instantiateBVarAt level (.apply declaration.quoteConstructor [process]) (.bvar index))
+          depth)) rest)
+        (.collection kind ((elements.map (wrapperNormal laws)).map (substituteResolved declaration
+          (fun level index => Substitution.instantiateBVarAt level
+            (.apply declaration.quoteConstructor [process']) (.bvar index)) depth)) rest) := by
       apply qwForward_collection
       rw [List.map_map]
       apply List.forall₂_map_left_iff.mpr
       apply List.forall₂_map_right_iff.mpr
-      exact List.forall₂_same.mpr each
+      exact List.forall₂_same.mpr fun item member => ih item member depth
+    simp only [substituteResolved, substituteResolvedList_eq_map]
     cases found : lawFor laws kind with
     | none =>
       rw [wrapperNormal_plain found]
-      simp only [instantiate, instantiateList_map']
-      exact mapped
+      simpa only [substituteResolved, substituteResolvedList_eq_map] using mapped
     | some law =>
       rw [wrapperNormal_law found]
       unfold wrapFinish
       split
       · rename_i item same
-        -- a singleton: the original keeps the wrapper, which then collapses
         obtain ⟨element, rfl, rfl⟩ : ∃ element, elements = [element] ∧ item = wrapperNormal laws element := by
           match elements, same with
           | [element], same => exact ⟨element, rfl, by simpa using same.symm⟩
-        simp only [List.map_cons, List.map_nil] at mapped
-        exact mapped.tail (.inr (.singleton found))
+        simp only [List.map_cons, List.map_nil] at mapped ⊢
+        exact (ReflTransGen.single (.inr (.singleton found))).trans (ih element (by simp) depth)
       · rename_i same
         have empty : elements = [] := by simpa using same
         subst empty
         split
         · rename_i label unit
-          simp only [instantiate, instantiateList_map', List.map_nil]
+          simp only [List.map_nil, substituteResolved]
           exact .single (.inr (.empty found unit))
-        · simp only [instantiate, instantiateList_map', List.map_nil]
+        · simp only [List.map_nil, substituteResolved, substituteResolvedList]
           exact .refl
-      · simp only [instantiate, instantiateList_map']
-        exact mapped
+      · simpa only [substituteResolved, substituteResolvedList_eq_map] using mapped
 
-/-- **The reflective binder operation maps the wrapper normal form of its body and a forward chain of
-its quoted replacement to a forward chain**, when the original result is closed. -/
+open ReflectiveInstantiation in
+/-- **Reflective binder elimination maps the wrapper normal form of its body and a forward chain of its
+quoted replacement to a forward chain**, when the original result is inScope. -/
+theorem instantiate_wrapper (compatible : BinderWrapperCompatible laws declaration)
+    {process process' : Pattern} (forwardProcess : QWForward laws declaration process process') (body : Pattern) :
+    ∀ depth, (instantiate declaration depth (.apply declaration.quoteConstructor [process]) body).isWellScopedAt depth →
+      QWForward laws declaration (instantiate declaration depth (.apply declaration.quoteConstructor [process]) body)
+        (instantiate declaration depth (.apply declaration.quoteConstructor [process']) (wrapperNormal laws body)) := by
+  intro depth _
+  unfold instantiate
+  rw [resolveQuotes_wrapperNormal compatible]
+  exact substituteResolved_wrapper compatible forwardProcess _ depth
+
+/-- **The reflective binder operation of a closed quote scope maps the wrapper normal form of its body
+and a forward chain of its quoted replacement to a forward chain**, when the original result is closed. -/
 theorem reflectiveOperation_wrapper (distinct : declaration.dropConstructor ≠ declaration.quoteConstructor)
+    (closedScope : declaration.quoteScope = .closed)
+    (compatible : BinderWrapperCompatible laws declaration)
     {payload payload' : Pattern} (forwardPayload : QWForward laws declaration payload payload') (body : Pattern)
     (inScope : (ScopedRuleInstantiation.reflectiveOperation declaration (.apply declaration.quoteConstructor [payload])
       body).isWellScopedAt 0 = true) :
@@ -708,8 +864,9 @@ theorem reflectiveOperation_wrapper (distinct : declaration.dropConstructor ≠ 
       (ScopedRuleInstantiation.reflectiveOperation declaration (.apply declaration.quoteConstructor [payload'])
         (wrapperNormal laws body)) := by
   unfold ScopedRuleInstantiation.reflectiveOperation at inScope ⊢
-  simp only [normalizeReflectiveReplacement, beq_self_eq_true, if_true] at inScope ⊢
-  exact instantiate_wrapper distinct (normal_qwForward_of_qwForward distinct forwardPayload) body 0 inScope
+  simp only [normalizeReflectiveReplacement, beq_self_eq_true, if_true,
+    ReflectiveInstantiation.instantiateDeclared_of_closed closedScope] at inScope ⊢
+  exact instantiate_wrapper compatible (normal_qwForward_of_qwForward distinct forwardPayload) body 0 inScope
 
 /-! ## Typing along forward chains -/
 

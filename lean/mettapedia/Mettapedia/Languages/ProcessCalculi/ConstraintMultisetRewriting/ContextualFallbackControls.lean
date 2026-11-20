@@ -6,8 +6,8 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 # Complete source fallback, guard rejection and late-arrival controls
 
 The initial store has requests 1 and 2, but no request 3. A complete source
-census permits a fallback that consumes request 1 and publishes request 3.
-The publication keeps its entry census. An independently inserted request 3
+rejection permits a fallback that consumes request 1 and publishes request 3.
+The publication keeps its entry rejection. An independently inserted request 3
 invalidates emptiness and excludes fallback. A second control needs a real
 guard countermodel even though its binding equations have a solution.
 -/
@@ -19,7 +19,7 @@ namespace Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contex
 open Mettapedia.OSLF.Binding hiding instantiate instantiateArgs
 open Mettapedia.OSLF.Binding.ContextualFamily
 open ContextualConjunctiveQueries ContextualConditionalRows ContextualStandingEvents ContextualStandingScheduler
-open ContextualSourceCensus
+open ContextualSourceRejection
 open ContextualRuleCode.Controls (DataOp dataSignature locals captures queries actor origin Tm symbol request declarationWorld entryModel)
 
 local instance : DecidableEq dataSignature.Srt := inferInstanceAs (DecidableEq Unit)
@@ -64,9 +64,9 @@ theorem fallback_source : Admitted queries [primary] fallbackPlan picked (before
     · intro check member
       cases member
 
-theorem the_actual_fallback_keeps_its_census_and_commits_once :
+theorem the_actual_fallback_keeps_its_rejection_and_commits_once :
     ∃ compiled : Compiled queries [primary] fallbackPlan picked (before := world),
-      compiled.fuel = 0 ∧ compiled.publication.negative = some compiled.census ∧
+      compiled.fuel = 0 ∧ compiled.publication.negative = some compiled.rejection ∧
       Allowed (State.mk world ∅) (.commit world (.publish compiled.publication)) ∧
       compiled.publication.target.current.present = {1, 7, 90} := by
   have patterned : ∀ alternative ∈ ([primary] : List (Request locals declarationWorld)),
@@ -116,7 +116,7 @@ theorem the_late_row_excludes_fallback :
 
 def firstCandidate : primary.Candidate := ⟨Fin.elim0, fun _ => 0⟩
 
-theorem zero_budget_is_not_an_equation_census :
+theorem zero_budget_is_not_an_equation_rejection :
     ¬ (∀ chosen ∈ primary.candidates, primary.RefutedAt chosen 0) := by
   intro complete
   exact primary.zero_fuel_is_not_a_refutation firstCandidate

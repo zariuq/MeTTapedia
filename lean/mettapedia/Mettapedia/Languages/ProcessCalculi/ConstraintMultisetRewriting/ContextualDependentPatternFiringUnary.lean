@@ -1,5 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentPatternFiringNullary
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentPatternFiringCensusControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentPatternFiringClassificationControls
 
 /-!
 # The inversion row is inhabited: a pattern with one local
@@ -62,10 +62,10 @@ theorem inversionRow_unary (empty : rules.computation = RootComputation.empty) {
   have appNormal : Normal rules (.app (.var ⟨1, by omega⟩) (.var ⟨0, by omega⟩) : Tm Head (Γ.arity + 1 + 1)) :=
     (ContextualDependentNormalizing.normal_iff_step_none empty _).mpr rfl
   have leftSame : opened = (.app (.var ⟨1, by omega⟩) (.var ⟨0, by omega⟩) : Tm Head (Γ.arity + 1 + 1)) :=
-    normal_reduct_unique empty (ContextualDependentCensus.openCode_star (R := rules) _ 1) appNormal leftSteps
+    normal_reduct_unique empty (ContextualDependentClassification.openCode_star (R := rules) _ 1) appNormal leftSteps
       leftNormal
   have rightSame : reduct = r :=
-    normal_reduct_unique empty (ContextualDependentCensus.openCode_star (R := rules) _ 1) normal rightSteps
+    normal_reduct_unique empty (ContextualDependentClassification.openCode_star (R := rules) _ 1) normal rightSteps
       rightNormal
   refine ⟨_, [⟨0, Nat.succ_pos _⟩], by rw [leftSame]; rfl, by rfl, ?_, List.nodup_singleton _, ?_, ?_⟩
   · intro argument member

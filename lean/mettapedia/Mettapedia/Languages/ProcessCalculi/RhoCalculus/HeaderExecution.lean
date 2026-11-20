@@ -30,13 +30,25 @@ def contractumProcess {free : FreeSortContext} (heads : List Header)
   ⟨selected.contractum, (ParameterizedRewriteSystem.process_iff _ _).mpr
     (selected.contractum_preserves typed safe)⟩
 
+/-- The compiled target of a selection as a process of the derived theory. -/
+def firingProcess {free : FreeSortContext} (heads : List Header)
+    (typed : ∀ head ∈ heads, head.Typed free) (safe : ∀ head ∈ heads, head.Safe)
+    (selected : Selection heads) : ParameterizedRewriteSystem.Process free :=
+  ⟨selected.firing, (ParameterizedRewriteSystem.process_iff _ _).mpr
+    (selected.firing_preserves typed safe)⟩
+
 /-- The authored COMM is constructed without a source execution premise. -/
 theorem selection_step {free : FreeSortContext} (heads : List Header)
     (typed : ∀ head ∈ heads, head.Typed free) (safe : ∀ head ∈ heads, head.Safe)
     (selected : Selection heads) :
     (ParameterizedRewriteSystem.theory free).Step (headerProcess heads typed safe)
-      (contractumProcess heads typed safe selected) :=
-  ParameterizedRewriteSystem.of_step ⟨1, selected.authored typed⟩
+      (contractumProcess heads typed safe selected) := by
+  apply ParameterizedRewriteSystem.step_iff.mpr
+  refine ⟨headerProcess heads typed safe, firingProcess heads typed safe selected,
+    ?_, ⟨1, selected.authored typed⟩, ?_⟩
+  · exact (ParameterizedRewriteSystem.equations_iff_structuralCongruence _ _).mpr (.refl _)
+  · exact (ParameterizedRewriteSystem.equations_iff_structuralCongruence _ _).mpr
+      (selected.firing_structuralCongruence typed)
 
 /-- Structural saturation keeps the independently supplied literal
 endpoints around the selected primitive receipt. -/
@@ -47,9 +59,10 @@ theorem supplied_selection_step {free : FreeSortContext} (heads : List Header)
     (targetEquation : StructuralCongruence selected.contractum after.1) :
     (ParameterizedRewriteSystem.theory free).Step before after := by
   apply ParameterizedRewriteSystem.step_iff.mpr
-  refine ⟨headerProcess heads typed safe, contractumProcess heads typed safe selected,
+  refine ⟨headerProcess heads typed safe, firingProcess heads typed safe selected,
     ?_, ⟨1, selected.authored typed⟩, ?_⟩
   · exact (ParameterizedRewriteSystem.equations_iff_structuralCongruence _ _).mpr sourceEquation
-  · exact (ParameterizedRewriteSystem.equations_iff_structuralCongruence _ _).mpr targetEquation
+  · exact (ParameterizedRewriteSystem.equations_iff_structuralCongruence _ _).mpr
+      (.trans _ _ _ (selected.firing_structuralCongruence typed) targetEquation)
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.HeaderExecution

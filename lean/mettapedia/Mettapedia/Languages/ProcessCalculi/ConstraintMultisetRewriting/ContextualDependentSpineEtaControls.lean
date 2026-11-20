@@ -12,7 +12,7 @@ Over `A X : U0`, at `(U0 → A) → A`, budget 16 and eight rounds:
 | `λ g. g (Π A A) ≐ λ g. g (Σ A A)` | suspended | refuted |
 
 The first store is in the fragment and solvable by `X := A` (R99's `flexibleBase_in_fragment`,
-`ContextualDependentCensusSolvable`). The second has the piece `Π A A ≐ Σ A A`, a clash of formers: the store has no
+`ContextualDependentClassificationSolvable`). The second has the piece `Π A A ≐ Σ A A`, a clash of formers: the store has no
 solution, certified by the refutation.
 -/
 
@@ -27,7 +27,7 @@ open Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId
 open Presentation TypedEquality TypedEquality.Normalization TypedContextual
 open ContextualDependentEta ContextualDependentWorklist ContextualDependentDynamicFragment
 open ContextualDependentPatternFiring.Controls ContextualDependentPruneSolve.Controls
-open ContextualDependentCensus.Controls ContextualDependentFragment.Controls ContextualDependentConstantHeads.Controls
+open ContextualDependentClassification.Controls ContextualDependentFragment.Controls ContextualDependentConstantHeads.Controls
 
 /-- The flexible-base solver of the tower controls, as a fuel-indexed family. -/
 noncomputable def flexTower : ContextualDependentDecisiveDriver.Family setting.levels :=

@@ -67,9 +67,7 @@ theorem prepared_source (program : Program) (satHead reverseHead : String) (name
       intro bound boundMember entered exited results kept executed
       have liveLocation := choices_extend bindings (reversePattern reverseHead names) graphRows bound boundMember names.space _ boundLocation
       refine ⟨QueryBagMaterialization.emit_returns program names.space table (template satHead names) bound entered exited results liveLocation executed, ?_⟩
-      obtain ⟨finish, inserted, same⟩ := Option.map_eq_some_iff.mp executed
-      obtain ⟨rfl, rfl⟩ := Prod.mk.inj same
-      exact (Effects.insert_read_other inserted apart).trans kept)
+      exact (Effects.insert_read_other (QueryBagMaterialization.emit_written executed).2.1 apart).trans kept)
     graphRead completed
   have collected := collapse_returns program caller before after _ _ outer.1
   refine ⟨?_, outer.2⟩
@@ -94,7 +92,10 @@ theorem prepared_exists (satHead reverseHead : String) (names : Names) (table : 
     ∃ after answers, prepared satHead reverseHead names table caller satRows graphRows before = some (after, answers) := by
   obtain ⟨after, installed⟩ := QueryBagMaterialization.installRows_exists table
     ((candidates satHead reverseHead names caller satRows graphRows).map (fun bindings => applySubst bindings (template satHead names)))
-    before satRows satRead
+    before satRows satRead (by
+      intro payload member
+      obtain ⟨bindings, _, rfl⟩ := List.mem_map.mp member
+      rfl)
   refine ⟨after, List.replicate (candidates satHead reverseHead names caller satRows graphRows).length (Effects.boolean true), ?_⟩
   rw [prepared_flatten, QueryBagMaterialization.traverse_install_exact, installed]
   rfl

@@ -172,7 +172,9 @@ private def quoteCanaryPresentation : ReflectivePresentationDecl :=
     dropConstructor := "D"
     parallelCollection := .hashBag
     parallelUnitConstructor := "Z"
-    quoteDropEquation := "QD" }
+    quoteDropEquation := "QD"
+    -- Closed: the canary's quotation seals its body against outer binders.
+    quoteScope := .closed }
 
 private def quoteCanaryProfile : ReflectionProfile :=
   { presentations := [quoteCanaryPresentation] }

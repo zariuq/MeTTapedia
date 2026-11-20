@@ -1644,7 +1644,7 @@ theorem retained_declarations :
 
 theorem source_without_initializers : program.initializers = [] := by rfl
 
-theorem source_equation_count : program.equations.length = 224 := RuleExecutionProgram.scoped_machine_equation_count
+theorem source_equation_count : program.equations.length = 233 := RuleExecutionProgram.scoped_machine_equation_count
 
 
 end Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.PremiseOperationsExecution.GeneralExecution.MatcherFrames.Assembly

@@ -692,14 +692,29 @@ theorem matches_made {W : Type} {next : W → MetaArity S} (ρ : Assignment (lat
   rw [Assignment.instantiate_compose, Assignment.instantiate_compose]
 
 omit [DecidableEq O] [DecidableEq S.Srt] [∀ result, DecidableEq (S.Op result)] in
-theorem absent_iff_region {Local Shared W : Type} {locals : Local → MetaArity S} {captures : Shared → MetaArity S}
+theorem none_iff_region {Local Shared W : Type} {locals : Local → MetaArity S} {captures : Shared → MetaArity S}
     {next : W → MetaArity S} (candidate : Assignment captures next)
     (rows : O → ContextualConditionalRows.Row locals captures Γ sort) (world : Finset O)
     (pattern : Term (signature S captures) Γ sort) :
-    ContextualConditionalGuards.Holds locals candidate rows world (.absent pattern) ↔
+    ContextualConditionalGuards.Holds locals candidate rows world (.predicate .none pattern) ↔
       ContextualConditionalGuards.region locals candidate rows world pattern = ∅ := by
   rw [Finset.eq_empty_iff_forall_notMem]
-  simp only [ContextualConditionalGuards.Holds, ContextualConditionalGuards.mem_region, not_and]
+  simp only [ContextualConditionalGuards.Holds, Quantifier.holds_none, ContextualConditionalGuards.mem_region,
+    not_and]
+
+omit [DecidableEq O] [DecidableEq S.Srt] [∀ result, DecidableEq (S.Op result)] in
+/-- A predicate query reads its world only through the region of its pattern. -/
+theorem predicate_iff_region {Local Shared W : Type} {locals : Local → MetaArity S}
+    {captures : Shared → MetaArity S} {next : W → MetaArity S} (candidate : Assignment captures next)
+    (rows : O → ContextualConditionalRows.Row locals captures Γ sort) (world : Finset O)
+    (quantifier : Quantifier) (pattern : Term (signature S captures) Γ sort) :
+    ContextualConditionalGuards.Holds locals candidate rows world (.predicate quantifier pattern) ↔
+      quantifier.Accepts (ContextualConditionalGuards.region locals candidate rows world pattern) := by
+  cases quantifier with
+  | any =>
+      show (∃ o ∈ world, _) ↔ (ContextualConditionalGuards.region locals candidate rows world pattern).Nonempty
+      simp only [Finset.Nonempty, ContextualConditionalGuards.mem_region]
+  | none => exact none_iff_region candidate rows world pattern
 
 /-- **The region of a carried pattern at the published result is the region of the pattern at the
 state**, read at the restriction, when the pattern sees none of the execution's takes and none of
@@ -756,9 +771,9 @@ theorem guard_residual {W : Type} {next : W → MetaArity S} (ρ : Assignment (l
       show instantiate ρ (instantiate (carry G) first) = instantiate ρ (instantiate (carry G) second) ↔ _
       rw [← Assignment.instantiate_compose, ← Assignment.instantiate_compose]
       rfl
-  | absent pattern =>
+  | predicate quantifier pattern =>
       dsimp only [Check.map]
-      rw [absent_iff_region, absent_iff_region, region_residual G ρ pattern blindTaken blindMade]
+      rw [predicate_iff_region, predicate_iff_region, region_residual G ρ pattern blindTaken blindMade]
   | count pattern cardinality =>
       show (ContextualConditionalGuards.region _ ρ _ _ (instantiate (carry G) pattern)).card = cardinality ↔
         (ContextualConditionalGuards.region _ _ _ _ pattern).card = cardinality
@@ -804,7 +819,7 @@ def SeesOutput {V W : Type} {declaration : V → MetaArity S} {next : W → Meta
     (left right : Assignment declaration next) (output : Term (signature S declaration) Γ sort) :
     Check (Term (signature S declaration) Γ sort) → Prop
   | .equal _ _ => False
-  | .absent pattern => instantiate left pattern = instantiate right output
+  | .predicate _ pattern => instantiate left pattern = instantiate right output
   | .count pattern _ => instantiate left pattern = instantiate right output
 
 variable (G : ContextualConditionalExecution.Firing s.locals s.state)
@@ -822,7 +837,7 @@ theorem guardSees_made_iff {W : Type} {next : W → MetaArity S} (ρ : Assignmen
         (G.outputs o) check := by
   cases check with
   | equal first second => exact Iff.rfl
-  | absent pattern =>
+  | predicate quantifier pattern =>
       refine (matches_made G ρ made live _).trans ?_
       show _ ↔ instantiate (Assignment.compose ρ (carry G)) pattern = _
       rw [Assignment.instantiate_compose ρ (carry G) pattern]

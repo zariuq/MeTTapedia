@@ -196,13 +196,13 @@ theorem rhoSystem_bisimilar_of_partner_bisimilar (Atom : Type)
 def waitingInput : RhoProcess :=
   ⟨.apply "PInput" [closedNilName.1, .lambda none (.apply "PZero" [])],
     (rhoClosedTermWellSorted_process_iff _).mpr
-      ⟨.input (.quote .unit) .unit, by decide⟩⟩
+      ⟨.input (.quote .unit (by decide)) .unit, by decide⟩⟩
 
 /-- The output partner that wakes the receiver. -/
 def outputPartner : RhoProcess :=
   ⟨.apply "POutput" [closedNilName.1, .apply "PZero" []],
     (rhoClosedTermWellSorted_process_iff _).mpr
-      ⟨.output (.quote .unit) .unit, by decide⟩⟩
+      ⟨.output (.quote .unit (by decide)) .unit, by decide⟩⟩
 
 theorem par_waitingInput_outputPartner : par waitingInput outputPartner = closedCommSource :=
   Subtype.ext rfl

@@ -407,36 +407,36 @@ theorem rename_subst (old new : String) (σ : Subst) (atom : Atom) :
   | nil => rfl
   | cons atom atoms head tail => simp only [subst.substList, renameSym.renameList, head, tail]
 
-theorem rename_of_not_mem {old new : String} (atom : Atom) (absent : old ∉ syms atom) :
+theorem rename_of_not_mem {old new : String} (atom : Atom) (missing : old ∉ syms atom) :
     renameSym old new atom = atom := by
-  revert absent
+  revert missing
   induction atom using Atom.rec
       (motive_2 := fun atoms => old ∉ syms.symsList atoms → renameSym.renameList old new atoms = atoms) with
   | symbol name =>
-    intro absent
-    have different : name ≠ old := fun same => absent (by simp [syms, same])
+    intro missing
+    have different : name ≠ old := fun same => missing (by simp [syms, same])
     simp [renameSym, different]
   | var name => intro _; rfl
   | grounded value => intro _; rfl
   | expression atoms ih =>
-    intro absent
+    intro missing
     simp only [renameSym]
-    rw [ih (by simpa [syms] using absent)]
+    rw [ih (by simpa [syms] using missing)]
   | nil => rfl
   | cons atom atoms head tail =>
-    rename_i absent
-    simp only [syms.symsList, List.mem_append, not_or] at absent
-    simp only [renameSym.renameList, head absent.1, tail absent.2]
+    rename_i missing
+    simp only [syms.symsList, List.mem_append, not_or] at missing
+    simp only [renameSym.renameList, head missing.1, tail missing.2]
 
-theorem rename_back {c d : String} (atom : Atom) (absent : c ∉ syms atom) :
+theorem rename_back {c d : String} (atom : Atom) (missing : c ∉ syms atom) :
     renameSym c d (renameSym d c atom) = atom := by
-  revert absent
+  revert missing
   induction atom using Atom.rec
       (motive_2 := fun atoms => c ∉ syms.symsList atoms →
         renameSym.renameList c d (renameSym.renameList d c atoms) = atoms) with
   | symbol name =>
-    intro absent
-    have different : name ≠ c := fun same => absent (by simp [syms, same])
+    intro missing
+    have different : name ≠ c := fun same => missing (by simp [syms, same])
     by_cases moved : name = d
     · subst moved
       simp [renameSym]
@@ -444,14 +444,14 @@ theorem rename_back {c d : String} (atom : Atom) (absent : c ∉ syms atom) :
   | var name => intro _; rfl
   | grounded value => intro _; rfl
   | expression atoms ih =>
-    intro absent
+    intro missing
     simp only [renameSym]
-    rw [ih (by simpa [syms] using absent)]
+    rw [ih (by simpa [syms] using missing)]
   | nil => rfl
   | cons atom atoms head tail =>
-    rename_i absent
-    simp only [syms.symsList, List.mem_append, not_or] at absent
-    simp only [renameSym.renameList, head absent.1, tail absent.2]
+    rename_i missing
+    simp only [syms.symsList, List.mem_append, not_or] at missing
+    simp only [renameSym.renameList, head missing.1, tail missing.2]
 
 theorem mem_syms_rename {c d : String} (atom : Atom) (present : d ∈ syms atom) :
     c ∈ syms (renameSym d c atom) := by
@@ -491,7 +491,7 @@ theorem vars_rename (old new : String) (atom : Atom) : vars (renameSym old new a
 /-- The symbol `c` occurs nowhere in a check. -/
 def CheckFree (c : String) : Check Atom → Prop
   | .equal left right => c ∉ syms left ∧ c ∉ syms right
-  | .absent pattern => c ∉ syms pattern
+  | .predicate _ pattern => c ∉ syms pattern
   | .count pattern _ => c ∉ syms pattern
 
 /-- The symbol `c` occurs nowhere in a rule instance. -/
@@ -536,7 +536,7 @@ theorem problem_free {label : O → Atom} {rule : RuleInstance Atom} {selection 
       (valid.occurrences.kept_subset (by simpa [Selection.commit] using inRead'))⟩
   · exact ruleFree.tell e told
 
-/-- Renaming a symbol absent from a store transports its solutions. -/
+/-- Renaming a symbol missing from a store transports its solutions. -/
 theorem models_rename {store : EquationStore Atom} {c d : String} (free : StoreFree c store)
     {σ : Subst} (solved : atomAction.Models σ store) :
     atomAction.Models (renameSubst c d σ) store := by
@@ -560,7 +560,7 @@ theorem twin_preserves_validity {label : O → Atom} {rule : RuleInstance Atom}
     (labelsFree : ∀ o ∈ before.present, c ∉ syms (label o))
     (ground : ∀ o ∈ before.present, vars (label o) = [])
     (sourcePresent : source ∈ before.present) (moved : d ∈ syms (label source))
-    (twin : label n = renameSym d c (label source)) (absent : n ∉ before.present)
+    (twin : label n = renameSym d c (label source)) (missing : n ∉ before.present)
     (notMade : n ∉ selection.made) :
     selection.Valid atomAction label rule ⟨before.equations, insert n before.present⟩ := by
   classical
@@ -593,19 +593,22 @@ theorem twin_preserves_validity {label : O → Atom} {rule : RuleInstance Atom}
     have ruleCheck := ruleFree.checks check member
     cases check with
     | equal left right => exact original
-    | absent t =>
-      intro o inserted
-      rcases Finset.mem_insert.mp inserted with isTwin | old
-      · subst isTwin
-        intro sees
-        change subst σ t = subst σ (label o) at sees
-        rw [subst_of_vars_eq_nil σ _ groundTwin] at sees
-        obtain ⟨solved', seesSource⟩ := transport t ruleCheck σ solved sees
-        have refuted := valid.checks (.absent t) member _ solved' source sourcePresent
-        apply refuted
-        change subst _ t = subst _ (label source)
-        rw [seesSource, subst_of_vars_eq_nil _ _ (ground source sourcePresent)]
-      · exact original o old
+    | predicate quantifier t =>
+      cases quantifier with
+      | any => exact Quantifier.holds_any_mono (Finset.subset_insert _ _) original
+      | none =>
+        intro o inserted
+        rcases Finset.mem_insert.mp inserted with isTwin | old
+        · subst isTwin
+          intro sees
+          change subst σ t = subst σ (label o) at sees
+          rw [subst_of_vars_eq_nil σ _ groundTwin] at sees
+          obtain ⟨solved', seesSource⟩ := transport t ruleCheck σ solved sees
+          have refuted := valid.checks (.predicate .none t) member _ solved' source sourcePresent
+          apply refuted
+          change subst _ t = subst _ (label source)
+          rw [seesSource, subst_of_vars_eq_nil _ _ (ground source sourcePresent)]
+        · exact original o old
     | count t k =>
       have unseen : ¬ atomAction.E (atomAction.apply σ t) (atomAction.apply σ (label n)) := by
         intro sees
@@ -650,29 +653,29 @@ theorem validity_never_certifies_completeness {label : O → Atom} {rule : RuleI
     (labelsFree : ∀ o ∈ before.present, c ∉ syms (label o))
     (ground : ∀ o ∈ before.present, vars (label o) = [])
     (sourcePresent : source ∈ before.present) (moved : d ∈ syms (label source))
-    (twin : label n = renameSym d c (label source)) (absent : n ∉ before.present)
+    (twin : label n = renameSym d c (label source)) (missing : n ∉ before.present)
     (notMade : n ∉ selection.made) (matched : Matches query (label source))
     (queryKeeps : d ∉ syms query) :
     selection.Valid atomAction label rule ⟨before.equations, insert n before.present⟩ ∧
       Matches query (label n) ∧ n ∉ selection.read ∧ n ∉ selection.taken := by
   refine ⟨twin_preserves_validity valid ruleFree storeFree labelsFree ground sourcePresent moved twin
-    absent notMade, ?_, ?_, ?_⟩
+    missing notMade, ?_, ?_, ?_⟩
   · obtain ⟨τ, solves⟩ := matched
     refine ⟨renameSubst d c τ, ?_⟩
     have renamed := rename_subst d c τ query
     rw [rename_of_not_mem query queryKeeps, solves] at renamed
     rw [twin, renamed]
   · intro read
-    exact absent (valid.occurrences.kept_subset (by simpa [Selection.commit] using read))
+    exact missing (valid.occurrences.kept_subset (by simpa [Selection.commit] using read))
   · intro taken
-    exact absent (valid.occurrences.taken_subset (by simpa [Selection.commit] using taken))
+    exact missing (valid.occurrences.taken_subset (by simpa [Selection.commit] using taken))
 
 /-! ## The primitive the step lacks -/
 
 /-- A predicate query of the occurrence-commit layer is spoiled by an added
 occurrence that its predicate selects: completeness is checked at commit. -/
 theorem predicate_query_detects_twin {R : Type*} (label : O → R) (store : Finset O)
-    (query : PredicateQuery O R) (holds : query.Holds label store) (n : O) (absent : n ∉ store)
+    (query : PredicateQuery O R) (holds : query.Holds label store) (n : O) (missing : n ∉ store)
     (selected : query.region (label n) = true) :
     ¬ query.Holds label (insert n store) := by
   intro extended
@@ -683,6 +686,6 @@ theorem predicate_query_detects_twin {R : Type*} (label : O → R) (store : Fins
     simp [regionOf, selected]
   change regionOf label (insert n store) query.region = query.seen at extended
   rw [extended] at mem
-  exact absent (seenSubset mem)
+  exact missing (seenSubset mem)
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.MeTTaOperationsCollapse

@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.HEFiniteSuperposeSquare
-import Mettapedia.Languages.MeTTa.HE.CeTTaRuntimeContracts
+import Mettapedia.Languages.MeTTa.HE.CollapseCollector
 
 /-!
 # A source-earned typed producer in the retained collapse collector
@@ -30,7 +30,6 @@ open Mettapedia.Languages.MeTTa.HE.RecursiveTasks
 open Mettapedia.GSLT.Distinction.ProductiveBlocks
 open TypedSquareCollection HEFiniteSuperposeSource HEFiniteSuperposeSquare
 
-open CeTTaRuntimeContracts.InstructionControl
 
 structure Request where
   operand : Atom
@@ -59,22 +58,22 @@ def load (request : Request) : Configuration :=
 
 def callerBindings (_request : Request) : Bindings := Bindings.empty
 
-def materialized (results : ResultSet) : List Collapse.MaterializedOutcome :=
+def materialized (results : ResultSet) : List CollapseCollector.MaterializedOutcome :=
   results.map fun result => ⟨some result.1, result.2⟩
 
-def completed (inputs : List Int) : Collapse.Completed Unit := ⟨(), materialized (sourceResults inputs)⟩
+def completed (inputs : List Int) : CollapseCollector.Completed Unit := ⟨(), materialized (sourceResults inputs)⟩
 
-def finish (state : Configuration) : Reply (Collapse.Completed Unit) Empty :=
+def finish (state : Configuration) : Reply (CollapseCollector.Completed Unit) Empty :=
   .returned ⟨(), materialized state.emitted⟩
 
 def child := worker.relabel id finish id
 
 def collector (services : Spec.Eval.Minimal.Services) :=
-  Collapse.handled services callerBindings child load
+  CollapseCollector.handled services callerBindings child load
 
-def active (input : Request) := Collapse.active (World := Unit) (Failure := Empty) input (load input)
+def active (input : Request) := CollapseCollector.active (World := Unit) (Failure := Empty) input (load input)
 
-def start (input : Request) : HandledState (Collapse.Parent Request Unit Empty) Configuration Request :=
+def start (input : Request) : HandledState (CollapseCollector.Parent Request Unit Empty) Configuration Request :=
   .running (.enter input)
 
 /-- Only a real worker completion constructs the child reply. Relabelling
@@ -87,26 +86,26 @@ theorem child_finishes (inputs : List Int) :
   simp [Outcome.relabel, finish, completed]
 
 theorem completed_rows_exact (inputs : List Int) :
-    Collapse.results (completed inputs).rows = inputs.map squareResult := by
+    CollapseCollector.results (completed inputs).rows = inputs.map squareResult := by
   cases inputs with
   | nil => rfl
   | cons first rest =>
-      simp [completed, sourceResults, materialized, Collapse.results, List.filterMap_map,
-        Collapse.MaterializedOutcome.kept, squareResult, num, Atom.empty, Function.comp_def]
+      simp [completed, sourceResults, materialized, CollapseCollector.results, List.filterMap_map,
+        CollapseCollector.MaterializedOutcome.kept, squareResult, num, Atom.empty, Function.comp_def]
 
 theorem completed_pack_exact (services : Spec.Eval.Minimal.Services) (inputs : List Int) :
-    Collapse.pack services (completed inputs).rows = Spec.Eval.Minimal.encodeResults services (inputs.map squareResult) := by
-  rw [Collapse.pack_exact, completed_rows_exact]
+    CollapseCollector.pack services (completed inputs).rows = Spec.Eval.Minimal.encodeResults services (inputs.map squareResult) := by
+  rw [CollapseCollector.pack_exact, completed_rows_exact]
 
 /-- The existing collector handles the actual source-derived child, and
 closes only after its full return and the collector's own closing step. -/
 theorem collector_finishes_active (services : Spec.Eval.Minimal.Services) (inputs : List Int) :
     ∃ used ≤ sourceBudget inputs + 1,
       (collector services).run used (active (request inputs)) =
-        ((sourceResults inputs).map Collapse.Event.child ++ [Collapse.Event.replied (.returned (completed inputs))],
+        ((sourceResults inputs).map CollapseCollector.Event.child ++ [CollapseCollector.Event.replied (.returned (completed inputs))],
           .finished (.aggregate (request inputs) ()
             (Spec.Eval.Minimal.encodeResults services (inputs.map squareResult), Bindings.empty))) := by
-  obtain ⟨used, bound, ran⟩ := Collapse.complete_after_child services callerBindings child load
+  obtain ⟨used, bound, ran⟩ := CollapseCollector.complete_after_child services callerBindings child load
     (sourceBudget inputs) (request inputs) (load (request inputs))
     (sourceResults inputs) (completed inputs) (child_finishes inputs)
   refine ⟨used, bound, ?_⟩
@@ -115,15 +114,15 @@ theorem collector_finishes_active (services : Spec.Eval.Minimal.Services) (input
 
 theorem collector_enters (services : Spec.Eval.Minimal.Services) (input : Request) :
     (collector services).step (start input) =
-      some (.publish [Collapse.Event.entered input] (active input)) := rfl
+      some (.publish [CollapseCollector.Event.entered input] (active input)) := rfl
 
 /-- The loader begins from the held operand, and the full handled run earns
 the aggregate. Ordered child publications remain visible in the trace. -/
 theorem collector_finishes (services : Spec.Eval.Minimal.Services) (inputs : List Int) :
     ∃ used ≤ sourceBudget inputs + 2,
       (collector services).run used (start (request inputs)) =
-        ([Collapse.Event.entered (request inputs)] ++
-          (sourceResults inputs).map Collapse.Event.child ++ [Collapse.Event.replied (.returned (completed inputs))],
+        ([CollapseCollector.Event.entered (request inputs)] ++
+          (sourceResults inputs).map CollapseCollector.Event.child ++ [CollapseCollector.Event.replied (.returned (completed inputs))],
           .finished (.aggregate (request inputs) ()
             (Spec.Eval.Minimal.encodeResults services (inputs.map squareResult), Bindings.empty))) := by
   obtain ⟨used, bound, ran⟩ := collector_finishes_active services inputs
@@ -137,19 +136,19 @@ theorem collector_paused (services : Spec.Eval.Minimal.Services) (inputs : List 
     (fuel : Nat) (published : ResultSet) (saved : Configuration)
     (paused : worker.run fuel (initial inputs) = (published, .exhausted saved)) :
     (collector services).run fuel (active (request inputs)) =
-      (published.map Collapse.Event.child,
-        .exhausted (Collapse.active (World := Unit) (Failure := Empty) (request inputs) saved)) := by
+      (published.map CollapseCollector.Event.child,
+        .exhausted (CollapseCollector.active (World := Unit) (Failure := Empty) (request inputs) saved)) := by
   have childPaused : child.run fuel (load (request inputs)) = (published, .exhausted saved) := by
     change child.run fuel (initial inputs) = _
     rw [child, worker.run_relabel, paused]
     simp [Outcome.relabel]
-  exact Collapse.paused_child_exact services callerBindings child load fuel (request inputs)
+  exact CollapseCollector.paused_child_exact services callerBindings child load fuel (request inputs)
     (load (request inputs)) saved published childPaused
 
 theorem returned_frontier_not_aggregate (services : Spec.Eval.Minimal.Services)
     (first : Int) (rest : List Int) :
     (collector services).run (97 * (first :: rest).length + 59) (active (request (first :: rest))) =
-      ([], .exhausted (Collapse.active (World := Unit) (Failure := Empty) (request (first :: rest))
+      ([], .exhausted (CollapseCollector.active (World := Unit) (Failure := Empty) (request (first :: rest))
         ⟨space, .returning ((first :: rest).map squareResult), [], []⟩)) :=
   collector_paused services (first :: rest) _ [] _ (source_returns first rest)
 
@@ -157,7 +156,7 @@ theorem returned_frontier_not_aggregate (services : Spec.Eval.Minimal.Services)
 the standard-library collapse readback performs on each collected pair.
 This is a readback law, not a proof of that whole macro's execution. -/
 theorem surface_values_readback (inputs : List Int) (depth : Nat) :
-    (Collapse.results (completed inputs).rows).map (fun result => result.2.applyFull result.1 depth) =
+    (CollapseCollector.results (completed inputs).rows).map (fun result => result.2.applyFull result.1 depth) =
       inputs.map (fun n => num (n * n)) := by
   rw [completed_rows_exact, List.map_map]
   apply List.map_congr_left
@@ -171,7 +170,7 @@ def diagnostic : Atom := Atom.error (.symbol "source-call") (.symbol "failure")
 /-- Collector readback omits Empty but retains both errors and successful
 values, with their original records. It is not another priority selector. -/
 theorem three_class_readback (bindings : Bindings) :
-    Collapse.results (materialized
+    CollapseCollector.results (materialized
       [(Atom.empty, bindings), (diagnostic, bindings), (num 4, bindings)]) =
       [(diagnostic, bindings), (num 4, bindings)] := rfl
 
@@ -184,10 +183,10 @@ theorem earlier_binary_selection_not_repaired (bindings : Bindings) :
       [(diagnostic, bindings)] := by constructor <;> rfl
 
 theorem empty_completed_is_empty_collection (services : Spec.Eval.Minimal.Services) :
-    Collapse.pack services (completed []).rows = .expression [] := rfl
+    CollapseCollector.pack services (completed []).rows = .expression [] := rfl
 
 theorem duplicate_occurrences_and_records (services : Spec.Eval.Minimal.Services) :
-    Collapse.pack services (completed [2, -2, 2]).rows =
+    CollapseCollector.pack services (completed [2, -2, 2]).rows =
       Spec.Eval.Minimal.encodeResults services [squareResult 2, squareResult (-2), squareResult 2] :=
   completed_pack_exact services [2, -2, 2]
 
@@ -196,7 +195,7 @@ theorem equal_values_different_snapshots (services : Spec.Eval.Minimal.Services)
     Spec.Eval.Minimal.encodeResult services (squareResult 2) ≠
       Spec.Eval.Minimal.encodeResult services (squareResult (-2)) := by
   intro same
-  have records := congrArg Prod.snd (Collapse.encodeResult_injective services laws same)
+  have records := congrArg Prod.snd (CollapseCollector.encodeResult_injective services laws same)
   exact TypedSquareCollection.Controls.equal_values_distinct_records.2 records
 
 theorem malformed_surface_declined :
@@ -204,7 +203,7 @@ theorem malformed_surface_declined :
       readRequest (apply "collapse" [.symbol "one", .symbol "two"]) = none := by decide
 
 theorem cancelled_no_aggregate (services : Spec.Eval.Minimal.Services) (input : Request) :
-    (Collapse.parent (World := Unit) (Receipt := ResultPair) (Failure := Empty) services callerBindings).step
+    (CollapseCollector.parent (World := Unit) (Receipt := ResultPair) (Failure := Empty) services callerBindings).step
       (.returned input .cancelled) = some (.finish (.cancelled input)) := rfl
 
 end Controls

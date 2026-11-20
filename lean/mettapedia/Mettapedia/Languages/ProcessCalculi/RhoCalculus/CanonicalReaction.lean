@@ -81,6 +81,22 @@ def result (rule : GroundComm) : RhoProcess :=
       (semanticCommSubst_preserves rule.body_typed rule.body_safe
         rule.payload_typed rule.payload_safe)⟩
 
+/-- The contractum the compiled COMM rule computes: the paper-facing COMM
+result of the body with its quotations of drops resolved. -/
+def compiledResult (rule : GroundComm) : RhoProcess :=
+  ⟨semanticCommSubst (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation rule.body) rule.payload,
+    (rhoClosedTermWellSorted_process_iff _).mpr
+      (semanticCommSubst_preserves (LanguageDefAdequacy.rhoProc_resolveQuotes_typed rule.body_typed)
+        (Mettapedia.OSLF.MeTTaIL.ReflectiveInstantiation.resolveQuotes_binderSafeAt
+          rhoReflectivePresentation rule.body_safe)
+        rule.payload_typed rule.payload_safe)⟩
+
+/-- The compiled contractum has the canonical form of the result. -/
+theorem compiledResult_canonical (rule : GroundComm) :
+    canonicalize rule.compiledResult.1 = canonicalize rule.result.1 :=
+  canonicalize_semanticCommSubst_resolveQuotes rule.body_typed
+    (PureBoundary.rhoProcWellSorted_hashSetFree rule.payload_typed)
+
 def redex (rule : GroundComm) : Bag :=
   ⟨([input rule.inputChannel rule.body, output rule.outputChannel rule.payload] :
       List Pattern), fun pattern membership => by
@@ -130,17 +146,32 @@ theorem target_inventory (rule : GroundComm) (residue : Bag) :
     (fun _ membership => ordered_prime residue membership), ordered_multiset]
   rfl
 
+/-- The target of the compiled firing, with the residue in order. -/
+def compiledTarget (rule : GroundComm) (residue : Bag) : RhoProcess :=
+  ofList (rule.compiledResult.1 :: ordered residue.1) (fun pattern membership => by
+    rcases List.mem_cons.mp membership with rfl | membership
+    · exact rule.compiledResult.2
+    · exact (ordered_prime residue membership).1)
+
+/-- The compiled target is the target up to the rho equations. -/
+theorem compiledTarget_equations (rule : GroundComm) (residue : Bag) :
+    rhoProcessEquations.r (rule.compiledTarget residue) (rule.target residue) := by
+  change canonicalize (.collection .hashBag (rule.compiledResult.1 :: ordered residue.1) none) =
+    canonicalize (.collection .hashBag (rule.result.1 :: ordered residue.1) none)
+  exact CanonicalStepperCompleteness.canonicalize_bag_cons_congr rule.compiledResult_canonical
+    (List.Perm.refl _)
+
 /-- The independent instance agrees with the actual compiled COMM matcher. -/
 theorem step (rule : GroundComm) (residue : Bag) :
-    RhoStep (rule.source residue).1 (rule.target residue).1 := by
+    RhoStep (rule.source residue).1 (rule.compiledTarget residue).1 := by
   have actual := rhoStepAt_one_comm
     (inputIndex := 0) (outputIndex := 0)
     (elements := input rule.inputChannel rule.body ::
       output rule.outputChannel rule.payload :: ordered residue.1)
     (by simp) (by simp) rfl rfl
     (rhoCanonicalEquivalent_iff _ _ |>.mpr rule.channels)
-  rw [apply_commBindingsAt rule.body_typed rule.payload_typed] at actual
-  exact ⟨1, by simpa [source, target, result, ofList] using actual⟩
+  rw [apply_commBindingsAt_resolved rule.body_typed rule.payload_typed] at actual
+  exact ⟨1, by simpa [source, compiledTarget, compiledResult, ofList] using actual⟩
 
 end GroundComm
 
@@ -158,10 +189,11 @@ theorem reaction_frame {source target : Bag} (reaction : Reaction source target)
 theorem reaction_public {source target : Bag} (reaction : Reaction source target) :
     rhoLanguageDefGSLT.Step (toProcess source) (toProcess target) := by
   obtain ⟨rule, residue, rfl, rfl⟩ := reaction
-  refine ⟨rule.source residue, rule.target residue, ?_, rule.step residue, ?_⟩
+  refine ⟨rule.source residue, rule.compiledTarget residue, ?_, rule.step residue, ?_⟩
   · apply (fromProcess_eq_iff _ _).mp
     rw [fromProcess_toProcess, rule.source_inventory]
-  · apply (fromProcess_eq_iff _ _).mp
+  · refine rhoProcessEquations.iseqv.trans (rule.compiledTarget_equations residue) ?_
+    apply (fromProcess_eq_iff _ _).mp
     rw [rule.target_inventory, fromProcess_toProcess]
 
 /-- Every actual public step selects an instance of the independent family.
@@ -173,7 +205,7 @@ theorem public_reaction {source target : RhoProcess}
   obtain ⟨redex, contractum, sourceEquation, reduces, targetEquation⟩ := step
   have closed := (rhoClosedTermWellSorted_process_iff redex.1).mp redex.2
   obtain ⟨target', canonicalStep, canonicalTarget⟩ :=
-    canonicalStep_complete_of_rhoStep closed.1 closed.2 reduces
+    canonicalStep_complete_of_rhoStep closed.1 reduces
   change canonicalize source.1 = canonicalize redex.1 at sourceEquation
   rw [← sourceEquation] at canonicalStep
   obtain ⟨bindings, matched, applied⟩ := rhoStepAt_one_inv canonicalStep
@@ -213,9 +245,9 @@ theorem public_reaction {source target : RhoProcess}
         (List.getElem_cons_eraseIdx_perm iBound)).symm
     simpa [rule, input, output, inputShape, outputShape] using perm
   have targetShape : target' =
-      .collection .hashBag (rule.result.1 :: tail) none := by
+      .collection .hashBag (rule.compiledResult.1 :: tail) none := by
     rw [← applied, bindingsShape]
-    exact apply_commBindingsAt rule.body_typed rule.payload_typed elements i j inputChannel
+    exact apply_commBindingsAt_resolved rule.body_typed rule.payload_typed elements i j inputChannel
   let targetPresentation : RhoProcess :=
     ofList (rule.result.1 :: tail) (fun pattern membership => by
       rcases List.mem_cons.mp membership with rfl | membership
@@ -231,7 +263,8 @@ theorem public_reaction {source target : RhoProcess}
   · have equivalent : rhoProcessEquations.r target targetPresentation := by
       change canonicalize target.1 =
         canonicalize (.collection .hashBag (rule.result.1 :: tail) none)
-      rw [← targetShape, canonicalTarget]
+      rw [← canonicalize_bag_cons_congr rule.compiledResult_canonical (List.Perm.refl _),
+        ← targetShape, canonicalTarget]
       exact targetEquation.symm
     have equality := (fromProcess_eq_iff _ _).mpr equivalent
     rw [equality]

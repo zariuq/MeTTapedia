@@ -60,7 +60,7 @@ theorem fullRound_eq (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (T
       match firstRule rigid facts complete roots heads algebra declared choices reducer root normalizes certifyNormal
           headTypingUnique fuel problem with
       | some (.solved update smaller) => .progress update (Prod.Lex.left _ _ smaller)
-      | some (.refuted absent) => .refuted absent
+      | some (.refuted missing) => .refuted missing
       | none => ContextualDependentWorklist.round rigid facts complete roots heads algebra declared choices reducer
           fuel problem := by
   unfold fullRound firstRule
@@ -160,7 +160,7 @@ def settledWhereRuleFires (holds : {Γ : Context S.R} → EquationStore (TotalTe
       rw [localsAt larger enough]
       cases locals : ContextualDependentRigidDecomposition.localsRule rigid complete facts roots heads algebra declared
           choices reducer root threshold problem with
-      | some absent => rfl
+      | some missing => rfl
       | none =>
           dsimp only
           rw [fullRound_eq, fullRound_eq, firstAt larger enough]
@@ -176,7 +176,7 @@ def settledWhereRuleFires (holds : {Γ : Context S.R} → EquationStore (TotalTe
       unfold ContextualDependentRigidDecomposition.rigidRound
       cases locals : ContextualDependentRigidDecomposition.localsRule rigid complete facts roots heads algebra declared
           choices reducer root threshold problem with
-      | some absent => intro impossible; cases impossible
+      | some missing => intro impossible; cases impossible
       | none =>
           dsimp only
           rw [fullRound_eq]
@@ -192,7 +192,7 @@ def settledWhereRuleFires (holds : {Γ : Context S.R} → EquationStore (TotalTe
       unfold ContextualDependentRigidDecomposition.rigidRound at progressed
       cases locals : ContextualDependentRigidDecomposition.localsRule rigid complete facts roots heads algebra declared
           choices reducer root threshold problem with
-      | some absent => rw [locals] at progressed; cases progressed
+      | some missing => rw [locals] at progressed; cases progressed
       | none =>
           rw [locals] at progressed
           dsimp only at progressed
@@ -208,7 +208,7 @@ def settledWhereRuleFires (holds : {Γ : Context S.R} → EquationStore (TotalTe
                     rw [first] at progressed
                     cases progressed
                     exact closed first
-                | refuted absent => rw [first] at progressed; cases progressed
+                | refuted missing => rw [first] at progressed; cases progressed
 
 end ContextualDependentDecisiveFragment
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting

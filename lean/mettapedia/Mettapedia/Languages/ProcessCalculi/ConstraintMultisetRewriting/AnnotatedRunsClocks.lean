@@ -401,10 +401,12 @@ theorem commit_of_writesOnly {f : Firing T S O} (only : WritesOnly f) :
 theorem staticIndependent_iff_written [Nonempty S] {label : O → T} {f g : Firing T S O}
     (fOnly : WritesOnly f) (gOnly : WritesOnly g) :
     StaticIndependent label f g ↔ Disjoint (written f) (written g) := by
-  have fFoot : ∀ σ : S, f.footprintAt σ = f.selection.commit (T := T) :=
-    Firing.footprintAt_of_queries_nil fOnly.queries
-  have gFoot : ∀ σ : S, g.footprintAt σ = g.selection.commit (T := T) :=
-    Firing.footprintAt_of_queries_nil gOnly.queries
+  have fFoot : ∀ (σ : S) (C : Configuration T O),
+      f.footprintAt label σ C = f.selection.commit (T := T) :=
+    Firing.footprintAt_of_queries_nil label fOnly.queries
+  have gFoot : ∀ (σ : S) (C : Configuration T O),
+      g.footprintAt label σ C = g.selection.commit (T := T) :=
+    Firing.footprintAt_of_queries_nil label gOnly.queries
   have fStatic : f.Static :=
     ⟨fOnly.checks, by intro query member; rw [fOnly.queries] at member; cases member⟩
   have gStatic : g.Static :=
@@ -447,11 +449,11 @@ theorem staticIndependent_iff_written [Nonempty S] {label : O → T} {f g : Firi
       · simpa [MeTTaCalculus.OccurrenceCommits.Commit.uses] using takenMade.symm
   constructor
   · rintro ⟨-, -, independent⟩
-    have atOne := independent (Classical.arbitrary S)
+    have atOne := independent (Classical.arbitrary S) ⟨[], ∅⟩
     rw [fFoot, gFoot] at atOne
     exact ground.mp atOne
   · intro apart
-    refine ⟨fStatic, gStatic, fun σ => ?_⟩
+    refine ⟨fStatic, gStatic, fun σ C => ?_⟩
     rw [fFoot, gFoot]
     exact ground.mpr apart
 

@@ -1,4 +1,4 @@
-import Mettapedia.Languages.MeTTa.PeTTa.Streaming
+import Mettapedia.Languages.MeTTa.PeTTa.StreamingPrefixes
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.HEOnTheStep.FramedMachines
 
 /-!
@@ -32,6 +32,11 @@ rules when each transition touches only the frames it pops. For PeTTa:
   machine has no transition, and infinite executions correspond.
 * `world_readout`: the answers so far and the effect state are read off the store's one world
   occurrence.
+* `firing_path_reads_stream` gets the newly appended packets from the
+  sequence of shared-world cuts. It retains duplicates and exact step counts.
+* `stateOf`, `source_bisimulation`, `representation_unique`: the framed configuration has no
+  additional source states, and a represented store determines the complete streaming state.
+  Ordered answers live in the world; the generic framed publication observer alone is a bag.
 
 Positive and negative examples: `Controls.markerless_once_answer_is_stuck` (an answer under a
 `once` frame whose marker is not on the agenda has no transition, whatever is appended below:
@@ -411,6 +416,22 @@ def machine (registry : SpaceSemantics.Program) : FramedMachine Shared PUnit Job
 def configOf (state : State) : Config Shared PUnit Job Empty :=
   ⟨⟨state.world, state.answers, state.nextBoundary⟩, PUnit.unit, state.agenda, []⟩
 
+/-- Recover the source state. The framed representation has no extra control
+choice or publication value; pending work remains the original agenda. -/
+def stateOf (configuration : Config Shared PUnit Job Empty) : State :=
+  ⟨configuration.world.world, configuration.stack, configuration.world.answers,
+    configuration.world.nextBoundary⟩
+
+theorem stateOf_configOf (state : State) : stateOf (configOf state) = state := rfl
+
+theorem configOf_stateOf (configuration : Config Shared PUnit Job Empty) :
+    configOf (stateOf configuration) = configuration := by
+  rcases configuration with ⟨⟨world, answers, boundary⟩, control, stack, emitted⟩
+  cases control
+  cases emitted with
+  | nil => rfl
+  | cons impossible _ => cases impossible
+
 /-- **The framed machine's steps are the streaming machine's transitions.** -/
 theorem step_iff (registry : SpaceSemantics.Program) (before after : State) :
     (machine registry).Step (configOf before) (configOf after) ↔
@@ -444,6 +465,37 @@ theorem streaming_bisimulation (registry : SpaceSemantics.Program) :
     IsBisimulation (StoreStep (machine registry)) (machine registry).Step Represents :=
   bisimulation (machine_local registry)
 
+/-- The source side is the actual streaming state, rather than an additional
+machine-state presentation. Arbitrary admitted target firings still reflect. -/
+theorem source_bisimulation (registry : SpaceSemantics.Program) :
+    IsBisimulation (StoreStep (machine registry))
+      (fun before after : State => Streaming.step registry before = some after)
+      (fun store state => Represents store (configOf state)) := by
+  constructor
+  · intro store state next represented fired
+    obtain ⟨configuration, taken, related⟩ := (streaming_bisimulation registry).1 represented fired
+    refine ⟨stateOf configuration, ?_, ?_⟩
+    · apply (step_iff registry state (stateOf configuration)).1
+      simpa only [configOf_stateOf] using taken
+    · simpa only [configOf_stateOf] using related
+  · intro store state next represented computed
+    exact (streaming_bisimulation registry).2 represented ((step_iff registry state next).2 computed)
+
+/-- A represented store determines the entire source state, including agenda
+order and the ordered published answers held in its shared world. -/
+theorem representation_unique {store : Store Shared PUnit Job Empty} {first second : State}
+    (left : Represents store (configOf first)) (right : Represents store (configOf second)) :
+    first = second := by
+  have encoded : encode (configOf first) = encode (configOf second) := left.2.symm.trans right.2
+  obtain ⟨world, _, agenda, _⟩ := (encode_eq_iff _ _).1 encoded
+  rcases first with ⟨fw, fs, fa, fb⟩
+  rcases second with ⟨sw, ss, sa, sb⟩
+  change (⟨fw, fa, fb⟩ : Shared) = ⟨sw, sa, sb⟩ at world
+  change fs = ss at agenda
+  cases world
+  cases agenda
+  rfl
+
 /-- A store has no firing exactly when the machine has no transition. -/
 theorem streaming_stuck_iff (registry : SpaceSemantics.Program)
     {store : Store Shared PUnit Job Empty} {configuration : Config Shared PUnit Job Empty}
@@ -463,6 +515,46 @@ theorem streaming_divergence_iff (registry : SpaceSemantics.Program)
         ∀ n, (machine registry).Step (configurations n) (configurations (n + 1)) :=
   divergence_iff (machine_local registry) represented
 
+/-- Terminality reflects the actual source transition function. This does
+not conflate its different terminal and unfinished observations. -/
+theorem source_stuck_iff (registry : SpaceSemantics.Program)
+    {store : Store Shared PUnit Job Empty} {state : State}
+    (represented : Represents store (configOf state)) :
+    (∀ next, ¬ StoreStep (machine registry) store next) ↔ Streaming.step registry state = none := by
+  constructor
+  · intro stopped
+    cases computed : Streaming.step registry state with
+    | none => rfl
+    | some next =>
+        obtain ⟨final, fired, _⟩ := (source_bisimulation registry).2 represented computed
+        exact False.elim (stopped final fired)
+  · intro stopped next fired
+    obtain ⟨after, computed, _⟩ := (source_bisimulation registry).1 represented fired
+    rw [stopped] at computed
+    cases computed
+
+/-- No infinite target administration is hidden by repackaging the source:
+infinite firings correspond to infinite actual streaming transitions. -/
+theorem source_divergence_iff (registry : SpaceSemantics.Program)
+    {store : Store Shared PUnit Job Empty} {state : State}
+    (represented : Represents store (configOf state)) :
+    (∃ stores : ℕ → Store Shared PUnit Job Empty, stores 0 = store ∧
+      ∀ n, StoreStep (machine registry) (stores n) (stores (n + 1))) ↔
+    ∃ states : ℕ → State, states 0 = state ∧
+      ∀ n, Streaming.step registry (states n) = some (states (n + 1)) := by
+  constructor
+  · intro infinite
+    obtain ⟨configurations, start, moves⟩ := (streaming_divergence_iff registry represented).1 infinite
+    refine ⟨fun n => stateOf (configurations n), ?_, ?_⟩
+    · exact (congrArg stateOf start).trans (stateOf_configOf state)
+    · intro n
+      apply (step_iff registry _ _).1
+      simpa only [configOf_stateOf] using moves n
+  · rintro ⟨states, start, moves⟩
+    apply (streaming_divergence_iff registry represented).2
+    exact ⟨fun n => configOf (states n), congrArg configOf start,
+      fun n => (step_iff registry _ _).2 (moves n)⟩
+
 /-- **The answers and the effect world are read off the store**: a store that represents a
 machine state holds exactly one world occurrence, with that state's world, answers and next
 boundary. -/
@@ -473,6 +565,199 @@ theorem world_readout {store : Store Shared PUnit Job Empty} (state : State)
       {(⟨state.world, state.answers, state.nextBoundary⟩ : Shared)} := by
   rw [represented.2, worldsOf_encode]
   rfl
+
+open Mettapedia.Machines.ProgressObservation (Observation observePath)
+open Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits (labels)
+
+/-- Only a sole world record supplies the streaming journal. This query
+does not pick an arbitrary answer from a bag of published cells. -/
+noncomputable def readShared (store : Store Shared PUnit Job Empty) : Option Shared :=
+  readUniqueWorld store
+
+theorem readShared_represents {store : Store Shared PUnit Job Empty} {state : State}
+    (represented : Represents store (configOf state)) :
+    readShared store = some (configOf state).world :=
+  readUniqueWorld_represents represented
+
+/-- PeTTa publishes through the world record even while work remains
+on the agenda. The existing source invariant justifies reading at
+most the one packet after the previously published prefix. -/
+noncomputable def streamedAnswer (registry : SpaceSemantics.Program) : Observation (Fired (machine registry)) Answer :=
+  fun {before after} _ => do
+    let earlier ← readShared before
+    let later ← readShared after
+    later.answers[earlier.answers.length]?
+
+theorem firing_streams_exact (registry : SpaceSemantics.Program)
+    {S S' : Fired (machine registry)} {before after : State}
+    (represented : Represents S (configOf before)) (reached : Represents S' (configOf after))
+    (event : S ⟶ S') :
+    after.answers = before.answers ++ (streamedAnswer registry event).toList := by
+  let actual : Firing (machine registry) S S' := event
+  obtain ⟨next, taken, there⟩ := (source_bisimulation registry).1 represented ⟨actual.val, actual.property⟩
+  have same := representation_unique there reached
+  subst next
+  obtain ⟨packet, appended⟩ := ((Streaming.step_iff_transition registry before after).mp taken).answers_packet
+  have picked : streamedAnswer registry event = packet := by
+    unfold streamedAnswer
+    rw [readShared_represents represented, readShared_represents reached]
+    change after.answers[before.answers.length]? = packet
+    rw [appended, List.getElem?_append_right (Nat.le_refl _), Nat.sub_self]
+    cases packet <;> rfl
+  rw [picked]
+  exact appended
+
+/-- Read PeTTa at the exact number of independently supplied firings.
+The same path reports precisely its ordered suffix, with the actual
+effect world and the agenda still represented at every endpoint. -/
+theorem firing_path_reads_stream (registry : SpaceSemantics.Program)
+    {S S' : Fired (machine registry)} {initial : State}
+    (represented : Represents S (configOf initial)) (path : Quiver.Path S S') :
+    let reached := Streaming.advance registry path.length initial
+    Represents S' (configOf reached) ∧
+      reached.answers = initial.answers ++ observePath (streamedAnswer registry) path := by
+  induction path with
+  | nil => exact ⟨represented, (List.append_nil _).symm⟩
+  | @cons middle final prefixPath event ih =>
+    let actual : Firing (machine registry) middle final := event
+    obtain ⟨there, seen⟩ := ih
+    obtain ⟨next, moved, related⟩ := (source_bisimulation registry).1 there ⟨actual.val, actual.property⟩
+    have step : Streaming.advance registry (prefixPath.length + 1) initial = next := by
+      rw [Streaming.advance_add]
+      change Mettapedia.Machines.BoundedDeterministicRun.run (Streaming.step registry) 1
+        (Streaming.advance registry prefixPath.length initial) = next
+      simp only [Mettapedia.Machines.BoundedDeterministicRun.run, moved]
+    have appended := firing_streams_exact registry there related event
+    dsimp only [Quiver.Path.length_cons]
+    rw [step]
+    exact ⟨related, by rw [appended, seen, List.append_assoc,
+      Mettapedia.Machines.ProgressObservation.observePath_cons]⟩
+
+/-- The projection excludes the agenda, answer history, and internal
+boundary supply unless one observes them separately. An answer is
+read from the actual journal suffix, not from an HE answer cell. -/
+def streamCut {View : Type} [DecidableEq View] (project : World → View)
+    (before after : State) : List (View × Option Answer) :=
+  (reportCut (project before.world) (project after.world) after.answers[before.answers.length]?).toList
+
+noncomputable def streamedWorld {View : Type} [DecidableEq View] (registry : SpaceSemantics.Program)
+    (project : World → View) : Observation (Fired (machine registry)) (View × Option Answer) :=
+  fun {before after} _ => do
+    let first ← readShared before
+    let last ← readShared after
+    reportCut (project first.world) (project last.world) last.answers[first.answers.length]?
+
+theorem stream_cut_agrees {View : Type} [DecidableEq View] (registry : SpaceSemantics.Program)
+    (project : World → View) {S S' : Fired (machine registry)} {x y : Config Shared PUnit Job Empty}
+    (before : Represents S x) (after : Represents S' y) (event : S ⟶ S') :
+    streamCut project (stateOf x) (stateOf y) = (streamedWorld registry project event).toList := by
+  unfold streamedWorld readShared
+  rw [readUniqueWorld_represents before, readUniqueWorld_represents after]
+  rfl
+
+/-- Read a bounded execution of the existing streaming machine.
+Excess fuel after a stopped transition adds neither work nor reports. -/
+def cutWord {View : Type} [DecidableEq View] (registry : SpaceSemantics.Program)
+    (project : World → View) : Nat → State → List (View × Option Answer)
+  | 0, _ => []
+  | fuel + 1, state =>
+      match Streaming.step registry state with
+      | none => []
+      | some next => streamCut project state next ++ cutWord registry project fuel next
+
+/-- Changing only the read view does not replay, elide, or combine PeTTa
+transitions. It erases newly silent cuts in the actual journal word. -/
+theorem cutWord_coarsen {Fine Coarse : Type} [DecidableEq Fine] [DecidableEq Coarse]
+    (registry : SpaceSemantics.Program) (view : World → Fine) (project : Fine → Coarse)
+    (budget : Nat) (initial : State) :
+    coarsenCuts project (view initial.world) (cutWord registry view budget initial) =
+      cutWord registry (project ∘ view) budget initial := by
+  induction budget generalizing initial with
+  | zero => rfl
+  | succ budget ih =>
+    cases moved : Streaming.step registry initial with
+    | none => simp only [cutWord, moved, coarsenCuts]
+    | some next =>
+      simp only [cutWord, moved, streamCut, coarsenCuts_reportCut_append, Function.comp_apply, ih]
+
+private theorem cutTrace_advance {View : Type} [DecidableEq View] (registry : SpaceSemantics.Program)
+    (project : World → View) {n : ℕ} {x y : Config Shared PUnit Job Empty}
+    {word : List (View × Option Answer)}
+    (trace : (machine registry).CutTrace (fun a b => streamCut project (stateOf a) (stateOf b)) n x y word) :
+    stateOf y = Streaming.advance registry n (stateOf x) ∧
+      word = cutWord registry project n (stateOf x) := by
+  induction trace with
+  | refl => exact ⟨rfl, rfl⟩
+  | @cons count before middle final tail edge _ ih =>
+    have step := (step_iff registry (stateOf before) (stateOf middle)).mp
+      (by simpa only [configOf_stateOf] using edge.down)
+    refine ⟨?_, ?_⟩
+    · simpa only [Streaming.advance, Mettapedia.Machines.BoundedDeterministicRun.run, step] using ih.1
+    · simp only [cutWord, step]
+      exact congrArg (streamCut project (stateOf before) (stateOf middle) ++ ·) ih.2
+
+/-- Every supplied firing prefix reads the exact effect-and-answer word
+of the corresponding number of real PeTTa streaming transitions. -/
+theorem firing_path_reads_world_stream {View : Type} [DecidableEq View] (registry : SpaceSemantics.Program)
+    (project : World → View) {S S' : Fired (machine registry)} {initial : State}
+    (represented : Represents S (configOf initial)) (path : Quiver.Path S S') :
+    Represents S' (configOf (Streaming.advance registry path.length initial)) ∧
+      observePath (streamedWorld registry project) path = cutWord registry project path.length initial := by
+  obtain ⟨last, trace, reached⟩ := firing_path_reads_cuts
+    (fun a b => streamCut project (stateOf a) (stateOf b)) (streamedWorld registry project)
+    (fun before after _ edge => stream_cut_agrees registry project before after edge) represented path
+  obtain ⟨state, word⟩ := cutTrace_advance registry project trace
+  rw [stateOf_configOf] at state word
+  exact ⟨by rw [← state, configOf_stateOf]; exact reached, word⟩
+
+/-- The same physical PeTTa firing path refines the two observers.
+The payload is the source journal's packet, not a framed answer cell. -/
+theorem coarsen_streamedWorld_path {Fine Coarse : Type} [DecidableEq Fine] [DecidableEq Coarse]
+    (registry : SpaceSemantics.Program) (view : World → Fine) (project : Fine → Coarse)
+    {S S' : Fired (machine registry)} {initial : State}
+    (represented : Represents S (configOf initial)) (path : Quiver.Path S S') :
+    coarsenCuts project (view initial.world) (observePath (streamedWorld registry view) path) =
+      observePath (streamedWorld registry (project ∘ view)) path := by
+  rw [(firing_path_reads_world_stream registry view represented path).2, cutWord_coarsen,
+    (firing_path_reads_world_stream registry (project ∘ view) represented path).2]
+
+private theorem advance_cutTrace {View : Type} [DecidableEq View] (registry : SpaceSemantics.Program)
+    (project : World → View) (budget : Nat) (initial : State) :
+    ∃ used ≤ budget,
+      (machine registry).CutTrace (fun a b => streamCut project (stateOf a) (stateOf b)) used
+        (configOf initial) (configOf (Streaming.advance registry budget initial))
+        (cutWord registry project budget initial) := by
+  induction budget generalizing initial with
+  | zero => exact ⟨0, Nat.le_refl _, .refl _⟩
+  | succ budget ih =>
+    cases moved : Streaming.step registry initial with
+    | none =>
+      have unchanged : Streaming.advance registry (budget + 1) initial = initial :=
+        Mettapedia.Machines.BoundedDeterministicRun.run_of_none _ _ moved _
+      rw [unchanged, cutWord, moved]
+      exact ⟨0, Nat.zero_le _, .refl _⟩
+    | some next =>
+      obtain ⟨used, within, suffix⟩ := ih next
+      have after : Streaming.advance registry (budget + 1) initial = Streaming.advance registry budget next := by
+        simp only [Streaming.advance, Mettapedia.Machines.BoundedDeterministicRun.run, moved]
+      rw [after, cutWord, moved]
+      exact ⟨used + 1, Nat.succ_le_succ within,
+        .cons ⟨(step_iff registry initial next).mpr moved⟩ suffix⟩
+
+/-- The bounded source observer lifts to a real firing path, including
+silent work in its length but excluding unused fuel. -/
+theorem advance_world_stream_lifts {View : Type} [DecidableEq View] (registry : SpaceSemantics.Program)
+    (project : World → View) (budget : Nat) {initial : State} {S : Fired (machine registry)}
+    (represented : Represents S (configOf initial)) :
+    ∃ (last : Fired (machine registry)) (path : Quiver.Path S last),
+      path.length ≤ budget ∧ Represents last (configOf (Streaming.advance registry budget initial)) ∧
+      observePath (streamedWorld registry project) path = cutWord registry project budget initial := by
+  obtain ⟨used, within, source⟩ := advance_cutTrace registry project budget initial
+  obtain ⟨last, path, reached, lengthEq, observed⟩ := cut_trace_fires
+    (fun a b => streamCut project (stateOf a) (stateOf b)) (streamedWorld registry project)
+    (fun before after _ edge => stream_cut_agrees registry project before after edge)
+    (machine_local registry) represented source
+  exact ⟨last, path, lengthEq.trans_le within, reached, observed⟩
 
 namespace Controls
 

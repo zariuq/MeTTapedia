@@ -1,0 +1,27 @@
+import "ByteScalars.module" as scalars
+Module ByteValues {
+
+  Theory U8(v: scalars.Values) {
+    v Rewrites {
+      ReadByte: (ReadU8 (BCons byte rest)) ~> (GotU8 byte rest);
+      ReadByteEmpty: (ReadU8 (BNil)) ~> (NeedInput);
+      WriteByte: (WriteU8 byte) ~> (WroteBytes (BCons byte (BNil)));
+    }
+  }
+  Theory LE16(v: scalars.Values) {
+    v Rewrites {
+      ReadWord:
+        (ReadLE16 (BCons (Byte8 l7 l6 l5 l4 l3 l2 l1 l0)
+          (BCons (Byte8 h7 h6 h5 h4 h3 h2 h1 h0) rest)))
+        ~> (GotLE16 (Word16Bits h7 h6 h5 h4 h3 h2 h1 h0 l7 l6 l5 l4 l3 l2 l1 l0) rest);
+      ReadWordEmpty: (ReadLE16 (BNil)) ~> (NeedInput);
+      ReadWordShort: (ReadLE16 (BCons byte (BNil))) ~> (NeedInput);
+      WriteWord:
+        (WriteLE16 (Word16Bits h7 h6 h5 h4 h3 h2 h1 h0 l7 l6 l5 l4 l3 l2 l1 l0))
+        ~> (WroteBytes (BCons (Byte8 l7 l6 l5 l4 l3 l2 l1 l0)
+          (BCons (Byte8 h7 h6 h5 h4 h3 h2 h1 h0) (BNil))));
+    }
+  }
+  Theory Codecs(v: scalars.Values) { U8(v) \/ LE16(v) }
+  theory Codecs(scalars.Values())
+}

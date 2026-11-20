@@ -397,7 +397,7 @@ theorem permutingRound_const {Θ : Context S.R} (problem : EquationStore (TotalT
   cases ContextualDependentRigidDecomposition.rigidRound rigid complete facts roots heads algebra declared choices
       reducer root normalizes certifyNormal headTypingUnique t₁ problem with
   | progress update smaller => rfl
-  | refuted absent => rfl
+  | refuted missing => rfl
   | stuck =>
       dsimp only
       erw [rotatedSame fuel (le_of_max_le_right enough), rotatedSame _ (le_max_right _ _)]

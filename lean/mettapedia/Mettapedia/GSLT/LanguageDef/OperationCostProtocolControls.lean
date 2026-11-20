@@ -1,7 +1,7 @@
 import Mettapedia.GSLT.LanguageDef.OperationCostProtocol
 import Mettapedia.Machines.ResumableRegion
 import Mettapedia.Machines.Cursor.Fold
-import Mettapedia.Machines.SourceProducerCardinality
+import Mettapedia.Machines.SourceProducerCardinality.Controls
 import Mettapedia.Machines.ErrorBoundaryContracts.DispatchPermit
 
 /-! Executable positive and negative controls for the native-invoice cursor.

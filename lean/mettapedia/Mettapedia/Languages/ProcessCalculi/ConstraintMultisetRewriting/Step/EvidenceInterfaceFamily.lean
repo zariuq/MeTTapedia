@@ -11,18 +11,18 @@ frame `X : U0, x : X, g : Ground`:
 
 * the sought row `p(a)` is the type `Ground`, the opposition `opp(a)` is `Ground → Ground` (row `1`),
   and the open row `p(X)` is the variable `X` (row `2`);
-* the probes ask the absence of `Ground`, read row `1` as `Ground → Ground`, tell `X ≐ Ground`, and
+* the probes ask the none query of `Ground`, read row `1` as `Ground → Ground`, tell `X ≐ Ground`, and
   read row `2` as `Ground`.
 
-| member | state | absence of `Ground` | read `Ground → Ground` | tell `X ≐ Ground` | read `Ground` |
+| member | state | none queries of `Ground` | read `Ground → Ground` | tell `X ≐ Ground` | read `Ground` |
 |---|---|---|---|---|---|
-| covered absence | no rows | admitted | refused | admitted | refused |
+| covered none queries | no rows | admitted | refused | admitted | refused |
 | refutation row | row `Ground → Ground` | admitted | admitted | admitted | refused |
 | incomplete search | row `X`, `X` open | refused | refused | admitted | admitted |
 | disequality | row `X`, `X ≠ Ground` | admitted | refused | refused | refused |
 
 `table` proves the sixteen verdicts, the same as the first-order ones, and `profiles_distinct` that no
-two members agree on the four probes. At the refutation member the absence holds because no solution
+two members agree on the four probes. At the refutation member the none query holds because no solution
 equates `Ground` with `Ground → Ground` (a rigid clash); at the disequality member, because every
 admitted solution keeps `X` apart from `Ground`.
 -/
@@ -87,7 +87,7 @@ def state : Member → Q.DState
 
 /-- The firing of each probe, without helpers. -/
 def plainProbe : Probe → Plain setting.levels Nat triple
-  | .absentP => ⟨[], [], [], [], [], [], [], [Query.absent setting.levels Nat groundUniverse]⟩
+  | .noP => ⟨[], [], [], [], [], [], [], [Query.predicate setting.levels Nat .none groundUniverse]⟩
   | .readOpp => ⟨[], [1], [], [arrowUniverse], [], [], [], []⟩
   | .bindA => ⟨[], [], [], [], [], [(xUniverse, groundUniverse)], [], []⟩
   | .findP => ⟨[], [2], [], [groundUniverse], [], [], [], []⟩
@@ -144,22 +144,22 @@ theorem bindA_plain (present : Finset Nat) : (plainProbe .bindA).Admits (rowsAt 
       exact toGround_solves⟩,
     fun _ τ _ => holds_plain present .bindA rfl τ⟩
 
-/-- The absence of `Ground` holds at a member whose rows are never `Ground`. -/
-theorem absentP_plain (present : Finset Nat)
+/-- The none query of `Ground` holds at a member whose rows are never `Ground`. -/
+theorem noP_plain (present : Finset Nat)
     (apart : ∀ {Θ : Context Tower.rules} (τ : Θ ⟶ triple), ∀ o ∈ present,
       ¬ X.E (X.act τ groundUniverse) (X.act τ (rowLabel o))) :
-    (plainProbe .absentP).Admits (rowsAt present).toLocal := by
-  refine ⟨shapes .absentP, enabled present .absentP (no_reads .absentP rfl present),
+    (plainProbe .noP).Admits (rowsAt present).toLocal := by
+  refine ⟨shapes .noP, enabled present .noP (no_reads .noP rfl present),
     ⟨triple, 𝟙 triple, fun e member => absurd member List.not_mem_nil⟩, fun _ τ _ => ⟨Frames.models_nil _, ?_⟩⟩
   intro q member
   obtain rfl := List.mem_singleton.mp member
-  exact (Query.absent_holds_iff _ _ _ τ).mpr fun o inside => apart τ o inside
+  exact (Query.predicate_holds_iff _ _ _ _ τ).mpr fun o inside => apart τ o inside
 
 /-- **The covered member.** -/
 theorem covered_profile :
-    profile .covered .absentP ∧ ¬ profile .covered .readOpp ∧ profile .covered .bindA ∧
+    profile .covered .noP ∧ ¬ profile .covered .readOpp ∧ profile .covered .bindA ∧
       ¬ profile .covered .findP :=
-  ⟨(plain_profile_iff ∅ .absentP).mpr (absentP_plain ∅ fun _ o inside => absurd inside (Finset.notMem_empty o)),
+  ⟨(plain_profile_iff ∅ .noP).mpr (noP_plain ∅ fun _ o inside => absurd inside (Finset.notMem_empty o)),
     fun admitted => refused_missing ∅ .readOpp (List.mem_singleton_self 1) (Finset.notMem_empty 1)
       ((plain_profile_iff ∅ .readOpp).mp admitted),
     (plain_profile_iff ∅ .bindA).mpr (bindA_plain ∅),
@@ -168,9 +168,9 @@ theorem covered_profile :
 
 /-- **The refutation member.** -/
 theorem refuted_profile :
-    profile .refuted .absentP ∧ profile .refuted .readOpp ∧ profile .refuted .bindA ∧
+    profile .refuted .noP ∧ profile .refuted .readOpp ∧ profile .refuted .bindA ∧
       ¬ profile .refuted .findP := by
-  refine ⟨(plain_profile_iff {1} .absentP).mpr (absentP_plain {1} fun τ o inside => ?_),
+  refine ⟨(plain_profile_iff {1} .noP).mpr (noP_plain {1} fun τ o inside => ?_),
     (plain_profile_iff {1} .readOpp).mpr ⟨shapes .readOpp, enabled {1} .readOpp fun o member => ?_,
       solvable_refl _ fun e member => ?_, fun _ τ _ => holds_plain {1} .readOpp rfl τ⟩,
     (plain_profile_iff {1} .bindA).mpr (bindA_plain {1}),
@@ -185,7 +185,7 @@ theorem refuted_profile :
 
 /-- **The incomplete member.** -/
 theorem incomplete_profile :
-    ¬ profile .incomplete .absentP ∧ ¬ profile .incomplete .readOpp ∧ profile .incomplete .bindA ∧
+    ¬ profile .incomplete .noP ∧ ¬ profile .incomplete .readOpp ∧ profile .incomplete .bindA ∧
       profile .incomplete .findP := by
   refine ⟨fun admitted => ?_,
     fun admitted => refused_missing {2} .readOpp (List.mem_singleton_self 1) (by decide)
@@ -193,11 +193,11 @@ theorem incomplete_profile :
     (plain_profile_iff {2} .bindA).mpr (bindA_plain {2}),
     (plain_profile_iff {2} .findP).mpr ⟨shapes .findP, enabled {2} .findP fun o member => ?_,
       ⟨point, toGround, fun e member => ?_⟩, fun _ τ _ => holds_plain {2} .findP rfl τ⟩⟩
-  · have asked := ((plain_profile_iff {2} .absentP).mp admitted).2.2.2 point toGround
+  · have asked := ((plain_profile_iff {2} .noP).mp admitted).2.2.2 point toGround
       (fun e member => absurd member List.not_mem_nil)
-    have absent := (Query.absent_holds_iff _ _ _ toGround).mp (asked.2 _ (List.mem_singleton_self _)) 2
+    have notMem := (Query.predicate_holds_iff _ _ _ _ toGround).mp (asked.2 _ (List.mem_singleton_self _)) 2
       (Finset.mem_singleton_self 2)
-    exact absent ((X.equivalence point).symm toGround_solves)
+    exact notMem ((X.equivalence point).symm toGround_solves)
   · obtain rfl := List.mem_singleton.mp member
     exact Finset.mem_singleton_self 2
   · obtain rfl := List.mem_singleton.mp member
@@ -205,9 +205,9 @@ theorem incomplete_profile :
 
 /-! ## The disequality member -/
 
-theorem disequal_absentP : profile .disequal .absentP := by
-  refine (Interface.Step.admits_iff_separating _ (probe .disequal .absentP)).mpr
-    ⟨shapes .absentP, enabled {2} .absentP (no_reads .absentP rfl {2}),
+theorem disequal_noP : profile .disequal .noP := by
+  refine (Interface.Step.admits_iff_separating _ (probe .disequal .noP)).mpr
+    ⟨shapes .noP, enabled {2} .noP (no_reads .noP rfl {2}),
       ⟨point, toArrow, fun e member => absurd member List.not_mem_nil, ?_⟩, ?_⟩
   · intro d member equated
     rcases List.mem_append.mp member with carried | none
@@ -218,7 +218,7 @@ theorem disequal_absentP : profile .disequal .absentP := by
   · intro b g _ separated
     refine ⟨Frames.models_nil _, fun q member => ?_⟩
     obtain rfl := List.mem_singleton.mp member
-    refine (Query.absent_holds_iff _ _ _ g).mpr fun o inside equated => ?_
+    refine (Query.predicate_holds_iff _ _ _ _ g).mpr fun o inside equated => ?_
     obtain rfl := Finset.mem_singleton.mp inside
     apply separated _ (List.mem_append_left _ (List.mem_singleton_self _))
     exact (congrArg (X.E (X.act g (X.act (𝟙 triple) xUniverse)))
@@ -258,16 +258,16 @@ theorem disequal_findP : ¬ profile .disequal .findP := by
 
 /-- **The sixteen verdicts**, the same as at the first-order step. -/
 theorem table :
-    (profile .covered .absentP ∧ ¬ profile .covered .readOpp ∧ profile .covered .bindA ∧
+    (profile .covered .noP ∧ ¬ profile .covered .readOpp ∧ profile .covered .bindA ∧
       ¬ profile .covered .findP) ∧
-    (profile .refuted .absentP ∧ profile .refuted .readOpp ∧ profile .refuted .bindA ∧
+    (profile .refuted .noP ∧ profile .refuted .readOpp ∧ profile .refuted .bindA ∧
       ¬ profile .refuted .findP) ∧
-    (¬ profile .incomplete .absentP ∧ ¬ profile .incomplete .readOpp ∧
+    (¬ profile .incomplete .noP ∧ ¬ profile .incomplete .readOpp ∧
       profile .incomplete .bindA ∧ profile .incomplete .findP) ∧
-    (profile .disequal .absentP ∧ ¬ profile .disequal .readOpp ∧ ¬ profile .disequal .bindA ∧
+    (profile .disequal .noP ∧ ¬ profile .disequal .readOpp ∧ ¬ profile .disequal .bindA ∧
       ¬ profile .disequal .findP) :=
   ⟨covered_profile, refuted_profile, incomplete_profile,
-    ⟨disequal_absentP, disequal_readOpp, disequal_bindA, disequal_findP⟩⟩
+    ⟨disequal_noP, disequal_readOpp, disequal_bindA, disequal_findP⟩⟩
 
 /-- **No two members coincide** at dependent frames. -/
 theorem profiles_distinct (m₁ m₂ : Member) (different : m₁ ≠ m₂) : profile m₁ ≠ profile m₂ := by
@@ -278,23 +278,23 @@ theorem profiles_distinct (m₁ m₂ : Member) (different : m₁ ≠ m₂) : pro
   all_goals first
     | exact different rfl
     | exact c2 ((at_ .readOpp).mpr r2)
-    | exact i1 ((at_ .absentP).mp c1)
+    | exact i1 ((at_ .noP).mp c1)
     | exact d3 ((at_ .bindA).mp c3)
     | exact c2 ((at_ .readOpp).mp r2)
-    | exact i1 ((at_ .absentP).mp r1)
+    | exact i1 ((at_ .noP).mp r1)
     | exact d3 ((at_ .bindA).mp r3)
-    | exact i1 ((at_ .absentP).mpr c1)
-    | exact i1 ((at_ .absentP).mpr r1)
-    | exact i1 ((at_ .absentP).mpr d1)
+    | exact i1 ((at_ .noP).mpr c1)
+    | exact i1 ((at_ .noP).mpr r1)
+    | exact i1 ((at_ .noP).mpr d1)
     | exact d3 ((at_ .bindA).mpr c3)
     | exact d3 ((at_ .bindA).mpr r3)
-    | exact i1 ((at_ .absentP).mp d1)
+    | exact i1 ((at_ .noP).mp d1)
 
 #print axioms ground_ne_arrow
 #print axioms covered_profile
 #print axioms refuted_profile
 #print axioms incomplete_profile
-#print axioms disequal_absentP
+#print axioms disequal_noP
 #print axioms disequal_bindA
 #print axioms disequal_findP
 #print axioms table

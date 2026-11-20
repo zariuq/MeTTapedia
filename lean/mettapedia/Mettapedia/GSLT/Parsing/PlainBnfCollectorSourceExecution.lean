@@ -124,7 +124,7 @@ variable {Scalar : Type} [NameScalarCodec Scalar]
 
 /-- The existing name carrier, encoded in the actual source text constructors. -/
 def name : List Scalar → SExpr
-  | [] => .list [.atom "metta-nullary", .atom "bnf-v1:text-nil"]
+  | [] => .list [.atom "bnf-v1:text-nil"]
   | scalar :: tail => .list [.atom "bnf-v1:text-cons", .atom (NameScalarCodec.decimal scalar), name tail]
 
 def definition (value : PlainBnfDeclarationSemantics.Definition
@@ -148,7 +148,7 @@ def entry : PlainBnfDeclarationSemantics.Entry
 
 def entries : List (PlainBnfDeclarationSemantics.Entry
     (List Scalar) SExpr SExpr SExpr) → SExpr
-  | [] => .list [.atom "metta-nullary", .atom "bnf-v1:entries-nil"]
+  | [] => .list [.atom "bnf-v1:entries-nil"]
   | head :: tail => .list [.atom "bnf-v1:entries-cons", entry head, entries tail]
 
 theorem name_injective : Function.Injective (name (Scalar := Scalar)) := by
@@ -265,7 +265,7 @@ theorem signed_name_retains_negative_atom :
     name ([-3, 0, 7] : List Int) = .list [.atom "bnf-v1:text-cons", .atom "-3",
       .list [.atom "bnf-v1:text-cons", .atom "0",
         .list [.atom "bnf-v1:text-cons", .atom "7",
-          .list [.atom "metta-nullary", .atom "bnf-v1:text-nil"]]]] := rfl
+          .list [.atom "bnf-v1:text-nil"]]]] := rfl
 
 theorem opposite_signed_names_are_distinct :
     name ([-3, 0] : List Int) ≠ name ([3, 0] : List Int) := by
@@ -459,7 +459,7 @@ def collectorBaseLanguage : LanguageDef :=
 
 private def collectorNilLeft : SExpr :=
   .list [.atom "BNFDiscoveryCollectLoopV1",
-    .list [.atom "metta-nullary", .atom "bnf-v1:entries-nil"],
+    .list [.atom "bnf-v1:entries-nil"],
     .atom "?index", .atom "?reversed"]
 
 private def collectorNilRight : SExpr :=
@@ -478,7 +478,7 @@ theorem collector_nil_rule_exact : (sourceRule? 41 >>= lowerRule?) = some
 
 def collectorNilCall (index : SExpr) (reversed : List SExpr) : SExpr :=
   .list [.atom "BNFDiscoveryCollectLoopV1",
-    .list [.atom "metta-nullary", .atom "bnf-v1:entries-nil"], index, definitions reversed]
+    .list [.atom "bnf-v1:entries-nil"], index, definitions reversed]
 
 def collectorNilResult (index : SExpr) (ordered : List SExpr) : SExpr :=
   .list [definitions ordered, .atom "BNFDiagnosticsNilV1", index]

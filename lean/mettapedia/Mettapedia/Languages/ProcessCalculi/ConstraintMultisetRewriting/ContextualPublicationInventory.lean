@@ -112,7 +112,7 @@ theorem holds_extendPrivate (candidate : Assignment captures next)
       ContextualGuardSemantics.Holds locals candidate rows world check := by
   cases check with
   | equal _ _ => rfl
-  | absent pattern => simp only [ContextualGuardSemantics.Holds,extendPrivate_matches_iff]
+  | predicate quantifier pattern => simp only [ContextualGuardSemantics.Holds,extendPrivate_matches_iff]
   | count pattern number => simp only [ContextualGuardSemantics.Holds,region_extendPrivate]
 
 theorem ask_extendPrivate {Γ : Ctx S} {sort : S.Srt}

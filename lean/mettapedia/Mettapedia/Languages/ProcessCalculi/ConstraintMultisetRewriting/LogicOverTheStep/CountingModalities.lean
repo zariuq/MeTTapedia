@@ -462,8 +462,7 @@ theorem program_events_iff (supply : Supply label) (R : Set (RuleInstance T)) (n
     obtain ⟨π, keeps, canonicalValid, canonicalResult⟩ := canonical_event A label supply valid.firing
     let f₀ : AnnotatedRuns.Firing T S O :=
       ⟨rule, [], ⟨taken, read, freshFor label supply C.present rule.produce⟩⟩
-    have f₀Valid : f₀.Valid A label C :=
-      (PredicateQueryAdmission.valid_empty_iff A label rule C _).mpr canonicalValid
+    have f₀Valid : f₀.Valid A label C := PredicateQueryAdmission.regionValid_nil_iff.mpr canonicalValid
     refine ⟨f₀, ⟨(AnnotatedRuns.firstOrder A label).toStep.prepares f₀Valid, f₀Valid, inR, rfl, rfl⟩,
       key, ?_⟩
     show φ ((⟨taken, read, freshFor label supply C.present rule.produce⟩ : Selection O).result label rule C)
@@ -559,7 +558,7 @@ theorem eventDiamond_rename (R : Set (RuleInstance T)) (n : ℕ) {φ : Configura
   obtain ⟨⟨rule, queries, sel⟩, ⟨_, valid, inR⟩, key, holds⟩ := witnesses k₀ inEvents
   let f : AnnotatedRuns.Firing T S O := ⟨rule, [], renameSel π sel⟩
   have fValid : f.Valid A label (renameConf π C) :=
-    (PredicateQueryAdmission.valid_empty_iff A label rule _ _).mpr (valid_rename A label keeps valid.firing)
+    PredicateQueryAdmission.regionValid_nil_iff.mpr (valid_rename A label keeps valid.firing)
   refine ⟨f, ⟨(AnnotatedRuns.firstOrder A label).toStep.prepares fValid, fValid, inR⟩, ?_, ?_⟩
   · rw [← key]
     rfl
@@ -686,8 +685,8 @@ theorem reading_admitted {C : Conf} {k : ℕ} (present : (factT, k) ∈ C.presen
     · intro check member
       simp [readsT] at member
   exact ⟨(AnnotatedRuns.firstOrder ground Prod.fst).toStep.prepares
-      ((PredicateQueryAdmission.valid_empty_iff ground Prod.fst readsT C _).mpr valid),
-    (PredicateQueryAdmission.valid_empty_iff ground Prod.fst readsT C _).mpr valid, rfl, rfl, rfl⟩
+      (PredicateQueryAdmission.regionValid_nil_iff.mpr valid),
+    PredicateQueryAdmission.regionValid_nil_iff.mpr valid, rfl, rfl, rfl⟩
 
 /-- Every event of the reading program is a reading of a present copy. -/
 theorem event_is_reading {C : Conf} {f : Fir} (admitted : readStep.Admits (s := C) f) :
@@ -879,7 +878,7 @@ theorem making_admitted (i : ℕ) :
       simp [Selection.problem, Selection.equations, makingT, emptyConf] at inProblem
     · intro check inChecks
       simp [makingT] at inChecks
-  have fValid := (PredicateQueryAdmission.valid_empty_iff ground Prod.fst makingT emptyConf _).mpr valid
+  have fValid := PredicateQueryAdmission.regionValid_nil_iff.mpr valid
   exact ⟨(AnnotatedRuns.firstOrder ground Prod.fst).toStep.prepares fValid, fValid, rfl⟩
 
 /-- **Firings of the real step are unbounded**: at the empty store, the making program has at least

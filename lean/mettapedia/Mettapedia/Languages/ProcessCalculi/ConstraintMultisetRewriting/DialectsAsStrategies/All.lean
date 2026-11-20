@@ -26,7 +26,7 @@ A language is a core step, a strategy over its runs, and an observation.
   Prolog evaluator is the depth-first handler over its atomic goals on the control-free fragment;
   `Logic.LP`'s SLD refutations are the answers of the leftmost SLD space on ground programs; cut as
   a scoped commit; `\+` operationally without stratification, and stratification as the adequacy
-  profile under which an absence below saturated strata stays true; the logical update view of one
+  profile under which a none query below saturated strata stays true; the logical update view of one
   invocation is its pre-state.
 * `PeTTaAndHE`: PeTTa's and HE's strategy and observation; the narrowing from the step is open in
   the sequential evaluator and under a lock around each branch, and not open under the interleaving

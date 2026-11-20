@@ -1,5 +1,6 @@
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.RuleInstantiationExecution
 import Mettapedia.OSLF.MeTTaIL.ScopedRuleInstantiation
+import Mettapedia.Tools.KernelReflexivity
 
 /-!
 # Scoped RHS and source-selected reflective substitution execution
@@ -32,6 +33,28 @@ def runtime : Program := RuleExecutionProgram.program.append sourceProgram
 
 theorem runtime_eq_append : runtime = RuleExecutionProgram.program.append sourceProgram := rfl
 
+/-- The reflective operations, loaded over the rule execution program, own their prefix. -/
+private def library : BridgeKit.Library :=
+  ⟨RuleExecutionProgram.program, sourceProgram,
+    ["gslt:rule:scope-reflective-"]⟩
+
+/-- The base defines and calls no owned operation, and the source defines and declares only owned
+operations. -/
+private theorem library_checked : library.check = true := by decide +kernel
+
+private theorem registered_of_source {head : String}
+    (found : sourceProgram.equations.any (·.head == head) = true) :
+    runtime.equations.any (·.head == head) = true := by
+  simp only [runtime, SpaceSemantics.Program.append, List.any_append, found, Bool.or_true]
+
+private theorem raw_of_source {head : String} {index : Nat}
+    (raw : argumentIsRaw sourceProgram head index = true) : argumentIsRaw runtime head index = true := by
+  unfold argumentIsRaw at raw ⊢
+  by_cases native : StdLib.known head
+  · simpa only [native, ↓reduceIte] using raw
+  · simp only [native, Bool.false_eq_true, ↓reduceIte] at raw ⊢
+    simp only [runtime, SpaceSemantics.Program.append, List.any_append, raw, Bool.or_true]
+
 theorem retained_program_agreement (allowed : String → Bool)
     (freshEquations : ∀ equation ∈ sourceProgram.equations, allowed equation.head = false)
     (freshDeclarations : ∀ name types,
@@ -48,48 +71,67 @@ private abbrev number (value : Nat) : Atom := encoded (.natural value)
 private abbrev patternValue (pattern : Pattern) : Atom := encoded (InferenceCettaWire.encodePattern pattern)
 private abbrev patternsValue (patterns : List Pattern) : Atom := encoded (InferenceCettaWire.encodePatterns patterns)
 private abbrev textValue (value : String) : Atom := encoded (.string value)
-private abbrev markValue (value : Pattern × Bool) : Atom :=
-  a "ReflectedNameMark" [patternValue value.1, Effects.boolean value.2]
 private abbrev declarationValue (declaration : ReflectivePresentationDecl) : Atom :=
   encoded (InferenceCettaWire.AuthoredRule.reflectivePresentationTerm declaration)
 
-attribute [local simp] Effects.boolean encoded number patternValue patternsValue textValue markValue declarationValue
+attribute [local simp] Effects.boolean encoded number patternValue patternsValue textValue declarationValue
 
 private inductive Helper where
-  | normalize | normalizeList | normalizeFinish | replacement | normalizedMark | nameMark
-  | unmark | dropFinish | instantiate | instantiateList | instantiateApply | instantiateUnary | operation
+  | normalize | normalizeList | normalizeFinish | replacement
+  | binderHead | binderHeadList | binderHeadJoin | binderHeadFold | binderHeadApply
+  | leaves | leavesList | append | exposedDrop | resolveFinish | resolve | resolveList
+  | receive | substitute | substituteList | substituteApply | substituteUnary | operation
 private def Helper.head : Helper → String
   | .normalize => "gslt:rule:scope-reflective-normalize"
   | .normalizeList => "gslt:rule:scope-reflective-normalize-list"
   | .normalizeFinish => "gslt:rule:scope-reflective-normalize-finish"
   | .replacement => "gslt:rule:scope-reflective-replacement"
-  | .normalizedMark => "gslt:rule:scope-reflective-normalized-mark"
-  | .nameMark => "gslt:rule:scope-reflective-name-mark"
-  | .unmark => "gslt:rule:scope-reflective-unmark"
-  | .dropFinish => "gslt:rule:scope-reflective-drop-finish"
-  | .instantiate => "gslt:rule:scope-reflective-instantiate-at"
-  | .instantiateList => "gslt:rule:scope-reflective-instantiate-list-at"
-  | .instantiateApply => "gslt:rule:scope-reflective-instantiate-apply"
-  | .instantiateUnary => "gslt:rule:scope-reflective-instantiate-unary"
+  | .binderHead => "gslt:rule:scope-reflective-binder-head"
+  | .binderHeadList => "gslt:rule:scope-reflective-binder-head-list"
+  | .binderHeadJoin => "gslt:rule:scope-reflective-binder-head-join"
+  | .binderHeadFold => "gslt:rule:scope-reflective-binder-head-fold"
+  | .binderHeadApply => "gslt:rule:scope-reflective-binder-head-apply"
+  | .leaves => "gslt:rule:scope-reflective-leaves"
+  | .leavesList => "gslt:rule:scope-reflective-leaves-list"
+  | .append => "gslt:rule:scope-reflective-append"
+  | .exposedDrop => "gslt:rule:scope-reflective-exposed-drop"
+  | .resolveFinish => "gslt:rule:scope-reflective-resolve-finish"
+  | .resolve => "gslt:rule:scope-reflective-resolve"
+  | .resolveList => "gslt:rule:scope-reflective-resolve-list"
+  | .receive => "gslt:rule:scope-reflective-receive"
+  | .substitute => "gslt:rule:scope-reflective-substitute-at"
+  | .substituteList => "gslt:rule:scope-reflective-substitute-list-at"
+  | .substituteApply => "gslt:rule:scope-reflective-substitute-apply"
+  | .substituteUnary => "gslt:rule:scope-reflective-substitute-unary"
   | .operation => "gslt:rule:scope-reflective-binder-operation"
 private def Helper.names : Helper → List String
   | .normalize => ["quote", "drop", "pattern"]
   | .normalizeList => ["quote", "drop", "patterns"]
   | .normalizeFinish => ["quote", "drop", "head", "children"]
   | .replacement => ["quote", "drop", "replacement"]
-  | .normalizedMark => ["depth", "replacement", "name"]
-  | .nameMark => ["quote", "drop", "depth", "replacement", "name"]
-  | .unmark => ["marked"]
-  | .dropFinish => ["quote", "head", "marked"]
-  | .instantiate => ["quote", "drop", "depth", "replacement", "pattern"]
-  | .instantiateList => ["quote", "drop", "depth", "replacement", "patterns"]
-  | .instantiateApply => ["quote", "drop", "depth", "replacement", "head", "children"]
-  | .instantiateUnary => ["quote", "drop", "depth", "replacement", "head", "payload"]
+  | .binderHead => ["quote", "drop", "parallel-kind", "parallel-unit", "pattern"]
+  | .binderHeadList => ["quote", "drop", "parallel-kind", "parallel-unit", "patterns"]
+  | .binderHeadJoin => ["left", "right"]
+  | .binderHeadFold => ["heads"]
+  | .binderHeadApply => ["quote", "drop", "parallel-unit", "constructor", "heads"]
+  | .leaves => ["parallel-kind", "parallel-unit", "pattern"]
+  | .leavesList => ["parallel-kind", "parallel-unit", "patterns"]
+  | .append => ["left", "right"]
+  | .exposedDrop => ["drop", "parallel-kind", "parallel-unit", "pattern"]
+  | .resolveFinish => ["quote", "drop", "parallel-kind", "parallel-unit", "head", "children"]
+  | .resolve => ["quote", "drop", "parallel-kind", "parallel-unit", "pattern"]
+  | .resolveList => ["quote", "drop", "parallel-kind", "parallel-unit", "patterns"]
+  | .receive => ["quote", "head", "name"]
+  | .substitute => ["quote", "drop", "parallel-kind", "parallel-unit", "inside", "depth", "replacement", "pattern"]
+  | .substituteList => ["quote", "drop", "parallel-kind", "parallel-unit", "inside", "depth", "replacement", "patterns"]
+  | .substituteApply => ["quote", "drop", "parallel-kind", "parallel-unit", "inside", "depth", "replacement", "head", "children"]
+  | .substituteUnary => ["quote", "drop", "parallel-kind", "parallel-unit", "inside", "depth", "replacement", "head", "payload"]
   | .operation => ["declaration", "replacement", "body"]
 private def reflectiveHeads : List String :=
-  [.normalize, .normalizeList, .normalizeFinish, .replacement, .normalizedMark,
-   .nameMark, .unmark, .dropFinish, .instantiate, .instantiateList,
-   .instantiateApply, .instantiateUnary, .operation].map Helper.head
+  [.normalize, .normalizeList, .normalizeFinish, .replacement, .binderHead, .binderHeadList,
+   .binderHeadJoin, .binderHeadFold, .binderHeadApply, .leaves, .leavesList, .append, .exposedDrop,
+   .resolveFinish, .resolve, .resolveList, .receive, .substitute, .substituteList,
+   .substituteApply, .substituteUnary, .operation].map Helper.head
 private def retainedHead (head : String) : Bool := head != "eval" && !reflectiveHeads.contains head
 private theorem retained_closed : ProgramClosed retainedHead RuleExecutionProgram.program := by
   constructor
@@ -123,7 +165,9 @@ private theorem retained_returns {caller : Subst} {state : State} {code answer :
     PureReturns runtime caller state code state answer :=
   path_of_closed_agreement retained_closed retained_agreement ⟨supported, rfl⟩ returned
 
-private def equations (head : String) : List SpaceSemantics.Equation := runtime.equations.filter (fun equation => equation.head == head)
+private theorem helper_owned (helper : Helper) : library.owns helper.head = true := by
+  cases helper <;> decide +kernel
+private def equations (head : String) : List SpaceSemantics.Equation := sourceProgram.equations.filter (fun equation => equation.head == head)
 private def equation (helper : Helper) : SpaceSemantics.Equation := (equations helper.head)[0]'(by cases helper <;> decide +kernel)
 private def environment (helper : Helper) (values : List Atom) : Subst := (helper.names.zip values).reverse
 
@@ -131,15 +175,17 @@ private theorem helper_clause (helper : Helper) (values : List Atom)
     (length : values.length = helper.names.length) :
     clauses runtime helper.head values = [.evaluate (environment helper values) (equation helper).body] :=
   PureData.named_equation_clause runtime helper.head (equation helper) helper.names values
-    (by cases helper <;> rfl) (by cases helper <;> decide +kernel)
+    (by
+      exact (BridgeKit.Library.owned_equations library_checked (helper_owned helper)).trans
+        (by cases helper <;> kernel_reflexivity)) (by cases helper <;> decide +kernel)
     (by cases helper <;> decide) length
 
 private theorem helper_raw (helper : Helper) (index : Nat) (bounded : index < helper.names.length) :
     argumentIsRaw runtime helper.head index = true := by
   have checked : (List.range helper.names.length).all
-      (fun index => argumentIsRaw runtime helper.head index) = true := by
+      (fun index => argumentIsRaw sourceProgram helper.head index) = true := by
     cases helper <;> decide +kernel
-  exact List.all_eq_true.mp checked index (List.mem_range.mpr bounded)
+  exact raw_of_source (List.all_eq_true.mp checked index (List.mem_range.mpr bounded))
 
 private theorem helper_call (helper : Helper) (caller : Subst) (state : State)
     (arguments values : List Atom) (answer : Atom)
@@ -150,7 +196,7 @@ private theorem helper_call (helper : Helper) (caller : Subst) (state : State)
   apply PureData.raw_authored_call_return runtime caller (environment helper values) state state
     helper.head arguments (equation helper).body answer
     (by cases helper <;> decide) (by cases helper <;> decide) (by cases helper <;> decide)
-    (by cases helper <;> decide +kernel)
+    (registered_of_source (by cases helper <;> decide +kernel))
   · intro index bounded
     apply helper_raw helper index
     have same : arguments.length = values.length := by simpa using congrArg List.length captured
@@ -171,7 +217,8 @@ private theorem helper_capture (helper : Helper) (caller : Subst) (state : State
     (returned : PureReturns runtime [] state (a helper.head values) state answer) :
     PureReturns runtime caller state (a helper.head arguments) state answer := by
   apply PureData.raw_capture_returns runtime [] caller state state helper.head values arguments answer
-    (by cases helper <;> decide +kernel) _ (by cases helper <;> decide) _ returned
+    (by simp only [registered_of_source (head := helper.head) (by cases helper <;> decide +kernel), Bool.or_true])
+    _ (by cases helper <;> decide) _ returned
   · intro index bounded
     exact helper_raw helper index (by omega)
   · simpa only [captured_closed] using captured.symm
@@ -289,110 +336,297 @@ private def replacementRows : SpaceSemantics.Cases :=
 private def replacementBody : Atom :=
   a "case" [v "replacement", .expression (replacementRows.map fun row => .expression [row.1, row.2])]
 
-private def normalizedMarkRow0 : Atom :=
-  a "let*" [.expression [.expression [v "value", a "gslt:rule:instantiate-bvar-at" [v "depth", v "replacement", v "name"]], .expression [v "matched", a "==" [v "index", v "depth"]]], a "ReflectedNameMark" [v "value", v "matched"]]
+private def collectionRestRows : SpaceSemantics.Cases :=
+  [(.symbol "RNone",
+     a "let" [v "heads", a "gslt:rule:scope-reflective-binder-head-list" [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "elements"],
+       a "gslt:rule:scope-reflective-binder-head-fold" [v "heads"]]),
+   (v "open", .symbol "BinderOpaque")]
 
-private def normalizedMarkRow1 : Atom :=
-  a "ReflectedNameMark" [v "name", Effects.boolean false]
+private def binderHeadRows : SpaceSemantics.Cases :=
+  [(a "Var" [v "index"], a "BinderIndex" [v "index"]),
+   (a "PApp" [v "head", v "children"],
+     a "let" [v "heads", a "gslt:rule:scope-reflective-binder-head-list" [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "children"],
+       a "gslt:rule:scope-reflective-binder-head-apply" [v "quote", v "drop", v "parallel-unit", v "head", v "heads"]]),
+   (a "PCollection" [v "collection", v "elements", v "rest"],
+     a "if" [a "==" [v "collection", v "parallel-kind"],
+       a "case" [v "rest", .expression (collectionRestRows.map fun row => .expression [row.1, row.2])],
+       .symbol "BinderOpaque"]),
+   (v "other", .symbol "BinderOpaque")]
 
-private def normalizedMarkRows : SpaceSemantics.Cases :=
-  [(a "Var" [v "index"], normalizedMarkRow0),
-   (v "literal", normalizedMarkRow1)]
+private def binderHeadBody : Atom :=
+  a "case" [v "pattern", .expression (binderHeadRows.map fun row => .expression [row.1, row.2])]
 
-private def normalizedMarkBody : Atom :=
-  a "case" [v "name", .expression (normalizedMarkRows.map fun row => .expression [row.1, row.2])]
+private def binderHeadListRows : SpaceSemantics.Cases :=
+  [(.symbol "LNil", .symbol "LNil"),
+   (a "LCons" [v "pattern", v "rest"],
+     a "let*" [.expression [.expression [v "head", a "gslt:rule:scope-reflective-binder-head" [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "pattern"]], .expression [v "tail", a "gslt:rule:scope-reflective-binder-head-list" [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "rest"]]], a "LCons" [v "head", v "tail"]])]
 
-private def nameMarkBody : Atom :=
-  a "let" [v "normalized", a "gslt:rule:scope-reflective-normalize" [v "quote", v "drop", v "name"], a "gslt:rule:scope-reflective-normalized-mark" [v "depth", v "replacement", v "normalized"]]
+private def binderHeadListBody : Atom :=
+  a "case" [v "patterns", .expression (binderHeadListRows.map fun row => .expression [row.1, row.2])]
 
-private def unmarkRow0 : Atom :=
-  v "name"
+private def joinInnerRows : SpaceSemantics.Cases :=
+  [(.symbol "BinderUnit", v "left"),
+   (v "other", .symbol "BinderOpaque")]
 
-private def unmarkRows : SpaceSemantics.Cases :=
-  [(a "ReflectedNameMark" [v "name", v "matched"], unmarkRow0)]
+private def joinRows : SpaceSemantics.Cases :=
+  [(.symbol "BinderUnit", v "right"),
+   (v "present", a "case" [v "right", .expression (joinInnerRows.map fun row => .expression [row.1, row.2])])]
 
-private def unmarkBody : Atom :=
-  a "case" [v "marked", .expression (unmarkRows.map fun row => .expression [row.1, row.2])]
+private def binderHeadJoinBody : Atom :=
+  a "case" [v "left", .expression (joinRows.map fun row => .expression [row.1, row.2])]
 
-private def dropFinishRow0 : Atom :=
-  a "if" [v "matched", a "case" [v "name", .expression [.expression [a "PApp" [v "inner-head", a "LCons" [v "process", .symbol "LNil"]], a "if" [a "==" [v "inner-head", v "quote"], v "process", a "PApp" [v "head", a "LCons" [v "name", .symbol "LNil"]]]], .expression [v "ordinary", a "PApp" [v "head", a "LCons" [v "name", .symbol "LNil"]]]]], a "PApp" [v "head", a "LCons" [v "name", .symbol "LNil"]]]
+private def foldRows : SpaceSemantics.Cases :=
+  [(.symbol "LNil", .symbol "BinderUnit"),
+   (a "LCons" [v "head", v "rest"],
+     a "let" [v "tail", a "gslt:rule:scope-reflective-binder-head-fold" [v "rest"],
+       a "gslt:rule:scope-reflective-binder-head-join" [v "head", v "tail"]])]
 
-private def dropFinishRows : SpaceSemantics.Cases :=
-  [(a "ReflectedNameMark" [v "name", v "matched"], dropFinishRow0)]
+private def binderHeadFoldBody : Atom :=
+  a "case" [v "heads", .expression (foldRows.map fun row => .expression [row.1, row.2])]
 
-private def dropFinishBody : Atom :=
-  a "case" [v "marked", .expression (dropFinishRows.map fun row => .expression [row.1, row.2])]
+private def applyRows : SpaceSemantics.Cases :=
+  [(.symbol "LNil", a "if" [a "==" [v "constructor", v "parallel-unit"], .symbol "BinderUnit", .symbol "BinderOpaque"]),
+   (a "LCons" [a "BinderDrop" [v "name"], .symbol "LNil"],
+     a "if" [a "==" [v "constructor", v "quote"], v "name",
+       a "if" [a "==" [v "constructor", v "drop"], a "BinderDrop" [a "BinderDrop" [v "name"]], .symbol "BinderOpaque"]]),
+   (a "LCons" [v "argument", .symbol "LNil"],
+     a "if" [a "==" [v "constructor", v "drop"], a "BinderDrop" [v "argument"], .symbol "BinderOpaque"]),
+   (v "many", .symbol "BinderOpaque")]
 
-private def instantiateRow0 : Atom :=
-  a "gslt:rule:instantiate-bvar-at" [v "depth", v "replacement", v "pattern"]
+private def binderHeadApplyBody : Atom :=
+  a "case" [v "heads", .expression (applyRows.map fun row => .expression [row.1, row.2])]
 
-private def instantiateRow1 : Atom :=
+private def leavesUnitRow : Atom :=
+  a "if" [a "==" [v "head", v "parallel-unit"], .symbol "LNil", a "LCons" [v "pattern", .symbol "LNil"]]
+
+private def leavesApplyRows : SpaceSemantics.Cases :=
+  [(.symbol "LNil", leavesUnitRow),
+   (v "many", a "LCons" [v "pattern", .symbol "LNil"])]
+
+private def leavesRestRows : SpaceSemantics.Cases :=
+  [(.symbol "RNone", a "gslt:rule:scope-reflective-leaves-list" [v "parallel-kind", v "parallel-unit", v "elements"]),
+   (v "open", a "LCons" [v "pattern", .symbol "LNil"])]
+
+private def leavesCollectionRow : Atom :=
+  a "if" [a "==" [v "collection", v "parallel-kind"],
+    a "case" [v "rest", .expression (leavesRestRows.map fun row => .expression [row.1, row.2])],
+    a "LCons" [v "pattern", .symbol "LNil"]]
+
+private def leavesRows : SpaceSemantics.Cases :=
+  [(a "PApp" [v "head", v "children"],
+     a "case" [v "children", .expression (leavesApplyRows.map fun row => .expression [row.1, row.2])]),
+   (a "PCollection" [v "collection", v "elements", v "rest"], leavesCollectionRow),
+   (v "other", a "LCons" [v "pattern", .symbol "LNil"])]
+
+private def leavesBody : Atom :=
+  a "case" [v "pattern", .expression (leavesRows.map fun row => .expression [row.1, row.2])]
+
+private def leavesListRow1 : Atom :=
+  a "let*" [.expression [.expression [v "head", a "gslt:rule:scope-reflective-leaves" [v "parallel-kind", v "parallel-unit", v "pattern"]], .expression [v "tail", a "gslt:rule:scope-reflective-leaves-list" [v "parallel-kind", v "parallel-unit", v "rest"]]], a "gslt:rule:scope-reflective-append" [v "head", v "tail"]]
+
+private def leavesListRows : SpaceSemantics.Cases :=
+  [(.symbol "LNil", .symbol "LNil"),
+   (a "LCons" [v "pattern", v "rest"], leavesListRow1)]
+
+private def leavesListBody : Atom :=
+  a "case" [v "patterns", .expression (leavesListRows.map fun row => .expression [row.1, row.2])]
+
+private def appendRow1 : Atom :=
+  a "let" [v "tail", a "gslt:rule:scope-reflective-append" [v "rest", v "right"], a "LCons" [v "item", v "tail"]]
+
+private def appendRows : SpaceSemantics.Cases :=
+  [(.symbol "LNil", v "right"),
+   (a "LCons" [v "item", v "rest"], appendRow1)]
+
+private def appendBody : Atom :=
+  a "case" [v "left", .expression (appendRows.map fun row => .expression [row.1, row.2])]
+
+private def exposedRows : SpaceSemantics.Cases :=
+  [(a "LCons" [a "PApp" [v "head", a "LCons" [v "name", .symbol "LNil"]], .symbol "LNil"],
+     a "if" [a "==" [v "head", v "drop"], a "Some" [v "name"], .symbol "None"]),
+   (v "other", .symbol "None")]
+
+private def exposedDropBody : Atom :=
+  a "let" [v "leaves", a "gslt:rule:scope-reflective-leaves" [v "parallel-kind", v "parallel-unit", v "pattern"],
+    a "case" [v "leaves", .expression (exposedRows.map fun row => .expression [row.1, row.2])]]
+
+private def exposedNameRows : SpaceSemantics.Cases :=
+  [(a "Some" [v "name"], v "name"),
+   (v "none", a "PApp" [v "head", v "children"])]
+
+private def resolveFinishRow0 : Atom :=
+  a "if" [a "==" [v "head", v "quote"],
+    a "let" [v "exposed", a "gslt:rule:scope-reflective-exposed-drop" [v "drop", v "parallel-kind", v "parallel-unit", v "payload"],
+      a "case" [v "exposed", .expression (exposedNameRows.map fun row => .expression [row.1, row.2])]],
+    a "PApp" [v "head", v "children"]]
+
+private def resolveFinishRows : SpaceSemantics.Cases :=
+  [(a "LCons" [v "payload", .symbol "LNil"], resolveFinishRow0),
+   (v "other", a "PApp" [v "head", v "children"])]
+
+private def resolveFinishBody : Atom :=
+  a "case" [v "children", .expression (resolveFinishRows.map fun row => .expression [row.1, row.2])]
+
+private def resolveRow0 : Atom :=
   v "pattern"
 
-private def instantiateRow2 : Atom :=
-  a "gslt:rule:scope-reflective-instantiate-apply" [v "quote", v "drop", v "depth", v "replacement", v "head", v "children"]
+private def resolveRow1 : Atom :=
+  v "pattern"
 
-private def instantiateRow3 : Atom :=
-  a "let*" [.expression [.expression [v "next", a "+" [v "depth", number 1]], .expression [v "value", a "gslt:rule:scope-reflective-instantiate-at" [v "quote", v "drop", v "next", v "replacement", v "body"]]], a "PLam" [v "binder", v "value"]]
+private def resolveRow2 : Atom :=
+  a "let" [v "values", a "gslt:rule:scope-reflective-resolve-list" [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "children"], a "gslt:rule:scope-reflective-resolve-finish" [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "head", v "values"]]
 
-private def instantiateRow4 : Atom :=
-  a "let*" [.expression [.expression [v "next", a "+" [v "depth", v "arity"]], .expression [v "value", a "gslt:rule:scope-reflective-instantiate-at" [v "quote", v "drop", v "next", v "replacement", v "body"]]], a "PMultiLam" [v "arity", v "binders", v "value"]]
+private def resolveRow3 : Atom :=
+  a "let" [v "value", a "gslt:rule:scope-reflective-resolve" [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "body"], a "PLam" [v "binder", v "value"]]
 
-private def instantiateRow5 : Atom :=
-  a "let*" [.expression [.expression [v "next", a "+" [v "depth", number 1]], .expression [v "value", a "gslt:rule:scope-reflective-instantiate-at" [v "quote", v "drop", v "next", v "replacement", v "body"]], .expression [v "replacement-value", a "gslt:rule:scope-reflective-instantiate-at" [v "quote", v "drop", v "depth", v "replacement", v "nested-replacement"]]], a "PSubst" [v "value", v "replacement-value"]]
+private def resolveRow4 : Atom :=
+  a "let" [v "value", a "gslt:rule:scope-reflective-resolve" [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "body"], a "PMultiLam" [v "arity", v "binders", v "value"]]
 
-private def instantiateRow6 : Atom :=
-  a "let" [v "values", a "gslt:rule:scope-reflective-instantiate-list-at" [v "quote", v "drop", v "depth", v "replacement", v "elements"], a "PCollection" [v "kind", v "values", v "rest"]]
+private def resolveRow5 : Atom :=
+  a "let*" [.expression [.expression [v "value", a "gslt:rule:scope-reflective-resolve" [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "body"]], .expression [v "replacement-value", a "gslt:rule:scope-reflective-resolve" [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "replacement"]]], a "PSubst" [v "value", v "replacement-value"]]
 
-private def instantiateRows : SpaceSemantics.Cases :=
-  [(a "Var" [v "index"], instantiateRow0),
-   (a "FVar" [v "name"], instantiateRow1),
-   (a "PApp" [v "head", v "children"], instantiateRow2),
-   (a "PLam" [v "binder", v "body"], instantiateRow3),
-   (a "PMultiLam" [v "arity", v "binders", v "body"], instantiateRow4),
-   (a "PSubst" [v "body", v "nested-replacement"], instantiateRow5),
-   (a "PCollection" [v "kind", v "elements", v "rest"], instantiateRow6)]
+private def resolveRow6 : Atom :=
+  a "let" [v "values", a "gslt:rule:scope-reflective-resolve-list" [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "elements"], a "PCollection" [v "kind", v "values", v "rest"]]
 
-private def instantiateBody : Atom :=
-  a "case" [v "pattern", .expression (instantiateRows.map fun row => .expression [row.1, row.2])]
+private def resolveRows : SpaceSemantics.Cases :=
+  [(a "Var" [v "index"], resolveRow0),
+   (a "FVar" [v "name"], resolveRow1),
+   (a "PApp" [v "head", v "children"], resolveRow2),
+   (a "PLam" [v "binder", v "body"], resolveRow3),
+   (a "PMultiLam" [v "arity", v "binders", v "body"], resolveRow4),
+   (a "PSubst" [v "body", v "replacement"], resolveRow5),
+   (a "PCollection" [v "kind", v "elements", v "rest"], resolveRow6)]
 
-private def instantiateListRow0 : Atom :=
+private def resolveBody : Atom :=
+  a "case" [v "pattern", .expression (resolveRows.map fun row => .expression [row.1, row.2])]
+
+private def resolveListRow0 : Atom :=
   .symbol "LNil"
 
-private def instantiateListRow1 : Atom :=
-  a "let*" [.expression [.expression [v "head", a "gslt:rule:scope-reflective-instantiate-at" [v "quote", v "drop", v "depth", v "replacement", v "pattern"]], .expression [v "tail", a "gslt:rule:scope-reflective-instantiate-list-at" [v "quote", v "drop", v "depth", v "replacement", v "rest"]]], a "LCons" [v "head", v "tail"]]
+private def resolveListRow1 : Atom :=
+  a "let*" [.expression [.expression [v "head", a "gslt:rule:scope-reflective-resolve" [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "pattern"]], .expression [v "tail", a "gslt:rule:scope-reflective-resolve-list" [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "rest"]]], a "LCons" [v "head", v "tail"]]
 
-private def instantiateListRows : SpaceSemantics.Cases :=
-  [(.symbol "LNil", instantiateListRow0),
-   (a "LCons" [v "pattern", v "rest"], instantiateListRow1)]
+private def resolveListRows : SpaceSemantics.Cases :=
+  [(.symbol "LNil", resolveListRow0),
+   (a "LCons" [v "pattern", v "rest"], resolveListRow1)]
 
-private def instantiateListBody : Atom :=
-  a "case" [v "patterns", .expression (instantiateListRows.map fun row => .expression [row.1, row.2])]
+private def resolveListBody : Atom :=
+  a "case" [v "patterns", .expression (resolveListRows.map fun row => .expression [row.1, row.2])]
 
-private def instantiateApplyRow0 : Atom :=
-  a "gslt:rule:scope-reflective-instantiate-unary" [v "quote", v "drop", v "depth", v "replacement", v "head", v "payload"]
+private def receiveRows : SpaceSemantics.Cases :=
+  [(a "PApp" [v "inner-head", a "LCons" [v "process", .symbol "LNil"]],
+    a "if" [a "==" [v "inner-head", v "quote"], v "process", a "PApp" [v "head", a "LCons" [v "name", .symbol "LNil"]]]),
+   (v "ordinary", a "PApp" [v "head", a "LCons" [v "name", .symbol "LNil"]])]
 
-private def instantiateApplyRow1 : Atom :=
-  a "let" [v "values", a "gslt:rule:scope-reflective-instantiate-list-at" [v "quote", v "drop", v "depth", v "replacement", v "children"], a "PApp" [v "head", v "values"]]
+private def receiveBody : Atom :=
+  a "case" [v "name", .expression (receiveRows.map fun row => .expression [row.1, row.2])]
 
-private def instantiateApplyRows : SpaceSemantics.Cases :=
-  [(a "LCons" [v "payload", .symbol "LNil"], instantiateApplyRow0),
-   (v "many", instantiateApplyRow1)]
+private def substituteRow0 : Atom :=
+  a "gslt:rule:instantiate-bvar-at" [v "depth", v "replacement", v "pattern"]
 
-private def instantiateApplyBody : Atom :=
-  a "case" [v "children", .expression (instantiateApplyRows.map fun row => .expression [row.1, row.2])]
+private def substituteRow1 : Atom :=
+  v "pattern"
 
-private def instantiateUnaryBody : Atom :=
-  a "if" [a "==" [v "head", v "quote"], a "let" [v "marked", a "gslt:rule:scope-reflective-name-mark" [v "quote", v "drop", v "depth", v "replacement", a "PApp" [v "head", a "LCons" [v "payload", .symbol "LNil"]]], a "gslt:rule:scope-reflective-unmark" [v "marked"]], a "if" [a "==" [v "head", v "drop"], a "let" [v "marked", a "gslt:rule:scope-reflective-name-mark" [v "quote", v "drop", v "depth", v "replacement", v "payload"], a "gslt:rule:scope-reflective-drop-finish" [v "quote", v "head", v "marked"]], a "let" [v "value", a "gslt:rule:scope-reflective-instantiate-at" [v "quote", v "drop", v "depth", v "replacement", v "payload"], a "PApp" [v "head", a "LCons" [v "value", .symbol "LNil"]]]]]
+private def substituteRow2 : Atom :=
+  a "gslt:rule:scope-reflective-substitute-apply" [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "inside", v "depth", v "replacement", v "head", v "children"]
+
+private def substituteRow3 : Atom :=
+  a "let*" [.expression [.expression [v "next", a "+" [v "depth", number 1]], .expression [v "value", a "gslt:rule:scope-reflective-substitute-at" [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "inside", v "next", v "replacement", v "body"]]], a "PLam" [v "binder", v "value"]]
+
+private def substituteRow4 : Atom :=
+  a "let*" [.expression [.expression [v "next", a "+" [v "depth", v "arity"]], .expression [v "value", a "gslt:rule:scope-reflective-substitute-at" [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "inside", v "next", v "replacement", v "body"]]], a "PMultiLam" [v "arity", v "binders", v "value"]]
+
+private def substituteRow5 : Atom :=
+  a "let*" [.expression [.expression [v "next", a "+" [v "depth", number 1]], .expression [v "value", a "gslt:rule:scope-reflective-substitute-at" [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "inside", v "next", v "replacement", v "body"]], .expression [v "replacement-value", a "gslt:rule:scope-reflective-substitute-at" [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "inside", v "depth", v "replacement", v "nested-replacement"]]], a "PSubst" [v "value", v "replacement-value"]]
+
+private def substituteRow6 : Atom :=
+  a "let" [v "values", a "gslt:rule:scope-reflective-substitute-list-at" [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "inside", v "depth", v "replacement", v "elements"], a "PCollection" [v "kind", v "values", v "rest"]]
+
+private def substituteRows : SpaceSemantics.Cases :=
+  [(a "Var" [v "index"], substituteRow0),
+   (a "FVar" [v "name"], substituteRow1),
+   (a "PApp" [v "head", v "children"], substituteRow2),
+   (a "PLam" [v "binder", v "body"], substituteRow3),
+   (a "PMultiLam" [v "arity", v "binders", v "body"], substituteRow4),
+   (a "PSubst" [v "body", v "nested-replacement"], substituteRow5),
+   (a "PCollection" [v "kind", v "elements", v "rest"], substituteRow6)]
+
+private def substituteBody : Atom :=
+  a "case" [v "pattern", .expression (substituteRows.map fun row => .expression [row.1, row.2])]
+
+private def substituteListRow0 : Atom :=
+  .symbol "LNil"
+
+private def substituteListRow1 : Atom :=
+  a "let*" [.expression [.expression [v "head", a "gslt:rule:scope-reflective-substitute-at" [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "inside", v "depth", v "replacement", v "pattern"]], .expression [v "tail", a "gslt:rule:scope-reflective-substitute-list-at" [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "inside", v "depth", v "replacement", v "rest"]]], a "LCons" [v "head", v "tail"]]
+
+private def substituteListRows : SpaceSemantics.Cases :=
+  [(.symbol "LNil", substituteListRow0),
+   (a "LCons" [v "pattern", v "rest"], substituteListRow1)]
+
+private def substituteListBody : Atom :=
+  a "case" [v "patterns", .expression (substituteListRows.map fun row => .expression [row.1, row.2])]
+
+private def substituteApplyRow0 : Atom :=
+  a "gslt:rule:scope-reflective-substitute-unary" [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "inside", v "depth", v "replacement", v "head", v "payload"]
+
+private def substituteApplyRow1 : Atom :=
+  a "let" [v "values", a "gslt:rule:scope-reflective-substitute-list-at" [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "inside", v "depth", v "replacement", v "children"], a "PApp" [v "head", v "values"]]
+
+private def substituteApplyRows : SpaceSemantics.Cases :=
+  [(a "LCons" [v "payload", .symbol "LNil"], substituteApplyRow0),
+   (v "many", substituteApplyRow1)]
+
+private def substituteApplyBody : Atom :=
+  a "case" [v "children", .expression (substituteApplyRows.map fun row => .expression [row.1, row.2])]
+
+private def substituteThrough : Atom :=
+  a "let" [v "value", a "gslt:rule:scope-reflective-substitute-at" [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "inside", v "depth", v "replacement", v "payload"], a "PApp" [v "head", a "LCons" [v "value", .symbol "LNil"]]]
+
+private def receiveHit : Atom :=
+  a "let" [v "value", a "gslt:rule:instantiate-bvar-at" [v "depth", v "replacement", a "Var" [v "depth"]],
+    a "gslt:rule:scope-reflective-receive" [v "quote", v "head", v "value"]]
+
+private def binderRows : SpaceSemantics.Cases :=
+  [(a "BinderIndex" [v "level"], a "if" [a "==" [v "level", v "depth"], receiveHit, substituteThrough]),
+   (v "other", substituteThrough)]
+
+private def substituteDrop : Atom :=
+  a "let" [v "binder", a "gslt:rule:scope-reflective-binder-head" [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "payload"],
+    a "case" [v "binder", .expression (binderRows.map fun row => .expression [row.1, row.2])]]
+
+private def insideRows : SpaceSemantics.Cases :=
+  [(.symbol "Opaque", a "PApp" [v "head", a "LCons" [v "payload", .symbol "LNil"]]),
+   (a "Enter" [v "value"],
+     a "let" [v "entered", a "gslt:rule:scope-reflective-substitute-at" [v "quote", v "drop", v "parallel-kind",
+       v "parallel-unit", v "inside", v "depth", v "value", v "payload"],
+       a "PApp" [v "head", a "LCons" [v "entered", .symbol "LNil"]]])]
+
+private def substituteQuote : Atom :=
+  a "case" [v "inside", .expression (insideRows.map fun row => .expression [row.1, row.2])]
+
+private def substituteUnaryBody : Atom :=
+  a "if" [a "==" [v "head", v "quote"], substituteQuote,
+    a "if" [a "==" [v "head", v "drop"], substituteDrop, substituteThrough]]
+
+private def scopeRows : SpaceSemantics.Cases :=
+  [(.symbol "QuoteClosed", .symbol "Opaque"),
+   (a "QuoteReaching" [.symbol "QuoteApply"], a "Enter" [v "normalized"]),
+   (a "QuoteReaching" [a "QuoteFreeze" [v "spelling"]], a "Enter" [v "spelling"]),
+   (a "QuoteReaching" [a "QuoteClosure" [v "context"]],
+     a "Enter" [a "PApp" [v "context", a "LCons" [v "normalized", .symbol "LNil"]]])]
+
+private def scopeCase : Atom :=
+  a "case" [v "scope", .expression (scopeRows.map fun row => .expression [row.1, row.2])]
 
 private def operationRow0 : Atom :=
-  a "let*" [.expression [.expression [v "normalized", a "gslt:rule:scope-reflective-replacement" [v "quote", v "drop", v "replacement"]], .expression [v "value", a "gslt:rule:scope-reflective-instantiate-at" [v "quote", v "drop", number 0, v "normalized", v "body"]]], a "Some" [v "value"]]
+  a "let*" [.expression [.expression [v "normalized", a "gslt:rule:scope-reflective-replacement" [v "quote", v "drop", v "replacement"]], .expression [v "resolved", a "gslt:rule:scope-reflective-resolve" [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "body"]], .expression [v "inside", scopeCase], .expression [v "value", a "gslt:rule:scope-reflective-substitute-at" [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "inside", number 0, v "normalized", v "resolved"]]], a "Some" [v "value"]]
 
 private def operationRow1 : Atom :=
   .symbol "None"
 
 private def operationRows : SpaceSemantics.Cases :=
-  [(a "ReflectivePresentation" [v "name", v "process-sort", v "name-sort", v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "quote-drop-equation"], operationRow0),
+  [(a "ReflectivePresentation" [v "name", v "process-sort", v "name-sort", v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "quote-drop-equation", v "scope"], operationRow0),
    (v "invalid", operationRow1)]
 
 private def operationBody : Atom :=
@@ -403,14 +637,23 @@ private def helperBody : Helper → Atom
   | .normalizeList => normalizeListBody
   | .normalizeFinish => normalizeFinishBody
   | .replacement => replacementBody
-  | .normalizedMark => normalizedMarkBody
-  | .nameMark => nameMarkBody
-  | .unmark => unmarkBody
-  | .dropFinish => dropFinishBody
-  | .instantiate => instantiateBody
-  | .instantiateList => instantiateListBody
-  | .instantiateApply => instantiateApplyBody
-  | .instantiateUnary => instantiateUnaryBody
+  | .binderHead => binderHeadBody
+  | .binderHeadList => binderHeadListBody
+  | .binderHeadJoin => binderHeadJoinBody
+  | .binderHeadFold => binderHeadFoldBody
+  | .binderHeadApply => binderHeadApplyBody
+  | .leaves => leavesBody
+  | .leavesList => leavesListBody
+  | .append => appendBody
+  | .exposedDrop => exposedDropBody
+  | .resolveFinish => resolveFinishBody
+  | .resolve => resolveBody
+  | .resolveList => resolveListBody
+  | .receive => receiveBody
+  | .substitute => substituteBody
+  | .substituteList => substituteListBody
+  | .substituteApply => substituteApplyBody
+  | .substituteUnary => substituteUnaryBody
   | .operation => operationBody
 
 private theorem source_body (helper : Helper) : (equation helper).body = helperBody helper := by
@@ -430,11 +673,11 @@ private theorem helper_case (helper : Helper) (state : State) (values : List Ato
   simpa only [captured] using variable_returns runtime (environment helper values) state name
 
 private theorem data_constructor (head : String) (names : List String)
-    (constructor : head ∈ ["LCons", "PApp", "PLam", "PMultiLam", "PSubst", "PCollection", "ReflectedNameMark", "Some"]) :
+    (constructor : head ∈ ["LCons", "PApp", "PLam", "PMultiLam", "PSubst", "PCollection", "Some", "Enter"]) :
     PureData.Template runtime (a head (names.map v)) := by
   apply constructor_variables head names
   · simp only [List.mem_cons, List.not_mem_nil, or_false] at constructor
-    rcases constructor with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide +kernel
+    rcases constructor with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> (decide +kernel)
   · simp only [List.mem_cons, List.not_mem_nil, or_false] at constructor
     rcases constructor with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
 
@@ -819,126 +1062,502 @@ theorem normalize_returns (state : State) (declaration : ReflectivePresentationD
             PureData.template_return runtime final state (a "PCollection" [v "kind", v "values", v "rest"])
               (data_constructor "PCollection" ["kind", "values", "rest"] (by decide))
 
-private theorem mark_literal_template : PureData.Template runtime
-    (a "ReflectedNameMark" [v "name", Effects.boolean false]) := by
-  apply PureData.Template.constructor "ReflectedNameMark" _ (by decide +kernel) (by decide)
-  intro child member
-  simp only [List.mem_cons, List.not_mem_nil, or_false] at member
-  rcases member with rfl | rfl
-  · exact .captured "name"
-  · exact .grounded (.bool false)
+/-! ## The binder head of a normalized name -/
 
-private theorem normalized_mark_ordinary_returns (state : State) (depth : Nat)
-    (replacement name : Pattern) (nonindex : ¬∃ index, name = .bvar index) :
-    PureReturns runtime [] state
-      (a Helper.normalizedMark.head [number depth, patternValue replacement, patternValue name]) state
-      (markValue (name, false)) := by
-  let values := [number depth, patternValue replacement, patternValue name]
-  let caller := environment .normalizedMark values
-  let selected := ("literal", patternValue name) :: caller
-  apply helper_case .normalizedMark state values "name" (patternValue name)
-    normalizedMarkRows selected normalizedMarkRow1 _ rfl rfl
-  · simp [values, environment, Helper.names, applySubst, Subst.lookup]
-  · cases name <;> first
-    | exact False.elim (nonindex ⟨_, rfl⟩)
-    | simp [normalizedMarkRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
-        CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
-        SpaceSemantics.matchValue.matchValues, matchAtom, selected, caller, values,
-        environment, Helper.names, Subst.lookup]
-  · simpa [normalizedMarkRow1, applySubst, applySubst.applySubstList, Subst.lookup,
-      selected, caller, values, environment, Helper.names] using
-      PureData.template_return runtime selected state (a "ReflectedNameMark" [v "name", Effects.boolean false])
-        mark_literal_template
+private def headValue : ReflectiveSubstitution.BinderHead → Atom
+  | .index level => a "BinderIndex" [number level]
+  | .unit => .symbol "BinderUnit"
+  | .drop name => a "BinderDrop" [headValue name]
+  | .opaque => .symbol "BinderOpaque"
 
-private theorem normalized_mark_returns (state : State) (depth : Nat)
-    (replacement name : Pattern) :
-    PureReturns runtime [] state
-      (a Helper.normalizedMark.head [number depth, patternValue replacement, patternValue name]) state
-      (markValue (match name with
-        | .bvar index => (Substitution.instantiateBVarAt depth replacement (.bvar index), index == depth)
-        | ordinary => (ordinary, false))) := by
-  by_cases indexed : ∃ index, name = .bvar index
-  · obtain ⟨index, rfl⟩ := indexed
-    let values := [number depth, patternValue replacement, patternValue (.bvar index)]
-    let caller := environment .normalizedMark values
-    let selected := ("index", number index) :: caller
-    let result := Substitution.instantiateBVarAt depth replacement (.bvar index)
-    let valueBound := ("value", patternValue result) :: selected
-    let final := ("matched", Effects.boolean (index == depth)) :: valueBound
-    have ordinaryReturned := retained_returns (by decide +kernel)
-      (RuleInstantiationExecution.instantiate_bvar_at_captured_returns selected state depth replacement (.bvar index)
-        (v "depth") (v "replacement") (v "name") (by
-          simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]))
-    have equalityReturned : PureReturns runtime valueBound state (a "==" [v "index", v "depth"]) state
-        (Effects.boolean (index == depth)) := by
-      have same : decide (index = depth) = (index == depth) := by
-        by_cases equal : index = depth <;> simp [equal]
-      simpa only [Term.natural.injEq, same] using
-        CettaWireAtom.equality_captured_returns runtime valueBound state (.natural index) (.natural depth)
-          "index" "depth" (by simp [valueBound, selected, applySubst, Subst.lookup])
-          (by simp [valueBound, selected, caller, values, environment, Helper.names, applySubst, Subst.lookup])
-    apply helper_case .normalizedMark state values "name" (patternValue (.bvar index))
-      normalizedMarkRows selected normalizedMarkRow0 _ rfl rfl
+private def headsValue : List ReflectiveSubstitution.BinderHead → Atom
+  | [] => .symbol "LNil"
+  | head :: rest => a "LCons" [headValue head, headsValue rest]
+
+private abbrev kindValue (declaration : ReflectivePresentationDecl) : Atom :=
+  encoded (InferenceCettaWire.encodeCollectionType declaration.parallelCollection)
+
+attribute [local simp] headsValue headValue kindValue
+
+private theorem head_template (head : String) (names : List String)
+    (constructor : head ∈ ["BinderIndex", "BinderDrop", "Var"]) :
+    PureData.Template runtime (a head (names.map v)) := by
+  apply constructor_variables head names
+  · simp only [List.mem_cons, List.not_mem_nil, or_false] at constructor
+    rcases constructor with rfl | rfl | rfl <;> (decide +kernel)
+  · simp only [List.mem_cons, List.not_mem_nil, or_false] at constructor
+    rcases constructor with rfl | rfl | rfl <;> decide
+
+private theorem join_inner_unit (selected : Subst) :
+    SpaceSemantics.selectCase selected (headValue .unit) joinInnerRows = some (selected, v "left") := by
+  simp [joinInnerRows, SpaceSemantics.selectCase, SpaceSemantics.matchValue, matchAtom]
+
+private theorem join_returns (state : State) (left right : ReflectiveSubstitution.BinderHead) :
+    PureReturns runtime [] state (a Helper.binderHeadJoin.head [headValue left, headValue right]) state
+      (headValue (ReflectiveSubstitution.BinderHead.join left right)) := by
+  let values := [headValue left, headValue right]
+  let caller := environment .binderHeadJoin values
+  by_cases unitLeft : left = .unit
+  · subst unitLeft
+    apply helper_case .binderHeadJoin state values "left" (headValue .unit) joinRows caller (v "right") _ rfl rfl
     · simp [values, environment, Helper.names, applySubst, Subst.lookup]
-    · simp [normalizedMarkRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
-        CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
-        SpaceSemantics.matchValue.matchValues, matchAtom, selected, caller, values,
-        environment, Helper.names, Subst.lookup]
-    · unfold normalizedMarkRow0
-      apply PureData.let_bindings_return (pairs :=
-        [(v "value", a "gslt:rule:instantiate-bvar-at" [v "depth", v "replacement", v "name"]),
-         (v "matched", a "==" [v "index", v "depth"])]) (final := final)
-      · apply PureData.BindingsReturn.cons (bound := valueBound) ordinaryReturned
-        · simp [SpaceSemantics.matchBinding, SpaceSemantics.matchValue, matchAtom, Subst.lookup,
-            valueBound, result, selected, caller, values, environment, Helper.names]
-        · apply PureData.BindingsReturn.cons (bound := final) equalityReturned
-          · simp [SpaceSemantics.matchBinding, SpaceSemantics.matchValue, matchAtom, Subst.lookup,
-              final, valueBound, selected, caller, values, environment, Helper.names]
-          · exact .nil _ _
-      · simpa [applySubst, applySubst.applySubstList, Subst.lookup, final, valueBound, result] using
-          PureData.template_return runtime final state (a "ReflectedNameMark" [v "value", v "matched"])
-            (data_constructor "ReflectedNameMark" ["value", "matched"] (by decide))
-  · cases name <;> first
-    | exact False.elim (indexed ⟨_, rfl⟩)
-    | exact normalized_mark_ordinary_returns state depth replacement _ (by
-        rintro ⟨index, same⟩; cases same)
+    · simp [joinRows, SpaceSemantics.selectCase, SpaceSemantics.matchValue, matchAtom, caller]
+    · simpa [caller, values, environment, Helper.names, applySubst, Subst.lookup] using
+        variable_returns runtime caller state "right"
+  · let selected := ("present", headValue left) :: caller
+    have rightSelected : PureReturns runtime selected state (v "right") state (headValue right) := by
+      simpa [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup] using
+        variable_returns runtime selected state "right"
+    apply helper_case .binderHeadJoin state values "left" (headValue left) joinRows selected
+      (a "case" [v "right", .expression (joinInnerRows.map fun row => .expression [row.1, row.2])]) _ rfl rfl
+    · simp [values, environment, Helper.names, applySubst, Subst.lookup]
+    · cases left <;> simp_all [joinRows, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+        matchAtom, selected, caller, values, environment,
+        Helper.names, Subst.lookup]
+    · by_cases unitRight : right = .unit
+      · subst unitRight
+        have leftReturned : PureReturns runtime selected state (v "left") state (headValue left) := by
+          simpa [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup] using
+            variable_returns runtime selected state "left"
+        simpa using branch_returns selected selected state (v "right") (headValue .unit) joinInnerRows
+          (v "left") (headValue left) rightSelected (join_inner_unit selected) leftReturned
+      · let other := ("other", headValue right) :: selected
+        have otherMatched : SpaceSemantics.selectCase selected (headValue right) joinInnerRows =
+            some (other, .symbol "BinderOpaque") := by
+          cases right <;> simp_all [joinInnerRows, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+            matchAtom, other, selected, caller, values, environment,
+            Helper.names, Subst.lookup]
+        rw [ReflectiveSubstitution.BinderHead.join_of_ne_unit unitLeft unitRight]
+        exact branch_returns selected other state (v "right") (headValue right) joinInnerRows
+          (.symbol "BinderOpaque") (.symbol "BinderOpaque") rightSelected otherMatched
+          (symbol_returns runtime other state "BinderOpaque")
 
-theorem name_mark_returns (state : State) (declaration : ReflectivePresentationDecl) (depth : Nat)
-    (replacement name : Pattern) :
+private theorem fold_returns (state : State) (heads : List ReflectiveSubstitution.BinderHead) :
+    PureReturns runtime [] state (a Helper.binderHeadFold.head [headsValue heads]) state
+      (headValue (heads.foldr ReflectiveSubstitution.BinderHead.join .unit)) := by
+  induction heads with
+  | nil =>
+      let values := [headsValue []]
+      apply helper_case .binderHeadFold state values "heads" (.symbol "LNil") foldRows
+        (environment .binderHeadFold values) (.symbol "BinderUnit") _ rfl rfl
+      · simp [values, environment, Helper.names, applySubst, Subst.lookup]
+      · simp [foldRows, SpaceSemantics.selectCase, SpaceSemantics.matchValue, matchAtom]
+      · simpa [CettaWireAtom.encode] using symbol_returns runtime _ state "BinderUnit"
+  | cons head rest ih =>
+      let values := [headsValue (head :: rest)]
+      let caller := environment .binderHeadFold values
+      let selected := ("rest", headsValue rest) :: ("head", headValue head) :: caller
+      let tail := rest.foldr ReflectiveSubstitution.BinderHead.join .unit
+      let final := ("tail", headValue tail) :: selected
+      apply helper_case .binderHeadFold state values "heads" (headsValue (head :: rest)) foldRows
+        selected (a "let" [v "tail", a Helper.binderHeadFold.head [v "rest"],
+          a Helper.binderHeadJoin.head [v "head", v "tail"]]) _ rfl rfl
+      · simp [values, environment, Helper.names, applySubst, Subst.lookup]
+      · simp [foldRows, SpaceSemantics.selectCase,
+          SpaceSemantics.matchValue, SpaceSemantics.matchValue.matchValues, matchAtom, selected,
+          caller, values, environment, Helper.names, Helper.head, Subst.lookup]
+      · simp only [List.foldr_cons]
+        apply named_let_returns selected state "tail" _ (headValue tail) _ _
+        · simp [selected, caller, values, environment, Helper.names, Subst.lookup]
+        · exact helper_capture .binderHeadFold selected state [v "rest"] [headsValue rest] _ rfl
+            (by simp [selected, applySubst, Subst.lookup]) ih
+        · exact helper_capture .binderHeadJoin final state [v "head", v "tail"]
+            [headValue head, headValue tail] _ rfl
+            (by simp [final, selected, applySubst, Subst.lookup]) (join_returns state head tail)
+
+private theorem apply_nil_returns (state : State) (declaration : ReflectivePresentationDecl) (constructor : String) :
     PureReturns runtime [] state
-      (a Helper.nameMark.head [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
-        number depth, patternValue replacement, patternValue name]) state
-      (markValue (ReflectiveInstantiation.nameMark declaration depth replacement name)) := by
+      (a Helper.binderHeadApply.head [textValue declaration.quoteConstructor,
+        textValue declaration.dropConstructor, textValue declaration.parallelUnitConstructor,
+        textValue constructor, headsValue []]) state
+      (headValue (ReflectiveSubstitution.BinderHead.apply declaration constructor [])) := by
   let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
-    number depth, patternValue replacement, patternValue name]
-  let caller := environment .nameMark values
-  let normalized := ReflectiveSubstitution.normalizeReflective declaration name
-  let final := ("normalized", patternValue normalized) :: caller
-  apply helper_call .nameMark [] state values values _ rfl (captured_closed _)
-  rw [source_body]
-  change PureReturns runtime caller state nameMarkBody state _
-  unfold nameMarkBody
-  apply named_let_returns caller state "normalized" _ (patternValue normalized) _ _
-  · simp [caller, values, environment, Helper.names, Subst.lookup]
-  · apply helper_capture .normalize caller state _ _ _ rfl _ (normalize_returns state declaration name)
-    simp [caller, values, environment, Helper.names, applySubst, Subst.lookup]
-  · unfold ReflectiveInstantiation.nameMark
-    apply helper_capture .normalizedMark final state _ _ _ rfl _
-      (normalized_mark_returns state depth replacement normalized)
-    simp [final, caller, values, environment, Helper.names, applySubst, Subst.lookup]
-
-private theorem unmark_returns (state : State) (name : Pattern) (matched : Bool) :
-    PureReturns runtime [] state (a Helper.unmark.head [markValue (name, matched)]) state (patternValue name) := by
-  let values := [markValue (name, matched)]
-  let caller := environment .unmark values
-  let selected := ("matched", Effects.boolean matched) :: ("name", patternValue name) :: caller
-  apply helper_case .unmark state values "marked" (markValue (name, matched))
-    unmarkRows selected unmarkRow0 _ rfl rfl
+    textValue declaration.parallelUnitConstructor, textValue constructor, headsValue []]
+  let caller := environment .binderHeadApply values
+  apply helper_case .binderHeadApply state values "heads" (headsValue []) applyRows caller
+    (a "if" [a "==" [v "constructor", v "parallel-unit"], .symbol "BinderUnit", .symbol "BinderOpaque"]) _ rfl rfl
   · simp [values, environment, Helper.names, applySubst, Subst.lookup]
-  · simp [unmarkRows, SpaceSemantics.selectCase,
-      SpaceSemantics.matchValue, SpaceSemantics.matchValue.matchValues, matchAtom,
-      selected, caller, values, environment, Helper.names, Subst.lookup]
-  · simpa [unmarkRow0, selected, applySubst, Subst.lookup] using variable_returns runtime selected state "name"
+  · simp [applyRows, SpaceSemantics.selectCase, SpaceSemantics.matchValue, matchAtom, caller]
+  · apply bool_if_returns caller state _ (constructor == declaration.parallelUnitConstructor) _ _ _
+    · apply strings_equal_returns caller state constructor declaration.parallelUnitConstructor
+        "constructor" "parallel-unit"
+      · simp [caller, values, environment, Helper.names, applySubst, Subst.lookup]
+      · simp [caller, values, environment, Helper.names, applySubst, Subst.lookup]
+    · by_cases unitHead : constructor = declaration.parallelUnitConstructor
+      · simpa [ReflectiveSubstitution.BinderHead.apply, ReflectiveSubstitution.BinderHead.rigid,
+          unitHead] using symbol_returns runtime caller state "BinderUnit"
+      · simpa [ReflectiveSubstitution.BinderHead.apply, ReflectiveSubstitution.BinderHead.rigid,
+          unitHead] using symbol_returns runtime caller state "BinderOpaque"
+
+private theorem apply_drop_returns (state : State) (declaration : ReflectivePresentationDecl)
+    (constructor : String) (name : ReflectiveSubstitution.BinderHead) :
+    PureReturns runtime [] state
+      (a Helper.binderHeadApply.head [textValue declaration.quoteConstructor,
+        textValue declaration.dropConstructor, textValue declaration.parallelUnitConstructor,
+        textValue constructor, headsValue [.drop name]]) state
+      (headValue (ReflectiveSubstitution.BinderHead.apply declaration constructor [.drop name])) := by
+  let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
+    textValue declaration.parallelUnitConstructor, textValue constructor, headsValue [.drop name]]
+  let caller := environment .binderHeadApply values
+  let selected := ("name", headValue name) :: caller
+  have nameBound : applySubst selected (v "name") = headValue name := by
+    simp [selected, applySubst, Subst.lookup]
+  apply helper_case .binderHeadApply state values "heads" (headsValue [.drop name]) applyRows selected
+    (a "if" [a "==" [v "constructor", v "quote"], v "name",
+      a "if" [a "==" [v "constructor", v "drop"], a "BinderDrop" [a "BinderDrop" [v "name"]],
+        .symbol "BinderOpaque"]]) _ rfl rfl
+  · simp [values, environment, Helper.names, applySubst, Subst.lookup]
+  · simp [applyRows, CettaWireAtom.encode, SpaceSemantics.selectCase,
+      SpaceSemantics.matchValue, SpaceSemantics.matchValue.matchValues, matchAtom, selected,
+      caller, values, environment, Helper.names, Subst.lookup]
+  · apply bool_if_returns selected state _ (constructor == declaration.quoteConstructor) _ _ _
+    · apply strings_equal_returns selected state constructor declaration.quoteConstructor
+        "constructor" "quote"
+      · simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+      · simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+    · by_cases quoted : constructor = declaration.quoteConstructor
+      · simpa [ReflectiveSubstitution.BinderHead.apply, quoted, nameBound] using
+          variable_returns runtime selected state "name"
+      · simp only [quoted, beq_iff_eq, if_false]
+        apply bool_if_returns selected state _ (constructor == declaration.dropConstructor) _ _ _
+        · apply strings_equal_returns selected state constructor declaration.dropConstructor
+            "constructor" "drop"
+          · simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+          · simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+        · by_cases dropped : constructor = declaration.dropConstructor
+          · have nested : PureData.Template runtime (a "BinderDrop" [a "BinderDrop" [v "name"]]) := by
+              apply PureData.Template.constructor "BinderDrop" _ (by decide +kernel) (by decide)
+              intro child member
+              simp only [List.mem_cons, List.not_mem_nil, or_false] at member
+              subst member
+              exact head_template "BinderDrop" ["name"] (by decide)
+            have dropNotQuote : declaration.dropConstructor ≠ declaration.quoteConstructor :=
+              dropped ▸ quoted
+            simpa [ReflectiveSubstitution.BinderHead.apply, ReflectiveSubstitution.BinderHead.rigid, quoted, dropped, dropNotQuote, applySubst,
+              applySubst.applySubstList, selected, Subst.lookup] using
+              PureData.template_return runtime selected state _ nested
+          · simpa [ReflectiveSubstitution.BinderHead.apply, ReflectiveSubstitution.BinderHead.rigid,
+              quoted, dropped] using symbol_returns runtime selected state "BinderOpaque"
+
+private theorem apply_single_returns (state : State) (declaration : ReflectivePresentationDecl)
+    (constructor : String) (argument : ReflectiveSubstitution.BinderHead)
+    (undropped : ∀ name, argument ≠ .drop name) :
+    PureReturns runtime [] state
+      (a Helper.binderHeadApply.head [textValue declaration.quoteConstructor,
+        textValue declaration.dropConstructor, textValue declaration.parallelUnitConstructor,
+        textValue constructor, headsValue [argument]]) state
+      (headValue (ReflectiveSubstitution.BinderHead.apply declaration constructor [argument])) := by
+  let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
+    textValue declaration.parallelUnitConstructor, textValue constructor, headsValue [argument]]
+  let caller := environment .binderHeadApply values
+  let selected := ("argument", headValue argument) :: caller
+  have rigid : ReflectiveSubstitution.BinderHead.apply declaration constructor [argument] =
+      ReflectiveSubstitution.BinderHead.rigid declaration constructor [argument] := by
+    cases argument <;> first
+      | exact absurd rfl (undropped _)
+      | simp [ReflectiveSubstitution.BinderHead.apply]
+  rw [rigid]
+  apply helper_case .binderHeadApply state values "heads" (headsValue [argument]) applyRows selected
+    (a "if" [a "==" [v "constructor", v "drop"], a "BinderDrop" [v "argument"], .symbol "BinderOpaque"]) _ rfl rfl
+  · simp [values, environment, Helper.names, applySubst, Subst.lookup]
+  · cases argument <;> first
+      | exact absurd rfl (undropped _)
+      | simp [applyRows, CettaWireAtom.encode, SpaceSemantics.selectCase,
+          SpaceSemantics.matchValue, SpaceSemantics.matchValue.matchValues, matchAtom, selected,
+          caller, values, environment, Helper.names, Subst.lookup]
+  · apply bool_if_returns selected state _ (constructor == declaration.dropConstructor) _ _ _
+    · apply strings_equal_returns selected state constructor declaration.dropConstructor
+        "constructor" "drop"
+      · simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+      · simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+    · by_cases dropped : constructor = declaration.dropConstructor
+      · simpa [ReflectiveSubstitution.BinderHead.rigid, dropped, applySubst, applySubst.applySubstList,
+          selected, Subst.lookup] using
+          PureData.template_return runtime selected state (a "BinderDrop" [v "argument"])
+            (head_template "BinderDrop" ["argument"] (by decide))
+      · simpa [ReflectiveSubstitution.BinderHead.rigid, dropped] using
+          symbol_returns runtime selected state "BinderOpaque"
+
+private theorem apply_many_returns (state : State) (declaration : ReflectivePresentationDecl)
+    (constructor : String) (first second : ReflectiveSubstitution.BinderHead)
+    (rest : List ReflectiveSubstitution.BinderHead) :
+    PureReturns runtime [] state
+      (a Helper.binderHeadApply.head [textValue declaration.quoteConstructor,
+        textValue declaration.dropConstructor, textValue declaration.parallelUnitConstructor,
+        textValue constructor, headsValue (first :: second :: rest)]) state
+      (headValue (ReflectiveSubstitution.BinderHead.apply declaration constructor (first :: second :: rest))) := by
+  let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
+    textValue declaration.parallelUnitConstructor, textValue constructor, headsValue (first :: second :: rest)]
+  let caller := environment .binderHeadApply values
+  let selected := ("many", headsValue (first :: second :: rest)) :: caller
+  have isOpaque : ReflectiveSubstitution.BinderHead.apply declaration constructor (first :: second :: rest) =
+      .opaque := by
+    cases first <;> simp [ReflectiveSubstitution.BinderHead.apply, ReflectiveSubstitution.BinderHead.rigid]
+  rw [isOpaque]
+  apply helper_case .binderHeadApply state values "heads" (headsValue (first :: second :: rest)) applyRows
+    selected (.symbol "BinderOpaque") _ rfl rfl
+  · simp [values, environment, Helper.names, applySubst, Subst.lookup]
+  · cases first <;> simp [applyRows, CettaWireAtom.encode, 
+      SpaceSemantics.selectCase, SpaceSemantics.matchValue, SpaceSemantics.matchValue.matchValues,
+      matchAtom, selected, caller, values, environment, Helper.names, Subst.lookup]
+  · exact symbol_returns runtime selected state "BinderOpaque"
+
+private theorem apply_returns (state : State) (declaration : ReflectivePresentationDecl) (constructor : String)
+    (heads : List ReflectiveSubstitution.BinderHead) :
+    PureReturns runtime [] state
+      (a Helper.binderHeadApply.head [textValue declaration.quoteConstructor,
+        textValue declaration.dropConstructor, textValue declaration.parallelUnitConstructor,
+        textValue constructor, headsValue heads]) state
+      (headValue (ReflectiveSubstitution.BinderHead.apply declaration constructor heads)) := by
+  rcases heads with _ | ⟨argument, _ | ⟨second, rest⟩⟩
+  · exact apply_nil_returns state declaration constructor
+  · by_cases dropped : ∃ name, argument = .drop name
+    · obtain ⟨name, rfl⟩ := dropped
+      exact apply_drop_returns state declaration constructor name
+    · exact apply_single_returns state declaration constructor argument
+        (fun name same => dropped ⟨name, same⟩)
+  · exact apply_many_returns state declaration constructor argument second rest
+
+private theorem kind_equal (left right : CollType) :
+    decide (InferenceCettaWire.encodeCollectionType left = InferenceCettaWire.encodeCollectionType right) =
+      decide (left = right) := by
+  cases left <;> cases right <;> simp [InferenceCettaWire.encodeCollectionType]
+
+private theorem binder_head_list_returns_from_elements (state : State)
+    (declaration : ReflectivePresentationDecl) (patterns : List Pattern)
+    (elements : ∀ pattern ∈ patterns, PureReturns runtime [] state
+      (a Helper.binderHead.head [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
+        kindValue declaration, textValue declaration.parallelUnitConstructor, patternValue pattern]) state
+      (headValue (ReflectiveSubstitution.BinderHead.ofPattern declaration pattern))) :
+    PureReturns runtime [] state
+      (a Helper.binderHeadList.head [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
+        kindValue declaration, textValue declaration.parallelUnitConstructor, patternsValue patterns]) state
+      (headsValue (patterns.map (ReflectiveSubstitution.BinderHead.ofPattern declaration))) := by
+  induction patterns with
+  | nil =>
+      let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
+        kindValue declaration, textValue declaration.parallelUnitConstructor, patternsValue []]
+      apply helper_case .binderHeadList state values "patterns" (.symbol "LNil") binderHeadListRows
+        (environment .binderHeadList values) (.symbol "LNil") _ rfl rfl
+      · simp [values, environment, Helper.names, applySubst, Subst.lookup,
+          InferenceCettaWire.encodePatterns, CettaWireAtom.encode]
+      · simp [binderHeadListRows, SpaceSemantics.selectCase, SpaceSemantics.matchValue, matchAtom]
+      · simpa using symbol_returns runtime _ state "LNil"
+  | cons pattern patterns ih =>
+      let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
+        kindValue declaration, textValue declaration.parallelUnitConstructor, patternsValue (pattern :: patterns)]
+      let caller := environment .binderHeadList values
+      let selected := ("rest", patternsValue patterns) :: ("pattern", patternValue pattern) :: caller
+      let first := headValue (ReflectiveSubstitution.BinderHead.ofPattern declaration pattern)
+      let firstBound := ("head", first) :: selected
+      let restValue := headsValue (patterns.map (ReflectiveSubstitution.BinderHead.ofPattern declaration))
+      let final := ("tail", restValue) :: firstBound
+      have firstReturned := helper_capture .binderHead selected state
+        [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "pattern"]
+        [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
+          kindValue declaration, textValue declaration.parallelUnitConstructor, patternValue pattern]
+        first rfl (by simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup])
+        (elements pattern (by simp))
+      have restReturned := helper_capture .binderHeadList firstBound state
+        [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "rest"]
+        [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
+          kindValue declaration, textValue declaration.parallelUnitConstructor, patternsValue patterns]
+        restValue rfl (by simp [firstBound, selected, caller, values, environment, Helper.names, applySubst, Subst.lookup])
+        (ih (fun pattern member => elements pattern (List.mem_cons_of_mem _ member)))
+      apply helper_case .binderHeadList state values "patterns" (patternsValue (pattern :: patterns))
+        binderHeadListRows selected
+        (a "let*" [.expression [.expression [v "head", a Helper.binderHead.head [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "pattern"]],
+          .expression [v "tail", a Helper.binderHeadList.head [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "rest"]]],
+          a "LCons" [v "head", v "tail"]]) _ rfl rfl
+      · simp [values, environment, Helper.names, applySubst, Subst.lookup]
+      · simp [binderHeadListRows, InferenceCettaWire.encodePatterns, CettaWireAtom.encode,
+          CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+          SpaceSemantics.matchValue.matchValues, matchAtom, selected, caller, values,
+          environment, Helper.names, Helper.head, Subst.lookup]
+      · apply PureData.let_bindings_return (pairs :=
+          [(v "head", a Helper.binderHead.head [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "pattern"]),
+           (v "tail", a Helper.binderHeadList.head [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "rest"])])
+          (final := final)
+        · apply PureData.BindingsReturn.cons (bound := firstBound) firstReturned
+          · simp [SpaceSemantics.matchBinding, SpaceSemantics.matchValue, matchAtom, Subst.lookup,
+              firstBound, selected, caller, values, environment, Helper.names]
+          · apply PureData.BindingsReturn.cons (bound := final) restReturned
+            · simp [SpaceSemantics.matchBinding, SpaceSemantics.matchValue, matchAtom, Subst.lookup,
+                final, firstBound, selected, caller, values, environment, Helper.names]
+            · exact .nil _ _
+        · simpa [List.map_cons, applySubst, applySubst.applySubstList, Subst.lookup,
+            final, firstBound, first, restValue] using
+            PureData.template_return runtime final state (a "LCons" [v "head", v "tail"])
+              (data_constructor "LCons" ["head", "tail"] (by decide))
+
+private theorem opaque_head_returns (state : State) (declaration : ReflectivePresentationDecl)
+    (pattern : Pattern) (selected : Subst)
+    (matched : SpaceSemantics.selectCase (environment .binderHead
+      [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
+        kindValue declaration, textValue declaration.parallelUnitConstructor, patternValue pattern])
+      (patternValue pattern) binderHeadRows = some (selected, .symbol "BinderOpaque"))
+    (isOpaque : ReflectiveSubstitution.BinderHead.ofPattern declaration pattern = .opaque) :
+    PureReturns runtime [] state
+      (a Helper.binderHead.head [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
+        kindValue declaration, textValue declaration.parallelUnitConstructor, patternValue pattern]) state
+      (headValue (ReflectiveSubstitution.BinderHead.ofPattern declaration pattern)) := by
+  rw [isOpaque]
+  apply helper_case .binderHead state _ "pattern" (patternValue pattern) binderHeadRows selected
+    (.symbol "BinderOpaque") _ rfl rfl
+  · simp [environment, Helper.names, applySubst, Subst.lookup]
+  · exact matched
+  · exact symbol_returns runtime selected state "BinderOpaque"
+
+theorem binder_head_returns (state : State) (declaration : ReflectivePresentationDecl) (pattern : Pattern) :
+    PureReturns runtime [] state
+      (a Helper.binderHead.head [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
+        kindValue declaration, textValue declaration.parallelUnitConstructor, patternValue pattern]) state
+      (headValue (ReflectiveSubstitution.BinderHead.ofPattern declaration pattern)) := by
+  induction pattern using Pattern.inductionOn with
+  | hbvar index =>
+      let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
+        kindValue declaration, textValue declaration.parallelUnitConstructor, patternValue (.bvar index)]
+      let caller := environment .binderHead values
+      let selected := ("index", number index) :: caller
+      apply helper_case .binderHead state values "pattern" (patternValue (.bvar index))
+        binderHeadRows selected (a "BinderIndex" [v "index"]) _ rfl rfl
+      · simp [values, environment, Helper.names, applySubst, Subst.lookup]
+      · simp [binderHeadRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
+          CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+          SpaceSemantics.matchValue.matchValues, matchAtom, selected, caller, values,
+          environment, Helper.names, Subst.lookup]
+      · simpa [ReflectiveSubstitution.BinderHead.ofPattern, applySubst, applySubst.applySubstList,
+          Subst.lookup, selected] using
+          PureData.template_return runtime selected state (a "BinderIndex" [v "index"])
+            (head_template "BinderIndex" ["index"] (by decide))
+  | hfvar name =>
+      apply opaque_head_returns state declaration _ (("other", patternValue (.fvar name)) ::
+        environment .binderHead [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
+          kindValue declaration, textValue declaration.parallelUnitConstructor, patternValue (.fvar name)])
+      · simp [binderHeadRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
+          CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+          SpaceSemantics.matchValue.matchValues, matchAtom, environment, Helper.names, Subst.lookup]
+      · simp [ReflectiveSubstitution.BinderHead.ofPattern]
+  | happly head children ih =>
+      let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
+        kindValue declaration, textValue declaration.parallelUnitConstructor, patternValue (.apply head children)]
+      let caller := environment .binderHead values
+      let selected := ("children", patternsValue children) :: ("head", textValue head) :: caller
+      let heads := children.map (ReflectiveSubstitution.BinderHead.ofPattern declaration)
+      let final := ("heads", headsValue heads) :: selected
+      simp only [ReflectiveSubstitution.BinderHead.ofPattern, ReflectiveSubstitution.BinderHead.ofList_eq_map]
+      apply helper_case .binderHead state values "pattern" (patternValue (.apply head children))
+        binderHeadRows selected
+        (a "let" [v "heads", a Helper.binderHeadList.head [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "children"],
+          a Helper.binderHeadApply.head [v "quote", v "drop", v "parallel-unit", v "head", v "heads"]]) _ rfl rfl
+      · simp [values, environment, Helper.names, applySubst, Subst.lookup]
+      · simp [binderHeadRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
+          CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+          SpaceSemantics.matchValue.matchValues, matchAtom, selected, caller, values,
+          environment, Helper.names, Helper.head, Subst.lookup]
+      · apply named_let_returns selected state "heads" _ (headsValue heads) _ _
+        · simp [selected, caller, values, environment, Helper.names, Subst.lookup]
+        · apply helper_capture .binderHeadList selected state _ _ _ rfl _
+            (binder_head_list_returns_from_elements state declaration children ih)
+          simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+        · apply helper_capture .binderHeadApply final state _ _ _ rfl _
+            (apply_returns state declaration head heads)
+          simp [final, selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+  | hlambda binder body _ =>
+      apply opaque_head_returns state declaration _ (("other", patternValue (.lambda binder body)) ::
+        environment .binderHead [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
+          kindValue declaration, textValue declaration.parallelUnitConstructor, patternValue (.lambda binder body)])
+      · simp [binderHeadRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
+          CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+          SpaceSemantics.matchValue.matchValues, matchAtom, environment, Helper.names, Subst.lookup]
+      · simp [ReflectiveSubstitution.BinderHead.ofPattern]
+  | hmultiLambda arity binders body _ =>
+      apply opaque_head_returns state declaration _ (("other", patternValue (.multiLambda arity binders body)) ::
+        environment .binderHead [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
+          kindValue declaration, textValue declaration.parallelUnitConstructor,
+          patternValue (.multiLambda arity binders body)])
+      · simp [binderHeadRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
+          CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+          SpaceSemantics.matchValue.matchValues, matchAtom, environment, Helper.names, Subst.lookup]
+      · simp [ReflectiveSubstitution.BinderHead.ofPattern]
+  | hsubst body replacement _ _ =>
+      apply opaque_head_returns state declaration _ (("other", patternValue (.subst body replacement)) ::
+        environment .binderHead [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
+          kindValue declaration, textValue declaration.parallelUnitConstructor, patternValue (.subst body replacement)])
+      · simp [binderHeadRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
+          CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+          SpaceSemantics.matchValue.matchValues, matchAtom, environment, Helper.names, Subst.lookup]
+      · simp [ReflectiveSubstitution.BinderHead.ofPattern]
+  | hcollection kind elements rest ih =>
+      let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
+        kindValue declaration, textValue declaration.parallelUnitConstructor,
+        patternValue (.collection kind elements rest)]
+      let caller := environment .binderHead values
+      let selected := ("rest", encoded (InferenceCettaWire.encodeRest rest)) ::
+        ("elements", patternsValue elements) ::
+        ("collection", encoded (InferenceCettaWire.encodeCollectionType kind)) :: caller
+      let heads := elements.map (ReflectiveSubstitution.BinderHead.ofPattern declaration)
+      apply helper_case .binderHead state values "pattern" (patternValue (.collection kind elements rest))
+        binderHeadRows selected
+        (a "if" [a "==" [v "collection", v "parallel-kind"],
+          a "case" [v "rest", .expression (collectionRestRows.map fun row => .expression [row.1, row.2])],
+          .symbol "BinderOpaque"]) _ rfl rfl
+      · simp [values, environment, Helper.names, applySubst, Subst.lookup]
+      · simp [binderHeadRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
+          CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+          SpaceSemantics.matchValue.matchValues, matchAtom, selected, caller, values,
+          environment, Helper.names, Subst.lookup]
+      · apply bool_if_returns selected state _ (decide (kind = declaration.parallelCollection)) _ _ _
+        · rw [← kind_equal]
+          apply CettaWireAtom.equality_captured_returns runtime selected state
+            (InferenceCettaWire.encodeCollectionType kind)
+            (InferenceCettaWire.encodeCollectionType declaration.parallelCollection) "collection" "parallel-kind"
+          · simp [selected, applySubst, Subst.lookup]
+          · simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+        · by_cases parallel : kind = declaration.parallelCollection
+          · rw [if_pos (decide_eq_true parallel)]
+            have restReturned : PureReturns runtime selected state (v "rest") state
+                (encoded (InferenceCettaWire.encodeRest rest)) := by
+              simpa [selected, applySubst, Subst.lookup] using variable_returns runtime selected state "rest"
+            cases rest with
+            | none =>
+                let final := ("heads", headsValue heads) :: selected
+                have folded : PureReturns runtime selected state
+                    (a "let" [v "heads", a Helper.binderHeadList.head [v "quote", v "drop", v "parallel-kind",
+                        v "parallel-unit", v "elements"], a Helper.binderHeadFold.head [v "heads"]]) state
+                    (headValue (heads.foldr ReflectiveSubstitution.BinderHead.join .unit)) := by
+                  apply named_let_returns selected state "heads" _ (headsValue heads) _ _
+                  · simp [selected, caller, values, environment, Helper.names, Subst.lookup]
+                  · apply helper_capture .binderHeadList selected state _ _ _ rfl _
+                      (binder_head_list_returns_from_elements state declaration elements ih)
+                    simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+                  · exact helper_capture .binderHeadFold final state [v "heads"] [headsValue heads] _ rfl
+                      (by simp [final, applySubst, Subst.lookup]) (fold_returns state heads)
+                have matched : SpaceSemantics.selectCase selected (encoded (InferenceCettaWire.encodeRest none))
+                    collectionRestRows = some (selected, a "let" [v "heads", a Helper.binderHeadList.head
+                      [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "elements"],
+                      a Helper.binderHeadFold.head [v "heads"]]) := by
+                  simp [collectionRestRows, InferenceCettaWire.encodeRest, CettaWireAtom.encode,
+                    SpaceSemantics.selectCase, SpaceSemantics.matchValue, matchAtom, Helper.head]
+                simpa [ReflectiveSubstitution.BinderHead.ofPattern, ReflectiveSubstitution.BinderHead.ofList_eq_map, parallel, heads] using
+                  branch_returns selected selected state (v "rest") _ collectionRestRows _ _
+                    restReturned matched folded
+            | some restName =>
+                let other := ("open", encoded (InferenceCettaWire.encodeRest (some restName))) :: selected
+                have matched : SpaceSemantics.selectCase selected
+                    (encoded (InferenceCettaWire.encodeRest (some restName))) collectionRestRows =
+                      some (other, .symbol "BinderOpaque") := by
+                  simp [collectionRestRows, InferenceCettaWire.encodeRest, CettaWireAtom.encode,
+                    CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+                    matchAtom, other, selected, caller, values,
+                    environment, Helper.names, Subst.lookup]
+                simpa [ReflectiveSubstitution.BinderHead.ofPattern] using
+                  branch_returns selected other state (v "rest") _ collectionRestRows _ _
+                    restReturned matched (symbol_returns runtime other state "BinderOpaque")
+          · have isOpaque : ReflectiveSubstitution.BinderHead.ofPattern declaration (.collection kind elements rest) = .opaque := by
+              cases rest <;> simp [ReflectiveSubstitution.BinderHead.ofPattern, parallel]
+            rw [isOpaque, if_neg (by simpa using parallel)]
+            exact symbol_returns runtime selected state "BinderOpaque"
 
 private theorem nonunary_selection (caller : Subst) (pattern : Pattern)
     (first second fallback : String) (yes no : Atom)
@@ -1007,19 +1626,14 @@ private theorem replacement_nonunary_result (declaration : ReflectivePresentatio
       | nil => exact False.elim (nonunary ⟨head, payload, rfl⟩)
       | cons child rest => rfl
 
-private theorem drop_nonunary_result (declaration : ReflectivePresentationDecl) (constructor : String)
+private theorem receive_nonunary (declaration : ReflectivePresentationDecl) (constructor : String)
     (name : Pattern) (nonunary : ¬∃ quote process, name = .apply quote [process]) :
-    (match name, true with
-      | .apply quote [process], true => if quote == declaration.quoteConstructor then process else .apply constructor [name]
-      | _, _ => .apply constructor [name]) = .apply constructor [name] := by
-  cases name <;> try rfl
-  rename_i head children
-  cases children with
-  | nil => rfl
-  | cons payload rest =>
-      cases rest with
-      | nil => exact False.elim (nonunary ⟨head, payload, rfl⟩)
-      | cons child rest => rfl
+    ReflectiveSubstitution.receive declaration constructor name = .apply constructor [name] := by
+  unfold ReflectiveSubstitution.receive
+  split
+  · rename_i quote process
+    exact False.elim (nonunary ⟨quote, process, rfl⟩)
+  · rfl
 
 theorem replacement_returns (state : State) (declaration : ReflectivePresentationDecl) (replacement : Pattern) :
     PureReturns runtime [] state
@@ -1074,197 +1688,682 @@ theorem replacement_returns (state : State) (declaration : ReflectivePresentatio
       apply helper_capture .normalize selected state _ _ _ rfl _ (normalize_returns state declaration replacement)
       simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
 
-private def dropNameRows : SpaceSemantics.Cases :=
-  [(a "PApp" [v "inner-head", a "LCons" [v "process", .symbol "LNil"]],
-    a "if" [a "==" [v "inner-head", v "quote"], v "process", a "PApp" [v "head", a "LCons" [v "name", .symbol "LNil"]]]),
-   (v "ordinary", a "PApp" [v "head", a "LCons" [v "name", .symbol "LNil"]])]
+/-! ## Resolving quotations of drops -/
 
-private theorem drop_finish_returns (state : State) (declaration : ReflectivePresentationDecl)
-    (constructor : String) (name : Pattern) (matched : Bool) :
+private def optionValue : Option Pattern → Atom
+  | none => .symbol "None"
+  | some name => a "Some" [patternValue name]
+
+/-- What a bound index becomes when the binder at `level` is eliminated. -/
+private abbrev eliminate (replacement : Pattern) (level index : Nat) : Pattern :=
+  Substitution.instantiateBVarAt level replacement (.bvar index)
+
+/-- The runtime spelling of what substitution does at a genuine quotation. -/
+private def modeValue : Option Pattern → Atom
+  | none => .symbol "Opaque"
+  | some value => a "Enter" [patternValue value]
+
+/-- Substitution in a resolved term at a mode: `none` keeps every genuine
+quotation opaque; `some value` enters it, with `value` as the selected binder's
+value inside. -/
+private def substituteMode (declaration : ReflectivePresentationDecl) :
+    Option Pattern → Pattern → Nat → Pattern → Pattern
+  | none, replacement, depth, pattern =>
+      ReflectiveSubstitution.substituteResolved declaration (eliminate replacement) depth pattern
+  | some value, replacement, depth, pattern =>
+      ReflectiveSubstitution.substituteViewed declaration (eliminate value) (eliminate replacement) depth pattern
+
+section Mode
+
+variable (declaration : ReflectivePresentationDecl) (mode : Option Pattern) (replacement : Pattern)
+
+private theorem mode_bvar (depth index : Nat) :
+    substituteMode declaration mode replacement depth (.bvar index) = eliminate replacement depth index := by
+  cases mode <;> rfl
+
+private theorem mode_fvar (depth : Nat) (name : String) :
+    substituteMode declaration mode replacement depth (.fvar name) = .fvar name := by
+  cases mode <;> rfl
+
+private theorem mode_lambda (depth : Nat) (binder : Option String) (body : Pattern) :
+    substituteMode declaration mode replacement depth (.lambda binder body) =
+      .lambda binder (substituteMode declaration mode replacement (depth + 1) body) := by
+  cases mode <;> rfl
+
+private theorem mode_multiLambda (depth arity : Nat) (binders : List String) (body : Pattern) :
+    substituteMode declaration mode replacement depth (.multiLambda arity binders body) =
+      .multiLambda arity binders (substituteMode declaration mode replacement (depth + arity) body) := by
+  cases mode <;> rfl
+
+private theorem mode_subst (depth : Nat) (body value : Pattern) :
+    substituteMode declaration mode replacement depth (.subst body value) =
+      .subst (substituteMode declaration mode replacement (depth + 1) body)
+        (substituteMode declaration mode replacement depth value) := by
+  cases mode <;> rfl
+
+private theorem mode_collection (depth : Nat) (kind : CollType) (elements : List Pattern) (rest : Option String) :
+    substituteMode declaration mode replacement depth (.collection kind elements rest) =
+      .collection kind (elements.map (substituteMode declaration mode replacement depth)) rest := by
+  cases mode <;>
+    simp [substituteMode, ReflectiveSubstitution.substituteResolved, ReflectiveSubstitution.substituteViewed,
+      ReflectiveSubstitution.substituteResolvedList_eq_map, ReflectiveSubstitution.substituteViewedList_eq_map]
+
+private theorem mode_apply_of_ne_one (depth : Nat) (head : String) {children : List Pattern}
+    (notOne : ¬∃ payload, children = [payload]) :
+    substituteMode declaration mode replacement depth (.apply head children) =
+      .apply head (children.map (substituteMode declaration mode replacement depth)) := by
+  rcases children with _ | ⟨payload, _ | ⟨second, rest⟩⟩
+  · cases mode <;> rfl
+  · exact False.elim (notOne ⟨payload, rfl⟩)
+  · cases mode <;>
+      simp [substituteMode, ReflectiveSubstitution.substituteResolved, ReflectiveSubstitution.substituteViewed,
+        ReflectiveSubstitution.substituteResolvedList_eq_map, ReflectiveSubstitution.substituteViewedList_eq_map]
+
+private theorem mode_unary_of_ne (depth : Nat) {head : String} (payload : Pattern)
+    (notQuote : head ≠ declaration.quoteConstructor) :
+    substituteMode declaration mode replacement depth (.apply head [payload]) =
+      if head = declaration.dropConstructor then
+        if ReflectiveSubstitution.matchesBinder declaration depth payload then
+          ReflectiveSubstitution.receive declaration head (eliminate replacement depth depth)
+        else .apply head [substituteMode declaration mode replacement depth payload]
+      else .apply head [substituteMode declaration mode replacement depth payload] := by
+  cases mode <;>
+    simp only [substituteMode, ReflectiveSubstitution.substituteResolved, ReflectiveSubstitution.substituteViewed,
+      if_neg notQuote]
+
+private theorem mode_quote_none (depth : Nat) (payload : Pattern) :
+    substituteMode declaration none replacement depth (.apply declaration.quoteConstructor [payload]) =
+      .apply declaration.quoteConstructor [payload] := by
+  simp [substituteMode, ReflectiveSubstitution.substituteResolved]
+
+private theorem mode_quote_some (depth : Nat) (value payload : Pattern) :
+    substituteMode declaration (some value) replacement depth (.apply declaration.quoteConstructor [payload]) =
+      .apply declaration.quoteConstructor [substituteMode declaration (some value) value depth payload] := by
+  simp [substituteMode, ReflectiveSubstitution.substituteViewed]
+
+end Mode
+
+private theorem singleton_template (name : String) :
+    PureData.Template runtime (a "LCons" [v name, .symbol "LNil"]) := by
+  apply PureData.Template.constructor "LCons" _ (by decide +kernel) (by decide)
+  intro argument member
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at member
+  rcases member with rfl | rfl
+  · exact .captured name
+  · exact .symbol "LNil"
+
+private theorem singleton_returns (caller : Subst) (state : State) (name : String) (pattern : Pattern)
+    (captured : applySubst caller (v name) = patternValue pattern) :
+    PureReturns runtime caller state (a "LCons" [v name, .symbol "LNil"]) state (patternsValue [pattern]) := by
+  have same : applySubst caller (a "LCons" [v name, .symbol "LNil"]) = patternsValue [pattern] := by
+    change a "LCons" [applySubst caller (v name), .symbol "LNil"] = _
+    rw [captured]
+    simp [InferenceCettaWire.encodePatterns, CettaWireAtom.encode, CettaWireAtom.encodeMany]
+  simpa only [same] using PureData.template_return runtime caller state _ (singleton_template name)
+
+private theorem receive_returns (state : State) (declaration : ReflectivePresentationDecl)
+    (constructor : String) (name : Pattern) :
     PureReturns runtime [] state
-      (a Helper.dropFinish.head [textValue declaration.quoteConstructor, textValue constructor, markValue (name, matched)]) state
-      (patternValue (match name, matched with
-        | .apply quote [process], true =>
-            if quote == declaration.quoteConstructor then process else .apply constructor [name]
-        | _, _ => .apply constructor [name])) := by
-  let values := [textValue declaration.quoteConstructor, textValue constructor, markValue (name, matched)]
-  let caller := environment .dropFinish values
-  let selected := ("matched", Effects.boolean matched) :: ("name", patternValue name) :: caller
-  apply helper_case .dropFinish state values "marked" (markValue (name, matched))
-    dropFinishRows selected dropFinishRow0 _ rfl rfl
-  · simp [values, environment, Helper.names, applySubst, Subst.lookup]
-  · simp [dropFinishRows, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
-      SpaceSemantics.matchValue.matchValues, matchAtom, selected, caller, values,
-      environment, Helper.names, Subst.lookup]
-  · unfold dropFinishRow0
-    apply bool_if_returns selected state (v "matched") matched _ _ _
-    · simpa [selected, applySubst, Subst.lookup] using variable_returns runtime selected state "matched"
-    · cases matched with
-      | false =>
-          simp only [Bool.false_eq_true, ite_false]
-          apply unary_constructor_returns selected state "head" "name" constructor name
-          · simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+      (a Helper.receive.head [textValue declaration.quoteConstructor, textValue constructor, patternValue name]) state
+      (patternValue (ReflectiveSubstitution.receive declaration constructor name)) := by
+  let values := [textValue declaration.quoteConstructor, textValue constructor, patternValue name]
+  let caller := environment .receive values
+  by_cases unary : ∃ quote process, name = .apply quote [process]
+  · obtain ⟨quote, process, rfl⟩ := unary
+    let bound := ("process", patternValue process) :: ("inner-head", textValue quote) :: caller
+    apply helper_case .receive state values "name" (patternValue (.apply quote [process])) receiveRows bound
+      (a "if" [a "==" [v "inner-head", v "quote"], v "process",
+        a "PApp" [v "head", a "LCons" [v "name", .symbol "LNil"]]]) _ rfl rfl
+    · simp [values, environment, Helper.names, applySubst, Subst.lookup]
+    · simp [receiveRows, InferenceCettaWire.encodePattern, InferenceCettaWire.encodePatterns,
+        CettaWireAtom.encode, CettaWireAtom.encodeMany, SpaceSemantics.selectCase,
+        SpaceSemantics.matchValue, SpaceSemantics.matchValue.matchValues, matchAtom,
+        bound, caller, values, environment, Helper.names, Subst.lookup]
+    · apply bool_if_returns bound state _ (quote == declaration.quoteConstructor) _ _ _
+      · apply strings_equal_returns bound state quote declaration.quoteConstructor "inner-head" "quote"
+        · simp [bound, applySubst, Subst.lookup]
+        · simp [bound, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+      · by_cases quoted : quote = declaration.quoteConstructor
+        · have equal : (quote == declaration.quoteConstructor) = true := by simp [quoted]
+          simp only [equal, ite_true, ReflectiveSubstitution.receive, if_pos quoted]
+          simpa [bound, applySubst, Subst.lookup] using variable_returns runtime bound state "process"
+        · have unequal : (quote == declaration.quoteConstructor) = false := by simp [quoted]
+          simp only [unequal, Bool.false_eq_true, ite_false, ReflectiveSubstitution.receive, if_neg quoted]
+          apply unary_constructor_returns bound state "head" "name" constructor (.apply quote [process])
+          · simp [bound, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+          · simp [bound, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+  · rw [receive_nonunary declaration constructor name unary]
+    let bound := ("ordinary", patternValue name) :: caller
+    apply helper_case .receive state values "name" (patternValue name) receiveRows bound
+      (a "PApp" [v "head", a "LCons" [v "name", .symbol "LNil"]]) _ rfl rfl
+    · simp [values, environment, Helper.names, applySubst, Subst.lookup]
+    · apply nonunary_selection caller name "inner-head" "process" "ordinary" _ _
+      · simp [caller, values, environment, Helper.names, Subst.lookup]
+      · exact unary
+    · apply unary_constructor_returns bound state "head" "name" constructor name
+      · simp [bound, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+      · simp [bound, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+
+private theorem append_returns (state : State) (left right : List Pattern) :
+    PureReturns runtime [] state (a Helper.append.head [patternsValue left, patternsValue right]) state
+      (patternsValue (left ++ right)) := by
+  induction left with
+  | nil =>
+      let values := [patternsValue [], patternsValue right]
+      apply helper_case .append state values "left" (.symbol "LNil") appendRows
+        (environment .append values) (v "right") _ rfl rfl
+      · simp [values, environment, Helper.names, applySubst, Subst.lookup,
+          InferenceCettaWire.encodePatterns, CettaWireAtom.encode]
+      · simp [appendRows, SpaceSemantics.selectCase, SpaceSemantics.matchValue, matchAtom]
+      · simpa [values, environment, Helper.names, applySubst, Subst.lookup] using
+          variable_returns runtime (environment .append values) state "right"
+  | cons item rest ih =>
+      let values := [patternsValue (item :: rest), patternsValue right]
+      let caller := environment .append values
+      let selected := ("rest", patternsValue rest) :: ("item", patternValue item) :: caller
+      let final := ("tail", patternsValue (rest ++ right)) :: selected
+      apply helper_case .append state values "left" (patternsValue (item :: rest)) appendRows
+        selected appendRow1 _ rfl rfl
+      · simp [values, environment, Helper.names, applySubst, Subst.lookup]
+      · simp [appendRows, InferenceCettaWire.encodePatterns, CettaWireAtom.encode,
+          CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+          SpaceSemantics.matchValue.matchValues, matchAtom, selected, caller, values,
+          environment, Helper.names, Subst.lookup]
+      · unfold appendRow1
+        apply named_let_returns selected state "tail" _ (patternsValue (rest ++ right)) _ _
+        · simp [selected, caller, values, environment, Helper.names, Subst.lookup]
+        · apply helper_capture .append selected state _ _ _ rfl _ ih
+          simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+        · simpa [List.cons_append, InferenceCettaWire.encodePatterns, CettaWireAtom.encode,
+            CettaWireAtom.encodeMany, applySubst, applySubst.applySubstList, Subst.lookup, final,
+            selected] using
+            PureData.template_return runtime final state (a "LCons" [v "item", v "tail"])
+              (data_constructor "LCons" ["item", "tail"] (by decide))
+
+private theorem leaves_list_returns_from_elements (state : State)
+    (declaration : ReflectivePresentationDecl) (patterns : List Pattern)
+    (elements : ∀ pattern ∈ patterns, PureReturns runtime [] state
+      (a Helper.leaves.head [kindValue declaration, textValue declaration.parallelUnitConstructor,
+        patternValue pattern]) state
+      (patternsValue (ReflectiveSubstitution.parallelLeaves declaration pattern))) :
+    PureReturns runtime [] state
+      (a Helper.leavesList.head [kindValue declaration, textValue declaration.parallelUnitConstructor,
+        patternsValue patterns]) state
+      (patternsValue (ReflectiveSubstitution.parallelLeavesList declaration patterns)) := by
+  induction patterns with
+  | nil =>
+      let values := [kindValue declaration, textValue declaration.parallelUnitConstructor, patternsValue []]
+      apply helper_case .leavesList state values "patterns" (.symbol "LNil") leavesListRows
+        (environment .leavesList values) (.symbol "LNil") _ rfl rfl
+      · simp [values, environment, Helper.names, applySubst, Subst.lookup,
+          InferenceCettaWire.encodePatterns, CettaWireAtom.encode]
+      · simp [leavesListRows, SpaceSemantics.selectCase, SpaceSemantics.matchValue, matchAtom]
+      · simpa [ReflectiveSubstitution.parallelLeavesList, InferenceCettaWire.encodePatterns,
+          CettaWireAtom.encode] using symbol_returns runtime _ state "LNil"
+  | cons pattern patterns ih =>
+      let values := [kindValue declaration, textValue declaration.parallelUnitConstructor,
+        patternsValue (pattern :: patterns)]
+      let caller := environment .leavesList values
+      let selected := ("rest", patternsValue patterns) :: ("pattern", patternValue pattern) :: caller
+      let first := ReflectiveSubstitution.parallelLeaves declaration pattern
+      let firstBound := ("head", patternsValue first) :: selected
+      let restLeaves := ReflectiveSubstitution.parallelLeavesList declaration patterns
+      let final := ("tail", patternsValue restLeaves) :: firstBound
+      have firstReturned := helper_capture .leaves selected state
+        [v "parallel-kind", v "parallel-unit", v "pattern"]
+        [kindValue declaration, textValue declaration.parallelUnitConstructor, patternValue pattern]
+        (patternsValue first) rfl
+        (by simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup])
+        (elements pattern (by simp))
+      have restReturned := helper_capture .leavesList firstBound state
+        [v "parallel-kind", v "parallel-unit", v "rest"]
+        [kindValue declaration, textValue declaration.parallelUnitConstructor, patternsValue patterns]
+        (patternsValue restLeaves) rfl
+        (by simp [firstBound, selected, caller, values, environment, Helper.names, applySubst, Subst.lookup])
+        (ih (fun pattern member => elements pattern (List.mem_cons_of_mem _ member)))
+      have appended := helper_capture .append final state [v "head", v "tail"]
+        [patternsValue first, patternsValue restLeaves] _ rfl
+        (by simp [final, firstBound, applySubst, Subst.lookup]) (append_returns state first restLeaves)
+      apply helper_case .leavesList state values "patterns" (patternsValue (pattern :: patterns))
+        leavesListRows selected leavesListRow1 _ rfl rfl
+      · simp [values, environment, Helper.names, applySubst, Subst.lookup]
+      · simp [leavesListRows, InferenceCettaWire.encodePatterns, CettaWireAtom.encode,
+          CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+          SpaceSemantics.matchValue.matchValues, matchAtom, selected, caller, values,
+          environment, Helper.names, Subst.lookup]
+      · unfold leavesListRow1
+        simp only [ReflectiveSubstitution.parallelLeavesList]
+        apply PureData.let_bindings_return (pairs :=
+          [(v "head", a Helper.leaves.head [v "parallel-kind", v "parallel-unit", v "pattern"]),
+           (v "tail", a Helper.leavesList.head [v "parallel-kind", v "parallel-unit", v "rest"])])
+          (final := final)
+        · apply PureData.BindingsReturn.cons (bound := firstBound) firstReturned
+          · simp [SpaceSemantics.matchBinding, SpaceSemantics.matchValue, matchAtom, Subst.lookup,
+              firstBound, selected, caller, values, environment, Helper.names]
+          · apply PureData.BindingsReturn.cons (bound := final) restReturned
+            · simp [SpaceSemantics.matchBinding, SpaceSemantics.matchValue, matchAtom, Subst.lookup,
+                final, firstBound, selected, caller, values, environment, Helper.names]
+            · exact .nil _ _
+        · exact appended
+
+private theorem leaves_other_returns (state : State) (declaration : ReflectivePresentationDecl)
+    (pattern : Pattern)
+    (matched : SpaceSemantics.selectCase (environment .leaves [kindValue declaration,
+        textValue declaration.parallelUnitConstructor, patternValue pattern])
+      (patternValue pattern) leavesRows =
+        some (("other", patternValue pattern) :: environment .leaves [kindValue declaration,
+          textValue declaration.parallelUnitConstructor, patternValue pattern],
+          a "LCons" [v "pattern", .symbol "LNil"]))
+    (single : ReflectiveSubstitution.parallelLeaves declaration pattern = [pattern]) :
+    PureReturns runtime [] state
+      (a Helper.leaves.head [kindValue declaration, textValue declaration.parallelUnitConstructor,
+        patternValue pattern]) state
+      (patternsValue (ReflectiveSubstitution.parallelLeaves declaration pattern)) := by
+  rw [single]
+  apply helper_case .leaves state _ "pattern" (patternValue pattern) leavesRows _ _ _ rfl rfl
+  · simp [environment, Helper.names, applySubst, Subst.lookup]
+  · exact matched
+  · apply singleton_returns
+    simp [environment, Helper.names, applySubst, Subst.lookup]
+
+private theorem leaves_returns (state : State) (declaration : ReflectivePresentationDecl) (pattern : Pattern) :
+    PureReturns runtime [] state
+      (a Helper.leaves.head [kindValue declaration, textValue declaration.parallelUnitConstructor,
+        patternValue pattern]) state
+      (patternsValue (ReflectiveSubstitution.parallelLeaves declaration pattern)) := by
+  induction pattern using Pattern.inductionOn with
+  | hbvar index =>
+      apply leaves_other_returns
+      · simp [leavesRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
+          CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+          SpaceSemantics.matchValue.matchValues, matchAtom, environment, Helper.names, Subst.lookup]
+      · simp [ReflectiveSubstitution.parallelLeaves]
+  | hfvar name =>
+      apply leaves_other_returns
+      · simp [leavesRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
+          CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+          SpaceSemantics.matchValue.matchValues, matchAtom, environment, Helper.names, Subst.lookup]
+      · simp [ReflectiveSubstitution.parallelLeaves]
+  | happly head children _ =>
+      let values := [kindValue declaration, textValue declaration.parallelUnitConstructor,
+        patternValue (.apply head children)]
+      let caller := environment .leaves values
+      let selected := ("children", patternsValue children) :: ("head", textValue head) :: caller
+      apply helper_case .leaves state values "pattern" (patternValue (.apply head children)) leavesRows selected
+        (a "case" [v "children", .expression (leavesApplyRows.map fun row => .expression [row.1, row.2])]) _ rfl rfl
+      · simp [values, environment, Helper.names, applySubst, Subst.lookup]
+      · simp [leavesRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
+          CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+          SpaceSemantics.matchValue.matchValues, matchAtom, selected, caller, values,
+          environment, Helper.names, Subst.lookup]
+      · have childrenReturned : PureReturns runtime selected state (v "children") state (patternsValue children) := by
+          simpa [selected, applySubst, Subst.lookup] using variable_returns runtime selected state "children"
+        cases children with
+        | nil =>
+            have matched : SpaceSemantics.selectCase selected (patternsValue []) leavesApplyRows =
+                some (selected, leavesUnitRow) := by
+              simp [leavesApplyRows, InferenceCettaWire.encodePatterns, CettaWireAtom.encode,
+                SpaceSemantics.selectCase, SpaceSemantics.matchValue, matchAtom]
+            apply branch_returns selected selected state (v "children") _ leavesApplyRows _ _ childrenReturned matched
+            unfold leavesUnitRow
+            apply bool_if_returns selected state _ (head == declaration.parallelUnitConstructor) _ _ _
+            · apply strings_equal_returns selected state head declaration.parallelUnitConstructor "head" "parallel-unit"
+              · simp [selected, applySubst, Subst.lookup]
+              · simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+            · by_cases unit : head = declaration.parallelUnitConstructor
+              · have equal : (head == declaration.parallelUnitConstructor) = true := by simp [unit]
+                simp only [equal, ite_true, ReflectiveSubstitution.parallelLeaves, if_pos unit]
+                simpa [InferenceCettaWire.encodePatterns, CettaWireAtom.encode] using
+                  symbol_returns runtime selected state "LNil"
+              · have unequal : (head == declaration.parallelUnitConstructor) = false := by simp [unit]
+                simp only [unequal, Bool.false_eq_true, ite_false, ReflectiveSubstitution.parallelLeaves,
+                  if_neg unit]
+                exact singleton_returns selected state "pattern" (.apply head [])
+                  (by simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup])
+        | cons first rest =>
+            let many := ("many", patternsValue (first :: rest)) :: selected
+            have matched : SpaceSemantics.selectCase selected (patternsValue (first :: rest)) leavesApplyRows =
+                some (many, a "LCons" [v "pattern", .symbol "LNil"]) := by
+              simp [leavesApplyRows, InferenceCettaWire.encodePatterns, CettaWireAtom.encode,
+                CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+                matchAtom, many, selected, caller, values,
+                environment, Helper.names, Subst.lookup]
+            simp only [ReflectiveSubstitution.parallelLeaves]
+            exact branch_returns selected many state (v "children") _ leavesApplyRows _ _ childrenReturned matched
+              (singleton_returns many state "pattern" (.apply head (first :: rest))
+                (by simp [many, selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]))
+  | hlambda binder body _ =>
+      apply leaves_other_returns
+      · simp [leavesRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
+          CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+          SpaceSemantics.matchValue.matchValues, matchAtom, environment, Helper.names, Subst.lookup]
+      · simp [ReflectiveSubstitution.parallelLeaves]
+  | hmultiLambda arity binders body _ =>
+      apply leaves_other_returns
+      · simp [leavesRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
+          CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+          SpaceSemantics.matchValue.matchValues, matchAtom, environment, Helper.names, Subst.lookup]
+      · simp [ReflectiveSubstitution.parallelLeaves]
+  | hsubst body replacement _ _ =>
+      apply leaves_other_returns
+      · simp [leavesRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
+          CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+          SpaceSemantics.matchValue.matchValues, matchAtom, environment, Helper.names, Subst.lookup]
+      · simp [ReflectiveSubstitution.parallelLeaves]
+  | hcollection kind elements rest ih =>
+      let values := [kindValue declaration, textValue declaration.parallelUnitConstructor,
+        patternValue (.collection kind elements rest)]
+      let caller := environment .leaves values
+      let selected := ("rest", encoded (InferenceCettaWire.encodeRest rest)) ::
+        ("elements", patternsValue elements) ::
+        ("collection", encoded (InferenceCettaWire.encodeCollectionType kind)) :: caller
+      apply helper_case .leaves state values "pattern" (patternValue (.collection kind elements rest))
+        leavesRows selected leavesCollectionRow _ rfl rfl
+      · simp [values, environment, Helper.names, applySubst, Subst.lookup]
+      · simp [leavesRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
+          CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+          SpaceSemantics.matchValue.matchValues, matchAtom, selected, caller, values,
+          environment, Helper.names, Subst.lookup]
+      · unfold leavesCollectionRow
+        apply bool_if_returns selected state _ (decide (kind = declaration.parallelCollection)) _ _ _
+        · rw [← kind_equal]
+          apply CettaWireAtom.equality_captured_returns runtime selected state
+            (InferenceCettaWire.encodeCollectionType kind)
+            (InferenceCettaWire.encodeCollectionType declaration.parallelCollection) "collection" "parallel-kind"
           · simp [selected, applySubst, Subst.lookup]
-      | true =>
-          simp only [ite_true]
-          change PureReturns runtime selected state
-            (a "case" [v "name", .expression (dropNameRows.map fun row => .expression [row.1, row.2])]) state _
-          by_cases unary : ∃ quote process, name = .apply quote [process]
-          · obtain ⟨quote, process, same⟩ := unary
-            subst name
-            let bound := ("process", patternValue process) :: ("inner-head", textValue quote) :: selected
-            apply branch_returns selected bound state _ (patternValue (.apply quote [process])) dropNameRows
-              (a "if" [a "==" [v "inner-head", v "quote"], v "process",
-                a "PApp" [v "head", a "LCons" [v "name", .symbol "LNil"]]]) _
-            · simpa [selected, applySubst, Subst.lookup] using variable_returns runtime selected state "name"
-            · simp [dropNameRows, InferenceCettaWire.encodePattern, InferenceCettaWire.encodePatterns,
+          · simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+        · by_cases parallel : kind = declaration.parallelCollection
+          · rw [if_pos (decide_eq_true parallel)]
+            have restReturned : PureReturns runtime selected state (v "rest") state
+                (encoded (InferenceCettaWire.encodeRest rest)) := by
+              simpa [selected, applySubst, Subst.lookup] using variable_returns runtime selected state "rest"
+            cases rest with
+            | none =>
+                have matched : SpaceSemantics.selectCase selected (encoded (InferenceCettaWire.encodeRest none))
+                    leavesRestRows = some (selected, a Helper.leavesList.head
+                      [v "parallel-kind", v "parallel-unit", v "elements"]) := by
+                  simp [leavesRestRows, InferenceCettaWire.encodeRest, CettaWireAtom.encode,
+                    SpaceSemantics.selectCase, SpaceSemantics.matchValue, matchAtom, Helper.head]
+                simp only [ReflectiveSubstitution.parallelLeaves, if_pos parallel]
+                exact branch_returns selected selected state (v "rest") _ leavesRestRows _ _ restReturned matched
+                  (helper_capture .leavesList selected state _ _ _ rfl
+                    (by simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup])
+                    (leaves_list_returns_from_elements state declaration elements ih))
+            | some restName =>
+                let other := ("open", encoded (InferenceCettaWire.encodeRest (some restName))) :: selected
+                have matched : SpaceSemantics.selectCase selected
+                    (encoded (InferenceCettaWire.encodeRest (some restName))) leavesRestRows =
+                      some (other, a "LCons" [v "pattern", .symbol "LNil"]) := by
+                  simp [leavesRestRows, InferenceCettaWire.encodeRest, CettaWireAtom.encode,
+                    CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+                    matchAtom, other, selected, caller, values, environment, Helper.names, Subst.lookup]
+                simp only [ReflectiveSubstitution.parallelLeaves]
+                exact branch_returns selected other state (v "rest") _ leavesRestRows _ _ restReturned matched
+                  (singleton_returns other state "pattern" _
+                    (by simp [other, selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]))
+          · rw [if_neg (by simpa using parallel)]
+            have single : ReflectiveSubstitution.parallelLeaves declaration (.collection kind elements rest) =
+                [.collection kind elements rest] := by
+              cases rest <;> simp [ReflectiveSubstitution.parallelLeaves, parallel]
+            rw [single]
+            exact singleton_returns selected state "pattern" _
+              (by simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup])
+
+private theorem lookup_cons (key name : String) (value : Atom) (rest : Subst) :
+    Subst.lookup ((key, value) :: rest) name = if key = name then some value else Subst.lookup rest name := by
+  unfold Subst.lookup
+  by_cases same : key = name
+  · simp [same]
+  · have different : (key == name) = false := beq_false_of_ne same
+    simp [List.find?, different, same]
+
+private theorem exposed_case_returns (caller : Subst) (state : State)
+    (declaration : ReflectivePresentationDecl) (pattern : Pattern)
+    (freshHead : Subst.lookup caller "head" = none) (freshName : Subst.lookup caller "name" = none)
+    (freshOther : Subst.lookup caller "other" = none)
+    (dropCaptured : applySubst caller (v "drop") = textValue declaration.dropConstructor)
+    (leavesCaptured : applySubst caller (v "leaves") =
+      patternsValue (ReflectiveSubstitution.parallelLeaves declaration pattern)) :
+    PureReturns runtime caller state
+      (a "case" [v "leaves", .expression (exposedRows.map fun row => .expression [row.1, row.2])]) state
+      (optionValue (ReflectiveSubstitution.exposedDrop? declaration pattern)) := by
+  unfold ReflectiveSubstitution.exposedDrop?
+  generalize ReflectiveSubstitution.parallelLeaves declaration pattern = leaves at leavesCaptured ⊢
+  have leavesReturned : PureReturns runtime caller state (v "leaves") state (patternsValue leaves) := by
+    simpa only [leavesCaptured] using variable_returns runtime caller state "leaves"
+  split
+  next constructor name =>
+    let selected := ("name", patternValue name) :: ("head", textValue constructor) :: caller
+    apply branch_returns caller selected state (v "leaves") _ exposedRows
+      (a "if" [a "==" [v "head", v "drop"], a "Some" [v "name"], .symbol "None"]) _ leavesReturned
+    · simp [exposedRows, InferenceCettaWire.encodePatterns, InferenceCettaWire.encodePattern,
+        CettaWireAtom.encode, CettaWireAtom.encodeMany, SpaceSemantics.selectCase,
+        SpaceSemantics.matchValue, SpaceSemantics.matchValue.matchValues, matchAtom, lookup_cons,
+        selected, freshHead, freshName]
+    · apply bool_if_returns selected state _ (constructor == declaration.dropConstructor) _ _ _
+      · apply strings_equal_returns selected state constructor declaration.dropConstructor "head" "drop"
+        · simp [selected, applySubst, lookup_cons]
+        · simpa [selected, applySubst, lookup_cons] using dropCaptured
+      · by_cases dropped : constructor = declaration.dropConstructor
+        · have equal : (constructor == declaration.dropConstructor) = true := by simp [dropped]
+          simp only [equal, ite_true, if_pos dropped]
+          simpa [optionValue, CettaWireAtom.encode, CettaWireAtom.encodeMany, applySubst,
+            applySubst.applySubstList, lookup_cons, selected] using
+            PureData.template_return runtime selected state (a "Some" [v "name"])
+              (data_constructor "Some" ["name"] (by decide))
+        · have unequal : (constructor == declaration.dropConstructor) = false := by simp [dropped]
+          simp only [unequal, Bool.false_eq_true, ite_false, if_neg dropped]
+          exact symbol_returns runtime selected state "None"
+  next notExposed =>
+    have matched : SpaceSemantics.selectCase caller (patternsValue leaves) exposedRows =
+        some (("other", patternsValue leaves) :: caller, .symbol "None") := by
+      rcases leaves with _ | ⟨first, _ | ⟨second, rest⟩⟩
+      · simp [exposedRows, InferenceCettaWire.encodePatterns, CettaWireAtom.encode,
+          SpaceSemantics.selectCase, SpaceSemantics.matchValue, matchAtom, freshOther]
+      · cases first with
+        | apply constructor children =>
+            rcases children with _ | ⟨name, _ | ⟨other, more⟩⟩
+            · simp [exposedRows, InferenceCettaWire.encodePatterns, InferenceCettaWire.encodePattern,
                 CettaWireAtom.encode, CettaWireAtom.encodeMany, SpaceSemantics.selectCase,
                 SpaceSemantics.matchValue, SpaceSemantics.matchValue.matchValues, matchAtom,
-                bound, selected, caller, values, environment, Helper.names, Subst.lookup]
-            · apply bool_if_returns bound state _ (quote == declaration.quoteConstructor) _ _ _
-              · apply strings_equal_returns bound state quote declaration.quoteConstructor "inner-head" "quote"
-                · simp [bound, applySubst, Subst.lookup]
-                · simp [bound, selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
-              · by_cases quoted : quote == declaration.quoteConstructor
-                · simpa [quoted, bound, applySubst, Subst.lookup] using variable_returns runtime bound state "process"
-                · simp only [quoted, Bool.false_eq_true, ite_false]
-                  apply unary_constructor_returns bound state "head" "name" constructor (.apply quote [process])
-                  · simp [bound, selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
-                  · simp [bound, selected, applySubst, Subst.lookup]
-          · rw [drop_nonunary_result declaration constructor name unary]
-            let bound := ("ordinary", patternValue name) :: selected
-            apply branch_returns selected bound state _ (patternValue name) dropNameRows
-              (a "PApp" [v "head", a "LCons" [v "name", .symbol "LNil"]]) _
-            · simpa [selected, applySubst, Subst.lookup] using variable_returns runtime selected state "name"
-            · apply nonunary_selection selected name "inner-head" "process" "ordinary" _ _
-              · simp [selected, caller, values, environment, Helper.names, Subst.lookup]
-              · exact unary
-            · apply unary_constructor_returns bound state "head" "name" constructor name
-              · simp [bound, selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
-              · simp [bound, selected, applySubst, Subst.lookup]
+                freshOther]
+            · exact False.elim (notExposed constructor name rfl)
+            · simp [exposedRows, InferenceCettaWire.encodePatterns, InferenceCettaWire.encodePattern,
+                CettaWireAtom.encode, CettaWireAtom.encodeMany, SpaceSemantics.selectCase,
+                SpaceSemantics.matchValue, SpaceSemantics.matchValue.matchValues, matchAtom,
+                freshOther]
+        | bvar _ | fvar _ | lambda _ _ | multiLambda _ _ _ | subst _ _ | collection _ _ _ =>
+            simp [exposedRows, InferenceCettaWire.encodePatterns, InferenceCettaWire.encodePattern,
+              CettaWireAtom.encode, CettaWireAtom.encodeMany, SpaceSemantics.selectCase,
+              SpaceSemantics.matchValue, SpaceSemantics.matchValue.matchValues, matchAtom, freshOther]
+      · simp [exposedRows, InferenceCettaWire.encodePatterns, CettaWireAtom.encode,
+          CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+          SpaceSemantics.matchValue.matchValues, matchAtom,
+          freshOther]
+    exact branch_returns caller _ state (v "leaves") _ exposedRows _ _ leavesReturned matched
+      (symbol_returns runtime _ state "None")
 
-private theorem instantiate_list_map (declaration : ReflectivePresentationDecl) (depth : Nat)
-    (replacement : Pattern) (patterns : List Pattern) :
-    ReflectiveInstantiation.instantiateList declaration depth replacement patterns =
-      patterns.map (ReflectiveInstantiation.instantiate declaration depth replacement) := by
-  induction patterns with
-  | nil => rfl
-  | cons head tail ih => simp [ReflectiveInstantiation.instantiateList, ih]
-
-private theorem instantiate_unary_returns (state : State) (declaration : ReflectivePresentationDecl)
-    (depth : Nat) (replacement : Pattern) (head : String) (payload : Pattern)
-    (payloadReturned : PureReturns runtime [] state
-      (a Helper.instantiate.head [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
-        number depth, patternValue replacement, patternValue payload]) state
-      (patternValue (ReflectiveInstantiation.instantiate declaration depth replacement payload))) :
+private theorem exposed_drop_returns (state : State) (declaration : ReflectivePresentationDecl)
+    (pattern : Pattern) :
     PureReturns runtime [] state
-      (a Helper.instantiateUnary.head [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
-        number depth, patternValue replacement, textValue head, patternValue payload]) state
-      (patternValue (ReflectiveInstantiation.instantiate declaration depth replacement (.apply head [payload]))) := by
-  let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
-    number depth, patternValue replacement, textValue head, patternValue payload]
-  let caller := environment .instantiateUnary values
-  apply helper_call .instantiateUnary [] state values values _ rfl (captured_closed _)
+      (a Helper.exposedDrop.head [textValue declaration.dropConstructor, kindValue declaration,
+        textValue declaration.parallelUnitConstructor, patternValue pattern]) state
+      (optionValue (ReflectiveSubstitution.exposedDrop? declaration pattern)) := by
+  let values := [textValue declaration.dropConstructor, kindValue declaration,
+    textValue declaration.parallelUnitConstructor, patternValue pattern]
+  let caller := environment .exposedDrop values
+  let leaves := ReflectiveSubstitution.parallelLeaves declaration pattern
+  let final := ("leaves", patternsValue leaves) :: caller
+  apply helper_call .exposedDrop [] state values values _ rfl (captured_closed _)
   rw [source_body]
-  change PureReturns runtime caller state instantiateUnaryBody state _
-  unfold instantiateUnaryBody
-  simp only [ReflectiveInstantiation.instantiate]
-  apply bool_if_returns caller state _ (head == declaration.quoteConstructor) _ _ _
-  · apply strings_equal_returns caller state head declaration.quoteConstructor "head" "quote"
-    · simp [caller, values, environment, Helper.names, applySubst, Subst.lookup]
-    · simp [caller, values, environment, Helper.names, applySubst, Subst.lookup]
-  · by_cases quoted : head == declaration.quoteConstructor
-    · simp only [quoted, ite_true]
-      let marked := ReflectiveInstantiation.nameMark declaration depth replacement (.apply head [payload])
-      let final := ("marked", markValue marked) :: caller
-      apply named_let_returns caller state "marked" _ (markValue marked) _ _
-      · simp [caller, values, environment, Helper.names, Subst.lookup]
-      · apply helper_capture .nameMark caller state _ _ _ rfl _
-          (name_mark_returns state declaration depth replacement (.apply head [payload]))
-        simp [caller, values, environment, Helper.names, applySubst, applySubst.applySubstList,
-          Subst.lookup, InferenceCettaWire.encodePattern, InferenceCettaWire.encodePatterns,
-          CettaWireAtom.encode, CettaWireAtom.encodeMany]
-      · apply helper_capture .unmark final state _ _ _ rfl _ (unmark_returns state marked.1 marked.2)
-        simp [final, applySubst, Subst.lookup]
-    · simp only [quoted, Bool.false_eq_true, ite_false]
-      apply bool_if_returns caller state _ (head == declaration.dropConstructor) _ _ _
-      · apply strings_equal_returns caller state head declaration.dropConstructor "head" "drop"
-        · simp [caller, values, environment, Helper.names, applySubst, Subst.lookup]
-        · simp [caller, values, environment, Helper.names, applySubst, Subst.lookup]
-      · by_cases dropped : head == declaration.dropConstructor
-        · simp only [dropped, ite_true]
-          let marked := ReflectiveInstantiation.nameMark declaration depth replacement payload
-          let final := ("marked", markValue marked) :: caller
-          apply named_let_returns caller state "marked" _ (markValue marked) _ _
-          · simp [caller, values, environment, Helper.names, Subst.lookup]
-          · apply helper_capture .nameMark caller state _ _ _ rfl _
-              (name_mark_returns state declaration depth replacement payload)
-            simp [caller, values, environment, Helper.names, applySubst, Subst.lookup]
-          · have returned := drop_finish_returns state declaration head marked.1 marked.2
-            apply helper_capture .dropFinish final state _ _ _ rfl _ returned
-            simp [final, caller, values, environment, Helper.names, applySubst, Subst.lookup]
-        · simp only [dropped, Bool.false_eq_true, ite_false]
-          let result := ReflectiveInstantiation.instantiate declaration depth replacement payload
-          let final := ("value", patternValue result) :: caller
-          apply named_let_returns caller state "value" _ (patternValue result) _ _
-          · simp [caller, values, environment, Helper.names, Subst.lookup]
-          · apply helper_capture .instantiate caller state _ _ _ rfl _ payloadReturned
-            simp [caller, values, environment, Helper.names, applySubst, Subst.lookup]
-          · apply unary_constructor_returns final state "head" "value" head result
-            · simp [final, caller, values, environment, Helper.names, applySubst, Subst.lookup]
-            · simp [final, applySubst, Subst.lookup]
+  change PureReturns runtime caller state exposedDropBody state _
+  unfold exposedDropBody
+  apply named_let_returns caller state "leaves" _ (patternsValue leaves) _ _
+  · simp [caller, values, environment, Helper.names, Subst.lookup]
+  · apply helper_capture .leaves caller state _ _ _ rfl _ (leaves_returns state declaration pattern)
+    simp [caller, values, environment, Helper.names, applySubst, Subst.lookup]
+  · apply exposed_case_returns final state declaration pattern
+    · simp [final, caller, values, environment, Helper.names, Subst.lookup]
+    · simp [final, caller, values, environment, Helper.names, Subst.lookup]
+    · simp [final, caller, values, environment, Helper.names, Subst.lookup]
+    · simp [final, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+    · simp [final, leaves, applySubst, Subst.lookup]
 
-private theorem instantiate_list_returns_from_elements (state : State)
-    (declaration : ReflectivePresentationDecl) (depth : Nat) (replacement : Pattern) (patterns : List Pattern)
-    (elements : ∀ pattern ∈ patterns, PureReturns runtime [] state
-      (a Helper.instantiate.head [textValue declaration.quoteConstructor,
-        textValue declaration.dropConstructor, number depth, patternValue replacement, patternValue pattern]) state
-      (patternValue (ReflectiveInstantiation.instantiate declaration depth replacement pattern))) :
+private theorem nonsingleton_selection (caller : Subst) (children : List Pattern)
+    (first fallback : String) (yes no : Atom)
+    (freshFallback : Subst.lookup caller fallback = none)
+    (nonsingleton : ¬∃ payload, children = [payload]) :
+    SpaceSemantics.selectCase caller (patternsValue children)
+      [(a "LCons" [v first, .symbol "LNil"], yes), (v fallback, no)] =
+      some ((fallback, patternsValue children) :: caller, no) := by
+  rcases children with _ | ⟨payload, _ | ⟨second, rest⟩⟩
+  · simp [InferenceCettaWire.encodePatterns, CettaWireAtom.encode, SpaceSemantics.selectCase,
+      SpaceSemantics.matchValue, matchAtom, freshFallback]
+  · exact False.elim (nonsingleton ⟨payload, rfl⟩)
+  · simp [InferenceCettaWire.encodePatterns, CettaWireAtom.encode, CettaWireAtom.encodeMany,
+      SpaceSemantics.selectCase, SpaceSemantics.matchValue, SpaceSemantics.matchValue.matchValues,
+      matchAtom, freshFallback]
+
+private theorem finish_resolve_nonsingleton (declaration : ReflectivePresentationDecl)
+    (constructor : String) (children : List Pattern) (nonsingleton : ¬∃ payload, children = [payload]) :
+    ReflectiveSubstitution.finishResolveApply declaration constructor children = .apply constructor children := by
+  rcases children with _ | ⟨payload, _ | ⟨second, rest⟩⟩
+  · rfl
+  · exact False.elim (nonsingleton ⟨payload, rfl⟩)
+  · rfl
+
+private theorem resolve_finish_returns (state : State) (declaration : ReflectivePresentationDecl)
+    (constructor : String) (children : List Pattern) :
     PureReturns runtime [] state
-      (a Helper.instantiateList.head [textValue declaration.quoteConstructor,
-        textValue declaration.dropConstructor, number depth, patternValue replacement, patternsValue patterns]) state
-      (patternsValue (patterns.map (ReflectiveInstantiation.instantiate declaration depth replacement))) := by
+      (a Helper.resolveFinish.head [textValue declaration.quoteConstructor,
+        textValue declaration.dropConstructor, kindValue declaration,
+        textValue declaration.parallelUnitConstructor, textValue constructor, patternsValue children]) state
+      (patternValue (ReflectiveSubstitution.finishResolveApply declaration constructor children)) := by
+  let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
+    kindValue declaration, textValue declaration.parallelUnitConstructor, textValue constructor,
+    patternsValue children]
+  let caller := environment .resolveFinish values
+  by_cases singleton : ∃ payload, children = [payload]
+  · obtain ⟨payload, rfl⟩ := singleton
+    let selected := ("payload", patternValue payload) :: caller
+    apply helper_case .resolveFinish state values "children" (patternsValue [payload])
+      resolveFinishRows selected resolveFinishRow0 _ rfl rfl
+    · simp [values, environment, Helper.names, applySubst, Subst.lookup]
+    · simp [resolveFinishRows, InferenceCettaWire.encodePatterns, CettaWireAtom.encode,
+        CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+        SpaceSemantics.matchValue.matchValues, matchAtom, selected, caller, values,
+        environment, Helper.names, Subst.lookup]
+    · unfold resolveFinishRow0
+      apply bool_if_returns selected state _ (constructor == declaration.quoteConstructor) _ _ _
+      · apply strings_equal_returns selected state constructor declaration.quoteConstructor "head" "quote"
+        · simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+        · simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+      · by_cases quoted : constructor = declaration.quoteConstructor
+        · have equal : (constructor == declaration.quoteConstructor) = true := by simp [quoted]
+          simp only [equal, ite_true, ReflectiveSubstitution.finishResolveApply, if_pos quoted]
+          have exposedReturned := exposed_drop_returns state declaration payload
+          cases found : ReflectiveSubstitution.exposedDrop? declaration payload with
+          | none =>
+              rw [found] at exposedReturned
+              let bound := ("exposed", Atom.symbol "None") :: selected
+              let other := ("none", Atom.symbol "None") :: bound
+              apply named_let_returns selected state "exposed" _ (.symbol "None") _ _
+              · simp [selected, caller, values, environment, Helper.names, Subst.lookup]
+              · apply helper_capture .exposedDrop selected state _ _ _ rfl _ exposedReturned
+                simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+              · apply branch_returns bound other state (v "exposed") (.symbol "None") exposedNameRows
+                  (a "PApp" [v "head", v "children"]) _
+                · simpa [bound, applySubst, Subst.lookup] using variable_returns runtime bound state "exposed"
+                · simp [exposedNameRows, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+                    matchAtom, other, bound, selected, caller,
+                    values, environment, Helper.names, Subst.lookup]
+                · apply finish_application_returns other state constructor [payload]
+                  · simp [other, bound, selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+                  · simp [other, bound, selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+          | some name =>
+              rw [found] at exposedReturned
+              let bound := ("exposed", optionValue (some name)) :: selected
+              let named := ("name", patternValue name) :: bound
+              apply named_let_returns selected state "exposed" _ (optionValue (some name)) _ _
+              · simp [selected, caller, values, environment, Helper.names, Subst.lookup]
+              · apply helper_capture .exposedDrop selected state _ _ _ rfl _ exposedReturned
+                simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+              · apply branch_returns bound named state (v "exposed") (optionValue (some name)) exposedNameRows
+                  (v "name") _
+                · simpa [bound, applySubst, Subst.lookup] using variable_returns runtime bound state "exposed"
+                · simp [exposedNameRows, optionValue, CettaWireAtom.encode,
+                    SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+                    SpaceSemantics.matchValue.matchValues, matchAtom, named, bound, selected, caller,
+                    values, environment, Helper.names, Subst.lookup]
+                · simpa [named, applySubst, Subst.lookup] using variable_returns runtime named state "name"
+        · have unequal : (constructor == declaration.quoteConstructor) = false := by simp [quoted]
+          simp only [unequal, Bool.false_eq_true, ite_false, ReflectiveSubstitution.finishResolveApply,
+            if_neg quoted]
+          apply finish_application_returns selected state constructor [payload]
+          · simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+          · simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+  · rw [finish_resolve_nonsingleton declaration constructor children singleton]
+    let selected := ("other", patternsValue children) :: caller
+    apply helper_case .resolveFinish state values "children" (patternsValue children)
+      resolveFinishRows selected (a "PApp" [v "head", v "children"]) _ rfl rfl
+    · simp [values, environment, Helper.names, applySubst, Subst.lookup]
+    · apply nonsingleton_selection caller children "payload" "other" _ _ _ singleton
+      simp [caller, values, environment, Helper.names, Subst.lookup]
+    · apply finish_application_returns selected state constructor children
+      · simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+      · simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+
+private theorem resolve_list_returns_from_elements (state : State)
+    (declaration : ReflectivePresentationDecl) (patterns : List Pattern)
+    (elements : ∀ pattern ∈ patterns, PureReturns runtime [] state
+      (a Helper.resolve.head [textValue declaration.quoteConstructor,
+        textValue declaration.dropConstructor, kindValue declaration, textValue declaration.parallelUnitConstructor, patternValue pattern]) state
+      (patternValue (ReflectiveSubstitution.resolveQuotes declaration pattern))) :
+    PureReturns runtime [] state
+      (a Helper.resolveList.head [textValue declaration.quoteConstructor,
+        textValue declaration.dropConstructor, kindValue declaration, textValue declaration.parallelUnitConstructor, patternsValue patterns]) state
+      (patternsValue (patterns.map (ReflectiveSubstitution.resolveQuotes declaration))) := by
   induction patterns with
   | nil =>
       let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
-        number depth, patternValue replacement, patternsValue []]
-      apply helper_case .instantiateList state values "patterns" (.symbol "LNil") instantiateListRows
-        (environment .instantiateList values) instantiateListRow0 _ rfl rfl
+        kindValue declaration, textValue declaration.parallelUnitConstructor, patternsValue []]
+      apply helper_case .resolveList state values "patterns" (.symbol "LNil") resolveListRows
+        (environment .resolveList values) resolveListRow0 _ rfl rfl
       · simp [values, environment, Helper.names, applySubst, Subst.lookup,
           InferenceCettaWire.encodePatterns, CettaWireAtom.encode]
-      · simp [instantiateListRows, SpaceSemantics.selectCase, SpaceSemantics.matchValue, matchAtom]
-      · simpa [instantiateListRow0, InferenceCettaWire.encodePatterns, CettaWireAtom.encode] using
+      · simp [resolveListRows, SpaceSemantics.selectCase, SpaceSemantics.matchValue, matchAtom]
+      · simpa [resolveListRow0, InferenceCettaWire.encodePatterns, CettaWireAtom.encode] using
           symbol_returns runtime _ state "LNil"
   | cons pattern patterns ih =>
       let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
-        number depth, patternValue replacement, patternsValue (pattern :: patterns)]
-      let caller := environment .instantiateList values
+        kindValue declaration, textValue declaration.parallelUnitConstructor, patternsValue (pattern :: patterns)]
+      let caller := environment .resolveList values
       let selected := ("rest", patternsValue patterns) :: ("pattern", patternValue pattern) :: caller
-      let headValue := patternValue (ReflectiveInstantiation.instantiate declaration depth replacement pattern)
+      let headValue := patternValue (ReflectiveSubstitution.resolveQuotes declaration pattern)
       let headBound := ("head", headValue) :: selected
-      let tailValue := patternsValue (patterns.map (ReflectiveInstantiation.instantiate declaration depth replacement))
+      let tailValue := patternsValue (patterns.map (ReflectiveSubstitution.resolveQuotes declaration))
       let final := ("tail", tailValue) :: headBound
-      have headReturned := helper_capture .instantiate selected state
-        [v "quote", v "drop", v "depth", v "replacement", v "pattern"]
-        [textValue declaration.quoteConstructor, textValue declaration.dropConstructor, number depth, patternValue replacement, patternValue pattern]
+      have headReturned := helper_capture .resolve selected state
+        [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "pattern"]
+        [textValue declaration.quoteConstructor, textValue declaration.dropConstructor, kindValue declaration, textValue declaration.parallelUnitConstructor, patternValue pattern]
         headValue rfl (by simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup])
         (elements pattern (by simp))
-      have tailReturned := helper_capture .instantiateList headBound state
-        [v "quote", v "drop", v "depth", v "replacement", v "rest"]
-        [textValue declaration.quoteConstructor, textValue declaration.dropConstructor, number depth, patternValue replacement, patternsValue patterns]
+      have tailReturned := helper_capture .resolveList headBound state
+        [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "rest"]
+        [textValue declaration.quoteConstructor, textValue declaration.dropConstructor, kindValue declaration, textValue declaration.parallelUnitConstructor, patternsValue patterns]
         tailValue rfl (by simp [headBound, selected, caller, values, environment, Helper.names, applySubst, Subst.lookup])
         (ih (fun pattern member => elements pattern (List.mem_cons_of_mem _ member)))
-      apply helper_case .instantiateList state values "patterns" (patternsValue (pattern :: patterns))
-        instantiateListRows selected instantiateListRow1 _ rfl rfl
+      apply helper_case .resolveList state values "patterns" (patternsValue (pattern :: patterns))
+        resolveListRows selected resolveListRow1 _ rfl rfl
       · simp [values, environment, Helper.names, applySubst, Subst.lookup]
-      · simp [instantiateListRows, InferenceCettaWire.encodePatterns,
+      · simp [resolveListRows, InferenceCettaWire.encodePatterns,
           CettaWireAtom.encode, CettaWireAtom.encodeMany, SpaceSemantics.selectCase,
           SpaceSemantics.matchValue, SpaceSemantics.matchValue.matchValues, matchAtom,
           selected, caller, values, environment, Helper.names, Subst.lookup]
-      · unfold instantiateListRow1
+      · unfold resolveListRow1
         apply PureData.let_bindings_return (pairs :=
-          [(v "head", a Helper.instantiate.head [v "quote", v "drop", v "depth", v "replacement", v "pattern"]),
-           (v "tail", a Helper.instantiateList.head [v "quote", v "drop", v "depth", v "replacement", v "rest"])]) (final := final)
+          [(v "head", a Helper.resolve.head [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "pattern"]),
+           (v "tail", a Helper.resolveList.head [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "rest"])]) (final := final)
         · apply PureData.BindingsReturn.cons (bound := headBound) headReturned
           · simp [SpaceSemantics.matchBinding, SpaceSemantics.matchValue, matchAtom, Subst.lookup,
               headBound, selected, caller, values, environment, Helper.names]
@@ -1278,67 +2377,487 @@ private theorem instantiate_list_returns_from_elements (state : State)
             PureData.template_return runtime final state (a "LCons" [v "head", v "tail"])
               (data_constructor "LCons" ["head", "tail"] (by decide))
 
-private theorem instantiate_apply_returns (state : State) (declaration : ReflectivePresentationDecl)
+theorem resolve_returns (state : State) (declaration : ReflectivePresentationDecl) (pattern : Pattern) :
+    PureReturns runtime [] state
+      (a Helper.resolve.head [textValue declaration.quoteConstructor,
+        textValue declaration.dropConstructor, kindValue declaration, textValue declaration.parallelUnitConstructor, patternValue pattern]) state
+      (patternValue (ReflectiveSubstitution.resolveQuotes declaration pattern)) := by
+  induction pattern using Pattern.inductionOn with
+  | hbvar index =>
+      let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
+        kindValue declaration, textValue declaration.parallelUnitConstructor, patternValue (.bvar index)]
+      let caller := environment .resolve values
+      let selected := ("index", number index) :: caller
+      apply helper_case .resolve state values "pattern" (patternValue (.bvar index))
+        resolveRows selected resolveRow0 _ rfl rfl
+      · simp [values, environment, Helper.names, applySubst, Subst.lookup]
+      · simp [resolveRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
+          CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+          SpaceSemantics.matchValue.matchValues, matchAtom, selected, caller, values,
+          environment, Helper.names, Subst.lookup]
+      · simpa [resolveRow0, ReflectiveSubstitution.resolveQuotes, selected, caller, values,
+          environment, Helper.names, applySubst, Subst.lookup] using variable_returns runtime selected state "pattern"
+  | hfvar name =>
+      let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
+        kindValue declaration, textValue declaration.parallelUnitConstructor, patternValue (.fvar name)]
+      let caller := environment .resolve values
+      let selected := ("name", textValue name) :: caller
+      apply helper_case .resolve state values "pattern" (patternValue (.fvar name))
+        resolveRows selected resolveRow1 _ rfl rfl
+      · simp [values, environment, Helper.names, applySubst, Subst.lookup]
+      · simp [resolveRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
+          CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+          SpaceSemantics.matchValue.matchValues, matchAtom, selected, caller, values,
+          environment, Helper.names, Subst.lookup]
+      · simpa [resolveRow1, ReflectiveSubstitution.resolveQuotes, selected, caller, values,
+          environment, Helper.names, applySubst, Subst.lookup] using variable_returns runtime selected state "pattern"
+  | happly head children ih =>
+      let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
+        kindValue declaration, textValue declaration.parallelUnitConstructor, patternValue (.apply head children)]
+      let caller := environment .resolve values
+      let selected := ("children", patternsValue children) :: ("head", textValue head) :: caller
+      let childrenResult := children.map (ReflectiveSubstitution.resolveQuotes declaration)
+      let final := ("values", patternsValue childrenResult) :: selected
+      simp only [ReflectiveSubstitution.resolveQuotes, ReflectiveSubstitution.resolveQuotesList_eq_map]
+      apply helper_case .resolve state values "pattern" (patternValue (.apply head children))
+        resolveRows selected resolveRow2 _ rfl rfl
+      · simp [values, environment, Helper.names, applySubst, Subst.lookup]
+      · simp [resolveRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
+          CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+          SpaceSemantics.matchValue.matchValues, matchAtom, selected, caller, values,
+          environment, Helper.names, Subst.lookup]
+      · unfold resolveRow2
+        apply named_let_returns selected state "values" _ (patternsValue childrenResult) _ _
+        · simp [selected, caller, values, environment, Helper.names, Subst.lookup]
+        · apply helper_capture .resolveList selected state _ _ _ rfl _
+            (resolve_list_returns_from_elements state declaration children ih)
+          simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+        · apply helper_capture .resolveFinish final state _ _ _ rfl _
+            (resolve_finish_returns state declaration head childrenResult)
+          simp [final, selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+  | hlambda binder body ih =>
+      let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
+        kindValue declaration, textValue declaration.parallelUnitConstructor, patternValue (.lambda binder body)]
+      let caller := environment .resolve values
+      let selected := ("body", patternValue body) ::
+        ("binder", encoded (InferenceCettaWire.encodeBinder binder)) :: caller
+      let result := ReflectiveSubstitution.resolveQuotes declaration body
+      let final := ("value", patternValue result) :: selected
+      simp only [ReflectiveSubstitution.resolveQuotes]
+      apply helper_case .resolve state values "pattern" (patternValue (.lambda binder body))
+        resolveRows selected resolveRow3 _ rfl rfl
+      · simp [values, environment, Helper.names, applySubst, Subst.lookup]
+      · simp [resolveRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
+          CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+          SpaceSemantics.matchValue.matchValues, matchAtom, selected, caller, values,
+          environment, Helper.names, Subst.lookup]
+      · unfold resolveRow3
+        apply named_let_returns selected state "value" _ (patternValue result) _ _
+        · simp [selected, caller, values, environment, Helper.names, Subst.lookup]
+        · apply helper_capture .resolve selected state _ _ _ rfl _ ih
+          simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+        · simpa [InferenceCettaWire.encodePattern, CettaWireAtom.encode, CettaWireAtom.encodeMany,
+            applySubst, applySubst.applySubstList, Subst.lookup, final, selected, result] using
+            PureData.template_return runtime final state (a "PLam" [v "binder", v "value"])
+              (data_constructor "PLam" ["binder", "value"] (by decide))
+  | hmultiLambda arity binders body ih =>
+      let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
+        kindValue declaration, textValue declaration.parallelUnitConstructor, patternValue (.multiLambda arity binders body)]
+      let caller := environment .resolve values
+      let selected := ("body", patternValue body) ::
+        ("binders", encoded (InferenceCettaWire.encodeList Term.string binders)) :: ("arity", number arity) :: caller
+      let result := ReflectiveSubstitution.resolveQuotes declaration body
+      let final := ("value", patternValue result) :: selected
+      simp only [ReflectiveSubstitution.resolveQuotes]
+      apply helper_case .resolve state values "pattern" (patternValue (.multiLambda arity binders body))
+        resolveRows selected resolveRow4 _ rfl rfl
+      · simp [values, environment, Helper.names, applySubst, Subst.lookup]
+      · simp [resolveRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
+          CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+          SpaceSemantics.matchValue.matchValues, matchAtom, selected, caller, values,
+          environment, Helper.names, Subst.lookup]
+      · unfold resolveRow4
+        apply named_let_returns selected state "value" _ (patternValue result) _ _
+        · simp [selected, caller, values, environment, Helper.names, Subst.lookup]
+        · apply helper_capture .resolve selected state _ _ _ rfl _ ih
+          simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+        · simpa [InferenceCettaWire.encodePattern, CettaWireAtom.encode, CettaWireAtom.encodeMany,
+            applySubst, applySubst.applySubstList, Subst.lookup, final, selected, result] using
+            PureData.template_return runtime final state (a "PMultiLam" [v "arity", v "binders", v "value"])
+              (data_constructor "PMultiLam" ["arity", "binders", "value"] (by decide))
+  | hsubst body replacement ihBody ihReplacement =>
+      let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
+        kindValue declaration, textValue declaration.parallelUnitConstructor, patternValue (.subst body replacement)]
+      let caller := environment .resolve values
+      let selected := ("replacement", patternValue replacement) :: ("body", patternValue body) :: caller
+      let bodyResult := ReflectiveSubstitution.resolveQuotes declaration body
+      let replacementResult := ReflectiveSubstitution.resolveQuotes declaration replacement
+      let bodyBound := ("value", patternValue bodyResult) :: selected
+      let final := ("replacement-value", patternValue replacementResult) :: bodyBound
+      have bodyReturned := helper_capture .resolve selected state [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "body"]
+        [textValue declaration.quoteConstructor, textValue declaration.dropConstructor, kindValue declaration, textValue declaration.parallelUnitConstructor, patternValue body]
+        (patternValue bodyResult) rfl
+        (by simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]) ihBody
+      have replacementReturned := helper_capture .resolve bodyBound state [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "replacement"]
+        [textValue declaration.quoteConstructor, textValue declaration.dropConstructor, kindValue declaration, textValue declaration.parallelUnitConstructor, patternValue replacement]
+        (patternValue replacementResult) rfl
+        (by simp [bodyBound, selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]) ihReplacement
+      simp only [ReflectiveSubstitution.resolveQuotes]
+      apply helper_case .resolve state values "pattern" (patternValue (.subst body replacement))
+        resolveRows selected resolveRow5 _ rfl rfl
+      · simp [values, environment, Helper.names, applySubst, Subst.lookup]
+      · simp [resolveRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
+          CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+          SpaceSemantics.matchValue.matchValues, matchAtom, selected, caller, values,
+          environment, Helper.names, Subst.lookup]
+      · unfold resolveRow5
+        apply PureData.let_bindings_return (pairs :=
+          [(v "value", a Helper.resolve.head [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "body"]),
+           (v "replacement-value", a Helper.resolve.head [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "replacement"])]) (final := final)
+        · apply PureData.BindingsReturn.cons (bound := bodyBound) bodyReturned
+          · simp [SpaceSemantics.matchBinding, SpaceSemantics.matchValue, matchAtom, Subst.lookup,
+              bodyBound, selected, caller, values, environment, Helper.names]
+          · apply PureData.BindingsReturn.cons (bound := final) replacementReturned
+            · simp [SpaceSemantics.matchBinding, SpaceSemantics.matchValue, matchAtom, Subst.lookup,
+                final, bodyBound, selected, caller, values, environment, Helper.names]
+            · exact .nil _ _
+        · simpa [InferenceCettaWire.encodePattern, CettaWireAtom.encode, CettaWireAtom.encodeMany,
+            applySubst, applySubst.applySubstList, Subst.lookup, final, bodyBound, bodyResult, replacementResult] using
+            PureData.template_return runtime final state (a "PSubst" [v "value", v "replacement-value"])
+              (data_constructor "PSubst" ["value", "replacement-value"] (by decide))
+  | hcollection kind elements rest ih =>
+      let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
+        kindValue declaration, textValue declaration.parallelUnitConstructor, patternValue (.collection kind elements rest)]
+      let caller := environment .resolve values
+      let selected := ("rest", encoded (InferenceCettaWire.encodeRest rest)) ::
+        ("elements", patternsValue elements) :: ("kind", encoded (InferenceCettaWire.encodeCollectionType kind)) :: caller
+      let results := elements.map (ReflectiveSubstitution.resolveQuotes declaration)
+      let final := ("values", patternsValue results) :: selected
+      simp only [ReflectiveSubstitution.resolveQuotes, ReflectiveSubstitution.resolveQuotesList_eq_map]
+      apply helper_case .resolve state values "pattern" (patternValue (.collection kind elements rest))
+        resolveRows selected resolveRow6 _ rfl rfl
+      · simp [values, environment, Helper.names, applySubst, Subst.lookup]
+      · simp [resolveRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
+          CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+          SpaceSemantics.matchValue.matchValues, matchAtom, selected, caller, values,
+          environment, Helper.names, Subst.lookup]
+      · unfold resolveRow6
+        apply named_let_returns selected state "values" _ (patternsValue results) _ _
+        · simp [selected, caller, values, environment, Helper.names, Subst.lookup]
+        · apply helper_capture .resolveList selected state _ _ _ rfl _
+            (resolve_list_returns_from_elements state declaration elements ih)
+          simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+        · simpa [InferenceCettaWire.encodePattern, CettaWireAtom.encode, CettaWireAtom.encodeMany,
+            applySubst, applySubst.applySubstList, Subst.lookup, final, selected, results] using
+            PureData.template_return runtime final state (a "PCollection" [v "kind", v "values", v "rest"])
+              (data_constructor "PCollection" ["kind", "values", "rest"] (by decide))
+
+private theorem substitute_unary_returns (state : State) (declaration : ReflectivePresentationDecl) (mode : Option Pattern)
+    (depth : Nat) (replacement : Pattern) (head : String) (payload : Pattern)
+    (payloadReturned : PureReturns runtime [] state
+      (a Helper.substitute.head [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
+        kindValue declaration, textValue declaration.parallelUnitConstructor, modeValue mode, number depth,
+        patternValue replacement, patternValue payload]) state
+      (patternValue (substituteMode declaration mode replacement depth payload)))
+    (entered : ∀ value, mode = some value → PureReturns runtime [] state
+      (a Helper.substitute.head [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
+        kindValue declaration, textValue declaration.parallelUnitConstructor, modeValue mode, number depth,
+        patternValue value, patternValue payload]) state
+      (patternValue (substituteMode declaration mode value depth payload))) :
+    PureReturns runtime [] state
+      (a Helper.substituteUnary.head [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
+        kindValue declaration, textValue declaration.parallelUnitConstructor, modeValue mode, number depth,
+        patternValue replacement, textValue head, patternValue payload]) state
+      (patternValue (substituteMode declaration mode replacement depth
+        (.apply head [payload]))) := by
+  let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
+    kindValue declaration, textValue declaration.parallelUnitConstructor, modeValue mode, number depth,
+    patternValue replacement, textValue head, patternValue payload]
+  let caller := environment .substituteUnary values
+  let result := substituteMode declaration mode replacement depth payload
+  have through : ∀ selected : Subst,
+      [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "inside", v "depth", v "replacement", v "payload"].map
+          (applySubst selected) =
+        [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
+          kindValue declaration, textValue declaration.parallelUnitConstructor, modeValue mode, number depth,
+          patternValue replacement, patternValue payload] →
+      applySubst (("value", patternValue result) :: selected) (v "head") = textValue head →
+      Subst.lookup selected "value" = none →
+      PureReturns runtime selected state substituteThrough state (patternValue (.apply head [result])) := by
+    intro selected captured headCaptured fresh
+    unfold substituteThrough
+    apply named_let_returns selected state "value" _ (patternValue result) _ _ fresh
+    · exact helper_capture .substitute selected state _ _ _ rfl captured payloadReturned
+    · apply unary_constructor_returns (("value", patternValue result) :: selected) state "head" "value" head result
+        headCaptured
+      simp [applySubst, Subst.lookup]
+  apply helper_call .substituteUnary [] state values values _ rfl (captured_closed _)
+  rw [source_body]
+  change PureReturns runtime caller state substituteUnaryBody state _
+  unfold substituteUnaryBody
+  apply bool_if_returns caller state _ (head == declaration.quoteConstructor) _ _ _
+  · apply strings_equal_returns caller state head declaration.quoteConstructor "head" "quote"
+    · simp [caller, values, environment, Helper.names, applySubst, Subst.lookup]
+    · simp [caller, values, environment, Helper.names, applySubst, Subst.lookup]
+  · by_cases quoted : head = declaration.quoteConstructor
+    · have equal : (head == declaration.quoteConstructor) = true := by simp [quoted]
+      simp only [equal, ite_true]
+      have insideBound : PureReturns runtime caller state (v "inside") state (modeValue mode) := by
+        simpa [caller, values, environment, Helper.names, applySubst, Subst.lookup] using
+          variable_returns runtime caller state "inside"
+      unfold substituteQuote
+      subst quoted
+      cases mode with
+      | none =>
+          rw [mode_quote_none]
+          apply branch_returns caller caller state (v "inside") (modeValue none) insideRows
+            (a "PApp" [v "head", a "LCons" [v "payload", .symbol "LNil"]]) _ insideBound
+          · simp [insideRows, modeValue, SpaceSemantics.selectCase, SpaceSemantics.matchValue, matchAtom]
+          · apply unary_constructor_returns caller state "head" "payload" _ payload
+            · simp [caller, values, environment, Helper.names, applySubst, Subst.lookup]
+            · simp [caller, values, environment, Helper.names, applySubst, Subst.lookup]
+      | some value =>
+          rw [mode_quote_some]
+          let inner := substituteMode declaration (some value) value depth payload
+          let selected := ("value", patternValue value) :: caller
+          let final := ("entered", patternValue inner) :: selected
+          apply branch_returns caller selected state (v "inside") (modeValue (some value)) insideRows
+            (a "let" [v "entered", a "gslt:rule:scope-reflective-substitute-at" [v "quote", v "drop",
+              v "parallel-kind", v "parallel-unit", v "inside", v "depth", v "value", v "payload"],
+              a "PApp" [v "head", a "LCons" [v "entered", .symbol "LNil"]]]) _ insideBound
+          · simp [insideRows, modeValue, CettaWireAtom.encode, SpaceSemantics.selectCase,
+              SpaceSemantics.matchValue, SpaceSemantics.matchValue.matchValues, matchAtom, selected, caller,
+              values, environment, Helper.names, Subst.lookup]
+          · apply named_let_returns selected state "entered" _ (patternValue inner) _ _
+            · simp [selected, caller, values, environment, Helper.names, Subst.lookup]
+            · exact helper_capture .substitute selected state _ _ _ rfl
+                (by simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup,
+                  modeValue])
+                (entered value rfl)
+            · apply unary_constructor_returns final state "head" "entered" _ inner
+              · simp [final, selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
+              · simp [final, applySubst, Subst.lookup]
+    · have unequal : (head == declaration.quoteConstructor) = false := by simp [quoted]
+      simp only [unequal, Bool.false_eq_true, ite_false]
+      apply bool_if_returns caller state _ (head == declaration.dropConstructor) _ _ _
+      · apply strings_equal_returns caller state head declaration.dropConstructor "head" "drop"
+        · simp [caller, values, environment, Helper.names, applySubst, Subst.lookup]
+        · simp [caller, values, environment, Helper.names, applySubst, Subst.lookup]
+      · by_cases dropped : head = declaration.dropConstructor
+        · have equalDrop : (head == declaration.dropConstructor) = true := by simp [dropped]
+          simp only [equalDrop, ite_true]
+          rw [mode_unary_of_ne declaration mode replacement depth payload quoted, if_pos dropped]
+          let binder := ReflectiveSubstitution.BinderHead.ofPattern declaration payload
+          let final := ("binder", headValue binder) :: caller
+          unfold substituteDrop
+          apply named_let_returns caller state "binder" _ (headValue binder) _ _
+          · simp [caller, values, environment, Helper.names, Subst.lookup]
+          · apply helper_capture .binderHead caller state _ _ _ rfl _ (binder_head_returns state declaration payload)
+            simp [caller, values, environment, Helper.names, applySubst, Subst.lookup]
+          · have binderBound : applySubst final (v "binder") = headValue binder := by
+              simp [final, applySubst, Subst.lookup]
+            by_cases indexed : ∃ level, binder = .index level
+            · obtain ⟨level, binderIs⟩ := indexed
+              let selected := ("level", number level) :: final
+              apply branch_returns final selected state _ (headValue (.index level)) binderRows
+                (a "if" [a "==" [v "level", v "depth"], receiveHit, substituteThrough]) _
+              · simpa [binderBound, binderIs] using variable_returns runtime final state "binder"
+              · simp [binderRows, CettaWireAtom.encode, SpaceSemantics.selectCase,
+                  SpaceSemantics.matchValue, SpaceSemantics.matchValue.matchValues, matchAtom, selected,
+                  final, caller, values, environment, Helper.names, Subst.lookup]
+              · apply bool_if_returns selected state _ (level == depth) _ _ _
+                · have same : decide (level = depth) = (level == depth) := by
+                    by_cases equal : level = depth <;> simp [equal]
+                  simpa only [Term.natural.injEq, same] using
+                    CettaWireAtom.equality_captured_returns runtime selected state (.natural level) (.natural depth)
+                      "level" "depth" (by simp [selected, applySubst, Subst.lookup])
+                      (by simp [selected, final, caller, values, environment, Helper.names, applySubst, Subst.lookup])
+                · by_cases hit : level = depth
+                  · subst hit
+                    have matched : ReflectiveSubstitution.matchesBinder declaration level payload = true := by
+                      simp only [ReflectiveSubstitution.matchesBinder, decide_eq_true_eq]
+                      exact binderIs
+                    simp only [beq_self_eq_true, ↓reduceIte, matched]
+                    let received := Substitution.instantiateBVarAt level replacement (.bvar level)
+                    let bound := ("value", patternValue received) :: selected
+                    have instantiated := retained_returns (by decide +kernel)
+                      (RuleInstantiationExecution.instantiate_bvar_at_captured_returns selected state level replacement
+                        (.bvar level) (v "depth") (v "replacement") (a "Var" [v "depth"]) (by
+                          show _ = [CettaWireAtom.encode (.natural level),
+                            CettaWireAtom.encode (InferenceCettaWire.encodePattern replacement),
+                            CettaWireAtom.encode (InferenceCettaWire.encodePattern (.bvar level))]
+                          simp [selected, final, caller, values, environment, Helper.names, applySubst,
+                            applySubst.applySubstList, Subst.lookup, InferenceCettaWire.encodePattern,
+                            CettaWireAtom.encode, CettaWireAtom.encodeMany]))
+                    unfold receiveHit
+                    apply named_let_returns selected state "value" _ (patternValue received) _ _
+                    · simp [selected, final, caller, values, environment, Helper.names, Subst.lookup]
+                    · exact instantiated
+                    · apply helper_capture .receive bound state _ _ _ rfl _
+                        (receive_returns state declaration head received)
+                      simp [bound, selected, final, caller, values, environment, Helper.names, applySubst,
+                        Subst.lookup]
+                  · have missed : ReflectiveSubstitution.matchesBinder declaration depth payload = false := by
+                      simp only [ReflectiveSubstitution.matchesBinder, decide_eq_false_iff_not]
+                      intro same
+                      exact hit (ReflectiveSubstitution.BinderHead.index.inj (binderIs.symm.trans same))
+                    have unequalLevel : (level == depth) = false := by simp [hit]
+                    simp only [unequalLevel, Bool.false_eq_true, ↓reduceIte, missed]
+                    exact through selected
+                      (by simp [selected, final, caller, values, environment, Helper.names, applySubst, Subst.lookup])
+                      (by simp [selected, final, caller, values, environment, Helper.names, applySubst, Subst.lookup])
+                      (by simp [selected, final, caller, values, environment, Helper.names, Subst.lookup])
+            · let selected := ("other", headValue binder) :: final
+              have missed : ReflectiveSubstitution.matchesBinder declaration depth payload = false := by
+                simp only [ReflectiveSubstitution.matchesBinder, decide_eq_false_iff_not]
+                intro same
+                exact indexed ⟨depth, same⟩
+              simp only [missed, Bool.false_eq_true, ↓reduceIte]
+              apply branch_returns final selected state _ (headValue binder) binderRows substituteThrough _
+              · simpa [binderBound] using variable_returns runtime final state "binder"
+              · generalize binderIs : binder = observed at indexed
+                cases observed with
+                | index level => exact False.elim (indexed ⟨level, rfl⟩)
+                | _ => simp_all [binderRows, CettaWireAtom.encode,
+                    SpaceSemantics.selectCase, SpaceSemantics.matchValue, SpaceSemantics.matchValue.matchValues,
+                    matchAtom, selected, final, caller, values, environment, Helper.names, Subst.lookup]
+              · exact through selected
+                  (by simp [selected, final, caller, values, environment, Helper.names, applySubst, Subst.lookup])
+                  (by simp [selected, final, caller, values, environment, Helper.names, applySubst, Subst.lookup])
+                  (by simp [selected, final, caller, values, environment, Helper.names, Subst.lookup])
+        · have unequalDrop : (head == declaration.dropConstructor) = false := by simp [dropped]
+          simp only [unequalDrop, Bool.false_eq_true, ite_false]
+          rw [mode_unary_of_ne declaration mode replacement depth payload quoted, if_neg dropped]
+          exact through caller
+            (by simp [caller, values, environment, Helper.names, applySubst, Subst.lookup])
+            (by simp [caller, values, environment, Helper.names, applySubst, Subst.lookup])
+            (by simp [caller, values, environment, Helper.names, Subst.lookup])
+
+private theorem substitute_list_returns_from_elements (state : State)
+    (declaration : ReflectivePresentationDecl) (mode : Option Pattern) (depth : Nat) (replacement : Pattern) (patterns : List Pattern)
+    (elements : ∀ pattern ∈ patterns, PureReturns runtime [] state
+      (a Helper.substitute.head [textValue declaration.quoteConstructor,
+        textValue declaration.dropConstructor, kindValue declaration, textValue declaration.parallelUnitConstructor, modeValue mode, number depth, patternValue replacement, patternValue pattern]) state
+      (patternValue (substituteMode declaration mode replacement depth pattern))) :
+    PureReturns runtime [] state
+      (a Helper.substituteList.head [textValue declaration.quoteConstructor,
+        textValue declaration.dropConstructor, kindValue declaration, textValue declaration.parallelUnitConstructor, modeValue mode, number depth, patternValue replacement, patternsValue patterns]) state
+      (patternsValue (patterns.map (substituteMode declaration mode replacement depth))) := by
+  induction patterns with
+  | nil =>
+      let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor, kindValue declaration,
+        textValue declaration.parallelUnitConstructor, modeValue mode, number depth, patternValue replacement, patternsValue []]
+      apply helper_case .substituteList state values "patterns" (.symbol "LNil") substituteListRows
+        (environment .substituteList values) substituteListRow0 _ rfl rfl
+      · simp [values, environment, Helper.names, applySubst, Subst.lookup,
+          InferenceCettaWire.encodePatterns, CettaWireAtom.encode]
+      · simp [substituteListRows, SpaceSemantics.selectCase, SpaceSemantics.matchValue, matchAtom]
+      · simpa [substituteListRow0, InferenceCettaWire.encodePatterns, CettaWireAtom.encode] using
+          symbol_returns runtime _ state "LNil"
+  | cons pattern patterns ih =>
+      let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor, kindValue declaration,
+        textValue declaration.parallelUnitConstructor, modeValue mode, number depth, patternValue replacement, patternsValue (pattern :: patterns)]
+      let caller := environment .substituteList values
+      let selected := ("rest", patternsValue patterns) :: ("pattern", patternValue pattern) :: caller
+      let headValue := patternValue (substituteMode declaration mode replacement depth pattern)
+      let headBound := ("head", headValue) :: selected
+      let tailValue := patternsValue (patterns.map (substituteMode declaration mode replacement depth))
+      let final := ("tail", tailValue) :: headBound
+      have headReturned := helper_capture .substitute selected state
+        [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "inside", v "depth", v "replacement", v "pattern"]
+        [textValue declaration.quoteConstructor, textValue declaration.dropConstructor, kindValue declaration, textValue declaration.parallelUnitConstructor, modeValue mode, number depth, patternValue replacement, patternValue pattern]
+        headValue rfl (by simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup])
+        (elements pattern (by simp))
+      have tailReturned := helper_capture .substituteList headBound state
+        [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "inside", v "depth", v "replacement", v "rest"]
+        [textValue declaration.quoteConstructor, textValue declaration.dropConstructor, kindValue declaration, textValue declaration.parallelUnitConstructor, modeValue mode, number depth, patternValue replacement, patternsValue patterns]
+        tailValue rfl (by simp [headBound, selected, caller, values, environment, Helper.names, applySubst, Subst.lookup])
+        (ih (fun pattern member => elements pattern (List.mem_cons_of_mem _ member)))
+      apply helper_case .substituteList state values "patterns" (patternsValue (pattern :: patterns))
+        substituteListRows selected substituteListRow1 _ rfl rfl
+      · simp [values, environment, Helper.names, applySubst, Subst.lookup]
+      · simp [substituteListRows, InferenceCettaWire.encodePatterns,
+          CettaWireAtom.encode, CettaWireAtom.encodeMany, SpaceSemantics.selectCase,
+          SpaceSemantics.matchValue, SpaceSemantics.matchValue.matchValues, matchAtom,
+          selected, caller, values, environment, Helper.names, Subst.lookup]
+      · unfold substituteListRow1
+        apply PureData.let_bindings_return (pairs :=
+          [(v "head", a Helper.substitute.head [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "inside", v "depth", v "replacement", v "pattern"]),
+           (v "tail", a Helper.substituteList.head [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "inside", v "depth", v "replacement", v "rest"])]) (final := final)
+        · apply PureData.BindingsReturn.cons (bound := headBound) headReturned
+          · simp [SpaceSemantics.matchBinding, SpaceSemantics.matchValue, matchAtom, Subst.lookup,
+              headBound, selected, caller, values, environment, Helper.names]
+          · apply PureData.BindingsReturn.cons (bound := final) tailReturned
+            · simp [SpaceSemantics.matchBinding, SpaceSemantics.matchValue, matchAtom, Subst.lookup,
+                final, headBound, selected, caller, values, environment, Helper.names]
+            · exact .nil _ _
+        · simpa [List.map_cons, InferenceCettaWire.encodePatterns, CettaWireAtom.encode,
+            CettaWireAtom.encodeMany, applySubst, applySubst.applySubstList, Subst.lookup,
+            final, headBound, headValue, tailValue] using
+            PureData.template_return runtime final state (a "LCons" [v "head", v "tail"])
+              (data_constructor "LCons" ["head", "tail"] (by decide))
+
+private theorem substitute_apply_returns (state : State) (declaration : ReflectivePresentationDecl) (mode : Option Pattern)
     (depth : Nat) (replacement : Pattern) (head : String) (children : List Pattern)
     (elements : ∀ pattern ∈ children, PureReturns runtime [] state
-      (a Helper.instantiate.head [textValue declaration.quoteConstructor,
-        textValue declaration.dropConstructor, number depth, patternValue replacement, patternValue pattern]) state
-      (patternValue (ReflectiveInstantiation.instantiate declaration depth replacement pattern))) :
+      (a Helper.substitute.head [textValue declaration.quoteConstructor,
+        textValue declaration.dropConstructor, kindValue declaration, textValue declaration.parallelUnitConstructor, modeValue mode, number depth, patternValue replacement, patternValue pattern]) state
+      (patternValue (substituteMode declaration mode replacement depth pattern)))
+    (entered : ∀ value, mode = some value → ∀ pattern ∈ children, PureReturns runtime [] state
+      (a Helper.substitute.head [textValue declaration.quoteConstructor,
+        textValue declaration.dropConstructor, kindValue declaration, textValue declaration.parallelUnitConstructor, modeValue mode, number depth, patternValue value, patternValue pattern]) state
+      (patternValue (substituteMode declaration mode value depth pattern))) :
     PureReturns runtime [] state
-      (a Helper.instantiateApply.head [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
-        number depth, patternValue replacement, textValue head, patternsValue children]) state
-      (patternValue (ReflectiveInstantiation.instantiate declaration depth replacement (.apply head children))) := by
+      (a Helper.substituteApply.head [textValue declaration.quoteConstructor, textValue declaration.dropConstructor, kindValue declaration,
+        textValue declaration.parallelUnitConstructor, modeValue mode, number depth, patternValue replacement, textValue head, patternsValue children]) state
+      (patternValue (substituteMode declaration mode replacement depth (.apply head children))) := by
   by_cases singleton : ∃ payload, children = [payload]
   · obtain ⟨payload, rfl⟩ := singleton
-    let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
-      number depth, patternValue replacement, textValue head, patternsValue [payload]]
-    let caller := environment .instantiateApply values
+    let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor, kindValue declaration,
+      textValue declaration.parallelUnitConstructor, modeValue mode, number depth, patternValue replacement, textValue head, patternsValue [payload]]
+    let caller := environment .substituteApply values
     let selected := ("payload", patternValue payload) :: caller
-    apply helper_case .instantiateApply state values "children" (patternsValue [payload])
-      instantiateApplyRows selected instantiateApplyRow0 _ rfl rfl
+    apply helper_case .substituteApply state values "children" (patternsValue [payload])
+      substituteApplyRows selected substituteApplyRow0 _ rfl rfl
     · simp [values, environment, Helper.names, applySubst, Subst.lookup]
-    · simp [instantiateApplyRows, InferenceCettaWire.encodePatterns, CettaWireAtom.encode,
+    · simp [substituteApplyRows, InferenceCettaWire.encodePatterns, CettaWireAtom.encode,
         CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
         SpaceSemantics.matchValue.matchValues, matchAtom, selected, caller, values,
         environment, Helper.names, Subst.lookup]
-    · unfold instantiateApplyRow0
-      apply helper_capture .instantiateUnary selected state _ _ _ rfl _
-        (instantiate_unary_returns state declaration depth replacement head payload (elements payload (by simp)))
+    · unfold substituteApplyRow0
+      apply helper_capture .substituteUnary selected state _ _ _ rfl _
+        (substitute_unary_returns state declaration mode depth replacement head payload (elements payload (by simp))
+          fun value same => entered value same payload (by simp))
       simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
-  · let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
-      number depth, patternValue replacement, textValue head, patternsValue children]
-    let caller := environment .instantiateApply values
+  · let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor, kindValue declaration,
+      textValue declaration.parallelUnitConstructor, modeValue mode, number depth, patternValue replacement, textValue head, patternsValue children]
+    let caller := environment .substituteApply values
     let selected := ("many", patternsValue children) :: caller
-    let results := children.map (ReflectiveInstantiation.instantiate declaration depth replacement)
+    let results := children.map (substituteMode declaration mode replacement depth)
     let final := ("values", patternsValue results) :: selected
-    have ordinary : ReflectiveInstantiation.instantiate declaration depth replacement (.apply head children) =
+    have ordinary : substituteMode declaration mode replacement depth (.apply head children) =
         .apply head results := by
-      cases children with
-      | nil => simp [ReflectiveInstantiation.instantiate, ReflectiveInstantiation.instantiateList, results]
-      | cons payload rest =>
-          cases rest with
-          | nil => exact False.elim (singleton ⟨payload, rfl⟩)
-          | cons child rest => simp only [ReflectiveInstantiation.instantiate, instantiate_list_map, results]
+      exact mode_apply_of_ne_one declaration mode replacement depth head singleton
     rw [ordinary]
-    apply helper_case .instantiateApply state values "children" (patternsValue children)
-      instantiateApplyRows selected instantiateApplyRow1 _ rfl rfl
+    apply helper_case .substituteApply state values "children" (patternsValue children)
+      substituteApplyRows selected substituteApplyRow1 _ rfl rfl
     · simp [values, environment, Helper.names, applySubst, Subst.lookup]
     · cases children with
-      | nil => simp [instantiateApplyRows, InferenceCettaWire.encodePatterns, CettaWireAtom.encode,
+      | nil => simp [substituteApplyRows, InferenceCettaWire.encodePatterns, CettaWireAtom.encode,
           SpaceSemantics.selectCase, SpaceSemantics.matchValue, matchAtom,
           selected, caller, values, environment, Helper.names, Subst.lookup]
       | cons payload rest =>
           cases rest with
           | nil => exact False.elim (singleton ⟨payload, rfl⟩)
-          | cons child rest => simp [instantiateApplyRows, InferenceCettaWire.encodePatterns,
+          | cons child rest => simp [substituteApplyRows, InferenceCettaWire.encodePatterns,
               CettaWireAtom.encode, CettaWireAtom.encodeMany, SpaceSemantics.selectCase,
               SpaceSemantics.matchValue, SpaceSemantics.matchValue.matchValues, matchAtom,
               selected, caller, values, environment, Helper.names, Subst.lookup]
-    · unfold instantiateApplyRow1
+    · unfold substituteApplyRow1
       apply named_let_returns selected state "values" _ (patternsValue results) _ _
       · simp [selected, caller, values, environment, Helper.names, Subst.lookup]
-      · apply helper_capture .instantiateList selected state _ _ _ rfl _
-          (instantiate_list_returns_from_elements state declaration depth replacement children elements)
+      · apply helper_capture .substituteList selected state _ _ _ rfl _
+          (substitute_list_returns_from_elements state declaration mode depth replacement children elements)
         simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
       · apply finish_application_returns final state head results "head" "values"
         · simp [final, selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
@@ -1365,89 +2884,96 @@ private theorem add_one_returns (caller : Subst) (state : State) (value : Nat) (
   · simpa only [number, encoded, CettaWireAtom.encode, Int.natCast_add, Int.natCast_one] using
       StdLib.integer_addition state (value : Int) 1
 
-theorem instantiate_returns (state : State) (declaration : ReflectivePresentationDecl) (replacement pattern : Pattern) (depth : Nat) :
+theorem substitute_returns (state : State) (declaration : ReflectivePresentationDecl) (mode : Option Pattern)
+    (pattern : Pattern) : ∀ (depth : Nat) (replacement : Pattern),
     PureReturns runtime [] state
-      (a Helper.instantiate.head [textValue declaration.quoteConstructor,
-        textValue declaration.dropConstructor, number depth, patternValue replacement, patternValue pattern]) state
-      (patternValue (ReflectiveInstantiation.instantiate declaration depth replacement pattern)) := by
-  induction pattern using Pattern.inductionOn generalizing depth with
+      (a Helper.substitute.head [textValue declaration.quoteConstructor,
+        textValue declaration.dropConstructor, kindValue declaration, textValue declaration.parallelUnitConstructor, modeValue mode, number depth, patternValue replacement, patternValue pattern]) state
+      (patternValue (substituteMode declaration mode replacement depth pattern)) := by
+  induction pattern using Pattern.inductionOn with
   | hbvar index =>
-      let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
-        number depth, patternValue replacement, patternValue (.bvar index)]
-      let caller := environment .instantiate values
+      intro depth replacement
+      let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor, kindValue declaration,
+        textValue declaration.parallelUnitConstructor, modeValue mode, number depth, patternValue replacement, patternValue (.bvar index)]
+      let caller := environment .substitute values
       let selected := ("index", number index) :: caller
-      apply helper_case .instantiate state values "pattern" (patternValue (.bvar index))
-        instantiateRows selected instantiateRow0 _ rfl rfl
+      apply helper_case .substitute state values "pattern" (patternValue (.bvar index))
+        substituteRows selected substituteRow0 _ rfl rfl
       · simp [values, environment, Helper.names, applySubst, Subst.lookup]
-      · simp [instantiateRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
+      · simp [substituteRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
           CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
           SpaceSemantics.matchValue.matchValues, matchAtom, selected, caller, values,
           environment, Helper.names, Subst.lookup]
-      · unfold instantiateRow0
-        simpa only [ReflectiveInstantiation.instantiate] using
+      · unfold substituteRow0
+        simpa only [mode_bvar, eliminate] using
           retained_returns (by decide +kernel)
             (RuleInstantiationExecution.instantiate_bvar_at_captured_returns selected state depth replacement (.bvar index)
               (v "depth") (v "replacement") (v "pattern") (by
                 simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]))
   | hfvar name =>
-      let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
-        number depth, patternValue replacement, patternValue (.fvar name)]
-      let caller := environment .instantiate values
+      intro depth replacement
+      let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor, kindValue declaration,
+        textValue declaration.parallelUnitConstructor, modeValue mode, number depth, patternValue replacement, patternValue (.fvar name)]
+      let caller := environment .substitute values
       let selected := ("name", textValue name) :: caller
-      apply helper_case .instantiate state values "pattern" (patternValue (.fvar name))
-        instantiateRows selected instantiateRow1 _ rfl rfl
+      apply helper_case .substitute state values "pattern" (patternValue (.fvar name))
+        substituteRows selected substituteRow1 _ rfl rfl
       · simp [values, environment, Helper.names, applySubst, Subst.lookup]
-      · simp [instantiateRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
+      · simp [substituteRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
           CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
           SpaceSemantics.matchValue.matchValues, matchAtom, selected, caller, values,
           environment, Helper.names, Subst.lookup]
-      · simpa [instantiateRow1, ReflectiveInstantiation.instantiate, selected, caller, values,
+      · simpa [substituteRow1, mode_fvar, selected, caller, values,
           environment, Helper.names, applySubst, Subst.lookup] using variable_returns runtime selected state "pattern"
   | happly head children ih =>
-      let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
-        number depth, patternValue replacement, patternValue (.apply head children)]
-      let caller := environment .instantiate values
+      intro depth replacement
+      let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor, kindValue declaration,
+        textValue declaration.parallelUnitConstructor, modeValue mode, number depth, patternValue replacement, patternValue (.apply head children)]
+      let caller := environment .substitute values
       let selected := ("children", patternsValue children) :: ("head", textValue head) :: caller
-      apply helper_case .instantiate state values "pattern" (patternValue (.apply head children))
-        instantiateRows selected instantiateRow2 _ rfl rfl
+      apply helper_case .substitute state values "pattern" (patternValue (.apply head children))
+        substituteRows selected substituteRow2 _ rfl rfl
       · simp [values, environment, Helper.names, applySubst, Subst.lookup]
-      · simp [instantiateRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
+      · simp [substituteRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
           CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
           SpaceSemantics.matchValue.matchValues, matchAtom, selected, caller, values,
           environment, Helper.names, Subst.lookup]
-      · unfold instantiateRow2
-        apply helper_capture .instantiateApply selected state _ _ _ rfl _
-          (instantiate_apply_returns state declaration depth replacement head children (fun child member => ih child member depth))
+      · unfold substituteRow2
+        apply helper_capture .substituteApply selected state _ _ _ rfl _
+          (substitute_apply_returns state declaration mode depth replacement head children
+            (fun child member => ih child member depth replacement)
+            (fun value _ child member => ih child member depth value))
         simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
   | hlambda binder body ih =>
-      let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
-        number depth, patternValue replacement, patternValue (.lambda binder body)]
-      let caller := environment .instantiate values
+      intro depth replacement
+      let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor, kindValue declaration,
+        textValue declaration.parallelUnitConstructor, modeValue mode, number depth, patternValue replacement, patternValue (.lambda binder body)]
+      let caller := environment .substitute values
       let selected := ("body", patternValue body) ::
         ("binder", encoded (InferenceCettaWire.encodeBinder binder)) :: caller
       let nextBound := ("next", number (depth + 1)) :: selected
-      let result := ReflectiveInstantiation.instantiate declaration (depth + 1) replacement body
+      let result := substituteMode declaration mode replacement (depth + 1) body
       let final := ("value", patternValue result) :: nextBound
       have nextReturned := add_one_returns selected state depth "depth" (by
         simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup])
-      have bodyReturned := helper_capture .instantiate nextBound state
-        [v "quote", v "drop", v "next", v "replacement", v "body"]
-        [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
-          number (depth + 1), patternValue replacement, patternValue body]
+      have bodyReturned := helper_capture .substitute nextBound state
+        [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "inside", v "next", v "replacement", v "body"]
+        [textValue declaration.quoteConstructor, textValue declaration.dropConstructor, kindValue declaration,
+          textValue declaration.parallelUnitConstructor, modeValue mode, number (depth + 1), patternValue replacement, patternValue body]
         (patternValue result) rfl (by
-          simp [nextBound, selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]) (ih (depth + 1))
-      simp only [ReflectiveInstantiation.instantiate]
-      apply helper_case .instantiate state values "pattern" (patternValue (.lambda binder body))
-        instantiateRows selected instantiateRow3 _ rfl rfl
+          simp [nextBound, selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]) (ih (depth + 1) replacement)
+      simp only [mode_lambda]
+      apply helper_case .substitute state values "pattern" (patternValue (.lambda binder body))
+        substituteRows selected substituteRow3 _ rfl rfl
       · simp [values, environment, Helper.names, applySubst, Subst.lookup]
-      · simp [instantiateRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
+      · simp [substituteRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
           CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
           SpaceSemantics.matchValue.matchValues, matchAtom, selected, caller, values,
           environment, Helper.names, Subst.lookup]
-      · unfold instantiateRow3
+      · unfold substituteRow3
         apply PureData.let_bindings_return (pairs :=
           [(v "next", a "+" [v "depth", number 1]),
-           (v "value", a Helper.instantiate.head [v "quote", v "drop", v "next", v "replacement", v "body"])]) (final := final)
+           (v "value", a Helper.substitute.head [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "inside", v "next", v "replacement", v "body"])]) (final := final)
         · apply PureData.BindingsReturn.cons (bound := nextBound) nextReturned
           · simp [SpaceSemantics.matchBinding, SpaceSemantics.matchValue, matchAtom, Subst.lookup,
               nextBound, selected, caller, values, environment, Helper.names]
@@ -1460,35 +2986,36 @@ theorem instantiate_returns (state : State) (declaration : ReflectivePresentatio
             PureData.template_return runtime final state (a "PLam" [v "binder", v "value"])
               (data_constructor "PLam" ["binder", "value"] (by decide))
   | hmultiLambda arity binders body ih =>
-      let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
-        number depth, patternValue replacement, patternValue (.multiLambda arity binders body)]
-      let caller := environment .instantiate values
+      intro depth replacement
+      let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor, kindValue declaration,
+        textValue declaration.parallelUnitConstructor, modeValue mode, number depth, patternValue replacement, patternValue (.multiLambda arity binders body)]
+      let caller := environment .substitute values
       let selected := ("body", patternValue body) ::
         ("binders", encoded (InferenceCettaWire.encodeList Term.string binders)) :: ("arity", number arity) :: caller
       let nextBound := ("next", number (depth + arity)) :: selected
-      let result := ReflectiveInstantiation.instantiate declaration (depth + arity) replacement body
+      let result := substituteMode declaration mode replacement (depth + arity) body
       let final := ("value", patternValue result) :: nextBound
       have nextReturned := add_variables_returns selected state depth arity "depth" "arity"
         (by simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup])
         (by simp [selected, applySubst, Subst.lookup])
-      have bodyReturned := helper_capture .instantiate nextBound state
-        [v "quote", v "drop", v "next", v "replacement", v "body"]
-        [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
-          number (depth + arity), patternValue replacement, patternValue body]
+      have bodyReturned := helper_capture .substitute nextBound state
+        [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "inside", v "next", v "replacement", v "body"]
+        [textValue declaration.quoteConstructor, textValue declaration.dropConstructor, kindValue declaration,
+          textValue declaration.parallelUnitConstructor, modeValue mode, number (depth + arity), patternValue replacement, patternValue body]
         (patternValue result) rfl (by
-          simp [nextBound, selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]) (ih (depth + arity))
-      simp only [ReflectiveInstantiation.instantiate]
-      apply helper_case .instantiate state values "pattern" (patternValue (.multiLambda arity binders body))
-        instantiateRows selected instantiateRow4 _ rfl rfl
+          simp [nextBound, selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]) (ih (depth + arity) replacement)
+      simp only [mode_multiLambda]
+      apply helper_case .substitute state values "pattern" (patternValue (.multiLambda arity binders body))
+        substituteRows selected substituteRow4 _ rfl rfl
       · simp [values, environment, Helper.names, applySubst, Subst.lookup]
-      · simp [instantiateRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
+      · simp [substituteRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
           CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
           SpaceSemantics.matchValue.matchValues, matchAtom, selected, caller, values,
           environment, Helper.names, Subst.lookup]
-      · unfold instantiateRow4
+      · unfold substituteRow4
         apply PureData.let_bindings_return (pairs :=
           [(v "next", a "+" [v "depth", v "arity"]),
-           (v "value", a Helper.instantiate.head [v "quote", v "drop", v "next", v "replacement", v "body"])]) (final := final)
+           (v "value", a Helper.substitute.head [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "inside", v "next", v "replacement", v "body"])]) (final := final)
         · apply PureData.BindingsReturn.cons (bound := nextBound) nextReturned
           · simp [SpaceSemantics.matchBinding, SpaceSemantics.matchValue, matchAtom, Subst.lookup,
               nextBound, selected, caller, values, environment, Helper.names]
@@ -1501,42 +3028,43 @@ theorem instantiate_returns (state : State) (declaration : ReflectivePresentatio
             PureData.template_return runtime final state (a "PMultiLam" [v "arity", v "binders", v "value"])
               (data_constructor "PMultiLam" ["arity", "binders", "value"] (by decide))
   | hsubst body nested ihBody ihReplacement =>
-      let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
-        number depth, patternValue replacement, patternValue (.subst body nested)]
-      let caller := environment .instantiate values
+      intro depth replacement
+      let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor, kindValue declaration,
+        textValue declaration.parallelUnitConstructor, modeValue mode, number depth, patternValue replacement, patternValue (.subst body nested)]
+      let caller := environment .substitute values
       let selected := ("nested-replacement", patternValue nested) :: ("body", patternValue body) :: caller
       let nextBound := ("next", number (depth + 1)) :: selected
-      let bodyResult := ReflectiveInstantiation.instantiate declaration (depth + 1) replacement body
-      let replacementResult := ReflectiveInstantiation.instantiate declaration depth replacement nested
+      let bodyResult := substituteMode declaration mode replacement (depth + 1) body
+      let replacementResult := substituteMode declaration mode replacement depth nested
       let bodyBound := ("value", patternValue bodyResult) :: nextBound
       let final := ("replacement-value", patternValue replacementResult) :: bodyBound
       have nextReturned := add_one_returns selected state depth "depth" (by
         simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup])
-      have bodyReturned := helper_capture .instantiate nextBound state
-        [v "quote", v "drop", v "next", v "replacement", v "body"]
-        [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
-          number (depth + 1), patternValue replacement, patternValue body]
+      have bodyReturned := helper_capture .substitute nextBound state
+        [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "inside", v "next", v "replacement", v "body"]
+        [textValue declaration.quoteConstructor, textValue declaration.dropConstructor, kindValue declaration,
+          textValue declaration.parallelUnitConstructor, modeValue mode, number (depth + 1), patternValue replacement, patternValue body]
         (patternValue bodyResult) rfl (by
-          simp [nextBound, selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]) (ihBody (depth + 1))
-      have replacementReturned := helper_capture .instantiate bodyBound state
-        [v "quote", v "drop", v "depth", v "replacement", v "nested-replacement"]
-        [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
-          number depth, patternValue replacement, patternValue nested]
+          simp [nextBound, selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]) (ihBody (depth + 1) replacement)
+      have replacementReturned := helper_capture .substitute bodyBound state
+        [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "inside", v "depth", v "replacement", v "nested-replacement"]
+        [textValue declaration.quoteConstructor, textValue declaration.dropConstructor, kindValue declaration,
+          textValue declaration.parallelUnitConstructor, modeValue mode, number depth, patternValue replacement, patternValue nested]
         (patternValue replacementResult) rfl (by
-          simp [bodyBound, nextBound, selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]) (ihReplacement depth)
-      simp only [ReflectiveInstantiation.instantiate]
-      apply helper_case .instantiate state values "pattern" (patternValue (.subst body nested))
-        instantiateRows selected instantiateRow5 _ rfl rfl
+          simp [bodyBound, nextBound, selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]) (ihReplacement depth replacement)
+      simp only [mode_subst]
+      apply helper_case .substitute state values "pattern" (patternValue (.subst body nested))
+        substituteRows selected substituteRow5 _ rfl rfl
       · simp [values, environment, Helper.names, applySubst, Subst.lookup]
-      · simp [instantiateRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
+      · simp [substituteRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
           CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
           SpaceSemantics.matchValue.matchValues, matchAtom, selected, caller, values,
           environment, Helper.names, Subst.lookup]
-      · unfold instantiateRow5
+      · unfold substituteRow5
         apply PureData.let_bindings_return (pairs :=
           [(v "next", a "+" [v "depth", number 1]),
-           (v "value", a Helper.instantiate.head [v "quote", v "drop", v "next", v "replacement", v "body"]),
-           (v "replacement-value", a Helper.instantiate.head [v "quote", v "drop", v "depth", v "replacement", v "nested-replacement"])]) (final := final)
+           (v "value", a Helper.substitute.head [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "inside", v "next", v "replacement", v "body"]),
+           (v "replacement-value", a Helper.substitute.head [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "inside", v "depth", v "replacement", v "nested-replacement"])]) (final := final)
         · apply PureData.BindingsReturn.cons (bound := nextBound) nextReturned
           · simp [SpaceSemantics.matchBinding, SpaceSemantics.matchValue, matchAtom, Subst.lookup,
               nextBound, selected, caller, values, environment, Helper.names]
@@ -1552,26 +3080,28 @@ theorem instantiate_returns (state : State) (declaration : ReflectivePresentatio
             PureData.template_return runtime final state (a "PSubst" [v "value", v "replacement-value"])
               (data_constructor "PSubst" ["value", "replacement-value"] (by decide))
   | hcollection kind elements rest ih =>
-      let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
-        number depth, patternValue replacement, patternValue (.collection kind elements rest)]
-      let caller := environment .instantiate values
+      intro depth replacement
+      let values := [textValue declaration.quoteConstructor, textValue declaration.dropConstructor, kindValue declaration,
+        textValue declaration.parallelUnitConstructor, modeValue mode, number depth, patternValue replacement, patternValue (.collection kind elements rest)]
+      let caller := environment .substitute values
       let selected := ("rest", encoded (InferenceCettaWire.encodeRest rest)) ::
         ("elements", patternsValue elements) :: ("kind", encoded (InferenceCettaWire.encodeCollectionType kind)) :: caller
-      let results := elements.map (ReflectiveInstantiation.instantiate declaration depth replacement)
+      let results := elements.map (substituteMode declaration mode replacement depth)
       let final := ("values", patternsValue results) :: selected
-      simp only [ReflectiveInstantiation.instantiate, instantiate_list_map]
-      apply helper_case .instantiate state values "pattern" (patternValue (.collection kind elements rest))
-        instantiateRows selected instantiateRow6 _ rfl rfl
+      simp only [mode_collection]
+      apply helper_case .substitute state values "pattern" (patternValue (.collection kind elements rest))
+        substituteRows selected substituteRow6 _ rfl rfl
       · simp [values, environment, Helper.names, applySubst, Subst.lookup]
-      · simp [instantiateRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
+      · simp [substituteRows, InferenceCettaWire.encodePattern, CettaWireAtom.encode,
           CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
           SpaceSemantics.matchValue.matchValues, matchAtom, selected, caller, values,
           environment, Helper.names, Subst.lookup]
-      · unfold instantiateRow6
+      · unfold substituteRow6
         apply named_let_returns selected state "values" _ (patternsValue results) _ _
         · simp [selected, caller, values, environment, Helper.names, Subst.lookup]
-        · apply helper_capture .instantiateList selected state _ _ _ rfl _
-            (instantiate_list_returns_from_elements state declaration depth replacement elements (fun child member => ih child member depth))
+        · apply helper_capture .substituteList selected state _ _ _ rfl _
+            (substitute_list_returns_from_elements state declaration mode depth replacement elements
+              (fun child member => ih child member depth replacement))
           simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup]
         · simpa [InferenceCettaWire.encodePattern, CettaWireAtom.encode, CettaWireAtom.encodeMany,
             applySubst, applySubst.applySubstList, Subst.lookup, final, selected, results] using
@@ -1585,13 +3115,120 @@ def operationAnswer (declaration : ReflectivePresentationDecl) (replacement body
   encoded (.application "Some" [InferenceCettaWire.encodePattern
     (ScopedRuleInstantiation.reflectiveOperation declaration replacement body)])
 
+/-- The runtime spelling of a quote scope. -/
+private abbrev scopeValue (scope : QuoteScope) : Atom :=
+  encoded (InferenceCettaWire.AuthoredRule.quoteScopeTerm scope)
+
+/-- The substitution mode a quote scope selects for a normalized replacement. -/
+private def scopeMode (scope : QuoteScope) (normalized : Pattern) : Option Pattern :=
+  match scope with
+  | .closed => none
+  | .reaching .apply => some normalized
+  | .reaching (.freeze frozen) => some frozen.spelling
+  | .reaching (.closure context) => some (.apply context [normalized])
+
+private theorem eliminate_of_ne (first second : Pattern) {level index : Nat} (other : index ≠ level) :
+    eliminate first level index = eliminate second level index := by
+  unfold eliminate
+  simp only [Substitution.instantiateBVarAt, other, if_false]
+
+/-- The mode a scope selects is the declared substitution. -/
+private theorem substituteMode_scopeMode (declaration : ReflectivePresentationDecl) (scope : QuoteScope)
+    (normalized body : Pattern) (depth : Nat) :
+    substituteMode declaration (scopeMode scope normalized) normalized depth
+        (ReflectiveSubstitution.resolveQuotes declaration body) =
+      ReflectiveSubstitution.substituteScoped declaration scope (eliminate normalized) depth body := by
+  rcases scope with _ | (_ | frozen | context)
+  · rfl
+  · rfl
+  · show ReflectiveSubstitution.substituteViewed declaration (eliminate frozen.spelling) (eliminate normalized)
+        depth _ = ReflectiveSubstitution.substituteViewed declaration
+          ((QuoteView.freeze frozen).inside (eliminate normalized)) (eliminate normalized) depth _
+    congr 1
+    funext level index
+    by_cases same : index = level
+    · subst same
+      simp [QuoteView.inside, eliminate, Substitution.instantiateBVarAt,
+        Substitution.liftBVars_eq_self_of_isWellScopedAt frozen.ground.2]
+    · simp only [QuoteView.inside, same, if_false]
+      exact eliminate_of_ne _ _ same
+  · show ReflectiveSubstitution.substituteViewed declaration (eliminate (.apply context [normalized]))
+        (eliminate normalized) depth _ = ReflectiveSubstitution.substituteViewed declaration
+          ((QuoteView.closure context).inside (eliminate normalized)) (eliminate normalized) depth _
+    congr 1
+    funext level index
+    by_cases same : index = level
+    · subst same
+      simp [QuoteView.inside, eliminate, Substitution.instantiateBVarAt, Substitution.liftBVars,
+        Substitution.liftBVarsList]
+    · simp only [QuoteView.inside, same, if_false]
+      exact eliminate_of_ne _ _ same
+
+private theorem enter_template (name : String) :
+    PureData.Template runtime (a "Enter" [v name]) :=
+  data_constructor "Enter" [name] (by decide)
+
+private theorem enter_context_template :
+    PureData.Template runtime (a "Enter" [a "PApp" [v "context", a "LCons" [v "normalized", .symbol "LNil"]]]) := by
+  apply PureData.Template.constructor "Enter" _ (by decide +kernel) (by decide)
+  intro argument member
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at member
+  subst member
+  exact unary_template "context" "normalized"
+
+/-- The quote scope evaluates to the substitution mode it selects. -/
+private theorem scopeCase_returns (caller : Subst) (state : State) (scope : QuoteScope) (normalized : Pattern)
+    (scopeLookup : Subst.lookup caller "scope" = some (scopeValue scope))
+    (normalizedLookup : Subst.lookup caller "normalized" = some (patternValue normalized))
+    (freshSpelling : Subst.lookup caller "spelling" = none)
+    (freshContext : Subst.lookup caller "context" = none) :
+    PureReturns runtime caller state scopeCase state (modeValue (scopeMode scope normalized)) := by
+  have scopeBound : PureReturns runtime caller state (v "scope") state (scopeValue scope) := by
+    simpa [applySubst, scopeLookup] using variable_returns runtime caller state "scope"
+  unfold scopeCase
+  rcases scope with _ | (_ | frozen | context)
+  · apply branch_returns caller caller state (v "scope") _ scopeRows (.symbol "Opaque") _ scopeBound
+    · simp [scopeRows, scopeValue, InferenceCettaWire.AuthoredRule.quoteScopeTerm, CettaWireAtom.encode,
+        SpaceSemantics.selectCase, SpaceSemantics.matchValue, matchAtom]
+    · exact symbol_returns runtime caller state "Opaque"
+  · apply branch_returns caller caller state (v "scope") _ scopeRows (a "Enter" [v "normalized"]) _ scopeBound
+    · simp [scopeRows, scopeValue, InferenceCettaWire.AuthoredRule.quoteScopeTerm, CettaWireAtom.encode,
+        CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+        SpaceSemantics.matchValue.matchValues, matchAtom]
+    · simpa [modeValue, scopeMode, applySubst, applySubst.applySubstList, normalizedLookup] using
+        PureData.template_return runtime caller state _ (enter_template "normalized")
+  · let selected := ("spelling", patternValue frozen.spelling) :: caller
+    apply branch_returns caller selected state (v "scope") _ scopeRows (a "Enter" [v "spelling"]) _ scopeBound
+    · simp [scopeRows, scopeValue, InferenceCettaWire.AuthoredRule.quoteScopeTerm, CettaWireAtom.encode,
+        CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+        SpaceSemantics.matchValue.matchValues, matchAtom, selected, freshSpelling]
+    · simpa [modeValue, scopeMode, applySubst, applySubst.applySubstList, selected, Subst.lookup] using
+        PureData.template_return runtime selected state _ (enter_template "spelling")
+  · let selected := ("context", textValue context) :: caller
+    apply branch_returns caller selected state (v "scope") _ scopeRows
+      (a "Enter" [a "PApp" [v "context", a "LCons" [v "normalized", .symbol "LNil"]]]) _ scopeBound
+    · simp [scopeRows, scopeValue, InferenceCettaWire.AuthoredRule.quoteScopeTerm, CettaWireAtom.encode,
+        CettaWireAtom.encodeMany, SpaceSemantics.selectCase, SpaceSemantics.matchValue,
+        SpaceSemantics.matchValue.matchValues, matchAtom, selected, freshContext]
+    · have contextLookup : Subst.lookup selected "context" = some (textValue context) := by
+        simp [selected, Subst.lookup]
+      have normalizedSelected : Subst.lookup selected "normalized" = some (patternValue normalized) := by
+        have passed : Subst.lookup selected "normalized" = Subst.lookup caller "normalized" := by
+          simp [selected, Subst.lookup]
+        rw [passed, normalizedLookup]
+      simpa [modeValue, scopeMode, applySubst, applySubst.applySubstList, contextLookup,
+        normalizedSelected, InferenceCettaWire.encodePattern, InferenceCettaWire.encodePatterns,
+        CettaWireAtom.encode, CettaWireAtom.encodeMany] using
+        PureData.template_return runtime selected state _ enter_context_template
+
 theorem operation_returns (state : State) (declaration : ReflectivePresentationDecl)
     (replacement body : Pattern) :
     PureReturns runtime [] state (operationCall declaration replacement body) state
       (operationAnswer declaration replacement body) := by
   let values := [declarationValue declaration, patternValue replacement, patternValue body]
   let caller := environment .operation values
-  let selected := ("quote-drop-equation", textValue declaration.quoteDropEquation) ::
+  let selected := ("scope", scopeValue declaration.quoteScope) ::
+    ("quote-drop-equation", textValue declaration.quoteDropEquation) ::
     ("parallel-unit", textValue declaration.parallelUnitConstructor) ::
     ("parallel-kind", encoded (InferenceCettaWire.encodeCollectionType declaration.parallelCollection)) ::
     ("drop", textValue declaration.dropConstructor) :: ("quote", textValue declaration.quoteConstructor) ::
@@ -1599,21 +3236,43 @@ theorem operation_returns (state : State) (declaration : ReflectivePresentationD
     ("name", textValue declaration.name) :: caller
   let normalized := ReflectiveSubstitution.normalizeReflectiveReplacement declaration replacement
   let normalizedBound := ("normalized", patternValue normalized) :: selected
+  let resolved := ReflectiveSubstitution.resolveQuotes declaration body
+  let resolvedBound := ("resolved", patternValue resolved) :: normalizedBound
+  let mode := scopeMode declaration.quoteScope normalized
+  let insideBound := ("inside", modeValue mode) :: resolvedBound
   let result := ScopedRuleInstantiation.reflectiveOperation declaration replacement body
-  let final := ("value", patternValue result) :: normalizedBound
+  let final := ("value", patternValue result) :: insideBound
   have replacementReturned := helper_capture .replacement selected state
     [v "quote", v "drop", v "replacement"]
     [textValue declaration.quoteConstructor, textValue declaration.dropConstructor, patternValue replacement]
     (patternValue normalized) rfl (by
       simp [selected, caller, values, environment, Helper.names, applySubst, Subst.lookup])
     (replacement_returns state declaration replacement)
-  have bodyReturned := helper_capture .instantiate normalizedBound state
-    [v "quote", v "drop", number 0, v "normalized", v "body"]
-    [textValue declaration.quoteConstructor, textValue declaration.dropConstructor,
-      number 0, patternValue normalized, patternValue body]
-    (patternValue result) rfl (by
+  have resolvedReturned := helper_capture .resolve normalizedBound state
+    [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "body"]
+    [textValue declaration.quoteConstructor, textValue declaration.dropConstructor, kindValue declaration,
+      textValue declaration.parallelUnitConstructor, patternValue body]
+    (patternValue resolved) rfl (by
       simp [normalizedBound, selected, caller, values, environment, Helper.names, applySubst, Subst.lookup])
-    (instantiate_returns state declaration normalized body 0)
+    (resolve_returns state declaration body)
+  have insideReturned : PureReturns runtime resolvedBound state scopeCase state (modeValue mode) :=
+    scopeCase_returns resolvedBound state declaration.quoteScope normalized
+      (by simp [resolvedBound, normalizedBound, selected, Subst.lookup])
+      (by simp [resolvedBound, normalizedBound, Subst.lookup])
+      (by simp [resolvedBound, normalizedBound, selected, caller, values, environment, Helper.names, Subst.lookup])
+      (by simp [resolvedBound, normalizedBound, selected, caller, values, environment, Helper.names, Subst.lookup])
+  have resultEq : patternValue (substituteMode declaration mode normalized 0 resolved) = patternValue result := by
+    simp only [mode, resolved, substituteMode_scopeMode]
+    rfl
+  have bodyReturned := helper_capture .substitute insideBound state
+    [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "inside", number 0, v "normalized", v "resolved"]
+    [textValue declaration.quoteConstructor, textValue declaration.dropConstructor, kindValue declaration,
+      textValue declaration.parallelUnitConstructor, modeValue mode, number 0, patternValue normalized,
+      patternValue resolved]
+    (patternValue result) rfl (by
+      simp [insideBound, resolvedBound, normalizedBound, selected, caller, values, environment, Helper.names,
+        applySubst, Subst.lookup])
+    (resultEq ▸ substitute_returns state declaration mode resolved 0 normalized)
   change PureReturns runtime [] state (a Helper.operation.head values) state _
   apply helper_case .operation state values "declaration" (declarationValue declaration)
     operationRows selected operationRow0 _ rfl rfl
@@ -1625,14 +3284,24 @@ theorem operation_returns (state : State) (declaration : ReflectivePresentationD
   · unfold operationRow0
     apply PureData.let_bindings_return (pairs :=
       [(v "normalized", a Helper.replacement.head [v "quote", v "drop", v "replacement"]),
-       (v "value", a Helper.instantiate.head [v "quote", v "drop", number 0, v "normalized", v "body"])]) (final := final)
+       (v "resolved", a Helper.resolve.head [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "body"]),
+       (v "inside", scopeCase),
+       (v "value", a Helper.substitute.head [v "quote", v "drop", v "parallel-kind", v "parallel-unit", v "inside",
+         number 0, v "normalized", v "resolved"])]) (final := final)
     · apply PureData.BindingsReturn.cons (bound := normalizedBound) replacementReturned
       · simp [SpaceSemantics.matchBinding, SpaceSemantics.matchValue, matchAtom, Subst.lookup,
           normalizedBound, selected, caller, values, environment, Helper.names]
-      · apply PureData.BindingsReturn.cons (bound := final) bodyReturned
+      · apply PureData.BindingsReturn.cons (bound := resolvedBound) resolvedReturned
         · simp [SpaceSemantics.matchBinding, SpaceSemantics.matchValue, matchAtom, Subst.lookup,
-            final, normalizedBound, selected, caller, values, environment, Helper.names]
-        · exact .nil _ _
+            resolvedBound, normalizedBound, selected, caller, values, environment, Helper.names]
+        · apply PureData.BindingsReturn.cons (bound := insideBound) insideReturned
+          · simp [SpaceSemantics.matchBinding, SpaceSemantics.matchValue, matchAtom, Subst.lookup,
+              insideBound, resolvedBound, normalizedBound, selected, caller, values, environment, Helper.names]
+          · apply PureData.BindingsReturn.cons (bound := final) bodyReturned
+            · simp [SpaceSemantics.matchBinding, SpaceSemantics.matchValue, matchAtom, Subst.lookup,
+                final, insideBound, resolvedBound, normalizedBound, selected, caller, values, environment,
+                Helper.names]
+            · exact .nil _ _
     · simpa [operationAnswer, CettaWireAtom.encode, CettaWireAtom.encodeMany,
         applySubst, applySubst.applySubstList, Subst.lookup, final, result] using
         PureData.template_return runtime final state (a "Some" [v "value"])
@@ -1689,7 +3358,9 @@ theorem unknown_declaration_returns_none (state : State) (replacement body : Pat
 def controlDeclaration : ReflectivePresentationDecl :=
   { name := "ReflectiveControl", processSort := "Process", nameSort := "Name",
     quoteConstructor := "Quote", dropConstructor := "Drop", parallelCollection := .hashBag,
-    parallelUnitConstructor := "Zero", quoteDropEquation := "quote-drop" }
+    parallelUnitConstructor := "Zero", quoteDropEquation := "quote-drop",
+    -- Closed, as rho; `viewDeclaration` varies the scope.
+    quoteScope := .closed }
 private def controlProcess : Pattern := .apply "ProcessPayload" []
 private def controlQuote : Pattern := .apply "Quote" [controlProcess]
 
@@ -1706,17 +3377,26 @@ private def collectionControl (kind : CollType) : Control :=
     body := .collection kind [.apply "Drop" [.bvar 0], .apply "Quote" [.apply "Drop" [.fvar "literal"]], .bvar 1] (some "tail"),
     expected := .collection kind [controlProcess, .fvar "literal", .bvar 0] (some "tail") }
 
+/-- A drop of the quotation of a parallel pair whose first component drops the
+selected name. -/
+private def parallelWrappedDrop (kind : CollType) (partner : Pattern) : Pattern :=
+  .apply "Drop" [.apply "Quote" [.collection kind [.apply "Drop" [.bvar 0], partner] none]]
+
+/-- A quotation whose payload drops a free name beside the declared unit. -/
+private def hiddenQuoteDrop : Pattern :=
+  .apply "Quote" [.collection .hashBag [.apply "Drop" [.fvar "x"], .apply "Zero" []] none]
+
 def controls : List Control :=
   [{ label := "selected-dropped-quote-activates", replacement := controlQuote,
       body := .apply "Drop" [.bvar 0], expected := controlProcess },
-   { label := "literal-quote-is-substitution-opaque", replacement := controlQuote,
-      body := .apply "Quote" [.bvar 0], expected := .apply "Quote" [.bvar 0] },
+
    { label := "literal-dropped-quote-remains-inert", replacement := controlQuote,
       body := .apply "Drop" [controlQuote], expected := .apply "Drop" [controlQuote] },
    { label := "lowered-name-has-no-substitution-mark", replacement := controlQuote,
       body := .apply "Drop" [.bvar 1], expected := .apply "Drop" [.bvar 0] },
-   { label := "open-replacement-lifts-under-binder", replacement := .apply "Quote" [.bvar 0],
-      body := .lambda (some "n") (.apply "Drop" [.bvar 1]), expected := .lambda (some "n") (.bvar 1) },
+   { label := "open-replacement-lifts-under-binder", replacement := .apply "Quote" [.apply "Drop" [.bvar 0]],
+      body := .lambda (some "n") (.apply "Drop" [.bvar 1]),
+      expected := .lambda (some "n") (.apply "Drop" [.bvar 1]) },
    { label := "ordinary-indices-substitute-and-lower", replacement := .fvar "R",
       body := .apply "Pair" [.bvar 0, .bvar 2], expected := .apply "Pair" [.fvar "R", .bvar 1] },
    { label := "binder-depth-preserves-local-indices", replacement := .fvar "R",
@@ -1741,7 +3421,81 @@ def controls : List Control :=
       body := .apply "Drop" [.fvar "free"], expected := .apply "Drop" [.fvar "free"] },
    { label := "normalization-can-expose-selected-name", replacement := controlQuote,
       body := .apply "Drop" [.apply "Quote" [.apply "Drop" [.bvar 0]]], expected := controlProcess },
-   collectionControl .vec, collectionControl .hashBag, collectionControl .hashSet]
+   { label := "unit-wrapped-dropped-quote-activates", replacement := controlQuote,
+      body := parallelWrappedDrop .hashBag (.apply "Zero" []), expected := controlProcess },
+
+
+
+   collectionControl .vec, collectionControl .hashBag, collectionControl .hashSet,
+   { label := "hidden-quote-drop-channel-resolves", replacement := controlQuote,
+      body := .apply "Send" [hiddenQuoteDrop, .apply "Zero" []],
+      expected := .apply "Send" [.fvar "x", .apply "Zero" []] },
+   { label := "hidden-quote-drop-inside-quoted-code-resolves", replacement := controlQuote,
+      body := .apply "Quote" [.apply "Send" [hiddenQuoteDrop, .apply "Zero" []]],
+      expected := .apply "Quote" [.apply "Send" [.fvar "x", .apply "Zero" []]] },
+   { label := "nested-parallel-hidden-drop-activates", replacement := controlQuote,
+      body := .apply "Drop" [.apply "Quote" [.collection .hashBag
+        [.collection .hashBag [.apply "Drop" [.bvar 0]] none, .apply "Zero" []] none]],
+      expected := controlProcess },
+   { label := "unit-first-hidden-binder-receives-quote", replacement := controlQuote,
+      body := .apply "Send" [.apply "Quote" [.collection .hashBag [.apply "Zero" [], .apply "Drop" [.bvar 0]] none],
+        .bvar 1],
+      expected := .apply "Send" [controlQuote, .bvar 0] }]
+
+/-- A quotation of code that mentions the eliminated binder: `@y` read as code. -/
+private def quotedIndex : Pattern := .apply "Quote" [.bvar 0]
+
+/-- **Negative admission controls.** These bodies mention the eliminated binder
+inside genuine quoted code, which a closed quote scope does not admit. -/
+theorem inadmissible_controls :
+    ¬ ReflectiveSubstitution.QuotesClosed controlDeclaration quotedIndex ∧
+      ¬ ReflectiveSubstitution.QuotesClosed controlDeclaration
+        (parallelWrappedDrop .hashBag (.apply "Drop" [.bvar 0])) ∧
+      ¬ ReflectiveSubstitution.QuotesClosed controlDeclaration
+        (parallelWrappedDrop .hashBag (.apply "Other" [])) ∧
+      ¬ ReflectiveSubstitution.QuotesClosed controlDeclaration
+        (parallelWrappedDrop .vec (.apply "Zero" [])) := by
+  decide
+
+/-- The control presentation with another quote scope. -/
+def viewDeclaration (scope : QuoteScope) : ReflectivePresentationDecl :=
+  { controlDeclaration with quoteScope := scope }
+
+/-- A frozen spelling for the controls. -/
+def frozenControl : FrozenSpelling :=
+  ⟨.apply "Frozen" [], by simp [Pattern.freeFvarNames, Pattern.isWellScopedAt, Pattern.isWellScopedListAt]⟩
+
+/-- `Pack(@(y!(0)))`: quoted code that sends on the eliminated binder. -/
+def viewBody : Pattern := .apply "Pack" [.apply "Quote" [.apply "Send" [.bvar 0, .apply "Zero" []]]]
+
+structure ViewControl where
+  label : String
+  scope : QuoteScope
+  expected : Pattern
+  deriving DecidableEq
+
+/-- Each reaching view acts on quoted code that mentions the eliminated binder. -/
+def viewControls : List ViewControl :=
+  [{ label := "apply-view-enters-quotation", scope := .reaching .apply,
+      expected := .apply "Pack" [.apply "Quote" [.apply "Send" [controlQuote, .apply "Zero" []]]] },
+   { label := "freeze-view-names-binder-inside", scope := .reaching (.freeze frozenControl),
+      expected := .apply "Pack" [.apply "Quote" [.apply "Send" [.apply "Frozen" [], .apply "Zero" []]]] },
+   { label := "closure-view-keeps-context-inside", scope := .reaching (.closure "Ctx"),
+      expected := .apply "Pack" [.apply "Quote"
+        [.apply "Send" [.apply "Ctx" [controlQuote], .apply "Zero" []]]] }]
+
+private theorem viewControls_reference : viewControls.all (fun control => decide
+    (ScopedRuleInstantiation.reflectiveOperation (viewDeclaration control.scope) controlQuote viewBody =
+      control.expected)) = true := by
+  decide +kernel
+
+theorem viewControls_returns (state : State) (control : ViewControl) (member : control ∈ viewControls) :
+    PureReturns runtime [] state (operationCall (viewDeclaration control.scope) controlQuote viewBody) state
+      (encoded (.application "Some" [InferenceCettaWire.encodePattern control.expected])) := by
+  have checked := List.all_eq_true.mp viewControls_reference control member
+  have equal := of_decide_eq_true checked
+  simpa only [operationAnswer, equal] using
+    operation_returns state (viewDeclaration control.scope) controlQuote viewBody
 
 private theorem controls_reference : controls.all (fun control => decide
     (ScopedRuleInstantiation.reflectiveOperation controlDeclaration control.replacement control.body = control.expected)) = true := by
@@ -1790,15 +3544,25 @@ def executionHeadNames : List String :=
    "<",
    "==",
    ">=",
+   "BinderDrop",
+   "BinderIndex",
+   "BinderOpaque",
+   "BinderUnit",
+   "Enter",
    "FVar",
    "LCons",
    "LNil",
+   "Opaque",
    "PApp",
    "PCollection",
    "PLam",
    "PMultiLam",
    "PSubst",
-   "ReflectedNameMark",
+   "QuoteClosed",
+   "QuoteClosure",
+   "QuoteFreeze",
+   "QuoteReaching",
+   "RNone",
    "ReflectivePresentation",
    "Some",
    "Var",
@@ -1807,19 +3571,28 @@ def executionHeadNames : List String :=
    "gslt:rule:instantiate-bvar-list-at",
    "gslt:rule:lift-bvars",
    "gslt:rule:lift-bvars-list",
+   "gslt:rule:scope-reflective-append",
+   "gslt:rule:scope-reflective-binder-head",
+   "gslt:rule:scope-reflective-binder-head-apply",
+   "gslt:rule:scope-reflective-binder-head-fold",
+   "gslt:rule:scope-reflective-binder-head-join",
+   "gslt:rule:scope-reflective-binder-head-list",
    "gslt:rule:scope-reflective-binder-operation",
-   "gslt:rule:scope-reflective-drop-finish",
-   "gslt:rule:scope-reflective-instantiate-apply",
-   "gslt:rule:scope-reflective-instantiate-at",
-   "gslt:rule:scope-reflective-instantiate-list-at",
-   "gslt:rule:scope-reflective-instantiate-unary",
-   "gslt:rule:scope-reflective-name-mark",
+   "gslt:rule:scope-reflective-exposed-drop",
+   "gslt:rule:scope-reflective-leaves",
+   "gslt:rule:scope-reflective-leaves-list",
    "gslt:rule:scope-reflective-normalize",
    "gslt:rule:scope-reflective-normalize-finish",
    "gslt:rule:scope-reflective-normalize-list",
-   "gslt:rule:scope-reflective-normalized-mark",
+   "gslt:rule:scope-reflective-receive",
    "gslt:rule:scope-reflective-replacement",
-   "gslt:rule:scope-reflective-unmark",
+   "gslt:rule:scope-reflective-resolve",
+   "gslt:rule:scope-reflective-resolve-finish",
+   "gslt:rule:scope-reflective-resolve-list",
+   "gslt:rule:scope-reflective-substitute-apply",
+   "gslt:rule:scope-reflective-substitute-at",
+   "gslt:rule:scope-reflective-substitute-list-at",
+   "gslt:rule:scope-reflective-substitute-unary",
    "if",
    "let",
    "let*"]
@@ -1890,25 +3663,32 @@ theorem source_equation_heads_unique : (sourceProgram.equations.map (·.head)).N
 #print axioms normalize_finish_returns
 #print axioms normalize_list_returns_from_elements
 #print axioms normalize_returns
-#print axioms mark_literal_template
-#print axioms normalized_mark_ordinary_returns
-#print axioms normalized_mark_returns
-#print axioms name_mark_returns
-#print axioms unmark_returns
+#print axioms join_returns
+#print axioms fold_returns
+#print axioms apply_returns
+#print axioms binder_head_returns
 #print axioms nonunary_selection
 #print axioms unary_template
 #print axioms unary_constructor_returns
 #print axioms replacement_nonunary_result
-#print axioms drop_nonunary_result
 #print axioms replacement_returns
-#print axioms drop_finish_returns
-#print axioms instantiate_list_map
-#print axioms instantiate_unary_returns
-#print axioms instantiate_list_returns_from_elements
-#print axioms instantiate_apply_returns
+#print axioms receive_nonunary
+#print axioms receive_returns
+#print axioms append_returns
+#print axioms leaves_list_returns_from_elements
+#print axioms leaves_returns
+#print axioms lookup_cons
+#print axioms exposed_case_returns
+#print axioms exposed_drop_returns
+#print axioms resolve_finish_returns
+#print axioms resolve_list_returns_from_elements
+#print axioms resolve_returns
+#print axioms substitute_unary_returns
+#print axioms substitute_list_returns_from_elements
+#print axioms substitute_apply_returns
+#print axioms substitute_returns
 #print axioms add_variables_returns
 #print axioms add_one_returns
-#print axioms instantiate_returns
 #print axioms operation_returns
 #print axioms operation_captured_returns
 #print axioms operation_has_sufficient_fuel
@@ -1916,6 +3696,9 @@ theorem source_equation_heads_unique : (sourceProgram.equations.map (·.head)).N
 #print axioms captured_operation_completed_iff
 #print axioms unknown_declaration_returns_none
 #print axioms controls_reference
+#print axioms inadmissible_controls
+#print axioms viewControls_reference
+#print axioms viewControls_returns
 #print axioms controls_returns
 #print axioms controls_completed_iff
 #print axioms negative_literal_drop_does_not_activate
@@ -1950,6 +3733,29 @@ def sourceProgram : Program := RuleExecutionProgram.scopedInstantiationProgram
 def runtime : Program := ScopedReflectiveBinderOperationExecution.runtime.append sourceProgram
 theorem runtime_eq_append : runtime =
     ScopedReflectiveBinderOperationExecution.runtime.append sourceProgram := rfl
+/-- The instantiation operations, loaded over the reflective runtime, own their heads. -/
+private def library : BridgeKit.Library :=
+  ⟨ScopedReflectiveBinderOperationExecution.runtime, sourceProgram,
+    ["gslt:rule:scope-binder-operation", "gslt:rule:scope-instantiate-slot", "gslt:rule:scope-instantiate-at",
+     "gslt:rule:scope-instantiate-args-at", "gslt:rule:scope-reduct"]⟩
+
+/-- The base defines and calls no owned operation, and the source defines and declares only owned
+operations. -/
+private theorem library_checked : library.check = true := by decide +kernel
+
+private theorem registered_of_source {head : String}
+    (found : sourceProgram.equations.any (·.head == head) = true) :
+    runtime.equations.any (·.head == head) = true := by
+  simp only [runtime, SpaceSemantics.Program.append, List.any_append, found, Bool.or_true]
+
+private theorem raw_of_source {head : String} {index : Nat}
+    (raw : argumentIsRaw sourceProgram head index = true) : argumentIsRaw runtime head index = true := by
+  unfold argumentIsRaw at raw ⊢
+  by_cases native : StdLib.known head
+  · simpa only [native, ↓reduceIte] using raw
+  · simp only [native, Bool.false_eq_true, ↓reduceIte] at raw ⊢
+    simp only [runtime, SpaceSemantics.Program.append, List.any_append, raw, Bool.or_true]
+
 private def retainedHead (head : String) : Bool :=
   head != "eval" && !sourceProgram.equations.any (fun equation => equation.head == head) &&
     !ScopedReflectiveBinderOperationExecution.sourceProgram.equations.any (fun equation => equation.head == head)
@@ -2048,7 +3854,9 @@ private def Helper.names : Helper → List String
   | .instantiate => ["operation", "rule", "spec", "ambient", "site", "path", "depth", "assignment", "pattern"]
   | .arguments => ["operation", "rule", "spec", "ambient", "site", "path", "depth", "assignment", "index", "patterns"]
   | .reduct => ["operation", "rule", "spec", "ambient", "assignment"]
-private def equations (head : String) : List SpaceSemantics.Equation := runtime.equations.filter (fun equation => equation.head == head)
+private theorem helper_owned (helper : Helper) : library.owns helper.head = true := by
+  cases helper <;> decide +kernel
+private def equations (head : String) : List SpaceSemantics.Equation := sourceProgram.equations.filter (fun equation => equation.head == head)
 private def equation (helper : Helper) : SpaceSemantics.Equation := (equations helper.head)[0]'(by cases helper <;> decide +kernel)
 private def environment (helper : Helper) (values : List Atom) : Subst := (helper.names.zip values).reverse
 
@@ -2056,15 +3864,17 @@ private theorem helper_clause (helper : Helper) (values : List Atom)
     (length : values.length = helper.names.length) :
     clauses runtime helper.head values = [.evaluate (environment helper values) (equation helper).body] :=
   PureData.named_equation_clause runtime helper.head (equation helper) helper.names values
-    (by cases helper <;> rfl) (by cases helper <;> decide +kernel)
+    (by
+      exact (BridgeKit.Library.owned_equations library_checked (helper_owned helper)).trans
+        (by cases helper <;> kernel_reflexivity)) (by cases helper <;> decide +kernel)
     (by cases helper <;> decide) length
 
 private theorem helper_raw (helper : Helper) (index : Nat) (bounded : index < helper.names.length) :
     argumentIsRaw runtime helper.head index = true := by
   have checked : (List.range helper.names.length).all
-      (fun index => argumentIsRaw runtime helper.head index) = true := by
+      (fun index => argumentIsRaw sourceProgram helper.head index) = true := by
     cases helper <;> decide +kernel
-  exact List.all_eq_true.mp checked index (List.mem_range.mpr bounded)
+  exact raw_of_source (List.all_eq_true.mp checked index (List.mem_range.mpr bounded))
 
 private theorem helper_call (helper : Helper) (caller : Subst) (state : State)
     (arguments values : List Atom) (answer : Atom)
@@ -2075,7 +3885,7 @@ private theorem helper_call (helper : Helper) (caller : Subst) (state : State)
   apply PureData.raw_authored_call_return runtime caller (environment helper values) state state
     helper.head arguments (equation helper).body answer
     (by cases helper <;> decide) (by cases helper <;> decide) (by cases helper <;> decide)
-    (by cases helper <;> decide +kernel)
+    (registered_of_source (by cases helper <;> decide +kernel))
   · intro index bounded
     apply helper_raw helper index
     have same : arguments.length = values.length := by simpa using congrArg List.length captured
@@ -2096,7 +3906,8 @@ private theorem helper_capture (helper : Helper) (caller : Subst) (state : State
     (returned : PureReturns runtime [] state (a helper.head values) state answer) :
     PureReturns runtime caller state (a helper.head arguments) state answer := by
   apply PureData.raw_capture_returns runtime [] caller state state helper.head values arguments answer
-    (by cases helper <;> decide +kernel) _ (by cases helper <;> decide) _ returned
+    (by simp only [registered_of_source (head := helper.head) (by cases helper <;> decide +kernel), Bool.or_true])
+    _ (by cases helper <;> decide) _ returned
   · intro index bounded
     exact helper_raw helper index (by omega)
   · have unchanged : applySubst [] = id := by
@@ -3878,8 +5689,8 @@ and bodies in the complete conditional machine. -/
 theorem scoped_machine_agreement : ProgramAgreementOn executionHeads runtime
     RuleExecutionProgram.scopedMachineProgram := by
   apply programAgreementOn_of_retained_rows
-  · rfl
-  · rfl
+  · kernel_reflexivity
+  · kernel_reflexivity
 
 #print axioms scoped_machine_agreement
 

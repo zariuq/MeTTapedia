@@ -190,7 +190,7 @@ variable (declared : DeclaredTypesFormed S.R) (choices : ExecutableChecking.Head
 def underOf {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)} (prepared : Update S.levels problem) :
     Option (PLift (¬ (frames S.levels).Solvable problem)) :=
   match underSearch facts roots heads algebra rigid complete prepared.remaining with
-  | some (.refuted absent) => some ⟨fun solvable => absent (prepared.solvable_iff.mp solvable)⟩
+  | some (.refuted missing) => some ⟨fun solvable => missing (prepared.solvable_iff.mp solvable)⟩
   | _ => none
 
 /-- The occurs rule under abstractions on the prepared store. -/
@@ -204,7 +204,7 @@ ranked round. -/
 def rankedOccursRound (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ)) :
     Round S.levels (weightRank facts roots heads algebra rigid complete) problem :=
   match underPrepared facts roots heads algebra rigid complete root rootComplete fuel problem with
-  | some absent => .refuted absent.down
+  | some missing => .refuted missing.down
   | none => rankedRound facts roots heads algebra rigid complete declared choices reducer root normalizes
       certifyNormal headTypingUnique rootComplete fuel problem
 
@@ -238,7 +238,7 @@ theorem rankedOccursRound_const {Θ : Context S.R} (problem : EquationStore (Tot
     intro fuel
     unfold rankedOccursRound
     split
-    · rename_i absent computed
+    · rename_i missing computed
       simp only [computed, Option.isSome_some, if_true, roundView]
     · rename_i computed
       simp only [computed, Option.isSome_none, Bool.false_eq_true, if_false]

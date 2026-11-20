@@ -29,6 +29,7 @@ theorem table_literal (handle : Handle) : SpaceSemantics.Literal (tableValue han
   have literal : SpaceSemantics.Literal (handleValue handle) := by
     cases handle with
     | self => exact .symbol _
+    | namedSpace _ => exact .symbol _
     | privateSpace index => exact .grounded _
   simpa using literal
 
@@ -402,10 +403,11 @@ theorem publish_body_returns (before after : State) (handle : Handle) (index : N
           [Effects.boolean true] (by decide)
         apply native_function_arguments_return program bound before after "add-atom" _ 2
           (Effects.boolean true) (by decide) (by decide)
+        have rowIsData : (Store.row (index, value)).isVariable = false := rfl
         simpa [bound, publishBound, applySubst, applySubst.applySubstList, Subst.lookup,
           Store.row, inserted] using
           (show StdLib.apply before "add-atom" [handleValue handle, Store.row (index, value)] =
-              .ok (after, [Effects.boolean true]) by simp [inserted])
+              .ok (after, [Effects.boolean true]) by simp [inserted, rowIsData])
     · simp [SpaceSemantics.matchValue, matchAtom, Subst.lookup, done, bound,
         publishBound, publishEnvironment]
     · simpa [done, bound, publishBound, publishEnvironment, tableValue, applySubst, Subst.lookup] using

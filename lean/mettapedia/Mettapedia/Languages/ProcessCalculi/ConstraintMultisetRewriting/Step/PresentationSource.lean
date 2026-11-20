@@ -28,7 +28,7 @@ open Payloads
 /-- Preserve production occurrences, rather than searching for equal labels. -/
 def syntaxEmbedding : LanguageDefGrammarEmbedding.Embedding dataLanguage authoredLanguage where
   index := {
-    toFun := fun i => ⟨i.val, by have bound : i.val < 25 := i.isLt; change i.val < 29; omega⟩
+    toFun := fun i => ⟨i.val, by have bound : i.val < 27 := i.isLt; change i.val < 31; omega⟩
     inj' := by
       intro first second same
       exact Fin.ext (congrArg (fun i : Fin authoredLanguage.terms.length => i.val) same) }
@@ -121,7 +121,7 @@ def requestTokens (state : Execution.State) (candidate : Execution.Candidate) : 
 theorem state_derives (state : Execution.State) :
     GrammarDerives.Derives authoredLanguage "State" (stateTokens state)
       (OccurrenceProfile.statePattern state) := by
-  refine .rule authoredLanguage.terms[25] (by decide +kernel) "State" rfl _ _ ?_
+  refine .rule authoredLanguage.terms[27] (by decide +kernel) "State" rfl _ _ ?_
   refine .terminal _ "(" _ _ _ (.terminal _ "state" _ _ _ ?_)
   refine .nonTerminal _ "configuration" "TcConfiguration" rfl _ _
     (syntaxEmbedding.derives (configuration_printed_derivation state)) _ _ _ ?_
@@ -131,13 +131,13 @@ theorem firing_derives (candidate : (_state : Execution.State) × Execution.Cand
     GrammarDerives.Derives authoredLanguage "Firing" (firingTokens candidate)
       (OccurrenceProfile.firingPattern candidate) := by
   rcases candidate with ⟨state, rule, selection⟩
-  refine .rule authoredLanguage.terms[26] (by decide +kernel) "Firing" rfl _ _ ?_
+  refine .rule authoredLanguage.terms[28] (by decide +kernel) "Firing" rfl _ _ ?_
   refine .terminal _ "(" _ _ _ (.terminal _ "candidate" _ _ _ ?_)
-  refine .nonTerminal authoredLanguage.terms[26] "source" "TcConfiguration" rfl _ _
+  refine .nonTerminal authoredLanguage.terms[28] "source" "TcConfiguration" rfl _ _
     (syntaxEmbedding.derives (configuration_printed_derivation state)) _ _ _ ?_
-  refine .nonTerminal authoredLanguage.terms[26] "rule" "TcRule" rfl _ _
+  refine .nonTerminal authoredLanguage.terms[28] "rule" "TcRule" rfl _ _
     (syntaxEmbedding.derives (rule_printed_derivation rule)) _ _ _ ?_
-  refine .nonTerminal authoredLanguage.terms[26] "selection" "TcSelection" rfl _ _
+  refine .nonTerminal authoredLanguage.terms[28] "selection" "TcSelection" rfl _ _
     (syntaxEmbedding.derives (selection_printed_derivation selection)) _ _ _ ?_
   exact .terminal _ ")" _ _ _ (.nil _)
 
@@ -145,11 +145,11 @@ theorem request_derives (state : Execution.State) (candidate : Execution.Candida
     GrammarDerives.Derives authoredLanguage "Proc" (requestTokens state candidate)
       (request (OccurrenceProfile.statePattern state)
         (OccurrenceProfile.firingPattern ⟨state, candidate⟩)) := by
-  refine .rule authoredLanguage.terms[28] (by decide +kernel) "Proc" rfl _ _ ?_
+  refine .rule authoredLanguage.terms[30] (by decide +kernel) "Proc" rfl _ _ ?_
   refine .terminal _ "fire" _ _ _ ?_
   refine .nonTerminal _ "state" "State" rfl _ _ (state_derives state) _ _ _ ?_
   simpa only [List.append_nil] using
-    (GrammarDerives.DerivesItems.nonTerminal authoredLanguage.terms[28]
+    (GrammarDerives.DerivesItems.nonTerminal authoredLanguage.terms[30]
       "firing" "Firing" rfl _ _ (firing_derives ⟨state, candidate⟩) [] [] [] (.nil _))
 
 def requestInput (state : Execution.State) (candidate : Execution.Candidate) : List Nat :=

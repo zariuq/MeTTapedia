@@ -138,17 +138,17 @@ theorem strengthened_client_cannot_read_private_snapshot :
   | cons occurrence rest =>
       exact InteractionFormation.no_peek_forbids_selected_read formed occurrence (by rw [selected]; simp) rfl
 
-def observeEmpty : RuleInstance Value := ⟨[], [], [], [.absent (true, secret)], [(false, done)]⟩
+def observeEmpty : RuleInstance Value := ⟨[], [], [], [.predicate .none (true, secret)], [(false, done)]⟩
 def observeSelection : Selection Nat := ⟨[], [], [1]⟩
 def empty : Configuration Value Nat := ⟨[], ∅⟩
 
-theorem private_absence_valid_even_when_empty : observeSelection.Valid locatedAction (label done) observeEmpty empty := by
+theorem private_none_valid_even_when_empty : observeSelection.Valid locatedAction (label done) observeEmpty empty := by
   refine ⟨by decide, by decide, rfl, rfl, rfl, ?_, ⟨action.identity, by simp [Selection.problem, Selection.equations, empty, observeEmpty, observeSelection]⟩, ?_⟩
   · exact ⟨by simp [Selection.commit, observeSelection], by simp [Selection.commit, observeSelection],
       by simp [Selection.commit, observeSelection], by simp [Selection.commit, observeSelection, empty],
       by simp [Selection.commit, observeSelection]⟩
   · intro check member
-    have same : check = .absent (true, secret) := List.mem_singleton.mp member
+    have same : check = .predicate .none (true, secret) := List.mem_singleton.mp member
     subst check
     intro assignment _ occurrence present
     cases present
@@ -156,13 +156,13 @@ theorem private_absence_valid_even_when_empty : observeSelection.Valid locatedAc
 theorem full_formation_refuses_empty_private_observation :
     ¬InteractionFormation.Formed clientRights (label done) observeSelection observeEmpty := by
   intro formed
-  exact InteractionFormation.no_observe_forbids_absence formed (true, secret) (by simp [observeEmpty]) rfl
+  exact InteractionFormation.no_observe_forbids_none formed (true, secret) (by simp [observeEmpty]) rfl
 
 theorem send_only_client_can_observe_empty_private_region :
     system.Step (activate observeEmpty) locatedAction (label done) false empty
       (observeSelection.result (label done) observeEmpty empty) := by
   refine ⟨(), by simp [system], (), observeEmpty, rfl, observeSelection,
-    private_absence_valid_even_when_empty, ?_, rfl⟩
+    private_none_valid_even_when_empty, ?_, rfl⟩
   intro occurrence made
   have same : occurrence = 1 := by simpa [observeSelection] using made
   subst occurrence

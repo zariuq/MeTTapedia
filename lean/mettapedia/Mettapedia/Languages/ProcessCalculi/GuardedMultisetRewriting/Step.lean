@@ -23,10 +23,10 @@ reading one edge twice (`Examples.shared_read_steps`). A take and a read never s
 (`Examples.take_read_no_share`).
 
 A **check** has a pattern and a condition on the bag of the values its pattern matches under `σ`
-(`Check`): absence (`Check.absent`), a count (`Check.count`), or a fold of all the matches,
+(`Check`): a none check (`Check.noneMatch`), a count (`Check.count`), or a fold of all the matches,
 itself matched by a pattern (`Check.all`).
 
-Example: the rule `take (ping $x), check absent (busy), produce (pong $x)` steps
+Example: the rule `take (ping $x), check none (busy), produce (pong $x)` steps
 `{ping 1, idle} → {pong 1, idle}` and does nothing at `{ping 1, busy}` (`Examples`).
 
 ## One substitution, or one per source
@@ -65,7 +65,7 @@ structure Rule (V : Type uV) (T : Type uT) (P : Type uP) where
 namespace Check
 
 /-- Nothing matches. -/
-def absent (p : P) : Check V T P := ⟨p, fun _ bag => bag = 0⟩
+def noneMatch (p : P) : Check V T P := ⟨p, fun _ bag => bag = 0⟩
 
 /-- Exactly `n` values match. -/
 def count (p : P) (n : ℕ) : Check V T P := ⟨p, fun _ bag => Multiset.card bag = n⟩
@@ -254,8 +254,8 @@ theorem stepChain_split {L : TermLayer V T P} :
 
 /-! ## The step is the compiled transform's step
 
-A rule whose checks are absences compiles to a transform of the source layer: its takes, its
-reads, its absences, then its templates (`Rule.transform`). **Its steps are exactly the transform's
+A rule whose checks are none checks compiles to a transform of the source layer: its takes, its
+reads, its none checks, then its templates (`Rule.transform`). **Its steps are exactly the transform's
 steps**, seen as bags of values:
 
 * `step_of_fires`: every firing of the transform (a `Commit`) steps the bag of the store to the bag
@@ -279,13 +279,13 @@ def prepend (srcs : List (Source V T P)) (rest : SourceList V T P) : SourceList 
 @[simp] theorem prepend_cons (s : Source V T P) (srcs : List (Source V T P))
     (rest : SourceList V T P) : prepend (s :: srcs) rest = .cons s (prepend srcs rest) := rfl
 
-/-- The sources of a rule whose checks are the absences `absent`. -/
-def Rule.sources (r : Rule V T P) (absent : List P) : List (Source V T P) :=
-  r.take.map Source.take ++ r.read.map Source.read ++ absent.map Source.absent
+/-- The sources of a rule whose checks are the none checks `absent`. -/
+def Rule.sources (r : Rule V T P) (missing : List P) : List (Source V T P) :=
+  r.take.map Source.take ++ r.read.map Source.read ++ missing.map Source.absent
 
-/-- **The transform of a rule** whose checks are the absences `absent`. -/
-def Rule.transform (r : Rule V T P) (absent : List P) : Transform V T P :=
-  ⟨prepend (r.sources absent) .done, r.produce⟩
+/-- **The transform of a rule** whose checks are the none checks `absent`. -/
+def Rule.transform (r : Rule V T P) (missing : List P) : Transform V T P :=
+  ⟨prepend (r.sources missing) .done, r.produce⟩
 
 /-- A chain of declarative steps of sources (`DStep`). -/
 inductive SourceChain (L : TermLayer V T P) (label : O → T) (S : Finset O) :
@@ -477,19 +477,19 @@ theorem sourceChain_absent_iff :
 
 omit [DecidableEq O] in
 /-- **The declarative rows of a rule's transform**: one substitution binding only the gather
-variables, distinct-or-not picks in the store solving the take and read patterns, empty absence
+variables, distinct-or-not picks in the store solving the take and read patterns, empty none query
 checks, and the instantiated templates. -/
-theorem dRow_transform_iff [DecidableEq V] (r : Rule V T P) (absent : List P)
+theorem dRow_transform_iff [DecidableEq V] (r : Rule V T P) (missing : List P)
     (y : Subst V T × List (Pick O T)) :
-    DRow L label S r.produce (prepend (r.sources absent) .done) (fun _ => none) y ↔
+    DRow L label S r.produce (prepend (r.sources missing) .done) (fun _ => none) y ↔
       ∃ (σ : Subst V T) (os₁ os₂ : List O) (made : List T),
         (∀ o ∈ os₁ ++ os₂, o ∈ S) ∧ BindsOnlyGathers L r σ ∧
           List.Forall₂ (L.Solves σ) r.take (os₁.map label) ∧
           List.Forall₂ (L.Solves σ) r.read (os₂.map label) ∧
-          (∀ q ∈ absent, regionOf label S (semRegion L σ q) = ∅) ∧
+          (∀ q ∈ missing, regionOf label S (semRegion L σ q) = ∅) ∧
           instTemplate L σ r.produce = some made ∧
           y = (σ, os₁.map Pick.take ++ os₂.map Pick.keep ++
-            absent.map (fun q => Pick.query ⟨semRegion L σ q, ∅⟩ false) ++ [.make (made : Multiset T)]) := by
+            missing.map (fun q => Pick.query ⟨semRegion L σ q, ∅⟩ false) ++ [.make (made : Multiset T)]) := by
   rw [dRow_prepend]
   constructor
   · rintro ⟨υ, picks, z, chain, ⟨made, inst, rfl⟩, rfl⟩
@@ -589,8 +589,8 @@ theorem exists_occurrences (label : O → T) :
         · exact oX
         · exact (Finset.mem_erase.mp (inX o' m)).2
 
-theorem lets_transform (r : Rule V T P) (absent : List P) :
-    (r.transform absent).sources.lets = [] := by
+theorem lets_transform (r : Rule V T P) (missing : List P) :
+    (r.transform missing).sources.lets = [] := by
   have : ∀ srcs : List (Source V T P), (∀ s ∈ srcs, ∀ p e, s ≠ .letBind p e) →
       (prepend srcs .done).lets = [] := by
     intro srcs none_let
@@ -636,14 +636,14 @@ theorem exists_list_of_mem (label : O → T) (X : Finset O) :
 twice are read once. -/
 theorem step_of_fires [DecidableEq V] [DecidableEq T] {m : Matcher V T P}
     (sound : Matcher.Sound L m) (complete : Matcher.Complete L m) (minimal : Matcher.Minimal L m)
-    {r : Rule V T P} {absent : List P} (checks : r.checks = absent.map Check.absent)
-    {c : Commit O T} (fires : Fires L m label S (r.transform absent) c) :
+    {r : Rule V T P} {missing : List P} (checks : r.checks = missing.map Check.noneMatch)
+    {c : Commit O T} (fires : Fires L m label S (r.transform missing) c) :
     Step L r (labels label S) (labels label (fire S c)) := by
   have enabled := fires.enabled
   obtain ⟨y, row, linear, commit⟩ := declarative_of_fires sound complete minimal
     (fun eval mem => by rw [lets_transform] at mem; cases mem) fires
   obtain ⟨σ, os₁, os₂, made, inS, only, solves₁, solves₂, empties, inst, rfl⟩ :=
-    (dRow_transform_iff r absent y).mp row
+    (dRow_transform_iff r missing y).mp row
   rw [footprint_row] at linear commit
   obtain ⟨nodup₁, apart⟩ := linear
   have nodup₁' : os₁.Nodup := by simpa using nodup₁
@@ -675,9 +675,9 @@ theory on what it makes, given fresh occurrences of every value. -/
 theorem fires_of_step [DecidableEq V] [DecidableEq T] {m : Matcher V T P}
     (sound : Matcher.Sound L m) (complete : Matcher.Complete L m) (minimal : Matcher.Minimal L m)
     (supply : ∀ (X : Finset O) (t : T), ∃ o, o ∉ X ∧ label o = t)
-    {r : Rule V T P} {absent : List P} (checks : r.checks = absent.map Check.absent)
+    {r : Rule V T P} {missing : List P} (checks : r.checks = missing.map Check.noneMatch)
     {M' : Multiset T} (step : Step L r (labels label S) M') :
-    ∃ c, Fires L m label S (r.transform absent) c ∧
+    ∃ c, Fires L m label S (r.transform missing) c ∧
       Multiset.Rel L.E (labels label (fire S c)) M' := by
   obtain ⟨σ, rest, _, kept, made, only, ⟨ts₁, solves₁, rfl⟩, ⟨ts₂, solves₂, -, support⟩, hM, holds,
     inst, rfl⟩ := step
@@ -695,9 +695,9 @@ theorem fires_of_step [DecidableEq V] [DecidableEq T] {m : Matcher V T P}
       rw [restEq]; exact Multiset.mem_add.mpr (Or.inr (support t m))
     obtain ⟨o, om, rfl⟩ := Multiset.mem_map.mp tin
     exact ⟨o, Finset.mem_val.mp om, rfl⟩)
-  have empties : ∀ q ∈ absent, regionOf label S (semRegion L σ q) = ∅ := by
+  have empties : ∀ q ∈ missing, regionOf label S (semRegion L σ q) = ∅ := by
     intro q qmem
-    have h := holds (Check.absent q) (by rw [checks]; exact List.mem_map_of_mem qmem)
+    have h := holds (Check.noneMatch q) (by rw [checks]; exact List.mem_map_of_mem qmem)
     change matchesIn L σ q (labels label S) = 0 at h
     rw [matchesIn_labels] at h
     simpa [labels] using h
@@ -706,10 +706,10 @@ theorem fires_of_step [DecidableEq V] [DecidableEq T] {m : Matcher V T P}
     rcases List.mem_append.mp m with m | m
     · exact inS₁ o m
     · exact (Finset.mem_sdiff.mp (inX₂ o m)).1
-  have row := (dRow_transform_iff (L := L) (label := label) (S := S) r absent _).mpr
+  have row := (dRow_transform_iff (L := L) (label := label) (S := S) r missing _).mpr
     ⟨σ, os₁, os₂, made, inS, only, solves₁, solves₂, empties, inst, rfl⟩
   have linear : (footprintOf (σ, os₁.map Pick.take ++ os₂.map Pick.keep ++
-      absent.map (fun q => Pick.query ⟨semRegion L σ q, ∅⟩ false) ++
+      missing.map (fun q => Pick.query ⟨semRegion L σ q, ∅⟩ false) ++
         [.make (made : Multiset T)]).2).Linear := by
     rw [footprint_row]
     refine ⟨by simpa using nodup₁, fun o m₁ m₂ => ?_⟩

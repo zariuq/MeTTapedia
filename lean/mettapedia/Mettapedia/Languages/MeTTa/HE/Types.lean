@@ -1027,6 +1027,14 @@ theorem applyDefault_expression (b : Bindings) (atoms : List Atom) :
   omega
 
 
+/-- Binding readout traverses a quotation expression. Evaluation of quotation
+is a separate operation and does not change this structural law. -/
+theorem applyDefault_quote (b : Bindings) (code : Atom) :
+    b.applyDefault (.expression [.symbol "quote", code]) =
+      .expression [.symbol "quote", b.applyDefault code] := by
+  rw [applyDefault_expression]
+  simp only [List.map_cons, List.map_nil, applyDefault_symbol]
+
 /-- Structural depth covers ordinary resolution from every retained path. -/
 theorem resolveAtomCovered_resolutionFuel (b : Bindings) (visited : List String) (atom : Atom) :
     b.resolveAtomCovered visited atom (b.resolutionFuel atom) = true := by

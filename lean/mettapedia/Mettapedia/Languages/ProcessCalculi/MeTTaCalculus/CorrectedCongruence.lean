@@ -297,6 +297,26 @@ inductive BagStep (admit : Admission) : Pattern → Pattern → Prop where
   | reflect (x : Pattern) {source target : Pattern} :
       BagStep admit source target → BagStep admit (pReflect x source) (pFor (tProc target) x pZero)
 
+theorem BagStep.components_nonempty {admit : Admission} {source target : Pattern}
+    (step : BagStep admit source target) : components source ≠ [] := by
+  induction step with
+  | comm => simp [components_par, components_pFor]
+  | parallel surrounding _ earlier =>
+      rw [components_par]
+      intro empty
+      exact earlier (List.append_eq_nil_iff.mp empty).1
+  | @congruence source source' target' target before _ _ earlier =>
+      intro empty
+      have lengths := ((bagEq_iff source source').mp before).length_eq
+      have otherEmpty : components source' = [] := List.eq_nil_of_length_eq_zero (by
+        simpa only [empty, List.map_nil, List.length_nil, List.length_map] using lengths.symm)
+      exact earlier otherEmpty
+  | reflect channel _ _ => simp [components, pReflect]
+
+theorem BagStep.not_from_zero (admit : Admission) (target : Pattern) :
+    ¬ BagStep admit pZero target :=
+  fun step => step.components_nonempty components_pZero
+
 /-- COMM at any position: the same rules without REFL. -/
 inductive BagCommStep (admit : Admission) : Pattern → Pattern → Prop where
   | comm (t u x A B : Pattern) (bs : Bindings) (principal : Principal t u bs)

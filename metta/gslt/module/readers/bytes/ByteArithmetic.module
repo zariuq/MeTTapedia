@@ -1,0 +1,68 @@
+import "ByteScalars.module" as scalars
+import "ByteDecode.module" as decode
+
+Module ByteArithmetic {
+
+  Theory Arithmetic(a: scalars.Values) {
+    a Rewrites {
+      IncZero: (NatInc (NatZero)) ~> (NatBit (Bit1) (NatZero));
+      IncEven: (NatInc (NatBit (Bit0) n)) ~> (NatBit (Bit1) n);
+      IncOdd: (NatInc (NatBit (Bit1) n)) ~> (NatBit (Bit0) (NatInc n));
+      AddZero: (NatAdd (NatZero) (NatZero)) ~> (NatZero);
+      AddLeftZero: (NatAdd (NatZero) (NatBit b n)) ~> (NatBit b n);
+      AddRightZero: (NatAdd (NatBit b n) (NatZero)) ~> (NatBit b n);
+      AddEvenEven: (NatAdd (NatBit (Bit0) n) (NatBit (Bit0) m)) ~> (MakeNatBit (Bit0) (NatAdd n m));
+      AddEvenOdd: (NatAdd (NatBit (Bit0) n) (NatBit (Bit1) m)) ~> (NatBit (Bit1) (NatAdd n m));
+      AddOddEven: (NatAdd (NatBit (Bit1) n) (NatBit (Bit0) m)) ~> (NatBit (Bit1) (NatAdd n m));
+      AddOddOdd: (NatAdd (NatBit (Bit1) n) (NatBit (Bit1) m)) ~> (NatBit (Bit0) (NatInc (NatAdd n m)));
+      Xor00: (BitXor (Bit0) (Bit0)) ~> (Bit0);
+      Xor01: (BitXor (Bit0) (Bit1)) ~> (Bit1);
+      Xor10: (BitXor (Bit1) (Bit0)) ~> (Bit1);
+      Xor11: (BitXor (Bit1) (Bit1)) ~> (Bit0);
+      XorZero: (NatXor (NatZero) (NatZero)) ~> (NatZero);
+      XorLeftZero: (NatXor (NatZero) (NatBit b n)) ~> (NatBit b n);
+      XorRightZero: (NatXor (NatBit b n) (NatZero)) ~> (NatBit b n);
+      XorMore: (NatXor (NatBit b n) (NatBit c m)) ~> (MakeNatBit (BitXor b c) (NatXor n m));
+      MultiplyZero: (NatMultiply (NatZero) n) ~> (NatZero);
+      MultiplyEven: (NatMultiply (NatBit (Bit0) n) m) ~> (MakeNatBit (Bit0) (NatMultiply n m));
+      MultiplyOdd: (NatMultiply (NatBit (Bit1) n) m) ~> (NatAdd m (MakeNatBit (Bit0) (NatMultiply n m)));
+      TrimEnd: (NatTrim (NatZero) n) ~> (NatZero);
+      TrimZero: (NatTrim (NatBit b width) (NatZero)) ~> (NatZero);
+      TrimMore: (NatTrim (NatBit b width) (NatBit bit n))
+        ~> (MakeNatBit bit (NatTrim (NatPred (NatBit b width)) n));
+      Pack:
+        (PackByte (Byte8 b7 b6 b5 b4 b3 b2 b1 b0) high) ~> (MakeNatBit b0 (MakeNatBit b1 (MakeNatBit b2 (MakeNatBit b3 (MakeNatBit b4 (MakeNatBit b5 (MakeNatBit b6 (MakeNatBit b7 high))))))));
+      LengthEmpty: (ByteLength (BNil)) ~> (NatZero);
+      LengthCons: (ByteLength (BCons b xs)) ~> (NatInc (ByteLength xs));
+      SubtractZero: (NatSubtract (NatZero) n) ~> (NatZero);
+      SubtractRightZero: (NatSubtract (NatBit bit n) (NatZero)) ~> (NatBit bit n);
+      SubtractMore: (NatSubtract (NatBit bit n) (NatBit other m))
+        ~> (NatSubtract (NatPred (NatBit bit n)) (NatPred (NatBit other m)));
+    }
+  }
+  Theory FixedWords(a: scalars.Values) {
+    a Rewrites {
+      Word16: (ReadWordLE16 xs) ~> (ReadFixedLE (NatBit (Bit0) (NatBit (Bit1) (NatZero))) xs);
+      Word32: (ReadWordLE32 xs) ~> (ReadFixedLE (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatZero)))) xs);
+      Word64: (ReadWordLE64 xs) ~> (ReadFixedLE (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatZero))))) xs);
+      FixedEmpty: (ReadFixedLE (NatZero) xs) ~> (DecodedWord (NatZero) xs);
+      FixedShort: (ReadFixedLE (NatBit bit n) (BNil)) ~> (NeedInput);
+      FixedByte: (ReadFixedLE (NatBit bit n) (BCons b xs))
+        ~> (FixedJoin b (ReadFixedLE (NatPred (NatBit bit n)) xs));
+      FixedPack: (FixedJoin b (DecodedWord n rest)) ~> (DecodedWord (PackByte b n) rest);
+      FixedPropagate: (FixedJoin b (NeedInput)) ~> (NeedInput);
+    }
+  }
+  Theory Checksum(a: scalars.Values) {
+    a Rewrites {
+      FnvInit: (FNV xs) ~> (FNVFrom (NatBit (Bit1) (NatBit (Bit0) (NatBit (Bit1) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatBit (Bit1) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatBit (Bit1) (NatBit (Bit1) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatBit (Bit1) (NatBit (Bit1) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatBit (Bit0) (NatBit (Bit1) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatBit (Bit1) (NatBit (Bit1) (NatBit (Bit1) (NatBit (Bit1) (NatBit (Bit1) (NatBit (Bit0) (NatBit (Bit1) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatBit (Bit1) (NatZero))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))) xs);
+      FnvDone: (FNVFrom h (BNil)) ~> h;
+      FnvNext: (FNVFrom h (BCons b xs)) ~> (FNVFrom (FNVByte h b) xs);
+      FnvByte:
+        (FNVByte h b) ~> (NatTrim (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatZero)))))))) (NatMultiply (NatBit (Bit1) (NatBit (Bit1) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatBit (Bit1) (NatBit (Bit0) (NatBit (Bit1) (NatBit (Bit1) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatZero)))))))))))))))))))))))))))))))))))))))))) (NatXor h (PackByte b (NatZero)))));
+    }
+  }
+  Theory Operations(a: scalars.Values) { decode.Naturals(a) \/ Arithmetic(a) \/ FixedWords(a) \/ Checksum(a) }
+  theory Operations(scalars.Values())
+}
+

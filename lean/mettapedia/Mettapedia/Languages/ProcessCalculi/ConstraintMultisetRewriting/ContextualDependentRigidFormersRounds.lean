@@ -39,8 +39,8 @@ theorem parts_equivalent {Θ : Context S.R} {equation : Equation (TotalTerm Θ)}
 def moveFound {Θ : Context S.R} {problem parts : EquationStore (TotalTerm Θ)}
     (same : (frames S.levels).Equivalent problem parts) : Found parts → Found problem
   | .solved update smaller => .solved (((Update.pending S.levels parts).rephrase same).then update) smaller
-  | .refuted absent => .refuted fun solvable =>
-      absent (((Update.pending S.levels parts).rephrase same).solvable_iff.mp solvable)
+  | .refuted missing => .refuted fun solvable =>
+      missing (((Update.pending S.levels parts).rephrase same).solvable_iff.mp solvable)
 
 variable [DecidableEq Head] [DecidableRel S.R.headEq]
   [∀ head, Decidable (S.R.isUniverse head)] [DecidableRel S.R.cumulative]
@@ -94,7 +94,7 @@ def formersRound (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (Total
   match inPlaceRound facts roots heads algebra declared choices reducer rigid complete root normalizes certifyNormal
       headTypingUnique rootComplete fuel problem with
   | .progress update smaller => .progress update smaller
-  | .refuted absent => .refuted absent
+  | .refuted missing => .refuted missing
   | .stuck =>
       match formerSearch facts roots heads algebra declared choices reducer rigid complete root normalizes certifyNormal
           headTypingUnique fuel (ContextualDependentNormalizing.prepare root rootComplete facts roots heads fuel problem).remaining with
@@ -104,9 +104,9 @@ def formersRound (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (Total
               have same := prepare_arity facts roots heads root rootComplete fuel problem
               change update.target.arity < Θ.arity
               omega))
-      | some (.refuted absent) =>
+      | some (.refuted missing) =>
           .refuted fun solvable =>
-            absent ((ContextualDependentNormalizing.prepare root rootComplete facts roots heads fuel problem).solvable_iff.mp
+            missing ((ContextualDependentNormalizing.prepare root rootComplete facts roots heads fuel problem).solvable_iff.mp
               solvable)
       | none => .stuck
 
@@ -252,13 +252,13 @@ theorem formersRound_view (fuel : Nat) {Θ : Context S.R} (problem : EquationSto
   split
   · rename_i update smaller computed
     simp only [computed, roundView, Option.or]
-  · rename_i absent computed
+  · rename_i missing computed
     simp only [computed, roundView, Option.or]
   · rename_i computed
     split
     · rename_i update smaller found
       simp only [computed, found, roundView, foundView, Option.or, Option.map_some]
-    · rename_i absent found
+    · rename_i missing found
       simp only [computed, found, roundView, foundView, Option.or, Option.map_some, Option.map_none]
     · rename_i found
       simp only [computed, found, roundView, foundView, Option.or, Option.map_none]

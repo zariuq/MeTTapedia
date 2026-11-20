@@ -820,7 +820,8 @@ theorem uncovered_finishes (policy : Policy) :
       emitted.map (fun r => r.1.erase) = [uncoveredCall] :=
     fun emitted run => if_source_uncovered uncovered_program isZero_one_uncovered uncovered_if_shape
       (complete_source run)
-  refine ⟨⟨?_, every⟩, ⟨fine.acc, fun y path => ?_⟩, petta_uncovered⟩
+  refine ⟨PublishesInOrder.bag ⟨?_, every⟩, FinishesInOrder.bag ⟨fine.acc, fun y path => ?_⟩,
+    petta_uncovered⟩
   · obtain ⟨space, emitted, path⟩ := IfAtFrames.Fine.exists_final fine
     have same : space = Space.ofList uncoveredRows := space_fixed path
     subst same

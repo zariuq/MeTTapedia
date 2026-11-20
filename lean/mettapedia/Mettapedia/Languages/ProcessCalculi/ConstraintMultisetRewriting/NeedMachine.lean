@@ -91,7 +91,7 @@ def startRule {program : Program} (next : Nat) (intent : Intent program) : RuleI
   | .direct after =>
       ⟨[.control next plan.input],plan.reads.map .heap,[],[],[.control next after]⟩
   | .edit source _ _ =>
-      ⟨[.control next plan.input],plan.reads.map .heap,[],[.absent (.heap (.allocated next))],
+      ⟨[.control next plan.input],plan.reads.map .heap,[],[.predicate .none (.heap (.allocated next))],
         [.waiting next plan,.heap (.request next source)]⟩
 
 def copyRule (job : Nat) (input : Control Nat) (reads : List (SnapshotCopy.Row Suspension))
@@ -217,7 +217,7 @@ theorem start_source_instruction {program : Program} {before after : World} {sto
   cases selected : intent.plan.action <;> simp [startRule,selected,member]
 
 /-- Source availability constructs an actual start firing with fresh
-physical outputs. The edit case retains the original absence admission cut. -/
+physical outputs. The edit case retains the original none queries admission cut. -/
 theorem start_exists {program : Program} (before : World) (next : Nat) (intent : Intent program)
     (consistent : action.Consistent before.equations)
     (current : Has before.present (.control next intent.plan.input))
@@ -258,7 +258,7 @@ theorem start_exists {program : Program} (before : World) (next : Nat) (intent :
       cases selected : intent.plan.action with
       | direct control => simp [startRule,selected] at member
       | edit source operation resume =>
-          have same : check = .absent (.heap (.allocated next)) := by simpa [startRule,selected] using member
+          have same : check = .predicate .none (.heap (.allocated next)) := by simpa [startRule,selected] using member
           subst check
           intro assignment _ occurrence old equal
           exact fresh source operation resume selected ⟨occurrence,old,equal.symm⟩

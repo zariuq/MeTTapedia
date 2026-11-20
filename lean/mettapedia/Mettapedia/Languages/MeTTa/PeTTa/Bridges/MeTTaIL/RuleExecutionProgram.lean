@@ -1,4 +1,5 @@
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.MatchAutomataProgram
+import Mettapedia.Languages.MeTTa.PeTTa.ProgramLiteral
 
 /-!
 # Retained rule operations and conservative matcher composition
@@ -102,7 +103,7 @@ The quoted artifact is independent of the source execution judgments. -/
 def scopedSource : ProgramQuotation.QuotedProgram :=
   petta_source_file%
     "../../../../../../../../metta/gslt/lib/gslt_scoped_execution.metta"
-    sha256 "1d3159a8a5f569b1227820f092f6b3441b729bc62b4dc244345418f03d4a45e4"
+    sha256 "01978e71dedad9a468f39fe1ec54f3acc6851a07ff62b34595e6e534c8fa71e4"
 
 def scopedProgram : Program := scopedSource.program
 
@@ -119,62 +120,62 @@ def callFragmentWhere (owns : String → Bool) (source : Program := scopedProgra
 def callFragment (heads : List String) (source : Program := scopedProgram) : Program :=
   callFragmentWhere heads.contains source
 
-def scopedMachineProgram : Program :=
+sealed_program scopedMachineProgram :=
   callFragmentWhere fun head =>
     head != "gslt:rule:site-replacement-represented" && head != "gslt:rule:job-finish-root"
 
-def premiseAssignmentProgram : Program :=
+sealed_program premiseAssignmentProgram :=
   callFragment ["gslt:premise:type-context-lookup", "gslt:premise:check-assignment"]
 
-def premiseAdministrationProgram : Program :=
+sealed_program premiseAdministrationProgram :=
   callFragment ["gslt:premise:context-next", "gslt:premise:context-quantified", "gslt:premise:machine-deliver", "gslt:premise:machine-evaluate", "gslt:premise:machine-expand"]
 
-def premiseEnvironmentProgram : Program :=
+sealed_program premiseEnvironmentProgram :=
   callFragment ["gslt:premise:constructor-declarations", "gslt:premise:source-type", "gslt:premise:specification", "gslt:premise:signature-candidates", "gslt:premise:signature", "gslt:premise:check-values", "gslt:premise:check-row"]
 
-def premiseGroundProgram : Program :=
+sealed_program premiseGroundProgram :=
   callFragment ["gslt:premise:ground-at", "gslt:premise:ground-list-at"]
 
-def premiseReflectionSelectionProgram : Program :=
+sealed_program premiseReflectionSelectionProgram :=
   callFragment ["gslt:premise:reflective-rules", "gslt:premise:reflective-presentations", "gslt:premise:presentation-named", "gslt:premise:substitution-presentation"]
 
-def premiseQueryProgram : Program :=
+sealed_program premiseQueryProgram :=
   callFragment ["gslt:premise:query-site", "gslt:premise:query-matching-request", "gslt:premise:query-expand-in"]
 
-def premiseAdmissionProgram : Program :=
+sealed_program premiseAdmissionProgram :=
   callFragment ["gslt:premise:admission-keys", "gslt:premise:admission-occurrence-keys", "gslt:premise:admission-nodup", "gslt:premise:admission-context-covered", "gslt:premise:admission-occurrences", "gslt:premise:binding-admitted"]
 
-def premiseFullEnvironmentProgram : Program :=
+sealed_program premiseFullEnvironmentProgram :=
   callFragment ["gslt:premise:query-obligations", "gslt:premise:machine-deliver-in", "gslt:premise:machine-evaluate-in", "gslt:premise:machine-expand-in"]
 
-def matcherEraseProgram : Program :=
+sealed_program matcherEraseProgram :=
   callFragment ["gslt:rule:scope-match-erase-at"]
 
-def scopedInstantiationProgram : Program :=
+sealed_program scopedInstantiationProgram :=
   callFragment ["gslt:rule:scope-binder-operation", "gslt:rule:scope-instantiate-slot", "gslt:rule:scope-instantiate-at", "gslt:rule:scope-instantiate-args-at", "gslt:rule:scope-reduct"]
 
-def scopedReflectionProgram : Program :=
-  callFragment ["gslt:rule:scope-reflective-normalize", "gslt:rule:scope-reflective-normalize-list", "gslt:rule:scope-reflective-normalize-finish", "gslt:rule:scope-reflective-replacement", "gslt:rule:scope-reflective-normalized-mark", "gslt:rule:scope-reflective-name-mark", "gslt:rule:scope-reflective-unmark", "gslt:rule:scope-reflective-drop-finish", "gslt:rule:scope-reflective-instantiate-at", "gslt:rule:scope-reflective-instantiate-list-at", "gslt:rule:scope-reflective-instantiate-apply", "gslt:rule:scope-reflective-instantiate-unary", "gslt:rule:scope-reflective-binder-operation"]
+sealed_program scopedReflectionProgram :=
+  callFragment ["gslt:rule:scope-reflective-normalize", "gslt:rule:scope-reflective-normalize-list", "gslt:rule:scope-reflective-normalize-finish", "gslt:rule:scope-reflective-replacement", "gslt:rule:scope-reflective-binder-head", "gslt:rule:scope-reflective-binder-head-list", "gslt:rule:scope-reflective-binder-head-join", "gslt:rule:scope-reflective-binder-head-fold", "gslt:rule:scope-reflective-binder-head-apply", "gslt:rule:scope-reflective-leaves", "gslt:rule:scope-reflective-leaves-list", "gslt:rule:scope-reflective-append", "gslt:rule:scope-reflective-exposed-drop", "gslt:rule:scope-reflective-resolve-finish", "gslt:rule:scope-reflective-resolve", "gslt:rule:scope-reflective-resolve-list", "gslt:rule:scope-reflective-receive", "gslt:rule:scope-reflective-substitute-at", "gslt:rule:scope-reflective-substitute-list-at", "gslt:rule:scope-reflective-substitute-apply", "gslt:rule:scope-reflective-substitute-unary", "gslt:rule:scope-reflective-binder-operation"]
 
-def scopedMatcherProgram : Program :=
+sealed_program scopedMatcherProgram :=
   callFragment ["gslt:rule:scope-matcher-capture", "gslt:rule:scope-matcher-captured-work", "gslt:rule:scope-matcher-split-at", "gslt:rule:scope-matcher-start", "gslt:rule:scope-matcher-complete", "gslt:rule:scope-matcher-expand-tree", "gslt:rule:scope-matcher-expand", "gslt:rule:scope-matcher-advance-branches", "gslt:rule:scope-matcher-advance", "gslt:rule:scope-matcher-tick", "gslt:rule:scope-matcher-run"]
 
-def premiseSchedulerProgram : Program :=
+sealed_program premiseSchedulerProgram :=
   callFragment ["gslt:premise:machine-commit", "gslt:premise:machine-complete"]
 
-def premiseMachineRunProgram : Program :=
+sealed_program premiseMachineRunProgram :=
   callFragment ["gslt:premise:machine-start", "gslt:premise:machine-tick", "gslt:premise:machine-run"]
 
-def premiseMatchingProgram : Program :=
+sealed_program premiseMatchingProgram :=
   callFragment ["gslt:premise:root-match-expand-in", "gslt:premise:target-match-expand-in", "gslt:premise:root-body-deliver-in", "gslt:premise:stepped-deliver-in"]
 
-def ruleJobReadoutProgram : Program :=
+sealed_program ruleJobReadoutProgram :=
   callFragment ["gslt:rule:site-replacement-represented", "gslt:rule:job-finish-root"]
 
-theorem scoped_equation_count : scopedProgram.equations.length = 226 := by rfl
+theorem scoped_equation_count : scopedProgram.equations.length = 235 := by rfl
 set_option maxRecDepth 10000 in
 set_option maxHeartbeats 500000 in
-theorem scoped_machine_equation_count : scopedMachineProgram.equations.length = 224 := by rfl
+theorem scoped_machine_equation_count : scopedMachineProgram.equations.length = 233 := by rfl
 theorem scoped_no_initializers : scopedProgram.initializers = [] := by rfl
 theorem scoped_no_facts : scopedProgram.facts = [] := by rfl
 theorem callFragmentWhere_balanced (owns : String → Bool) (source : Program) :
@@ -205,7 +206,7 @@ theorem matcherEraseProgram_equation_count : matcherEraseProgram.equations.lengt
 
 theorem scopedInstantiationProgram_equation_count : scopedInstantiationProgram.equations.length = 5 := by rfl
 
-theorem scopedReflectionProgram_equation_count : scopedReflectionProgram.equations.length = 13 := by rfl
+theorem scopedReflectionProgram_equation_count : scopedReflectionProgram.equations.length = 22 := by rfl
 
 theorem scopedMatcherProgram_equation_count : scopedMatcherProgram.equations.length = 11 := by rfl
 
@@ -336,21 +337,26 @@ def interpretedPremiseSupportSources : List ProgramQuotation.QuotedProgram :=
     interpretedRunnerSource
   ]
 
+/-- The scoped operations other than the matching dispatch. -/
+sealed_program interpretedPremiseBase :=
+  callFragmentWhere (fun head => !head.startsWith "gslt:premise:matching-") scopedProgram
+
+/-- The matching dispatch, placed after its implementations. -/
+sealed_program interpretedPremiseMatching :=
+  callFragmentWhere (fun head => head.startsWith "gslt:premise:matching-") scopedProgram
+
 /-- One raw source view for both ordinary and interpreted retained matching.
 Matching dispatch is placed after its implementations; all selected source
 rows retain their order. This definition grants no execution capability. -/
 def interpretedPremiseProgram : Program :=
-  let base := callFragmentWhere
-    (fun head => !head.startsWith "gslt:premise:matching-") scopedProgram
   let support := interpretedPremiseSupportSources.foldl
-    (fun loaded source => loaded.append source.program) base
-  support.append (callFragmentWhere
-    (fun head => head.startsWith "gslt:premise:matching-") scopedProgram)
+    (fun loaded source => loaded.append source.program) interpretedPremiseBase
+  support.append interpretedPremiseMatching
 
 set_option maxRecDepth 100000 in
 set_option maxHeartbeats 4000000 in
 theorem interpretedPremiseProgram_equation_count :
-    interpretedPremiseProgram.equations.length = 566 := by decide +kernel
+    interpretedPremiseProgram.equations.length = 575 := by decide +kernel
 
 set_option maxRecDepth 100000 in
 set_option maxHeartbeats 4000000 in

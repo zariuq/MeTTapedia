@@ -35,6 +35,7 @@ def Carrier : String → Type
   | "TcIndices" => List Nat
   | "TcSelection" => Selection Nat
   | "TcConfiguration" => EquationStore Term × List Nat
+  | "TcQuantifier" => Quantifier
   | _ => Empty
 
 def readConfigurationData : Pattern → Option (EquationStore Term × List Nat)
@@ -56,6 +57,7 @@ def decode : (sort : String) → Pattern → Option (Carrier sort)
   | "TcIndices", pattern => readIndices pattern
   | "TcSelection", pattern => readSelection pattern
   | "TcConfiguration", pattern => readConfigurationData pattern
+  | "TcQuantifier", pattern => readQuantifier pattern
   | _, _ => none
 
 def construct {inputs : List String} {output : String} (operation : Operation rules inputs output) :
@@ -63,7 +65,7 @@ def construct {inputs : List String} {output : String} (operation : Operation ru
   cases operation with
   | «at» index =>
     rcases index with ⟨n, valid⟩
-    have range : n < 25 := valid
+    have range : n < 27 := valid
     match n with
     | 0 =>
       change FamilyList Carrier [] → Nat
@@ -114,8 +116,8 @@ def construct {inputs : List String} {output : String} (operation : Operation ru
       change FamilyList Carrier ["TcTerm", "TcTerm"] → Check Term
       exact fun | .cons left (.cons right (.nil)) => Check.equal left right
     | 16 =>
-      change FamilyList Carrier ["TcTerm"] → Check Term
-      exact fun | .cons term (.nil) => Check.absent term
+      change FamilyList Carrier ["TcQuantifier", "TcTerm"] → Check Term
+      exact fun | .cons quantifier (.cons term (.nil)) => Check.predicate quantifier term
     | 17 =>
       change FamilyList Carrier ["TcTerm", "TcIndex"] → Check Term
       exact fun | .cons term (.cons count (.nil)) => Check.count term count
@@ -140,7 +142,13 @@ def construct {inputs : List String} {output : String} (operation : Operation ru
     | 24 =>
       change FamilyList Carrier ["TcEquations", "TcIndices"] → EquationStore Term × List Nat
       exact fun | .cons knowledge (.cons present (.nil)) => (knowledge, present)
-    | k + 25 => exact False.elim (by omega)
+    | 25 =>
+      change FamilyList Carrier [] → Quantifier
+      exact fun | .nil => Quantifier.any
+    | 26 =>
+      change FamilyList Carrier [] → Quantifier
+      exact fun | .nil => Quantifier.none
+    | k + 27 => exact False.elim (by omega)
 
 def interpretation : Interpretation rules where
   Carrier := Carrier
@@ -407,19 +415,25 @@ theorem decode_construct {inputs : List String} {output : String}
               change readCheck (.apply "TcEqual" [o0.tree, o1.tree]) = some (Check.equal v0 v1)
               rw [readCheck, h0, h1]
               rfl
-    · change FamilyList (fun _ : String => Observation) ["TcTerm"] at observations
-      change FamilyList Carrier ["TcTerm"] at values
+    · change FamilyList (fun _ : String => Observation) ["TcQuantifier", "TcTerm"] at observations
+      change FamilyList Carrier ["TcQuantifier", "TcTerm"] at values
       cases observations with
       | cons o0 os0 =>
         cases values with
         | cons v0 vs0 =>
-          cases os0
-          cases vs0
-          have h0 := children.head
-          change readTerm o0.tree = some v0 at h0
-          change readCheck (.apply "TcAbsent" [o0.tree]) = some (Check.absent v0)
-          rw [readCheck, h0]
-          rfl
+          cases os0 with
+          | cons o1 os1 =>
+            cases vs0 with
+            | cons v1 vs1 =>
+              cases os1
+              cases vs1
+              have h0 := children.head
+              change readQuantifier o0.tree = some v0 at h0
+              have h1 := children.tail.head
+              change readTerm o1.tree = some v1 at h1
+              change readCheck (.apply "TcPredicate" [o0.tree, o1.tree]) = some (Check.predicate v0 v1)
+              rw [readCheck, h0, h1]
+              rfl
     · change FamilyList (fun _ : String => Observation) ["TcTerm", "TcIndex"] at observations
       change FamilyList Carrier ["TcTerm", "TcIndex"] at values
       cases observations with
@@ -570,6 +584,12 @@ theorem decode_construct {inputs : List String} {output : String}
               change readConfigurationData (.apply "TcConfigurationData" [o0.tree, o1.tree]) = some ((v0, v1))
               rw [readConfigurationData, h0, h1]
               rfl
+    all_goals
+      change FamilyList (fun _ : String => Observation) [] at observations
+      change FamilyList Carrier [] at values
+      cases observations
+      cases values
+      rfl
 
 mutual
   /-- Every typed route of the authored grammar decodes to its structural

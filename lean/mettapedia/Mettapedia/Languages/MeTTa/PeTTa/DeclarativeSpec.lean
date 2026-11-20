@@ -222,6 +222,14 @@ def nestedLets : List Atom → Atom → Option Atom
       (.expression [.symbol "let", pattern, value, ·]) <$> nestedLets rest body
   | _, _ => none
 
+/-- The rows of a two-branch `(if condition yes)`: one row whose pattern is the
+literal `True` and whose body is `yes`. Selecting on them runs `yes` for a
+condition value that is exactly `True` and drops every other value, which is
+PeTTa's reading of the missing branch (translator.pl compiles `(if C T)` to
+`(C, (Cv == true -> T))`). A literal pattern dispatches nothing, so the missing
+branch adds no code to the configuration. -/
+def ifThenCases (yes : Atom) : Cases := [(Effects.boolean true, yes)]
+
 /-- The source `unique` rewrite collects its whole producer before applying
 stable deduplication and the value-unpacking primitive. Using argument frames
 does not re-enter the literal-branch syntax of `superpose` or invent binders. -/
@@ -240,11 +248,20 @@ open Effects (State Fault)
 open Eval
 
 /-- Recognition of the control syntax handled before ordinary applications.
-Other arities and shapes continue through the ordinary call/data rules. -/
+Other arities and shapes continue through the ordinary call/data rules.
+
+Both arities of `if` are control. PeTTa evaluates `if` lazily: its translator
+compiles `(if C T E)` to `(C, (Cv == true -> T ; E))` and `(if C T)` to
+`(C, (Cv == true -> T))`, so only the selected branch ever runs, and a
+two-branch `if` whose condition is not `True` gives no answer. CeTTa's
+`--lang petta` reads both arities as the same special form. Treating `(if C T)`
+as a call or as data would instead evaluate `T` eagerly and return the
+expression itself. -/
 def controlForm : Atom → Bool
   | .expression [.symbol "let", _, _, _]
   | .expression [.symbol "let*", .expression _, _]
   | .expression [.symbol "case", _, .expression _]
+  | .expression [.symbol "if", _, _]
   | .expression [.symbol "if", _, _, _]
   | .expression [.symbol "collapse", _]
   | .expression [.symbol "unique", _]
@@ -379,6 +396,15 @@ inductive Transition (program : Program) : Configuration → Configuration → P
         { source with
           control := .evaluate bindings condition
           frames := .branch bindings yes no :: source.frames }
+  /-- `(if condition yes)` evaluates `condition` and then selects on `ifThenCases`:
+  `yes` runs once for each `True` answer, and other answers contribute nothing. -/
+  | if_without_else {source : Configuration} {bindings : Subst} {condition yes : Atom}
+      (control : source.control = .evaluate bindings
+        (.expression [.symbol "if", condition, yes])) :
+      Transition program source
+        { source with
+          control := .evaluate bindings condition
+          frames := .select bindings (ifThenCases yes) :: source.frames }
   | collapse_enter {source : Configuration} {bindings : Subst} {expression : Atom}
       (control : source.control = .evaluate bindings
         (.expression [.symbol "collapse", expression])) :
@@ -551,7 +577,8 @@ theorem completed_from_loaded_finite_representation {program : SpaceSemantics.Pr
     {answers input output : List Mettapedia.Languages.MeTTa.OSLFCore.Atom}
     (initial : source.state = Effects.loaded program)
     (running : Runs program source (.complete after answers input output)) :
-    ∃ names, reconstruct after.core [] after.spacesPrefix (after.cellRows names) = after := by
+    ∃ names, reconstruct after.core [] after.spacesPrefix (after.cellRows names)
+      after.namedSpaces after.namedEmpty = after := by
   have finite : FiniteCells source.state := by
     rw [initial]
     exact Effects.loaded_finite_cells program

@@ -2,12 +2,12 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualFrameWorklist
 
 /-!
-# Certified absence from the existing contextual equation worklist
+# Certified none query from the existing contextual equation worklist
 
 Each observed occurrence contributes one ordinary joint equation problem.
-Only a certified refutation of every such problem establishes the absence
+Only a certified refutation of every such problem establishes the none query
 ask. A residual, including a solved compatible instance or fuel exhaustion,
-does not certify absence. The checker exports no local binding or answer.
+does not certify none queries. The checker exports no local binding or answer.
 -/
 
 set_option autoImplicit false
@@ -96,7 +96,7 @@ theorem observed_joint_models {Γ : Ctx S} {sort : S.Srt}
 variable [DecidableEq Local] [DecidableEq Shared] [DecidableEq S.Srt]
   [∀ sort, DecidableEq (S.Op sort)]
 
-def certifiesRowAbsence (fuel : Nat) {Γ : Ctx S} {sort : S.Srt}
+def certifiesRowNone (fuel : Nat) {Γ : Ctx S} {sort : S.Srt}
     (problem : EquationStore (Term (signature S captures) Γ sort))
     (row : ContextualStoredRows.Row locals captures Γ sort) (pattern : Term (signature S captures) Γ sort) : Bool :=
   match ContextualFrameWorklist.run fuel (ContextualSelectionViews.source locals captures)
@@ -104,41 +104,41 @@ def certifiesRowAbsence (fuel : Nat) {Γ : Ctx S} {sort : S.Srt}
   | .refuted _ => true
   | .residual _ => false
 
-theorem certifiesRowAbsence_sound (fuel : Nat) {Γ : Ctx S} {sort : S.Srt}
+theorem certifiesRowNone_sound (fuel : Nat) {Γ : Ctx S} {sort : S.Srt}
     (problem : EquationStore (Term (signature S captures) Γ sort))
     (row : ContextualStoredRows.Row locals captures Γ sort) (pattern : Term (signature S captures) Γ sort)
-    (accepted : certifiesRowAbsence locals captures fuel problem row pattern = true)
+    (accepted : certifiesRowNone locals captures fuel problem row pattern = true)
     (candidate : Assignment captures next) (solved : ContextualFrameUnifier.Models candidate problem) :
     ¬ Matches locals candidate (instantiate candidate pattern) row := by
   intro matched
   cases computed : ContextualFrameWorklist.run fuel (ContextualSelectionViews.source locals captures)
       (observedJoint locals captures problem row pattern) with
-  | residual update => simp only [certifiesRowAbsence, computed, Bool.false_eq_true] at accepted
+  | residual update => simp only [certifiesRowNone, computed, Bool.false_eq_true] at accepted
   | refuted impossible =>
       obtain ⟨Later, later, combined, jointSolved⟩ :=
         match_gives_joint_model locals captures candidate problem row pattern solved matched
       exact impossible later combined (observed_joint_models locals captures problem row pattern combined jointSolved)
 
-def certifiesAbsence [DecidableEq O] (fuel : Nat) {Γ : Ctx S} {sort : S.Srt}
+def certifiesNone [DecidableEq O] (fuel : Nat) {Γ : Ctx S} {sort : S.Srt}
     (problem : EquationStore (Term (signature S captures) Γ sort))
     (rows : O → ContextualStoredRows.Row locals captures Γ sort) (world : Finset O)
     (pattern : Term (signature S captures) Γ sort) : Bool :=
-  decide (∀ occurrence ∈ world, certifiesRowAbsence locals captures fuel problem (rows occurrence) pattern = true)
+  decide (∀ occurrence ∈ world, certifiesRowNone locals captures fuel problem (rows occurrence) pattern = true)
 
-theorem certifiesAbsence_sound [DecidableEq O] (fuel : Nat) {Γ : Ctx S} {sort : S.Srt}
+theorem certifiesNone_sound [DecidableEq O] (fuel : Nat) {Γ : Ctx S} {sort : S.Srt}
     (problem : EquationStore (Term (signature S captures) Γ sort))
     (rows : O → ContextualStoredRows.Row locals captures Γ sort) (world : Finset O)
     (pattern : Term (signature S captures) Γ sort)
-    (accepted : certifiesAbsence locals captures fuel problem rows world pattern = true) :
-    ContextualGuardSemantics.Ask locals problem rows world (.absent pattern) := by
+    (accepted : certifiesNone locals captures fuel problem rows world pattern = true) :
+    ContextualGuardSemantics.Ask locals problem rows world (.predicate .none pattern) := by
   intro Later later candidate solved occurrence present
   have all := of_decide_eq_true accepted
-  exact certifiesRowAbsence_sound locals captures fuel problem (rows occurrence) pattern
+  exact certifiesRowNone_sound locals captures fuel problem (rows occurrence) pattern
     (all occurrence present) candidate solved
 
 theorem zero_fuel_never_certifies_a_row {Γ : Ctx S} {sort : S.Srt}
     (problem : EquationStore (Term (signature S captures) Γ sort))
     (row : ContextualStoredRows.Row locals captures Γ sort) (pattern : Term (signature S captures) Γ sort) :
-    certifiesRowAbsence locals captures 0 problem row pattern = false := rfl
+    certifiesRowNone locals captures 0 problem row pattern = false := rfl
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualGuardRefutation

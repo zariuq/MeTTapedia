@@ -806,12 +806,14 @@ def graphProfile : CollectionRootSearch.Profile reachabilityPlan :=
 
 def petriCoverage : CollectionRootSearch.CoverageProfile petriPlan :=
   ⟨petriProfile, fun declaration member => CollectionRootSearch.canonicalRuleCheck_sound
-    (List.all_eq_true.mp (show petriPlan.rules.all CollectionRootSearch.canonicalRuleCheck = true by cbv)
+    (List.all_eq_true.mp (show petriPlan.rules.all
+      (CollectionRootSearch.canonicalRuleCheck (GeneralPlanEnvironment.environment petriPlan).reflection) = true by cbv)
       declaration member), by cbv, by cbv⟩
 
 def graphCoverage : CollectionRootSearch.CoverageProfile reachabilityPlan :=
   ⟨graphProfile, fun declaration member => CollectionRootSearch.canonicalRuleCheck_sound
-    (List.all_eq_true.mp (show reachabilityPlan.rules.all CollectionRootSearch.canonicalRuleCheck = true by cbv)
+    (List.all_eq_true.mp (show reachabilityPlan.rules.all
+      (CollectionRootSearch.canonicalRuleCheck (GeneralPlanEnvironment.environment reachabilityPlan).reflection) = true by cbv)
       declaration member), by cbv, by cbv⟩
 
 #guard (CollectionRootSearch.coverageProfile? petriPlan).isSome
@@ -831,11 +833,11 @@ example : CollectionRootSearch.checkSpineOrder [.bvar 1, .bvar 1] = true := by d
 private def firstPetriDeclaration : GeneralExecutionAdmission.RulePlan :=
   petriPlan.rules[0]'(by cbv)
 
-example : CollectionRootSearch.canonicalRuleCheck
+example : CollectionRootSearch.canonicalRuleCheck .empty
     { firstPetriDeclaration with authored := { firstPetriDeclaration.authored with
       left := .collection .hashSet [.collection .hashSet [] none] none } } = false := by cbv
 
-example : CollectionRootSearch.canonicalRuleCheck
+example : CollectionRootSearch.canonicalRuleCheck .empty
     { firstPetriDeclaration with authored := { firstPetriDeclaration.authored with
       premises := [.relationQuery "requires-service" []] } } = false := by cbv
 
@@ -2061,11 +2063,11 @@ theorem two_route_source_key_eventually_published {source : Pattern} {original :
     (List.fst_mem_of_mem_zipIdx valid.1.1) original.job.site.focusBound original.job.ordinal
   have bounded : StructuralDescent.eventsDepth original.premiseHistory ≤ 0 := by
     rw [valid.2.1.collection_guards_history_depth (GeneralRuleJobs.Job.selected_rule valid.1)
-      (GeneralRuleJobs.Job.selected_specification valid.1) fragment.2]
+      (GeneralRuleJobs.Job.selected_specification valid.1) fragment.2.1]
   obtain ⟨work, packet, receipt, logged, finished, licensed, _, _, completed,
     history, ordinal, declaration, _, _, _⟩ :=
     CollectionOccurrenceMachine.receipt_eventually_published_with_bindings
-      valid fragment.1 fragment.2 0 bounded
+      valid fragment.2.2 fragment.1 fragment.2.1 0 bounded
   have permissions : twoRoutePlan.permissions.sites = .rootOnly := rfl
   have packetLicense := licensed.1.2
   have sourceLicense := valid.1.2

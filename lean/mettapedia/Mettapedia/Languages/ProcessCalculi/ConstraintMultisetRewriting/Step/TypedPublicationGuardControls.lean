@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Programmi
 /-!
 # Publication does not erase guard or equality boundaries
 
-The actual dependent absence controls retain their verdicts. Counting uses
+The actual dependent none query controls retain their verdicts. Counting uses
 the complete present region; adding a matching occurrence changes admission.
 Extensional evidence is retained as evidence and does not become a new
 definitional equation of the intensional frame.
@@ -21,27 +21,27 @@ open Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation
 open TypedEquality TypedEquality.Normalization TypedContextual
 open ContextualDependentEta DependentFull DependentFull.Controls
 
-abbrev absenceSchema := DependentProgram.QueryControls.absenceSchema
-abbrev absencePick := DependentProgram.QueryControls.absencePick
+abbrev noneSchema := DependentProgram.QueryControls.noneSchema
+abbrev nonePick := DependentProgram.QueryControls.nonePick
 
-theorem absence_outputs_typed : ∀ made ∈ absenceSchema.makes, made.WellTyped := by
+theorem none_outputs_typed : ∀ made ∈ noneSchema.makes, made.WellTyped := by
   intro made member
   cases member
 
-def absenceApplication (knowledge : EquationStore (TotalTerm triple)) :
+def noneApplication (knowledge : EquationStore (TotalTerm triple)) :
     Application setting.levels Nat (queryState knowledge) :=
-  FrameTyped.application absenceSchema absence_outputs_typed absencePick
+  FrameTyped.application noneSchema none_outputs_typed nonePick
 
-theorem unknown_type_still_refuses_absence :
-    ¬ (realizationStep setting.levels Nat).Admits (absenceApplication []) := by
+theorem unknown_type_still_refuses_none :
+    ¬ (realizationStep setting.levels Nat).Admits (noneApplication []) := by
   intro admitted
-  exact DependentProgram.QueryControls.unknown_type_refuses_absence
-    ((FrameTyped.admits_iff (state := queryState []) absenceSchema absence_outputs_typed absencePick).mp admitted)
+  exact DependentProgram.QueryControls.unknown_type_refuses_none
+    ((FrameTyped.admits_iff (state := queryState []) noneSchema none_outputs_typed nonePick).mp admitted)
 
-theorem function_type_still_admits_absence :
-    (realizationStep setting.levels Nat).Admits (absenceApplication [(xUniverse, arrowUniverse)]) :=
-  (FrameTyped.admits_iff (state := queryState [(xUniverse, arrowUniverse)]) absenceSchema absence_outputs_typed absencePick).mpr
-    DependentProgram.QueryControls.function_type_admits_absence
+theorem function_type_still_admits_none :
+    (realizationStep setting.levels Nat).Admits (noneApplication [(xUniverse, arrowUniverse)]) :=
+  (FrameTyped.admits_iff (state := queryState [(xUniverse, arrowUniverse)]) noneSchema none_outputs_typed nonePick).mpr
+    DependentProgram.QueryControls.function_type_admits_none
 
 def countedRow : TotalTerm point := ⟨groundType point, ⟨.var 0, Derivable.var 0⟩⟩
 

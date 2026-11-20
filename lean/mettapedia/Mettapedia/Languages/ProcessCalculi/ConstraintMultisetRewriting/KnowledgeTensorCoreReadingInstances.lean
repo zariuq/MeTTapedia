@@ -3,10 +3,10 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Knowledge
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.KnowledgeTensorCoreFirstOrderIdentities
 
 /-!
-# The two steps of the calculus have zoned readings
+# The first-order step and the binding-aware helper step have zoned readings
 
 The theorem of `KnowledgeTensorCoreReading` is stated for an arbitrary step with a zoned reading.
-Both steps of the calculus have one.
+Both of these steps have one.
 
 * `FirstOrder.identityReading`: the first-order step, read on occurrence identities at one frame.
   Good knowledge is a nonempty set of solutions; a good state has a consistent store.

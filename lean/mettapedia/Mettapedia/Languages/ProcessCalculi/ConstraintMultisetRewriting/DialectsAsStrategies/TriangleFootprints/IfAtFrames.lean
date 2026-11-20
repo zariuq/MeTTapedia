@@ -17,7 +17,7 @@ value).
 * `fine_branch_function_gen`: `IfFinishes.fine_branch_function` with the operator's acceptance and
   renewal as hypotheses;
 * `branch_runs_at`: every run of `(if b y n)` under `%Undefined%` at such a frame, under any
-  continuation fine on the taken branch, finishes (H6's relation `Fine`).
+  continuation fine on the taken branch, finishes (the relation `EveryRunFinishes.Fine`).
 
 ## Controls
 

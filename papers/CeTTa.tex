@@ -4670,9 +4670,9 @@ with decoding only for surviving bindings and native fallback whenever the
 declared observer cannot be preserved.
 
 \paragraph{Verified runtime contracts.}
-Recent Lean work extends the backend correctness story with three new contract files:
+Recent Lean work extends the backend correctness story with these results:
 \begin{itemize}
-\item \code{CeTTaRuntimeContracts.lean} (20 theorems): canonicalization injectivity and BEq preservation (\code{term\_canon.c}), search-context save/rollback correctness (\code{search\_machine.c}), effect classification safety (\code{runtime\_effect\_classes.json}), and profile hierarchy (\code{session.c}).  Each theorem maps to a concrete refactoring risk it reduces.
+\item \code{CoReferencePreservation.lean} and \code{VariantQueryCorrectness.lean}: a canonicalization is an injective variable renaming, so it preserves co-reference and \code{==}, and variant-equivalent queries share their answers; \code{term\_canon.c} is tested against these laws.
 \item \code{IncrementalTableSemantics.lean} (15 theorems): specifies partial-table soundness, answer monotonicity, and completion for future tabling in \code{table\_store.c}.  Any correct implementation must satisfy \code{TableEntry.Sound} (partial reads are genuine) and \code{TableEntry.Exact} (completed tables equal \code{queryEquations}).
 \item \code{ProducerChoicePoint.lean} (10 theorems): formalizes the search machine's save, rollback and nested choice-point protocol over combined bindings and scratch state.
 \end{itemize}

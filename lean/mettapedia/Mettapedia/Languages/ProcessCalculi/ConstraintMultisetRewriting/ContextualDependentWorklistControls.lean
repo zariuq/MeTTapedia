@@ -154,7 +154,7 @@ theorem two_rounds_fragment :
       run step twoRounds larger = run step twoRounds fuel ∧
       ((∃ state finished, run step twoRounds larger = .solved state finished ∧
           (frames setting.levels).Principal twoRounds state.answer) ∨
-        (∃ absent, run step twoRounds larger = .refuted absent)) :=
+        (∃ missing, run step twoRounds larger = .refuted missing)) :=
   (decidedFragment rigid TowerModel.facts TowerModel.complete TowerModel.roots TowerModel.heads
     TowerModel.algebra ContextualDependentFlex.Controls.declarations_formed
     ExecutableTowerChoices.choices ConversionControls.reducer 16).decided

@@ -66,7 +66,9 @@ theorem NameValue.typed {depth : Nat} (name : NameValue depth) :
       apply NameWellSorted.bvar
       simp [bounds, rhoReflectivePresentation, index.isLt]
   | atom label | reserved label => exact .fvar rfl
-  | allocated index => exact .quote ((seedCode_typed rhoAtomicNameContext index).weakenBoundRight _)
+  | allocated index =>
+      exact NameWellSorted.quoteOfSafe ((seedCode_typed rhoAtomicNameContext index).weakenBoundRight _)
+        (seedCode_safe index 0)
 
 theorem NameValue.safe {depth : Nat} (name : NameValue depth) :
     binderSafeAt "NQuote" depth name.term = true := by
@@ -80,6 +82,17 @@ theorem NameValue.normalized {depth : Nat} (name : NameValue depth) :
   cases name with
   | bound index | atom index | reserved index => rfl
   | allocated index => exact allocatedName_normalized index
+
+theorem NameValue.literal {depth : Nat} (name : NameValue depth) : Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral rhoReflectivePresentation name.term = true := by
+  cases name with
+  | bound index | atom index | reserved index => rfl
+  | allocated index => exact allocatedName_literal index
+
+theorem NameValue.payload_literal {depth : Nat} (name : NameValue depth) :
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral rhoReflectivePresentation name.payload = true := by
+  cases name with
+  | bound index | atom index | reserved index => rfl
+  | allocated index => exact seedCode_literal index
 
 theorem NameValue.payload_typed {depth : Nat} (name : NameValue depth) :
     ProcWellSorted rhoReflectivePresentation rhoAtomicNameContext (bounds depth) name.payload := by
@@ -118,6 +131,7 @@ def NameValue.channel (name : NameValue 0) : Channel rhoAtomicNameContext where
   typed := name.typed
   safe := name.safe
   normalized := name.normalized
+  literal := name.literal
 
 def reservedChannel (channel : Reserved) : Channel rhoAtomicNameContext :=
   (NameValue.reserved channel : NameValue 0).channel
@@ -128,6 +142,8 @@ structure Code (depth : Nat) where
   typed : ProcWellSorted rhoReflectivePresentation rhoAtomicNameContext (bounds depth) term
   safe : binderSafeAt "NQuote" depth term = true
   normalized : semanticNormalizeProc term = term
+  /-- Its quotations expose a drop only literally. -/
+  literal : Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral rhoReflectivePresentation term = true
 
 namespace Code
 
@@ -136,6 +152,7 @@ def zero (depth : Nat) : Code depth where
   typed := .unit
   safe := rfl
   normalized := rfl
+  literal := rfl
 
 def par {depth : Nat} (first second : Code depth) : Code depth where
   term := parallel [first.term, second.term]
@@ -143,6 +160,7 @@ def par {depth : Nat} (first second : Code depth) : Code depth where
   safe := by simp [binderSafeAt, binderSafeListAt, first.safe, second.safe]
   normalized := by simp [semanticNormalizeProc, semanticNormalizeProcList,
     first.normalized, second.normalized]
+  literal := by simp [first.literal, second.literal]
 
 def triple {depth : Nat} (first second third : Code depth) : Code depth where
   term := parallel [first.term, second.term, third.term]
@@ -150,18 +168,21 @@ def triple {depth : Nat} (first second third : Code depth) : Code depth where
   safe := by simp [binderSafeAt, binderSafeListAt, first.safe, second.safe, third.safe]
   normalized := by simp [semanticNormalizeProc, semanticNormalizeProcList,
     first.normalized, second.normalized, third.normalized]
+  literal := by simp [first.literal, second.literal, third.literal]
 
 def emit {depth : Nat} (channel : NameValue depth) (payload : Code depth) : Code depth where
   term := send channel.term payload.term
   typed := .output channel.typed payload.typed
   safe := by simp [binderSafeAt, binderSafeListAt, channel.safe, payload.safe]
   normalized := by simp [semanticNormalizeProc, channel.normalized, payload.normalized]
+  literal := by simp [channel.literal, payload.literal]
 
 def datum {depth : Nat} (name : NameValue depth) : Code depth where
   term := name.payload
   typed := name.payload_typed
   safe := name.payload_safe
   normalized := name.payload_normalized
+  literal := name.payload_literal
 
 def sendName {depth : Nat} (channel datum : NameValue depth) : Code depth :=
   emit channel (Code.datum datum)
@@ -171,6 +192,7 @@ def listen {depth : Nat} (channel : NameValue depth) (body : Code (depth + 1)) :
   typed := .input channel.typed (by simpa [bounds, List.replicate_succ, rhoReflectivePresentation] using body.typed)
   safe := by simpa [binderSafeAt, binderSafeListAt, channel.safe] using body.safe
   normalized := by simp [semanticNormalizeProc, channel.normalized, body.normalized]
+  literal := by simp [channel.literal, body.literal]
 
 /-- Allocate one fresh name and bind it in the supplied scoped body. -/
 def reserve {depth : Nat} (body : Code (depth + 1)) : Code depth :=
@@ -181,6 +203,7 @@ def handler (body : Code 1) : Handler rhoAtomicNameContext where
   typed := body.typed
   safe := body.safe
   normalized := body.normalized
+  literal := body.literal
 
 end Code
 

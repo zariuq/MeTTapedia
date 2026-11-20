@@ -126,16 +126,16 @@ structure Fragment : Prop where
 
 variable {A label offers}
 
-theorem footprint_eq {f : Firing T S O} (noQueries : f.queries = []) (σ : S) :
-    f.footprintAt σ = f.selection.commit (T := T) := by
-  unfold Firing.footprintAt PredicateQueryAdmission.commit
+theorem footprint_eq {f : Firing T S O} (noQueries : f.queries = []) (σ : S) (C : Configuration T O) :
+    f.footprintAt label σ C = f.selection.commit (T := T) := by
+  unfold Firing.footprintAt
   rw [noQueries]
-  rfl
+  exact PredicateQueryAdmission.regionCommit_nil
 
 theorem Fragment.trace (fragment : Fragment label offers) (σ : S) {ℓ ℓ' : L} {f g : Firing T S O}
     (offeredF : offers ℓ f) (offeredG : offers ℓ' g) (apart : f ≠ g) :
     TraceIndependent label (f.selection.commit (T := T)) (g.selection.commit (T := T)) := by
-  have := (fragment.independent ℓ ℓ' f g offeredF offeredG apart).2.2 σ
+  have := (fragment.independent ℓ ℓ' f g offeredF offeredG apart).2.2 σ ⟨[],∅⟩
   rwa [footprint_eq (fragment.ground _ _ offeredF).queries,
     footprint_eq (fragment.ground _ _ offeredG).queries] at this
 
@@ -276,7 +276,7 @@ theorem not_fragment : ¬ Fragment (S := S) (label t) (offers t) := by
     have := congrArg (fun f : AnnotatedRuns.Firing T S Site => f.selection.made) same
     simp [aQb, aQc] at this
   have independent := fragment.independent _ _ _ _ ⟨mem_aQb t, rfl⟩ ⟨mem_aQc t, rfl⟩ distinct
-  have trace := independent.2.2 A.identity
+  have trace := independent.2.2 A.identity ⟨[],∅⟩
   exact trace.1.1 (.inl (of_decide_eq_false rfl))
 
 end Pair

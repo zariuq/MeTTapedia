@@ -99,13 +99,13 @@ theorem local_grows (extension : NeedLocalSteps.Extension O L R U V F N E)
   | returned result stack => exact referenceCase (by simpa only [NeedLocalSteps.step, control] using selected)
   | halted result => exact referenceCase (by simpa only [NeedLocalSteps.step, control] using selected)
 
-theorem common_extension_index (prefix common : List Nat) (i j : Nat)
-    (left : prefix ++ [i] <+: common) (right : prefix ++ [j] <+: common) : i = j := by
+theorem common_extension_index (base common : List Nat) (i j : Nat)
+    (left : base ++ [i] <+: common) (right : base ++ [j] <+: common) : i = j := by
   obtain ⟨suffix, left⟩ := left
   obtain ⟨tail, right⟩ := right
-  have same : prefix ++ (i :: suffix) = prefix ++ (j :: tail) := by
+  have same : base ++ (i :: suffix) = base ++ (j :: tail) := by
     simpa only [List.append_assoc, List.singleton_append] using left.trans right.symm
-  exact (List.cons.inj (List.append_left_cancel same)).1
+  exact (List.cons.inj (List.append_cancel_left same)).1
 
 theorem laws (extension : NeedLocalSteps.Extension O L R U V F N E)
     (initial : Machine O L R U V F N E) :

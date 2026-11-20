@@ -7,8 +7,9 @@ import Mettapedia.Logic.LP.TermEquality
 # Executable certain-check admission for the first-order profile
 
 The existing total occurs-checked unifier decides compatibility with each
-candidate occurrence. Equality, absence and exact counts are accepted exactly
-when the equation store is consistent and the check holds in every model.
+candidate occurrence. Equality, predicate queries and exact counts are accepted
+exactly when the equation store is consistent and the check holds in every model.
+`any` is read at the principal answer; `none` needs the possible region.
 Counts concern physical identities, without an independence assumption.
 
 A false result denies this certain-check admission. It may represent a
@@ -66,7 +67,8 @@ def acceptsCertainCheck (problem : EquationStore (Term signature)) (label : O �
   | none => false
   | some answer => match check with
     | .equal left right => decide (answer.applyTerm left = answer.applyTerm right)
-    | .absent pattern => decide (possible problem label world pattern = ∅)
+    | .predicate .any pattern => decide (certain answer label world pattern).Nonempty
+    | .predicate .none pattern => decide (possible problem label world pattern = ∅)
     | .count pattern number => decide ((certain answer label world pattern).card = number ∧
         possible problem label world pattern = certain answer label world pattern)
 
@@ -89,9 +91,19 @@ theorem accepts_iff (problem : EquationStore (Term signature)) (label : O → Te
           have interface := SubstitutionAction.Principal.on A principal [left, right]
           exact (PrincipalCheckRegions.equal_iff_principal_answer A interface left right
             (by simp) (by simp)).symm
-      | absent pattern =>
-          rw [decide_eq_true_eq, possible_eq]
-          exact (PrincipalCheckRegions.absent_iff_possible_empty A problem label world pattern).symm
+      | predicate quantifier pattern =>
+          have interface := SubstitutionAction.Principal.on A principal (pattern :: world.toList.map label)
+          have values : ∀ occurrence ∈ world, label occurrence ∈ pattern :: world.toList.map label :=
+            fun occurrence member =>
+              List.mem_cons_of_mem _ (List.mem_map.mpr ⟨occurrence, Finset.mem_toList.mpr member, rfl⟩)
+          cases quantifier with
+          | any =>
+              rw [decide_eq_true_eq, certain_eq]
+              exact (PrincipalCheckRegions.any_iff_principal_nonempty A interface label world pattern
+                List.mem_cons_self values).symm
+          | none =>
+              rw [decide_eq_true_eq, possible_eq]
+              exact (PrincipalCheckRegions.none_iff_possible_empty A problem label world pattern).symm
       | count pattern number =>
           rw [decide_eq_true_eq, possible_eq, certain_eq]
           have interface := SubstitutionAction.Principal.on A principal (pattern :: world.toList.map label)
@@ -114,14 +126,14 @@ theorem possible_covers (problem : EquationStore (Term signature)) (label : O �
   subst equation
   exact same
 
-/-- A covered restriction preserves the actual executable absence verdict,
+/-- A covered restriction preserves the actual executable none verdict,
 including its consistency check. Partial unqualified scans get no such law. -/
-theorem absent_accepts_iff_of_covered (problem : EquationStore (Term signature))
+theorem none_accepts_iff_of_covered (problem : EquationStore (Term signature))
     (label : O → Term signature) (visible world : Finset O) (pattern : Term signature)
     (included : visible ⊆ world)
     (covered : Check.CoversMatches A problem label visible world pattern) :
-    acceptsCertainCheck problem label visible (.absent pattern) = true ↔
-      acceptsCertainCheck problem label world (.absent pattern) = true := by
-  rw [accepts_iff, accepts_iff, Check.entails_absent_iff_of_covered A included covered]
+    acceptsCertainCheck problem label visible (.predicate .none pattern) = true ↔
+      acceptsCertainCheck problem label world (.predicate .none pattern) = true := by
+  rw [accepts_iff, accepts_iff, Check.entails_none_iff_of_covered A included covered]
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.FirstOrderChecks

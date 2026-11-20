@@ -56,19 +56,21 @@ section Answers
 
 variable {Head : Type}
 
-/-- **An answer** of a call: a normal form its firings reach. -/
+/-- **An answer** of a call: a normal form that the package's reduction reaches from it (rows fired at
+any position of the term, not runs of the step). -/
 def Answer (R : Rules Head) {n : Nat} (t v : Tm Head n) : Prop :=
   StepStar R t v ∧ ConstructorSystem.Normal R v
 
-/-- Firings are conversions. -/
+/-- Steps of the package's reduction are conversions. -/
 theorem conv_of_stepStar {R : Rules Head} {n : Nat} {t u : Tm Head n} (steps : StepStar R t u) :
     Conv R.headEq t u R.computation := by
   induction steps with
   | refl => exact .refl _
   | tail _ step ih => exact .trans _ _ _ ih (.rel _ _ step)
 
-/-- **The two readings agree on Church–Rosser packages**: evaluating a call by firings reaches `v`
-exactly when `v` is a conversion normal form of the call. -/
+/-- **The two readings agree on Church–Rosser packages**: evaluating a call by the package's
+reduction reaches `v` exactly when `v` is a conversion normal form of the call. The reduction is the
+package's own term rewriting; runs of the step do not occur here. -/
 theorem answer_iff {R : Rules Head} (church : ChurchRosser R) {n : Nat} {t v : Tm Head n} :
     Answer R t v ↔ Conv R.headEq t v R.computation ∧ ConstructorSystem.Normal R v := by
   constructor

@@ -6,9 +6,9 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsA
 
 `EveryRunFinishes` shows that no run of HE's contextual machine on a term of
 `CompoundBindings.SettlesK` is stuck or infinite. Integer operations run only on HE's world
-machine, whose host service executes them. Here the same holds there, on the class of
-`NestedArithmetic.SettlesKG`: compound bindings, nested calls and integer operations in any
-position.
+machine, whose host service executes them. Here the same holds there, for every grounded table `T`
+(`GroundedTables.GroundedTable`), on the class of `NestedArithmetic.SettlesKG T`: compound bindings,
+nested calls and integer operations in any position, which the table answers.
 
 **`FineW x`**: `x` is final, or `x` can step on the world machine and every successor is `FineW`.
 
@@ -31,14 +31,14 @@ value and the batch frames then run deterministically.
   PeTTa's run yields from some fuel on.
 * `every_run_finishes_kg_with_he_lookups`: the same, together with the existence of a complete run,
   under both of HE's own lookups (historical list storage and scoped fresh variants). The class
-  contains the compound-binding class of `CompoundBindings` on HE's integer dispatch
+  contains the compound-binding class of `CompoundBindings` on the table's dispatch
   (`NestedArithmetic.settlesK_settlesKG`), so those programs get both lookups too.
 
 ## Controls
 
 * `Controls.quad_every_run_finishes`, `Controls.toInt_every_run_finishes`,
-  `Controls.arith_every_run_finishes` (positive): `(quad 4)`, `(toInt (S (S Z)))` and
-  `(+ (* 2 3) 1)` finish on every run with `16`, `2` and `7`.
+  `Controls.arith_every_run_finishes` (positive), on HE's table: `(quad 4)`, `(toInt (S (S Z)))`
+  and `(+ (* 2 3) 1)` finish on every run with `16`, `2` and `7`.
 * `Controls.host_steps_on_world` (the extension is needed): the host call `(+ 4 4)`, stuck on the
   contextual machine, steps on the world machine.
 * `Controls.loop_diverges_world` (negative): outside the class the world machine diverges; `(loop)`
@@ -70,39 +70,40 @@ open ServiceFootprints EntryToQuery AnswerBags EveryRun BoundVariables NestedArg
   NestedEveryRun NestedValues NestedCalls MarkedValues CompoundBindings GroundedTables GroundedRuns
   GroundedEveryRun NestedArithmetic EveryRunFinishes
 
-variable {minimal : Minimal.Services} {lookup : CastLookup} {policy : Policy}
+variable {minimal : Minimal.Services} {T : GroundedTable} {lookup : CastLookup} {policy : Policy}
 
 /-! ## The world machine on contextual configurations -/
 
-/-- One step of HE's world machine (read-only world, integer host service), read on contextual
-configurations. Every world configuration is one (`toFlat`). -/
-abbrev WStep (minimal : Minimal.Services) (lookup : CastLookup) (policy : Policy) (x y : HEConfig) :
-    Prop :=
-  WorldStep (fun (_ : Unit) => id) (services minimal) heDispatch lookup policy
+/-- One step of HE's world machine (read-only world, the host service of the table `T`), read on
+contextual configurations. Every world configuration is one (`toFlat`). -/
+abbrev WStep (minimal : Minimal.Services) (T : GroundedTable) (lookup : CastLookup) (policy : Policy)
+    (x y : HEConfig) : Prop :=
+  WorldStep (fun (_ : Unit) => id) (services minimal T) T.dispatch lookup policy
     (WorldConfiguration.ofReadOnly x) (WorldConfiguration.ofReadOnly y)
 
 /-- The contextual configuration of a world configuration. -/
 def toFlat (w : WorldConfiguration Space Unit) : HEConfig := ⟨w.context, w.control, w.stack, w.emitted⟩
 
-/-- Tasks the world machine runs exactly as the contextual machine does. -/
-def PlainTask : Task → Prop
-  | .call _ _ value .. => ¬ Minimal.HostCall heDispatch value.erase
-  | .invocation _ _ _ value .. => ¬ Minimal.HostCall heDispatch value.erase
+/-- Tasks the world machine with the table `T` runs exactly as the contextual machine does. -/
+def PlainTask (T : GroundedTable) : Task → Prop
+  | .call _ _ value .. => ¬ Minimal.HostCall T.dispatch value.erase
+  | .invocation _ _ _ value .. => ¬ Minimal.HostCall T.dispatch value.erase
   | .minimal .. => False
   | .capture .. => False
   | .restore .. => False
   | _ => True
 
-/-- Configurations the world machine runs exactly as the contextual machine does. -/
-def Plain : HEConfig → Prop
-  | ⟨_, .work task, _, _⟩ => PlainTask task
+/-- Configurations the world machine with the table `T` runs exactly as the contextual machine
+does. -/
+def Plain (T : GroundedTable) : HEConfig → Prop
+  | ⟨_, .work task, _, _⟩ => PlainTask T task
   | ⟨_, .returning _, .collect _ :: _, _⟩ => False
   | ⟨_, .returning _, _, _⟩ => True
   | ⟨_, .context .., _, _⟩ => False
 
 /-- **On a plain configuration every world step is a contextual step.** -/
-theorem world_core {x y : HEConfig} (plain : Plain x) (step : WStep minimal lookup policy x y) :
-    HEStep heDispatch lookup policy x y := by
+theorem world_core {x y : HEConfig} (plain : Plain T x) (step : WStep minimal T lookup policy x y) :
+    HEStep T.dispatch lookup policy x y := by
   obtain ⟨space, control, stack, emitted⟩ := x
   obtain ⟨space', control', stack', emitted'⟩ := y
   dsimp only [WStep, WorldConfiguration.ofReadOnly] at step
@@ -120,11 +121,11 @@ theorem world_core {x y : HEConfig} (plain : Plain x) (step : WStep minimal look
 
 /-- A call of a head the host does not execute is plain. -/
 theorem plain_call {atoms : List Atom} {f : String} {vals : List Atom}
-    (head : NodeHead heDispatch atoms f) {space : Space} {live : List Atom} {scope : List String}
+    (head : NodeHead T.dispatch atoms f) {space : Space} {live : List Atom} {scope : List String}
     {value : Entry.Value} {expected : Atom} {activation : Frame} {stack : List Continuation}
     {emitted : List Result} (erased : value.erase = .expression (.symbol f :: vals)) :
-    Plain ⟨space, .work (.call live scope value expected activation), stack, emitted⟩ := by
-  show ¬ Minimal.HostCall heDispatch value.erase
+    Plain T ⟨space, .work (.call live scope value expected activation), stack, emitted⟩ := by
+  show ¬ Minimal.HostCall T.dispatch value.erase
   rintro ⟨operator, arguments, shaped, executable⟩
   rw [erased] at shaped
   simp only [Atom.expression.injEq, List.cons.injEq] at shaped
@@ -135,58 +136,58 @@ theorem plain_call {atoms : List Atom} {f : String} {vals : List Atom}
 
 /-- **Every world run from `x` finishes**: `x` is final, or `x` can step and every successor
 finishes. -/
-inductive FineW (minimal : Minimal.Services) (lookup : CastLookup) (policy : Policy) :
-    HEConfig → Prop
+inductive FineW (minimal : Minimal.Services) (T : GroundedTable) (lookup : CastLookup)
+    (policy : Policy) : HEConfig → Prop
   | final {space : Space} {emitted : List Result} :
-      FineW minimal lookup policy ⟨space, .returning [], [], emitted⟩
-  | step {x : HEConfig} : (∃ y, WStep minimal lookup policy x y) →
-      (∀ y, WStep minimal lookup policy x y → FineW minimal lookup policy y) →
-      FineW minimal lookup policy x
+      FineW minimal T lookup policy ⟨space, .returning [], [], emitted⟩
+  | step {x : HEConfig} : (∃ y, WStep minimal T lookup policy x y) →
+      (∀ y, WStep minimal T lookup policy x y → FineW minimal T lookup policy y) →
+      FineW minimal T lookup policy x
 
 theorem final_no_stepW {space : Space} {emitted : List Result} {y : HEConfig} :
-    ¬ WStep minimal lookup policy ⟨space, .returning [], [], emitted⟩ y := by
+    ¬ WStep minimal T lookup policy ⟨space, .returning [], [], emitted⟩ y := by
   intro step
   cases world_core (by trivial) step with
   | internal l => cases l
 
-theorem FineW.next {x y : HEConfig} (fine : FineW minimal lookup policy x)
-    (step : WStep minimal lookup policy x y) : FineW minimal lookup policy y := by
+theorem FineW.next {x y : HEConfig} (fine : FineW minimal T lookup policy x)
+    (step : WStep minimal T lookup policy x y) : FineW minimal T lookup policy y := by
   cases fine with
   | final => exact absurd step final_no_stepW
   | step _ all => exact all y step
 
 /-- **No infinite world run.** -/
-theorem FineW.acc_world {x : HEConfig} (fine : FineW minimal lookup policy x) :
-    Acc (fun b a => WorldStep (fun (_ : Unit) => id) (services minimal) heDispatch lookup policy a b)
+theorem FineW.acc_world {x : HEConfig} (fine : FineW minimal T lookup policy x) :
+    Acc (fun b a => WorldStep (fun (_ : Unit) => id) (services minimal T) T.dispatch lookup policy a b)
       (WorldConfiguration.ofReadOnly x) := by
   induction fine with
   | final =>
       exact Acc.intro _ fun w step =>
-        absurd (show WStep minimal lookup policy _ (toFlat w) from step) final_no_stepW
+        absurd (show WStep minimal T lookup policy _ (toFlat w) from step) final_no_stepW
   | step _ _ ih => exact Acc.intro _ fun w step => ih (toFlat w) step
 
 /-- Every world configuration reachable from a `FineW` one is `FineW`. -/
-theorem FineW.reaches_world {x : HEConfig} (fine : FineW minimal lookup policy x)
+theorem FineW.reaches_world {x : HEConfig} (fine : FineW minimal T lookup policy x)
     {w : WorldConfiguration Space Unit}
-    (path : WorldSteps (fun (_ : Unit) => id) (services minimal) heDispatch lookup policy
+    (path : WorldSteps (fun (_ : Unit) => id) (services minimal T) T.dispatch lookup policy
       (WorldConfiguration.ofReadOnly x) w) :
-    FineW minimal lookup policy (toFlat w) := by
+    FineW minimal T lookup policy (toFlat w) := by
   induction path with
   | refl => exact fine
   | @tail b c _ step ih => exact ih.next (y := toFlat c) step
 
 /-- **No stuck configuration.** -/
-theorem FineW.progress {x : HEConfig} (fine : FineW minimal lookup policy x) :
-    (∃ y, WStep minimal lookup policy x y) ∨
+theorem FineW.progress {x : HEConfig} (fine : FineW minimal T lookup policy x) :
+    (∃ y, WStep minimal T lookup policy x y) ∨
       ∃ (space : Space) (emitted : List Result), x = ⟨space, .returning [], [], emitted⟩ := by
   cases fine with
   | final => exact Or.inr ⟨_, _, rfl⟩
   | step moves _ => exact Or.inl moves
 
 /-- A plain configuration with one contextual successor is `FineW` when that successor is. -/
-theorem fineW_det {x y : HEConfig} (plain : Plain x) (moves : HEStep heDispatch lookup policy x y)
-    (only : ∀ z, HEStep heDispatch lookup policy x z → z = y) (next : FineW minimal lookup policy y) :
-    FineW minimal lookup policy x :=
+theorem fineW_det {x y : HEConfig} (plain : Plain T x) (moves : HEStep T.dispatch lookup policy x y)
+    (only : ∀ z, HEStep T.dispatch lookup policy x z → z = y) (next : FineW minimal T lookup policy y) :
+    FineW minimal T lookup policy x :=
   .step ⟨y, lift_step minimal moves⟩ fun z step => by
     rw [only z (world_core plain step)]
     exact next
@@ -194,9 +195,9 @@ theorem fineW_det {x y : HEConfig} (plain : Plain x) (moves : HEStep heDispatch 
 /-- **The world machine has every infinite run of the contextual machine**: well-foundedness of the
 world step relation from a configuration gives it for the contextual one. -/
 theorem acc_of_world_acc {x : HEConfig}
-    (acc : Acc (fun b a => WorldStep (fun (_ : Unit) => id) (services minimal) heDispatch lookup
+    (acc : Acc (fun b a => WorldStep (fun (_ : Unit) => id) (services minimal T) T.dispatch lookup
       policy a b) (WorldConfiguration.ofReadOnly x)) :
-    Acc (fun b a => HEStep heDispatch lookup policy a b) x := by
+    Acc (fun b a => HEStep T.dispatch lookup policy a b) x := by
   generalize same : WorldConfiguration.ofReadOnly x = w at acc
   induction acc generalizing x with
   | intro w _ ih =>
@@ -205,7 +206,7 @@ theorem acc_of_world_acc {x : HEConfig}
 
 /-- World runs keep the context. -/
 theorem context_fixed {x : HEConfig} {w : WorldConfiguration Space Unit}
-    (path : WorldSteps (fun (_ : Unit) => id) (services minimal) heDispatch lookup policy
+    (path : WorldSteps (fun (_ : Unit) => id) (services minimal T) T.dispatch lookup policy
       (WorldConfiguration.ofReadOnly x) w) : w.context = x.space := by
   induction path with
   | refl => rfl
@@ -218,59 +219,59 @@ section Frames
 variable {space : Space} {stack : List Continuation} {emitted : List Result}
 
 theorem fine_singletonW {R : List Result}
-    (next : FineW minimal lookup policy ⟨space, .returning (R.map Completed.tupleSingleton), stack,
+    (next : FineW minimal T lookup policy ⟨space, .returning (R.map Completed.tupleSingleton), stack,
       emitted⟩) :
-    FineW minimal lookup policy ⟨space, .returning R, .singleton :: stack, emitted⟩ :=
+    FineW minimal T lookup policy ⟨space, .returning R, .singleton :: stack, emitted⟩ :=
   fineW_det (by trivial) (.internal .singleton) (fun z step => by
     cases step with
     | internal l => cases l; rfl) next
 
 theorem fine_branches_frameW {live : List Atom} {scope : List String} {tail : List Entry.Value}
     {heads : List Result}
-    (next : FineW minimal lookup policy ⟨space, .work (.branches live scope tail heads), stack,
+    (next : FineW minimal T lookup policy ⟨space, .work (.branches live scope tail heads), stack,
       emitted⟩) :
-    FineW minimal lookup policy ⟨space, .returning heads, .branches live scope tail :: stack,
+    FineW minimal T lookup policy ⟨space, .returning heads, .branches live scope tail :: stack,
       emitted⟩ :=
   fineW_det (by trivial) (.internal .branches) (fun z step => by
     cases step with
     | internal l => cases l; rfl) next
 
 theorem fine_tupleTailW {head : Entry.Value} {R : List Result}
-    (next : FineW minimal lookup policy ⟨space, .returning (R.map (Completed.tuplePrepend head)),
+    (next : FineW minimal T lookup policy ⟨space, .returning (R.map (Completed.tuplePrepend head)),
       stack, emitted⟩) :
-    FineW minimal lookup policy ⟨space, .returning R, .tupleTail head :: stack, emitted⟩ :=
+    FineW minimal T lookup policy ⟨space, .returning R, .tupleTail head :: stack, emitted⟩ :=
   fineW_det (by trivial) (.internal .tupleTail) (fun z step => by
     cases step with
     | internal l => cases l; rfl) next
 
 theorem fine_appendW {remaining : Task} {R : List Result}
-    (next : FineW minimal lookup policy ⟨space, .work remaining, .prepend R :: stack, emitted⟩) :
-    FineW minimal lookup policy ⟨space, .returning R, .append remaining :: stack, emitted⟩ :=
+    (next : FineW minimal T lookup policy ⟨space, .work remaining, .prepend R :: stack, emitted⟩) :
+    FineW minimal T lookup policy ⟨space, .returning R, .append remaining :: stack, emitted⟩ :=
   fineW_det (by trivial) (.internal .append) (fun z step => by
     cases step with
     | internal l => cases l; rfl) next
 
 theorem fine_prependW {selected R : List Result}
-    (next : FineW minimal lookup policy ⟨space, .returning (selected ++ R), stack, emitted⟩) :
-    FineW minimal lookup policy ⟨space, .returning R, .prepend selected :: stack, emitted⟩ :=
+    (next : FineW minimal T lookup policy ⟨space, .returning (selected ++ R), stack, emitted⟩) :
+    FineW minimal T lookup policy ⟨space, .returning R, .prepend selected :: stack, emitted⟩ :=
   fineW_det (by trivial) (.internal .prepend) (fun z step => by
     cases step with
     | internal l => cases l; rfl) next
 
 theorem fine_calls_frameW {live : List Atom} {scope : List String} {expected : Atom}
     {rows : List Result}
-    (next : FineW minimal lookup policy ⟨space, .work (.calls live scope expected rows), stack,
+    (next : FineW minimal T lookup policy ⟨space, .work (.calls live scope expected rows), stack,
       emitted⟩) :
-    FineW minimal lookup policy ⟨space, .returning rows, .calls live scope expected :: stack,
+    FineW minimal T lookup policy ⟨space, .returning rows, .calls live scope expected :: stack,
       emitted⟩ :=
   fineW_det (by trivial) (.internal .calls) (fun z step => by
     cases step with
     | internal l => cases l; rfl) next
 
 theorem fine_diagnosticsW {errors : List Atom} {activation : Frame} {R : List Result}
-    (next : FineW minimal lookup policy ⟨space,
+    (next : FineW minimal T lookup policy ⟨space,
       .returning (R ++ Completed.diagnosticResults errors activation), stack, emitted⟩) :
-    FineW minimal lookup policy ⟨space, .returning R, .diagnostics errors activation :: stack,
+    FineW minimal T lookup policy ⟨space, .returning R, .diagnostics errors activation :: stack,
       emitted⟩ :=
   fineW_det (by trivial) (.internal .diagnostics) (fun z step => by
     cases step with
@@ -278,9 +279,9 @@ theorem fine_diagnosticsW {errors : List Atom} {activation : Frame} {R : List Re
 
 theorem fine_boundaryBatch_frameW {live : List Atom} {scope : List String} {caller : Option Atom}
     {site : Completed.Boundary} {rows : List Result}
-    (next : FineW minimal lookup policy ⟨space, .work (.boundaryBatch live scope caller site rows),
+    (next : FineW minimal T lookup policy ⟨space, .work (.boundaryBatch live scope caller site rows),
       stack, emitted⟩) :
-    FineW minimal lookup policy ⟨space, .returning rows,
+    FineW minimal T lookup policy ⟨space, .returning rows,
       .boundaryBatch live scope caller site :: stack, emitted⟩ :=
   fineW_det (by trivial) (.internal .boundaryBatch) (fun z step => by
     cases step with
@@ -288,9 +289,9 @@ theorem fine_boundaryBatch_frameW {live : List Atom} {scope : List String} {call
 
 /-- The publication frame: every answer is answerable, so all are kept. -/
 theorem fine_publishW {R : List Result} {original : Atom} (clean : ∀ r ∈ R, Answerable r.1.erase)
-    (next : FineW minimal lookup policy ⟨space,
+    (next : FineW minimal T lookup policy ⟨space,
       .returning (R.map (Completed.publishResult policy original)), stack, emitted⟩) :
-    FineW minimal lookup policy ⟨space, .returning R, .publish original :: stack, emitted⟩ := by
+    FineW minimal T lookup policy ⟨space, .returning R, .publish original :: stack, emitted⟩ := by
   have unchanged : R.map (Completed.readResult policy) = R :=
     map_fixed fun r member => HERuns.readResult_closed policy r (clean r member).closed
   have selected : Mettapedia.Machines.OrderedProtocol.Completion.SuccessPriorityRel
@@ -307,7 +308,7 @@ theorem fine_publishW {R : List Result} {original : Atom} (clean : ∀ r ∈ R, 
 
 /-- **The top level drains every batch.** -/
 theorem fine_topW : ∀ (R emitted : List Result),
-    FineW minimal lookup policy ⟨space, .returning R, [], emitted⟩
+    FineW minimal T lookup policy ⟨space, .returning R, [], emitted⟩
   | [], _ => .final
   | r :: rs, emitted => fineW_det (by trivial) .publish (fun z step => by
       cases step with
@@ -324,38 +325,38 @@ variable {space : Space} {stack : List Continuation} {emitted : List Result} {li
   {scope : List String}
 
 theorem fine_tuple_singletonW {v : Entry.Value} {activation : Frame}
-    (next : FineW minimal lookup policy ⟨space,
+    (next : FineW minimal T lookup policy ⟨space,
       .work (.atom live scope v Atom.undefinedType activation), .singleton :: stack, emitted⟩) :
-    FineW minimal lookup policy ⟨space, .work (.tuple live scope [v] activation), stack, emitted⟩ :=
+    FineW minimal T lookup policy ⟨space, .work (.tuple live scope [v] activation), stack, emitted⟩ :=
   fineW_det (by trivial) (.internal .tupleSingleton) (fun z step => by
     cases step with
     | internal l => cases l; rfl) next
 
 theorem fine_tuple_consW {head second : Entry.Value} {remaining : List Entry.Value}
     {activation : Frame}
-    (next : FineW minimal lookup policy ⟨space,
+    (next : FineW minimal T lookup policy ⟨space,
       .work (.atom (.expression ((second :: remaining).map Entry.Value.erase) :: live) scope head
         Atom.undefinedType activation), .branches live scope (second :: remaining) :: stack,
         emitted⟩) :
-    FineW minimal lookup policy ⟨space, .work (.tuple live scope (head :: second :: remaining)
+    FineW minimal T lookup policy ⟨space, .work (.tuple live scope (head :: second :: remaining)
       activation), stack, emitted⟩ :=
   fineW_det (by trivial) (.internal .tupleCons) (fun z step => by
     cases step with
     | internal l => cases l; rfl) next
 
 theorem fine_branches_nilW {tail : List Entry.Value}
-    (next : FineW minimal lookup policy ⟨space, .returning [], stack, emitted⟩) :
-    FineW minimal lookup policy ⟨space, .work (.branches live scope tail []), stack, emitted⟩ :=
+    (next : FineW minimal T lookup policy ⟨space, .returning [], stack, emitted⟩) :
+    FineW minimal T lookup policy ⟨space, .work (.branches live scope tail []), stack, emitted⟩ :=
   fineW_det (by trivial) (.internal .branchesNil) (fun z step => by
     cases step with
     | internal l => cases l; rfl) next
 
 theorem fine_branches_consW {tail : List Entry.Value} {head : Result} {heads : List Result}
     (clean : ¬ IsEmptyOrErrorRel head.1.erase)
-    (next : FineW minimal lookup policy ⟨space,
+    (next : FineW minimal T lookup policy ⟨space,
       .work (.tuple (head.1.erase :: live) scope tail head.2),
       .tupleTail head.1 :: .append (.branches live scope tail heads) :: stack, emitted⟩) :
-    FineW minimal lookup policy ⟨space, .work (.branches live scope tail (head :: heads)), stack,
+    FineW minimal T lookup policy ⟨space, .work (.branches live scope tail (head :: heads)), stack,
       emitted⟩ :=
   fineW_det (by trivial) (.internal (.branchesContinue clean)) (fun z step => by
     cases step with
@@ -365,24 +366,24 @@ theorem fine_branches_consW {tail : List Entry.Value} {head : Result} {heads : L
         | branchesContinue _ => rfl) next
 
 theorem fine_calls_nilW {expected : Atom}
-    (next : FineW minimal lookup policy ⟨space, .returning [], stack, emitted⟩) :
-    FineW minimal lookup policy ⟨space, .work (.calls live scope expected []), stack, emitted⟩ :=
+    (next : FineW minimal T lookup policy ⟨space, .returning [], stack, emitted⟩) :
+    FineW minimal T lookup policy ⟨space, .work (.calls live scope expected []), stack, emitted⟩ :=
   fineW_det (by trivial) (.internal .callsNil) (fun z step => by
     cases step with
     | internal l => cases l; rfl) next
 
 theorem fine_calls_consW {expected : Atom} {head : Result} {heads : List Result}
-    (next : FineW minimal lookup policy ⟨space, .work (.call live scope head.1 expected head.2),
+    (next : FineW minimal T lookup policy ⟨space, .work (.call live scope head.1 expected head.2),
       .append (.calls live scope expected heads) :: stack, emitted⟩) :
-    FineW minimal lookup policy ⟨space, .work (.calls live scope expected (head :: heads)), stack,
+    FineW minimal T lookup policy ⟨space, .work (.calls live scope expected (head :: heads)), stack,
       emitted⟩ :=
   fineW_det (by trivial) (.internal .callsCons) (fun z step => by
     cases step with
     | internal l => cases l; rfl) next
 
 theorem fine_equations_nilW {original : Entry.Value} {expected : Atom} {activation : Frame}
-    (next : FineW minimal lookup policy ⟨space, .returning [], stack, emitted⟩) :
-    FineW minimal lookup policy ⟨space,
+    (next : FineW minimal T lookup policy ⟨space, .returning [], stack, emitted⟩) :
+    FineW minimal T lookup policy ⟨space,
       .work (.equations live scope original expected activation []), stack, emitted⟩ :=
   fineW_det (by trivial) (.internal .equationsNil) (fun z step => by
     cases step with
@@ -390,8 +391,8 @@ theorem fine_equations_nilW {original : Entry.Value} {expected : Atom} {activati
 
 theorem fine_boundary_producerW {caller : Option Atom} {value : Entry.Value} {activation : Frame}
     (raw : ¬ Completed.FunctionPending policy value)
-    (next : FineW minimal lookup policy ⟨space, .returning [(value, activation)], stack, emitted⟩) :
-    FineW minimal lookup policy ⟨space,
+    (next : FineW minimal T lookup policy ⟨space, .returning [(value, activation)], stack, emitted⟩) :
+    FineW minimal T lookup policy ⟨space,
       .work (.boundary live scope caller .producer value activation), stack, emitted⟩ :=
   fineW_det (by trivial) (.internal (.boundaryProducerRaw raw)) (fun z step => by
     cases step with
@@ -401,8 +402,8 @@ theorem fine_boundary_producerW {caller : Option Atom} {value : Entry.Value} {ac
         | boundaryProducerFunction pending => exact absurd pending raw) next
 
 theorem fine_boundaryBatch_nilW {caller : Option Atom} {site : Completed.Boundary}
-    (next : FineW minimal lookup policy ⟨space, .returning [], stack, emitted⟩) :
-    FineW minimal lookup policy ⟨space, .work (.boundaryBatch live scope caller site []), stack,
+    (next : FineW minimal T lookup policy ⟨space, .returning [], stack, emitted⟩) :
+    FineW minimal T lookup policy ⟨space, .work (.boundaryBatch live scope caller site []), stack,
       emitted⟩ :=
   fineW_det (by trivial) (.internal .boundaryBatchNil) (fun z step => by
     cases step with
@@ -410,10 +411,10 @@ theorem fine_boundaryBatch_nilW {caller : Option Atom} {site : Completed.Boundar
 
 theorem fine_boundaryBatch_consW {caller : Option Atom} {site : Completed.Boundary} {head : Result}
     {heads : List Result}
-    (next : FineW minimal lookup policy ⟨space,
+    (next : FineW minimal T lookup policy ⟨space,
       .work (.boundary live scope caller site head.1 head.2),
       .append (.boundaryBatch live scope caller site heads) :: stack, emitted⟩) :
-    FineW minimal lookup policy ⟨space,
+    FineW minimal T lookup policy ⟨space,
       .work (.boundaryBatch live scope caller site (head :: heads)), stack, emitted⟩ :=
   fineW_det (by trivial) (.internal .boundaryBatchCons) (fun z step => by
     cases step with
@@ -421,9 +422,9 @@ theorem fine_boundaryBatch_consW {caller : Option Atom} {site : Completed.Bounda
 
 theorem fine_boundary_returnedW {caller : Option Atom} {original value : Entry.Value}
     {expected : Atom} {activation : Frame}
-    (next : FineW minimal lookup policy ⟨space,
+    (next : FineW minimal T lookup policy ⟨space,
       .work (.returned live scope original expected value activation), stack, emitted⟩) :
-    FineW minimal lookup policy ⟨space,
+    FineW minimal T lookup policy ⟨space,
       .work (.boundary live scope caller (.returned original expected) value activation), stack,
         emitted⟩ :=
   fineW_det (by trivial) (.internal .boundaryReturned) (fun z step => by
@@ -433,9 +434,9 @@ theorem fine_boundary_returnedW {caller : Option Atom} {original value : Entry.V
 theorem fine_returned_evaluateW {original value : Entry.Value} {expected : Atom}
     {activation : Frame}
     (notRefused : value.erase ≠ Atom.notReducible) (notStopped : ¬ IsEmptyOrErrorRel value.erase)
-    (next : FineW minimal lookup policy ⟨space,
+    (next : FineW minimal T lookup policy ⟨space,
       .work (.atom live scope value expected activation), stack, emitted⟩) :
-    FineW minimal lookup policy ⟨space,
+    FineW minimal T lookup policy ⟨space,
       .work (.returned live scope original expected value activation), stack, emitted⟩ :=
   fineW_det (by trivial) (.internal (.returnEvaluate notRefused notStopped)) (fun z step => by
     cases step with
@@ -448,10 +449,10 @@ theorem fine_returned_evaluateW {original value : Entry.Value} {expected : Atom}
 /-- The native boundary of an emitted value under a return demand. -/
 theorem fine_native_emitted_returnW {caller : Option Atom} {original value : Entry.Value}
     {expected : Atom} {activation : Frame}
-    (next : FineW minimal lookup policy ⟨space,
+    (next : FineW minimal T lookup policy ⟨space,
       .work (.boundary (expected :: live) scope (some original.erase) .producer value activation),
       .boundaryBatch live scope caller (.returned original expected) :: stack, emitted⟩) :
-    FineW minimal lookup policy ⟨space,
+    FineW minimal T lookup policy ⟨space,
       .work (.boundary live scope caller (.native original (some expected) .emitted) value
         activation), stack, emitted⟩ :=
   fineW_det (by trivial) (.internal .boundaryNativeEmittedReturn) (fun z step => by
@@ -462,43 +463,45 @@ end Tasks
 
 /-! ## The logical relation on the world machine -/
 
-/-- **Every world run from pending work on `v` finishes, with answers `L`.** -/
-def FineRunsW (minimal : Minimal.Services) (lookup : CastLookup) (policy : Policy)
-    (atoms : List Atom) (v : Entry.Value) (L : List Atom) : Prop :=
+/-- **Every world run with the table `T` from pending work on `v` finishes, with answers `L`.** -/
+def FineRunsW (minimal : Minimal.Services) (T : GroundedTable) (lookup : CastLookup)
+    (policy : Policy) (atoms : List Atom) (v : Entry.Value) (L : List Atom) : Prop :=
   ∀ (live : List Atom) (scope : List String) (activation : Frame) (stack : List Continuation)
     (emitted : List Result),
     (∀ R : List Result, R.map (fun r => r.1.erase) = L →
-      FineW minimal lookup policy ⟨Space.ofList atoms, .returning R, stack, emitted⟩) →
-    FineW minimal lookup policy ⟨Space.ofList atoms,
+      FineW minimal T lookup policy ⟨Space.ofList atoms, .returning R, stack, emitted⟩) →
+    FineW minimal T lookup policy ⟨Space.ofList atoms,
       .work (.atom live scope v Atom.undefinedType activation), stack, emitted⟩
 
-/-- **Every marked presentation of `t` runs finely to `L` on the world machine.** -/
-def FineEvalW (minimal : Minimal.Services) (lookup : CastLookup) (policy : Policy)
-    (atoms : List Atom) (t : Atom) (L : List Atom) : Prop :=
-  ∀ v : Entry.Value, v.erase = t → Marked heDispatch atoms v → FineRunsW minimal lookup policy atoms v L
+/-- **Every marked presentation of `t` runs finely to `L` on the world machine with the table
+`T`.** -/
+def FineEvalW (minimal : Minimal.Services) (T : GroundedTable) (lookup : CastLookup)
+    (policy : Policy) (atoms : List Atom) (t : Atom) (L : List Atom) : Prop :=
+  ∀ v : Entry.Value, v.erase = t → Marked T.dispatch atoms v → FineRunsW minimal T lookup policy atoms v L
 
-/-- **Every query of `(f vals)`, on every call value, runs finely to `A` on the world machine.** -/
-def FineQueryW (minimal : Minimal.Services) (lookup : CastLookup) (policy : Policy)
-    (atoms : List Atom) (f : String) (vals A : List Atom) : Prop :=
+/-- **Every query of `(f vals)`, on every call value, runs finely to `A` on the world machine with
+the table `T`.** -/
+def FineQueryW (minimal : Minimal.Services) (T : GroundedTable) (lookup : CastLookup)
+    (policy : Policy) (atoms : List Atom) (f : String) (vals A : List Atom) : Prop :=
   ∀ (live : List Atom) (scope : List String) (activation : Frame) (value : Entry.Value),
     value.erase = .expression (.symbol f :: vals) →
     ∀ (stack : List Continuation) (emitted : List Result),
       (∀ R : List Result, R.map (fun r => r.1.erase) = A →
-        FineW minimal lookup policy ⟨Space.ofList atoms, .returning R, stack, emitted⟩) →
-      FineW minimal lookup policy ⟨Space.ofList atoms,
+        FineW minimal T lookup policy ⟨Space.ofList atoms, .returning R, stack, emitted⟩) →
+      FineW minimal T lookup policy ⟨Space.ofList atoms,
         .work (.call live scope value Atom.undefinedType activation), stack, emitted⟩
 
 /-- **A data atom**: its cast is the only step, and every cast result is the atom. -/
 theorem fine_dataW (answers : AnswersUndefined lookup) (contract : LookupContract lookup)
     (atoms : List Atom) {d : Atom} (data : DataAtom d) :
-    FineEvalW minimal lookup policy atoms d [d] := by
+    FineEvalW minimal T lookup policy atoms d [d] := by
   intro v erased _ live scope activation stack emitted cont
   rw [value_of_data data erased]
   have entry : Entry.Rel policy.reentry (activation.read policy (Entry.Value.ofAtom d)).status
       (activation.read policy (Entry.Value.ofAtom d)).erase Atom.undefinedType .cast := by
     simp only [CompleteRun.read_data policy activation data, Entry.Value.erase_ofAtom, data.status]
     exact data.entry policy.reentry
-  refine .step ⟨_, lift_step minimal (CompleteRun.cast_step_frame (dispatch := heDispatch)
+  refine .step ⟨_, lift_step minimal (CompleteRun.cast_step_frame (dispatch := T.dispatch)
     (policy := policy) answers (Space.ofList atoms) data activation live scope stack emitted)⟩ ?_
   intro y step
   replace step := world_core (by trivial) step
@@ -507,7 +510,7 @@ theorem fine_dataW (answers : AnswersUndefined lookup) (contract : LookupContrac
       cases l with
       | delivered entered => cases Entry.functional entered entry
       | cast entered batch related =>
-          have derived : Completed.AtomRel (Space.ofList atoms) heDispatch lookup _ _ _ _ _ _
+          have derived : Completed.AtomRel (Space.ofList atoms) T.dispatch lookup _ _ _ _ _ _
               (policy := policy) := .cast entered batch related
           obtain ⟨after, rfl⟩ := data_source contract data derived
           exact cont _ (by simp)
@@ -522,7 +525,7 @@ theorem fine_heldW (atoms : List Atom) {children : List Entry.Value}
     (closed : ∀ name, ¬ Mettapedia.Languages.MeTTa.HE.Spec.Match.Merge.AtomOccurs
       (.expression (children.map Entry.Value.erase)) name)
     (notStopped : ¬ IsEmptyOrErrorRel (.expression (children.map Entry.Value.erase))) :
-    FineRunsW minimal lookup policy atoms (.expression .held children)
+    FineRunsW minimal T lookup policy atoms (.expression .held children)
       [.expression (children.map Entry.Value.erase)] := by
   intro live scope activation stack emitted cont
   have eraseV : (Entry.Value.expression .held children).erase =
@@ -557,16 +560,16 @@ theorem fine_branchesW (atoms : List Atom) {live : List Atom} {scope : List Stri
     (tailFine : ∀ (live' : List Atom) (activation : Frame) (stack : List Continuation)
       (emitted : List Result),
       (∀ R : List Result, R.map (fun r => r.1.erase) = Ts.map Atom.expression →
-        FineW minimal lookup policy ⟨Space.ofList atoms, .returning R, stack, emitted⟩) →
-      FineW minimal lookup policy ⟨Space.ofList atoms, .work (.tuple live' scope tail activation),
+        FineW minimal T lookup policy ⟨Space.ofList atoms, .returning R, stack, emitted⟩) →
+      FineW minimal T lookup policy ⟨Space.ofList atoms, .work (.tuple live' scope tail activation),
         stack, emitted⟩)
     (tailClean : ∀ c ∈ Ts, ∃ c0 cs, c = c0 :: cs ∧ Answerable c0) :
     ∀ (heads : List Result), (∀ h ∈ heads, Answerable h.1.erase) →
       ∀ (stack : List Continuation) (emitted : List Result),
         (∀ R : List Result, R.map (fun r => r.1.erase) =
             heads.flatMap (fun h => Ts.map fun c => Atom.expression (h.1.erase :: c)) →
-          FineW minimal lookup policy ⟨Space.ofList atoms, .returning R, stack, emitted⟩) →
-        FineW minimal lookup policy ⟨Space.ofList atoms, .work (.branches live scope tail heads),
+          FineW minimal T lookup policy ⟨Space.ofList atoms, .returning R, stack, emitted⟩) →
+        FineW minimal T lookup policy ⟨Space.ofList atoms, .work (.branches live scope tail heads),
           stack, emitted⟩
   | [], _, stack, emitted, cont => fine_branches_nilW (cont [] rfl)
   | h :: hs, clean, stack, emitted, cont => by
@@ -607,13 +610,13 @@ theorem fine_branchesW (atoms : List Atom) {live : List Atom} {scope : List Stri
 /-- **The tuple traversal of marked values**, for every successor. -/
 theorem fine_tupleW (atoms : List Atom) :
     ∀ (vs : List Entry.Value) (Ls : List (List Atom)), vs ≠ [] →
-      List.Forall₂ (fun v L => FineRunsW minimal lookup policy atoms v L ∧ ∀ a ∈ L, Answerable a)
+      List.Forall₂ (fun v L => FineRunsW minimal T lookup policy atoms v L ∧ ∀ a ∈ L, Answerable a)
         vs Ls →
       ∀ (live : List Atom) (scope : List String) (activation : Frame) (stack : List Continuation)
         (emitted : List Result),
         (∀ R : List Result, R.map (fun r => r.1.erase) = (combos Ls).map Atom.expression →
-          FineW minimal lookup policy ⟨Space.ofList atoms, .returning R, stack, emitted⟩) →
-        FineW minimal lookup policy ⟨Space.ofList atoms, .work (.tuple live scope vs activation),
+          FineW minimal T lookup policy ⟨Space.ofList atoms, .returning R, stack, emitted⟩) →
+        FineW minimal T lookup policy ⟨Space.ofList atoms, .work (.tuple live scope vs activation),
           stack, emitted⟩
   | [], _, nonempty, _ => absurd rfl nonempty
   | [v], Ls, _, related => by
@@ -689,12 +692,12 @@ theorem fine_callsW (atoms : List Atom) {live : List Atom} {scope : List String}
     (Q : List Atom → List Atom) :
     ∀ (rows : List Result),
       (∀ r ∈ rows, ∃ vals, r.1.erase = .expression (.symbol f :: vals) ∧
-        FineQueryW minimal lookup policy atoms f vals (Q vals)) →
+        FineQueryW minimal T lookup policy atoms f vals (Q vals)) →
       ∀ (stack : List Continuation) (emitted : List Result),
         (∀ R : List Result, R.map (fun r => r.1.erase) =
             rows.flatMap (fun r => Q (HENested.argsOf r.1.erase)) →
-          FineW minimal lookup policy ⟨Space.ofList atoms, .returning R, stack, emitted⟩) →
-        FineW minimal lookup policy ⟨Space.ofList atoms,
+          FineW minimal T lookup policy ⟨Space.ofList atoms, .returning R, stack, emitted⟩) →
+        FineW minimal T lookup policy ⟨Space.ofList atoms,
           .work (.calls live scope Atom.undefinedType rows), stack, emitted⟩
   | [], _, stack, emitted, cont => fine_calls_nilW (cont [] rfl)
   | r :: rs, queries, stack, emitted, cont => by
@@ -721,12 +724,12 @@ theorem fine_equationsW (atoms : List Atom) {live : List Atom} {scope : List Str
           (Entry.Value.ofAtom work.pattern) output.environment) →
       List.Forall₂ (fun work L => ∃ i, (∀ output : Frame, output.bindings = work.bindings →
           (output.read policy (Entry.Value.ofAtom work.body)).erase = i ∧
-          Marked heDispatch atoms (output.read policy (Entry.Value.ofAtom work.body))) ∧
-        FineEvalW minimal lookup policy atoms i L ∧ BodyFacts i) works Ls →
+          Marked T.dispatch atoms (output.read policy (Entry.Value.ofAtom work.body))) ∧
+        FineEvalW minimal T lookup policy atoms i L ∧ BodyFacts i) works Ls →
       ∀ (stack : List Continuation) (emitted : List Result),
         (∀ R : List Result, R.map (fun r => r.1.erase) = Ls.flatten →
-          FineW minimal lookup policy ⟨Space.ofList atoms, .returning R, stack, emitted⟩) →
-        FineW minimal lookup policy ⟨Space.ofList atoms,
+          FineW minimal T lookup policy ⟨Space.ofList atoms, .returning R, stack, emitted⟩) →
+        FineW minimal T lookup policy ⟨Space.ofList atoms,
           .work (.equations live scope original Atom.undefinedType activation works), stack, emitted⟩
   | [], Ls, _, related, stack, emitted, cont => by
       cases related
@@ -768,9 +771,9 @@ theorem fine_equationsW (atoms : List Atom) {live : List Atom} {scope : List Str
 /-- **A query with an empty region**: `callAbsent` is the only step, returning the call. -/
 theorem fine_query_absentW {atoms : List Atom}
     (program : ∀ row ∈ atoms, RegionsWithVariables.ConsFreeHeads row) {f : String}
-    {vals : List Atom} (head : NodeHead heDispatch atoms f) (valsClean : ∀ v ∈ vals, Answerable v)
+    {vals : List Atom} (head : NodeHead T.dispatch atoms f) (valsClean : ∀ v ∈ vals, Answerable v)
     (empty : regionBodies atoms f vals = []) :
-    FineQueryW minimal lookup policy atoms f vals [.expression (.symbol f :: vals)] := by
+    FineQueryW minimal T lookup policy atoms f vals [.expression (.symbol f :: vals)] := by
   intro live scope activation value erased stack emitted cont
   have ground : ∀ v ∈ vals, TypeSubst.typeVars v = [] :=
     fun v member => HERuns.ground_typeVars (valsClean v member)
@@ -812,19 +815,19 @@ theorem fine_query_absentW {atoms : List Atom}
 
 /-- **A query with a nonempty region of instances**: every frontier the machine may choose fires. -/
 theorem fine_query_equationsW {atoms : List Atom} (program : ScopedProgram atoms) {f : String}
-    {vals : List Atom} (head : NodeHead heDispatch atoms f)
-    (valsValues : ∀ v ∈ vals, NestedValues.Value heDispatch atoms v)
+    {vals : List Atom} (head : NodeHead T.dispatch atoms f)
+    (valsValues : ∀ v ∈ vals, NestedValues.Value T.dispatch atoms v)
     (nonempty : regionInstances atoms f vals ≠ []) {Ls : List (List Atom)}
-    (bodies : List.Forall₂ (fun b L => FineEvalW minimal lookup policy atoms b L ∧ BodyFacts b)
+    (bodies : List.Forall₂ (fun b L => FineEvalW minimal T lookup policy atoms b L ∧ BodyFacts b)
       (regionInstances atoms f vals) Ls) :
-    FineQueryW minimal lookup policy atoms f vals Ls.flatten := by
+    FineQueryW minimal T lookup policy atoms f vals Ls.flatten := by
   intro live scope activation value erased stack emitted cont
   have ground : ∀ v ∈ vals, TypeSubst.typeVars v = [] :=
     fun v member => HERuns.ground_typeVars (value_answerable (valsValues v member))
   have fromFrontier : ∀ (works : List EquationWork),
       EquationFrontierRel (Space.ofList atoms) (Atom.undefinedType :: live)
         (.expression (.symbol f :: vals)) activation.bindings works →
-      FineW minimal lookup policy ⟨Space.ofList atoms,
+      FineW minimal T lookup policy ⟨Space.ofList atoms,
         .work (.equations live scope value Atom.undefinedType activation works), stack, emitted⟩ := by
     intro works frontier
     have instances := works_instances_K policy valsValues program activation.certified.satisfiable
@@ -844,8 +847,8 @@ theorem fine_query_equationsW {atoms : List Atom} (program : ScopedProgram atoms
     have related : List.Forall₂ (fun work L => ∃ i, (∀ output : Frame,
           output.bindings = work.bindings →
             (output.read policy (Entry.Value.ofAtom work.body)).erase = i ∧
-            Marked heDispatch atoms (output.read policy (Entry.Value.ofAtom work.body))) ∧
-        FineEvalW minimal lookup policy atoms i L ∧ BodyFacts i) works Ls :=
+            Marked T.dispatch atoms (output.read policy (Entry.Value.ofAtom work.body))) ∧
+        FineEvalW minimal T lookup policy atoms i L ∧ BodyFacts i) works Ls :=
       (forall₂_comp instances bodies).imp fun _ _ both => by
         obtain ⟨i, ⟨_, reads⟩, fineI, facts⟩ := both
         exact ⟨i, reads, fineI, facts⟩
@@ -897,8 +900,8 @@ theorem fine_nativeW (answers : AnswersUndefined lookup) (contract : LookupContr
     (live : List Atom) (scope : List String) (original : Entry.Value) (activation : Frame)
     (stack : List Continuation) (emitted : List Result)
     (cont : ∀ R : List Result, R.map (fun r => r.1.erase) = [d] →
-      FineW minimal lookup policy ⟨Space.ofList atoms, .returning R, stack, emitted⟩) :
-    FineW minimal lookup policy ⟨Space.ofList atoms, .work (.boundaryBatch live scope none
+      FineW minimal T lookup policy ⟨Space.ofList atoms, .returning R, stack, emitted⟩) :
+    FineW minimal T lookup policy ⟨Space.ofList atoms, .work (.boundaryBatch live scope none
       (.native original (some Atom.undefinedType) .emitted) [(Entry.Value.ofAtom d, activation)]),
       stack, emitted⟩ := by
   have notFunction : ¬ Completed.FunctionPending policy (Entry.Value.ofAtom d) := by
@@ -926,30 +929,32 @@ theorem fine_nativeW (answers : AnswersUndefined lookup) (contract : LookupContr
   apply cont
   simpa using eraseR
 
-/-- **An integer operation on every call value**: the host step is the only step, its plan resumes
-with the one value under whatever frame the merge renews, and the native boundary finishes. -/
+/-- **An integer operation the table answers, on every call value**: the host step is the only
+step, its plan resumes with the one value under whatever frame the merge renews, and the native
+boundary finishes. -/
 theorem fine_grounded_query (answers : AnswersUndefined lookup) (contract : LookupContract lookup)
-    {atoms : List Atom} {op : String} (known : IntOp op) (a b : Int) :
-    FineQueryW minimal lookup policy atoms op [num a, num b] [intValue op a b] := by
+    {atoms : List Atom} {op : String} (known : IntOp op) (a b : Int)
+    (table : T.Answers (.symbol op) [num a, num b] (intValue op a b)) :
+    FineQueryW minimal T lookup policy atoms op [num a, num b] [intValue op a b] := by
   intro live scope activation value erased stack emitted cont
-  have host : Minimal.HostCall heDispatch value.erase :=
-    ⟨.symbol op, [num a, num b], erased, he_executable known⟩
+  have host : Minimal.HostCall T.dispatch value.erase :=
+    ⟨.symbol op, [num a, num b], erased, table.1⟩
   have rData := intValue_dataAtom known a b
   have outcomeOf : ∀ {frame : Frame} {outcome : GroundedResult Entry.Value} {w₃ w₄ : Unit},
-      (services minimal).groundedAt (Space.ofList atoms) w₃ live scope frame value outcome w₄ →
+      (services minimal T).groundedAt (Space.ofList atoms) w₃ live scope frame value outcome w₄ →
       outcome = .ok [(Entry.Value.ofAtom (intValue op a b), Bindings.empty)] := by
     intro frame outcome w₃ w₄ produced
     obtain ⟨operator, arguments, raw, shaped, executed, rfl⟩ := produced
     rw [erased] at shaped
     simp only [Atom.expression.injEq, List.cons.injEq] at shaped
     obtain ⟨rfl, rfl⟩ := shaped
-    rw [(he_outcome_exact known a b raw).mp executed]
+    rw [(table.2 raw).mp executed]
     rfl
-  have produced : (services minimal).groundedAt (Space.ofList atoms) () live scope activation value
+  have produced : (services minimal T).groundedAt (Space.ofList atoms) () live scope activation value
       (.ok [(Entry.Value.ofAtom (intValue op a b), Bindings.empty)]) () :=
     ⟨.symbol op, [num a, num b], .ok [(intValue op a b, Bindings.empty)], erased,
-      (he_outcome_exact known a b _).mpr rfl, rfl⟩
-  have rows : Completed.NativeOutcomeRel policy heDispatch (.symbol op) [num a, num b] value
+      (table.2 _).mpr rfl, rfl⟩
+  have rows : Completed.NativeOutcomeRel policy T.dispatch (.symbol op) [num a, num b] value
       (some Atom.undefinedType) activation
       (.ok [(Entry.Value.ofAtom (intValue op a b), Bindings.empty)])
       (.resume [(Entry.Value.ofAtom (intValue op a b), activation)]) :=
@@ -958,8 +963,7 @@ theorem fine_grounded_query (answers : AnswersUndefined lookup) (contract : Look
   refine .step ⟨⟨Space.ofList atoms, .work (.boundaryBatch live scope none
       (.native value (some Atom.undefinedType) .emitted)
       [(Entry.Value.ofAtom (intValue op a b), activation)]), stack, emitted⟩,
-    .internal (WorldLocalStepWith.callGroundedResume erased (he_executable known) notError produced
-      rows)⟩ ?_
+    .internal (WorldLocalStepWith.callGroundedResume erased table.1 notError produced rows)⟩ ?_
   intro y step
   obtain ⟨space', control', stack', emitted'⟩ := y
   dsimp only [WStep, WorldConfiguration.ofReadOnly] at step
@@ -976,19 +980,26 @@ theorem fine_grounded_query (answers : AnswersUndefined lookup) (contract : Look
           | callEquations _ nonGrounded _ _ => exact absurd host nonGrounded.1
       | callGroundedDone _ _ _ produced' planned =>
           rw [outcomeOf produced'] at planned
-          cases planned
+          obtain ⟨prepared, paired, plan⟩ := Completed.NativeOutcomeRel.ok_iff_rows.mp planned
+          cases paired with
+          | rejected impossible _ =>
+              exact absurd ⟨_, ⟨Mettapedia.Languages.MeTTa.HE.BindingSourceAgreement.refl _,
+                activation.certified.satisfiable⟩⟩ impossible
+          | cons _ rest =>
+              cases rest
+              cases plan
       | callGroundedResume _ _ _ produced' planned =>
           rw [outcomeOf produced'] at planned
-          cases planned with
-          | success prepared =>
-              cases prepared with
-              | rejected impossible _ =>
-                  exact absurd ⟨_, ⟨Mettapedia.Languages.MeTTa.HE.BindingSourceAgreement.refl _,
-                    activation.certified.satisfiable⟩⟩ impossible
-              | @cons _ _ after _ _ rest =>
-                  cases rest
-                  exact fine_nativeW answers contract rData (intValue_notRefused known a b) live scope
-                    value after stack emitted cont
+          obtain ⟨prepared, paired, plan⟩ := Completed.NativeOutcomeRel.ok_iff_rows.mp planned
+          cases paired with
+          | rejected impossible _ =>
+              exact absurd ⟨_, ⟨Mettapedia.Languages.MeTTa.HE.BindingSourceAgreement.refl _,
+                activation.certified.satisfiable⟩⟩ impossible
+          | @cons _ _ after _ _ rest =>
+              cases rest
+              cases plan
+              exact fine_nativeW answers contract rData (intValue_notRefused known a b) live scope
+                value after stack emitted cont
 
 /-! ## Every marked call whose root HE interprets -/
 
@@ -999,16 +1010,16 @@ theorem fine_nodeW (contract : LookupContract lookup) {atoms : List Atom} {f : S
     (untyped : (Space.ofList atoms).atoms.filter (typeRegion (.symbol f)) = [])
     (closed : ∀ name,
       ¬ Mettapedia.Languages.MeTTa.HE.Spec.Match.Merge.AtomOccurs (.expression (.symbol f :: ts)) name)
-    (headFine : FineRunsW minimal lookup policy atoms (.symbol f) [.symbol f])
+    (headFine : FineRunsW minimal T lookup policy atoms (.symbol f) [.symbol f])
     {readiness : Entry.Status} {vs : List Entry.Value}
     (interpreted : policy.reentry = .reinterpret ∨ readiness = .active)
     (erased : vs.map Entry.Value.erase = ts)
-    (args : List.Forall₂ (fun v L => FineRunsW minimal lookup policy atoms v L ∧
+    (args : List.Forall₂ (fun v L => FineRunsW minimal T lookup policy atoms v L ∧
       ∀ a ∈ L, Answerable a) vs Ls)
     (Q : List Atom → List Atom)
-    (apps : ∀ vals ∈ combos Ls, FineQueryW minimal lookup policy atoms f vals (Q vals) ∧
+    (apps : ∀ vals ∈ combos Ls, FineQueryW minimal T lookup policy atoms f vals (Q vals) ∧
       ∀ a ∈ Q vals, Answerable a) :
-    FineRunsW minimal lookup policy atoms (.expression readiness (.symbol f :: vs))
+    FineRunsW minimal T lookup policy atoms (.expression readiness (.symbol f :: vs))
       ((combos Ls).flatMap Q) := by
   intro live scope activation stack emitted cont
   have eraseV : (Entry.Value.expression readiness (.symbol f :: vs)).erase =
@@ -1048,7 +1059,7 @@ theorem fine_nodeW (contract : LookupContract lookup) {atoms : List Atom} {f : S
     obtain ⟨vals, valsMem, inner⟩ := List.mem_flatMap.mp member
     exact (apps vals valsMem).2 a inner
   have afterPublish : ∀ R : List Result, R.map (fun r => r.1.erase) = (combos Ls).flatMap Q →
-      FineW minimal lookup policy ⟨Space.ofList atoms, .returning R,
+      FineW minimal T lookup policy ⟨Space.ofList atoms, .returning R,
         .publish (.expression (.symbol f :: ts)) :: stack, emitted⟩ := by
     intro R eraseR
     apply fine_publishW (HENested.clean_of_erase eraseR answerableAll)
@@ -1056,16 +1067,16 @@ theorem fine_nodeW (contract : LookupContract lookup) {atoms : List Atom} {f : S
     rw [publish_erase, eraseR]
   have afterRows : ∀ (rest : List Continuation),
       (∀ R : List Result, R.map (fun r => r.1.erase) = (combos Ls).flatMap Q →
-        FineW minimal lookup policy ⟨Space.ofList atoms, .returning R, rest, emitted⟩) →
+        FineW minimal T lookup policy ⟨Space.ofList atoms, .returning R, rest, emitted⟩) →
       ∀ rows : List Result, rows.map (fun r => r.1.erase) =
           (combos ([.symbol f] :: Ls)).map Atom.expression →
-        FineW minimal lookup policy ⟨Space.ofList atoms, .returning rows,
+        FineW minimal T lookup policy ⟨Space.ofList atoms, .returning rows,
           .calls live scope Atom.undefinedType :: rest, emitted⟩ := by
     intro rest restFine rows eraseRows
     rw [combos_head] at eraseRows
     apply fine_calls_frameW
     have queries : ∀ r ∈ rows, ∃ vals, r.1.erase = .expression (.symbol f :: vals) ∧
-        FineQueryW minimal lookup policy atoms f vals (Q vals) := by
+        FineQueryW minimal T lookup policy atoms f vals (Q vals) := by
       intro r member
       have inRows : r.1.erase ∈ ((combos Ls).map (Atom.symbol f :: ·)).map Atom.expression := by
         rw [← eraseRows]
@@ -1082,7 +1093,7 @@ theorem fine_nodeW (contract : LookupContract lookup) {atoms : List Atom} {f : S
       rw [List.flatMap_map]
     rw [viaAtoms, eraseRows, List.map_map, List.flatMap_map]
     rfl
-  have argsAll : List.Forall₂ (fun v L => FineRunsW minimal lookup policy atoms v L ∧
+  have argsAll : List.Forall₂ (fun v L => FineRunsW minimal T lookup policy atoms v L ∧
       ∀ a ∈ L, Answerable a) (Entry.Value.symbol f :: vs) ([.symbol f] :: Ls) :=
     .cons ⟨headFine, fun a member => by
       rw [List.mem_singleton] at member
@@ -1138,13 +1149,13 @@ theorem fine_nodeW (contract : LookupContract lookup) {atoms : List Atom} {f : S
 presentation, under every continuation fine on its answers. -/
 theorem fine_settlesKG (answers : AnswersUndefined lookup) (contract : LookupContract lookup)
     {atoms : List Atom} (program : CallProgram atoms) {t : Atom} {L : List Atom}
-    (settles : SettlesKG atoms t L) : FineEvalW minimal lookup policy atoms t L := by
+    (settles : SettlesKG T atoms t L) : FineEvalW minimal T lookup policy atoms t L := by
   induction settles with
   | @data d data _ => exact fine_dataW answers contract atoms data
   | @build f ts Ls head noEquation length settled ih =>
       have whole := SettlesKG.build head noEquation length settled
-      have argsT : List.Forall₂ (fun t L => SettlesKG atoms t L ∧
-          FineEvalW minimal lookup policy atoms t L) ts Ls :=
+      have argsT : List.Forall₂ (fun t L => SettlesKG T atoms t L ∧
+          FineEvalW minimal T lookup policy atoms t L) ts Ls :=
         forall₂_of_zip length fun p member => ⟨settled p member, ih p member⟩
       have allClean : ∀ L ∈ Ls, ∀ a ∈ L, Answerable a := by
         intro L member a inside
@@ -1154,12 +1165,12 @@ theorem fine_settlesKG (answers : AnswersUndefined lookup) (contract : LookupCon
       obtain ⟨readiness, vs, rfl, vsErase⟩ := call_value_shape erased
       subst vsErase
       have closed := (settlesKG_shape whole).1.answerable.closed
-      have args : List.Forall₂ (fun v L => FineRunsW minimal lookup policy atoms v L ∧
+      have args : List.Forall₂ (fun v L => FineRunsW minimal T lookup policy atoms v L ∧
           ∀ a ∈ L, Answerable a) vs Ls :=
         forall₂_imp_mem (List.forall₂_map_left_iff.mp argsT) fun w member L both =>
           ⟨both.2 w rfl (marked.children w (List.mem_cons_of_mem _ member)),
             (settlesKG_shape both.1).1.answers⟩
-      have headFine : FineRunsW minimal lookup policy atoms (.symbol f) [.symbol f] :=
+      have headFine : FineRunsW minimal T lookup policy atoms (.symbol f) [.symbol f] :=
         fine_dataW answers contract atoms head.head (.symbol f) (by simp only [Entry.Value.erase])
           (.symbol f)
       have eraseList : (Entry.Value.symbol f :: vs).map Entry.Value.erase =
@@ -1170,7 +1181,7 @@ theorem fine_settlesKG (answers : AnswersUndefined lookup) (contract : LookupCon
         have value := marked.held_value
         rw [eraseList] at value
         rw [settlesKG_value_self whole value]
-        have runs := fine_heldW (minimal := minimal) (lookup := lookup) atoms reuses
+        have runs := fine_heldW (minimal := minimal) (T := T) (lookup := lookup) atoms reuses
           (children := .symbol f :: vs) (by rw [eraseList]; exact closed)
           (by rw [eraseList]; exact call_not_stopped head.head)
         rwa [eraseList] at runs
@@ -1187,10 +1198,10 @@ theorem fine_settlesKG (answers : AnswersUndefined lookup) (contract : LookupCon
               exact app_answerable head.head (combos_answerable allClean vals member)⟩)
   | @call f ts Ls R head defined length settled nonempty lengths bodies ihArgs ihBodies =>
       have whole := SettlesKG.call R head defined length settled nonempty lengths bodies
-      have argsT : List.Forall₂ (fun t L => SettlesKG atoms t L ∧
-          FineEvalW minimal lookup policy atoms t L) ts Ls :=
+      have argsT : List.Forall₂ (fun t L => SettlesKG T atoms t L ∧
+          FineEvalW minimal T lookup policy atoms t L) ts Ls :=
         forall₂_of_zip length fun p member => ⟨settled p member, ihArgs p member⟩
-      have allValues : ∀ L ∈ Ls, ∀ a ∈ L, NestedValues.Value heDispatch atoms a := by
+      have allValues : ∀ L ∈ Ls, ∀ a ∈ L, NestedValues.Value T.dispatch atoms a := by
         intro L member a inside
         obtain ⟨t, both⟩ := forall₂_right_exists argsT L member
         exact (settlesKG_shape both.1).2 a inside
@@ -1198,12 +1209,12 @@ theorem fine_settlesKG (answers : AnswersUndefined lookup) (contract : LookupCon
       obtain ⟨readiness, vs, rfl, vsErase⟩ := call_value_shape erased
       subst vsErase
       have closed := (settlesKG_shape whole).1.answerable.closed
-      have args : List.Forall₂ (fun v L => FineRunsW minimal lookup policy atoms v L ∧
+      have args : List.Forall₂ (fun v L => FineRunsW minimal T lookup policy atoms v L ∧
           ∀ a ∈ L, Answerable a) vs Ls :=
         forall₂_imp_mem (List.forall₂_map_left_iff.mp argsT) fun w member L both =>
           ⟨both.2 w rfl (marked.children w (List.mem_cons_of_mem _ member)),
             (settlesKG_shape both.1).1.answers⟩
-      have headFine : FineRunsW minimal lookup policy atoms (.symbol f) [.symbol f] :=
+      have headFine : FineRunsW minimal T lookup policy atoms (.symbol f) [.symbol f] :=
         fine_dataW answers contract atoms head.head (.symbol f) (by simp only [Entry.Value.erase])
           (.symbol f)
       cases readiness with
@@ -1223,21 +1234,21 @@ theorem fine_settlesKG (answers : AnswersUndefined lookup) (contract : LookupCon
                 have regions := forall₂_of_zip (lengths vals member) (bodies vals member)
                 obtain ⟨b, settlesB⟩ := forall₂_right_exists regions L inR
                 exact (settlesKG_shape settlesB).1.answers a inner⟩)
-  | @grounded op ts Ls known untyped length settled ints ih =>
-      have whole := SettlesKG.grounded known untyped length settled ints
-      have argsT : List.Forall₂ (fun t L => SettlesKG atoms t L ∧
-          FineEvalW minimal lookup policy atoms t L) ts Ls :=
+  | @grounded op ts Ls known untyped length settled ints tables ih =>
+      have whole := SettlesKG.grounded known untyped length settled ints tables
+      have argsT : List.Forall₂ (fun t L => SettlesKG T atoms t L ∧
+          FineEvalW minimal T lookup policy atoms t L) ts Ls :=
         forall₂_of_zip length fun p member => ⟨settled p member, ih p member⟩
       intro v erased marked
       obtain ⟨readiness, vs, rfl, vsErase⟩ := call_value_shape erased
       subst vsErase
       have closed := (settlesKG_shape whole).1.answerable.closed
-      have args : List.Forall₂ (fun v L => FineRunsW minimal lookup policy atoms v L ∧
+      have args : List.Forall₂ (fun v L => FineRunsW minimal T lookup policy atoms v L ∧
           ∀ a ∈ L, Answerable a) vs Ls :=
         forall₂_imp_mem (List.forall₂_map_left_iff.mp argsT) fun w member L both =>
           ⟨both.2 w rfl (marked.children w (List.mem_cons_of_mem _ member)),
             (settlesKG_shape both.1).1.answers⟩
-      have headFine : FineRunsW minimal lookup policy atoms (.symbol op) [.symbol op] :=
+      have headFine : FineRunsW minimal T lookup policy atoms (.symbol op) [.symbol op] :=
         fine_dataW answers contract atoms (intOp_head known) (.symbol op)
           (by simp only [Entry.Value.erase]) (.symbol op)
       cases readiness with
@@ -1254,7 +1265,7 @@ theorem fine_settlesKG (answers : AnswersUndefined lookup) (contract : LookupCon
               obtain ⟨a, b, rfl⟩ := ints vals member
               refine ⟨?_, fun x inside => ?_⟩
               · rw [arith_num]
-                exact fine_grounded_query answers contract known a b
+                exact fine_grounded_query answers contract known a b (tables a b member)
               · rw [List.mem_singleton] at inside
                 subst inside
                 rw [arith_num]
@@ -1263,8 +1274,8 @@ theorem fine_settlesKG (answers : AnswersUndefined lookup) (contract : LookupCon
 /-- **The entry of a settling term is `FineW`.** -/
 theorem fine_entryW (answers : AnswersUndefined lookup) (contract : LookupContract lookup)
     {atoms : List Atom} (program : CallProgram atoms) {c : Atom} {L : List Atom}
-    (settles : SettlesKG atoms c L) :
-    FineW minimal lookup policy (load (Space.ofList atoms) c Atom.undefinedType) :=
+    (settles : SettlesKG T atoms c L) :
+    FineW minimal T lookup policy (load (Space.ofList atoms) c Atom.undefinedType) :=
   fine_settlesKG answers contract program settles (Entry.Value.ofAtom c) (Entry.Value.erase_ofAtom c)
     (marked_ofAtom c) [] [] Completed.Frame.empty [] [] (fun R _ => fine_topW R [])
 
@@ -1274,13 +1285,13 @@ services): the world step relation is well founded (no infinite run), and every 
 configuration either has a step or is final, and a final one publishes exactly `L`, which PeTTa's
 run yields from some fuel on. -/
 theorem every_run_finishes_kg (minimal : Minimal.Services) (policy : Policy) {atoms : List Atom}
-    (program : CallProgram atoms) {c : Atom} {L : List Atom} (settles : SettlesKG atoms c L) :
-    Acc (fun b a => WorldStep (fun (_ : Unit) => id) (services minimal) heDispatch
+    (program : CallProgram atoms) {c : Atom} {L : List Atom} (settles : SettlesKG T atoms c L) :
+    Acc (fun b a => WorldStep (fun (_ : Unit) => id) (services minimal T) T.dispatch
         Completed.rawLookup policy a b)
         (WorldConfiguration.ofReadOnly (load (Space.ofList atoms) c Atom.undefinedType)) ∧
-      (∀ w, WorldSteps (fun (_ : Unit) => id) (services minimal) heDispatch Completed.rawLookup
+      (∀ w, WorldSteps (fun (_ : Unit) => id) (services minimal T) T.dispatch Completed.rawLookup
           policy (WorldConfiguration.ofReadOnly (load (Space.ofList atoms) c Atom.undefinedType)) w →
-        (∃ w', WorldStep (fun (_ : Unit) => id) (services minimal) heDispatch Completed.rawLookup
+        (∃ w', WorldStep (fun (_ : Unit) => id) (services minimal T) T.dispatch Completed.rawLookup
           policy w w') ∨
           ∃ emitted : List Result,
             w = WorldConfiguration.ofReadOnly ⟨Space.ofList atoms, .returning [], [], emitted⟩ ∧
@@ -1290,6 +1301,8 @@ theorem every_run_finishes_kg (minimal : Minimal.Services) (policy : Policy) {at
   have fine := fine_entryW (minimal := minimal) (policy := policy) raw_answers raw_contract program
     settles
   obtain ⟨_, N, every⟩ := every_complete_run_kg minimal policy program settles
+  have determined := settlesKG_determined (minimal := minimal) (lookup := Completed.rawLookup)
+    (policy := policy) raw_contract program settles
   refine ⟨fine.acc_world, fun w path => ?_, N, fun n bigger => (every n bigger).1⟩
   rcases (fine.reaches_world path).progress with ⟨y, moves⟩ | ⟨space, emitted, same⟩
   · exact Or.inl ⟨_, moves⟩
@@ -1303,7 +1316,8 @@ theorem every_run_finishes_kg (minimal : Minimal.Services) (policy : Policy) {at
       at sameSpace
     subst sameSpace
     cases world
-    exact Or.inr ⟨emitted', rfl, (every N le_rfl).2 emitted' path⟩
+    exact Or.inr ⟨emitted', rfl, determined (Entry.Value.ofAtom c) (Entry.Value.erase_ofAtom c)
+      (marked_ofAtom c) _ _ _ _ _ _ (complete_source_W path)⟩
 
 /-- **The whole result under any lookup meeting the contract**: a complete world run exists, the
 world step relation is well founded from the entry, every reachable world configuration steps or is
@@ -1311,16 +1325,16 @@ final, every final one publishes exactly `L`, and PeTTa's run yields `L` from so
 theorem every_run_finishes_kg_under (minimal : Minimal.Services) {lookup : CastLookup}
     (answers : AnswersUndefined lookup) (contract : LookupContract lookup) (policy : Policy)
     {atoms : List Atom} (program : CallProgram atoms) {c : Atom} {L : List Atom}
-    (settles : SettlesKG atoms c L) :
+    (settles : SettlesKG T atoms c L) :
     (∃ heAnswers : List Result,
-      WorldSteps (fun (_ : Unit) => id) (services minimal) heDispatch lookup policy
+      WorldSteps (fun (_ : Unit) => id) (services minimal T) T.dispatch lookup policy
         (WorldConfiguration.ofReadOnly (load (Space.ofList atoms) c Atom.undefinedType))
         (WorldConfiguration.ofReadOnly ⟨Space.ofList atoms, .returning [], [], heAnswers⟩)) ∧
-      Acc (fun b a => WorldStep (fun (_ : Unit) => id) (services minimal) heDispatch lookup policy a b)
+      Acc (fun b a => WorldStep (fun (_ : Unit) => id) (services minimal T) T.dispatch lookup policy a b)
         (WorldConfiguration.ofReadOnly (load (Space.ofList atoms) c Atom.undefinedType)) ∧
-      (∀ w, WorldSteps (fun (_ : Unit) => id) (services minimal) heDispatch lookup policy
+      (∀ w, WorldSteps (fun (_ : Unit) => id) (services minimal T) T.dispatch lookup policy
           (WorldConfiguration.ofReadOnly (load (Space.ofList atoms) c Atom.undefinedType)) w →
-        (∃ w', WorldStep (fun (_ : Unit) => id) (services minimal) heDispatch lookup policy w w') ∨
+        (∃ w', WorldStep (fun (_ : Unit) => id) (services minimal T) T.dispatch lookup policy w w') ∨
           ∃ emitted : List Result,
             w = WorldConfiguration.ofReadOnly ⟨Space.ofList atoms, .returning [], [], emitted⟩ ∧
             emitted.map (fun r => r.1.erase) = L) ∧
@@ -1358,17 +1372,17 @@ variants): a complete world run exists, no world run is infinite or stuck, and e
 publishes PeTTa's answers. -/
 theorem every_run_finishes_kg_with_he_lookups (minimal : Minimal.Services) (policy : Policy)
     {atoms : List Atom} (program : CallProgram atoms) {c : Atom} {L : List Atom}
-    (settles : SettlesKG atoms c L) :
+    (settles : SettlesKG T atoms c L) :
     ∀ lookup ∈ [Completed.rawLookup, Completed.scopedLookup],
       (∃ heAnswers : List Result,
-        WorldSteps (fun (_ : Unit) => id) (services minimal) heDispatch lookup policy
+        WorldSteps (fun (_ : Unit) => id) (services minimal T) T.dispatch lookup policy
           (WorldConfiguration.ofReadOnly (load (Space.ofList atoms) c Atom.undefinedType))
           (WorldConfiguration.ofReadOnly ⟨Space.ofList atoms, .returning [], [], heAnswers⟩)) ∧
-        Acc (fun b a => WorldStep (fun (_ : Unit) => id) (services minimal) heDispatch lookup policy
+        Acc (fun b a => WorldStep (fun (_ : Unit) => id) (services minimal T) T.dispatch lookup policy
           a b) (WorldConfiguration.ofReadOnly (load (Space.ofList atoms) c Atom.undefinedType)) ∧
-        (∀ w, WorldSteps (fun (_ : Unit) => id) (services minimal) heDispatch lookup policy
+        (∀ w, WorldSteps (fun (_ : Unit) => id) (services minimal T) T.dispatch lookup policy
             (WorldConfiguration.ofReadOnly (load (Space.ofList atoms) c Atom.undefinedType)) w →
-          (∃ w', WorldStep (fun (_ : Unit) => id) (services minimal) heDispatch lookup policy w w') ∨
+          (∃ w', WorldStep (fun (_ : Unit) => id) (services minimal T) T.dispatch lookup policy w w') ∨
             ∃ emitted : List Result,
               w = WorldConfiguration.ofReadOnly ⟨Space.ofList atoms, .returning [], [], emitted⟩ ∧
               emitted.map (fun r => r.1.erase) = L) ∧
@@ -1388,75 +1402,83 @@ open AnswerBags.Controls (sym app)
 open NestedArithmetic.Controls (quadRows quad_program quad_four toIntRows toInt_program toInt_ssz
   empty_program arith_seven)
 
-/-- **Positive control: every world run of `(quad 4)` finishes with `16`.** -/
+/-- **Positive control: every world run of `(quad 4)` with HE's table finishes with `16`**; its
+grounded calls `(+ 4 4)` and `(+ 8 8)` are in HE's typed region. -/
 theorem quad_every_run_finishes (minimal : Minimal.Services) (policy : Policy) :
-    Acc (fun b a => WorldStep (fun (_ : Unit) => id) (services minimal) heDispatch
-        Completed.rawLookup policy a b)
+    (TypedRegion quadRows "+" [num 4, num 4] ∧ TypedRegion quadRows "+" [num 8, num 8]) ∧
+    Acc (fun b a => WorldStep (fun (_ : Unit) => id) (services minimal measuredTable)
+        measuredTable.dispatch Completed.rawLookup policy a b)
         (WorldConfiguration.ofReadOnly
           (load (Space.ofList quadRows) (app "quad" [num 4]) Atom.undefinedType)) ∧
-      ∀ w, WorldSteps (fun (_ : Unit) => id) (services minimal) heDispatch Completed.rawLookup
-          policy (WorldConfiguration.ofReadOnly
+      ∀ w, WorldSteps (fun (_ : Unit) => id) (services minimal measuredTable) measuredTable.dispatch
+          Completed.rawLookup policy (WorldConfiguration.ofReadOnly
             (load (Space.ofList quadRows) (app "quad" [num 4]) Atom.undefinedType)) w →
-        (∃ w', WorldStep (fun (_ : Unit) => id) (services minimal) heDispatch Completed.rawLookup
-          policy w w') ∨
+        (∃ w', WorldStep (fun (_ : Unit) => id) (services minimal measuredTable)
+          measuredTable.dispatch Completed.rawLookup policy w w') ∨
           ∃ emitted : List Result,
             w = WorldConfiguration.ofReadOnly ⟨Space.ofList quadRows, .returning [], [], emitted⟩ ∧
             emitted.map (fun r => r.1.erase) = [num 16] := by
   obtain ⟨acc, every, _⟩ := every_run_finishes_kg minimal policy quad_program quad_four
-  exact ⟨acc, every⟩
+  exact ⟨⟨by decide +kernel, by decide +kernel⟩, acc, every⟩
 
-/-- **Positive control: every world run of `(toInt (S (S Z)))` finishes with `2`.** -/
+/-- **Positive control: every world run of `(toInt (S (S Z)))` with HE's table finishes with
+`2`**; its grounded calls `(+ 0 1)` and `(+ 1 1)` are in HE's typed region. -/
 theorem toInt_every_run_finishes (minimal : Minimal.Services) (policy : Policy) :
-    Acc (fun b a => WorldStep (fun (_ : Unit) => id) (services minimal) heDispatch
-        Completed.rawLookup policy a b)
+    (TypedRegion toIntRows "+" [num 0, num 1] ∧ TypedRegion toIntRows "+" [num 1, num 1]) ∧
+    Acc (fun b a => WorldStep (fun (_ : Unit) => id) (services minimal measuredTable)
+        measuredTable.dispatch Completed.rawLookup policy a b)
         (WorldConfiguration.ofReadOnly (load (Space.ofList toIntRows)
           (app "toInt" [app "S" [app "S" [sym "Z"]]]) Atom.undefinedType)) ∧
-      ∀ w, WorldSteps (fun (_ : Unit) => id) (services minimal) heDispatch Completed.rawLookup
-          policy (WorldConfiguration.ofReadOnly (load (Space.ofList toIntRows)
+      ∀ w, WorldSteps (fun (_ : Unit) => id) (services minimal measuredTable) measuredTable.dispatch
+          Completed.rawLookup policy (WorldConfiguration.ofReadOnly (load (Space.ofList toIntRows)
             (app "toInt" [app "S" [app "S" [sym "Z"]]]) Atom.undefinedType)) w →
-        (∃ w', WorldStep (fun (_ : Unit) => id) (services minimal) heDispatch Completed.rawLookup
-          policy w w') ∨
+        (∃ w', WorldStep (fun (_ : Unit) => id) (services minimal measuredTable)
+          measuredTable.dispatch Completed.rawLookup policy w w') ∨
           ∃ emitted : List Result,
             w = WorldConfiguration.ofReadOnly ⟨Space.ofList toIntRows, .returning [], [], emitted⟩ ∧
             emitted.map (fun r => r.1.erase) = [num 2] := by
   obtain ⟨acc, every, _⟩ := every_run_finishes_kg minimal policy toInt_program toInt_ssz
-  exact ⟨acc, every⟩
+  exact ⟨⟨by decide +kernel, by decide +kernel⟩, acc, every⟩
 
-/-- **Positive control: every world run of `(+ (* 2 3) 1)` finishes with `7`.** -/
+/-- **Positive control: every world run of `(+ (* 2 3) 1)` with HE's table finishes with `7`**; its
+grounded calls `(* 2 3)` and `(+ 6 1)` are in HE's typed region. -/
 theorem arith_every_run_finishes (minimal : Minimal.Services) (policy : Policy) :
-    Acc (fun b a => WorldStep (fun (_ : Unit) => id) (services minimal) heDispatch
-        Completed.rawLookup policy a b)
+    (TypedRegion [] "*" [num 2, num 3] ∧ TypedRegion [] "+" [num 6, num 1]) ∧
+    Acc (fun b a => WorldStep (fun (_ : Unit) => id) (services minimal measuredTable)
+        measuredTable.dispatch Completed.rawLookup policy a b)
         (WorldConfiguration.ofReadOnly
           (load (Space.ofList []) (app "+" [app "*" [num 2, num 3], num 1]) Atom.undefinedType)) ∧
-      ∀ w, WorldSteps (fun (_ : Unit) => id) (services minimal) heDispatch Completed.rawLookup
-          policy (WorldConfiguration.ofReadOnly
+      ∀ w, WorldSteps (fun (_ : Unit) => id) (services minimal measuredTable) measuredTable.dispatch
+          Completed.rawLookup policy (WorldConfiguration.ofReadOnly
             (load (Space.ofList []) (app "+" [app "*" [num 2, num 3], num 1]) Atom.undefinedType)) w →
-        (∃ w', WorldStep (fun (_ : Unit) => id) (services minimal) heDispatch Completed.rawLookup
-          policy w w') ∨
+        (∃ w', WorldStep (fun (_ : Unit) => id) (services minimal measuredTable)
+          measuredTable.dispatch Completed.rawLookup policy w w') ∨
           ∃ emitted : List Result,
             w = WorldConfiguration.ofReadOnly ⟨Space.ofList [], .returning [], [], emitted⟩ ∧
             emitted.map (fun r => r.1.erase) = [num 7] := by
   obtain ⟨acc, every, _⟩ := every_run_finishes_kg minimal policy empty_program arith_seven
-  exact ⟨acc, every⟩
+  exact ⟨⟨by decide +kernel, by decide +kernel⟩, acc, every⟩
 
-/-- **The extension is needed**: the host call `(+ 4 4)`, which has no step on the contextual
-machine, steps on the world machine. -/
+/-- **The extension is needed**: with HE's table, the host call `(+ 4 4)`, which has no step on the
+contextual machine, steps on the world machine. -/
 theorem host_steps_on_world (minimal : Minimal.Services) {lookup : CastLookup} {policy : Policy}
     (atoms : List Atom) (live : List Atom) (scope : List String) (activation : Frame)
     (stack : List Continuation) (emitted : List Result) :
-    (¬ ∃ next, HEStep heDispatch lookup policy ⟨Space.ofList atoms,
+    (¬ ∃ next, HEStep measuredTable.dispatch lookup policy ⟨Space.ofList atoms,
       .work (.call live scope (callValue "+" [num 4, num 4]) Atom.undefinedType activation), stack,
         emitted⟩ next) ∧
-      ∃ y, WStep minimal lookup policy ⟨Space.ofList atoms,
+      ∃ y, WStep minimal measuredTable lookup policy ⟨Space.ofList atoms,
         .work (.call live scope (callValue "+" [num 4, num 4]) Atom.undefinedType activation), stack,
           emitted⟩ y := by
-  refine ⟨GroundedRuns.Controls.contextual_stuck _ live scope _ activation stack emitted, ?_⟩
-  have produced : (services minimal).groundedAt (Space.ofList atoms) () live scope activation
-      (callValue "+" [num 4, num 4]) (.ok [(Entry.Value.ofAtom (intValue "+" 4 4), Bindings.empty)])
-      () :=
+  refine ⟨GroundedRuns.Controls.contextual_stuck (measured_executable .plus) _ live scope _ activation
+    stack emitted, ?_⟩
+  have table := measured_answers .plus 4 4 (GroundedRuns.Controls.fits_of (m := 8) rfl (by decide))
+  have produced : (services minimal measuredTable).groundedAt (Space.ofList atoms) () live scope
+      activation (callValue "+" [num 4, num 4])
+      (.ok [(Entry.Value.ofAtom (intValue "+" 4 4), Bindings.empty)]) () :=
     ⟨.symbol "+", [num 4, num 4], .ok [(intValue "+" 4 4, Bindings.empty)],
-      callValue_erase "+" [num 4, num 4], (he_outcome_exact .plus 4 4 _).mpr rfl, rfl⟩
-  have rows : Completed.NativeOutcomeRel policy heDispatch (.symbol "+") [num 4, num 4]
+      callValue_erase "+" [num 4, num 4], (table.2 _).mpr rfl, rfl⟩
+  have rows : Completed.NativeOutcomeRel policy measuredTable.dispatch (.symbol "+") [num 4, num 4]
       (callValue "+" [num 4, num 4]) (some Atom.undefinedType) activation
       (.ok [(Entry.Value.ofAtom (intValue "+" 4 4), Bindings.empty)])
       (.resume [(Entry.Value.ofAtom (intValue "+" 4 4), activation)]) :=
@@ -1465,21 +1487,21 @@ theorem host_steps_on_world (minimal : Minimal.Services) {lookup : CastLookup} {
       (.native (callValue "+" [num 4, num 4]) (some Atom.undefinedType) .emitted)
       [(Entry.Value.ofAtom (intValue "+" 4 4), activation)]), stack, emitted⟩,
     .internal (WorldLocalStepWith.callGroundedResume (callValue_erase "+" [num 4, num 4])
-      (he_executable .plus) (HERuns.value_not_error (intOp_head .plus)
+      table.1 (HERuns.value_not_error (intOp_head .plus)
         (callValue_erase "+" [num 4, num 4])) produced rows)⟩
 
-/-- **Negative control: the world machine diverges outside the class.** On `{(= (loop) (loop))}`
-the world step relation is not well founded from the entry of `(loop)`, so `(loop)` is not `FineW`;
-it is not a settling term either. -/
+/-- **Negative control: the world machine diverges outside the class.** On `{(= (loop) (loop))}`,
+with HE's table, the world step relation is not well founded from the entry of `(loop)`, so `(loop)`
+is not `FineW`; it is not a settling term either. -/
 theorem loop_diverges_world (minimal : Minimal.Services) (policy : Policy) :
-    ¬ Acc (fun b a => WorldStep (fun (_ : Unit) => id) (services minimal) heDispatch
-        Completed.rawLookup policy a b)
+    ¬ Acc (fun b a => WorldStep (fun (_ : Unit) => id) (services minimal measuredTable)
+        measuredTable.dispatch Completed.rawLookup policy a b)
         (WorldConfiguration.ofReadOnly
           (load (Space.ofList AnswerBags.Controls.loopRows) (app "loop" []) Atom.undefinedType)) ∧
-      ¬ FineW minimal Completed.rawLookup policy
+      ¬ FineW minimal measuredTable Completed.rawLookup policy
         (load (Space.ofList AnswerBags.Controls.loopRows) (app "loop" []) Atom.undefinedType) := by
-  have diverges : ¬ Acc (fun b a => WorldStep (fun (_ : Unit) => id) (services minimal) heDispatch
-      Completed.rawLookup policy a b)
+  have diverges : ¬ Acc (fun b a => WorldStep (fun (_ : Unit) => id)
+      (services minimal measuredTable) measuredTable.dispatch Completed.rawLookup policy a b)
       (WorldConfiguration.ofReadOnly
         (load (Space.ofList AnswerBags.Controls.loopRows) (app "loop" []) Atom.undefinedType)) :=
     fun acc => EveryRunFinishes.Controls.loop_diverges_on

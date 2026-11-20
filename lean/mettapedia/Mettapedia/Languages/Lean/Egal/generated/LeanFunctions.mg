@@ -2904,9 +2904,7 @@ Qed.
 Theorem Lean_Nat_decLe_In : forall v_n :e Lean_Nat, forall v_m :e Lean_Nat, Lean_Nat_decLe v_n v_m :e (Lean_Decidable (Lean_Nat_le_Prop v_n v_m)).
 claim Step: forall n, forall i :e Lean_Nat, 0 :e Lean_Nat_le_Prop n i -> 0 :e Lean_Nat_le_Prop n (Lean_Nat_succ_node i).
 { let n i. assume Hi: i :e Lean_Nat. assume H: 0 :e Lean_Nat_le_Prop n i.
-  apply SepE2 1 (fun x => exists w, w :e Lean_Nat_le n i) 0 H.
-  let w. assume Hw: w :e Lean_Nat_le n i.
-  exact Lean_Nat_le_step_proof_ok n i Hi w Hw. }
+  exact Lean_Nat_le_step_proof_ok n i Hi 0 H. }
 claim ZeroLe: forall m :e Lean_Nat, 0 :e Lean_Nat_le_Prop Lean_Nat_zero_node m.
 { apply Lean_Nat_ind.
   - exact Lean_Nat_le_refl_proof_ok Lean_Nat_zero_node.
@@ -5435,6 +5433,24 @@ Qed.
 
 
 
+Theorem Lean_Irreducible_ind : forall P:set -> prop, (forall x0 :e (Pi_ ux :e (((Lean_IsUnit P0) P1) P2), Lean_False_Prop), forall x1 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e
+    (((Lean_Eq_Prop P0) P2) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) q0) q1)), ((Lean_Or_Prop (((Lean_IsUnit P0) P1) q0)) (((Lean_IsUnit P0) P1) q1)))))}, P (Lean_Irreducible_mk_node x0 x1)) ->
+    forall t :e Lean_Irreducible, P t.
+let P. assume H0.
+claim M0: 0 :e (Pi_ x0 :e (Pi_ ux :e (((Lean_IsUnit P0) P1) P2), Lean_False_Prop), (Pi_ x1 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e (((Lean_Eq_Prop P0) P2) ((((proj1 ((proj1 ((proj1
+    P1) 0)) 0)) 0) q0) q1)), ((Lean_Or_Prop (((Lean_IsUnit P0) P1) q0)) (((Lean_IsUnit P0) P1) q1)))))}, {z :e 1 | P (Lean_Irreducible_mk_node x0 x1)})).
+{ apply Pi_0_In. let x0. assume Hx0: x0 :e (Pi_ ux :e (((Lean_IsUnit P0) P1) P2), Lean_False_Prop).
+  prove 0 :e (Pi_ x1 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e (((Lean_Eq_Prop P0) P2) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) q0) q1)), ((Lean_Or_Prop (((Lean_IsUnit P0) P1) q0))
+    (((Lean_IsUnit P0) P1) q1)))))}, {z :e 1 | P (Lean_Irreducible_mk_node x0 x1)}).
+  apply Pi_0_In. let x1. assume Hx1: x1 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e (((Lean_Eq_Prop P0) P2) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) q0) q1)), ((Lean_Or_Prop
+    (((Lean_IsUnit P0) P1) q0)) (((Lean_IsUnit P0) P1) q1)))))}.
+  prove 0 :e {z :e 1 | P (Lean_Irreducible_mk_node x0 x1)}.
+  exact SepI 1 (fun z => P (Lean_Irreducible_mk_node x0 x1)) 0 In_0_1 (H0 x0 Hx0 x1 Hx1). }
+let t. assume Ht: t :e Lean_Irreducible.
+exact SepE2 1 (fun z => P t) (Lean_Irreducible_rec 0 t) (Lean_Irreducible_rec_type (fun t => {z :e 1 | P t}) 0 M0 t Ht).
+Qed.
+
+
 
 
 
@@ -5545,6 +5561,23 @@ claim L: IndRec Lean_Irreducible_K Lean_Irreducible_T Lean_Irreducible_N Lean_Ir
     x = 0) (Eps_i (fun w:set => w :e Lean_Irreducible)) Hw0). }
 exact In_fam_eq (fun z:set => C z) 0 t (eq_sym_i t 0 Ht0) (IndRec Lean_Irreducible_K Lean_Irreducible_T Lean_Irreducible_N Lean_Irreducible_R Lean_Irreducible_F Lean_Irreducible_Ix Lean_Irreducible_O
     Lean_Irreducible_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0) (a 1))) SeqNil) k) (Eps_i (fun w:set => w :e Lean_Irreducible))) L.
+Qed.
+Theorem Lean_Irreducible_rec_proof_ok : forall motive:set -> set,
+  0 :e (Pi_ x0 :e (Pi_ ux :e (((Lean_IsUnit P0) P1) P2), Lean_False_Prop), (Pi_ x1 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e (((Lean_Eq_Prop P0) P2) ((((proj1 ((proj1 ((proj1 P1) 0))
+    0)) 0) q0) q1)), ((Lean_Or_Prop (((Lean_IsUnit P0) P1) q0)) (((Lean_IsUnit P0) P1) q1)))))}, (motive 0))) ->
+  0 :e Lean_Irreducible_Prop -> 0 :e (motive 0).
+let motive. assume H0.
+claim L: forall w :e Lean_Irreducible, 0 :e (motive 0).
+{ apply Lean_Irreducible_ind.
+  let x0. assume Hx0. let x1. assume Hx1.
+    exact (Pi_0_ap {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e (((Lean_Eq_Prop P0) P2) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) q0) q1)), ((Lean_Or_Prop (((Lean_IsUnit P0) P1) q0))
+    (((Lean_IsUnit P0) P1) q1)))))} (fun x1 => (motive 0)) (Pi_0_ap (Pi_ ux :e (((Lean_IsUnit P0) P1) P2), Lean_False_Prop) (fun x0 => (Pi_ x1 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2
+    :e (((Lean_Eq_Prop P0) P2) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) q0) q1)), ((Lean_Or_Prop (((Lean_IsUnit P0) P1) q0)) (((Lean_IsUnit P0) P1) q1)))))}, (motive 0))) H0 x0 Hx0) x1 Hx1).
+}
+assume Ht: 0 :e Lean_Irreducible_Prop.
+apply SepE2 1 (fun x:set => exists w, w :e Lean_Irreducible) 0 Ht.
+let w. assume Hw: w :e Lean_Irreducible.
+exact L w Hw.
 Qed.
 
 End Lean_Irreducible_Section.
@@ -11503,6 +11536,15 @@ let t. assume Ht: t :e Lean_Finset.
 exact SepE2 1 (fun z => P t) (Lean_Finset_rec 0 t) (Lean_Finset_rec_type (fun t => {z :e 1 | P t}) 0 M0 t Ht).
 Qed.
 
+
+Theorem Lean_Finset_rec_proof_ok : forall motive:set -> set,
+  0 :e (Pi_ x0 :e (Lean_Multiset P0), (Pi_ x1 :e {z :e 1 | z :e ((Lean_Multiset_Nodup P0) x0)}, (motive (Lean_Finset_mk_node x0 x1)))) ->
+  forall t :e Lean_Finset, 0 :e (motive t).
+let motive. assume H0.
+apply Lean_Finset_ind.
+  let x0. assume Hx0. let x1. assume Hx1. exact (Pi_0_ap {z :e 1 | z :e ((Lean_Multiset_Nodup P0) x0)} (fun x1 => (motive (Lean_Finset_mk_node x0 x1))) (Pi_0_ap (Lean_Multiset P0) (fun x0 => (Pi_ x1
+    :e {z :e 1 | z :e ((Lean_Multiset_Nodup P0) x0)}, (motive (Lean_Finset_mk_node x0 x1)))) H0 x0 Hx0) x1 Hx1).
+Qed.
 
 
 

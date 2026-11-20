@@ -32,7 +32,7 @@ theorem coversMatches_iff_all_model_counts [DecidableEq O] (A : SubstitutionActi
       (fun occurrence => A.E (A.apply σ pattern) (A.apply σ (label occurrence))) included).mpr (counts σ model)
     exact covered
 
-theorem coversMatches_iff_all_filtered_absence [DecidableEq O] (A : SubstitutionAction T S)
+theorem coversMatches_iff_all_filtered_none [DecidableEq O] (A : SubstitutionAction T S)
     (equations : EquationStore T) (label : O → T) (visible world : Finset O) (pattern : T)
     (included : visible ⊆ world) :
     CoversMatches A equations label visible world pattern ↔
@@ -41,9 +41,9 @@ theorem coversMatches_iff_all_filtered_absence [DecidableEq O] (A : Substitution
         (¬ ∃ occurrence ∈ world, A.E (A.apply σ pattern) (A.apply σ (label occurrence)) ∧ test occurrence) := by
   constructor
   · intro covered σ model
-    exact (WitnessObservations.covers_iff_all_filtered_absence visible world _ included).mp (covered σ model)
+    exact (WitnessObservations.covers_iff_all_filtered_none visible world _ included).mp (covered σ model)
   · intro preserved σ model
-    exact (WitnessObservations.covers_iff_all_filtered_absence visible world _ included).mpr (preserved σ model)
+    exact (WitnessObservations.covers_iff_all_filtered_none visible world _ included).mpr (preserved σ model)
 
 end Check
 

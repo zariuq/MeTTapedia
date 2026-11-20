@@ -1,0 +1,15 @@
+import Mettapedia.Machines.SurvivorBudgetExecution
+import Mettapedia.Logic.KernelFoundationManifest
+
+#print axioms Mettapedia.Machines.SurvivorBudget.accounted_peak
+#print axioms Mettapedia.Machines.SurvivorBudget.accounted_peak_with_roots
+#print axioms Mettapedia.Machines.SurvivorBudget.guarded_add_eq_saturation
+#print axioms Mettapedia.Machines.SurvivorBudget.guarded_product_eq_saturation
+#print axioms Mettapedia.Machines.SurvivorBudget.saturated_threshold_keeps_live_floor
+#print axioms Mettapedia.Machines.SurvivorBudget.trace_copy_amortized
+#print axioms Mettapedia.Machines.SurvivorBudgetExecution.scheduled_execution_agrees
+#print axioms Mettapedia.Machines.SurvivorBudgetExecution.two_schedules_agree
+#print axioms Mettapedia.Machines.CollectorEvacuation.trace_reset_evacuate_composes
+
+#foundation_manifest_module Mettapedia.Machines.SurvivorBudget
+#foundation_manifest_module Mettapedia.Machines.SurvivorBudgetExecution

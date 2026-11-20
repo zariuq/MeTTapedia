@@ -51,6 +51,120 @@ def comp (first second : ReflectiveSymbols) : ReflectiveSymbols where
 
 end ReflectiveSymbols
 
+private theorem mapPattern_freeFvarNames_eq (symbols : LanguageDefSymbolMap) (pattern : Pattern) :
+    (mapPattern symbols pattern).freeFvarNames = pattern.freeFvarNames := by
+  induction pattern using Pattern.inductionOn with
+  | hbvar => rfl
+  | hfvar => rfl
+  | happly constructor arguments ih =>
+      simp only [mapPattern, mapPatternList_eq_map, Pattern.freeFvarNames, List.flatMap_map]
+      exact List.flatMap_congr ih
+  | hlambda => simp_all [mapPattern, Pattern.freeFvarNames]
+  | hmultiLambda => simp_all [mapPattern, Pattern.freeFvarNames]
+  | hsubst => simp_all [mapPattern, Pattern.freeFvarNames]
+  | hcollection collectionType elements rest ih =>
+      simp only [mapPattern, mapPatternList_eq_map, Pattern.freeFvarNames, List.flatMap_map]
+      rw [List.flatMap_congr ih]
+
+private theorem mapPattern_isWellScopedAt_eq (symbols : LanguageDefSymbolMap) (pattern : Pattern) :
+    ∀ depth, (mapPattern symbols pattern).isWellScopedAt depth = pattern.isWellScopedAt depth := by
+  induction pattern using Pattern.inductionOn with
+  | hbvar => intro _; rfl
+  | hfvar => intro _; rfl
+  | happly constructor arguments ih =>
+      intro depth
+      simp only [mapPattern, mapPatternList_eq_map, Pattern.isWellScopedAt]
+      induction arguments with
+      | nil => rfl
+      | cons argument rest restIh =>
+          simp only [List.map_cons, Pattern.isWellScopedListAt, ih argument (by simp) depth,
+            restIh fun other member => ih other (by simp [member])]
+  | hlambda binder body ih => intro depth; simp only [mapPattern, Pattern.isWellScopedAt, ih]
+  | hmultiLambda arity binders body ih => intro depth; simp only [mapPattern, Pattern.isWellScopedAt, ih]
+  | hsubst body replacement ihBody ihReplacement =>
+      intro depth; simp only [mapPattern, Pattern.isWellScopedAt, ihBody, ihReplacement]
+  | hcollection collectionType elements rest ih =>
+      intro depth
+      simp only [mapPattern, mapPatternList_eq_map, Pattern.isWellScopedAt]
+      induction elements with
+      | nil => rfl
+      | cons element others othersIh =>
+          simp only [List.map_cons, Pattern.isWellScopedListAt, ih element (by simp) depth,
+            othersIh fun other member => ih other (by simp [member])]
+
+/-- A frozen spelling stays a global name under a structural map. -/
+def mapFrozenSpelling (symbols : LanguageDefSymbolMap) (frozen : FrozenSpelling) : FrozenSpelling :=
+  ⟨mapPattern symbols frozen.spelling, by
+    rw [mapPattern_freeFvarNames_eq, mapPattern_isWellScopedAt_eq]; exact frozen.ground⟩
+
+/-- Map a quote scope. A frozen spelling is a pattern and is mapped like one; a
+closure context constructor is mapped like a constructor, so that the closure
+terms it builds correspond. -/
+def mapQuoteScope (symbols : ReflectiveSymbols) : QuoteScope → QuoteScope
+  | .closed => .closed
+  | .reaching .apply => .reaching .apply
+  | .reaching (.freeze frozen) => .reaching (.freeze (mapFrozenSpelling symbols.toLanguageDefSymbolMap frozen))
+  | .reaching (.closure context) => .reaching (.closure (symbols.constructor context))
+
+/-- A structural map sends a closure context constructor to its image. -/
+@[simp] theorem mapQuoteScope_contextConstructor? (symbols : ReflectiveSymbols) (scope : QuoteScope) :
+    (mapQuoteScope symbols scope).contextConstructor? = scope.contextConstructor?.map symbols.constructor := by
+  rcases scope with _ | (_ | frozen | context) <;> rfl
+
+@[simp] theorem mapQuoteScope_id (scope : QuoteScope) : mapQuoteScope ReflectiveSymbols.id scope = scope := by
+  rcases scope with _ | (_ | frozen | context)
+  · rfl
+  · rfl
+  · simp only [mapQuoteScope, ReflectiveSymbols.id, mapFrozenSpelling, mapPattern_id]
+  · rfl
+
+@[simp] theorem mapQuoteScope_comp (first second : ReflectiveSymbols) (scope : QuoteScope) :
+    mapQuoteScope (first.comp second) scope = mapQuoteScope second (mapQuoteScope first scope) := by
+  rcases scope with _ | (_ | frozen | context)
+  · rfl
+  · rfl
+  · simp only [mapQuoteScope, ReflectiveSymbols.comp, mapFrozenSpelling, mapPattern_comp]
+  · rfl
+
+/-- Pattern transport reads only the constructor component of a symbol map. -/
+theorem mapPattern_congr_constructor {first second : LanguageDefSymbolMap}
+    (same : ∀ constructor, first.constructor constructor = second.constructor constructor)
+    (pattern : Pattern) : mapPattern first pattern = mapPattern second pattern := by
+  induction pattern using Pattern.inductionOn with
+  | hbvar index => rfl
+  | hfvar name => rfl
+  | happly constructor arguments ih =>
+      simp only [mapPattern, mapPatternList_eq_map, same constructor]
+      congr 1
+      exact List.map_congr_left fun argument member => ih argument member
+  | hlambda binder body ih => simp only [mapPattern, ih]
+  | hmultiLambda arity binders body ih => simp only [mapPattern, ih]
+  | hsubst body replacement ihBody ihReplacement => simp only [mapPattern, ihBody, ihReplacement]
+  | hcollection kind elements rest ih =>
+      simp only [mapPattern, mapPatternList_eq_map]
+      congr 1
+      exact List.map_congr_left fun element member => ih element member
+
+/-- Quote-scope transport is natural whenever constructor transport is. -/
+theorem mapQuoteScope_natural {first second third fourth : ReflectiveSymbols}
+    (same : ∀ constructor, second.constructor (first.constructor constructor) =
+      fourth.constructor (third.constructor constructor))
+    (scope : QuoteScope) :
+    mapQuoteScope second (mapQuoteScope first scope) = mapQuoteScope fourth (mapQuoteScope third scope) := by
+  rcases scope with _ | (_ | frozen | context)
+  · rfl
+  · rfl
+  · simp only [mapQuoteScope, mapFrozenSpelling, QuoteScope.reaching.injEq, QuoteView.freeze.injEq]
+    have spelled : mapPattern second.toLanguageDefSymbolMap (mapPattern first.toLanguageDefSymbolMap
+        frozen.spelling) = mapPattern fourth.toLanguageDefSymbolMap
+          (mapPattern third.toLanguageDefSymbolMap frozen.spelling) := by
+      rw [← mapPattern_comp, ← mapPattern_comp]
+      exact mapPattern_congr_constructor (fun constructor => same constructor) frozen.spelling
+    cases frozen
+    simp only [FrozenSpelling.mk.injEq]
+    exact spelled
+  · simp only [mapQuoteScope, same]
+
 /-- Map one reflective presentation and all references it makes into the
 five-field core. -/
 def mapReflectivePresentation (symbols : ReflectiveSymbols)
@@ -63,7 +177,8 @@ def mapReflectivePresentation (symbols : ReflectiveSymbols)
     parallelCollection := declaration.parallelCollection
     parallelUnitConstructor :=
       symbols.constructor declaration.parallelUnitConstructor
-    quoteDropEquation := symbols.equation declaration.quoteDropEquation }
+    quoteDropEquation := symbols.equation declaration.quoteDropEquation
+    quoteScope := mapQuoteScope symbols declaration.quoteScope }
 
 /-- Map a rule-local reflective selection while preserving its distinct
 matching and substitution roles. -/
@@ -80,6 +195,7 @@ def mapReflectiveRule (symbols : ReflectiveSymbols)
     (declaration : ReflectivePresentationDecl) :
     mapReflectivePresentation ReflectiveSymbols.id declaration = declaration := by
   cases declaration
+  simp only [mapReflectivePresentation, mapQuoteScope_id]
   rfl
 
 @[simp] theorem mapReflectivePresentation_comp
@@ -89,6 +205,7 @@ def mapReflectiveRule (symbols : ReflectiveSymbols)
       mapReflectivePresentation second
         (mapReflectivePresentation first declaration) := by
   cases declaration
+  simp only [mapReflectivePresentation, mapQuoteScope_comp]
   rfl
 
 @[simp] theorem mapReflectiveRule_id (declaration : ReflectiveRuleDecl) :

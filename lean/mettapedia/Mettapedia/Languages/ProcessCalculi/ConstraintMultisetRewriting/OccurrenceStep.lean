@@ -23,9 +23,69 @@ open Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits
 
 universe uT uS uO
 
+/-- How a predicate query quantifies over the present rows its pattern matches. A check is read
+at every solution of the firing's information, so its pattern is read through each solution.
+A universal query needs a domain and unknowns local to the query; it is not a quantifier over the
+whole store, which would read every row of every space. -/
+inductive Quantifier where
+  /-- Some present row matches. -/
+  | any
+  /-- No present row matches. -/
+  | none
+  deriving DecidableEq, Repr
+
+namespace Quantifier
+
+variable {O : Type uO}
+
+/-- The quantifier over the rows of a world, of a property of rows. -/
+def Holds : Quantifier → Finset O → (O → Prop) → Prop
+  | .any, world, p => ∃ o ∈ world, p o
+  | .none, world, p => ∀ o ∈ world, ¬ p o
+
+@[simp] theorem holds_any (world : Finset O) (p : O → Prop) :
+    Quantifier.any.Holds world p ↔ ∃ o ∈ world, p o := Iff.rfl
+
+@[simp] theorem holds_none (world : Finset O) (p : O → Prop) :
+    Quantifier.none.Holds world p ↔ ∀ o ∈ world, ¬ p o := Iff.rfl
+
+/-- A quantifier reads its property only on the rows of the world. -/
+theorem holds_congr (q : Quantifier) {world : Finset O} {p p' : O → Prop}
+    (same : ∀ o ∈ world, (p o ↔ p' o)) : q.Holds world p ↔ q.Holds world p' := by
+  cases q with
+  | any => exact ⟨fun ⟨o, m, h⟩ => ⟨o, m, (same o m).1 h⟩, fun ⟨o, m, h⟩ => ⟨o, m, (same o m).2 h⟩⟩
+  | none => exact ⟨fun h o m e => h o m ((same o m).2 e), fun h o m e => h o m ((same o m).1 e)⟩
+
+/-- What a quantifier asks of the set of rows its pattern matches. -/
+def Accepts : Quantifier → Finset O → Prop
+  | .any, seen => seen.Nonempty
+  | .none, seen => seen = ∅
+
+/-- `none` is the negation of `any`. -/
+theorem holds_none_iff_not_any (world : Finset O) (p : O → Prop) :
+    Quantifier.none.Holds world p ↔ ¬ Quantifier.any.Holds world p := by
+  simp
+
+/-- `any` grows with the world; `none` shrinks with it. -/
+theorem holds_any_mono {world world' : Finset O} (sub : world ⊆ world') {p : O → Prop} :
+    Quantifier.any.Holds world p → Quantifier.any.Holds world' p :=
+  fun ⟨o, m, h⟩ => ⟨o, sub m, h⟩
+
+theorem holds_none_anti {world world' : Finset O} (sub : world ⊆ world') {p : O → Prop} :
+    Quantifier.none.Holds world' p → Quantifier.none.Holds world p :=
+  fun h o m => h o (sub m)
+
+instance decidableHolds (q : Quantifier) (world : Finset O) (p : O → Prop) [DecidablePred p] :
+    Decidable (q.Holds world p) := by
+  cases q <;> unfold Holds <;> infer_instance
+
+end Quantifier
+
+/-- A check of a rule instance: an equation guard, a predicate query over the present rows, or a
+count aggregate of the present rows matching a pattern. -/
 inductive Check (T : Type uT) where
   | equal (left right : T)
-  | absent (pattern : T)
+  | predicate (quantifier : Quantifier) (pattern : T)
   | count (pattern : T) (number : Nat)
 
 namespace Check
@@ -34,11 +94,11 @@ variable {T : Type uT} {S : Type uS} {O : Type uO} [DecidableEq O]
 
 def pattern : Check T → T
   | .equal left _ => left
-  | .absent p | .count p _ => p
+  | .predicate _ p | .count p _ => p
 
 def map {U : Type*} (f : T → U) : Check T → Check U
   | .equal left right => .equal (f left) (f right)
-  | .absent p => .absent (f p)
+  | .predicate q p => .predicate q (f p)
   | .count p n => .count (f p) n
 
 noncomputable def «matches» (A : SubstitutionAction T S) (σ : S)
@@ -49,8 +109,7 @@ noncomputable def «matches» (A : SubstitutionAction T S) (σ : S)
 def Holds (A : SubstitutionAction T S) (σ : S) (label : O → T)
     (store : Finset O) : Check T → Prop
   | .equal left right => A.Solves σ (left, right)
-  | .absent pattern => ∀ o ∈ store,
-      ¬ A.E (A.apply σ pattern) (A.apply σ (label o))
+  | .predicate q pattern => q.Holds store fun o => A.E (A.apply σ pattern) (A.apply σ (label o))
   | .count pattern number => («matches» A σ label store pattern).card = number
 
 end Check

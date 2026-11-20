@@ -105,16 +105,19 @@ def tryEquation (equation : Equation (Observation S source)) : Option (Refutatio
     · exact none
   · exact none
 
-def choose : (problem : Problem source) → Option (Refutation problem)
-  | [] => none
-  | equation :: rest =>
-      match tryEquation equation with
+def choose : (problem : Problem source) →
+    (allowed : Equation (Observation S source) → Bool := fun _ => true) → Option (Refutation problem)
+  | [], _ => none
+  | equation :: rest, allowed =>
+      match (match allowed equation with
+        | true => tryEquation equation
+        | false => none) with
       | some refused => some ⟨fun next candidate solved =>
           refused.noModel next candidate fun pair member => by
             have same := List.mem_singleton.mp member
             subst pair
             exact solved equation List.mem_cons_self⟩
-      | none => (choose rest).map fun refused => ⟨fun next candidate solved =>
+      | none => (choose rest allowed).map fun refused => ⟨fun next candidate solved =>
           refused.noModel next candidate fun pair member => solved pair (List.mem_cons_of_mem equation member)⟩
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualEquationRefutation

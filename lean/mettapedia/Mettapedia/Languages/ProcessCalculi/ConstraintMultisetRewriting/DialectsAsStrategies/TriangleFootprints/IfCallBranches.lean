@@ -17,9 +17,10 @@ included.
   match identically, and `$p`, `$q` are bound to the delivered branches, unchanged.
 * `call_read`: on every frontier of `(if b y n)` over a program whose region of `if` is the row of
   `b`, the one work's body read under any unifier output is the plain taken branch.
-* `call_every_run`: a complete HE run of `(if c y n)` exists, every complete run publishes the
-  answers of the taken branch, and PeTTa yields the same; the condition settles with one Boolean
-  answer, the taken branch is any settling term whose data answers `$t` casts as they are.
+* `call_every_run`: a complete HE run of `(if c y n)` exists, every complete run publishes the bag
+  of the answers of the taken branch, and PeTTa yields them as a list; the condition settles with
+  one Boolean answer, the taken branch is any settling term whose data answers `$t` casts as they
+  are.
 
 ## Controls
 
@@ -108,7 +109,7 @@ theorem lookup_bind_self (rebuilding : Entry.RebuildPolicy) (env : Entry.Value.E
   simp [Entry.Value.bind]
 
 theorem lookup_filter_map_none {env : Entry.Value.Environment} {name other : String}
-    {transform : Entry.Value → Entry.Value} (absent : env.lookup name = none) :
+    {transform : Entry.Value → Entry.Value} (missing : env.lookup name = none) :
     ((env.filter fun row => row.1 != other).map fun row => (row.1, transform row.2)).lookup name =
       none := by
   induction env with
@@ -117,22 +118,22 @@ theorem lookup_filter_map_none {env : Entry.Value.Environment} {name other : Str
       rcases row with ⟨key, value⟩
       by_cases same : name = key
       · subst same
-        simp [List.lookup] at absent
+        simp [List.lookup] at missing
       · have different : (name == key) = false := by simp [same]
-        have restAbsent : rest.lookup name = none := by
-          simpa [List.lookup, different] using absent
+        have restMissing : rest.lookup name = none := by
+          simpa [List.lookup, different] using missing
         by_cases kept : (key != other) = true
-        · simp [List.filter, kept, List.lookup, different, ih restAbsent]
+        · simp [List.filter, kept, List.lookup, different, ih restMissing]
         · simp only [Bool.not_eq_true] at kept
-          simp [List.filter, kept, ih restAbsent]
+          simp [List.filter, kept, ih restMissing]
 
 theorem lookup_bind_unbound {rebuilding : Entry.RebuildPolicy} {env : Entry.Value.Environment}
     {name other : String} {value : Entry.Value} (different : name ≠ other)
-    (absent : env.lookup name = none) :
+    (missing : env.lookup name = none) :
     (Entry.Value.bind rebuilding env other value).lookup name = none := by
   have notEq : (name == other) = false := by simp [different]
   simp only [Entry.Value.bind, List.lookup, notEq]
-  exact lookup_filter_map_none absent
+  exact lookup_filter_map_none missing
 
 /-- After binding `p` to a closed value and then another name `q`, `p` still reads that value. -/
 theorem lookup_bind_bind {rebuilding : Entry.RebuildPolicy} {env : Entry.Value.Environment}
@@ -867,8 +868,8 @@ HE's standard-library `if` (`IfCallProgram`), historical lookup, any policy and 
 does not execute `if`: for a condition that settles with one Boolean answer `b` and meets `Bool`, and
 branches meeting `CallBranches` (the taken one any settling term with answers `L` whose data form
 `$t` casts as they are, the other any closed atom, the region of `if` HE's row of `b`): a complete
-HE run of `(if c y n)` exists, every complete run publishes `L`, and PeTTa's special form yields `L`
-from some fuel on. -/
+HE run of `(if c y n)` exists, every complete run publishes the bag of `L`, and PeTTa's special form
+yields the list `L` from some fuel on. -/
 theorem call_every_run (dispatch : GroundedDispatch)
     (notHost : ¬ dispatch.executable (.symbol "if")) (policy : Policy) {atoms : List Atom}
     (program : IfCallProgram atoms) {c : Atom} {b : Bool} (condition : Condition dispatch atoms c b)
@@ -881,7 +882,8 @@ theorem call_every_run (dispatch : GroundedDispatch)
         Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy)
             (load (Space.ofList atoms) (callC c y n) Atom.undefinedType)
             ⟨Space.ofList atoms, .returning [], [], emitted⟩ →
-          emitted.map (fun r => r.1.erase) = L) ∧
+          ((emitted.map (fun r => r.1.erase) : List Atom) : Multiset Atom) =
+            ((L : List Atom) : Multiset Atom)) ∧
       ∃ N : Nat, ∀ k, N ≤ k → Streaming.values (Streaming.advance (translate atoms) k
         (Streaming.enter { state := store atoms } (callC c y n))) = L := by
   obtain ⟨heAnswers, path, _⟩ := call_run dispatch notHost policy program condition branches
@@ -890,7 +892,8 @@ theorem call_every_run (dispatch : GroundedDispatch)
     simp [isGroundAtom, isGroundAtom.isGroundList, cShape.answerable.ground,
       branches.groundYes, branches.groundNo]
   exact ⟨⟨heAnswers, path⟩,
-    fun emitted run => call_source program condition branches (complete_source run),
+    fun emitted run => congrArg (fun l : List Atom => (l : Multiset Atom))
+      (call_source program condition branches (complete_source run)),
     petta_complete ground (settlesK_shape branches.takenSettles).1.answers
       (petta_if_computed (petta_settles program.rows condition.settles)
         (petta_settles program.rows branches.takenSettles))⟩
@@ -1034,9 +1037,11 @@ theorem zero_call (policy : Policy) :
           emitted.map (fun r => r.1.erase) = [sym "two"]) ∧
       ∃ N : Nat, ∀ k, N ≤ k → Streaming.values (Streaming.advance (translate callRows) k
         (Streaming.enter { state := store callRows }
-          (callC (app "isZero" [num 0]) (app "half" [num 4]) (app "loop" [])))) = [sym "two"] :=
-  call_every_run noHost (fun impossible => impossible) policy call_program isZero_condition
-    half_branches
+          (callC (app "isZero" [num 0]) (app "half" [num 4]) (app "loop" [])))) = [sym "two"] := by
+  obtain ⟨complete, every, petta⟩ := call_every_run noHost (fun impossible => impossible) policy
+    call_program isZero_condition half_branches
+  exact ⟨complete, fun emitted run =>
+    List.perm_singleton.mp (Multiset.coe_eq_coe.mp (every emitted run)), petta⟩
 
 /-- **Negative control: freshness is what the read uses.** If the environment already binds the
 pattern variable `$p` to `z`, HE's unifier cannot bind `$p` to the delivered branch `y`: no

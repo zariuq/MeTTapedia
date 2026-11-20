@@ -76,7 +76,7 @@ def oneTerm : Term signature := .const 1
 def label (occurrence : Nat) : Term signature := if occurrence = 0 then zeroTerm else .const 2
 def before : Configuration (Term signature) Nat := ⟨[], {0}⟩
 def rule : RuleInstance (Term signature) :=
-  ⟨[], [], [(x, oneTerm)], [.absent x], [.const 2]⟩
+  ⟨[], [], [(x, oneTerm)], [.predicate .none x], [.const 2]⟩
 def selection : Selection Nat := ⟨[], [], [1]⟩
 
 theorem original_joint_selection_is_valid : selection.Valid A label rule before := by
@@ -88,7 +88,7 @@ theorem original_joint_selection_is_valid : selection.Valid A label rule before 
     subst equation
     rfl
   · intro check member assignment solved
-    have same : check = .absent x := by simpa [rule] using member
+    have same : check = .predicate .none x := by simpa [rule] using member
     subst check
     have value := solved (x, oneTerm) (by
       simp [Selection.problem, Selection.equations, rule, selection, before])
@@ -101,11 +101,11 @@ theorem original_joint_selection_is_valid : selection.Valid A label rule before 
     cases equal
 
 theorem pre_tell_guard_is_unresolved :
-    Check.Unresolved A (inputProblem selection label rule before) label before.present (.absent x) := by
+    Check.Unresolved A (inputProblem selection label rule before) label before.present (.predicate .none x) := by
   constructor
   · intro certain
-    have absent := certain ConstraintMultisetRewriting.Controls.zero (A.models_nil _)
-    exact absent 0 (by simp [before]) rfl
+    have missing := certain ConstraintMultisetRewriting.Controls.zero (A.models_nil _)
+    exact missing 0 (by simp [before]) rfl
   · intro refuted
     apply refuted ConstraintMultisetRewriting.Controls.one (A.models_nil _)
     intro occurrence present same
@@ -117,7 +117,7 @@ theorem pre_tell_guard_is_unresolved :
 theorem the_choice_has_a_real_separator :
     selection.Valid A label rule before ∧
       ¬ A.Entails (inputProblem selection label rule before)
-        (fun assignment => (Check.absent x).Holds A assignment label before.present) :=
+        (fun assignment => (Check.predicate .none x).Holds A assignment label before.present) :=
   ⟨original_joint_selection_is_valid, pre_tell_guard_is_unresolved.1⟩
 
 end Controls

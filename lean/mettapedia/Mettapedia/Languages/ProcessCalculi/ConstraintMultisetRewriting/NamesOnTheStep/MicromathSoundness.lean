@@ -283,7 +283,7 @@ def asY : ℕ → Expr := fun i => [projY, projX, projY, .name 0].getD i (.sym 0
 
 theorem define_writes {τ : ℕ → Expr} (onlyZero : ∀ p ∈ define.patterns, ∀ i ∈ p.holes,
       ∀ m ∈ (τ i).support, m = 0)
-    {queries : List (PredicateQueryAdmission.Query Expr Unit Occ)} {sel : Selection Occ} {n : ℕ}
+    {queries : List (PredicateQueryAdmission.RegionQuery Expr Unit Occ)} {sel : Selection Occ} {n : ℕ}
     (written : n ∈ firingNames Expr.names (⟨define.inst τ, queries, sel⟩ : Fir)) : n = 0 := by
   obtain ⟨p, member, i, inHoles, held⟩ :=
     codeOnly_writes (micromath_codeOnly define (by simp [micromath])) τ queries sel written

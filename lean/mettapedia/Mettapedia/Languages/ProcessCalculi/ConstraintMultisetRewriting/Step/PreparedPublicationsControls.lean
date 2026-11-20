@@ -31,7 +31,7 @@ theorem new_receipt_without_base_receipt :
     EventControls.restricted.successObserver.evaluate EventControls.admittedPath [] =
       [⟨start, ⟨apart, apart_admitted⟩⟩] ∧
     ¬ Nonempty (guarded.step.effectCore.Event guarded.step.eventAdmission () ()) :=
-  ⟨rfl, EventControls.receipt_after_admission, EventControls.guarded_event_absent⟩
+  ⟨rfl, EventControls.receipt_after_admission, EventControls.no_guarded_event⟩
 
 theorem inherited_observation_erases :
     (inherited.observer EventControls.restricted.eventAdmission).forget.mapPath

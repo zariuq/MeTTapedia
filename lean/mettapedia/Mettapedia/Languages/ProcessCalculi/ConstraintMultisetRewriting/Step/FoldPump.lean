@@ -24,8 +24,8 @@ The first-order step has no authority layer, so no authority condition arises he
 
 * **Pumped** (`producer_pumps`): making one occurrence from the empty configuration pumps to `n`
   occurrences, for every `n`.
-* **Refused** (`absent_guard_stops`): a rule that makes `b` while requiring `b` absent fires once from
-  the empty configuration and is then refused, under every renaming of what it makes; its absence
+* **Refused** (`none_guard_stops`): a rule that makes `b` while requiring `b` missing fires once from
+  the empty configuration and is then refused, under every renaming of what it makes; its none query
   guard is not an equation, so it is not query-free.
 -/
 
@@ -178,28 +178,28 @@ def marked : ℕ → Term signature := fun _ => .const 1
 
 /-- Makes occurrence `o`, labelled `1`, requiring that no `1` is present. -/
 def once (o : ℕ) : Firing (Term signature) (Subst signature) ℕ :=
-  ⟨⟨[], [], [], [.absent (.const 1)], [.const 1]⟩, [], ⟨[], [], [o]⟩⟩
+  ⟨⟨[], [], [], [.predicate .none (.const 1)], [.const 1]⟩, [], ⟨[], [], [o]⟩⟩
 
 theorem once_valid : (once 7).Valid A marked blankStart := by
   refine ⟨⟨by simp [once], by simp [once], rfl, rfl, rfl, by decide,
     ⟨Subst.id signature, fun e member => by simp [Selection.problem, Selection.equations, once, blankStart] at member⟩,
     ?_⟩, by simp [once]⟩
   intro check member σ _
-  obtain rfl : check = .absent (.const 1) := by simpa [once] using member
+  obtain rfl : check = .predicate .none (.const 1) := by simpa [once] using member
   intro o present
   simp [blankStart] at present
 
 /-- **Refused**: the rule fires once from the empty configuration and is then refused, whatever
 occurrence it would make; a positive balance does not pump it. -/
-theorem absent_guard_stops :
+theorem none_guard_stops :
     (once 7).Valid A marked blankStart ∧ (∀ o, ¬ (once o).Valid A marked ((once 7).result marked blankStart)) ∧
       ¬ QueryFree (once 7) := by
   refine ⟨once_valid, fun o valid => ?_, fun free => ?_⟩
-  · have holds := valid.firing.checks (.absent (.const 1)) (by simp [once]) (Subst.id signature)
+  · have holds := valid.firing.checks (.predicate .none (.const 1)) (by simp [once]) (Subst.id signature)
       (fun e member => by
         simp [Selection.problem, Selection.equations, Firing.result, Selection.result, once, blankStart] at member)
     exact holds 7 (by decide) rfl
-  · obtain ⟨left, right, same⟩ := free.guards (.absent (.const 1)) (by simp [once])
+  · obtain ⟨left, right, same⟩ := free.guards (.predicate .none (.const 1)) (by simp [once])
     cases same
 
 end PumpControls
@@ -210,6 +210,6 @@ end PumpControls
 #print axioms PumpControls.producer_supply
 #print axioms PumpControls.producer_pumps
 #print axioms PumpControls.once_valid
-#print axioms PumpControls.absent_guard_stops
+#print axioms PumpControls.none_guard_stops
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.AnnotatedRuns

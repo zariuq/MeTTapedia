@@ -63,8 +63,9 @@ theorem result_exact (world : PreparedStoreProtocol.World O)
     (OrderedStore.step X a label).result (request (a := a) plan) admitted =
       (knowledge, PreparedStoreProtocol.updatedRows world plan) := rfl
 
-/-- Every committed protocol publication is realized by an admitted tcalc
-step with the same ordered rows, whether or not a receipt was requested. -/
+/-- Every committed protocol publication is realized by an admitted step of the
+ordered occurrence store (`OrderedStore.step`) with the same ordered rows,
+whether or not a receipt was requested. -/
 theorem publication_realized (state : PreparedStoreProtocol.State O (Tm a))
     (expected : Option Nat) (receipt : Option (PreparedStoreProtocol.Receipt O (Tm a)))
     (committed : (PreparedStoreProtocol.publish label expected state).1 = .committed receipt)

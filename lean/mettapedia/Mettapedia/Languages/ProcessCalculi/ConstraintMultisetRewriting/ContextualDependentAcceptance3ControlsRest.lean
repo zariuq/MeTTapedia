@@ -1,9 +1,9 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentAcceptance3Controls
 
 /-!
-# The census under the last family: projections, clashes, and the gap witnesses
+# The classification under the last family: projections, clashes, and the gap witnesses
 
-The third part of the census of `ContextualDependentAcceptance3Controls`, with R110's gap witnesses (`cumulativeStore`,
+The third part of the classification of `ContextualDependentAcceptance3Controls`, with R110's gap witnesses (`cumulativeStore`,
 `twiceStore`, `witnessStore`) and R116's twin witness (`twinStore`).
 -/
 

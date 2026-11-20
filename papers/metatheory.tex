@@ -3311,8 +3311,8 @@ dependencies, and preservation of the selected effects, faults and residuals.
 Termination, choicepoint elimination, cost composition and parallel admission
 retain their separate proof obligations.
 
-The native frame and contextual-variable readbacks in
-\leanname{CeTTaNeedHistory}, together with \leanname{CeTTaFrameWriteback},
+The call-by-need lifecycle laws are \leanname{BranchLocalNeed.CacheLaws}; the
+frame readbacks of \leanname{CeTTaFrameWriteback}
 provide a concrete component of retained-world realization: selected frame
 readback and write receipts preserve the shared logical image. Complete
 payload graphs, producer worlds, force rights, Need identities and native

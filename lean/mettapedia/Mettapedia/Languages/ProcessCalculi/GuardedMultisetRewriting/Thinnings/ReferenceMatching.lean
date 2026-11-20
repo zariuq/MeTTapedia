@@ -194,12 +194,12 @@ theorem matchContextR_spec (store : Store Head) (canonical : Canonical store)
       matchT pattern.tree (fun _ => none) (unfold store target) at structural
     cases captured : matchR pattern.tree store (fun _ => none) target with
     | none =>
-      have absent : matchT pattern.tree (fun _ => none) (unfold store target) = none := by
+      have missing : matchT pattern.tree (fun _ => none) (unfold store target) = none := by
         simpa [captured] using structural.symm
       simp only [matchContextR, inScope, ↓reduceIte, captured]
       refine ⟨List.prefix_refl _, canonical, ?_, ?_⟩
       · intro result impossible; cases impossible
-      · simp [match?, scopedTarget, absent]
+      · simp [match?, scopedTarget, missing]
     | some targets =>
       have found : matchT pattern.tree (fun _ => none) (unfold store target) =
           some (unfoldSubst store targets) := by simpa [captured] using structural.symm

@@ -4,7 +4,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Occurrenc
 /-!
 # Principal-answer transport retains check arguments and physical worlds
 
-Equality, absence and exact-count checks depend on their term arguments and
+Equality, none queries and exact-count checks depend on their term arguments and
 every occurrence value in the observed world. Once those terms are retained
 in a principal interface, asking a check in every model is equivalent to
 asking it after every residual instantiation of the principal answer.
@@ -23,7 +23,7 @@ variable {T : Type uT} {S : Type uS} {O : Type uO}
 
 def Check.terms : Check T → List T
   | .equal left right => [left, right]
-  | .absent pattern | .count pattern _ => [pattern]
+  | .predicate _ pattern | .count pattern _ => [pattern]
 
 private theorem equality_iff (A : SubstitutionAction T S) {left right left' right' : T}
     (leftSame : A.E left left') (rightSame : A.E right right') :
@@ -46,16 +46,12 @@ theorem Check.holds_congr (A : SubstitutionAction T S) (first second : S)
   | equal left right =>
       exact equality_iff A (arguments left (by simp [Check.terms]))
         (arguments right (by simp [Check.terms]))
-  | absent pattern =>
+  | predicate quantifier pattern =>
       have comparisons : ∀ occurrence ∈ world,
           A.E (A.apply first pattern) (A.apply first (label occurrence)) ↔
             A.E (A.apply second pattern) (A.apply second (label occurrence)) := fun occurrence member =>
         equality_iff A (arguments pattern (by simp [Check.terms])) (values occurrence member)
-      constructor
-      · intro absent occurrence member same
-        exact absent occurrence member ((comparisons occurrence member).mpr same)
-      · intro absent occurrence member same
-        exact absent occurrence member ((comparisons occurrence member).mp same)
+      exact quantifier.holds_congr comparisons
   | count pattern number =>
       have regions : Check.matches A first label world pattern = Check.matches A second label world pattern := by
         classical

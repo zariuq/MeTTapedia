@@ -5,12 +5,12 @@ import Mettapedia.GSLT.Parsing.PlainBnfStructuredValueCodec
 # Authored scalar lists and their existing structured wire representation
 
 The source graph uses the existing ground equation carrier: its empty scalar
-list is `metta-nullary` applied to the `bnf-v1:scalars-nil` symbol, while each
+list is the nullary `bnf-v1:scalars-nil` constructor, while each
 cons contains an integer and the next source list. The decoder below accepts
 exactly lists of nonnegative integers in this source shape.
 
 The separate structural lowering maps this family into the existing CeTTa
-wire term. It unwraps the source nil and represents nonnegative integers as
+wire term. It preserves the source nil and represents nonnegative integers as
 wire naturals. Its result is proved equal to the existing structured-value
 encoder; it is not defined by invoking that encoder or the source decoder.
 No text rendering, host reading, SWI codec, or physical C correspondence is
@@ -24,12 +24,12 @@ namespace Mettapedia.GSLT.Parsing.PlainBnfSourceScalarCodec
 open HornCertificate HornIntegerProvider
 
 def encodeScalars : List Nat → GroundTerm
-  | [] => .app "metta-nullary" (.cons (.atom "bnf-v1:scalars-nil") .nil)
+  | [] => .app "bnf-v1:scalars-nil" .nil
   | scalar :: rest => .app "bnf-v1:scalars-cons"
       (.cons (.integer scalar) (.cons (encodeScalars rest) .nil))
 
 def decodeScalars : GroundTerm → Option (List Nat)
-  | .app "metta-nullary" (.cons (.atom "bnf-v1:scalars-nil") .nil) => some []
+  | .app "bnf-v1:scalars-nil" .nil => some []
   | .app "bnf-v1:scalars-cons" (.cons (.integer scalar) (.cons rest .nil)) =>
       if 0 ≤ scalar then do
         let decodedRest ← decodeScalars rest
@@ -79,12 +79,12 @@ theorem encodeScalars_injective : Function.Injective encodeScalars := by
 
 theorem encodeScalars_aliasFree (scalars : List Nat) : AliasFree (encodeScalars scalars) := by
   induction scalars with
-  | nil => exact .app (by decide) (.cons (.atom (by decide)) .nil)
+  | nil => exact .app (by decide) .nil
   | cons scalar rest ih => exact .app (by decide) (.cons (.integer _) (.cons ih .nil))
 
 /-- Structural lowering for the scalar-list family only. -/
 def lowerScalars : GroundTerm → Option Mettapedia.GSLT.LanguageDef.CettaWire.Term
-  | .app "metta-nullary" (.cons (.atom "bnf-v1:scalars-nil") .nil) =>
+  | .app "bnf-v1:scalars-nil" .nil =>
       some (.application "bnf-v1:scalars-nil" [])
   | .app "bnf-v1:scalars-cons" (.cons (.integer scalar) (.cons rest .nil)) =>
       if 0 ≤ scalar then do
@@ -156,8 +156,8 @@ theorem lowerScalars_decode_agreement (term : GroundTerm) :
 
 /-! ## Source-shape and preservation controls -/
 
-theorem source_nil_is_wrapped :
-    encodeScalars [] = .app "metta-nullary" (.cons (.atom "bnf-v1:scalars-nil") .nil) := rfl
+theorem source_nil_is_nullary :
+    encodeScalars [] = .app "bnf-v1:scalars-nil" .nil := rfl
 
 theorem empty_list_lowers :
     lowerScalars (encodeScalars []) = some (.application "bnf-v1:scalars-nil" []) := by
@@ -187,10 +187,10 @@ theorem non_list_tail_is_rejected :
         (.cons (.integer 0) (.cons (.atom "not-a-list") .nil))) = none := by
   simp [decodeScalars, lowerScalars]
 
-theorem bare_and_unwrapped_nil_are_not_source_lists :
+theorem bare_and_marker_wrapped_nil_are_not_source_lists :
     decodeScalars (.atom "bnf-v1:scalars-nil") = none ∧
-      decodeScalars (.app "bnf-v1:scalars-nil" .nil) = none ∧
-      lowerScalars (.app "bnf-v1:scalars-nil" .nil) = none := by
+      decodeScalars (.app "metta-nullary" (.cons (.atom "bnf-v1:scalars-nil") .nil)) = none ∧
+      lowerScalars (.app "metta-nullary" (.cons (.atom "bnf-v1:scalars-nil") .nil)) = none := by
   simp [decodeScalars, lowerScalars]
 
 /-- Structural decoding deliberately does not perform Unicode admission. -/

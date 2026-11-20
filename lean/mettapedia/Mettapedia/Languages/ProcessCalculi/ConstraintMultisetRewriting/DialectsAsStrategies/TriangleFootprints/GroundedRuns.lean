@@ -12,20 +12,27 @@ whose operator the dispatch executes reaches `.work (.call …)` and no rule fir
 `WorldServices.readOnlyGrounded`, which produces the dispatch's outcome as fresh syntax. Its source
 semantics is `Completed.Stateful`.
 
-Here the world machine runs HE with `GroundedTables.heDispatch`. Every step of the contextual
-machine is a step of the world machine (`lift_step`; the dispatch has no minimal service), so the
-runs of `AnswerBags` and `BoundVariables` carry over; the grounded call adds `callGroundedResume`
-and the native boundary (`he_grounded_W`). PeTTa runs the call through its `primitive` rule
-(`petta_open_grounded`).
+Here the world machine runs HE with any grounded table `T` (`GroundedTables.GroundedTable`: the
+operators it executes and its outcome relation). The theorems are stated once, for every table; a
+grounded call of the class asks the table to answer it with PeTTa's value
+(`GroundedTable.Answers`). HE's table (`GroundedTables.measuredTable`) answers an integer operation
+whose result fits in 64 bits (`GroundedTables.measured_answers`); the model's table
+(`GroundedTables.modelTable`) answers every one (`GroundedTables.model_answers`). Every step of the
+contextual machine is a step of the world machine, for any dispatch without a minimal service and
+any host services (`lift_step_of`), so the runs of `AnswerBags` and `BoundVariables` carry over;
+the grounded call adds `callGroundedResume` and the native boundary (`he_answer_W`,
+`he_grounded_W`). PeTTa runs the call through its `primitive` rule (`petta_open_grounded`).
 
 ## Results
 
-* `SettlesG`: `SettlesV` with a fourth case, an integer operation `+ - * < <= > >=` on two integer
-  literals, its operator undeclared in the program. It is still a condition on the program.
+* `SettlesG T`: `SettlesV` with a fourth case, an integer operation `+ - * < <= > >=` on two
+  integer literals, its operator undeclared in the program, which the table `T` answers with the
+  operation's value. It is a condition on the program and the table.
 * `settlesG_agree`, `answersG_agree`: HE's world machine and PeTTa's streaming machine give the
-  same answer list on every settling term, from both entries.
-* `Controls.double_eight`: `(double 4)` on `{(= (double $x) (+ $x $x))}`: HE's world machine has a
-  complete run publishing `8`, and PeTTa's run gives `8`.
+  same answer list on every settling term, from both entries. The list's order is the model's;
+  HE's claim is the bag (`GroundedEveryRun.every_complete_run_G`).
+* `Controls.double_eight`: `(double 4)` on `{(= (double $x) (+ $x $x))}`: HE's world machine with
+  HE's table has a complete run publishing `8`, and PeTTa's run gives `8`.
 * `Controls.contextual_stuck`: on the contextual machine of `AnswerBags`, the host call `(+ 4 4)`
   has no step.
 -/
@@ -52,11 +59,11 @@ open Mettapedia.Languages.MeTTa.PeTTa
 open Mettapedia.Languages.ProcessCalculi.MORK (Subst isGroundAtom)
 open ServiceFootprints EntryToQuery AnswerBags BoundVariables GroundedTables
 
-/-! ## The world machine with HE's integer dispatch -/
+/-! ## The world machine with a grounded table -/
 
-/-- The host services: read-only, producing the dispatch's outcome as fresh syntax. -/
-abbrev services (minimal : Minimal.Services) : WorldServices Space Unit :=
-  WorldServices.readOnlyGrounded minimal heDispatch
+/-- The host services of a table: read-only, producing the table's outcome as fresh syntax. -/
+abbrev services (minimal : Minimal.Services) (T : GroundedTable) : WorldServices Space Unit :=
+  WorldServices.readOnlyGrounded minimal T.dispatch
 
 theorem heDispatch_minimal : heDispatch.minimal = none := rfl
 
@@ -94,61 +101,83 @@ theorem lift_local {space : Space} {dispatch : GroundedDispatch}
     · exact original
     · constructor
 
-theorem lift_step (minimal : Minimal.Services) {lookup : CastLookup} {policy : Policy}
-    {before after : HEConfig} (step : HEStep heDispatch lookup policy before after) :
-    WorldStep (fun (_ : Unit) => id) (services minimal) heDispatch lookup policy
+/-- **Every contextual step is a world step**, for any dispatch without a minimal service and any
+host services. -/
+theorem lift_step_of {dispatch : GroundedDispatch} (noMinimal : dispatch.minimal = none)
+    (worldServices : WorldServices Space Unit) {lookup : CastLookup} {policy : Policy}
+    {before after : HEConfig} (step : HEStep dispatch lookup policy before after) :
+    WorldStep (fun (_ : Unit) => id) worldServices dispatch lookup policy
       (WorldConfiguration.ofReadOnly before) (WorldConfiguration.ofReadOnly after) := by
   cases step with
-  | internal localStep => exact .internal (lift_local heDispatch_minimal (services minimal) localStep)
+  | internal localStep => exact .internal (lift_local noMinimal worldServices localStep)
   | publish => exact .publish
 
-/-- **Every contextual run is a world run.** -/
-theorem lift_path (minimal : Minimal.Services) {lookup : CastLookup} {policy : Policy}
+/-- **Every contextual run is a world run**, for any dispatch without a minimal service and any
+host services. -/
+theorem lift_path_of {dispatch : GroundedDispatch} (noMinimal : dispatch.minimal = none)
+    (worldServices : WorldServices Space Unit) {lookup : CastLookup} {policy : Policy}
     {before after : HEConfig}
-    (path : Relation.ReflTransGen (HEStep heDispatch lookup policy) before after) :
-    WorldSteps (fun (_ : Unit) => id) (services minimal) heDispatch lookup policy
+    (path : Relation.ReflTransGen (HEStep dispatch lookup policy) before after) :
+    WorldSteps (fun (_ : Unit) => id) worldServices dispatch lookup policy
       (WorldConfiguration.ofReadOnly before) (WorldConfiguration.ofReadOnly after) := by
   induction path with
   | refl => exact .refl
-  | tail _ step ih => exact ih.tail (lift_step minimal step)
+  | tail _ step ih => exact ih.tail (lift_step_of noMinimal worldServices step)
 
-/-- **HE's world machine evaluates `t` to the answers `L`**: from pending work on `t` under
-`%Undefined%`, with any live list, scope, activation, continuation stack and publication prefix. -/
-def HEEvaluatesW (minimal : Minimal.Services) (lookup : CastLookup) (policy : Policy)
-    (atoms : List Atom) (t : Atom) (L : List Atom) : Prop :=
+theorem lift_step (minimal : Minimal.Services) {T : GroundedTable} {lookup : CastLookup}
+    {policy : Policy} {before after : HEConfig} (step : HEStep T.dispatch lookup policy before after) :
+    WorldStep (fun (_ : Unit) => id) (services minimal T) T.dispatch lookup policy
+      (WorldConfiguration.ofReadOnly before) (WorldConfiguration.ofReadOnly after) :=
+  lift_step_of T.dispatch_minimal (services minimal T) step
+
+/-- **Every contextual run is a world run.** -/
+theorem lift_path (minimal : Minimal.Services) {T : GroundedTable} {lookup : CastLookup}
+    {policy : Policy} {before after : HEConfig}
+    (path : Relation.ReflTransGen (HEStep T.dispatch lookup policy) before after) :
+    WorldSteps (fun (_ : Unit) => id) (services minimal T) T.dispatch lookup policy
+      (WorldConfiguration.ofReadOnly before) (WorldConfiguration.ofReadOnly after) :=
+  lift_path_of T.dispatch_minimal (services minimal T) path
+
+/-- **HE's world machine with the table `T` evaluates `t` to the answers `L`**: from pending work
+on `t` under `%Undefined%`, with any live list, scope, activation, continuation stack and
+publication prefix. -/
+def HEEvaluatesW (minimal : Minimal.Services) (T : GroundedTable) (lookup : CastLookup)
+    (policy : Policy) (atoms : List Atom) (t : Atom) (L : List Atom) : Prop :=
   ∀ (live : List Atom) (scope : List String) (activation : Frame) (stack : List Continuation)
     (emitted : List Result),
     ∃ results : List Result, results.map (fun result => result.1.erase) = L ∧
-      WorldSteps (fun (_ : Unit) => id) (services minimal) heDispatch lookup policy
+      WorldSteps (fun (_ : Unit) => id) (services minimal T) T.dispatch lookup policy
         (WorldConfiguration.ofReadOnly ⟨Space.ofList atoms,
           .work (.atom live scope (Entry.Value.ofAtom t) Atom.undefinedType activation), stack,
             emitted⟩)
         (WorldConfiguration.ofReadOnly ⟨Space.ofList atoms, .returning results, stack, emitted⟩)
 
-theorem lift_evaluates (minimal : Minimal.Services) {lookup : CastLookup} {policy : Policy}
-    {atoms : List Atom} {t : Atom} {L : List Atom}
-    (evaluates : HEEvaluates heDispatch lookup policy atoms t L) :
-    HEEvaluatesW minimal lookup policy atoms t L := by
+theorem lift_evaluates (minimal : Minimal.Services) {T : GroundedTable} {lookup : CastLookup}
+    {policy : Policy} {atoms : List Atom} {t : Atom} {L : List Atom}
+    (evaluates : HEEvaluates T.dispatch lookup policy atoms t L) :
+    HEEvaluatesW minimal T lookup policy atoms t L := by
   intro live scope activation stack emitted
   obtain ⟨R, eraseR, path⟩ := evaluates live scope activation stack emitted
   exact ⟨R, eraseR, lift_path minimal path⟩
 
 /-! ## The terms that settle, with grounded operations -/
 
-/-- **The fragment with integer operations.** `SettlesV`'s three cases, and an integer operation on
-two integer literals whose operator the program does not declare. -/
-inductive SettlesG (atoms : List Atom) : Atom → Prop
-  | data {a : Atom} : DataAtom a → a ≠ Atom.notReducible → SettlesG atoms a
-  | constructor {f : String} {args : List Atom} : Ordinary heDispatch atoms f args →
+/-- **The fragment with integer operations, on the table `T`.** `SettlesV`'s three cases, and an
+integer operation on two integer literals whose operator the program does not declare and which the
+table answers with the operation's value. -/
+inductive SettlesG (T : GroundedTable) (atoms : List Atom) : Atom → Prop
+  | data {a : Atom} : DataAtom a → a ≠ Atom.notReducible → SettlesG T atoms a
+  | constructor {f : String} {args : List Atom} : Ordinary T.dispatch atoms f args →
       (atoms.filterMap LiveEquations.equationOfRow).all (fun equation => equation.head != f) = true →
-      SettlesG atoms (.expression (.symbol f :: args))
-  | call {f : String} {args : List Atom} : Ordinary heDispatch atoms f args →
+      SettlesG T atoms (.expression (.symbol f :: args))
+  | call {f : String} {args : List Atom} : Ordinary T.dispatch atoms f args →
       regionInstances atoms f args ≠ [] →
-      (∀ b ∈ regionInstances atoms f args, SettlesG atoms b) →
-      SettlesG atoms (.expression (.symbol f :: args))
+      (∀ b ∈ regionInstances atoms f args, SettlesG T atoms b) →
+      SettlesG T atoms (.expression (.symbol f :: args))
   | grounded {op : String} (a b : Int) : IntOp op →
+      T.Answers (.symbol op) [num a, num b] (intValue op a b) →
       (Space.ofList atoms).atoms.filter (typeRegion (.symbol op)) = [] →
-      SettlesG atoms (.expression [.symbol op, num a, num b])
+      SettlesG T atoms (.expression [.symbol op, num a, num b])
 
 theorem intOp_head {op : String} (known : IntOp op) : DataAtom (.symbol op) := by
   cases known <;> exact .symbol (by decide) (by decide)
@@ -192,16 +221,18 @@ theorem grounded_facts {op : String} (known : IntOp op) (a b : Int) :
       cases known <;> simp at same
   · simp [Mettapedia.Languages.MeTTa.HE.Spec.Type.RuntimeRefinement.renameTypeVars]
 
-theorem settlesG_facts {atoms : List Atom} {t : Atom} (settles : SettlesG atoms t) : BodyFacts t := by
+theorem settlesG_facts {T : GroundedTable} {atoms : List Atom} {t : Atom} (settles : SettlesG T atoms t) :
+    BodyFacts t := by
   cases settles with
-  | data data notRefused => exact settles_facts (Settles.data (dispatch := heDispatch) (atoms := atoms)
+  | data data notRefused => exact settles_facts (Settles.data (dispatch := T.dispatch) (atoms := atoms)
       data notRefused)
   | constructor ordinary _ => exact call_facts ordinary
   | call ordinary _ _ => exact call_facts ordinary
-  | grounded a b known _ => exact grounded_facts known a b
+  | grounded a b known _ _ => exact grounded_facts known a b
 
 /-- A ground term of the extended fragment presents itself. -/
-theorem presentsG_self {atoms : List Atom} {t : Atom} (settles : SettlesG atoms t) (σ : Subst) :
+theorem presentsG_self {T : GroundedTable} {atoms : List Atom} {t : Atom} (settles : SettlesG T atoms t)
+    (σ : Subst) :
     Presents σ t t := by
   have items : ∀ (args : List Atom), (∀ a ∈ args, DataAtom a) →
       List.Forall₂ (PresentsItem σ) args args := by
@@ -215,7 +246,7 @@ theorem presentsG_self {atoms : List Atom} {t : Atom} (settles : SettlesG atoms 
   | data data _ => exact .item ⟨lit_of_data data, Or.inl rfl⟩
   | constructor ordinary _ => exact .call _ ordinary.notControl (items _ ordinary.arguments)
   | call ordinary _ _ => exact .call _ ordinary.notControl (items _ ordinary.arguments)
-  | @grounded op a b known _ =>
+  | @grounded op a b known _ _ =>
       exact .call op (sourceControlForm_of_head (by cases known <;> decide) _)
         (items _ fun x member => intOp_items known a b x (List.mem_cons_of_mem _ member))
 
@@ -223,7 +254,7 @@ theorem presentsG_self {atoms : List Atom} {t : Atom} (settles : SettlesG atoms 
 
 section HEWorld
 
-variable (minimal : Minimal.Services) {lookup : CastLookup} {policy : Policy}
+variable (minimal : Minimal.Services) {T : GroundedTable} {lookup : CastLookup} {policy : Policy}
 
 /-- **The equation loop on the world machine**, bodies read as instances. -/
 theorem equations_steps_W {atoms : List Atom} {live : List Atom} {scope : List String}
@@ -234,10 +265,10 @@ theorem equations_steps_W {atoms : List Atom} {live : List Atom} {scope : List S
           (Entry.Value.ofAtom work.pattern) output.environment) →
       List.Forall₂ (fun work L => ∃ i, (∀ output : Frame, output.bindings = work.bindings →
           output.read policy (Entry.Value.ofAtom work.body) = Entry.Value.ofAtom i) ∧
-        HEEvaluatesW minimal lookup policy atoms i L ∧ BodyFacts i) works Ls →
+        HEEvaluatesW minimal T lookup policy atoms i L ∧ BodyFacts i) works Ls →
       ∀ (stack : List Continuation) (emitted : List Result),
         ∃ results : List Result, results.map (fun result => result.1.erase) = Ls.flatten ∧
-          WorldSteps (fun (_ : Unit) => id) (services minimal) heDispatch lookup policy
+          WorldSteps (fun (_ : Unit) => id) (services minimal T) T.dispatch lookup policy
             (WorldConfiguration.ofReadOnly ⟨Space.ofList atoms,
               .work (.equations live scope original Atom.undefinedType activation works), stack,
                 emitted⟩)
@@ -283,11 +314,11 @@ theorem equations_steps_W {atoms : List Atom} {live : List Atom} {scope : List S
 /-- **A call whose region has instances, on the world machine.** -/
 theorem he_call_W (answers : AnswersUndefined lookup) {atoms : List Atom}
     (program : BoundProgram atoms) {f : String} {args : List Atom}
-    (ordinary : Ordinary heDispatch atoms f args) (nonempty : regionInstances atoms f args ≠ [])
+    (ordinary : Ordinary T.dispatch atoms f args) (nonempty : regionInstances atoms f args ≠ [])
     {Ls : List (List Atom)}
-    (bodies : List.Forall₂ (fun b L => HEEvaluatesW minimal lookup policy atoms b L ∧ BodyFacts b ∧
+    (bodies : List.Forall₂ (fun b L => HEEvaluatesW minimal T lookup policy atoms b L ∧ BodyFacts b ∧
       ∀ a ∈ L, Answerable a) (regionInstances atoms f args) Ls) :
-    HEEvaluatesW minimal lookup policy atoms (.expression (.symbol f :: args)) Ls.flatten := by
+    HEEvaluatesW minimal T lookup policy atoms (.expression (.symbol f :: args)) Ls.flatten := by
   intro live scope activation stack emitted
   obtain ⟨works, frontier⟩ := frontier_total (Space.ofList atoms) (Atom.undefinedType :: live)
     (.expression (.symbol f :: args)) activation.bindings
@@ -314,7 +345,7 @@ theorem he_call_W (answers : AnswersUndefined lookup) {atoms : List Atom}
   have related : List.Forall₂ (fun work L => ∃ i, (∀ output : Frame,
         output.bindings = work.bindings →
           output.read policy (Entry.Value.ofAtom work.body) = Entry.Value.ofAtom i) ∧
-      HEEvaluatesW minimal lookup policy atoms i L ∧ BodyFacts i) works Ls :=
+      HEEvaluatesW minimal T lookup policy atoms i L ∧ BodyFacts i) works Ls :=
     (forall₂_comp instances bodies).imp fun _ _ both => by
       obtain ⟨i, ⟨_, reads⟩, evaluates, facts, _⟩ := both
       exact ⟨i, reads, evaluates, facts⟩
@@ -322,7 +353,7 @@ theorem he_call_W (answers : AnswersUndefined lookup) {atoms : List Atom}
     (.append (.calls live scope Atom.undefinedType []) ::
       .publish (.expression (.symbol f :: args)) :: stack) emitted
   have clean := HERuns.results_answerable (bodies.imp fun _ _ both => ⟨both.1, both.2.2⟩) eraseR
-  obtain ⟨published, erased, finish⟩ := HERuns.finish_steps (dispatch := heDispatch)
+  obtain ⟨published, erased, finish⟩ := HERuns.finish_steps (dispatch := T.dispatch)
     (lookup := lookup) (policy := policy) (atoms := atoms) (live := live) (scope := scope)
     (.expression (.symbol f :: args)) R clean stack emitted
   refine ⟨published, by rw [erased, eraseR], ?_⟩
@@ -340,7 +371,7 @@ theorem native_steps (answers : AnswersUndefined lookup) {atoms : List Atom} {d 
     (data : DataAtom d) (notRefused : d ≠ Atom.notReducible) (live : List Atom)
     (scope : List String) (original : Entry.Value) (activation : Frame)
     (stack : List Continuation) (emitted : List Result) :
-    Relation.ReflTransGen (HEStep heDispatch lookup policy)
+    Relation.ReflTransGen (HEStep T.dispatch lookup policy)
       ⟨Space.ofList atoms, .work (.boundaryBatch live scope none
         (.native original (some Atom.undefinedType) .emitted) [(Entry.Value.ofAtom d, activation)]),
         stack, emitted⟩
@@ -370,49 +401,59 @@ theorem native_steps (answers : AnswersUndefined lookup) {atoms : List Atom} {d 
   refine .head (.internal .boundaryBatchNil) ?_
   exact .single (.internal .prepend)
 
-/-- **An integer operation on HE's world machine**: the tuple entry, the grounded call through the
-host service, the native boundary, the cast of the value, and the publication. -/
-theorem he_grounded_W (answers : AnswersUndefined lookup) {atoms : List Atom} {op : String}
-    (known : IntOp op) (a b : Int)
+/-- **A call the table answers, on HE's world machine**: the tuple entry, the grounded call through
+the host service, the native boundary, the cast of the value, and the publication. -/
+theorem he_answer_W (answers : AnswersUndefined lookup) {atoms : List Atom} {op : String}
+    {args : List Atom} {v : Atom} (head : DataAtom (.symbol op)) (arguments : ∀ x ∈ args, DataAtom x)
+    (data : DataAtom v) (notRefused : v ≠ Atom.notReducible) (table : T.Answers (.symbol op) args v)
     (untyped : (Space.ofList atoms).atoms.filter (typeRegion (.symbol op)) = []) :
-    HEEvaluatesW minimal lookup policy atoms (.expression [.symbol op, num a, num b])
-      [intValue op a b] := by
+    HEEvaluatesW minimal T lookup policy atoms (.expression (.symbol op :: args)) [v] := by
   intro live scope activation stack emitted
-  have rData := intValue_dataAtom known a b
-  have clean : ∀ r ∈ [(Entry.Value.ofAtom (intValue op a b), activation)],
-      Answerable r.1.erase := by
+  have items : ∀ x ∈ Atom.symbol op :: args, DataAtom x := by
+    intro x member
+    rcases List.mem_cons.mp member with rfl | inArgs
+    · exact head
+    · exact arguments x inArgs
+  have clean : ∀ r ∈ [(Entry.Value.ofAtom v, activation)], Answerable r.1.erase := by
     intro r member
     rw [List.mem_singleton] at member
     subst member
     rw [Entry.Value.erase_ofAtom]
-    exact answerable_of_data rData
-  obtain ⟨published, erased, finish⟩ := HERuns.finish_steps (dispatch := heDispatch)
+    exact answerable_of_data data
+  obtain ⟨published, erased, finish⟩ := HERuns.finish_steps (dispatch := T.dispatch)
     (lookup := lookup) (policy := policy) (atoms := atoms) (live := live) (scope := scope)
-    (.expression [.symbol op, num a, num b]) [(Entry.Value.ofAtom (intValue op a b), activation)]
-    clean stack emitted
+    (.expression (.symbol op :: args)) [(Entry.Value.ofAtom v, activation)] clean stack emitted
   refine ⟨published, by rw [erased]; simp, ?_⟩
-  have produced : (services minimal).groundedAt (Space.ofList atoms) () live scope activation
-      (callValue op [num a, num b]) (.ok [(Entry.Value.ofAtom (intValue op a b), Bindings.empty)])
-      () :=
-    ⟨.symbol op, [num a, num b], .ok [(intValue op a b, Bindings.empty)],
-      callValue_erase op [num a, num b], (he_outcome_exact known a b _).mpr rfl, rfl⟩
-  have rows : Completed.NativeOutcomeRel policy heDispatch (.symbol op) [num a, num b]
-      (callValue op [num a, num b]) (some Atom.undefinedType) activation
-      (.ok [(Entry.Value.ofAtom (intValue op a b), Bindings.empty)])
-      (.resume [(Entry.Value.ofAtom (intValue op a b), activation)]) :=
+  have produced : (services minimal T).groundedAt (Space.ofList atoms) () live scope activation
+      (callValue op args) (.ok [(Entry.Value.ofAtom v, Bindings.empty)]) () :=
+    ⟨.symbol op, args, .ok [(v, Bindings.empty)], callValue_erase op args, (table.2 _).mpr rfl, rfl⟩
+  have rows : Completed.NativeOutcomeRel policy T.dispatch (.symbol op) args
+      (callValue op args) (some Atom.undefinedType) activation
+      (.ok [(Entry.Value.ofAtom v, Bindings.empty)])
+      (.resume [(Entry.Value.ofAtom v, activation)]) :=
     .success (.cons (Frame.NativeRenewRel.empty policy activation) .nil)
-  have notError : ¬ IsErrorRel (callValue op [num a, num b]).erase :=
-    HERuns.value_not_error (intOp_head known) (callValue_erase op [num a, num b])
-  refine .trans (lift_path minimal (HERuns.call_entry_steps answers (intOp_items known a b) untyped
+  have notError : ¬ IsErrorRel (callValue op args).erase :=
+    HERuns.value_not_error head (callValue_erase op args)
+  refine .trans (lift_path minimal (HERuns.call_entry_steps answers items untyped
     live scope activation stack emitted)) ?_
   refine .head (.internal (WorldLocalStepWith.callGroundedResume
-    (callValue_erase op [num a, num b]) (he_executable known) notError produced rows)) ?_
-  have native := lift_path minimal (native_steps (policy := policy) answers (atoms := atoms) rData
-    (intValue_notRefused known a b) live scope (callValue op [num a, num b]) activation
+    (callValue_erase op args) table.1 notError produced rows)) ?_
+  have native := lift_path minimal (T := T) (native_steps (policy := policy) answers (atoms := atoms)
+    data notRefused live scope (callValue op args) activation
     (.append (.calls live scope Atom.undefinedType []) ::
-      .publish (.expression [.symbol op, num a, num b]) :: stack) emitted)
+      .publish (.expression (.symbol op :: args)) :: stack) emitted)
   simp only [List.append_nil] at native
   exact native.trans (lift_path minimal finish)
+
+/-- **An integer operation the table answers, on HE's world machine.** -/
+theorem he_grounded_W (answers : AnswersUndefined lookup) {atoms : List Atom} {op : String}
+    (known : IntOp op) (a b : Int) (table : T.Answers (.symbol op) [num a, num b] (intValue op a b))
+    (untyped : (Space.ofList atoms).atoms.filter (typeRegion (.symbol op)) = []) :
+    HEEvaluatesW minimal T lookup policy atoms (.expression [.symbol op, num a, num b])
+      [intValue op a b] :=
+  he_answer_W minimal answers (intOp_head known)
+    (fun x member => intOp_items known a b x (List.mem_cons_of_mem _ member))
+    (intValue_dataAtom known a b) (intValue_notRefused known a b) table untyped
 
 end HEWorld
 
@@ -469,13 +510,14 @@ theorem petta_open_grounded (atoms : List Atom) {op : String} (known : IntOp op)
 
 section Joint
 
-variable (minimal : Minimal.Services) {lookup : CastLookup} {policy : Policy}
+variable (minimal : Minimal.Services) {T : GroundedTable} {lookup : CastLookup} {policy : Policy}
 
 /-- **Both machines evaluate every settling term to the same answer list**, with HE's world machine
-and PeTTa on every open presentation. -/
+and PeTTa on every open presentation, for every table. The list is the model's order, which is
+PeTTa's; HE's claim is the bag (`answersG_agree`, `GroundedEveryRun.every_complete_run_G`). -/
 theorem settlesG_agree (answers : AnswersUndefined lookup) {atoms : List Atom}
-    (program : BoundProgram atoms) {t : Atom} (settles : SettlesG atoms t) :
-    ∃ L : List Atom, (∀ a ∈ L, Answerable a) ∧ HEEvaluatesW minimal lookup policy atoms t L ∧
+    (program : BoundProgram atoms) {t : Atom} (settles : SettlesG T atoms t) :
+    ∃ L : List Atom, (∀ a ∈ L, Answerable a) ∧ HEEvaluatesW minimal T lookup policy atoms t L ∧
       PeTTaOpen atoms t L := by
   induction settles with
   | @data d data _ =>
@@ -493,8 +535,8 @@ theorem settlesG_agree (answers : AnswersUndefined lookup) {atoms : List Atom}
       subst member
       exact call_answerable ordinary.head ordinary.arguments
   | @call f args ordinary nonempty settled ih =>
-      have each : ∀ b ∈ regionInstances atoms f args, ∃ L, SettlesG atoms b ∧
-          (∀ a ∈ L, Answerable a) ∧ HEEvaluatesW minimal lookup policy atoms b L ∧
+      have each : ∀ b ∈ regionInstances atoms f args, ∃ L, SettlesG T atoms b ∧
+          (∀ a ∈ L, Answerable a) ∧ HEEvaluatesW minimal T lookup policy atoms b L ∧
           PeTTaOpen atoms b L := by
         intro b member
         obtain ⟨L, rest⟩ := ih b member
@@ -515,27 +557,30 @@ theorem settlesG_agree (answers : AnswersUndefined lookup) {atoms : List Atom}
       obtain ⟨L, inLs, inner⟩ := List.mem_flatten.mp member
       obtain ⟨b, both⟩ := forall₂_right_exists related L inLs
       exact both.2.1 a inner
-  | @grounded op a b known untyped =>
-      refine ⟨[intValue op a b], fun x member => ?_, he_grounded_W minimal answers known a b untyped,
-        petta_open_grounded atoms known a b⟩
+  | @grounded op a b known table untyped =>
+      refine ⟨[intValue op a b], fun x member => ?_,
+        he_grounded_W minimal answers known a b table untyped, petta_open_grounded atoms known a b⟩
       rw [List.mem_singleton] at member
       subst member
       exact answerable_of_data (intValue_dataAtom known a b)
 
-/-- **The answers agree with grounded operations**: HE's world machine runs from its entry
-configuration to a completed phase, and from some fuel on PeTTa's streaming run yields exactly the
-atoms HE published, in the same order and with the same multiplicities. -/
+/-- **The answers agree with grounded operations, as bags**: the world machine with the table `T`
+runs from HE's entry configuration to a completed phase, and from some fuel on PeTTa's streaming
+run yields the bag of atoms that run published, with the same multiplicities. The model's run gives
+PeTTa's list (`settlesG_agree`); order is not an observation of HE
+(`GroundedEveryRun.every_complete_run_G` covers every run). -/
 theorem answersG_agree (answers : AnswersUndefined lookup) {atoms : List Atom}
-    (program : BoundProgram atoms) {c : Atom} (settles : SettlesG atoms c) :
+    (program : BoundProgram atoms) {c : Atom} (settles : SettlesG T atoms c) :
     ∃ (heAnswers : List Result) (N : Nat),
-      WorldSteps (fun (_ : Unit) => id) (services minimal) heDispatch lookup policy
+      WorldSteps (fun (_ : Unit) => id) (services minimal T) T.dispatch lookup policy
           (WorldConfiguration.ofReadOnly (load (Space.ofList atoms) c Atom.undefinedType))
           (WorldConfiguration.ofReadOnly ⟨Space.ofList atoms, .returning [], [], heAnswers⟩) ∧
         worldObserve (WorldConfiguration.ofReadOnly
           ⟨Space.ofList atoms, .returning [], [], heAnswers⟩) = some heAnswers ∧
         ∀ n, N ≤ n →
-          Streaming.values (Streaming.advance (translate atoms) n
-            (Streaming.enter { state := store atoms } c)) = heAnswers.map (fun r => r.1.erase) := by
+          ((Streaming.values (Streaming.advance (translate atoms) n
+            (Streaming.enter { state := store atoms } c)) : List Atom) : Multiset Atom) =
+            ((heAnswers.map (fun r => r.1.erase) : List Atom) : Multiset Atom) := by
   obtain ⟨L, clean, he, petta⟩ := settlesG_agree minimal (policy := policy) answers program settles
   obtain ⟨R, eraseR, path⟩ := he [] [] Completed.Frame.empty [] []
   obtain ⟨N, stable⟩ := petta_complete (settlesG_facts settles).ground clean
@@ -554,7 +599,7 @@ namespace Controls
 open AnswerBags.Controls (sym app rule rule_consFree)
 open BoundVariables.Controls (bound_rule var_items sym_data)
 
-/-- H1's program: `(= (double $x) (+ $x $x))`. -/
+/-- The program `(= (double $x) (+ $x $x))`. -/
 def doubleRows : List Atom := [rule (app "double" [.var "x"]) (app "+" [.var "x", .var "x"])]
 
 theorem double_program : BoundProgram doubleRows := by
@@ -564,13 +609,21 @@ theorem double_program : BoundProgram doubleRows := by
   exact bound_rule "double" ["x"] (by decide)
     (.call "+" [.var "x", .var "x"] (by decide) (var_items ["x", "x"]))
 
-theorem double_not_host : ¬ heDispatch.executable (.symbol "double") := by
+theorem double_not_host : ¬ measuredTable.executes (.symbol "double") := by
   rintro ⟨name, same, member⟩
   cases same
-  simp [heIntegerNames] at member
+  simp [measuredNames] at member
 
-/-- **`(double 4)` settles**: its one instance is `(+ 4 4)`. -/
-theorem double_settles : SettlesG doubleRows (app "double" [num 4]) := by
+/-- A value of an integer operation fits when the integer it names does. -/
+theorem fits_of {op : String} {a b m : Int} (value : intValue op a b = num m) (fits : Fits m) :
+    ∀ n, intValue op a b = num n → Fits n := by
+  intro n same
+  rw [value] at same
+  cases same
+  exact fits
+
+/-- **`(double 4)` settles on HE's table**: its one instance is `(+ 4 4)`, whose value `8` fits. -/
+theorem double_settles : SettlesG measuredTable doubleRows (app "double" [num 4]) := by
   have instances : regionInstances doubleRows "double" [num 4] = [app "+" [num 4, num 4]] := by
     decide +kernel
   refine .call ⟨sym_data "double" (by decide) (by decide), fun v member => by
@@ -582,14 +635,18 @@ theorem double_settles : SettlesG doubleRows (app "double" [num 4]) := by
   intro b member
   simp only [List.mem_singleton] at member
   subst member
-  exact .grounded 4 4 .plus (by decide +kernel)
+  exact .grounded 4 4 .plus (measured_answers .plus 4 4 (fits_of (m := 8) rfl (by decide)))
+    (by decide +kernel)
 
-/-- **H1's program end to end**: `(double 4)` on `{(= (double $x) (+ $x $x))}`. HE's world machine,
-with the tree's integer dispatch and HE's raw lookup, has a complete run from its entry publishing
-`8`, and PeTTa's streaming run of the translation gives `8`. -/
+/-- **The `double` program end to end**: `(double 4)` on `{(= (double $x) (+ $x $x))}`. Its grounded call
+`(+ 4 4)` is in HE's typed region; HE's world machine, with HE's table and HE's raw lookup, has a
+complete run from its entry publishing `8`, and PeTTa's streaming run of the translation gives `8`.
+-/
 theorem double_eight (minimal : Minimal.Services) (policy : Policy) :
+    TypedRegion doubleRows "+" [num 4, num 4] ∧
     (∃ heAnswers : List Result,
-      WorldSteps (fun (_ : Unit) => id) (services minimal) heDispatch Completed.rawLookup policy
+      WorldSteps (fun (_ : Unit) => id) (services minimal measuredTable) measuredTable.dispatch
+          Completed.rawLookup policy
           (WorldConfiguration.ofReadOnly
             (load (Space.ofList doubleRows) (app "double" [num 4]) Atom.undefinedType))
           (WorldConfiguration.ofReadOnly ⟨Space.ofList doubleRows, .returning [], [], heAnswers⟩) ∧
@@ -604,21 +661,21 @@ theorem double_eight (minimal : Minimal.Services) (policy : Policy) :
     decide +kernel
   obtain ⟨R, N, path, _, agree⟩ := answersG_agree minimal (policy := policy) raw_answers
     double_program double_settles
-  refine ⟨⟨R, path, ?_⟩, computed⟩
+  refine ⟨by decide +kernel, ⟨R, path, ?_⟩, computed⟩
   have later := agree (max N 60) (le_max_left _ _)
   rw [advance_stable (List.eq_nil_of_length_eq_zero finished) _ (le_max_right _ _), computed] at later
-  exact later.symm
+  exact List.perm_singleton.mp (Multiset.coe_eq_coe.mp later.symm)
 
-/-- **Negative control: the contextual machine has no rule for a host call.** With HE's integer
-dispatch, the call `(+ 4 4)` reached by `AnswerBags`'s machine has no successor. -/
-theorem contextual_stuck {lookup : CastLookup} {policy : Policy} (space : Space)
-    (live : List Atom) (scope : List String) (expected : Atom) (activation : Frame)
-    (stack : List Continuation) (emitted : List Result) :
-    ¬ ∃ next, HEStep heDispatch lookup policy
+/-- **Negative control: the contextual machine has no rule for a host call.** With any table that
+executes `+`, the call `(+ 4 4)` reached by `AnswerBags`'s machine has no successor. -/
+theorem contextual_stuck {T : GroundedTable} (executes : T.executes (.symbol "+")) {lookup : CastLookup}
+    {policy : Policy} (space : Space) (live : List Atom) (scope : List String) (expected : Atom)
+    (activation : Frame) (stack : List Continuation) (emitted : List Result) :
+    ¬ ∃ next, HEStep T.dispatch lookup policy
       ⟨space, .work (.call live scope (callValue "+" [num 4, num 4]) expected activation), stack,
         emitted⟩ next := by
-  have host : Minimal.HostCall heDispatch (callValue "+" [num 4, num 4]).erase :=
-    ⟨.symbol "+", [num 4, num 4], callValue_erase "+" [num 4, num 4], he_executable .plus⟩
+  have host : Minimal.HostCall T.dispatch (callValue "+" [num 4, num 4]).erase :=
+    ⟨.symbol "+", [num 4, num 4], callValue_erase "+" [num 4, num 4], executes⟩
   rintro ⟨next, step⟩
   cases step with
   | internal localStep =>
@@ -631,11 +688,14 @@ theorem contextual_stuck {lookup : CastLookup} {policy : Policy} (space : Space)
 
 end Controls
 
+#print axioms lift_step_of
+#print axioms lift_path_of
 #print axioms lift_step
 #print axioms lift_path
 #print axioms equations_steps_W
 #print axioms he_call_W
 #print axioms native_steps
+#print axioms he_answer_W
 #print axioms he_grounded_W
 #print axioms primitive_step
 #print axioms petta_open_grounded

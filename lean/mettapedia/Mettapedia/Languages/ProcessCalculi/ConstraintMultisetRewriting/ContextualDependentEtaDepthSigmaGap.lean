@@ -16,7 +16,7 @@ locals (`sigmaDistinct_piece_stuck`).
 **The repair.** The Σ family, which η-expands spines of a bound local at a Σ base into the pairs of their projections,
 commits on the first store (`sigma_sigma_committed`) and refutes the second with a certified refutation
 (`sigmaDistinct_sigma_refuted`), so that store is unsolvable (`sigmaDistinct_unsolvable`). It keeps the outcomes of the
-piece family on R119's 44 census stores (`sigma_of_final`).
+piece family on R119's 44 classification stores (`sigma_of_final`).
 
 **Projections along reducts.** At `Π (h : Π (G : U0 → U1). G A) (y : A). Σ U0 U0`, the equation
 `λ h y. h (λ x. x → Σ U0 U0) y ≐ λ h y. h (λ x. x → Σ U0 U0) (F y)` (`comboStore`) is in the fragment
@@ -197,7 +197,7 @@ theorem combo_projection_none :
   decide +kernel
 
 open ContextualDependentIntersectionGeneral.InPlaceControls ContextualDependentIntersectionGeneral.DeadControls in
-/-- **R119's census under the Σ family.** -/
+/-- **R119's classification under the Σ family.** -/
 theorem sigma_of_final {Θ : Context setting.R} {problem : EquationStore (TotalTerm Θ)}
     (final : ContextualDependentAcceptance3.Controls.finalDecided problem = true) :
     (run inPlaceOnly problem 8).Decided ∧ run (sigmaTower.solver 16) problem 8 = run inPlaceOnly problem 8 := by

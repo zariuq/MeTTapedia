@@ -490,7 +490,7 @@ theorem reflective_rules_captured_returns (caller : Subst) (state : State) (requ
 private abbrev reflectionReflectivePresentationsValue (declarations : List ReflectivePresentationDecl) : Atom :=
   reflectionEncoded (encodeList InferenceCettaWire.AuthoredRule.reflectivePresentationTerm declarations)
 private def reflectionReflectivePresentationsConsData : Atom :=
-  reflectionA "LCons" [reflectionA "ReflectivePresentation" [reflectionV "name", reflectionV "processSort", reflectionV "nameSort", reflectionV "quote", reflectionV "drop", reflectionV "kind", reflectionV "unit", reflectionV "equation"], reflectionV "filtered"]
+  reflectionA "LCons" [reflectionA "ReflectivePresentation" [reflectionV "name", reflectionV "processSort", reflectionV "nameSort", reflectionV "quote", reflectionV "drop", reflectionV "kind", reflectionV "unit", reflectionV "equation", reflectionV "scope"], reflectionV "filtered"]
 private def reflectionReflectivePresentationsIncludedBody : Atom :=
   reflectionA "let" [reflectionV "filtered", reflectionA "gslt:premise:reflective-presentations" [reflectionV "requested", reflectionV "rest"], reflectionReflectivePresentationsConsData]
 private def reflectionReflectivePresentationsConsBody : Atom :=
@@ -498,7 +498,7 @@ private def reflectionReflectivePresentationsConsBody : Atom :=
     reflectionA "gslt:premise:reflective-presentations" [reflectionV "requested", reflectionV "rest"]]
 private def reflectionReflectivePresentationsCases : SpaceSemantics.Cases :=
   [(.symbol "LNil", .symbol "LNil"),
-    (reflectionA "LCons" [reflectionA "ReflectivePresentation" [reflectionV "name", reflectionV "processSort", reflectionV "nameSort", reflectionV "quote", reflectionV "drop", reflectionV "kind", reflectionV "unit", reflectionV "equation"], reflectionV "rest"], reflectionReflectivePresentationsConsBody),
+    (reflectionA "LCons" [reflectionA "ReflectivePresentation" [reflectionV "name", reflectionV "processSort", reflectionV "nameSort", reflectionV "quote", reflectionV "drop", reflectionV "kind", reflectionV "unit", reflectionV "equation", reflectionV "scope"], reflectionV "rest"], reflectionReflectivePresentationsConsBody),
     (reflectionV "bad", .symbol "LNil")]
 private theorem reflectionReflectivePresentations_shape : (reflectionEnvEquation .reflectivePresentations).body =
     reflectionCaseData (reflectionV "declarations") reflectionReflectivePresentationsCases := by rfl
@@ -519,7 +519,8 @@ theorem reflective_presentations_returns (state : State) (requested : String) (d
       · exact symbol_returns reflectionRuntime caller state "LNil"
   | cons declaration declarations ih =>
       let caller := reflectionEnvCaptured .reflectivePresentations [reflectionStringValue requested, reflectionReflectivePresentationsValue (declaration :: declarations)]
-      let selected := [("rest", reflectionReflectivePresentationsValue declarations), ("equation", reflectionStringValue declaration.quoteDropEquation), ("unit", reflectionStringValue declaration.parallelUnitConstructor), ("kind", reflectionCollectionValue declaration.parallelCollection), ("drop", reflectionStringValue declaration.dropConstructor), ("quote", reflectionStringValue declaration.quoteConstructor), ("nameSort", reflectionStringValue declaration.nameSort), ("processSort", reflectionStringValue declaration.processSort), ("name", reflectionStringValue declaration.name)] ++ caller
+      let selected := [("rest", reflectionReflectivePresentationsValue declarations),
+        ("scope", reflectionEncoded (InferenceCettaWire.AuthoredRule.quoteScopeTerm declaration.quoteScope)), ("equation", reflectionStringValue declaration.quoteDropEquation), ("unit", reflectionStringValue declaration.parallelUnitConstructor), ("kind", reflectionCollectionValue declaration.parallelCollection), ("drop", reflectionStringValue declaration.dropConstructor), ("quote", reflectionStringValue declaration.quoteConstructor), ("nameSort", reflectionStringValue declaration.nameSort), ("processSort", reflectionStringValue declaration.processSort), ("name", reflectionStringValue declaration.name)] ++ caller
       let filtered := ("filtered", reflectionReflectivePresentationsValue (declarations.filter fun declaration => declaration.name == requested)) :: selected
       apply reflectionEnv_call .reflectivePresentations [] state _ _ _ rfl (reflectionCaptured_closed _)
       rw [reflectionReflectivePresentations_shape]
@@ -571,17 +572,17 @@ private abbrev reflectionPresentationOptionValue (declaration : Option Reflectiv
   reflectionEncoded (encodeOption InferenceCettaWire.AuthoredRule.reflectivePresentationTerm declaration)
 private def reflectionPresentationSomeData : Atom :=
   reflectionA "Some" [reflectionA "ReflectivePresentation" [reflectionV "name", reflectionV "processSort", reflectionV "nameSort", reflectionV "quote", reflectionV "drop",
-    reflectionV "kind", reflectionV "unit", reflectionV "equation"]]
+    reflectionV "kind", reflectionV "unit", reflectionV "equation", reflectionV "scope"]]
 private def reflectionPresentationNamedCases : SpaceSemantics.Cases :=
   [(reflectionA "LCons" [reflectionA "ReflectivePresentation" [reflectionV "name", reflectionV "processSort", reflectionV "nameSort", reflectionV "quote", reflectionV "drop",
-      reflectionV "kind", reflectionV "unit", reflectionV "equation"], .symbol "LNil"], reflectionPresentationSomeData),
+      reflectionV "kind", reflectionV "unit", reflectionV "equation", reflectionV "scope"], .symbol "LNil"], reflectionPresentationSomeData),
     (reflectionV "unavailable", .symbol "None")]
 private theorem reflectionPresentation_named_shape : (reflectionEnvEquation .presentationNamed).body =
     reflectionCaseData (reflectionA "gslt:premise:reflective-presentations" [reflectionV "requested", reflectionV "presentations"])
       reflectionPresentationNamedCases := by rfl
 
 /-- Presentation names select a unique physical declaration, including all
-eight fields used by its original reflective operation. -/
+nine fields used by its original reflective operation. -/
 theorem presentation_named_returns (state : State) (profile : Reflection.ReflectionProfile) (requested : String) :
     PureReturns reflectionRuntime [] state
       (reflectionA "gslt:premise:presentation-named" [reflectionReflectivePresentationsValue profile.presentations, reflectionStringValue requested]) state
@@ -605,7 +606,8 @@ theorem presentation_named_returns (state : State) (profile : Reflection.Reflect
   | cons declaration declarations =>
       cases declarations with
       | nil =>
-          let selected := [("equation", reflectionStringValue declaration.quoteDropEquation),
+          let selected := [("scope", reflectionEncoded (InferenceCettaWire.AuthoredRule.quoteScopeTerm declaration.quoteScope)),
+            ("equation", reflectionStringValue declaration.quoteDropEquation),
             ("unit", reflectionStringValue declaration.parallelUnitConstructor),
             ("kind", reflectionCollectionValue declaration.parallelCollection), ("drop", reflectionStringValue declaration.dropConstructor),
             ("quote", reflectionStringValue declaration.quoteConstructor), ("nameSort", reflectionStringValue declaration.nameSort),

@@ -9,7 +9,7 @@ An equation component is closed when no existing equation crosses its boundary.
 Consistent new equations outside that component preserve every observation
 depending only on it, including entailed, refuted and unresolved verdicts.
 
-For an absence or count observation, dependencies include the shared labels it
+For a none query or count observation, dependencies include the shared labels it
 inspects. A closed query alone does not make such an observation independent of
 bindings. The conditions below are sufficient locality bounds, not a claim of
 minimal support or native incremental-index correctness.
@@ -98,13 +98,13 @@ theorem equality_reads_support (component : Set signature.vars) (left right : Te
   intro first second agree
   exact solves_congr (fun name member => agree name (supported name member))
 
-theorem absent_reads_query_and_rows {O : Type*} [DecidableEq O]
+theorem none_reads_query_and_rows {O : Type*} [DecidableEq O]
     (component : Set signature.vars) (label : O → Term signature)
     (world : Finset O) (query : Term signature)
     (querySupport : ∀ name ∈ query.freeVars, name ∈ component)
     (rowSupport : ∀ occurrence ∈ world, ∀ name ∈ (label occurrence).freeVars, name ∈ component) :
     ReadsOnly component (fun assignment =>
-      (Check.absent query).Holds (FirstOrder.action signature) assignment label world) := by
+      (Check.predicate .none query).Holds (FirstOrder.action signature) assignment label world) := by
   intro first second agree
   have querySame := Subst.applyTerm_congr (t := query)
     (fun name member => agree name (querySupport name member))
@@ -113,12 +113,12 @@ theorem absent_reads_query_and_rows {O : Type*} [DecidableEq O]
   change (∀ occurrence ∈ world, ¬ first.applyTerm query = first.applyTerm (label occurrence)) ↔
     (∀ occurrence ∈ world, ¬ second.applyTerm query = second.applyTerm (label occurrence))
   constructor
-  · intro absent occurrence present
+  · intro missing occurrence present
     rw [← querySame, ← rowSame occurrence present]
-    exact absent occurrence present
-  · intro absent occurrence present
+    exact missing occurrence present
+  · intro missing occurrence present
     rw [querySame, rowSame occurrence present]
-    exact absent occurrence present
+    exact missing occurrence present
 
 theorem count_reads_query_and_rows {O : Type*} [DecidableEq O]
     (component : Set signature.vars) (label : O → Term signature)

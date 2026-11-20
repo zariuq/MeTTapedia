@@ -17,7 +17,7 @@ Over a signature with two constants, unary `f`, `g` and binary `arrow`, and vari
   solved form is not finite (`loop_not_finite`, `occurs_not_reflected`).
 * **Finite-tree refutations are not rational ones**: from no knowledge, the finite calculus derives
   that no occurrence labelled `X` matches `f(X)`, by the occurs check; the rational calculus does
-  not derive it, and at `X := f(f(…))` it is false (`absence_not_transferred`).
+  not derive it, and at `X := f(f(…))` it is false (`none_not_transferred`).
 * **Rational trees are for object terms, not types**: the simple-type inference problem of
   self-application `x x` is `A = A → B`. It has no finite solution, and it has a rational one
   (`selfApplication_typable_only_rationally`). Typing self-application types `(λx. x x)(λx. x x)`,
@@ -210,9 +210,9 @@ def labelX : ℕ → Term ctlSig := fun _ => X
 /-- **Finite-tree refutations are not rational ones.** From no knowledge, the finite calculus
 derives that no occurrence labelled `X` matches `f(X)`, by the occurs check. The rational calculus
 does not derive it: at `X := f(f(…))` the occurrence matches. -/
-theorem absence_not_transferred :
-    AnnotatedRuns.CertainChecks.Derives (σ := ctlSig) [] labelX {0} (.absent (un .f X)) ∧
-      ¬ RationalChecks.Derives (σ := ctlSig) [] (fun o => r (labelX o)) {0} (.absent (r (un .f X))) := by
+theorem none_not_transferred :
+    AnnotatedRuns.CertainChecks.Derives (σ := ctlSig) [] labelX {0} (.predicate .none (un .f X)) ∧
+      ¬ RationalChecks.Derives (σ := ctlSig) [] (fun o => r (labelX o)) {0} (.predicate .none (r (un .f X))) := by
   constructor
   · refine (AnnotatedRuns.CertainChecks.derives_iff_entails (σ := ctlSig) _ _ _ _).mpr
       ⟨⟨Subst.id ctlSig, fun _ member => by simp at member⟩, fun θ _ o _ same => ?_⟩
@@ -279,7 +279,7 @@ namespace Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting
 #print axioms Rational.Controls.finite_occurs
 #print axioms Rational.Controls.loop_not_finite
 #print axioms Rational.Controls.occurs_not_reflected
-#print axioms Rational.Controls.absence_not_transferred
+#print axioms Rational.Controls.none_not_transferred
 #print axioms Rational.Controls.selfApplication_typable_only_rationally
 #print axioms Rational.Controls.arrow_sharing_unobservable
 

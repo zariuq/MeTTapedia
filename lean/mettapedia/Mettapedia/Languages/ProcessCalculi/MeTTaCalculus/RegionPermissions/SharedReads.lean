@@ -5,9 +5,9 @@ import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.SerializedPublication.R
 /-!
 # The shared case of read polarity, on the runtime's revision protocol
 
-`DelegatedReads` splits a universal read of the names `A` (absence, "every row here is like this")
+`DelegatedReads` splits a universal read of the names `A` (none queries, "every row here is like this")
 into three cases by what the genesis lets the others reach: **owned** (no other subject can ever
-hold `send` at `A`: the read needs no validation, `absence_preserved_iff`), **sealed** (every such
+hold `send` at `A`: the read needs no validation, `none_preserved_iff`), **sealed** (every such
 `send` was revoked), and **shared** (otherwise: the read must be validated when its commit fires).
 The runtime publishes proposals validated by one revision per space (`SerializedPublication`): a
 proposal matched at a snapshot is published as the commit widened by a predicate query of the whole
@@ -18,9 +18,9 @@ space (`widen`), over the commit protocol of `CommitProtocol`, whose epoch for t
 
 When another subject can reach `send` at a name of `A`, the delegation core can authorize it to
 make an occurrence there, and as a transaction of the revision protocol that make commits; the
-absence then fails, and the owner's revision-validated transaction that read it commits in no
-continuation (`shared_absence_stale_under_revision`). The stale read is never published. Without
-the validation it would be: the absence query of the base commit fails at the new store.
+none queries then fails, and the owner's revision-validated transaction that read it commits in no
+continuation (`shared_none_stale_under_revision`). The stale read is never published. Without
+the validation it would be: the none query of the base commit fails at the new store.
 
 ## Owned: the revision still aborts
 
@@ -39,7 +39,7 @@ The interaction kernel validates by one revision per scanned space
 ## Controls
 
 `Controls.shared_instance`: the genesis of `DelegatedReads.Controls` in which the owner may grant
-`send` to the other subject, an owner's transaction that read the absence at name `0` validated by
+`send` to the other subject, an owner's transaction that read the none query at name `0` validated by
 the revision, and the other's make at name `0`: all the hypotheses hold, and the theorem applies.
 -/
 
@@ -82,9 +82,9 @@ theorem make_commits {txn : T → Commit O R} {σ : ProtocolState O R T}
 
 /-- **The shared case, on the revision protocol.** If another subject can reach `send` at a name
 of `A`, the delegation core can authorize it to make a fresh occurrence there; as a transaction of
-the revision protocol the make commits, the absence at `A` fails, and the owner's transaction
+the revision protocol the make commits, the none query at `A` fails, and the owner's transaction
 validated by the revision commits in no continuation. -/
-theorem shared_absence_stale_under_revision {st₀ : Delegation.State Sub (Facet × N)}
+theorem shared_none_stale_under_revision {st₀ : Delegation.State Sub (Facet × N)}
     {b : Sub} {A : N → Bool} {n : N} (atA : A n = true)
     (reach : Delegation.CanHold st₀ b (facetAt .send n) false)
     {txn : T → Commit O R} {σ : ProtocolState O R T} (wf : WellFormed label txn σ)
@@ -175,12 +175,12 @@ def nameOf : ℕ → ℕ := fun o => if o = 5 then 0 else 1
 /-- The read's names: name `0`. -/
 def atZero : ℕ → Bool := fun n => decide (n = 0)
 
-/-- The owner's commit: the absence at name `0`, validated by the revision at the empty snapshot. -/
-def absenceReader : Commit ℕ ℕ := widen ∅ ⟨∅, ∅, ∅, [⟨fun r => atZero r, ∅⟩]⟩
+/-- The owner's commit: the none query at name `0`, validated by the revision at the empty snapshot. -/
+def noneReader : Commit ℕ ℕ := widen ∅ ⟨∅, ∅, ∅, [⟨fun r => atZero r, ∅⟩]⟩
 
 /-- Transaction `true` is the owner's reader, `false` the other's make of `5`. -/
 def txn : Bool → Commit ℕ ℕ
-  | true => absenceReader
+  | true => noneReader
   | false => Commit.makeOne 5
 
 /-- The empty start: nothing stored or born, every transaction idle. -/
@@ -193,48 +193,48 @@ def begun : ProtocolState ℕ ℕ Bool :=
 theorem begun_wellFormed : WellFormed nameOf txn begun := by
   have initial : Initial start := ⟨le_rfl, fun _ => rfl, fun _ => rfl⟩
   have enabled : Enabled nameOf start.store (txn true) := by
-    refine ⟨by simp [txn, absenceReader, widen], by simp [txn, absenceReader, widen],
-      by simp [txn, absenceReader, widen], by simp [txn, absenceReader, widen], ?_⟩
+    refine ⟨by simp [txn, noneReader, widen], by simp [txn, noneReader, widen],
+      by simp [txn, noneReader, widen], by simp [txn, noneReader, widen], ?_⟩
     intro read member
-    simp only [txn, absenceReader, widen_reads, List.mem_cons, List.not_mem_nil, or_false] at member
+    simp only [txn, noneReader, widen_reads, List.mem_cons, List.not_mem_nil, or_false] at member
     rcases member with rfl | rfl
     · exact revisionQuery_holds_iff.mpr rfl
     · decide
   exact (Step.begin start true rfl enabled).wellFormed (wellFormed_of_initial initial)
 
 /-- **The shared case applies**: the other subject can reach `send` at name `0`, so it can be
-authorized to make `5` there; the make commits, the absence fails, and the owner's reader commits
+authorized to make `5` there; the make commits, the none query fails, and the owner's reader commits
 in no continuation. -/
 theorem shared_instance :
     (∃ ops, CapFormed nameOf id (Delegation.run grantingGenesis ops) false (Commit.makeOne 5)) ∧
       ∃ σ', Run nameOf txn begun [(false, txn false)] σ' ∧ 5 ∈ restrict nameOf id atZero σ'.store ∧
         ∀ σ'' trace, Run nameOf txn σ' trace σ'' → ∀ entry ∈ trace, entry.1 ≠ true :=
-  shared_absence_stale_under_revision (loc := id) (A := atZero) (n := 0) (t := true) (w := false)
+  shared_none_stale_under_revision (loc := id) (A := atZero) (n := 0) (t := true) (w := false)
     (o := 5) (seen := start.epoch) (by decide) other_reaches_send begun_wellFormed (by decide)
     (by simp [begun]) (snapshot := ∅)
-    (by simp [txn, absenceReader, widen]) (by simp [begun, start]) rfl (by simp [begun, start])
+    (by simp [txn, noneReader, widen]) (by simp [begun, start]) rfl (by simp [begun, start])
     (by simp [nameOf])
 
-/-- **A write at name `1` leaves the absence at name `0` true and still makes the reader stale.** -/
+/-- **A write at name `1` leaves the none query at name `0` true and still makes the reader stale.** -/
 theorem outside_instance :
-    ∃ σ', Run nameOf (fun t => if t then absenceReader else Commit.makeOne 6) begun
+    ∃ σ', Run nameOf (fun t => if t then noneReader else Commit.makeOne 6) begun
         [(false, Commit.makeOne 6)] σ' ∧
       restrict nameOf id atZero σ'.store = restrict nameOf id atZero begun.store := by
-  have wf : WellFormed nameOf (fun t => if t then absenceReader else Commit.makeOne 6) begun := by
+  have wf : WellFormed nameOf (fun t => if t then noneReader else Commit.makeOne 6) begun := by
     have initial : Initial start := ⟨le_rfl, fun _ => rfl, fun _ => rfl⟩
-    have enabled : Enabled nameOf start.store absenceReader := by
-      refine ⟨by simp [absenceReader, widen], by simp [absenceReader, widen],
-        by simp [absenceReader, widen], by simp [absenceReader, widen], ?_⟩
+    have enabled : Enabled nameOf start.store noneReader := by
+      refine ⟨by simp [noneReader, widen], by simp [noneReader, widen],
+        by simp [noneReader, widen], by simp [noneReader, widen], ?_⟩
       intro read member
-      simp only [absenceReader, widen_reads, List.mem_cons, List.not_mem_nil, or_false] at member
+      simp only [noneReader, widen_reads, List.mem_cons, List.not_mem_nil, or_false] at member
       rcases member with rfl | rfl
       · exact revisionQuery_holds_iff.mpr rfl
       · decide
-    exact (Step.begin (txn := fun t => if t then absenceReader else Commit.makeOne 6) start true rfl
+    exact (Step.begin (txn := fun t => if t then noneReader else Commit.makeOne 6) start true rfl
       enabled).wellFormed (wellFormed_of_initial initial)
   obtain ⟨σ', run, same, -⟩ := write_outside_stales_revision (loc := id) (A := atZero) wf
     (t := true) (w := false) (seen := start.epoch) (by decide) (by simp [begun]) (snapshot := ∅)
-    (by simp [absenceReader, widen]) (by simp [begun, start]) (o := 6) rfl (by simp [begun, start])
+    (by simp [noneReader, widen]) (by simp [begun, start]) (o := 6) rfl (by simp [begun, start])
     (by simp [nameOf, atZero])
   exact ⟨σ', run, same⟩
 

@@ -136,12 +136,12 @@ theorem definition_listModels_iff {N : List (Binding.MetaArity S)}
     exact congrArg Binding.ContextualFamily.observe same
 
 /-- **A definition has a principal second-order answer**: the binding `m ↦ t`. -/
-theorem definition_principal (absent : i ∉ Binding.ContextualFamily.support t) :
+theorem definition_principal (missing : i ∉ Binding.ContextualFamily.support t) :
     (listFrames S).Principal (a := M) (m := M) (definitionStore M i t)
       (ContextualBinding.answer i t) where
   sound := (definition_listModels_iff M i t _).mpr
     ((ContextualBinding.answer_same i t).trans
-      (ContextualBinding.instantiate_answer_of_absent i t t absent).symm)
+      (ContextualBinding.instantiate_answer_of_notMem_support i t t missing).symm)
   factors := by
     intro N f solved
     have binding := (definition_listModels_iff M i t f).mp solved
@@ -209,7 +209,7 @@ theorem definition_factorsOnImage :
 theorem definition_entails_iff (empty : rules.computation = RootComputation.empty)
     (symmetric : Std.Symm rules.headEq) (sortInjective : Function.Injective names.sort)
     (operatorInjective : ∀ {s : S.Srt}, Function.Injective (names.operator (sort := s)))
-    (absent : i ∉ Binding.ContextualFamily.support t)
+    (missing : i ∉ Binding.ContextualFamily.support t)
     (G : EquationStore (Binding.ContextualFamily.Observation S M.get)) :
     (Dependent.frames rules).Entails ((translation names realization).store (definitionStore M i t))
         (fun _ g => (Dependent.frames rules).Models g ((translation names realization).store G)) ↔
@@ -217,15 +217,15 @@ theorem definition_entails_iff (empty : rules.computation = RootComputation.empt
         (fun _ f => (listFrames S).Models f G) :=
   (translation names realization).entails_iff_of_factorsOnImage
     (translation_reflects names realization empty symmetric sortInjective @operatorInjective)
-    (definition_principal M i t absent) (definition_factorsOnImage names realization M i t)
+    (definition_principal M i t missing) (definition_factorsOnImage names realization M i t)
 
 /-- Both sides of a definition are solvable. -/
-theorem definition_solvable (absent : i ∉ Binding.ContextualFamily.support t) :
+theorem definition_solvable (missing : i ∉ Binding.ContextualFamily.support t) :
     (listFrames S).Solvable (a := M) (definitionStore M i t) ∧
       (Dependent.frames rules).Solvable
         ((translation names realization).store (definitionStore M i t)) :=
-  ⟨(definition_principal M i t absent).solvable,
-    translation_solvable names realization (definition_principal M i t absent).solvable⟩
+  ⟨(definition_principal M i t missing).solvable,
+    translation_solvable names realization (definition_principal M i t missing).solvable⟩
 
 end Definitions
 

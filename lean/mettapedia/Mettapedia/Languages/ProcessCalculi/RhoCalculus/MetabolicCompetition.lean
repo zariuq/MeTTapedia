@@ -169,6 +169,7 @@ theorem transfer_substitution {Head : Type u} (encoding : Encoding Head)
       output acquisition (payload encoding stack) := by
   simp [transferBody, semanticCommSubst, semanticSubstProc, semanticSubstName,
     semanticSubstNameMark, semanticNormalizeName, semanticNormalizeProc,
+    canonicalize, canonicalizeList, normalizeQuote,
     payload_normalize, output, acquisition, spent, pop, metabolic, zero]
 
 /-- The contextual result stores the complete received stack on its new channel. -/
@@ -182,9 +183,6 @@ theorem canonical_transfer_result {Head : Type u} (encoding : Encoding Head)
     (show ProcWellSorted rhoReflectivePresentation FreeSortContext.empty
       [rhoReflectivePresentation.nameSort] transferBody from
         .output (acquisition_typed _) (.drop (.bvar rfl)))
-    (show binderSafeAt "NQuote" 1 transferBody = true from by
-      simp [transferBody, output, binderSafeAt, binderSafeListAt,
-        acquisition, spent, pop, metabolic, zero])
     (PureBoundary.rhoProcWellSorted_hashSetFree (payload_typed encoding stack [])),
     transfer_substitution]
   simp only [output, canonicalize_output]

@@ -7,16 +7,16 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Prog
 
 The program core runs on two hosts: the first-order equation core (`ProgramEquations.EqStep`, with
 R95's unmatched calls as values) and the binder-bearing core on the contextual step
-(`ProgramBinders`, with R100's absence check). `ProgramBindersFirstOrder` embeds first-order rows
+(`ProgramBinders`, with R100's none check). `ProgramBindersFirstOrder` embeds first-order rows
 (`encSx`, `encPat`) and joins the cores' rewriting on ground rows (`step_join`, `execution_join`).
-This module joins their absence checks.
+This module joins their none checks.
 
 * **Matching agrees** (`matches_iff`): a translated left-hand side matches an embedded call exactly
   when the first-order pattern matches the row.
-* **R100's absence is first-order non-matching** (`unmatched_iff_firstOrder`), and so is **R95's**
+* **R100's the none query is first-order non-matching** (`unmatched_iff_firstOrder`), and so is **R95's**
   (`matchedBy_false_iff`): its test, renamed-apart unification against the embedded row, sees no
   equation exactly when no pattern matches the row.
-* **The two absence checks are one** (`absence_agrees`): for programs with the same left-hand sides,
+* **The two none checks are one** (`none_agrees`): for programs with the same left-hand sides,
   R100's `Unmatched` at an embedded call holds exactly when R95's query test `matchedBy` is false at
   the embedded row.
 * **And so are the return firings' admissions at an embedded call** (`return_admitted_iff`): R100's
@@ -53,7 +53,7 @@ theorem matches_iff (e : ProgramEquations.Equation) (s : Sx) :
     rw [matched] at read
     exact read
 
-/-- **R100's absence at an embedded call is first-order non-matching.** -/
+/-- **R100's none queries at an embedded call is first-order non-matching.** -/
 theorem unmatched_iff_firstOrder (prog : ProgramEquations.Program) (s : Sx) :
     Unmatched (foProgram prog) (encSx s) ↔ ∀ e ∈ prog, ∀ θ : ℕ → Sx, e.lhs.inst θ ≠ s := by
   constructor
@@ -97,9 +97,9 @@ theorem matchedBy_false_iff (eqs : List ProgramNested.NEquation) (s : Sx) :
 
 /-! ## The agreement -/
 
-/-- **The two absence checks are one on first-order rows**: for programs with the same left-hand
+/-- **The two none checks are one on first-order rows**: for programs with the same left-hand
 sides, R100's `Unmatched` at an embedded call is R95's query test being false at the embedded row. -/
-theorem absence_agrees (prog : ProgramEquations.Program) (eqs : List ProgramNested.NEquation)
+theorem none_agrees (prog : ProgramEquations.Program) (eqs : List ProgramNested.NEquation)
     (sameLhs : eqs.map ProgramNested.NEquation.lhs = prog.map ProgramEquations.Equation.lhs) (s : Sx) :
     Unmatched (foProgram prog) (encSx s) ↔ ProgramNested.matchedBy eqs (embed s) = false := by
   rw [unmatched_iff_firstOrder, matchedBy_false_iff]
@@ -118,13 +118,13 @@ theorem return_admitted_iff (prog : ProgramEquations.Program) (eqs : List Progra
     ProgramBinders.UnmatchedAdmitted (foProgram prog) (ProgramBinders.initial (encSx s)) ↔
       ProgramNested.matchedBy eqs (embed s) = false :=
   (ProgramBinders.returns_iff _ (encSx s) (ProgramBinders.initial_determines _)).trans
-    (absence_agrees prog eqs sameLhs s)
+    (none_agrees prog eqs sameLhs s)
 
 #print axioms matches_iff
 #print axioms unmatched_iff_firstOrder
 #print axioms unifies_embed_iff
 #print axioms matchedBy_false_iff
-#print axioms absence_agrees
+#print axioms none_agrees
 #print axioms return_admitted_iff
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ProgramHosts

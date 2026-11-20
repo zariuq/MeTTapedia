@@ -4,7 +4,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLF
 /-! # A loaded update consumes one occurrence and creates another
 
 The same constructed model also supplies the frame and knowledge contracts.
-Returning the original store is rejected, and the raw sentinel remains absent.
+Returning the original store is rejected, and the raw sentinel remains not present.
 -/
 
 set_option autoImplicit false
@@ -47,7 +47,7 @@ theorem loaded_controls (other : TypeFamilySemantics.OperatorFamilies.{0})
     simp at member
   · intro claimed
     have point := congrArg ULift.down (congrFun image (occurrences.symm none))
-    exact invalid_absent actual occurrences {1} ((iff_of_eq point).mp claimed)
+    exact invalid_code_false actual occurrences {1} ((iff_of_eq point).mp claimed)
 
 #print axioms actual_update
 #print axioms loaded_controls

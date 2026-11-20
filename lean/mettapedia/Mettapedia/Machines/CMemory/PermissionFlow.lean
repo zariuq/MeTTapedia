@@ -52,15 +52,15 @@ def check [BEq State] [LawfulBEq State] (transition : State → Action → Optio
   | .ret, s => if returnAllowed s then some [⟨.returned, s⟩] else none
   | .breakLoop, s => some [⟨.broke, s⟩]
   | .continueLoop, s => some [⟨.continued, s⟩]
-  | .branch yes no next, s => do
-      let left ← check transition returnAllowed yes s
-      let right ← check transition returnAllowed no s
+  | .branch yes no next, s =>
+      (check transition returnAllowed yes s).bind fun left =>
+      (check transition returnAllowed no s).bind fun right =>
       continueExits (check transition returnAllowed next) (left ++ right).eraseDups
-  | .loop body next, s => do
-      let iterations ← check transition returnAllowed body s
+  | .loop body next, s =>
+      (check transition returnAllowed body s).bind fun iterations =>
       if iterations.all (fun exit => exit.kind == .returned || exit.state == s) then
-        let after ← check transition returnAllowed next s
-        pure (iterations.filter (fun exit => exit.kind == .returned) ++ after)
+        (check transition returnAllowed next s).bind fun after =>
+          some (iterations.filter (fun exit => exit.kind == .returned) ++ after)
       else none
 
 inductive Execution (transition : State → Action → Option State) :
@@ -382,5 +382,124 @@ theorem Prefix.invariant {property : State → Prop}
   | loopStop rest ih => exact ih initial
   | loopBreak finished rest ih => exact ih (finished.invariant preserved initial)
   | loopAgain finished repeats rest ih => exact ih (finished.invariant preserved initial)
+
+/-!
+## Mandatory first iterations
+
+`resumeIteration` composes one already checked body with its latch or break
+continuation. A body return/fault stays terminal. Nested loops keep their own
+break and continue targets. This is a lowering of Cesta's permission plans,
+not an interpreter for C scalar expressions or machine execution.
+-/
+
+section Iteration
+
+omit [BEq State] [LawfulBEq State]
+
+def resume {Action : Type u} (body normal continued broken : Plan Action) : Plan Action :=
+  match body with
+  | .done => normal
+  | .step action next => .step action (resume next normal continued broken)
+  | .ret => .ret
+  | .breakLoop => broken
+  | .continueLoop => continued
+  | .branch yes no next =>
+      let tail := resume next normal continued broken
+      .branch (resume yes tail continued broken) (resume no tail continued broken) .done
+  | .loop body next => .loop body (resume next normal continued broken)
+
+def resumeIteration {Action : Type u} (body finish broken : Plan Action) : Plan Action :=
+  resume body finish finish broken
+
+inductive IterationResume (transition : State → Action → Option State)
+    (normal continued broken : Plan Action) : Exit State → Exit State → Prop where
+  | normal {state : State} {outcome : Exit State}
+      (run : Execution transition normal state outcome) :
+      IterationResume transition normal continued broken ⟨.normal, state⟩ outcome
+  | continued {state : State} {outcome : Exit State}
+      (run : Execution transition continued state outcome) :
+      IterationResume transition normal continued broken ⟨.continued, state⟩ outcome
+  | broke {state : State} {outcome : Exit State}
+      (run : Execution transition broken state outcome) :
+      IterationResume transition normal continued broken ⟨.broke, state⟩ outcome
+  | terminal {outcome : Exit State}
+      (terminal : outcome.kind = .returned ∨ outcome.kind = .fault) :
+      IterationResume transition normal continued broken outcome outcome
+
+private theorem choose_done {yes no : Plan Action} {choice : Bool}
+    {state : State} {outcome : Exit State}
+    (run : Execution transition (if choice then yes else no) state outcome) :
+    Execution transition (.branch yes no .done) state outcome := by
+  by_cases normal : outcome.kind = .normal
+  · obtain ⟨kind, after⟩ := outcome
+    dsimp at normal
+    subst kind
+    exact .branchNormal choice run (.done after)
+  · exact .branchAbrupt choice run normal
+
+/-- A mandatory body precedes its selected continuation. A continue skips
+ordinary branch tails; nested loops keep their own transfer targets. -/
+theorem resume_execution {body normal continued broken : Plan Action} {state : State}
+    {iteration outcome : Exit State} (run : Execution transition body state iteration)
+    (follow : IterationResume transition normal continued broken iteration outcome) :
+    Execution transition (resume body normal continued broken) state outcome := by
+  induction run generalizing normal continued broken outcome with
+  | done =>
+      cases follow with
+      | normal run => exact run
+      | terminal h => simp at h
+  | step enabled rest ih => exact .step enabled (ih follow)
+  | failed disabled => cases follow with | terminal _ => exact .failed disabled
+  | ret => cases follow with | terminal _ => exact .ret _
+  | breakLoop =>
+      cases follow with
+      | broke run => exact run
+      | terminal h => simp at h
+  | continueLoop =>
+      cases follow with
+      | continued run => exact run
+      | terminal h => simp at h
+  | branchNormal choice branch rest ihbranch ihrest =>
+      apply choose_done (choice := choice)
+      cases choice <;> simp only [Bool.false_eq_true, ↓reduceIte] at *
+      all_goals exact ihbranch (.normal (ihrest follow))
+  | branchAbrupt choice branch abrupt ih =>
+      apply choose_done (choice := choice)
+      cases choice <;> simp only [Bool.false_eq_true, ↓reduceIte] at *
+      all_goals cases follow with
+      | normal _ => exact False.elim (abrupt rfl)
+      | continued run => exact ih (.continued run)
+      | broke run => exact ih (.broke run)
+      | terminal h => exact ih (.terminal h)
+  | loopStop rest ih => exact .loopStop (ih follow)
+  | loopBreak iteration rest ihiteration ihrest => exact .loopBreak iteration (ihrest follow)
+  | loopAbrupt iteration abrupt ih =>
+      cases follow with
+      | normal _ => simp at abrupt
+      | continued _ => simp at abrupt
+      | broke _ => simp at abrupt
+      | terminal _ => exact .loopAbrupt iteration abrupt
+  | loopAgain iteration repeats rest ihiteration ihrest =>
+      exact .loopAgain iteration repeats (ihrest follow)
+
+theorem mandatory_no_fault [BEq State] [LawfulBEq State]
+    {body finish broken : Plan Action} {state : State} {returnAllowed : State → Bool}
+    {outputs : List (Exit State)} {iteration outcome : Exit State}
+    (admitted : check transition returnAllowed (resumeIteration body finish broken) state = some outputs)
+    (bodyRun : Execution transition body state iteration)
+    (continuation : IterationResume transition finish finish broken iteration outcome) :
+    outcome.kind ≠ .fault := by
+  exact admitted_no_fault ⟨outputs, admitted⟩ (resume_execution bodyRun continuation)
+
+theorem mandatory_returns [BEq State] [LawfulBEq State]
+    {body finish broken : Plan Action} {state : State} {returnAllowed : State → Bool}
+    {outputs : List (Exit State)} {iteration : Exit State} {after : State}
+    (admitted : check transition returnAllowed (resumeIteration body finish broken) state = some outputs)
+    (bodyRun : Execution transition body state iteration)
+    (continuation : IterationResume transition finish finish broken iteration ⟨.returned, after⟩) :
+    returnAllowed after = true := by
+  exact checked_returns admitted _ (covers_execution (resume_execution bodyRun continuation) admitted) rfl
+
+end Iteration
 
 end Mettapedia.Machines.CMemory.PermissionFlow

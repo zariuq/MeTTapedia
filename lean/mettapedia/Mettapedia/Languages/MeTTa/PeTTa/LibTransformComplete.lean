@@ -35,7 +35,7 @@ namespace Mettapedia.Languages.MeTTa.PeTTa.LibTransformStep
 
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 open Mettapedia.Languages.ProcessCalculi.MORK
-  (Subst isGroundAtom applySubst matchAtom MatchAtomRel matchAtom_complete
+  (Subst isGroundAtom applySubst applySubst_eq_subst matchAtom MatchAtomRel matchAtom_complete
     matchAtom_lookupExtends matchAtom_applySubst_ground)
 open Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting
   (Selection RuleInstance Configuration SubstitutionAction Check EquationStore)
@@ -258,10 +258,10 @@ theorem absent_of_checks {label : O → Atom} {K : EquationStore Atom} {n : Nat}
   have inImage : b ∈ rows.map (resolve ρ₀ label) := by
     rw [knows.resolved ρ₀ models₀]; exact stored
   obtain ⟨o, present, isValue⟩ := List.mem_map.mp inImage
-  have check := valid.checks (Check.map (rename n) (Check.absent p))
+  have check := valid.checks (Check.map (rename n) (Check.predicate .none p))
     (by
-      change Check.map (rename n) (Check.absent p) ∈
-        (absents.map Check.absent).map (Check.map (rename n))
+      change Check.map (rename n) (Check.predicate .none p) ∈
+        (absents.map (Check.predicate .none)).map (Check.map (rename n))
       exact List.mem_map_of_mem (List.mem_map_of_mem inside))
     (withLocal ρ₀ n (solution τ)) models
   have holds : ∀ o ∈ rows.toFinset,

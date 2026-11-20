@@ -27,6 +27,8 @@ private def quoteResetFixture : ReflectivePresentationDecl where
   parallelCollection := .hashBag
   parallelUnitConstructor := "zero"
   quoteDropEquation := "quote-drop"
+  -- Closed: a quotation resets the binder depth the keyed form observes.
+  quoteScope := .closed
 
 private def quoteResetDepthKey (depth : Nat) : Pattern → Nat
   | .fvar "a" => if depth = 0 then 0 else 1

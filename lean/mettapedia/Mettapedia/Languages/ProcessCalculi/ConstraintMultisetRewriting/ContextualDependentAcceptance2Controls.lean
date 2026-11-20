@@ -1,15 +1,15 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSpineEtaControls
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentCensusControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentClassificationControls
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentPatternFiringRowsControls
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentCensusPairEtaControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentClassificationPairEtaControls
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentTwinsUnderControls
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentIdEndpointsControls
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentConstantHeadsProjectionsControls
 
 /-!
-# The census controls under the flexible-base family
+# The classification controls under the flexible-base family
 
-Every control store of the census (R99, R107 and this layer), run by the flexible-base solver `flexOnly` at budget 16
+Every control store of the classification (R99, R107 and this layer), run by the flexible-base solver `flexOnly` at budget 16
 for eight rounds. A commit is a principal answer and a refutation certifies that the store has no solution
 (`Outcome.readout_eq_refuted`), so on these stores the readout is the right answer. The cumulative family, the last one,
 acts only where the flexible-base round is stuck, so it has the same run on every store decided here
@@ -57,11 +57,11 @@ theorem flexible_last : (run flexOnly flexibleStore 8).readout = .commit := by d
 theorem prunable_last : (run flexOnly prunableStore 8).readout = .commit := by decide +kernel
 theorem matching_last : (run flexOnly matchingStore 8).readout = .commit := by decide +kernel
 
-theorem flexibleBase_last : (run flexOnly ContextualDependentCensus.Controls.flexibleBaseStore 8).readout = .commit := by
+theorem flexibleBase_last : (run flexOnly ContextualDependentClassification.Controls.flexibleBaseStore 8).readout = .commit := by
   decide +kernel
-theorem nested_last : (run flexOnly ContextualDependentCensus.Controls.nestedStore 8).readout = .commit := by
+theorem nested_last : (run flexOnly ContextualDependentClassification.Controls.nestedStore 8).readout = .commit := by
   decide +kernel
-theorem applied_last : (run flexOnly ContextualDependentCensus.Controls.appliedStore 8).readout = .commit := by
+theorem applied_last : (run flexOnly ContextualDependentClassification.Controls.appliedStore 8).readout = .commit := by
   decide +kernel
 theorem sameHeads_last :
     (run flexOnly ContextualDependentConstantHeads.Controls.sameHeadsStore 8).readout = .commit := by decide +kernel
@@ -79,7 +79,7 @@ theorem secondSpine_last :
     (run flexOnly ContextualDependentConstantHeadsProjections.Controls.secondSpineStore 8).readout = .commit := by
   decide +kernel
 theorem projector_last :
-    (run flexOnly ContextualDependentCensusPairEta.Controls.projectorStore 8).readout = .commit := by decide +kernel
+    (run flexOnly ContextualDependentClassificationPairEta.Controls.projectorStore 8).readout = .commit := by decide +kernel
 
 /-! ## Refutations -/
 
@@ -90,11 +90,11 @@ theorem older_last : (run flexOnly olderStore 8).readout = .refuted := by decide
 theorem swapped_last : (run flexOnly swappedStore 8).readout = .refuted := by decide +kernel
 
 theorem nestedClash_last :
-    (run flexOnly ContextualDependentCensus.Controls.nestedClashStore 8).readout = .refuted := by decide +kernel
-theorem argument_last : (run flexOnly ContextualDependentCensus.Controls.argumentStore 8).readout = .refuted := by
+    (run flexOnly ContextualDependentClassification.Controls.nestedClashStore 8).readout = .refuted := by decide +kernel
+theorem argument_last : (run flexOnly ContextualDependentClassification.Controls.argumentStore 8).readout = .refuted := by
   decide +kernel
 theorem deepArgument_last :
-    (run flexOnly ContextualDependentCensus.Controls.deepArgumentStore 8).readout = .refuted := by decide +kernel
+    (run flexOnly ContextualDependentClassification.Controls.deepArgumentStore 8).readout = .refuted := by decide +kernel
 theorem projections_last :
     (run flexOnly ContextualDependentConstantHeads.Controls.projectionsStore 8).readout = .refuted := by
   decide +kernel

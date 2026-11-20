@@ -33,7 +33,7 @@ Module QueryRoundtrip {
 #guard QueryRoundtrip.language.isOk
 #module_roundtrip QueryRoundtrip
 #guard Printer.premise (.relationQuery "ml-primitive" [.fvar "input", .fvar "output"]) ==
-  "\"ml-primitive\"(input, output)"
+  "\"ml-primitive\"(? \"input\", ? \"output\")"
 #guard Printer.premise (.relationQuery "ordinary" []) == "\"ordinary\"()"
 
 end Mettapedia.GSLT.LanguageDef.ModuleSource.PrinterQueryControls

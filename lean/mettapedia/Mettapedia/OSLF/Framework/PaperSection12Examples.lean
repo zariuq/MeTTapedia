@@ -39,8 +39,8 @@ def racePayload : Pattern := .apply "PZero" []
 /-- First race body. -/
 def raceBody1 : Pattern := .bvar 0
 
-/-- Second race body (distinct from `raceBody1`). -/
-def raceBody2 : Pattern := .apply "PDrop" [.apply "NQuote" [.bvar 0]]
+/-- Second race body (distinct from `raceBody1`): run the received name. -/
+def raceBody2 : Pattern := .apply "PDrop" [.bvar 0]
 
 /-- Bag with one output and two competing inputs on the same channel. -/
 def raceElems : List Pattern :=

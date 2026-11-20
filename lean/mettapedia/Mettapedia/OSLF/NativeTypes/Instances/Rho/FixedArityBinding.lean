@@ -192,10 +192,12 @@ theorem reflective_reduct {ambient : Nat} {channel body payload : Pattern}
   rfl
 
 /-- On the independently sorted source syntax, the companion reads exactly
-the paper-facing received-name substitution, for every body and payload. -/
+the paper-facing received-name substitution, for every body in the
+literal-quotation fiber and every payload. -/
 theorem reduct_agrees_with_original_semantic_substitution
     {free : DerivedPresentationSyntax.FreeSortContext} {channel body payload : Pattern}
     (bodyTyped : DerivedPresentationSyntax.ProcWellSorted rhoReflectivePresentation free ["Name"] body)
+    (fiber : Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral rhoReflectivePresentation body = true)
     (payloadTyped : DerivedPresentationSyntax.ProcWellSorted rhoReflectivePresentation free [] payload) :
     reductWith? (ScopedReflectiveExecution.binderOperation rhoReflectionProfile comm)
       comm bindingSpec 0 (captured 0 channel body payload) =
@@ -204,6 +206,7 @@ theorem reduct_agrees_with_original_semantic_substitution
   have bodySafe : body.isWellScopedAt 1 = true := (GeneralRho.derived_process_typed bodyTyped).isWellScopedAt
   have payloadSafe : payload.isWellScopedAt 0 = true := (GeneralRho.derived_process_typed payloadTyped).isWellScopedAt
   have original := GeneralRho.reflective_reduct_semantic (channel := channel) (rest := []) bodyTyped payloadTyped rfl
+    fiber
   rw [GeneralRho.reflective_reduct bodySafe payloadSafe rfl] at original
   rw [reflective_reduct bodySafe payloadSafe]
   exact original

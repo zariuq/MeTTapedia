@@ -145,9 +145,9 @@ theorem support_inclusion_iff (reference : Ref) (within : reference.thin.length 
   · intro included i present
     have inside : i < n := by
       by_contra outside
-      have absent := bit_of_length_le (θ := reference.thin)
+      have missing := bit_of_length_le (θ := reference.thin)
         (within.trans (Nat.le_of_not_gt outside))
-      rw [absent] at present
+      rw [missing] at present
       cases present
     have accepted := included ((mem_used n reference ⟨i, inside⟩).mpr present)
     exact (mask_bit allowed ⟨i, inside⟩).trans (by simpa using accepted)

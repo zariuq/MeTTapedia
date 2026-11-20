@@ -94,11 +94,11 @@ abbrev clashSchema := schemaOf clashValue clashValue.1 clashInformation
 abbrev clashPick := pickOf clashValue clashValue.1 clashInformation
 
 theorem computed_refutation :
-    ∃ absent, clashSchema.resolve (state := clashState) clashPick actualSolver 1 = .refuted absent := by
+    ∃ missing, clashSchema.resolve (state := clashState) clashPick actualSolver 1 = .refuted missing := by
   have refutes := ContextualDependentWorklist.Controls.clash_run_refutes
   cases computed : run actualSolver clashInformation 1 with
-  | refuted absent =>
-      exact ⟨absent, congrArg (fun outcome : Outcome setting.levels clashInformation =>
+  | refuted missing =>
+      exact ⟨missing, congrArg (fun outcome : Outcome setting.levels clashInformation =>
         clashSchema.resolveOutcome (state := clashState) clashPick outcome) computed⟩
   | solved update finished => rw [computed] at refutes; cases refutes
   | stuck update => rw [computed] at refutes; cases refutes
@@ -140,7 +140,7 @@ theorem cross_finishes_postponed :
   change (run actualSolver crossStore fuel).Finished at finished
   cases computed : run actualSolver crossStore fuel with
   | solved update empty => exact False.elim ((cross_residual_never_empty update).1 empty)
-  | refuted absent => exact False.elim (absent fragment_without_principal_answer.2.1)
+  | refuted missing => exact False.elim (missing fragment_without_principal_answer.2.1)
   | cutoff update => rw [computed] at finished; exact False.elim finished
   | stuck update => exact ⟨fuel, update, computed, cross_residual_never_empty update⟩
 

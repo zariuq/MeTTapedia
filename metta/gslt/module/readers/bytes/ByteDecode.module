@@ -1,0 +1,73 @@
+import "ByteScalars.module" as scalars
+
+Module ByteDecode {
+
+  Theory Naturals(d: scalars.Values) {
+    d Rewrites {
+      CanonZero: (MakeNatBit (Bit0) (NatZero)) ~> (NatZero);
+      CanonOne: (MakeNatBit (Bit1) n) ~> (NatBit (Bit1) n);
+      CanonMore: (MakeNatBit (Bit0) (NatBit b n)) ~> (NatBit (Bit0) (NatBit b n));
+      PredOdd: (NatPred (NatBit (Bit1) n)) ~> (MakeNatBit (Bit0) n);
+      PredEven: (NatPred (NatBit (Bit0) n)) ~> (NatBit (Bit1) (NatPred n));
+      CompareZero: (NatCompare (NatZero) (NatZero)) ~> (Equal);
+      CompareLeftZero: (NatCompare (NatZero) (NatBit b n)) ~> (Less);
+      CompareRightZero: (NatCompare (NatBit b n) (NatZero)) ~> (Greater);
+      CompareMore: (NatCompare (NatBit a n) (NatBit b m)) ~> (CompareBits a b (NatCompare n m));
+      CompareHigherLess: (CompareBits a b (Less)) ~> (Less);
+      CompareHigherGreater: (CompareBits a b (Greater)) ~> (Greater);
+      CompareEqualZero: (CompareBits (Bit0) (Bit0) (Equal)) ~> (Equal);
+      CompareEqualOne: (CompareBits (Bit1) (Bit1) (Equal)) ~> (Equal);
+      CompareLowLess: (CompareBits (Bit0) (Bit1) (Equal)) ~> (Less);
+      CompareLowGreater: (CompareBits (Bit1) (Bit0) (Equal)) ~> (Greater);
+    }
+  }
+  Theory ULEB62(d: scalars.Values) {
+    d Rewrites {
+      StartLEB: (ReadULEB62 xs) ~> (LebRead (LebMore (LebMore (LebMore (LebMore (LebMore (LebMore (LebMore (LebMore (LebLast))))))))) xs);
+      LebEmpty: (LebRead limit (BNil)) ~> (NeedInput);
+      LebEnd:
+        (LebRead (LebMore limit) (BCons (Byte8 (Bit0) b6 b5 b4 b3 b2 b1 b0) rest))
+        ~> (DecodedWord (MakeNatBit b0 (MakeNatBit b1 (MakeNatBit b2 (MakeNatBit b3 (MakeNatBit b4 (MakeNatBit b5 (MakeNatBit b6 (NatZero)))))))) rest);
+      LebContinue:
+        (LebRead (LebMore limit) (BCons (Byte8 (Bit1) b6 b5 b4 b3 b2 b1 b0) rest))
+        ~> (LebJoin b6 b5 b4 b3 b2 b1 b0 (LebRead limit rest));
+      LebNinth:
+        (LebRead (LebLast) (BCons (Byte8 (Bit0) (Bit0) b5 b4 b3 b2 b1 b0) rest))
+        ~> (DecodedWord (MakeNatBit b0 (MakeNatBit b1 (MakeNatBit b2 (MakeNatBit b3 (MakeNatBit b4 (MakeNatBit b5 (NatZero))))))) rest);
+      LebOverflow:
+        (LebRead (LebLast) (BCons (Byte8 (Bit0) (Bit1) b5 b4 b3 b2 b1 b0) rest))
+        ~> (BadInteger);
+      LebTooLong:
+        (LebRead (LebLast) (BCons (Byte8 (Bit1) b6 b5 b4 b3 b2 b1 b0) rest))
+        ~> (BadInteger);
+      LebNonminimal:
+        (LebJoin b6 b5 b4 b3 b2 b1 b0 (DecodedWord (NatZero) rest)) ~> (BadInteger);
+      LebCombine:
+        (LebJoin b6 b5 b4 b3 b2 b1 b0 (DecodedWord (NatBit bit n) rest))
+        ~> (DecodedWord (MakeNatBit b0 (MakeNatBit b1 (MakeNatBit b2 (MakeNatBit b3 (MakeNatBit b4 (MakeNatBit b5 (MakeNatBit b6 (NatBit bit n)))))))) rest);
+      LebJoinShort: (LebJoin b6 b5 b4 b3 b2 b1 b0 (NeedInput)) ~> (NeedInput);
+      LebJoinBad: (LebJoin b6 b5 b4 b3 b2 b1 b0 (BadInteger)) ~> (BadInteger);
+    }
+  }
+  Theory Counted(d: scalars.Values) {
+    d Rewrites {
+      TakeEmpty: (TakeBytes (NatZero) xs) ~> (Taken (BNil) xs);
+      TakeShort: (TakeBytes (NatBit bit n) (BNil)) ~> (NeedInput);
+      TakeMore: (TakeBytes (NatBit bit n) (BCons b xs))
+        ~> (TakePush b (TakeBytes (NatPred (NatBit bit n)) xs));
+      TakeCons: (TakePush b (Taken prefix rest)) ~> (Taken (BCons b prefix) rest);
+      TakePropagate: (TakePush b (NeedInput)) ~> (NeedInput);
+      CountedRead: (ReadCountedBytes xs) ~> (CountedStart (ReadULEB62 xs));
+      CountedWord: (CountedStart (DecodedWord n rest))
+        ~> (CountedBound (NatCompare n (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatZero))))))))))))))))))))))) n rest);
+      CountedSmall: (CountedBound (Less) n xs) ~> (TakeBytes n xs);
+      CountedLimit: (CountedBound (Equal) n xs) ~> (TakeBytes n xs);
+      CountedLarge: (CountedBound (Greater) n xs) ~> (LimitExceeded);
+      CountedShort: (CountedStart (NeedInput)) ~> (NeedInput);
+      CountedBad: (CountedStart (BadInteger)) ~> (BadInteger);
+    }
+  }
+  Theory Decoder(d: scalars.Values) { Naturals(d) \/ ULEB62(d) \/ Counted(d) }
+  theory Decoder(scalars.Values())
+}
+

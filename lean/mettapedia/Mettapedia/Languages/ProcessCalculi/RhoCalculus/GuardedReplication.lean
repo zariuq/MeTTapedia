@@ -42,11 +42,13 @@ def idle (self request handler : Pattern) : Pattern :=
 
 private theorem subst_drop_eq (index : Nat) (process : Pattern) :
     semanticSubstProc index (.apply "NQuote" [process]) (drop index) = process := by
-  simp [drop, semanticSubstProc, semanticSubstNameMark, semanticNormalizeName]
+  simp [drop, semanticSubstProc, semanticSubstNameMark, 
+    Canonical.canonicalize]
 
 private theorem subst_drop_ne (index target : Nat) (replacement : Pattern) (different : index ≠ target) :
     semanticSubstProc target replacement (drop index) = drop index := by
-  simp [drop, semanticSubstProc, semanticSubstNameMark, semanticNormalizeName, different]
+  simp [drop, semanticSubstProc, semanticSubstNameMark, semanticNormalizeName,
+    Canonical.canonicalize, different]
 
 section Laws
 

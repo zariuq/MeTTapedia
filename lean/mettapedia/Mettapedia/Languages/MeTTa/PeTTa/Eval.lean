@@ -100,6 +100,8 @@ def step (program : Program) (configuration : Configuration) : Option Configurat
           match readCases rows with
           | some cases => push (.select bindings cases) bindings value
           | none => advance (.fault (.invalidArguments "case"))
+      | .expression [.symbol "if", condition, yes] =>
+          push (.select bindings (ifThenCases yes)) bindings condition
       | .expression [.symbol "if", condition, yes, no] =>
           push (.branch bindings yes no) bindings condition
       | .expression [.symbol "collapse", expression] => push .collect bindings expression
@@ -177,6 +179,70 @@ theorem transition_step {program : Program} {source target : Configuration}
   case data_enter bindings head arguments control notControl notCallable =>
     simp only [step, control]
     split <;> simp_all [controlForm]
+
+set_option maxHeartbeats 400000 in
+/-- A step from an expression under evaluation is one of the syntax-directed rules.
+Each arm of `step` on `.evaluate` is matched by the rule for the same syntax; the call
+and data arms are reached only when the expression is not a control form. -/
+private theorem evaluate_step_transition {program : Program} {state : State}
+    {bindings : Subst} {expression : Atom} {frames : List Frame} {input output : List Atom}
+    {target : Configuration}
+    (computed : step program ⟨state, .evaluate bindings expression, frames, input, output⟩ =
+      some target) :
+    Transition program ⟨state, .evaluate bindings expression, frames, input, output⟩ target := by
+  simp only [step] at computed
+  split at computed
+  · cases computed
+    exact .value_variable rfl
+  · cases computed
+    exact .symbol rfl
+  · cases computed
+    exact .grounded rfl
+  · cases computed
+    exact .let_enter rfl
+  · split at computed
+    · cases computed
+      exact .let_star rfl (by assumption)
+    · cases computed
+      exact .let_star_bad rfl (by assumption)
+  · split at computed
+    · cases computed
+      exact .case_enter rfl (by assumption)
+    · cases computed
+      exact .case_bad rfl (by assumption)
+  · cases computed
+    exact .if_without_else rfl
+  · cases computed
+    exact .if_enter rfl
+  · cases computed
+    exact .collapse_enter rfl
+  · cases computed
+    exact .unique_enter rfl
+  · cases computed
+    exact .superpose_enter rfl
+  · cases computed
+    exact .empty_enter rfl
+  · cases computed
+    exact .quote_enter rfl
+  · cases computed
+    exact .query_enter rfl
+  · split at computed
+    · cases computed
+      apply Transition.call_enter rfl _ (by assumption)
+      simp only [controlForm]
+      split <;> (simp only [Atom.expression.injEq, List.cons.injEq, Atom.symbol.injEq] at * <;> aesop)
+    · rename_i notCallable
+      cases computed
+      apply Transition.data_enter rfl _ (Bool.eq_false_iff.mpr notCallable)
+      simp only [controlForm]
+      split <;> (simp only [Atom.expression.injEq, List.cons.injEq, Atom.symbol.injEq] at * <;> aesop)
+  · -- The remaining expressions are exactly the unheaded ones: a headed expression
+    -- was taken by the call/data arm above.
+    cases computed
+    apply Transition.expression_enter rfl
+    intro head arguments shape
+    subst shape
+    simp_all
 
 theorem step_transition {program : Program} {source target : Configuration}
     (computed : step program source = some target) :
@@ -281,54 +347,7 @@ theorem step_transition {program : Program} {source target : Configuration}
             exact .raw_argument rfl (by assumption)
           · cases computed
             exact .evaluated_argument rfl (by simpa using ‹¬ argumentIsRaw program head index = true›)
-    | evaluate bindings expression =>
-      simp only [step] at computed
-      split at computed
-      · cases computed
-        exact .value_variable rfl
-      · cases computed
-        exact .symbol rfl
-      · cases computed
-        exact .grounded rfl
-      · cases computed
-        exact .let_enter rfl
-      · split at computed
-        · cases computed
-          exact .let_star rfl (by assumption)
-        · cases computed
-          exact .let_star_bad rfl (by assumption)
-      · split at computed
-        · cases computed
-          exact .case_enter rfl (by assumption)
-        · cases computed
-          exact .case_bad rfl (by assumption)
-      · cases computed
-        exact .if_enter rfl
-      · cases computed
-        exact .collapse_enter rfl
-      · cases computed
-        exact .unique_enter rfl
-      · cases computed
-        exact .superpose_enter rfl
-      · cases computed
-        exact .empty_enter rfl
-      · cases computed
-        exact .quote_enter rfl
-      · cases computed
-        exact .query_enter rfl
-      · split at computed
-        · cases computed
-          apply Transition.call_enter rfl _ (by assumption)
-          simp only [controlForm]
-          split <;> (simp only [Atom.expression.injEq, List.cons.injEq, Atom.symbol.injEq] at * <;> aesop)
-        · rename_i notCallable
-          cases computed
-          apply Transition.data_enter rfl _ (Bool.eq_false_iff.mpr notCallable)
-          simp only [controlForm]
-          split <;> (simp only [Atom.expression.injEq, List.cons.injEq, Atom.symbol.injEq] at * <;> aesop)
-      · cases computed
-        apply Transition.expression_enter rfl
-        aesop
+    | evaluate bindings expression => exact evaluate_step_transition computed
     | returned answers =>
       cases frames with
       | nil => simp [step] at computed
@@ -435,7 +454,7 @@ theorem step_eq_of_program_agreement {first second : Program} {source : Configur
           | expression items =>
               simp only [step]
               split <;> try rfl
-              rename_i _ head arguments _ _ _ _ _ _ _ _ _ _ shape
+              rename_i _ head arguments _ _ _ _ _ _ _ _ _ _ _ shape
               rw [dispatch bindings head arguments (congrArg (Control.evaluate bindings) shape)]
 
 /-- Transport a finite path after checking the program observations along it.
@@ -661,7 +680,7 @@ theorem transition_within {allowed : String → Bool} {program : Program}
   all_goals simp only [configurationWithin]
   all_goals try solve |
     simp_all [controlWithin, controlsWithin, frameWithin, targetWithin,
-      codeWithin, atomsWithin, expressionHeadWithin, Bool.and_eq_true]
+      codeWithin, atomsWithin, expressionHeadWithin, ifThenCases, Bool.and_eq_true]
   case equations bindings head index values control _ _ =>
     rw [control] at controlCode
     simp only [controlWithin, targetWithin, atomsWithin, Bool.and_true,
@@ -2364,7 +2383,7 @@ theorem transition_safe (program : Program) (excluded : List String)
   all_goals simp_all only [configurationSafe, controlSafe, frameSafe, targetSafe,
     expression_safe, List.all_cons, List.all_nil, controlSafe.controlsSafe,
     Bool.and_true, Bool.true_and, Bool.and_eq_true, and_true, true_and]
-  all_goals try solve | simp_all [blocked, ioHead]
+  all_goals try solve | simp_all [blocked, ioHead, ifThenCases]
   case equations =>
     apply application_safe program excluded _ _ closed
     simpa using safe.1

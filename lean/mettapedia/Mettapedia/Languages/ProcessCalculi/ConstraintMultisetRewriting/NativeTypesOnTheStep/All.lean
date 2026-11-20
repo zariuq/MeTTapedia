@@ -48,8 +48,9 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NativeTyp
   controls for both, and for a declaration that is not confluent.
 * `InterpreterDeclared`: the typed interpreter returns at its declared type once its value type is
   declared computing.
-* `RhoNativeTypes`: rho's native types against the step's types, the generated logic agreeing with
-  the past over the heating class, and where they diverge.
+* `RhoNativeTypes`: modal types (formulas with possibility, successor and predecessor necessity) of
+  rho's communication with ordinary substitution against the step's, the generated logic agreeing
+  with the past over the heating class, and where they diverge.
 * `AgreementCounterexample`: raw typing is not closed under agreement: `h : Π (x : U₁). U₁` and its
   η-expansion agree, and only the η-expansion is typed at `Π (x : U₀). U₁`; a settler along the
   η-expansion makes the settling step admit a row not typed after the match.

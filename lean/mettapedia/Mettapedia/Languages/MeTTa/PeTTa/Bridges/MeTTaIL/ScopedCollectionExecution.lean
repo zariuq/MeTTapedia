@@ -86,7 +86,7 @@ private def collectionMachineScopedMetadataEquations : List SpaceSemantics.Equat
     RuleExecutionProgram.scopedProgram.equations[1]'(by decide +kernel),
     RuleExecutionProgram.scopedProgram.equations[174]'(by decide +kernel),
     RuleExecutionProgram.scopedProgram.equations[180]'(by decide +kernel),
-    RuleExecutionProgram.scopedProgram.equations[198]'(by decide +kernel)]
+    RuleExecutionProgram.scopedProgram.equations[207]'(by decide +kernel)]
 
 private def collectionMachinePriorMetadataEquations : List SpaceSemantics.Equation :=
   [(RuleExecutionProgram.interpretedPremiseSupportSources[5]'(by decide +kernel)).program.equations[4]'(by decide +kernel)]
@@ -96,7 +96,7 @@ private def collectionMachineScopedMetadataDeclarations : List Atom :=
     RuleExecutionProgram.scopedProgram.declarations[1]'(by decide +kernel),
     RuleExecutionProgram.scopedProgram.declarations[174]'(by decide +kernel),
     RuleExecutionProgram.scopedProgram.declarations[180]'(by decide +kernel),
-    RuleExecutionProgram.scopedProgram.declarations[198]'(by decide +kernel)]
+    RuleExecutionProgram.scopedProgram.declarations[207]'(by decide +kernel)]
 
 private def collectionMachinePriorMetadataDeclarations : List Atom :=
   [(RuleExecutionProgram.interpretedPremiseSupportSources[5]'(by decide +kernel)).program.declarations[4]'(by decide +kernel)]
@@ -120,7 +120,7 @@ private def collectionMachineLaterSources := RuleExecutionProgram.interpretedPre
 
 private theorem collectionMachineScoped_equations_indices :
     (List.finRange RuleExecutionProgram.scopedProgram.equations.length).filter (fun index => (fun row => collectionMachineProofHeads row.head) (RuleExecutionProgram.scopedProgram.equations.get index)) =
-      [⟨0, by decide +kernel⟩, ⟨1, by decide +kernel⟩, ⟨174, by decide +kernel⟩, ⟨180, by decide +kernel⟩, ⟨198, by decide +kernel⟩] := by decide +kernel
+      [⟨0, by decide +kernel⟩, ⟨1, by decide +kernel⟩, ⟨174, by decide +kernel⟩, ⟨180, by decide +kernel⟩, ⟨207, by decide +kernel⟩] := by decide +kernel
 
 private theorem collectionMachineScoped_equations : RuleExecutionProgram.scopedProgram.equations.filter (fun row => collectionMachineProofHeads row.head) = collectionMachineScopedMetadataEquations := by
   rw [CompleteExecution.source_filter_indices, collectionMachineScoped_equations_indices]
@@ -164,7 +164,7 @@ private theorem collectionMachineProof_physical_equations : collectionMachinePro
 
 private theorem collectionMachineScoped_declarations_indices :
     (List.finRange RuleExecutionProgram.scopedProgram.declarations.length).filter (fun index => (retainedCallDeclaration collectionMachineProofHeads) (RuleExecutionProgram.scopedProgram.declarations.get index)) =
-      [⟨0, by decide +kernel⟩, ⟨1, by decide +kernel⟩, ⟨174, by decide +kernel⟩, ⟨180, by decide +kernel⟩, ⟨198, by decide +kernel⟩] := by decide +kernel
+      [⟨0, by decide +kernel⟩, ⟨1, by decide +kernel⟩, ⟨174, by decide +kernel⟩, ⟨180, by decide +kernel⟩, ⟨207, by decide +kernel⟩] := by decide +kernel
 
 private theorem collectionMachineScoped_declarations : RuleExecutionProgram.scopedProgram.declarations.filter (retainedCallDeclaration collectionMachineProofHeads) = collectionMachineScopedMetadataDeclarations := by
   rw [CompleteExecution.source_filter_indices, collectionMachineScoped_declarations_indices]

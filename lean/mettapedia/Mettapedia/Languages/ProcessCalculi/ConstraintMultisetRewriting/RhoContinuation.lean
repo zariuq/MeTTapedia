@@ -85,6 +85,17 @@ def Environment.map {Γ Δ : Ctx base} (assignment : Assignment declaration next
   process position := instantiate assignment (environment.process position)
   active position := instantiate assignment (environment.active position)
 
+theorem Environment.map_identity {Γ Δ : Ctx base}
+    (environment : Environment declaration Γ Δ) :
+    environment.map (generator declaration) = environment := by
+  apply Environment.ext <;> funext position <;> exact instantiate_identity _
+
+theorem Environment.map_comp {Z : Type} {last : Z → MetaArity base}
+    {Γ Δ : Ctx base} (first : Assignment declaration next) (second : Assignment next last)
+    (environment : Environment declaration Γ Δ) :
+    environment.map (Assignment.compose second first) = (environment.map first).map second := by
+  apply Environment.ext <;> funext position <;> exact Assignment.instantiate_compose second first _
+
 theorem Environment.map_lift {Γ Δ : Ctx base} (assignment : Assignment declaration next)
     (environment : Environment declaration Γ Δ) :
     (environment.map assignment).lift = environment.lift.map assignment := by

@@ -56,7 +56,7 @@ theorem start_valid : startSelection.Valid action label startRule initial := by
   · change ∀ equation ∈ startSelection.problem label startRule initial, equation.1 = equation.2
     decide +kernel
   · intro check member assignment _
-    have same : check = .absent (.allocated 1) := List.mem_singleton.mp member
+    have same : check = .predicate .none (.allocated 1) := List.mem_singleton.mp member
     subst check
     change ∀ occurrence ∈ initial.present, Row.allocated 1 ≠ label occurrence
     decide +kernel
@@ -160,8 +160,8 @@ theorem missing_source_cell_refuses_its_copy_step (token : Occurrence Suspension
     ¬ Nonempty (Firing firstRule token missingSource after) := by
   rintro ⟨firing⟩
   obtain ⟨occurrence,present,same⟩ := firing.read_rows (.cell 0 0 cached) (by simp [firstRule,copyRule])
-  have absent : ∀ occurrence ∈ missingSource.present, label occurrence ≠ .cell 0 0 cached := by decide +kernel
-  exact absent occurrence present same
+  have missing : ∀ occurrence ∈ missingSource.present, label occurrence ≠ .cell 0 0 cached := by decide +kernel
+  exact missing occurrence present same
 
 /-- Internal cells are observable before readiness if a context is allowed
 to read them. Completion gating alone is not a public atomicity theorem. -/

@@ -180,12 +180,12 @@ def idDecomposeEquation (fuel : Nat) {Θ : Context S.R} (equation : Equation (To
                   (id_replace_equivalent choices view split firstComputed secondComputed rest)
               match ContextualDependentRigidDecomposition.localsRule rigid complete facts roots heads algebra declared
                   choices reducer root fuel (firstClosed.equation :: secondClosed.equation :: rest) with
-              | some absent => some (.refuted fun solvable => absent.down (moved.solvable_iff.mp solvable))
+              | some missing => some (.refuted fun solvable => missing.down (moved.solvable_iff.mp solvable))
               | none =>
                   match patternRule rigid facts complete roots heads algebra declared choices reducer root normalizes
                       certifyNormal fuel (firstClosed.equation :: secondClosed.equation :: rest) with
                   | some (.solved solved smaller) => some (.solved (moved.then solved) smaller)
-                  | some (.refuted absent) => some (.refuted fun solvable => absent (moved.solvable_iff.mp solvable))
+                  | some (.refuted missing) => some (.refuted fun solvable => missing (moved.solvable_iff.mp solvable))
                   | none => none
           | _, _ => none
 
@@ -213,9 +213,9 @@ def identityRound (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (Tota
           have same := prepare_arity facts roots heads root rootComplete fuel problem
           change update.target.arity < Θ.arity
           omega))
-  | some (.refuted absent) =>
+  | some (.refuted missing) =>
       .refuted fun solvable =>
-        absent ((ContextualDependentNormalizing.prepare root rootComplete facts roots heads fuel problem).solvable_iff.mp
+        missing ((ContextualDependentNormalizing.prepare root rootComplete facts roots heads fuel problem).solvable_iff.mp
           solvable)
   | none => fragmentRound rigid facts complete roots heads algebra declared choices reducer root rootComplete normalizes
       certifyNormal headTypingUnique fuel problem

@@ -20,6 +20,9 @@ by absences, a template whose variables the kernel binds, and a ground store.
   tagged `n`, at the configuration with knowledge `K`; it makes fresh occurrences labelled
   with the renamed template parts; and the knowledge and rows it leaves know the store the
   model leaves (the committed store followed by the instances).
+* `Numbered`: a word in which every firing, where it fires, is a given rule written with
+  the variables of a number above every number its configuration mentions
+  (`made_fold_executable` gives it for the fold of a call).
 * `made_transform_is_run`: the whole call is a run of the step. At its end, under every
   solution of the knowledge, the labels of the last rows are the atoms of the store the
   call leaves, in order.
@@ -39,7 +42,7 @@ set_option autoImplicit false
 namespace Mettapedia.Languages.MeTTa.PeTTa.LibTransformStep
 
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
-open Mettapedia.Languages.ProcessCalculi.MORK (Subst isGroundAtom applySubst)
+open Mettapedia.Languages.ProcessCalculi.MORK (Subst isGroundAtom applySubst applySubst_eq_subst)
 open Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting
   (Selection RuleInstance Configuration SubstitutionAction Check EquationStore)
 open Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.MetaMeTTaComparison
@@ -91,7 +94,7 @@ theorem knows_of_represents {label : O → Atom} {rows : List O} {s : Store}
 
 /-- The rule instance of a transform that makes its template's parts. -/
 def madeRule (pats : Footprint) (absents : List Atom) (template : Atom) : RuleInstance Atom :=
-  ⟨takes pats, reads pats, [], absents.map Check.absent, split template⟩
+  ⟨takes pats, reads pats, [], absents.map (Check.predicate .none), split template⟩
 
 /-! ## What a fired branch provides, with its instances -/
 
@@ -266,7 +269,7 @@ theorem made_fire_step {label : O → Atom}
             (knows.labelsBelow o (real.read_present o member))]
         rfl
     · intro check member ρ models
-      change check ∈ (absents.map Check.absent).map (Check.map (rename n)) at member
+      change check ∈ (absents.map (Check.predicate .none)).map (Check.map (rename n)) at member
       obtain ⟨plainCheck, inChecks, rfl⟩ := List.mem_map.mp member
       obtain ⟨p, inside, rfl⟩ := List.mem_map.mp inChecks
       have all : atomAction.Models ρ
@@ -360,6 +363,47 @@ theorem made_fire_step {label : O → Atom}
     simp [Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits.fire,
       Selection.commit]
 
+/-! ## Firings with their numbers -/
+
+/-- **A numbered word**: every firing, at the configuration where it fires, is one of the
+given rule instances written with the variables of a number that the configuration's
+knowledge and present labels stay below, and it asks no predicate query. -/
+def Numbered (label : O → Atom) (rules : RuleInstance Atom → Prop) :
+    Configuration Atom O →
+      List (Firing Atom Mettapedia.Languages.MeTTa.SubstitutionAlgebra.Subst O) → Prop
+  | _, [] => True
+  | C, f :: rest =>
+      (∃ rule n, rules rule ∧ f.rule = rule.map (rename n) ∧ f.queries = [] ∧
+        (∀ e ∈ C.equations, TagsBelow n e.1 ∧ TagsBelow n e.2) ∧
+        ∀ o ∈ C.present, TagsBelow n (label o)) ∧
+      Numbered label rules (f.result label C) rest
+
+/-- A numbered word of some rules is a numbered word of more rules. -/
+theorem Numbered.mono {label : O → Atom} {rules rules' : RuleInstance Atom → Prop}
+    (weaker : ∀ rule, rules rule → rules' rule) :
+    ∀ {word : List (Firing Atom Mettapedia.Languages.MeTTa.SubstitutionAlgebra.Subst O)}
+      {C : Configuration Atom O}, Numbered label rules C word → Numbered label rules' C word
+  | [], _, _ => trivial
+  | _ :: rest, _, numbered => by
+      obtain ⟨⟨rule, n, isRule, facts⟩, later⟩ := numbered
+      exact ⟨⟨rule, n, weaker rule isRule, facts⟩, Numbered.mono weaker (word := rest) later⟩
+
+/-- Numbered words compose. -/
+theorem Numbered.append {label : O → Atom} {rules : RuleInstance Atom → Prop} :
+    ∀ (first : List (Firing Atom Mettapedia.Languages.MeTTa.SubstitutionAlgebra.Subst O))
+      {second : List (Firing Atom Mettapedia.Languages.MeTTa.SubstitutionAlgebra.Subst O)}
+      {C D : Configuration Atom O},
+      Numbered label rules C first → follow label C first = D →
+      Numbered label rules D second → Numbered label rules C (first ++ second)
+  | [], _, _, _, _, ends, later => by
+      have same : follow label _ ([] : List (Firing Atom _ O)) = _ := ends
+      simp only [follow] at same
+      subst same
+      exact later
+  | _ :: rest, _, _, _, numbered, ends, later => by
+      obtain ⟨head, tail⟩ := numbered
+      exact ⟨head, Numbered.append rest tail ends later⟩
+
 /-! ## The whole call -/
 
 /-- The fold of the branches of a transform that makes its instances is an executable word
@@ -381,9 +425,11 @@ theorem made_fold_executable {label : O → Atom}
                 (instances template)) acc).2 ∧
           (∀ f ∈ word, ∃ m, f.rule = (madeRule pats absents template).map (rename m) ∧
             f.queries = []) ∧
-          word.length ≤ guides.length
+          word.length ≤ guides.length ∧
+          Numbered label (fun rule => rule = madeRule pats absents template)
+            ⟨K, rows.toFinset⟩ word
   | [], _, acc, rows, K, n, knows =>
-      ⟨[], rows, K, n, knows.consistent, rfl, knows, by simp, Nat.le_refl _⟩
+      ⟨[], rows, K, n, knows.consistent, rfl, knows, by simp, Nat.le_refl _, trivial⟩
   | g :: guides, fits, acc, rows, K, n, knows => by
       have later : ∀ g' ∈ guides, Fits pats g' := fun g' member =>
         fits g' (List.mem_cons_of_mem _ member)
@@ -393,10 +439,10 @@ theorem made_fold_executable {label : O → Atom}
           have same : branchStep intoStore ⟨kernelOf pats ++ absentsOf absents, [], none⟩
               (instances template) acc g = acc := by
             simp [branchStep, fired]
-          obtain ⟨word, rows', K', n', exec, ends, knows', rules, len⟩ :=
+          obtain ⟨word, rows', K', n', exec, ends, knows', rules, len, numbered⟩ :=
             made_fold_executable supply pats absents template closed guides later acc rows K n
               knows
-          refine ⟨word, rows', K', n', exec, ends, ?_, rules, Nat.le_succ_of_le len⟩
+          refine ⟨word, rows', K', n', exec, ends, ?_, rules, Nat.le_succ_of_le len, numbered⟩
           rw [List.foldl_cons, same]
           exact knows'
       | some result =>
@@ -406,7 +452,7 @@ theorem made_fold_executable {label : O → Atom}
             simp [branchStep, fired, intoStore]
           obtain ⟨sel, mid, valid, knowsNext, present⟩ :=
             made_fire_step supply knows (fits g (List.mem_cons_self ..)) closed fired
-          obtain ⟨word, rows', K', n', exec, ends, knows', rules, len⟩ :=
+          obtain ⟨word, rows', K', n', exec, ends, knows', rules, len, numbered⟩ :=
             made_fold_executable supply pats absents template closed guides later
               (acc.1 ++ [out.length], s' ++ out) mid
               (sel.problem label ((madeRule pats absents template).map (rename n))
@@ -420,7 +466,7 @@ theorem made_fold_executable {label : O → Atom}
             rw [present]
             rfl
           refine ⟨Firing.ofPlain ((madeRule pats absents template).map (rename n), sel) :: word,
-            rows', K', n', ?_, ?_, ?_, ?_, Nat.succ_le_succ len⟩
+            rows', K', n', ?_, ?_, ?_, ?_, Nat.succ_le_succ len, ?_⟩
           · refine ⟨(Firing.valid_ofPlain_iff atomAction label _ _).mpr valid, ?_⟩
             rw [result]
             exact exec
@@ -436,6 +482,10 @@ theorem made_fold_executable {label : O → Atom}
             rcases List.mem_cons.mp member with rfl | member
             · exact ⟨n, rfl, rfl⟩
             · exact rules f member
+          · refine ⟨⟨_, n, rfl, rfl, rfl, knows.knowledgeBelow, fun o present =>
+              knows.labelsBelow o (List.mem_toFinset.mp present)⟩, ?_⟩
+            rw [result]
+            exact numbered
 
 /-- **A transform that makes atoms is a run of the first-order step.** On a ground store
 represented by `rows`, with a supply of fresh occurrences for every label, the call

@@ -9,8 +9,8 @@ Concrete runs and refusals on the first-order step over ground terms (`IssuedNam
 
 * `freshOnly_derives_W`: in the theory with consumption, without the use check, a run makes `W`:
   `r1` writes `A 0` before `r2` issues `0`. With issuing no run does (`issuing_never_derives_W`).
-* In the theory with an absence guard (`k04`: `p` makes `A x`; `nw` issues `n` and makes `B n`;
-  `gd` keeps `B n`, asks that `A n` be absent and makes `V n`):
+* In the theory with a none guard (`k04`: `p` makes `A x`; `nw` issues `n` and makes `B n`;
+  `gd` keeps `B n`, asks that `A n` not be present and makes `V n`):
   - `issuing_refuses_an_unissued_name`, `issuing_admits_the_guard`: with issuing, `p` on the unissued
     `0` is refused, and after `nw` issues `0` the guard is admitted;
   - `freshOnly_issued_name_is_in_the_store`, `freshOnly_refuses_the_guard`: without the use check,
@@ -76,12 +76,12 @@ theorem freshOnly_derives_W :
     ∃ r : (withLedger base (freshOnly k29)).Run start, ∃ o ∈ r.last.1.present, o.1 = factW :=
   ⟨fo29Run, (factW, 0), by decide, rfl⟩
 
-/-! ## The theory with an absence guard -/
+/-! ## The theory with a none guard -/
 
 def p (x : Expr) : RuleInstance Expr := rule [] [] [factA x]
 def nw (n : ℕ) : RuleInstance Expr := rule [] [] [factB (.name n)]
 def gd (n : ℕ) : RuleInstance Expr :=
-  rule [] [factB (.name n)] [factV (.name n)] [.absent (factA (.name n))]
+  rule [] [factB (.name n)] [factV (.name n)] [.predicate .none (factA (.name n))]
 
 /-- The theory: a pure maker, an issuer, and a guard that the issued name is unused. -/
 abbrev k04 (f : Fir) (fresh : List ℕ) : Prop :=
@@ -165,7 +165,7 @@ theorem is04a2 : is04.Admits (s := is04.result (s := empty) _ is04a1) (guard 0 0
   · intro c member
     simp only [gd, rule, List.mem_singleton] at member
     subst member
-    exact absent_holds (by decide)
+    exact none_holds (by decide)
   · intro n written
     rw [guard_writes written]
     show (0 : ℕ) ∈ (empty.2 ∪ {n | n ∈ [0]}) ∪ {n | n ∈ ([] : List ℕ)}
@@ -212,7 +212,7 @@ theorem freshOnly_refuses_the_guard (f : Fir) (asks : f.rule = gd 0) :
     ¬ fo04.Admits (s := freshOnlyAfter) (f, []) := by
   intro admitted
   have valid : f.selection.Valid ground Prod.fst f.rule freshOnlyAfter.1 := valid_of admitted
-  exact absent_refuted valid (p := factA (.name 0)) (by rw [asks]; simp [gd, rule])
+  exact none_refuted valid (p := factA (.name 0)) (by rw [asks]; simp [gd, rule])
     (o := (factA (.name 0), 0)) (by decide) rfl
 
 /-! ### Without freshness -/
@@ -262,7 +262,7 @@ theorem usesOnly_refuses_the_guard (f : Fir) (asks : f.rule = gd 0) :
     ¬ uo04.Admits (s := usesOnlyAfter) (f, []) := by
   intro admitted
   have valid : f.selection.Valid ground Prod.fst f.rule usesOnlyAfter.1 := valid_of admitted
-  exact absent_refuted valid (p := factA (.name 0)) (by rw [asks]; simp [gd, rule])
+  exact none_refuted valid (p := factA (.name 0)) (by rw [asks]; simp [gd, rule])
     (o := (factA (.name 0), 0)) (by decide) rfl
 
 /-- **Issuing refuses any second issue of a name**, whatever the firing. -/
@@ -289,7 +289,7 @@ theorem issued_name_is_accepted :
   ⟨issuing_refuses_an_unissued_name _ rfl, is04p⟩
 
 /-- **Codes need no issuing**: the code of a closed term, and a constant, are written at the empty
-ledger by the calculus's discipline. -/
+ledger by the issuing discipline. -/
 theorem codes_need_no_issuing :
     is04.Admits (s := empty) (makeA (quote (.app (.sym 1) (.sym 2))) 0, []) ∧
       is04.Admits (s := empty) (makeA (.sym 5) 0, []) := by

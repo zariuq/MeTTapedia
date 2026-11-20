@@ -65,13 +65,13 @@ def refuteReading {Θ : Context S.R} (equation : Equation (TotalTerm Θ)) (rest 
   | none => none
   | some ⟨scope, active, view⟩ =>
       match readingRefute facts roots heads rigid complete normalizes certifyNormal scope active with
-      | some absent => some ⟨View.refutes (S := S) ⟨scope.toScoped active, view⟩
-          (fun solution held => absent.down solution held) rest⟩
+      | some missing => some ⟨View.refutes (S := S) ⟨scope.toScoped active, view⟩
+          (fun solution held => missing.down solution held) rest⟩
       | none =>
           (readingRefute facts roots heads rigid complete normalizes certifyNormal scope
-              ⟨active.type, active.right, active.left⟩).map fun absent =>
+              ⟨active.type, active.right, active.left⟩).map fun missing =>
             ⟨View.refutes (S := S) ⟨scope.toScoped active, view⟩
-              (fun solution held => absent.down solution ((toScoped_swap scope active solution).mpr held)) rest⟩
+              (fun solution held => missing.down solution ((toScoped_swap scope active solution).mpr held)) rest⟩
 
 /-- The rigid rule on one store equation. -/
 def tryEquationCode (fuel : Nat) {Θ : Context S.R} (equation : Equation (TotalTerm Θ))
@@ -81,9 +81,9 @@ def tryEquationCode (fuel : Nat) {Θ : Context S.R} (equation : Equation (TotalT
 
 /-- A refutation of the rest of a store refutes the store. -/
 def keepRefuted {Θ : Context S.R} (equation : Equation (TotalTerm Θ)) {rest : EquationStore (TotalTerm Θ)}
-    (absent : PLift (¬ (frames S.levels).Solvable rest)) : PLift (¬ (frames S.levels).Solvable (equation :: rest)) :=
+    (missing : PLift (¬ (frames S.levels).Solvable rest)) : PLift (¬ (frames S.levels).Solvable (equation :: rest)) :=
   ⟨fun ⟨Δ, solution, modeled⟩ =>
-    absent.down ⟨Δ, solution, fun other member => modeled other (List.mem_cons_of_mem _ member)⟩⟩
+    missing.down ⟨Δ, solution, fun other member => modeled other (List.mem_cons_of_mem _ member)⟩⟩
 
 /-- **The rigid rule**: the first equation of the store that it refutes. -/
 def rigidRule (fuel : Nat) {Θ : Context S.R} :
@@ -102,11 +102,11 @@ def flexibleRest (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (Total
   match ContextualDependentRecognitionConversion.patternRuleConv facts roots heads algebra declared choices reducer
       rigid complete root normalizes certifyNormal fuel problem with
   | some (.solved update smaller) => .progress update (below_of_arity facts roots heads algebra rigid complete smaller)
-  | some (.refuted absent) => .refuted absent
+  | some (.refuted missing) => .refuted missing
   | none =>
       match rigidRule facts roots heads algebra rigid complete declared choices reducer root normalizes certifyNormal
           fuel problem with
-      | some absent => .refuted absent.down
+      | some missing => .refuted missing.down
       | none => .stuck
 
 /-- **One firing round**: the arguments round; when it is stuck, the conversion pattern rule on the store as it is,
@@ -140,7 +140,7 @@ theorem firingRound_eq_of_arguments (fuel : Nat) {Θ : Context S.R} {problem : E
       certifyNormal headTypingUnique rootComplete fuel problem with
   | stuck => exact absurd computed moving
   | progress update smaller => rfl
-  | refuted absent => rfl
+  | refuted missing => rfl
 
 /-- **Every run that the arguments family decides, the firing family decides with the same outcome.** -/
 theorem firing_run_of_arguments (fuel rounds : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ))
@@ -199,13 +199,13 @@ theorem firingRound_not_stuck_of_rigid (fuel : Nat) {Θ : Context S.R} {problem 
       | some found =>
           cases found with
           | solved update smaller => exact fun impossible => by cases impossible
-          | refuted absent => exact fun impossible => by cases impossible
+          | refuted missing => exact fun impossible => by cases impossible
       | none =>
-          obtain ⟨absent, computed⟩ := Option.isSome_iff_exists.mp read
+          obtain ⟨missing, computed⟩ := Option.isSome_iff_exists.mp read
           simp only [computed]
           exact fun impossible => by cases impossible
   | progress update smaller => exact fun impossible => by cases impossible
-  | refuted absent => exact fun impossible => by cases impossible
+  | refuted missing => exact fun impossible => by cases impossible
 
 /-- **The pattern rows.** When the conversion pattern rule decides on the store as it is, the firing round is not
 stuck. -/
@@ -223,9 +223,9 @@ theorem firingRound_not_stuck_of_pattern (fuel : Nat) {Θ : Context S.R} {proble
       rw [computed]
       cases found with
       | solved update smaller => exact fun impossible => by cases impossible
-      | refuted absent => exact fun impossible => by cases impossible
+      | refuted missing => exact fun impossible => by cases impossible
   | progress update smaller => exact fun impossible => by cases impossible
-  | refuted absent => exact fun impossible => by cases impossible
+  | refuted missing => exact fun impossible => by cases impossible
 
 /-! ## Eventual constancy -/
 
@@ -282,12 +282,12 @@ theorem firingRound_view (fuel : Nat) {Θ : Context S.R} (problem : EquationStor
       | some found =>
           cases found with
           | solved update smaller => rfl
-          | refuted absent => rfl
+          | refuted missing => rfl
       | none =>
           cases rigidRule facts roots heads algebra rigid complete declared choices reducer root normalizes certifyNormal
             fuel problem <;> rfl
   | progress update smaller => rfl
-  | refuted absent => rfl
+  | refuted missing => rfl
 
 include stable in
 /-- **The firing round is eventually constant on every store.** -/

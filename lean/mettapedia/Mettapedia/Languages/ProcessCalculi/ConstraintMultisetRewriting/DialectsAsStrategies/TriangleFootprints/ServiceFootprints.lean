@@ -643,7 +643,7 @@ def declareDouble : Atom := .expression [.symbol ":", .symbol "double", .symbol 
 /-- **Positive control: the entry of `(double 4)` reads no row of `{(p a), (= (double 4) 8)}`** under
 the declared footprint of HE's raw lookup, where the whole-space footprint of `HEFootprints` reads
 both rows. The region is not empty: it holds every declaration of `double`, such as
-`(: double Number)`, so the entry's observation is an absence guard over them. -/
+`(: double Number)`, so the entry's observation is a none guard over them. -/
 theorem entry_reads_no_row :
     regionRows (interpretRegion rawDeclared doubleFour) program = [] ∧
       regionRows (fun _ : Atom => true) program = [(pa, 0), (doubleEight, 1)] ∧

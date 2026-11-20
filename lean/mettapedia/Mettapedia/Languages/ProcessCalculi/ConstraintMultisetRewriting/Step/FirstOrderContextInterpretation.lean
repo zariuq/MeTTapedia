@@ -8,7 +8,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Coex
 
 The canonical one-frame placement uses the existing configuration tensor.
 Its exact permission test asks freshness, joint consistency and the actual
-guards and census queries. A separate consumption condition is precisely the
+guards and collect queries. A separate consumption condition is precisely the
 frame law needed to leave the other component unchanged. No guard blindness
 or disjointness of shared reads is imposed.
 -/
@@ -31,7 +31,7 @@ def ContextChecks (left right : Configuration T O) (f : Firing T S O) : Prop :=
         check.Holds A σ label (left.present ∪ right.present)) ∧
     ∀ query ∈ f.queries, ∀ σ : S,
       A.Models σ (f.selection.problem label f.rule (AnnotatedRuns.tensor left right)) →
-        (query.atSolution σ).Holds label (left.present ∪ right.present)
+        query.Holds σ label (left.present ∪ right.present)
 
 theorem valid_tensor_iff {left right : Configuration T O} (f : Firing T S O)
     (allowed : f.Valid A label left) :

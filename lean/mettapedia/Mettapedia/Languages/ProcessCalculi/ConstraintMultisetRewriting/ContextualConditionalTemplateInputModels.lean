@@ -7,7 +7,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 The input set excludes rows already created inside the body. Each given
 final information model supplies a matching witness for every used entry
 row, preserving its caller assignment. Finite witnesses can then be opened
-jointly in a fresh declaration extension. Unused row conditions are absent
+jointly in a fresh declaration extension. Unused row conditions are not present
 from these obligations.
 -/
 

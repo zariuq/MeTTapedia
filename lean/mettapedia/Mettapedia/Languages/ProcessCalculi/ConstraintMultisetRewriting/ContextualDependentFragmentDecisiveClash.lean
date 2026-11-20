@@ -530,7 +530,7 @@ def clashSearch {Θ : Context S.R} : (problem : EquationStore (TotalTerm Θ)) �
 def clashOf {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)} (prepared : Update S.levels problem) :
     Option (PLift (¬ (frames S.levels).Solvable problem)) :=
   match clashSearch facts complete prepared.remaining with
-  | some (.refuted absent) => some ⟨fun solvable => absent (prepared.solvable_iff.mp solvable)⟩
+  | some (.refuted missing) => some ⟨fun solvable => missing (prepared.solvable_iff.mp solvable)⟩
   | _ => none
 
 end ContextualDependentFragmentDecisive

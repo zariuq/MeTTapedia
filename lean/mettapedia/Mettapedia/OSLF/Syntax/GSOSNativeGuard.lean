@@ -1,6 +1,6 @@
 import Mettapedia.OSLF.Syntax.DeterministicGSOSEdgeReadout
 import Mettapedia.OSLF.Syntax.DeterministicGSOSFinitePresentation
-import Mettapedia.GSLT.Topos.PresheafEventAbsence
+import Mettapedia.GSLT.Topos.PresheafEventNone
 
 /-!
 # Native positive and negative availability guards of deterministic GSOS
@@ -38,13 +38,13 @@ def labelPredicate (Origins : Type u) (sort : S.Srt) (action : Actions sort) :
 /-- Positive action availability is the actual source image of its label. -/
 noncomputable def enabled (Origins : Type u) (sort : S.Srt) (action : Actions sort) :
     Subfunctor (terms worlds sort) :=
-  PresheafEventAbsence.enabled (eventSpan law worlds steps Origins sort).source
+  PresheafEventNone.enabled (eventSpan law worlds steps Origins sort).source
     (labelPredicate law worlds steps Origins sort action)
 
 /-- Negative action availability uses the native Heyting implication. -/
 noncomputable def noAction (Origins : Type u) (sort : S.Srt) (action : Actions sort) :
     Subfunctor (terms worlds sort) :=
-  PresheafEventAbsence.absent (eventSpan law worlds steps Origins sort).source
+  PresheafEventNone.noneEnabled (eventSpan law worlds steps Origins sort).source
     (labelPredicate law worlds steps Origins sort action)
 
 theorem mem_enabled (Origins : Type u) (sort : S.Srt) (action : Actions sort)
@@ -69,7 +69,7 @@ theorem enabled_iff_step [Nonempty Origins] (sort : S.Srt) (action : Actions sor
 
 /-- Exact Option-map naturality earns source-fibre reflection. -/
 theorem reflectsAvailability (Origins : Type u) (sort : S.Srt) (action : Actions sort) :
-    PresheafEventAbsence.ReflectsAvailability
+    PresheafEventNone.ReflectsAvailability
       (eventSpan law worlds steps Origins sort).source
       (labelPredicate law worlds steps Origins sort action) := by
   intro world future change program event label source
@@ -91,7 +91,7 @@ theorem noAction_iff_none [Nonempty Origins] (sort : S.Srt) (action : Actions so
     (world : Cᵒᵖ) (program : S.Term (worlds.obj world) sort) :
     program ∈ (noAction law worlds steps Origins sort action).obj world ↔
       Operational.coalgebra law (steps.app world) PUnit.unit sort program action = none := by
-  have reflected := PresheafEventAbsence.absent_iff_present
+  have reflected := PresheafEventNone.noneEnabled_iff_present
     (eventSpan law worlds steps Origins sort).source
     (labelPredicate law worlds steps Origins sort action)
     (reflectsAvailability law worlds steps Origins sort action) world program

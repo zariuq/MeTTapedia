@@ -31,9 +31,9 @@ does (`resourceRule_fires_iff`).
     presence.*  A producer of a resource and a reader of it are a step when the
     resource is already there; as local rules the producer writes the kind that
     the reader reads (`ResourceWaveControls.producer_and_reader_step_not_independent`).  A
-    guard of a local rule may ask for anything that is local, an absence
+    guard of a local rule may ask for anything that is local, a none query
     included, and then a production does disable it
-    (`FootprintedSpaceTransactions.SpaceRules.absence_guard_breaks_diamond`); such
+    (`FootprintedSpaceTransactions.SpaceRules.none_guard_breaks_diamond`); such
     a guard is not a read of any resource system.
 * The count is taken at one snapshot; the footprints are compared without one.
 -/

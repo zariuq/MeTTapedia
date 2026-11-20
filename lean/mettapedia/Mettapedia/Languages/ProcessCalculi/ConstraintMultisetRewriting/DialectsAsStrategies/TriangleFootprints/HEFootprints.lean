@@ -13,7 +13,7 @@ depends on (`heFoot`):
   depends on the rows of its region (`eqRegion`): the rows that are not inert for the query, where a
   row is inert when its only possible contribution to the complete frontier is nothing (it is not an
   equation, or every fresh variant of it misses). Its firing reads the matched rows and observes that
-  the region holds nothing else: the matched rows plus an absence guard;
+  the region holds nothing else: the matched rows plus a none guard;
 * the moves that consult the cast lookup, the argument admission service, the context payload of
   the space, or a completed native return depend on the whole space: those services are parameters
   of the machine, so nothing smaller is honest for them in this generality;
@@ -32,9 +32,11 @@ depends on (`heFoot`):
 ## Controls
 
 * `eqRegion_not_equation`, `Controls.pa_outside`: a row that is not an equation, such as `(p a)`, is
-  outside every equation query's region, so no equation query reads it (H1's `reads_differ` row).
+  outside every equation query's region, so no equation query reads it (the row of
+  `HEOnTheStep.Triangle.reads_differ`).
 * `Controls.tuple_reads_nothing`: every firing from a store whose pending work is a tuple reads no
-  row; H1's encoding read the whole space there.
+  row, where the encoding of `HEOnTheStep.Triangle`, in which every equation query reads the whole
+  space, read it all.
 * `Controls.fixture_region`: on the tree's frontier fixture (`(= a result)`, `metadata`,
   `(= b missed)`, `(= a result)`) the query `a` has the two copies of `(= a result)`, at positions
   `0` and `3`, as its region's rows: the irrelevant row and the missed equation are outside.
@@ -499,8 +501,8 @@ theorem pa_outside (live : List Atom) (query : Atom)
   eqRegion_not_equation fun left right same => by simp [pa] at same
 
 /-- **Positive control: pending work on a tuple reads no row.** Every firing of HE's footprinted
-rules from a store whose control is a tuple's pending work reads nothing. H1's encoding read the
-whole space there. -/
+rules from a store whose control is a tuple's pending work reads nothing. The encoding of
+`HEOnTheStep.Triangle` read the whole space there. -/
 theorem tuple_reads_nothing {dispatch : Mettapedia.Languages.MeTTa.HE.Spec.Eval.GroundedDispatch}
     {lookup : CastLookup} {policy : Policy}
     {S S' : Store (Atom × ℕ) Control Continuation Result} {space : Space} {live : List Atom}

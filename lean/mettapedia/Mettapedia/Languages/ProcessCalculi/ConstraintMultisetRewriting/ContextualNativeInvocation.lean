@@ -23,7 +23,7 @@ open Mettapedia.OSLF.Binding.ContextualFamily
 open ContextualConjunctiveQueries ContextualConditionalRows
 open Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits
 
-private theorem absent_after_no_make {N : Type} [DecidableEq N] (key : N) (world : Finset N)
+private theorem not_present_after_no_make {N : Type} [DecidableEq N] (key : N) (world : Finset N)
     (missing : key ∉ world) (code : List (Commit N Unit))
     (quiet : ∀ commit ∈ code, key ∉ commit.made) : key ∉ fireList world code := by
   induction code generalizing world with
@@ -93,7 +93,7 @@ variable [DecidableEq First] [DecidableEq S.Srt] [∀ result, DecidableEq (S.Op 
 
 include selection
 
-theorem completed_control_absent : none ∉ firing.target.present := by
+theorem completed_control_not_present : none ∉ firing.target.present := by
   rw [firing.physical_result, selection]
   intro member
   rcases mem_fire.mp member with old | created
@@ -102,13 +102,13 @@ theorem completed_control_absent : none ∉ firing.target.present := by
 
 theorem completed_changes_private_state : firing.target.present ≠ (body.nativeBindingState occupied).present := by
   intro same
-  have missing := body.completed_control_absent occupied firing selection
+  have missing := body.completed_control_not_present occupied firing selection
   rw [same] at missing
   exact missing (Finset.mem_insert_self _ _)
 
 theorem invocation_pending_decreases :
     invocationPending firing.target.present < invocationPending (body.nativeBindingState occupied).present := by
-  have missing := body.completed_control_absent occupied firing selection
+  have missing := body.completed_control_not_present occupied firing selection
   have present : (none : GuardPhysical O) ∈ (body.nativeBindingState occupied).present := Finset.mem_insert_self _ _
   simp only [invocationPending, if_neg missing, if_pos present]
   exact Nat.zero_lt_one
@@ -116,7 +116,7 @@ theorem invocation_pending_decreases :
 theorem no_immediate_resource_replay (next : Selection (GuardPhysical O)) (requested : none ∈ next.taken) :
     ¬ Enabled (fun _ => ()) firing.target.present (next.commit (T := Unit)) := by
   intro enabled
-  exact body.completed_control_absent occupied firing selection
+  exact body.completed_control_not_present occupied firing selection
     (enabled.taken_subset (List.mem_toFinset.mpr requested))
 
 /-- This covers every actual second firing requiring the control through
@@ -133,12 +133,12 @@ theorem no_immediate_admitted_replay
     ¬ ContextualConditionalExecution.Admitted
       (ContextualPublication.privateFamily body.guardNativeBank firing.update.declaration) firing.target rule next outputs := by
   intro admitted
-  exact body.completed_control_absent occupied firing selection
+  exact body.completed_control_not_present occupied firing selection
     (admitted.taken_present (List.mem_toFinset.mpr requested))
 
 theorem no_control_after_intervening_data (code : List (Commit (GuardPhysical O) Unit))
     (quiet : ∀ commit ∈ code, none ∉ commit.made) : none ∉ fireList firing.target.present code :=
-  absent_after_no_make none firing.target.present (body.completed_control_absent occupied firing selection) code quiet
+  not_present_after_no_make none firing.target.present (body.completed_control_not_present occupied firing selection) code quiet
 
 theorem no_resource_replay_after_data (code : List (Commit (GuardPhysical O) Unit))
     (quiet : ∀ commit ∈ code, none ∉ commit.made)

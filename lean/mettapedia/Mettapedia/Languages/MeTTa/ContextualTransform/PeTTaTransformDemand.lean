@@ -247,6 +247,90 @@ theorem transform_once (route : Answers → Search Store A) (sources : Sources)
       (Search.once (transformWith route sources emit) store).drain :=
   execute_once (transformWith route sources emit) store
 
+/-- Limit the transform at its first successful firing, then apply first-answer
+demand to the selected packet's continuation. -/
+def firstFiring (route : Answers → Search Store A) (sources : Sources)
+    (emit : Subst → Answers) : Search Store A := fun store =>
+  match fireFirst store sources emit with
+  | none => .done store
+  | some (committed, packet) => Search.once (route packet) committed
+
+private theorem bind_forward (trace : Trace S A) :
+    trace.bind (fun value => Search.superpose [value]) = trace := by
+  induction trace with
+  | done => rfl
+  | answer value store later ih =>
+    simp only [Trace.bind, Search.superpose, Trace.append]
+    congr 1
+    funext next
+    exact ih next
+
+/-- Forwarding a selected packet's answer preserves its trace and store.
+In particular the binding of an identity let adds no demand of its own. -/
+theorem firstFiring_forward (route : Answers → Search Store A) (sources : Sources)
+    (emit : Subst → Answers) (store : Store) :
+    firstFiring (fun packet => (route packet).bind (fun value => Search.superpose [value]))
+      sources emit store = firstFiring route sources emit store := by
+  simp only [firstFiring, Search.once, Search.bind, bind_forward]
+
+private theorem first_packet (sources : Sources) (emit : Subst → Answers)
+    (store : Store) (guides : List Footprint) :
+    Search.once ((Search.superpose guides).bind (firing sources emit)) store =
+      match guides.findSome? (fun guide => fire store guide sources emit) with
+      | none => .done store
+      | some (committed, packet) => .answer packet committed .done := by
+  induction guides with
+  | nil => rfl
+  | cons guide rest ih =>
+    cases fires : fire store guide sources emit with
+    | none =>
+      simpa only [Search.once, Search.bind, Search.superpose, firing, Trace.bind,
+        Trace.append, List.findSome?_cons, fires] using ih
+    | some result =>
+      cases result
+      simp only [Search.once, Search.bind, Search.superpose, firing, Trace.bind,
+        Trace.append, List.findSome?_cons, fires]
+
+/-- The authored packet selection implements first-firing demand even
+when routing the packet produces no answer. -/
+theorem firstFiring_from_packet (route : Answers → Search Store A) (sources : Sources)
+    (emit : Subst → Answers) (store : Store) :
+    firstFiring route sources emit store =
+      (Search.once ((Search.superpose (proposals store sources)).bind (firing sources emit))
+        |>.bind fun packet => Search.once (route packet)) store := by
+  simp only [firstFiring, fireFirst, Search.bind, first_packet]
+  cases (proposals store sources).findSome? (fun guide => fire store guide sources emit) with
+  | none => rfl
+  | some result =>
+    obtain ⟨committed, packet⟩ := result
+    cases routed : route packet committed <;>
+      simp only [Search.once, routed, Trace.bind, Trace.append]
+
+/-- Keep first-answer demand in the caller and send only the firing limit to
+the producer. The caller can still resume its other alternatives from the store
+left by an answerless packet. -/
+theorem once_routes_first_packet (route : Answers → Search Store A) (sources : Sources)
+    (emit : Subst → Answers) (later : Search Store A) :
+    Search.once (fun store =>
+      let receipts := (Search.superpose (proposals store sources)).bind (firing sources emit)
+      ((Search.once receipts).bind route store).append later) =
+    Search.once (fun store => (firstFiring route sources emit store).append later) := by
+  funext store
+  simp only [firstFiring, Search.bind, first_packet, fireFirst]
+  cases fired : (proposals store sources).findSome? (fun guide => fire store guide sources emit) with
+  | none => simp [Search.once, Trace.bind, Trace.append, fired]
+  | some result =>
+    obtain ⟨reached, packet⟩ := result
+    cases routed : route packet reached <;>
+      simp [Search.once, Trace.bind, Trace.append, fired, routed]
+
+theorem firstFiring_answerless (route : Answers → Search Store A) (sources : Sources)
+    (emit : Subst → Answers) {store committed final : Store} {packet : Answers}
+    (fired : fireFirst store sources emit = some (committed, packet))
+    (noAnswer : route packet committed = .done final) :
+    firstFiring route sources emit store = .done final := by
+  simp only [firstFiring, fired, Search.once, noAnswer]
+
 theorem transform_resume_drain (route : Answers → Search Store A) (sources : Sources)
     (emit : Subst → Answers) (demand : Nat) (store : Store) :
     let selected := ScopedCommitCursor.sourceView (transformCursor route sources emit demand store)
@@ -279,6 +363,9 @@ theorem zero_does_not_start_candidate_work :
 theorem source_first_passes_an_answerless_firing :
     firstSource.1 = [.symbol "b"] ∧ firstSource.2.1 = [.symbol "c"] := by decide +kernel
 
+theorem first_firing_leaves_the_later_takes_available :
+    (firstFiring route source emit start).drain = ([], [.symbol "b", .symbol "c"]) := by decide +kernel
+
 /-- The target claim is derived from the source result and generic cursor
 law; it does not separately assume a completed evaluator equivalence. -/
 theorem target_first_retains_the_answerless_take :
@@ -288,6 +375,20 @@ theorem target_first_retains_the_answerless_take :
   change (one.answers, one.world) = (firstSource.1, firstSource.2.1) at exact
   exact ⟨(congrArg Prod.fst exact).trans source_first_passes_an_answerless_firing.1,
     (congrArg Prod.snd exact).trans source_first_passes_an_answerless_firing.2⟩
+
+/-- The next branch may observe the store left by an answerless firing. -/
+theorem once_fallback_reads_reached_store :
+    let observe : Search Store Atom := fun store => Search.superpose [.expression store] store
+    (Search.once (fun store => (firstFiring route source emit store).append observe) start).drain =
+      ([.expression [.symbol "b", .symbol "c"]], [.symbol "b", .symbol "c"]) := by decide +kernel
+
+/-- A continuation that can reject an answer must get to see the later
+answers as well. It cannot forward first-answer demand to its input. -/
+theorem once_before_filter_loses_answer :
+    let choices : Search Store Nat := Search.superpose [0, 1]
+    let keep : Nat → Search Store Nat := fun n => Search.superpose (if n == 0 then [] else [n])
+    (Search.once ((Search.once choices).bind keep) []).drain = ([], []) ∧
+      (Search.once (choices.bind keep) []).drain = ([1], []) := by decide +kernel
 
 theorem source_resume_uses_the_consumers_store :
     (firstSource.2.2 [.symbol "outside", .symbol "c"]).drain =

@@ -34,7 +34,7 @@ chosen to move only identities present in one of the sets (`exists_supported_ren
 
 A **region** (`Region`) is a Boolean test of terms at each solution that gives equal results on terms
 the solution identifies. A **probe modulo the knowledge** (`ModuloProbe`) asks whether a held reference
-is present, asks a guard at every solution (`Check`: an equation, an absence or a count), asks that a
+is present, asks a guard at every solution (`Check`: an equation, a predicate query or a count), asks that a
 region holds exactly the identities seen, or **tallies** a region: its number of present rows at every
 solution, as a function of the solution.
 
@@ -129,7 +129,7 @@ theorem mem_map_iff (h : RenamingUpTo r label E π) {o : O} (escaped : o ∈ E) 
 end RenamingUpTo
 
 /-- **A private renaming supported on the two sets**: as `exists_private_map`, and the renaming moves
-no identity absent from both sets. -/
+no identity missing from both sets. -/
 theorem exists_supported_map {label : O → U} {E : Finset O} :
     ∀ (n : ℕ) {P Q : Finset O}, (P \ Q).card = n → (∀ o ∈ E, o ∈ P ↔ o ∈ Q) →
       P.val.map label = Q.val.map label →
@@ -382,7 +382,7 @@ theorem moduloEquivalent_iff (C D : Configuration T O) :
     exact ⟨π, k, equivalent, onto⟩
 
 variable {A label E} in
-/-- **The renaming can be chosen supported on the present occurrences**: it moves no identity absent
+/-- **The renaming can be chosen supported on the present occurrences**: it moves no identity missing
 from both states. -/
 theorem ModuloEquivalent.supported {C D : Configuration T O} (h : ModuloEquivalent A label E C D) :
     ∃ π : O ≃ O, RenamingUpTo (entailedSetoid A C.equations) label E π ∧
@@ -541,14 +541,24 @@ theorem holds_map_upTo (keeps : ∀ o, A.Solves σ (label (π o), label o)) (P :
     guard.Holds A σ label (P.map π.toEmbedding) ↔ guard.Holds A σ label P := by
   cases guard with
   | equal left right => exact Iff.rfl
-  | absent pattern =>
-      constructor
-      · intro absent o member matched
-        exact absent _ (Finset.mem_map_of_mem π.toEmbedding member)
-          (A.equivalence.trans matched (A.equivalence.symm (keeps o)))
-      · intro absent o member matched
-        obtain ⟨a, inside, rfl⟩ := Finset.mem_map.mp member
-        exact absent a inside (A.equivalence.trans matched (keeps a))
+  | predicate quantifier pattern =>
+      cases quantifier with
+      | any =>
+          constructor
+          · rintro ⟨o, member, matched⟩
+            obtain ⟨a, inside, rfl⟩ := Finset.mem_map.mp member
+            exact ⟨a, inside, A.equivalence.trans matched (keeps a)⟩
+          · rintro ⟨o, member, matched⟩
+            exact ⟨_, Finset.mem_map_of_mem π.toEmbedding member,
+              A.equivalence.trans matched (A.equivalence.symm (keeps o))⟩
+      | none =>
+          constructor
+          · intro missing o member matched
+            exact missing _ (Finset.mem_map_of_mem π.toEmbedding member)
+              (A.equivalence.trans matched (A.equivalence.symm (keeps o)))
+          · intro missing o member matched
+            obtain ⟨a, inside, rfl⟩ := Finset.mem_map.mp member
+            exact missing a inside (A.equivalence.trans matched (keeps a))
   | count pattern number =>
       show (Check.matches A σ label (P.map π.toEmbedding) pattern).card = number ↔
         (Check.matches A σ label P pattern).card = number

@@ -29,23 +29,22 @@ def readout : Outcome → Option (List Atom × List Atom × List Atom)
   | .complete _ answers input output => some (answers, input, output)
   | _ => none
 
-def returnedState : Outcome → Effects.State
+private def returnedState : Outcome → Effects.State
   | .complete state _ _ _ => state
   | _ => Effects.empty
 
 private theorem empty_store (state : Effects.State)
     (core : state.core = []) (allocation : state.next = 0)
     (spaces : ∀ index, state.spaces index = [])
-    (cells : ∀ name, state.cells name = none) : state = Effects.empty := by
+    (cells : ∀ name, state.cells name = none)
+    (named : state.namedSpaces = []) (fallback : state.namedEmpty = []) : state = Effects.empty := by
   cases state with
-  | mk stored next privateSpaces privateCells =>
-    simp only at core allocation spaces cells
-    subst stored
-    subst next
+  | mk stored next privateSpaces privateCells namedSpaces namedEmpty =>
+    simp only at core allocation spaces cells named fallback
+    subst stored next namedSpaces namedEmpty
     have spacesEq : privateSpaces = fun _ => [] := funext spaces
     have cellsEq : privateCells = fun _ => none := funext cells
-    subst privateSpaces
-    subst privateCells
+    subst privateSpaces privateCells
     rfl
 
 private theorem exact_outcome (result : Outcome) (state : Effects.State)
@@ -88,6 +87,8 @@ theorem captured_call_returns :
         let goal ← Lean.Elab.Tactic.getMainGoal
         goal.withContext do
           goal.assign (← Lean.Meta.mkDecideProof (← goal.getType))
+    · decide +kernel
+    · decide +kernel
   · decide +kernel
 
 theorem captured_call_path :
@@ -100,27 +101,13 @@ def residual : Configuration :=
 
 theorem pause_keeps_binding : BoundCalls.run program 2 initial = .exhausted residual := by rfl
 
-theorem resume_returns :
-    BoundCalls.run program 38 residual = .complete Effects.empty [eight] [] [] := by
-  apply exact_outcome
-  · apply empty_store
-    · decide +kernel
-    · decide +kernel
-    · intro index
-      run_tac do
-        let goal ← Lean.Elab.Tactic.getMainGoal
-        goal.withContext do
-          goal.assign (← Lean.Meta.mkDecideProof (← goal.getType))
-    · intro name
-      run_tac do
-        let goal ← Lean.Elab.Tactic.getMainGoal
-        goal.withContext do
-          goal.assign (← Lean.Meta.mkDecideProof (← goal.getType))
-  · decide +kernel
-
 theorem resume_agrees :
     BoundCalls.run program 38 residual = BoundCalls.run program 40 initial :=
   (BoundCalls.run_resume program 2 38 initial residual pause_keeps_binding).symm
+
+theorem resume_returns :
+    BoundCalls.run program 38 residual = .complete Effects.empty [eight] [] [] :=
+  resume_agrees.trans captured_call_returns
 
 
 /-- Keeping only a source expression loses the binding-bearing continuation. -/

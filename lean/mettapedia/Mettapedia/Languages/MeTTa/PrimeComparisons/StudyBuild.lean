@@ -62,6 +62,7 @@ import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.CertifiedTran
 import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.CertifiedTransformProgram.Qualification
 import Mettapedia.Languages.MeTTa.PrimeCandidates.Native.NativeCheckedHypothesisCognitiveClient
 import Mettapedia.Languages.MeTTa.PrimeCandidates.Native.AtomProcArgument
+import Mettapedia.Languages.MeTTa.PrimeCandidates.Native.DataForm
 import Mettapedia.TypeTheory.Calculi.SingleBaseSTLC.TypedEqualityEmbedding
 import Mettapedia.Logic.HOL.Embedding.RelativizedCarrier
 import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.CertifiedTransformProgram.ExecutableModel.SimpleFragment
@@ -70,8 +71,6 @@ import Mettapedia.Languages.Megalodon.TheoryAdmissionKernel
 import Mettapedia.Languages.Megalodon.SourceTypeParameters
 import Mettapedia.Languages.Megalodon.TheoryAdmissionSequence
 import Mettapedia.Languages.MeTTa.PrimeCandidates
-import Mettapedia.Languages.MeTTa.PrimeCeTTaCurrent
-import Mettapedia.Languages.MeTTa.PrimeComparisons
 import Mettapedia.Languages.MeTTa.CoreProfile
 import Mettapedia.Languages.MeTTa.RuntimeSpec
 import Mettapedia.GSLT.LanguageDef.PresentationEvidence
@@ -318,7 +317,6 @@ import Mettapedia.TypeTheory.Models.UnitypedDisplayedTyping
 import Mettapedia.TypeTheory.Models.UnitypedDisplayedTypingCoherence
 import Mettapedia.Languages.MeTTa.PrimeCandidates.Native.UniversalName
 import Mettapedia.Languages.MeTTa.PrimeCeTTaCurrent.Calibration.CertificateBoundaryV1
-import Mettapedia.Languages.MeTTa.PrimeCeTTaCurrent.ScopedJudgmentDraft
 import Mettapedia.Languages.MeTTa.PrimeCeTTaCurrent.Calibration.FragmentAdequacyV1
 import Mettapedia.Languages.MeTTa.PrimeCeTTaCurrent.Calibration.PackageIdentityV1
 import Mettapedia.Languages.MeTTa.PrimeCeTTaCurrent.Calibration.PeTTaChainerDAGReplayV1

@@ -1,5 +1,8 @@
 import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaInheritedFixtures
 import Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.TypeEquationScalarReduction
+import Mettapedia.Logic.LP.TotalUnificationStructural
+import Mettapedia.Languages.MeTTa.HE.Spec.Type.RenameTypeVarsStructural
+import Mettapedia.Tools.KernelReducibleCopies
 
 /-! # Root-frontier controls retaining complete source answer records -/
 
@@ -14,11 +17,12 @@ open PettaCheckpointFixtures (num text)
 
 theorem body_commit_keeps_the_older_typed_call :
     observed false false = some ([num 4, text "outside"], [text "before", text "body"]) := by
-  unfold observed
-  simp only [PettaInheritedContext.execute_in_host]
-  cbv
+  kernel_reflexivity using [Mettapedia.Logic.LP.unifyTotalStructural_eq,
+    Mettapedia.Languages.MeTTa.HE.Spec.Type.RuntimeRefinement.renameTypeVarsStructural_eq]
 
 theorem omitting_handoff_publishes_the_unguarded_wrong_type :
-    withoutHandoff false true = some ([text "wrong", text "outside"], [text "before", text "body"]) := by cbv
+    withoutHandoff false true = some ([text "wrong", text "outside"], [text "before", text "body"]) := by
+  kernel_reflexivity using [Mettapedia.Logic.LP.unifyTotalStructural_eq,
+    Mettapedia.Languages.MeTTa.HE.Spec.Type.RuntimeRefinement.renameTypeVarsStructural_eq]
 
 end Mettapedia.GSLT.LanguageDef.Collections.TypedCalls.PettaInheritedControls

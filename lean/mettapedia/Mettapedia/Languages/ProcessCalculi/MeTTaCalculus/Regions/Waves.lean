@@ -25,10 +25,10 @@ footprints of the proposals; locations that both only read are not mentioned.
 * Shared reads do not conflict: `Proposal.independent_of_no_writes`, and
   `Controls.shared_gate_independent` with `Controls.shared_gate_both_orders`.
 
-**Races.**  `Controls.absence_race`: one proposal adds an atom that the guard of
-another requires to be absent.  They are not independent.  Published first, the
+**Races.**  `Controls.none_race`: one proposal adds an atom that the guard of
+another requires to not be present.  They are not independent.  Published first, the
 addition refuses the guarded proposal under both validations
-(`Controls.absence_race_reads_not_kept` for the first); published second, it is
+(`Controls.none_race_reads_not_kept` for the first); published second, it is
 accepted.  So the result depends on the order of publication, and the refusal
 has to be reported.  `Controls.takers_race`: two takers of one token are not
 independent, and the second to be published is refused.
@@ -290,7 +290,7 @@ def mark : Proposal Store (Multiset ℕ) Unit :=
 /-- **A race in which one writes what the other read.**  The two proposals are
 not independent; both have an outcome from the empty snapshot; publishing the
 mark first refuses the guarded addition, and publishing it second does not. -/
-theorem absence_race :
+theorem none_race :
     ¬ mark.Independent addUnlessMarked ∧
       (addUnlessMarked.outcome? empty).isSome ∧ (mark.outcome? empty).isSome ∧
       (publishInOrder [((), mark), ((), addUnlessMarked)] empty).isSome = false ∧
@@ -298,7 +298,7 @@ theorem absence_race :
   decide
 
 /-- The first validation refuses the guarded addition after the mark as well. -/
-theorem absence_race_reads_not_kept :
+theorem none_race_reads_not_kept :
     (publishWithKeptReads [(empty, ((), mark)), (empty, ((), addUnlessMarked))] empty).isSome =
       false := by
   decide
@@ -317,7 +317,7 @@ end Controls
 #print axioms Controls.takers_not_independent
 #print axioms Controls.takers_refused_together
 #print axioms Controls.takers_race
-#print axioms Controls.absence_race
-#print axioms Controls.absence_race_reads_not_kept
+#print axioms Controls.none_race
+#print axioms Controls.none_race_reads_not_kept
 
 end Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.Regions

@@ -50,7 +50,7 @@ their equations (`sealed_bisimulation`); unrestricted syntax readers collapse th
 * `match` is the read-only restriction: `Equivalence.Lanes.prime_match_specializes_every` (an
   `every` over a read takes nothing and makes the bag of instances).
 * `=`-rules are a read-only rule space plus demand: `MeTTaZero.evaluationFiring` (work and answer
-  routing), `MeTTaZero.loop_delivers_iff_runner_completes`, and the absence decision behind answers,
+  routing), `MeTTaZero.loop_delivers_iff_runner_completes`, and the none query decision behind answers,
   `MeTTaZero.answer_not_stable_under_new_equation`; a rule kept parked is `Reflection.RulesAsData`.
 * Need cells are shared nodes: keying each demand by its term's reference shares exactly the demands
   for alpha-equivalent terms (`nodeSharing_sound`, `nodeSharing_complete`, new here, over
@@ -195,18 +195,18 @@ theorem Calculus.Process.Step.no_make_without_send [DecidableEq N] {proc : C.Pro
 /-- **A formed rule's compiled transform fires only formed steps**: every `Commit` it fires is
 `FormedUnder` the process's rights, in the sense of the interaction semantics. -/
 theorem formedUnder_of_fires {O : Type*} [DecidableEq O] [DecidableEq V] {Γ : Rights N}
-    {contract : Contract} {r : Rule V T P} (formed : C.Formed Γ contract r) {absent : List P}
-    (checks : r.checks = absent.map Check.absent) {m : Matcher V T P}
+    {contract : Contract} {r : Rule V T P} (formed : C.Formed Γ contract r) {missing : List P}
+    (checks : r.checks = missing.map Check.noneMatch) {m : Matcher V T P}
     (sound : Matcher.Sound (C.readers.layer contract) m)
     (complete : Matcher.Complete (C.readers.layer contract) m)
     (minimal : Matcher.Minimal (C.readers.layer contract) m)
     {label : O → T} {S : Finset O} {c : Commit O T}
-    (fires : Fires (C.readers.layer contract) m label S (r.transform absent) c) :
+    (fires : Fires (C.readers.layer contract) m label S (r.transform missing) c) :
     FormedUnder label C.space Γ c := by
   obtain ⟨y, row, -, commit⟩ := declarative_of_fires sound complete minimal
     (fun eval mem => by rw [lets_transform] at mem; cases mem) fires
   obtain ⟨σ, os₁, os₂, made, -, -, solves₁, solves₂, -, inst, rfl⟩ :=
-    (dRow_transform_iff r absent y).mp row
+    (dRow_transform_iff r missing y).mp row
   rw [footprint_row] at commit
   refine ⟨fun o mem => ?_, fun o mem => ?_, fun o mem => ?_, fun q mem t hq => ?_⟩
   · rw [commit.taken] at mem
@@ -227,7 +227,7 @@ theorem formedUnder_of_fires {O : Type*} [DecidableEq O] [DecidableEq V] {Γ : R
     simp only [Multiset.mem_coe, List.mem_map] at qm
     obtain ⟨a, am, rfl⟩ := qm
     have cov : (C.readers.layer contract).Covers σ a t := (semRegion_eq_true _).mp hq
-    exact formed.check (Check.absent a) (by rw [checks]; exact List.mem_map_of_mem am) σ t cov
+    exact formed.check (Check.noneMatch a) (by rw [checks]; exact List.mem_map_of_mem am) σ t cov
 
 /-! ## Need cells are shared nodes -/
 

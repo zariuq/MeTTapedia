@@ -1,0 +1,1837 @@
+-- HOL Light's kernel (fusion.ml, SHA-256 29544be92d9cc1e6b3b59ba5b210604b9a748366a68b3bcdc2619717d68fd98a,
+-- with lib.ml of 233b83c for union, subtract, subset, rev_assocd, sort) as a pure calculus, and a checker that
+-- folds over a decoded HOLR v1 record sequence.
+--
+-- Reading:
+--   * Every judgment is a function written as big-step rules: "J"(arguments) ~> result, its premises being
+--     calls of other judgments.  Rules of one judgment do not overlap, so each call has at most one result.
+--   * All data is constructor data.  A name is its list of bytes; a byte is two hexadecimal digits.  Ids,
+--     counts and arities are binary numerals, least significant digit first.
+--   * The kernel's state is explicit: a theory value (type constants, term constants, axioms, definitions)
+--     goes into each theory operation and a new theory value comes out.  Theorems are values of sort Thm.
+--   * fusion.ml uses OCaml's physical equality (==) in a few places.  Where it can change a result
+--     (vsubst's "s' == s"), it is read as structural equality: the result is then a function of the
+--     arguments.  Elsewhere (qmap, inst, orda, term_image) the test cannot change a result.
+--   * OCaml evaluates "let a = e1 and b = e2" left to right; inst's Comb case is written that way.
+--
+-- Layers: Data (bytes, names, numerals, orderings); Syntax (types and terms, OCaml's compare, lib.ml's lists);
+-- Kernel (fusion.ml's functions, ten primitive rules, theory operations); Replay (HOLR v1: id tables,
+-- validation, records, axiom policy with its standard certification, verdicts).
+Module HOLLightKernel {
+  Theory Kernel() {
+    Empty
+    Types {
+      Flag; Ord; Nib; Byte; Str; Strs; Nat; Ids; IdPairs; Bits4;
+      Type; Tys; Term; Tms; Thm; Thms; TyPairs; TmPairs;
+      FunTy; SplitEq; InstR; VsR; KR; TR; YR; MatchR; OptTy; OptNat;
+      TyCons; Cons; Thy; ThyR; ThyThmR; TydefR;
+      Reason; Status; Policy; Mode; Std; StdDef; StdDefs;
+      Obj; Cell; Trie; Table; Tables; Labels; Book; Kern; Replay;
+      Record; Records; Header; Terminal; Decoded; Verdict; Step; Validity; Exec; Out;
+    }
+    Terms {
+      -- ---------------------------------------------------------------- data
+      "hl:yes". |- "yes" : Flag;
+      "hl:no". |- "no" : Flag;
+      "hl:lt". |- "lt" : Ord;
+      "hl:eq". |- "eq" : Ord;
+      "hl:gt". |- "gt" : Ord;
+      "hl:x0". |- "x0" : Nib;  "hl:x1". |- "x1" : Nib;  "hl:x2". |- "x2" : Nib;  "hl:x3". |- "x3" : Nib;
+      "hl:x4". |- "x4" : Nib;  "hl:x5". |- "x5" : Nib;  "hl:x6". |- "x6" : Nib;  "hl:x7". |- "x7" : Nib;
+      "hl:x8". |- "x8" : Nib;  "hl:x9". |- "x9" : Nib;  "hl:xa". |- "xa" : Nib;  "hl:xb". |- "xb" : Nib;
+      "hl:xc". |- "xc" : Nib;  "hl:xd". |- "xd" : Nib;  "hl:xe". |- "xe" : Nib;  "hl:xf". |- "xf" : Nib;
+      "hl:bits4". a:Flag, b:Flag, c:Flag, d:Flag |- "bits4" a b c d : Bits4;
+      "hl:byte". hi:Nib, lo:Nib |- "byte" hi lo : Byte;
+      "hl:nnil". |- "nnil" : Str;
+      "hl:ncons". x:Byte, xs:Str |- "ncons" x xs : Str;
+      "hl:ss-nil". |- "ss-nil" : Strs;
+      "hl:ss-cons". x:Str, xs:Strs |- "ss-cons" x xs : Strs;
+      "hl:nz". |- "nz" : Nat;
+      "hl:nb0". n:Nat |- "nb0" n : Nat;
+      "hl:nb1". n:Nat |- "nb1" n : Nat;
+      "hl:ids-nil". |- "ids-nil" : Ids;
+      "hl:ids-cons". x:Nat, xs:Ids |- "ids-cons" x xs : Ids;
+      "hl:idp-nil". |- "idp-nil" : IdPairs;
+      "hl:idp-cons". a:Nat, b:Nat, xs:IdPairs |- "idp-cons" a b xs : IdPairs;
+      "hl:not". a:Flag |- "not" a : Flag;
+      "hl:and". a:Flag, b:Flag |- "and" a b : Flag;
+      "hl:or". a:Flag, b:Flag |- "or" a b : Flag;
+      "hl:then". o:Ord, p:Ord |- "then" o p : Ord;
+      "hl:ord-is-eq". o:Ord |- "ord-is-eq" o : Flag;
+      "hl:cmp-flag". a:Flag, b:Flag |- "cmp-flag" a b : Ord;
+      "hl:nib-bits". a:Nib |- "nib-bits" a : Bits4;
+      "hl:cmp-nib". a:Nib, b:Nib |- "cmp-nib" a b : Ord;
+      "hl:cmp-byte". a:Byte, b:Byte |- "cmp-byte" a b : Ord;
+      "hl:cmp-str". a:Str, b:Str |- "cmp-str" a b : Ord;
+      "hl:cmp-str-k". o:Ord, a:Str, b:Str |- "cmp-str-k" o a b : Ord;
+      "hl:str-eq". a:Str, b:Str |- "str-eq" a b : Flag;
+      "hl:str-prime". a:Str |- "str-prime" a : Str;
+      "hl:ss-mem". x:Str, xs:Strs |- "ss-mem" x xs : Flag;
+      "hl:ss-mem-k". e:Flag, x:Str, xs:Strs |- "ss-mem-k" e x xs : Flag;
+      "hl:nat-inc". n:Nat |- "nat-inc" n : Nat;
+      "hl:cmp-nat". a:Nat, b:Nat |- "cmp-nat" a b : Ord;
+      "hl:ids-merge". a:Ids, b:Ids |- "ids-merge" a b : Ids;
+      "hl:ids-merge-k". o:Ord, x:Nat, xs:Ids, y:Nat, ys:Ids |- "ids-merge-k" o x xs y ys : Ids;
+      "hl:ids-set". a:Ids |- "ids-set" a : Ids;
+      "hl:ids-count". a:Ids |- "ids-count" a : Nat;
+      "hl:ids-eq". a:Ids, b:Ids |- "ids-eq" a b : Flag;
+      "hl:ids-eq-k". o:Ord, xs:Ids, ys:Ids |- "ids-eq-k" o xs ys : Flag;
+
+      -- names that fusion.ml and CeTTa's standard theory spell out
+      "hl:nm-bool". |- "nm-bool" : Str;   "hl:nm-fun". |- "nm-fun" : Str;     "hl:nm-eq". |- "nm-eq" : Str;
+      "hl:nm-A". |- "nm-A" : Str;         "hl:nm-B". |- "nm-B" : Str;         "hl:nm-a". |- "nm-a" : Str;
+      "hl:nm-r". |- "nm-r" : Str;         "hl:nm-ind". |- "nm-ind" : Str;     "hl:nm-at". |- "nm-at" : Str;
+      "hl:nm-T". |- "nm-T" : Str;         "hl:nm-and". |- "nm-and" : Str;     "hl:nm-imp". |- "nm-imp" : Str;
+      "hl:nm-all". |- "nm-all" : Str;     "hl:nm-ex". |- "nm-ex" : Str;       "hl:nm-F". |- "nm-F" : Str;
+      "hl:nm-neg". |- "nm-neg" : Str;     "hl:nm-one-one". |- "nm-one-one" : Str;
+      "hl:nm-onto". |- "nm-onto" : Str;   "hl:nm-p". |- "nm-p" : Str;         "hl:nm-q". |- "nm-q" : Str;
+      "hl:nm-f". |- "nm-f" : Str;         "hl:nm-P". |- "nm-P" : Str;         "hl:nm-x". |- "nm-x" : Str;
+      "hl:nm-t". |- "nm-t" : Str;         "hl:nm-x1". |- "nm-x1" : Str;       "hl:nm-x2". |- "nm-x2" : Str;
+      "hl:nm-y". |- "nm-y" : Str;         "hl:nm-g2064". |- "nm-g2064" : Str; "hl:nm-g2069". |- "nm-g2069" : Str;
+
+      -- -------------------------------------------------------------- syntax
+      "hl:Tyvar". n:Str |- "Tyvar" n : Type;
+      "hl:Tyapp". n:Str, args:Tys |- "Tyapp" n args : Type;
+      "hl:tynil". |- "tynil" : Tys;
+      "hl:tycons". x:Type, xs:Tys |- "tycons" x xs : Tys;
+      "hl:Var". n:Str, ty:Type |- "Var" n ty : Term;
+      "hl:Const". n:Str, ty:Type |- "Const" n ty : Term;
+      "hl:Comb". f:Term, x:Term |- "Comb" f x : Term;
+      "hl:Abs". v:Term, b:Term |- "Abs" v b : Term;
+      "hl:tmnil". |- "tmnil" : Tms;
+      "hl:tmcons". x:Term, xs:Tms |- "tmcons" x xs : Tms;
+      "hl:Sequent". asl:Tms, c:Term |- "Sequent" asl c : Thm;
+      "hl:thnil". |- "thnil" : Thms;
+      "hl:thcons". x:Thm, xs:Thms |- "thcons" x xs : Thms;
+      "hl:typ-nil". |- "typ-nil" : TyPairs;
+      "hl:typ-cons". val:Type, key:Type, xs:TyPairs |- "typ-cons" val key xs : TyPairs;
+      "hl:tmp-nil". |- "tmp-nil" : TmPairs;
+      "hl:tmp-cons". val:Term, key:Term, xs:TmPairs |- "tmp-cons" val key xs : TmPairs;
+      "hl:fun-parts". d:Type, r:Type |- "fun-parts" d r : FunTy;
+      "hl:not-fun". |- "not-fun" : FunTy;
+      "hl:eqn". op:Term, l:Term, r:Term |- "eqn" op l r : SplitEq;
+      "hl:no-eqn". |- "no-eqn" : SplitEq;
+      "hl:some-ty". ty:Type |- "some-ty" ty : OptTy;
+      "hl:none-ty". |- "none-ty" : OptTy;
+      "hl:some-nat". n:Nat |- "some-nat" n : OptNat;
+      "hl:none-nat". |- "none-nat" : OptNat;
+
+      "hl:bool-ty". |- "bool_ty" : Type;
+      "hl:aty". |- "aty" : Type;
+      "hl:mk-fun-ty". d:Type, r:Type |- "mk_fun_ty" d r : Type;
+      "hl:dest-fun-ty". ty:Type |- "dest-fun-ty" ty : FunTy;
+      "hl:dest-fun-k". e:Flag, d:Type, r:Type |- "dest-fun-k" e d r : FunTy;
+      "hl:cmp-type". a:Type, b:Type |- "cmp-type" a b : Ord;
+      "hl:cmp-type-k". o:Ord, a:Tys, b:Tys |- "cmp-type-k" o a b : Ord;
+      "hl:cmp-types". a:Tys, b:Tys |- "cmp-types" a b : Ord;
+      "hl:cmp-types-k". o:Ord, a:Tys, b:Tys |- "cmp-types-k" o a b : Ord;
+      "hl:ty-eq". a:Type, b:Type |- "ty-eq" a b : Flag;
+      "hl:cmp-leaf". n1:Str, t1:Type, n2:Str, t2:Type |- "cmp-leaf" n1 t1 n2 t2 : Ord;
+      "hl:cmp-leaf-k". o:Ord, t1:Type, t2:Type |- "cmp-leaf-k" o t1 t2 : Ord;
+      "hl:cmp-term". a:Term, b:Term |- "cmp-term" a b : Ord;
+      "hl:cmp-term-k". o:Ord, a:Term, b:Term |- "cmp-term-k" o a b : Ord;
+      "hl:tm-eq". a:Term, b:Term |- "tm-eq" a b : Flag;
+      "hl:tms-eq". a:Tms, b:Tms |- "tms-eq" a b : Flag;
+      "hl:tms-eq-k". e:Flag, a:Tms, b:Tms |- "tms-eq-k" e a b : Flag;
+      "hl:ty-mem". x:Type, xs:Tys |- "ty-mem" x xs : Flag;
+      "hl:ty-mem-k". e:Flag, x:Type, xs:Tys |- "ty-mem-k" e x xs : Flag;
+      "hl:ty-insert". x:Type, xs:Tys |- "ty-insert" x xs : Tys;
+      "hl:ty-insert-k". e:Flag, x:Type, xs:Tys |- "ty-insert-k" e x xs : Tys;
+      "hl:ty-union". a:Tys, b:Tys |- "ty-union" a b : Tys;
+      "hl:ty-subset". a:Tys, b:Tys |- "ty-subset" a b : Flag;
+      "hl:ty-subset-k". e:Flag, a:Tys, b:Tys |- "ty-subset-k" e a b : Flag;
+      "hl:ty-sort". a:Tys |- "ty-sort" a : Tys;
+      "hl:ty-sort-insert". x:Type, xs:Tys |- "ty-sort-insert" x xs : Tys;
+      "hl:ty-sort-insert-k". o:Ord, x:Type, y:Type, ys:Tys |- "ty-sort-insert-k" o x y ys : Tys;
+      "hl:ty-length". a:Tys |- "ty-length" a : Nat;
+      "hl:tyvars". ty:Type |- "tyvars" ty : Tys;
+      "hl:tyvars-list". a:Tys |- "tyvars-list" a : Tys;
+      "hl:typ-rev-assocd". key:Type, xs:TyPairs, d:Type |- "typ-rev-assocd" key xs d : Type;
+      "hl:typ-rev-assocd-k". e:Flag, key:Type, val:Type, xs:TyPairs, d:Type |- "typ-rev-assocd-k" e key val xs d : Type;
+      "hl:type-subst". i:TyPairs, ty:Type |- "type_subst" i ty : Type;
+      "hl:type-subst-list". i:TyPairs, a:Tys |- "type-subst-list" i a : Tys;
+      "hl:tm-mem". x:Term, xs:Tms |- "tm-mem" x xs : Flag;
+      "hl:tm-mem-k". e:Flag, x:Term, xs:Tms |- "tm-mem-k" e x xs : Flag;
+      "hl:tm-insert". x:Term, xs:Tms |- "tm-insert" x xs : Tms;
+      "hl:tm-insert-k". e:Flag, x:Term, xs:Tms |- "tm-insert-k" e x xs : Tms;
+      "hl:tm-union". a:Tms, b:Tms |- "tm-union" a b : Tms;
+      "hl:tm-subtract". a:Tms, b:Tms |- "tm-subtract" a b : Tms;
+      "hl:tm-subtract-k". e:Flag, x:Term, rest:Tms |- "tm-subtract-k" e x rest : Tms;
+      "hl:tmp-rev-assocd". key:Term, xs:TmPairs, d:Term |- "tmp-rev-assocd" key xs d : Term;
+      "hl:tmp-rev-assocd-k". e:Flag, key:Term, val:Term, xs:TmPairs, d:Term |- "tmp-rev-assocd-k" e key val xs d : Term;
+
+      -- -------------------------------------------------------------- kernel
+      "hl:type-of". tm:Term |- "type_of" tm : Type;
+      "hl:frees". tm:Term |- "frees" tm : Tms;
+      "hl:freesl". a:Tms |- "freesl" a : Tms;
+      "hl:freesin". acc:Tms, tm:Term |- "freesin" acc tm : Flag;
+      "hl:freesin-k". e:Flag, acc:Tms, tm:Term |- "freesin-k" e acc tm : Flag;
+      "hl:vfree-in". v:Term, tm:Term |- "vfree_in" v tm : Flag;
+      "hl:vfree-in-abs-k". e:Flag, v:Term, tm:Term |- "vfree-in-abs-k" e v tm : Flag;
+      "hl:vfree-in-comb-k". e:Flag, v:Term, tm:Term |- "vfree-in-comb-k" e v tm : Flag;
+      "hl:exists-vfree-in". v:Term, xs:Tms |- "exists-vfree-in" v xs : Flag;
+      "hl:exists-vfree-in-k". e:Flag, v:Term, xs:Tms |- "exists-vfree-in-k" e v xs : Flag;
+      "hl:type-vars-in-term". tm:Term |- "type_vars_in_term" tm : Tys;
+      "hl:variant". avoid:Tms, v:Term |- "variant" avoid v : Term;
+      "hl:variant-k". e:Flag, avoid:Tms, n:Str, ty:Type |- "variant-k" e avoid n ty : Term;
+      "hl:vs-ok". tm:Term |- "vs-ok" tm : VsR;
+      "hl:vs-bad". |- "vs-bad" : VsR;
+      "hl:vsubst". theta:TmPairs, tm:Term |- "vsubst" theta tm : VsR;
+      "hl:vsubst-k". e:Flag, theta:TmPairs, tm:Term |- "vsubst-k" e theta tm : VsR;
+      "hl:vsubst-good". theta:TmPairs |- "vsubst-good" theta : Flag;
+      "hl:vsubst-good-k". e:Flag, rest:TmPairs |- "vsubst-good-k" e rest : Flag;
+      "hl:vsubst-pair-good". t:Term, x:Term |- "vsubst-pair-good" t x : Flag;
+      "hl:vsubst-rec". il:TmPairs, tm:Term |- "vsubst-rec" il tm : Term;
+      "hl:vs-filter". il:TmPairs, v:Term |- "vs-filter" il v : TmPairs;
+      "hl:vs-filter-k". e:Flag, t:Term, x:Term, rest:TmPairs, v:Term |- "vs-filter-k" e t x rest v : TmPairs;
+      "hl:vs-abs-1". il:TmPairs, v:Term, s:Term |- "vs-abs-1" il v s : Term;
+      "hl:vs-abs-2". e:Flag, il:TmPairs, v:Term, s:Term, s1:Term |- "vs-abs-2" e il v s s1 : Term;
+      "hl:vs-abs-3". e:Flag, il:TmPairs, v:Term, s:Term, s1:Term |- "vs-abs-3" e il v s s1 : Term;
+      "hl:vs-capture". il:TmPairs, v:Term, s:Term |- "vs-capture" il v s : Flag;
+      "hl:vs-capture-k". e:Flag, x:Term, rest:TmPairs, v:Term, s:Term |- "vs-capture-k" e x rest v s : Flag;
+      "hl:vs-capture-k2". e:Flag, rest:TmPairs, v:Term, s:Term |- "vs-capture-k2" e rest v s : Flag;
+      "hl:inst". tyin:TyPairs, tm:Term |- "inst" tyin tm : Term;
+      "hl:inst-ok". tm:Term |- "inst-ok" tm : InstR;
+      "hl:inst-clash". tm:Term |- "inst-clash" tm : InstR;
+      "hl:inst-rec". env:TmPairs, tyin:TyPairs, tm:Term |- "inst-rec" env tyin tm : InstR;
+      "hl:inst-var-k". e:Flag, tm1:Term |- "inst-var-k" e tm1 : InstR;
+      "hl:inst-comb-1". r:InstR, env:TmPairs, tyin:TyPairs, x:Term |- "inst-comb-1" r env tyin x : InstR;
+      "hl:inst-comb-2". f1:Term, r:InstR |- "inst-comb-2" f1 r : InstR;
+      "hl:inst-abs-1". r:InstR, env:TmPairs, tyin:TyPairs, y:Term, y1:Term, t:Term |- "inst-abs-1" r env tyin y y1 t : InstR;
+      "hl:inst-abs-2". e:Flag, w:Term, env:TmPairs, tyin:TyPairs, y:Term, y1:Term, t:Term |- "inst-abs-2" e w env tyin y y1 t : InstR;
+      "hl:inst-frees". tyin:TyPairs, a:Tms |- "inst-frees" tyin a : Tms;
+      "hl:safe-mk-eq". l:Term, r:Term |- "safe_mk_eq" l r : Term;
+      "hl:split-eq". tm:Term |- "split-eq" tm : SplitEq;
+      "hl:split-eq-k". e:Flag, n:Str, ty:Type, l:Term, r:Term |- "split-eq-k" e n ty l r : SplitEq;
+      "hl:alphaorder". a:Term, b:Term |- "alphaorder" a b : Ord;
+      "hl:orda". env:TmPairs, a:Term, b:Term |- "orda" env a b : Ord;
+      "hl:orda-comb-k". o:Ord, env:TmPairs, a:Term, b:Term |- "orda-comb-k" o env a b : Ord;
+      "hl:orda-abs-k". o:Ord, env:TmPairs, a:Term, b:Term |- "orda-abs-k" o env a b : Ord;
+      "hl:ordav". env:TmPairs, a:Term, b:Term |- "ordav" env a b : Ord;
+      "hl:ordav-k". e1:Flag, e2:Flag, env:TmPairs, a:Term, b:Term |- "ordav-k" e1 e2 env a b : Ord;
+      "hl:term-union". a:Tms, b:Tms |- "term_union" a b : Tms;
+      "hl:term-union-k". o:Ord, h1:Term, t1:Tms, h2:Term, t2:Tms |- "term-union-k" o h1 t1 h2 t2 : Tms;
+      "hl:term-remove". t:Term, l:Tms |- "term_remove" t l : Tms;
+      "hl:term-remove-k". o:Ord, t:Term, s:Term, ss:Tms |- "term-remove-k" o t s ss : Tms;
+      "hl:term-image-inst". tyin:TyPairs, l:Tms |- "term-image-inst" tyin l : Tms;
+      "hl:term-image-vsubst". theta:TmPairs, l:Tms |- "term-image-vsubst" theta l : Tms;
+      "hl:term-image-k". e:Flag, l:Tms, h1:Term, t1:Tms |- "term-image-k" e l h1 t1 : Tms;
+      "hl:exists-aconv". x:Term, xs:Tms |- "exists-aconv" x xs : Flag;
+      "hl:exists-aconv-k". o:Ord, x:Term, xs:Tms |- "exists-aconv-k" o x xs : Flag;
+      "hl:forall-exists-aconv". a:Tms, b:Tms |- "forall-exists-aconv" a b : Flag;
+      "hl:forall-exists-aconv-k". e:Flag, a:Tms, b:Tms |- "forall-exists-aconv-k" e a b : Flag;
+
+      "hl:ok". th:Thm |- "ok" th : KR;
+      "hl:fail". r:Reason |- "fail" r : KR;
+      "hl:tm-ok". tm:Term |- "tm-ok" tm : TR;
+      "hl:tm-fail". r:Reason |- "tm-fail" r : TR;
+      "hl:ty-ok". ty:Type |- "ty-ok" ty : YR;
+      "hl:ty-fail". r:Reason |- "ty-fail" r : YR;
+      "hl:match-ok". b:TyPairs |- "match-ok" b : MatchR;
+      "hl:match-fail". |- "match-fail" : MatchR;
+
+      "hl:mk-type". thy:Thy, n:Str, args:Tys |- "mk_type" thy n args : YR;
+      "hl:mk-type-k". o:OptNat, n:Str, args:Tys |- "mk-type-k" o n args : YR;
+      "hl:mk-type-k2". o:Ord, n:Str, args:Tys |- "mk-type-k2" o n args : YR;
+      "hl:mk-const-at". thy:Thy, n:Str, ty:Type |- "mk-const-at" thy n ty : TR;
+      "hl:mk-const-k". o:OptTy, n:Str, ty:Type |- "mk-const-k" o n ty : TR;
+      "hl:mk-const-k2". m:MatchR, n:Str, ty:Type |- "mk-const-k2" m n ty : TR;
+      "hl:ty-match". pat:Type, ty:Type, b:TyPairs |- "ty-match" pat ty b : MatchR;
+      "hl:ty-match-var". o:OptTy, pat:Type, ty:Type, b:TyPairs |- "ty-match-var" o pat ty b : MatchR;
+      "hl:ty-match-var-k". e:Flag, b:TyPairs |- "ty-match-var-k" e b : MatchR;
+      "hl:ty-match-app". e:Flag, pa:Tys, ta:Tys, b:TyPairs |- "ty-match-app" e pa ta b : MatchR;
+      "hl:ty-match-list". pa:Tys, ta:Tys, b:TyPairs |- "ty-match-list" pa ta b : MatchR;
+      "hl:ty-match-list-k". m:MatchR, pa:Tys, ta:Tys |- "ty-match-list-k" m pa ta : MatchR;
+      "hl:typ-lookup". key:Type, xs:TyPairs |- "typ-lookup" key xs : OptTy;
+      "hl:typ-lookup-k". e:Flag, val:Type, key:Type, xs:TyPairs |- "typ-lookup-k" e val key xs : OptTy;
+      "hl:mk-comb". f:Term, a:Term |- "mk_comb" f a : TR;
+      "hl:mk-comb-k". ft:FunTy, f:Term, a:Term |- "mk-comb-k" ft f a : TR;
+      "hl:mk-comb-k2". e:Flag, f:Term, a:Term |- "mk-comb-k2" e f a : TR;
+      "hl:mk-abs". v:Term, b:Term |- "mk_abs" v b : TR;
+
+      "hl:REFL". tm:Term |- "REFL" tm : Thm;
+      "hl:TRANS". a:Thm, b:Thm |- "TRANS" a b : KR;
+      "hl:trans-k". a1:Tms, s1:SplitEq, a2:Tms, s2:SplitEq |- "trans-k" a1 s1 a2 s2 : KR;
+      "hl:trans-k2". o:Ord, a1:Tms, a2:Tms, op:Term, l:Term, r:Term |- "trans-k2" o a1 a2 op l r : KR;
+      "hl:MK_COMB". a:Thm, b:Thm |- "MK_COMB" a b : KR;
+      "hl:mk-comb-rule-k". a1:Tms, s1:SplitEq, a2:Tms, s2:SplitEq |- "mk-comb-rule-k" a1 s1 a2 s2 : KR;
+      "hl:mk-comb-rule-k2". ft:FunTy, a1:Tms, a2:Tms, l1:Term, r1:Term, l2:Term, r2:Term |- "mk-comb-rule-k2" ft a1 a2 l1 r1 l2 r2 : KR;
+      "hl:mk-comb-rule-k3". e:Flag, a1:Tms, a2:Tms, l1:Term, r1:Term, l2:Term, r2:Term |- "mk-comb-rule-k3" e a1 a2 l1 r1 l2 r2 : KR;
+      "hl:ABS". v:Term, th:Thm |- "ABS" v th : KR;
+      "hl:abs-k". s:SplitEq, v:Term, asl:Tms |- "abs-k" s v asl : KR;
+      "hl:abs-k2". e:Flag, v:Term, asl:Tms, l:Term, r:Term |- "abs-k2" e v asl l r : KR;
+      "hl:BETA". tm:Term |- "BETA" tm : KR;
+      "hl:beta-k". e:Flag, tm:Term, bod:Term |- "beta-k" e tm bod : KR;
+      "hl:ASSUME". tm:Term |- "ASSUME" tm : KR;
+      "hl:assume-k". e:Flag, tm:Term |- "assume-k" e tm : KR;
+      "hl:EQ_MP". a:Thm, b:Thm |- "EQ_MP" a b : KR;
+      "hl:eq-mp-k". s:SplitEq, a1:Tms, a2:Tms, c:Term |- "eq-mp-k" s a1 a2 c : KR;
+      "hl:eq-mp-k2". o:Ord, a1:Tms, a2:Tms, r:Term |- "eq-mp-k2" o a1 a2 r : KR;
+      "hl:DEDUCT_ANTISYM_RULE". a:Thm, b:Thm |- "DEDUCT_ANTISYM_RULE" a b : Thm;
+      "hl:INST_TYPE". theta:TyPairs, th:Thm |- "INST_TYPE" theta th : Thm;
+      "hl:INST". theta:TmPairs, th:Thm |- "INST" theta th : KR;
+      "hl:inst-rule-k". e:Flag, theta:TmPairs, asl:Tms, c:Term |- "inst-rule-k" e theta asl c : KR;
+
+      "hl:tc-nil". |- "tc-nil" : TyCons;
+      "hl:tc-cons". n:Str, k:Nat, xs:TyCons |- "tc-cons" n k xs : TyCons;
+      "hl:cc-nil". |- "cc-nil" : Cons;
+      "hl:cc-cons". n:Str, ty:Type, xs:Cons |- "cc-cons" n ty xs : Cons;
+      "hl:Theory". tys:TyCons, cons:Cons, axioms:Thms, defs:Thms |- "Theory" tys cons axioms defs : Thy;
+      "hl:thy-ok". thy:Thy |- "thy-ok" thy : ThyR;
+      "hl:thy-fail". r:Reason |- "thy-fail" r : ThyR;
+      "hl:thy-thm". thy:Thy, th:Thm |- "thy-thm" thy th : ThyThmR;
+      "hl:thy-thm-fail". r:Reason |- "thy-thm-fail" r : ThyThmR;
+      "hl:tydef-ok". thy:Thy, th1:Thm, th2:Thm |- "tydef-ok" thy th1 th2 : TydefR;
+      "hl:tydef-fail". r:Reason |- "tydef-fail" r : TydefR;
+      "hl:tydef-fail-partial". thy:Thy, r:Reason |- "tydef-fail-partial" thy r : TydefR;
+      "hl:initial-theory". |- "initial-theory" : Thy;
+      "hl:get-type-arity". xs:TyCons, n:Str |- "get_type_arity" xs n : OptNat;
+      "hl:get-type-arity-k". e:Flag, k:Nat, xs:TyCons, n:Str |- "get-type-arity-k" e k xs n : OptNat;
+      "hl:get-const-type". xs:Cons, n:Str |- "get_const_type" xs n : OptTy;
+      "hl:get-const-type-k". e:Flag, ty:Type, xs:Cons, n:Str |- "get-const-type-k" e ty xs n : OptTy;
+      "hl:new-type". thy:Thy, n:Str, k:Nat |- "new_type" thy n k : ThyR;
+      "hl:new-type-k". o:OptNat, thy:Thy, n:Str, k:Nat |- "new-type-k" o thy n k : ThyR;
+      "hl:new-constant". thy:Thy, n:Str, ty:Type |- "new_constant" thy n ty : ThyR;
+      "hl:new-constant-k". o:OptTy, thy:Thy, n:Str, ty:Type |- "new-constant-k" o thy n ty : ThyR;
+      "hl:new-axiom". thy:Thy, tm:Term |- "new_axiom" thy tm : ThyThmR;
+      "hl:new-axiom-k". e:Flag, thy:Thy, tm:Term |- "new-axiom-k" e thy tm : ThyThmR;
+      "hl:new-basic-definition". thy:Thy, tm:Term |- "new_basic_definition" thy tm : ThyThmR;
+      "hl:new-def-k". s:SplitEq, thy:Thy |- "new-def-k" s thy : ThyThmR;
+      "hl:new-def-k2". e:Flag, thy:Thy, n:Str, ty:Type, r:Term |- "new-def-k2" e thy n ty r : ThyThmR;
+      "hl:new-def-k3". e:Flag, thy:Thy, n:Str, ty:Type, r:Term |- "new-def-k3" e thy n ty r : ThyThmR;
+      "hl:new-def-k4". o:ThyR, n:Str, ty:Type, r:Term |- "new-def-k4" o n ty r : ThyThmR;
+      "hl:new-basic-type-definition". thy:Thy, tyname:Str, absname:Str, repname:Str, th:Thm |- "new_basic_type_definition" thy tyname absname repname th : TydefR;
+      "hl:tydef-1". e:Flag, thy:Thy, tyname:Str, absname:Str, repname:Str, asl:Tms, c:Term |- "tydef-1" e thy tyname absname repname asl c : TydefR;
+      "hl:tydef-2". thy:Thy, tyname:Str, absname:Str, repname:Str, c:Term |- "tydef-2" thy tyname absname repname c : TydefR;
+      "hl:tydef-3". e:Flag, thy:Thy, tyname:Str, absname:Str, repname:Str, p:Term, x:Term |- "tydef-3" e thy tyname absname repname p x : TydefR;
+      "hl:tydef-4". o:ThyR, tyname:Str, absname:Str, repname:Str, p:Term, x:Term, tvs:Tys |- "tydef-4" o tyname absname repname p x tvs : TydefR;
+      "hl:tydef-5". o:ThyR, thy:Thy, absname:Str, absty:Type, repname:Str, p:Term, aty:Type, rty:Type |- "tydef-5" o thy absname absty repname p aty rty : TydefR;
+      "hl:tydef-5b". o:ThyR, thy:Thy, absname:Str, absty:Type, repname:Str, repty:Type, p:Term, aty:Type, rty:Type |- "tydef-5b" o thy absname absty repname repty p aty rty : TydefR;
+      "hl:tydef-6". thy:Thy, p:Term, abs:Term, rep:Term, aty:Type, rty:Type |- "tydef-6" thy p abs rep aty rty : TydefR;
+      "hl:can-get-const". xs:Cons, n:Str |- "can-get-const" xs n : Flag;
+      "hl:can-get-const-k". o:OptTy |- "can-get-const-k" o : Flag;
+
+      -- reasons: fusion.ml's failure messages, then the replay's
+      "hl:r-mk-type-undeclared". |- "mk_type: undeclared" : Reason;
+      "hl:r-mk-type-arity". |- "mk_type: arity" : Reason;
+      "hl:r-mk-const-undeclared". |- "mk_const: not a constant name" : Reason;
+      "hl:r-const-not-instance". |- "CONST: not an instance" : Reason;
+      "hl:r-mk-abs-not-var". |- "mk_abs: not a variable" : Reason;
+      "hl:r-mk-comb-types". |- "mk_comb: types do not agree" : Reason;
+      "hl:r-vsubst-bad". |- "vsubst: Bad substitution list" : Reason;
+      "hl:r-trans". |- "TRANS" : Reason;
+      "hl:r-mk-comb-not-eqs". |- "MK_COMB: not both equations" : Reason;
+      "hl:r-mk-comb-rule-types". |- "MK_COMB: types do not agree" : Reason;
+      "hl:r-abs". |- "ABS" : Reason;
+      "hl:r-beta". |- "BETA: not a trivial beta-redex" : Reason;
+      "hl:r-assume". |- "ASSUME: not a proposition" : Reason;
+      "hl:r-eq-mp". |- "EQ_MP" : Reason;
+      "hl:r-type-exists". |- "new_type: already declared" : Reason;
+      "hl:r-const-exists". |- "new_constant: already declared" : Reason;
+      "hl:r-axiom-not-bool". |- "new_axiom: Not a proposition" : Reason;
+      "hl:r-def-shape". |- "new_basic_definition" : Reason;
+      "hl:r-def-already-const". |- "new_basic_definition: already defined" : Reason;
+      "hl:r-def-not-closed". |- "new_definition: term not closed" : Reason;
+      "hl:r-def-tyvars". |- "new_definition: Type variables not reflected in constant" : Reason;
+      "hl:r-tydef-consts". |- "new_basic_type_definition: Constant(s) already in use" : Reason;
+      "hl:r-tydef-hyps". |- "new_basic_type_definition: Assumptions in theorem" : Reason;
+      "hl:r-tydef-not-comb". |- "new_basic_type_definition: Not a combination" : Reason;
+      "hl:r-tydef-not-closed". |- "new_basic_type_definition: Predicate is not closed" : Reason;
+      "hl:r-tydef-type-exists". |- "new_basic_type_definition: Type already defined" : Reason;
+      "hl:r-axiom-policy". |- "axiom policy" : Reason;
+      "hl:r-future-ref". |- "future reference" : Reason;
+      "hl:r-dropped-ref". |- "dropped reference" : Reason;
+      "hl:r-expect". |- "expectation failed" : Reason;
+      "hl:r-bad-value". |- "bad value" : Reason;
+      "hl:bad-magic". |- "bad magic" : Reason;
+      "hl:bad-version". |- "unsupported version" : Reason;
+      "hl:bad-header". |- "bad header" : Reason;
+      "hl:truncated". |- "truncated" : Reason;
+      "hl:bad-integer". |- "bad integer encoding" : Reason;
+      "hl:bad-opcode". |- "unknown opcode" : Reason;
+      "hl:trailing-bytes". |- "trailing bytes" : Reason;
+      "hl:checksum-mismatch". |- "checksum mismatch" : Reason;
+      "hl:count-mismatch". |- "record count mismatch" : Reason;
+      "hl:limit-exceeded". |- "limit exceeded" : Reason;
+      "hl:missing-end". |- "missing END" : Reason;
+      "hl:decoder-out-of-memory". |- "decoder out of memory" : Reason;
+      "hl:decoder-other". |- "decoder failure" : Reason;
+
+      -- -------------------------------------------------------------- replay
+      "hl:st-refused". |- "REFUSED" : Status;
+      "hl:st-policy". |- "POLICY" : Status;
+      "hl:open". |- "open" : Policy;
+      "hl:standard". |- "standard" : Policy;
+      "hl:sealed". |- "sealed" : Policy;
+      "hl:strict". |- "strict" : Mode;
+      "hl:probe". |- "probe" : Mode;
+      "hl:policy-max". a:Policy, b:Policy |- "policy-max" a b : Policy;
+      "hl:policy-of-nat". n:Nat |- "policy-of-nat" n : Policy;
+      "hl:std". tys:Strs, cons:Strs |- "std" tys cons : Std;
+      "hl:sd". n:Str, ty:Type, body:Term |- "sd" n ty body : StdDef;
+      "hl:sd-nil". |- "sd-nil" : StdDefs;
+      "hl:sd-cons". d:StdDef, ds:StdDefs |- "sd-cons" d ds : StdDefs;
+      "hl:initial-std". |- "initial-std" : Std;
+      "hl:std-defs". |- "std-defs" : StdDefs;
+      "hl:std-def-T". |- "std-def-T" : StdDef;
+      "hl:std-def-and". |- "std-def-and" : StdDef;
+      "hl:std-def-imp". |- "std-def-imp" : StdDef;
+      "hl:std-def-all". |- "std-def-all" : StdDef;
+      "hl:std-def-ex". |- "std-def-ex" : StdDef;
+      "hl:std-def-F". |- "std-def-F" : StdDef;
+      "hl:std-def-neg". |- "std-def-neg" : StdDef;
+      "hl:std-def-one-one". |- "std-def-one-one" : StdDef;
+      "hl:std-def-onto". |- "std-def-onto" : StdDef;
+      "hl:std-axioms". |- "std-axioms" : Tms;
+      "hl:std-eta". |- "std-eta" : Term;
+      "hl:std-select". |- "std-select" : Term;
+      "hl:std-infinity". |- "std-infinity" : Term;
+      "hl:std-choice-type". |- "std-choice-type" : Type;
+      "hl:type-std". s:Std, ty:Type |- "type-std" s ty : Flag;
+      "hl:types-std". s:Std, a:Tys |- "types-std" s a : Flag;
+      "hl:types-std-k". e:Flag, s:Std, a:Tys |- "types-std-k" e s a : Flag;
+      "hl:type-std-k". e:Flag, s:Std, a:Tys |- "type-std-k" e s a : Flag;
+      "hl:term-std". s:Std, tm:Term |- "term-std" s tm : Flag;
+      "hl:term-std-k". e:Flag, s:Std, tm:Term |- "term-std-k" e s tm : Flag;
+      "hl:std-after-new-type". s:Std, n:Str, k:Nat |- "std-after-new-type" s n k : Std;
+      "hl:std-add-type-k". e:Flag, s:Std, n:Str |- "std-add-type-k" e s n : Std;
+      "hl:std-after-new-constant". s:Std, n:Str, ty:Type |- "std-after-new-constant" s n ty : Std;
+      "hl:std-add-const-k". e:Flag, s:Std, n:Str |- "std-add-const-k" e s n : Std;
+      "hl:std-after-new-definition". s:Std, tm:Term |- "std-after-new-definition" s tm : Std;
+      "hl:std-def-check". s:SplitEq, st:Std |- "std-def-check" s st : Std;
+      "hl:std-def-lookup". ds:StdDefs, n:Str, ty:Type, body:Term, st:Std |- "std-def-lookup" ds n ty body st : Std;
+      "hl:std-def-lookup-k". e:Flag, ety:Type, ebody:Term, ds:StdDefs, n:Str, ty:Type, body:Term, st:Std |- "std-def-lookup-k" e ety ebody ds n ty body st : Std;
+      "hl:std-def-match-k". e:Flag, o:Ord, n:Str, body:Term, st:Std |- "std-def-match-k" e o n body st : Std;
+      "hl:std-axiom". s:Std, tm:Term |- "std-axiom" s tm : Flag;
+      "hl:std-axiom-k". axs:Tms, s:Std, tm:Term |- "std-axiom-k" axs s tm : Flag;
+      "hl:std-axiom-k2". o:Ord, rest:Tms, s:Std, tm:Term |- "std-axiom-k2" o rest s tm : Flag;
+
+      "hl:o-name". s:Str |- "o-name" s : Obj;
+      "hl:o-type". ty:Type |- "o-type" ty : Obj;
+      "hl:o-term". tm:Term |- "o-term" tm : Obj;
+      "hl:o-thm". th:Thm, deps:Ids |- "o-thm" th deps : Obj;
+      "hl:c-none". |- "c-none" : Cell;
+      "hl:c-ok". o:Obj |- "c-ok" o : Cell;
+      "hl:c-failed". |- "c-failed" : Cell;
+      "hl:c-dropped". |- "c-dropped" : Cell;
+      "hl:tleaf". |- "tleaf" : Trie;
+      "hl:tnode". c:Cell, t0:Trie, t1:Trie |- "tnode" c t0 t1 : Trie;
+      "hl:trie-get". t:Trie, n:Nat |- "trie-get" t n : Cell;
+      "hl:trie-set". t:Trie, n:Nat, c:Cell |- "trie-set" t n c : Trie;
+      "hl:table". next:Nat, t:Trie |- "table" next t : Table;
+      "hl:table-get". tb:Table, n:Nat |- "table-get" tb n : Cell;
+      "hl:table-put". tb:Table, c:Cell |- "table-put" tb c : Table;
+      "hl:table-set". tb:Table, n:Nat, c:Cell |- "table-set" tb n c : Table;
+      "hl:table-next". tb:Table |- "table-next" tb : Nat;
+      "hl:empty-table". |- "empty-table" : Table;
+      "hl:tables". names:Table, types:Table, terms:Table, thms:Table |- "tables" names types terms thms : Tables;
+      "hl:lb-nil". |- "lb-nil" : Labels;
+      "hl:lb-cons". h:Nat, n:Str, xs:Labels |- "lb-cons" h n xs : Labels;
+      "hl:book". mode:Mode, lastref:Flag, emitted:Thms, labels:Labels, nrec:Nat, nfailed:Nat |- "book" mode lastref emitted labels nrec nfailed : Book;
+      "hl:kern". thy:Thy, pol:Policy, s:Std |- "kern" thy pol s : Kern;
+      "hl:replay". k:Kern, tb:Tables, bk:Book |- "replay" k tb bk : Replay;
+      "hl:initial-replay". pol:Policy, mode:Mode |- "initial-replay" pol mode : Replay;
+
+      "holr:NAME". s:Str |- "NAME" s : Record;
+      "holr:TYVAR". n:Nat |- "TYVAR" n : Record;
+      "holr:TYAPP". n:Nat, args:Ids |- "TYAPP" n args : Record;
+      "holr:VAR". n:Nat, y:Nat |- "VAR" n y : Record;
+      "holr:CONST". n:Nat, y:Nat |- "CONST" n y : Record;
+      "holr:COMB". a:Nat, b:Nat |- "COMB" a b : Record;
+      "holr:ABS". a:Nat, b:Nat |- "ABS" a b : Record;
+      "holr:REFL". t:Nat |- "REFL" t : Record;
+      "holr:TRANS". a:Nat, b:Nat |- "TRANS" a b : Record;
+      "holr:MK_COMB". a:Nat, b:Nat |- "MK_COMB" a b : Record;
+      "holr:ABS_RULE". t:Nat, h:Nat |- "ABS_RULE" t h : Record;
+      "holr:BETA". t:Nat |- "BETA" t : Record;
+      "holr:ASSUME". t:Nat |- "ASSUME" t : Record;
+      "holr:EQ_MP". a:Nat, b:Nat |- "EQ_MP" a b : Record;
+      "holr:DEDUCT_ANTISYM_RULE". a:Nat, b:Nat |- "DEDUCT_ANTISYM_RULE" a b : Record;
+      "holr:INST_TYPE". ps:IdPairs, h:Nat |- "INST_TYPE" ps h : Record;
+      "holr:INST". ps:IdPairs, h:Nat |- "INST" ps h : Record;
+      "holr:NEW_TYPE". n:Nat, k:Nat |- "NEW_TYPE" n k : Record;
+      "holr:NEW_CONSTANT". n:Nat, y:Nat |- "NEW_CONSTANT" n y : Record;
+      "holr:NEW_AXIOM". t:Nat |- "NEW_AXIOM" t : Record;
+      "holr:NEW_DEFINITION". t:Nat |- "NEW_DEFINITION" t : Record;
+      "holr:NEW_TYPEDEF". nt:Nat, na:Nat, nr:Nat, h:Nat |- "NEW_TYPEDEF" nt na nr h : Record;
+      "holr:POLICY". u:Nat |- "POLICY" u : Record;
+      "holr:EXPECT". h:Nat, ts:Ids, t:Nat |- "EXPECT" h ts t : Record;
+      "holr:EXPECT_ALPHA". h:Nat, ts:Ids, t:Nat |- "EXPECT_ALPHA" h ts t : Record;
+      "holr:EXPECT_AXIOMS". h:Nat, hs:Ids |- "EXPECT_AXIOMS" h hs : Record;
+      "holr:EXPECT_REFUSED". |- "EXPECT_REFUSED" : Record;
+      "holr:LABEL". h:Nat, n:Nat |- "LABEL" h n : Record;
+      "holr:EMIT". h:Nat |- "EMIT" h : Record;
+      "holr:DROP_TYPE". i:Nat |- "DROP_TYPE" i : Record;
+      "holr:DROP_TERM". i:Nat |- "DROP_TERM" i : Record;
+      "holr:DROP_THM". i:Nat |- "DROP_THM" i : Record;
+      "hl:rnil". |- "rnil" : Records;
+      "hl:rcons". r:Record, rs:Records |- "rcons" r rs : Records;
+      "hl:header". pol:Policy, mode:Mode |- "header" pol mode : Header;
+      "hl:header-malformed". |- "header-malformed" : Header;
+      "hl:end-ok". |- "end-ok" : Terminal;
+      "hl:end-malformed". r:Reason |- "end-malformed" r : Terminal;
+      "hl:decoded". rs:Records, h:Header, t:Terminal |- "decoded" rs h t : Decoded;
+
+      "hl:accepted". nrec:Nat, emitted:Thms |- "accepted" nrec emitted : Verdict;
+      "hl:refused". st:Status, r:Reason, nrec:Nat |- "refused" st r nrec : Verdict;
+      "hl:malformed". r:Reason, nrec:Nat |- "malformed" r nrec : Verdict;
+      "hl:probe-refused". nfailed:Nat |- "probe-refused" nfailed : Verdict;
+      "hl:continue". rp:Replay |- "continue" rp : Step;
+      "hl:stop". v:Verdict |- "stop" v : Step;
+      "hl:valid". |- "valid" : Validity;
+      "hl:depfail". |- "depfail" : Validity;
+      "hl:invalid". r:Reason |- "invalid" r : Validity;
+      "hl:x-ok". rp:Replay |- "x-ok" rp : Exec;
+      "hl:x-refused". st:Status, r:Reason |- "x-refused" st r : Exec;
+      "hl:x-check-failed". |- "x-check-failed" : Exec;
+      "hl:x-malformed". r:Reason |- "x-malformed" r : Exec;
+      "hl:out-none". |- "out-none" : Out;
+      "hl:out-type". |- "out-type" : Out;
+      "hl:out-term". |- "out-term" : Out;
+      "hl:out-thm". |- "out-thm" : Out;
+      "hl:out-thm2". |- "out-thm2" : Out;
+
+      "hl:check". host:Policy, d:Decoded |- "check" host d : Verdict;
+      "hl:run". rp:Replay, rs:Records, t:Terminal |- "run" rp rs t : Verdict;
+      "hl:run-k". s:Step, rs:Records, t:Terminal |- "run-k" s rs t : Verdict;
+      "hl:finish". rp:Replay |- "finish" rp : Verdict;
+      "hl:finish-k". e:Flag, nrec:Nat, nfailed:Nat, emitted:Thms |- "finish-k" e nrec nfailed emitted : Verdict;
+      "hl:thms-rev". a:Thms, acc:Thms |- "thms-rev" a acc : Thms;
+      "hl:step". rp:Replay, r:Record |- "step" rp r : Step;
+      "hl:step-v". v:Validity, rp:Replay, r:Record |- "step-v" v rp r : Step;
+      "hl:step-x". x:Exec, rp:Replay, r:Record |- "step-x" x rp r : Step;
+      "hl:step-refused". m:Mode, st:Status, r:Reason, rp:Replay, rec:Record |- "step-refused" m st r rp rec : Step;
+      "hl:step-check-failed". m:Mode, rp:Replay |- "step-check-failed" m rp : Step;
+      "hl:commit-ok". rp:Replay |- "commit-ok" rp : Replay;
+      "hl:commit-failed". rp:Replay, o:Out, lastref:Flag |- "commit-failed" rp o lastref : Replay;
+      "hl:put-failed". tb:Tables, o:Out |- "put-failed" tb o : Tables;
+      "hl:rec-out". r:Record |- "rec-out" r : Out;
+      "hl:nrec-of". rp:Replay |- "nrec-of" rp : Nat;
+      "hl:validate". tb:Tables, r:Record |- "validate" tb r : Validity;
+      "hl:v-seq". a:Validity, b:Validity |- "v-seq" a b : Validity;
+      "hl:v-name". tb:Table, n:Nat |- "v-name" tb n : Validity;
+      "hl:v-name-k". c:Cell |- "v-name-k" c : Validity;
+      "hl:v-use". tb:Table, n:Nat |- "v-use" tb n : Validity;
+      "hl:v-use-k". c:Cell |- "v-use-k" c : Validity;
+      "hl:v-drop". tb:Table, n:Nat |- "v-drop" tb n : Validity;
+      "hl:v-drop-k". c:Cell |- "v-drop-k" c : Validity;
+      "hl:v-uses". tb:Table, ns:Ids |- "v-uses" tb ns : Validity;
+      "hl:v-pairs". tb:Table, ps:IdPairs |- "v-pairs" tb ps : Validity;
+      "hl:get-name". tb:Tables, n:Nat |- "get-name" tb n : Str;
+      "hl:get-type". tb:Tables, n:Nat |- "get-type" tb n : Type;
+      "hl:get-term". tb:Tables, n:Nat |- "get-term" tb n : Term;
+      "hl:get-thm". tb:Tables, n:Nat |- "get-thm" tb n : Obj;
+      "hl:get-types". tb:Tables, ns:Ids |- "get-types" tb ns : Tys;
+      "hl:get-terms". tb:Tables, ns:Ids |- "get-terms" tb ns : Tms;
+      "hl:get-ty-pairs". tb:Tables, ps:IdPairs |- "get-ty-pairs" tb ps : TyPairs;
+      "hl:get-tm-pairs". tb:Tables, ps:IdPairs |- "get-tm-pairs" tb ps : TmPairs;
+      "hl:put-type". rp:Replay, ty:Type |- "put-type" rp ty : Replay;
+      "hl:put-term". rp:Replay, tm:Term |- "put-term" rp tm : Replay;
+      "hl:put-thm". rp:Replay, th:Thm, deps:Ids |- "put-thm" rp th deps : Replay;
+      "hl:exec". rp:Replay, r:Record |- "exec" rp r : Exec;
+      "hl:exec-ty". y:YR, rp:Replay |- "exec-ty" y rp : Exec;
+      "hl:exec-tm". t:TR, rp:Replay |- "exec-tm" t rp : Exec;
+      "hl:exec-kr". k:KR, deps:Ids, rp:Replay |- "exec-kr" k deps rp : Exec;
+      "hl:exec-new-type". o:ThyR, rp:Replay, n:Str, k:Nat |- "exec-new-type" o rp n k : Exec;
+      "hl:exec-new-constant". o:ThyR, rp:Replay, n:Str, ty:Type |- "exec-new-constant" o rp n ty : Exec;
+      "hl:exec-new-axiom". o:ThyThmR, rp:Replay, tm:Term |- "exec-new-axiom" o rp tm : Exec;
+      "hl:exec-new-axiom-2". pol:Policy, rp:Replay, thy:Thy, th:Thm, tm:Term |- "exec-new-axiom-2" pol rp thy th tm : Exec;
+      "hl:exec-new-axiom-std". e:Flag, rp:Replay, thy:Thy, th:Thm |- "exec-new-axiom-std" e rp thy th : Exec;
+      "hl:exec-new-axiom-3". rp:Replay, thy:Thy, th:Thm |- "exec-new-axiom-3" rp thy th : Exec;
+      "hl:exec-new-definition". o:ThyThmR, rp:Replay, tm:Term |- "exec-new-definition" o rp tm : Exec;
+      "hl:exec-new-typedef". o:TydefR, rp:Replay, deps:Ids |- "exec-new-typedef" o rp deps : Exec;
+      "hl:exec-policy". o:Ord, rp:Replay, u:Nat |- "exec-policy" o rp u : Exec;
+      "hl:exec-policy-k". p:Policy, rp:Replay |- "exec-policy-k" p rp : Exec;
+      "hl:exec-policy-k2". o:Ord, p:Policy, rp:Replay |- "exec-policy-k2" o p rp : Exec;
+      "hl:policy-rank". p:Policy |- "policy-rank" p : Nat;
+      "hl:exec-check". e:Flag, rp:Replay |- "exec-check" e rp : Exec;
+      "hl:expect-alpha". th:Thm, hyps:Tms, c:Term |- "expect-alpha" th hyps c : Flag;
+      "hl:expect-alpha-k". o:Ord, asl:Tms, hyps:Tms |- "expect-alpha-k" o asl hyps : Flag;
+      "hl:expect-axioms". deps:Ids, listed:Ids |- "expect-axioms" deps listed : Flag;
+      "hl:expect-axioms-k". o:Ord, deps:Ids, listed:Ids |- "expect-axioms-k" o deps listed : Flag;
+    }
+    Rewrites {
+      -- ===================================================================== data
+      "not-yes". |- "hl:not"("hl:yes"()) ~> "hl:no"();
+      "not-no". |- "hl:not"("hl:no"()) ~> "hl:yes"();
+      "then-lt". o:Ord |- "hl:then"("hl:lt"(), o) ~> "hl:lt"();
+      "then-eq". o:Ord |- "hl:then"("hl:eq"(), o) ~> o;
+      "then-gt". o:Ord |- "hl:then"("hl:gt"(), o) ~> "hl:gt"();
+      "ord-is-eq-lt". |- "hl:ord-is-eq"("hl:lt"()) ~> "hl:no"();
+      "ord-is-eq-eq". |- "hl:ord-is-eq"("hl:eq"()) ~> "hl:yes"();
+      "ord-is-eq-gt". |- "hl:ord-is-eq"("hl:gt"()) ~> "hl:no"();
+      "cmp-flag-nn". |- "hl:cmp-flag"("hl:no"(), "hl:no"()) ~> "hl:eq"();
+      "cmp-flag-ny". |- "hl:cmp-flag"("hl:no"(), "hl:yes"()) ~> "hl:lt"();
+      "cmp-flag-yn". |- "hl:cmp-flag"("hl:yes"(), "hl:no"()) ~> "hl:gt"();
+      "cmp-flag-yy". |- "hl:cmp-flag"("hl:yes"(), "hl:yes"()) ~> "hl:eq"();
+      -- a hexadecimal digit as four bits, most significant first
+      "nib-0". |- "hl:nib-bits"("hl:x0"()) ~> "hl:bits4"("hl:no"(), "hl:no"(), "hl:no"(), "hl:no"());
+      "nib-1". |- "hl:nib-bits"("hl:x1"()) ~> "hl:bits4"("hl:no"(), "hl:no"(), "hl:no"(), "hl:yes"());
+      "nib-2". |- "hl:nib-bits"("hl:x2"()) ~> "hl:bits4"("hl:no"(), "hl:no"(), "hl:yes"(), "hl:no"());
+      "nib-3". |- "hl:nib-bits"("hl:x3"()) ~> "hl:bits4"("hl:no"(), "hl:no"(), "hl:yes"(), "hl:yes"());
+      "nib-4". |- "hl:nib-bits"("hl:x4"()) ~> "hl:bits4"("hl:no"(), "hl:yes"(), "hl:no"(), "hl:no"());
+      "nib-5". |- "hl:nib-bits"("hl:x5"()) ~> "hl:bits4"("hl:no"(), "hl:yes"(), "hl:no"(), "hl:yes"());
+      "nib-6". |- "hl:nib-bits"("hl:x6"()) ~> "hl:bits4"("hl:no"(), "hl:yes"(), "hl:yes"(), "hl:no"());
+      "nib-7". |- "hl:nib-bits"("hl:x7"()) ~> "hl:bits4"("hl:no"(), "hl:yes"(), "hl:yes"(), "hl:yes"());
+      "nib-8". |- "hl:nib-bits"("hl:x8"()) ~> "hl:bits4"("hl:yes"(), "hl:no"(), "hl:no"(), "hl:no"());
+      "nib-9". |- "hl:nib-bits"("hl:x9"()) ~> "hl:bits4"("hl:yes"(), "hl:no"(), "hl:no"(), "hl:yes"());
+      "nib-a". |- "hl:nib-bits"("hl:xa"()) ~> "hl:bits4"("hl:yes"(), "hl:no"(), "hl:yes"(), "hl:no"());
+      "nib-b". |- "hl:nib-bits"("hl:xb"()) ~> "hl:bits4"("hl:yes"(), "hl:no"(), "hl:yes"(), "hl:yes"());
+      "nib-c". |- "hl:nib-bits"("hl:xc"()) ~> "hl:bits4"("hl:yes"(), "hl:yes"(), "hl:no"(), "hl:no"());
+      "nib-d". |- "hl:nib-bits"("hl:xd"()) ~> "hl:bits4"("hl:yes"(), "hl:yes"(), "hl:no"(), "hl:yes"());
+      "nib-e". |- "hl:nib-bits"("hl:xe"()) ~> "hl:bits4"("hl:yes"(), "hl:yes"(), "hl:yes"(), "hl:no"());
+      "nib-f". |- "hl:nib-bits"("hl:xf"()) ~> "hl:bits4"("hl:yes"(), "hl:yes"(), "hl:yes"(), "hl:yes"());
+      "cmp-nib". a:Nib, b:Nib, a3:Flag, a2:Flag, a1:Flag, a0:Flag, b3:Flag, b2:Flag, b1:Flag, b0:Flag, o3:Ord, o2:Ord, o1:Ord, o0:Ord, r1:Ord, r2:Ord, r3:Ord |
+          "hl:nib-bits"(a) ~> "hl:bits4"(a3, a2, a1, a0), "hl:nib-bits"(b) ~> "hl:bits4"(b3, b2, b1, b0),
+          "hl:cmp-flag"(a3, b3) ~> o3, "hl:cmp-flag"(a2, b2) ~> o2, "hl:cmp-flag"(a1, b1) ~> o1, "hl:cmp-flag"(a0, b0) ~> o0,
+          "hl:then"(o1, o0) ~> r1, "hl:then"(o2, r1) ~> r2, "hl:then"(o3, r2) ~> r3
+        |- "hl:cmp-nib"(a, b) ~> r3;
+      "cmp-byte". h1:Nib, l1:Nib, h2:Nib, l2:Nib, oh:Ord, ol:Ord, r:Ord |
+          "hl:cmp-nib"(h1, h2) ~> oh, "hl:cmp-nib"(l1, l2) ~> ol, "hl:then"(oh, ol) ~> r
+        |- "hl:cmp-byte"("hl:byte"(h1, l1), "hl:byte"(h2, l2)) ~> r;
+      -- OCaml's compare on strings: bytes from the first, unsigned; a proper prefix first
+      "cmp-str-nn". |- "hl:cmp-str"("hl:nnil"(), "hl:nnil"()) ~> "hl:eq"();
+      "cmp-str-nc". y:Byte, ys:Str |- "hl:cmp-str"("hl:nnil"(), "hl:ncons"(y, ys)) ~> "hl:lt"();
+      "cmp-str-cn". x:Byte, xs:Str |- "hl:cmp-str"("hl:ncons"(x, xs), "hl:nnil"()) ~> "hl:gt"();
+      "cmp-str-cc". x:Byte, xs:Str, y:Byte, ys:Str, o:Ord, r:Ord | "hl:cmp-byte"(x, y) ~> o, "hl:cmp-str-k"(o, xs, ys) ~> r
+        |- "hl:cmp-str"("hl:ncons"(x, xs), "hl:ncons"(y, ys)) ~> r;
+      "cmp-str-k-lt". xs:Str, ys:Str |- "hl:cmp-str-k"("hl:lt"(), xs, ys) ~> "hl:lt"();
+      "cmp-str-k-gt". xs:Str, ys:Str |- "hl:cmp-str-k"("hl:gt"(), xs, ys) ~> "hl:gt"();
+      "cmp-str-k-eq". xs:Str, ys:Str, r:Ord | "hl:cmp-str"(xs, ys) ~> r |- "hl:cmp-str-k"("hl:eq"(), xs, ys) ~> r;
+      "str-eq". a:Str, b:Str, o:Ord, e:Flag | "hl:cmp-str"(a, b) ~> o, "hl:ord-is-eq"(o) ~> e |- "hl:str-eq"(a, b) ~> e;
+      -- s ^ "'"
+      "str-prime-nil". |- "hl:str-prime"("hl:nnil"()) ~> "hl:ncons"("hl:byte"("hl:x2"(), "hl:x7"()), "hl:nnil"());
+      "str-prime-cons". x:Byte, xs:Str, ys:Str | "hl:str-prime"(xs) ~> ys |- "hl:str-prime"("hl:ncons"(x, xs)) ~> "hl:ncons"(x, ys);
+      "ss-mem-nil". x:Str |- "hl:ss-mem"(x, "hl:ss-nil"()) ~> "hl:no"();
+      "ss-mem-cons". x:Str, y:Str, ys:Strs, e:Flag, r:Flag | "hl:str-eq"(x, y) ~> e, "hl:ss-mem-k"(e, x, ys) ~> r
+        |- "hl:ss-mem"(x, "hl:ss-cons"(y, ys)) ~> r;
+      "ss-mem-k-yes". x:Str, ys:Strs |- "hl:ss-mem-k"("hl:yes"(), x, ys) ~> "hl:yes"();
+      "ss-mem-k-no". x:Str, ys:Strs, r:Flag | "hl:ss-mem"(x, ys) ~> r |- "hl:ss-mem-k"("hl:no"(), x, ys) ~> r;
+      -- numerals, least significant digit first; zero is nz, and nb0 never wraps nz
+      "inc-z". |- "hl:nat-inc"("hl:nz"()) ~> "hl:nb1"("hl:nz"());
+      "inc-0". n:Nat |- "hl:nat-inc"("hl:nb0"(n)) ~> "hl:nb1"(n);
+      "inc-1". n:Nat, m:Nat | "hl:nat-inc"(n) ~> m |- "hl:nat-inc"("hl:nb1"(n)) ~> "hl:nb0"(m);
+      "cmp-nat-zz". |- "hl:cmp-nat"("hl:nz"(), "hl:nz"()) ~> "hl:eq"();
+      "cmp-nat-z0". m:Nat |- "hl:cmp-nat"("hl:nz"(), "hl:nb0"(m)) ~> "hl:lt"();
+      "cmp-nat-z1". m:Nat |- "hl:cmp-nat"("hl:nz"(), "hl:nb1"(m)) ~> "hl:lt"();
+      "cmp-nat-0z". n:Nat |- "hl:cmp-nat"("hl:nb0"(n), "hl:nz"()) ~> "hl:gt"();
+      "cmp-nat-1z". n:Nat |- "hl:cmp-nat"("hl:nb1"(n), "hl:nz"()) ~> "hl:gt"();
+      "cmp-nat-00". n:Nat, m:Nat, o:Ord | "hl:cmp-nat"(n, m) ~> o |- "hl:cmp-nat"("hl:nb0"(n), "hl:nb0"(m)) ~> o;
+      "cmp-nat-11". n:Nat, m:Nat, o:Ord | "hl:cmp-nat"(n, m) ~> o |- "hl:cmp-nat"("hl:nb1"(n), "hl:nb1"(m)) ~> o;
+      "cmp-nat-01". n:Nat, m:Nat, o:Ord, r:Ord | "hl:cmp-nat"(n, m) ~> o, "hl:then"(o, "hl:lt"()) ~> r |- "hl:cmp-nat"("hl:nb0"(n), "hl:nb1"(m)) ~> r;
+      "cmp-nat-10". n:Nat, m:Nat, o:Ord, r:Ord | "hl:cmp-nat"(n, m) ~> o, "hl:then"(o, "hl:gt"()) ~> r |- "hl:cmp-nat"("hl:nb1"(n), "hl:nb0"(m)) ~> r;
+      -- sorted, repetition-free id lists (axiom dependencies)
+      "ids-merge-nil". b:Ids |- "hl:ids-merge"("hl:ids-nil"(), b) ~> b;
+      "ids-merge-cons-nil". x:Nat, xs:Ids |- "hl:ids-merge"("hl:ids-cons"(x, xs), "hl:ids-nil"()) ~> "hl:ids-cons"(x, xs);
+      "ids-merge-cons-cons". x:Nat, xs:Ids, y:Nat, ys:Ids, o:Ord, r:Ids | "hl:cmp-nat"(x, y) ~> o, "hl:ids-merge-k"(o, x, xs, y, ys) ~> r
+        |- "hl:ids-merge"("hl:ids-cons"(x, xs), "hl:ids-cons"(y, ys)) ~> r;
+      "ids-merge-k-lt". x:Nat, xs:Ids, y:Nat, ys:Ids, r:Ids | "hl:ids-merge"(xs, "hl:ids-cons"(y, ys)) ~> r
+        |- "hl:ids-merge-k"("hl:lt"(), x, xs, y, ys) ~> "hl:ids-cons"(x, r);
+      "ids-merge-k-eq". x:Nat, xs:Ids, y:Nat, ys:Ids, r:Ids | "hl:ids-merge"(xs, ys) ~> r
+        |- "hl:ids-merge-k"("hl:eq"(), x, xs, y, ys) ~> "hl:ids-cons"(x, r);
+      "ids-merge-k-gt". x:Nat, xs:Ids, y:Nat, ys:Ids, r:Ids | "hl:ids-merge"("hl:ids-cons"(x, xs), ys) ~> r
+        |- "hl:ids-merge-k"("hl:gt"(), x, xs, y, ys) ~> "hl:ids-cons"(y, r);
+      "ids-set-nil". |- "hl:ids-set"("hl:ids-nil"()) ~> "hl:ids-nil"();
+      "ids-set-cons". x:Nat, xs:Ids, s:Ids, r:Ids | "hl:ids-set"(xs) ~> s, "hl:ids-merge"("hl:ids-cons"(x, "hl:ids-nil"()), s) ~> r
+        |- "hl:ids-set"("hl:ids-cons"(x, xs)) ~> r;
+      "ids-count-nil". |- "hl:ids-count"("hl:ids-nil"()) ~> "hl:nz"();
+      "ids-count-cons". x:Nat, xs:Ids, n:Nat, m:Nat | "hl:ids-count"(xs) ~> n, "hl:nat-inc"(n) ~> m |- "hl:ids-count"("hl:ids-cons"(x, xs)) ~> m;
+      "ids-eq-nn". |- "hl:ids-eq"("hl:ids-nil"(), "hl:ids-nil"()) ~> "hl:yes"();
+      "ids-eq-nc". y:Nat, ys:Ids |- "hl:ids-eq"("hl:ids-nil"(), "hl:ids-cons"(y, ys)) ~> "hl:no"();
+      "ids-eq-cn". x:Nat, xs:Ids |- "hl:ids-eq"("hl:ids-cons"(x, xs), "hl:ids-nil"()) ~> "hl:no"();
+      "ids-eq-cc". x:Nat, xs:Ids, y:Nat, ys:Ids, o:Ord, r:Flag | "hl:cmp-nat"(x, y) ~> o, "hl:ids-eq-k"(o, xs, ys) ~> r
+        |- "hl:ids-eq"("hl:ids-cons"(x, xs), "hl:ids-cons"(y, ys)) ~> r;
+      "ids-eq-k-lt". xs:Ids, ys:Ids |- "hl:ids-eq-k"("hl:lt"(), xs, ys) ~> "hl:no"();
+      "ids-eq-k-gt". xs:Ids, ys:Ids |- "hl:ids-eq-k"("hl:gt"(), xs, ys) ~> "hl:no"();
+      "ids-eq-k-eq". xs:Ids, ys:Ids, r:Flag | "hl:ids-eq"(xs, ys) ~> r |- "hl:ids-eq-k"("hl:eq"(), xs, ys) ~> r;
+
+      -- names spelled out in fusion.ml and in the standard theory (bytes in hexadecimal)
+      "nm-bool". |- "hl:nm-bool"() ~> "hl:ncons"("hl:byte"("hl:x6"(), "hl:x2"()), "hl:ncons"("hl:byte"("hl:x6"(), "hl:xf"()), "hl:ncons"("hl:byte"("hl:x6"(), "hl:xf"()), "hl:ncons"("hl:byte"("hl:x6"(), "hl:xc"()), "hl:nnil"()))));
+      "nm-fun". |- "hl:nm-fun"() ~> "hl:ncons"("hl:byte"("hl:x6"(), "hl:x6"()), "hl:ncons"("hl:byte"("hl:x7"(), "hl:x5"()), "hl:ncons"("hl:byte"("hl:x6"(), "hl:xe"()), "hl:nnil"())));
+      "nm-eq". |- "hl:nm-eq"() ~> "hl:ncons"("hl:byte"("hl:x3"(), "hl:xd"()), "hl:nnil"());
+      "nm-A". |- "hl:nm-A"() ~> "hl:ncons"("hl:byte"("hl:x4"(), "hl:x1"()), "hl:nnil"());
+      "nm-B". |- "hl:nm-B"() ~> "hl:ncons"("hl:byte"("hl:x4"(), "hl:x2"()), "hl:nnil"());
+      "nm-a". |- "hl:nm-a"() ~> "hl:ncons"("hl:byte"("hl:x6"(), "hl:x1"()), "hl:nnil"());
+      "nm-r". |- "hl:nm-r"() ~> "hl:ncons"("hl:byte"("hl:x7"(), "hl:x2"()), "hl:nnil"());
+      "nm-ind". |- "hl:nm-ind"() ~> "hl:ncons"("hl:byte"("hl:x6"(), "hl:x9"()), "hl:ncons"("hl:byte"("hl:x6"(), "hl:xe"()), "hl:ncons"("hl:byte"("hl:x6"(), "hl:x4"()), "hl:nnil"())));
+      "nm-at". |- "hl:nm-at"() ~> "hl:ncons"("hl:byte"("hl:x4"(), "hl:x0"()), "hl:nnil"());
+      "nm-T". |- "hl:nm-T"() ~> "hl:ncons"("hl:byte"("hl:x5"(), "hl:x4"()), "hl:nnil"());
+      "nm-and". |- "hl:nm-and"() ~> "hl:ncons"("hl:byte"("hl:x2"(), "hl:xf"()), "hl:ncons"("hl:byte"("hl:x5"(), "hl:xc"()), "hl:nnil"()));
+      "nm-imp". |- "hl:nm-imp"() ~> "hl:ncons"("hl:byte"("hl:x3"(), "hl:xd"()), "hl:ncons"("hl:byte"("hl:x3"(), "hl:xd"()), "hl:ncons"("hl:byte"("hl:x3"(), "hl:xe"()), "hl:nnil"())));
+      "nm-all". |- "hl:nm-all"() ~> "hl:ncons"("hl:byte"("hl:x2"(), "hl:x1"()), "hl:nnil"());
+      "nm-ex". |- "hl:nm-ex"() ~> "hl:ncons"("hl:byte"("hl:x3"(), "hl:xf"()), "hl:nnil"());
+      "nm-F". |- "hl:nm-F"() ~> "hl:ncons"("hl:byte"("hl:x4"(), "hl:x6"()), "hl:nnil"());
+      "nm-neg". |- "hl:nm-neg"() ~> "hl:ncons"("hl:byte"("hl:x7"(), "hl:xe"()), "hl:nnil"());
+      "nm-one-one". |- "hl:nm-one-one"() ~> "hl:ncons"("hl:byte"("hl:x4"(), "hl:xf"()), "hl:ncons"("hl:byte"("hl:x4"(), "hl:xe"()), "hl:ncons"("hl:byte"("hl:x4"(), "hl:x5"()), "hl:ncons"("hl:byte"("hl:x5"(), "hl:xf"()), "hl:ncons"("hl:byte"("hl:x4"(), "hl:xf"()), "hl:ncons"("hl:byte"("hl:x4"(), "hl:xe"()), "hl:ncons"("hl:byte"("hl:x4"(), "hl:x5"()), "hl:nnil"())))))));
+      "nm-onto". |- "hl:nm-onto"() ~> "hl:ncons"("hl:byte"("hl:x4"(), "hl:xf"()), "hl:ncons"("hl:byte"("hl:x4"(), "hl:xe"()), "hl:ncons"("hl:byte"("hl:x5"(), "hl:x4"()), "hl:ncons"("hl:byte"("hl:x4"(), "hl:xf"()), "hl:nnil"()))));
+      "nm-p". |- "hl:nm-p"() ~> "hl:ncons"("hl:byte"("hl:x7"(), "hl:x0"()), "hl:nnil"());
+      "nm-q". |- "hl:nm-q"() ~> "hl:ncons"("hl:byte"("hl:x7"(), "hl:x1"()), "hl:nnil"());
+      "nm-f". |- "hl:nm-f"() ~> "hl:ncons"("hl:byte"("hl:x6"(), "hl:x6"()), "hl:nnil"());
+      "nm-P". |- "hl:nm-P"() ~> "hl:ncons"("hl:byte"("hl:x5"(), "hl:x0"()), "hl:nnil"());
+      "nm-x". |- "hl:nm-x"() ~> "hl:ncons"("hl:byte"("hl:x7"(), "hl:x8"()), "hl:nnil"());
+      "nm-t". |- "hl:nm-t"() ~> "hl:ncons"("hl:byte"("hl:x7"(), "hl:x4"()), "hl:nnil"());
+      "nm-x1". |- "hl:nm-x1"() ~> "hl:ncons"("hl:byte"("hl:x7"(), "hl:x8"()), "hl:ncons"("hl:byte"("hl:x3"(), "hl:x1"()), "hl:nnil"()));
+      "nm-x2". |- "hl:nm-x2"() ~> "hl:ncons"("hl:byte"("hl:x7"(), "hl:x8"()), "hl:ncons"("hl:byte"("hl:x3"(), "hl:x2"()), "hl:nnil"()));
+      "nm-y". |- "hl:nm-y"() ~> "hl:ncons"("hl:byte"("hl:x7"(), "hl:x9"()), "hl:nnil"());
+      "nm-g2064". |- "hl:nm-g2064"() ~> "hl:ncons"("hl:byte"("hl:x5"(), "hl:xf"()), "hl:ncons"("hl:byte"("hl:x3"(), "hl:x2"()), "hl:ncons"("hl:byte"("hl:x3"(), "hl:x0"()), "hl:ncons"("hl:byte"("hl:x3"(), "hl:x6"()), "hl:ncons"("hl:byte"("hl:x3"(), "hl:x4"()), "hl:nnil"())))));
+      "nm-g2069". |- "hl:nm-g2069"() ~> "hl:ncons"("hl:byte"("hl:x5"(), "hl:xf"()), "hl:ncons"("hl:byte"("hl:x3"(), "hl:x2"()), "hl:ncons"("hl:byte"("hl:x3"(), "hl:x0"()), "hl:ncons"("hl:byte"("hl:x3"(), "hl:x6"()), "hl:ncons"("hl:byte"("hl:x3"(), "hl:x9"()), "hl:nnil"())))));
+
+      -- =================================================================== syntax
+      -- bool_ty, aty, mk_fun_ty, and the pattern Tyapp("fun",[dty;rty])
+      "bool-ty". b:Str | "hl:nm-bool"() ~> b |- "hl:bool-ty"() ~> "hl:Tyapp"(b, "hl:tynil"());
+      "aty". a:Str | "hl:nm-A"() ~> a |- "hl:aty"() ~> "hl:Tyvar"(a);
+      "mk-fun-ty". d:Type, r:Type, f:Str | "hl:nm-fun"() ~> f |- "hl:mk-fun-ty"(d, r) ~> "hl:Tyapp"(f, "hl:tycons"(d, "hl:tycons"(r, "hl:tynil"())));
+      "dest-fun-var". n:Str |- "hl:dest-fun-ty"("hl:Tyvar"(n)) ~> "hl:not-fun"();
+      "dest-fun-0". n:Str |- "hl:dest-fun-ty"("hl:Tyapp"(n, "hl:tynil"())) ~> "hl:not-fun"();
+      "dest-fun-1". n:Str, a:Type |- "hl:dest-fun-ty"("hl:Tyapp"(n, "hl:tycons"(a, "hl:tynil"()))) ~> "hl:not-fun"();
+      "dest-fun-2". n:Str, d:Type, r:Type, f:Str, e:Flag, out:FunTy | "hl:nm-fun"() ~> f, "hl:str-eq"(n, f) ~> e, "hl:dest-fun-k"(e, d, r) ~> out
+        |- "hl:dest-fun-ty"("hl:Tyapp"(n, "hl:tycons"(d, "hl:tycons"(r, "hl:tynil"())))) ~> out;
+      "dest-fun-3". n:Str, a:Type, b:Type, c:Type, rest:Tys |- "hl:dest-fun-ty"("hl:Tyapp"(n, "hl:tycons"(a, "hl:tycons"(b, "hl:tycons"(c, rest))))) ~> "hl:not-fun"();
+      "dest-fun-k-yes". d:Type, r:Type |- "hl:dest-fun-k"("hl:yes"(), d, r) ~> "hl:fun-parts"(d, r);
+      "dest-fun-k-no". d:Type, r:Type |- "hl:dest-fun-k"("hl:no"(), d, r) ~> "hl:not-fun"();
+
+      -- OCaml's compare on hol_type: Tyvar < Tyapp, then the fields in order; lists: [] < h::t
+      "cmp-type-vv". a:Str, b:Str, o:Ord | "hl:cmp-str"(a, b) ~> o |- "hl:cmp-type"("hl:Tyvar"(a), "hl:Tyvar"(b)) ~> o;
+      "cmp-type-va". a:Str, n:Str, args:Tys |- "hl:cmp-type"("hl:Tyvar"(a), "hl:Tyapp"(n, args)) ~> "hl:lt"();
+      "cmp-type-av". a:Str, n:Str, args:Tys |- "hl:cmp-type"("hl:Tyapp"(n, args), "hl:Tyvar"(a)) ~> "hl:gt"();
+      "cmp-type-aa". n1:Str, a1:Tys, n2:Str, a2:Tys, o:Ord, r:Ord | "hl:cmp-str"(n1, n2) ~> o, "hl:cmp-type-k"(o, a1, a2) ~> r
+        |- "hl:cmp-type"("hl:Tyapp"(n1, a1), "hl:Tyapp"(n2, a2)) ~> r;
+      "cmp-type-k-lt". a1:Tys, a2:Tys |- "hl:cmp-type-k"("hl:lt"(), a1, a2) ~> "hl:lt"();
+      "cmp-type-k-gt". a1:Tys, a2:Tys |- "hl:cmp-type-k"("hl:gt"(), a1, a2) ~> "hl:gt"();
+      "cmp-type-k-eq". a1:Tys, a2:Tys, r:Ord | "hl:cmp-types"(a1, a2) ~> r |- "hl:cmp-type-k"("hl:eq"(), a1, a2) ~> r;
+      "cmp-types-nn". |- "hl:cmp-types"("hl:tynil"(), "hl:tynil"()) ~> "hl:eq"();
+      "cmp-types-nc". y:Type, ys:Tys |- "hl:cmp-types"("hl:tynil"(), "hl:tycons"(y, ys)) ~> "hl:lt"();
+      "cmp-types-cn". x:Type, xs:Tys |- "hl:cmp-types"("hl:tycons"(x, xs), "hl:tynil"()) ~> "hl:gt"();
+      "cmp-types-cc". x:Type, xs:Tys, y:Type, ys:Tys, o:Ord, r:Ord | "hl:cmp-type"(x, y) ~> o, "hl:cmp-types-k"(o, xs, ys) ~> r
+        |- "hl:cmp-types"("hl:tycons"(x, xs), "hl:tycons"(y, ys)) ~> r;
+      "cmp-types-k-lt". xs:Tys, ys:Tys |- "hl:cmp-types-k"("hl:lt"(), xs, ys) ~> "hl:lt"();
+      "cmp-types-k-gt". xs:Tys, ys:Tys |- "hl:cmp-types-k"("hl:gt"(), xs, ys) ~> "hl:gt"();
+      "cmp-types-k-eq". xs:Tys, ys:Tys, r:Ord | "hl:cmp-types"(xs, ys) ~> r |- "hl:cmp-types-k"("hl:eq"(), xs, ys) ~> r;
+      "ty-eq". a:Type, b:Type, o:Ord, e:Flag | "hl:cmp-type"(a, b) ~> o, "hl:ord-is-eq"(o) ~> e |- "hl:ty-eq"(a, b) ~> e;
+
+      -- OCaml's compare on term: Var < Const < Comb < Abs, then the fields in order
+      "cmp-leaf". n1:Str, t1:Type, n2:Str, t2:Type, o:Ord, r:Ord | "hl:cmp-str"(n1, n2) ~> o, "hl:cmp-leaf-k"(o, t1, t2) ~> r
+        |- "hl:cmp-leaf"(n1, t1, n2, t2) ~> r;
+      "cmp-leaf-k-lt". t1:Type, t2:Type |- "hl:cmp-leaf-k"("hl:lt"(), t1, t2) ~> "hl:lt"();
+      "cmp-leaf-k-gt". t1:Type, t2:Type |- "hl:cmp-leaf-k"("hl:gt"(), t1, t2) ~> "hl:gt"();
+      "cmp-leaf-k-eq". t1:Type, t2:Type, r:Ord | "hl:cmp-type"(t1, t2) ~> r |- "hl:cmp-leaf-k"("hl:eq"(), t1, t2) ~> r;
+      "cmp-term-vv". n1:Str, t1:Type, n2:Str, t2:Type, r:Ord | "hl:cmp-leaf"(n1, t1, n2, t2) ~> r |- "hl:cmp-term"("hl:Var"(n1, t1), "hl:Var"(n2, t2)) ~> r;
+      "cmp-term-vc". n1:Str, t1:Type, n2:Str, t2:Type |- "hl:cmp-term"("hl:Var"(n1, t1), "hl:Const"(n2, t2)) ~> "hl:lt"();
+      "cmp-term-vm". n1:Str, t1:Type, f:Term, x:Term |- "hl:cmp-term"("hl:Var"(n1, t1), "hl:Comb"(f, x)) ~> "hl:lt"();
+      "cmp-term-va". n1:Str, t1:Type, v:Term, b:Term |- "hl:cmp-term"("hl:Var"(n1, t1), "hl:Abs"(v, b)) ~> "hl:lt"();
+      "cmp-term-cv". n1:Str, t1:Type, n2:Str, t2:Type |- "hl:cmp-term"("hl:Const"(n1, t1), "hl:Var"(n2, t2)) ~> "hl:gt"();
+      "cmp-term-cc". n1:Str, t1:Type, n2:Str, t2:Type, r:Ord | "hl:cmp-leaf"(n1, t1, n2, t2) ~> r |- "hl:cmp-term"("hl:Const"(n1, t1), "hl:Const"(n2, t2)) ~> r;
+      "cmp-term-cm". n1:Str, t1:Type, f:Term, x:Term |- "hl:cmp-term"("hl:Const"(n1, t1), "hl:Comb"(f, x)) ~> "hl:lt"();
+      "cmp-term-ca". n1:Str, t1:Type, v:Term, b:Term |- "hl:cmp-term"("hl:Const"(n1, t1), "hl:Abs"(v, b)) ~> "hl:lt"();
+      "cmp-term-mv". n1:Str, t1:Type, f:Term, x:Term |- "hl:cmp-term"("hl:Comb"(f, x), "hl:Var"(n1, t1)) ~> "hl:gt"();
+      "cmp-term-mc". n1:Str, t1:Type, f:Term, x:Term |- "hl:cmp-term"("hl:Comb"(f, x), "hl:Const"(n1, t1)) ~> "hl:gt"();
+      "cmp-term-mm". f1:Term, x1:Term, f2:Term, x2:Term, o:Ord, r:Ord | "hl:cmp-term"(f1, f2) ~> o, "hl:cmp-term-k"(o, x1, x2) ~> r
+        |- "hl:cmp-term"("hl:Comb"(f1, x1), "hl:Comb"(f2, x2)) ~> r;
+      "cmp-term-ma". f:Term, x:Term, v:Term, b:Term |- "hl:cmp-term"("hl:Comb"(f, x), "hl:Abs"(v, b)) ~> "hl:lt"();
+      "cmp-term-av". n1:Str, t1:Type, v:Term, b:Term |- "hl:cmp-term"("hl:Abs"(v, b), "hl:Var"(n1, t1)) ~> "hl:gt"();
+      "cmp-term-ac". n1:Str, t1:Type, v:Term, b:Term |- "hl:cmp-term"("hl:Abs"(v, b), "hl:Const"(n1, t1)) ~> "hl:gt"();
+      "cmp-term-am". f:Term, x:Term, v:Term, b:Term |- "hl:cmp-term"("hl:Abs"(v, b), "hl:Comb"(f, x)) ~> "hl:gt"();
+      "cmp-term-aa". v1:Term, b1:Term, v2:Term, b2:Term, o:Ord, r:Ord | "hl:cmp-term"(v1, v2) ~> o, "hl:cmp-term-k"(o, b1, b2) ~> r
+        |- "hl:cmp-term"("hl:Abs"(v1, b1), "hl:Abs"(v2, b2)) ~> r;
+      "cmp-term-k-lt". a:Term, b:Term |- "hl:cmp-term-k"("hl:lt"(), a, b) ~> "hl:lt"();
+      "cmp-term-k-gt". a:Term, b:Term |- "hl:cmp-term-k"("hl:gt"(), a, b) ~> "hl:gt"();
+      "cmp-term-k-eq". a:Term, b:Term, r:Ord | "hl:cmp-term"(a, b) ~> r |- "hl:cmp-term-k"("hl:eq"(), a, b) ~> r;
+      "tm-eq". a:Term, b:Term, o:Ord, e:Flag | "hl:cmp-term"(a, b) ~> o, "hl:ord-is-eq"(o) ~> e |- "hl:tm-eq"(a, b) ~> e;
+      "tms-eq-nn". |- "hl:tms-eq"("hl:tmnil"(), "hl:tmnil"()) ~> "hl:yes"();
+      "tms-eq-nc". y:Term, ys:Tms |- "hl:tms-eq"("hl:tmnil"(), "hl:tmcons"(y, ys)) ~> "hl:no"();
+      "tms-eq-cn". x:Term, xs:Tms |- "hl:tms-eq"("hl:tmcons"(x, xs), "hl:tmnil"()) ~> "hl:no"();
+      "tms-eq-cc". x:Term, xs:Tms, y:Term, ys:Tms, e:Flag, r:Flag | "hl:tm-eq"(x, y) ~> e, "hl:tms-eq-k"(e, xs, ys) ~> r
+        |- "hl:tms-eq"("hl:tmcons"(x, xs), "hl:tmcons"(y, ys)) ~> r;
+      "tms-eq-k-no". xs:Tms, ys:Tms |- "hl:tms-eq-k"("hl:no"(), xs, ys) ~> "hl:no"();
+      "tms-eq-k-yes". xs:Tms, ys:Tms, r:Flag | "hl:tms-eq"(xs, ys) ~> r |- "hl:tms-eq-k"("hl:yes"(), xs, ys) ~> r;
+
+      -- lib.ml on lists of types: mem, insert, union = itlist insert, subset, sort (<=), length
+      "ty-mem-nil". x:Type |- "hl:ty-mem"(x, "hl:tynil"()) ~> "hl:no"();
+      "ty-mem-cons". x:Type, y:Type, ys:Tys, e:Flag, r:Flag | "hl:ty-eq"(x, y) ~> e, "hl:ty-mem-k"(e, x, ys) ~> r |- "hl:ty-mem"(x, "hl:tycons"(y, ys)) ~> r;
+      "ty-mem-k-yes". x:Type, ys:Tys |- "hl:ty-mem-k"("hl:yes"(), x, ys) ~> "hl:yes"();
+      "ty-mem-k-no". x:Type, ys:Tys, r:Flag | "hl:ty-mem"(x, ys) ~> r |- "hl:ty-mem-k"("hl:no"(), x, ys) ~> r;
+      "ty-insert". x:Type, l:Tys, e:Flag, r:Tys | "hl:ty-mem"(x, l) ~> e, "hl:ty-insert-k"(e, x, l) ~> r |- "hl:ty-insert"(x, l) ~> r;
+      "ty-insert-k-yes". x:Type, l:Tys |- "hl:ty-insert-k"("hl:yes"(), x, l) ~> l;
+      "ty-insert-k-no". x:Type, l:Tys |- "hl:ty-insert-k"("hl:no"(), x, l) ~> "hl:tycons"(x, l);
+      "ty-union-nil". l2:Tys |- "hl:ty-union"("hl:tynil"(), l2) ~> l2;
+      "ty-union-cons". h:Type, t:Tys, l2:Tys, u:Tys, r:Tys | "hl:ty-union"(t, l2) ~> u, "hl:ty-insert"(h, u) ~> r |- "hl:ty-union"("hl:tycons"(h, t), l2) ~> r;
+      "ty-subset-nil". l2:Tys |- "hl:ty-subset"("hl:tynil"(), l2) ~> "hl:yes"();
+      "ty-subset-cons". h:Type, t:Tys, l2:Tys, e:Flag, r:Flag | "hl:ty-mem"(h, l2) ~> e, "hl:ty-subset-k"(e, t, l2) ~> r |- "hl:ty-subset"("hl:tycons"(h, t), l2) ~> r;
+      "ty-subset-k-no". t:Tys, l2:Tys |- "hl:ty-subset-k"("hl:no"(), t, l2) ~> "hl:no"();
+      "ty-subset-k-yes". t:Tys, l2:Tys, r:Flag | "hl:ty-subset"(t, l2) ~> r |- "hl:ty-subset-k"("hl:yes"(), t, l2) ~> r;
+      -- sort (<=) on distinct elements gives the ascending order; insertion sort computes it
+      "ty-sort-nil". |- "hl:ty-sort"("hl:tynil"()) ~> "hl:tynil"();
+      "ty-sort-cons". x:Type, xs:Tys, s:Tys, r:Tys | "hl:ty-sort"(xs) ~> s, "hl:ty-sort-insert"(x, s) ~> r |- "hl:ty-sort"("hl:tycons"(x, xs)) ~> r;
+      "ty-sort-insert-nil". x:Type |- "hl:ty-sort-insert"(x, "hl:tynil"()) ~> "hl:tycons"(x, "hl:tynil"());
+      "ty-sort-insert-cons". x:Type, y:Type, ys:Tys, o:Ord, r:Tys | "hl:cmp-type"(x, y) ~> o, "hl:ty-sort-insert-k"(o, x, y, ys) ~> r
+        |- "hl:ty-sort-insert"(x, "hl:tycons"(y, ys)) ~> r;
+      "ty-sort-insert-k-lt". x:Type, y:Type, ys:Tys |- "hl:ty-sort-insert-k"("hl:lt"(), x, y, ys) ~> "hl:tycons"(x, "hl:tycons"(y, ys));
+      "ty-sort-insert-k-eq". x:Type, y:Type, ys:Tys |- "hl:ty-sort-insert-k"("hl:eq"(), x, y, ys) ~> "hl:tycons"(x, "hl:tycons"(y, ys));
+      "ty-sort-insert-k-gt". x:Type, y:Type, ys:Tys, r:Tys | "hl:ty-sort-insert"(x, ys) ~> r |- "hl:ty-sort-insert-k"("hl:gt"(), x, y, ys) ~> "hl:tycons"(y, r);
+      "ty-length-nil". |- "hl:ty-length"("hl:tynil"()) ~> "hl:nz"();
+      "ty-length-cons". x:Type, xs:Tys, n:Nat, m:Nat | "hl:ty-length"(xs) ~> n, "hl:nat-inc"(n) ~> m |- "hl:ty-length"("hl:tycons"(x, xs)) ~> m;
+
+      -- tyvars: Tyapp(_,args) -> itlist (union o tyvars) args [] | Tyvar v -> [tv]
+      "tyvars-var". n:Str |- "hl:tyvars"("hl:Tyvar"(n)) ~> "hl:tycons"("hl:Tyvar"(n), "hl:tynil"());
+      "tyvars-app". n:Str, args:Tys, r:Tys | "hl:tyvars-list"(args) ~> r |- "hl:tyvars"("hl:Tyapp"(n, args)) ~> r;
+      "tyvars-list-nil". |- "hl:tyvars-list"("hl:tynil"()) ~> "hl:tynil"();
+      "tyvars-list-cons". a:Type, rest:Tys, v:Tys, w:Tys, r:Tys | "hl:tyvars"(a) ~> v, "hl:tyvars-list"(rest) ~> w, "hl:ty-union"(v, w) ~> r
+        |- "hl:tyvars-list"("hl:tycons"(a, rest)) ~> r;
+
+      -- type_subst: Tyapp -> map; Tyvar -> rev_assocd ty i ty (first pair whose key is ty)
+      "typ-rev-assocd-nil". key:Type, d:Type |- "hl:typ-rev-assocd"(key, "hl:typ-nil"(), d) ~> d;
+      "typ-rev-assocd-cons". key:Type, val:Type, k2:Type, xs:TyPairs, d:Type, e:Flag, r:Type | "hl:ty-eq"(k2, key) ~> e, "hl:typ-rev-assocd-k"(e, key, val, xs, d) ~> r
+        |- "hl:typ-rev-assocd"(key, "hl:typ-cons"(val, k2, xs), d) ~> r;
+      "typ-rev-assocd-k-yes". key:Type, val:Type, xs:TyPairs, d:Type |- "hl:typ-rev-assocd-k"("hl:yes"(), key, val, xs, d) ~> val;
+      "typ-rev-assocd-k-no". key:Type, val:Type, xs:TyPairs, d:Type, r:Type | "hl:typ-rev-assocd"(key, xs, d) ~> r |- "hl:typ-rev-assocd-k"("hl:no"(), key, val, xs, d) ~> r;
+      "type-subst-var". i:TyPairs, n:Str, r:Type | "hl:typ-rev-assocd"("hl:Tyvar"(n), i, "hl:Tyvar"(n)) ~> r |- "hl:type-subst"(i, "hl:Tyvar"(n)) ~> r;
+      "type-subst-app". i:TyPairs, n:Str, args:Tys, args2:Tys | "hl:type-subst-list"(i, args) ~> args2 |- "hl:type-subst"(i, "hl:Tyapp"(n, args)) ~> "hl:Tyapp"(n, args2);
+      "type-subst-list-nil". i:TyPairs |- "hl:type-subst-list"(i, "hl:tynil"()) ~> "hl:tynil"();
+      "type-subst-list-cons". i:TyPairs, a:Type, rest:Tys, a2:Type, rest2:Tys | "hl:type-subst"(i, a) ~> a2, "hl:type-subst-list"(i, rest) ~> rest2
+        |- "hl:type-subst-list"(i, "hl:tycons"(a, rest)) ~> "hl:tycons"(a2, rest2);
+
+      -- lib.ml on lists of terms
+      "tm-mem-nil". x:Term |- "hl:tm-mem"(x, "hl:tmnil"()) ~> "hl:no"();
+      "tm-mem-cons". x:Term, y:Term, ys:Tms, e:Flag, r:Flag | "hl:tm-eq"(x, y) ~> e, "hl:tm-mem-k"(e, x, ys) ~> r |- "hl:tm-mem"(x, "hl:tmcons"(y, ys)) ~> r;
+      "tm-mem-k-yes". x:Term, ys:Tms |- "hl:tm-mem-k"("hl:yes"(), x, ys) ~> "hl:yes"();
+      "tm-mem-k-no". x:Term, ys:Tms, r:Flag | "hl:tm-mem"(x, ys) ~> r |- "hl:tm-mem-k"("hl:no"(), x, ys) ~> r;
+      "tm-insert". x:Term, l:Tms, e:Flag, r:Tms | "hl:tm-mem"(x, l) ~> e, "hl:tm-insert-k"(e, x, l) ~> r |- "hl:tm-insert"(x, l) ~> r;
+      "tm-insert-k-yes". x:Term, l:Tms |- "hl:tm-insert-k"("hl:yes"(), x, l) ~> l;
+      "tm-insert-k-no". x:Term, l:Tms |- "hl:tm-insert-k"("hl:no"(), x, l) ~> "hl:tmcons"(x, l);
+      "tm-union-nil". l2:Tms |- "hl:tm-union"("hl:tmnil"(), l2) ~> l2;
+      "tm-union-cons". h:Term, t:Tms, l2:Tms, u:Tms, r:Tms | "hl:tm-union"(t, l2) ~> u, "hl:tm-insert"(h, u) ~> r |- "hl:tm-union"("hl:tmcons"(h, t), l2) ~> r;
+      "tm-subtract-nil". l2:Tms |- "hl:tm-subtract"("hl:tmnil"(), l2) ~> "hl:tmnil"();
+      "tm-subtract-cons". h:Term, t:Tms, l2:Tms, e:Flag, rest:Tms, r:Tms | "hl:tm-mem"(h, l2) ~> e, "hl:tm-subtract"(t, l2) ~> rest, "hl:tm-subtract-k"(e, h, rest) ~> r
+        |- "hl:tm-subtract"("hl:tmcons"(h, t), l2) ~> r;
+      "tm-subtract-k-yes". h:Term, rest:Tms |- "hl:tm-subtract-k"("hl:yes"(), h, rest) ~> rest;
+      "tm-subtract-k-no". h:Term, rest:Tms |- "hl:tm-subtract-k"("hl:no"(), h, rest) ~> "hl:tmcons"(h, rest);
+      "tmp-rev-assocd-nil". key:Term, d:Term |- "hl:tmp-rev-assocd"(key, "hl:tmp-nil"(), d) ~> d;
+      "tmp-rev-assocd-cons". key:Term, val:Term, k2:Term, xs:TmPairs, d:Term, e:Flag, r:Term | "hl:tm-eq"(k2, key) ~> e, "hl:tmp-rev-assocd-k"(e, key, val, xs, d) ~> r
+        |- "hl:tmp-rev-assocd"(key, "hl:tmp-cons"(val, k2, xs), d) ~> r;
+      "tmp-rev-assocd-k-yes". key:Term, val:Term, xs:TmPairs, d:Term |- "hl:tmp-rev-assocd-k"("hl:yes"(), key, val, xs, d) ~> val;
+      "tmp-rev-assocd-k-no". key:Term, val:Term, xs:TmPairs, d:Term, r:Term | "hl:tmp-rev-assocd"(key, xs, d) ~> r |- "hl:tmp-rev-assocd-k"("hl:no"(), key, val, xs, d) ~> r;
+
+      -- =================================================================== kernel
+      -- type_of (terms are well typed by construction; a Comb's rator has a function type)
+      "type-of-var". n:Str, ty:Type |- "hl:type-of"("hl:Var"(n, ty)) ~> ty;
+      "type-of-const". n:Str, ty:Type |- "hl:type-of"("hl:Const"(n, ty)) ~> ty;
+      "type-of-comb". s:Term, t:Term, sty:Type, d:Type, r:Type | "hl:type-of"(s) ~> sty, "hl:dest-fun-ty"(sty) ~> "hl:fun-parts"(d, r)
+        |- "hl:type-of"("hl:Comb"(s, t)) ~> r;
+      "type-of-abs". n:Str, ty:Type, t:Term, tt:Type, f:Type | "hl:type-of"(t) ~> tt, "hl:mk-fun-ty"(ty, tt) ~> f
+        |- "hl:type-of"("hl:Abs"("hl:Var"(n, ty), t)) ~> f;
+
+      -- frees, freesl, freesin, vfree_in, type_vars_in_term
+      "frees-var". n:Str, ty:Type |- "hl:frees"("hl:Var"(n, ty)) ~> "hl:tmcons"("hl:Var"(n, ty), "hl:tmnil"());
+      "frees-const". n:Str, ty:Type |- "hl:frees"("hl:Const"(n, ty)) ~> "hl:tmnil"();
+      "frees-abs". bv:Term, bod:Term, f:Tms, r:Tms | "hl:frees"(bod) ~> f, "hl:tm-subtract"(f, "hl:tmcons"(bv, "hl:tmnil"())) ~> r
+        |- "hl:frees"("hl:Abs"(bv, bod)) ~> r;
+      "frees-comb". s:Term, t:Term, fs:Tms, ft:Tms, r:Tms | "hl:frees"(s) ~> fs, "hl:frees"(t) ~> ft, "hl:tm-union"(fs, ft) ~> r
+        |- "hl:frees"("hl:Comb"(s, t)) ~> r;
+      "freesl-nil". |- "hl:freesl"("hl:tmnil"()) ~> "hl:tmnil"();
+      "freesl-cons". h:Term, t:Tms, fh:Tms, ft:Tms, r:Tms | "hl:frees"(h) ~> fh, "hl:freesl"(t) ~> ft, "hl:tm-union"(fh, ft) ~> r
+        |- "hl:freesl"("hl:tmcons"(h, t)) ~> r;
+      "freesin-var". acc:Tms, n:Str, ty:Type, r:Flag | "hl:tm-mem"("hl:Var"(n, ty), acc) ~> r |- "hl:freesin"(acc, "hl:Var"(n, ty)) ~> r;
+      "freesin-const". acc:Tms, n:Str, ty:Type |- "hl:freesin"(acc, "hl:Const"(n, ty)) ~> "hl:yes"();
+      "freesin-abs". acc:Tms, bv:Term, bod:Term, r:Flag | "hl:freesin"("hl:tmcons"(bv, acc), bod) ~> r |- "hl:freesin"(acc, "hl:Abs"(bv, bod)) ~> r;
+      "freesin-comb". acc:Tms, s:Term, t:Term, e:Flag, r:Flag | "hl:freesin"(acc, s) ~> e, "hl:freesin-k"(e, acc, t) ~> r |- "hl:freesin"(acc, "hl:Comb"(s, t)) ~> r;
+      "freesin-k-no". acc:Tms, t:Term |- "hl:freesin-k"("hl:no"(), acc, t) ~> "hl:no"();
+      "freesin-k-yes". acc:Tms, t:Term, r:Flag | "hl:freesin"(acc, t) ~> r |- "hl:freesin-k"("hl:yes"(), acc, t) ~> r;
+      "vfree-in-var". v:Term, n:Str, ty:Type, r:Flag | "hl:tm-eq"("hl:Var"(n, ty), v) ~> r |- "hl:vfree-in"(v, "hl:Var"(n, ty)) ~> r;
+      "vfree-in-const". v:Term, n:Str, ty:Type, r:Flag | "hl:tm-eq"("hl:Const"(n, ty), v) ~> r |- "hl:vfree-in"(v, "hl:Const"(n, ty)) ~> r;
+      "vfree-in-abs". v:Term, bv:Term, bod:Term, e:Flag, r:Flag | "hl:tm-eq"(v, bv) ~> e, "hl:vfree-in-abs-k"(e, v, bod) ~> r
+        |- "hl:vfree-in"(v, "hl:Abs"(bv, bod)) ~> r;
+      "vfree-in-abs-k-yes". v:Term, bod:Term |- "hl:vfree-in-abs-k"("hl:yes"(), v, bod) ~> "hl:no"();
+      "vfree-in-abs-k-no". v:Term, bod:Term, r:Flag | "hl:vfree-in"(v, bod) ~> r |- "hl:vfree-in-abs-k"("hl:no"(), v, bod) ~> r;
+      "vfree-in-comb". v:Term, s:Term, t:Term, e:Flag, r:Flag | "hl:vfree-in"(v, s) ~> e, "hl:vfree-in-comb-k"(e, v, t) ~> r
+        |- "hl:vfree-in"(v, "hl:Comb"(s, t)) ~> r;
+      "vfree-in-comb-k-yes". v:Term, t:Term |- "hl:vfree-in-comb-k"("hl:yes"(), v, t) ~> "hl:yes"();
+      "vfree-in-comb-k-no". v:Term, t:Term, r:Flag | "hl:vfree-in"(v, t) ~> r |- "hl:vfree-in-comb-k"("hl:no"(), v, t) ~> r;
+      "exists-vfree-in-nil". v:Term |- "hl:exists-vfree-in"(v, "hl:tmnil"()) ~> "hl:no"();
+      "exists-vfree-in-cons". v:Term, h:Term, t:Tms, e:Flag, r:Flag | "hl:vfree-in"(v, h) ~> e, "hl:exists-vfree-in-k"(e, v, t) ~> r
+        |- "hl:exists-vfree-in"(v, "hl:tmcons"(h, t)) ~> r;
+      "exists-vfree-in-k-yes". v:Term, t:Tms |- "hl:exists-vfree-in-k"("hl:yes"(), v, t) ~> "hl:yes"();
+      "exists-vfree-in-k-no". v:Term, t:Tms, r:Flag | "hl:exists-vfree-in"(v, t) ~> r |- "hl:exists-vfree-in-k"("hl:no"(), v, t) ~> r;
+      "tvs-var". n:Str, ty:Type, r:Tys | "hl:tyvars"(ty) ~> r |- "hl:type-vars-in-term"("hl:Var"(n, ty)) ~> r;
+      "tvs-const". n:Str, ty:Type, r:Tys | "hl:tyvars"(ty) ~> r |- "hl:type-vars-in-term"("hl:Const"(n, ty)) ~> r;
+      "tvs-comb". s:Term, t:Term, a:Tys, b:Tys, r:Tys | "hl:type-vars-in-term"(s) ~> a, "hl:type-vars-in-term"(t) ~> b, "hl:ty-union"(a, b) ~> r
+        |- "hl:type-vars-in-term"("hl:Comb"(s, t)) ~> r;
+      "tvs-abs". n:Str, ty:Type, t:Term, a:Tys, b:Tys, r:Tys | "hl:tyvars"(ty) ~> a, "hl:type-vars-in-term"(t) ~> b, "hl:ty-union"(a, b) ~> r
+        |- "hl:type-vars-in-term"("hl:Abs"("hl:Var"(n, ty), t)) ~> r;
+
+      -- variant avoid v: prime the name until v is free in no term of avoid (v is a variable at every call)
+      "variant". avoid:Tms, n:Str, ty:Type, e:Flag, r:Term | "hl:exists-vfree-in"("hl:Var"(n, ty), avoid) ~> e, "hl:variant-k"(e, avoid, n, ty) ~> r
+        |- "hl:variant"(avoid, "hl:Var"(n, ty)) ~> r;
+      "variant-k-no". avoid:Tms, n:Str, ty:Type |- "hl:variant-k"("hl:no"(), avoid, n, ty) ~> "hl:Var"(n, ty);
+      "variant-k-yes". avoid:Tms, n:Str, ty:Type, n2:Str, r:Term | "hl:str-prime"(n) ~> n2, "hl:variant"(avoid, "hl:Var"(n2, ty)) ~> r
+        |- "hl:variant-k"("hl:yes"(), avoid, n, ty) ~> r;
+
+      -- vsubst theta: [] is the identity; otherwise every pair (t, Var(_,y)) needs type_of t = y
+      "vsubst-nil". tm:Term |- "hl:vsubst"("hl:tmp-nil"(), tm) ~> "hl:vs-ok"(tm);
+      "vsubst-cons". t:Term, x:Term, rest:TmPairs, tm:Term, e:Flag, r:VsR | "hl:vsubst-good"("hl:tmp-cons"(t, x, rest)) ~> e, "hl:vsubst-k"(e, "hl:tmp-cons"(t, x, rest), tm) ~> r
+        |- "hl:vsubst"("hl:tmp-cons"(t, x, rest), tm) ~> r;
+      "vsubst-k-yes". theta:TmPairs, tm:Term, r:Term | "hl:vsubst-rec"(theta, tm) ~> r |- "hl:vsubst-k"("hl:yes"(), theta, tm) ~> "hl:vs-ok"(r);
+      "vsubst-k-no". theta:TmPairs, tm:Term |- "hl:vsubst-k"("hl:no"(), theta, tm) ~> "hl:vs-bad"();
+      "vsubst-good-nil". |- "hl:vsubst-good"("hl:tmp-nil"()) ~> "hl:yes"();
+      "vsubst-good-cons". t:Term, x:Term, rest:TmPairs, e:Flag, r:Flag | "hl:vsubst-pair-good"(t, x) ~> e, "hl:vsubst-good-k"(e, rest) ~> r
+        |- "hl:vsubst-good"("hl:tmp-cons"(t, x, rest)) ~> r;
+      "vsubst-good-k-no". rest:TmPairs |- "hl:vsubst-good-k"("hl:no"(), rest) ~> "hl:no"();
+      "vsubst-good-k-yes". rest:TmPairs, r:Flag | "hl:vsubst-good"(rest) ~> r |- "hl:vsubst-good-k"("hl:yes"(), rest) ~> r;
+      "vsubst-pair-var". t:Term, n:Str, y:Type, tt:Type, r:Flag | "hl:type-of"(t) ~> tt, "hl:ty-eq"(tt, y) ~> r |- "hl:vsubst-pair-good"(t, "hl:Var"(n, y)) ~> r;
+      "vsubst-pair-const". t:Term, n:Str, y:Type |- "hl:vsubst-pair-good"(t, "hl:Const"(n, y)) ~> "hl:no"();
+      "vsubst-pair-comb". t:Term, f:Term, a:Term |- "hl:vsubst-pair-good"(t, "hl:Comb"(f, a)) ~> "hl:no"();
+      "vsubst-pair-abs". t:Term, v:Term, b:Term |- "hl:vsubst-pair-good"(t, "hl:Abs"(v, b)) ~> "hl:no"();
+      -- the recursion of vsubst
+      "vs-var". il:TmPairs, n:Str, ty:Type, r:Term | "hl:tmp-rev-assocd"("hl:Var"(n, ty), il, "hl:Var"(n, ty)) ~> r |- "hl:vsubst-rec"(il, "hl:Var"(n, ty)) ~> r;
+      "vs-const". il:TmPairs, n:Str, ty:Type |- "hl:vsubst-rec"(il, "hl:Const"(n, ty)) ~> "hl:Const"(n, ty);
+      "vs-comb". il:TmPairs, s:Term, t:Term, s1:Term, t1:Term | "hl:vsubst-rec"(il, s) ~> s1, "hl:vsubst-rec"(il, t) ~> t1
+        |- "hl:vsubst-rec"(il, "hl:Comb"(s, t)) ~> "hl:Comb"(s1, t1);
+      "vs-abs". il:TmPairs, v:Term, s:Term, il2:TmPairs, r:Term | "hl:vs-filter"(il, v) ~> il2, "hl:vs-abs-1"(il2, v, s) ~> r
+        |- "hl:vsubst-rec"(il, "hl:Abs"(v, s)) ~> r;
+      -- ilist' = [] -> tm
+      "vs-abs-1-nil". v:Term, s:Term |- "hl:vs-abs-1"("hl:tmp-nil"(), v, s) ~> "hl:Abs"(v, s);
+      "vs-abs-1-cons". t:Term, x:Term, rest:TmPairs, v:Term, s:Term, s1:Term, e:Flag, r:Term |
+          "hl:vsubst-rec"("hl:tmp-cons"(t, x, rest), s) ~> s1, "hl:tm-eq"(s1, s) ~> e, "hl:vs-abs-2"(e, "hl:tmp-cons"(t, x, rest), v, s, s1) ~> r
+        |- "hl:vs-abs-1"("hl:tmp-cons"(t, x, rest), v, s) ~> r;
+      -- s' == s -> tm (read as structural equality)
+      "vs-abs-2-same". il:TmPairs, v:Term, s:Term, s1:Term |- "hl:vs-abs-2"("hl:yes"(), il, v, s, s1) ~> "hl:Abs"(v, s);
+      "vs-abs-2-changed". il:TmPairs, v:Term, s:Term, s1:Term, c:Flag, r:Term | "hl:vs-capture"(il, v, s) ~> c, "hl:vs-abs-3"(c, il, v, s, s1) ~> r
+        |- "hl:vs-abs-2"("hl:no"(), il, v, s, s1) ~> r;
+      "vs-abs-3-no". il:TmPairs, v:Term, s:Term, s1:Term |- "hl:vs-abs-3"("hl:no"(), il, v, s, s1) ~> "hl:Abs"(v, s1);
+      "vs-abs-3-yes". il:TmPairs, v:Term, s:Term, s1:Term, v1:Term, s2:Term |
+          "hl:variant"("hl:tmcons"(s1, "hl:tmnil"()), v) ~> v1, "hl:vsubst-rec"("hl:tmp-cons"(v1, v, il), s) ~> s2
+        |- "hl:vs-abs-3"("hl:yes"(), il, v, s, s1) ~> "hl:Abs"(v1, s2);
+      -- filter (fun (t,x) -> x <> v) ilist
+      "vs-filter-nil". v:Term |- "hl:vs-filter"("hl:tmp-nil"(), v) ~> "hl:tmp-nil"();
+      "vs-filter-cons". t:Term, x:Term, rest:TmPairs, v:Term, e:Flag, r:TmPairs | "hl:tm-eq"(x, v) ~> e, "hl:vs-filter-k"(e, t, x, rest, v) ~> r
+        |- "hl:vs-filter"("hl:tmp-cons"(t, x, rest), v) ~> r;
+      "vs-filter-k-yes". t:Term, x:Term, rest:TmPairs, v:Term, r:TmPairs | "hl:vs-filter"(rest, v) ~> r |- "hl:vs-filter-k"("hl:yes"(), t, x, rest, v) ~> r;
+      "vs-filter-k-no". t:Term, x:Term, rest:TmPairs, v:Term, r:TmPairs | "hl:vs-filter"(rest, v) ~> r |- "hl:vs-filter-k"("hl:no"(), t, x, rest, v) ~> "hl:tmp-cons"(t, x, r);
+      -- exists (fun (t,x) -> vfree_in v t && vfree_in x s) ilist'
+      "vs-capture-nil". v:Term, s:Term |- "hl:vs-capture"("hl:tmp-nil"(), v, s) ~> "hl:no"();
+      "vs-capture-cons". t:Term, x:Term, rest:TmPairs, v:Term, s:Term, e:Flag, r:Flag | "hl:vfree-in"(v, t) ~> e, "hl:vs-capture-k"(e, x, rest, v, s) ~> r
+        |- "hl:vs-capture"("hl:tmp-cons"(t, x, rest), v, s) ~> r;
+      "vs-capture-k-no". x:Term, rest:TmPairs, v:Term, s:Term, r:Flag | "hl:vs-capture"(rest, v, s) ~> r |- "hl:vs-capture-k"("hl:no"(), x, rest, v, s) ~> r;
+      "vs-capture-k-yes". x:Term, rest:TmPairs, v:Term, s:Term, e:Flag, r:Flag | "hl:vfree-in"(x, s) ~> e, "hl:vs-capture-k2"(e, rest, v, s) ~> r
+        |- "hl:vs-capture-k"("hl:yes"(), x, rest, v, s) ~> r;
+      "vs-capture-k2-yes". rest:TmPairs, v:Term, s:Term |- "hl:vs-capture-k2"("hl:yes"(), rest, v, s) ~> "hl:yes"();
+      "vs-capture-k2-no". rest:TmPairs, v:Term, s:Term, r:Flag | "hl:vs-capture"(rest, v, s) ~> r |- "hl:vs-capture-k2"("hl:no"(), rest, v, s) ~> r;
+
+      -- inst tyin: [] is the identity; otherwise inst [] tyin, whose Clash never escapes the outermost binder
+      "inst-nil". tm:Term |- "hl:inst"("hl:typ-nil"(), tm) ~> tm;
+      "inst-cons". a:Type, b:Type, rest:TyPairs, tm:Term, r:Term | "hl:inst-rec"("hl:tmp-nil"(), "hl:typ-cons"(a, b, rest), tm) ~> "hl:inst-ok"(r)
+        |- "hl:inst"("hl:typ-cons"(a, b, rest), tm) ~> r;
+      -- Var: if compare (rev_assocd tm' env tm) tm = 0 then tm' else raise (Clash tm')
+      "inst-var". env:TmPairs, tyin:TyPairs, n:Str, ty:Type, ty1:Type, back:Term, e:Flag, r:InstR |
+          "hl:type-subst"(tyin, ty) ~> ty1, "hl:tmp-rev-assocd"("hl:Var"(n, ty1), env, "hl:Var"(n, ty)) ~> back,
+          "hl:tm-eq"(back, "hl:Var"(n, ty)) ~> e, "hl:inst-var-k"(e, "hl:Var"(n, ty1)) ~> r
+        |- "hl:inst-rec"(env, tyin, "hl:Var"(n, ty)) ~> r;
+      "inst-var-k-yes". tm1:Term |- "hl:inst-var-k"("hl:yes"(), tm1) ~> "hl:inst-ok"(tm1);
+      "inst-var-k-no". tm1:Term |- "hl:inst-var-k"("hl:no"(), tm1) ~> "hl:inst-clash"(tm1);
+      "inst-const". env:TmPairs, tyin:TyPairs, n:Str, ty:Type, ty1:Type | "hl:type-subst"(tyin, ty) ~> ty1
+        |- "hl:inst-rec"(env, tyin, "hl:Const"(n, ty)) ~> "hl:inst-ok"("hl:Const"(n, ty1));
+      -- Comb: the rator first (left to right), a Clash propagates
+      "inst-comb". env:TmPairs, tyin:TyPairs, f:Term, x:Term, rf:InstR, r:InstR | "hl:inst-rec"(env, tyin, f) ~> rf, "hl:inst-comb-1"(rf, env, tyin, x) ~> r
+        |- "hl:inst-rec"(env, tyin, "hl:Comb"(f, x)) ~> r;
+      "inst-comb-1-clash". w:Term, env:TmPairs, tyin:TyPairs, x:Term |- "hl:inst-comb-1"("hl:inst-clash"(w), env, tyin, x) ~> "hl:inst-clash"(w);
+      "inst-comb-1-ok". f1:Term, env:TmPairs, tyin:TyPairs, x:Term, rx:InstR, r:InstR | "hl:inst-rec"(env, tyin, x) ~> rx, "hl:inst-comb-2"(f1, rx) ~> r
+        |- "hl:inst-comb-1"("hl:inst-ok"(f1), env, tyin, x) ~> r;
+      "inst-comb-2-clash". f1:Term, w:Term |- "hl:inst-comb-2"(f1, "hl:inst-clash"(w)) ~> "hl:inst-clash"(w);
+      "inst-comb-2-ok". f1:Term, x1:Term |- "hl:inst-comb-2"(f1, "hl:inst-ok"(x1)) ~> "hl:inst-ok"("hl:Comb"(f1, x1));
+      -- Abs(y,t): y' = inst [] tyin y; t under (y,y')::env; a Clash on y' renames y apart and retries
+      "inst-abs". env:TmPairs, tyin:TyPairs, n:Str, ty:Type, t:Term, ty1:Type, rt:InstR, r:InstR |
+          "hl:type-subst"(tyin, ty) ~> ty1,
+          "hl:inst-rec"("hl:tmp-cons"("hl:Var"(n, ty), "hl:Var"(n, ty1), env), tyin, t) ~> rt,
+          "hl:inst-abs-1"(rt, env, tyin, "hl:Var"(n, ty), "hl:Var"(n, ty1), t) ~> r
+        |- "hl:inst-rec"(env, tyin, "hl:Abs"("hl:Var"(n, ty), t)) ~> r;
+      "inst-abs-1-ok". t1:Term, env:TmPairs, tyin:TyPairs, y:Term, y1:Term, t:Term |- "hl:inst-abs-1"("hl:inst-ok"(t1), env, tyin, y, y1, t) ~> "hl:inst-ok"("hl:Abs"(y1, t1));
+      "inst-abs-1-clash". w:Term, env:TmPairs, tyin:TyPairs, y:Term, y1:Term, t:Term, e:Flag, r:InstR | "hl:tm-eq"(w, y1) ~> e, "hl:inst-abs-2"(e, w, env, tyin, y, y1, t) ~> r
+        |- "hl:inst-abs-1"("hl:inst-clash"(w), env, tyin, y, y1, t) ~> r;
+      "inst-abs-2-other". w:Term, env:TmPairs, tyin:TyPairs, y:Term, y1:Term, t:Term |- "hl:inst-abs-2"("hl:no"(), w, env, tyin, y, y1, t) ~> "hl:inst-clash"(w);
+      -- ifrees = map (inst [] tyin) (frees t); y'' = variant ifrees y'; z = Var(fst(dest_var y''),snd(dest_var y));
+      -- inst env tyin (Abs(z,vsubst[z,y] t))
+      "inst-abs-2-rename". w:Term, env:TmPairs, tyin:TyPairs, n:Str, ty:Type, y1:Term, t:Term, fr:Tms, ifr:Tms, n2:Str, ty2:Type, t2:Term, r:InstR |
+          "hl:frees"(t) ~> fr, "hl:inst-frees"(tyin, fr) ~> ifr, "hl:variant"(ifr, y1) ~> "hl:Var"(n2, ty2),
+          "hl:vsubst"("hl:tmp-cons"("hl:Var"(n2, ty), "hl:Var"(n, ty), "hl:tmp-nil"()), t) ~> "hl:vs-ok"(t2),
+          "hl:inst-rec"(env, tyin, "hl:Abs"("hl:Var"(n2, ty), t2)) ~> r
+        |- "hl:inst-abs-2"("hl:yes"(), w, env, tyin, "hl:Var"(n, ty), y1, t) ~> r;
+      -- inst [] tyin on a free variable never clashes: it is Var(n, type_subst tyin ty)
+      "inst-frees-nil". tyin:TyPairs |- "hl:inst-frees"(tyin, "hl:tmnil"()) ~> "hl:tmnil"();
+      "inst-frees-cons". tyin:TyPairs, n:Str, ty:Type, rest:Tms, ty1:Type, r:Tms | "hl:type-subst"(tyin, ty) ~> ty1, "hl:inst-frees"(tyin, rest) ~> r
+        |- "hl:inst-frees"(tyin, "hl:tmcons"("hl:Var"(n, ty), rest)) ~> "hl:tmcons"("hl:Var"(n, ty1), r);
+
+      -- safe_mk_eq, and the pattern Comb(Comb(Const("=",_),l),r)
+      "safe-mk-eq". l:Term, r:Term, ty:Type, b:Type, t1:Type, t2:Type, e:Str | "hl:type-of"(l) ~> ty, "hl:bool-ty"() ~> b,
+          "hl:mk-fun-ty"(ty, b) ~> t1, "hl:mk-fun-ty"(ty, t1) ~> t2, "hl:nm-eq"() ~> e
+        |- "hl:safe-mk-eq"(l, r) ~> "hl:Comb"("hl:Comb"("hl:Const"(e, t2), l), r);
+      "split-eq". n:Str, ty:Type, l:Term, r:Term, q:Str, e:Flag, out:SplitEq | "hl:nm-eq"() ~> q, "hl:str-eq"(n, q) ~> e, "hl:split-eq-k"(e, n, ty, l, r) ~> out
+        |- "hl:split-eq"("hl:Comb"("hl:Comb"("hl:Const"(n, ty), l), r)) ~> out;
+      "split-eq-k-yes". n:Str, ty:Type, l:Term, r:Term |- "hl:split-eq-k"("hl:yes"(), n, ty, l, r) ~> "hl:eqn"("hl:Const"(n, ty), l, r);
+      "split-eq-k-no". n:Str, ty:Type, l:Term, r:Term |- "hl:split-eq-k"("hl:no"(), n, ty, l, r) ~> "hl:no-eqn"();
+      "split-eq-var". n:Str, ty:Type |- "hl:split-eq"("hl:Var"(n, ty)) ~> "hl:no-eqn"();
+      "split-eq-const". n:Str, ty:Type |- "hl:split-eq"("hl:Const"(n, ty)) ~> "hl:no-eqn"();
+      "split-eq-abs". v:Term, b:Term |- "hl:split-eq"("hl:Abs"(v, b)) ~> "hl:no-eqn"();
+      "split-eq-c-var". n:Str, ty:Type, r:Term |- "hl:split-eq"("hl:Comb"("hl:Var"(n, ty), r)) ~> "hl:no-eqn"();
+      "split-eq-c-const". n:Str, ty:Type, r:Term |- "hl:split-eq"("hl:Comb"("hl:Const"(n, ty), r)) ~> "hl:no-eqn"();
+      "split-eq-c-abs". v:Term, b:Term, r:Term |- "hl:split-eq"("hl:Comb"("hl:Abs"(v, b), r)) ~> "hl:no-eqn"();
+      "split-eq-cc-var". n:Str, ty:Type, l:Term, r:Term |- "hl:split-eq"("hl:Comb"("hl:Comb"("hl:Var"(n, ty), l), r)) ~> "hl:no-eqn"();
+      "split-eq-cc-comb". f:Term, x:Term, l:Term, r:Term |- "hl:split-eq"("hl:Comb"("hl:Comb"("hl:Comb"(f, x), l), r)) ~> "hl:no-eqn"();
+      "split-eq-cc-abs". v:Term, b:Term, l:Term, r:Term |- "hl:split-eq"("hl:Comb"("hl:Comb"("hl:Abs"(v, b), l), r)) ~> "hl:no-eqn"();
+
+      -- alphaorder = orda []; orda's physical-equality shortcut cannot change its result and is omitted
+      "alphaorder". a:Term, b:Term, r:Ord | "hl:orda"("hl:tmp-nil"(), a, b) ~> r |- "hl:alphaorder"(a, b) ~> r;
+      "orda-vv". env:TmPairs, n1:Str, t1:Type, n2:Str, t2:Type, r:Ord | "hl:ordav"(env, "hl:Var"(n1, t1), "hl:Var"(n2, t2)) ~> r
+        |- "hl:orda"(env, "hl:Var"(n1, t1), "hl:Var"(n2, t2)) ~> r;
+      "orda-cc". env:TmPairs, n1:Str, t1:Type, n2:Str, t2:Type, r:Ord | "hl:cmp-leaf"(n1, t1, n2, t2) ~> r
+        |- "hl:orda"(env, "hl:Const"(n1, t1), "hl:Const"(n2, t2)) ~> r;
+      "orda-mm". env:TmPairs, s1:Term, t1:Term, s2:Term, t2:Term, o:Ord, r:Ord | "hl:orda"(env, s1, s2) ~> o, "hl:orda-comb-k"(o, env, t1, t2) ~> r
+        |- "hl:orda"(env, "hl:Comb"(s1, t1), "hl:Comb"(s2, t2)) ~> r;
+      "orda-comb-k-lt". env:TmPairs, a:Term, b:Term |- "hl:orda-comb-k"("hl:lt"(), env, a, b) ~> "hl:lt"();
+      "orda-comb-k-gt". env:TmPairs, a:Term, b:Term |- "hl:orda-comb-k"("hl:gt"(), env, a, b) ~> "hl:gt"();
+      "orda-comb-k-eq". env:TmPairs, a:Term, b:Term, r:Ord | "hl:orda"(env, a, b) ~> r |- "hl:orda-comb-k"("hl:eq"(), env, a, b) ~> r;
+      "orda-aa". env:TmPairs, n1:Str, ty1:Type, b1:Term, n2:Str, ty2:Type, b2:Term, o:Ord, r:Ord |
+          "hl:cmp-type"(ty1, ty2) ~> o, "hl:orda-abs-k"(o, "hl:tmp-cons"("hl:Var"(n1, ty1), "hl:Var"(n2, ty2), env), b1, b2) ~> r
+        |- "hl:orda"(env, "hl:Abs"("hl:Var"(n1, ty1), b1), "hl:Abs"("hl:Var"(n2, ty2), b2)) ~> r;
+      "orda-abs-k-lt". env:TmPairs, a:Term, b:Term |- "hl:orda-abs-k"("hl:lt"(), env, a, b) ~> "hl:lt"();
+      "orda-abs-k-gt". env:TmPairs, a:Term, b:Term |- "hl:orda-abs-k"("hl:gt"(), env, a, b) ~> "hl:gt"();
+      "orda-abs-k-eq". env:TmPairs, a:Term, b:Term, r:Ord | "hl:orda"(env, a, b) ~> r |- "hl:orda-abs-k"("hl:eq"(), env, a, b) ~> r;
+      -- mixed constructors: Const < Var < Comb < Abs
+      "orda-cv". env:TmPairs, n1:Str, t1:Type, n2:Str, t2:Type |- "hl:orda"(env, "hl:Const"(n1, t1), "hl:Var"(n2, t2)) ~> "hl:lt"();
+      "orda-cm". env:TmPairs, n1:Str, t1:Type, f:Term, x:Term |- "hl:orda"(env, "hl:Const"(n1, t1), "hl:Comb"(f, x)) ~> "hl:lt"();
+      "orda-ca". env:TmPairs, n1:Str, t1:Type, v:Term, b:Term |- "hl:orda"(env, "hl:Const"(n1, t1), "hl:Abs"(v, b)) ~> "hl:lt"();
+      "orda-vc". env:TmPairs, n1:Str, t1:Type, n2:Str, t2:Type |- "hl:orda"(env, "hl:Var"(n2, t2), "hl:Const"(n1, t1)) ~> "hl:gt"();
+      "orda-mc". env:TmPairs, n1:Str, t1:Type, f:Term, x:Term |- "hl:orda"(env, "hl:Comb"(f, x), "hl:Const"(n1, t1)) ~> "hl:gt"();
+      "orda-ac". env:TmPairs, n1:Str, t1:Type, v:Term, b:Term |- "hl:orda"(env, "hl:Abs"(v, b), "hl:Const"(n1, t1)) ~> "hl:gt"();
+      "orda-vm". env:TmPairs, n1:Str, t1:Type, f:Term, x:Term |- "hl:orda"(env, "hl:Var"(n1, t1), "hl:Comb"(f, x)) ~> "hl:lt"();
+      "orda-va". env:TmPairs, n1:Str, t1:Type, v:Term, b:Term |- "hl:orda"(env, "hl:Var"(n1, t1), "hl:Abs"(v, b)) ~> "hl:lt"();
+      "orda-mv". env:TmPairs, n1:Str, t1:Type, f:Term, x:Term |- "hl:orda"(env, "hl:Comb"(f, x), "hl:Var"(n1, t1)) ~> "hl:gt"();
+      "orda-av". env:TmPairs, n1:Str, t1:Type, v:Term, b:Term |- "hl:orda"(env, "hl:Abs"(v, b), "hl:Var"(n1, t1)) ~> "hl:gt"();
+      "orda-ma". env:TmPairs, f:Term, x:Term, v:Term, b:Term |- "hl:orda"(env, "hl:Comb"(f, x), "hl:Abs"(v, b)) ~> "hl:lt"();
+      "orda-am". env:TmPairs, f:Term, x:Term, v:Term, b:Term |- "hl:orda"(env, "hl:Abs"(v, b), "hl:Comb"(f, x)) ~> "hl:gt"();
+      -- ordav: a binder pair decides; with no pair, compare
+      "ordav-nil". a:Term, b:Term, r:Ord | "hl:cmp-term"(a, b) ~> r |- "hl:ordav"("hl:tmp-nil"(), a, b) ~> r;
+      "ordav-cons". t1:Term, t2:Term, rest:TmPairs, a:Term, b:Term, e1:Flag, e2:Flag, r:Ord | "hl:tm-eq"(a, t1) ~> e1, "hl:tm-eq"(b, t2) ~> e2, "hl:ordav-k"(e1, e2, rest, a, b) ~> r
+        |- "hl:ordav"("hl:tmp-cons"(t1, t2, rest), a, b) ~> r;
+      "ordav-k-yy". rest:TmPairs, a:Term, b:Term |- "hl:ordav-k"("hl:yes"(), "hl:yes"(), rest, a, b) ~> "hl:eq"();
+      "ordav-k-yn". rest:TmPairs, a:Term, b:Term |- "hl:ordav-k"("hl:yes"(), "hl:no"(), rest, a, b) ~> "hl:lt"();
+      "ordav-k-ny". rest:TmPairs, a:Term, b:Term |- "hl:ordav-k"("hl:no"(), "hl:yes"(), rest, a, b) ~> "hl:gt"();
+      "ordav-k-nn". rest:TmPairs, a:Term, b:Term, r:Ord | "hl:ordav"(rest, a, b) ~> r |- "hl:ordav-k"("hl:no"(), "hl:no"(), rest, a, b) ~> r;
+
+      -- term_union, term_remove, term_image (hypothesis lists stay ordered by alphaorder)
+      "term-union-nil". l2:Tms |- "hl:term-union"("hl:tmnil"(), l2) ~> l2;
+      "term-union-cons-nil". h:Term, t:Tms |- "hl:term-union"("hl:tmcons"(h, t), "hl:tmnil"()) ~> "hl:tmcons"(h, t);
+      "term-union-cons-cons". h1:Term, t1:Tms, h2:Term, t2:Tms, o:Ord, r:Tms | "hl:alphaorder"(h1, h2) ~> o, "hl:term-union-k"(o, h1, t1, h2, t2) ~> r
+        |- "hl:term-union"("hl:tmcons"(h1, t1), "hl:tmcons"(h2, t2)) ~> r;
+      "term-union-k-eq". h1:Term, t1:Tms, h2:Term, t2:Tms, r:Tms | "hl:term-union"(t1, t2) ~> r |- "hl:term-union-k"("hl:eq"(), h1, t1, h2, t2) ~> "hl:tmcons"(h1, r);
+      "term-union-k-lt". h1:Term, t1:Tms, h2:Term, t2:Tms, r:Tms | "hl:term-union"(t1, "hl:tmcons"(h2, t2)) ~> r |- "hl:term-union-k"("hl:lt"(), h1, t1, h2, t2) ~> "hl:tmcons"(h1, r);
+      "term-union-k-gt". h1:Term, t1:Tms, h2:Term, t2:Tms, r:Tms | "hl:term-union"("hl:tmcons"(h1, t1), t2) ~> r |- "hl:term-union-k"("hl:gt"(), h1, t1, h2, t2) ~> "hl:tmcons"(h2, r);
+      "term-remove-nil". t:Term |- "hl:term-remove"(t, "hl:tmnil"()) ~> "hl:tmnil"();
+      "term-remove-cons". t:Term, s:Term, ss:Tms, o:Ord, r:Tms | "hl:alphaorder"(t, s) ~> o, "hl:term-remove-k"(o, t, s, ss) ~> r
+        |- "hl:term-remove"(t, "hl:tmcons"(s, ss)) ~> r;
+      "term-remove-k-gt". t:Term, s:Term, ss:Tms, r:Tms | "hl:term-remove"(t, ss) ~> r |- "hl:term-remove-k"("hl:gt"(), t, s, ss) ~> "hl:tmcons"(s, r);
+      "term-remove-k-eq". t:Term, s:Term, ss:Tms |- "hl:term-remove-k"("hl:eq"(), t, s, ss) ~> ss;
+      "term-remove-k-lt". t:Term, s:Term, ss:Tms |- "hl:term-remove-k"("hl:lt"(), t, s, ss) ~> "hl:tmcons"(s, ss);
+      -- term_image f (h::t): if h' == h && t' == t then l else term_union [h'] t'
+      "term-image-inst-nil". tyin:TyPairs |- "hl:term-image-inst"(tyin, "hl:tmnil"()) ~> "hl:tmnil"();
+      "term-image-inst-cons". tyin:TyPairs, h:Term, t:Tms, h1:Term, t1:Tms, e1:Flag, e2:Flag, e:Flag, r:Tms |
+          "hl:inst"(tyin, h) ~> h1, "hl:term-image-inst"(tyin, t) ~> t1, "hl:tms-eq"("hl:tmcons"(h1, t1), "hl:tmcons"(h, t)) ~> e,
+          "hl:term-image-k"(e, "hl:tmcons"(h, t), h1, t1) ~> r
+        |- "hl:term-image-inst"(tyin, "hl:tmcons"(h, t)) ~> r;
+      "term-image-vsubst-nil". theta:TmPairs |- "hl:term-image-vsubst"(theta, "hl:tmnil"()) ~> "hl:tmnil"();
+      "term-image-vsubst-cons". theta:TmPairs, h:Term, t:Tms, h1:Term, t1:Tms, e:Flag, r:Tms |
+          "hl:vsubst-rec"(theta, h) ~> h1, "hl:term-image-vsubst"(theta, t) ~> t1, "hl:tms-eq"("hl:tmcons"(h1, t1), "hl:tmcons"(h, t)) ~> e,
+          "hl:term-image-k"(e, "hl:tmcons"(h, t), h1, t1) ~> r
+        |- "hl:term-image-vsubst"(theta, "hl:tmcons"(h, t)) ~> r;
+      "term-image-k-yes". l:Tms, h1:Term, t1:Tms |- "hl:term-image-k"("hl:yes"(), l, h1, t1) ~> l;
+      "term-image-k-no". l:Tms, h1:Term, t1:Tms, r:Tms | "hl:term-union"("hl:tmcons"(h1, "hl:tmnil"()), t1) ~> r |- "hl:term-image-k"("hl:no"(), l, h1, t1) ~> r;
+      -- aconv-membership, for EXPECT_ALPHA
+      "exists-aconv-nil". x:Term |- "hl:exists-aconv"(x, "hl:tmnil"()) ~> "hl:no"();
+      "exists-aconv-cons". x:Term, y:Term, ys:Tms, o:Ord, r:Flag | "hl:alphaorder"(x, y) ~> o, "hl:exists-aconv-k"(o, x, ys) ~> r
+        |- "hl:exists-aconv"(x, "hl:tmcons"(y, ys)) ~> r;
+      "exists-aconv-k-eq". x:Term, ys:Tms |- "hl:exists-aconv-k"("hl:eq"(), x, ys) ~> "hl:yes"();
+      "exists-aconv-k-lt". x:Term, ys:Tms, r:Flag | "hl:exists-aconv"(x, ys) ~> r |- "hl:exists-aconv-k"("hl:lt"(), x, ys) ~> r;
+      "exists-aconv-k-gt". x:Term, ys:Tms, r:Flag | "hl:exists-aconv"(x, ys) ~> r |- "hl:exists-aconv-k"("hl:gt"(), x, ys) ~> r;
+      "forall-exists-aconv-nil". b:Tms |- "hl:forall-exists-aconv"("hl:tmnil"(), b) ~> "hl:yes"();
+      "forall-exists-aconv-cons". x:Term, xs:Tms, b:Tms, e:Flag, r:Flag | "hl:exists-aconv"(x, b) ~> e, "hl:forall-exists-aconv-k"(e, xs, b) ~> r
+        |- "hl:forall-exists-aconv"("hl:tmcons"(x, xs), b) ~> r;
+      "forall-exists-aconv-k-no". xs:Tms, b:Tms |- "hl:forall-exists-aconv-k"("hl:no"(), xs, b) ~> "hl:no"();
+      "forall-exists-aconv-k-yes". xs:Tms, b:Tms, r:Flag | "hl:forall-exists-aconv"(xs, b) ~> r |- "hl:forall-exists-aconv-k"("hl:yes"(), xs, b) ~> r;
+
+      -- constructors with checks: mk_type, mk_const (by matching the generic type), mk_comb, mk_abs
+      "mk-type". thy:Thy, tcs:TyCons, ccs:Cons, ax:Thms, df:Thms, n:Str, args:Tys, o:OptNat, r:YR |
+          "hl:get-type-arity"(tcs, n) ~> o, "hl:mk-type-k"(o, n, args) ~> r
+        |- "hl:mk-type"("hl:Theory"(tcs, ccs, ax, df), n, args) ~> r;
+      "mk-type-k-none". n:Str, args:Tys |- "hl:mk-type-k"("hl:none-nat"(), n, args) ~> "hl:ty-fail"("hl:r-mk-type-undeclared"());
+      "mk-type-k-some". k:Nat, n:Str, args:Tys, len:Nat, o:Ord, r:YR | "hl:ty-length"(args) ~> len, "hl:cmp-nat"(k, len) ~> o, "hl:mk-type-k2"(o, n, args) ~> r
+        |- "hl:mk-type-k"("hl:some-nat"(k), n, args) ~> r;
+      "mk-type-k2-eq". n:Str, args:Tys |- "hl:mk-type-k2"("hl:eq"(), n, args) ~> "hl:ty-ok"("hl:Tyapp"(n, args));
+      "mk-type-k2-lt". n:Str, args:Tys |- "hl:mk-type-k2"("hl:lt"(), n, args) ~> "hl:ty-fail"("hl:r-mk-type-arity"());
+      "mk-type-k2-gt". n:Str, args:Tys |- "hl:mk-type-k2"("hl:gt"(), n, args) ~> "hl:ty-fail"("hl:r-mk-type-arity"());
+      "mk-const-at". tcs:TyCons, ccs:Cons, ax:Thms, df:Thms, n:Str, ty:Type, o:OptTy, r:TR | "hl:get-const-type"(ccs, n) ~> o, "hl:mk-const-k"(o, n, ty) ~> r
+        |- "hl:mk-const-at"("hl:Theory"(tcs, ccs, ax, df), n, ty) ~> r;
+      "mk-const-k-none". n:Str, ty:Type |- "hl:mk-const-k"("hl:none-ty"(), n, ty) ~> "hl:tm-fail"("hl:r-mk-const-undeclared"());
+      "mk-const-k-some". g:Type, n:Str, ty:Type, m:MatchR, r:TR | "hl:ty-match"(g, ty, "hl:typ-nil"()) ~> m, "hl:mk-const-k2"(m, n, ty) ~> r
+        |- "hl:mk-const-k"("hl:some-ty"(g), n, ty) ~> r;
+      "mk-const-k2-ok". b:TyPairs, n:Str, ty:Type |- "hl:mk-const-k2"("hl:match-ok"(b), n, ty) ~> "hl:tm-ok"("hl:Const"(n, ty));
+      "mk-const-k2-fail". n:Str, ty:Type |- "hl:mk-const-k2"("hl:match-fail"(), n, ty) ~> "hl:tm-fail"("hl:r-const-not-instance"());
+      -- one-way matching of a generic type against an instance: some theta has type_subst theta pat = ty
+      "ty-match-var". v:Str, ty:Type, b:TyPairs, o:OptTy, r:MatchR | "hl:typ-lookup"("hl:Tyvar"(v), b) ~> o, "hl:ty-match-var"(o, "hl:Tyvar"(v), ty, b) ~> r
+        |- "hl:ty-match"("hl:Tyvar"(v), ty, b) ~> r;
+      "ty-match-var-new". pat:Type, ty:Type, b:TyPairs |- "hl:ty-match-var"("hl:none-ty"(), pat, ty, b) ~> "hl:match-ok"("hl:typ-cons"(ty, pat, b));
+      "ty-match-var-old". x:Type, pat:Type, ty:Type, b:TyPairs, e:Flag, r:MatchR | "hl:ty-eq"(x, ty) ~> e, "hl:ty-match-var-k"(e, b) ~> r
+        |- "hl:ty-match-var"("hl:some-ty"(x), pat, ty, b) ~> r;
+      "ty-match-var-k-yes". b:TyPairs |- "hl:ty-match-var-k"("hl:yes"(), b) ~> "hl:match-ok"(b);
+      "ty-match-var-k-no". b:TyPairs |- "hl:ty-match-var-k"("hl:no"(), b) ~> "hl:match-fail"();
+      "ty-match-app-var". n:Str, pa:Tys, v:Str, b:TyPairs |- "hl:ty-match"("hl:Tyapp"(n, pa), "hl:Tyvar"(v), b) ~> "hl:match-fail"();
+      "ty-match-app-app". n:Str, pa:Tys, m:Str, ta:Tys, b:TyPairs, e:Flag, r:MatchR | "hl:str-eq"(n, m) ~> e, "hl:ty-match-app"(e, pa, ta, b) ~> r
+        |- "hl:ty-match"("hl:Tyapp"(n, pa), "hl:Tyapp"(m, ta), b) ~> r;
+      "ty-match-app-no". pa:Tys, ta:Tys, b:TyPairs |- "hl:ty-match-app"("hl:no"(), pa, ta, b) ~> "hl:match-fail"();
+      "ty-match-app-yes". pa:Tys, ta:Tys, b:TyPairs, r:MatchR | "hl:ty-match-list"(pa, ta, b) ~> r |- "hl:ty-match-app"("hl:yes"(), pa, ta, b) ~> r;
+      "ty-match-list-nn". b:TyPairs |- "hl:ty-match-list"("hl:tynil"(), "hl:tynil"(), b) ~> "hl:match-ok"(b);
+      "ty-match-list-nc". t:Type, ts:Tys, b:TyPairs |- "hl:ty-match-list"("hl:tynil"(), "hl:tycons"(t, ts), b) ~> "hl:match-fail"();
+      "ty-match-list-cn". p:Type, ps:Tys, b:TyPairs |- "hl:ty-match-list"("hl:tycons"(p, ps), "hl:tynil"(), b) ~> "hl:match-fail"();
+      "ty-match-list-cc". p:Type, ps:Tys, t:Type, ts:Tys, b:TyPairs, m:MatchR, r:MatchR | "hl:ty-match"(p, t, b) ~> m, "hl:ty-match-list-k"(m, ps, ts) ~> r
+        |- "hl:ty-match-list"("hl:tycons"(p, ps), "hl:tycons"(t, ts), b) ~> r;
+      "ty-match-list-k-fail". ps:Tys, ts:Tys |- "hl:ty-match-list-k"("hl:match-fail"(), ps, ts) ~> "hl:match-fail"();
+      "ty-match-list-k-ok". b:TyPairs, ps:Tys, ts:Tys, r:MatchR | "hl:ty-match-list"(ps, ts, b) ~> r |- "hl:ty-match-list-k"("hl:match-ok"(b), ps, ts) ~> r;
+      "typ-lookup-nil". key:Type |- "hl:typ-lookup"(key, "hl:typ-nil"()) ~> "hl:none-ty"();
+      "typ-lookup-cons". key:Type, val:Type, k2:Type, xs:TyPairs, e:Flag, r:OptTy | "hl:ty-eq"(k2, key) ~> e, "hl:typ-lookup-k"(e, val, key, xs) ~> r
+        |- "hl:typ-lookup"(key, "hl:typ-cons"(val, k2, xs)) ~> r;
+      "typ-lookup-k-yes". val:Type, key:Type, xs:TyPairs |- "hl:typ-lookup-k"("hl:yes"(), val, key, xs) ~> "hl:some-ty"(val);
+      "typ-lookup-k-no". val:Type, key:Type, xs:TyPairs, r:OptTy | "hl:typ-lookup"(key, xs) ~> r |- "hl:typ-lookup-k"("hl:no"(), val, key, xs) ~> r;
+      "mk-comb". f:Term, a:Term, ft:Type, d:FunTy, r:TR | "hl:type-of"(f) ~> ft, "hl:dest-fun-ty"(ft) ~> d, "hl:mk-comb-k"(d, f, a) ~> r |- "hl:mk-comb"(f, a) ~> r;
+      "mk-comb-k-no". f:Term, a:Term |- "hl:mk-comb-k"("hl:not-fun"(), f, a) ~> "hl:tm-fail"("hl:r-mk-comb-types"());
+      "mk-comb-k-fun". d:Type, rr:Type, f:Term, a:Term, at:Type, e:Flag, r:TR | "hl:type-of"(a) ~> at, "hl:ty-eq"(d, at) ~> e, "hl:mk-comb-k2"(e, f, a) ~> r
+        |- "hl:mk-comb-k"("hl:fun-parts"(d, rr), f, a) ~> r;
+      "mk-comb-k2-yes". f:Term, a:Term |- "hl:mk-comb-k2"("hl:yes"(), f, a) ~> "hl:tm-ok"("hl:Comb"(f, a));
+      "mk-comb-k2-no". f:Term, a:Term |- "hl:mk-comb-k2"("hl:no"(), f, a) ~> "hl:tm-fail"("hl:r-mk-comb-types"());
+      "mk-abs-var". n:Str, ty:Type, b:Term |- "hl:mk-abs"("hl:Var"(n, ty), b) ~> "hl:tm-ok"("hl:Abs"("hl:Var"(n, ty), b));
+      "mk-abs-const". n:Str, ty:Type, b:Term |- "hl:mk-abs"("hl:Const"(n, ty), b) ~> "hl:tm-fail"("hl:r-mk-abs-not-var"());
+      "mk-abs-comb". f:Term, x:Term, b:Term |- "hl:mk-abs"("hl:Comb"(f, x), b) ~> "hl:tm-fail"("hl:r-mk-abs-not-var"());
+      "mk-abs-abs". v:Term, w:Term, b:Term |- "hl:mk-abs"("hl:Abs"(v, w), b) ~> "hl:tm-fail"("hl:r-mk-abs-not-var"());
+
+      -- ======================================================== the ten primitive rules
+      "REFL". tm:Term, e:Term | "hl:safe-mk-eq"(tm, tm) ~> e |- "hl:REFL"(tm) ~> "hl:Sequent"("hl:tmnil"(), e);
+      -- TRANS: c1 = Comb((Comb(Const("=",_),_) as eql),m1), c2 = Comb(Comb(Const("=",_),m2),r), alphaorder m1 m2 = 0
+      "TRANS". a1:Tms, c1:Term, a2:Tms, c2:Term, s1:SplitEq, s2:SplitEq, r:KR | "hl:split-eq"(c1) ~> s1, "hl:split-eq"(c2) ~> s2, "hl:trans-k"(a1, s1, a2, s2) ~> r
+        |- "hl:TRANS"("hl:Sequent"(a1, c1), "hl:Sequent"(a2, c2)) ~> r;
+      "trans-k-no-1". a1:Tms, a2:Tms, s2:SplitEq |- "hl:trans-k"(a1, "hl:no-eqn"(), a2, s2) ~> "hl:fail"("hl:r-trans"());
+      "trans-k-no-2". a1:Tms, a2:Tms, op:Term, l:Term, m:Term |- "hl:trans-k"(a1, "hl:eqn"(op, l, m), a2, "hl:no-eqn"()) ~> "hl:fail"("hl:r-trans"());
+      "trans-k-eqs". a1:Tms, a2:Tms, op1:Term, l:Term, m1:Term, op2:Term, m2:Term, r:Term, o:Ord, out:KR | "hl:alphaorder"(m1, m2) ~> o, "hl:trans-k2"(o, a1, a2, op1, l, r) ~> out
+        |- "hl:trans-k"(a1, "hl:eqn"(op1, l, m1), a2, "hl:eqn"(op2, m2, r)) ~> out;
+      "trans-k2-eq". a1:Tms, a2:Tms, op:Term, l:Term, r:Term, hs:Tms | "hl:term-union"(a1, a2) ~> hs
+        |- "hl:trans-k2"("hl:eq"(), a1, a2, op, l, r) ~> "hl:ok"("hl:Sequent"(hs, "hl:Comb"("hl:Comb"(op, l), r)));
+      "trans-k2-lt". a1:Tms, a2:Tms, op:Term, l:Term, r:Term |- "hl:trans-k2"("hl:lt"(), a1, a2, op, l, r) ~> "hl:fail"("hl:r-trans"());
+      "trans-k2-gt". a1:Tms, a2:Tms, op:Term, l:Term, r:Term |- "hl:trans-k2"("hl:gt"(), a1, a2, op, l, r) ~> "hl:fail"("hl:r-trans"());
+      -- MK_COMB: both equations, then type_of r1 = Tyapp("fun",[ty;_]) with ty = type_of r2
+      "MK_COMB". a1:Tms, c1:Term, a2:Tms, c2:Term, s1:SplitEq, s2:SplitEq, r:KR | "hl:split-eq"(c1) ~> s1, "hl:split-eq"(c2) ~> s2, "hl:mk-comb-rule-k"(a1, s1, a2, s2) ~> r
+        |- "hl:MK_COMB"("hl:Sequent"(a1, c1), "hl:Sequent"(a2, c2)) ~> r;
+      "mk-comb-rule-k-no-1". a1:Tms, a2:Tms, s2:SplitEq |- "hl:mk-comb-rule-k"(a1, "hl:no-eqn"(), a2, s2) ~> "hl:fail"("hl:r-mk-comb-not-eqs"());
+      "mk-comb-rule-k-no-2". a1:Tms, a2:Tms, op:Term, l:Term, m:Term |- "hl:mk-comb-rule-k"(a1, "hl:eqn"(op, l, m), a2, "hl:no-eqn"()) ~> "hl:fail"("hl:r-mk-comb-not-eqs"());
+      "mk-comb-rule-k-eqs". a1:Tms, a2:Tms, op1:Term, l1:Term, r1:Term, op2:Term, l2:Term, r2:Term, t1:Type, d:FunTy, out:KR |
+          "hl:type-of"(r1) ~> t1, "hl:dest-fun-ty"(t1) ~> d, "hl:mk-comb-rule-k2"(d, a1, a2, l1, r1, l2, r2) ~> out
+        |- "hl:mk-comb-rule-k"(a1, "hl:eqn"(op1, l1, r1), a2, "hl:eqn"(op2, l2, r2)) ~> out;
+      "mk-comb-rule-k2-no". a1:Tms, a2:Tms, l1:Term, r1:Term, l2:Term, r2:Term |- "hl:mk-comb-rule-k2"("hl:not-fun"(), a1, a2, l1, r1, l2, r2) ~> "hl:fail"("hl:r-mk-comb-rule-types"());
+      "mk-comb-rule-k2-fun". ty:Type, rr:Type, a1:Tms, a2:Tms, l1:Term, r1:Term, l2:Term, r2:Term, t2:Type, e:Flag, out:KR |
+          "hl:type-of"(r2) ~> t2, "hl:ty-eq"(ty, t2) ~> e, "hl:mk-comb-rule-k3"(e, a1, a2, l1, r1, l2, r2) ~> out
+        |- "hl:mk-comb-rule-k2"("hl:fun-parts"(ty, rr), a1, a2, l1, r1, l2, r2) ~> out;
+      "mk-comb-rule-k3-no". a1:Tms, a2:Tms, l1:Term, r1:Term, l2:Term, r2:Term |- "hl:mk-comb-rule-k3"("hl:no"(), a1, a2, l1, r1, l2, r2) ~> "hl:fail"("hl:r-mk-comb-rule-types"());
+      "mk-comb-rule-k3-yes". a1:Tms, a2:Tms, l1:Term, r1:Term, l2:Term, r2:Term, hs:Tms, e:Term |
+          "hl:term-union"(a1, a2) ~> hs, "hl:safe-mk-eq"("hl:Comb"(l1, l2), "hl:Comb"(r1, r2)) ~> e
+        |- "hl:mk-comb-rule-k3"("hl:yes"(), a1, a2, l1, r1, l2, r2) ~> "hl:ok"("hl:Sequent"(hs, e));
+      -- ABS v: v a variable, c an equation, v free in no hypothesis
+      "ABS-var". n:Str, ty:Type, asl:Tms, c:Term, s:SplitEq, r:KR | "hl:split-eq"(c) ~> s, "hl:abs-k"(s, "hl:Var"(n, ty), asl) ~> r
+        |- "hl:ABS"("hl:Var"(n, ty), "hl:Sequent"(asl, c)) ~> r;
+      "ABS-const". n:Str, ty:Type, th:Thm |- "hl:ABS"("hl:Const"(n, ty), th) ~> "hl:fail"("hl:r-abs"());
+      "ABS-comb". f:Term, x:Term, th:Thm |- "hl:ABS"("hl:Comb"(f, x), th) ~> "hl:fail"("hl:r-abs"());
+      "ABS-abs". v:Term, b:Term, th:Thm |- "hl:ABS"("hl:Abs"(v, b), th) ~> "hl:fail"("hl:r-abs"());
+      "abs-k-no". v:Term, asl:Tms |- "hl:abs-k"("hl:no-eqn"(), v, asl) ~> "hl:fail"("hl:r-abs"());
+      "abs-k-eqn". op:Term, l:Term, r:Term, v:Term, asl:Tms, e:Flag, out:KR | "hl:exists-vfree-in"(v, asl) ~> e, "hl:abs-k2"(e, v, asl, l, r) ~> out
+        |- "hl:abs-k"("hl:eqn"(op, l, r), v, asl) ~> out;
+      "abs-k2-yes". v:Term, asl:Tms, l:Term, r:Term |- "hl:abs-k2"("hl:yes"(), v, asl, l, r) ~> "hl:fail"("hl:r-abs"());
+      "abs-k2-no". v:Term, asl:Tms, l:Term, r:Term, e:Term | "hl:safe-mk-eq"("hl:Abs"(v, l), "hl:Abs"(v, r)) ~> e
+        |- "hl:abs-k2"("hl:no"(), v, asl, l, r) ~> "hl:ok"("hl:Sequent"(asl, e));
+      -- BETA: only Comb(Abs(v,bod),arg) with arg = v
+      "BETA-redex". v:Term, bod:Term, arg:Term, e:Flag, r:KR | "hl:tm-eq"(arg, v) ~> e, "hl:beta-k"(e, "hl:Comb"("hl:Abs"(v, bod), arg), bod) ~> r
+        |- "hl:BETA"("hl:Comb"("hl:Abs"(v, bod), arg)) ~> r;
+      "beta-k-yes". tm:Term, bod:Term, e:Term | "hl:safe-mk-eq"(tm, bod) ~> e |- "hl:beta-k"("hl:yes"(), tm, bod) ~> "hl:ok"("hl:Sequent"("hl:tmnil"(), e));
+      "beta-k-no". tm:Term, bod:Term |- "hl:beta-k"("hl:no"(), tm, bod) ~> "hl:fail"("hl:r-beta"());
+      "BETA-var". n:Str, ty:Type |- "hl:BETA"("hl:Var"(n, ty)) ~> "hl:fail"("hl:r-beta"());
+      "BETA-const". n:Str, ty:Type |- "hl:BETA"("hl:Const"(n, ty)) ~> "hl:fail"("hl:r-beta"());
+      "BETA-abs". v:Term, b:Term |- "hl:BETA"("hl:Abs"(v, b)) ~> "hl:fail"("hl:r-beta"());
+      "BETA-c-var". n:Str, ty:Type, a:Term |- "hl:BETA"("hl:Comb"("hl:Var"(n, ty), a)) ~> "hl:fail"("hl:r-beta"());
+      "BETA-c-const". n:Str, ty:Type, a:Term |- "hl:BETA"("hl:Comb"("hl:Const"(n, ty), a)) ~> "hl:fail"("hl:r-beta"());
+      "BETA-c-comb". f:Term, x:Term, a:Term |- "hl:BETA"("hl:Comb"("hl:Comb"(f, x), a)) ~> "hl:fail"("hl:r-beta"());
+      -- ASSUME: a proposition
+      "ASSUME". tm:Term, ty:Type, b:Type, e:Flag, r:KR | "hl:type-of"(tm) ~> ty, "hl:bool-ty"() ~> b, "hl:ty-eq"(ty, b) ~> e, "hl:assume-k"(e, tm) ~> r
+        |- "hl:ASSUME"(tm) ~> r;
+      "assume-k-yes". tm:Term |- "hl:assume-k"("hl:yes"(), tm) ~> "hl:ok"("hl:Sequent"("hl:tmcons"(tm, "hl:tmnil"()), tm));
+      "assume-k-no". tm:Term |- "hl:assume-k"("hl:no"(), tm) ~> "hl:fail"("hl:r-assume"());
+      -- EQ_MP: eq = Comb(Comb(Const("=",_),l),r) with alphaorder l c = 0
+      "EQ_MP". a1:Tms, eq:Term, a2:Tms, c:Term, s:SplitEq, r:KR | "hl:split-eq"(eq) ~> s, "hl:eq-mp-k"(s, a1, a2, c) ~> r
+        |- "hl:EQ_MP"("hl:Sequent"(a1, eq), "hl:Sequent"(a2, c)) ~> r;
+      "eq-mp-k-no". a1:Tms, a2:Tms, c:Term |- "hl:eq-mp-k"("hl:no-eqn"(), a1, a2, c) ~> "hl:fail"("hl:r-eq-mp"());
+      "eq-mp-k-eqn". op:Term, l:Term, r:Term, a1:Tms, a2:Tms, c:Term, o:Ord, out:KR | "hl:alphaorder"(l, c) ~> o, "hl:eq-mp-k2"(o, a1, a2, r) ~> out
+        |- "hl:eq-mp-k"("hl:eqn"(op, l, r), a1, a2, c) ~> out;
+      "eq-mp-k2-eq". a1:Tms, a2:Tms, r:Term, hs:Tms | "hl:term-union"(a1, a2) ~> hs |- "hl:eq-mp-k2"("hl:eq"(), a1, a2, r) ~> "hl:ok"("hl:Sequent"(hs, r));
+      "eq-mp-k2-lt". a1:Tms, a2:Tms, r:Term |- "hl:eq-mp-k2"("hl:lt"(), a1, a2, r) ~> "hl:fail"("hl:r-eq-mp"());
+      "eq-mp-k2-gt". a1:Tms, a2:Tms, r:Term |- "hl:eq-mp-k2"("hl:gt"(), a1, a2, r) ~> "hl:fail"("hl:r-eq-mp"());
+      -- DEDUCT_ANTISYM_RULE: no side condition
+      "DEDUCT_ANTISYM_RULE". a1:Tms, c1:Term, a2:Tms, c2:Term, b1:Tms, b2:Tms, hs:Tms, e:Term |
+          "hl:term-remove"(c2, a1) ~> b1, "hl:term-remove"(c1, a2) ~> b2, "hl:term-union"(b1, b2) ~> hs, "hl:safe-mk-eq"(c1, c2) ~> e
+        |- "hl:DEDUCT_ANTISYM_RULE"("hl:Sequent"(a1, c1), "hl:Sequent"(a2, c2)) ~> "hl:Sequent"(hs, e);
+      -- INST_TYPE: no side condition
+      "INST_TYPE". theta:TyPairs, asl:Tms, c:Term, hs:Tms, c1:Term | "hl:term-image-inst"(theta, asl) ~> hs, "hl:inst"(theta, c) ~> c1
+        |- "hl:INST_TYPE"(theta, "hl:Sequent"(asl, c)) ~> "hl:Sequent"(hs, c1);
+      -- INST: vsubst theta checks the list once, before the theorem is touched
+      "INST-nil". asl:Tms, c:Term |- "hl:INST"("hl:tmp-nil"(), "hl:Sequent"(asl, c)) ~> "hl:ok"("hl:Sequent"(asl, c));
+      "INST-cons". t:Term, x:Term, rest:TmPairs, asl:Tms, c:Term, e:Flag, r:KR | "hl:vsubst-good"("hl:tmp-cons"(t, x, rest)) ~> e, "hl:inst-rule-k"(e, "hl:tmp-cons"(t, x, rest), asl, c) ~> r
+        |- "hl:INST"("hl:tmp-cons"(t, x, rest), "hl:Sequent"(asl, c)) ~> r;
+      "inst-rule-k-no". theta:TmPairs, asl:Tms, c:Term |- "hl:inst-rule-k"("hl:no"(), theta, asl, c) ~> "hl:fail"("hl:r-vsubst-bad"());
+      "inst-rule-k-yes". theta:TmPairs, asl:Tms, c:Term, hs:Tms, c1:Term | "hl:term-image-vsubst"(theta, asl) ~> hs, "hl:vsubst-rec"(theta, c) ~> c1
+        |- "hl:inst-rule-k"("hl:yes"(), theta, asl, c) ~> "hl:ok"("hl:Sequent"(hs, c1));
+
+      -- ======================================================= theory operations
+      -- the initial theory: types bool/0 and fun/2, the constant = : A->A->bool, no axioms, no definitions
+      "initial-theory". b:Str, f:Str, q:Str, a:Type, bt:Type, ab:Type, eqty:Type |
+          "hl:nm-bool"() ~> b, "hl:nm-fun"() ~> f, "hl:nm-eq"() ~> q, "hl:aty"() ~> a, "hl:bool-ty"() ~> bt,
+          "hl:mk-fun-ty"(a, bt) ~> ab, "hl:mk-fun-ty"(a, ab) ~> eqty
+        |- "hl:initial-theory"() ~> "hl:Theory"("hl:tc-cons"(b, "hl:nz"(), "hl:tc-cons"(f, "hl:nb0"("hl:nb1"("hl:nz"())), "hl:tc-nil"())),
+                                                "hl:cc-cons"(q, eqty, "hl:cc-nil"()), "hl:thnil"(), "hl:thnil"());
+      -- assoc on the newest-first lists
+      "get-type-arity-nil". n:Str |- "hl:get-type-arity"("hl:tc-nil"(), n) ~> "hl:none-nat"();
+      "get-type-arity-cons". m:Str, k:Nat, xs:TyCons, n:Str, e:Flag, r:OptNat | "hl:str-eq"(m, n) ~> e, "hl:get-type-arity-k"(e, k, xs, n) ~> r
+        |- "hl:get-type-arity"("hl:tc-cons"(m, k, xs), n) ~> r;
+      "get-type-arity-k-yes". k:Nat, xs:TyCons, n:Str |- "hl:get-type-arity-k"("hl:yes"(), k, xs, n) ~> "hl:some-nat"(k);
+      "get-type-arity-k-no". k:Nat, xs:TyCons, n:Str, r:OptNat | "hl:get-type-arity"(xs, n) ~> r |- "hl:get-type-arity-k"("hl:no"(), k, xs, n) ~> r;
+      "get-const-type-nil". n:Str |- "hl:get-const-type"("hl:cc-nil"(), n) ~> "hl:none-ty"();
+      "get-const-type-cons". m:Str, ty:Type, xs:Cons, n:Str, e:Flag, r:OptTy | "hl:str-eq"(m, n) ~> e, "hl:get-const-type-k"(e, ty, xs, n) ~> r
+        |- "hl:get-const-type"("hl:cc-cons"(m, ty, xs), n) ~> r;
+      "get-const-type-k-yes". ty:Type, xs:Cons, n:Str |- "hl:get-const-type-k"("hl:yes"(), ty, xs, n) ~> "hl:some-ty"(ty);
+      "get-const-type-k-no". ty:Type, xs:Cons, n:Str, r:OptTy | "hl:get-const-type"(xs, n) ~> r |- "hl:get-const-type-k"("hl:no"(), ty, xs, n) ~> r;
+      "can-get-const". xs:Cons, n:Str, o:OptTy, r:Flag | "hl:get-const-type"(xs, n) ~> o, "hl:can-get-const-k"(o) ~> r |- "hl:can-get-const"(xs, n) ~> r;
+      "can-get-const-k-some". ty:Type |- "hl:can-get-const-k"("hl:some-ty"(ty)) ~> "hl:yes"();
+      "can-get-const-k-none". |- "hl:can-get-const-k"("hl:none-ty"()) ~> "hl:no"();
+      -- new_type, new_constant: a name is declared once
+      "new-type". tcs:TyCons, ccs:Cons, ax:Thms, df:Thms, n:Str, k:Nat, o:OptNat, r:ThyR | "hl:get-type-arity"(tcs, n) ~> o, "hl:new-type-k"(o, "hl:Theory"(tcs, ccs, ax, df), n, k) ~> r
+        |- "hl:new-type"("hl:Theory"(tcs, ccs, ax, df), n, k) ~> r;
+      "new-type-k-some". m:Nat, thy:Thy, n:Str, k:Nat |- "hl:new-type-k"("hl:some-nat"(m), thy, n, k) ~> "hl:thy-fail"("hl:r-type-exists"());
+      "new-type-k-none". tcs:TyCons, ccs:Cons, ax:Thms, df:Thms, n:Str, k:Nat
+        |- "hl:new-type-k"("hl:none-nat"(), "hl:Theory"(tcs, ccs, ax, df), n, k) ~> "hl:thy-ok"("hl:Theory"("hl:tc-cons"(n, k, tcs), ccs, ax, df));
+      "new-constant". tcs:TyCons, ccs:Cons, ax:Thms, df:Thms, n:Str, ty:Type, o:OptTy, r:ThyR | "hl:get-const-type"(ccs, n) ~> o, "hl:new-constant-k"(o, "hl:Theory"(tcs, ccs, ax, df), n, ty) ~> r
+        |- "hl:new-constant"("hl:Theory"(tcs, ccs, ax, df), n, ty) ~> r;
+      "new-constant-k-some". g:Type, thy:Thy, n:Str, ty:Type |- "hl:new-constant-k"("hl:some-ty"(g), thy, n, ty) ~> "hl:thy-fail"("hl:r-const-exists"());
+      "new-constant-k-none". tcs:TyCons, ccs:Cons, ax:Thms, df:Thms, n:Str, ty:Type
+        |- "hl:new-constant-k"("hl:none-ty"(), "hl:Theory"(tcs, ccs, ax, df), n, ty) ~> "hl:thy-ok"("hl:Theory"(tcs, "hl:cc-cons"(n, ty, ccs), ax, df));
+      -- new_axiom: a proposition; the theorem is |- tm and it joins the axioms
+      "new-axiom". thy:Thy, tm:Term, ty:Type, b:Type, e:Flag, r:ThyThmR | "hl:type-of"(tm) ~> ty, "hl:bool-ty"() ~> b, "hl:ty-eq"(ty, b) ~> e, "hl:new-axiom-k"(e, thy, tm) ~> r
+        |- "hl:new-axiom"(thy, tm) ~> r;
+      "new-axiom-k-no". thy:Thy, tm:Term |- "hl:new-axiom-k"("hl:no"(), thy, tm) ~> "hl:thy-thm-fail"("hl:r-axiom-not-bool"());
+      "new-axiom-k-yes". tcs:TyCons, ccs:Cons, ax:Thms, df:Thms, tm:Term
+        |- "hl:new-axiom-k"("hl:yes"(), "hl:Theory"(tcs, ccs, ax, df), tm)
+             ~> "hl:thy-thm"("hl:Theory"(tcs, ccs, "hl:thcons"("hl:Sequent"("hl:tmnil"(), tm), ax), df), "hl:Sequent"("hl:tmnil"(), tm));
+      -- new_basic_definition: Comb(Comb(Const("=",_),Var(cname,ty)),r) with r closed and its type variables in ty's
+      "new-basic-definition". thy:Thy, tm:Term, s:SplitEq, r:ThyThmR | "hl:split-eq"(tm) ~> s, "hl:new-def-k"(s, thy) ~> r |- "hl:new-basic-definition"(thy, tm) ~> r;
+      "new-def-k-no". thy:Thy |- "hl:new-def-k"("hl:no-eqn"(), thy) ~> "hl:thy-thm-fail"("hl:r-def-shape"());
+      "new-def-k-const". op:Term, n:Str, ty:Type, r:Term, thy:Thy |- "hl:new-def-k"("hl:eqn"(op, "hl:Const"(n, ty), r), thy) ~> "hl:thy-thm-fail"("hl:r-def-already-const"());
+      "new-def-k-comb". op:Term, f:Term, x:Term, r:Term, thy:Thy |- "hl:new-def-k"("hl:eqn"(op, "hl:Comb"(f, x), r), thy) ~> "hl:thy-thm-fail"("hl:r-def-shape"());
+      "new-def-k-abs". op:Term, v:Term, b:Term, r:Term, thy:Thy |- "hl:new-def-k"("hl:eqn"(op, "hl:Abs"(v, b), r), thy) ~> "hl:thy-thm-fail"("hl:r-def-shape"());
+      "new-def-k-var". op:Term, n:Str, ty:Type, r:Term, thy:Thy, e:Flag, out:ThyThmR | "hl:freesin"("hl:tmnil"(), r) ~> e, "hl:new-def-k2"(e, thy, n, ty, r) ~> out
+        |- "hl:new-def-k"("hl:eqn"(op, "hl:Var"(n, ty), r), thy) ~> out;
+      "new-def-k2-no". thy:Thy, n:Str, ty:Type, r:Term |- "hl:new-def-k2"("hl:no"(), thy, n, ty, r) ~> "hl:thy-thm-fail"("hl:r-def-not-closed"());
+      "new-def-k2-yes". thy:Thy, n:Str, ty:Type, r:Term, a:Tys, b:Tys, e:Flag, out:ThyThmR |
+          "hl:type-vars-in-term"(r) ~> a, "hl:tyvars"(ty) ~> b, "hl:ty-subset"(a, b) ~> e, "hl:new-def-k3"(e, thy, n, ty, r) ~> out
+        |- "hl:new-def-k2"("hl:yes"(), thy, n, ty, r) ~> out;
+      "new-def-k3-no". thy:Thy, n:Str, ty:Type, r:Term |- "hl:new-def-k3"("hl:no"(), thy, n, ty, r) ~> "hl:thy-thm-fail"("hl:r-def-tyvars"());
+      "new-def-k3-yes". thy:Thy, n:Str, ty:Type, r:Term, o:ThyR, out:ThyThmR | "hl:new-constant"(thy, n, ty) ~> o, "hl:new-def-k4"(o, n, ty, r) ~> out
+        |- "hl:new-def-k3"("hl:yes"(), thy, n, ty, r) ~> out;
+      "new-def-k4-fail". rs:Reason, n:Str, ty:Type, r:Term |- "hl:new-def-k4"("hl:thy-fail"(rs), n, ty, r) ~> "hl:thy-thm-fail"(rs);
+      "new-def-k4-ok". tcs:TyCons, ccs:Cons, ax:Thms, df:Thms, n:Str, ty:Type, r:Term, e:Term | "hl:safe-mk-eq"("hl:Const"(n, ty), r) ~> e
+        |- "hl:new-def-k4"("hl:thy-ok"("hl:Theory"(tcs, ccs, ax, df)), n, ty, r)
+             ~> "hl:thy-thm"("hl:Theory"(tcs, ccs, ax, "hl:thcons"("hl:Sequent"("hl:tmnil"(), e), df)), "hl:Sequent"("hl:tmnil"(), e));
+      -- new_basic_type_definition tyname (absname,repname) |- P x
+      "new-basic-type-definition". tcs:TyCons, ccs:Cons, ax:Thms, df:Thms, tn:Str, an:Str, rn:Str, asl:Tms, c:Term, e1:Flag, e2:Flag, e3:Flag, r:TydefR |
+          "hl:can-get-const"(ccs, an) ~> e1, "hl:can-get-const"(ccs, rn) ~> e2, "hl:or"(e1, e2) ~> e3,
+          "hl:tydef-1"(e3, "hl:Theory"(tcs, ccs, ax, df), tn, an, rn, asl, c) ~> r
+        |- "hl:new-basic-type-definition"("hl:Theory"(tcs, ccs, ax, df), tn, an, rn, "hl:Sequent"(asl, c)) ~> r;
+      "tydef-1-in-use". thy:Thy, tn:Str, an:Str, rn:Str, asl:Tms, c:Term |- "hl:tydef-1"("hl:yes"(), thy, tn, an, rn, asl, c) ~> "hl:tydef-fail"("hl:r-tydef-consts"());
+      "tydef-1-hyps". thy:Thy, tn:Str, an:Str, rn:Str, h:Term, hs:Tms, c:Term |- "hl:tydef-1"("hl:no"(), thy, tn, an, rn, "hl:tmcons"(h, hs), c) ~> "hl:tydef-fail"("hl:r-tydef-hyps"());
+      "tydef-1-ok". thy:Thy, tn:Str, an:Str, rn:Str, c:Term, r:TydefR | "hl:tydef-2"(thy, tn, an, rn, c) ~> r |- "hl:tydef-1"("hl:no"(), thy, tn, an, rn, "hl:tmnil"(), c) ~> r;
+      "tydef-2-var". thy:Thy, tn:Str, an:Str, rn:Str, n:Str, ty:Type |- "hl:tydef-2"(thy, tn, an, rn, "hl:Var"(n, ty)) ~> "hl:tydef-fail"("hl:r-tydef-not-comb"());
+      "tydef-2-const". thy:Thy, tn:Str, an:Str, rn:Str, n:Str, ty:Type |- "hl:tydef-2"(thy, tn, an, rn, "hl:Const"(n, ty)) ~> "hl:tydef-fail"("hl:r-tydef-not-comb"());
+      "tydef-2-abs". thy:Thy, tn:Str, an:Str, rn:Str, v:Term, b:Term |- "hl:tydef-2"(thy, tn, an, rn, "hl:Abs"(v, b)) ~> "hl:tydef-fail"("hl:r-tydef-not-comb"());
+      "tydef-2-comb". thy:Thy, tn:Str, an:Str, rn:Str, p:Term, x:Term, e:Flag, r:TydefR | "hl:freesin"("hl:tmnil"(), p) ~> e, "hl:tydef-3"(e, thy, tn, an, rn, p, x) ~> r
+        |- "hl:tydef-2"(thy, tn, an, rn, "hl:Comb"(p, x)) ~> r;
+      "tydef-3-open". thy:Thy, tn:Str, an:Str, rn:Str, p:Term, x:Term |- "hl:tydef-3"("hl:no"(), thy, tn, an, rn, p, x) ~> "hl:tydef-fail"("hl:r-tydef-not-closed"());
+      "tydef-3-closed". thy:Thy, tn:Str, an:Str, rn:Str, p:Term, x:Term, tvs:Tys, stvs:Tys, k:Nat, o:ThyR, r:TydefR |
+          "hl:type-vars-in-term"(p) ~> tvs, "hl:ty-sort"(tvs) ~> stvs, "hl:ty-length"(stvs) ~> k,
+          "hl:new-type"(thy, tn, k) ~> o, "hl:tydef-4"(o, tn, an, rn, p, x, stvs) ~> r
+        |- "hl:tydef-3"("hl:yes"(), thy, tn, an, rn, p, x) ~> r;
+      "tydef-4-fail". rs:Reason, tn:Str, an:Str, rn:Str, p:Term, x:Term, tvs:Tys |- "hl:tydef-4"("hl:thy-fail"(rs), tn, an, rn, p, x, tvs) ~> "hl:tydef-fail"("hl:r-tydef-type-exists"());
+      "tydef-4-ok". thy:Thy, tn:Str, an:Str, rn:Str, p:Term, x:Term, tvs:Tys, rty:Type, absty:Type, o:ThyR, r:TydefR |
+          "hl:type-of"(x) ~> rty, "hl:mk-fun-ty"(rty, "hl:Tyapp"(tn, tvs)) ~> absty,
+          "hl:new-constant"(thy, an, absty) ~> o, "hl:tydef-5"(o, thy, an, absty, rn, p, "hl:Tyapp"(tn, tvs), rty) ~> r
+        |- "hl:tydef-4"("hl:thy-ok"(thy), tn, an, rn, p, x, tvs) ~> r;
+      -- the constant names were checked free, so new_constant(absname) cannot fail; fusion.ml would keep the new type
+      "tydef-5-fail". rs:Reason, thy:Thy, an:Str, absty:Type, rn:Str, p:Term, aty:Type, rty:Type
+        |- "hl:tydef-5"("hl:thy-fail"(rs), thy, an, absty, rn, p, aty, rty) ~> "hl:tydef-fail-partial"(thy, rs);
+      "tydef-5-ok". thy1:Thy, thy:Thy, an:Str, absty:Type, rn:Str, p:Term, aty:Type, rty:Type, repty:Type, o:ThyR, r:TydefR |
+          "hl:mk-fun-ty"(aty, rty) ~> repty, "hl:new-constant"(thy1, rn, repty) ~> o, "hl:tydef-5b"(o, thy1, an, absty, rn, repty, p, aty, rty) ~> r
+        |- "hl:tydef-5"("hl:thy-ok"(thy1), thy, an, absty, rn, p, aty, rty) ~> r;
+      -- absname = repname: fusion.ml has declared the type and the abstraction constant when new_constant(repname) fails
+      "tydef-5b-partial". rs:Reason, thy1:Thy, an:Str, absty:Type, rn:Str, repty:Type, p:Term, aty:Type, rty:Type
+        |- "hl:tydef-5b"("hl:thy-fail"(rs), thy1, an, absty, rn, repty, p, aty, rty) ~> "hl:tydef-fail-partial"(thy1, rs);
+      "tydef-5b-ok". thy2:Thy, thy1:Thy, an:Str, absty:Type, rn:Str, repty:Type, p:Term, aty:Type, rty:Type, r:TydefR |
+          "hl:tydef-6"(thy2, p, "hl:Const"(an, absty), "hl:Const"(rn, repty), aty, rty) ~> r
+        |- "hl:tydef-5b"("hl:thy-ok"(thy2), thy1, an, absty, rn, repty, p, aty, rty) ~> r;
+      -- |- abs(rep a) = a   and   |- P r = (rep(abs r) = r); mk_comb's type checks hold by construction here
+      "tydef-6". thy:Thy, p:Term, abs:Term, rep:Term, aty:Type, rty:Type, na:Str, nr:Str, e1:Term, inner:Term, e2:Term |
+          "hl:nm-a"() ~> na, "hl:nm-r"() ~> nr,
+          "hl:safe-mk-eq"("hl:Comb"(abs, "hl:Comb"(rep, "hl:Var"(na, aty))), "hl:Var"(na, aty)) ~> e1,
+          "hl:safe-mk-eq"("hl:Comb"(rep, "hl:Comb"(abs, "hl:Var"(nr, rty))), "hl:Var"(nr, rty)) ~> inner,
+          "hl:safe-mk-eq"("hl:Comb"(p, "hl:Var"(nr, rty)), inner) ~> e2
+        |- "hl:tydef-6"(thy, p, abs, rep, aty, rty) ~> "hl:tydef-ok"(thy, "hl:Sequent"("hl:tmnil"(), e1), "hl:Sequent"("hl:tmnil"(), e2));
+      "or-yes". b:Flag |- "hl:or"("hl:yes"(), b) ~> "hl:yes"();
+      "or-no". b:Flag |- "hl:or"("hl:no"(), b) ~> b;
+      "and-yes". b:Flag |- "hl:and"("hl:yes"(), b) ~> b;
+      "and-no". b:Flag |- "hl:and"("hl:no"(), b) ~> "hl:no"();
+
+      -- ================================================================= replay
+      -- HOLR v1 replay of a decoded record sequence, as CeTTa's native/hol_light/hol_stream.c executes it.
+      -- The axiom policy: OPEN admits any proposition (fusion.ml's new_axiom), STANDARD only ETA_AX, SELECT_AX
+      -- and INFINITY_AX over the certified standard declarations, SEALED none.  A stream's policy is the larger
+      -- of the host's and its header's, and POLICY records only tighten it.
+      "policy-max-open". p:Policy |- "hl:policy-max"("hl:open"(), p) ~> p;
+      "policy-max-standard-open". |- "hl:policy-max"("hl:standard"(), "hl:open"()) ~> "hl:standard"();
+      "policy-max-standard-standard". |- "hl:policy-max"("hl:standard"(), "hl:standard"()) ~> "hl:standard"();
+      "policy-max-standard-sealed". |- "hl:policy-max"("hl:standard"(), "hl:sealed"()) ~> "hl:sealed"();
+      "policy-max-sealed". p:Policy |- "hl:policy-max"("hl:sealed"(), p) ~> "hl:sealed"();
+      "policy-rank-open". |- "hl:policy-rank"("hl:open"()) ~> "hl:nz"();
+      "policy-rank-standard". |- "hl:policy-rank"("hl:standard"()) ~> "hl:nb1"("hl:nz"());
+      "policy-rank-sealed". |- "hl:policy-rank"("hl:sealed"()) ~> "hl:nb0"("hl:nb1"("hl:nz"()));
+      "policy-of-nat-0". |- "hl:policy-of-nat"("hl:nz"()) ~> "hl:open"();
+      "policy-of-nat-1". |- "hl:policy-of-nat"("hl:nb1"("hl:nz"())) ~> "hl:standard"();
+      "policy-of-nat-2". |- "hl:policy-of-nat"("hl:nb0"("hl:nb1"("hl:nz"()))) ~> "hl:sealed"();
+
+      -- The standard theory, as CeTTa certifies it (HOL Light 924faf0c's definitions of T, /\, ==>, !, ?, F, ~,
+      -- ONE_ONE, ONTO, its axioms ETA_AX, SELECT_AX, INFINITY_AX, the choice constant @ : (A->bool)->A and the type
+      -- ind of arity 0).  Bound names are kept, although alphaorder does not look at them.
+      "initial-std". b:Str, f:Str, q:Str | "hl:nm-bool"() ~> b, "hl:nm-fun"() ~> f, "hl:nm-eq"() ~> q
+        |- "hl:initial-std"() ~> "hl:std"("hl:ss-cons"(b, "hl:ss-cons"(f, "hl:ss-nil"())), "hl:ss-cons"(q, "hl:ss-nil"()));
+      "std-defs". d1:StdDef, d2:StdDef, d3:StdDef, d4:StdDef, d5:StdDef, d6:StdDef, d7:StdDef, d8:StdDef, d9:StdDef |
+          "hl:std-def-T"() ~> d1, "hl:std-def-and"() ~> d2, "hl:std-def-imp"() ~> d3, "hl:std-def-all"() ~> d4, "hl:std-def-ex"() ~> d5,
+          "hl:std-def-F"() ~> d6, "hl:std-def-neg"() ~> d7, "hl:std-def-one-one"() ~> d8, "hl:std-def-onto"() ~> d9
+        |- "hl:std-defs"() ~> "hl:sd-cons"(d1, "hl:sd-cons"(d2, "hl:sd-cons"(d3, "hl:sd-cons"(d4, "hl:sd-cons"(d5, "hl:sd-cons"(d6, "hl:sd-cons"(d7, "hl:sd-cons"(d8, "hl:sd-cons"(d9, "hl:sd-nil"())))))))));
+      -- T = (\p:bool. p) = (\p:bool. p)
+      "std-def-T". nT:Str, np:Str, b:Type, body:Term | "hl:nm-T"() ~> nT, "hl:nm-p"() ~> np, "hl:bool-ty"() ~> b,
+          "hl:safe-mk-eq"("hl:Abs"("hl:Var"(np, b), "hl:Var"(np, b)), "hl:Abs"("hl:Var"(np, b), "hl:Var"(np, b))) ~> body
+        |- "hl:std-def-T"() ~> "hl:sd"(nT, b, body);
+      -- (/\) = \p q. (\f:bool->bool->bool. f p q) = (\f. f T T)
+      "std-def-and". na:Str, nT:Str, np:Str, nq:Str, nf:Str, b:Type, bb:Type, bbb:Type, e:Term |
+          "hl:nm-and"() ~> na, "hl:nm-T"() ~> nT, "hl:nm-p"() ~> np, "hl:nm-q"() ~> nq, "hl:nm-f"() ~> nf, "hl:bool-ty"() ~> b,
+          "hl:mk-fun-ty"(b, b) ~> bb, "hl:mk-fun-ty"(b, bb) ~> bbb,
+          "hl:safe-mk-eq"("hl:Abs"("hl:Var"(nf, bbb), "hl:Comb"("hl:Comb"("hl:Var"(nf, bbb), "hl:Var"(np, b)), "hl:Var"(nq, b))),
+                          "hl:Abs"("hl:Var"(nf, bbb), "hl:Comb"("hl:Comb"("hl:Var"(nf, bbb), "hl:Const"(nT, b)), "hl:Const"(nT, b)))) ~> e
+        |- "hl:std-def-and"() ~> "hl:sd"(na, bbb, "hl:Abs"("hl:Var"(np, b), "hl:Abs"("hl:Var"(nq, b), e)));
+      -- (==>) = \p q. (p /\ q) = p
+      "std-def-imp". ni:Str, na:Str, np:Str, nq:Str, b:Type, bb:Type, bbb:Type, e:Term |
+          "hl:nm-imp"() ~> ni, "hl:nm-and"() ~> na, "hl:nm-p"() ~> np, "hl:nm-q"() ~> nq, "hl:bool-ty"() ~> b,
+          "hl:mk-fun-ty"(b, b) ~> bb, "hl:mk-fun-ty"(b, bb) ~> bbb,
+          "hl:safe-mk-eq"("hl:Comb"("hl:Comb"("hl:Const"(na, bbb), "hl:Var"(np, b)), "hl:Var"(nq, b)), "hl:Var"(np, b)) ~> e
+        |- "hl:std-def-imp"() ~> "hl:sd"(ni, bbb, "hl:Abs"("hl:Var"(np, b), "hl:Abs"("hl:Var"(nq, b), e)));
+      -- (!) = \P:A->bool. P = (\x. T)
+      "std-def-all". nl:Str, nP:Str, nx:Str, nT:Str, a:Type, b:Type, ab:Type, ty:Type, e:Term |
+          "hl:nm-all"() ~> nl, "hl:nm-P"() ~> nP, "hl:nm-x"() ~> nx, "hl:nm-T"() ~> nT, "hl:aty"() ~> a, "hl:bool-ty"() ~> b,
+          "hl:mk-fun-ty"(a, b) ~> ab, "hl:mk-fun-ty"(ab, b) ~> ty,
+          "hl:safe-mk-eq"("hl:Var"(nP, ab), "hl:Abs"("hl:Var"(nx, a), "hl:Const"(nT, b))) ~> e
+        |- "hl:std-def-all"() ~> "hl:sd"(nl, ty, "hl:Abs"("hl:Var"(nP, ab), e));
+      -- (?) = \P:A->bool. !q. (!x. P x ==> q) ==> q
+      "std-def-ex". ne:Str, nl:Str, ni:Str, nP:Str, nq:Str, nx:Str, a:Type, b:Type, bb:Type, bbb:Type, ab:Type, ty:Type, allb:Type |
+          "hl:nm-ex"() ~> ne, "hl:nm-all"() ~> nl, "hl:nm-imp"() ~> ni, "hl:nm-P"() ~> nP, "hl:nm-q"() ~> nq, "hl:nm-x"() ~> nx,
+          "hl:aty"() ~> a, "hl:bool-ty"() ~> b, "hl:mk-fun-ty"(b, b) ~> bb, "hl:mk-fun-ty"(b, bb) ~> bbb,
+          "hl:mk-fun-ty"(a, b) ~> ab, "hl:mk-fun-ty"(ab, b) ~> ty, "hl:mk-fun-ty"(bb, b) ~> allb
+        |- "hl:std-def-ex"() ~> "hl:sd"(ne, ty,
+             "hl:Abs"("hl:Var"(nP, ab), "hl:Comb"("hl:Const"(nl, allb), "hl:Abs"("hl:Var"(nq, b),
+               "hl:Comb"("hl:Comb"("hl:Const"(ni, bbb),
+                   "hl:Comb"("hl:Const"(nl, ty), "hl:Abs"("hl:Var"(nx, a),
+                     "hl:Comb"("hl:Comb"("hl:Const"(ni, bbb), "hl:Comb"("hl:Var"(nP, ab), "hl:Var"(nx, a))), "hl:Var"(nq, b))))),
+                 "hl:Var"(nq, b))))));
+      -- F = !p:bool. p
+      "std-def-F". nF:Str, nl:Str, np:Str, b:Type, bb:Type, allb:Type | "hl:nm-F"() ~> nF, "hl:nm-all"() ~> nl, "hl:nm-p"() ~> np,
+          "hl:bool-ty"() ~> b, "hl:mk-fun-ty"(b, b) ~> bb, "hl:mk-fun-ty"(bb, b) ~> allb
+        |- "hl:std-def-F"() ~> "hl:sd"(nF, b, "hl:Comb"("hl:Const"(nl, allb), "hl:Abs"("hl:Var"(np, b), "hl:Var"(np, b))));
+      -- (~) = \p. p ==> F
+      "std-def-neg". nn:Str, ni:Str, nF:Str, np:Str, b:Type, bb:Type, bbb:Type | "hl:nm-neg"() ~> nn, "hl:nm-imp"() ~> ni, "hl:nm-F"() ~> nF, "hl:nm-p"() ~> np,
+          "hl:bool-ty"() ~> b, "hl:mk-fun-ty"(b, b) ~> bb, "hl:mk-fun-ty"(b, bb) ~> bbb
+        |- "hl:std-def-neg"() ~> "hl:sd"(nn, bb, "hl:Abs"("hl:Var"(np, b), "hl:Comb"("hl:Comb"("hl:Const"(ni, bbb), "hl:Var"(np, b)), "hl:Const"(nF, b))));
+      -- ONE_ONE = \f:A->B. !x1 x2. (f x1 = f x2) ==> (x1 = x2)
+      "std-def-one-one". no:Str, nl:Str, ni:Str, ng:Str, n1:Str, n2:Str, a:Type, nb:Str, b:Type, bb:Type, bbb:Type, ab:Type, alla:Type, fab:Type, ty:Type, e1:Term, e2:Term |
+          "hl:nm-one-one"() ~> no, "hl:nm-all"() ~> nl, "hl:nm-imp"() ~> ni, "hl:nm-g2064"() ~> ng, "hl:nm-x1"() ~> n1, "hl:nm-x2"() ~> n2,
+          "hl:aty"() ~> a, "hl:nm-B"() ~> nb, "hl:bool-ty"() ~> b, "hl:mk-fun-ty"(b, b) ~> bb, "hl:mk-fun-ty"(b, bb) ~> bbb,
+          "hl:mk-fun-ty"(a, b) ~> ab, "hl:mk-fun-ty"(ab, b) ~> alla, "hl:mk-fun-ty"(a, "hl:Tyvar"(nb)) ~> fab, "hl:mk-fun-ty"(fab, b) ~> ty,
+          "hl:safe-mk-eq"("hl:Comb"("hl:Var"(ng, fab), "hl:Var"(n1, a)), "hl:Comb"("hl:Var"(ng, fab), "hl:Var"(n2, a))) ~> e1,
+          "hl:safe-mk-eq"("hl:Var"(n1, a), "hl:Var"(n2, a)) ~> e2
+        |- "hl:std-def-one-one"() ~> "hl:sd"(no, ty,
+             "hl:Abs"("hl:Var"(ng, fab), "hl:Comb"("hl:Const"(nl, alla), "hl:Abs"("hl:Var"(n1, a),
+               "hl:Comb"("hl:Const"(nl, alla), "hl:Abs"("hl:Var"(n2, a), "hl:Comb"("hl:Comb"("hl:Const"(ni, bbb), e1), e2)))))));
+      -- ONTO = \f:A->B. !y. ?x. y = f x
+      "std-def-onto". nt:Str, nl:Str, ne:Str, ng:Str, ny:Str, nx:Str, nb:Str, a:Type, b:Type, bty:Type, ab:Type, bb2:Type, allb:Type, exa:Type, fab:Type, ty:Type, e:Term |
+          "hl:nm-onto"() ~> nt, "hl:nm-all"() ~> nl, "hl:nm-ex"() ~> ne, "hl:nm-g2069"() ~> ng, "hl:nm-y"() ~> ny, "hl:nm-x"() ~> nx, "hl:nm-B"() ~> nb,
+          "hl:aty"() ~> a, "hl:bool-ty"() ~> b, "hl:mk-fun-ty"(a, b) ~> ab, "hl:mk-fun-ty"("hl:Tyvar"(nb), b) ~> bb2,
+          "hl:mk-fun-ty"(bb2, b) ~> allb, "hl:mk-fun-ty"(ab, b) ~> exa, "hl:mk-fun-ty"(a, "hl:Tyvar"(nb)) ~> fab, "hl:mk-fun-ty"(fab, b) ~> ty,
+          "hl:safe-mk-eq"("hl:Var"(ny, "hl:Tyvar"(nb)), "hl:Comb"("hl:Var"(ng, fab), "hl:Var"(nx, a))) ~> e
+        |- "hl:std-def-onto"() ~> "hl:sd"(nt, ty,
+             "hl:Abs"("hl:Var"(ng, fab), "hl:Comb"("hl:Const"(nl, allb), "hl:Abs"("hl:Var"(ny, "hl:Tyvar"(nb)),
+               "hl:Comb"("hl:Const"(ne, exa), "hl:Abs"("hl:Var"(nx, a), e))))));
+      "std-axioms". a:Term, b:Term, c:Term | "hl:std-eta"() ~> a, "hl:std-select"() ~> b, "hl:std-infinity"() ~> c
+        |- "hl:std-axioms"() ~> "hl:tmcons"(a, "hl:tmcons"(b, "hl:tmcons"(c, "hl:tmnil"())));
+      -- ETA_AX: !t:A->B. (\x. t x) = t
+      "std-eta". nl:Str, nt:Str, nx:Str, nb:Str, a:Type, b:Type, fab:Type, p:Type, ty:Type, e:Term |
+          "hl:nm-all"() ~> nl, "hl:nm-t"() ~> nt, "hl:nm-x"() ~> nx, "hl:nm-B"() ~> nb, "hl:aty"() ~> a, "hl:bool-ty"() ~> b,
+          "hl:mk-fun-ty"(a, "hl:Tyvar"(nb)) ~> fab, "hl:mk-fun-ty"(fab, b) ~> p, "hl:mk-fun-ty"(p, b) ~> ty,
+          "hl:safe-mk-eq"("hl:Abs"("hl:Var"(nx, a), "hl:Comb"("hl:Var"(nt, fab), "hl:Var"(nx, a))), "hl:Var"(nt, fab)) ~> e
+        |- "hl:std-eta"() ~> "hl:Comb"("hl:Const"(nl, ty), "hl:Abs"("hl:Var"(nt, fab), e));
+      -- SELECT_AX: !P:A->bool. !x. P x ==> P (@ P)
+      "std-select". nl:Str, ni:Str, nc:Str, nP:Str, nx:Str, a:Type, b:Type, bb:Type, bbb:Type, ab:Type, alla:Type, p:Type, ty:Type, ct:Type |
+          "hl:nm-all"() ~> nl, "hl:nm-imp"() ~> ni, "hl:nm-at"() ~> nc, "hl:nm-P"() ~> nP, "hl:nm-x"() ~> nx, "hl:aty"() ~> a, "hl:bool-ty"() ~> b,
+          "hl:mk-fun-ty"(b, b) ~> bb, "hl:mk-fun-ty"(b, bb) ~> bbb, "hl:mk-fun-ty"(a, b) ~> ab, "hl:mk-fun-ty"(ab, b) ~> alla,
+          "hl:mk-fun-ty"(alla, b) ~> ty, "hl:mk-fun-ty"(ab, a) ~> ct
+        |- "hl:std-select"() ~> "hl:Comb"("hl:Const"(nl, ty), "hl:Abs"("hl:Var"(nP, ab), "hl:Comb"("hl:Const"(nl, alla), "hl:Abs"("hl:Var"(nx, a),
+             "hl:Comb"("hl:Comb"("hl:Const"(ni, bbb), "hl:Comb"("hl:Var"(nP, ab), "hl:Var"(nx, a))),
+                        "hl:Comb"("hl:Var"(nP, ab), "hl:Comb"("hl:Const"(nc, ct), "hl:Var"(nP, ab))))))));
+      -- INFINITY_AX: ?f:ind->ind. ONE_ONE f /\ ~(ONTO f)
+      "std-infinity". ne:Str, na:Str, no:Str, nn:Str, nt:Str, nf:Str, ni:Str, it:Type, b:Type, bb:Type, bbb:Type, ii:Type, iib:Type, ty:Type |
+          "hl:nm-ex"() ~> ne, "hl:nm-and"() ~> na, "hl:nm-one-one"() ~> no, "hl:nm-neg"() ~> nn, "hl:nm-onto"() ~> nt, "hl:nm-f"() ~> nf, "hl:nm-ind"() ~> ni,
+          "hl:bool-ty"() ~> b, "hl:mk-fun-ty"(b, b) ~> bb, "hl:mk-fun-ty"(b, bb) ~> bbb,
+          "hl:mk-fun-ty"("hl:Tyapp"(ni, "hl:tynil"()), "hl:Tyapp"(ni, "hl:tynil"())) ~> ii, "hl:mk-fun-ty"(ii, b) ~> iib, "hl:mk-fun-ty"(iib, b) ~> ty
+        |- "hl:std-infinity"() ~> "hl:Comb"("hl:Const"(ne, ty), "hl:Abs"("hl:Var"(nf, ii),
+             "hl:Comb"("hl:Comb"("hl:Const"(na, bbb), "hl:Comb"("hl:Const"(no, iib), "hl:Var"(nf, ii))),
+                        "hl:Comb"("hl:Const"(nn, bb), "hl:Comb"("hl:Const"(nt, iib), "hl:Var"(nf, ii))))));
+      "std-choice-type". a:Type, b:Type, ab:Type, r:Type | "hl:aty"() ~> a, "hl:bool-ty"() ~> b, "hl:mk-fun-ty"(a, b) ~> ab, "hl:mk-fun-ty"(ab, a) ~> r
+        |- "hl:std-choice-type"() ~> r;
+      -- a term or type is standard when every type operator and constant in it is certified
+      "type-std-var". s:Std, n:Str |- "hl:type-std"(s, "hl:Tyvar"(n)) ~> "hl:yes"();
+      "type-std-app". tys:Strs, cons:Strs, n:Str, args:Tys, e:Flag, r:Flag | "hl:ss-mem"(n, tys) ~> e, "hl:type-std-k"(e, "hl:std"(tys, cons), args) ~> r
+        |- "hl:type-std"("hl:std"(tys, cons), "hl:Tyapp"(n, args)) ~> r;
+      "type-std-k-no". s:Std, a:Tys |- "hl:type-std-k"("hl:no"(), s, a) ~> "hl:no"();
+      "type-std-k-yes". s:Std, a:Tys, r:Flag | "hl:types-std"(s, a) ~> r |- "hl:type-std-k"("hl:yes"(), s, a) ~> r;
+      "types-std-nil". s:Std |- "hl:types-std"(s, "hl:tynil"()) ~> "hl:yes"();
+      "types-std-cons". s:Std, x:Type, xs:Tys, e:Flag, r:Flag | "hl:type-std"(s, x) ~> e, "hl:types-std-k"(e, s, xs) ~> r |- "hl:types-std"(s, "hl:tycons"(x, xs)) ~> r;
+      "types-std-k-no". s:Std, a:Tys |- "hl:types-std-k"("hl:no"(), s, a) ~> "hl:no"();
+      "types-std-k-yes". s:Std, a:Tys, r:Flag | "hl:types-std"(s, a) ~> r |- "hl:types-std-k"("hl:yes"(), s, a) ~> r;
+      "term-std-var". s:Std, n:Str, ty:Type, r:Flag | "hl:type-std"(s, ty) ~> r |- "hl:term-std"(s, "hl:Var"(n, ty)) ~> r;
+      "term-std-const". tys:Strs, cons:Strs, n:Str, ty:Type, e:Flag, r:Flag | "hl:ss-mem"(n, cons) ~> e, "hl:type-std-k"(e, "hl:std"(tys, cons), "hl:tycons"(ty, "hl:tynil"())) ~> r
+        |- "hl:term-std"("hl:std"(tys, cons), "hl:Const"(n, ty)) ~> r;
+      "term-std-comb". s:Std, f:Term, x:Term, e:Flag, r:Flag | "hl:term-std"(s, f) ~> e, "hl:term-std-k"(e, s, x) ~> r |- "hl:term-std"(s, "hl:Comb"(f, x)) ~> r;
+      "term-std-abs". s:Std, v:Term, b:Term, e:Flag, r:Flag | "hl:term-std"(s, v) ~> e, "hl:term-std-k"(e, s, b) ~> r |- "hl:term-std"(s, "hl:Abs"(v, b)) ~> r;
+      "term-std-k-no". s:Std, tm:Term |- "hl:term-std-k"("hl:no"(), s, tm) ~> "hl:no"();
+      "term-std-k-yes". s:Std, tm:Term, r:Flag | "hl:term-std"(s, tm) ~> r |- "hl:term-std-k"("hl:yes"(), s, tm) ~> r;
+      -- certification of new declarations: ind of arity 0, @ at (A->bool)->A, and the nine definitions
+      "std-after-new-type". s:Std, n:Str, k:Nat, i:Str, e1:Flag, o:Ord, e2:Flag, e:Flag, r:Std |
+          "hl:nm-ind"() ~> i, "hl:str-eq"(n, i) ~> e1, "hl:cmp-nat"(k, "hl:nz"()) ~> o, "hl:ord-is-eq"(o) ~> e2, "hl:and"(e1, e2) ~> e, "hl:std-add-type-k"(e, s, n) ~> r
+        |- "hl:std-after-new-type"(s, n, k) ~> r;
+      "std-add-type-k-yes". tys:Strs, cons:Strs, n:Str |- "hl:std-add-type-k"("hl:yes"(), "hl:std"(tys, cons), n) ~> "hl:std"("hl:ss-cons"(n, tys), cons);
+      "std-add-type-k-no". s:Std, n:Str |- "hl:std-add-type-k"("hl:no"(), s, n) ~> s;
+      "std-after-new-constant". s:Std, n:Str, ty:Type, at:Str, e1:Flag, ct:Type, e2:Flag, e:Flag, r:Std |
+          "hl:nm-at"() ~> at, "hl:str-eq"(n, at) ~> e1, "hl:std-choice-type"() ~> ct, "hl:ty-eq"(ty, ct) ~> e2, "hl:and"(e1, e2) ~> e, "hl:std-add-const-k"(e, s, n) ~> r
+        |- "hl:std-after-new-constant"(s, n, ty) ~> r;
+      "std-add-const-k-yes". tys:Strs, cons:Strs, n:Str |- "hl:std-add-const-k"("hl:yes"(), "hl:std"(tys, cons), n) ~> "hl:std"(tys, "hl:ss-cons"(n, cons));
+      "std-add-const-k-no". s:Std, n:Str |- "hl:std-add-const-k"("hl:no"(), s, n) ~> s;
+      "std-after-new-definition". s:Std, tm:Term, sp:SplitEq, r:Std | "hl:split-eq"(tm) ~> sp, "hl:std-def-check"(sp, s) ~> r |- "hl:std-after-new-definition"(s, tm) ~> r;
+      "std-def-check-var". op:Term, n:Str, ty:Type, body:Term, s:Std, ds:StdDefs, r:Std | "hl:std-defs"() ~> ds, "hl:std-def-lookup"(ds, n, ty, body, s) ~> r
+        |- "hl:std-def-check"("hl:eqn"(op, "hl:Var"(n, ty), body), s) ~> r;
+      "std-def-check-const". op:Term, n:Str, ty:Type, body:Term, s:Std |- "hl:std-def-check"("hl:eqn"(op, "hl:Const"(n, ty), body), s) ~> s;
+      "std-def-check-comb". op:Term, f:Term, x:Term, body:Term, s:Std |- "hl:std-def-check"("hl:eqn"(op, "hl:Comb"(f, x), body), s) ~> s;
+      "std-def-check-abs". op:Term, v:Term, b:Term, body:Term, s:Std |- "hl:std-def-check"("hl:eqn"(op, "hl:Abs"(v, b), body), s) ~> s;
+      "std-def-check-none". s:Std |- "hl:std-def-check"("hl:no-eqn"(), s) ~> s;
+      "std-def-lookup-nil". n:Str, ty:Type, body:Term, s:Std |- "hl:std-def-lookup"("hl:sd-nil"(), n, ty, body, s) ~> s;
+      "std-def-lookup-cons". m:Str, ety:Type, ebody:Term, ds:StdDefs, n:Str, ty:Type, body:Term, s:Std, e:Flag, r:Std |
+          "hl:str-eq"(m, n) ~> e, "hl:std-def-lookup-k"(e, ety, ebody, ds, n, ty, body, s) ~> r
+        |- "hl:std-def-lookup"("hl:sd-cons"("hl:sd"(m, ety, ebody), ds), n, ty, body, s) ~> r;
+      "std-def-lookup-k-no". ety:Type, ebody:Term, ds:StdDefs, n:Str, ty:Type, body:Term, s:Std, r:Std | "hl:std-def-lookup"(ds, n, ty, body, s) ~> r
+        |- "hl:std-def-lookup-k"("hl:no"(), ety, ebody, ds, n, ty, body, s) ~> r;
+      "std-def-lookup-k-yes". ety:Type, ebody:Term, ds:StdDefs, n:Str, ty:Type, body:Term, s:Std, e:Flag, o:Ord, r:Std |
+          "hl:ty-eq"(ty, ety) ~> e, "hl:alphaorder"(ebody, body) ~> o, "hl:std-def-match-k"(e, o, n, body, s) ~> r
+        |- "hl:std-def-lookup-k"("hl:yes"(), ety, ebody, ds, n, ty, body, s) ~> r;
+      "std-def-match-k-hit". n:Str, body:Term, s:Std, e:Flag, r:Std | "hl:term-std"(s, body) ~> e, "hl:std-add-const-k"(e, s, n) ~> r
+        |- "hl:std-def-match-k"("hl:yes"(), "hl:eq"(), n, body, s) ~> r;
+      "std-def-match-k-lt". n:Str, body:Term, s:Std |- "hl:std-def-match-k"("hl:yes"(), "hl:lt"(), n, body, s) ~> s;
+      "std-def-match-k-gt". n:Str, body:Term, s:Std |- "hl:std-def-match-k"("hl:yes"(), "hl:gt"(), n, body, s) ~> s;
+      "std-def-match-k-type". o:Ord, n:Str, body:Term, s:Std |- "hl:std-def-match-k"("hl:no"(), o, n, body, s) ~> s;
+      -- a standard axiom is alpha-equivalent to one of the three, and standard
+      "std-axiom". s:Std, tm:Term, axs:Tms, r:Flag | "hl:std-axioms"() ~> axs, "hl:std-axiom-k"(axs, s, tm) ~> r |- "hl:std-axiom"(s, tm) ~> r;
+      "std-axiom-k-nil". s:Std, tm:Term |- "hl:std-axiom-k"("hl:tmnil"(), s, tm) ~> "hl:no"();
+      "std-axiom-k-cons". a:Term, rest:Tms, s:Std, tm:Term, o:Ord, r:Flag | "hl:alphaorder"(a, tm) ~> o, "hl:std-axiom-k2"(o, rest, s, tm) ~> r
+        |- "hl:std-axiom-k"("hl:tmcons"(a, rest), s, tm) ~> r;
+      "std-axiom-k2-eq". rest:Tms, s:Std, tm:Term, r:Flag | "hl:term-std"(s, tm) ~> r |- "hl:std-axiom-k2"("hl:eq"(), rest, s, tm) ~> r;
+      "std-axiom-k2-lt". rest:Tms, s:Std, tm:Term, r:Flag | "hl:std-axiom-k"(rest, s, tm) ~> r |- "hl:std-axiom-k2"("hl:lt"(), rest, s, tm) ~> r;
+      "std-axiom-k2-gt". rest:Tms, s:Std, tm:Term, r:Flag | "hl:std-axiom-k"(rest, s, tm) ~> r |- "hl:std-axiom-k2"("hl:gt"(), rest, s, tm) ~> r;
+
+      -- id tables: a binary trie keyed by the id's digits, least significant first, and the next id
+      "trie-get-leaf". n:Nat |- "hl:trie-get"("hl:tleaf"(), n) ~> "hl:c-none"();
+      "trie-get-z". c:Cell, t0:Trie, t1:Trie |- "hl:trie-get"("hl:tnode"(c, t0, t1), "hl:nz"()) ~> c;
+      "trie-get-0". c:Cell, t0:Trie, t1:Trie, n:Nat, r:Cell | "hl:trie-get"(t0, n) ~> r |- "hl:trie-get"("hl:tnode"(c, t0, t1), "hl:nb0"(n)) ~> r;
+      "trie-get-1". c:Cell, t0:Trie, t1:Trie, n:Nat, r:Cell | "hl:trie-get"(t1, n) ~> r |- "hl:trie-get"("hl:tnode"(c, t0, t1), "hl:nb1"(n)) ~> r;
+      "trie-set-leaf-z". c:Cell |- "hl:trie-set"("hl:tleaf"(), "hl:nz"(), c) ~> "hl:tnode"(c, "hl:tleaf"(), "hl:tleaf"());
+      "trie-set-leaf-0". n:Nat, c:Cell, t:Trie | "hl:trie-set"("hl:tleaf"(), n, c) ~> t |- "hl:trie-set"("hl:tleaf"(), "hl:nb0"(n), c) ~> "hl:tnode"("hl:c-none"(), t, "hl:tleaf"());
+      "trie-set-leaf-1". n:Nat, c:Cell, t:Trie | "hl:trie-set"("hl:tleaf"(), n, c) ~> t |- "hl:trie-set"("hl:tleaf"(), "hl:nb1"(n), c) ~> "hl:tnode"("hl:c-none"(), "hl:tleaf"(), t);
+      "trie-set-node-z". c0:Cell, t0:Trie, t1:Trie, c:Cell |- "hl:trie-set"("hl:tnode"(c0, t0, t1), "hl:nz"(), c) ~> "hl:tnode"(c, t0, t1);
+      "trie-set-node-0". c0:Cell, t0:Trie, t1:Trie, n:Nat, c:Cell, t:Trie | "hl:trie-set"(t0, n, c) ~> t |- "hl:trie-set"("hl:tnode"(c0, t0, t1), "hl:nb0"(n), c) ~> "hl:tnode"(c0, t, t1);
+      "trie-set-node-1". c0:Cell, t0:Trie, t1:Trie, n:Nat, c:Cell, t:Trie | "hl:trie-set"(t1, n, c) ~> t |- "hl:trie-set"("hl:tnode"(c0, t0, t1), "hl:nb1"(n), c) ~> "hl:tnode"(c0, t0, t);
+      "table-get". next:Nat, t:Trie, n:Nat, r:Cell | "hl:trie-get"(t, n) ~> r |- "hl:table-get"("hl:table"(next, t), n) ~> r;
+      "table-put". next:Nat, t:Trie, c:Cell, t2:Trie, n2:Nat | "hl:trie-set"(t, next, c) ~> t2, "hl:nat-inc"(next) ~> n2 |- "hl:table-put"("hl:table"(next, t), c) ~> "hl:table"(n2, t2);
+      "table-set". next:Nat, t:Trie, n:Nat, c:Cell, t2:Trie | "hl:trie-set"(t, n, c) ~> t2 |- "hl:table-set"("hl:table"(next, t), n, c) ~> "hl:table"(next, t2);
+      "table-next". next:Nat, t:Trie |- "hl:table-next"("hl:table"(next, t)) ~> next;
+      "empty-table". |- "hl:empty-table"() ~> "hl:table"("hl:nz"(), "hl:tleaf"());
+      "initial-replay". pol:Policy, mode:Mode, thy:Thy, s:Std, e:Table | "hl:initial-theory"() ~> thy, "hl:initial-std"() ~> s, "hl:empty-table"() ~> e
+        |- "hl:initial-replay"(pol, mode) ~> "hl:replay"("hl:kern"(thy, pol, s), "hl:tables"(e, e, e, e), "hl:book"(mode, "hl:no"(), "hl:thnil"(), "hl:lb-nil"(), "hl:nz"(), "hl:nz"()));
+
+      -- validation: every id operand in encoding order; the first undefined or dropped id makes the stream
+      -- malformed; otherwise a FAILED operand makes the record a dependent failure; a FAILED id may be dropped
+      "v-seq-valid". b:Validity |- "hl:v-seq"("hl:valid"(), b) ~> b;
+      "v-seq-invalid". r:Reason, b:Validity |- "hl:v-seq"("hl:invalid"(r), b) ~> "hl:invalid"(r);
+      "v-seq-depfail-valid". |- "hl:v-seq"("hl:depfail"(), "hl:valid"()) ~> "hl:depfail"();
+      "v-seq-depfail-depfail". |- "hl:v-seq"("hl:depfail"(), "hl:depfail"()) ~> "hl:depfail"();
+      "v-seq-depfail-invalid". r:Reason |- "hl:v-seq"("hl:depfail"(), "hl:invalid"(r)) ~> "hl:invalid"(r);
+      "v-name". tb:Table, n:Nat, c:Cell, r:Validity | "hl:table-get"(tb, n) ~> c, "hl:v-name-k"(c) ~> r |- "hl:v-name"(tb, n) ~> r;
+      "v-name-k-none". |- "hl:v-name-k"("hl:c-none"()) ~> "hl:invalid"("hl:r-future-ref"());
+      "v-name-k-ok". o:Obj |- "hl:v-name-k"("hl:c-ok"(o)) ~> "hl:valid"();
+      "v-name-k-failed". |- "hl:v-name-k"("hl:c-failed"()) ~> "hl:valid"();
+      "v-name-k-dropped". |- "hl:v-name-k"("hl:c-dropped"()) ~> "hl:valid"();
+      "v-use". tb:Table, n:Nat, c:Cell, r:Validity | "hl:table-get"(tb, n) ~> c, "hl:v-use-k"(c) ~> r |- "hl:v-use"(tb, n) ~> r;
+      "v-use-k-none". |- "hl:v-use-k"("hl:c-none"()) ~> "hl:invalid"("hl:r-future-ref"());
+      "v-use-k-dropped". |- "hl:v-use-k"("hl:c-dropped"()) ~> "hl:invalid"("hl:r-dropped-ref"());
+      "v-use-k-failed". |- "hl:v-use-k"("hl:c-failed"()) ~> "hl:depfail"();
+      "v-use-k-ok". o:Obj |- "hl:v-use-k"("hl:c-ok"(o)) ~> "hl:valid"();
+      "v-drop". tb:Table, n:Nat, c:Cell, r:Validity | "hl:table-get"(tb, n) ~> c, "hl:v-drop-k"(c) ~> r |- "hl:v-drop"(tb, n) ~> r;
+      "v-drop-k-none". |- "hl:v-drop-k"("hl:c-none"()) ~> "hl:invalid"("hl:r-future-ref"());
+      "v-drop-k-dropped". |- "hl:v-drop-k"("hl:c-dropped"()) ~> "hl:invalid"("hl:r-dropped-ref"());
+      "v-drop-k-failed". |- "hl:v-drop-k"("hl:c-failed"()) ~> "hl:valid"();
+      "v-drop-k-ok". o:Obj |- "hl:v-drop-k"("hl:c-ok"(o)) ~> "hl:valid"();
+      "v-uses-nil". tb:Table |- "hl:v-uses"(tb, "hl:ids-nil"()) ~> "hl:valid"();
+      "v-uses-cons". tb:Table, n:Nat, ns:Ids, a:Validity, b:Validity, r:Validity | "hl:v-use"(tb, n) ~> a, "hl:v-uses"(tb, ns) ~> b, "hl:v-seq"(a, b) ~> r
+        |- "hl:v-uses"(tb, "hl:ids-cons"(n, ns)) ~> r;
+      "v-pairs-nil". tb:Table |- "hl:v-pairs"(tb, "hl:idp-nil"()) ~> "hl:valid"();
+      "v-pairs-cons". tb:Table, a:Nat, b:Nat, ps:IdPairs, x:Validity, y:Validity, z:Validity, r1:Validity, r:Validity |
+          "hl:v-use"(tb, a) ~> x, "hl:v-use"(tb, b) ~> y, "hl:v-pairs"(tb, ps) ~> z, "hl:v-seq"(y, z) ~> r1, "hl:v-seq"(x, r1) ~> r
+        |- "hl:v-pairs"(tb, "hl:idp-cons"(a, b, ps)) ~> r;
+      "validate-NAME". tb:Tables, s:Str |- "hl:validate"(tb, "holr:NAME"(s)) ~> "hl:valid"();
+      "validate-TYVAR". nm:Table, ty:Table, tm:Table, th:Table, n:Nat, r:Validity | "hl:v-name"(nm, n) ~> r |- "hl:validate"("hl:tables"(nm, ty, tm, th), "holr:TYVAR"(n)) ~> r;
+      "validate-TYAPP". nm:Table, ty:Table, tm:Table, th:Table, n:Nat, ns:Ids, a:Validity, b:Validity, r:Validity | "hl:v-name"(nm, n) ~> a, "hl:v-uses"(ty, ns) ~> b, "hl:v-seq"(a, b) ~> r
+        |- "hl:validate"("hl:tables"(nm, ty, tm, th), "holr:TYAPP"(n, ns)) ~> r;
+      "validate-VAR". nm:Table, ty:Table, tm:Table, th:Table, n:Nat, y:Nat, a:Validity, b:Validity, r:Validity | "hl:v-name"(nm, n) ~> a, "hl:v-use"(ty, y) ~> b, "hl:v-seq"(a, b) ~> r
+        |- "hl:validate"("hl:tables"(nm, ty, tm, th), "holr:VAR"(n, y)) ~> r;
+      "validate-CONST". nm:Table, ty:Table, tm:Table, th:Table, n:Nat, y:Nat, a:Validity, b:Validity, r:Validity | "hl:v-name"(nm, n) ~> a, "hl:v-use"(ty, y) ~> b, "hl:v-seq"(a, b) ~> r
+        |- "hl:validate"("hl:tables"(nm, ty, tm, th), "holr:CONST"(n, y)) ~> r;
+      "validate-COMB". nm:Table, ty:Table, tm:Table, th:Table, x:Nat, y:Nat, a:Validity, b:Validity, r:Validity | "hl:v-use"(tm, x) ~> a, "hl:v-use"(tm, y) ~> b, "hl:v-seq"(a, b) ~> r
+        |- "hl:validate"("hl:tables"(nm, ty, tm, th), "holr:COMB"(x, y)) ~> r;
+      "validate-ABS". nm:Table, ty:Table, tm:Table, th:Table, x:Nat, y:Nat, a:Validity, b:Validity, r:Validity | "hl:v-use"(tm, x) ~> a, "hl:v-use"(tm, y) ~> b, "hl:v-seq"(a, b) ~> r
+        |- "hl:validate"("hl:tables"(nm, ty, tm, th), "holr:ABS"(x, y)) ~> r;
+      "validate-REFL". nm:Table, ty:Table, tm:Table, th:Table, x:Nat, r:Validity | "hl:v-use"(tm, x) ~> r |- "hl:validate"("hl:tables"(nm, ty, tm, th), "holr:REFL"(x)) ~> r;
+      "validate-BETA". nm:Table, ty:Table, tm:Table, th:Table, x:Nat, r:Validity | "hl:v-use"(tm, x) ~> r |- "hl:validate"("hl:tables"(nm, ty, tm, th), "holr:BETA"(x)) ~> r;
+      "validate-ASSUME". nm:Table, ty:Table, tm:Table, th:Table, x:Nat, r:Validity | "hl:v-use"(tm, x) ~> r |- "hl:validate"("hl:tables"(nm, ty, tm, th), "holr:ASSUME"(x)) ~> r;
+      "validate-NEW_AXIOM". nm:Table, ty:Table, tm:Table, th:Table, x:Nat, r:Validity | "hl:v-use"(tm, x) ~> r |- "hl:validate"("hl:tables"(nm, ty, tm, th), "holr:NEW_AXIOM"(x)) ~> r;
+      "validate-NEW_DEFINITION". nm:Table, ty:Table, tm:Table, th:Table, x:Nat, r:Validity | "hl:v-use"(tm, x) ~> r |- "hl:validate"("hl:tables"(nm, ty, tm, th), "holr:NEW_DEFINITION"(x)) ~> r;
+      "validate-TRANS". nm:Table, ty:Table, tm:Table, th:Table, x:Nat, y:Nat, a:Validity, b:Validity, r:Validity | "hl:v-use"(th, x) ~> a, "hl:v-use"(th, y) ~> b, "hl:v-seq"(a, b) ~> r
+        |- "hl:validate"("hl:tables"(nm, ty, tm, th), "holr:TRANS"(x, y)) ~> r;
+      "validate-MK_COMB". nm:Table, ty:Table, tm:Table, th:Table, x:Nat, y:Nat, a:Validity, b:Validity, r:Validity | "hl:v-use"(th, x) ~> a, "hl:v-use"(th, y) ~> b, "hl:v-seq"(a, b) ~> r
+        |- "hl:validate"("hl:tables"(nm, ty, tm, th), "holr:MK_COMB"(x, y)) ~> r;
+      "validate-EQ_MP". nm:Table, ty:Table, tm:Table, th:Table, x:Nat, y:Nat, a:Validity, b:Validity, r:Validity | "hl:v-use"(th, x) ~> a, "hl:v-use"(th, y) ~> b, "hl:v-seq"(a, b) ~> r
+        |- "hl:validate"("hl:tables"(nm, ty, tm, th), "holr:EQ_MP"(x, y)) ~> r;
+      "validate-DEDUCT". nm:Table, ty:Table, tm:Table, th:Table, x:Nat, y:Nat, a:Validity, b:Validity, r:Validity | "hl:v-use"(th, x) ~> a, "hl:v-use"(th, y) ~> b, "hl:v-seq"(a, b) ~> r
+        |- "hl:validate"("hl:tables"(nm, ty, tm, th), "holr:DEDUCT_ANTISYM_RULE"(x, y)) ~> r;
+      "validate-ABS_RULE". nm:Table, ty:Table, tm:Table, th:Table, x:Nat, y:Nat, a:Validity, b:Validity, r:Validity | "hl:v-use"(tm, x) ~> a, "hl:v-use"(th, y) ~> b, "hl:v-seq"(a, b) ~> r
+        |- "hl:validate"("hl:tables"(nm, ty, tm, th), "holr:ABS_RULE"(x, y)) ~> r;
+      "validate-INST_TYPE". nm:Table, ty:Table, tm:Table, th:Table, ps:IdPairs, h:Nat, a:Validity, b:Validity, r:Validity | "hl:v-pairs"(ty, ps) ~> a, "hl:v-use"(th, h) ~> b, "hl:v-seq"(a, b) ~> r
+        |- "hl:validate"("hl:tables"(nm, ty, tm, th), "holr:INST_TYPE"(ps, h)) ~> r;
+      "validate-INST". nm:Table, ty:Table, tm:Table, th:Table, ps:IdPairs, h:Nat, a:Validity, b:Validity, r:Validity | "hl:v-pairs"(tm, ps) ~> a, "hl:v-use"(th, h) ~> b, "hl:v-seq"(a, b) ~> r
+        |- "hl:validate"("hl:tables"(nm, ty, tm, th), "holr:INST"(ps, h)) ~> r;
+      "validate-NEW_TYPE". nm:Table, ty:Table, tm:Table, th:Table, n:Nat, k:Nat, r:Validity | "hl:v-name"(nm, n) ~> r |- "hl:validate"("hl:tables"(nm, ty, tm, th), "holr:NEW_TYPE"(n, k)) ~> r;
+      "validate-NEW_CONSTANT". nm:Table, ty:Table, tm:Table, th:Table, n:Nat, y:Nat, a:Validity, b:Validity, r:Validity | "hl:v-name"(nm, n) ~> a, "hl:v-use"(ty, y) ~> b, "hl:v-seq"(a, b) ~> r
+        |- "hl:validate"("hl:tables"(nm, ty, tm, th), "holr:NEW_CONSTANT"(n, y)) ~> r;
+      "validate-NEW_TYPEDEF". nm:Table, ty:Table, tm:Table, th:Table, a:Nat, b:Nat, c:Nat, h:Nat, va:Validity, vb:Validity, vc:Validity, vh:Validity, r1:Validity, r2:Validity, r:Validity |
+          "hl:v-name"(nm, a) ~> va, "hl:v-name"(nm, b) ~> vb, "hl:v-name"(nm, c) ~> vc, "hl:v-use"(th, h) ~> vh,
+          "hl:v-seq"(vc, vh) ~> r1, "hl:v-seq"(vb, r1) ~> r2, "hl:v-seq"(va, r2) ~> r
+        |- "hl:validate"("hl:tables"(nm, ty, tm, th), "holr:NEW_TYPEDEF"(a, b, c, h)) ~> r;
+      "validate-POLICY". tb:Tables, u:Nat |- "hl:validate"(tb, "holr:POLICY"(u)) ~> "hl:valid"();
+      "validate-EXPECT". nm:Table, ty:Table, tm:Table, th:Table, h:Nat, ts:Ids, t:Nat, a:Validity, b:Validity, c:Validity, r1:Validity, r:Validity |
+          "hl:v-use"(th, h) ~> a, "hl:v-uses"(tm, ts) ~> b, "hl:v-use"(tm, t) ~> c, "hl:v-seq"(b, c) ~> r1, "hl:v-seq"(a, r1) ~> r
+        |- "hl:validate"("hl:tables"(nm, ty, tm, th), "holr:EXPECT"(h, ts, t)) ~> r;
+      "validate-EXPECT_ALPHA". nm:Table, ty:Table, tm:Table, th:Table, h:Nat, ts:Ids, t:Nat, a:Validity, b:Validity, c:Validity, r1:Validity, r:Validity |
+          "hl:v-use"(th, h) ~> a, "hl:v-uses"(tm, ts) ~> b, "hl:v-use"(tm, t) ~> c, "hl:v-seq"(b, c) ~> r1, "hl:v-seq"(a, r1) ~> r
+        |- "hl:validate"("hl:tables"(nm, ty, tm, th), "holr:EXPECT_ALPHA"(h, ts, t)) ~> r;
+      "validate-EXPECT_AXIOMS". nm:Table, ty:Table, tm:Table, th:Table, h:Nat, hs:Ids, a:Validity, b:Validity, r:Validity | "hl:v-use"(th, h) ~> a, "hl:v-uses"(th, hs) ~> b, "hl:v-seq"(a, b) ~> r
+        |- "hl:validate"("hl:tables"(nm, ty, tm, th), "holr:EXPECT_AXIOMS"(h, hs)) ~> r;
+      "validate-EXPECT_REFUSED". tb:Tables |- "hl:validate"(tb, "holr:EXPECT_REFUSED"()) ~> "hl:valid"();
+      "validate-LABEL". nm:Table, ty:Table, tm:Table, th:Table, h:Nat, n:Nat, a:Validity, b:Validity, r:Validity | "hl:v-use"(th, h) ~> a, "hl:v-name"(nm, n) ~> b, "hl:v-seq"(a, b) ~> r
+        |- "hl:validate"("hl:tables"(nm, ty, tm, th), "holr:LABEL"(h, n)) ~> r;
+      "validate-EMIT". nm:Table, ty:Table, tm:Table, th:Table, h:Nat, r:Validity | "hl:v-use"(th, h) ~> r |- "hl:validate"("hl:tables"(nm, ty, tm, th), "holr:EMIT"(h)) ~> r;
+      "validate-DROP_TYPE". nm:Table, ty:Table, tm:Table, th:Table, i:Nat, r:Validity | "hl:v-drop"(ty, i) ~> r |- "hl:validate"("hl:tables"(nm, ty, tm, th), "holr:DROP_TYPE"(i)) ~> r;
+      "validate-DROP_TERM". nm:Table, ty:Table, tm:Table, th:Table, i:Nat, r:Validity | "hl:v-drop"(tm, i) ~> r |- "hl:validate"("hl:tables"(nm, ty, tm, th), "holr:DROP_TERM"(i)) ~> r;
+      "validate-DROP_THM". nm:Table, ty:Table, tm:Table, th:Table, i:Nat, r:Validity | "hl:v-drop"(th, i) ~> r |- "hl:validate"("hl:tables"(nm, ty, tm, th), "holr:DROP_THM"(i)) ~> r;
+
+      -- reading validated operands
+      "get-name". nm:Table, ty:Table, tm:Table, th:Table, n:Nat, s:Str | "hl:table-get"(nm, n) ~> "hl:c-ok"("hl:o-name"(s)) |- "hl:get-name"("hl:tables"(nm, ty, tm, th), n) ~> s;
+      "get-type". nm:Table, ty:Table, tm:Table, th:Table, n:Nat, x:Type | "hl:table-get"(ty, n) ~> "hl:c-ok"("hl:o-type"(x)) |- "hl:get-type"("hl:tables"(nm, ty, tm, th), n) ~> x;
+      "get-term". nm:Table, ty:Table, tm:Table, th:Table, n:Nat, x:Term | "hl:table-get"(tm, n) ~> "hl:c-ok"("hl:o-term"(x)) |- "hl:get-term"("hl:tables"(nm, ty, tm, th), n) ~> x;
+      "get-thm". nm:Table, ty:Table, tm:Table, th:Table, n:Nat, x:Thm, d:Ids | "hl:table-get"(th, n) ~> "hl:c-ok"("hl:o-thm"(x, d)) |- "hl:get-thm"("hl:tables"(nm, ty, tm, th), n) ~> "hl:o-thm"(x, d);
+      "get-types-nil". tb:Tables |- "hl:get-types"(tb, "hl:ids-nil"()) ~> "hl:tynil"();
+      "get-types-cons". tb:Tables, n:Nat, ns:Ids, x:Type, xs:Tys | "hl:get-type"(tb, n) ~> x, "hl:get-types"(tb, ns) ~> xs |- "hl:get-types"(tb, "hl:ids-cons"(n, ns)) ~> "hl:tycons"(x, xs);
+      "get-terms-nil". tb:Tables |- "hl:get-terms"(tb, "hl:ids-nil"()) ~> "hl:tmnil"();
+      "get-terms-cons". tb:Tables, n:Nat, ns:Ids, x:Term, xs:Tms | "hl:get-term"(tb, n) ~> x, "hl:get-terms"(tb, ns) ~> xs |- "hl:get-terms"(tb, "hl:ids-cons"(n, ns)) ~> "hl:tmcons"(x, xs);
+      -- pairs are (replacement, original)
+      "get-ty-pairs-nil". tb:Tables |- "hl:get-ty-pairs"(tb, "hl:idp-nil"()) ~> "hl:typ-nil"();
+      "get-ty-pairs-cons". tb:Tables, a:Nat, b:Nat, ps:IdPairs, x:Type, y:Type, r:TyPairs | "hl:get-type"(tb, a) ~> x, "hl:get-type"(tb, b) ~> y, "hl:get-ty-pairs"(tb, ps) ~> r
+        |- "hl:get-ty-pairs"(tb, "hl:idp-cons"(a, b, ps)) ~> "hl:typ-cons"(x, y, r);
+      "get-tm-pairs-nil". tb:Tables |- "hl:get-tm-pairs"(tb, "hl:idp-nil"()) ~> "hl:tmp-nil"();
+      "get-tm-pairs-cons". tb:Tables, a:Nat, b:Nat, ps:IdPairs, x:Term, y:Term, r:TmPairs | "hl:get-term"(tb, a) ~> x, "hl:get-term"(tb, b) ~> y, "hl:get-tm-pairs"(tb, ps) ~> r
+        |- "hl:get-tm-pairs"(tb, "hl:idp-cons"(a, b, ps)) ~> "hl:tmp-cons"(x, y, r);
+      "put-type". k:Kern, nm:Table, ty:Table, tm:Table, th:Table, bk:Book, x:Type, ty2:Table | "hl:table-put"(ty, "hl:c-ok"("hl:o-type"(x))) ~> ty2
+        |- "hl:put-type"("hl:replay"(k, "hl:tables"(nm, ty, tm, th), bk), x) ~> "hl:replay"(k, "hl:tables"(nm, ty2, tm, th), bk);
+      "put-term". k:Kern, nm:Table, ty:Table, tm:Table, th:Table, bk:Book, x:Term, tm2:Table | "hl:table-put"(tm, "hl:c-ok"("hl:o-term"(x))) ~> tm2
+        |- "hl:put-term"("hl:replay"(k, "hl:tables"(nm, ty, tm, th), bk), x) ~> "hl:replay"(k, "hl:tables"(nm, ty, tm2, th), bk);
+      "put-thm". k:Kern, nm:Table, ty:Table, tm:Table, th:Table, bk:Book, x:Thm, d:Ids, th2:Table | "hl:table-put"(th, "hl:c-ok"("hl:o-thm"(x, d))) ~> th2
+        |- "hl:put-thm"("hl:replay"(k, "hl:tables"(nm, ty, tm, th), bk), x, d) ~> "hl:replay"(k, "hl:tables"(nm, ty, tm, th2), bk);
+
+      -- executing one validated record
+      "exec-NAME". k:Kern, nm:Table, ty:Table, tm:Table, th:Table, bk:Book, s:Str, nm2:Table | "hl:table-put"(nm, "hl:c-ok"("hl:o-name"(s))) ~> nm2
+        |- "hl:exec"("hl:replay"(k, "hl:tables"(nm, ty, tm, th), bk), "holr:NAME"(s)) ~> "hl:x-ok"("hl:replay"(k, "hl:tables"(nm2, ty, tm, th), bk));
+      "exec-TYVAR". k:Kern, tb:Tables, bk:Book, n:Nat, s:Str, rp:Replay | "hl:get-name"(tb, n) ~> s, "hl:put-type"("hl:replay"(k, tb, bk), "hl:Tyvar"(s)) ~> rp
+        |- "hl:exec"("hl:replay"(k, tb, bk), "holr:TYVAR"(n)) ~> "hl:x-ok"(rp);
+      "exec-TYAPP". thy:Thy, pol:Policy, st:Std, tb:Tables, bk:Book, n:Nat, ns:Ids, s:Str, args:Tys, y:YR, r:Exec |
+          "hl:get-name"(tb, n) ~> s, "hl:get-types"(tb, ns) ~> args, "hl:mk-type"(thy, s, args) ~> y, "hl:exec-ty"(y, "hl:replay"("hl:kern"(thy, pol, st), tb, bk)) ~> r
+        |- "hl:exec"("hl:replay"("hl:kern"(thy, pol, st), tb, bk), "holr:TYAPP"(n, ns)) ~> r;
+      "exec-ty-ok". x:Type, rp:Replay, rp2:Replay | "hl:put-type"(rp, x) ~> rp2 |- "hl:exec-ty"("hl:ty-ok"(x), rp) ~> "hl:x-ok"(rp2);
+      "exec-ty-fail". r:Reason, rp:Replay |- "hl:exec-ty"("hl:ty-fail"(r), rp) ~> "hl:x-refused"("hl:st-refused"(), r);
+      "exec-VAR". k:Kern, tb:Tables, bk:Book, n:Nat, y:Nat, s:Str, x:Type, rp:Replay | "hl:get-name"(tb, n) ~> s, "hl:get-type"(tb, y) ~> x, "hl:put-term"("hl:replay"(k, tb, bk), "hl:Var"(s, x)) ~> rp
+        |- "hl:exec"("hl:replay"(k, tb, bk), "holr:VAR"(n, y)) ~> "hl:x-ok"(rp);
+      "exec-CONST". thy:Thy, pol:Policy, st:Std, tb:Tables, bk:Book, n:Nat, y:Nat, s:Str, x:Type, t:TR, r:Exec |
+          "hl:get-name"(tb, n) ~> s, "hl:get-type"(tb, y) ~> x, "hl:mk-const-at"(thy, s, x) ~> t, "hl:exec-tm"(t, "hl:replay"("hl:kern"(thy, pol, st), tb, bk)) ~> r
+        |- "hl:exec"("hl:replay"("hl:kern"(thy, pol, st), tb, bk), "holr:CONST"(n, y)) ~> r;
+      "exec-tm-ok". x:Term, rp:Replay, rp2:Replay | "hl:put-term"(rp, x) ~> rp2 |- "hl:exec-tm"("hl:tm-ok"(x), rp) ~> "hl:x-ok"(rp2);
+      "exec-tm-fail". r:Reason, rp:Replay |- "hl:exec-tm"("hl:tm-fail"(r), rp) ~> "hl:x-refused"("hl:st-refused"(), r);
+      "exec-COMB". k:Kern, tb:Tables, bk:Book, a:Nat, b:Nat, f:Term, x:Term, t:TR, r:Exec | "hl:get-term"(tb, a) ~> f, "hl:get-term"(tb, b) ~> x, "hl:mk-comb"(f, x) ~> t, "hl:exec-tm"(t, "hl:replay"(k, tb, bk)) ~> r
+        |- "hl:exec"("hl:replay"(k, tb, bk), "holr:COMB"(a, b)) ~> r;
+      "exec-ABS". k:Kern, tb:Tables, bk:Book, a:Nat, b:Nat, v:Term, x:Term, t:TR, r:Exec | "hl:get-term"(tb, a) ~> v, "hl:get-term"(tb, b) ~> x, "hl:mk-abs"(v, x) ~> t, "hl:exec-tm"(t, "hl:replay"(k, tb, bk)) ~> r
+        |- "hl:exec"("hl:replay"(k, tb, bk), "holr:ABS"(a, b)) ~> r;
+      "exec-kr-ok". x:Thm, d:Ids, rp:Replay, rp2:Replay | "hl:put-thm"(rp, x, d) ~> rp2 |- "hl:exec-kr"("hl:ok"(x), d, rp) ~> "hl:x-ok"(rp2);
+      "exec-kr-fail". r:Reason, d:Ids, rp:Replay |- "hl:exec-kr"("hl:fail"(r), d, rp) ~> "hl:x-refused"("hl:st-refused"(), r);
+      "exec-REFL". k:Kern, tb:Tables, bk:Book, t:Nat, x:Term, th:Thm, rp:Replay | "hl:get-term"(tb, t) ~> x, "hl:REFL"(x) ~> th, "hl:put-thm"("hl:replay"(k, tb, bk), th, "hl:ids-nil"()) ~> rp
+        |- "hl:exec"("hl:replay"(k, tb, bk), "holr:REFL"(t)) ~> "hl:x-ok"(rp);
+      "exec-TRANS". k:Kern, tb:Tables, bk:Book, a:Nat, b:Nat, t1:Thm, d1:Ids, t2:Thm, d2:Ids, kr:KR, d:Ids, r:Exec |
+          "hl:get-thm"(tb, a) ~> "hl:o-thm"(t1, d1), "hl:get-thm"(tb, b) ~> "hl:o-thm"(t2, d2), "hl:TRANS"(t1, t2) ~> kr, "hl:ids-merge"(d1, d2) ~> d, "hl:exec-kr"(kr, d, "hl:replay"(k, tb, bk)) ~> r
+        |- "hl:exec"("hl:replay"(k, tb, bk), "holr:TRANS"(a, b)) ~> r;
+      "exec-MK_COMB". k:Kern, tb:Tables, bk:Book, a:Nat, b:Nat, t1:Thm, d1:Ids, t2:Thm, d2:Ids, kr:KR, d:Ids, r:Exec |
+          "hl:get-thm"(tb, a) ~> "hl:o-thm"(t1, d1), "hl:get-thm"(tb, b) ~> "hl:o-thm"(t2, d2), "hl:MK_COMB"(t1, t2) ~> kr, "hl:ids-merge"(d1, d2) ~> d, "hl:exec-kr"(kr, d, "hl:replay"(k, tb, bk)) ~> r
+        |- "hl:exec"("hl:replay"(k, tb, bk), "holr:MK_COMB"(a, b)) ~> r;
+      "exec-EQ_MP". k:Kern, tb:Tables, bk:Book, a:Nat, b:Nat, t1:Thm, d1:Ids, t2:Thm, d2:Ids, kr:KR, d:Ids, r:Exec |
+          "hl:get-thm"(tb, a) ~> "hl:o-thm"(t1, d1), "hl:get-thm"(tb, b) ~> "hl:o-thm"(t2, d2), "hl:EQ_MP"(t1, t2) ~> kr, "hl:ids-merge"(d1, d2) ~> d, "hl:exec-kr"(kr, d, "hl:replay"(k, tb, bk)) ~> r
+        |- "hl:exec"("hl:replay"(k, tb, bk), "holr:EQ_MP"(a, b)) ~> r;
+      "exec-DEDUCT". k:Kern, tb:Tables, bk:Book, a:Nat, b:Nat, t1:Thm, d1:Ids, t2:Thm, d2:Ids, th:Thm, d:Ids, rp:Replay |
+          "hl:get-thm"(tb, a) ~> "hl:o-thm"(t1, d1), "hl:get-thm"(tb, b) ~> "hl:o-thm"(t2, d2), "hl:DEDUCT_ANTISYM_RULE"(t1, t2) ~> th, "hl:ids-merge"(d1, d2) ~> d,
+          "hl:put-thm"("hl:replay"(k, tb, bk), th, d) ~> rp
+        |- "hl:exec"("hl:replay"(k, tb, bk), "holr:DEDUCT_ANTISYM_RULE"(a, b)) ~> "hl:x-ok"(rp);
+      "exec-ABS_RULE". k:Kern, tb:Tables, bk:Book, t:Nat, h:Nat, v:Term, th:Thm, d:Ids, kr:KR, r:Exec |
+          "hl:get-term"(tb, t) ~> v, "hl:get-thm"(tb, h) ~> "hl:o-thm"(th, d), "hl:ABS"(v, th) ~> kr, "hl:exec-kr"(kr, d, "hl:replay"(k, tb, bk)) ~> r
+        |- "hl:exec"("hl:replay"(k, tb, bk), "holr:ABS_RULE"(t, h)) ~> r;
+      "exec-BETA". k:Kern, tb:Tables, bk:Book, t:Nat, x:Term, kr:KR, r:Exec | "hl:get-term"(tb, t) ~> x, "hl:BETA"(x) ~> kr, "hl:exec-kr"(kr, "hl:ids-nil"(), "hl:replay"(k, tb, bk)) ~> r
+        |- "hl:exec"("hl:replay"(k, tb, bk), "holr:BETA"(t)) ~> r;
+      "exec-ASSUME". k:Kern, tb:Tables, bk:Book, t:Nat, x:Term, kr:KR, r:Exec | "hl:get-term"(tb, t) ~> x, "hl:ASSUME"(x) ~> kr, "hl:exec-kr"(kr, "hl:ids-nil"(), "hl:replay"(k, tb, bk)) ~> r
+        |- "hl:exec"("hl:replay"(k, tb, bk), "holr:ASSUME"(t)) ~> r;
+      "exec-INST_TYPE". k:Kern, tb:Tables, bk:Book, ps:IdPairs, h:Nat, theta:TyPairs, th:Thm, d:Ids, th2:Thm, rp:Replay |
+          "hl:get-ty-pairs"(tb, ps) ~> theta, "hl:get-thm"(tb, h) ~> "hl:o-thm"(th, d), "hl:INST_TYPE"(theta, th) ~> th2, "hl:put-thm"("hl:replay"(k, tb, bk), th2, d) ~> rp
+        |- "hl:exec"("hl:replay"(k, tb, bk), "holr:INST_TYPE"(ps, h)) ~> "hl:x-ok"(rp);
+      "exec-INST". k:Kern, tb:Tables, bk:Book, ps:IdPairs, h:Nat, theta:TmPairs, th:Thm, d:Ids, kr:KR, r:Exec |
+          "hl:get-tm-pairs"(tb, ps) ~> theta, "hl:get-thm"(tb, h) ~> "hl:o-thm"(th, d), "hl:INST"(theta, th) ~> kr, "hl:exec-kr"(kr, d, "hl:replay"(k, tb, bk)) ~> r
+        |- "hl:exec"("hl:replay"(k, tb, bk), "holr:INST"(ps, h)) ~> r;
+      "exec-NEW_TYPE". thy:Thy, pol:Policy, st:Std, tb:Tables, bk:Book, n:Nat, kk:Nat, s:Str, o:ThyR, r:Exec |
+          "hl:get-name"(tb, n) ~> s, "hl:new-type"(thy, s, kk) ~> o, "hl:exec-new-type"(o, "hl:replay"("hl:kern"(thy, pol, st), tb, bk), s, kk) ~> r
+        |- "hl:exec"("hl:replay"("hl:kern"(thy, pol, st), tb, bk), "holr:NEW_TYPE"(n, kk)) ~> r;
+      "exec-new-type-ok". thy2:Thy, thy:Thy, pol:Policy, st:Std, tb:Tables, bk:Book, s:Str, kk:Nat, st2:Std | "hl:std-after-new-type"(st, s, kk) ~> st2
+        |- "hl:exec-new-type"("hl:thy-ok"(thy2), "hl:replay"("hl:kern"(thy, pol, st), tb, bk), s, kk) ~> "hl:x-ok"("hl:replay"("hl:kern"(thy2, pol, st2), tb, bk));
+      "exec-new-type-fail". r:Reason, rp:Replay, s:Str, kk:Nat |- "hl:exec-new-type"("hl:thy-fail"(r), rp, s, kk) ~> "hl:x-refused"("hl:st-refused"(), r);
+      "exec-NEW_CONSTANT". thy:Thy, pol:Policy, st:Std, tb:Tables, bk:Book, n:Nat, y:Nat, s:Str, x:Type, o:ThyR, r:Exec |
+          "hl:get-name"(tb, n) ~> s, "hl:get-type"(tb, y) ~> x, "hl:new-constant"(thy, s, x) ~> o, "hl:exec-new-constant"(o, "hl:replay"("hl:kern"(thy, pol, st), tb, bk), s, x) ~> r
+        |- "hl:exec"("hl:replay"("hl:kern"(thy, pol, st), tb, bk), "holr:NEW_CONSTANT"(n, y)) ~> r;
+      "exec-new-constant-ok". thy2:Thy, thy:Thy, pol:Policy, st:Std, tb:Tables, bk:Book, s:Str, x:Type, st2:Std | "hl:std-after-new-constant"(st, s, x) ~> st2
+        |- "hl:exec-new-constant"("hl:thy-ok"(thy2), "hl:replay"("hl:kern"(thy, pol, st), tb, bk), s, x) ~> "hl:x-ok"("hl:replay"("hl:kern"(thy2, pol, st2), tb, bk));
+      "exec-new-constant-fail". r:Reason, rp:Replay, s:Str, x:Type |- "hl:exec-new-constant"("hl:thy-fail"(r), rp, s, x) ~> "hl:x-refused"("hl:st-refused"(), r);
+      -- NEW_AXIOM: a proposition (fusion.ml), then the policy: SEALED refuses, STANDARD wants a standard axiom
+      "exec-NEW_AXIOM". thy:Thy, pol:Policy, st:Std, tb:Tables, bk:Book, t:Nat, x:Term, o:ThyThmR, r:Exec |
+          "hl:get-term"(tb, t) ~> x, "hl:new-axiom"(thy, x) ~> o, "hl:exec-new-axiom"(o, "hl:replay"("hl:kern"(thy, pol, st), tb, bk), x) ~> r
+        |- "hl:exec"("hl:replay"("hl:kern"(thy, pol, st), tb, bk), "holr:NEW_AXIOM"(t)) ~> r;
+      "exec-new-axiom-fail". r:Reason, rp:Replay, x:Term |- "hl:exec-new-axiom"("hl:thy-thm-fail"(r), rp, x) ~> "hl:x-refused"("hl:st-refused"(), r);
+      "exec-new-axiom-ok". thy2:Thy, th:Thm, thy:Thy, pol:Policy, st:Std, tb:Tables, bk:Book, x:Term, r:Exec |
+          "hl:exec-new-axiom-2"(pol, "hl:replay"("hl:kern"(thy, pol, st), tb, bk), thy2, th, x) ~> r
+        |- "hl:exec-new-axiom"("hl:thy-thm"(thy2, th), "hl:replay"("hl:kern"(thy, pol, st), tb, bk), x) ~> r;
+      "exec-new-axiom-2-sealed". rp:Replay, thy2:Thy, th:Thm, x:Term |- "hl:exec-new-axiom-2"("hl:sealed"(), rp, thy2, th, x) ~> "hl:x-refused"("hl:st-policy"(), "hl:r-axiom-policy"());
+      "exec-new-axiom-2-open". rp:Replay, thy2:Thy, th:Thm, x:Term, r:Exec | "hl:exec-new-axiom-3"(rp, thy2, th) ~> r |- "hl:exec-new-axiom-2"("hl:open"(), rp, thy2, th, x) ~> r;
+      "exec-new-axiom-2-standard". thy:Thy, pol:Policy, st:Std, tb:Tables, bk:Book, thy2:Thy, th:Thm, x:Term, e:Flag, r:Exec |
+          "hl:std-axiom"(st, x) ~> e, "hl:exec-new-axiom-std"(e, "hl:replay"("hl:kern"(thy, pol, st), tb, bk), thy2, th) ~> r
+        |- "hl:exec-new-axiom-2"("hl:standard"(), "hl:replay"("hl:kern"(thy, pol, st), tb, bk), thy2, th, x) ~> r;
+      "exec-new-axiom-std-no". rp:Replay, thy2:Thy, th:Thm |- "hl:exec-new-axiom-std"("hl:no"(), rp, thy2, th) ~> "hl:x-refused"("hl:st-policy"(), "hl:r-axiom-policy"());
+      "exec-new-axiom-std-yes". rp:Replay, thy2:Thy, th:Thm, r:Exec | "hl:exec-new-axiom-3"(rp, thy2, th) ~> r |- "hl:exec-new-axiom-std"("hl:yes"(), rp, thy2, th) ~> r;
+      -- the axiom's theorem depends on itself: its own output id
+      "exec-new-axiom-3". thy:Thy, pol:Policy, st:Std, nm:Table, ty:Table, tm:Table, th:Table, bk:Book, thy2:Thy, x:Thm, id:Nat, th2:Table |
+          "hl:table-next"(th) ~> id, "hl:table-put"(th, "hl:c-ok"("hl:o-thm"(x, "hl:ids-cons"(id, "hl:ids-nil"())))) ~> th2
+        |- "hl:exec-new-axiom-3"("hl:replay"("hl:kern"(thy, pol, st), "hl:tables"(nm, ty, tm, th), bk), thy2, x)
+             ~> "hl:x-ok"("hl:replay"("hl:kern"(thy2, pol, st), "hl:tables"(nm, ty, tm, th2), bk));
+      "exec-NEW_DEFINITION". thy:Thy, pol:Policy, st:Std, tb:Tables, bk:Book, t:Nat, x:Term, o:ThyThmR, r:Exec |
+          "hl:get-term"(tb, t) ~> x, "hl:new-basic-definition"(thy, x) ~> o, "hl:exec-new-definition"(o, "hl:replay"("hl:kern"(thy, pol, st), tb, bk), x) ~> r
+        |- "hl:exec"("hl:replay"("hl:kern"(thy, pol, st), tb, bk), "holr:NEW_DEFINITION"(t)) ~> r;
+      "exec-new-definition-fail". r:Reason, rp:Replay, x:Term |- "hl:exec-new-definition"("hl:thy-thm-fail"(r), rp, x) ~> "hl:x-refused"("hl:st-refused"(), r);
+      "exec-new-definition-ok". thy2:Thy, th:Thm, thy:Thy, pol:Policy, st:Std, tb:Tables, bk:Book, x:Term, st2:Std, rp:Replay |
+          "hl:std-after-new-definition"(st, x) ~> st2, "hl:put-thm"("hl:replay"("hl:kern"(thy2, pol, st2), tb, bk), th, "hl:ids-nil"()) ~> rp
+        |- "hl:exec-new-definition"("hl:thy-thm"(thy2, th), "hl:replay"("hl:kern"(thy, pol, st), tb, bk), x) ~> "hl:x-ok"(rp);
+      "exec-NEW_TYPEDEF". thy:Thy, pol:Policy, st:Std, tb:Tables, bk:Book, a:Nat, b:Nat, c:Nat, h:Nat, sa:Str, sb:Str, sc:Str, th:Thm, d:Ids, o:TydefR, r:Exec |
+          "hl:get-name"(tb, a) ~> sa, "hl:get-name"(tb, b) ~> sb, "hl:get-name"(tb, c) ~> sc, "hl:get-thm"(tb, h) ~> "hl:o-thm"(th, d),
+          "hl:new-basic-type-definition"(thy, sa, sb, sc, th) ~> o, "hl:exec-new-typedef"(o, "hl:replay"("hl:kern"(thy, pol, st), tb, bk), d) ~> r
+        |- "hl:exec"("hl:replay"("hl:kern"(thy, pol, st), tb, bk), "holr:NEW_TYPEDEF"(a, b, c, h)) ~> r;
+      "exec-new-typedef-ok". thy2:Thy, t1:Thm, t2:Thm, thy:Thy, pol:Policy, st:Std, tb:Tables, bk:Book, d:Ids, rp1:Replay, rp2:Replay |
+          "hl:put-thm"("hl:replay"("hl:kern"(thy2, pol, st), tb, bk), t1, d) ~> rp1, "hl:put-thm"(rp1, t2, d) ~> rp2
+        |- "hl:exec-new-typedef"("hl:tydef-ok"(thy2, t1, t2), "hl:replay"("hl:kern"(thy, pol, st), tb, bk), d) ~> "hl:x-ok"(rp2);
+      "exec-new-typedef-fail". r:Reason, rp:Replay, d:Ids |- "hl:exec-new-typedef"("hl:tydef-fail"(r), rp, d) ~> "hl:x-refused"("hl:st-refused"(), r);
+      -- records are atomic: fusion.ml's partial extension is not committed
+      "exec-new-typedef-partial". thy:Thy, r:Reason, rp:Replay, d:Ids |- "hl:exec-new-typedef"("hl:tydef-fail-partial"(thy, r), rp, d) ~> "hl:x-refused"("hl:st-refused"(), r);
+      "exec-POLICY". rp:Replay, u:Nat, o:Ord, r:Exec | "hl:cmp-nat"(u, "hl:nb0"("hl:nb1"("hl:nz"()))) ~> o, "hl:exec-policy"(o, rp, u) ~> r |- "hl:exec"(rp, "holr:POLICY"(u)) ~> r;
+      "exec-policy-gt". rp:Replay, u:Nat |- "hl:exec-policy"("hl:gt"(), rp, u) ~> "hl:x-malformed"("hl:r-bad-value"());
+      "exec-policy-lt". rp:Replay, u:Nat, p:Policy, r:Exec | "hl:policy-of-nat"(u) ~> p, "hl:exec-policy-k"(p, rp) ~> r |- "hl:exec-policy"("hl:lt"(), rp, u) ~> r;
+      "exec-policy-eq". rp:Replay, u:Nat, p:Policy, r:Exec | "hl:policy-of-nat"(u) ~> p, "hl:exec-policy-k"(p, rp) ~> r |- "hl:exec-policy"("hl:eq"(), rp, u) ~> r;
+      "exec-policy-k". p:Policy, thy:Thy, pol:Policy, st:Std, tb:Tables, bk:Book, a:Nat, b:Nat, o:Ord, r:Exec |
+          "hl:policy-rank"(p) ~> a, "hl:policy-rank"(pol) ~> b, "hl:cmp-nat"(a, b) ~> o, "hl:exec-policy-k2"(o, p, "hl:replay"("hl:kern"(thy, pol, st), tb, bk)) ~> r
+        |- "hl:exec-policy-k"(p, "hl:replay"("hl:kern"(thy, pol, st), tb, bk)) ~> r;
+      "exec-policy-k2-gt". p:Policy, thy:Thy, pol:Policy, st:Std, tb:Tables, bk:Book
+        |- "hl:exec-policy-k2"("hl:gt"(), p, "hl:replay"("hl:kern"(thy, pol, st), tb, bk)) ~> "hl:x-ok"("hl:replay"("hl:kern"(thy, p, st), tb, bk));
+      "exec-policy-k2-eq". p:Policy, rp:Replay |- "hl:exec-policy-k2"("hl:eq"(), p, rp) ~> "hl:x-ok"(rp);
+      "exec-policy-k2-lt". p:Policy, rp:Replay |- "hl:exec-policy-k2"("hl:lt"(), p, rp) ~> "hl:x-ok"(rp);
+      -- checks
+      "exec-check-yes". rp:Replay |- "hl:exec-check"("hl:yes"(), rp) ~> "hl:x-ok"(rp);
+      "exec-check-no". rp:Replay |- "hl:exec-check"("hl:no"(), rp) ~> "hl:x-check-failed"();
+      "exec-EXPECT". k:Kern, tb:Tables, bk:Book, h:Nat, ts:Ids, t:Nat, asl:Tms, c:Term, d:Ids, hyps:Tms, c2:Term, e1:Flag, e2:Flag, e:Flag, r:Exec |
+          "hl:get-thm"(tb, h) ~> "hl:o-thm"("hl:Sequent"(asl, c), d), "hl:get-terms"(tb, ts) ~> hyps, "hl:get-term"(tb, t) ~> c2,
+          "hl:tms-eq"(asl, hyps) ~> e1, "hl:tm-eq"(c, c2) ~> e2, "hl:and"(e1, e2) ~> e, "hl:exec-check"(e, "hl:replay"(k, tb, bk)) ~> r
+        |- "hl:exec"("hl:replay"(k, tb, bk), "holr:EXPECT"(h, ts, t)) ~> r;
+      "exec-EXPECT_ALPHA". k:Kern, tb:Tables, bk:Book, h:Nat, ts:Ids, t:Nat, th:Thm, d:Ids, hyps:Tms, c2:Term, e:Flag, r:Exec |
+          "hl:get-thm"(tb, h) ~> "hl:o-thm"(th, d), "hl:get-terms"(tb, ts) ~> hyps, "hl:get-term"(tb, t) ~> c2,
+          "hl:expect-alpha"(th, hyps, c2) ~> e, "hl:exec-check"(e, "hl:replay"(k, tb, bk)) ~> r
+        |- "hl:exec"("hl:replay"(k, tb, bk), "holr:EXPECT_ALPHA"(h, ts, t)) ~> r;
+      "expect-alpha". asl:Tms, c:Term, hyps:Tms, c2:Term, o:Ord, r:Flag | "hl:alphaorder"(c, c2) ~> o, "hl:expect-alpha-k"(o, asl, hyps) ~> r
+        |- "hl:expect-alpha"("hl:Sequent"(asl, c), hyps, c2) ~> r;
+      "expect-alpha-k-eq". asl:Tms, hyps:Tms, e1:Flag, e2:Flag, r:Flag | "hl:forall-exists-aconv"(asl, hyps) ~> e1, "hl:forall-exists-aconv"(hyps, asl) ~> e2, "hl:and"(e1, e2) ~> r
+        |- "hl:expect-alpha-k"("hl:eq"(), asl, hyps) ~> r;
+      "expect-alpha-k-lt". asl:Tms, hyps:Tms |- "hl:expect-alpha-k"("hl:lt"(), asl, hyps) ~> "hl:no"();
+      "expect-alpha-k-gt". asl:Tms, hyps:Tms |- "hl:expect-alpha-k"("hl:gt"(), asl, hyps) ~> "hl:no"();
+      -- EXPECT_AXIOMS: the listed ids, as a set without repetition, are the theorem's axiom dependencies
+      "exec-EXPECT_AXIOMS". k:Kern, tb:Tables, bk:Book, h:Nat, hs:Ids, th:Thm, d:Ids, e:Flag, r:Exec |
+          "hl:get-thm"(tb, h) ~> "hl:o-thm"(th, d), "hl:expect-axioms"(d, hs) ~> e, "hl:exec-check"(e, "hl:replay"(k, tb, bk)) ~> r
+        |- "hl:exec"("hl:replay"(k, tb, bk), "holr:EXPECT_AXIOMS"(h, hs)) ~> r;
+      "expect-axioms". d:Ids, hs:Ids, n1:Nat, n2:Nat, o:Ord, r:Flag | "hl:ids-count"(d) ~> n1, "hl:ids-count"(hs) ~> n2, "hl:cmp-nat"(n1, n2) ~> o, "hl:expect-axioms-k"(o, d, hs) ~> r
+        |- "hl:expect-axioms"(d, hs) ~> r;
+      "expect-axioms-k-eq". d:Ids, hs:Ids, s:Ids, r:Flag | "hl:ids-set"(hs) ~> s, "hl:ids-eq"(s, d) ~> r |- "hl:expect-axioms-k"("hl:eq"(), d, hs) ~> r;
+      "expect-axioms-k-lt". d:Ids, hs:Ids |- "hl:expect-axioms-k"("hl:lt"(), d, hs) ~> "hl:no"();
+      "expect-axioms-k-gt". d:Ids, hs:Ids |- "hl:expect-axioms-k"("hl:gt"(), d, hs) ~> "hl:no"();
+      "exec-EXPECT_REFUSED". k:Kern, tb:Tables, m:Mode, lr:Flag, em:Thms, lb:Labels, nr:Nat, nf:Nat, r:Exec |
+          "hl:exec-check"(lr, "hl:replay"(k, tb, "hl:book"(m, lr, em, lb, nr, nf))) ~> r
+        |- "hl:exec"("hl:replay"(k, tb, "hl:book"(m, lr, em, lb, nr, nf)), "holr:EXPECT_REFUSED"()) ~> r;
+      "exec-LABEL". k:Kern, tb:Tables, m:Mode, lr:Flag, em:Thms, lb:Labels, nr:Nat, nf:Nat, h:Nat, n:Nat, s:Str | "hl:get-name"(tb, n) ~> s
+        |- "hl:exec"("hl:replay"(k, tb, "hl:book"(m, lr, em, lb, nr, nf)), "holr:LABEL"(h, n)) ~> "hl:x-ok"("hl:replay"(k, tb, "hl:book"(m, lr, em, "hl:lb-cons"(h, s, lb), nr, nf)));
+      -- EMIT delivers the theorem as it is at this record
+      "exec-EMIT". k:Kern, tb:Tables, m:Mode, lr:Flag, em:Thms, lb:Labels, nr:Nat, nf:Nat, h:Nat, th:Thm, d:Ids | "hl:get-thm"(tb, h) ~> "hl:o-thm"(th, d)
+        |- "hl:exec"("hl:replay"(k, tb, "hl:book"(m, lr, em, lb, nr, nf)), "holr:EMIT"(h)) ~> "hl:x-ok"("hl:replay"(k, tb, "hl:book"(m, lr, "hl:thcons"(th, em), lb, nr, nf)));
+      "exec-DROP_TYPE". k:Kern, nm:Table, ty:Table, tm:Table, th:Table, bk:Book, i:Nat, ty2:Table | "hl:table-set"(ty, i, "hl:c-dropped"()) ~> ty2
+        |- "hl:exec"("hl:replay"(k, "hl:tables"(nm, ty, tm, th), bk), "holr:DROP_TYPE"(i)) ~> "hl:x-ok"("hl:replay"(k, "hl:tables"(nm, ty2, tm, th), bk));
+      "exec-DROP_TERM". k:Kern, nm:Table, ty:Table, tm:Table, th:Table, bk:Book, i:Nat, tm2:Table | "hl:table-set"(tm, i, "hl:c-dropped"()) ~> tm2
+        |- "hl:exec"("hl:replay"(k, "hl:tables"(nm, ty, tm, th), bk), "holr:DROP_TERM"(i)) ~> "hl:x-ok"("hl:replay"(k, "hl:tables"(nm, ty, tm2, th), bk));
+      "exec-DROP_THM". k:Kern, nm:Table, ty:Table, tm:Table, th:Table, bk:Book, i:Nat, th2:Table | "hl:table-set"(th, i, "hl:c-dropped"()) ~> th2
+        |- "hl:exec"("hl:replay"(k, "hl:tables"(nm, ty, tm, th), bk), "holr:DROP_THM"(i)) ~> "hl:x-ok"("hl:replay"(k, "hl:tables"(nm, ty, tm, th2), bk));
+
+      -- committing a record: a success clears last-refused; a refusal or dependent failure (probe mode) puts
+      -- FAILED placeholders for the ids the record would define and sets it; a failed check clears it
+      "commit-ok". k:Kern, tb:Tables, m:Mode, lr:Flag, em:Thms, lb:Labels, nr:Nat, nf:Nat, nr2:Nat | "hl:nat-inc"(nr) ~> nr2
+        |- "hl:commit-ok"("hl:replay"(k, tb, "hl:book"(m, lr, em, lb, nr, nf))) ~> "hl:replay"(k, tb, "hl:book"(m, "hl:no"(), em, lb, nr2, nf));
+      "commit-failed". k:Kern, tb:Tables, m:Mode, lr:Flag, em:Thms, lb:Labels, nr:Nat, nf:Nat, o:Out, lr2:Flag, tb2:Tables, nr2:Nat, nf2:Nat |
+          "hl:put-failed"(tb, o) ~> tb2, "hl:nat-inc"(nr) ~> nr2, "hl:nat-inc"(nf) ~> nf2
+        |- "hl:commit-failed"("hl:replay"(k, tb, "hl:book"(m, lr, em, lb, nr, nf)), o, lr2) ~> "hl:replay"(k, tb2, "hl:book"(m, lr2, em, lb, nr2, nf2));
+      "put-failed-none". tb:Tables |- "hl:put-failed"(tb, "hl:out-none"()) ~> tb;
+      "put-failed-type". nm:Table, ty:Table, tm:Table, th:Table, ty2:Table | "hl:table-put"(ty, "hl:c-failed"()) ~> ty2
+        |- "hl:put-failed"("hl:tables"(nm, ty, tm, th), "hl:out-type"()) ~> "hl:tables"(nm, ty2, tm, th);
+      "put-failed-term". nm:Table, ty:Table, tm:Table, th:Table, tm2:Table | "hl:table-put"(tm, "hl:c-failed"()) ~> tm2
+        |- "hl:put-failed"("hl:tables"(nm, ty, tm, th), "hl:out-term"()) ~> "hl:tables"(nm, ty, tm2, th);
+      "put-failed-thm". nm:Table, ty:Table, tm:Table, th:Table, th2:Table | "hl:table-put"(th, "hl:c-failed"()) ~> th2
+        |- "hl:put-failed"("hl:tables"(nm, ty, tm, th), "hl:out-thm"()) ~> "hl:tables"(nm, ty, tm, th2);
+      "put-failed-thm2". nm:Table, ty:Table, tm:Table, th:Table, th2:Table, th3:Table | "hl:table-put"(th, "hl:c-failed"()) ~> th2, "hl:table-put"(th2, "hl:c-failed"()) ~> th3
+        |- "hl:put-failed"("hl:tables"(nm, ty, tm, th), "hl:out-thm2"()) ~> "hl:tables"(nm, ty, tm, th3);
+      "rec-out-NAME". s:Str |- "hl:rec-out"("holr:NAME"(s)) ~> "hl:out-none"();
+      "rec-out-TYVAR". n:Nat |- "hl:rec-out"("holr:TYVAR"(n)) ~> "hl:out-type"();
+      "rec-out-TYAPP". n:Nat, ns:Ids |- "hl:rec-out"("holr:TYAPP"(n, ns)) ~> "hl:out-type"();
+      "rec-out-VAR". n:Nat, y:Nat |- "hl:rec-out"("holr:VAR"(n, y)) ~> "hl:out-term"();
+      "rec-out-CONST". n:Nat, y:Nat |- "hl:rec-out"("holr:CONST"(n, y)) ~> "hl:out-term"();
+      "rec-out-COMB". a:Nat, b:Nat |- "hl:rec-out"("holr:COMB"(a, b)) ~> "hl:out-term"();
+      "rec-out-ABS". a:Nat, b:Nat |- "hl:rec-out"("holr:ABS"(a, b)) ~> "hl:out-term"();
+      "rec-out-REFL". t:Nat |- "hl:rec-out"("holr:REFL"(t)) ~> "hl:out-thm"();
+      "rec-out-TRANS". a:Nat, b:Nat |- "hl:rec-out"("holr:TRANS"(a, b)) ~> "hl:out-thm"();
+      "rec-out-MK_COMB". a:Nat, b:Nat |- "hl:rec-out"("holr:MK_COMB"(a, b)) ~> "hl:out-thm"();
+      "rec-out-ABS_RULE". a:Nat, b:Nat |- "hl:rec-out"("holr:ABS_RULE"(a, b)) ~> "hl:out-thm"();
+      "rec-out-BETA". t:Nat |- "hl:rec-out"("holr:BETA"(t)) ~> "hl:out-thm"();
+      "rec-out-ASSUME". t:Nat |- "hl:rec-out"("holr:ASSUME"(t)) ~> "hl:out-thm"();
+      "rec-out-EQ_MP". a:Nat, b:Nat |- "hl:rec-out"("holr:EQ_MP"(a, b)) ~> "hl:out-thm"();
+      "rec-out-DEDUCT". a:Nat, b:Nat |- "hl:rec-out"("holr:DEDUCT_ANTISYM_RULE"(a, b)) ~> "hl:out-thm"();
+      "rec-out-INST_TYPE". ps:IdPairs, h:Nat |- "hl:rec-out"("holr:INST_TYPE"(ps, h)) ~> "hl:out-thm"();
+      "rec-out-INST". ps:IdPairs, h:Nat |- "hl:rec-out"("holr:INST"(ps, h)) ~> "hl:out-thm"();
+      "rec-out-NEW_TYPE". n:Nat, k:Nat |- "hl:rec-out"("holr:NEW_TYPE"(n, k)) ~> "hl:out-none"();
+      "rec-out-NEW_CONSTANT". n:Nat, y:Nat |- "hl:rec-out"("holr:NEW_CONSTANT"(n, y)) ~> "hl:out-none"();
+      "rec-out-NEW_AXIOM". t:Nat |- "hl:rec-out"("holr:NEW_AXIOM"(t)) ~> "hl:out-thm"();
+      "rec-out-NEW_DEFINITION". t:Nat |- "hl:rec-out"("holr:NEW_DEFINITION"(t)) ~> "hl:out-thm"();
+      "rec-out-NEW_TYPEDEF". a:Nat, b:Nat, c:Nat, h:Nat |- "hl:rec-out"("holr:NEW_TYPEDEF"(a, b, c, h)) ~> "hl:out-thm2"();
+      "rec-out-POLICY". u:Nat |- "hl:rec-out"("holr:POLICY"(u)) ~> "hl:out-none"();
+      "rec-out-EXPECT". h:Nat, ts:Ids, t:Nat |- "hl:rec-out"("holr:EXPECT"(h, ts, t)) ~> "hl:out-none"();
+      "rec-out-EXPECT_ALPHA". h:Nat, ts:Ids, t:Nat |- "hl:rec-out"("holr:EXPECT_ALPHA"(h, ts, t)) ~> "hl:out-none"();
+      "rec-out-EXPECT_AXIOMS". h:Nat, hs:Ids |- "hl:rec-out"("holr:EXPECT_AXIOMS"(h, hs)) ~> "hl:out-none"();
+      "rec-out-EXPECT_REFUSED". |- "hl:rec-out"("holr:EXPECT_REFUSED"()) ~> "hl:out-none"();
+      "rec-out-LABEL". h:Nat, n:Nat |- "hl:rec-out"("holr:LABEL"(h, n)) ~> "hl:out-none"();
+      "rec-out-EMIT". h:Nat |- "hl:rec-out"("holr:EMIT"(h)) ~> "hl:out-none"();
+      "rec-out-DROP_TYPE". i:Nat |- "hl:rec-out"("holr:DROP_TYPE"(i)) ~> "hl:out-none"();
+      "rec-out-DROP_TERM". i:Nat |- "hl:rec-out"("holr:DROP_TERM"(i)) ~> "hl:out-none"();
+      "rec-out-DROP_THM". i:Nat |- "hl:rec-out"("holr:DROP_THM"(i)) ~> "hl:out-none"();
+      "nrec-of". k:Kern, tb:Tables, m:Mode, lr:Flag, em:Thms, lb:Labels, nr:Nat, nf:Nat |- "hl:nrec-of"("hl:replay"(k, tb, "hl:book"(m, lr, em, lb, nr, nf))) ~> nr;
+
+      -- one record: validate, execute, commit; strict mode stops at the first refusal or failed check
+      "step". k:Kern, tb:Tables, bk:Book, r:Record, v:Validity, s:Step | "hl:validate"(tb, r) ~> v, "hl:step-v"(v, "hl:replay"(k, tb, bk), r) ~> s
+        |- "hl:step"("hl:replay"(k, tb, bk), r) ~> s;
+      "step-v-invalid". why:Reason, rp:Replay, r:Record, n:Nat | "hl:nrec-of"(rp) ~> n |- "hl:step-v"("hl:invalid"(why), rp, r) ~> "hl:stop"("hl:malformed"(why, n));
+      "step-v-depfail". rp:Replay, r:Record, o:Out, rp2:Replay | "hl:rec-out"(r) ~> o, "hl:commit-failed"(rp, o, "hl:yes"()) ~> rp2 |- "hl:step-v"("hl:depfail"(), rp, r) ~> "hl:continue"(rp2);
+      "step-v-valid". rp:Replay, r:Record, x:Exec, s:Step | "hl:exec"(rp, r) ~> x, "hl:step-x"(x, rp, r) ~> s |- "hl:step-v"("hl:valid"(), rp, r) ~> s;
+      "step-x-ok". rp2:Replay, rp:Replay, r:Record, rp3:Replay | "hl:commit-ok"(rp2) ~> rp3 |- "hl:step-x"("hl:x-ok"(rp2), rp, r) ~> "hl:continue"(rp3);
+      "step-x-refused". st:Status, why:Reason, k:Kern, tb:Tables, m:Mode, lr:Flag, em:Thms, lb:Labels, nr:Nat, nf:Nat, r:Record, s:Step |
+          "hl:step-refused"(m, st, why, "hl:replay"(k, tb, "hl:book"(m, lr, em, lb, nr, nf)), r) ~> s
+        |- "hl:step-x"("hl:x-refused"(st, why), "hl:replay"(k, tb, "hl:book"(m, lr, em, lb, nr, nf)), r) ~> s;
+      "step-refused-strict". st:Status, why:Reason, rp:Replay, r:Record, n:Nat | "hl:nrec-of"(rp) ~> n |- "hl:step-refused"("hl:strict"(), st, why, rp, r) ~> "hl:stop"("hl:refused"(st, why, n));
+      "step-refused-probe". st:Status, why:Reason, rp:Replay, r:Record, o:Out, rp2:Replay | "hl:rec-out"(r) ~> o, "hl:commit-failed"(rp, o, "hl:yes"()) ~> rp2
+        |- "hl:step-refused"("hl:probe"(), st, why, rp, r) ~> "hl:continue"(rp2);
+      "step-x-check-failed". k:Kern, tb:Tables, m:Mode, lr:Flag, em:Thms, lb:Labels, nr:Nat, nf:Nat, r:Record, s:Step |
+          "hl:step-check-failed"(m, "hl:replay"(k, tb, "hl:book"(m, lr, em, lb, nr, nf))) ~> s
+        |- "hl:step-x"("hl:x-check-failed"(), "hl:replay"(k, tb, "hl:book"(m, lr, em, lb, nr, nf)), r) ~> s;
+      "step-check-failed-strict". rp:Replay, n:Nat | "hl:nrec-of"(rp) ~> n |- "hl:step-check-failed"("hl:strict"(), rp) ~> "hl:stop"("hl:refused"("hl:st-refused"(), "hl:r-expect"(), n));
+      "step-check-failed-probe". rp:Replay, rp2:Replay | "hl:commit-failed"(rp, "hl:out-none"(), "hl:no"()) ~> rp2 |- "hl:step-check-failed"("hl:probe"(), rp) ~> "hl:continue"(rp2);
+      "step-x-malformed". why:Reason, rp:Replay, r:Record, n:Nat | "hl:nrec-of"(rp) ~> n |- "hl:step-x"("hl:x-malformed"(why), rp, r) ~> "hl:stop"("hl:malformed"(why, n));
+
+      -- the checker: a fold over the decoded records, then the decoder's ending
+      "run-nil-ok". rp:Replay, v:Verdict | "hl:finish"(rp) ~> v |- "hl:run"(rp, "hl:rnil"(), "hl:end-ok"()) ~> v;
+      "run-nil-malformed". rp:Replay, why:Reason, n:Nat | "hl:nrec-of"(rp) ~> n |- "hl:run"(rp, "hl:rnil"(), "hl:end-malformed"(why)) ~> "hl:malformed"(why, n);
+      "run-cons". rp:Replay, r:Record, rs:Records, t:Terminal, s:Step, v:Verdict | "hl:step"(rp, r) ~> s, "hl:run-k"(s, rs, t) ~> v
+        |- "hl:run"(rp, "hl:rcons"(r, rs), t) ~> v;
+      "run-k-continue". rp:Replay, rs:Records, t:Terminal, v:Verdict | "hl:run"(rp, rs, t) ~> v |- "hl:run-k"("hl:continue"(rp), rs, t) ~> v;
+      "run-k-stop". v:Verdict, rs:Records, t:Terminal |- "hl:run-k"("hl:stop"(v), rs, t) ~> v;
+      "finish". k:Kern, tb:Tables, m:Mode, lr:Flag, em:Thms, lb:Labels, nr:Nat, nf:Nat, o:Ord, e:Flag, v:Verdict |
+          "hl:cmp-nat"(nf, "hl:nz"()) ~> o, "hl:ord-is-eq"(o) ~> e, "hl:finish-k"(e, nr, nf, em) ~> v
+        |- "hl:finish"("hl:replay"(k, tb, "hl:book"(m, lr, em, lb, nr, nf))) ~> v;
+      "finish-k-yes". nr:Nat, nf:Nat, em:Thms, r:Thms | "hl:thms-rev"(em, "hl:thnil"()) ~> r |- "hl:finish-k"("hl:yes"(), nr, nf, em) ~> "hl:accepted"(nr, r);
+      "finish-k-no". nr:Nat, nf:Nat, em:Thms |- "hl:finish-k"("hl:no"(), nr, nf, em) ~> "hl:probe-refused"(nf);
+      "thms-rev-nil". acc:Thms |- "hl:thms-rev"("hl:thnil"(), acc) ~> acc;
+      "thms-rev-cons". x:Thm, xs:Thms, acc:Thms, r:Thms | "hl:thms-rev"(xs, "hl:thcons"(x, acc)) ~> r |- "hl:thms-rev"("hl:thcons"(x, xs), acc) ~> r;
+      "check-header-malformed". host:Policy, rs:Records, why:Reason |- "hl:check"(host, "hl:decoded"(rs, "hl:header-malformed"(), "hl:end-malformed"(why))) ~> "hl:malformed"(why, "hl:nz"());
+      "check". host:Policy, pol:Policy, mode:Mode, rs:Records, t:Terminal, eff:Policy, rp:Replay, v:Verdict |
+          "hl:policy-max"(host, pol) ~> eff, "hl:initial-replay"(eff, mode) ~> rp, "hl:run"(rp, rs, t) ~> v
+        |- "hl:check"(host, "hl:decoded"(rs, "hl:header"(pol, mode), t)) ~> v;
+    }
+  }
+}

@@ -296,14 +296,14 @@ private theorem output_channel_congr
       exact StructuralCongruence.refl payload
 
 /-- Inversion of the derived rho process judgment at an input constructor. -/
-theorem rho_input_wellSorted_inv
+theorem rho_input_wellSorted_inv {scope : QuoteScope}
     {free : FreeSortContext} {bound : List String}
     {channel body : Pattern} {binder : Option String}
-    (typed : ProcWellSorted rhoReflectivePresentation free bound
+    (typed : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound
       (.apply "PInput" [channel, .lambda binder body])) :
     binder = none ∧
-      NameWellSorted rhoReflectivePresentation free bound channel ∧
-      ProcWellSorted rhoReflectivePresentation free
+      NameWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound channel ∧
+      ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free
         (rhoReflectivePresentation.nameSort :: bound) body := by
   generalize patternEq :
     (Pattern.apply "PInput" [channel, Pattern.lambda binder body]) = pattern at typed
@@ -312,14 +312,30 @@ theorem rho_input_wellSorted_inv
   rcases patternEq with ⟨rfl, rfl, rfl⟩
   exact ⟨rfl, channelTyped, bodyTyped⟩
 
+private theorem input_body_congr
+    {channel body body' : Pattern}
+    (bodyCongruence : StructuralCongruence body body') :
+    StructuralCongruence
+      (.apply "PInput" [channel, .lambda none body])
+      (.apply "PInput" [channel, .lambda none body']) := by
+  refine StructuralCongruence.apply_cong "PInput"
+    [channel, .lambda none body] [channel, .lambda none body'] rfl ?_
+  intro index leftBound rightBound
+  cases index with
+  | zero => exact StructuralCongruence.refl _
+  | succ index =>
+      cases index with
+      | zero => exact StructuralCongruence.lambda_cong none _ _ bodyCongruence
+      | succ index => exact absurd leftBound (by simp)
+
 /-- Inversion of the derived rho process judgment at an output constructor. -/
-theorem rho_output_wellSorted_inv
+theorem rho_output_wellSorted_inv {scope : QuoteScope}
     {free : FreeSortContext} {bound : List String}
     {channel payload : Pattern}
-    (typed : ProcWellSorted rhoReflectivePresentation free bound
+    (typed : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound
       (.apply "POutput" [channel, payload])) :
-    NameWellSorted rhoReflectivePresentation free bound channel ∧
-      ProcWellSorted rhoReflectivePresentation free bound payload := by
+    NameWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound channel ∧
+      ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound payload := by
   generalize patternEq :
     (Pattern.apply "POutput" [channel, payload]) = pattern at typed
   cases typed <;> simp [rhoReflectivePresentation] at patternEq
@@ -359,10 +375,11 @@ theorem rhoComm_application_sound
       inputChannelFree outputChannelFree).mp channelsEquivalent
   let residue := (elements.eraseIdx inputIndex).eraseIdx outputIndex
   have compiledAgreement :=
-    LanguageDefAdequacy.applyBindingsForRule_rhoComm_agrees_derived
+    LanguageDefAdequacy.applyBindingsForRule_rhoComm_eq_resolved
       bodyTyped payloadTyped inputChannel residue
   have targetShape :
-      target = .collection .hashBag (semanticCommSubst body payload :: residue) none := by
+      target = .collection .hashBag
+        (semanticCommSubst (resolveQuotes rhoReflectivePresentation body) payload :: residue) none := by
     rw [← targetEq]
     have reordered :
         applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
@@ -416,18 +433,39 @@ theorem rhoComm_application_sound
           .apply "PInput" [inputChannel, .lambda none body]] ++ residue) none) := by
     apply StructuralCongruence.par_perm
     exact List.Perm.swap _ _ _
+  have bodyAgreement : StructuralCongruence
+      (.collection .hashBag
+        ([.apply "POutput" [inputChannel, payload],
+          .apply "PInput" [inputChannel, .lambda none body]] ++ residue) none)
+      (.collection .hashBag
+        ([.apply "POutput" [inputChannel, payload],
+          .apply "PInput" [inputChannel,
+            .lambda none (resolveQuotes rhoReflectivePresentation body)]] ++ residue) none) := by
+    refine StructuralCongruence.par_cong _ _ (by simp) ?_
+    intro index leftBound rightBound
+    cases index with
+    | zero => exact StructuralCongruence.refl _
+    | succ index =>
+        cases index with
+        | zero =>
+            simpa using input_body_congr (channel := inputChannel)
+              (LanguageDefAdequacy.resolveQuotes_structuralCongruence body)
+        | succ index =>
+            have residueBound : index < residue.length := by simpa using leftBound
+            simpa using StructuralCongruence.refl (residue.get ⟨index, residueBound⟩)
   rw [targetShape]
   exact ⟨Reduces.equiv
     (StructuralCongruence.trans _ _ _ sourcePermutation
-      (StructuralCongruence.trans _ _ _ partnerAgreement orderAgreement))
-    (Reduces.comm (n := inputChannel) (q := payload) (p := body)
-      (rest := residue))
+      (StructuralCongruence.trans _ _ _ partnerAgreement
+        (StructuralCongruence.trans _ _ _ orderAgreement bodyAgreement)))
+    (Reduces.comm (n := inputChannel) (q := payload)
+      (p := resolveQuotes rhoReflectivePresentation body) (rest := residue))
     (StructuralCongruence.refl _)⟩
 
 /-- The primitive COMM constructor of the least relation compiled from
-`rhoCalc`. The well-sorted hypotheses are exactly those needed to identify the
-compiled reflective substitution with semantic COMM substitution. -/
-theorem RhoStep.comm
+`rhoCalc`, for every well-sorted body: the contractum is the paper-facing COMM
+result of the body with its quotations of drops resolved. -/
+theorem RhoStep.comm_resolved
     {free : FreeSortContext} {bound : List String}
     (channel body payload : Pattern) (rest : List Pattern)
     (bodyTyped : ProcWellSorted rhoReflectivePresentation free
@@ -437,14 +475,37 @@ theorem RhoStep.comm
       (.collection .hashBag
         ([.apply "PInput" [channel, .lambda none body],
           .apply "POutput" [channel, payload]] ++ rest) none)
-      (.collection .hashBag (semanticCommSubst body payload :: rest) none) := by
+      (.collection .hashBag
+        (semanticCommSubst (resolveQuotes rhoReflectivePresentation body) payload :: rest) none) := by
   refine ⟨1, .rule LanguageDefAdequacy.rhoCommRewrite_mem
     (rhoComm_match_exact channel body payload rest) (.nil _) ?_⟩
   change applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
     (rhoCommMatchedBindings channel body payload rest) = _
   rw [rhoComm_apply_exact,
-      LanguageDefAdequacy.applyBindingsForRule_rhoComm_agrees_derived
-        bodyTyped payloadTyped]
+      LanguageDefAdequacy.applyBindingsForRule_rhoComm_eq_resolved bodyTyped payloadTyped]
+
+/-- The primitive COMM constructor of the least relation compiled from
+`rhoCalc`. The well-sorted hypotheses and the literal-quotation fiber of the
+body are exactly those needed to identify the compiled reflective substitution
+with semantic COMM substitution; outside the fiber the compiled step resolves
+quotations of drops that the paper-facing substitution keeps as written
+(`LanguageDefAdequacy.hiddenQuoteDrop_comm_differs`). The fiber condition is
+decidable and discharged automatically for concrete bodies. -/
+theorem RhoStep.comm
+    {free : FreeSortContext} {bound : List String}
+    (channel body payload : Pattern) (rest : List Pattern)
+    (bodyTyped : ProcWellSorted rhoReflectivePresentation free
+      (rhoReflectivePresentation.nameSort :: bound) body)
+    (payloadTyped : ProcWellSorted rhoReflectivePresentation free bound payload)
+    (fiber : Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral rhoReflectivePresentation body = true :=
+      by decide +kernel) :
+    RhoStep
+      (.collection .hashBag
+        ([.apply "PInput" [channel, .lambda none body],
+          .apply "POutput" [channel, payload]] ++ rest) none)
+      (.collection .hashBag (semanticCommSubst body payload :: rest) none) := by
+  rw [← LanguageDefAdequacy.semanticCommSubst_resolveQuotes_of_fiber bodyTyped fiber payloadTyped]
+  exact RhoStep.comm_resolved channel body payload rest bodyTyped payloadTyped
 
 /-! ## Shape and meaning of an authored `ParCong` application -/
 
@@ -697,13 +758,17 @@ private theorem rhoComm_application_preserves_closed
   have residueSafe : binderSafeListAt "NQuote" 0 residue = true := by
     exact binderSafeListAt_eraseIdx "NQuote" 0 outputIndex afterInputSafe
   have contractumPreserved :=
-    semanticCommSubst_preserves bodyTyped bodySafe payloadTyped payloadSafe
+    semanticCommSubst_preserves (LanguageDefAdequacy.rhoProc_resolveQuotes_typed bodyTyped)
+      (Mettapedia.OSLF.MeTTaIL.ReflectiveInstantiation.resolveQuotes_binderSafeAt
+        rhoReflectivePresentation bodySafe)
+      payloadTyped payloadSafe
   have compiledAgreement :=
-    LanguageDefAdequacy.applyBindingsForRule_rhoComm_agrees_derived
+    LanguageDefAdequacy.applyBindingsForRule_rhoComm_eq_resolved
       bodyTyped payloadTyped inputChannel residue
   have targetShape :
       target =
-        .collection .hashBag (semanticCommSubst body payload :: residue) none := by
+        .collection .hashBag
+          (semanticCommSubst (resolveQuotes rhoReflectivePresentation body) payload :: residue) none := by
     rw [← targetEq]
     have reordered :
         applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
@@ -841,6 +906,19 @@ theorem rhoStep_preserves_closed
       binderSafeAt "NQuote" 0 target = true := by
   obtain ⟨fuel, bounded⟩ := step
   exact rhoStepAt_preserves_closed sourceTyped sourceSafe bounded
+
+/-- **The step preserves quote admission.** Rho declares that binders do not
+reach into quotations, so every quotation of a sorted process is closed code;
+every finite authored step from a sorted closed process ends at a process whose
+quotations are again closed code. -/
+theorem rhoStep_preserves_quotesClosed
+    {free : FreeSortContext} {source target : Pattern}
+    (sourceTyped :
+      ProcWellSorted rhoReflectivePresentation free [] source)
+    (sourceSafe : binderSafeAt "NQuote" 0 source = true)
+    (step : RhoStep source target) :
+    QuotesClosed rhoReflectivePresentation.toReflectivePresentationDecl target :=
+  (rhoStep_preserves_closed sourceTyped sourceSafe step).1.quotesClosed rfl (by decide)
 
 /-! ## Positive and negative operational controls -/
 

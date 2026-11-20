@@ -78,7 +78,7 @@ theorem underSearch_not_stuck (fuel : Nat) {Θ : Context S.R}
       | progress update smaller =>
           intro stuck
           cases stuck
-      | refuted absent =>
+      | refuted missing =>
           intro stuck
           cases stuck
 
@@ -120,7 +120,7 @@ theorem underRound_not_stuck_of_dropsDead (fuel : Nat) {Θ : Context S.R} {probl
   | progress update smaller =>
       intro stuck
       cases stuck
-  | refuted absent =>
+  | refuted missing =>
       intro stuck
       cases stuck
 
@@ -201,7 +201,7 @@ theorem tower_under_decided_of_underReads
       run (underTower.solver larger) problem larger = run (underTower.solver budget) problem budget ∧
       ((∃ state finished, run (underTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ absent, run (underTower.solver larger) problem larger = .refuted absent)) :=
+        (∃ missing, run (underTower.solver larger) problem larger = .refuted missing)) :=
   tower_under_decided_of_firing
     (fun permuted nonempty => firing_of_underReads (S := setting) TowerModel.facts TowerModel.roots TowerModel.heads
       TowerModel.algebra ContextualDependentPiSpine.Controls.rigid TowerModel.complete

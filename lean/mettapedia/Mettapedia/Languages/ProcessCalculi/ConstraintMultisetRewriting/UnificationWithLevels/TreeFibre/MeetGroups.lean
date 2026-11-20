@@ -362,22 +362,22 @@ theorem stepMeetGroup_ne_stuck {Θ : Context S.R} {e : Equation (TotalTerm Θ)} 
 
 omit [∀ head, Decidable (S.R.isUniverse head)] in
 theorem stepMeetGroup_ne_refuted {Θ : Context S.R} {e : Equation (TotalTerm Θ)} (all : AllFamilies Θ)
-    (v : FitFlex e) (rest : EquationStore (TotalTerm Θ)) (absent : ¬ (frames S.levels).Solvable (e :: rest)) :
-    stepMeetGroup facts roots heads algebra rigid complete all v rest ≠ .refuted absent := by
+    (v : FitFlex e) (rest : EquationStore (TotalTerm Θ)) (missing : ¬ (frames S.levels).Solvable (e :: rest)) :
+    stepMeetGroup facts roots heads algebra rigid complete all v rest ≠ .refuted missing := by
   unfold stepMeetGroup
   split_ifs <;> intro h <;> cases h
 
 /-- **The rules never refute.** -/
 theorem meetGroupRound_ne_refuted {Γ : Context S.R} (problem : EquationStore (TotalTerm Γ))
-    (absent : ¬ (frames S.levels).Solvable problem) :
-    meetGroupRound facts roots heads algebra rigid complete problem ≠ .refuted absent := by
+    (missing : ¬ (frames S.levels).Solvable problem) :
+    meetGroupRound facts roots heads algebra rigid complete problem ≠ .refuted missing := by
   cases problem with
   | nil => intro h; cases h
   | cons e rest =>
       simp only [meetGroupRound]
       split_ifs with hall
       · split
-        · exact stepMeetGroup_ne_refuted facts roots heads algebra rigid complete _ _ rest absent
+        · exact stepMeetGroup_ne_refuted facts roots heads algebra rigid complete _ _ rest missing
         · intro h; cases h
       · intro h; cases h
 
@@ -463,8 +463,8 @@ theorem meetGroup_decided {Θ : Context S.R} {original : EquationStore (TotalTer
           run (meetGroupSolver facts roots heads algebra rigid complete) original fuel ∧
         ((∃ state finished, run (meetGroupSolver facts roots heads algebra rigid complete) original larger =
               .solved state finished ∧ (frames S.levels).Principal original state.answer) ∨
-          (∃ absent, run (meetGroupSolver facts roots heads algebra rigid complete) original larger =
-            .refuted absent)) :=
+          (∃ missing, run (meetGroupSolver facts roots heads algebra rigid complete) original larger =
+            .refuted missing)) :=
   (meetGroupFragment facts roots heads algebra rigid complete).decided inside
 
 include facts roots heads algebra rigid complete in
@@ -473,11 +473,11 @@ theorem principal_of_inMeetFragment {Θ : Context S.R} {original : EquationStore
     (inside : InMeetFragment original) :
     ∃ (Δ : Context S.R) (answer : Δ ⟶ Θ), (frames S.levels).Principal original answer := by
   obtain ⟨fuel, ends⟩ := meetGroup_decided facts roots heads algebra rigid complete inside
-  rcases (ends fuel le_rfl).2 with ⟨state, _, _, principal⟩ | ⟨absent, refuted⟩
+  rcases (ends fuel le_rfl).2 with ⟨state, _, _, principal⟩ | ⟨missing, refuted⟩
   · exact ⟨_, _, principal⟩
   · exact absurd refuted (drive_ne_refuted (meetGroupSolver facts roots heads algebra rigid complete)
-      (fun problem absent => meetGroupRound_ne_refuted facts roots heads algebra rigid complete problem absent)
-      fuel _ absent)
+      (fun problem missing => meetGroupRound_ne_refuted facts roots heads algebra rigid complete problem missing)
+      fuel _ missing)
 
 end Solver
 

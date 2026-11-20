@@ -1,4 +1,4 @@
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.PredicateQueryAdmission
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RegionObservations
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.GuardFreeProcessOrders
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits.Traces
 import Mettapedia.GSLT.Distinction.CausalGluing
@@ -8,11 +8,14 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Inte
 /-!
 # Runs of the candidate step: the base of every annotation
 
-A firing of the candidate step is a rule instance, its predicate queries and its
-selected occurrences. Its admission is `PredicateQueryAdmission.Valid`: the queries'
-census, the complete answer table, must hold at the firing's cut. Its update is
-the existing `Selection.result`. A run is a word of firings, each admitted where
-its predecessors left the configuration.
+A firing of the candidate step is a rule instance, its region queries and its selected
+occurrences. A region query (`PredicateQueryAdmission.RegionQuery`) has, at each solution, a region
+of labels and an observation of the occurrences in it, for example exactly a seen set (the predicate query of
+the admission form, `Query.toRegion`), a count, or a none query. Its admission is
+`PredicateQueryAdmission.RegionValid`: the firing's own admission, and every query asked at every
+solution of the firing's cut against the occurrences present before it. Its update is the existing
+`Selection.result`. A run is a word of firings, each admitted where its predecessors left the
+configuration.
 
 ## The first-order step is the one-frame instance of the interface
 
@@ -35,7 +38,8 @@ Admission, the update and runs are equivariant (`Firing.valid_rename`, `Firing.r
 
 Admission depends on a configuration only through the solutions of its
 equations and its present occurrences (`GuardFreeProcessOrders.valid_congr`;
-`Firing.valid_congr` adds the predicate queries). Configurations are therefore
+`Firing.valid_congr` adds the region queries, which read the present occurrences only through
+their fibers). Configurations are therefore
 read up to `SameUpTo`. On these classes the candidate step is a GSLT whose events
 are the firings (`theory`, `presentation`). Its runs are the arrows of the free
 category `OccurrenceHistory.OccurrenceCat` on that presentation, and they are
@@ -45,10 +49,15 @@ histories of the writer theory of `HistoryMonad` (`eventLabels`,
 
 ## Two independences, not one
 
-* **Static.** For firings without checks whose query regions do not depend on
-  the solution, the relation `StaticIndependent` is decided by the firings
-  alone: at every solution, their footprints, queries included, are trace
-  independent in the ground layer (`OccurrenceCommits.TraceIndependent`).
+* **Static.** For firings without checks whose queries do not depend on the
+  solution, neither in their region nor in what they accept, the relation
+  `StaticIndependent` is decided by the firings alone: at every solution and
+  configuration, their footprints, queries included, are trace independent in the
+  ground layer (`OccurrenceCommits.TraceIndependent`). Trace independence reads of a query only
+  its region (`traceIndependent_iff_regions`), so neither the configuration at
+  which the footprints are taken nor what the queries observe matters
+  (`Firing.traceIndependent_footprintAt_iff`); on exact queries the relation is the
+  one of the admission form's footprints (`independent_iff_of_exact`).
   Equations are unrestricted and may share variables. A firing is independent
   of itself exactly when it writes nothing (`independent_self_iff`); removing
   these pairs makes the relation irreflexive and generates the same equivalence
@@ -70,7 +79,11 @@ histories of the writer theory of `HistoryMonad` (`eventLabels`,
   independent while one order runs and the other is refused
   (`Controls.told_check_one_order`).
 * A predicate query has a predicate-read dependency on its region: it conflicts
-  with every writer into that region (`Controls.census_writer_one_order`).
+  with every writer into that region (`Controls.query_writer_one_order`).
+* A query may accept according to the solution. Its region can be static and the
+  footprints trace independent while one order runs and the other is refused
+  (`Controls.acceptance_reading_the_solution_one_order`): the static fragment asks
+  that what a query accepts does not depend on the solution either.
 -/
 
 set_option autoImplicit false
@@ -89,11 +102,11 @@ theorem sameUpTo_symm (A : SubstitutionAction T S) {C D : Configuration T O}
     (same : SameUpTo A C D) : SameUpTo A D C :=
   ⟨fun σ => (same.1 σ).symm, same.2.symm⟩
 
-/-- One firing of the candidate step: a rule instance, its predicate queries and the selected
+/-- One firing of the candidate step: a rule instance, its region queries and the selected
 occurrences. -/
 structure Firing (T : Type uT) (S : Type uS) (O : Type uO) where
   rule : RuleInstance T
-  queries : List (PredicateQueryAdmission.Query T S O)
+  queries : List (PredicateQueryAdmission.RegionQuery T S O)
   selection : Selection O
 
 namespace Firing
@@ -106,24 +119,28 @@ def ofPlain (x : ConditionalSchedule.Firing T O) : Firing T S O := ⟨x.1, [], x
 
 variable (A : SubstitutionAction T S) (label : O → T)
 
-/-- Admission is the existing census admission: the queries must hold at the firing's cut. -/
+/-- Admission with region queries (`PredicateQueryAdmission.RegionValid`): the firing's own
+admission, and every query asked at the firing's cut against the occurrences present before it. -/
 def Valid (f : Firing T S O) (C : Configuration T O) : Prop :=
-  PredicateQueryAdmission.Valid A label f.rule f.queries C f.selection
+  PredicateQueryAdmission.RegionValid A label f.rule f.queries C f.selection
 
 /-- The update is the existing occurrence operation; the queries add none. -/
 def result (f : Firing T S O) (C : Configuration T O) : Configuration T O :=
   f.selection.result label f.rule C
 
-/-- The ground footprint of a firing at one solution, its queries included. -/
-def footprintAt (f : Firing T S O) (σ : S) : Commit O T :=
-  PredicateQueryAdmission.commit f.selection f.queries σ
+/-- The ground footprint of a firing at one solution and one configuration, its queries included:
+each query's footprint is what its fiber holds there (`PredicateQueryAdmission.regionCommit`). It
+holds by construction, so it certifies no query; admission asks the queries (`Valid`). -/
+def footprintAt (f : Firing T S O) (σ : S) (C : Configuration T O) : Commit O T :=
+  PredicateQueryAdmission.regionCommit f.selection f.queries σ label C.present
 
-/-- Without queries, admission is the plain admission (`PredicateQueryAdmission.valid_empty_iff`). -/
+/-- Without queries, admission is the plain admission (`PredicateQueryAdmission.regionValid_nil_iff`). -/
 theorem valid_ofPlain_iff (x : ConditionalSchedule.Firing T O) (C : Configuration T O) :
     (ofPlain x : Firing T S O).Valid A label C ↔ x.2.Valid A label x.1 C :=
-  PredicateQueryAdmission.valid_empty_iff A label x.1 C x.2
+  PredicateQueryAdmission.regionValid_nil_iff
 
-/-- Admission with queries depends only on the solutions and the present occurrences. -/
+/-- Admission with region queries depends only on the solutions and the present occurrences: a
+query reads the world only through its fiber. -/
 theorem valid_congr {f : Firing T S O} {C D : Configuration T O} (same : SameUpTo A C D) :
     f.Valid A label C ↔ f.Valid A label D := by
   have problems : A.Equivalent (f.selection.problem label f.rule C)
@@ -134,13 +151,11 @@ theorem valid_congr {f : Firing T S O} {C D : Configuration T O} (same : SameUpT
   · rintro ⟨firing, observations⟩
     refine ⟨(GuardFreeProcessOrders.valid_congr A label same).mp firing, ?_⟩
     intro query member σ solved
-    change regionOf label D.present (query.region σ) = query.seen
     rw [← same.2]
     exact observations query member σ ((problems σ).mpr solved)
   · rintro ⟨firing, observations⟩
     refine ⟨(GuardFreeProcessOrders.valid_congr A label same).mpr firing, ?_⟩
     intro query member σ solved
-    change regionOf label C.present (query.region σ) = query.seen
     rw [same.2]
     exact observations query member σ ((problems σ).mp solved)
 
@@ -228,7 +243,7 @@ def firstOrder :
     f.rule.take.length = f.selection.taken.length ∧ f.rule.read.length = f.selection.read.length ∧
     f.selection.made.map label = f.rule.produce
   Holds {C} f _ σ := (∀ check ∈ f.rule.checks, check.Holds A σ label C.present) ∧
-    ∀ query ∈ f.queries, (query.atSolution σ).Holds label C.present
+    ∀ query ∈ f.queries, query.Holds σ label C.present
   Admits {C} f := f.Valid A label C
   admits_iff := by
     intro C f
@@ -307,10 +322,13 @@ end OneFrame
 
 /-! ## Renaming occurrence identities
 
-A bijection of occurrence identities that keeps their labels renames a selection, the identities
-the predicate queries of a firing saw, and the present occurrences of a configuration; knowledge
-never mentions identities. Admission and the update are equivariant (`Firing.valid_rename`,
-`Firing.result_rename`), and so are runs (`executable_rename`, `follow_rename`). -/
+A bijection of occurrence identities that keeps their labels renames a selection, what the region
+queries of a firing observe (`PredicateQueryAdmission.RegionQuery.rename`: the region is unchanged
+and the observation reads the occurrences it is given back along the bijection), and the present
+occurrences of a configuration; knowledge never mentions identities. An exact query's seen set is
+renamed (`rename_toRegion`); a count is unchanged. Admission and the update are equivariant
+(`Firing.valid_rename`, `Firing.result_rename`), and so are runs (`executable_rename`,
+`follow_rename`). -/
 
 section Renaming
 
@@ -320,13 +338,30 @@ variable (π : O ≃ O)
 def renameSelection (selection : Selection O) : Selection O :=
   ⟨selection.taken.map π, selection.read.map π, selection.made.map π⟩
 
-/-- Rename the identities a predicate query saw. -/
-def renameQuery (query : PredicateQueryAdmission.Query T S O) : PredicateQueryAdmission.Query T S O :=
-  ⟨query.region, query.seen.map π.toEmbedding⟩
+omit [DecidableEq O] in
+/-- **Renaming an exact query renames what it saw**: on the admission form's queries,
+`RegionQuery.rename` is the renaming of their seen sets. -/
+theorem rename_toRegion (query : PredicateQueryAdmission.Query T S O) :
+    query.toRegion.rename π =
+      (⟨query.region, query.seen.map π.toEmbedding⟩ : PredicateQueryAdmission.Query T S O).toRegion := by
+  show (⟨query.region, fun _ found => found.map π.symm.toEmbedding = query.seen⟩ :
+      PredicateQueryAdmission.RegionQuery T S O) =
+    ⟨query.region, fun _ found => found = query.seen.map π.toEmbedding⟩
+  refine congrArg (PredicateQueryAdmission.RegionQuery.mk query.region) ?_
+  funext _ found
+  apply propext
+  constructor
+  · intro renamed
+    rw [← renamed, Finset.map_map, Function.Embedding.equiv_symm_toEmbedding_trans_toEmbedding,
+      Finset.map_refl]
+  · intro renamed
+    rw [renamed, Finset.map_map, Function.Embedding.equiv_toEmbedding_trans_symm_toEmbedding,
+      Finset.map_refl]
 
-/-- Rename a firing: its selection and its queries' sightings. -/
+/-- Rename a firing: its selection and what its queries observe. -/
 def Firing.rename (f : Firing T S O) : Firing T S O :=
-  ⟨f.rule, f.queries.map (renameQuery π), renameSelection π f.selection⟩
+  ⟨f.rule, f.queries.map (PredicateQueryAdmission.RegionQuery.rename π),
+    renameSelection π f.selection⟩
 
 /-- Rename the present occurrences of a configuration. -/
 def renameConfiguration (C : Configuration T O) : Configuration T O :=
@@ -391,18 +426,32 @@ theorem holds_rename (A : SubstitutionAction T S) (keeps : ∀ o, label (π o) =
     check.Holds A σ label (present.map π.toEmbedding) ↔ check.Holds A σ label present := by
   cases check with
   | equal left right => exact Iff.rfl
-  | absent pattern =>
-      constructor
-      · intro absent o member matched
-        apply absent _ (Finset.mem_map_of_mem π.toEmbedding member)
-        show A.E (A.apply σ pattern) (A.apply σ (label (π o)))
-        rw [keeps]
-        exact matched
-      · intro absent o member matched
-        obtain ⟨a, inside, rfl⟩ := Finset.mem_map.mp member
-        change A.E (A.apply σ pattern) (A.apply σ (label (π a))) at matched
-        rw [keeps] at matched
-        exact absent a inside matched
+  | predicate quantifier pattern =>
+      cases quantifier with
+      | any =>
+          constructor
+          · rintro ⟨o, member, matched⟩
+            obtain ⟨a, inside, rfl⟩ := Finset.mem_map.mp member
+            refine ⟨a, inside, ?_⟩
+            change A.E (A.apply σ pattern) (A.apply σ (label (π a))) at matched
+            rwa [keeps] at matched
+          · rintro ⟨o, member, matched⟩
+            refine ⟨π o, Finset.mem_map_of_mem π.toEmbedding member, ?_⟩
+            show A.E (A.apply σ pattern) (A.apply σ (label (π o)))
+            rw [keeps]
+            exact matched
+      | none =>
+          constructor
+          · intro none o member matched
+            apply none _ (Finset.mem_map_of_mem π.toEmbedding member)
+            show A.E (A.apply σ pattern) (A.apply σ (label (π o)))
+            rw [keeps]
+            exact matched
+          · intro none o member matched
+            obtain ⟨a, inside, rfl⟩ := Finset.mem_map.mp member
+            change A.E (A.apply σ pattern) (A.apply σ (label (π a))) at matched
+            rw [keeps] at matched
+            exact none a inside matched
   | count pattern number =>
       show (Check.matches A σ label (present.map π.toEmbedding) pattern).card = number ↔
         (Check.matches A σ label present pattern).card = number
@@ -422,14 +471,15 @@ theorem regionOf_rename (keeps : ∀ o, label (π o) = label o) (present : Finse
     exact ⟨⟨a, member, rfl⟩, by rwa [keeps]⟩
 
 omit [DecidableEq O] in
+/-- **A renamed query holds at the renamed occurrences exactly when the query holds**, whatever it
+observes: `RegionQuery.rename_holds_iff` for a renaming that keeps the labels. -/
 theorem queryHolds_rename (keeps : ∀ o, label (π o) = label o) (σ : S) (present : Finset O)
-    (query : PredicateQueryAdmission.Query T S O) :
-    ((renameQuery π query).atSolution σ).Holds label (present.map π.toEmbedding) ↔
-      (query.atSolution σ).Holds label present := by
-  show regionOf label (present.map π.toEmbedding) (query.region σ) = query.seen.map π.toEmbedding ↔
-    regionOf label present (query.region σ) = query.seen
-  rw [regionOf_rename keeps]
-  exact Finset.map_inj
+    (query : PredicateQueryAdmission.RegionQuery T S O) :
+    (query.rename π).Holds σ label (present.map π.toEmbedding) ↔ query.Holds σ label present := by
+  have relabel : label ∘ π.symm = label :=
+    funext fun o => (keeps (π.symm o)).symm.trans (congrArg label (π.apply_symm_apply o))
+  have equivariant := PredicateQueryAdmission.RegionQuery.rename_holds_iff π query σ label present
+  rwa [relabel] at equivariant
 
 /-- **Admission is equivariant** under label-preserving renamings of occurrence identities. -/
 theorem Firing.valid_rename (A : SubstitutionAction T S) (keeps : ∀ o, label (π o) = label o)
@@ -452,7 +502,7 @@ theorem Firing.valid_rename (A : SubstitutionAction T S) (keeps : ∀ o, label (
       have asked := checks check member σ (by simpa only [Firing.rename, problem] using solved)
       exact (holds_rename A keeps σ C.present check).mp asked
     · intro query member σ solved
-      have asked := observations (renameQuery π query) (List.mem_map_of_mem member) σ
+      have asked := observations (query.rename π) (List.mem_map_of_mem member) σ
         (by simpa only [Firing.rename, problem] using solved)
       exact (queryHolds_rename keeps σ C.present query).mp asked
   · rintro ⟨⟨takeDistinct, outputDistinct, takeLength, readLength, outputsEq, occurrences,
@@ -510,27 +560,52 @@ end Renaming
 
 namespace Firing
 
-/-- Query regions that do not depend on the solution. -/
+/-- Queries that do not depend on the solution, neither in their region nor in what they accept
+(`PredicateQueryAdmission.RegionQuery.Uniform`). -/
 def StaticQueries (f : Firing T S O) : Prop :=
-  ∀ query ∈ f.queries, ∀ σ τ : S, query.region σ = query.region τ
+  ∀ query ∈ f.queries, query.Uniform
 
-/-- The fragment with a static independence: no checks, and query regions that do not
-depend on the solution. Equations, including shared variables, are not restricted. -/
+/-- The fragment with a static independence: no checks, and queries that do not depend on the
+solution. Equations, including shared variables, are not restricted. -/
 structure Static (f : Firing T S O) : Prop where
   checks : f.rule.checks = []
   queries : f.StaticQueries
 
-@[simp] theorem footprintAt_taken (f : Firing T S O) (σ : S) :
-    (f.footprintAt σ).taken = f.selection.taken.toFinset := rfl
+omit [DecidableEq O] in
+/-- **On exact queries the static condition reads only regions**: what an exact query accepts never
+depends on the solution. -/
+theorem staticQueries_iff_of_exact {f : Firing T S O}
+    {queries : List (PredicateQueryAdmission.Query T S O)}
+    (exact : f.queries = queries.map PredicateQueryAdmission.Query.toRegion) :
+    f.StaticQueries ↔ ∀ query ∈ queries, ∀ σ τ : S, query.region σ = query.region τ := by
+  unfold StaticQueries
+  rw [exact, List.forall_mem_map]
+  exact forall₂_congr fun _ _ => ⟨fun uniform => uniform.1, fun region => ⟨region, fun _ _ => rfl⟩⟩
 
-@[simp] theorem footprintAt_kept (f : Firing T S O) (σ : S) :
-    (f.footprintAt σ).kept = f.selection.read.toFinset := rfl
+@[simp] theorem footprintAt_taken (label : O → T) (f : Firing T S O) (σ : S)
+    (C : Configuration T O) : (f.footprintAt label σ C).taken = f.selection.taken.toFinset := rfl
 
-@[simp] theorem footprintAt_made (f : Firing T S O) (σ : S) :
-    (f.footprintAt σ).made = f.selection.made.toFinset := rfl
+@[simp] theorem footprintAt_kept (label : O → T) (f : Firing T S O) (σ : S)
+    (C : Configuration T O) : (f.footprintAt label σ C).kept = f.selection.read.toFinset := rfl
 
-@[simp] theorem footprintAt_queries (f : Firing T S O) (σ : S) :
-    (f.footprintAt σ).queries = f.queries.map fun query => query.atSolution σ := rfl
+@[simp] theorem footprintAt_made (label : O → T) (f : Firing T S O) (σ : S)
+    (C : Configuration T O) : (f.footprintAt label σ C).made = f.selection.made.toFinset := rfl
+
+@[simp] theorem footprintAt_queries (label : O → T) (f : Firing T S O) (σ : S)
+    (C : Configuration T O) :
+    (f.footprintAt label σ C).queries = f.queries.map fun query => query.footprintAt σ label C.present :=
+  rfl
+
+/-- **Where its exact queries hold, a firing's footprint is the admission form's**
+(`PredicateQueryAdmission.regionCommit_toRegion`). -/
+theorem footprintAt_of_exact {label : O → T} {f : Firing T S O}
+    {queries : List (PredicateQueryAdmission.Query T S O)}
+    (exact : f.queries = queries.map PredicateQueryAdmission.Query.toRegion) {σ : S}
+    {C : Configuration T O} (holds : ∀ query ∈ queries, (query.atSolution σ).Holds label C.present) :
+    f.footprintAt label σ C = PredicateQueryAdmission.commit f.selection queries σ := by
+  show PredicateQueryAdmission.regionCommit f.selection f.queries σ label C.present = _
+  rw [exact]
+  exact PredicateQueryAdmission.regionCommit_toRegion holds
 
 omit [DecidableEq O] in
 @[simp] theorem plain_fst (f : Firing T S O) : f.plain.1 = f.rule := rfl
@@ -540,23 +615,112 @@ omit [DecidableEq O] in
 
 end Firing
 
-/-- **Static independence of firings**: at every solution, the two footprints, queries
-included, are trace independent in the ground layer. -/
+/-- **Trace independence reads of a predicate query only its region**: two commits are trace
+independent exactly when they are without their queries and neither writes into a query region of
+the other. -/
+theorem traceIndependent_iff_regions {label : O → T} {c d : Commit O T} :
+    TraceIndependent label c d ↔
+      TraceIndependent label ⟨c.taken, c.kept, c.made, []⟩ ⟨d.taken, d.kept, d.made, []⟩ ∧
+        (∀ read ∈ d.queries, ∀ o ∈ c.taken ∪ c.made, read.region (label o) = false) ∧
+        (∀ read ∈ c.queries, ∀ o ∈ d.taken ∪ d.made, read.region (label o) = false) := by
+  constructor
+  · rintro ⟨⟨clash, cd, dc⟩, cMade, dMade⟩
+    refine ⟨⟨⟨clash, fun spoils => cd ?_, fun spoils => dc ?_⟩, cMade, dMade⟩, ?_, ?_⟩
+    · rcases spoils with kept | ⟨_, member, -⟩
+      · exact Or.inl kept
+      · exact absurd member List.not_mem_nil
+    · rcases spoils with kept | ⟨_, member, -⟩
+      · exact Or.inl kept
+      · exact absurd member List.not_mem_nil
+    · intro read member o written
+      cases inside : read.region (label o) with
+      | false => rfl
+      | true => exact (cd (Or.inr ⟨read, member, o, written, inside⟩)).elim
+    · intro read member o written
+      cases inside : read.region (label o) with
+      | false => rfl
+      | true => exact (dc (Or.inr ⟨read, member, o, written, inside⟩)).elim
+  · rintro ⟨⟨⟨clash, cd, dc⟩, cMade, dMade⟩, intoD, intoC⟩
+    refine ⟨⟨clash, ?_, ?_⟩, cMade, dMade⟩
+    · rintro (kept | ⟨read, member, o, written, inside⟩)
+      · exact cd (Or.inl kept)
+      · rw [intoD read member o written] at inside
+        exact Bool.false_ne_true inside
+    · rintro (kept | ⟨read, member, o, written, inside⟩)
+      · exact dc (Or.inl kept)
+      · rw [intoC read member o written] at inside
+        exact Bool.false_ne_true inside
+
+/-- **Two footprints are trace independent exactly when the selections are and neither firing writes
+into a query region of the other at the solution.** Neither the configuration nor what a query
+observes matters. -/
+theorem Firing.traceIndependent_footprintAt_iff {label : O → T} {f g : Firing T S O} {σ : S}
+    {C : Configuration T O} :
+    TraceIndependent label (f.footprintAt label σ C) (g.footprintAt label σ C) ↔
+      TraceIndependent label (f.selection.commit (T := T)) (g.selection.commit (T := T)) ∧
+        (∀ query ∈ g.queries,
+          ∀ o ∈ (f.selection.commit (T := T)).taken ∪ (f.selection.commit (T := T)).made,
+            query.region σ (label o) = false) ∧
+        (∀ query ∈ f.queries,
+          ∀ o ∈ (g.selection.commit (T := T)).taken ∪ (g.selection.commit (T := T)).made,
+            query.region σ (label o) = false) :=
+  traceIndependent_iff_regions.trans
+    (and_congr Iff.rfl (and_congr List.forall_mem_map List.forall_mem_map))
+
+/-- The same for the admission form's footprints (`PredicateQueryAdmission.commit`). -/
+theorem traceIndependent_commit_iff {label : O → T} {s s' : Selection O}
+    {queries queries' : List (PredicateQueryAdmission.Query T S O)} {σ : S} :
+    TraceIndependent label (PredicateQueryAdmission.commit s queries σ)
+        (PredicateQueryAdmission.commit s' queries' σ) ↔
+      TraceIndependent label (s.commit (T := T)) (s'.commit (T := T)) ∧
+        (∀ query ∈ queries',
+          ∀ o ∈ (s.commit (T := T)).taken ∪ (s.commit (T := T)).made,
+            query.region σ (label o) = false) ∧
+        (∀ query ∈ queries,
+          ∀ o ∈ (s'.commit (T := T)).taken ∪ (s'.commit (T := T)).made,
+            query.region σ (label o) = false) :=
+  traceIndependent_iff_regions.trans
+    (and_congr Iff.rfl (and_congr List.forall_mem_map List.forall_mem_map))
+
+/-- **Static independence of firings**: at every solution and every configuration, the two
+footprints, queries included, are trace independent in the ground layer. The configuration does not
+matter (`Firing.traceIndependent_footprintAt_iff`). -/
 def Independent (label : O → T) (f g : Firing T S O) : Prop :=
-  ∀ σ : S, TraceIndependent label (f.footprintAt σ) (g.footprintAt σ)
+  ∀ (σ : S) (C : Configuration T O),
+    TraceIndependent label (f.footprintAt label σ C) (g.footprintAt label σ C)
+
+/-- **On exact queries the static independence is the admission form's**: at every solution, trace
+independence of the footprints `PredicateQueryAdmission.commit`. -/
+theorem independent_iff_of_exact {label : O → T} {f g : Firing T S O}
+    {queries queries' : List (PredicateQueryAdmission.Query T S O)}
+    (exactF : f.queries = queries.map PredicateQueryAdmission.Query.toRegion)
+    (exactG : g.queries = queries'.map PredicateQueryAdmission.Query.toRegion) :
+    Independent label f g ↔
+      ∀ σ : S, TraceIndependent label (PredicateQueryAdmission.commit f.selection queries σ)
+        (PredicateQueryAdmission.commit g.selection queries' σ) := by
+  have same : ∀ (σ : S) (C : Configuration T O),
+      TraceIndependent label (f.footprintAt label σ C) (g.footprintAt label σ C) ↔
+        TraceIndependent label (PredicateQueryAdmission.commit f.selection queries σ)
+          (PredicateQueryAdmission.commit g.selection queries' σ) := by
+    intro σ C
+    rw [Firing.traceIndependent_footprintAt_iff, traceIndependent_commit_iff, exactF, exactG,
+      List.forall_mem_map, List.forall_mem_map]
+    rfl
+  exact ⟨fun independent σ => (same σ ⟨[], ∅⟩).mp (independent σ ⟨[], ∅⟩),
+    fun independent σ C => (same σ C).mpr (independent σ)⟩
 
 namespace Independent
 
 variable {label : O → T} {f g : Firing T S O}
 
 theorem symm (independent : Independent label f g) : Independent label g f :=
-  fun σ => (independent σ).symm
+  fun σ C => (independent σ C).symm
 
 /-- Neither makes what the other takes or reads (`GuardFreeProcessOrders.NoCause`). -/
 theorem noCause (independent : Independent label f g) (σ : S) : NoCause f.plain g.plain := by
   intro o made
-  have apart := (independent σ).2.1
-  have inMade : o ∈ (f.footprintAt σ).made := by simpa using made
+  have apart := (independent σ ⟨[], ∅⟩).2.1
+  have inMade : o ∈ (f.footprintAt label σ ⟨[], ∅⟩).made := by simpa using made
   refine ⟨fun taken => Finset.disjoint_left.mp apart inMade ?_,
     fun read => Finset.disjoint_left.mp apart inMade ?_⟩
   · exact MeTTaCalculus.OccurrenceCommits.Commit.mem_uses.mpr (Or.inl (by simpa using taken))
@@ -565,7 +729,7 @@ theorem noCause (independent : Independent label f g) (σ : S) : NoCause f.plain
 /-- The second takes nothing the first reads (`GuardFreeProcessOrders.NoAsym`). -/
 theorem noAsym (independent : Independent label f g) (σ : S) : NoAsym f.plain g.plain := by
   intro o read taken
-  apply (independent σ).1.2.2
+  apply (independent σ ⟨[], ∅⟩).1.2.2
   left
   rw [Finset.not_disjoint_iff]
   exact ⟨o, by simpa using taken, by simpa using read⟩
@@ -573,21 +737,16 @@ theorem noAsym (independent : Independent label f g) (σ : S) : NoAsym f.plain g
 /-- The second makes no identity the first took (`GuardFreeProcessOrders.NoReuse`). -/
 theorem noReuse (independent : Independent label f g) (σ : S) : NoReuse f.plain g.plain := by
   intro o made taken
-  exact Finset.disjoint_left.mp (independent σ).2.2 (by simpa using made)
+  exact Finset.disjoint_left.mp (independent σ ⟨[], ∅⟩).2.2 (by simpa using made)
     (MeTTaCalculus.OccurrenceCommits.Commit.mem_uses.mpr (Or.inl (by simpa using taken)))
 
 /-- **No predicate-read dependency**: the first writes nothing into a query region of the
-second. -/
+second, whatever the second observes there. -/
 theorem writesOutside (independent : Independent label f g) (σ : S) :
     ∀ query ∈ g.queries,
       ∀ o ∈ (f.selection.commit (T := T)).taken ∪ (f.selection.commit (T := T)).made,
-        query.region σ (label o) = false := by
-  intro query member o written
-  by_contra inRegion
-  apply (independent σ).1.2.1
-  right
-  exact ⟨query.atSolution σ, List.mem_map.mpr ⟨query, member, rfl⟩, o, written,
-    by simpa [PredicateQueryAdmission.Query.atSolution] using inRegion⟩
+        query.region σ (label o) = false :=
+  (Firing.traceIndependent_footprintAt_iff.mp (independent σ ⟨[], ∅⟩)).2.1
 
 end Independent
 
@@ -615,10 +774,10 @@ theorem independent_self_iff (label : O → T) (σ : S) (f : Firing T S O) :
     Independent label f f ↔ f.selection.taken = [] ∧ f.selection.made = [] := by
   constructor
   · intro independent
-    obtain ⟨taken, made⟩ := (traceIndependent_self_iff label _).mp (independent σ)
+    obtain ⟨taken, made⟩ := (traceIndependent_self_iff label _).mp (independent σ ⟨[], ∅⟩)
     exact ⟨(List.toFinset_eq_empty_iff _).mp (by simpa using taken),
       (List.toFinset_eq_empty_iff _).mp (by simpa using made)⟩
-  · rintro ⟨taken, made⟩ τ
+  · rintro ⟨taken, made⟩ τ C
     exact (traceIndependent_self_iff label _).mpr ⟨by simp [taken], by simp [made]⟩
 
 /-- The static independence: both firings in the static fragment, and independent. -/
@@ -667,8 +826,9 @@ section Swaps
 
 variable (A : SubstitutionAction T S) (label : O → T)
 
-/-- **The swap of the candidate step with predicate queries.** An executed pair of statically
-independent firings runs in the other order and reaches the same class. -/
+/-- **The swap of the candidate step with region queries.** An executed pair of statically
+independent firings runs in the other order and reaches the same class, whatever the queries
+observe. -/
 theorem swap_valid {f g : Firing T S O} {C : Configuration T O}
     (independent : StaticIndependent label f g)
     (fValid : f.Valid A label C) (gValid : g.Valid A label (f.result label C)) :
@@ -682,21 +842,20 @@ theorem swap_valid {f g : Firing T S O} {C : Configuration T O}
   refine ⟨⟨gPlain, ?_⟩, ⟨fPlain, ?_⟩, same⟩
   · intro query member σ _
     obtain ⟨τ, solvedAfter⟩ := gValid.firing.consistent
-    have holds := gValid.observations query member τ solvedAfter
-    change regionOf label (fire C.present (f.selection.commit (T := T))) (query.region τ) =
-      query.seen at holds
-    change regionOf label C.present (query.region σ) = query.seen
-    rw [gStatic.queries query member σ τ,
-      ← regionOf_fire_of_no_write (apart.writesOutside τ query member)]
+    have holds : query.Holds τ label (fire C.present (f.selection.commit (T := T))) :=
+      gValid.observations query member τ solvedAfter
+    refine ((gStatic.queries query member).holds_iff σ τ label C.present).mpr ?_
+    show query.accepts τ (regionOf label C.present (query.region τ))
+    rw [← regionOf_fire_of_no_write (apart.writesOutside τ query member)]
     exact holds
   · intro query member σ _
     obtain ⟨τ, solvedBefore⟩ := fValid.firing.consistent
-    have holds := fValid.observations query member τ solvedBefore
-    change regionOf label C.present (query.region τ) = query.seen at holds
-    change regionOf label (fire C.present (g.selection.commit (T := T))) (query.region σ) =
-      query.seen
-    rw [fStatic.queries query member σ τ,
-      regionOf_fire_of_no_write (apart.symm.writesOutside τ query member)]
+    have holds : query.Holds τ label C.present := fValid.observations query member τ solvedBefore
+    refine ((fStatic.queries query member).holds_iff σ τ label
+      (fire C.present (g.selection.commit (T := T)))).mpr ?_
+    show query.accepts τ
+      (regionOf label (fire C.present (g.selection.commit (T := T))) (query.region τ))
+    rw [regionOf_fire_of_no_write (apart.symm.writesOutside τ query member)]
     exact holds
 
 theorem executable_swap {f g : Firing T S O} {rest : List (Firing T S O)} {C : Configuration T O}
@@ -782,10 +941,12 @@ theorem Executable.ground : ∀ {C : Configuration T O} {w : List (Firing T S O)
   | _, _ :: _, executable =>
       .cons executable.1.firing.occurrences (Executable.ground executable.2)
 
-/-- A firing without predicate queries has its selection's commit as its footprint. -/
-theorem Firing.footprintAt_of_queries_nil {f : Firing T S O} (empty : f.queries = []) (σ : S) :
-    f.footprintAt σ = f.selection.commit (T := T) := by
-  simp [Firing.footprintAt, PredicateQueryAdmission.commit, Selection.commit, empty]
+/-- A firing without queries has its selection's commit as its footprint, at every solution and
+every configuration. -/
+theorem Firing.footprintAt_of_queries_nil {f : Firing T S O} (empty : f.queries = []) (σ : S)
+    (C : Configuration T O) : f.footprintAt label σ C = f.selection.commit (T := T) :=
+  (congrArg (fun queries => PredicateQueryAdmission.regionCommit f.selection queries σ label C.present)
+    empty).trans PredicateQueryAdmission.regionCommit_nil
 
 /-- A ground swap of the footprints of a run without guards and predicate queries lifts to a
 swap of its firings. -/
@@ -801,7 +962,8 @@ theorem lift_swapStep {w : List (Firing T S O)} {l : List (Commit O T)}
       obtain ⟨g, v, rfl, second, final⟩ := List.map_eq_cons_iff.mp after'
       have fPlain := plain f (by simp)
       have gPlain := plain g (by simp)
-      refine ⟨u ++ g :: f :: v, ?_, Swap.swap u v ⟨⟨fPlain.1, ?_⟩, ⟨gPlain.1, ?_⟩, fun σ => ?_⟩⟩
+      refine ⟨u ++ g :: f :: v, ?_,
+        Swap.swap u v ⟨⟨fPlain.1, ?_⟩, ⟨gPlain.1, ?_⟩, fun σ C => ?_⟩⟩
       · simp only [footprints, List.map_append, List.map_cons] at before final ⊢
         rw [before, first, second, final]
       · intro query member
@@ -810,15 +972,15 @@ theorem lift_swapStep {w : List (Firing T S O)} {l : List (Commit O T)}
       · intro query member
         rw [gPlain.2] at member
         cases member
-      · rw [Firing.footprintAt_of_queries_nil fPlain.2, Firing.footprintAt_of_queries_nil gPlain.2,
-          first, second]
+      · rw [Firing.footprintAt_of_queries_nil label fPlain.2 σ C,
+          Firing.footprintAt_of_queries_nil label gPlain.2 σ C, first, second]
         exact independent
 
 /-- **Runs with the same firings are one trace.** Without guards and predicate queries, two
 runs of the same firings, with fresh and pairwise distinct footprints, are trace equivalent:
 the trace of such a run is its set of firings, ordered by what they make and use. This carries
 `OccurrenceCommits.positive_runs_traceEq` from footprints to firings. With predicate queries it
-fails: an absence can be falsified and restored (`OccurrenceCommits.Controls.restored_absence_two_traces`). -/
+fails: a none query can be falsified and restored (`OccurrenceCommits.Controls.restored_none_two_traces`). -/
 theorem same_firings_traceEquiv {C : Configuration T O} {w₁ w₂ : List (Firing T S O)}
     (plain : ∀ f ∈ w₁, f.rule.checks = [] ∧ f.queries = [])
     (fresh : MeTTaCalculus.OccurrenceCommits.GloballyFresh C.present (footprints w₁))
@@ -1066,7 +1228,7 @@ theorem reader_valid : reader.Valid A label (taker.result label start) := by
 theorem taker_reader_independent : StaticIndependent label taker reader := by
   refine ⟨⟨rfl, by simp [Firing.StaticQueries, taker]⟩,
     ⟨rfl, by simp [Firing.StaticQueries, reader]⟩,
-    fun _ => ?_⟩
+    fun _ _ => ?_⟩
   unfold TraceIndependent MeTTaCalculus.OccurrenceCommits.Independent
     MeTTaCalculus.OccurrenceCommits.Clash MeTTaCalculus.OccurrenceCommits.Spoils
     MeTTaCalculus.OccurrenceCommits.WritesInto MeTTaCalculus.OccurrenceCommits.Commit.uses
@@ -1187,7 +1349,7 @@ guard reads the other firing's tell. Static independence requires the guard-free
 theorem told_check_one_order :
     Independent label teller asker ∧ Executable A label empty [teller, asker] ∧
       ¬ Executable A label empty [asker, teller] ∧ ¬ asker.Static := by
-  refine ⟨fun _ => ?_, ⟨teller_valid, asker_valid_after, asker_valid_after.firing.consistent⟩,
+  refine ⟨fun _ _ => ?_, ⟨teller_valid, asker_valid_after, asker_valid_after.firing.consistent⟩,
     fun executable => asker_refused_first executable.1, fun static => by
       have := static.checks
       simp [asker] at this⟩
@@ -1198,6 +1360,66 @@ theorem told_check_one_order :
     Firing.footprintAt_queries, teller, asker, List.map_nil]
   decide
 
+/-! ### A query whose acceptance reads the solution -/
+
+/-- A region query with an empty fiber that accepts at a solution of `X = 1`: what it accepts depends
+on the solution, its region does not. -/
+def readsSolution : PredicateQueryAdmission.RegionQuery (Term signature) (Subst signature) Nat :=
+  ⟨fun _ _ => false, fun σ _ => A.Solves σ (.var 0, .const 1)⟩
+
+/-- Asks `readsSolution`, and nothing else. -/
+def solutionAsker : Run := ⟨⟨[], [], [], [], []⟩, [readsSolution], ⟨[], [], []⟩⟩
+
+theorem solutionAsker_valid_after : solutionAsker.Valid A label (teller.result label empty) := by
+  refine ⟨⟨by decide, by decide, rfl, rfl, rfl, by decide, ⟨ones, ?_⟩, by simp [solutionAsker]⟩, ?_⟩
+  · intro equation member
+    have same : equation = (.var 0, .const 1) := by
+      simpa [Selection.problem, Selection.equations, Selection.result, Firing.result, empty,
+        teller, solutionAsker] using member
+    subst same
+    rfl
+  · intro query member σ solved
+    obtain rfl := List.mem_singleton.mp member
+    exact solved (.var 0, .const 1) (by
+      simp [Selection.problem, Selection.equations, Selection.result, Firing.result, empty,
+        teller, solutionAsker])
+
+theorem solutionAsker_refused_first : ¬ solutionAsker.Valid A label empty := by
+  intro valid
+  have holds := valid.observations readsSolution (List.mem_singleton_self _) (Subst.id signature)
+    (by simp [Selection.problem, Selection.equations, empty, solutionAsker])
+  change (Term.var (σ := signature) 0) = .const 1 at holds
+  cases holds
+
+/-- **Negative control: a static region is not enough.** The region of `readsSolution` does not
+depend on the solution and the footprints are trace independent, yet only the order with the tell
+first runs: after the tell every solution sends `X` to `1`, before it some do not. So the static
+fragment asks that what a query accepts does not depend on the solution either
+(`PredicateQueryAdmission.RegionQuery.Uniform`). -/
+theorem acceptance_reading_the_solution_one_order :
+    (∀ query ∈ solutionAsker.queries, ∀ σ τ : Subst signature, query.region σ = query.region τ) ∧
+      Independent label teller solutionAsker ∧ Executable A label empty [teller, solutionAsker] ∧
+      ¬ Executable A label empty [solutionAsker, teller] ∧ ¬ solutionAsker.Static := by
+  refine ⟨fun query member σ τ => ?_, fun _ _ => ?_,
+    ⟨teller_valid, solutionAsker_valid_after, solutionAsker_valid_after.firing.consistent⟩,
+    fun executable => solutionAsker_refused_first executable.1, fun static => ?_⟩
+  · obtain rfl := List.mem_singleton.mp member
+    rfl
+  · refine Firing.traceIndependent_footprintAt_iff.mpr ⟨?_, ?_, ?_⟩
+    · unfold TraceIndependent MeTTaCalculus.OccurrenceCommits.Independent
+        MeTTaCalculus.OccurrenceCommits.Clash MeTTaCalculus.OccurrenceCommits.Spoils
+        MeTTaCalculus.OccurrenceCommits.WritesInto MeTTaCalculus.OccurrenceCommits.Commit.uses
+      decide
+    · intro query _ o written
+      simp [teller, Selection.commit] at written
+    · intro query member
+      simp [teller] at member
+  · have accepted : readsSolution.accepts (Subst.id signature) ∅ :=
+      cast (congrFun ((static.queries readsSolution (List.mem_singleton_self _)).2 ones
+        (Subst.id signature)) ∅) rfl
+    change (Term.var (σ := signature) 0) = .const 1 at accepted
+    cases accepted
+
 /-! ### A predicate query and a writer into its region -/
 
 /-- The region of persistent atoms. -/
@@ -1205,22 +1427,25 @@ def persistent : Term signature → Bool
   | .const name => name == 9
   | _ => false
 
-/-- A predicate query of the persistent region whose census is empty. -/
+/-- A predicate query of the persistent region whose predicate query is empty. -/
 def noPersistent : MeTTaCalculus.OccurrenceCommits.PredicateQuery Nat (Term signature) :=
   ⟨persistent, ∅⟩
 
-/-- Observes that no persistent atom is present. -/
+/-- Observes that no persistent atom is present: the exact query of `noPersistent`. -/
 def observer : Run :=
-  ⟨⟨[], [], [], [], []⟩, [PredicateQueryAdmission.Query.fixed noPersistent], ⟨[], [], []⟩⟩
+  ⟨⟨[], [], [], [], []⟩,
+    [PredicateQueryAdmission.Query.fixed noPersistent].map PredicateQueryAdmission.Query.toRegion,
+    ⟨[], [], []⟩⟩
 
 /-- Makes the persistent atom `9`. -/
 def maker : Run := ⟨⟨[], [], [], [], [.const 9]⟩, [], ⟨[], [], [9]⟩⟩
 
 theorem observer_valid : observer.Valid A label empty := by
-  refine (PredicateQueryAdmission.valid_fixed_iff A label observer.rule [noPersistent] empty
-    observer.selection).mpr ⟨⟨by decide, by decide, rfl, rfl, rfl, by decide,
-      ⟨Subst.id signature, by simp [Selection.problem, Selection.equations, empty, observer]⟩,
-      by simp [observer]⟩, ?_⟩
+  refine PredicateQueryAdmission.valid_iff_regionValid.mp
+    ((PredicateQueryAdmission.valid_fixed_iff A label observer.rule [noPersistent] empty
+      observer.selection).mpr ⟨⟨by decide, by decide, rfl, rfl, rfl, by decide,
+        ⟨Subst.id signature, by simp [Selection.problem, Selection.equations, empty, observer]⟩,
+        by simp [observer]⟩, ?_⟩)
   intro query member
   obtain rfl := List.mem_singleton.mp member
   decide
@@ -1233,25 +1458,26 @@ theorem maker_valid_after : maker.Valid A label (observer.result label empty) :=
 
 theorem observer_refused_after_maker : ¬ observer.Valid A label (maker.result label empty) := by
   intro valid
-  have holds := valid.observations _ (List.mem_singleton_self _) (Subst.id signature) (by
-    simp [Selection.problem, Selection.equations, Selection.result, Firing.result, empty,
-      observer, maker])
+  have holds := (PredicateQueryAdmission.Query.toRegion_holds_iff _).mp
+    (valid.observations _ (List.mem_singleton_self _) (Subst.id signature) (by
+      simp [Selection.problem, Selection.equations, Selection.result, Firing.result, empty,
+        observer, maker]))
   revert holds
   decide
 
 /-- **Negative control, the predicate-read dependency.** Both firings are in the static
 fragment; a writer into the query region is not independent of the query, and only the
 order with the query first runs. -/
-theorem census_writer_one_order :
+theorem query_writer_one_order :
     observer.Static ∧ maker.Static ∧ ¬ Independent label observer maker ∧
       Executable A label empty [observer, maker] ∧ ¬ Executable A label empty [maker, observer] := by
   refine ⟨⟨rfl, ?_⟩, ⟨rfl, by simp [Firing.StaticQueries, maker]⟩, fun independent => ?_,
     ⟨observer_valid, maker_valid_after, maker_valid_after.firing.consistent⟩,
     fun executable => observer_refused_after_maker executable.2.1⟩
-  · intro query member σ τ
+  · intro query member
     obtain rfl := List.mem_singleton.mp member
-    rfl
-  · have spoiled := independent (Subst.id signature)
+    exact ⟨fun _ _ => rfl, fun _ _ => rfl⟩
+  · have spoiled := independent (Subst.id signature) empty
     revert spoiled
     unfold TraceIndependent MeTTaCalculus.OccurrenceCommits.Independent
       MeTTaCalculus.OccurrenceCommits.Clash MeTTaCalculus.OccurrenceCommits.Spoils
@@ -1259,6 +1485,65 @@ theorem census_writer_one_order :
     simp only [Firing.footprintAt_taken, Firing.footprintAt_kept, Firing.footprintAt_made,
       Firing.footprintAt_queries, observer, maker, List.map_cons, List.map_nil]
     decide
+
+/-! ### A count and a writer outside its region -/
+
+/-- The persistent `9` alone. -/
+def nineState : Configuration (Term signature) Nat := ⟨[], {9}⟩
+
+/-- Counts one persistent atom, and does nothing else. -/
+def countsNine : Run :=
+  ⟨⟨[], [], [], [], []⟩,
+    [PredicateQueryAdmission.RegionQuery.count (fun _ => persistent) 1], ⟨[], [], []⟩⟩
+
+/-- Makes `5`, labelled `2`, outside the persistent region. -/
+def makesFive : Run := ⟨⟨[], [], [], [], [.const 2]⟩, [], ⟨[], [], [5]⟩⟩
+
+theorem countsNine_valid : countsNine.Valid A label nineState := by
+  refine ⟨⟨by decide, by decide, rfl, rfl, rfl, by decide,
+    ⟨Subst.id signature, by simp [Selection.problem, Selection.equations, nineState, countsNine]⟩,
+    by simp [countsNine]⟩, fun query member σ _ => ?_⟩
+  obtain rfl := List.mem_singleton.mp member
+  simp only [PredicateQueryAdmission.RegionQuery.count_holds_iff]
+  decide
+
+theorem makesFive_valid_after : makesFive.Valid A label (countsNine.result label nineState) := by
+  refine ⟨⟨by decide, by decide, rfl, rfl, rfl, by decide,
+    ⟨Subst.id signature, by
+      simp [Selection.problem, Selection.equations, Selection.result, Firing.result, nineState,
+        countsNine, makesFive]⟩, by simp [makesFive]⟩, by simp [makesFive]⟩
+
+theorem countsNine_makesFive_independent : StaticIndependent label countsNine makesFive := by
+  refine ⟨⟨rfl, fun query member => ?_⟩, ⟨rfl, by simp [Firing.StaticQueries, makesFive]⟩,
+    fun _ _ => Firing.traceIndependent_footprintAt_iff.mpr ⟨?_, ?_, ?_⟩⟩
+  · obtain rfl := List.mem_singleton.mp member
+    exact ⟨fun _ _ => rfl, fun _ _ => rfl⟩
+  · unfold TraceIndependent MeTTaCalculus.OccurrenceCommits.Independent
+      MeTTaCalculus.OccurrenceCommits.Clash MeTTaCalculus.OccurrenceCommits.Spoils
+      MeTTaCalculus.OccurrenceCommits.WritesInto MeTTaCalculus.OccurrenceCommits.Commit.uses
+    decide
+  · intro query member
+    simp [makesFive] at member
+  · intro query member o written
+    obtain rfl := List.mem_singleton.mp member
+    have five : o = 5 := by simpa [makesFive, Selection.commit] using written
+    subst five
+    rfl
+
+/-- **Positive control: a count swaps with a writer outside its region.** A count of one persistent
+atom and a firing that makes the non-persistent `5` are statically independent, so both orders run
+and reach one class: the swap holds for observations other than the exact one. -/
+theorem count_swaps_with_an_outside_writer :
+    StaticIndependent label countsNine makesFive ∧
+      Executable A label nineState [countsNine, makesFive] ∧
+      Executable A label nineState [makesFive, countsNine] ∧
+      SameUpTo A (follow label nineState [countsNine, makesFive])
+        (follow label nineState [makesFive, countsNine]) := by
+  have executable : Executable A label nineState [countsNine, makesFive] :=
+    ⟨countsNine_valid, makesFive_valid_after, makesFive_valid_after.firing.consistent⟩
+  exact ⟨countsNine_makesFive_independent, executable,
+    (executable_swap A label countsNine_makesFive_independent executable).1,
+    (executable_swap A label countsNine_makesFive_independent executable).2⟩
 
 end Controls
 
@@ -1296,6 +1581,23 @@ end Controls
 #print axioms Controls.swapped_words
 #print axioms Controls.reflexive_part
 #print axioms Controls.told_check_one_order
-#print axioms Controls.census_writer_one_order
+#print axioms Controls.query_writer_one_order
+#print axioms Firing.valid_ofPlain_iff
+#print axioms rename_toRegion
+#print axioms queryHolds_rename
+#print axioms Firing.staticQueries_iff_of_exact
+#print axioms Firing.footprintAt_of_exact
+#print axioms traceIndependent_iff_regions
+#print axioms Firing.traceIndependent_footprintAt_iff
+#print axioms traceIndependent_commit_iff
+#print axioms independent_iff_of_exact
+#print axioms Firing.footprintAt_of_queries_nil
+#print axioms Controls.solutionAsker_valid_after
+#print axioms Controls.solutionAsker_refused_first
+#print axioms Controls.acceptance_reading_the_solution_one_order
+#print axioms Controls.countsNine_valid
+#print axioms Controls.makesFive_valid_after
+#print axioms Controls.countsNine_makesFive_independent
+#print axioms Controls.count_swaps_with_an_outside_writer
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.AnnotatedRuns

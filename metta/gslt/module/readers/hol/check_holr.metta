@@ -1,0 +1,71 @@
+!(import! &self "../bytes/lib_raw_bytes.metta")
+!(import! &self "../bytes/lib_module_rules.metta")
+!(import! &self "../bytes/lib_byte_modules.metta")
+!(import! &self "../bytes/lib_module_authoring.metta")
+!(import! &self "lib_holr_observation.metta")
+!(import! &self fs)
+!(import! &self proc)
+!(import! &self system)
+
+(= (gate:fail $detail)
+   (let $printed (println! (HOLRGateFailed $detail)) (system:exit 1)))
+
+(= (gate:oracle $oracle $path $mode)
+   (let* (($argv (if (== $mode prefix) ($oracle "--prefix" $path) ($oracle $path)))
+          ($answer (proc:run $argv ())))
+     (case $answer
+       (((proc:result (proc:exited 0) proc:normal $out $err
+           (proc:capture $out-size $out-size $err-size $err-size
+             proc:eof proc:eof (proc:input $sent $sent)))
+         (parse $out))
+        ($other (gate:fail (OracleFailure $path $other)))))))
+
+(= (gate:compare $oracle $alphabet $path $mode)
+   (let* (($raw (fs:read-text $path))
+          ($input (byte:constructors $alphabet $raw 0 (str:byte-length $raw)))
+          ($query (if (== $mode prefix) (ReadHOLRPrefix $input) (ReadHOLRFile $input)))
+          ($answers (collapse (eval $query))))
+     (case $answers
+       ((($result)
+         (let* (($actual (if (== $mode prefix) (holr:prefix-observation $result) (holr:observation $result)))
+                ($expected (gate:oracle $oracle $path $mode)))
+           (if (== $actual $expected) 1
+             (gate:fail (Different $path $actual $expected)))))
+        ($other (gate:fail (DecoderMultiplicity $path)))))))
+
+(= (gate:files $oracle $alphabet $paths $mode)
+   (case $paths
+     ((LNil 0)
+      ((LCons $path $rest)
+       (let $checked (gate:compare $oracle $alphabet $path $mode)
+         (+ $checked (gate:files $oracle $alphabet $rest $mode))))
+      ($other (gate:fail InvalidFileList)))))
+
+; Arguments: readers directory, compiler, authoring budget, artifact directory,
+; structural-scan oracle, and a file containing one LCons/LNil path list.
+!(let* (($readers (system:arg 0))
+         ($compiler-argument (system:arg 1))
+         ($compiler (str:concat "" $compiler-argument))
+         ($budget-argument (system:arg 2))
+         ($budget (str:concat "" $budget-argument))
+         ($directory (system:arg 3))
+         ($oracle-argument (system:arg 4))
+         ($oracle (str:concat "" $oracle-argument))
+         ($file-list (system:arg 5))
+         ($mode (if (> (system:argc) 6) (system:arg 6) complete))
+         ($bytes-directory (str:concat $readers "/bytes"))
+         ($hol-directory (str:concat $readers "/hol"))
+         ((ByteModuleContext $decode $arithmetic $records $root $d $a $r $h $catalog)
+           (byte-module:holr-context $bytes-directory $hol-directory))
+         ($request (ModuleCompilePipeline $root (LCons "Format" LNil) (LCons $r LNil) $catalog "HOLRStream"))
+         ($request-path (str:concat $directory "/HOLRStream.request.metta"))
+         ($output-path (str:concat $directory "/HOLRStream.rules.metta"))
+         ($exported (module-authoring:export $request $compiler $budget $request-path $output-path))
+         ($installed (byte-module:install-export &self $exported)))
+   (if (== $installed true)
+     (let* (($alphabet (byte:alphabet))
+            ($list-text (fs:read-text $file-list))
+            ($paths (parse $list-text))
+            ($count (gate:files $oracle $alphabet $paths $mode)))
+       (println! (HOLRGatePassed $count $mode)))
+     (gate:fail (Compilation $installed))))

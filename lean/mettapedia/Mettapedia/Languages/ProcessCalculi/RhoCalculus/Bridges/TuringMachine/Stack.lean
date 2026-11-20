@@ -52,7 +52,13 @@ theorem subst_symbolCode (n k : Nat) (replacement : Pattern) :
   | zero => rfl
   | succ n ih => simp [symbolCode, receive, semanticSubstProc,
       semanticSubstName, semanticSubstNameMark, semanticNormalizeName,
-      semanticNormalizeProc, ih]
+      semanticNormalizeProc, Canonical.canonicalize, Canonical.canonicalizeList,
+      Canonical.normalizeQuote, ih]
+
+theorem noBVar_symbolCode (n k : Nat) : noBVar k (symbolCode n) = true := by
+  induction n generalizing k with
+  | zero => rfl
+  | succ n ih => simp [symbolCode, receive, noBVar, noBVarList, ih]
 
 theorem symbolCode_ioCount (n : Nat) : ioCount (symbolCode n) = n := by
   induction n with
@@ -80,13 +86,13 @@ def port (index : Nat) : Pattern := .apply "NQuote" [symbolCode index]
 
 @[simp] theorem subst_port_mark (index k : Nat) (replacement : Pattern) :
     semanticSubstNameMark k replacement (port index) = (port index, false) := by
-  rw [semanticSubstNameMark, normalize_port]
-  rfl
+  rw [semanticSubstNameMark_unmatched_of_noBVar k replacement
+    (by simp [port, noBVar, noBVarList, noBVar_symbolCode]), normalize_port]
 
 @[simp] theorem subst_bound_mark (index k : Nat) (replacement : Pattern) :
     semanticSubstNameMark k replacement (.bvar index) =
       if index = k then (replacement, true) else (.bvar index, false) := by
-  simp [semanticSubstNameMark, semanticNormalizeName]
+  simp [semanticSubstNameMark, semanticNormalizeName, Canonical.canonicalize]
 
 @[simp] theorem subst_port (index k : Nat) (replacement : Pattern) :
     semanticSubstName k replacement (port index) = port index := by

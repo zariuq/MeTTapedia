@@ -484,9 +484,7 @@ Qed.
 Theorem Lean_Nat_decLe_In : forall v_n :e Lean_Nat, forall v_m :e Lean_Nat, Lean_Nat_decLe v_n v_m :e (Lean_Decidable (Lean_Nat_le_Prop v_n v_m)).
 claim Step: forall n, forall i :e Lean_Nat, 0 :e Lean_Nat_le_Prop n i -> 0 :e Lean_Nat_le_Prop n (Lean_Nat_succ_node i).
 { let n i. assume Hi: i :e Lean_Nat. assume H: 0 :e Lean_Nat_le_Prop n i.
-  apply SepE2 1 (fun x => exists w, w :e Lean_Nat_le n i) 0 H.
-  let w. assume Hw: w :e Lean_Nat_le n i.
-  exact Lean_Nat_le_step_proof_ok n i Hi w Hw. }
+  exact Lean_Nat_le_step_proof_ok n i Hi 0 H. }
 claim ZeroLe: forall m :e Lean_Nat, 0 :e Lean_Nat_le_Prop Lean_Nat_zero_node m.
 { apply Lean_Nat_ind.
   - exact Lean_Nat_le_refl_proof_ok Lean_Nat_zero_node.

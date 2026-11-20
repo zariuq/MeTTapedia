@@ -96,8 +96,8 @@ theorem exists_blockwise : ∀ (blocks : List (Finset O)), blocks.Pairwise Disjo
   | [], _, P, Q, _, outside => by
       simp only [blocksUnion, Finset.sdiff_empty] at outside
       obtain ⟨π, k, onto, support⟩ := exists_supported_renamingUpTo r label ∅
-        (fun _ absent => absurd absent (Finset.notMem_empty _)) outside
-      exact ⟨π, k, onto, support, fun _ absent => absurd absent List.not_mem_nil⟩
+        (fun _ missing => absurd missing (Finset.notMem_empty _)) outside
+      exact ⟨π, k, onto, support, fun _ missing => absurd missing List.not_mem_nil⟩
   | B :: rest, apart, P, Q, inside, outside => by
       obtain ⟨headApart, restApart⟩ := List.pairwise_cons.mp apart
       obtain ⟨ρ, kρ, ontoρ, supportρ, keptρ⟩ := exists_blockwise rest restApart (P := P \ B) (Q := Q \ B)
@@ -106,7 +106,7 @@ theorem exists_blockwise : ∀ (blocks : List (Finset O)), blocks.Pairwise Disjo
           exact inside B' (List.mem_cons_of_mem _ member))
         (by rw [sdiff_blocksUnion_cons, sdiff_blocksUnion_cons]; exact outside)
       obtain ⟨β, kβ, ontoβ, supportβ⟩ := exists_supported_renamingUpTo r label ∅ (P := P ∩ B) (Q := Q ∩ B)
-        (fun _ absent => absurd absent (Finset.notMem_empty _)) (inside B List.mem_cons_self)
+        (fun _ missing => absurd missing (Finset.notMem_empty _)) (inside B List.mem_cons_self)
       have fixβ : ∀ o, o ∉ B → β o = o := fun o out =>
         supportβ o (fun member => out (Finset.mem_inter.mp member).2)
           (fun member => out (Finset.mem_inter.mp member).2)
@@ -344,7 +344,7 @@ theorem RecordEquivalent.modulo_of_principal {C D : Configuration T O} {answer :
     RecordModuloEquivalent A label r C D := by
   obtain ⟨π, aut, keeps, onto⟩ := h.2.2 answer principal.sound
   have k : RenamingUpTo (solutionSetoid A answer) label ∅ π :=
-    ⟨keeps, fun _ absent => absurd absent (Finset.notMem_empty _)⟩
+    ⟨keeps, fun _ missing => absurd missing (Finset.notMem_empty _)⟩
   exact ⟨π, aut, k.weaken (solution_le_entailedSetoid principal), h.1, onto⟩
 
 omit [DecidableEq O] in
@@ -385,11 +385,11 @@ variable {T : Type*} {S : Type*} {O : Type*} [DecidableEq O]
 record, keeping labels, relates the ends of trace-equivalent runs of the transport that renames
 occurrences. -/
 theorem renaming_traceEquiv_recordModuloEquivalent (A : SubstitutionAction T S) (label : O → T)
-    {x : Escaped (firstOrder A label).toStep} {r r' : (renamingEscape A label).step.Run x}
+    {x : Escaped (ExactQueryAlphabet.step A label)} {r r' : (renamingEscape A label).step.Run x}
     (equivalent : (renamingEscaping A label).TraceEquiv x r r') :
     Observation.RecordModuloEquivalent A label x.record r.last.state r'.last.state := by
   obtain ⟨i, aut, -⟩ := Transport.Escape.traceEquiv_past equivalent
-  refine ⟨i.rename, aut, ⟨fun o σ _ => ?_, fun _ absent => absurd absent (Finset.notMem_empty _)⟩, i.same⟩
+  refine ⟨i.rename, aut, ⟨fun o σ _ => ?_, fun _ missing => absurd missing (Finset.notMem_empty _)⟩, i.same⟩
   show A.E (A.apply σ (label (i.rename o))) (A.apply σ (label o))
   rw [i.keeps]
   exact A.equivalence.refl _
@@ -426,7 +426,7 @@ def adjacent : Configuration (Term signature) ℕ := ⟨[], {1, 2}⟩
 /-- Opposite occurrences `1` and `3`, labelled alike, and no knowledge. -/
 def opposite : Configuration (Term signature) ℕ := ⟨[], {1, 3}⟩
 
-theorem models_nil (σ : Subst signature) : A.Models σ [] := fun _ absent => absurd absent List.not_mem_nil
+theorem models_nil (σ : Subst signature) : A.Models σ [] := fun _ missing => absurd missing List.not_mem_nil
 
 /-- A set the automorphisms of the cycle keep holds `2` exactly when it holds `3`. -/
 theorem two_iff_three {W : Finset ℕ} (kept : ∀ π ∈ automorphisms cycle, W.map π.toEmbedding = W) :

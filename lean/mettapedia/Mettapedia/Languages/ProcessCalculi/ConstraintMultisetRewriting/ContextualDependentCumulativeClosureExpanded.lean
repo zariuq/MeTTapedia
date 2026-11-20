@@ -4,7 +4,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 # Closure of the cumulative round: R112's η for Σ
 
 The pairs round expands, under the common abstractions, a pair against a rigid neutral side `n` (a spine whose head is
-a bound local or a constant) into the pair of its projections (`ContextualDependentCensusPairEta.expandOne`). On a
+a bound local or a constant) into the pair of its projections (`ContextualDependentClassificationPairEta.expandOne`). On a
 strongly normalizing package an equation has Miller sides exactly when both its codes have closed normal reducts with
 Miller occurrences (`side_reduct`, `sides_of_reducts`). Reduction keeps a rigid neutral spine rigid
 (`fixedSkeleton_star`), the projections of a rigid neutral normal form are normal and Miller (`pairEta_reduct`), so the
@@ -24,7 +24,7 @@ open Presentation TypedEquality TypedEquality.Normalization TypedContextual
 open ContextualDependentEta ContextualDependentUpdate ContextualDependentWorklist
 open ContextualDependentPatternSolver ContextualDependentFragment ContextualDependentRank
 open ContextualDependentMillerClosure ContextualDependentShortClosure ContextualDependentDynamicFragment
-open ContextualDependentExecutableJoin ContextualDependentConstantHeads ContextualDependentCensusPairEta
+open ContextualDependentExecutableJoin ContextualDependentConstantHeads ContextualDependentClassificationPairEta
 open ContextualDependentClosure
 open ContextualDependentGeneralPattern (liftFlexible)
 

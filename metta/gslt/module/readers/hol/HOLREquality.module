@@ -1,0 +1,24 @@
+import "HOLRData.module" as data
+import "../bytes/ByteRecords.module" as records
+import "../bytes/ByteScalars.module" as scalars
+
+Module HOLREquality {
+  Theory Signature(s: scalars.Values) {
+    s Terms {
+      BytesEqual . Bit ::= "bytes_equal" "(" Bytes "," Bytes ")";
+      BytesEqualNext . Bit ::= "bytes_equal_next" "(" Ordering "," Bytes "," Bytes ")";
+    }
+  }
+  Theory Format(r: Signature) {
+    r Rewrites {
+      BytesEqualEmpty: (BytesEqual (BNil) (BNil)) ~> (Bit1);
+      BytesLeftEmpty: (BytesEqual (BNil) (BCons b xs)) ~> (Bit0);
+      BytesRightEmpty: (BytesEqual (BCons b xs) (BNil)) ~> (Bit0);
+      BytesEqualMore: (BytesEqual (BCons b xs) (BCons c ys)) ~> (BytesEqualNext (NatCompare (PackByte b (NatZero)) (PackByte c (NatZero))) xs ys);
+      BytesEqualMatch: (BytesEqualNext (Equal) xs ys) ~> (BytesEqual xs ys);
+      BytesLessMismatch: (BytesEqualNext (Less) xs ys) ~> (Bit0);
+      BytesGreaterMismatch: (BytesEqualNext (Greater) xs ys) ~> (Bit0);
+    }
+  }
+  theory Format(Signature(scalars.Values()))
+}

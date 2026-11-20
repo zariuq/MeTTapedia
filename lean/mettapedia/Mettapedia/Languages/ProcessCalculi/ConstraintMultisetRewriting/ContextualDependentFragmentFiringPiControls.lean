@@ -270,7 +270,7 @@ theorem blocked_piRound_stuck (fuel : Nat) :
   · rename_i update smaller found
     rw [searched] at found
     cases found
-  · rename_i absent found
+  · rename_i missing found
     rw [searched] at found
     cases found
   · exact blocked_identityRound_stuck fuel

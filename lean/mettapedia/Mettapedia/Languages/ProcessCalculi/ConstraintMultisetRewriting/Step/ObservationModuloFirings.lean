@@ -21,7 +21,7 @@ its own. The congruence factors in two steps:
 
 * **Equivariance** (`ModuloEquivalent.firing`): at equivalent states, along a renaming supported on
   the present occurrences, a firing and its renaming are admitted together and their results are
-  equivalent again, when the firing's made identities are absent from both states and its query
+  equivalent again, when the firing's made identities are missing from both states and its query
   regions read labels through solutions.
 * **Firings and runs that name only escaped identities keep the equivalence**
   (`ModuloEquivalent.named_firing`, `ModuloEquivalent.named_run`), when their query regions read
@@ -108,13 +108,22 @@ theorem holds_rename_comp (A : SubstitutionAction T S) (σ : S) (present : Finse
       check.Holds A σ (fun o => label (π o)) present := by
   cases check with
   | equal left right => exact Iff.rfl
-  | absent pattern =>
-      constructor
-      · intro absent o member matched
-        exact absent _ (Finset.mem_map_of_mem π.toEmbedding member) matched
-      · intro absent o member matched
-        obtain ⟨a, inside, rfl⟩ := Finset.mem_map.mp member
-        exact absent a inside matched
+  | predicate quantifier pattern =>
+      cases quantifier with
+      | any =>
+          constructor
+          · rintro ⟨o, member, matched⟩
+            obtain ⟨a, inside, rfl⟩ := Finset.mem_map.mp member
+            exact ⟨a, inside, matched⟩
+          · rintro ⟨o, member, matched⟩
+            exact ⟨_, Finset.mem_map_of_mem π.toEmbedding member, matched⟩
+      | none =>
+          constructor
+          · intro missing o member matched
+            exact missing _ (Finset.mem_map_of_mem π.toEmbedding member) matched
+          · intro missing o member matched
+            obtain ⟨a, inside, rfl⟩ := Finset.mem_map.mp member
+            exact missing a inside matched
   | count pattern number =>
       show (Check.matches A σ label (present.map π.toEmbedding) pattern).card = number ↔
         (Check.matches A σ (fun o => label (π o)) present pattern).card = number
@@ -122,13 +131,11 @@ theorem holds_rename_comp (A : SubstitutionAction T S) (σ : S) (present : Finse
 
 omit [DecidableEq O] in
 theorem queryHolds_rename_comp (σ : S) (present : Finset O)
-    (query : PredicateQueryAdmission.Query T S O) :
-    ((renameQuery π query).atSolution σ).Holds label (present.map π.toEmbedding) ↔
-      (query.atSolution σ).Holds (fun o => label (π o)) present := by
-  show regionOf label (present.map π.toEmbedding) (query.region σ) = query.seen.map π.toEmbedding ↔
-    regionOf (fun o => label (π o)) present (query.region σ) = query.seen
-  rw [regionOf_rename_comp]
-  exact Finset.map_inj
+    (query : PredicateQueryAdmission.RegionQuery T S O) :
+    (query.rename π).Holds σ label (present.map π.toEmbedding) ↔
+      query.Holds σ (fun o => label (π o)) present := by
+  simpa only [Function.comp_def,Equiv.apply_symm_apply] using
+    PredicateQueryAdmission.RegionQuery.rename_holds_iff π query σ (fun o => label (π o)) present
 
 /-- The occurrence conditions of a selection do not read labels. -/
 theorem enabled_relabel (label' : O → T) (present : Finset O) (selection : Selection O) :
@@ -158,7 +165,7 @@ theorem Firing.valid_rename_comp (A : SubstitutionAction T S) (f : Firing T S O)
       have asked := checks check member σ (by simpa only [Firing.rename, problem] using solved)
       exact (holds_rename_comp π A σ C.present check).mp asked
     · intro query member σ solved
-      have asked := observations (renameQuery π query) (List.mem_map_of_mem member) σ
+      have asked := observations (query.rename π) (List.mem_map_of_mem member) σ
         (by simpa only [Firing.rename, problem] using solved)
       exact (queryHolds_rename_comp π σ C.present query).mp asked
   · rintro ⟨⟨takeDistinct, outputDistinct, takeLength, readLength, outputsEq, occurrences,
@@ -230,8 +237,9 @@ theorem holds_relabel (agree : ∀ o, A.Solves σ (label o, label' o)) (present 
     (check : Check T) : check.Holds A σ label present ↔ check.Holds A σ label' present := by
   cases check with
   | equal left right => exact Iff.rfl
-  | absent pattern =>
-      exact forall₂_congr fun o _ => not_congr ⟨fun matched => A.equivalence.trans matched (agree o),
+  | predicate quantifier pattern =>
+      show quantifier.Holds present _ ↔ quantifier.Holds present _
+      exact quantifier.holds_congr fun o _ => ⟨fun matched => A.equivalence.trans matched (agree o),
         fun matched => A.equivalence.trans matched (A.equivalence.symm (agree o))⟩
   | count pattern number =>
       show (Check.matches A σ label present pattern).card = number ↔
@@ -290,7 +298,7 @@ theorem Firing.valid_relabel (within : ∀ o, Entailed A C.equations (label o) (
       exact (holds_relabel (agreeAt σ solved') C.present check).mp (checks check member σ solved')
     · intro query member σ solved
       have solved' := (problems σ).mpr solved
-      show regionOf label' C.present (query.region σ) = query.seen
+      show query.accepts σ (regionOf label' C.present (query.region σ))
       rw [← regions σ solved' query member]
       exact observations query member σ solved'
   · rintro ⟨⟨takeDistinct, outputDistinct, takeLength, readLength, outputsEq, occurrences,
@@ -302,7 +310,7 @@ theorem Firing.valid_relabel (within : ∀ o, Entailed A C.equations (label o) (
       exact (holds_relabel (agreeAt σ solved) C.present check).mpr
         (checks check member σ ((problems σ).mp solved))
     · intro query member σ solved
-      show regionOf label C.present (query.region σ) = query.seen
+      show query.accepts σ (regionOf label C.present (query.region σ))
       rw [regions σ solved query member]
       exact observations query member σ ((problems σ).mp solved)
 
@@ -348,7 +356,7 @@ theorem modulo_step {C D : Configuration T O} {π : O ≃ O}
 
 /-- **Equivariance modulo the knowledge**: at equivalent states, along a renaming supported on the
 present occurrences, a firing and its renaming are admitted together and their results are
-equivalent, when the firing's made identities are absent from both states and its query regions
+equivalent, when the firing's made identities are missing from both states and its query regions
 read labels through solutions. -/
 theorem ModuloEquivalent.firing {C D : Configuration T O} (h : ModuloEquivalent A label E C D)
     {f : Firing T S O} (avoids : ∀ r ∈ f.selection.made, r ∉ C.present ∧ r ∉ D.present)
@@ -373,11 +381,12 @@ theorem ModuloEquivalent.admitted {C D : Configuration T O} (h : ModuloEquivalen
 
 /-- **Firings that name only escaped identities keep the equivalence.** -/
 theorem ModuloEquivalent.named_firing {C D : Configuration T O} (h : ModuloEquivalent A label E C D)
-    {f : Firing T S O} (named : f.names ⊆ E) (reads : QueriesReadThroughSolutions A f) :
+    {f : Firing T S O} (supports : Interface.RegionQuerySupport.Supports f.queries)
+    (named : f.names supports ⊆ E) (reads : QueriesReadThroughSolutions A f) :
     (f.Valid A label C ↔ f.Valid A label D) ∧
       ModuloEquivalent A label E (f.result label C) (f.result label D) := by
   obtain ⟨π, k, same⟩ := h
-  have fixed : f.rename π = f := f.rename_eq_self fun o member => k.fixes o (named member)
+  have fixed : f.rename π = f := f.rename_eq_self supports fun o member => k.fixes o (named member)
   have fixesMade : ∀ r ∈ f.selection.made, π r = r := fun r member =>
     k.fixes r (named (by simp [Firing.names, member]))
   obtain ⟨admits, results⟩ := modulo_step k same fixesMade reads
@@ -387,14 +396,18 @@ theorem ModuloEquivalent.named_firing {C D : Configuration T O} (h : ModuloEquiv
 /-- **Runs that name only escaped identities keep the equivalence.** -/
 theorem ModuloEquivalent.named_run :
     ∀ {C D : Configuration T O}, ModuloEquivalent A label E C D →
-      ∀ {w : List (Firing T S O)}, (∀ f ∈ w, f.names ⊆ E) → (∀ f ∈ w, QueriesReadThroughSolutions A f) →
+      ∀ {w : List (Firing T S O)}
+        (supports : ∀ f ∈ w, Interface.RegionQuerySupport.Supports f.queries),
+        (∀ (f : Firing T S O) (member : f ∈ w), f.names (supports f member) ⊆ E) →
+        (∀ f ∈ w, QueriesReadThroughSolutions A f) →
         (Executable A label C w ↔ Executable A label D w) ∧
           ModuloEquivalent A label E (follow label C w) (follow label D w)
-  | _, _, h, [], _, _ => ⟨SubstitutionAction.equivalent_consistent A h.solutions, h⟩
-  | _, _, h, f :: rest, named, reads => by
-      obtain ⟨admits, results⟩ := h.named_firing (named f List.mem_cons_self)
+  | _, _, h, [], _, _, _ => ⟨SubstitutionAction.equivalent_consistent A h.solutions, h⟩
+  | _, _, h, f :: rest, supports, named, reads => by
+      obtain ⟨admits, results⟩ := h.named_firing (supports f List.mem_cons_self) (named f List.mem_cons_self)
         (reads f List.mem_cons_self)
       obtain ⟨later, ends⟩ := ModuloEquivalent.named_run results
+        (fun g member => supports g (List.mem_cons_of_mem f member))
         (fun g member => named g (List.mem_cons_of_mem f member))
         (fun g member => reads g (List.mem_cons_of_mem f member))
       exact ⟨and_congr admits later, ends⟩
@@ -455,15 +468,15 @@ theorem ModuloEquivalent.bisimulation {C D : Configuration T O} (h : ModuloEquiv
       ModuloEquivalent A label E (f.result label C) (g.result label D) := by
   classical
   let M := f.selection.made.toFinset.filter (· ∈ D.present)
-  let F := C.present ∪ D.present ∪ E ∪ f.names
+  let F := C.present ∪ D.present ∪ E ∪ f.selection.made.toFinset
   have inF_C : ∀ {o}, o ∈ C.present → o ∈ F := fun inC =>
     Finset.mem_union_left _ (Finset.mem_union_left _ (Finset.mem_union_left _ inC))
   have inF_D : ∀ {o}, o ∈ D.present → o ∈ F := fun inD =>
     Finset.mem_union_left _ (Finset.mem_union_left _ (Finset.mem_union_right _ inD))
   have inF_E : ∀ {o}, o ∈ E → o ∈ F := fun inE =>
     Finset.mem_union_left _ (Finset.mem_union_right _ inE)
-  have madeNamed : ∀ {o}, o ∈ f.selection.made → o ∈ f.names := fun made => by
-    simp [Firing.names, made]
+  have madeNamed : ∀ {o}, o ∈ f.selection.made → o ∈ f.selection.made.toFinset :=
+    fun made => List.mem_toFinset.mpr made
   have madeOfM : ∀ {o}, o ∈ M → o ∈ f.selection.made := fun inM =>
     List.mem_toFinset.mp (Finset.mem_filter.mp inM).1
   have sub : M ⊆ F := fun o inM => inF_D (Finset.mem_filter.mp inM).2
@@ -625,7 +638,7 @@ theorem made_plenty :
 /-! ### A query region that reads labels syntactically -/
 
 /-- The firing whose query asks for no row labelled `Y` itself. -/
-noncomputable def noY : Firing Tm (Subst signature) ℕ := ⟨⟨[], [], [], [], []⟩, [syntacticY], ⟨[], [], []⟩⟩
+noncomputable def noY : Firing Tm (Subst signature) ℕ := ⟨⟨[], [], [], [], []⟩, [syntacticY.toRegion], ⟨[], [], []⟩⟩
 
 /-- **A query region that reads labels syntactically breaks congruence**: `noY` is admitted at the
 first C2 state, and none of its renamings is admitted at the second. -/
@@ -640,15 +653,16 @@ theorem syntactic_query_collision :
       simpa [Selection.problem, Selection.equations, noY, c2] using member
     exact zeros_solves e known
   · intro query member σ solved
-    rw [show query = syntacticY by simpa [noY] using member]
+    rw [show query = syntacticY.toRegion by simpa [noY] using member]
     exact separated.2.1 σ (by simpa [Selection.problem, Selection.equations, noY, c2] using solved)
   · apply separated.2.2
     intro σ solved
-    have asked := valid.observations (renameQuery ρ syntacticY) (by simp [Firing.rename, noY]) σ
+    have asked := valid.observations (syntacticY.toRegion.rename ρ) (by simp [Firing.rename, noY]) σ
       (by simpa [Selection.problem, Selection.equations, Firing.rename, noY, renameSelection, c2]
         using solved)
-    simpa [renameQuery, syntacticY, PredicateQueryAdmission.Query.atSolution,
-      MeTTaCalculus.OccurrenceCommits.PredicateQuery.Holds] using asked
+    simpa [PredicateQueryAdmission.RegionQuery.rename,syntacticY,PredicateQueryAdmission.Query.toRegion,
+      PredicateQueryAdmission.RegionQuery.exact,PredicateQueryAdmission.RegionQuery.Holds,
+      PredicateQueryAdmission.Query.atSolution,MeTTaCalculus.OccurrenceCommits.PredicateQuery.Holds] using asked
 
 /-! ### Positive -/
 

@@ -242,6 +242,7 @@ theorem receipt_has_prepared_replay {plan : GeneralExecutionAdmission.Plan}
     {bound : List TypeExpr} {expected : TypeExpr} {source : Pattern}
     {original : GeneralRuleJobs.Receipt}
     (valid : original.Valid plan bound expected source)
+    (binderOk : BinderLawsFor [] (GeneralPlanEnvironment.environment plan).reflection original.job.declaration.rule)
     (increasing : IncreasingSpines original.job.declaration.rule
       original.job.declaration.binding.spec)
     (guards : CollectionGuardFragment plan.snapshot.provider
@@ -274,7 +275,7 @@ theorem receipt_has_prepared_replay {plan : GeneralExecutionAdmission.Plan}
   obtain ⟨work, answer, prepared, target, published, captures, computed, matching, replayed, sameTarget⟩ :=
     RecursiveCollectionFiringCoverage.firing_has_prepared_match valid.2.1
       (GeneralRuleJobs.Job.selected_rule valid.1)
-      (GeneralRuleJobs.Job.selected_specification valid.1) increasing guards
+      (GeneralRuleJobs.Job.selected_specification valid.1) binderOk increasing guards
   have preparedValid : prepared.Valid job.request answer := requestEq.symm ▸ matching
   have sameCapture : prepared.ordinary.assignment = canonAssignment original.captured :=
     preparedValid.assignment.trans captures
@@ -318,16 +319,18 @@ does not discharge equation, contextual-policy, or emitted-runtime duties. -/
 def checkNullaryFragment (plan : GeneralExecutionAdmission.Plan) : Bool :=
   plan.rules.all fun declaration =>
     CollectionRootSearch.checkBindingSpines declaration.binding.spec &&
-      checkNullaryGuards declaration.rule.premises
+      checkNullaryGuards declaration.rule.premises &&
+      checkBinderLawsFor [] (GeneralPlanEnvironment.environment plan).reflection declaration.rule
 
 theorem checkNullaryFragment_sound {plan : GeneralExecutionAdmission.Plan}
     (checked : checkNullaryFragment plan = true)
     (declaration : GeneralExecutionAdmission.RulePlan) (selected : declaration ∈ plan.rules) :
-    IncreasingSpines declaration.rule declaration.binding.spec ∧ NullaryGuards declaration.rule.premises := by
+    IncreasingSpines declaration.rule declaration.binding.spec ∧ NullaryGuards declaration.rule.premises ∧
+      BinderLawsFor [] (GeneralPlanEnvironment.environment plan).reflection declaration.rule := by
   have both := List.all_eq_true.mp checked declaration selected
   simp only [Bool.and_eq_true] at both
-  exact ⟨CollectionRootSearch.checkBindingSpines_sound both.1,
-    (checkNullaryGuards_iff _).mp both.2⟩
+  exact ⟨CollectionRootSearch.checkBindingSpines_sound both.1.1,
+    (checkNullaryGuards_iff _).mp both.1.2, (checkBinderLawsFor_iff _ _ _).mp both.2⟩
 
 /-- The query profile checks actual occurrence spines, input object templates,
 all argument modes and canonical provider rows. Nullary guards retain their
@@ -336,7 +339,8 @@ def checkGuardFragment (plan : GeneralExecutionAdmission.Plan) : Bool :=
   plan.rules.all fun declaration =>
     CollectionRootSearch.checkBindingSpines declaration.binding.spec &&
       checkCollectionGuardFragment plan.snapshot.provider
-        ⟨0, declaration.rule, declaration.binding.spec, [], 0, 0⟩ declaration.rule.premises
+        ⟨0, declaration.rule, declaration.binding.spec, [], 0, 0⟩ declaration.rule.premises &&
+      checkBinderLawsFor [] (GeneralPlanEnvironment.environment plan).reflection declaration.rule
 
 theorem checkGuardFragment_sound {plan : GeneralExecutionAdmission.Plan}
     (checked : checkGuardFragment plan = true)
@@ -344,11 +348,12 @@ theorem checkGuardFragment_sound {plan : GeneralExecutionAdmission.Plan}
     (bound : List TypeExpr) (index : Nat) :
     IncreasingSpines declaration.rule declaration.binding.spec ∧
       CollectionGuardFragment plan.snapshot.provider
-        ⟨index, declaration.rule, declaration.binding.spec, bound, 0, 0⟩ declaration.rule.premises := by
+        ⟨index, declaration.rule, declaration.binding.spec, bound, 0, 0⟩ declaration.rule.premises ∧
+      BinderLawsFor [] (GeneralPlanEnvironment.environment plan).reflection declaration.rule := by
   have both := List.all_eq_true.mp checked declaration selected
   simp only [Bool.and_eq_true] at both
-  refine ⟨CollectionRootSearch.checkBindingSpines_sound both.1, ?_⟩
-  exact ((checkCollectionGuardFragment_iff _ _ _).mp both.2).recontext bound index
+  refine ⟨CollectionRootSearch.checkBindingSpines_sound both.1.1, ?_, (checkBinderLawsFor_iff _ _ _).mp both.2⟩
+  exact ((checkCollectionGuardFragment_iff _ _ _).mp both.1.2).recontext bound index
 
 theorem checkNullaryFragment_guard {plan : GeneralExecutionAdmission.Plan}
     (checked : checkNullaryFragment plan = true) : checkGuardFragment plan = true := by
@@ -357,7 +362,7 @@ theorem checkNullaryFragment_guard {plan : GeneralExecutionAdmission.Plan}
   have both := List.all_eq_true.mp checked declaration selected
   simp only [Bool.and_eq_true] at both
   simp only [Bool.and_eq_true, checkCollectionGuardFragment, Bool.or_eq_true]
-  exact ⟨both.1, .inl both.2⟩
+  exact ⟨⟨both.1.1, .inl both.1.2⟩, both.2⟩
 
 /-- Every valid source receipt in the increasing-spine, checked-guard
 fragment eventually reaches the actual joint matching/continuation log.
@@ -368,6 +373,7 @@ theorem receipt_eventually_published_with_bindings {plan : GeneralExecutionAdmis
     {bound : List TypeExpr} {expected : TypeExpr} {source : Pattern}
     {original : GeneralRuleJobs.Receipt}
     (valid : original.Valid plan bound expected source)
+    (binderOk : BinderLawsFor [] (GeneralPlanEnvironment.environment plan).reflection original.job.declaration.rule)
     (increasing : IncreasingSpines original.job.declaration.rule original.job.declaration.binding.spec)
     (guards : CollectionGuardFragment plan.snapshot.provider
       ⟨original.job.ordinal, original.job.declaration.rule, original.job.declaration.binding.spec,
@@ -387,7 +393,7 @@ theorem receipt_eventually_published_with_bindings {plan : GeneralExecutionAdmis
       receipt.job.declaration = original.job.declaration ∧
       Same original.target receipt.target := by
   obtain ⟨job, work, answer, prepared, target, licensed, published, computed, matching,
-    captures, sameTarget, replayed, ordinal, declaration⟩ := receipt_has_prepared_replay valid increasing guards
+    captures, sameTarget, replayed, ordinal, declaration⟩ := receipt_has_prepared_replay valid binderOk increasing guards
   let receipt : GeneralRuleJobs.Receipt :=
     ⟨job.preparedJob prepared, prepared.ordinary.trace, prepared.ordinary.assignment,
       canonAssignment original.completed, original.premiseHistory, target,
@@ -433,6 +439,7 @@ theorem receipt_eventually_published {plan : GeneralExecutionAdmission.Plan}
     {bound : List TypeExpr} {expected : TypeExpr} {source : Pattern}
     {original : GeneralRuleJobs.Receipt}
     (valid : original.Valid plan bound expected source)
+    (binderOk : BinderLawsFor [] (GeneralPlanEnvironment.environment plan).reflection original.job.declaration.rule)
     (increasing : IncreasingSpines original.job.declaration.rule original.job.declaration.binding.spec)
     (guards : CollectionGuardFragment plan.snapshot.provider
       ⟨original.job.ordinal, original.job.declaration.rule, original.job.declaration.binding.spec,
@@ -447,7 +454,7 @@ theorem receipt_eventually_published {plan : GeneralExecutionAdmission.Plan}
       Same original.target receipt.target := by
   obtain ⟨work, packet, receipt, logged, finished, _, _, _, _, history, _, _,
     ordinal, declaration, target⟩ :=
-    receipt_eventually_published_with_bindings valid increasing guards depth bounded
+    receipt_eventually_published_with_bindings valid binderOk increasing guards depth bounded
   exact ⟨work, packet, receipt, logged, finished, history, ordinal, declaration, target⟩
 
 /-- Presented source steps are covered by the retained joint search when
@@ -472,10 +479,10 @@ theorem presented_covered {plan : GeneralExecutionAdmission.Plan}
     (List.fst_mem_of_mem_zipIdx valid.1.1) original.job.site.focusBound original.job.ordinal
   have bounded : StructuralDescent.eventsDepth original.premiseHistory ≤ depth := by
     rw [valid.2.1.collection_guards_history_depth (GeneralRuleJobs.Job.selected_rule valid.1)
-      (GeneralRuleJobs.Job.selected_specification valid.1) fragment.2]
+      (GeneralRuleJobs.Job.selected_specification valid.1) fragment.2.1]
     exact Nat.zero_le _
   obtain ⟨work, packet, receipt, logged, finished, _, _, _, observed⟩ :=
-    receipt_eventually_published valid fragment.1 fragment.2 depth bounded
+    receipt_eventually_published valid fragment.2.2 fragment.1 fragment.2.1 depth bounded
   rw [← sameSource] at logged
   exact ⟨work, packet, receipt, logged, finished, sameTarget.symm.trans observed⟩
 

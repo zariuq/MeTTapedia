@@ -273,6 +273,80 @@ theorem reader_is_query_optimal (C : Program) (control : C.V () ()) (count : Nat
   rw [reader_exact]
   exact prefix_query_lower_bound C control count correct memory fuel value finished
 
+/-! ## Checking independently versioned dependencies -/
+
+def Validates (C : Program) (control : C.V () ()) (count : Nat) : Prop :=
+  ∀ memory fuel result,
+    (execute C fuel control (initial memory)).2.2 = .inr result →
+      result = [(inputPrefix memory count).all id]
+
+/-- Even a Boolean validation certificate requires every independent cell
+on an accepted, all-current run. The oracle supplies only individual cells. -/
+theorem validation_query_lower_bound (C : Program) (control : C.V () ()) (count : Nat)
+    (correct : Validates C control count) (fuel : Nat)
+    (accepted : (execute C fuel control (initial (fun _ => true))).2.2 = .inr [true]) :
+    count ≤ (execute C fuel control (initial (fun _ => true))).1 := by
+  let current : Nat → Bool := fun _ => true
+  have covered : Finset.range count ⊆ (execute C fuel control (initial current)).2.1 := by
+    intro hidden member
+    by_contra unread
+    let changed := Function.update current hidden false
+    have same := unread_congruence C fuel control current changed ∅ hidden
+      (by intro address different; simp [changed, different]) unread
+    have accepted' : (execute C fuel control (initial changed)).2.2 = .inr [true] := by
+      change (execute C fuel control ⟨changed, ∅⟩).2.2 = _
+      rw [same]
+      exact accepted
+    have all := List.cons.inj (correct changed fuel [true] accepted') |>.1
+    have falseBit : false ∈ inputPrefix changed count :=
+      List.mem_map.mpr ⟨hidden, List.mem_range.mpr (Finset.mem_range.mp member), by simp [changed]⟩
+    have contradiction := (List.all_eq_true.mp all.symm) false falseBit
+    cases contradiction
+  have reads := distinct_reads_le_work C fuel control (initial current)
+  exact (by simpa using Finset.card_le_card covered : count ≤ _).trans
+    (by simpa [initial] using reads)
+
+/-- Test each requested cell once and return immediately after a mismatch. -/
+def validator : Program where
+  V _ _ := Option (List Nat)
+  str := fun _ _ => ↾(fun
+    | none => ⟨.inl [false], fun impossible => nomatch impossible⟩
+    | some [] => ⟨.inl [true], fun impossible => nomatch impossible⟩
+    | some (address :: rest) => ⟨.inr address, fun (reply : Bool) => if reply then some rest else none⟩)
+
+theorem validator_complete (locations : List Nat) (memory : Nat → Bool) (reads : Finset Nat) :
+    let result := execute validator (locations.length + 1) (some locations) ⟨memory, reads⟩
+    result.2.2 = .inr [locations.all memory] ∧
+      result.1 = (locations.takeWhile memory).length + (if locations.all memory then 0 else 1) := by
+  induction locations generalizing reads with
+  | nil => exact ⟨rfl, rfl⟩
+  | cons address rest ih =>
+      dsimp only [List.length_cons]
+      rw [execute_query validator (rest.length + 1) (some (address :: rest)) ⟨memory, reads⟩
+        address (fun reply => if reply then some rest else none) rfl]
+      cases seen : memory address with
+      | false =>
+          have stopped : execute validator (rest.length + 1) none ⟨memory, insert address reads⟩ =
+              (0, (insert address reads, .inr [false])) := rfl
+          simp [seen, stopped]
+      | true =>
+          have tail := ih (insert address reads)
+          dsimp only at tail ⊢
+          simp [seen, tail.1, tail.2, Nat.add_assoc, Nat.add_left_comm]
+
+/-- Worst-case optimality for a completed check of a packed dependency
+vector, with no additional trusted aggregate version. -/
+theorem validator_attains_validation_bound (count : Nat) :
+    let result := execute validator (count + 1) (some (List.range count)) (initial (fun _ => true))
+    result.2.2 = .inr [true] ∧ result.1 = count := by
+  have always (locations : List Nat) : locations.all (fun _ => true) = true ∧
+      locations.takeWhile (fun _ => true) = locations := by
+    induction locations with
+    | nil => exact ⟨rfl, rfl⟩
+    | cons address rest ih => simp [ih]
+  have each := always (List.range count)
+  simpa [initial, each.1, each.2] using validator_complete (List.range count) (fun _ => true) ∅
+
 namespace Controls
 
 theorem once_reads_no_next_location (memory : Nat → Bool) :

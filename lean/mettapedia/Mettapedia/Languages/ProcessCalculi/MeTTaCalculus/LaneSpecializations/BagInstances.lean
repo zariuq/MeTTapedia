@@ -490,25 +490,25 @@ theorem chain_fires_labels {a : T} {c : Commit O T}
     have present : a ∈ labels label S := (hasRow_takeIdentical_iff (V := V)).mp ⟨_, member, linear⟩
     rw [labels_fire_of_isCommitOf commit linear enabled, chainRemove, if_pos present]
     simp [footprintOf_cons, same, Multiset.sub_singleton]
-  · have absent : a ∉ labels label S := fun present => noFirst ((hasRow_takeIdentical_iff (V := V)).mpr present)
+  · have missing : a ∉ labels label S := fun present => noFirst ((hasRow_takeIdentical_iff (V := V)).mpr present)
     have enabled := second.enabled
     obtain ⟨x, member, linear, commit⟩ := second
     have one := (hasRow_takeUnique_iff (V := V)).mp ⟨_, member, linear⟩
     obtain ⟨-, rfl⟩ := mem_rows_takeUnique.mp member
-    rw [labels_fire_of_isCommitOf commit linear enabled, chainRemove, if_neg absent, if_pos one]
+    rw [labels_fire_of_isCommitOf commit linear enabled, chainRemove, if_neg missing, if_pos one]
     simp only [footprintOf_cons, footprintOf_nil, footprint_query, footprint_make, add_zero,
       Footprint.takes_add, Footprint.makes_add, ite_true]
     rw [show (fun x => label x) = label from rfl, labels_regionOf]
     congr 1
     exact Multiset.filter_congr fun t _ => by simp [eqRegion]
-  · have absent : a ∉ labels label S := fun present => noFirst ((hasRow_takeIdentical_iff (V := V)).mpr present)
+  · have missing : a ∉ labels label S := fun present => noFirst ((hasRow_takeIdentical_iff (V := V)).mpr present)
     have notOne : ((labels label S).filter (E a)).card ≠ 1 := fun one =>
       noSecond ((hasRow_takeUnique_iff (V := V)).mpr one)
     have enabled := third.enabled
     obtain ⟨x, member, linear, commit⟩ := third
     rw [mem_rows_skip] at member
     subst member
-    rw [labels_fire_of_isCommitOf commit linear enabled, chainRemove, if_neg absent, if_neg notOne]
+    rw [labels_fire_of_isCommitOf commit linear enabled, chainRemove, if_neg missing, if_neg notOne]
     simp [footprintOf_cons]
 
 /-- **The removal chain always fires.** -/
@@ -545,12 +545,12 @@ theorem exact_fires_labels {a : T} {c : Commit O T}
     have present : a ∈ labels label S := (hasRow_takeIdentical_iff (V := V)).mp ⟨_, member, linear⟩
     rw [labels_fire_of_isCommitOf commit linear enabled, exactRemove, if_pos present]
     simp [footprintOf_cons, same, Multiset.sub_singleton]
-  · have absent : a ∉ labels label S := fun present => noFirst ((hasRow_takeIdentical_iff (V := V)).mpr present)
+  · have missing : a ∉ labels label S := fun present => noFirst ((hasRow_takeIdentical_iff (V := V)).mpr present)
     have enabled := third.enabled
     obtain ⟨x, member, linear, commit⟩ := third
     rw [mem_rows_skip] at member
     subst member
-    rw [labels_fire_of_isCommitOf commit linear enabled, exactRemove, if_neg absent]
+    rw [labels_fire_of_isCommitOf commit linear enabled, exactRemove, if_neg missing]
     simp [footprintOf_cons]
 
 end Remove

@@ -107,7 +107,7 @@ theorem takeFiring_decided :
 theorem takeFiring_firstOrder :
     (AnnotatedRuns.firstOrder (action (pairFrame star)) label).Admits (s := start) takeFiring := by
   refine (firstOrder_admits_iff label start takeFiring rfl (fun _ _ member => by cases member)).mpr
-    ⟨⟨by decide, by decide, rfl, rfl, rfl⟩, ⟨?_, ?_, ?_, ?_⟩, ?_, ?_, ?_⟩
+    ⟨⟨by decide, by decide, rfl, rfl, rfl⟩, ⟨?_, ?_, ?_, ?_⟩, ?_, ?_, ?_, ?_⟩
   · intro o member
     simp only [takeFiring, List.mem_singleton] at member
     subst member
@@ -121,6 +121,8 @@ theorem takeFiring_firstOrder :
   · rw [takeFiring_problem]
     exact ⟨endoCollapse, endoCollapse_solves⟩
   · intro σ _ e member
+    cases member
+  · intro p member
     cases member
   · intro p member
     cases member

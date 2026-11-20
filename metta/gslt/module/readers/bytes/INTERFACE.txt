@@ -1,0 +1,61 @@
+Byte-format module interface
+============================
+
+The decoder returns data. Kernel inference and theorem acceptance consume
+that data in a separate calculus.
+
+Lists use LNil and (LCons head tail). Bytes are integer values 0..255; byte
+strings are not converted to UTF-8 or NUL-terminated strings. Words are
+nonnegative integers within the bound declared by their encoding.
+
+Common record and operand values:
+  (BRecord opcode fields)       fields is a list of operands in wire order
+  (BWord n)                    one integer or reference-id operand
+  (BBytes bytes)               one count-prefixed byte string
+  (BWords words)               one count-prefixed list of integers/ids
+  (BPairs pairs)               one count-prefixed list of pairs
+  (BPair left right)           a pair, in wire order
+
+A decoded HOLR record uses the numeric opcode of hol_stream.c/op_table.
+Reference-id roles remain in the opcode schema; BWord does not claim that
+an id is defined, live or well typed. Counts of BBytes/BWords/BPairs are
+their list lengths and do not become extra operands.
+
+Examples:
+  NAME "ab":
+    (BRecord 1 (LCons (BBytes (LCons 97 (LCons 98 LNil))) LNil))
+  TYAPP name2 [type1,type1]:
+    (BRecord 3 (LCons (BWord 2) (LCons (BWords (LCons 1 (LCons 1 LNil))) LNil)))
+  TRANS theorem4 theorem7:
+    (BRecord 17 (LCons (BWord 4) (LCons (BWord 7) LNil)))
+  INST_TYPE [(replacement2,typevar3)] theorem8:
+    (BRecord 24 (LCons (BPairs (LCons (BPair 2 3) LNil))
+      (LCons (BWord 8) LNil)))
+
+HOLR header metadata:
+  (HOLRHeader kernelIdBytes version profile policy flags)
+kernelIdBytes is (BBytes bytes32). Version/profile/policy/flags are integers.
+The host's minimum axiom policy and the kernel's acceptance rules remain
+separate from decoding this metadata.
+
+The kernel receives the list of BRecord values plus the decoded header.
+The END opcode, declared count and checksum trailer are framing/integrity
+evidence and are excluded from the list of kernel instructions. A format
+success requires them to agree with the consumed prefix and record count.
+
+Exact byte spans may be reported separately as
+  (BRecordAt start end record)
+with half-open offsets into the original byte input. This wrapper does not
+change the kernel instruction. Structural malformed input, incomplete input,
+resource exhaustion and kernel refusal must remain distinct outcomes.
+
+An integrity checksum establishes the format's byte check, not mathematical
+truth, origin authentication or permission to publish a theorem.
+
+For checker composition a complete-file prefix observation is available:
+  (ByteFormatPrefix header records terminal)
+where terminal is (ByteFormatEndOK) or (ByteFormatEndError reason).
+It retains every complete record preceding a malformed field or END trailer.
+No incomplete record is included. This lets a checker preserve an earlier
+logical refusal rather than replacing it with a later format failure.
+ReadHOLRFile's complete-format verdict remains a separate observation.

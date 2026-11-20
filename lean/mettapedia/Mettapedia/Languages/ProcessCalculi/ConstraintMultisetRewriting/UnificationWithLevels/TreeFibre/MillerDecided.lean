@@ -322,9 +322,9 @@ theorem miller_decided {Θ : Context S.R} {original : EquationStore (TotalTerm �
         ((∃ state finished,
               run (millerSolver facts roots heads algebra rigid complete normalizes inh) original larger =
                 .solved state finished ∧ (frames S.levels).Principal original state.answer) ∨
-          (∃ absent,
+          (∃ missing,
             run (millerSolver facts roots heads algebra rigid complete normalizes inh) original larger =
-              .refuted absent)) :=
+              .refuted missing)) :=
   (millerFragment facts roots heads algebra rigid complete normalizes inh).decided inside
 
 include facts roots heads algebra rigid complete normalizes inh in
@@ -334,9 +334,9 @@ theorem principal_or_unsolvable {Θ : Context S.R} {original : EquationStore (To
     (∃ (Δ : Context S.R) (answer : Δ ⟶ Θ), (frames S.levels).Principal original answer) ∨
       ¬ (frames S.levels).Solvable original := by
   obtain ⟨fuel, decided⟩ := miller_decided facts roots heads algebra rigid complete normalizes inh inside
-  rcases (decided fuel le_rfl).2 with ⟨state, _, _, principal⟩ | ⟨absent, _⟩
+  rcases (decided fuel le_rfl).2 with ⟨state, _, _, principal⟩ | ⟨missing, _⟩
   · exact .inl ⟨_, _, principal⟩
-  · exact .inr absent
+  · exact .inr missing
 
 end Decided
 

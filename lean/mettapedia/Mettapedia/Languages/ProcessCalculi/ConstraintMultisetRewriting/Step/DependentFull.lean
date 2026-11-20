@@ -17,7 +17,7 @@ the present occurrences, and their labels, **typed terms over `Γ`**.
 * told equations and guards, equations of typed terms;
 * predicate queries (`Query`): a region of rows at each solution, which **reads through
   solutions** (terms a solution equates are in the region together), and an answer on the region of
-  present rows. Absence (`Query.absent`) and counting (`Query.count`) of a pattern are queries.
+  present rows. Predicate queries (`Query.predicate`) and counting (`Query.count`) of a pattern are queries.
 
 **The information** of a firing is the knowledge read along the weakening, the equations of each
 take and read pattern with the label of its row, and the told equations (`Firing.information`). An
@@ -145,11 +145,12 @@ theorem matching_reads (pattern : TotalTerm Δ) {Θ : Context rules} (τ : Θ �
   ⟨fun h => ((frames levels).equivalence Θ).trans h same,
     fun h => ((frames levels).equivalence Θ).trans h (((frames levels).equivalence Θ).symm same)⟩
 
-/-- **The absence query of a pattern**: no present row is equated with the pattern. -/
-def absent (pattern : TotalTerm Δ) : Query levels O Δ where
+/-- **The predicate query of a pattern**: its quantifier holds of the present rows equated with
+the pattern; `any` asks for some such row, `none` for none. -/
+def predicate (quantifier : Quantifier) (pattern : TotalTerm Δ) : Query levels O Δ where
   region τ t := matching levels pattern τ t
   reads := fun {_} τ {_ _} same => matching_reads levels pattern τ same
-  answer seen := seen = ∅
+  answer seen := quantifier.Accepts seen
 
 /-- **The counting query of a pattern**: exactly `number` present rows are equated with it. -/
 def count (pattern : TotalTerm Δ) (number : Nat) : Query levels O Δ where
@@ -159,19 +160,32 @@ def count (pattern : TotalTerm Δ) (number : Nat) : Query levels O Δ where
 
 variable {levels O}
 
-theorem absent_holds_iff (pattern : TotalTerm Δ) (present : Finset O) (row : O → TotalTerm Δ)
-    {Θ : Context rules} (τ : Θ ⟶ Δ) :
-    (absent levels O pattern).Holds present row τ ↔
-      ∀ o ∈ present, ¬ (frames levels).E ((frames levels).act τ pattern) ((frames levels).act τ (row o)) := by
-  constructor
-  · rintro ⟨seen, members, empty⟩ o present' equated
-    have inside : o ∈ seen := (members o).mpr ⟨present', equated⟩
-    rw [show seen = ∅ from empty] at inside
-    exact absurd inside (Finset.notMem_empty o)
-  · intro none
-    refine ⟨∅, fun o => ⟨fun inside => absurd inside (Finset.notMem_empty o), ?_⟩, rfl⟩
-    rintro ⟨present', equated⟩
-    exact absurd equated (none o present')
+theorem predicate_holds_iff (quantifier : Quantifier) (pattern : TotalTerm Δ) (present : Finset O)
+    (row : O → TotalTerm Δ) {Θ : Context rules} (τ : Θ ⟶ Δ) :
+    (predicate levels O quantifier pattern).Holds present row τ ↔
+      quantifier.Holds present fun o =>
+        (frames levels).E ((frames levels).act τ pattern) ((frames levels).act τ (row o)) := by
+  classical
+  cases quantifier with
+  | any =>
+    constructor
+    · rintro ⟨seen, members, ⟨o, inside⟩⟩
+      exact ⟨o, ((members o).mp inside).1, ((members o).mp inside).2⟩
+    · rintro ⟨o, present', equated⟩
+      refine ⟨present.filter fun o => (frames levels).E ((frames levels).act τ pattern)
+        ((frames levels).act τ (row o)), fun o' => ?_, ⟨o, Finset.mem_filter.mpr ⟨present', equated⟩⟩⟩
+      simp only [Finset.mem_filter]
+      rfl
+  | none =>
+    constructor
+    · rintro ⟨seen, members, empty⟩ o present' equated
+      have inside : o ∈ seen := (members o).mpr ⟨present', equated⟩
+      rw [show seen = ∅ from empty] at inside
+      exact absurd inside (Finset.notMem_empty o)
+    · intro none
+      refine ⟨∅, fun o => ⟨fun inside => absurd inside (Finset.notMem_empty o), ?_⟩, rfl⟩
+      rintro ⟨present', equated⟩
+      exact absurd equated (none o present')
 
 end Query
 
@@ -258,9 +272,9 @@ theorem relabel_of_not_mem {Δ : Context rules} (row : O → TotalTerm Δ) :
     ∀ (makes : List (O × Make Δ)) (typed : ∀ m ∈ makes, m.2.WellTyped) {o : O},
       o ∉ makes.map Prod.fst → relabel row makes typed o = row o
   | [], _, _, _ => rfl
-  | m :: rest, typed, o, absent => by
-      have other : o ≠ m.1 := fun same => absent (List.mem_cons.mpr (Or.inl same))
-      have later : o ∉ rest.map Prod.fst := fun inside => absent (List.mem_cons.mpr (Or.inr inside))
+  | m :: rest, typed, o, missing => by
+      have other : o ≠ m.1 := fun same => missing (List.mem_cons.mpr (Or.inl same))
+      have later : o ∉ rest.map Prod.fst := fun inside => missing (List.mem_cons.mpr (Or.inr inside))
       simp only [relabel, if_neg other]
       exact relabel_of_not_mem row rest _ later
 
@@ -417,9 +431,9 @@ theorem admitted_take_unifies (admitted : f.Admits) {p : TotalTerm f.helpers.fra
 
 /-! ## Results and subject reduction -/
 
-theorem label_after_of_not_mem (admitted : f.Admits) {o : O} (absent : o ∉ f.made) :
+theorem label_after_of_not_mem (admitted : f.Admits) {o : O} (missing : o ∉ f.made) :
     (f.after admitted).label o = f.row o :=
-  relabel_of_not_mem f.row f.makes _ absent
+  relabel_of_not_mem f.row f.makes _ missing
 
 theorem label_after_of_mem (admitted : f.Admits) {o : O} (inside : o ∈ f.made) :
     ∃ (m : O × Make f.helpers.frame) (member : m ∈ f.makes),
@@ -437,8 +451,8 @@ theorem subject_reduction (admitted : f.Admits) (o : O) :
         ((f.after admitted).label o).1.code = subst f.helpers.weaken.substitution (s.label o).1.code) ∧
       (o ∈ f.made → ∃ m ∈ f.makes, m.1 = o ∧ ((f.after admitted).label o).1 = m.2.type ∧
         ((f.after admitted).label o).2.code = m.2.code) := by
-  refine ⟨((f.after admitted).label o).2.typed, fun absent => ?_, fun inside => ?_⟩
-  · rw [f.label_after_of_not_mem admitted absent]
+  refine ⟨((f.after admitted).label o).2.typed, fun missing => ?_, fun inside => ?_⟩
+  · rw [f.label_after_of_not_mem admitted missing]
     exact ⟨rfl, rfl⟩
   · obtain ⟨m, member, named, eq⟩ := f.label_after_of_mem admitted inside
     exact ⟨m, member, named, by rw [eq]; rfl, by rw [eq]; rfl⟩
@@ -456,7 +470,7 @@ end Admission
 
 end DependentFull
 
-#print axioms DependentFull.Query.absent_holds_iff
+#print axioms DependentFull.Query.predicate_holds_iff
 #print axioms DependentFull.step
 #print axioms DependentFull.enabled_iff
 #print axioms DependentFull.admits_iff

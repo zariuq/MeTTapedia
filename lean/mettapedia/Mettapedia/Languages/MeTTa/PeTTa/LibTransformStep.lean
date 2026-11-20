@@ -367,9 +367,10 @@ theorem candidate_valid_iff {label : O → Atom} {rows : List O} {s : Store}
 
 /-- **A firing commits the first candidate, in candidate order, whose footprint has a
 selection.** -/
-theorem fire_eq_some_iff_first_realized {label : O → Atom} {rows : List O} {s s' : Store}
-    (rep : Represents label rows s) {g : Footprint} {src : Sources} {emit : Subst → Answers}
-    {out : Answers} :
+theorem fire_eq_some_iff_first_realized {A : Type}
+    {label : O → Atom} {rows : List O} {s s' : Store}
+    (rep : Represents label rows s) {g : Footprint} {src : Sources} {emit : Subst → List A}
+    {out : List A} :
     LibTransform.fire s g src emit = some (s', out) ↔
       ∃ pre c post, candidates s g src = pre ++ c :: post ∧
         (∀ d ∈ pre, ¬ ∃ sel : Selection O, Realizes label rows d.footprint sel) ∧
@@ -413,9 +414,9 @@ theorem fire_eq_none_iff_unrealized {label : O → Atom} {rows : List O} {s : St
 footprint has a selection; that selection is an enabled commit; the store the firing leaves
 is represented by a permutation of the ordered publication, and its occurrences are those
 of the occurrence firing. -/
-theorem fire_publishes {label : O → Atom} {rows : List O} {s s' : Store}
-    (rep : Represents label rows s) {g : Footprint} {src : Sources} {emit : Subst → Answers}
-    {out : Answers} (fired : LibTransform.fire s g src emit = some (s', out)) :
+theorem fire_publishes {A : Type} {label : O → Atom} {rows : List O} {s s' : Store}
+    (rep : Represents label rows s) {g : Footprint} {src : Sources} {emit : Subst → List A}
+    {out : List A} (fired : LibTransform.fire s g src emit = some (s', out)) :
     ∃ c ∈ candidates s g src, ∃ (sel : Selection O) (rows' : List O),
       Realizes label rows c.footprint sel ∧
       Enabled label rows.toFinset (sel.commit (T := Atom)) ∧
@@ -430,5 +431,22 @@ theorem fire_publishes {label : O → Atom} {rows : List O} {s s' : Store}
   refine ⟨c, by rw [split]; simp, sel, rows', real, real.enabled, same, rep', ?_, rfl⟩
   rw [← publish_present]
   exact List.toFinset_eq_of_perm _ _ same
+
+/-- Cutting at the commit retains the physical selection and the exact
+emission packet of that selection. Republish order is still the library's
+order, not assumed to equal the ordered backend's survivor order. -/
+theorem fireFirst_publishes {A : Type} {label : O → Atom} {rows : List O} {s s' : Store}
+    (rep : Represents label rows s) {src : Sources} {emit : Subst → List A} {out : List A}
+    (fired : fireFirst s src emit = some (s', out)) :
+    ∃ guide ∈ proposals s src, ∃ c ∈ candidates s guide src,
+      ∃ (sel : Selection O) (rows' : List O), Realizes label rows c.footprint sel ∧
+        Enabled label rows.toFinset (sel.commit (T := Atom)) ∧
+        rows'.Perm (publish rows sel) ∧ Represents label rows' s' ∧
+        out = c.instances emit := by
+  obtain ⟨earlier, guide, later, order, chosen, _⟩ := fireFirst_eq_some_iff.mp fired
+  obtain ⟨c, candidate, selection, rows', realizes, enabled, perm, observed, _, exactOut⟩ :=
+    fire_publishes rep chosen
+  exact ⟨guide, by rw [order]; simp, c, candidate, selection, rows', realizes, enabled, perm,
+    observed, exactOut⟩
 
 end Mettapedia.Languages.MeTTa.PeTTa.LibTransformStep

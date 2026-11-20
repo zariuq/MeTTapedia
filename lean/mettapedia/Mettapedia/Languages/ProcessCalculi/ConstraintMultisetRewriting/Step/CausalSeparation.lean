@@ -97,7 +97,7 @@ theorem not_independent_same_variable [Nonempty S] {e e' : Ev} (same : e.1 = e'.
     ¬ AnnotatedRuns.Independent id (firing (S := S) graph e) (firing graph e') := by
   intro independent
   obtain ⟨σ⟩ := ‹Nonempty S›
-  apply (independent σ).1.1
+  apply (independent σ ⟨[],∅⟩).1.1
   left
   rw [Finset.not_disjoint_iff]
   exact ⟨Atom.pend e.1, by simp [firing], by simp [firing, same]⟩
@@ -109,32 +109,32 @@ theorem history_staticIndependent_iff [Nonempty S] (regime : V → R) (x : V →
     AnnotatedRuns.StaticIndependent id (firing (S := S) graph (assignmentEvent graph regime x u))
         (firing graph (assignmentEvent graph regime x v)) ↔
       ¬ graph.edges u v ∧ ¬ graph.edges v u := by
-  have madeU : ∀ σ : S, Atom.val u (x u) ∈
-      ((firing (S := S) graph (assignmentEvent graph regime x u)).footprintAt σ).made := by
-    intro σ
+  have madeU : ∀ (σ : S) C, Atom.val u (x u) ∈
+      ((firing (S := S) graph (assignmentEvent graph regime x u)).footprintAt id σ C).made := by
+    intro σ C
     simp [firing, assignmentEvent]
-  have madeV : ∀ σ : S, Atom.val v (x v) ∈
-      ((firing (S := S) graph (assignmentEvent graph regime x v)).footprintAt σ).made := by
-    intro σ
+  have madeV : ∀ (σ : S) C, Atom.val v (x v) ∈
+      ((firing (S := S) graph (assignmentEvent graph regime x v)).footprintAt id σ C).made := by
+    intro σ C
     simp [firing, assignmentEvent]
-  have usesIff : ∀ (σ : S) (w w' : V) (a : Atom V β R),
-      a ∈ ((firing (S := S) graph (assignmentEvent graph regime x w')).footprintAt σ).uses ↔
+  have usesIff : ∀ (σ : S) C (w w' : V) (a : Atom V β R),
+      a ∈ ((firing (S := S) graph (assignmentEvent graph regime x w')).footprintAt id σ C).uses ↔
         a = Atom.pend w' ∨ a ∈ reads graph (assignmentEvent graph regime x w') := by
-    intro σ w w' a
+    intro σ C w w' a
     simp [Commit.uses, firing, assignmentEvent]
   constructor
   · rintro ⟨-, -, independent⟩
     obtain ⟨σ⟩ := ‹Nonempty S›
-    have trace := independent σ
+    have trace := independent σ ⟨[],∅⟩
     refine ⟨fun edge => ?_, fun edge => ?_⟩
-    · exact Finset.disjoint_left.mp trace.2.1 (madeU σ)
-        ((usesIff σ u v _).mpr (Or.inr ((val_mem_history_reads graph regime x u v).mpr edge)))
-    · exact Finset.disjoint_left.mp trace.2.2 (madeV σ)
-        ((usesIff σ v u _).mpr (Or.inr ((val_mem_history_reads graph regime x v u).mpr edge)))
+    · exact Finset.disjoint_left.mp trace.2.1 (madeU σ ⟨[],∅⟩)
+        ((usesIff σ ⟨[],∅⟩ u v _).mpr (Or.inr ((val_mem_history_reads graph regime x u v).mpr edge)))
+    · exact Finset.disjoint_left.mp trace.2.2 (madeV σ ⟨[],∅⟩)
+        ((usesIff σ ⟨[],∅⟩ v u _).mpr (Or.inr ((val_mem_history_reads graph regime x v u).mpr edge)))
   · rintro ⟨noUV, noVU⟩
     have static : ∀ w, (firing (S := S) graph (assignmentEvent graph regime x w)).Static :=
       fun w => ⟨rfl, fun query member => by simp [firing] at member⟩
-    refine ⟨static u, static v, fun σ => ⟨⟨?_, ?_, ?_⟩, ?_, ?_⟩⟩
+    refine ⟨static u, static v, fun σ C => ⟨⟨?_, ?_, ?_⟩, ?_, ?_⟩⟩
     · rintro (taken | made)
       · apply taken
         rw [Finset.disjoint_left]
@@ -170,14 +170,14 @@ theorem history_staticIndependent_iff [Nonempty S] (regime : V → R) (x : V →
       intro a inU inUses
       simp [firing, assignmentEvent] at inU
       subst inU
-      rcases (usesIff σ u v _).mp inUses with pending | read
+      rcases (usesIff σ C u v _).mp inUses with pending | read
       · cases pending
       · exact noUV ((val_mem_history_reads graph regime x u v).mp read)
     · rw [Finset.disjoint_left]
       intro a inV inUses
       simp [firing, assignmentEvent] at inV
       subst inV
-      rcases (usesIff σ v u _).mp inUses with pending | read
+      rcases (usesIff σ C v u _).mp inUses with pending | read
       · cases pending
       · exact noVU ((val_mem_history_reads graph regime x v u).mp read)
 

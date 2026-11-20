@@ -41,7 +41,7 @@ theorem computed_certificate_publishes :
       refine ⟨application, admitted, ?_, rfl, rfl⟩
       exact congrArg (fun decision : NativeTypesOnTheStep.Decision setting.levels coerceFiring.information =>
         (Coerce.schema.resolveFamilyDecision (state := baseState) Coerce.pick decision).application?) chosen
-  | refuted absent => rw [chosen] at settles; cases settles
+  | refuted missing => rw [chosen] at settles; cases settles
   | undecided => rw [chosen] at settles; cases settles
 
 open ContextualDependentSweep.Witnesses in
@@ -53,7 +53,7 @@ theorem cross_family_declines : olderFamily olderFuel crossStore = .undecided :=
   | settled target answer initial =>
       rw [chosen] at declines
       exact False.elim (declines True.intro)
-  | refuted absent =>
+  | refuted missing =>
       rw [chosen] at declines
       exact False.elim (declines True.intro)
   | undecided => rfl

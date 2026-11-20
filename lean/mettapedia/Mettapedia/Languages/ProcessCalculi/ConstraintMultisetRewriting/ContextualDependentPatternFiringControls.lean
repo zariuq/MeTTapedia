@@ -191,12 +191,12 @@ theorem prunable_firing_stuck : isStuck (run firingOnly prunableStore 8) = true 
 
 /-! ## Regressions -/
 
-theorem argument_firing_refuted : (run firingOnly ContextualDependentCensus.Controls.argumentStore 8).readout = .refuted := by
+theorem argument_firing_refuted : (run firingOnly ContextualDependentClassification.Controls.argumentStore 8).readout = .refuted := by
   decide +kernel
 theorem twin_firing_committed :
     (run firingOnly ContextualDependentTwinsUnder.Controls.twinStore 8).readout = .commit := by decide +kernel
 theorem flexibleBase_firing_suspended :
-    (run firingOnly ContextualDependentCensus.Controls.flexibleBaseStore 8).readout = .suspended := by decide +kernel
+    (run firingOnly ContextualDependentClassification.Controls.flexibleBaseStore 8).readout = .suspended := by decide +kernel
 
 end ContextualDependentPatternFiring.Controls
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting

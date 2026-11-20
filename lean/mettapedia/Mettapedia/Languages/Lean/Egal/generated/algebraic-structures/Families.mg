@@ -413,6 +413,17 @@ exact SepE2 1 (fun z => P t) (Lean_Nat_rec 0 0 t) (Lean_Nat_rec_type (fun t => {
 Qed.
 
 
+Theorem Lean_Nat_rec_proof_ok : forall motive:set -> set,
+  0 :e (motive Lean_Nat_zero_node) ->
+  0 :e (Pi_ x0 :e Lean_Nat, (Pi_ y0 :e (motive x0), (motive (Lean_Nat_succ_node x0)))) ->
+  forall t :e Lean_Nat, 0 :e (motive t).
+let motive. assume H0. assume H1.
+apply Lean_Nat_ind.
+  - exact H0.
+  - let x0. assume Hx0. assume IH0. exact (Pi_0_ap (motive x0) (fun y0 => (motive (Lean_Nat_succ_node x0))) (Pi_0_ap Lean_Nat (fun x0 => (Pi_ y0 :e (motive x0), (motive (Lean_Nat_succ_node x0)))) H1
+    x0 Hx0) 0 IH0).
+Qed.
+
 
 Theorem Lean_Nat_noconf0_1 : forall y0, Lean_Nat_zero_node <> (Lean_Nat_succ_node y0).
 let y0. assume H: Lean_Nat_zero_node = (Lean_Nat_succ_node y0).
@@ -655,6 +666,7 @@ Qed.
 
 
 
+
 Theorem Lean_Eq_ind : forall P:set -> set -> prop, (P P1 Lean_Eq_refl_node) -> forall i, forall t :e Lean_Eq i, P i t.
 let P. assume H0.
 claim M0: 0 :e {z :e 1 | P P1 Lean_Eq_refl_node}.
@@ -681,7 +693,7 @@ let i. exact PowerI 1 (Lean_Eq_Prop i) (Sep_Subq 1 (fun x:set => exists w, w :e 
 Qed.
 Definition Lean_Eq_refl_proof : set := 0.
 Theorem Lean_Eq_refl_proof_ok : 0 :e (Lean_Eq_Prop P1).
-exact SepI 1 (fun x:set => exists w, w :e Lean_Eq P1) 0 In_0_1 (fun p H => H (Lean_Eq_refl_node) (Lean_Eq_refl_typed )).
+exact SepI 1 (fun x:set => exists w, w :e Lean_Eq P1) 0 In_0_1 (fun p H => H (Lean_Eq_refl_node ) (Lean_Eq_refl_typed )).
 Qed.
 Theorem Lean_Eq_refl_proof_type : Lean_Eq_refl_proof :e (Lean_Eq_Prop P1).
 exact (Lean_Eq_refl_proof_ok ).
@@ -780,6 +792,20 @@ rewrite IndRec_iota Lean_Eq_K Lean_Eq_T Lean_Eq_N Lean_Eq_R Lean_Eq_F Lean_Eq_Ix
     (ordsuccI2 0) (TupArgs 0 SeqNil) Lean_Eq_refl_args.
 prove SeqAt (SeqCons (h0) SeqNil) 0 = h0.
 rewrite SeqAt_0. reflexivity.
+Qed.
+Theorem Lean_Eq_rec_proof_ok : forall motive:set -> set -> set,
+  0 :e (motive P1 0) ->
+  forall i0, 0 :e (Lean_Eq_Prop i0) -> 0 :e (motive i0 0).
+let motive. assume H0.
+claim L: forall i, forall w :e Lean_Eq i, 0 :e (motive i 0).
+{ apply Lean_Eq_ind.
+
+    exact H0.
+}
+let i0. assume Ht: 0 :e Lean_Eq_Prop i0.
+apply SepE2 1 (fun x:set => exists w, w :e Lean_Eq i0) 0 Ht.
+let w. assume Hw: w :e Lean_Eq i0.
+exact L i0 w Hw.
 Qed.
 
 End Lean_Eq_Section.
@@ -972,6 +998,14 @@ let t. assume Ht: t :e Lean_Mul.
 exact SepE2 1 (fun z => P t) (Lean_Mul_rec 0 t) (Lean_Mul_rec_type (fun t => {z :e 1 | P t}) 0 M0 t Ht).
 Qed.
 
+
+Theorem Lean_Mul_rec_proof_ok : forall motive:set -> set,
+  0 :e (Pi_ x0 :e (Pi_ ux :e P0, (Pi_ ux :e P0, P0)), (motive (Lean_Mul_mk_node x0))) ->
+  forall t :e Lean_Mul, 0 :e (motive t).
+let motive. assume H0.
+apply Lean_Mul_ind.
+  let x0. assume Hx0. exact (Pi_0_ap (Pi_ ux :e P0, (Pi_ ux :e P0, P0)) (fun x0 => (motive (Lean_Mul_mk_node x0))) H0 x0 Hx0).
+Qed.
 
 
 
@@ -1200,6 +1234,14 @@ let t. assume Ht: t :e Lean_One.
 exact SepE2 1 (fun z => P t) (Lean_One_rec 0 t) (Lean_One_rec_type (fun t => {z :e 1 | P t}) 0 M0 t Ht).
 Qed.
 
+
+Theorem Lean_One_rec_proof_ok : forall motive:set -> set,
+  0 :e (Pi_ x0 :e P0, (motive (Lean_One_mk_node x0))) ->
+  forall t :e Lean_One, 0 :e (motive t).
+let motive. assume H0.
+apply Lean_One_ind.
+  let x0. assume Hx0. exact (Pi_0_ap P0 (fun x0 => (motive (Lean_One_mk_node x0))) H0 x0 Hx0).
+Qed.
 
 
 
@@ -1430,6 +1472,14 @@ let t. assume Ht: t :e Lean_NPow.
 exact SepE2 1 (fun z => P t) (Lean_NPow_rec 0 t) (Lean_NPow_rec_type (fun t => {z :e 1 | P t}) 0 M0 t Ht).
 Qed.
 
+
+Theorem Lean_NPow_rec_proof_ok : forall motive:set -> set,
+  0 :e (Pi_ x0 :e (Pi_ ux :e Lean_Nat, (Pi_ ux :e P0, P0)), (motive (Lean_NPow_mk_node x0))) ->
+  forall t :e Lean_NPow, 0 :e (motive t).
+let motive. assume H0.
+apply Lean_NPow_ind.
+  let x0. assume Hx0. exact (Pi_0_ap (Pi_ ux :e Lean_Nat, (Pi_ ux :e P0, P0)) (fun x0 => (motive (Lean_NPow_mk_node x0))) H0 x0 Hx0).
+Qed.
 
 
 
@@ -1768,6 +1818,17 @@ let t. assume Ht: t :e Lean_Semigroup.
 exact SepE2 1 (fun z => P t) (Lean_Semigroup_rec 0 t) (Lean_Semigroup_rec_type (fun t => {z :e 1 | P t}) 0 M0 t Ht).
 Qed.
 
+
+Theorem Lean_Semigroup_rec_proof_ok : forall motive:set -> set,
+  0 :e (Pi_ x0 :e (Lean_Mul P0), (Pi_ x1 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P0, (((Lean_Eq_Prop P0) ((((proj1 x0) 0) ((((proj1 x0) 0) q0) q1)) q2)) ((((proj1 x0) 0) q0)
+    ((((proj1 x0) 0) q1) q2))))))}, (motive (Lean_Semigroup_mk_node x0 x1)))) ->
+  forall t :e Lean_Semigroup, 0 :e (motive t).
+let motive. assume H0.
+apply Lean_Semigroup_ind.
+  let x0. assume Hx0. let x1. assume Hx1. exact (Pi_0_ap {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P0, (((Lean_Eq_Prop P0) ((((proj1 x0) 0) ((((proj1 x0) 0) q0) q1)) q2)) ((((proj1 x0)
+    0) q0) ((((proj1 x0) 0) q1) q2))))))} (fun x1 => (motive (Lean_Semigroup_mk_node x0 x1))) (Pi_0_ap (Lean_Mul P0) (fun x0 => (Pi_ x1 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P0,
+    (((Lean_Eq_Prop P0) ((((proj1 x0) 0) ((((proj1 x0) 0) q0) q1)) q2)) ((((proj1 x0) 0) q0) ((((proj1 x0) 0) q1) q2))))))}, (motive (Lean_Semigroup_mk_node x0 x1)))) H0 x0 Hx0) x1 Hx1).
+Qed.
 
 
 
@@ -2638,6 +2699,36 @@ exact SepE2 1 (fun z => P t) (Lean_Monoid_rec 0 t) (Lean_Monoid_rec_type (fun t 
 Qed.
 
 
+Theorem Lean_Monoid_rec_proof_ok : forall motive:set -> set,
+  0 :e (Pi_ x0 :e (Lean_Semigroup P0), (Pi_ x1 :e (Lean_One P0), (Pi_ x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (((Lean_Eq_Prop P0) ((((proj1 ((proj1 x0) 0)) 0) ((proj1 x1) 0)) q0)) q0))}, (Pi_ x3 :e {z :e
+    1 | z :e (Pi_ q0 :e P0, (((Lean_Eq_Prop P0) ((((proj1 ((proj1 x0) 0)) 0) q0) ((proj1 x1) 0))) q0))}, (Pi_ x4 :e (Lean_NPow P0), (Pi_ x5 :e {z :e 1 | z :e (Pi_ q0 :e P0, (((Lean_Eq_Prop P0)
+    ((((proj1 x4) 0) (LeanNum 0)) q0)) ((proj1 x1) 0)))}, (Pi_ x6 :e {z :e 1 | z :e (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e P0, (((Lean_Eq_Prop P0) ((((proj1 x4) 0) (Lean_Nat_succ_node q0)) q1)) ((((proj1
+    ((proj1 x0) 0)) 0) ((((proj1 x4) 0) q0) q1)) q1))))}, (motive (Lean_Monoid_mk_node x0 x1 x2 x3 x4 x5 x6))))))))) ->
+  forall t :e Lean_Monoid, 0 :e (motive t).
+let motive. assume H0.
+apply Lean_Monoid_ind.
+  let x0. assume Hx0. let x1. assume Hx1. let x2. assume Hx2. let x3. assume Hx3. let x4. assume Hx4. let x5. assume Hx5. let x6. assume Hx6. exact (Pi_0_ap {z :e 1 | z :e (Pi_ q0 :e Lean_Nat, (Pi_
+    q1 :e P0, (((Lean_Eq_Prop P0) ((((proj1 x4) 0) (Lean_Nat_succ_node q0)) q1)) ((((proj1 ((proj1 x0) 0)) 0) ((((proj1 x4) 0) q0) q1)) q1))))} (fun x6 => (motive (Lean_Monoid_mk_node x0 x1 x2 x3 x4
+    x5 x6))) (Pi_0_ap {z :e 1 | z :e (Pi_ q0 :e P0, (((Lean_Eq_Prop P0) ((((proj1 x4) 0) (LeanNum 0)) q0)) ((proj1 x1) 0)))} (fun x5 => (Pi_ x6 :e {z :e 1 | z :e (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e P0,
+    (((Lean_Eq_Prop P0) ((((proj1 x4) 0) (Lean_Nat_succ_node q0)) q1)) ((((proj1 ((proj1 x0) 0)) 0) ((((proj1 x4) 0) q0) q1)) q1))))}, (motive (Lean_Monoid_mk_node x0 x1 x2 x3 x4 x5 x6)))) (Pi_0_ap
+    (Lean_NPow P0) (fun x4 => (Pi_ x5 :e {z :e 1 | z :e (Pi_ q0 :e P0, (((Lean_Eq_Prop P0) ((((proj1 x4) 0) (LeanNum 0)) q0)) ((proj1 x1) 0)))}, (Pi_ x6 :e {z :e 1 | z :e (Pi_ q0 :e Lean_Nat, (Pi_ q1
+    :e P0, (((Lean_Eq_Prop P0) ((((proj1 x4) 0) (Lean_Nat_succ_node q0)) q1)) ((((proj1 ((proj1 x0) 0)) 0) ((((proj1 x4) 0) q0) q1)) q1))))}, (motive (Lean_Monoid_mk_node x0 x1 x2 x3 x4 x5 x6)))))
+    (Pi_0_ap {z :e 1 | z :e (Pi_ q0 :e P0, (((Lean_Eq_Prop P0) ((((proj1 ((proj1 x0) 0)) 0) q0) ((proj1 x1) 0))) q0))} (fun x3 => (Pi_ x4 :e (Lean_NPow P0), (Pi_ x5 :e {z :e 1 | z :e (Pi_ q0 :e P0,
+    (((Lean_Eq_Prop P0) ((((proj1 x4) 0) (LeanNum 0)) q0)) ((proj1 x1) 0)))}, (Pi_ x6 :e {z :e 1 | z :e (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e P0, (((Lean_Eq_Prop P0) ((((proj1 x4) 0) (Lean_Nat_succ_node
+    q0)) q1)) ((((proj1 ((proj1 x0) 0)) 0) ((((proj1 x4) 0) q0) q1)) q1))))}, (motive (Lean_Monoid_mk_node x0 x1 x2 x3 x4 x5 x6)))))) (Pi_0_ap {z :e 1 | z :e (Pi_ q0 :e P0, (((Lean_Eq_Prop P0)
+    ((((proj1 ((proj1 x0) 0)) 0) ((proj1 x1) 0)) q0)) q0))} (fun x2 => (Pi_ x3 :e {z :e 1 | z :e (Pi_ q0 :e P0, (((Lean_Eq_Prop P0) ((((proj1 ((proj1 x0) 0)) 0) q0) ((proj1 x1) 0))) q0))}, (Pi_ x4 :e
+    (Lean_NPow P0), (Pi_ x5 :e {z :e 1 | z :e (Pi_ q0 :e P0, (((Lean_Eq_Prop P0) ((((proj1 x4) 0) (LeanNum 0)) q0)) ((proj1 x1) 0)))}, (Pi_ x6 :e {z :e 1 | z :e (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e P0,
+    (((Lean_Eq_Prop P0) ((((proj1 x4) 0) (Lean_Nat_succ_node q0)) q1)) ((((proj1 ((proj1 x0) 0)) 0) ((((proj1 x4) 0) q0) q1)) q1))))}, (motive (Lean_Monoid_mk_node x0 x1 x2 x3 x4 x5 x6)))))))
+    (Pi_0_ap (Lean_One P0) (fun x1 => (Pi_ x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (((Lean_Eq_Prop P0) ((((proj1 ((proj1 x0) 0)) 0) ((proj1 x1) 0)) q0)) q0))}, (Pi_ x3 :e {z :e 1 | z :e (Pi_ q0 :e P0,
+    (((Lean_Eq_Prop P0) ((((proj1 ((proj1 x0) 0)) 0) q0) ((proj1 x1) 0))) q0))}, (Pi_ x4 :e (Lean_NPow P0), (Pi_ x5 :e {z :e 1 | z :e (Pi_ q0 :e P0, (((Lean_Eq_Prop P0) ((((proj1 x4) 0) (LeanNum 0))
+    q0)) ((proj1 x1) 0)))}, (Pi_ x6 :e {z :e 1 | z :e (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e P0, (((Lean_Eq_Prop P0) ((((proj1 x4) 0) (Lean_Nat_succ_node q0)) q1)) ((((proj1 ((proj1 x0) 0)) 0) ((((proj1 x4)
+    0) q0) q1)) q1))))}, (motive (Lean_Monoid_mk_node x0 x1 x2 x3 x4 x5 x6)))))))) (Pi_0_ap (Lean_Semigroup P0) (fun x0 => (Pi_ x1 :e (Lean_One P0), (Pi_ x2 :e {z :e 1 | z :e (Pi_ q0 :e P0,
+    (((Lean_Eq_Prop P0) ((((proj1 ((proj1 x0) 0)) 0) ((proj1 x1) 0)) q0)) q0))}, (Pi_ x3 :e {z :e 1 | z :e (Pi_ q0 :e P0, (((Lean_Eq_Prop P0) ((((proj1 ((proj1 x0) 0)) 0) q0) ((proj1 x1) 0))) q0))},
+    (Pi_ x4 :e (Lean_NPow P0), (Pi_ x5 :e {z :e 1 | z :e (Pi_ q0 :e P0, (((Lean_Eq_Prop P0) ((((proj1 x4) 0) (LeanNum 0)) q0)) ((proj1 x1) 0)))}, (Pi_ x6 :e {z :e 1 | z :e (Pi_ q0 :e Lean_Nat, (Pi_
+    q1 :e P0, (((Lean_Eq_Prop P0) ((((proj1 x4) 0) (Lean_Nat_succ_node q0)) q1)) ((((proj1 ((proj1 x0) 0)) 0) ((((proj1 x4) 0) q0) q1)) q1))))}, (motive (Lean_Monoid_mk_node x0 x1 x2 x3 x4 x5
+    x6))))))))) H0 x0 Hx0) x1 Hx1) x2 Hx2) x3 Hx3) x4 Hx4) x5 Hx5) x6 Hx6).
+Qed.
+
 
 
 Theorem Lean_Monoid_mk_inj0 : forall x0 x1 x2 x3 x4 x5 x6 y0 y1 y2 y3 y4 y5 y6, (Lean_Monoid_mk_node x0 x1 x2 x3 x4 x5 x6) = (Lean_Monoid_mk_node y0 y1 y2 y3 y4 y5 y6) -> x0 = y0.
@@ -2960,6 +3051,14 @@ exact SepE2 1 (fun z => P t) (Lean_Add_rec 0 t) (Lean_Add_rec_type (fun t => {z 
 Qed.
 
 
+Theorem Lean_Add_rec_proof_ok : forall motive:set -> set,
+  0 :e (Pi_ x0 :e (Pi_ ux :e P0, (Pi_ ux :e P0, P0)), (motive (Lean_Add_mk_node x0))) ->
+  forall t :e Lean_Add, 0 :e (motive t).
+let motive. assume H0.
+apply Lean_Add_ind.
+  let x0. assume Hx0. exact (Pi_0_ap (Pi_ ux :e P0, (Pi_ ux :e P0, P0)) (fun x0 => (motive (Lean_Add_mk_node x0))) H0 x0 Hx0).
+Qed.
+
 
 
 Theorem Lean_Add_mk_inj0 : forall x0 y0, (Lean_Add_mk_node x0) = (Lean_Add_mk_node y0) -> x0 = y0.
@@ -3190,6 +3289,14 @@ let t. assume Ht: t :e Lean_Zero.
 exact SepE2 1 (fun z => P t) (Lean_Zero_rec 0 t) (Lean_Zero_rec_type (fun t => {z :e 1 | P t}) 0 M0 t Ht).
 Qed.
 
+
+Theorem Lean_Zero_rec_proof_ok : forall motive:set -> set,
+  0 :e (Pi_ x0 :e P0, (motive (Lean_Zero_mk_node x0))) ->
+  forall t :e Lean_Zero, 0 :e (motive t).
+let motive. assume H0.
+apply Lean_Zero_ind.
+  let x0. assume Hx0. exact (Pi_0_ap P0 (fun x0 => (motive (Lean_Zero_mk_node x0))) H0 x0 Hx0).
+Qed.
 
 
 
@@ -3425,6 +3532,14 @@ let t. assume Ht: t :e Lean_NSMul.
 exact SepE2 1 (fun z => P t) (Lean_NSMul_rec 0 t) (Lean_NSMul_rec_type (fun t => {z :e 1 | P t}) 0 M0 t Ht).
 Qed.
 
+
+Theorem Lean_NSMul_rec_proof_ok : forall motive:set -> set,
+  0 :e (Pi_ x0 :e (Pi_ ux :e Lean_Nat, (Pi_ ux :e P0, P0)), (motive (Lean_NSMul_mk_node x0))) ->
+  forall t :e Lean_NSMul, 0 :e (motive t).
+let motive. assume H0.
+apply Lean_NSMul_ind.
+  let x0. assume Hx0. exact (Pi_0_ap (Pi_ ux :e Lean_Nat, (Pi_ ux :e P0, P0)) (fun x0 => (motive (Lean_NSMul_mk_node x0))) H0 x0 Hx0).
+Qed.
 
 
 
@@ -3779,6 +3894,17 @@ let t. assume Ht: t :e Lean_AddSemigroup.
 exact SepE2 1 (fun z => P t) (Lean_AddSemigroup_rec 0 t) (Lean_AddSemigroup_rec_type (fun t => {z :e 1 | P t}) 0 M0 t Ht).
 Qed.
 
+
+Theorem Lean_AddSemigroup_rec_proof_ok : forall motive:set -> set,
+  0 :e (Pi_ x0 :e (Lean_Add P0), (Pi_ x1 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P0, (((Lean_Eq_Prop P0) ((((proj1 x0) 0) ((((proj1 x0) 0) q0) q1)) q2)) ((((proj1 x0) 0) q0)
+    ((((proj1 x0) 0) q1) q2))))))}, (motive (Lean_AddSemigroup_mk_node x0 x1)))) ->
+  forall t :e Lean_AddSemigroup, 0 :e (motive t).
+let motive. assume H0.
+apply Lean_AddSemigroup_ind.
+  let x0. assume Hx0. let x1. assume Hx1. exact (Pi_0_ap {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e P0, (((Lean_Eq_Prop P0) ((((proj1 x0) 0) ((((proj1 x0) 0) q0) q1)) q2)) ((((proj1 x0)
+    0) q0) ((((proj1 x0) 0) q1) q2))))))} (fun x1 => (motive (Lean_AddSemigroup_mk_node x0 x1))) (Pi_0_ap (Lean_Add P0) (fun x0 => (Pi_ x1 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e
+    P0, (((Lean_Eq_Prop P0) ((((proj1 x0) 0) ((((proj1 x0) 0) q0) q1)) q2)) ((((proj1 x0) 0) q0) ((((proj1 x0) 0) q1) q2))))))}, (motive (Lean_AddSemigroup_mk_node x0 x1)))) H0 x0 Hx0) x1 Hx1).
+Qed.
 
 
 
@@ -4665,6 +4791,36 @@ exact SepE2 1 (fun z => P t) (Lean_AddMonoid_rec 0 t) (Lean_AddMonoid_rec_type (
 Qed.
 
 
+Theorem Lean_AddMonoid_rec_proof_ok : forall motive:set -> set,
+  0 :e (Pi_ x0 :e (Lean_AddSemigroup P0), (Pi_ x1 :e (Lean_Zero P0), (Pi_ x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (((Lean_Eq_Prop P0) ((((proj1 ((proj1 x0) 0)) 0) ((proj1 x1) 0)) q0)) q0))}, (Pi_ x3 :e
+    {z :e 1 | z :e (Pi_ q0 :e P0, (((Lean_Eq_Prop P0) ((((proj1 ((proj1 x0) 0)) 0) q0) ((proj1 x1) 0))) q0))}, (Pi_ x4 :e (Lean_NSMul P0), (Pi_ x5 :e {z :e 1 | z :e (Pi_ q0 :e P0, (((Lean_Eq_Prop P0)
+    ((((proj1 x4) 0) (LeanNum 0)) q0)) ((proj1 x1) 0)))}, (Pi_ x6 :e {z :e 1 | z :e (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e P0, (((Lean_Eq_Prop P0) ((((proj1 x4) 0) (Lean_Nat_succ_node q0)) q1)) ((((proj1
+    ((proj1 x0) 0)) 0) ((((proj1 x4) 0) q0) q1)) q1))))}, (motive (Lean_AddMonoid_mk_node x0 x1 x2 x3 x4 x5 x6))))))))) ->
+  forall t :e Lean_AddMonoid, 0 :e (motive t).
+let motive. assume H0.
+apply Lean_AddMonoid_ind.
+  let x0. assume Hx0. let x1. assume Hx1. let x2. assume Hx2. let x3. assume Hx3. let x4. assume Hx4. let x5. assume Hx5. let x6. assume Hx6. exact (Pi_0_ap {z :e 1 | z :e (Pi_ q0 :e Lean_Nat, (Pi_
+    q1 :e P0, (((Lean_Eq_Prop P0) ((((proj1 x4) 0) (Lean_Nat_succ_node q0)) q1)) ((((proj1 ((proj1 x0) 0)) 0) ((((proj1 x4) 0) q0) q1)) q1))))} (fun x6 => (motive (Lean_AddMonoid_mk_node x0 x1 x2 x3
+    x4 x5 x6))) (Pi_0_ap {z :e 1 | z :e (Pi_ q0 :e P0, (((Lean_Eq_Prop P0) ((((proj1 x4) 0) (LeanNum 0)) q0)) ((proj1 x1) 0)))} (fun x5 => (Pi_ x6 :e {z :e 1 | z :e (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e
+    P0, (((Lean_Eq_Prop P0) ((((proj1 x4) 0) (Lean_Nat_succ_node q0)) q1)) ((((proj1 ((proj1 x0) 0)) 0) ((((proj1 x4) 0) q0) q1)) q1))))}, (motive (Lean_AddMonoid_mk_node x0 x1 x2 x3 x4 x5 x6))))
+    (Pi_0_ap (Lean_NSMul P0) (fun x4 => (Pi_ x5 :e {z :e 1 | z :e (Pi_ q0 :e P0, (((Lean_Eq_Prop P0) ((((proj1 x4) 0) (LeanNum 0)) q0)) ((proj1 x1) 0)))}, (Pi_ x6 :e {z :e 1 | z :e (Pi_ q0 :e
+    Lean_Nat, (Pi_ q1 :e P0, (((Lean_Eq_Prop P0) ((((proj1 x4) 0) (Lean_Nat_succ_node q0)) q1)) ((((proj1 ((proj1 x0) 0)) 0) ((((proj1 x4) 0) q0) q1)) q1))))}, (motive (Lean_AddMonoid_mk_node x0 x1
+    x2 x3 x4 x5 x6))))) (Pi_0_ap {z :e 1 | z :e (Pi_ q0 :e P0, (((Lean_Eq_Prop P0) ((((proj1 ((proj1 x0) 0)) 0) q0) ((proj1 x1) 0))) q0))} (fun x3 => (Pi_ x4 :e (Lean_NSMul P0), (Pi_ x5 :e {z :e 1 |
+    z :e (Pi_ q0 :e P0, (((Lean_Eq_Prop P0) ((((proj1 x4) 0) (LeanNum 0)) q0)) ((proj1 x1) 0)))}, (Pi_ x6 :e {z :e 1 | z :e (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e P0, (((Lean_Eq_Prop P0) ((((proj1 x4) 0)
+    (Lean_Nat_succ_node q0)) q1)) ((((proj1 ((proj1 x0) 0)) 0) ((((proj1 x4) 0) q0) q1)) q1))))}, (motive (Lean_AddMonoid_mk_node x0 x1 x2 x3 x4 x5 x6)))))) (Pi_0_ap {z :e 1 | z :e (Pi_ q0 :e P0,
+    (((Lean_Eq_Prop P0) ((((proj1 ((proj1 x0) 0)) 0) ((proj1 x1) 0)) q0)) q0))} (fun x2 => (Pi_ x3 :e {z :e 1 | z :e (Pi_ q0 :e P0, (((Lean_Eq_Prop P0) ((((proj1 ((proj1 x0) 0)) 0) q0) ((proj1 x1)
+    0))) q0))}, (Pi_ x4 :e (Lean_NSMul P0), (Pi_ x5 :e {z :e 1 | z :e (Pi_ q0 :e P0, (((Lean_Eq_Prop P0) ((((proj1 x4) 0) (LeanNum 0)) q0)) ((proj1 x1) 0)))}, (Pi_ x6 :e {z :e 1 | z :e (Pi_ q0 :e
+    Lean_Nat, (Pi_ q1 :e P0, (((Lean_Eq_Prop P0) ((((proj1 x4) 0) (Lean_Nat_succ_node q0)) q1)) ((((proj1 ((proj1 x0) 0)) 0) ((((proj1 x4) 0) q0) q1)) q1))))}, (motive (Lean_AddMonoid_mk_node x0 x1
+    x2 x3 x4 x5 x6))))))) (Pi_0_ap (Lean_Zero P0) (fun x1 => (Pi_ x2 :e {z :e 1 | z :e (Pi_ q0 :e P0, (((Lean_Eq_Prop P0) ((((proj1 ((proj1 x0) 0)) 0) ((proj1 x1) 0)) q0)) q0))}, (Pi_ x3 :e {z :e 1 |
+    z :e (Pi_ q0 :e P0, (((Lean_Eq_Prop P0) ((((proj1 ((proj1 x0) 0)) 0) q0) ((proj1 x1) 0))) q0))}, (Pi_ x4 :e (Lean_NSMul P0), (Pi_ x5 :e {z :e 1 | z :e (Pi_ q0 :e P0, (((Lean_Eq_Prop P0) ((((proj1
+    x4) 0) (LeanNum 0)) q0)) ((proj1 x1) 0)))}, (Pi_ x6 :e {z :e 1 | z :e (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e P0, (((Lean_Eq_Prop P0) ((((proj1 x4) 0) (Lean_Nat_succ_node q0)) q1)) ((((proj1 ((proj1 x0)
+    0)) 0) ((((proj1 x4) 0) q0) q1)) q1))))}, (motive (Lean_AddMonoid_mk_node x0 x1 x2 x3 x4 x5 x6)))))))) (Pi_0_ap (Lean_AddSemigroup P0) (fun x0 => (Pi_ x1 :e (Lean_Zero P0), (Pi_ x2 :e {z :e 1 | z
+    :e (Pi_ q0 :e P0, (((Lean_Eq_Prop P0) ((((proj1 ((proj1 x0) 0)) 0) ((proj1 x1) 0)) q0)) q0))}, (Pi_ x3 :e {z :e 1 | z :e (Pi_ q0 :e P0, (((Lean_Eq_Prop P0) ((((proj1 ((proj1 x0) 0)) 0) q0)
+    ((proj1 x1) 0))) q0))}, (Pi_ x4 :e (Lean_NSMul P0), (Pi_ x5 :e {z :e 1 | z :e (Pi_ q0 :e P0, (((Lean_Eq_Prop P0) ((((proj1 x4) 0) (LeanNum 0)) q0)) ((proj1 x1) 0)))}, (Pi_ x6 :e {z :e 1 | z :e
+    (Pi_ q0 :e Lean_Nat, (Pi_ q1 :e P0, (((Lean_Eq_Prop P0) ((((proj1 x4) 0) (Lean_Nat_succ_node q0)) q1)) ((((proj1 ((proj1 x0) 0)) 0) ((((proj1 x4) 0) q0) q1)) q1))))}, (motive
+    (Lean_AddMonoid_mk_node x0 x1 x2 x3 x4 x5 x6))))))))) H0 x0 Hx0) x1 Hx1) x2 Hx2) x3 Hx3) x4 Hx4) x5 Hx5) x6 Hx6).
+Qed.
+
 
 
 Theorem Lean_AddMonoid_mk_inj0 : forall x0 x1 x2 x3 x4 x5 x6 y0 y1 y2 y3 y4 y5 y6, (Lean_AddMonoid_mk_node x0 x1 x2 x3 x4 x5 x6) = (Lean_AddMonoid_mk_node y0 y1 y2 y3 y4 y5 y6) -> x0 = y0.
@@ -5106,6 +5262,17 @@ let t. assume Ht: t :e Lean_AddCommMonoid.
 exact SepE2 1 (fun z => P t) (Lean_AddCommMonoid_rec 0 t) (Lean_AddCommMonoid_rec_type (fun t => {z :e 1 | P t}) 0 M0 t Ht).
 Qed.
 
+
+Theorem Lean_AddCommMonoid_rec_proof_ok : forall motive:set -> set,
+  0 :e (Pi_ x0 :e (Lean_AddMonoid P0), (Pi_ x1 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 x0) 0)) 0)) 0) q0) q1)) ((((proj1 ((proj1 ((proj1 x0) 0))
+    0)) 0) q1) q0))))}, (motive (Lean_AddCommMonoid_mk_node x0 x1)))) ->
+  forall t :e Lean_AddCommMonoid, 0 :e (motive t).
+let motive. assume H0.
+apply Lean_AddCommMonoid_ind.
+  let x0. assume Hx0. let x1. assume Hx1. exact (Pi_0_ap {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (((Lean_Eq_Prop P0) ((((proj1 ((proj1 ((proj1 x0) 0)) 0)) 0) q0) q1)) ((((proj1 ((proj1 ((proj1
+    x0) 0)) 0)) 0) q1) q0))))} (fun x1 => (motive (Lean_AddCommMonoid_mk_node x0 x1))) (Pi_0_ap (Lean_AddMonoid P0) (fun x0 => (Pi_ x1 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (((Lean_Eq_Prop
+    P0) ((((proj1 ((proj1 ((proj1 x0) 0)) 0)) 0) q0) q1)) ((((proj1 ((proj1 ((proj1 x0) 0)) 0)) 0) q1) q0))))}, (motive (Lean_AddCommMonoid_mk_node x0 x1)))) H0 x0 Hx0) x1 Hx1).
+Qed.
 
 
 

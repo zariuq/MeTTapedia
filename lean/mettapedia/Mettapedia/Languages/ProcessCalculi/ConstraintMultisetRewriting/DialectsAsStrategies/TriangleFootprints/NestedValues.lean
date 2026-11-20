@@ -20,9 +20,10 @@ variable may occur at any depth of a value the body builds: `(= (nest $x) (pair 
 
 * `SettlesN`: `SettlesV` with a fourth case, a value: a constructor head applied to values.
 * `settlesN_agree`, `answersN_agree`: both machines evaluate every settling term to the same answer
-  list, PeTTa for every open presentation.
-* `settlesN_determined`, `every_complete_run_n`: every complete run of HE (historical lookup)
-  publishes PeTTa's values.
+  list, PeTTa for every open presentation (the model's order; `answersN_agree` states the bag that
+  a complete run from HE's entry publishes).
+* `settlesN_determined`, `every_complete_run_n`: a complete run of HE exists and every complete run
+  (historical lookup) publishes the bag of PeTTa's values.
 * Controls `nest_every_run`, `dup_every_run`; `nest_not_settlesV` (the extension is strict).
 -/
 
@@ -821,7 +822,8 @@ section Joint
 variable {lookup : CastLookup} {policy : Policy}
 
 /-- **Both machines evaluate every settling term to the same answer list**, PeTTa on every flat or
-value presentation. -/
+value presentation. The list is the model's order, which is PeTTa's; HE's claim is the bag
+(`answersN_agree`, `every_complete_run_n`). -/
 theorem settlesN_agree (answers : AnswersUndefined lookup) {atoms : List Atom}
     (program : NestedProgram dispatch atoms) {t : Atom} (settles : SettlesN dispatch atoms t) :
     ∃ L : List Atom, (∀ a ∈ L, Answerable a) ∧ HEEvaluates dispatch lookup policy atoms t L ∧
@@ -869,8 +871,9 @@ theorem settlesN_agree (answers : AnswersUndefined lookup) {atoms : List Atom}
         (Value.node head each)
       exact ⟨[.expression (.symbol g :: vs)], joint.1, joint.2.1, petta_openN_value head⟩
 
-/-- **The answers agree with value bodies**: HE's complete run from its entry configuration and,
-from some fuel on, PeTTa's streaming run give the same atoms, in order. -/
+/-- **The answers agree with value bodies, as bags**: HE's machine has a complete run from its entry
+configuration, and from some fuel on PeTTa's streaming run gives the bag of atoms it published. The
+model's run gives PeTTa's list (`settlesN_agree`); order is not an observation of HE. -/
 theorem answersN_agree (answers : AnswersUndefined lookup) {atoms : List Atom}
     (program : NestedProgram dispatch atoms) {c : Atom} (settles : SettlesN dispatch atoms c) :
     ∃ (heAnswers : List Result) (N : Nat),
@@ -879,8 +882,9 @@ theorem answersN_agree (answers : AnswersUndefined lookup) {atoms : List Atom}
           ⟨Space.ofList atoms, .returning [], [], heAnswers⟩ ∧
         observe ⟨Space.ofList atoms, .returning [], [], heAnswers⟩ = some heAnswers ∧
         ∀ n, N ≤ n →
-          Streaming.values (Streaming.advance (translate atoms) n
-            (Streaming.enter { state := store atoms } c)) = heAnswers.map (fun r => r.1.erase) := by
+          ((Streaming.values (Streaming.advance (translate atoms) n
+            (Streaming.enter { state := store atoms } c)) : List Atom) : Multiset Atom) =
+            ((heAnswers.map (fun r => r.1.erase) : List Atom) : Multiset Atom) := by
   obtain ⟨L, clean, he, petta⟩ := settlesN_agree (policy := policy) answers program settles
   obtain ⟨R, eraseR, path, observed⟩ := he_complete he
   obtain ⟨N, stable⟩ := petta_complete (settlesN_facts settles).ground clean
@@ -965,8 +969,9 @@ theorem every_complete_run_n (policy : Policy) {atoms : List Atom}
         Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy)
             (load (Space.ofList atoms) c Atom.undefinedType)
             ⟨Space.ofList atoms, .returning [], [], emitted⟩ →
-          Streaming.values (Streaming.advance (translate atoms) n
-            (Streaming.enter { state := store atoms } c)) = emitted.map (fun r => r.1.erase) := by
+          ((Streaming.values (Streaming.advance (translate atoms) n
+            (Streaming.enter { state := store atoms } c)) : List Atom) : Multiset Atom) =
+            ((emitted.map (fun r => r.1.erase) : List Atom) : Multiset Atom) := by
   obtain ⟨L, _, determined⟩ := settlesN_determined (policy := policy) program settles
   obtain ⟨heAnswers, N, path, _, agree⟩ := answersN_agree (policy := policy) raw_answers program
     settles
@@ -1092,7 +1097,7 @@ theorem nest_every_run (policy : Policy) :
   refine ⟨⟨⟨heAnswers, path⟩, fun emitted run => ?_⟩, computed⟩
   have later := every (max N 80) (le_max_left _ _) emitted run
   rw [advance_stable (List.eq_nil_of_length_eq_zero finished) _ (le_max_right _ _), computed] at later
-  exact later.symm
+  exact List.perm_singleton.mp (Multiset.coe_eq_coe.mp later.symm)
 
 /-- **Positive control: a list built from the variable.** `(dup a)` gives `(Cons a (Cons a Nil))` on
 every complete HE run and in PeTTa. -/
@@ -1117,7 +1122,7 @@ theorem dup_every_run (policy : Policy) :
   refine ⟨⟨⟨heAnswers, path⟩, fun emitted run => ?_⟩, computed⟩
   have later := every (max N 80) (le_max_left _ _) emitted run
   rw [advance_stable (List.eq_nil_of_length_eq_zero finished) _ (le_max_right _ _), computed] at later
-  exact later.symm
+  exact List.perm_singleton.mp (Multiset.coe_eq_coe.mp later.symm)
 
 /-- **Negative control: the extension is strict.** `(nest a)` does not settle in `BoundVariables`'s
 sense: its instance has a call as an argument. -/

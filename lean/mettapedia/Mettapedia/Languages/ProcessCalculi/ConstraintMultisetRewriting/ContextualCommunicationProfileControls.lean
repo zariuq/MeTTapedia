@@ -1,4 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualCommunicationPlugging
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualCommunicationGround
 import Mettapedia.OSLF.Syntax.RhoContextScopeComparison
 
 /-!
@@ -126,12 +127,12 @@ theorem process_reduction_does_not_become_equality :
         (drop (quote visible)) visible :=
   ⟨suspended_not_visible, process_drop_source_step visible⟩
 
-theorem output_payload_reaction_permission_is_absent :
+theorem output_payload_reaction_permission_is_not_granted :
     ¬ RhoScopedEquationEventControls.parallelPermission Srt.pr Op.out 1 := by
   intro impossible
   exact impossible
 
-theorem input_body_reaction_permission_is_absent :
+theorem input_body_reaction_permission_is_not_granted :
     ¬ RhoScopedEquationEventControls.parallelPermission Srt.pr Op.inp 1 := by
   intro impossible
   exact impossible
@@ -205,16 +206,16 @@ theorem visible_normalizes_to_one_occurrence : normalized visible = {visible} :=
   rw [RhoScopedConstructorInventory.output_components]
   rfl
 
-/-- A public absence observer distinguishes the two stages. A comparison
+/-- A public none observer distinguishes the two stages. A comparison
 that hides this intermediate state must state that restriction or arrange
 private preparation/atomic publication; endpoint agreement is insufficient. -/
-theorem public_absence_distinguishes_staging
+theorem public_none_distinguishes_staging
     (middle after : Configuration (Process []) (ContextualCommunicationProfiles.Occurrence []))
     (middleRep : Represents middle suspended) (afterRep : Represents after visible) :
     Check.Holds (ContextualCommunicationProfiles.action []) (ContextualCommunicationProfiles.action []).identity
-      ContextualCommunicationProfiles.label middle.present (.absent visible) ∧
+      ContextualCommunicationProfiles.label middle.present (.predicate .none visible) ∧
     ¬ Check.Holds (ContextualCommunicationProfiles.action []) (ContextualCommunicationProfiles.action []).identity
-      ContextualCommunicationProfiles.label after.present (.absent visible) := by
+      ContextualCommunicationProfiles.label after.present (.predicate .none visible) := by
   have mid := middleRep.2
   have final := afterRep.2
   rw [suspended_normalizes_to_one_occurrence] at mid
@@ -227,27 +228,27 @@ theorem public_absence_distinguishes_staging
     rw [mid, Multiset.mem_singleton] at member
     simp only [SubstitutionAction.apply_identity, member]
     exact Ne.symm suspended_not_visible
-  · intro absent
+  · intro missing
     have member : visible ∈ labels ContextualCommunicationProfiles.label after.present := by
       rw [final]
       exact Multiset.mem_singleton_self _
     obtain ⟨occurrence, present, same⟩ := Multiset.mem_map.mp member
-    have refused := absent occurrence present
+    have refused := missing occurrence present
     simp only [SubstitutionAction.apply_identity, same] at refused
     exact refused rfl
 
 /-- At the closed source context, the separating observation is also the
 actual universal guard entailment required by the CMR step. -/
-theorem public_absence_entailment_distinguishes_staging
+theorem public_none_entailment_distinguishes_staging
     (middle after : Configuration (Process []) (ContextualCommunicationProfiles.Occurrence []))
     (middleRep : Represents middle suspended) (afterRep : Represents after visible) :
     (ContextualCommunicationProfiles.action []).Entails middle.equations
       (fun assignment => Check.Holds (ContextualCommunicationProfiles.action []) assignment
-        ContextualCommunicationProfiles.label middle.present (.absent visible)) ∧
+        ContextualCommunicationProfiles.label middle.present (.predicate .none visible)) ∧
     ¬ (ContextualCommunicationProfiles.action []).Entails after.equations
       (fun assignment => Check.Holds (ContextualCommunicationProfiles.action []) assignment
-        ContextualCommunicationProfiles.label after.present (.absent visible)) := by
-  obtain ⟨beforeCheck, afterCheck⟩ := public_absence_distinguishes_staging middle after middleRep afterRep
+        ContextualCommunicationProfiles.label after.present (.predicate .none visible)) := by
+  obtain ⟨beforeCheck, afterCheck⟩ := public_none_distinguishes_staging middle after middleRep afterRep
   constructor
   · intro assignment _
     have identity : assignment = (ContextualCommunicationProfiles.action []).identity := by
@@ -257,5 +258,277 @@ theorem public_absence_entailment_distinguishes_staging
     exact beforeCheck
   · intro entailed
     exact afterCheck (entailed _ afterRep.1)
+
+namespace Payload
+
+open RhoPayloadPresentation
+open ContextualFamily
+
+abbrev base := ContextualCommunication.Payload.base
+abbrev locals := ContextualCommunication.Payload.locals
+
+def channel : Term base [] .nm := freeT "receive"
+def code {Γ : Ctx base} : Term base Γ .pr := outT (freeT "answer") nilT
+def runReceived : Term base [.pr] .pr := .var .zero
+def nameReceived : Term base [.pr] .pr := outT received nilT
+def nestedReceived : Term base [.pr] .pr := inpT (freeT "nested") (.var (.succ .zero))
+def literalDrop : Term base [.pr] .pr := drpT (quoT code)
+
+section CanonicalSurface
+
+open Mettapedia.OSLF.MeTTaIL.DerivedPresentationSyntax (FreeSortContext)
+open Mettapedia.OSLF.MeTTaIL.Syntax (rhoReflectivePresentation)
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus
+open Canonical (canonicalize)
+open RhoPayloadParameterizedRuntime (mapClass mapClass_eq_iff)
+open ContextualCommunicationAdequacy.Payload (Store InterpretedStep
+  every_source_has_store canonical_surface_step_iff_firing canonical_surface_firing_reflects_paper)
+
+private theorem emptyHasNoFreeProcesses (name : String) :
+    FreeSortContext.empty name ≠ some rhoReflectivePresentation.processSort := by
+  simp [FreeSortContext.empty]
+
+/-- The wrapped name is compiled before communicating. The physical
+commit and the paper reduction of the original spelling read back to
+the same supplied process, not to the raw dangling-index residual. -/
+theorem wrapped_surface_communicates_on_the_step :
+    ∃ (safe : canonicalWholeNameSafe RawBoundary.surfaceSpelling = true)
+      (before after : Store []) (residual : ParameterizedRewriteSystem.Process FreeSortContext.empty),
+      ContextualCommunicationAdequacy.Payload.Represents before
+        (mapClass emptyHasNoFreeProcesses
+          (canonicalProcess RawBoundary.surfaceSpelling RawBoundary.surfaceSpelling_typed safe)) ∧
+      InterpretedStep before after ∧
+      ContextualCommunicationAdequacy.Payload.Represents after
+        (mapClass emptyHasNoFreeProcesses residual) ∧
+      Nonempty (Reduction.Reduces RawBoundary.surfaceSpelling residual.1) ∧
+      canonicalize residual.1 =
+        canonicalize (.apply "POutput" [.apply "NQuote" [.apply "PZero" []], .apply "PZero" []]) := by
+  obtain ⟨safe, reached, reacts, expected⟩ := RawBoundary.canonical_surface_communicates
+  let entry := canonicalProcess RawBoundary.surfaceSpelling RawBoundary.surfaceSpelling_typed safe
+  let intended := ParameterizedRewriteSystem.stepTarget entry ⟨1, reacts⟩
+  obtain ⟨before, represented⟩ := every_source_has_store (mapClass emptyHasNoFreeProcesses entry)
+  obtain ⟨after, fired, final⟩ :=
+    (canonical_surface_step_iff_firing emptyHasNoFreeProcesses
+      RawBoundary.surfaceSpelling_typed safe (target := intended) represented).mp ⟨reached, reacts, rfl⟩
+  obtain ⟨residual, _, paper, readback⟩ :=
+    canonical_surface_firing_reflects_paper emptyHasNoFreeProcesses
+      RawBoundary.surfaceSpelling_typed safe represented fired
+  have same := (mapClass_eq_iff emptyHasNoFreeProcesses residual intended).mp
+    (readback.readback.symm.trans final.readback)
+  exact ⟨safe, before, after, residual, represented, fired, readback, paper, same.trans expected⟩
+
+end CanonicalSurface
+
+section ScopedRelay
+
+open RhoPayloadParameterizedRuntime (classStep classStep_cls)
+open ContextualCommunicationAdequacy.Payload (Store InterpretedStep source_step_has_firing
+  target_step_reads_back reindexed_step_has_firing)
+
+attribute [local instance] Classical.propDecidable
+
+private def ambientProcess : Term base [.pr] .pr := .var .zero
+private def relayChannel : Term base [.pr] .nm := freeT "relay"
+
+/-- The next channel comes from the received process. The payload of that
+next send is the caller's process, not the received one. -/
+private def relayBody : Term base [.pr, .pr] .pr :=
+  outT (quoT (.var .zero)) (.var (.succ .zero))
+
+private def receiveTwice : Term base [.pr, .pr] .pr :=
+  parT (.var .zero) (.var .zero)
+
+private def listener : Term base [.pr] .pr := inpT (quoT (drpT (quoT code))) receiveTwice
+
+/-- Even an executable COMM inside the quoted packet is suspended here. -/
+private def sealed : Term base [.pr] .pr :=
+  drpT (quoT (parT code (inpT (freeT "answer") (.var .zero))))
+
+private def relayStart : Term base [.pr] .pr :=
+  parT (parT (outT (quoT (drpT relayChannel)) code) (inpT relayChannel relayBody))
+    (parT listener sealed)
+
+private def relayMiddle : Term base [.pr] .pr :=
+  parT (parT (outT (quoT code) ambientProcess) listener) sealed
+
+private def relayEnd : Term base [.pr] .pr :=
+  parT (parT ambientProcess ambientProcess) sealed
+
+private theorem relay_step :
+    Steps strictRules relayStart relayMiddle := by
+  apply steps_of_equiv
+    (equiv_parT (equiv_parT (equiv_outT (quoteDrop_equiv relayChannel) (.refl _)) (.refl _)) (.refl _))
+    (parT_assoc (outT (quoT code) ambientProcess) listener sealed).symm
+  exact steps_parCong [] (parT listener sealed) (steps_comm [] relayChannel code relayBody)
+
+private theorem relay_second_step :
+    Steps strictRules relayMiddle relayEnd := by
+  apply steps_of_equiv
+    (equiv_parT (equiv_parT (.refl _)
+      (equiv_inpT (quoteDrop_equiv (quoT code)) (.refl _))) (.refl _)) (.refl _)
+  exact steps_parCong [] sealed (steps_comm [] (quoT code) ambientProcess receiveTwice)
+
+private theorem relay_end_has_no_step (target : Cls [.pr] .pr) :
+    ¬ classStep (cls relayEnd) target := by
+  intro reaction
+  have represented : classStep (cls relayEnd) (cls (Quotient.out target)) :=
+    (RhoPayloadPresentation.cls_out target).symm ▸ reaction
+  exact no_strict_step_of_no_output (source := relayEnd) rfl
+    ((classStep_cls _ _).mp represented)
+
+local notation "Rep" => ContextualCommunicationAdequacy.Payload.Represents
+
+/-- A relay at open scope runs twice, retains the untouched packet, and
+publishes two occurrences of the exact caller process. The suspended
+packet alone cannot provide a third reaction. -/
+theorem scoped_relay_has_two_commits :
+    ∃ (before middle after : Store [.pr]),
+      Rep before (cls relayStart) ∧ InterpretedStep before middle ∧
+      Rep middle (cls relayMiddle) ∧ InterpretedStep middle after ∧
+      Rep after (cls relayEnd) ∧ (∀ next, ¬ InterpretedStep after next) := by
+  obtain ⟨world, labels⟩ := IndexedOccurrences.realize (atoms relayStart)
+  let before : Store [.pr] := ⟨[], world⟩
+  have starts : Rep before (cls relayStart) := ⟨(ContextualCommunicationAdequacy.Payload.action _).models_nil _, labels⟩
+  obtain ⟨middle, first, atMiddle⟩ := source_step_has_firing starts ((classStep_cls _ _).mpr relay_step)
+  obtain ⟨after, second, atEnd⟩ := source_step_has_firing atMiddle ((classStep_cls _ _).mpr relay_second_step)
+  refine ⟨before, middle, after, starts, first, atMiddle, second, atEnd, ?_⟩
+  intro next extra
+  obtain ⟨target, invented, _⟩ := target_step_reads_back atEnd extra
+  exact relay_end_has_no_step target invented
+
+private def supplyCaller : Sub base [.pr] []
+  | _, .zero => parT code code
+
+/-- Supplying a parallel caller repacks each of the two result variables
+into two code occurrences. The quoted packet is unchanged. -/
+theorem supplying_the_caller_repackages_the_same_relay :
+    ∃ (before after : Store []),
+      Rep before (bindQ supplyCaller (cls relayMiddle)) ∧ InterpretedStep before after ∧
+      labels ContextualCommunicationAdequacy.Payload.label after.present =
+        Multiset.replicate 4 (cls (code (Γ := []))) + {cls (bind supplyCaller sealed)} := by
+  obtain ⟨_, middle, finish, _, _, original, second, atEnd, _⟩ := scoped_relay_has_two_commits
+  obtain ⟨world, values⟩ := IndexedOccurrences.realize (atoms (bind supplyCaller relayMiddle))
+  let before : Store [] := ⟨[], world⟩
+  have repacked : Rep before (bindQ supplyCaller (cls relayMiddle)) :=
+    ⟨(ContextualCommunicationAdequacy.Payload.action _).models_nil _, values⟩
+  obtain ⟨_, after, _, fired, _, observed⟩ :=
+    reindexed_step_has_firing supplyCaller original second repacked
+  rw [atEnd.2, ← atomsQ_bindQ] at observed
+  exact ⟨before, after, repacked, fired, observed⟩
+
+/-- An ambient variable can be assigned a name to solve an input equation
+without that equation holding in the current scope. This is why source
+reaction admission uses the fixed interpretation, not satisfiability alone. -/
+theorem mere_channel_unifiability_is_not_fixed_matching :
+    let a := ContextualCommunicationAdequacy.Payload.action [.nm]
+    let unknown : Term base [.nm] .nm := .var .zero
+    let fixed : Term base [.nm] .nm := freeT "fixed"
+    let problem := [(cls (inpT unknown nilT), cls (inpT fixed nilT))]
+    a.Consistent problem ∧ ¬ a.Models a.identity problem := by
+  dsimp only
+  let a := ContextualCommunicationAdequacy.Payload.action [.nm]
+  let unknown : Term base [.nm] .nm := .var .zero
+  let fixed : Term base [.nm] .nm := freeT "fixed"
+  let fill : Sub base [.nm] [.nm] := fun _ position =>
+    match position with
+    | .zero => fixed
+  have different : cls unknown ≠ cls fixed := by
+    intro equal
+    have core := qcore_invariant (cls_eq_iff.mp equal)
+    change QKey.var .zero = QKey.free "fixed" at core
+    cases core
+  refine ⟨⟨fill, (a.models_cons _ _ _).mpr ⟨rfl, a.models_nil _⟩⟩, ?_⟩
+  intro atCurrent
+  have solved := (a.models_cons a.identity (cls (inpT unknown nilT), cls (inpT fixed nilT)) []).mp atCurrent
+  have same := solved.1
+  change a.apply a.identity (cls (inpT unknown nilT)) =
+    a.apply a.identity (cls (inpT fixed nilT)) at same
+  rw [a.apply_identity, a.apply_identity] at same
+  have parts := inpParts_invariant (cls_eq_iff.mp same)
+  change ({(cls unknown, cls nilT)} : Multiset _) = {(cls fixed, cls nilT)} at parts
+  exact different (congrArg Prod.fst (Multiset.singleton_inj.mp parts))
+
+end ScopedRelay
+
+variable {V W : Type} (captures : V → MetaArity base) (next : W → MetaArity base)
+  (occupied : Finset Nat)
+
+theorem actual_communication_is_admitted :
+    ContextualActivatedStep.Valid locals captures occupied ContextualCommunicationGround.Payload.selection
+      (ContextualCommunication.Payload.rule captures)
+      (ContextualCommunicationGround.Payload.rows captures channel code runReceived)
+      (ContextualCommunicationGround.Payload.before captures)
+      (ContextualCommunicationGround.Payload.outputs captures occupied) :=
+  ContextualCommunicationGround.Payload.activation_valid captures channel code runReceived occupied
+
+theorem received_process_is_the_result
+    (assignment : Assignment (ContextualCommunicationGround.Payload.active captures) next)
+    (solved : ContextualFrameUnifier.Models assignment
+      (ContextualCommunicationGround.Payload.problem captures channel code runReceived occupied)) :
+    ContextualFamily.instantiate assignment (ContextualCommunicationGround.Payload.outputs captures occupied 2) =
+      ContextualFamily.Rigid.includeTerm next (code (Γ := [])) :=
+  ContextualCommunicationGround.Payload.result_in_every_solution captures channel code runReceived occupied next assignment solved
+
+theorem received_name_is_quoted
+    (assignment : Assignment (ContextualCommunicationGround.Payload.active captures) next)
+    (solved : ContextualFrameUnifier.Models assignment
+      (ContextualCommunicationGround.Payload.problem captures channel code nameReceived occupied)) :
+    ContextualFamily.instantiate assignment (ContextualCommunicationGround.Payload.outputs captures occupied 2) =
+      ContextualFamily.Rigid.includeTerm next (outT (quoT code) nilT : Term base [] .pr) :=
+  ContextualCommunicationGround.Payload.result_in_every_solution captures channel code nameReceived occupied next assignment solved
+
+theorem nested_receiver_does_not_capture_payload
+    (assignment : Assignment (ContextualCommunicationGround.Payload.active captures) next)
+    (solved : ContextualFrameUnifier.Models assignment
+      (ContextualCommunicationGround.Payload.problem captures channel code nestedReceived occupied)) :
+    ContextualFamily.instantiate assignment (ContextualCommunicationGround.Payload.outputs captures occupied 2) =
+      ContextualFamily.Rigid.includeTerm next (inpT (freeT "nested") code : Term base [] .pr) :=
+  ContextualCommunicationGround.Payload.result_in_every_solution captures channel code nestedReceived occupied next assignment solved
+
+theorem receiving_does_not_execute_a_literal_drop
+    (assignment : Assignment (ContextualCommunicationGround.Payload.active captures) next)
+    (solved : ContextualFrameUnifier.Models assignment
+      (ContextualCommunicationGround.Payload.problem captures channel code literalDrop occupied)) :
+    ContextualFamily.instantiate assignment (ContextualCommunicationGround.Payload.outputs captures occupied 2) =
+        ContextualFamily.Rigid.includeTerm next (drpT (quoT code) : Term base [] .pr) ∧
+      ∀ target : Term base [] .pr, ¬ Steps strictRules (drpT (quoT code)) target :=
+  ⟨ContextualCommunicationGround.Payload.result_in_every_solution captures channel code literalDrop occupied next assignment solved,
+    fun _ => drop_inert_strict _ _⟩
+
+theorem one_occurrence_cannot_supply_both_consumed_premises :
+    ¬ ContextualActivatedStep.Valid locals captures occupied
+      (⟨[0, 0], [], [2]⟩ : Selection Nat)
+      (ContextualCommunication.Payload.rule captures)
+      (ContextualCommunicationGround.Payload.rows captures channel code runReceived)
+      (ContextualCommunicationGround.Payload.before captures)
+      (fun _ => ContextualCommunicationGround.Payload.outputs captures occupied 2) := by
+  intro valid
+  exact (by decide : ¬ ([0, 0] : List Nat).Nodup) valid.take_distinct
+
+theorem distinct_free_channels_cannot_solve_the_rule
+    (assignment : Assignment (ContextualCommunication.Payload.source captures) next) :
+    ¬ (ContextualFamily.instantiate assignment
+          ((ContextualCommunication.Payload.rule captures).take[0]'(by change 0 < 2; decide)) =
+        Rigid.includeTerm next (inpT (freeT "left") runReceived) ∧
+      ContextualFamily.instantiate assignment
+          ((ContextualCommunication.Payload.rule captures).take[1]'(by change 1 < 2; decide)) =
+        Rigid.includeTerm next (outT (freeT "right") code)) := by
+  rintro ⟨receiver, sender⟩
+  change ContextualCommunication.Payload.input
+    (ContextualFamily.instantiate assignment
+      (generator (ContextualCommunication.Payload.source captures) (.inl .channel)))
+    (ContextualFamily.instantiate assignment
+      (generator (ContextualCommunication.Payload.source captures) (.inl .continuation))) = _ at receiver
+  change ContextualCommunication.Payload.output
+    (ContextualFamily.instantiate assignment
+      (generator (ContextualCommunication.Payload.source captures) (.inl .channel)))
+    (ContextualFamily.instantiate assignment
+      (generator (ContextualCommunication.Payload.source captures) (.inl .payload))) = _ at sender
+  erw [instantiate_generator, instantiate_generator] at receiver sender
+  have channels := (ContextualCommunication.Payload.input_fields receiver).1.symm.trans
+    (ContextualCommunication.Payload.output_fields sender).1
+  simp [Rigid.includeTerm, freeT] at channels
+
+end Payload
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualCommunicationProfileControls

@@ -1,28 +1,28 @@
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentCensusReadsValidHead
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentClassificationReadsValidHead
 
 /-!
-# A conditional decision for the skeleton family, from the census rows not yet read
+# A conditional decision for the skeleton family, from the classification rows not yet read
 
-Every nonempty store of the permuted Miller class has, from some budget on, a census head on a preparation that no
-longer changes, with normal codes (`ContextualDependentCoverageReadersHalf.tower_stable_census_head`). Three rows of
-the census are read by the skeleton family (`CoveredHead`, `tower_skeletonReads_of_covered`):
+Every nonempty store of the permuted Miller class has, from some budget on, a classified head on a preparation that no
+longer changes, with normal codes (`ContextualDependentCoverageReadersHalf.tower_stable_classified_head`). Three rows of
+the classification are read by the skeleton family (`CoveredHead`, `tower_skeletonReads_of_covered`):
 
-* the census head is valid: the conversion scan drops it (`tower_underReads_of_validHead`);
+* the classified head is valid: the conversion scan drops it (`tower_underReads_of_validHead`);
 * its sides, η-expanded to the annotation's Π count, clash at their heads: distinct skeletons at a rigid base, distinct
   type kinds at a universe, reflexivity against a neutral term (`tower_etaReads_of_clash`), at any depths of the two
   sides;
 * its η-expanded sides have distinct skeletons, at any base type (`tower_skeletonReads_of_clash`).
 
-So **a conditional decision** (`tower_skeleton_decided_of_uncovered`): if every census head outside these three rows
+So **a conditional decision** (`tower_skeleton_decided_of_uncovered`): if every classified head outside these three rows
 is read, the skeleton family decides every store of the dynamic pattern fragment, with a principal answer or a
-certified refutation, constant at every larger budget. The hypothesis is the rest of the census half of coverage;
+certified refutation, constant at every larger budget. The hypothesis is the rest of the classification half of coverage;
 among its rows are the pattern rows, spines of one head with one skeleton, formers of one kind at a universe, and pairs
 against neutral terms. At the tower the hypothesis fails: the conclusion would decide `crossStore`, solvable and
 without principal answer (`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`). For every store,
 runs are exact; on `crossStore` they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`).
 
-The census can be read at the full depth: the η-long opened sides of every equation of the class with normal sides
-are of a census kind at the annotation's Π count (`eta_kind`), so the hypothesis may use that kind
+The classification can be read at the full depth: the η-long opened sides of every equation of the class with normal sides
+are of a classified kind at the annotation's Π count (`eta_kind`), so the hypothesis may use that kind
 (`tower_skeleton_decided_of_uncovered_kinds`).
 -/
 
@@ -39,7 +39,7 @@ open ContextualDependentEta ContextualDependentUpdate ContextualDependentWorklis
 open ContextualDependentCoverageReadersHalf ContextualDependentConstantHeads ContextualDependentMillerClosure
 open ContextualDependentPatternFiring.Controls ContextualDependentAcceptance4
 
-/-- **The census rows read so far**, on one equation. -/
+/-- **The classification rows read so far**, on one equation. -/
 def CoveredHead {Γ : Context setting.R} (equation : Equation (TotalTerm Γ)) : Prop :=
   (frames setting.levels).E equation.1 equation.2 ∨
     HeadClash setting.R 0 equation.1.1.code (expandTo (piCount equation.1.1.code) equation.1.2.code)
@@ -47,7 +47,7 @@ def CoveredHead {Γ : Context setting.R} (equation : Equation (TotalTerm Γ)) : 
     SkeletonClash 0 equation.1.1.code (expandTo (piCount equation.1.1.code) equation.1.2.code)
       (expandTo (piCount equation.1.1.code) equation.2.2.code)
 
-/-- **A covered census head is read** by the skeleton family from some budget on. -/
+/-- **A covered classified head is read** by the skeleton family from some budget on. -/
 theorem tower_skeletonReads_of_covered {Θ : Context setting.R} {problem : EquationStore (TotalTerm Θ)}
     {threshold : Nat}
     (constant : ∀ larger, threshold ≤ larger → towerPrepare larger problem = towerPrepare threshold problem)
@@ -64,7 +64,7 @@ theorem tower_skeletonReads_of_covered {Θ : Context setting.R} {problem : Equat
     exact ⟨bound, fun larger enough => .inl (reads larger enough)⟩
   · exact tower_skeletonReads_of_clash constant member types skeletons
 
-/-- **Conditional decision for the tower's skeleton family, from the census rows not yet read**: if every census head
+/-- **Conditional decision for the tower's skeleton family, from the classification rows not yet read**: if every classified head
 of a constant preparation outside the covered rows is read from some budget on, the family decides every store of the
 dynamic pattern fragment, with a principal answer or a certified refutation, constant at every larger budget. At the
 tower the hypothesis fails: the conclusion would decide `crossStore`
@@ -76,49 +76,49 @@ theorem tower_skeleton_decided_of_uncovered
       PermutedMiller setting.levels problem → problem ≠ [] → ∀ threshold,
         (∀ larger, threshold ≤ larger → towerPrepare larger problem = towerPrepare threshold problem) →
         ∀ equation ∈ (towerPrepare threshold problem).remaining,
-          ContextualDependentNormalizing.NormalEquation (fun _ => (0 : Nat)) equation → CensusHead equation →
+          ContextualDependentNormalizing.NormalEquation (fun _ => (0 : Nat)) equation → ClassifiedHead equation →
           ¬ CoveredHead equation → ∃ bound, ∀ larger, bound ≤ larger → TowerSkeletonReads larger problem)
     {Θ : Context setting.R} {problem : EquationStore (TotalTerm Θ)} (inside : InFragmentStore problem) :
     ∃ budget, ∀ larger, budget ≤ larger →
       run (skeletonTower.solver larger) problem larger = run (skeletonTower.solver budget) problem budget ∧
       ((∃ state finished, run (skeletonTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ absent, run (skeletonTower.solver larger) problem larger = .refuted absent)) :=
+        (∃ missing, run (skeletonTower.solver larger) problem larger = .refuted missing)) :=
   tower_skeleton_decided_of_skeletonReads (fun permuted nonempty => by
-      obtain ⟨threshold, constant, equation, member, normal, head⟩ := tower_stable_census_head permuted nonempty
+      obtain ⟨threshold, constant, equation, member, normal, head⟩ := tower_stable_classified_head permuted nonempty
       by_cases covered : CoveredHead equation
       · exact tower_skeletonReads_of_covered constant member normal head.1 covered
       · exact uncovered permuted nonempty threshold constant equation member normal head covered)
     inside
 
-/-! ## The census at the full depth -/
+/-! ## The classification at the full depth -/
 
-/-- **The η-long opened sides of an equation with Miller sides are of a census kind**, at the annotation's Π
+/-- **The η-long opened sides of an equation with Miller sides are of a classified kind**, at the annotation's Π
 count. -/
 theorem eta_kind {Γ : Context setting.R} {equation : Equation (TotalTerm Γ)}
     (sides : ContextualDependentShortClosure.FragmentSidesMiller equation)
     (normalLeft : ContextualDependentExecutableJoin.Normal Tower.rules equation.1.2.code)
     (normalRight : ContextualDependentExecutableJoin.Normal Tower.rules equation.2.2.code) :
     Kind (openedFlexible (piCount equation.1.1.code))
-      (ContextualDependentCensus.openNormal (piCount equation.1.1.code)
+      (ContextualDependentClassification.openNormal (piCount equation.1.1.code)
         (expandTo (piCount equation.1.1.code) equation.1.2.code))
-      (ContextualDependentCensus.openNormal (piCount equation.1.1.code)
+      (ContextualDependentClassification.openNormal (piCount equation.1.1.code)
         (expandTo (piCount equation.1.1.code) equation.2.2.code)) := by
   have empty := computation_empty ContextualDependentPiSpine.Controls.rigid
   obtain ⟨left, right⟩ := ContextualDependentCumulativeClosure.side_reduct ContextualDependentPiSpine.Controls.rigid
     tower_stronglyNormalizing sides
   have opened : ∀ {code : Tower.Tm Γ.arity}, ContextualDependentCumulativeClosure.MarkedReduct Tower.rules
       (fun _ => true) code → ContextualDependentExecutableJoin.Normal Tower.rules code →
-      miller (openedFlexible (piCount equation.1.1.code)) (ContextualDependentCensus.openNormal
+      miller (openedFlexible (piCount equation.1.1.code)) (ContextualDependentClassification.openNormal
         (piCount equation.1.1.code) (expandTo (piCount equation.1.1.code) code)) = true := fun reduct normal =>
     ContextualDependentCumulativeClosure.opened_of_reduct empty (MarkedReduct.expand empty _ reduct) _ _
-      (ContextualDependentCensus.openCode_star _ _)
-      (ContextualDependentCensus.openNormal_normal empty (normal_expandTo empty _ normal) _)
+      (ContextualDependentClassification.openCode_star _ _)
+      (ContextualDependentClassification.openNormal_normal empty (normal_expandTo empty _ normal) _)
   exact classification (opened left normalLeft) (opened right normalRight)
 
-/-- **Conditional decision for the tower's skeleton family, from the census rows not yet read**, with the census kind
-of the η-long opened sides available: if every census head of a constant preparation outside the covered rows, whose
-η-long opened sides are of a census kind at the annotation's Π count, is read from some budget on, the family decides
+/-- **Conditional decision for the tower's skeleton family, from the classification rows not yet read**, with the classified kind
+of the η-long opened sides available: if every classified head of a constant preparation outside the covered rows, whose
+η-long opened sides are of a classified kind at the annotation's Π count, is read from some budget on, the family decides
 every store of the dynamic pattern fragment, with a principal answer or a certified refutation, constant at every
 larger budget. At the tower the hypothesis fails for the same reason
 (`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`). For every store, runs are exact; on
@@ -128,12 +128,12 @@ theorem tower_skeleton_decided_of_uncovered_kinds
       PermutedMiller setting.levels problem → problem ≠ [] → ∀ threshold,
         (∀ larger, threshold ≤ larger → towerPrepare larger problem = towerPrepare threshold problem) →
         ∀ equation ∈ (towerPrepare threshold problem).remaining,
-          ContextualDependentNormalizing.NormalEquation (fun _ => (0 : Nat)) equation → CensusHead equation →
+          ContextualDependentNormalizing.NormalEquation (fun _ => (0 : Nat)) equation → ClassifiedHead equation →
           ContextualDependentShortClosure.FragmentSidesMiller equation →
           Kind (openedFlexible (piCount equation.1.1.code))
-            (ContextualDependentCensus.openNormal (piCount equation.1.1.code)
+            (ContextualDependentClassification.openNormal (piCount equation.1.1.code)
               (expandTo (piCount equation.1.1.code) equation.1.2.code))
-            (ContextualDependentCensus.openNormal (piCount equation.1.1.code)
+            (ContextualDependentClassification.openNormal (piCount equation.1.1.code)
               (expandTo (piCount equation.1.1.code) equation.2.2.code)) →
           ¬ CoveredHead equation → ∃ bound, ∀ larger, bound ≤ larger → TowerSkeletonReads larger problem)
     {Θ : Context setting.R} {problem : EquationStore (TotalTerm Θ)} (inside : InFragmentStore problem) :
@@ -141,7 +141,7 @@ theorem tower_skeleton_decided_of_uncovered_kinds
       run (skeletonTower.solver larger) problem larger = run (skeletonTower.solver budget) problem budget ∧
       ((∃ state finished, run (skeletonTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ absent, run (skeletonTower.solver larger) problem larger = .refuted absent)) :=
+        (∃ missing, run (skeletonTower.solver larger) problem larger = .refuted missing)) :=
   tower_skeleton_decided_of_uncovered (fun {_} {problem} permuted nonempty threshold constant equation member normal
       head covered => by
       have prepared := ContextualDependentCumulativeClosure.prepare_keeps (S := setting) (fun _ => none)

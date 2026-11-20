@@ -55,8 +55,10 @@ theorem closed_process_wellSorted_iff (pattern : Pattern) :
         HasSort rhoCalc (liftFreeSortContext FreeSortContext.empty) []
           pattern "Proc" := by
       simpa [rhoProc, emptyFreeContexts_agree] using typed
-    exact ⟨languageDefHasSort_to_procWellSorted typed' object canonical,
-      (rho_scopeSafe_iff pattern).mp reflectiveSafe⟩
+    have binderSafe := (rho_scopeSafe_iff pattern).mp reflectiveSafe
+    exact ⟨languageDefHasSort_to_procWellSorted typed' object canonical
+        (Mettapedia.OSLF.MeTTaIL.ReflectiveQuoteAdmission.quotesClosed_of_binderSafeAt binderSafe),
+      binderSafe⟩
   · rintro ⟨typed, binderSafe⟩
     have generated := procWellSorted_toLanguageDefHasSort typed
     have properties := procWellSorted_object_canonical typed
@@ -84,8 +86,10 @@ theorem closed_name_wellSorted_iff (pattern : Pattern) :
         HasSort rhoCalc (liftFreeSortContext FreeSortContext.empty) []
           pattern "Name" := by
       simpa [rhoName, emptyFreeContexts_agree] using typed
-    exact ⟨languageDefHasSort_to_nameWellSorted typed' object canonical,
-      (rho_scopeSafe_iff pattern).mp reflectiveSafe⟩
+    have binderSafe := (rho_scopeSafe_iff pattern).mp reflectiveSafe
+    exact ⟨languageDefHasSort_to_nameWellSorted typed' object canonical
+        (Mettapedia.OSLF.MeTTaIL.ReflectiveQuoteAdmission.quotesClosed_of_binderSafeAt binderSafe),
+      binderSafe⟩
   · rintro ⟨typed, binderSafe⟩
     have generated := nameWellSorted_toLanguageDefHasSort typed
     have properties := nameWellSorted_object_canonical typed

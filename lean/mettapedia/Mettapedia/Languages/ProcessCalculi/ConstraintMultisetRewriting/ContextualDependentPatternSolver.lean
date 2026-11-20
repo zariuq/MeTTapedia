@@ -110,10 +110,10 @@ theorem View.combine_target {Θ : Context S.R} {equation : Equation (TotalTerm �
 
 /-- A reading without solutions refutes every store containing the equation. -/
 theorem View.refutes {Θ : Context S.R} {equation : Equation (TotalTerm Θ)} (view : View equation)
-    (absent : ∀ {Δ : Context S.R} (solution : Δ ⟶ Θ), ¬ view.constraint.Holds solution)
+    (missing : ∀ {Δ : Context S.R} (solution : Δ ⟶ Θ), ¬ view.constraint.Holds solution)
     (rest : EquationStore (TotalTerm Θ)) : ¬ (frames S.levels).Solvable (equation :: rest) := by
   rintro ⟨Δ, solution, solved⟩
-  exact absent solution ((view.holds_iff solution).mp fun other member => by
+  exact missing solution ((view.holds_iff solution).mp fun other member => by
     obtain rfl := List.mem_singleton.mp member
     exact solved _ List.mem_cons_self)
 
@@ -121,13 +121,13 @@ theorem View.refutes {Θ : Context S.R} {equation : Equation (TotalTerm Θ)} (vi
 removes a declaration, or a refutation. -/
 inductive Found {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ)) : Type
   | solved (update : Update S.levels problem) (smaller : update.target.arity < Θ.arity)
-  | refuted (absent : ¬ (frames S.levels).Solvable problem)
+  | refuted (missing : ¬ (frames S.levels).Solvable problem)
 
 def Found.keepLeft {Θ : Context S.R} {rest : EquationStore (TotalTerm Θ)} (equation : Equation (TotalTerm Θ)) :
     Found rest → Found (equation :: rest)
   | .solved update smaller => .solved (update.keepLeft [equation]) smaller
-  | .refuted absent => .refuted fun ⟨Δ, solution, modeled⟩ =>
-      absent ⟨Δ, solution, fun other member => modeled other (List.mem_cons_of_mem _ member)⟩
+  | .refuted missing => .refuted fun ⟨Δ, solution, modeled⟩ =>
+      missing ⟨Δ, solution, fun other member => modeled other (List.mem_cons_of_mem _ member)⟩
 
 /-- Run a computation at the newest declaration of a context. -/
 def throughNewest {Θ : Context S.R} (view : Newest Θ) (problem : EquationStore (TotalTerm Θ))
@@ -214,14 +214,14 @@ def tryActive (fuel : Nat) {Γ : Context S.R} (type : TypeOver Γ) {scopeType : 
                   if smaller : (reading.combine rest moved).target.arity < (extend Γ type).arity then
                     some (.solved (reading.combine rest moved) smaller)
                   else none
-              | .refuted absent =>
+              | .refuted missing =>
                   some (.refuted (reading.refutes (fun solution held =>
-                    absent solution ((recognized.holds_iff solution).mp held)) rest))
+                    missing solution ((recognized.holds_iff solution).mp held)) rest))
               | .pending =>
                   match occursCheck rigid complete normalizes recognized.pattern recognized.right with
-                  | some absent =>
+                  | some missing =>
                       some (.refuted (reading.refutes (fun solution held =>
-                        absent.down solution ((recognized.holds_iff solution).mp held)) rest))
+                        missing.down solution ((recognized.holds_iff solution).mp held)) rest))
                   | none => none
 
 /-- The pattern rule on one store equation, in both orientations. -/
@@ -275,7 +275,7 @@ def round (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ
   match patternRule rigid facts complete roots heads algebra declared choices reducer root normalizes certifyNormal
       fuel problem with
   | some (.solved update smaller) => .progress update (Prod.Lex.left _ _ smaller)
-  | some (.refuted absent) => .refuted absent
+  | some (.refuted missing) => .refuted missing
   | none => ContextualDependentWorklist.round rigid facts complete roots heads algebra declared choices reducer fuel problem
 
 /-- **The composed solver** for the worklist driver. -/
@@ -293,19 +293,19 @@ theorem round_nil (fuel : Nat) {Θ : Context S.R} :
 /-- **Refutations are certified**: a refuting round found a rigid clash, or the pattern rule
 refuted one equation of the store. -/
 theorem round_refuted_grounds (fuel : Nat) {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)}
-    {absent : ¬ (frames S.levels).Solvable problem}
+    {missing : ¬ (frames S.levels).Solvable problem}
     (refuted : round rigid facts complete roots heads algebra declared choices reducer root normalizes certifyNormal
-      fuel problem = .refuted absent) :
+      fuel problem = .refuted missing) :
     ContextualDependentRigid.storeClashes problem = true ∨
-      ∃ absent', patternRule rigid facts complete roots heads algebra declared choices reducer root normalizes
-        certifyNormal fuel problem = some (.refuted absent') := by
+      ∃ missing', patternRule rigid facts complete roots heads algebra declared choices reducer root normalizes
+        certifyNormal fuel problem = some (.refuted missing') := by
   unfold round at refuted
   cases found : patternRule rigid facts complete roots heads algebra declared choices reducer root normalizes
       certifyNormal fuel problem with
   | some result =>
       cases result with
       | solved update smaller => simp only [found] at refuted; cases refuted
-      | refuted absent' => exact .inr ⟨absent', rfl⟩
+      | refuted missing' => exact .inr ⟨missing', rfl⟩
   | none =>
     simp only [found] at refuted
     exact .inl (ContextualDependentWorklist.round_refuted_clashes rigid facts complete roots heads algebra declared

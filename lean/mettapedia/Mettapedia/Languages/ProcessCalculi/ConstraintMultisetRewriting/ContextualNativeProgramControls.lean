@@ -187,24 +187,24 @@ theorem the_full_resource_condition_refuses_the_invalid_prefix :
   intro executable
   have condition : (body {0}).native.sourceResourceCondition.Holds Schedule.unitLabel (world {0}).present :=
     (CompiledSchedule.compile_condition_iff _ _ _).mpr executable
-  have absent : (0 : Nat) ∈ (body {0}).native.sourceResourceCondition.absent := by decide +kernel
+  have missing : (0 : Nat) ∈ (body {0}).native.sourceResourceCondition.missing := by decide +kernel
   have present : (0 : Nat) ∈ (world {0}).present := by decide +kernel
-  exact Finset.disjoint_left.mp condition.2.2.1 absent present
+  exact Finset.disjoint_left.mp condition.2.2.1 missing present
 
-theorem the_native_absence_query_sees_the_conflict (candidate : Candidate (body {0}).native.guardNativeFamily) :
-    ¬ (((body {0}).native.producerAbsentQuery).atSolution candidate).Holds
+theorem the_native_none_query_sees_the_conflict (candidate : Candidate (body {0}).native.guardNativeFamily) :
+    ¬ (((body {0}).native.producerNoneQuery).atSolution candidate).Holds
       (nativeLabels (body {0}).native.guardNativeBank ((body {0}).native.nativeBindingState ∅))
       ((body {0}).native.nativeBindingState ∅).present := by
   intro observed
   have member : ContextualNativeBodies.Body.entryIdentity 0 ∈ regionOf
       (nativeLabels (body {0}).native.guardNativeBank ((body {0}).native.nativeBindingState ∅))
-      ((body {0}).native.nativeBindingState ∅).present ((body {0}).native.producerAbsentQuery.region candidate) := by
+      ((body {0}).native.nativeBindingState ∅).present ((body {0}).native.producerNoneQuery.region candidate) := by
     apply mem_regionOf.mpr
     refine ⟨by decide +kernel, ?_⟩
-    change decide (ContextualNativeBodies.Body.entryIdentity 0 ∈ (body {0}).native.sourceResourceCondition.absent.image ContextualNativeBodies.Body.entryIdentity) = true
+    change decide (ContextualNativeBodies.Body.entryIdentity 0 ∈ (body {0}).native.sourceResourceCondition.missing.image ContextualNativeBodies.Body.entryIdentity) = true
     exact decide_eq_true (Finset.mem_image_of_mem ContextualNativeBodies.Body.entryIdentity (by decide +kernel))
   change regionOf (nativeLabels (body {0}).native.guardNativeBank ((body {0}).native.nativeBindingState ∅))
-    ((body {0}).native.nativeBindingState ∅).present ((body {0}).native.producerAbsentQuery.region candidate) = ∅ at observed
+    ((body {0}).native.nativeBindingState ∅).present ((body {0}).native.producerNoneQuery.region candidate) = ∅ at observed
   rw [observed] at member
   exact Finset.notMem_empty _ member
 

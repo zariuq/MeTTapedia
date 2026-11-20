@@ -99,7 +99,7 @@ theorem block_run : ∀ (n : ℕ) (b : List (RuleName × List Occ × List Occ)) 
       exact .refl
   | n, (i, taken, read) :: rest, C, ⟨valid, later⟩ => by
       have first : Translated schema (C, n) (((schema i).firing n taken read).result Occ.label C, n + 1) :=
-        .fire i taken read valid
+        .fire i taken read (PredicateQueryAdmission.valid_iff_regionValid.mp valid)
       have tail := block_run (n + 1) rest _ later
       have index : n + 1 + rest.length = n + ((i, taken, read) :: rest).length := by
         simp only [List.length_cons]; omega
@@ -125,8 +125,8 @@ the rows of the block's translated run in code order. -/
 theorem deferred_one_firing (n : ℕ) (b : List (RuleName × List Occ × List Occ)) (C : Config)
     (ready : StagedSourceEffects.Executable A Occ.label C (block n b)) :
     let plan := (StagedSourceEffects.compile Occ.label (block n b)).raw
-    let selected := CensusSourceCompilation.selection plan.effect
-    let rule := CensusSourceCompilation.rule Occ.label plan.effect plan.equations
+    let selected := PredicateQuerySourceCompilation.selection plan.effect
+    let rule := PredicateQuerySourceCompilation.rule Occ.label plan.effect plan.equations
     PredicateQueryAdmission.Valid A Occ.label rule (plan.effect.queries.map PredicateQueryAdmission.Query.fixed)
         C selected ∧
       A.Equivalent (selected.result Occ.label rule C).equations (blockEnd C n b).equations ∧
@@ -171,7 +171,7 @@ theorem deferred_failed_branch_leaves_no_trace :
   refine ⟨taken, read, valid, rep, noRemoval, fun taken' read' after result => ?_⟩
   refine StagedSourceEffects.refused_has_no_residue ?_ result
   rintro ⟨-, valid', -⟩
-  exact noRemoval taken' read' valid'
+  exact noRemoval taken' read' (PredicateQueryAdmission.valid_iff_regionValid.mp valid')
 
 /-! ## Obstruction: atomic commits need computed rules -/
 

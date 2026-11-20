@@ -155,7 +155,7 @@ private def lookupObserved (field : Key) : List RewriteRule :=
   let relation := SExpr.atom (lookupRelation field)
   let query := SExpr.atom (variableName field)
   [observed (sourcePrefix field ++ "-lookup-missing-v1")
-    (.list [relation, query, .list [.atom "metta-nullary", .atom "bnf-v1:lexical-declarations-nil"]])
+    (.list [relation, query, .list [.atom "bnf-v1:lexical-declarations-nil"]])
     (.list [.atom "BNFLexicalMissingV1"]),
    observed (sourcePrefix field ++ "-lookup-found-v1")
     (.list [relation, query, .list [.atom "bnf-v1:lexical-declarations-cons", declarationPattern field false, .atom "?tail"]])

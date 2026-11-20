@@ -38,7 +38,7 @@ def readPairs : List (Unit × Unit) → List T → Option (List (T × T) × List
 
 def readCheck : Check Unit → List T → Option (Check T × List T)
   | .equal _ _, left :: right :: values => some (.equal left right, values)
-  | .absent _, value :: values => some (.absent value, values)
+  | .predicate quantifier _, value :: values => some (.predicate quantifier value, values)
   | .count _ count, value :: values => some (.count value count, values)
   | _, _ => none
 

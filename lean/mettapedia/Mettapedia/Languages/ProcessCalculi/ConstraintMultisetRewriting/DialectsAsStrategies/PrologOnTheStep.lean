@@ -42,20 +42,20 @@ order. Prolog's strategy is the depth-first policy over it (`Search.Policy.dfs`)
   Its scope is the nearest choice point (`Controls.cut_scoped`). Controls:
   `Controls.cut_changes_answers` and `Controls.cut_sees_order`: with the cut `(!, fail ; true)` has
   no answer, without it one, and with its branches swapped one.
-* **`\+` is absence of a derivation** (`Controls.negation_not_monotone`): the inner goal gaining an
+* **`\+` is the none query of a derivation** (`Controls.negation_not_monotone`): the inner goal gaining an
   answer takes the negation's away. **Operationally `\+` needs no stratification**: a forward firing
-  (`Fires`) checks its negated atoms absent in the current store, for every program, and
+  (`Fires`) checks its negated atoms missing in the current store, for every program, and
   `p :- \+ p`, which has no stratification (`Controls.self_negation_unstratified`), fires
   (`Controls.self_negation_fires`). **Stratification** (`Stratified`: positive body atoms at or below
   the head, negated ones strictly below) is an additional declarative adequacy profile.
-  `lower_strata_stable`, `absence_stable`: on a stratified program, once the strata below a level
+  `lower_strata_stable`, `none_stable`: on a stratified program, once the strata below a level
   are saturated (`SaturatedBelow`), every run of the program, firing any of its clauses, leaves the
-  atoms below that level as they were, so an absence checked there stays true: the protected region
+  atoms below that level as they were, so a none query checked there stays true: the protected region
   that a snapshot alone does not give. These are stated on a ground model of forward chaining over
   atoms, not on the step or the tree's Prolog evaluator. Controls: `Controls.guarded_stratified`,
   `p :- \+ q` is stratified, fires on the empty store and not once `q` is there, and
-  `Controls.guarded_absence_protected` keeps `q` absent along its runs;
-  `Controls.unstratified_absence_breaks`, `Controls.unsaturated_absence_breaks`: without either
+  `Controls.guarded_none_protected` keeps `q` missing along its runs;
+  `Controls.unstratified_none_breaks`, `Controls.unsaturated_none_breaks`: without either
   hypothesis a run makes an atom below the level.
 
 ## The logical update view is the pre-state
@@ -387,7 +387,7 @@ def Stratified (level : ℕ → ℕ) (prog : NormalProgram) : Prop :=
   ∀ c ∈ prog, (∀ b ∈ c.2.1, level b ≤ level c.1) ∧ ∀ b ∈ c.2.2, level b < level c.1
 
 /-- **One forward firing** of a clause of the program: its positive body present, its negated body
-absent, its head added. -/
+missing, its head added. -/
 def Fires (prog : NormalProgram) (S S' : Finset ℕ) : Prop :=
   ∃ c ∈ prog, (∀ b ∈ c.2.1, b ∈ S) ∧ (∀ b ∈ c.2.2, b ∉ S) ∧ S' = insert c.1 S
 
@@ -428,15 +428,15 @@ theorem lower_strata_stable {level : ℕ → ℕ} {k : ℕ} {prog : NormalProgra
           · exact (earlier a low).mp old
         · exact fun inS => Or.inr ((earlier a low).mpr inS)
 
-/-- **Absence below a level is stable under stratification**: on a stratified program, once the
-strata below `k` are saturated, an atom below `k` absent at the start stays absent along every run of
-the program. Both hypotheses are needed (`Controls.unstratified_absence_breaks`,
-`Controls.unsaturated_absence_breaks`). -/
-theorem absence_stable {level : ℕ → ℕ} {k : ℕ} {prog : NormalProgram}
+/-- **The none query below a level is stable under stratification**: on a stratified program, once the
+strata below `k` are saturated, an atom below `k` not present at the start stays not present along every run of
+the program. Both hypotheses are needed (`Controls.unstratified_none_breaks`,
+`Controls.unsaturated_none_breaks`). -/
+theorem none_stable {level : ℕ → ℕ} {k : ℕ} {prog : NormalProgram}
     (stratified : Stratified level prog) {S S' : Finset ℕ} (saturated : SaturatedBelow level k prog S)
-    (run : Relation.ReflTransGen (Fires prog) S S') {b : ℕ} (low : level b < k) (absent : b ∉ S) :
+    (run : Relation.ReflTransGen (Fires prog) S S') {b : ℕ} (low : level b < k) (missing : b ∉ S) :
     b ∉ S' :=
-  fun present => absent ((lower_strata_stable stratified saturated run b low).mp present)
+  fun present => missing ((lower_strata_stable stratified saturated run b low).mp present)
 
 /-! ## The logical update view -/
 
@@ -766,7 +766,7 @@ theorem negation_not_monotone (oracle : EvalOracle) (env : PEnv) :
 /-- `p :- \+ q.` with `p = 1`, `q = 0`. -/
 def guarded : NormalProgram := [(1, [], [0])]
 
-/-- **Control: stratified, and the absence is read below.** `p :- \+ q` fires on the empty store
+/-- **Control: stratified, and the none query is read below.** `p :- \+ q` fires on the empty store
 and not once `q` is there. -/
 theorem guarded_stratified :
     Stratified (fun a => a) guarded ∧ Fires guarded ∅ {1} ∧ ∀ S', ¬ Fires guarded {0} S' := by
@@ -775,16 +775,16 @@ theorem guarded_stratified :
     simp only [guarded, List.mem_singleton] at member
     subst member
     exact ⟨by simp, by simp⟩
-  · rintro S' ⟨c, member, _, absent, _⟩
+  · rintro S' ⟨c, member, _, missing, _⟩
     simp only [guarded, List.mem_singleton] at member
     subst member
-    exact absent 0 (by simp) (by simp)
+    exact missing 0 (by simp) (by simp)
 
 /-- **Positive control: the protected region.** Along every run of `p :- \+ q` from the empty store,
-`q` stays absent: the strata below `1` are saturated there (`absence_stable`). -/
-theorem guarded_absence_protected {S' : Finset ℕ} (run : Relation.ReflTransGen (Fires guarded) ∅ S') :
+`q` stays not present: the strata below `1` are saturated there (`none_stable`). -/
+theorem guarded_none_protected {S' : Finset ℕ} (run : Relation.ReflTransGen (Fires guarded) ∅ S') :
     0 ∉ S' :=
-  absence_stable (k := 1) guarded_stratified.1 (fun c member low _ _ => by
+  none_stable (k := 1) guarded_stratified.1 (fun c member low _ _ => by
     simp only [guarded, List.mem_singleton] at member
     subst member
     exact absurd low (by decide)) run (by decide) (Finset.notMem_empty 0)
@@ -792,10 +792,10 @@ theorem guarded_absence_protected {S' : Finset ℕ} (run : Relation.ReflTransGen
 /-- `p :- q.  q.` with `p = 0` and `q = 1`: the positive body sits above the head. -/
 def upward : NormalProgram := [(1, [], []), (0, [1], [])]
 
-/-- **Control: without stratification, absence below a level is not stable.** With the atoms as
+/-- **Control: without stratification, the none query below a level is not stable.** With the atoms as
 their own levels, `upward` is not stratified, the empty store is saturated below `1`, and a run from
-it makes `0`, absent at the start. -/
-theorem unstratified_absence_breaks :
+it makes `0`, not present at the start. -/
+theorem unstratified_none_breaks :
     ¬ Stratified (fun a => a) upward ∧ SaturatedBelow (fun a => a) 1 upward ∅ ∧
       Relation.ReflTransGen (Fires upward) ∅ {0, 1} := by
   refine ⟨fun stratified => ?_, ?_, ?_⟩
@@ -812,9 +812,9 @@ theorem unstratified_absence_breaks :
 /-- `p.` with `p = 0`. -/
 def fact0 : NormalProgram := [(0, [], [])]
 
-/-- **Control: without saturation, absence below a level is not stable.** `p.` is stratified, the
+/-- **Control: without saturation, the none query below a level is not stable.** `p.` is stratified, the
 empty store is not saturated below `1`, and a run from it makes `0`. -/
-theorem unsaturated_absence_breaks :
+theorem unsaturated_none_breaks :
     Stratified (fun a => a) fact0 ∧ ¬ SaturatedBelow (fun a => a) 1 fact0 ∅ ∧
       Relation.ReflTransGen (Fires fact0) ∅ {0} := by
   refine ⟨?_, fun saturated => ?_, .single ⟨(0, [], []), by decide, by decide, by decide, rfl⟩⟩
@@ -832,7 +832,7 @@ theorem self_negation_unstratified (level : ℕ → ℕ) : ¬ Stratified level [
   exact lt_irrefl _ this
 
 /-- **Control: operationally `\+` needs no stratification.** `p :- \+ p` has none
-(`self_negation_unstratified`), yet it fires on the empty store, where `p` is absent. -/
+(`self_negation_unstratified`), yet it fires on the empty store, where `p` is not present. -/
 theorem self_negation_fires : Fires [(1, [], [1])] ∅ {1} :=
   ⟨(1, [], [1]), by decide, by decide, by decide, rfl⟩
 
@@ -891,7 +891,7 @@ end Controls
 #print axioms cut_commits
 #print axioms cut_commits_iff
 #print axioms lower_strata_stable
-#print axioms absence_stable
+#print axioms none_stable
 #print axioms DB.view_stable
 #print axioms answer_sldTree
 #print axioms sldTree_answer
@@ -902,9 +902,9 @@ end Controls
 #print axioms Controls.cut_scoped
 #print axioms Controls.negation_not_monotone
 #print axioms Controls.guarded_stratified
-#print axioms Controls.guarded_absence_protected
-#print axioms Controls.unstratified_absence_breaks
-#print axioms Controls.unsaturated_absence_breaks
+#print axioms Controls.guarded_none_protected
+#print axioms Controls.unstratified_none_breaks
+#print axioms Controls.unsaturated_none_breaks
 #print axioms Controls.self_negation_unstratified
 #print axioms Controls.self_negation_fires
 #print axioms Controls.update_views_differ

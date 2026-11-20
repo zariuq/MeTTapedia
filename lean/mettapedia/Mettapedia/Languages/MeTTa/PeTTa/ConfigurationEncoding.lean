@@ -100,6 +100,7 @@ def readIndices : List Atom → Option (List Nat)
 
 def faultData : Fault → Atom
   | .invalidSpace => .symbol "petta-fault-space-v1"
+  | .instantiation => .symbol "petta-fault-instantiation-v1"
   | .zeroDivisor => .symbol "petta-fault-zero-v1"
   | .missingCell name => .expression [.symbol "petta-fault-cell-v1", text name]
   | .invalidArguments head => .expression [.symbol "petta-fault-arguments-v1", text head]
@@ -109,6 +110,7 @@ def faultData : Fault → Atom
 
 def readFault : Atom → Option Fault
   | .symbol "petta-fault-space-v1" => some .invalidSpace
+  | .symbol "petta-fault-instantiation-v1" => some .instantiation
   | .symbol "petta-fault-zero-v1" => some .zeroDivisor
   | .expression [.symbol "petta-fault-cell-v1", .grounded (.string name)] =>
       some (.missingCell name)
@@ -281,23 +283,43 @@ def readSpaces (values : List Atom) : Option (List (List Atom)) :=
   | nil => rfl
   | cons first rest ih => simp_all [readSpaces, readSpace]
 
+def namedSpaceData (row : String × List Atom) : Atom :=
+  .expression [text row.1, .expression row.2]
+
+def readNamedSpace : Atom → Option (String × List Atom)
+  | .expression [.grounded (.string name), .expression rows] => some (name, rows)
+  | _ => none
+
+def readNamedSpaces (rows : List Atom) : Option (List (String × List Atom)) :=
+  rows.mapM readNamedSpace
+
+@[simp] theorem readNamedSpaces_map (rows : List (String × List Atom)) :
+    readNamedSpaces (rows.map namedSpaceData) = some rows := by
+  induction rows with
+  | nil => rfl
+  | cons first rest ih =>
+      rcases first with ⟨name, values⟩
+      simp_all [readNamedSpaces, namedSpaceData, readNamedSpace, text]
+
 /-- Finite store fields; cell support remains explicit representation evidence. -/
 def stateData (state : State) (names : List String) : Atom :=
-  .expression [.symbol "petta-store-v1", .expression state.core,
+  .expression [.symbol "petta-store-v2", .expression state.core,
     .expression (state.spacesPrefix.map Atom.expression),
-    .expression ((state.cellRows names).map cellData)]
+    .expression ((state.cellRows names).map cellData),
+    .expression (state.namedSpaces.map namedSpaceData), .expression state.namedEmpty]
 
 def readState : Atom → Option State
-  | .expression [.symbol "petta-store-v1", .expression core,
-      .expression spaces, .expression cells] => do
+  | .expression [.symbol "petta-store-v2", .expression core,
+      .expression spaces, .expression cells, .expression namedRows, .expression namedEmpty] => do
       return reconstruct core [] (← readSpaces spaces) (← readCells cells)
+        (← readNamedSpaces namedRows) namedEmpty
   | _ => none
 
 theorem readState_stateData (state : State) (names : List String)
     (vacant : EmptyTail state [])
     (covers : ∀ name, name ∉ names → state.cells name = none) :
     readState (stateData state names) = some state := by
-  simp only [stateData, readState, readSpaces_map, readCells_map]
+  simp only [stateData, readState, readSpaces_map, readCells_map, readNamedSpaces_map]
   simpa using congrArg some (reconstruct_exact state [] names vacant covers)
 
 def configurationData (configuration : Configuration) (names : List String) : Atom :=

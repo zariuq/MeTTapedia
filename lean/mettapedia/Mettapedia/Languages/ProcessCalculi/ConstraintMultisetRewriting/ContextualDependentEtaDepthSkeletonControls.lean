@@ -9,7 +9,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
   first round on `λ g. g ≐ λ g x. x` at the flexible base `(A → A) → A → A`.
 * **The skeleton family** (`skeletonTower`) refutes that store with a certified refutation, so it is unsolvable
   (`flexible_unsolvable`), and keeps the other outcomes.
-* Both families decide R119's 44 census stores as the in-place family does (`eta_of_final`, `skeleton_of_final`).
+* Both families decide R119's 44 classification stores as the in-place family does (`eta_of_final`, `skeleton_of_final`).
 -/
 
 set_option autoImplicit false
@@ -47,9 +47,9 @@ theorem shallow_skeleton_refuted : (run (skeletonTower.solver 16) shallowStore 8
 theorem solvable_skeleton_committed : (run (skeletonTower.solver 16) solvableStore 8).readout = .commit := by
   decide +kernel
 
-/-! ## R119's census -/
+/-! ## R119's classification -/
 
-/-- **R119's census under the η-long prepared family.** -/
+/-- **R119's classification under the η-long prepared family.** -/
 theorem eta_of_final {Θ : Context setting.R} {problem : EquationStore (TotalTerm Θ)}
     (final : ContextualDependentAcceptance3.Controls.finalDecided problem = true) :
     (run inPlaceOnly problem 8).Decided ∧ run (etaTower.solver 16) problem 8 = run inPlaceOnly problem 8 := by
@@ -67,7 +67,7 @@ theorem eta_of_final {Θ : Context setting.R} {problem : EquationStore (TotalTer
     (ContextualDependentNormalizing.tower_rootComplete (fun _ => (0 : Nat))) tower_strengthening 16 8 problem
     underDecided
 
-/-- **R119's census under the skeleton family.** -/
+/-- **R119's classification under the skeleton family.** -/
 theorem skeleton_of_final {Θ : Context setting.R} {problem : EquationStore (TotalTerm Θ)}
     (final : ContextualDependentAcceptance3.Controls.finalDecided problem = true) :
     (run inPlaceOnly problem 8).Decided ∧ run (skeletonTower.solver 16) problem 8 = run inPlaceOnly problem 8 := by

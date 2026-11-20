@@ -1312,6 +1312,118 @@ mutual
     all_goals simp <;> omega
 end
 
+/-! ## Self-alignment of binder-free frames -/
+
+set_option maxRecDepth 2000 in
+set_option maxHeartbeats 800000 in
+mutual
+  /-- A binder-free frame whose reflective availability is its whole typing context,
+  or the sealed (empty) context, is aligned with substitution by its own support:
+  each free-variable leaf's typing context splits as `active ++ support name ++ sealed`
+  with `active` as long as the available prefix above the support. -/
+  theorem HasType.ReflectiveSupportSafeAt.selfAligned_of_binderFree
+      {language : LanguageDef} {free : FreeTypeContext}
+      {profile : ReflectionProfile} {support : ContextSupport.Support}
+      {bound available : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+      {typed : HasType language free bound pattern type}
+      {binderImage : TypeExpr → TypeExpr}
+      (safe : typed.ReflectiveSupportSafeAt profile support available binderImage)
+      (frameFree : ReflectiveSubstitutionBinderFree pattern = true)
+      (rootOrSealed : available = bound ∨ available = []) :
+      ReflectiveSupportSubstitutionAlignedAt support safe := by
+    cases safe with
+    | bvar lookup available => exact .bvar (lookup := lookup)
+    | fvar lookup available shape =>
+        obtain ⟨active, availableShape⟩ := shape
+        rcases rootOrSealed with root | sealed
+        · refine .fvar (lookup := lookup) (shape := ⟨active, availableShape⟩)
+            ⟨active, [], ?_, ?_⟩
+          · rw [List.append_nil, ← availableShape, root]
+          · simp [availableShape]
+        · have emptyShape := availableShape
+          rw [sealed] at emptyShape
+          have supportEmpty := (List.append_eq_nil_iff.mp emptyShape.symm).2
+          refine .fvar (lookup := lookup) (shape := ⟨active, availableShape⟩)
+            ⟨[], bound, ?_, ?_⟩
+          · rw [supportEmpty]
+            rfl
+          · simp [sealed, supportEmpty]
+    | @constructorQuote _ _ _ membership notBare _ _ _ quoted argumentsSafe =>
+        have argumentsFree := frameFree
+        simp only [ReflectiveSubstitutionBinderFree] at argumentsFree
+        exact .constructorQuote (membership := membership) (notBare := notBare)
+          (quoted := quoted)
+          (argumentsSafe.selfAligned_of_binderFree argumentsFree (Or.inr rfl))
+    | @constructorOrdinary _ _ _ membership notBare _ _ _ ordinary argumentsSafe =>
+        have argumentsFree := frameFree
+        simp only [ReflectiveSubstitutionBinderFree] at argumentsFree
+        exact .constructorOrdinary (membership := membership) (notBare := notBare)
+          (ordinary := ordinary)
+          (argumentsSafe.selfAligned_of_binderFree argumentsFree rootOrSealed)
+    | lambda => simp [ReflectiveSubstitutionBinderFree] at frameFree
+    | multiLambda => simp [ReflectiveSubstitutionBinderFree] at frameFree
+    | subst => simp [ReflectiveSubstitutionBinderFree] at frameFree
+    | collection elementsSafe =>
+        have elementsFree := frameFree
+        simp only [ReflectiveSubstitutionBinderFree] at elementsFree
+        exact .collection
+          (elementsSafe.selfAligned_of_binderFree elementsFree rootOrSealed)
+    | @collectionConstructor _ _ _ _ _ _ _ membership parameterShape _ _ _ elementsSafe =>
+        have elementsFree := frameFree
+        simp only [ReflectiveSubstitutionBinderFree] at elementsFree
+        exact .collectionConstructor (membership := membership)
+          (parameterShape := parameterShape)
+          (elementsSafe.selfAligned_of_binderFree elementsFree rootOrSealed)
+  termination_by 3 * sizeOf pattern + 2
+
+  /-- Argument-spine companion of `HasType.ReflectiveSupportSafeAt.selfAligned_of_binderFree`. -/
+  theorem ArgumentsHaveTypes.ReflectiveSupportSafeAt.selfAligned_of_binderFree
+      {language : LanguageDef} {free : FreeTypeContext}
+      {profile : ReflectionProfile} {support : ContextSupport.Support}
+      {bound available : List TypeExpr} {arguments : List Pattern}
+      {parameters : List TermParam}
+      {typed : ArgumentsHaveTypes language free bound arguments parameters}
+      {binderImage : TypeExpr → TypeExpr}
+      (safe : typed.ReflectiveSupportSafeAt profile support available binderImage)
+      (frameFree : ReflectiveSubstitutionBinderFreeList arguments = true)
+      (rootOrSealed : available = bound ∨ available = []) :
+      ReflectiveArgumentsSupportSubstitutionAlignedAt support safe := by
+    cases safe with
+    | nil => exact .nil _ _
+    | @cons _ _ _ _ _ _ representation parameterType _ _ _ _ argumentSafe argumentsSafe =>
+        have freeParts := frameFree
+        simp only [ReflectiveSubstitutionBinderFreeList, Bool.and_eq_true] at freeParts
+        exact .cons (representation := representation) (parameterType := parameterType)
+          (argumentSafe.selfAligned_of_binderFree freeParts.1 rootOrSealed)
+          (argumentsSafe.selfAligned_of_binderFree freeParts.2 rootOrSealed)
+  termination_by 3 * sizeOf arguments + 1
+
+  /-- Collection-spine companion of `HasType.ReflectiveSupportSafeAt.selfAligned_of_binderFree`. -/
+  theorem ElementsHaveType.ReflectiveSupportSafeAt.selfAligned_of_binderFree
+      {language : LanguageDef} {free : FreeTypeContext}
+      {profile : ReflectionProfile} {support : ContextSupport.Support}
+      {bound available : List TypeExpr} {elements : List Pattern}
+      {elementType : TypeExpr}
+      {typed : ElementsHaveType language free bound elements elementType}
+      {binderImage : TypeExpr → TypeExpr}
+      (safe : typed.ReflectiveSupportSafeAt profile support available binderImage)
+      (frameFree : ReflectiveSubstitutionBinderFreeList elements = true)
+      (rootOrSealed : available = bound ∨ available = []) :
+      ReflectiveElementsSupportSubstitutionAlignedAt support safe := by
+    cases safe with
+    | nil => exact .nil _ _ _
+    | cons elementSafe elementsSafe =>
+        have freeParts := frameFree
+        simp only [ReflectiveSubstitutionBinderFreeList, Bool.and_eq_true] at freeParts
+        exact .cons (elementSafe.selfAligned_of_binderFree freeParts.1 rootOrSealed)
+          (elementsSafe.selfAligned_of_binderFree freeParts.2 rootOrSealed)
+  termination_by 3 * sizeOf elements + 1
+
+  decreasing_by
+    all_goals subst_vars
+    all_goals simp <;> omega
+end
+
 end WellSorted
 
 end Mettapedia.GSLT.LanguageDef

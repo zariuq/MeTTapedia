@@ -1,13 +1,16 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.TriangleFootprints.DeclaredHeads
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.TriangleFootprints.EveryRun
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.TriangleFootprints.TypeQueryFragment
 
 /-!
 # The declaration guard changes the answer on every run
 
 `DeclaredHeads.declared_guard_differs` gives one complete run of HE's machine on
 `{(: f (-> Number Number)), (: b Bool), (= (f $x) yes)}` that publishes the type error
-`(Error (f b) (BadArgType 1 Number Bool))`, where PeTTa answers `yes`. Here every complete run is
-covered, by the route of `EveryRun` (a complete run is a derivation of HE's completed relation):
+`(Error (f b) (BadArgType 1 Number Bool))`. The PeTTa hosts answer nothing there (they check `b`
+against `Number`); the PeTTa model, which reads no declaration, answers `yes`, which is the hosts'
+answer on the program without `f`'s declaration. Here every complete run is covered, by the route
+of `EveryRun` (a complete run is a derivation of HE's completed relation):
 
 * `no_success`: no applicability path of `(f b)` through `(-> Number Number)` exists, since the
   only type of `b` is `Bool` and `Number` does not match it;
@@ -16,7 +19,8 @@ covered, by the route of `EveryRun` (a complete run is a derivation of HE's comp
 * `scan_outcome`: every scan of `f`'s declared types ends exhausted, with that error and without
   tuple fallback;
 * `declared_source`: every derivation of HE's completed relation for `(f b)` publishes the error;
-* `declared_every_run`: **every** complete run of HE publishes the error, and PeTTa answers `yes`.
+* `declared_every_run`: a complete run exists and **every** complete run of HE publishes the error;
+  PeTTa answers `yes` on the program without `f`'s declaration.
 
 ## Controls
 
@@ -230,20 +234,31 @@ theorem declared_source {results : List Result}
       simp [Completed.diagnosticResults, Completed.publishResult]
 
 /-- **The declaration guard changes the answer on every run.** On
-`{(: f (-> Number Number)), (: b Bool), (= (f $x) yes)}`, with HE's historical lookup, any policy and
-any dispatch: every complete run of HE from the entry configuration of `(f b)` publishes exactly
-`(Error (f b) (BadArgType 1 Number Bool))`, an error, while PeTTa's run yields `yes` from fuel `40`
-on. -/
+`{(: f (-> Number Number)), (: b Bool), (= (f $x) yes)}`, a program in the measured type fragment
+(`TypeQueryFragment.MeasuredTypeFragment`), with HE's historical lookup, any policy
+and any dispatch: a complete run of HE from the entry configuration of `(f b)` exists, and every
+complete run publishes exactly `(Error (f b) (BadArgType 1 Number Bool))`, an error. On the program
+without `f`'s declaration PeTTa yields `yes` from fuel `40` on, as the PeTTa hosts do; on the
+declared program the hosts answer nothing (they check `b` against `Number`), so the two dialects
+differ there as an error against no answer. -/
 theorem declared_every_run (dispatch : GroundedDispatch) (policy : Policy) :
-    (∀ emitted : List Result,
-      Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy)
+    TypeQueryFragment.MeasuredTypeFragment declaredRows ∧
+      (∃ heAnswers : List Result,
+        Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy)
+          (load (Space.ofList declaredRows) declaredCall Atom.undefinedType)
+          ⟨Space.ofList declaredRows, .returning [], [], heAnswers⟩) ∧
+      (∀ emitted : List Result,
+        Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy)
           (load (Space.ofList declaredRows) declaredCall Atom.undefinedType)
           ⟨Space.ofList declaredRows, .returning [], [], emitted⟩ →
         emitted.map (fun r => r.1.erase) = [badArgument]) ∧
       isErrorAtom badArgument = true ∧
-      ∀ n, 40 ≤ n → Streaming.values (Streaming.advance (translate declaredRows) n
-        (Streaming.enter { state := store declaredRows } declaredCall)) = [sym "yes"] :=
-  ⟨fun _ run => declared_source (complete_source run), (declared_guard_differs dispatch policy).2⟩
+      ∀ n, 40 ≤ n → Streaming.values (Streaming.advance (translate (headUndeclared declaredRows "f"))
+        n (Streaming.enter { state := store (headUndeclared declaredRows "f") } declaredCall)) =
+          [sym "yes"] := by
+  obtain ⟨⟨R, path, _⟩, isError, petta⟩ := declared_guard_differs dispatch policy
+  exact ⟨TypeQueryFragment.fragment_declaredRows, ⟨R, path⟩,
+    fun _ run => declared_source (complete_source run), isError, petta⟩
 
 /-! ## Controls -/
 
@@ -288,9 +303,10 @@ theorem plain_every_run (policy : Policy) (emitted : List Result)
       (Streaming.enter { state := store plainRows } declaredCall)).agenda.length = 0 := by
     decide +kernel
   obtain ⟨N, every⟩ := every_complete_run noHost policy program settles
-  rw [← every (max N 40) (le_max_left _ _) emitted run,
-    advance_stable (List.eq_nil_of_length_eq_zero finished) (max N 40) (le_max_right _ _),
-    computed]
+  have bag := every (max N 40) (le_max_left _ _) emitted run
+  rw [advance_stable (List.eq_nil_of_length_eq_zero finished) (max N 40) (le_max_right _ _),
+    computed] at bag
+  exact List.perm_singleton.mp (Multiset.coe_eq_coe.mp bag.symm)
 
 /-- `{(: b Bool), (= (f $x) yes)}`: the argument is declared, the head is not. -/
 abbrev argumentRows : List Atom :=
@@ -339,9 +355,10 @@ theorem argument_declaration_agrees (policy : Policy) (emitted : List Result)
     decide +kernel
   obtain ⟨N, every⟩ := every_complete_run noHost policy program settles
   refine ⟨?_, computed⟩
-  rw [← every (max N 40) (le_max_left _ _) emitted run,
-    advance_stable (List.eq_nil_of_length_eq_zero finished) (max N 40) (le_max_right _ _),
-    computed]
+  have bag := every (max N 40) (le_max_left _ _) emitted run
+  rw [advance_stable (List.eq_nil_of_length_eq_zero finished) (max N 40) (le_max_right _ _),
+    computed] at bag
+  exact List.perm_singleton.mp (Multiset.coe_eq_coe.mp bag.symm)
 
 end Controls
 

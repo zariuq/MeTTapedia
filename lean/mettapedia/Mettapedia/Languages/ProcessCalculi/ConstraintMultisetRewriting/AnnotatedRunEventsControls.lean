@@ -1,10 +1,10 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.AnnotatedRunEventsOrder
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.AnnotatedRunsAbsence
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.AnnotatedRunsRestoredNone
 
 /-!
 # Controls for the events of the unfolding
 
-* **Restored absence, two configurations** (`restored_absence_two_configurations`): the runs
+* **Restored none query, two configurations** (`restored_none_two_configurations`): the runs
   `reader, maker, taker` and `maker, taker, reader` fire one set of firings, and their
   configurations differ. The reader's event differs too: in the first it has no cause, in the
   second the maker and the taker are its causes. In the order (`reader_prefix_of_one_trace`), the
@@ -22,6 +22,8 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Annotated
   its causes are disjunctive and no cause set is a property of the trace.
 * **Positive control** (`round_one_configuration`): the two orders of a round have one
   configuration and one set of events.
+* **Positive count control** (`count_one_configuration`): a count of one persistent atom and a
+  writer outside its region; both orders are configurations, and they are one configuration.
 -/
 
 set_option autoImplicit false
@@ -49,20 +51,20 @@ theorem not_mem_causes_of_no_edge {T S O : Type*} {X : Config T S O} {a f : Firi
   | single edge => exact noEdge a edge
   | tail _ edge => exact noEdge _ edge
 
-/-! ## Restored absence: one set of firings, two configurations -/
+/-! ## Restored none query: one set of firings, two configurations -/
 
-namespace RestoredAbsence
+namespace RestoredNone
 
-open AnnotatedRuns.AbsenceControls (reader maker taker empty noPersistent query_first_runs
+open AnnotatedRuns.RestoredNoneControls (reader maker taker empty noPersistent query_first_runs
   query_last_runs)
 
-local notation "label" => AnnotatedRuns.AbsenceControls.label
+local notation "label" => AnnotatedRuns.RestoredNoneControls.label
 
 theorem reader_static : reader.Static :=
   ⟨rfl, by
-    intro query member σ τ
+    intro query member
     obtain rfl := List.mem_singleton.mp member
-    rfl⟩
+    exact ⟨fun _ _ => rfl, fun _ _ => rfl⟩⟩
 
 theorem maker_static : maker.Static := ⟨rfl, by simp [Firing.StaticQueries, maker]⟩
 
@@ -117,12 +119,12 @@ theorem fragment_last : Fragment empty [maker, taker, reader] :=
   fragment_of_perm _ (List.perm_append_comm (l₁ := [maker, taker]) (l₂ := [reader]))
 
 theorem maker_inhibits_reader : Inhibits label maker reader :=
-  ⟨Subst.id signature, PredicateQueryAdmission.Query.fixed noPersistent, List.mem_singleton_self _, 61,
-    Or.inr (List.mem_singleton_self _), rfl⟩
+  ⟨Subst.id signature, (PredicateQueryAdmission.Query.fixed noPersistent).toRegion,
+    List.mem_singleton_self _, 61, Or.inr (List.mem_singleton_self _), rfl⟩
 
 theorem taker_inhibits_reader : Inhibits label taker reader :=
-  ⟨Subst.id signature, PredicateQueryAdmission.Query.fixed noPersistent, List.mem_singleton_self _, 61,
-    Or.inl (List.mem_singleton_self _), rfl⟩
+  ⟨Subst.id signature, (PredicateQueryAdmission.Query.fixed noPersistent).toRegion,
+    List.mem_singleton_self _, 61, Or.inl (List.mem_singleton_self _), rfl⟩
 
 /-- No edge enters the reader when it comes first. -/
 theorem no_edge_into_reader_first (g : AnnotatedRuns.Controls.Run) :
@@ -134,8 +136,8 @@ theorem no_edge_into_reader_first (g : AnnotatedRuns.Controls.Run) :
   · simp [reader] at taken
   · exact not_precedes_head fragment_first.nodup before.1
 
-/-- **Restored absence: one set of firings, two configurations, two events of the reader.** -/
-theorem restored_absence_two_configurations :
+/-- **Restored none query: one set of firings, two configurations, two events of the reader.** -/
+theorem restored_none_two_configurations :
     IsConfiguration A label empty (configOf label [reader, maker, taker]) ∧
       IsConfiguration A label empty (configOf label [maker, taker, reader]) ∧
       (configOf label [reader, maker, taker]).firings = (configOf label [maker, taker, reader]).firings ∧
@@ -164,17 +166,17 @@ theorem restored_absence_two_configurations :
       Or.inr (Or.inr ⟨precedes_cons.mpr (Or.inr (precedes_cons.mpr (Or.inl ⟨rfl, by simp⟩))),
         Or.inl taker_inhibits_reader⟩)⟩
   · intro equivalent
-    exact AnnotatedRuns.AbsenceControls.restored_absence_two_traces.2.2.2.2.1 equivalent
+    exact AnnotatedRuns.RestoredNoneControls.restored_none_two_traces.2.2.2.2.1 equivalent
 
 theorem reader_alone_runs : Executable A label empty [reader] :=
-  ⟨AnnotatedRuns.AbsenceControls.reader_valid_empty,
-    AnnotatedRuns.AbsenceControls.reader_valid_empty.firing.consistent⟩
+  ⟨AnnotatedRuns.RestoredNoneControls.reader_valid_empty,
+    AnnotatedRuns.RestoredNoneControls.reader_valid_empty.firing.consistent⟩
 
 theorem fragment_reader : Fragment empty [reader] :=
   ⟨by simpa using reader_static, List.nodup_singleton _, by intro f _ o _ present; simp [empty] at present,
     by intro g hg h hh ne; simp only [List.mem_singleton] at hg hh; exact absurd (hg.trans hh.symm) ne⟩
 
-/-- **Restored absence, in the order.** The history of the reader alone is an initial part of the
+/-- **Restored none query, in the order.** The history of the reader alone is an initial part of the
 first configuration and not of the second, although the second fires the same reader: there the
 reader has causes. So the reader-first history is a prefix of one trace and not of the other. -/
 theorem reader_prefix_of_one_trace :
@@ -201,7 +203,7 @@ theorem reader_prefix_of_one_trace :
   exact (prefix_iff_extends A label reader_alone_runs fragment_reader query_last_runs
     fragment_last).mp prefix_
 
-end RestoredAbsence
+end RestoredNone
 
 /-! ## Competing takes of one occurrence conflict -/
 
@@ -654,14 +656,64 @@ theorem round_one_configuration :
 
 end Round
 
+/-! ## Positive count control: a count and an outside writer have one configuration -/
+
+namespace Count
+
+open AnnotatedRuns.Controls (label Run countsNine makesFive nineState
+  count_swaps_with_an_outside_writer)
+
+theorem fragment_pair : Fragment nineState [countsNine, makesFive] where
+  static f member := by
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at member
+    rcases member with rfl | rfl
+    · exact count_swaps_with_an_outside_writer.1.1
+    · exact count_swaps_with_an_outside_writer.1.2.1
+  nodup := by
+    refine List.nodup_cons.mpr ⟨fun inTail => ?_, List.nodup_singleton _⟩
+    have made := congrArg (fun f : Run => f.selection.made) (List.mem_singleton.mp inTail)
+    simp [countsNine, makesFive] at made
+  fresh f member o made := by
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at member
+    rcases member with rfl | rfl
+    · simp [countsNine] at made
+    · simp only [makesFive, List.mem_singleton] at made
+      subst made
+      simp [nineState]
+  makers f fm g gm ne o inF inG := by
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at fm gm
+    rcases fm with rfl | rfl <;> rcases gm with rfl | rfl
+    · exact ne rfl
+    · simp [countsNine] at inF
+    · simp [countsNine] at inG
+    · exact ne rfl
+
+/-- **Positive count control.** A count of one persistent atom and a firing that makes the
+non-persistent `5`: both orders are configurations, and they are one configuration. Runs and
+configurations correspond for observations other than the exact one. -/
+theorem count_one_configuration :
+    IsConfiguration A label nineState (configOf label [countsNine, makesFive]) ∧
+      IsConfiguration A label nineState (configOf label [makesFive, countsNine]) ∧
+      configOf label [countsNine, makesFive] = configOf label [makesFive, countsNine] := by
+  obtain ⟨independent, first, second, -⟩ := count_swaps_with_an_outside_writer
+  exact ⟨configOf_isConfiguration A label first fragment_pair,
+    configOf_isConfiguration A label second
+      (fragment_pair.perm (List.Perm.swap makesFive countsNine [])),
+    configOf_eq_of_roundEquiv A label
+      (.rel _ _ (static_swap_is_round_swap A label independent [] [] nineState first))
+      fragment_pair.static⟩
+
+end Count
+
 #print axioms TransGen.source_mem
 #print axioms not_mem_causes_of_no_edge
-#print axioms RestoredAbsence.restored_absence_two_configurations
-#print axioms RestoredAbsence.reader_prefix_of_one_trace
+#print axioms RestoredNone.restored_none_two_configurations
+#print axioms RestoredNone.reader_prefix_of_one_trace
 #print axioms Conflict.competing_takes_conflict
 #print axioms Asymmetry.read_before_take_asymmetric
 #print axioms Joint.inconsistent_triple_no_configuration
 #print axioms Guards.guard_or_causality
 #print axioms Round.round_one_configuration
+#print axioms Count.count_one_configuration
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.AnnotatedRunEvents.Controls

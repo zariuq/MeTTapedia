@@ -170,7 +170,7 @@ def roundAfter {Γ : Context S.R} {problem : EquationStore (TotalTerm Γ)} (firs
     (same : millerRank first.remaining = millerRank problem) :
     Round S.levels millerRank first.remaining → Round S.levels millerRank problem
   | .progress u smaller => .progress (first.then u) (by rw [← same]; exact smaller)
-  | .refuted absent => .refuted fun solvable => absent (solvable_remaining first solvable)
+  | .refuted missing => .refuted fun solvable => missing (solvable_remaining first solvable)
   | .stuck => .stuck
 
 theorem roundAfter_ne_stuck {Γ : Context S.R} {problem : EquationStore (TotalTerm Γ)}
@@ -178,7 +178,7 @@ theorem roundAfter_ne_stuck {Γ : Context S.R} {problem : EquationStore (TotalTe
     {r : Round S.levels millerRank first.remaining} (moves : r ≠ .stuck) : roundAfter first same r ≠ .stuck := by
   cases r with
   | progress u smaller => intro h; cases h
-  | refuted absent => intro h; cases h
+  | refuted missing => intro h; cases h
   | stuck => exact absurd rfl moves
 
 theorem roundAfter_progress {Γ : Context S.R} {problem : EquationStore (TotalTerm Γ)}
@@ -191,7 +191,7 @@ theorem roundAfter_progress {Γ : Context S.R} {problem : EquationStore (TotalTe
   | progress u s =>
       cases progressed
       exact ⟨u, s, rfl, rfl⟩
-  | refuted absent => cases progressed
+  | refuted missing => cases progressed
   | stuck => cases progressed
 
 end After

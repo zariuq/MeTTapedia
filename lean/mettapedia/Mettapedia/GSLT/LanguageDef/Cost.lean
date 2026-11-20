@@ -83,13 +83,8 @@ apex embedded as its diagonal under the agreement hypothesis.
 
 ## Deliberate exclusions
 
-`CostHereditaryCanonicalOccurrenceSupport` (4,644 lines) is **not**
-imported.  It is the superseded hereditary monolith; the provenanced
-alignment path replaces it.  Anything still reaching for it should be
-migrated, and the file retired once no consumer remains.
-
 The uncorrected reified-stop path (`CostStaticPlanCanonicalReifiedStop`
-and its congruence) is likewise **not** re-exported: its replacement is
+and its congruence) is **not** re-exported: its replacement is
 `CostStaticPlanProvenancedStop`, whose `sourceFVar` arm carries membership
 evidence on both sides.  No compatibility alias is provided, deliberately.
 

@@ -262,11 +262,11 @@ theorem parallel_patterns_distinct : orderedPar ≠ swappedPar := by
 
 theorem procDrop_process :
     ProcWellSorted rhoReflectivePresentation FreeSortContext.empty [] procDrop :=
-  .drop (.quote .unit)
+  .drop (.quote .unit (by decide))
 
 theorem procOutput_process :
     ProcWellSorted rhoReflectivePresentation FreeSortContext.empty [] procOutput :=
-  .output (.quote .unit) .unit
+  .output (.quote .unit (by decide)) .unit
 
 theorem procZero_process :
     ProcWellSorted rhoReflectivePresentation FreeSortContext.empty [] procZero :=

@@ -106,14 +106,30 @@ theorem source_length (firing : Firing source) : 2 ≤ (ordered source.1).length
   have removed := List.length_eraseIdx_add_one firing.inputIndex.isLt
   omega
 
+/-- The unnormalized endpoint of the compiled firing: the compiled contractum
+in front of the exact ordered unmatched occurrences. -/
+def compiledPresentation (firing : Firing source) : RhoProcess :=
+  ofList (firing.rule.compiledResult.1 :: firing.tail) (fun pattern membership => by
+    rcases List.mem_cons.mp membership with rfl | membership
+    · exact firing.rule.compiledResult.2
+    · exact (firing.tail_primes pattern membership).1)
+
+/-- The compiled endpoint is the presented endpoint up to the rho equations. -/
+theorem compiledPresentation_equations (firing : Firing source) :
+    rhoProcessEquations.r firing.compiledPresentation firing.presentation := by
+  change canonicalize (.collection .hashBag (firing.rule.compiledResult.1 :: firing.tail) none) =
+    canonicalize (.collection .hashBag (firing.rule.result.1 :: firing.tail) none)
+  exact CanonicalStepperCompleteness.canonicalize_bag_cons_congr
+    firing.rule.compiledResult_canonical (List.Perm.refl _)
+
 /-- The compiled primitive step agrees at these exact occurrence positions. -/
 theorem selected_step (firing : Firing source) :
-    RhoStepAt 1 (toProcess source).1 firing.presentation.1 := by
+    RhoStepAt 1 (toProcess source).1 firing.compiledPresentation.1 := by
   rw [toProcess_pattern, collapseBag_eq_bag_of_length_ge_two firing.source_length]
   have step := rhoStepAt_one_comm firing.inputIndex.isLt firing.outputIndex.isLt
     firing.inputAt firing.outputAt
     ((rhoCanonicalEquivalent_iff _ _).mpr firing.rule.channels)
-  rw [apply_commBindingsAt firing.rule.body_typed firing.rule.payload_typed] at step
+  rw [apply_commBindingsAt_resolved firing.rule.body_typed firing.rule.payload_typed] at step
   exact step
 
 def address (firing : Firing source) :

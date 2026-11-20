@@ -13,10 +13,7 @@ import Mettapedia.PLN.Bridges.GSLT.EvidenceResolutionAlgebra
 import Mettapedia.PLN.Bridges.GSLT.EvidenceRevisionSufficiency
 import Mettapedia.Machines.NativeCostLedger
 import Mettapedia.Algebra.ParallelCrossover
-import Mettapedia.Languages.MeTTa.CeTTaNativeCostCorrespondence
-import Mettapedia.Languages.MeTTa.Bridges.GSLT.CeTTaResourceWave
-import Mettapedia.Languages.MeTTa.Bridges.GSLT.CeTTaWeightLedger
-import Mettapedia.Languages.MeTTa.Bridges.GSLT.CeTTaNeedHistory
+import Mettapedia.GSLT.Causality.FixedWidthDemand
 import Mettapedia.Machines.ResourceOwnership
 import Mettapedia.Machines.Cursor.OwnedLifecycle
 import Mettapedia.Machines.Cursor.ProducerAccountTransport
@@ -131,31 +128,8 @@ Mixed imports preserve the retained prefix after the first refusal. The common
 worker-phase schedule supplies span without reconstructing it from work or
 from an incomplete event history. Equal-valued child states remain separate
 physical imports; admitting each owner once is a distinct runtime obligation.
-The admitted C counter route implements the independent work coordinate, with
-the enclosing append, storage and identity services still requiring refinement.
-The native counter helper is admitted from complete C source by
-the shared reader and proved against independent natural-number saturation.
-Its scalar, sequential memory profile is separate from whole-ledger and
-concurrent worker refinement.
-
-The original factor-comparison function is admitted from its complete C
-characters, retaining pointee const in the prototype and checking the declared
-record alias. The shared read-only profile refuses stores, lost qualification,
-ambiguous aliases and effectful services. Its two positional keys and loaded
-coefficient pointers determine the exact Boolean result. Complete invocation
-binds and captures the pointer arguments, executes the original branches and
-releases its fresh parameter cells, preserving the whole caller state. A
-coefficient-service contract is required only when both keys agree; a differing
-key skips that service even when it is unavailable. Physical layout, compiled
-service implementation, whole-ledger and concurrent-memory refinement remain
-separate obligations.
-
-The original completed-cache predicate is admitted through that same C reader.
-Its null branch skips field reads; its live branch agrees with the existing
-Need lifecycle's completed-cache judgment. The exact invocation allocates and
-releases its parameter cell and preserves the caller state. Cache lookup,
-production identity, physical enum layout and compiled memory access retain
-separate correspondence obligations.
+Saturating counter addition with a sticky overflow flag agrees with
+natural-number saturation at every width.
 
 The common Need lifecycle classifies completed productions and cached
 deliveries from the original source instruction and matched cache owner.
@@ -192,21 +166,6 @@ renaming productions alone can resurrect an already handled contribution.
 Independent controls expose split shared identities, coalesced factors, changed
 dependencies, lost claims and reordered matrix factors. Literal program data
 does not gain a renaming permission from its constructor spelling.
-
-The actual receipt wrapper is admitted with its declared services. Under a
-state-preserving inactive query it returns zero, restores the complete caller
-state and never invokes observed accounting. Its enabled branch forwards the
-captured arguments and preserves the observed service's result relation and
-complete post-state, releasing only its ordinary parameter cells. A missing
-service response cannot become a successful invocation. A concrete service
-that returns zero while changing its world distinguishes this law from a
-return-value-only check. Both branches also construct the existing ordered
-invocation certificate: the inactive branch has one query child; the active
-branch has query then charge, with complete intermediate states. Removing or
-reversing the query fails the ledger check. A concrete finite-store instance
-realizes the full program-call relation, so the certificate obligations are
-inhabited. Runtime overhead and the service implementations retain separate
-obligations.
 
 Copied residual storage uses the common injective address and payload
 relocation. Complete paths and aliases are preserved and reflected, and
@@ -415,9 +374,8 @@ Its unannotated path creates no extra grading operation.
 These laws cover the declared pure first-order Need source fragment, not full
 HE/PeTTa effects or C predicate-frame refinement. The dependent judgment's
 account of these contributions remains a separate trinity obligation.
-The resource guard's complete
-C invocation implements the common collective demand inequality and releases
-its parameter cells without altering caller state.
+Fixed-width counters decide the collective demand inequality by guarded
+subtraction, without forming a sum that could wrap.
 
 The common resource search rediscovers candidates in each descendant world.
 Complete catalogues justify terminal publication; bounded execution retains

@@ -27,7 +27,7 @@ variable {T : Type uT} {S : Type uS} {N : Type uN} {O : Type uO}
 
 def ObservationFormed (rights : Rights N) : Check (N × T) → Prop
   | .equal _ _ => True
-  | .absent pattern => rights pattern.1 .observe = true
+  | .predicate _ pattern => rights pattern.1 .observe = true
   | .count pattern _ => rights pattern.1 .observe = true
 
 structure Formed (rights : Rights N) (label : O → N × T) (picked : Selection O) (rule : RuleInstance (N × T)) : Prop where
@@ -91,10 +91,10 @@ theorem no_peek_forbids_selected_read {rights : Rights N} {label : O → N × T}
   rw [denied] at allowed
   cases allowed
 
-theorem no_observe_forbids_absence {rights : Rights N} {label : O → N × T} {picked : Selection O}
+theorem no_observe_forbids_none {rights : Rights N} {label : O → N × T} {picked : Selection O}
     {rule : RuleInstance (N × T)} (formed : Formed rights label picked rule)
-    (pattern : N × T) (selected : Check.absent pattern ∈ rule.checks) (denied : rights pattern.1 .observe = false) : False := by
-  have allowed := formed.observations (.absent pattern) selected
+    (pattern : N × T) (selected : Check.predicate .none pattern ∈ rule.checks) (denied : rights pattern.1 .observe = false) : False := by
+  have allowed := formed.observations (.predicate .none pattern) selected
   change rights pattern.1 .observe = true at allowed
   rw [denied] at allowed
   cases allowed

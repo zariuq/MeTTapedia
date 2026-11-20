@@ -225,11 +225,11 @@ theorem recordEquivalent_sighting_iff (W : Finset O) (C D : Configuration T O) :
       have same := counts t₀
       omega
     have none : ∀ o ∈ (∅ : Finset O), ∀ P Q : Finset O, o ∈ P ↔ o ∈ Q :=
-      fun _ absent => absurd absent (Finset.notMem_empty _)
+      fun _ missing => absurd missing (Finset.notMem_empty _)
     obtain ⟨π₁, k₁, onto₁, support₁⟩ := exists_supported_renamingUpTo (solutionSetoid A σ) label ∅
-      (P := C.present ∩ W) (Q := D.present ∩ W) (fun o absent => none o absent _ _) inside
+      (P := C.present ∩ W) (Q := D.present ∩ W) (fun o missing => none o missing _ _) inside
     obtain ⟨π₂, k₂, onto₂, support₂⟩ := exists_supported_renamingUpTo (solutionSetoid A σ) label ∅
-      (P := C.present \ W) (Q := D.present \ W) (fun o absent => none o absent _ _) outside
+      (P := C.present \ W) (Q := D.present \ W) (fun o missing => none o missing _ _) outside
     have fix₁ : ∀ o, o ∉ W → π₁ o = o := fun o out =>
       support₁ o (fun member => out (Finset.mem_inter.mp member).2)
         (fun member => out (Finset.mem_inter.mp member).2)
@@ -266,7 +266,7 @@ variable {T : Type uT} {S : Type uS} {O : Type uO} [DecidableEq O]
 escape-relative transport that renames occurrences end in configurations equivalent relative to the
 record the environment held at the start. -/
 theorem renaming_traceEquiv_recordEquivalent (A : SubstitutionAction T S) (label : O → T)
-    {x : Escaped (firstOrder A label).toStep} {r r' : (renamingEscape A label).step.Run x}
+    {x : Escaped (ExactQueryAlphabet.step A label)} {r r' : (renamingEscape A label).step.Run x}
     (equivalent : (renamingEscaping A label).TraceEquiv x r r') :
     RecordEquivalent A label x.record r.last.state r'.last.state := by
   obtain ⟨i, aut, -⟩ := Transport.Escape.traceEquiv_past equivalent
@@ -298,7 +298,7 @@ def left : Configuration (Term signature) ℕ := ⟨[], {5, 7}⟩
 /-- Occurrences `7` and `8`, both labelled `0`, and no knowledge. -/
 def right : Configuration (Term signature) ℕ := ⟨[], {7, 8}⟩
 
-theorem models_nil (σ : Subst signature) : A.Models σ [] := fun _ absent => absurd absent List.not_mem_nil
+theorem models_nil (σ : Subst signature) : A.Models σ [] := fun _ missing => absurd missing List.not_mem_nil
 
 /-- The automorphisms of the record carry the sighted set to itself. -/
 theorem kept_of_aut {π : ℕ ≃ ℕ} (aut : π ∈ automorphisms sawTwins) :
@@ -391,10 +391,10 @@ theorem supported_agree (p : ModuloProbe A ℕ) (supported : p.Supported sawTwin
         rw [regionOf_rename keeps, Finset.map_eq_empty]
       · have never : ∀ P : Finset ℕ, 6 ∉ P →
             ¬ A.Entails [] (fun σ => regionOf blank P (region.test σ) = seen) := by
-          intro P absent asked
+          intro P missing asked
           have held := asked (Subst.id signature) (models_nil _)
           rw [← held] at six
-          exact absent (Finset.mem_of_mem_filter _ six)
+          exact missing (Finset.mem_of_mem_filter _ six)
         exact iff_of_false (never left.present (by decide)) (never right.present (by decide))
 
 /-- **Equivalence relative to the record separates them**: no automorphism of the record carries `5`

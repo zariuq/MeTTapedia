@@ -76,7 +76,9 @@ and the row of the evidence of `seen` made at `r`. -/
 def revisionFiring (φ : W → Bool) (row : Evidence ℕ → T) (seen : Finset O) (r : O) :
     Firing T S O :=
   ⟨⟨[], [], [], [], [row (ledgerEvidence (recorded label outcome) φ seen)]⟩,
-    [PredicateQueryAdmission.Query.fixed (ledgerQuery space seen)], ⟨[], [], [r]⟩⟩
+    [PredicateQueryAdmission.Query.fixed (ledgerQuery space seen)].map
+      PredicateQueryAdmission.Query.toRegion,
+    ⟨[], [], [r]⟩⟩
 
 /-- **Admission of revision**: the predicate query saw the ledger, the row is fresh and carries the
 counts, and the store has a solution. -/
@@ -86,9 +88,10 @@ theorem revisionFiring_valid_iff (φ : W → Bool) (row : Evidence ℕ → T) (s
       ledger label space C = seen ∧ r ∉ C.present ∧
         label r = row (ledgerEvidence (recorded label outcome) φ seen) ∧
         A.Consistent C.equations := by
-  change PredicateQueryAdmission.Valid A label _ ([ledgerQuery space seen].map PredicateQueryAdmission.Query.fixed)
-    C _ ↔ _
-  rw [PredicateQueryAdmission.valid_fixed_iff]
+  change PredicateQueryAdmission.RegionValid A label _
+    (([ledgerQuery space seen].map PredicateQueryAdmission.Query.fixed).map
+      PredicateQueryAdmission.Query.toRegion) C _ ↔ _
+  rw [← PredicateQueryAdmission.valid_iff_regionValid, PredicateQueryAdmission.valid_fixed_iff]
   constructor
   · rintro ⟨firing, holds⟩
     refine ⟨holds _ (List.mem_singleton_self _), ?_, ?_, ?_⟩
@@ -247,7 +250,9 @@ noncomputable def deductionFiring (bits : GuardBits A) (row : ℝ → T) (seen :
     Firing T S O :=
   ⟨⟨[], [], [], [bits.check (decide (Screened a b c (bagOf label outcome seen)))],
       [row (deductionValue a b c (bagOf label outcome seen))]⟩,
-    [PredicateQueryAdmission.Query.fixed (ledgerQuery space seen)], ⟨[], [], [r]⟩⟩
+    [PredicateQueryAdmission.Query.fixed (ledgerQuery space seen)].map
+      PredicateQueryAdmission.Query.toRegion,
+    ⟨[], [], [r]⟩⟩
 
 /-- **Adequacy of deduction**: an admitted deduction firing saw the ledger, the ledger screens off,
 and its row is the world-model answer to the conclusion. -/
@@ -257,7 +262,8 @@ theorem deduction_adequate {bits : GuardBits A} {row : ℝ → T} {seen : Finset
     seen = ledger label space C ∧ Screened a b c (bagOf label outcome (ledger label space C)) ∧
       label r = row (linkValue a c (bagOf label outcome (ledger label space C))) := by
   have unfolded : PredicateQueryAdmission.Valid A label _
-      ([ledgerQuery space seen].map PredicateQueryAdmission.Query.fixed) C _ := valid
+      ([ledgerQuery space seen].map PredicateQueryAdmission.Query.fixed) C _ :=
+    PredicateQueryAdmission.valid_iff_regionValid.mpr valid
   rw [PredicateQueryAdmission.valid_fixed_iff] at unfolded
   obtain ⟨firing, holds⟩ := unfolded
   have seenEq : ledger label space C = seen := holds _ (List.mem_singleton_self _)

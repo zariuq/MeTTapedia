@@ -261,6 +261,62 @@ theorem owner_death_masks_interrupt {state next : State}
     subst next
     simp_all
 
+inductive NotificationMode where
+  | polling
+  | msix
+  deriving DecidableEq, Repr
+
+def Action.maskChange : Action → Option Bool
+  | .begin .. | .ownerDead .. => some true
+  | .resume .. => some false
+  | _ => none
+
+/-- Reset after lease admission. Polling still uses the logical reset phases.
+    MSI-X commits a change of phase only after the required mask write succeeds. -/
+def stepWithNotification (mode : NotificationMode) (state : State) (action : Action)
+    (writeMask : Bool → Bool) : State × Status :=
+  match mode with
+  | .polling =>
+      match action with
+      | .acknowledge .. => (state, .invalid)
+      | _ => step state action
+  | .msix =>
+      let result := step state action
+      match action.maskChange with
+      | none => result
+      | some masked =>
+          if result.2 = .ok ∧ writeMask masked = false then (state, .hardware) else result
+
+theorem polling_refuses_acknowledgement (state : State) (expected produced heard : Nat)
+    (writeMask : Bool → Bool) :
+    stepWithNotification .polling state (.acknowledge expected produced heard) writeMask =
+      (state, .invalid) := rfl
+
+theorem polling_reset_ignores_mask_result (state : State) (action : Action)
+    (first second : Bool → Bool) :
+    stepWithNotification .polling state action first =
+      stepWithNotification .polling state action second := by
+  cases action <;> rfl
+
+theorem polling_resume_advances_generation {state next : State}
+    {expected produced acknowledged : Nat} {ccEnabled cstsReady queuesReady : Bool}
+    {writeMask : Bool → Bool}
+    (transition : stepWithNotification .polling state
+      (.resume expected produced acknowledged ccEnabled cstsReady queuesReady) writeMask =
+      (next, .ok)) :
+    state.phase = .quiescent ∧ queuesReady = true ∧
+      next.generation = state.generation + 1 := by
+  rcases resume_advances_generation
+    (show step state (.resume expected produced acknowledged ccEnabled cstsReady queuesReady) =
+      (next, .ok) from transition) with ⟨phase, queued, _, _, _, _, generation, _, _, _⟩
+  exact ⟨phase, queued, generation⟩
+
+theorem msix_failed_mask_preserves_reset {state next : State} {action : Action} {masked : Bool}
+    {writeMask : Bool → Bool} (core : step state action = (next, .ok))
+    (change : action.maskChange = some masked) (failed : writeMask masked = false) :
+    stepWithNotification .msix state action writeMask = (state, .hardware) := by
+  simp [stepWithNotification, core, change, failed]
+
 namespace Controls
 
 def initial : State := ⟨2, 0x100, 0x5845101b, 0x22, 1, 7, 7, .active, false, [], 4, 8, 99⟩
@@ -299,6 +355,14 @@ theorem exact_receipt_allows_begin :
     drainedBeforeBegin.acknowledgedRevision = 1 ∧ begunAfterDrain.phase = .resetting ∧
       begunAfterDrain.interruptMasked = true := by decide
 
+example :
+    let reply := stepWithNotification .polling pendingBeforeBegin (.begin 1 0 0) (fun _ => false)
+    reply.2 = .ok ∧ reply.1.phase = .resetting ∧ reply.1.ledger.length = 1 := by decide
+example : stepWithNotification .msix pendingBeforeBegin (.begin 1 0 0) (fun _ => false)
+    = (pendingBeforeBegin, .hardware) := by decide
+example : stepWithNotification .polling initial (.acknowledge 1 8 8) (fun _ => true)
+    = (initial, .invalid) := by decide
+
 end Controls
 
 #print axioms record_advances_once
@@ -313,5 +377,9 @@ end Controls
 #print axioms begin_requires_acknowledged_interrupts
 #print axioms resume_unmasks_interrupt
 #print axioms owner_death_masks_interrupt
+#print axioms polling_refuses_acknowledgement
+#print axioms polling_reset_ignores_mask_result
+#print axioms polling_resume_advances_generation
+#print axioms msix_failed_mask_preserves_reset
 
 end Mettapedia.Machines.Kernel.EpochDeviceReset

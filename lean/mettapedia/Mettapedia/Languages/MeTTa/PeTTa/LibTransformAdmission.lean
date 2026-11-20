@@ -12,7 +12,7 @@ patterns, set equal to the labels of the selected occurrences, have a common sol
 store.
 
 * `solution`: the bindings of a walk, as a substitution of the step's atom action;
-  `applySubst_eq_subst` says the two ways of applying them agree.
+  `MORK.applySubst_eq_subst` says the two ways of applying them agree.
 * `match_solves`: a match of a pattern against a ground atom solves the equation between
   them, under its bindings and under every extension of them.
 * `walk_kernel_solves`: a row of a kernel of reads and takes solves, conjunct by conjunct,
@@ -48,7 +48,8 @@ namespace Mettapedia.Languages.MeTTa.PeTTa.LibTransformStep
 
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 open Mettapedia.Languages.ProcessCalculi.MORK
-  (Subst matchAtom applySubst isGroundAtom matchAtom_applySubst_ground applySubst_ground_ext)
+  (Subst matchAtom applySubst applySubst_eq_subst isGroundAtom
+    matchAtom_applySubst_ground applySubst_ground_ext)
 open Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting
   (Selection RuleInstance Configuration SubstitutionAction)
 open Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.MetaMeTTaComparison
@@ -64,26 +65,7 @@ variable {O : Type} [DecidableEq O]
 /-! ## Bindings as a solution -/
 
 /-- The substitution a list of bindings denotes. -/
-def solution (σ : Subst) : Mettapedia.Languages.MeTTa.SubstitutionAlgebra.Subst :=
-  fun v => Subst.lookup σ v
-
-/-- Applying a list of bindings is substituting its solution. -/
-theorem applySubst_eq_subst (σ : Subst) :
-    ∀ a : Atom, applySubst σ a = SubstitutionAlgebra.subst (solution σ) a
-  | .var _ => rfl
-  | .symbol _ => rfl
-  | .grounded _ => rfl
-  | .expression es => by
-      simp only [applySubst, SubstitutionAlgebra.subst]
-      congr 1
-      exact list es
-where
-  list : ∀ es : List Atom,
-      applySubst.applySubstList σ es = SubstitutionAlgebra.subst.substList (solution σ) es
-    | [] => rfl
-    | a :: as => by
-        simp only [applySubst.applySubstList, SubstitutionAlgebra.subst.substList,
-          applySubst_eq_subst σ a, list as]
+abbrev solution (σ : Subst) : Mettapedia.Languages.MeTTa.SubstitutionAlgebra.Subst := σ.lookup
 
 /-- A ground atom has no variable. -/
 theorem vars_of_ground : ∀ a : Atom, isGroundAtom a = true → SubstitutionAlgebra.vars a = []

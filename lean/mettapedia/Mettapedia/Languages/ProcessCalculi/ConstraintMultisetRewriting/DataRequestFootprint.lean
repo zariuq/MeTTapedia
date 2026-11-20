@@ -8,7 +8,7 @@ assignment, shared reads, outputs and finite data computation are retained;
 only the irrelevant query snapshot is recomputed on the smaller world.
 
 This theorem concerns request recipes whose condition reads finite supplied
-data, not arbitrary absence/count or world-dependent guards.
+data, not arbitrary none queries/count or world-dependent guards.
 -/
 
 set_option autoImplicit false

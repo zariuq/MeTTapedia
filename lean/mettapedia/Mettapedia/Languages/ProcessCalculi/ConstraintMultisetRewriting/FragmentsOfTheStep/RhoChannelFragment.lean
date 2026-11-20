@@ -2,20 +2,27 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RhoStoreB
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.FragmentsOfTheStep.HeatingBisimulation
 
 /-!
-# Rho is the channel-communication fragment of the step
+# The channel-communication fragment of the step, against rho's communication
+
+The rho of this module is the intrinsic source profile of `ContextualCommunicationProfiles` with
+communication alone (`RhoStep`): ordinary substitution, including inside quoted terms. It is not
+the semantic-substitution profile, which seals quotation and runs received drops during
+communication; that profile is not covered here.
 
 The store holds rho processes as occurrences. A rule is in the **channel-communication fragment**
 (`ChannelCommunication`) when it reads, checks and tells nothing, takes exactly the parallel
-components of a communication redex and makes exactly the components of its result. Intrinsically
-(`channelCommunication_iff`, from `core_root_shape`): it takes one message `x!(q)` and one receiver
-`for(y <- x) K` on the same name, and makes the components of `K` instantiated at `@q`. Nothing in
-the language changes: the fragment is a property of rule sets, and rho stays a client hosted on the
-step. Reads (a receive that keeps its message, a peek) are not in the fragment, and a peek is not
-rho (`RhoPeekOutside.peek_not_rho`).
+components of a communication redex and makes exactly the components of its result: one rule
+instance per redex, whose made components are the reduct that rho's own rule computes.
+Intrinsically (`channelCommunication_iff`, from `core_root_shape`): it takes one message `x!(q)` and
+one receiver `for(y <- x) K` on the same name, and makes the components of `K` instantiated at
+`@q`. Nothing in the language changes: the fragment is a property of rule sets, and rho stays a
+client placed on the step by these rules. Reads (a receive that keeps its message, a peek) are not
+in the fragment, and a peek is not rho (`RhoPeekOutside.peek_not_rho`).
 
 * `channel_fragment_bisimulation`: the step restricted to the channel-communication fragment, at
   the identity solution (`ChannelStep`), is **strongly bisimilar** to rho's reduction with
-  communication alone, through representation (`ContextualCommunicationAdequacy.Represents`: the
+  communication alone and ordinary substitution, through representation
+  (`ContextualCommunicationAdequacy.Represents`: the
   store holds exactly the components of the process, and the identity models its knowledge). Both
   directions are proved, for every rule of the fragment, not only for the compiled roots.
 * `channelStep_iff_view`: a fragment firing and a compiled firing are interchangeable through the

@@ -22,8 +22,8 @@ transport, so it is asked only of the last knowledge.
   the empty extra context and whose final knowledge is good, with the same uses in the same
   order.
 
-The step, its frames and the zoned system are arbitrary. The two steps of the calculus are
-instances (`KnowledgeTensorCoreReadingInstances`).
+The step, its frames and the zoned system are arbitrary. The first-order step and the binding-aware
+helper step are instances (`KnowledgeTensorCoreReadingInstances`).
 -/
 
 set_option autoImplicit false

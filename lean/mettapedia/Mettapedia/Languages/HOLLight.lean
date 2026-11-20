@@ -14,6 +14,15 @@ import Mettapedia.Languages.HOLLight.SourceQuantifierEmission
 import Mettapedia.Languages.HOLLight.Rules
 import Mettapedia.Languages.HOLLight.DefinitionAdapters
 import Mettapedia.Languages.HOLLight.ExportReplay
+import Mettapedia.Languages.HOLLight.HOLRDeliveries
+import Mettapedia.Languages.HOLLight.RuleModulePrimitives
+import Mettapedia.Languages.HOLLight.RuleModuleComparisonLaws
+import Mettapedia.Languages.HOLLight.RuleModuleInterning
+import Mettapedia.Languages.HOLLight.RuleModuleComponents
+import Mettapedia.Languages.HOLLight.RuleModuleReader
+import Mettapedia.Languages.HOLLight.RuleModuleHandles
+import Mettapedia.Languages.HOLLight.RuleModuleFeed
+import Mettapedia.Languages.HOLLight.RuleModuleCaches
 import Mettapedia.Languages.HOLLight.IncrementalExecution
 import Mettapedia.Languages.HOLLight.ModelInterpretation
 import Mettapedia.Languages.HOLLight.StandardTheoryInterpretation

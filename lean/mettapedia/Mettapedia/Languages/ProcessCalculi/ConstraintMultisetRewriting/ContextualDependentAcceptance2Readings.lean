@@ -1,5 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentAcceptance2
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentCensusReadings
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentClassificationReadings
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentAcceptance
 
 /-!
@@ -24,7 +24,7 @@ row reading proved for a lower round is therefore a reading of the last round, w
 | pruning under binders | `pruneSolveRule` | `last_reads_pruning` |
 | spine at a flexible base | `flexRest` | `flexRound_not_stuck_of_rest` |
 
-This is the reading half of a coverage theorem. The other half, that every equation of a census row satisfies the
+This is the reading half of a coverage theorem. The other half, that every equation of a classification row satisfies the
 hypothesis of its reader on the prepared store, is not proved here.
 -/
 
@@ -40,9 +40,9 @@ open Presentation TypedEquality TypedEquality.Normalization TypedContextual
 open ContextualDependentEta ContextualDependentUpdate ContextualDependentWorklist
 open ContextualDependentPatternSolver ContextualDependentDecisiveFragment ContextualDependentFragment
 open ContextualDependentRigidFormers ContextualDependentRank ContextualDependentSpinesMany
-open ContextualDependentTwinsUnder ContextualDependentConstantHeads ContextualDependentCensusPairEta
+open ContextualDependentTwinsUnder ContextualDependentConstantHeads ContextualDependentClassificationPairEta
 open ContextualDependentIdEndpoints ContextualDependentFragmentDecisive ContextualDependentEtaExpansion
-open ContextualDependentIdEndpointsArguments ContextualDependentCensusReadings ContextualDependentAcceptance
+open ContextualDependentIdEndpointsArguments ContextualDependentClassificationReadings ContextualDependentAcceptance
 open ContextualDependentPatternFiring ContextualDependentEliminations ContextualDependentFlexReorder
 open ContextualDependentIntersection ContextualDependentPruneSolve ContextualDependentSpineEta
 open ContextualDependentConstantHeadsProjections

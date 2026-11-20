@@ -50,20 +50,20 @@ theorem Settles.principal_or_unsolvable {Θ : Context S.R} {problem : EquationSt
     (settled : Settles problem) :
     (∃ (Δ : Context S.R) (answer : Δ ⟶ Θ), (frames S.levels).Principal problem answer) ∨
       ¬ (frames S.levels).Solvable problem := by
-  rcases settled with ⟨update, finished⟩ | absent
+  rcases settled with ⟨update, finished⟩ | missing
   · exact .inl ⟨update.target, update.answer, update.completed finished⟩
-  · exact .inr absent
+  · exact .inr missing
 
 /-- **Read past a later declaration**: the finished update lifted, the later declaration instantiated by its answer;
 or no solution, since every solution restricts to the older telescope. -/
 theorem settles_later {Γ : Context S.R} (A : TypeOver Γ) {problem : EquationStore (TotalTerm Γ)}
     (settled : Settles problem) : Settles ((frames S.levels).applyStore (projectionHom Γ A) problem) := by
-  rcases settled with ⟨update, finished⟩ | absent
+  rcases settled with ⟨update, finished⟩ | missing
   · refine .inl ⟨update.lift A, ?_⟩
     change (frames S.levels).applyStore (projectionHom update.target (A.reindex update.answer)) update.remaining = []
     rw [finished]
     rfl
-  · refine .inr fun ⟨Δ, f, solved⟩ => absent ⟨Δ, f ≫ projectionHom Γ A, ?_⟩
+  · refine .inr fun ⟨Δ, f, solved⟩ => missing ⟨Δ, f ≫ projectionHom Γ A, ?_⟩
     exact (Frames.models_applyStore (X := frames S.levels) (projectionHom Γ A) f problem).mp solved
 
 /-- **The lifted answer's telescope**: the later declaration instantiated by the answer. -/
@@ -75,16 +75,16 @@ theorem later_target {Γ : Context S.R} (A : TypeOver Γ) {problem : EquationSto
 /-- Settled stores stay settled along an equivalence. -/
 theorem Settles.equivalent {Θ : Context S.R} {problem other : EquationStore (TotalTerm Θ)}
     (same : (frames S.levels).Equivalent problem other) (settled : Settles other) : Settles problem := by
-  rcases settled with ⟨update, finished⟩ | absent
+  rcases settled with ⟨update, finished⟩ | missing
   · exact .inl ⟨update.rephrase same, finished⟩
-  · exact .inr fun ⟨Δ, f, solved⟩ => absent ⟨Δ, f, (same Δ f).mp solved⟩
+  · exact .inr fun ⟨Δ, f, solved⟩ => missing ⟨Δ, f, (same Δ f).mp solved⟩
 
 /-- A store is settled when an update of it leaves a settled store. -/
 theorem Settles.after {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)} (first : Update S.levels problem)
     (settled : Settles first.remaining) : Settles problem := by
-  rcases settled with ⟨update, finished⟩ | absent
+  rcases settled with ⟨update, finished⟩ | missing
   · exact .inl ⟨first.then update, finished⟩
-  · exact .inr fun solvable => absent (first.solvable_iff.mp solvable)
+  · exact .inr fun solvable => missing (first.solvable_iff.mp solvable)
 
 end Settles
 
@@ -144,9 +144,9 @@ theorem arrows_settles {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ
     (inside : InArrowsCod choices problem) : Settles problem := by
   obtain ⟨fuel, decided⟩ := arrowsCod_decided choices glb spec facts roots heads algebra rigid complete
     headTypingUnique declared strengthening total inside
-  rcases (decided fuel le_rfl).2 with ⟨state, finished, _, _⟩ | ⟨absent, _⟩
+  rcases (decided fuel le_rfl).2 with ⟨state, finished, _, _⟩ | ⟨missing, _⟩
   · exact .inl ⟨state, finished⟩
-  · exact .inr absent
+  · exact .inr missing
 
 include facts roots heads algebra rigid complete headTypingUnique declared strengthening spec total in
 /-- **Equations between arrow codes through later declarations are decided**: the solver of arrow codes runs on the

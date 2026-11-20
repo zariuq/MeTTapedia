@@ -47,15 +47,15 @@ after an abort is a new transaction.
   relation has no cycle.
 * **The wave commit** (`Run.wave`): committing an acyclic, clash-free batch of ready transactions
   one by one in a ranking order is a protocol run. The cycle test of `Waves` is exact.
-* **What a wait index must report** (`positive_woken_by_make`, `absence_woken_by_take`,
+* **What a wait index must report** (`positive_woken_by_make`, `none_woken_by_take`,
   `woken_requires_write`): a parked guard that one commit makes true was flipped by an event of its
-  kind. A positive guard is flipped only by a make in its region, an absence guard only by a take
+  kind. A positive guard is flipped only by a make in its region, a none guard only by a take
   from it, and a predicate query by some write in it. An index keyed by region and event kind that
   reports those events therefore sees every flip. The index itself is not modeled here.
 
 Controls: a lost claim (`Controls.lost_claim_aborts`: two rivals for one token; once the first
 commits, the second commits in no continuation), a stale epoch (`Controls.stale_epoch_aborts`: a
-lock maker commits after an absence reader began; the reader never commits), and a reachable,
+lock maker commits after a none reader began; the reader never commits), and a reachable,
 well-formed state with a waits-for edge (`Controls.waitsFor_inhabited`), so the acyclicity theorem
 is not vacuous.
 
@@ -570,8 +570,8 @@ theorem positive_woken_by_make [DecidableEq O] {store : Finset O} {d : Commit O 
   exact before (upward (regionOf_fire_subset_of_no_make fun o made => by simpa using noMake o made) after)
 
 omit [LinearOrder O] in
-/-- **An absence guard, or any downward-closed one, is woken only by a take from its region.** -/
-theorem absence_woken_by_take [DecidableEq O] {store : Finset O} {d : Commit O R}
+/-- **A none guard, or any downward-closed one, is woken only by a take from its region.** -/
+theorem none_woken_by_take [DecidableEq O] {store : Finset O} {d : Commit O R}
     {region : R → Bool} {test : Finset O → Prop}
     (downward : ∀ ⦃small large : Finset O⦄, small ⊆ large → test large → test small)
     (before : ¬ test (regionOf label store region))
@@ -711,18 +711,18 @@ theorem lost_claim_aborts :
   · simp [commitState, protocolStart]
   · rw [endStore]; decide
 
-/-- An absence reader and a lock maker. -/
+/-- A none reader and a lock maker. -/
 def lockRace : Bool → Commit ℕ Atom
   | true => unlessLocked
   | false => lockMaker
 
 /-- **A stale epoch aborts.** Both begin; the lock maker commits, which moves the epoch of the lock
-region; the absence reader is then stale and commits in no continuation. -/
+region; the none reader is then stale and commits in no continuation. -/
 theorem stale_epoch_aborts :
     ∃ σ, Run Controls.label lockRace protocolStart [(false, lockMaker)] σ ∧
       ∀ σ' trace, Run Controls.label lockRace σ trace σ' → ∀ entry ∈ trace, entry.1 ≠ true := by
   have run : Run Controls.label lockRace protocolStart [(false, lockMaker)] _ :=
-    .step (.begin _ true rfl absence_holds_empty)
+    .step (.begin _ true rfl none_holds_empty)
       (.step (.begin _ false rfl lockMaker_enabled)
         (.step (.commit _ false (fun _ => 0) rfl (by simp [lockRace, lockMaker])
             (by simp [lockRace, lockMaker]) (by simp [lockRace, lockMaker]) (by decide))

@@ -73,6 +73,8 @@ private def presentation : ReflectivePresentationDecl where
   parallelCollection := .hashBag
   parallelUnitConstructor := "PZero"
   quoteDropEquation := "QuoteDrop"
+  -- Closed, as rho, whose binder-occurrence collision this reproduces.
+  quoteScope := .closed
 
 private def binderOccurrenceProfile : ReflectionProfile where
   presentations := [presentation]

@@ -71,6 +71,23 @@ theorem ordered_controls_steps {registry : SpaceSemantics.Program}
         ((Relation.ReflTransGen.head entered childPath).tail returned).trans
           (ih frames (collected ++ firstResults))
 
+/-- An exchange of completed children gives a real reversed sequence
+path in the PeTTa machine. The installed caller is not changed; this
+does not license a caller that consumes the order of the new answers. -/
+theorem ordered_controls_permuted_steps {registry : SpaceSemantics.Program}
+    {controls reordered : List Control} {before after : Configuration} {answers : List Answer}
+    (schedule : controls.Perm reordered)
+    (swap : ∀ a ∈ controls, ∀ b ∈ controls, a ≠ b →
+      OrderedStateFlatMapRel.BagSwap (CompletedControl registry) a b)
+    (ordered : OrderedStateFlatMapRel (CompletedControl registry) controls before answers after)
+    (frames : List Frame) (collected : List Answer) :
+    ∃ output, output.Perm answers ∧
+      Relation.ReflTransGen (Transition registry)
+        {before with control := .sequence reordered collected, frames}
+        {after with control := .returned (collected ++ output), frames} := by
+  obtain ⟨_,reached,bag⟩ := ordered.permute schedule swap
+  exact ⟨_,bag,ordered_controls_steps reached frames collected⟩
+
 theorem completed_operand_bindings_valid {registry : SpaceSemantics.Program}
     {before after : Configuration} {bindings : Mettapedia.Languages.ProcessCalculi.MORK.Subst}
     {expression : Mettapedia.Languages.MeTTa.OSLFCore.Atom} {answers : List Answer}

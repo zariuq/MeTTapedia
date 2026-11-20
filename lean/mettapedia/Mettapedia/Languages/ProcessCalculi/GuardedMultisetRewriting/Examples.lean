@@ -52,7 +52,7 @@ def pOut : Pat ℕ Sig := .node .out (.var 0) (.leaf .nil)
 
 /-- Take a request, check that no lock is present, produce the answer. -/
 def serve : Rule ℕ (Tm Sig) (Pat ℕ Sig) :=
-  ⟨[pRedex], [], [Check.absent (.leaf .lock)], [pOut]⟩
+  ⟨[pRedex], [], [Check.noneMatch (.leaf .lock)], [pOut]⟩
 
 /-- The substitution `$0 ↦ a`. -/
 def σa : Subst ℕ (Tm Sig) := Function.update empty 0 (some (k .a))
@@ -87,7 +87,7 @@ theorem serve_steps :
 theorem serve_blocked (M' : Multiset (Tm Sig)) :
     ¬ Step Ls serve {un .redex (k .a), k .lock} M' := by
   rintro ⟨σ, S, taken, kept, made, -, -, -, -, holds, -⟩
-  have h := holds (Check.absent (.leaf .lock)) (by simp [serve])
+  have h := holds (Check.noneMatch (.leaf .lock)) (by simp [serve])
   change matchesIn Ls σ (.leaf .lock) {un .redex (k .a), k .lock} = 0 at h
   have mem : k .lock ∈ matchesIn Ls σ (.leaf .lock) {un .redex (k .a), k .lock} :=
     mem_matchesIn.mpr ⟨by simp, covers_leaf_iff.mpr rfl⟩

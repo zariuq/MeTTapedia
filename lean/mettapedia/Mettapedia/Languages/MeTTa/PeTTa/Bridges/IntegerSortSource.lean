@@ -129,7 +129,7 @@ theorem sorted_mode_is_histogram {program : Program} {caller : Subst} {operand :
 namespace Controls
 
 def program : Program := {equations := [], declarations := []}
-def world : Effects.State := {core := []}
+def world : Effects.State := Effects.empty
 
 def literal (values : List Int) : Atom := .expression [.symbol "quote", .expression (StdLib.integerAtoms values)]
 

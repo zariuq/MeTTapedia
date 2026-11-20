@@ -152,7 +152,7 @@ theorem tryActiveConv_drops (sn : ContextualDependentOpenedNormal.StronglyNormal
         obtain ⟨v, toV, normalV, millerV⟩ := abstractBody_reducing rigid sn recognized.pattern body rightSides
         exact newestReducing _ toV normalV millerV
       · cases fired
-  | refuted absent => cases fired
+  | refuted missing => cases fired
   | pending =>
       dsimp only at fired
       split at fired <;> cases fired

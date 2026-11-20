@@ -6,7 +6,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Firs
 
 * **Guards** (`firstOrderGuards`): a first-order firing's guards are its checks and predicate queries,
   read at any present occurrences (`firstOrderGuard`). Its region at a solution is the occurrences
-  whose labels its absence and count checks match there, and those its queries' regions hold there
+  whose labels its predicate and count checks match there, and those its queries' regions hold there
   (`firstOrderRegion`); the guards read nothing else (`firstOrderGuard_inside`).
 * **The frame equivalence.** Checks respect it for every action (`check_holds_respects`). A query's
   region is an arbitrary function of the substitution, so `Holds` respects the equivalence for every
@@ -47,15 +47,15 @@ variable (A : SubstitutionAction T S) (label : O → T)
 /-- The occurrences a check reads at a solution: those whose label its pattern matches there. -/
 def checkReads (σ : S) : Check T → O → Prop
   | .equal _ _, _ => False
-  | .absent pattern, o => A.E (A.apply σ pattern) (A.apply σ (label o))
+  | .predicate _ pattern, o => A.E (A.apply σ pattern) (A.apply σ (label o))
   | .count pattern _, o => A.E (A.apply σ pattern) (A.apply σ (label o))
 
 /-- **The guards of a first-order firing**, read at any present occurrences. -/
 def firstOrderGuard (f : Firing T S O) (σ : S) (W : Finset O) : Prop :=
   (∀ check ∈ f.rule.checks, check.Holds A σ label W) ∧
-    ∀ query ∈ f.queries, (query.atSolution σ).Holds label W
+    ∀ query ∈ f.queries, query.Holds σ label W
 
-/-- **The region of a first-order firing at a solution**: the occurrences its absence and count
+/-- **The region of a first-order firing at a solution**: the occurrences its predicate and count
 checks match there, and the occurrences its queries' regions hold there. -/
 def firstOrderRegion (f : Firing T S O) (σ : S) : Set O :=
   {o | (∃ check ∈ f.rule.checks, checkReads A label σ check o) ∨
@@ -68,14 +68,24 @@ theorem check_holds_inside (σ : S) (check : Check T) {W W' : Finset O}
     check.Holds A σ label W ↔ check.Holds A σ label W' := by
   cases check with
   | equal _ _ => exact Iff.rfl
-  | absent pattern =>
-      show (∀ o ∈ W, ¬ A.E (A.apply σ pattern) (A.apply σ (label o))) ↔
-        (∀ o ∈ W', ¬ A.E (A.apply σ pattern) (A.apply σ (label o)))
-      constructor
-      · intro absent o member matched
-        exact absent o ((same o matched).mpr member) matched
-      · intro absent o member matched
-        exact absent o ((same o matched).mp member) matched
+  | predicate quantifier pattern =>
+      cases quantifier with
+      | any =>
+          show (∃ o ∈ W, A.E (A.apply σ pattern) (A.apply σ (label o))) ↔
+            (∃ o ∈ W', A.E (A.apply σ pattern) (A.apply σ (label o)))
+          constructor
+          · rintro ⟨o, member, matched⟩
+            exact ⟨o, (same o matched).mp member, matched⟩
+          · rintro ⟨o, member, matched⟩
+            exact ⟨o, (same o matched).mpr member, matched⟩
+      | none =>
+          show (∀ o ∈ W, ¬ A.E (A.apply σ pattern) (A.apply σ (label o))) ↔
+            (∀ o ∈ W', ¬ A.E (A.apply σ pattern) (A.apply σ (label o)))
+          constructor
+          · intro missing o member matched
+            exact missing o ((same o matched).mpr member) matched
+          · intro missing o member matched
+            exact missing o ((same o matched).mp member) matched
   | count pattern number =>
       show (Check.«matches» A σ label W pattern).card = number ↔
         (Check.«matches» A σ label W' pattern).card = number
@@ -97,7 +107,7 @@ theorem firstOrderGuard_inside (f : Firing T S O) (σ : S) {W W' : Finset O}
   refine and_congr (forall_congr' fun check => imp_congr_right fun member => ?_)
     (forall_congr' fun query => imp_congr_right fun member => ?_)
   · exact check_holds_inside A label σ check fun o reads => same o (Or.inl ⟨check, member, reads⟩)
-  · show regionOf label W (query.region σ) = query.seen ↔ regionOf label W' (query.region σ) = query.seen
+  · show query.accepts σ (regionOf label W (query.region σ)) ↔ query.accepts σ (regionOf label W' (query.region σ))
     have equal : regionOf label W (query.region σ) = regionOf label W' (query.region σ) := by
       ext o
       simp only [regionOf, Finset.mem_filter]
@@ -117,10 +127,9 @@ theorem check_holds_respects {σ τ : S} (same : ∀ t, A.E (A.apply σ t) (A.ap
       fun h => A.equivalence.trans (same s) (A.equivalence.trans h (A.equivalence.symm (same t)))⟩
   cases check with
   | equal left right => exact congrE left right
-  | absent pattern =>
-      show (∀ o ∈ W, ¬ A.E (A.apply σ pattern) (A.apply σ (label o))) ↔
-        (∀ o ∈ W, ¬ A.E (A.apply τ pattern) (A.apply τ (label o)))
-      exact forall_congr' fun o => imp_congr_right fun _ => not_congr (congrE _ _)
+  | predicate quantifier pattern =>
+      show quantifier.Holds W _ ↔ quantifier.Holds W _
+      exact quantifier.holds_congr fun o _ => congrE _ _
   | count pattern number =>
       show (Check.«matches» A σ label W pattern).card = number ↔
         (Check.«matches» A τ label W pattern).card = number
@@ -388,7 +397,7 @@ def blind : SubstitutionAction Unit Bool where
 def split : PredicateQueryAdmission.Query Unit Bool Nat := ⟨fun σ _ => σ, ∅⟩
 
 /-- Queries `split` and nothing else. -/
-def splitter : Firing Unit Bool Nat := ⟨⟨[], [], [], [], []⟩, [split], ⟨[], [], []⟩⟩
+def splitter : Firing Unit Bool Nat := ⟨⟨[], [], [], [], []⟩, [split.toRegion], ⟨[], [], []⟩⟩
 
 /-- One present occurrence. -/
 def one : Configuration Unit Nat := ⟨[], {0}⟩
@@ -406,7 +415,7 @@ theorem holds_not_respecting :
     show regionOf (fun _ : Nat => ()) one.present (fun _ => false) = (∅ : Finset Nat)
     decide
   obtain ⟨-, queries⟩ := same.mpr atFalse
-  have atTrue := queries split (List.mem_singleton_self _)
+  have atTrue := queries split.toRegion (List.mem_singleton_self _)
   change regionOf (fun _ : Nat => ()) one.present (fun _ => true) = (∅ : Finset Nat) at atTrue
   revert atTrue
   decide

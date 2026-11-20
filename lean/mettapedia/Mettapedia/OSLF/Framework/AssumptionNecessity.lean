@@ -267,8 +267,8 @@ theorem commPredSourceGeneric_rhoStep (channel : Pattern) :
       Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefAdequacy.rhoComm_substitutionPresentation_selected]
     simp [rhoCommRewrite, commPredTarget, zeroPat, applyBindingsReflective,
       applyBindingsReflectiveList, normalizeReflectiveReplacement,
-      substituteReflective, normalizeReflective, normalizeReflectiveList,
-      finishNormalizeReflectiveApply, rhoReflectivePresentation]
+      substituteReflective, resolveQuotes, substituteResolved, normalizeReflective,
+      normalizeReflectiveList, finishNormalizeReflectiveApply, rhoReflectivePresentation]
 
 theorem commPredSource_rhoStep (n : Nat) :
     RhoStep (commPredSource n) commPredTarget :=

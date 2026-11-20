@@ -270,10 +270,10 @@ def solvableB {Θ : Context S.R} {e : Equation (TotalTerm Θ)} (v : FlexArrow e)
 
 omit [DecidableEq Head] in
 theorem solvable_of_B {Θ : Context S.R} {e : Equation (TotalTerm Θ)} (v : FlexArrow e)
-    (h : solvableB choices v = true) (absent : v.X ∉ domainVars e.2.2.code) : Solvable' v := by
+    (h : solvableB choices v = true) (missing : v.X ∉ domainVars e.2.2.code) : Solvable' v := by
   simp only [solvableB, Bool.and_eq_true] at h
   obtain ⟨⟨hHeads, hComparable⟩, hAll⟩ := h
-  refine ⟨absent, ?_, allUniverseDecls_of_B hAll, ?_⟩
+  refine ⟨missing, ?_, allUniverseDecls_of_B hAll, ?_⟩
   · intro h member
     have fit := List.all_eq_true.mp hHeads h member
     unfold fitPred at fit
@@ -453,9 +453,9 @@ theorem flexRigid_decided {Θ : Context S.R} {original : EquationStore (TotalTer
         ((∃ state finished,
               run (flexRigidSolver choices facts roots heads algebra rigid complete headTypingUnique) original larger =
                 .solved state finished ∧ (frames S.levels).Principal original state.answer) ∨
-          (∃ absent,
+          (∃ missing,
             run (flexRigidSolver choices facts roots heads algebra rigid complete headTypingUnique) original larger =
-              .refuted absent)) :=
+              .refuted missing)) :=
   (flexRigidFragment choices facts roots heads algebra rigid complete headTypingUnique).decided inside
 
 end Solver

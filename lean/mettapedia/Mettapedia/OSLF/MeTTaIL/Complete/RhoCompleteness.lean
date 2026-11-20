@@ -109,7 +109,7 @@ theorem established_step {source target : RhoProcess} (step : rhoLanguageDefGSLT
   obtain ⟨redexTyped, redexSafe⟩ := (rhoClosedTermWellSorted_process_iff redex.1).mp redex.2
   obtain ⟨target', canonicalStep, sameCanonical⟩ :=
     Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalStepperCompleteness.canonicalStep_complete_of_rhoStep
-      redexTyped redexSafe baseStep
+      redexTyped baseStep
   obtain ⟨receipt, valid, targetEq⟩ := GeneralRho.DepthOne.step_receipt
     (canonicalize_procWellSorted [] redexTyped) (canonicalize_binderSafeAt _ 0 redexSafe)
     (GeneralRho.DepthOne.isCanonical_channelsDecided (canonicalize_isCanonical _)) canonicalStep

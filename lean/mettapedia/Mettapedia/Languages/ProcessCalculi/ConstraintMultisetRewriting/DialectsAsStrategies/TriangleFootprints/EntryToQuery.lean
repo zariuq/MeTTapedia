@@ -25,8 +25,9 @@ The services are HE's own: the machine's argument admission is HE's historical s
   the interpretation's region, then the tuple traversal (`tupleWord`: a cast of each `aᵢ` reads the
   lookup's region of `aᵢ`, every other move reads nothing), then two moves reading nothing.
 * `query_fires`: from the call, HE's equation query fires (`callAbsent` on an empty frontier,
-  `callEquations` otherwise), and its declared region is H2's equation region
-  `eqRegion [%Undefined%] (f a₁ … aₙ) ∅` (`query_region`). Every query has a frontier
+  `callEquations` otherwise), and its declared region is the equation region compared in
+  `ReadWordTriangle`, `HEFootprints.eqRegion [%Undefined%] (f a₁ … aₙ) ∅` (`query_region`). Every
+  query has a frontier
   (`frontier_total`).
 * `entry_reaches_equation_query`: the two together, the headline of this module.
 * `entry_rows_empty`: under HE's raw lookup, on a program with no declaration of `f` or of the
@@ -37,7 +38,7 @@ The services are HE's own: the machine's argument admission is HE's historical s
 * `silent_fails` (negative): the contract is not vacuous.
 * `Controls.declared_head_blocks_tuple` (negative): with a declaration `(: f T)` in the program, the
   entry's tuple move of `entry_traced` is not available: the run's first move depends on the
-  absence of declarations of `f`.
+  none queries of declarations of `f`.
 -/
 
 set_option autoImplicit false
@@ -527,8 +528,8 @@ theorem query_region (D : DeclaredLookup) {atoms : List Atom} {f : String} {args
 /-- **HE's run from the entry reaches the equation query** (obligation 1). For a flat ground call
 `(f a₁ … aₙ)` of data atoms, with no declaration of `f`, `f` no host operation and no instruction,
 and a cast lookup meeting `AnswersUndefined`: HE's machine runs from `load` to the call, with the
-declared word `entryWord`; the equation query has a frontier, fires, and reads H2's equation
-region. -/
+declared word `entryWord`; the equation query has a frontier, fires, and reads the equation region
+`HEFootprints.eqRegion`. -/
 theorem entry_reaches_equation_query (D : DeclaredLookup) (answers : AnswersUndefined D.lookup)
     {atoms : List Atom} {f : String} {args : List Atom}
     (data : ∀ a ∈ Atom.symbol f :: args, DataAtom a)
@@ -637,7 +638,7 @@ def declareF : Atom := .expression [.symbol ":", .symbol "f", .symbol "Number"]
 
 /-- **Negative control: a declaration of the head blocks the tuple entry.** With `(: f Number)` in
 the program, the type collection of `f` is not `%Undefined%` alone, so the entry move of
-`entry_traced` is not available: HE's run depends on the absence of declarations of `f`. -/
+`entry_traced` is not available: HE's run depends on the lack of declarations of `f`. -/
 theorem declared_head_blocks_tuple :
     ¬ TypeOccurrencesRel ((Space.ofList [declareF]).atoms : Multiset Atom) (.symbol "f")
         {Atom.undefinedType} ∧

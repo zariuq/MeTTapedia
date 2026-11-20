@@ -1,6 +1,7 @@
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SemanticSubstitution
 import Mettapedia.Machines.Cursor.Protocol
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.ScopedSemanticSubstitution
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalMatch
 
 /-!
 # Explicit computation evidence for rho communication
@@ -16,6 +17,14 @@ set_option autoImplicit false
 namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.SemanticSubstitutionEvidence
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
+
+/-- The replay's binder test is the whole-name decision of the source meaning. -/
+private theorem matchesBinder_iff (k : Nat) (name : Pattern) :
+    Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.matchesBinder rhoReflectivePresentation k name = true ↔
+      Canonical.canonicalize name = .bvar k := by
+  simp only [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.matchesBinder, decide_eq_true_eq,
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.BinderHead.ofPattern_index_iff,
+    CanonicalMatch.derivedCanonicalize_eq]
 
 inductive Task where
   | normalizeName (name : Pattern)
@@ -153,9 +162,10 @@ def unfoldCall : Task → List Result → Option (List Task × Result)
   | .normalizeList (p :: ps), [.pattern out, .patterns outs] =>
       some ([.normalizeProc p, .normalizeList ps], .patterns (out :: outs))
   | .substituteName k replacement name, [.pattern normalized] =>
-      some ([.normalizeName name], match normalized with
-        | .bvar n => if n == k then .marked replacement true else .marked (.bvar n) false
-        | _ => .marked normalized false)
+      some ([.normalizeName name],
+        if Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.matchesBinder rhoReflectivePresentation k name then
+          .marked replacement true
+        else .marked normalized false)
   | .substituteProc k replacement (.bvar n), [] =>
       some ([], .pattern (if n == k then replacement else .bvar n))
   | .substituteProc _ _ (.fvar name), [] => some ([], .pattern (.fvar name))
@@ -226,8 +236,8 @@ theorem unfoldCall_sound {task : Task} {results : List Result} {requests : List 
     cases process using semanticNormalizeProc.fun_cases <;>
       simp_all [semanticNormalizeProc.eq_1, semanticNormalizeProc.eq_2, semanticNormalizeProc.eq_11]
   case case24 index replacement name normalized =>
-    cases normalized <;> simp only []
-    split_ifs <;> rfl
+    by_cases hit : Canonical.canonicalize name = .bvar index <;>
+      simp [hit, (matchesBinder_iff index name).not]
   case case28 => rfl
 
 mutual
@@ -279,8 +289,8 @@ theorem unfoldCall_source (task : Task) :
     cases process using semanticNormalizeProc.fun_cases <;>
       simp_all [semanticNormalizeProc.eq_1, semanticNormalizeProc.eq_2, semanticNormalizeProc.eq_11]
   case case15 index replacement name =>
-    cases normalized : semanticNormalizeName name <;> simp only []
-    split_ifs <;> rfl
+    by_cases hit : Canonical.canonicalize name = .bvar index <;>
+      simp [hit, (matchesBinder_iff index name).not]
   case case19 => rfl
 
 theorem unfoldCall_requests {task : Task} {results : List Result} {requests : List Task} {out : Result}

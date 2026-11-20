@@ -104,16 +104,14 @@ theorem semanticNormalize_markerName (n : Nat) :
 theorem semanticSubstName_markerName
     (depth : Nat) (replacement : Pattern) (n : Nat) :
     semanticSubstName depth replacement (markerName n) = markerName n := by
-  simp only [semanticSubstName, semanticSubstNameMark]
-  rw [semanticNormalize_markerName]
-  rfl
-
-theorem markerProcess_wellSorted : ∀ n,
-    ProcWellSorted rhoReflectivePresentation FreeSortContext.empty []
-      (markerProcess n)
-  | 0 => .unit
-  | n + 1 =>
-      .output (.quote (markerProcess_wellSorted n)) .unit
+  have absent : ∀ m, noBVar depth (markerProcess m) = true := by
+    intro m
+    induction m with
+    | zero => simp [markerProcess, rhoZero, noBVar, noBVarList]
+    | succ m ih => simp [markerProcess, rhoZero, noBVar, noBVarList, ih]
+  rw [semanticSubstName, semanticSubstNameMark_unmatched_of_noBVar depth replacement
+    (by simpa [markerName, noBVar, noBVarList] using absent n)]
+  exact semanticNormalize_markerName n
 
 theorem markerProcess_binderSafe : ∀ n,
     binderSafeAt "NQuote" 0 (markerProcess n) = true
@@ -122,13 +120,20 @@ theorem markerProcess_binderSafe : ∀ n,
       simp [markerProcess, rhoZero, binderSafeAt, binderSafeListAt,
         markerProcess_binderSafe n]
 
+theorem markerProcess_wellSorted : ∀ n,
+    ProcWellSorted rhoReflectivePresentation FreeSortContext.empty []
+      (markerProcess n)
+  | 0 => .unit
+  | n + 1 =>
+      .output (NameWellSorted.quoteOfSafe (markerProcess_wellSorted n) (markerProcess_binderSafe n)) .unit
+
 /-- Every metabolic name used below inhabits the closed name fiber of the
 authored pure-rho calculus. -/
 theorem markerName_closed (n : Nat) :
     RhoClosedTermWellSorted
       Mettapedia.OSLF.Framework.ConstructorCategory.rhoName (markerName n) := by
   apply (rhoClosedTermWellSorted_name_iff _).mpr
-  exact ⟨.quote (markerProcess_wellSorted n), by
+  exact ⟨NameWellSorted.quoteOfSafe (markerProcess_wellSorted n) (markerProcess_binderSafe n), by
     simp [markerName, binderSafeAt,
       markerProcess_binderSafe n]⟩
 

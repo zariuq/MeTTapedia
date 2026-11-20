@@ -314,7 +314,9 @@ theorem residual_isConfiguration {C : Configuration T O} {X : Config T S O}
           · exact Or.inl gU
           · exact Or.inr ⟨mem_residual.mpr ⟨gX, gU⟩, inhibits, before, gU, qU⟩
         · exact Or.inl gU
-    rw [split, regionOf_presentAfter_union_outside label]
+    rw [split]
+    unfold PredicateQueryAdmission.RegionQuery.Holds
+    rw [regionOf_presentAfter_union_outside label]
     · exact config.observed q qX query member σ
     · intro g hg o written
       obtain ⟨gU, notWriter⟩ := Finset.mem_filter.mp hg

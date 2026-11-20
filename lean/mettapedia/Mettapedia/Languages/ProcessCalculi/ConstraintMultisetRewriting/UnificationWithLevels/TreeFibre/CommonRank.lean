@@ -352,7 +352,7 @@ def retarget {rank rank' : {Γ : Context S.R} → EquationStore (TotalTerm Γ) �
     Round S.levels rank' problem :=
   match r with
   | .progress update smaller => .progress update (lowers update smaller rfl)
-  | .refuted absent => .refuted absent
+  | .refuted missing => .refuted missing
   | .stuck => .stuck
 
 theorem retarget_progress {rank rank' : {Γ : Context S.R} → EquationStore (TotalTerm Γ) → Nat × Nat}
@@ -384,7 +384,7 @@ theorem retarget_ne_stuck {rank rank' : {Γ : Context S.R} → EquationStore (To
 def transport {Γ : Context S.R} {P Q : EquationStore (TotalTerm Γ)} (same : (frames S.levels).Equivalent P Q)
     (ranks : commonRank Q = commonRank P) : Round S.levels commonRank Q → Round S.levels commonRank P
   | .progress update smaller => .progress (update.rephrase same) (by rw [← ranks]; exact smaller)
-  | .refuted absent => .refuted fun ⟨Δ, f, solved⟩ => absent ⟨Δ, f, (same Δ f).mp solved⟩
+  | .refuted missing => .refuted fun ⟨Δ, f, solved⟩ => missing ⟨Δ, f, (same Δ f).mp solved⟩
   | .stuck => .stuck
 
 theorem transport_progress {Γ : Context S.R} {P Q : EquationStore (TotalTerm Γ)}

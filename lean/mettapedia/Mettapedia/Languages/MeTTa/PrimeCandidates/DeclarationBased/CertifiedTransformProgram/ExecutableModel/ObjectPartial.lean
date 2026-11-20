@@ -624,9 +624,9 @@ def searchWitnessed : Witnessed objectRules where
   type := searchType
   witness := searchWitness
   fresh := search_fresh
-  typesAbsent := search_typesAbsent
+  typesAvoidName := search_typesAbsent
   stepsStable := search_stepsStable
-  typeAbsent := search_typeAbsent
+  typeAvoidsName := search_typeAbsent
   universeHead := .sort Tower.zero
   universeOk := .sort _
   typeTyped := searchType_typed
@@ -650,7 +650,7 @@ theorem search_conserves_absent {st : Statement Tower.Head}
     (absent : st.allConstants (fun n => !(n == searchN)) = true)
     (derivation : Derivable (objectRules.addConstant searchN searchType) st) :
     Derivable objectRules st :=
-  searchWitnessed.conserves_absent absent derivation
+  searchWitnessed.conserves_of_not_occurring absent derivation
 
 /-- **Consistency is kept** wherever the object package has no closed inhabitant
 of a closed type in which `search` does not occur. -/
@@ -680,7 +680,7 @@ theorem search_witness_image : Typed objectRules .nil searchWitness searchType :
   have typeId :
       searchWitnessed.type.instConsts searchWitnessed.subst = searchWitnessed.type :=
     Tm.instConsts_of_allConstants searchWitnessed.subst searchWitnessed.fixes
-      searchWitnessed.typeAbsent
+      searchWitnessed.typeAvoidsName
   rw [typeId] at moved
   exact moved
 

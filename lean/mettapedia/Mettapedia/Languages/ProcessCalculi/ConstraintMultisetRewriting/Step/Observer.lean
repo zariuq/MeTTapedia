@@ -279,17 +279,17 @@ def querySightings (queries : List (PredicateQueryAdmission.Query T S O)) : Reco
   queries.map fun query => sighting query.seen
 
 /-- **The sightings of a run**: those of its firings, in order. -/
-def runSightings (w : List (Firing T S O)) : Record O :=
-  w.flatMap fun f => querySightings f.queries
+def runSightings (w : List (ExactQueryAlphabet.Alphabet T S O)) : Record O :=
+  w.flatMap fun f => querySightings f.2.queries
 
 /-- **Renaming a query renames the relation it records.** -/
 theorem querySightings_rename (π : O ≃ O) (queries : List (PredicateQueryAdmission.Query T S O)) :
-    querySightings (queries.map (renameQuery π)) = rename π (querySightings queries) := by
+    querySightings (queries.map (ExactQueryAlphabet.renameQuery π)) = rename π (querySightings queries) := by
   simp only [querySightings, rename, List.map_map]
   exact List.map_congr_left fun query _ => (renameEntry_sighting π query.seen).symm
 
-theorem runSightings_cons (f : Firing T S O) (w : List (Firing T S O)) :
-    runSightings (f :: w) = querySightings f.queries ++ runSightings w :=
+theorem runSightings_cons (f : ExactQueryAlphabet.Alphabet T S O) (w : List (ExactQueryAlphabet.Alphabet T S O)) :
+    runSightings (f :: w) = querySightings f.2.queries ++ runSightings w :=
   List.flatMap_cons
 
 variable [DecidableEq O]
@@ -303,7 +303,7 @@ theorem support_querySightings :
       rw [support_sighting, support_querySightings rest]
 
 /-- **Flattened, a run's sightings are the client layer's.** -/
-theorem support_runSightings : ∀ w : List (Firing T S O), support (runSightings w) = runSighted w
+theorem support_runSightings : ∀ w : List (ExactQueryAlphabet.Alphabet T S O), support (runSightings w) = runSighted w
   | [] => rfl
   | f :: rest => by
       rw [runSightings_cons, support_append, support_querySightings, support_runSightings rest]

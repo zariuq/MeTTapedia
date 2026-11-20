@@ -108,33 +108,33 @@ variable {T : Type uT} {S : Type uS} {O : Type uO} [DecidableEq O]
 /-- **A firing and its alternative under a fresh name are equivalent modulo the knowledge exactly
 when neither name has escaped.** -/
 theorem fresh_alternative_moduloEquivalent_iff (valid : f.Valid A label C)
-    (made : r ∈ f.selection.made) (absent : r' ∉ C.present) (same : label r' = label r)
-    (new : r' ∉ f.names) :
+    (made : r ∈ f.selection.made) (missing : r' ∉ C.present) (same : label r' = label r)
+    (new : r' ∉ f.selection.made) :
     ModuloEquivalent A label E (f.result label C) ((f.rename (Equiv.swap r r')).result label C) ↔
       r ∉ E ∧ r' ∉ E := by
-  have notMade : r' ∉ f.selection.made := fun inMade => new (by simp [Firing.names, inMade])
+  have notMade : r' ∉ f.selection.made := new
   constructor
   · intro h
     refine ⟨fun seen => ?_, fun seen' => ?_⟩
     · have here : r ∈ (f.result label C).present := result_present_iff.mpr (Or.inr made)
       have there := (h.escaped_iff seen).mp here
-      rw [fresh_alternative_result valid made absent same] at there
+      rw [fresh_alternative_result valid made missing same] at there
       obtain ⟨a, member, moved⟩ := Finset.mem_map.mp there
       have isR' : a = r' := by
         rw [Equiv.coe_toEmbedding, Equiv.swap_apply_eq_iff, Equiv.swap_apply_left] at moved
         exact moved
       rw [isR'] at member
       rcases result_present_iff.mp member with ⟨present, -⟩ | inMade
-      · exact absent present
+      · exact missing present
       · exact notMade inMade
     · have there : r' ∈ ((f.rename (Equiv.swap r r')).result label C).present := by
-        rw [fresh_alternative_result valid made absent same]
+        rw [fresh_alternative_result valid made missing same]
         exact Finset.mem_map.mpr ⟨r, result_present_iff.mpr (Or.inr made), by simp⟩
       rcases result_present_iff.mp ((h.escaped_iff seen').mpr there) with ⟨present, -⟩ | inMade
-      · exact absent present
+      · exact missing present
       · exact notMade inMade
   · rintro ⟨unseen, unseen'⟩
-    exact PrivatelyEquivalent.modulo (fresh_alternative_equivalent valid made absent same unseen unseen')
+    exact PrivatelyEquivalent.modulo (fresh_alternative_equivalent valid made missing same unseen unseen')
 
 end Alternatives
 
@@ -163,7 +163,7 @@ theorem superposed_modulo_iff (E : Finset ℕ) :
         moduloEnd A label E (classEnd A label root (Quot.mk _ [second])) ↔ 20 ∉ E ∧ 21 ∉ E := by
   rw [classEnd_single, classEnd_single, moduloEnd_mk_eq_iff, ← second_is_alternative]
   exact fresh_alternative_moduloEquivalent_iff first_valid (by simp [first]) (by decide) rfl
-    (by simp [Firing.names, first, sighted])
+    (by simp [first])
 
 /-- **The verdict is the private one**: on the superposed pair, ends modulo the knowledge and private
 ends agree for every client. -/
@@ -173,7 +173,7 @@ theorem superposed_same_verdict (E : Finset ℕ) :
       PrivatelyEquivalent A label E (first.result label root) (second.result label root) := by
   rw [superposed_modulo_iff, ← second_is_alternative]
   exact (fresh_alternative_equivalent_iff (r := 20) (r' := 21) first_valid (by simp [first]) (by decide) rfl
-    (by simp [Firing.names, first, sighted])).symm
+    (by simp [first])).symm
 
 /-- **Private rows interfere modulo the knowledge**: the amplitudes `1` and `-1` read `0`. -/
 theorem superposed_modulo_private :

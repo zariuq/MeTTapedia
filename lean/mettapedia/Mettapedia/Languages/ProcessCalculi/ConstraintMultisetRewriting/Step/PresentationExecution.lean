@@ -1,4 +1,4 @@
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Presentation
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationCore
 import Mettapedia.OSLF.MeTTaIL.RelationQueryAdmission
 
 /-!

@@ -12,7 +12,7 @@ state to itself renames by an automorphism of that whole record (`escapeIso_self
   record mentions onto themselves, and the identities the end's record mentions onto those of the
   other end. Restricted to what was exported, it is a partial bijection between the executions that
   keeps its old part and extends to names exported later (`Record.support_rename`).
-* **Recording choices** (`choiceEscape`): a firing makes the environment record each sighted set and
+* **Recording choices** (`choiceEscape`): an exact-query firing makes the environment record each sighted set and
   each occurrence it took, as a held reference.
 
 ## Controls (`ChoiceControls`)
@@ -125,18 +125,18 @@ variable (A : SubstitutionAction T S) (label : O → T)
 
 /-- **Recording choices**: a firing makes the environment record each set its predicate queries
 sighted and each occurrence it took, as a held reference. -/
-def choiceEscape : (renamingTransport A label).Escape where
+def choiceEscape : (exactRenamingTransport A label).Escape where
   row _ o := some (label o)
   row_iso i o := .some (Frames.Carried.of_E (by
     show A.E (A.apply A.identity (label o)) (label (i.rename o))
     rw [A.apply_identity, i.keeps]
     exact A.equivalence.refl _))
-  records f := querySightings f.queries ++ Record.references f.selection.taken
+  records f := querySightings f.2.queries ++ Record.references f.1.selection.taken
   publishes _ _ := []
   records_move i f := by
-    show querySightings (f.queries.map (renameQuery i.rename)) ++
-        Record.references (f.selection.taken.map i.rename) =
-      Record.rename i.rename (querySightings f.queries ++ Record.references f.selection.taken)
+    show querySightings (f.2.queries.map (ExactQueryAlphabet.renameQuery i.rename)) ++
+        Record.references (f.1.selection.taken.map i.rename) =
+      Record.rename i.rename (querySightings f.2.queries ++ Record.references f.1.selection.taken)
     rw [Observation.querySightings_rename, Record.rename_append, Record.references_rename]
   publishes_move _ _ _ := .nil
   records_alike {C} {f} _ same := by
@@ -148,7 +148,7 @@ def choiceEscape : (renamingTransport A label).Escape where
 
 /-- The escape-relative transport that records choices. -/
 abbrev choiceEscaping :=
-  (renamingTransport A label).escaping (renamingNatural A label) (choiceEscape A label)
+  (exactRenamingTransport A label).escaping (exactRenamingNatural A label) (choiceEscape A label)
 
 end Choices
 
@@ -174,7 +174,7 @@ namespace ChoiceControls
 open Mettapedia.Logic.LP
 open ConstraintMultisetRewriting.Controls (signature)
 open EscapeControls (blank twins seeAll takeFive swapTwins swapTwins_keeps twins_renamed takeFive_valid
-  takeSix_valid)
+  takeSix_valid takeFiveExact takeSixExact takeFiveExact_valid takeSixExact_valid)
 open ObserverControls (escaping start runFive runSix swapIso sighting_dissolved)
 open Observation.Record (sighting reference references automorphisms)
 open MeTTaCalculus.OccurrenceCommits (regionOf)
@@ -292,11 +292,11 @@ abbrev choices := choiceEscaping A blank
 
 /-- Take `5`, sight `{5, 6}`, and record the choice. -/
 abbrev choiceFive (R : Record ℕ) : (choiceEscape A blank).step.Run (start R) :=
-  .cons takeFive takeFive_valid (.nil _)
+  .cons takeFiveExact takeFiveExact_valid (.nil _)
 
 /-- Take `6`, sight `{5, 6}`, and record the choice. -/
 abbrev choiceSix (R : Record ℕ) : (choiceEscape A blank).step.Run (start R) :=
-  .cons (takeFive.rename swapTwins) takeSix_valid (.nil _)
+  .cons takeSixExact takeSixExact_valid (.nil _)
 
 /-- The exchange of `5` and `6`, relative to an environment that knows nothing. -/
 def freshSwap : choices.Iso (start []) (start []) := ⟨swapIso, .nil, rfl⟩
@@ -308,7 +308,7 @@ theorem choice_recorded_identified :
       (choiceFive []).last.record = [sighting {5, 6}, reference 5] ∧
       (choiceSix []).last.record = [sighting {5, 6}, reference 6] ∧
       Record.rename swapTwins [sighting {5, 6}, reference 5] = [sighting {5, 6}, reference 6] :=
-  ⟨.rel _ _ (.inr (Transport.Similar.single freshSwap takeFive_valid takeSix_valid rfl)), rfl,
+  ⟨.rel _ _ (.inr (Transport.Similar.single freshSwap takeFiveExact_valid takeSixExact_valid rfl)), rfl,
     by decide, by decide⟩
 
 /-! ### Repeated references -/
@@ -339,35 +339,36 @@ theorem aliasing_same_automorphisms (π : ℕ ≃ ℕ) :
 /-! ### A name exported later -/
 
 /-- Sight `{5, 6}` and take nothing. -/
-def sightBoth : Firing (Term signature) (Subst signature) ℕ := ⟨⟨[], [], [], [], []⟩, [seeAll], ⟨[], [], []⟩⟩
+def sightBoth : ExactQueryAlphabet.Alphabet (Term signature) (Subst signature) ℕ :=
+  ExactQueryAlphabet.ofQueries ⟨[], [], [], [], []⟩ [seeAll] ⟨[], [], []⟩
 
 /-- Take `o`, sighting nothing. -/
-def takeOnly (o : ℕ) : Firing (Term signature) (Subst signature) ℕ :=
-  ⟨⟨[.const 0], [], [], [], []⟩, [], ⟨[o], [], []⟩⟩
+def takeOnly (o : ℕ) : ExactQueryAlphabet.Alphabet (Term signature) (Subst signature) ℕ :=
+  ExactQueryAlphabet.ofQueries ⟨[.const 0], [], [], [], []⟩ [] ⟨[o], [], []⟩
 
-theorem sightBoth_valid : sightBoth.Valid A blank twins := by
+theorem sightBoth_valid : (ExactQueryAlphabet.step A blank).Admits (s := twins) sightBoth := by
   refine ⟨⟨by decide, by decide, rfl, rfl, rfl, by decide,
-    ⟨Subst.id signature, by simp [Selection.problem, Selection.equations, twins, sightBoth]⟩,
-    by simp [sightBoth]⟩, ?_⟩
+    ⟨Subst.id signature, by simp [Selection.problem, Selection.equations, twins, sightBoth, ExactQueryAlphabet.ofQueries]⟩,
+    by simp [sightBoth, ExactQueryAlphabet.ofQueries]⟩, ?_⟩
   intro query member σ _
   obtain rfl := List.mem_singleton.mp member
   show MeTTaCalculus.OccurrenceCommits.regionOf blank twins.present (fun _ => true) = {5, 6}
   decide
 
 /-- What sighting both leaves. -/
-abbrev afterSight : Configuration (Term signature) ℕ := sightBoth.result blank twins
+abbrev afterSight : Configuration (Term signature) ℕ := sightBoth.1.result blank twins
 
 theorem afterSight_present : afterSight.present = {5, 6} := by decide
 
 theorem takeOnly_valid (o : ℕ) (present : o ∈ ({5, 6} : Finset ℕ)) :
-    (takeOnly o).Valid A blank afterSight := by
+    (ExactQueryAlphabet.step A blank).Admits (s := afterSight) (takeOnly o) := by
   refine ⟨⟨List.nodup_singleton o, List.nodup_nil, rfl, rfl, rfl, ?_,
-    ⟨Subst.id signature, ?_⟩, by simp [takeOnly]⟩, by simp [takeOnly]⟩
+    ⟨Subst.id signature, ?_⟩, by simp [takeOnly, ExactQueryAlphabet.ofQueries]⟩, by simp [takeOnly, ExactQueryAlphabet.ofQueries]⟩
   · simp only [Finset.mem_insert, Finset.mem_singleton] at present
     rcases present with rfl | rfl <;> decide
   · intro e member
     simp [Selection.problem, Selection.equations, takeOnly, sightBoth, Selection.result, Firing.result,
-      twins, blank] at member
+      twins, blank, ExactQueryAlphabet.ofQueries] at member
     obtain rfl := member
     exact A.equivalence.refl _
 
@@ -376,10 +377,10 @@ abbrev sightThenTake (R : Record ℕ) (o : ℕ) (present : o ∈ ({5, 6} : Finse
     (choiceEscape A blank).step.Run (start R) :=
   .cons sightBoth sightBoth_valid (.cons (takeOnly o) (takeOnly_valid o present) (.nil _))
 
-theorem sightBoth_renamed : sightBoth.rename swapTwins = sightBoth := by
+theorem sightBoth_renamed : ExactQueryAlphabet.rename swapTwins sightBoth = sightBoth := by
   have kept : ({5, 6} : Finset ℕ).map swapTwins.toEmbedding = {5, 6} := by decide
-  show (⟨⟨[], [], [], [], []⟩, [⟨seeAll.region, ({5, 6} : Finset ℕ).map swapTwins.toEmbedding⟩],
-    ⟨[], [], []⟩⟩ : Firing (Term signature) (Subst signature) ℕ) = sightBoth
+  change ExactQueryAlphabet.ofQueries ⟨[], [], [], [], []⟩
+    [⟨seeAll.region, ({5, 6} : Finset ℕ).map swapTwins.toEmbedding⟩] ⟨[], [], []⟩ = sightBoth
   rw [kept]
   rfl
 

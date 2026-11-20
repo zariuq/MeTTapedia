@@ -97,7 +97,9 @@ theorem emit_complete {codec : Codec Value} {names : Inventory String} (head : F
     (total : ∀ slot, ∃ value, readback codec names bindings slot = some value)
     (snapshot : before.read target = some rows) : ∃ after answers, emit head target bindings before = some (after, answers) := by
   obtain ⟨values, rendered⟩ := ConjunctiveOutputDomain.instantiate_total _ total head.2.cells
-  obtain ⟨after, changed, inserted⟩ := FreshInsertionSource.update_exists snapshot (row codec head.2.head values)
+  obtain ⟨after, changed, inserted⟩ :=
+    FreshInsertionSource.update_exists snapshot (row codec head.2.head values)
+      (GuardedInsertionSource.dataRow_value (encoded_data head data values))
   exact ⟨after, FreshInsertionSource.answers changed, by simp [emit, rendered, encoded_data head data values, inserted]⟩
 
 theorem completed_access {codec : Codec Value} {names : Inventory String} (domain : Finset Value)

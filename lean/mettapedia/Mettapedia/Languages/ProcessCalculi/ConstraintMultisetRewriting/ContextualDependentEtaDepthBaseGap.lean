@@ -1,5 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentEtaDepthSigmaGap
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentCensusReadsSpines
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentClassificationReadsSpines
 
 /-!
 # A gap in the spine decompositions: a base type that is an application
@@ -20,7 +20,7 @@ universe, an identity type or a variable: `rigidBase` for the readings between s
   readings read nothing (`flex_reducts_none`, `flex_elims_none`) and the Σ family is stuck (`flex_sigma_stuck`).
 
 The sides of the first store have the shape of two spines of one local except for the base test: with a universe as
-base type the same sides are read (`universe_reads`, `universe_sigma_committed`). So the census row of spines of one
+base type the same sides are read (`universe_reads`, `universe_sigma_committed`). So the classification row of spines of one
 local is the row at a *rigid* base (`LocalSpines`), and reading these stores needs one more rule, a decomposition
 between spines of one local at a neutral base type. That rule would not make the Σ family decide the fragment: at the
 tower the fragment also holds `crossStore`, solvable and without principal answer

@@ -7,9 +7,9 @@ import Mettapedia.OSLF.MeTTaIL.ScopedReflectiveExecution
 A law move rearranges a collection's elements; it never changes a constructor application, a
 binder or an index. Hence law-equal terms have the same shape above their collections
 (`LawSame.apply_inv`, `LawSame.bvar_inv`), the quote-drop normal form maps law-equal terms to
-law-equal terms (`normalizeReflective_lawSame`), and so does reflective binder elimination
-(`reflectiveOperation_lawSame`). Every binder operation of a plan respects the laws
-(`binderOperation_lawSame`).
+law-equal terms (`normalizeReflective_lawSame`). Reflective binder elimination also
+respects the laws when the collection laws preserve its whole-name test
+(`BinderLawCompatible`, `binderOperation_lawSame`).
 -/
 
 set_option autoImplicit false
@@ -208,44 +208,10 @@ def dropResult (declaration : ReflectivePresentationDecl) (constructor : String)
   | _, _ => .apply constructor [name]
 
 open ReflectiveInstantiation in
-theorem instantiate_quote (declaration : ReflectivePresentationDecl) (depth : Nat) (replacement : Pattern)
-    {constructor : String} (payload : Pattern) (quote : (constructor == declaration.quoteConstructor) = true) :
-    instantiate declaration depth replacement (.apply constructor [payload]) =
-      (nameMark declaration depth replacement (.apply constructor [payload])).1 := by
-  rw [instantiate]; simp [quote]
-
-open ReflectiveInstantiation in
-theorem instantiate_drop (declaration : ReflectivePresentationDecl) (depth : Nat) (replacement : Pattern)
-    {constructor : String} (payload : Pattern) (notQuote : (constructor == declaration.quoteConstructor) = false)
-    (drop : (constructor == declaration.dropConstructor) = true) :
-    instantiate declaration depth replacement (.apply constructor [payload]) =
-      dropResult declaration constructor (nameMark declaration depth replacement payload).1
-        (nameMark declaration depth replacement payload).2 := by
-  rw [instantiate]; simp only [notQuote, drop, Bool.false_eq_true, if_false, if_true]; rfl
-
-open ReflectiveInstantiation in
-theorem instantiate_plainOne (declaration : ReflectivePresentationDecl) (depth : Nat) (replacement : Pattern)
-    {constructor : String} (payload : Pattern) (notQuote : (constructor == declaration.quoteConstructor) = false)
-    (notDrop : (constructor == declaration.dropConstructor) = false) :
-    instantiate declaration depth replacement (.apply constructor [payload]) =
-      .apply constructor [instantiate declaration depth replacement payload] := by
-  rw [instantiate]; simp [notQuote, notDrop]
-
-open ReflectiveInstantiation in
 theorem instantiateList_map' (declaration : ReflectivePresentationDecl) (depth : Nat) (replacement : Pattern) :
     ∀ items : List Pattern, instantiateList declaration depth replacement items =
       items.map (instantiate declaration depth replacement)
-  | [] => by rw [instantiateList]; rfl
-  | item :: rest => by rw [instantiateList, instantiateList_map' declaration depth replacement rest]; rfl
-
-open ReflectiveInstantiation in
-theorem instantiate_many (declaration : ReflectivePresentationDecl) (depth : Nat) (replacement : Pattern)
-    (constructor : String) {arguments : List Pattern} (notOne : arguments.length ≠ 1) :
-    instantiate declaration depth replacement (.apply constructor arguments) =
-      .apply constructor (arguments.map (instantiate declaration depth replacement)) := by
-  match arguments, notOne with
-  | [], _ => rw [instantiate, instantiateList_map']; intro _ same; cases same
-  | _ :: _ :: _, _ => rw [instantiate, instantiateList_map']; intro _ same; simp at same
+  | _ => rfl
 
 theorem dropResult_shaped (declaration : ReflectivePresentationDecl) (constructor quote : String) (process : Pattern) :
     dropResult declaration constructor (.apply quote [process]) true =
@@ -288,27 +254,140 @@ theorem dropResult_lawSame (declaration : ReflectivePresentationDecl) (construct
       rw [dropResult_plain declaration constructor (.inl shaped), dropResult_plain declaration constructor (.inl shaped')]
       exact lawSame_apply_congr _ (.cons same .nil)
 
-open ReflectiveInstantiation in
-/-- Names with law-equal quote-drop normal forms mark the same way: the same index, or no index. -/
-theorem nameMark_names (declaration : ReflectivePresentationDecl) (depth : Nat) (replacement : Pattern)
-    {name name' : Pattern}
-    (same : LawSame laws (ReflectiveSubstitution.normalizeReflective declaration name)
-      (ReflectiveSubstitution.normalizeReflective declaration name')) :
-    nameMark declaration depth replacement name = nameMark declaration depth replacement name' ∨
-      ∃ marked marked', nameMark declaration depth replacement name = (marked, false) ∧
-        nameMark declaration depth replacement name' = (marked', false) ∧ LawSame laws marked marked' := by
-  unfold nameMark
+/-- The chosen collection laws may rearrange or flatten the reflective
+parallel bag, but may not delete a different unit or contract multiplicities
+as a set. Laws acting only on other collection kinds are unrestricted. -/
+structure BinderLawCompatible (laws : List Laws) (declaration : ReflectivePresentationDecl) : Prop where
+  notSet : declaration.parallelCollection ≠ .hashSet
+  unit_eq : ∀ {law label}, lawFor laws declaration.parallelCollection = some law →
+    law.unit = some label → label = declaration.parallelUnitConstructor
+
+/-- Check only the presentation selected by the real rule; an ordinary
+binder has no reflective collection dependency. -/
+def BinderLawsFor (laws : List Laws) (profile : Reflection.ReflectionProfile) (rule : RewriteRule) : Prop :=
+  ∀ declaration, substitutionPresentationForRule? profile rule = some declaration →
+    BinderLawCompatible laws declaration
+
+def checkBinderLawsFor (laws : List Laws) (profile : Reflection.ReflectionProfile) (rule : RewriteRule) : Bool :=
+  match substitutionPresentationForRule? profile rule with
+  | none => true
+  | some declaration =>
+      decide (declaration.parallelCollection ≠ .hashSet) &&
+      match (lawFor laws declaration.parallelCollection).bind Laws.unit with
+      | none => true
+      | some label => label == declaration.parallelUnitConstructor
+
+theorem checkBinderLawsFor_iff (laws : List Laws) (profile : Reflection.ReflectionProfile) (rule : RewriteRule) :
+    checkBinderLawsFor laws profile rule = true ↔ BinderLawsFor laws profile rule := by
+  unfold checkBinderLawsFor BinderLawsFor
   split
-  · rename_i index found
-    rw [found] at same
-    rw [same.bvar_inv]
-    exact .inl rfl
-  · rename_i normalized notIndex
-    split
-    · rename_i index found'
-      rw [found'] at same
-      exact absurd (LawSame.bvar_inv (Relation.EqvGen.symm _ _ same)) (notIndex index)
-    · exact .inr ⟨_, _, rfl, rfl, same⟩
+  · rename_i missing
+    simp [missing]
+  · rename_i declaration selected
+    simp only [selected, Option.some.injEq, forall_eq', Bool.and_eq_true, decide_eq_true_eq]
+    cases found : lawFor laws declaration.parallelCollection with
+    | none =>
+      simp only [Option.bind_none, and_true]
+      exact ⟨fun notSet => ⟨notSet, by simp [found]⟩, fun compatible => compatible.notSet⟩
+    | some law =>
+      cases unit : law.unit with
+      | none =>
+        simp only [Option.bind_some, unit, and_true]
+        refine ⟨fun notSet => ⟨notSet, ?_⟩, fun compatible => compatible.notSet⟩
+        intro other label otherLaw otherUnit
+        have equal := Option.some.inj (found.symm.trans otherLaw)
+        subst other
+        rw [unit] at otherUnit
+        cases otherUnit
+      | some label =>
+        simp only [Option.bind_some, unit, beq_iff_eq]
+        refine ⟨fun ⟨notSet, labelEq⟩ => ⟨notSet, ?_⟩,
+          fun compatible => ⟨compatible.notSet, compatible.unit_eq found unit⟩⟩
+        intro other name otherLaw otherUnit
+        rw [found, Option.some.injEq] at otherLaw
+        subst other
+        exact (Option.some.inj (otherUnit.symm.trans unit)).trans labelEq
+
+open BinderHead in
+/-- Authorized collection moves cannot change the structural binder head. -/
+theorem LawStep.binderHead_eq {declaration : ReflectivePresentationDecl}
+    (compatible : BinderLawCompatible laws declaration) {left right : Pattern}
+    (step : LawStep laws left right) :
+    ofPattern declaration left = ofPattern declaration right := by
+  induction step with
+  | @permute kind elements permuted rest _ permutation =>
+    cases rest with
+    | some rest => rfl
+    | none =>
+      by_cases parallel : kind = declaration.parallelCollection
+      · simp only [ofPattern, parallel, if_true, ofList_eq_map]
+        exact fold_perm (permutation.map _)
+      · simp [ofPattern, parallel]
+  | @members elements others rest _ =>
+    cases rest with
+    | some rest => rfl
+    | none => simp [ofPattern, Ne.symm compatible.notSet]
+  | @flatten kind law before inner after rest _ =>
+    cases rest with
+    | some rest => rfl
+    | none =>
+      by_cases parallel : kind = declaration.parallelCollection
+      · simp only [ofPattern, parallel, if_true, ofList_eq_map, List.map_append,
+          List.map_cons, List.foldr_cons, fold_append, join_assoc]
+      · simp [ofPattern, parallel]
+  | @unit kind law label before after rest found unit =>
+    cases rest with
+    | some rest => rfl
+    | none =>
+      by_cases parallel : kind = declaration.parallelCollection
+      · subst kind
+        have unitLabel := compatible.unit_eq found unit
+        simp [ofPattern, ofList_eq_map, BinderHead.apply, rigid, unitLabel]
+      · simp [ofPattern, parallel]
+  | apply inner ih => simp [ofPattern, ofList_eq_map, ih]
+  | lambda inner ih => rfl
+  | multiLambda inner ih => rfl
+  | substBody inner ih => rfl
+  | substReplacement inner ih => rfl
+  | @element kind before after element changed rest inner ih =>
+    cases rest with
+    | some rest => rfl
+    | none => simp [ofPattern, ofList_eq_map, ih]
+
+theorem LawSame.binderHead_eq {declaration : ReflectivePresentationDecl}
+    (compatible : BinderLawCompatible laws declaration) {left right : Pattern}
+    (same : LawSame laws left right) :
+    BinderHead.ofPattern declaration left = BinderHead.ofPattern declaration right := by
+  induction same with
+  | rel _ _ step => exact step.binderHead_eq compatible
+  | refl => rfl
+  | symm _ _ _ ih => exact ih.symm
+  | trans _ _ _ _ _ first second => exact first.trans second
+
+open BinderHead in
+/-- On the raw carrier the compatibility condition is exact. Repeating a
+single index separates a set from a parallel bag; inserting a conflicting
+unit beside that index separates the two notions of unit. -/
+theorem binderLawCompatible_iff (laws : List Laws) (declaration : ReflectivePresentationDecl) :
+    BinderLawCompatible laws declaration ↔
+      ∀ {left right}, LawStep laws left right →
+        ofPattern declaration left = ofPattern declaration right := by
+  refine ⟨fun compatible {_ _} step => step.binderHead_eq compatible, ?_⟩
+  intro preserves
+  constructor
+  · intro parallel
+    have repeated : LawStep laws (.collection .hashSet [.bvar 0, .bvar 0] none)
+        (.collection .hashSet [.bvar 0] none) := .members (by simp)
+    have same := preserves repeated
+    simp [ofPattern, ofList, parallel, join] at same
+  · intro law label found unit
+    by_contra different
+    have dropped : LawStep laws
+        (.collection declaration.parallelCollection [.apply label [], .bvar 0] none)
+        (.collection declaration.parallelCollection [.bvar 0] none) :=
+      .unit (before := []) (after := [.bvar 0]) found unit
+    have same := preserves dropped
+    simp [ofPattern, ofList, BinderHead.apply, rigid, join, different] at same
 
 theorem instantiateBVarAt_lawSame_replacement {replacement replacement' : Pattern}
     (same : LawSame laws replacement replacement') (depth index : Nat) :
@@ -321,6 +400,495 @@ theorem instantiateBVarAt_lawSame_replacement {replacement replacement' : Patter
     · exact LawSame.lift (fun step => step.liftBVars 0 depth) same
     · exact .refl _
 
+/-! ### Resolution and structural elimination respect compatible laws -/
+
+open ReflectiveCoherent in
+private theorem single_members {declaration : ReflectivePresentationDecl} {left right : Pattern}
+    (leftMember : IsMember declaration left) (rightMember : IsMember declaration right)
+    (same : LawSame laws left right) :
+    ∃ arranged, (parallelLeaves declaration left).Perm arranged ∧
+      List.Forall₂ (LawSame laws) arranged (parallelLeaves declaration right) := by
+  rw [parallelLeaves_of_isMember leftMember, parallelLeaves_of_isMember rightMember]
+  exact ⟨_, .refl _, .cons same .nil⟩
+
+private theorem parallelLeaves_collection {declaration : ReflectivePresentationDecl}
+    (elements : List Pattern) :
+    parallelLeaves declaration (.collection declaration.parallelCollection elements none) =
+      elements.flatMap (parallelLeaves declaration) := by
+  simp [parallelLeaves, parallelLeavesList_eq_flatMap]
+
+open ReflectiveCoherent in
+/-- A compatible law move changes the members of the declared parallel
+composition only by a permutation and law-equal members. -/
+theorem LawStep.parallelLeaves {declaration : ReflectivePresentationDecl}
+    (compatible : BinderLawCompatible laws declaration) {left right : Pattern}
+    (step : LawStep laws left right) :
+    ∃ arranged, (ReflectiveSubstitution.parallelLeaves declaration left).Perm arranged ∧
+      List.Forall₂ (LawSame laws) arranged (ReflectiveSubstitution.parallelLeaves declaration right) := by
+  have whole : LawSame laws left right := .rel _ _ step
+  induction step with
+  | @permute kind elements permuted rest unordered permutation =>
+    by_cases parallel : kind = declaration.parallelCollection ∧ rest = none
+    · obtain ⟨rfl, rfl⟩ := parallel
+      rw [parallelLeaves_collection, parallelLeaves_collection]
+      exact ⟨_, permutation.flatMap_right _, forall₂_lawSame_refl _⟩
+    · exact single_members ⟨by simp, fun _ same => by injection same with hk _ hr; exact parallel ⟨hk, hr⟩⟩
+        ⟨by simp, fun _ same => by injection same with hk _ hr; exact parallel ⟨hk, hr⟩⟩ whole
+  | @members elements others rest _ =>
+    have different : CollType.hashSet ≠ declaration.parallelCollection := Ne.symm compatible.notSet
+    exact single_members ⟨by simp, fun _ same => by injection same with hk; exact different hk⟩
+      ⟨by simp, fun _ same => by injection same with hk; exact different hk⟩ whole
+  | @flatten kind law before inner after rest found =>
+    by_cases parallel : kind = declaration.parallelCollection ∧ rest = none
+    · obtain ⟨rfl, rfl⟩ := parallel
+      refine ⟨_, List.Perm.of_eq ?_, forall₂_lawSame_refl _⟩
+      simp [parallelLeaves_collection, List.flatMap_append]
+    · exact single_members ⟨by simp, fun _ same => by injection same with hk _ hr; exact parallel ⟨hk, hr⟩⟩
+        ⟨by simp, fun _ same => by injection same with hk _ hr; exact parallel ⟨hk, hr⟩⟩ whole
+  | @unit kind law label before after rest found unit =>
+    by_cases parallel : kind = declaration.parallelCollection ∧ rest = none
+    · obtain ⟨rfl, rfl⟩ := parallel
+      have unitLabel := compatible.unit_eq found unit
+      subst unitLabel
+      refine ⟨_, List.Perm.of_eq ?_, forall₂_lawSame_refl _⟩
+      rw [parallelLeaves_collection, parallelLeaves_collection, List.flatMap_append, List.flatMap_cons,
+        List.flatMap_append]
+      simp [ReflectiveSubstitution.parallelLeaves]
+    · exact single_members ⟨by simp, fun _ same => by injection same with hk _ hr; exact parallel ⟨hk, hr⟩⟩
+        ⟨by simp, fun _ same => by injection same with hk _ hr; exact parallel ⟨hk, hr⟩⟩ whole
+  | @apply label before after argument changed _ _ =>
+    exact single_members ⟨by simp, by simp⟩ ⟨by simp, by simp⟩ whole
+  | lambda _ _ => exact single_members ⟨by simp, by simp⟩ ⟨by simp, by simp⟩ whole
+  | multiLambda _ _ => exact single_members ⟨by simp, by simp⟩ ⟨by simp, by simp⟩ whole
+  | substBody _ _ => exact single_members ⟨by simp, by simp⟩ ⟨by simp, by simp⟩ whole
+  | substReplacement _ _ => exact single_members ⟨by simp, by simp⟩ ⟨by simp, by simp⟩ whole
+  | @element kind before after element changed rest inner ih =>
+    by_cases parallel : kind = declaration.parallelCollection ∧ rest = none
+    · obtain ⟨rfl, rfl⟩ := parallel
+      obtain ⟨arranged, permutation, related⟩ := ih (.rel _ _ inner)
+      rw [parallelLeaves_collection, parallelLeaves_collection]
+      simp only [List.flatMap_append, List.flatMap_cons]
+      exact ⟨_, (permutation.append_right _).append_left _,
+        List.rel_append (forall₂_lawSame_refl _) (List.rel_append related (forall₂_lawSame_refl _))⟩
+    · exact single_members ⟨by simp, fun _ same => by injection same with hk _ hr; exact parallel ⟨hk, hr⟩⟩
+        ⟨by simp, fun _ same => by injection same with hk _ hr; exact parallel ⟨hk, hr⟩⟩ whole
+
+open ReflectiveCoherent in
+private theorem exposedDrop?_step {declaration : ReflectivePresentationDecl}
+    (compatible : BinderLawCompatible laws declaration) {left right : Pattern}
+    (step : LawStep laws left right) :
+    (exposedDrop? declaration left = none ∧ exposedDrop? declaration right = none) ∨
+      ∃ name name', exposedDrop? declaration left = some name ∧
+        exposedDrop? declaration right = some name' ∧ LawSame laws name name' := by
+  obtain ⟨arranged, permutation, related⟩ := step.parallelLeaves compatible
+  cases leftExposed : exposedDrop? declaration left with
+  | some name =>
+    have leaves := exposedDrop?_eq_some_iff.mp leftExposed
+    rw [leaves, List.singleton_perm] at permutation
+    subst permutation
+    obtain ⟨result, others, same, nilRel, rightLeaves⟩ := List.forall₂_cons_left_iff.mp related
+    rw [List.forall₂_nil_left_iff] at nilRel
+    subst nilRel
+    obtain ⟨arguments, resultEq, inner⟩ := LawSame.apply_inv same
+    obtain ⟨name', rest, nameSame, nilRest, argumentsEq⟩ := List.forall₂_cons_left_iff.mp inner
+    rw [List.forall₂_nil_left_iff] at nilRest
+    subst nilRest argumentsEq resultEq
+    exact .inr ⟨name, name', rfl, exposedDrop?_eq_some_iff.mpr rightLeaves, nameSame⟩
+  | none =>
+    refine .inl ⟨rfl, ?_⟩
+    cases rightExposed : exposedDrop? declaration right with
+    | none => rfl
+    | some name' =>
+      exfalso
+      have leaves := exposedDrop?_eq_some_iff.mp rightExposed
+      rw [leaves] at related
+      obtain ⟨member, others, same, nilRel, arrangedEq⟩ := List.forall₂_cons_right_iff.mp related
+      rw [List.forall₂_nil_right_iff] at nilRel
+      subst nilRel arrangedEq
+      obtain ⟨arguments, memberEq, inner⟩ := LawSame.apply_inv (Relation.EqvGen.symm _ _ same)
+      obtain ⟨name, rest, _, nilRest, argumentsEq⟩ := List.forall₂_cons_left_iff.mp inner
+      rw [List.forall₂_nil_left_iff] at nilRest
+      subst nilRest argumentsEq memberEq
+      rw [List.perm_singleton] at permutation
+      have exposed := exposedDrop?_eq_some_iff.mpr permutation
+      rw [leftExposed] at exposed
+      cases exposed
+
+open ReflectiveCoherent in
+/-- Law-equal terms expose a drop together, with law-equal names. -/
+theorem LawSame.exposedDrop?_cases {declaration : ReflectivePresentationDecl}
+    (compatible : BinderLawCompatible laws declaration) {left right : Pattern}
+    (same : LawSame laws left right) :
+    (exposedDrop? declaration left = none ∧ exposedDrop? declaration right = none) ∨
+      ∃ name name', exposedDrop? declaration left = some name ∧
+        exposedDrop? declaration right = some name' ∧ LawSame laws name name' := by
+  induction same with
+  | rel _ _ step => exact exposedDrop?_step compatible step
+  | refl term =>
+    cases exposed : exposedDrop? declaration term with
+    | none => exact .inl ⟨rfl, rfl⟩
+    | some name => exact .inr ⟨name, name, rfl, rfl, .refl _⟩
+  | symm _ _ _ ih =>
+    rcases ih with ⟨first, second⟩ | ⟨name, name', first, second, same⟩
+    · exact .inl ⟨second, first⟩
+    · exact .inr ⟨name', name, second, first, .symm _ _ same⟩
+  | trans _ _ _ _ _ first second =>
+    rcases first with ⟨a, b⟩ | ⟨n, n', a, b, s⟩ <;> rcases second with ⟨c, d⟩ | ⟨m, m', c, d, t⟩
+    · exact .inl ⟨a, d⟩
+    · rw [b] at c; cases c
+    · rw [b] at c; cases c
+    · rw [b] at c
+      cases c
+      exact .inr ⟨n, m', a, d, .trans _ _ _ s t⟩
+
+private theorem finishResolveApply_of_length_ne_one (declaration : ReflectivePresentationDecl)
+    (label : String) {arguments : List Pattern} (notOne : arguments.length ≠ 1) :
+    finishResolveApply declaration label arguments = .apply label arguments := by
+  match arguments, notOne with
+  | [], _ => rfl
+  | _ :: _ :: _, _ => rfl
+
+/-- **Resolution maps a compatible law move to law-equal results.** -/
+theorem LawStep.resolveQuotes {declaration : ReflectivePresentationDecl}
+    (compatible : BinderLawCompatible laws declaration) {left right : Pattern}
+    (step : LawStep laws left right) :
+    LawSame laws (ReflectiveSubstitution.resolveQuotes declaration left)
+      (ReflectiveSubstitution.resolveQuotes declaration right) := by
+  induction step with
+  | permute unordered permutation =>
+    simp only [ReflectiveSubstitution.resolveQuotes, resolveQuotesList_eq_map]
+    exact .rel _ _ (.permute unordered (permutation.map _))
+  | members same =>
+    simp only [ReflectiveSubstitution.resolveQuotes, resolveQuotesList_eq_map]
+    exact .rel _ _ (.members (members_map same _))
+  | flatten found =>
+    simp only [ReflectiveSubstitution.resolveQuotes, resolveQuotesList_eq_map, List.map_append,
+      List.map_cons]
+    exact .rel _ _ (.flatten found)
+  | unit found unit =>
+    simp only [ReflectiveSubstitution.resolveQuotes, resolveQuotesList_eq_map, List.map_append,
+      List.map_cons, resolveQuotesList, finishResolveApply]
+    exact .rel _ _ (.unit found unit)
+  | @apply label before after argument changed inner ih =>
+    simp only [ReflectiveSubstitution.resolveQuotes, resolveQuotesList_eq_map, List.map_append,
+      List.map_cons]
+    by_cases single : before = [] ∧ after = []
+    · obtain ⟨rfl, rfl⟩ := single
+      simp only [List.map_nil, List.nil_append, finishResolveApply]
+      by_cases quoted : label = declaration.quoteConstructor
+      · simp only [quoted, if_true]
+        rcases LawSame.exposedDrop?_cases compatible ih with ⟨none₁, none₂⟩ | ⟨name, name', some₁, some₂, same⟩
+        · rw [none₁, none₂]
+          exact lawSame_apply_congr _ (.cons ih .nil)
+        · rw [some₁, some₂]
+          exact same
+      · simp only [quoted, if_false]
+        exact lawSame_apply_congr _ (.cons ih .nil)
+    · have notOne : (before.map (ReflectiveSubstitution.resolveQuotes declaration) ++
+          ReflectiveSubstitution.resolveQuotes declaration argument ::
+            after.map (ReflectiveSubstitution.resolveQuotes declaration)).length ≠ 1 := by
+        intro one; apply single
+        simp only [List.length_append, List.length_map, List.length_cons] at one
+        exact ⟨List.eq_nil_of_length_eq_zero (by omega), List.eq_nil_of_length_eq_zero (by omega)⟩
+      have notOne' : (before.map (ReflectiveSubstitution.resolveQuotes declaration) ++
+          ReflectiveSubstitution.resolveQuotes declaration changed ::
+            after.map (ReflectiveSubstitution.resolveQuotes declaration)).length ≠ 1 := by
+        simpa using notOne
+      rw [finishResolveApply_of_length_ne_one declaration label notOne,
+        finishResolveApply_of_length_ne_one declaration label notOne']
+      exact lawSame_apply_congr _ (List.rel_append (forall₂_lawSame_refl _) (.cons ih
+        (forall₂_lawSame_refl _)))
+  | lambda _ ih =>
+    simp only [ReflectiveSubstitution.resolveQuotes]; exact lawSame_lambda_congr _ ih
+  | multiLambda _ ih =>
+    simp only [ReflectiveSubstitution.resolveQuotes]; exact lawSame_multiLambda_congr _ _ ih
+  | substBody _ ih =>
+    simp only [ReflectiveSubstitution.resolveQuotes]; exact lawSame_subst_congr ih (.refl _)
+  | substReplacement _ ih =>
+    simp only [ReflectiveSubstitution.resolveQuotes]; exact lawSame_subst_congr (.refl _) ih
+  | element _ ih =>
+    simp only [ReflectiveSubstitution.resolveQuotes, resolveQuotesList_eq_map, List.map_append,
+      List.map_cons]
+    exact lawSame_collection_congr _ _ (List.rel_append (forall₂_lawSame_refl _) (.cons ih
+      (forall₂_lawSame_refl _)))
+
+private theorem substituteResolved_of_length_ne_one (declaration : ReflectivePresentationDecl)
+    (atIndex : Nat → Nat → Pattern) (depth : Nat) (label : String) {arguments : List Pattern}
+    (notOne : arguments.length ≠ 1) :
+    substituteResolved declaration atIndex depth (.apply label arguments) =
+      .apply label (arguments.map (substituteResolved declaration atIndex depth)) := by
+  match arguments, notOne with
+  | [], _ => rfl
+  | _ :: _ :: _, _ => simp [substituteResolved, substituteResolvedList_eq_map]
+
+/-- **Structural elimination maps a compatible law move to law-equal results.** -/
+theorem LawStep.substituteResolved {declaration : ReflectivePresentationDecl}
+    (compatible : BinderLawCompatible laws declaration) (atIndex : Nat → Nat → Pattern)
+    {left right : Pattern} (step : LawStep laws left right) :
+    ∀ depth, LawSame laws (ReflectiveSubstitution.substituteResolved declaration atIndex depth left)
+      (ReflectiveSubstitution.substituteResolved declaration atIndex depth right) := by
+  induction step with
+  | permute unordered permutation =>
+    intro depth
+    simp only [ReflectiveSubstitution.substituteResolved, substituteResolvedList_eq_map]
+    exact .rel _ _ (.permute unordered (permutation.map _))
+  | members same =>
+    intro depth
+    simp only [ReflectiveSubstitution.substituteResolved, substituteResolvedList_eq_map]
+    exact .rel _ _ (.members (members_map same _))
+  | flatten found =>
+    intro depth
+    simp only [ReflectiveSubstitution.substituteResolved, substituteResolvedList_eq_map,
+      List.map_append, List.map_cons]
+    exact .rel _ _ (.flatten found)
+  | unit found unit =>
+    intro depth
+    simp only [ReflectiveSubstitution.substituteResolved, substituteResolvedList_eq_map,
+      List.map_append, List.map_cons]
+    exact .rel _ _ (.unit found unit)
+  | @apply label before after argument changed inner ih =>
+    intro depth
+    by_cases single : before = [] ∧ after = []
+    · obtain ⟨rfl, rfl⟩ := single
+      simp only [List.nil_append]
+      by_cases quoted : label = declaration.quoteConstructor
+      · simp only [ReflectiveSubstitution.substituteResolved, quoted, if_true]
+        exact .rel _ _ (.apply (before := []) (after := []) inner)
+      · by_cases dropped : label = declaration.dropConstructor
+        · have notQuote : ¬ declaration.dropConstructor = declaration.quoteConstructor :=
+            fun same => quoted (dropped.trans same)
+          have decision : matchesBinder declaration depth argument =
+              matchesBinder declaration depth changed := by
+            simp only [matchesBinder, inner.binderHead_eq compatible]
+          by_cases hit : matchesBinder declaration depth changed = true
+          · simp only [ReflectiveSubstitution.substituteResolved, dropped, notQuote, if_false, if_true,
+              decision, hit]
+            exact .refl _
+          · simp only [ReflectiveSubstitution.substituteResolved, dropped, notQuote, if_false, if_true,
+              decision, hit, Bool.false_eq_true]
+            exact lawSame_apply_congr _ (.cons (ih depth) .nil)
+        · simp only [ReflectiveSubstitution.substituteResolved, quoted, dropped, if_false]
+          exact lawSame_apply_congr _ (.cons (ih depth) .nil)
+    · have notOne : (before ++ argument :: after).length ≠ 1 := by
+        intro one; apply single
+        simp only [List.length_append, List.length_cons] at one
+        exact ⟨List.eq_nil_of_length_eq_zero (by omega), List.eq_nil_of_length_eq_zero (by omega)⟩
+      have notOne' : (before ++ changed :: after).length ≠ 1 := by simpa using notOne
+      rw [substituteResolved_of_length_ne_one declaration atIndex depth label notOne,
+        substituteResolved_of_length_ne_one declaration atIndex depth label notOne']
+      simp only [List.map_append, List.map_cons]
+      exact lawSame_apply_congr _ (List.rel_append (forall₂_lawSame_refl _) (.cons (ih depth)
+        (forall₂_lawSame_refl _)))
+  | lambda _ ih =>
+    intro depth
+    simp only [ReflectiveSubstitution.substituteResolved]
+    exact lawSame_lambda_congr _ (ih _)
+  | multiLambda _ ih =>
+    intro depth
+    simp only [ReflectiveSubstitution.substituteResolved]
+    exact lawSame_multiLambda_congr _ _ (ih _)
+  | substBody _ ih =>
+    intro depth
+    simp only [ReflectiveSubstitution.substituteResolved]
+    exact lawSame_subst_congr (ih _) (.refl _)
+  | substReplacement _ ih =>
+    intro depth
+    simp only [ReflectiveSubstitution.substituteResolved]
+    exact lawSame_subst_congr (.refl _) (ih _)
+  | element _ ih =>
+    intro depth
+    simp only [ReflectiveSubstitution.substituteResolved, substituteResolvedList_eq_map,
+      List.map_append, List.map_cons]
+    exact lawSame_collection_congr _ _ (List.rel_append (forall₂_lawSame_refl _) (.cons (ih depth)
+      (forall₂_lawSame_refl _)))
+
+theorem substituteViewed_of_length_ne_one (declaration : ReflectivePresentationDecl)
+    (insideQuote atIndex : Nat → Nat → Pattern) (depth : Nat) (label : String) {arguments : List Pattern}
+    (notOne : arguments.length ≠ 1) :
+    ReflectiveSubstitution.substituteViewed declaration insideQuote atIndex depth (.apply label arguments) =
+      .apply label (arguments.map (ReflectiveSubstitution.substituteViewed declaration insideQuote atIndex depth)) := by
+  match arguments, notOne with
+  | [], _ => rfl
+  | [_], notOne => exact absurd rfl notOne
+  | first :: second :: rest, _ =>
+      simp only [ReflectiveSubstitution.substituteViewed, ReflectiveSubstitution.substituteViewedList_eq_map]
+
+theorem LawStep.substituteViewed {declaration : ReflectivePresentationDecl}
+    (compatible : BinderLawCompatible laws declaration) (insideQuote : Nat → Nat → Pattern)
+    {left right : Pattern} (step : LawStep laws left right) :
+    ∀ (atIndex : Nat → Nat → Pattern) depth,
+      LawSame laws (ReflectiveSubstitution.substituteViewed declaration insideQuote atIndex depth left)
+        (ReflectiveSubstitution.substituteViewed declaration insideQuote atIndex depth right) := by
+  induction step with
+  | permute unordered permutation =>
+    intro atIndex depth
+    simp only [ReflectiveSubstitution.substituteViewed, ReflectiveSubstitution.substituteViewedList_eq_map]
+    exact .rel _ _ (.permute unordered (permutation.map _))
+  | members same =>
+    intro atIndex depth
+    simp only [ReflectiveSubstitution.substituteViewed, ReflectiveSubstitution.substituteViewedList_eq_map]
+    exact .rel _ _ (.members (members_map same _))
+  | flatten found =>
+    intro atIndex depth
+    simp only [ReflectiveSubstitution.substituteViewed, ReflectiveSubstitution.substituteViewedList_eq_map,
+      List.map_append, List.map_cons]
+    exact .rel _ _ (.flatten found)
+  | unit found unit =>
+    intro atIndex depth
+    simp only [ReflectiveSubstitution.substituteViewed, ReflectiveSubstitution.substituteViewedList_eq_map,
+      List.map_append, List.map_cons]
+    exact .rel _ _ (.unit found unit)
+  | @apply label before after argument changed inner ih =>
+    intro atIndex depth
+    by_cases single : before = [] ∧ after = []
+    · obtain ⟨rfl, rfl⟩ := single
+      simp only [List.nil_append]
+      by_cases quoted : label = declaration.quoteConstructor
+      · simp only [ReflectiveSubstitution.substituteViewed, quoted, if_true]
+        exact lawSame_apply_congr _ (.cons (ih insideQuote depth) .nil)
+      · by_cases dropped : label = declaration.dropConstructor
+        · have notQuote : ¬ declaration.dropConstructor = declaration.quoteConstructor :=
+            fun same => quoted (dropped.trans same)
+          have decision : matchesBinder declaration depth argument =
+              matchesBinder declaration depth changed := by
+            simp only [matchesBinder, inner.binderHead_eq compatible]
+          by_cases hit : matchesBinder declaration depth changed = true
+          · simp only [ReflectiveSubstitution.substituteViewed, dropped, notQuote, if_false, if_true,
+              decision, hit]
+            exact .refl _
+          · simp only [ReflectiveSubstitution.substituteViewed, dropped, notQuote, if_false, if_true,
+              decision, hit, Bool.false_eq_true]
+            exact lawSame_apply_congr _ (.cons (ih atIndex depth) .nil)
+        · simp only [ReflectiveSubstitution.substituteViewed, quoted, dropped, if_false]
+          exact lawSame_apply_congr _ (.cons (ih atIndex depth) .nil)
+    · have notOne : (before ++ argument :: after).length ≠ 1 := by
+        intro one; apply single
+        simp only [List.length_append, List.length_cons] at one
+        exact ⟨List.eq_nil_of_length_eq_zero (by omega), List.eq_nil_of_length_eq_zero (by omega)⟩
+      have notOne' : (before ++ changed :: after).length ≠ 1 := by simpa using notOne
+      rw [substituteViewed_of_length_ne_one declaration insideQuote atIndex depth label notOne,
+        substituteViewed_of_length_ne_one declaration insideQuote atIndex depth label notOne']
+      simp only [List.map_append, List.map_cons]
+      exact lawSame_apply_congr _ (List.rel_append (forall₂_lawSame_refl _) (.cons (ih atIndex depth)
+        (forall₂_lawSame_refl _)))
+  | lambda _ ih =>
+    intro atIndex depth
+    simp only [ReflectiveSubstitution.substituteViewed]
+    exact lawSame_lambda_congr _ (ih _ _)
+  | multiLambda _ ih =>
+    intro atIndex depth
+    simp only [ReflectiveSubstitution.substituteViewed]
+    exact lawSame_multiLambda_congr _ _ (ih _ _)
+  | substBody _ ih =>
+    intro atIndex depth
+    simp only [ReflectiveSubstitution.substituteViewed]
+    exact lawSame_subst_congr (ih _ _) (.refl _)
+  | substReplacement _ ih =>
+    intro atIndex depth
+    simp only [ReflectiveSubstitution.substituteViewed]
+    exact lawSame_subst_congr (.refl _) (ih _ _)
+  | element _ ih =>
+    intro atIndex depth
+    simp only [ReflectiveSubstitution.substituteViewed, ReflectiveSubstitution.substituteViewedList_eq_map,
+      List.map_append, List.map_cons]
+    exact lawSame_collection_congr _ _ (List.rel_append (forall₂_lawSame_refl _) (.cons (ih atIndex depth)
+      (forall₂_lawSame_refl _)))
+
+theorem LawSame.substituteResolved {declaration : ReflectivePresentationDecl}
+    (compatible : BinderLawCompatible laws declaration) (atIndex : Nat → Nat → Pattern)
+    {left right : Pattern} (same : LawSame laws left right) (depth : Nat) :
+    LawSame laws (ReflectiveSubstitution.substituteResolved declaration atIndex depth left)
+      (ReflectiveSubstitution.substituteResolved declaration atIndex depth right) := by
+  induction same with
+  | rel _ _ step => exact step.substituteResolved compatible atIndex depth
+  | refl => exact .refl _
+  | symm _ _ _ ih => exact .symm _ _ ih
+  | trans _ _ _ _ _ first second => exact .trans _ _ _ first second
+
+theorem LawSame.substituteViewed {declaration : ReflectivePresentationDecl}
+    (compatible : BinderLawCompatible laws declaration) (insideQuote atIndex : Nat → Nat → Pattern)
+    {left right : Pattern} (same : LawSame laws left right) (depth : Nat) :
+    LawSame laws (ReflectiveSubstitution.substituteViewed declaration insideQuote atIndex depth left)
+      (ReflectiveSubstitution.substituteViewed declaration insideQuote atIndex depth right) := by
+  induction same with
+  | rel _ _ step => exact step.substituteViewed compatible insideQuote atIndex depth
+  | refl => exact .refl _
+  | symm _ _ _ ih => exact .symm _ _ ih
+  | trans _ _ _ _ _ first second => exact .trans _ _ _ first second
+
+open ReflectiveInstantiation in
+/-- **Reflective elimination maps a law move in the body to law-equal results.** -/
+theorem LawStep.instantiate (declaration : ReflectivePresentationDecl) {body body' : Pattern}
+    (step : LawStep laws body body') (compatible : BinderLawCompatible laws declaration) :
+      ∀ (depth : Nat) (replacement : Pattern),
+      LawSame laws (ReflectiveInstantiation.instantiate declaration depth replacement body)
+        (ReflectiveInstantiation.instantiate declaration depth replacement body') := by
+  intro depth replacement
+  exact LawSame.substituteResolved compatible _ (step.resolveQuotes compatible) depth
+
+open ReflectiveCoherent in
+theorem receive_lawSame (declaration : ReflectivePresentationDecl) (constructor : String)
+    {name name' : Pattern} (same : LawSame laws name name') :
+    LawSame laws (receive declaration constructor name) (receive declaration constructor name') := by
+  have shapeEq : ∀ (n : Pattern), receive declaration constructor n = dropResult declaration constructor n true := by
+    intro n
+    unfold receive
+    split
+    · rename_i quote process
+      rw [dropResult_shaped]
+      by_cases quoted : quote = declaration.quoteConstructor <;> simp [quoted]
+    · rename_i notShaped
+      rw [dropResult_plain _ _ (.inl ?_)]
+      rintro ⟨quote, process, rfl⟩
+      exact notShaped quote process rfl
+  rw [shapeEq, shapeEq]
+  exact dropResult_lawSame declaration constructor true same
+
+open ReflectiveInstantiation in
+/-- **Reflective elimination maps law-equal replacements to law-equal results.** -/
+theorem instantiate_replacement (declaration : ReflectivePresentationDecl) {replacement replacement' : Pattern}
+    (same : LawSame laws replacement replacement') : ∀ (body : Pattern) (depth : Nat),
+      LawSame laws (ReflectiveInstantiation.instantiate declaration depth replacement body)
+        (ReflectiveInstantiation.instantiate declaration depth replacement' body) := by
+  intro body depth
+  unfold ReflectiveInstantiation.instantiate
+  generalize ReflectiveSubstitution.resolveQuotes declaration body = resolved
+  induction resolved using Pattern.inductionOn generalizing depth with
+  | hbvar index => exact instantiateBVarAt_lawSame_replacement same depth index
+  | hfvar name => exact .refl _
+  | hlambda binder body ih =>
+    simp only [ReflectiveSubstitution.substituteResolved]; exact lawSame_lambda_congr _ (ih _)
+  | hmultiLambda arity binders body ih =>
+    simp only [ReflectiveSubstitution.substituteResolved]; exact lawSame_multiLambda_congr _ _ (ih _)
+  | hsubst body value ihBody ihValue =>
+    simp only [ReflectiveSubstitution.substituteResolved]
+    exact lawSame_subst_congr (ihBody _) (ihValue _)
+  | hcollection kind elements rest ih =>
+    simp only [ReflectiveSubstitution.substituteResolved, substituteResolvedList_eq_map]
+    apply lawSame_collection_congr
+    apply List.forall₂_map_left_iff.mpr
+    apply List.forall₂_map_right_iff.mpr
+    exact List.forall₂_same.mpr fun item member => ih item member depth
+  | happly label arguments ih =>
+    match arguments, ih with
+    | [], _ => exact .refl _
+    | first :: second :: rest, ih =>
+      rw [substituteResolved_of_length_ne_one declaration _ depth label (by simp),
+        substituteResolved_of_length_ne_one declaration _ depth label (by simp)]
+      apply lawSame_apply_congr
+      apply List.forall₂_map_left_iff.mpr
+      apply List.forall₂_map_right_iff.mpr
+      exact List.forall₂_same.mpr fun item member => ih item member depth
+    | [payload], ih =>
+      simp only [ReflectiveSubstitution.substituteResolved]
+      split
+      · exact .refl _
+      · split
+        · split
+          · exact receive_lawSame declaration label (instantiateBVarAt_lawSame_replacement same depth depth)
+          · exact lawSame_apply_congr _ (.cons (ih payload (by simp) depth) .nil)
+        · exact lawSame_apply_congr _ (.cons (ih payload (by simp) depth) .nil)
+
 open ReflectiveInstantiation in
 theorem nameMark_replacement (declaration : ReflectivePresentationDecl) (depth : Nat) {replacement replacement' : Pattern}
     (same : LawSame laws replacement replacement') (name : Pattern) :
@@ -328,165 +896,17 @@ theorem nameMark_replacement (declaration : ReflectivePresentationDecl) (depth :
       LawSame laws (nameMark declaration depth replacement name).1 (nameMark declaration depth replacement' name).1 := by
   unfold nameMark
   split
-  · exact ⟨rfl, instantiateBVarAt_lawSame_replacement same depth _⟩
-  · exact ⟨rfl, .refl _⟩
-
-open ReflectiveInstantiation in
-/-- **Reflective elimination maps a law move in the body to law-equal results.** -/
-theorem LawStep.instantiate (declaration : ReflectivePresentationDecl) {body body' : Pattern}
-    (step : LawStep laws body body') : ∀ (depth : Nat) (replacement : Pattern),
-      LawSame laws (ReflectiveInstantiation.instantiate declaration depth replacement body)
-        (ReflectiveInstantiation.instantiate declaration depth replacement body') := by
-  induction step with
-  | permute unordered permutation =>
-    intro depth replacement
-    rw [ReflectiveInstantiation.instantiate, ReflectiveInstantiation.instantiate, instantiateList_map',
-      instantiateList_map']
-    exact .rel _ _ (.permute unordered (permutation.map _))
-  | members same =>
-    intro depth replacement
-    rw [ReflectiveInstantiation.instantiate, ReflectiveInstantiation.instantiate, instantiateList_map',
-      instantiateList_map']
-    exact .rel _ _ (.members (members_map same _))
-  | @flatten kind law before inner after rest found =>
-    intro depth replacement
-    rw [ReflectiveInstantiation.instantiate, ReflectiveInstantiation.instantiate, instantiateList_map',
-      instantiateList_map']
-    simp only [List.map_append, List.map_cons]
-    rw [ReflectiveInstantiation.instantiate, instantiateList_map']
-    exact .rel _ _ (.flatten found)
-  | @unit kind law label before after rest found unit =>
-    intro depth replacement
-    rw [ReflectiveInstantiation.instantiate, ReflectiveInstantiation.instantiate, instantiateList_map',
-      instantiateList_map']
-    simp only [List.map_append, List.map_cons]
-    rw [instantiate_many declaration depth replacement label (by simp), List.map_nil]
-    exact .rel _ _ (.unit found unit)
-  | @apply label before after argument changed inner ih =>
-    intro depth replacement
-    by_cases single : before = [] ∧ after = []
-    · obtain ⟨rfl, rfl⟩ := single
-      simp only [List.nil_append]
-      cases quote : label == declaration.quoteConstructor
-      · cases drop : label == declaration.dropConstructor
-        · rw [instantiate_plainOne declaration depth replacement _ quote drop,
-            instantiate_plainOne declaration depth replacement _ quote drop]
-          exact lawSame_apply_congr _ (.cons (ih depth replacement) .nil)
-        · rw [instantiate_drop declaration depth replacement _ quote drop,
-            instantiate_drop declaration depth replacement _ quote drop]
-          rcases nameMark_names declaration depth replacement (inner.normalizeReflective declaration) with
-            equal | ⟨marked, marked', first, second, same⟩
-          · rw [equal]; exact .refl _
-          · rw [first, second]
-            exact dropResult_lawSame declaration label false same
-      · rw [instantiate_quote declaration depth replacement _ quote, instantiate_quote declaration depth replacement _ quote]
-        have normalSame := (LawStep.apply (label := label) (before := []) (after := []) inner).normalizeReflective declaration
-        rcases nameMark_names declaration depth replacement normalSame with equal | ⟨marked, marked', first, second, same⟩
-        · simp only [List.nil_append] at equal
-          rw [equal]; exact .refl _
-        · simp only [List.nil_append] at first second
-          rw [first, second]
-          exact same
-    · have notOne : (before ++ argument :: after).length ≠ 1 := by
-        intro one; apply single
-        simp only [List.length_append, List.length_cons] at one
-        exact ⟨List.eq_nil_of_length_eq_zero (by omega), List.eq_nil_of_length_eq_zero (by omega)⟩
-      have notOne' : (before ++ changed :: after).length ≠ 1 := by simpa using notOne
-      rw [instantiate_many declaration depth replacement label notOne,
-        instantiate_many declaration depth replacement label notOne']
-      simp only [List.map_append, List.map_cons]
-      exact lawSame_apply_congr _ (List.rel_append (forall₂_lawSame_refl _) (.cons (ih depth replacement)
-        (forall₂_lawSame_refl _)))
-  | lambda _ ih =>
-    intro depth replacement
-    rw [ReflectiveInstantiation.instantiate, ReflectiveInstantiation.instantiate]
-    exact lawSame_lambda_congr _ (ih _ _)
-  | multiLambda _ ih =>
-    intro depth replacement
-    rw [ReflectiveInstantiation.instantiate, ReflectiveInstantiation.instantiate]
-    exact lawSame_multiLambda_congr _ _ (ih _ _)
-  | substBody _ ih =>
-    intro depth replacement
-    rw [ReflectiveInstantiation.instantiate, ReflectiveInstantiation.instantiate]
-    exact lawSame_subst_congr (ih _ _) (.refl _)
-  | substReplacement _ ih =>
-    intro depth replacement
-    rw [ReflectiveInstantiation.instantiate, ReflectiveInstantiation.instantiate]
-    exact lawSame_subst_congr (.refl _) (ih _ _)
-  | element _ ih =>
-    intro depth replacement
-    rw [ReflectiveInstantiation.instantiate, ReflectiveInstantiation.instantiate, instantiateList_map',
-      instantiateList_map']
-    simp only [List.map_append, List.map_cons]
-    exact lawSame_collection_congr _ _ (List.rel_append (forall₂_lawSame_refl _) (.cons (ih depth replacement)
-      (forall₂_lawSame_refl _)))
-
-open ReflectiveInstantiation in
-/-- **Reflective elimination maps law-equal replacements to law-equal results.** -/
-theorem instantiate_replacement (declaration : ReflectivePresentationDecl) {replacement replacement' : Pattern}
-    (same : LawSame laws replacement replacement') : ∀ (body : Pattern) (depth : Nat),
-      LawSame laws (ReflectiveInstantiation.instantiate declaration depth replacement body)
-        (ReflectiveInstantiation.instantiate declaration depth replacement' body)
-  | .bvar index, depth => by
-    rw [ReflectiveInstantiation.instantiate, ReflectiveInstantiation.instantiate]
-    exact instantiateBVarAt_lawSame_replacement same depth index
-  | .fvar _, depth => by rw [ReflectiveInstantiation.instantiate, ReflectiveInstantiation.instantiate]; exact .refl _
-  | .apply label arguments, depth => by
-    by_cases one : arguments.length = 1
-    · match arguments, one with
-      | [payload], _ =>
-        cases quote : label == declaration.quoteConstructor
-        · cases drop : label == declaration.dropConstructor
-          · rw [instantiate_plainOne declaration depth _ _ quote drop, instantiate_plainOne declaration depth _ _ quote drop]
-            have : sizeOf payload < sizeOf (Pattern.apply label [payload]) := by
-              have := List.sizeOf_lt_of_mem (List.mem_singleton_self payload)
-              simp only [Pattern.apply.sizeOf_spec]; omega
-            exact lawSame_apply_congr _ (.cons (instantiate_replacement declaration same payload depth) .nil)
-          · rw [instantiate_drop declaration depth _ _ quote drop, instantiate_drop declaration depth _ _ quote drop]
-            obtain ⟨flags, names⟩ := nameMark_replacement declaration depth same payload
-            rw [flags]
-            exact dropResult_lawSame declaration label _ names
-        · rw [instantiate_quote declaration depth _ _ quote, instantiate_quote declaration depth _ _ quote]
-          exact (nameMark_replacement declaration depth same _).2
-    · rw [instantiate_many declaration depth _ label one, instantiate_many declaration depth _ label one]
-      apply lawSame_apply_congr
-      apply List.forall₂_map_left_iff.mpr
-      apply List.forall₂_map_right_iff.mpr
-      apply List.forall₂_same.mpr
-      intro item member
-      have : sizeOf item < sizeOf (Pattern.apply label arguments) := by
-        have := List.sizeOf_lt_of_mem member; simp only [Pattern.apply.sizeOf_spec]; omega
-      exact instantiate_replacement declaration same item depth
-  | .lambda binder body, depth => by
-    rw [ReflectiveInstantiation.instantiate, ReflectiveInstantiation.instantiate]
-    exact lawSame_lambda_congr _ (instantiate_replacement declaration same body (depth + 1))
-  | .multiLambda arity binders body, depth => by
-    rw [ReflectiveInstantiation.instantiate, ReflectiveInstantiation.instantiate]
-    exact lawSame_multiLambda_congr _ _ (instantiate_replacement declaration same body (depth + arity))
-  | .subst body value, depth => by
-    rw [ReflectiveInstantiation.instantiate, ReflectiveInstantiation.instantiate]
-    exact lawSame_subst_congr (instantiate_replacement declaration same body (depth + 1))
-      (instantiate_replacement declaration same value depth)
-  | .collection kind elements rest, depth => by
-    rw [ReflectiveInstantiation.instantiate, ReflectiveInstantiation.instantiate, instantiateList_map',
-      instantiateList_map']
-    apply lawSame_collection_congr
-    apply List.forall₂_map_left_iff.mpr
-    apply List.forall₂_map_right_iff.mpr
-    apply List.forall₂_same.mpr
-    intro item member
-    have : sizeOf item < sizeOf (Pattern.collection kind elements rest) := by
-      have := List.sizeOf_lt_of_mem member; simp only [Pattern.collection.sizeOf_spec]; omega
-    exact instantiate_replacement declaration same item depth
-termination_by body => sizeOf body
+  · exact ⟨rfl, instantiateBVarAt_lawSame_replacement same depth depth⟩
+  · exact ⟨rfl, instantiate_replacement declaration same name depth⟩
 
 theorem instantiate_lawSame (declaration : ReflectivePresentationDecl) (depth : Nat) {replacement replacement' body body' : Pattern}
+    (compatible : BinderLawCompatible laws declaration)
     (sameReplacement : LawSame laws replacement replacement') (sameBody : LawSame laws body body') :
     LawSame laws (ReflectiveInstantiation.instantiate declaration depth replacement body)
       (ReflectiveInstantiation.instantiate declaration depth replacement' body') := by
   refine .trans _ _ _ ?_ (instantiate_replacement declaration sameReplacement body' depth)
   induction sameBody with
-  | rel _ _ step => exact step.instantiate declaration depth replacement
+  | rel _ _ step => exact step.instantiate declaration compatible depth replacement
   | refl => exact .refl _
   | symm _ _ _ ih => exact .symm _ _ ih
   | trans _ _ _ _ _ first second => exact .trans _ _ _ first second
@@ -523,22 +943,123 @@ theorem normalizeReflectiveReplacement_lawSame (declaration : ReflectivePresenta
     rw [plain _ shaped, plain _ shaped']
     exact normalizeReflective_lawSame declaration same
 
+/-- Law-equal actions give law-equal viewed substitutions. -/
+theorem substituteViewed_actions_lawSame (declaration : ReflectivePresentationDecl)
+    {insideQuote insideQuote' : Nat → Nat → Pattern}
+    (insideSame : ∀ level index, LawSame laws (insideQuote level index) (insideQuote' level index)) :
+    ∀ (body : Pattern) (atIndex atIndex' : Nat → Nat → Pattern),
+      (∀ level index, LawSame laws (atIndex level index) (atIndex' level index)) → ∀ depth,
+      LawSame laws (ReflectiveSubstitution.substituteViewed declaration insideQuote atIndex depth body)
+        (ReflectiveSubstitution.substituteViewed declaration insideQuote' atIndex' depth body) := by
+  intro body
+  induction body using Pattern.inductionOn with
+  | hbvar index => intro _ _ outsideSame depth; exact outsideSame depth index
+  | hfvar name => intro _ _ _ _; exact .refl _
+  | hlambda binder body ih =>
+    intro atIndex atIndex' outsideSame depth
+    simp only [ReflectiveSubstitution.substituteViewed]
+    exact lawSame_lambda_congr _ (ih atIndex atIndex' outsideSame _)
+  | hmultiLambda arity binders body ih =>
+    intro atIndex atIndex' outsideSame depth
+    simp only [ReflectiveSubstitution.substituteViewed]
+    exact lawSame_multiLambda_congr _ _ (ih atIndex atIndex' outsideSame _)
+  | hsubst body value ihBody ihValue =>
+    intro atIndex atIndex' outsideSame depth
+    simp only [ReflectiveSubstitution.substituteViewed]
+    exact lawSame_subst_congr (ihBody atIndex atIndex' outsideSame _) (ihValue atIndex atIndex' outsideSame _)
+  | hcollection kind elements rest ih =>
+    intro atIndex atIndex' outsideSame depth
+    simp only [ReflectiveSubstitution.substituteViewed, ReflectiveSubstitution.substituteViewedList_eq_map]
+    apply lawSame_collection_congr
+    apply List.forall₂_map_left_iff.mpr
+    apply List.forall₂_map_right_iff.mpr
+    exact List.forall₂_same.mpr fun item member => ih item member atIndex atIndex' outsideSame depth
+  | happly label arguments ih =>
+    intro atIndex atIndex' outsideSame depth
+    match arguments, ih with
+    | [], _ => exact .refl _
+    | first :: second :: rest, ih =>
+      rw [substituteViewed_of_length_ne_one declaration _ _ depth label (by simp),
+        substituteViewed_of_length_ne_one declaration _ _ depth label (by simp)]
+      apply lawSame_apply_congr
+      apply List.forall₂_map_left_iff.mpr
+      apply List.forall₂_map_right_iff.mpr
+      exact List.forall₂_same.mpr fun item member => ih item member atIndex atIndex' outsideSame depth
+    | [payload], ih =>
+      simp only [ReflectiveSubstitution.substituteViewed]
+      split
+      · exact lawSame_apply_congr _ (.cons (ih payload (by simp) insideQuote insideQuote' insideSame depth) .nil)
+      · split
+        · split
+          · exact receive_lawSame declaration label (outsideSame depth depth)
+          · exact lawSame_apply_congr _ (.cons (ih payload (by simp) atIndex atIndex' outsideSame depth) .nil)
+        · exact lawSame_apply_congr _ (.cons (ih payload (by simp) atIndex atIndex' outsideSame depth) .nil)
+
+open ReflectiveInstantiation in
+/-- **Declared binder elimination respects the collection laws**, at every quote
+scope. -/
+theorem instantiateDeclared_lawSame (declaration : ReflectivePresentationDecl) (depth : Nat)
+    {replacement replacement' body body' : Pattern}
+    (compatible : BinderLawCompatible laws declaration)
+    (sameReplacement : LawSame laws replacement replacement') (sameBody : LawSame laws body body') :
+    LawSame laws (instantiateDeclared declaration depth replacement body)
+      (instantiateDeclared declaration depth replacement' body') := by
+  unfold instantiateDeclared
+  cases scope : declaration.quoteScope with
+  | closed => exact instantiate_lawSame declaration depth compatible sameReplacement sameBody
+  | reaching view =>
+    simp only [ReflectiveSubstitution.substituteScoped]
+    have lowered : ∀ level index,
+        LawSame laws (Substitution.instantiateBVarAt level replacement (.bvar index))
+          (Substitution.instantiateBVarAt level replacement' (.bvar index)) :=
+      fun level index => instantiateBVarAt_lawSame_replacement sameReplacement level index
+    have insideSame : ∀ level index,
+        LawSame laws (view.inside (fun level index => Substitution.instantiateBVarAt level replacement (.bvar index))
+            level index)
+          (view.inside (fun level index => Substitution.instantiateBVarAt level replacement' (.bvar index))
+            level index) := by
+      intro level index
+      cases view with
+      | apply => exact lowered level index
+      | freeze frozen =>
+          simp only [QuoteView.inside]
+          split
+          · exact .refl _
+          · exact lowered level index
+      | closure context =>
+          simp only [QuoteView.inside]
+          split
+          · exact lawSame_apply_congr _ (.cons (lowered level level) .nil)
+          · exact lowered level index
+    refine .trans _ _ _ ?_ (substituteViewed_actions_lawSame declaration insideSame _ _ _ lowered depth)
+    induction sameBody with
+    | rel _ _ step =>
+        exact LawSame.substituteViewed compatible _ _ (step.resolveQuotes compatible) depth
+    | refl => exact .refl _
+    | symm _ _ _ ih => exact .symm _ _ ih
+    | trans _ _ _ _ _ first second => exact .trans _ _ _ first second
+
 /-- **Reflective binder elimination respects the collection laws.** -/
 theorem reflectiveOperation_lawSame (declaration : ReflectivePresentationDecl) {replacement replacement' body body' : Pattern}
+    (compatible : BinderLawCompatible laws declaration)
     (sameReplacement : LawSame laws replacement replacement') (sameBody : LawSame laws body body') :
     LawSame laws (ScopedRuleInstantiation.reflectiveOperation declaration replacement body)
       (ScopedRuleInstantiation.reflectiveOperation declaration replacement' body') :=
-  instantiate_lawSame declaration 0 (normalizeReflectiveReplacement_lawSame declaration sameReplacement) sameBody
+  instantiateDeclared_lawSame declaration 0 compatible
+    (normalizeReflectiveReplacement_lawSame declaration sameReplacement) sameBody
 
-/-- **Every binder operation of a plan respects the collection laws.** -/
+/-- An ordinary binder respects collection laws. A selected reflective
+binder needs compatibility at the rule's actual substitution declaration. -/
 theorem binderOperation_lawSame (profile : Reflection.ReflectionProfile) (rule : RewriteRule)
     {replacement replacement' body body' : Pattern}
+    (compatible : BinderLawsFor laws profile rule)
     (sameReplacement : LawSame laws replacement replacement') (sameBody : LawSame laws body body') :
     LawSame laws (ScopedReflectiveExecution.binderOperation profile rule replacement body)
       (ScopedReflectiveExecution.binderOperation profile rule replacement' body') := by
   unfold ScopedReflectiveExecution.binderOperation
-  cases substitutionPresentationForRule? profile rule with
+  cases selected : substitutionPresentationForRule? profile rule with
   | none => exact instantiateBVar_lawSame sameReplacement sameBody
-  | some declaration => exact reflectiveOperation_lawSame declaration sameReplacement sameBody
+  | some declaration =>
+    exact reflectiveOperation_lawSame declaration (compatible declaration selected) sameReplacement sameBody
 
 end Mettapedia.OSLF.MeTTaIL.CanonicalBags

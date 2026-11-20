@@ -63,15 +63,15 @@ def producerPresentQuery (body : Body S O Γ sort before after) : body.ProducerQ
   let required := body.sourceResourceCondition.present.image entryIdentity
   ⟨fun _ label => decide (label.1 ∈ required), required⟩
 
-def producerAbsentQuery (body : Body S O Γ sort before after) : body.ProducerQuery :=
-  let forbidden := body.sourceResourceCondition.absent.image entryIdentity
+def producerNoneQuery (body : Body S O Γ sort before after) : body.ProducerQuery :=
+  let forbidden := body.sourceResourceCondition.missing.image entryIdentity
   ⟨fun _ label => decide (label.1 ∈ forbidden), ∅⟩
 
 noncomputable def producerStaticQuery (body : Body S O Γ sort before after) : body.ProducerQuery :=
   liftPoint (ofCondition (fun _ => body.ShapesHold ∧ body.sourceResourceCondition.possible = true) none)
 
 noncomputable def producerResourceQueries (body : Body S O Γ sort before after) : List body.ProducerQuery :=
-  [body.producerStaticQuery, body.producerPresentQuery, body.producerAbsentQuery]
+  [body.producerStaticQuery, body.producerPresentQuery, body.producerNoneQuery]
 
 private theorem finite_presence {N Label : Type} {Candidate : Type uA} [DecidableEq N]
     (required world : Finset N) (rows : N → Label) (candidate : Candidate) :
@@ -88,7 +88,7 @@ private theorem finite_presence {N Label : Type} {Candidate : Type uA} [Decidabl
     simp only [mem_regionOf, decide_eq_true_eq]
     exact ⟨And.right, fun member => ⟨present member, member⟩⟩
 
-private theorem finite_absence {N Label : Type} {Candidate : Type uA} [DecidableEq N]
+private theorem finite_none {N Label : Type} {Candidate : Type uA} [DecidableEq N]
     (forbidden world : Finset N) (rows : N → Label) (candidate : Candidate) :
     ((PredicateQueryAdmission.Query.mk (fun (_ : Candidate) (label : N × Label) => decide (label.1 ∈ forbidden)) ∅).atSolution candidate).Holds
       (fun occurrence => (occurrence, rows occurrence)) world ↔ Disjoint forbidden world := by
@@ -122,7 +122,7 @@ theorem entry_presence_iff (body : Body S O Γ sort before after) (occupied : Fi
     obtain ⟨occurrence, original, rfl⟩ := Finset.mem_image.mp member
     exact Finset.mem_insert_of_mem (Finset.mem_image_of_mem entryIdentity (checked original))
 
-theorem entry_absence_iff (body : Body S O Γ sort before after) (occupied : Finset Nat) (forbidden : Finset O) :
+theorem entry_none_iff (body : Body S O Γ sort before after) (occupied : Finset Nat) (forbidden : Finset O) :
     Disjoint (forbidden.image entryIdentity) (body.nativeBindingState occupied).present ↔ Disjoint forbidden before.present := by
   constructor
   · intro apart
@@ -169,19 +169,19 @@ theorem producer_resource_queries_iff (body : Body S O Γ sort before after) (oc
         (checked Future future candidate model))
     · intro holds Future future candidate _model
       exact (finite_presence _ _ _ (⟨Future, future, candidate⟩ : Candidate body.guardNativeFamily)).mpr ((body.entry_presence_iff occupied _).mpr holds)
-  have absent : AskData (body.nativeBindingInformation occupied produced []) body.producerAbsentQuery
+  have missing : AskData (body.nativeBindingInformation occupied produced []) body.producerNoneQuery
       (nativeLabels body.guardNativeBank (body.nativeBindingState occupied)) (body.nativeBindingState occupied).present ↔
-      Disjoint body.sourceResourceCondition.absent before.present := by
+      Disjoint body.sourceResourceCondition.missing before.present := by
     constructor
     · intro checked
       obtain ⟨Future, future, candidate, model⟩ := consistent
-      exact (body.entry_absence_iff occupied _).mp ((finite_absence _ _ _ (⟨Future, future, candidate⟩ : Candidate body.guardNativeFamily)).mp
+      exact (body.entry_none_iff occupied _).mp ((finite_none _ _ _ (⟨Future, future, candidate⟩ : Candidate body.guardNativeFamily)).mp
         (checked Future future candidate model))
     · intro holds Future future candidate _model
-      exact (finite_absence _ _ _ (⟨Future, future, candidate⟩ : Candidate body.guardNativeFamily)).mpr ((body.entry_absence_iff occupied _).mpr holds)
+      exact (finite_none _ _ _ (⟨Future, future, candidate⟩ : Candidate body.guardNativeFamily)).mpr ((body.entry_none_iff occupied _).mpr holds)
   have resources : Executable ContextualSourceSchedules.Schedule.unitLabel before.present body.commits ↔
       body.sourceResourceCondition.possible = true ∧ body.sourceResourceCondition.present ⊆ before.present ∧
-        Disjoint body.sourceResourceCondition.absent before.present := by
+        Disjoint body.sourceResourceCondition.missing before.present := by
     rw [← CompiledSchedule.compile_condition_iff]
     change body.sourceResourceCondition.Holds ContextualSourceSchedules.Schedule.unitLabel before.present ↔ _
     rw [CommitPrecondition.Holds, body.source_resource_queries_empty]
@@ -190,7 +190,7 @@ theorem producer_resource_queries_iff (body : Body S O Γ sort before after) (oc
   · intro checked
     have one := static.mp (checked _ (List.mem_cons_self ..))
     have two := present.mp (checked _ (List.mem_cons_of_mem _ (List.mem_cons_self ..)))
-    have three := absent.mp (checked _ (List.mem_cons_of_mem _ (List.mem_cons_of_mem _ (List.mem_singleton_self _))))
+    have three := missing.mp (checked _ (List.mem_cons_of_mem _ (List.mem_cons_of_mem _ (List.mem_singleton_self _))))
     exact ⟨one.1, resources.mpr ⟨one.2, two, three⟩⟩
   · rintro ⟨shapes, executable⟩ query member
     have parts := resources.mp executable
@@ -198,6 +198,6 @@ theorem producer_resource_queries_iff (body : Body S O Γ sort before after) (oc
     rcases member with rfl | rfl | rfl
     · exact static.mpr ⟨shapes, parts.1⟩
     · exact present.mpr parts.2.1
-    · exact absent.mpr parts.2.2
+    · exact missing.mpr parts.2.2
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualNativeBodies.Body

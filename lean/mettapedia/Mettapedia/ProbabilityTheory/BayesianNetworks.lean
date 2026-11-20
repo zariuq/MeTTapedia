@@ -1,4 +1,5 @@
 import Mettapedia.ProbabilityTheory.BayesianNetworks.ComposedFunctionalExtension
+import Mettapedia.ProbabilityTheory.BayesianNetworks.ConditionedKernel
 import Mettapedia.ProbabilityTheory.BayesianNetworks.FunctionalExtension
 import Mettapedia.ProbabilityTheory.BayesianNetworks.DirectedGraph
 import Mettapedia.ProbabilityTheory.BayesianNetworks.BayesianNetwork

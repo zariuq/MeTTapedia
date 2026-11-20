@@ -48,7 +48,8 @@ theorem guarded_workflow_receipt_covered {receipt : GeneralRuleJobs.Receipt}
       CanonicalBags.Same receipt.target result.target := by
   have hypotheses := CollectionOccurrenceMachine.checkNullaryFragment_sound guarded_workflow_fragment
     receipt.job.declaration (List.fst_mem_of_mem_zipIdx valid.1.1)
-  exact CollectionOccurrenceMachine.receipt_eventually_published valid hypotheses.1 (.nullary hypotheses.2) depth bounded
+  exact CollectionOccurrenceMachine.receipt_eventually_published valid hypotheses.2.2 hypotheses.1
+    (.nullary hypotheses.2.1) depth bounded
 
 #guard !GeneralPremise.checkNullaryGuards [.relationQuery "inspect" [.fvar "facts"]]
 #guard !GeneralPremise.checkNullaryGuards [.congruence (.fvar "x") (.fvar "y")]

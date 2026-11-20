@@ -417,7 +417,7 @@ end FixedRegion
 
 namespace Controls
 
-open Mettapedia.Machines.ReadOnlyQuery.Controls (adaptive original absenceQuery)
+open Mettapedia.Machines.ReadOnlyQuery.Controls (adaptive original negativeLookupQuery)
 
 private def execute (fuel : Nat) :=
   advance (provider original) client (readCharge original) (base := .unit)
@@ -478,14 +478,14 @@ theorem unchecked_revision_follows_wrong_continuation :
 theorem completed_negative_read_refuses_new_presence :
     let absent := fun (_ : Nat) => (none : Option Nat)
     let previous := advance (provider absent) client (readCharge absent)
-      (base := .unit) 2 ⟨.unit, absenceQuery, []⟩
+      (base := .unit) 2 ⟨.unit, negativeLookupQuery, []⟩
     resumeValidated absent (Function.update absent 4 (some 9)) 1 previous = .error previous := by
   rfl
 
 theorem negative_read_is_retained :
     completed? (fun (_ : Nat) => (none : Option Nat))
       (advance (provider (fun (_ : Nat) => (none : Option Nat))) client
-        (readCharge (fun _ => none)) (base := .unit) 2 ⟨.unit, absenceQuery, []⟩).2 =
+        (readCharge (fun _ => none)) (base := .unit) 2 ⟨.unit, negativeLookupQuery, []⟩).2 =
           some ⟨true, [(4, none)]⟩ := by
   rfl
 

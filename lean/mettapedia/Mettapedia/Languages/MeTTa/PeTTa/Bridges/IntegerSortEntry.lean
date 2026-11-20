@@ -145,7 +145,7 @@ namespace Controls
 open MeTTaIL.WireKit
 
 def request : Request :=
-  ⟨{equations := [], declarations := []}, [], {core := []},
+  ⟨{equations := [], declarations := []}, [], {core := [], namedEmpty := []},
     apply "let" [.var "ignored", apply "add-atom" [.symbol "&self", number 9],
       apply "quote" [.expression [number 3, number 1, number 3]]]⟩
 

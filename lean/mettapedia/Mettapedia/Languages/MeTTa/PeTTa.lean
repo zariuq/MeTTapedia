@@ -5,6 +5,7 @@ import Mettapedia.Languages.MeTTa.PeTTa.SpaceSemantics
 import Mettapedia.Languages.MeTTa.PeTTa.LibTransform
 import Mettapedia.Languages.MeTTa.PeTTa.LibTransformControls
 import Mettapedia.Languages.MeTTa.PeTTa.LibTransformQuery
+import Mettapedia.Languages.MeTTa.PeTTa.LibTransformRunner
 import Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite.Answers
 import Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite.Space
 import Mettapedia.Languages.MeTTa.PeTTa.PatternRewrite.Commands

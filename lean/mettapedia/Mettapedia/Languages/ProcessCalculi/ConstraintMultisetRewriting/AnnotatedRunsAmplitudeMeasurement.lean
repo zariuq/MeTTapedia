@@ -296,7 +296,9 @@ omit [DecidableEq O] in
 row `t` at `r`. -/
 def rowFiring (queries : List (PredicateQuery O T)) (checks : List (Check T)) (t : T) (r : O) :
     Firing T S O :=
-  ⟨⟨[], [], [], checks, [t]⟩, queries.map PredicateQueryAdmission.Query.fixed, ⟨[], [], [r]⟩⟩
+  ⟨⟨[], [], [], checks, [t]⟩,
+    (queries.map PredicateQueryAdmission.Query.fixed).map PredicateQueryAdmission.Query.toRegion,
+    ⟨[], [], [r]⟩⟩
 
 /-- **Admission of a row firing**: every query saw its region whole, the row is fresh and carries
 `t`, the store has a solution, and every guard holds at every solution of the store. -/
@@ -309,9 +311,10 @@ theorem rowFiring_valid_iff (queries : List (PredicateQuery O T)) (checks : List
   have problem : (⟨[], [], [r]⟩ : Selection O).problem label
       (⟨[], [], [], checks, [t]⟩ : RuleInstance T) C = C.equations := by
     simp [Selection.problem, Selection.equations]
-  change PredicateQueryAdmission.Valid A label (⟨[], [], [], checks, [t]⟩ : RuleInstance T)
-      (queries.map PredicateQueryAdmission.Query.fixed) C (⟨[], [], [r]⟩ : Selection O) ↔ _
-  rw [PredicateQueryAdmission.valid_fixed_iff]
+  change PredicateQueryAdmission.RegionValid A label (⟨[], [], [], checks, [t]⟩ : RuleInstance T)
+      ((queries.map PredicateQueryAdmission.Query.fixed).map PredicateQueryAdmission.Query.toRegion) C
+      (⟨[], [], [r]⟩ : Selection O) ↔ _
+  rw [← PredicateQueryAdmission.valid_iff_regionValid, PredicateQueryAdmission.valid_fixed_iff]
   constructor
   · rintro ⟨firing, holds⟩
     have consistent := firing.consistent
@@ -655,10 +658,10 @@ theorem waveform_refused {seen : Finset O} {r : O} {C : Configuration T O}
 /-- **A path arriving in the region after its query saw it refuses the waveform guard.** -/
 theorem waveform_refuses_arrival {seen : Finset O} {r : O} {C : Configuration T O}
     (valid : (waveformFiring A label wave verdict bits row region seen r).Valid A label C) {o : O}
-    (absent : o ∉ C.present) (inRegion : region (label o) = true) :
+    (missing : o ∉ C.present) (inRegion : region (label o) = true) :
     ¬ (waveformFiring A label wave verdict bits row region seen r).Valid A label
       ⟨C.equations, C.present ∪ {o}⟩ :=
-  query_refuses_arrival A label valid (query := ⟨region, seen⟩) (List.mem_singleton_self _) absent
+  query_refuses_arrival A label valid (query := ⟨region, seen⟩) (List.mem_singleton_self _) missing
     inRegion
 
 omit [DecidableEq O] in

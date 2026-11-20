@@ -119,7 +119,7 @@ theorem firesUnder_lent_of_valid {J : Configuration T O} {f : Firing T S O} {len
       exact here
     · intro query member σ known
       have here := valid.observations query member σ (models_problem_of_mem A label J f σ known)
-      show (query.atSolution σ).Holds label (f.selection.taken.toFinset ∪
+      show query.Holds σ label (f.selection.taken.toFinset ∪
         (((J.present \ lent) \ f.selection.taken.toFinset).val + lent.val).toFinset)
       rw [store]
       exact here
@@ -166,7 +166,7 @@ theorem valid_of_firesUnder_lent (J : Configuration T O) (f : Firing T S O) {len
             (((J.present \ lent) \ f.selection.taken.toFinset).val + lent.val).toFinset)) ∧
       ∀ query ∈ f.queries,
         ∀ σ ∈ (knowledge A J ⊓ {σ | A.Models σ (added label f.rule f.selection)} : Set S),
-          (query.atSolution σ).Holds label (f.selection.taken.toFinset ∪
+          query.Holds σ label (f.selection.taken.toFinset ∪
             (((J.present \ lent) \ f.selection.taken.toFinset).val + lent.val).toFinset) := checked
   rw [store] at checks
   have reaches : reached = knowledge A (f.result label J) :=
@@ -329,8 +329,8 @@ theorem checks_gives_lent_proof {left right : Configuration T O}
     constructor
     · rintro ⟨here | there, outside⟩
       · exact here
-      · by_contra absent
-        exact outside ⟨there, absent⟩
+      · by_contra missing
+        exact outside ⟨there, missing⟩
     · intro here
       exact ⟨Or.inl here, fun both => both.2 here⟩
   obtain ⟨along, zoned⟩ := runUnder_lent_of_native_run A label
@@ -346,7 +346,7 @@ theorem checks_gives_lent_proof {left right : Configuration T O}
 /-- **The native tensor of two runs is a graded proof of the tensor sequent, on identities.** It
 starts from the meet of the two knowledges and the identities of both configurations, and its
 firings are those of the first run, then those of the second. No restriction on checks or
-predicate queries, and no supply of occurrences. -/
+region queries, and no supply of occurrences. -/
 theorem native_tensor_is_zoned_proof_on_identities {left right : Configuration T O}
     {first : (firstOrder A label).toStep.Run left} {second : (firstOrder A label).toStep.Run right}
     (plan : (contextualRunInterpretation A label).TensorPlan (contextualFlip A label) PUnit.unit
@@ -366,5 +366,11 @@ theorem native_tensor_is_zoned_proof_on_identities {left right : Configuration T
       tensor_sites A label plan, consistent⟩
   rw [knowledge_tensor] at proof
   exact proof
+
+#print axioms firesUnder_lent_of_valid
+#print axioms valid_of_firesUnder_lent
+#print axioms lent_run_iff_zoned_proof
+#print axioms checks_gives_lent_proof
+#print axioms native_tensor_is_zoned_proof_on_identities
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.KnowledgeTensorCore.FirstOrder

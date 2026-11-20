@@ -42,7 +42,7 @@ not define `collapse` anew.
 * **R16's stratification rule** (`Roles.Collection.stratified_meaning`): a world's collection taken
   after its constraints (`worldAnswers`) is the observation of the conjunction's solution, in
   every order of the constraints (`worldAnswers_meaning`, `collectAtCut_constraint_perm`).
-* **w9's actual query collection** (`StratifiedCensusCollection.observe`): collected at the
+* **w9's actual query collection** (`StratifiedQueryCollection.observe`): collected at the
   stratified cut of every world, it is the bag of w10's `collectQueries` over the solved stores
   (`collectAtCut_eq_collectQueries`).
 -/
@@ -427,13 +427,13 @@ theorem collectAtCut_eq_collectQueries (layer : MeTTaCalculus.OccurrenceCommits.
     (matcher : MeTTaCalculus.OccurrenceCommits.Sources.Matcher N V Pattern) (label : Row → V) (contents : List Row)
     (pattern template : Pattern) (constraints : W → Steps N V) (store : W → Store N V) :
     ∀ worlds : List W, (∀ world ∈ worlds, solveConj (constraints world) = some (store world)) →
-      collectAtCut (fun state => ((StratifiedCensusCollection.observe layer matcher label contents
+      collectAtCut (fun state => ((StratifiedQueryCollection.observe layer matcher label contents
           pattern template state).answer : Multiset V)) constraints worlds =
         (AnnotatedRunUnfolding.collectQueries layer matcher label contents pattern template store
           worlds : Multiset V)
   | [], _ => rfl
   | world :: rest, solved => by
-      have head := worldAnswers_meaning (fun state => ((StratifiedCensusCollection.observe layer
+      have head := worldAnswers_meaning (fun state => ((StratifiedQueryCollection.observe layer
         matcher label contents pattern template state).answer : Multiset V)) constraints world
       rw [solved world List.mem_cons_self] at head
       have tail := collectAtCut_eq_collectQueries layer matcher label contents pattern template

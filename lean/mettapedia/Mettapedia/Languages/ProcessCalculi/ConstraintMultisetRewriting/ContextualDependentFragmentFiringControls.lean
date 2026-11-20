@@ -266,11 +266,11 @@ theorem rigid_not_decisive_on_fragment :
         run (rigidTower.solver larger) idStore larger = run (rigidTower.solver budget) idStore budget ∧
         ((∃ state finished, run (rigidTower.solver larger) idStore larger = .solved state finished ∧
             (frames setting.levels).Principal idStore state.answer) ∨
-          (∃ absent, run (rigidTower.solver larger) idStore larger = .refuted absent)) := by
+          (∃ missing, run (rigidTower.solver larger) idStore larger = .refuted missing)) := by
   refine ⟨idStore_in_fragment, idStore_unsolvable, ?_⟩
   rintro ⟨budget, decided⟩
   have never := (id_never_decided budget budget).1
-  rcases (decided budget le_rfl).2 with ⟨state, finished, solved, _⟩ | ⟨absent, refuted⟩
+  rcases (decided budget le_rfl).2 with ⟨state, finished, solved, _⟩ | ⟨missing, refuted⟩
   · rw [solved] at never; exact never trivial
   · rw [refuted] at never; exact never trivial
 

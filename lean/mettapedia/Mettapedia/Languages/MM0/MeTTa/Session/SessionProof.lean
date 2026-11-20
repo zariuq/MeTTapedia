@@ -400,7 +400,8 @@ private def initial : State :=
       else if index = 3 then TableAccess.declarationRows declarations.terms.reverse
       else if index = 5 then Proof.theoremRows declarations.theorems.reverse
       else []
-    cells := fun name => if name = InferenceCache.cell then some (Effects.handleValue spaces.cache) else none }
+    cells := fun name => if name = InferenceCache.cell then some (Effects.handleValue spaces.cache) else none
+    namedEmpty := [] }
 
 private theorem ready : Ready spaces declarations initial := by
   refine ⟨⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, by decide⟩, ?_⟩

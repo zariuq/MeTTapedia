@@ -182,9 +182,9 @@ def carry {Γ : Context S.R} (type : TypeOver Γ) {strong : EquationStore (Total
       .solved (((update.lift type).keepLeft weak).rephrase same) (by
         change update.target.arity + 1 < Γ.arity + 1
         omega)
-  | .refuted absent =>
+  | .refuted missing =>
       .refuted fun ⟨Δ, σ, solved⟩ =>
-        absent ⟨Δ, σ ≫ projectionHom Γ type,
+        missing ⟨Δ, σ ≫ projectionHom Γ type,
           (Frames.models_applyStore (X := frames S.levels) (projectionHom Γ type) σ strong).mp
             ((Frames.models_append (X := frames S.levels) σ weak _).mp ((same Δ σ).mp solved)).2⟩
 
@@ -268,7 +268,7 @@ def inPlaceRound (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (Total
   match piRound facts roots heads algebra declared choices reducer rigid complete root normalizes certifyNormal
       headTypingUnique rootComplete fuel problem with
   | .progress update smaller => .progress update smaller
-  | .refuted absent => .refuted absent
+  | .refuted missing => .refuted missing
   | .stuck =>
       match inPlaceRule facts roots heads algebra declared choices reducer rigid complete root normalizes certifyNormal
           headTypingUnique fuel (ContextualDependentNormalizing.prepare root rootComplete facts roots heads fuel problem).remaining with
@@ -278,9 +278,9 @@ def inPlaceRound (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (Total
               have same := prepare_arity facts roots heads root rootComplete fuel problem
               change update.target.arity < Θ.arity
               omega))
-      | some (.refuted absent) =>
+      | some (.refuted missing) =>
           .refuted fun solvable =>
-            absent ((ContextualDependentNormalizing.prepare root rootComplete facts roots heads fuel problem).solvable_iff.mp
+            missing ((ContextualDependentNormalizing.prepare root rootComplete facts roots heads fuel problem).solvable_iff.mp
               solvable)
       | none => .stuck
 
@@ -299,24 +299,24 @@ def inPlaceFamily : ContextualDependentDecisiveDriver.Family S.levels where
 /-- **Every refutation of the in-place round is certified**: it is the Π round's, or a refutation of
 the prepared store by the in-place rule. -/
 theorem inPlaceRound_refuted {fuel : Nat} {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)}
-    {absent : ¬ (frames S.levels).Solvable problem}
+    {missing : ¬ (frames S.levels).Solvable problem}
     (refuted : inPlaceRound facts roots heads algebra declared choices reducer rigid complete root normalizes
-      certifyNormal headTypingUnique rootComplete fuel problem = .refuted absent) :
-    (∃ absent', piRound facts roots heads algebra declared choices reducer rigid complete root normalizes certifyNormal
-        headTypingUnique rootComplete fuel problem = .refuted absent') ∨
-      ∃ absent', inPlaceRule facts roots heads algebra declared choices reducer rigid complete root normalizes
+      certifyNormal headTypingUnique rootComplete fuel problem = .refuted missing) :
+    (∃ missing', piRound facts roots heads algebra declared choices reducer rigid complete root normalizes certifyNormal
+        headTypingUnique rootComplete fuel problem = .refuted missing') ∨
+      ∃ missing', inPlaceRule facts roots heads algebra declared choices reducer rigid complete root normalizes
         certifyNormal headTypingUnique fuel
         (ContextualDependentNormalizing.prepare root rootComplete facts roots heads fuel problem).remaining =
-          some (.refuted absent') := by
+          some (.refuted missing') := by
   unfold inPlaceRound at refuted
   split at refuted
   · cases refuted
-  · rename_i absent' computed
-    exact .inl ⟨absent', computed⟩
+  · rename_i missing' computed
+    exact .inl ⟨missing', computed⟩
   · split at refuted
     · cases refuted
-    · rename_i absent' computed
-      exact .inr ⟨absent', computed⟩
+    · rename_i missing' computed
+      exact .inr ⟨missing', computed⟩
     · cases refuted
 
 end ContextualDependentInPlace

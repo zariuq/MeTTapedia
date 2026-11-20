@@ -4,19 +4,19 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Knowledge
 /-!
 # Controls for neutral states and for the checks of a word
 
-* `the_reads_word_passes_beside_nine`, `the_absence_word_fails_beside_nine`: the checks of a
+* `the_reads_word_passes_beside_nine`, `the_none_word_fails_beside_nine`: the checks of a
   word beside the occurrence `9` pass for the run that reads and fail for the firing that checks
-  the absence of `9`.
-* `the_absence_run_beside_nothing_and_nine`: beside the pair of the empty configuration and the
-  occurrence `9` the absence run is not in its grade; the law of pairs reduces this to the run
+  the none query of `9`.
+* `the_none_run_beside_nothing_and_nine`: beside the pair of the empty configuration and the
+  occurrence `9` the none run is not in its grade; the law of pairs reduces this to the run
   placed beside the empty configuration.
 
 * `the_reads_run_is_in_its_grade_beside_nothing`: beside the empty configuration the run that
   reads is in its own grade.
-* `the_absence_run_is_in_its_grade_beside_nothing`: so is the firing that checks the absence of
+* `the_none_run_is_in_its_grade_beside_nothing`: so is the firing that checks the none query of
   the occurrence `9`.
 * `nine_is_not_neutral`: the configuration that holds the occurrence `9` is not neutral: the
-  firing that checks its absence is admitted alone and refused beside it.
+  firing that checks its none query is admitted alone and refused beside it.
 -/
 
 set_option autoImplicit false
@@ -32,7 +32,7 @@ theorem the_reads_run_is_in_its_grade_beside_nothing :
       (right := AnnotatedRuns.unitConfiguration) PUnit.unit readsRun :=
   checks_of_neutral (FirstOrder.unit_neutral plain id) PUnit.unit readsRun
 
-theorem the_absence_run_is_in_its_grade_beside_nothing :
+theorem the_none_run_is_in_its_grade_beside_nothing :
     (contextualRunInterpretation plain id).Checks (left := one)
       (right := AnnotatedRuns.unitConfiguration) PUnit.unit unlessNineRun :=
   checks_of_neutral (FirstOrder.unit_neutral plain id) PUnit.unit unlessNineRun
@@ -49,18 +49,18 @@ theorem the_reads_word_passes_beside_nine :
     ((exists_places_iff_checks (contextualRunInterpretation plain id) (left := one) (right := nine)
       PUnit.unit readsRun).mp reads_has_a_placed_run)
 
-theorem the_absence_word_fails_beside_nine :
+theorem the_none_word_fails_beside_nine :
     ¬ FirstOrder.WordChecks plain id nine one (sites plain id unlessNineRun) :=
-  fun passes => absence_grade_is_not_structural.2
+  fun passes => none_grade_is_not_structural.2
     ((FirstOrder.checks_iff_wordChecks plain id nine unlessNineRun).mpr passes)
 
-/-- **The law of pairs at the absence check.** Beside the pair of the empty configuration and the
-occurrence `9` the absence run is not in its grade. -/
-theorem the_absence_run_beside_nothing_and_nine :
+/-- **The law of pairs at the none check.** Beside the pair of the empty configuration and the
+occurrence `9` the none run is not in its grade. -/
+theorem the_none_run_beside_nothing_and_nine :
     ¬ (contextualRunInterpretation plain id).Checks (left := one)
       (right := AnnotatedRuns.tensor AnnotatedRuns.unitConfiguration nine) PUnit.unit
       unlessNineRun := by
   rw [AnnotatedRuns.tensor_unit_left]
-  exact absence_grade_is_not_structural.2
+  exact none_grade_is_not_structural.2
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.KnowledgeTensorCore.Controls

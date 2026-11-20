@@ -15,9 +15,13 @@ set_option autoImplicit false
 
 namespace Mettapedia.Languages.MeTTa.PeTTa.NamedSpaces
 
+/-- Ordinary atom names other than the distinguished self-space spelling. -/
+abbrev Name := { name : String // name ≠ "&self" }
+
 inductive Handle where
   | self
   | privateSpace (index : Nat)
+  | namedSpace (name : Name)
   deriving DecidableEq, Repr
 
 universe uSpace uValue
@@ -28,17 +32,37 @@ structure Store (Space : Type uSpace) (Value : Type uValue) where
   next : Nat := 0
   spaces : Nat → Space := fun _ => core
   cells : String → Option Value := fun _ => none
+  namedSpaces : List (String × Space) := []
+  namedEmpty : Space
 
 namespace Store
 
 variable {Space : Type uSpace} {Value : Type uValue}
 
 def new (core empty : Space) : Store Space Value :=
-  { core, spaces := fun _ => empty }
+  { core, spaces := fun _ => empty, namedEmpty := empty }
 
 def read (state : Store Space Value) : Handle → Option Space
   | .self => some state.core
   | .privateSpace index => if index < state.next then some (state.spaces index) else none
+  | .namedSpace name => some ((state.namedSpaces.lookup name.1).getD state.namedEmpty)
+
+private theorem lookup_filter_other (name other : String) (different : other ≠ name)
+    (rows : List (String × Space)) :
+    (rows.filter (fun row => row.1 != name)).lookup other = rows.lookup other := by
+  induction rows with
+  | nil => rfl
+  | cons row rest ih =>
+      rcases row with ⟨key, value⟩
+      by_cases removed : key = name
+      · subst key
+        have differentBool : (other == name) = false := by simp [different]
+        simp [List.lookup_cons, differentBool, ih]
+      · by_cases found : other = key
+        · subst key
+          simp [different]
+        · have differentBool : (other == key) = false := by simp [found]
+          simp [List.lookup_cons, removed, differentBool, ih]
 
 def write (state : Store Space Value) : Handle → Space → Option (Store Space Value)
   | .self, space => some { state with core := space }
@@ -46,6 +70,9 @@ def write (state : Store Space Value) : Handle → Space → Option (Store Space
     if index < state.next then
       some { state with spaces := Function.update state.spaces index space }
     else none
+  | .namedSpace name, space =>
+      some { state with namedSpaces :=
+        (name.1, space) :: state.namedSpaces.filter (fun row => row.1 != name.1) }
 
 def allocate (state : Store Space Value) (empty : Space) : Handle × Store Space Value :=
   (.privateSpace state.next,
@@ -57,6 +84,9 @@ def putCell (state : Store Space Value) (name : String) (value : Value) : Store 
   { state with cells := Function.update state.cells name (some value) }
 
 @[simp] theorem read_self (state : Store Space Value) : state.read .self = some state.core := rfl
+
+@[simp] theorem new_named_read (core empty : Space) (name : Name) :
+    (new core empty : Store Space Value).read (.namedSpace name) = some empty := rfl
 
 @[simp] theorem read_unallocated (state : Store Space Value) (index : Nat)
     (unallocated : state.next ≤ index) : state.read (.privateSpace index) = none := by
@@ -75,6 +105,7 @@ theorem allocation_read_existing (state : Store Space Value) (empty : Space) (ha
     (state.allocate empty).2.read handle = state.read handle := by
   cases handle with
   | self => rfl
+  | namedSpace name => rfl
   | privateSpace index =>
     have unequal : index ≠ state.next := by
       intro same
@@ -104,12 +135,16 @@ theorem write_reads_back (state : Store Space Value) (handle : Handle) (space : 
       cases written
       simp [read, allocated]
     next => contradiction
+  | namedSpace name =>
+      cases written
+      simp [read]
 
 theorem write_exists_of_read_some (state : Store Space Value) (handle : Handle)
     (before space : Space) (allocated : state.read handle = some before) :
     ∃ after, state.write handle space = some after := by
   cases handle with
   | self => exact ⟨_, rfl⟩
+  | namedSpace name => exact ⟨_, rfl⟩
   | privateSpace index =>
       have bounded : index < state.next := by
         by_contra absent
@@ -126,6 +161,7 @@ theorem write_read_other (state : Store Space Value) (handle other : Handle) (sp
     cases other with
     | self => exact False.elim (different rfl)
     | privateSpace index => rfl
+    | namedSpace name => rfl
   | privateSpace index =>
     simp only [write] at written
     split at written
@@ -133,12 +169,25 @@ theorem write_read_other (state : Store Space Value) (handle other : Handle) (sp
       cases written
       cases other with
       | self => rfl
+      | namedSpace name => rfl
       | privateSpace otherIndex =>
         have unequal : otherIndex ≠ index := by
           intro same
           exact different (congrArg Handle.privateSpace same)
         simp [read, unequal]
     next => contradiction
+  | namedSpace name =>
+      cases written
+      cases other with
+      | self => rfl
+      | privateSpace index => rfl
+      | namedSpace otherName =>
+          have unequal : otherName.1 ≠ name.1 := by
+            intro same
+            exact different (congrArg Handle.namedSpace (Subtype.ext same))
+          have unequalBool : (otherName.1 == name.1) = false := by simp [unequal]
+          simp [read, List.lookup_cons, unequalBool,
+            lookup_filter_other name.1 otherName.1 unequal state.namedSpaces]
 
 theorem write_preserves_cells (state : Store Space Value) (handle : Handle) (space : Space)
     (after : Store Space Value) (written : state.write handle space = some after) :
@@ -153,6 +202,7 @@ theorem write_preserves_cells (state : Store Space Value) (handle : Handle) (spa
     split at written
     next => cases written; rfl
     next => contradiction
+  | namedSpace name => cases written; rfl
 
 @[simp] theorem cell_reads_back (state : Store Space Value) (name : String) (value : Value) :
     (state.putCell name value).cells name = some value := by
@@ -241,6 +291,7 @@ theorem write_emptyTail {state after : Store Space Value} {handle : Handle}
       simp only [write, Option.some.injEq] at written
       cases written
       exact vacant
+  | namedSpace name => cases written; exact vacant
   | privateSpace writtenIndex =>
       simp only [write] at written
       split at written
@@ -308,10 +359,11 @@ theorem cells_eq_rows_lookup (state : Store Space Value) (names : List String)
 
 /-- Reconstruct the existing store carrier from finite space and cell payloads. -/
 def reconstruct (core empty : Space) (spaces : List Space)
-    (cells : List (String × Option Value)) : Store Space Value :=
+    (cells : List (String × Option Value)) (namedSpaces : List (String × Space))
+    (namedEmpty : Space) : Store Space Value :=
   { core, next := spaces.length,
     spaces := fun index => (spaces[index]?).getD empty,
-    cells := fun name => (cells.lookup name).join }
+    cells := fun name => (cells.lookup name).join, namedSpaces, namedEmpty }
 
 /-- Exact finite reconstruction is available when the cell support is supplied
 and the unallocated space tail is empty. Neither a cell nor a private space is
@@ -319,7 +371,8 @@ silently discarded. -/
 theorem reconstruct_exact (state : Store Space Value) (empty : Space) (names : List String)
     (vacant : EmptyTail state empty)
     (covers : ∀ name, name ∉ names → state.cells name = none) :
-    reconstruct state.core empty state.spacesPrefix (state.cellRows names) = state := by
+    reconstruct state.core empty state.spacesPrefix (state.cellRows names)
+      state.namedSpaces state.namedEmpty = state := by
   have spaces : (fun index => (state.spacesPrefix[index]?).getD empty) = state.spaces := by
     funext index
     exact (spaces_eq_prefix_of_emptyTail vacant index).symm
@@ -330,7 +383,8 @@ theorem reconstruct_exact (state : Store Space Value) (empty : Space) (names : L
 
 theorem finite_reconstruction_exists (state : Store Space Value) (empty : Space)
     (finite : FiniteCells state) (vacant : EmptyTail state empty) :
-    ∃ names, reconstruct state.core empty state.spacesPrefix (state.cellRows names) = state := by
+    ∃ names, reconstruct state.core empty state.spacesPrefix (state.cellRows names)
+      state.namedSpaces state.namedEmpty = state := by
   obtain ⟨names, covers⟩ := finite
   exact ⟨names, reconstruct_exact state empty names vacant covers⟩
 

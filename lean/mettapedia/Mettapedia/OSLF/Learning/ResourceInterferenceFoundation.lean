@@ -41,7 +41,7 @@ import Mettapedia.OSLF.Syntax.RhoPayloadConstruction
 import Mettapedia.OSLF.Syntax.RhoPayloadPresentation
 import Mettapedia.OSLF.Syntax.RhoScopedChannelSeparation
 import Mettapedia.OSLF.Syntax.RhoScopedFiniteReactions
-import Mettapedia.OSLF.Syntax.RhoScopedNativeAbsence
+import Mettapedia.OSLF.Syntax.RhoScopedNativeNone
 import Mettapedia.OSLF.Syntax.RhoScopedReactionReadout
 import Mettapedia.OSLF.Syntax.ScopedBindingContexts
 import Mettapedia.Documentation.SourceLedgers.FindingMindLearning

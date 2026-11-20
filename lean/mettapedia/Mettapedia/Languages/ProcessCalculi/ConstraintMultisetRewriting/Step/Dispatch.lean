@@ -40,9 +40,9 @@ instance of a translated source solution covers (`coversAt_of_top`).
 ## Dispatch
 
 At the frame level (`LicensedAt.solvable_iff`, `LicensedAt.entails_models_iff`,
-`entails_absent_iff`, `LicensedAt.entails_count_iff`): on a store the source decides, solvability
-and asks of equation guards of the translated store are those of the source store; asks of absence
-need only the refutation clause, at each absence extension; asks of counts need the license at the
+`entails_none_iff`, `LicensedAt.entails_count_iff`): on a store the source decides, solvability
+and asks of equation guards of the translated store are those of the source store; asks of none queries
+need only the refutation clause, at each none query extension; asks of counts need the license at the
 store and the refutation clause at each extension by matches. Along covering no decision is needed
 (`CoversAt.entails_models_iff`, `CoversAt.entails_count_iff`).
 
@@ -367,11 +367,11 @@ theorem coversAt_of_refuted {a : Obj} {K : EquationStore (Tm a)}
     (refuted : ¬ Y.Solvable (Φ.store K)) : Φ.CoversAt K :=
   fun b τ solved => absurd ⟨b, τ, solved⟩ refuted
 
-/-! ## Absence dispatches with the refutation clause alone -/
+/-! ## The none query dispatches with the refutation clause alone -/
 
-/-- **Absence asks dispatch** when the license holds at each absence extension. Only the
+/-- **None asks dispatch** when the license holds at each none query extension. Only the
 refutation clause is used, and the source need not decide. -/
-theorem entails_absent_iff {O : Type*} {a : Obj} {K : EquationStore (Tm a)} (p : Tm a)
+theorem entails_none_iff {O : Type*} {a : Obj} {K : EquationStore (Tm a)} (p : Tm a)
     (present : Finset O) (row : O → Tm a)
     (licensed : ∀ o ∈ present, Φ.LicensedAt (K ++ [(p, row o)])) :
     Y.Entails (Φ.store K)
@@ -599,7 +599,7 @@ end Translation.FrameMap
 #print axioms Translation.FrameMap.coversAt_of_principal
 #print axioms Translation.FrameMap.coversAt_of_top
 #print axioms Translation.FrameMap.coversAt_of_refuted
-#print axioms Translation.FrameMap.entails_absent_iff
+#print axioms Translation.FrameMap.entails_none_iff
 #print axioms Translation.FrameMap.CoversAt.entails_count_iff
 #print axioms Translation.FrameMap.LicensedAt.entails_count_iff
 #print axioms Translation.FrameMap.dispatch_admits_iff

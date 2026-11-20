@@ -7,6 +7,16 @@ import Mettapedia.Machines.Kernel.AgentCoordination
 import Mettapedia.Machines.Kernel.CorrelatedReplies
 import Mettapedia.Machines.Kernel.BootAuthority
 import Mettapedia.Machines.Kernel.DelegationPolicy
+import Mettapedia.Machines.Kernel.AuthorityCustody
+import Mettapedia.Machines.Kernel.InvocationContext
+import Mettapedia.Machines.Kernel.IpcTaskWait
+import Mettapedia.Machines.Kernel.NetworkStartup
+import Mettapedia.Machines.Kernel.ProgramNetworkGrant
+import Mettapedia.Machines.Kernel.FilesRetirement
+import Mettapedia.Machines.Kernel.DisplayBands
+import Mettapedia.Machines.Kernel.DurablePublication
+import Mettapedia.Machines.Kernel.TerminalRelay
+import Mettapedia.Machines.Kernel.SessionInput
 import Mettapedia.Machines.Kernel.SharedCalls
 import Mettapedia.Machines.Kernel.EpochTransition
 import Mettapedia.Machines.Kernel.EpochLedger
@@ -24,7 +34,11 @@ import Mettapedia.Machines.Kernel.Arm64Phase3
 import Mettapedia.Machines.Kernel.Arm64Phase4
 import Mettapedia.Machines.Kernel.Arm64Phase5
 import Mettapedia.Machines.Kernel.NvmeMsix
+import Mettapedia.Machines.Kernel.BlockReadRun
 import Mettapedia.Machines.Kernel.FpuContext
+import Mettapedia.Machines.Kernel.ProtectionViews
+import Mettapedia.Machines.Kernel.FilesRestartSettlement
+import Mettapedia.Machines.Kernel.DevicePower
 
 /-!
 # Kernels of authority
@@ -35,6 +49,13 @@ Abstract cores of capability operating systems, and the instances that check con
   closure of the genesis, and that closure realized by runs.
 - `AgentCoordination`: the delegation core read as a coordination layer for agents sharing a mailbox;
   delegation and cascading revocation down a chain, and confinement of an outside agent.
+- `AuthorityCustody`: a small product theory connecting the static authority envelope, current
+  derivation state and retained exactly-once call custody; revocation blocks progress without
+  erasing already accepted obligations.
+- `InvocationContext`: authority derived from the authenticated current run, continuation strategy
+  derived from the executing main or worker task, and custody conserved until settlement.
+- `IpcTaskWait`: task-local IPC waiting, retained results across spurious wakes, and once-only delivery.
+- `ProgramNetworkGrant`: per-run Network enrollment and correlated provider replies before activation.
 - `SingleAddressSpace`: protection domains sharing one address space under protection keys; integrity of
   memory, rings, tables and reply slots, a fixed communication graph, authenticated replies, and memory
   reachable only along lent frames.

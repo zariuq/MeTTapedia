@@ -39,6 +39,13 @@ def Boundary.check (boundary : Boundary) : Bool :=
     boundary.scratch = ["r14", "r15"] ∧ boundary.saved = ["rbx", "r12", "r13", "r14", "r15"] ∧
     boundary.frameRegister = "rdi" ∧ boundary.resultRegister = "rax" ∧ boundary.entryOffset = 0)
 
+def Boundary.checkAllowance (boundary : Boundary) (allowanceRegister : String) : Bool :=
+  { boundary with saved := ["rbx", "r12", "r13", "r14", "r15"] }.check &&
+    boundary.saved == ["rbx", "r12", "r13", "r14", "r15", "rbp"] && allowanceRegister == "rbp"
+
+def allowancePrologue : List NativeImage.Byte := NativeImage.prologue ++ [0x55]
+def allowanceEpilogue : List NativeImage.Byte := 0x5d :: NativeImage.epilogue
+
 structure Span where
   offset : Nat
   length : Nat
@@ -62,6 +69,18 @@ def Span.sourceCheck (span : Span) (source : Stmt) : Bool :=
     | some (.early ..) => ["LOOP-ENTRY", "EARLY-LOOP-HEAD", "EARLY-LOOP-LATCH"].contains span.kind
     | some (.ret ..) => span.kind == "RETURN"
     | some (.fund _) => span.kind == "FUND"
+    | _ => false
+
+def Span.allowanceSourceCheck (span : Span) (source : Stmt) : Bool :=
+  span.sourceCheck source ||
+    match span.path.bind source.atPath with
+    | some (.instruction (.compare ..)) => span.kind == "CMP-FLAGS"
+    | some (.instruction (.address ..)) => ["ADDR-DIRECT", "ADDR-INDEX", "ADDR-TEST"].contains span.kind
+    | some (.instruction (.load ..)) => ["LOAD-DIRECT", "LOAD-TEST"].contains span.kind
+    | some (.instruction (.store ..)) => ["STORE-DIRECT", "STORE-TEST"].contains span.kind
+    | some (.branch ..) => span.kind == "IF-FLAGS"
+    | some (.counted ..) => ["HOIST-TEST", "FAST-EXIT", "FAST-LATCH"].contains span.kind
+    | some (.early ..) => ["EARLY-LOOP-ENTRY", "HOIST-TEST", "FAST-EXIT", "EARLY-FAST-LATCH"].contains span.kind
     | _ => false
 
 structure Program where
@@ -96,15 +115,24 @@ def Program.view (program : Program) : NativeImage.View :=
       if Nat.ble value 255 then some (BitVec.ofNat 8 value) else none
     else none⟩
 
-def Program.imageCheckOn (program : Program) (view : NativeImage.View) : Bool :=
-  19 ≤ program.size &&
+private def Program.imageCheckWith (program : Program) (view : NativeImage.View)
+    (prologue epilogue : List NativeImage.Byte) (sourceCheck : Span → Stmt → Bool) : Bool :=
+  prologue.length + epilogue.length ≤ program.size &&
     view.size == program.size &&
-    NativeImage.readRange? view 0 9 == some NativeImage.prologue &&
-    NativeImage.readRange? view (program.size - 10) 10 == some NativeImage.epilogue &&
+    NativeImage.readRange? view 0 prologue.length == some prologue &&
+    NativeImage.readRange? view (program.size - epilogue.length) epilogue.length == some epilogue &&
     NativeImage.spanEnd? 0 (program.spans.map fun span => ⟨span.offset, span.length, span.kind⟩) == some program.size &&
-    program.spans.all (fun span => span.sourceCheck program.source.body)
+    program.spans.all (fun span => sourceCheck span program.source.body)
+
+def Program.imageCheckOn (program : Program) (view : NativeImage.View) : Bool :=
+  program.imageCheckWith view NativeImage.prologue NativeImage.epilogue Span.sourceCheck
 
 def Program.imageCheck (program : Program) : Bool := program.imageCheckOn program.view
+
+def Program.allowanceImageCheckOn (program : Program) (view : NativeImage.View) : Bool :=
+  program.imageCheckWith view allowancePrologue allowanceEpilogue Span.allowanceSourceCheck
+
+def Program.allowanceImageCheck (program : Program) : Bool := program.allowanceImageCheckOn program.view
 
 theorem Program.printed_exact (program : Program) (checked : program.sourceCheck = true) :
     encodeProgram program.source = some program.printed := (of_decide_eq_true checked).1
@@ -134,5 +162,9 @@ structure Bundle where
   boundary : Boundary
   declaredCount : Nat
   programs : List Program
+
+structure AllowanceBundle where
+  bundle : Bundle
+  allowanceRegister : String
 
 end Mettapedia.Machines.TIsa.P1Capture

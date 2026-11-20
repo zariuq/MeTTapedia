@@ -34,11 +34,11 @@ a handle, not by a bound name. A firing permitted under rights without `send` at
 there, so every do at `h` admits it and leaves its weight unchanged (`doAt_of_no_send`,
 `restrictWeight_doAt_of_no_send`): **a do at `h` reaches only the firings that hold `send` at `h`**.
 
-## A context with an absence guard performs a hard do (`Controls.context_performs_do`)
+## A context with a none guard performs a hard do (`Controls.context_performs_do`)
 
 In the race of `Contention.Controls`, the hard do "only `racer`" and the one-atom context that adds
 `p` give `racer` probability `1` alike. Meredith's Prop. 3.3 makes hard intervention white-box over
-the positive reals; on the step, an absence guard lets a context perform it.
+the positive reals; on the step, a none guard lets a context perform it.
 -/
 
 set_option autoImplicit false
@@ -287,7 +287,7 @@ theorem hard_do (positiveR : 0 < weight racer) :
     prob A label race id (restrictWeight (fun g => g = racer) weight) D0 racer Set.univ = 1 :=
   prob_hard _ (only_racer A) positiveR
 
-/-- **A context with an absence guard performs the hard do**: the white-box intervention and the
+/-- **A context with a none guard performs the hard do**: the white-box intervention and the
 one-atom context give `racer` the same probability `1`, where the unintervened race gives it
 `w_r/(w_r+w_v) < 1`. -/
 theorem context_performs_do (positiveR : 0 < weight racer) (positiveV : 0 < weight vetoed) :

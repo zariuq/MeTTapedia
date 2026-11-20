@@ -84,20 +84,13 @@ theorem absent_returns (program : Program) (bindings : Subst) (state : Effects.S
 theorem insert_returns (program : Program) (bindings : Subst) (before after : Effects.State)
     (spaceName : String) (pattern : Atom) (handle : Handle)
     (location : Subst.lookup bindings spaceName = some (Effects.handleValue handle))
+    (value : (applySubst bindings pattern).isVariable = false)
     (inserted : Effects.insert before handle (applySubst bindings pattern) = some after) :
     PureReturns program bindings before (.expression [.symbol "add-atom", .var spaceName, pattern])
       after (Effects.boolean true) := by
   have applied : StdLib.apply before "add-atom" [Effects.handleValue handle, applySubst bindings pattern] =
-      .ok (after, [Effects.boolean true]) := by
-    change (match Effects.readHandle (Effects.handleValue handle) >>= fun chosen =>
-      Effects.insert before chosen (applySubst bindings pattern) with
-      | some result => Except.ok (result, [Effects.boolean true])
-      | none => Except.error Effects.Fault.invalidSpace) = _
-    rw [Effects.readHandle_handleValue]
-    change (match Effects.insert before handle (applySubst bindings pattern) with
-      | some result => Except.ok (result, [Effects.boolean true])
-      | none => Except.error Effects.Fault.invalidSpace) = _
-    rw [inserted]
+      .ok (after, [Effects.boolean true]) :=
+    StdLib.add_atom_applies_of_inserted value inserted
   have native := native_function_arguments_return program bindings before after "add-atom"
     [Effects.handleValue handle, applySubst bindings pattern] 2 (Effects.boolean true) (by decide) (by decide) applied
   have raw := raw_argument_answers program bindings before after "add-atom" pattern []
@@ -124,7 +117,7 @@ theorem returns (program : Program) (spaceName temporary : String) (pattern payl
     body bindings before after answers
     (fun rows snapshot => absent_returns program bindings before spaceName pattern payload target rows
       captured scalar location snapshot)
-    (fun middle written => insert_returns program bindings before middle spaceName pattern target location written)
+    (fun middle value written => insert_returns program bindings before middle spaceName pattern target location value written)
     fresh law completed
 
 structure Prepared (bindings : Subst) (pattern : Atom) (target : Handle) (state : Effects.State) : Type where

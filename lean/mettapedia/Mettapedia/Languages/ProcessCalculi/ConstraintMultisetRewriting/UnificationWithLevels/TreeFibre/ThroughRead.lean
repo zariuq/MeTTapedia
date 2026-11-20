@@ -181,9 +181,9 @@ theorem one_settles {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)} 
     Settles problem := by
   obtain ⟨fuel, decided⟩ := one_decided choices facts roots heads algebra rigid complete normalizes inh
     headTypingUnique declared strengthening join joinSound glb spec glbTotal joinTotal inside
-  rcases (decided fuel le_rfl).2 with ⟨state, finished, _, _⟩ | ⟨absent, _⟩
+  rcases (decided fuel le_rfl).2 with ⟨state, finished, _, _⟩ | ⟨missing, _⟩
   · exact .inl ⟨state, finished⟩
-  · exact .inr absent
+  · exact .inr missing
 
 include facts roots heads algebra rigid complete normalizes inh headTypingUnique declared strengthening joinSound spec
   glbTotal joinTotal in

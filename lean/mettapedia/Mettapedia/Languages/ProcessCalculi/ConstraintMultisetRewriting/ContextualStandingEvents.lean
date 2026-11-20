@@ -1,5 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualStandingEntry
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualSourceCensus
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualSourceRejection
 
 /-!
 # Indexed source firings as concrete reactive events
@@ -8,7 +8,7 @@ Worlds package the actual declaration family and private bank. A publication
 or installed invocation carries the existing compiler's actual firing; its
 target is computed by that firing. This permits scheduler reasoning across
 family changes without giving one shared syntax label to distinct row uses.
-Publications may retain a complete negative source census at that same
+Publications may retain a complete negative source collect query at that same
 input index; ordinary publications need no such observation.
 
 Source readiness is independently stated with source admission. The compiler
@@ -55,7 +55,7 @@ structure Publication (before : World S atom O Γ) : Type 1 where
   picked : Selection O
   actual : Clause before queries equality plan picked
   negative : letI := before.equality
-    Option (ContextualSourceCensus.EmptyCensus before.locals before.current) := none
+    Option (ContextualSourceRejection.CompleteRejection before.locals before.current) := none
 
 structure Invocation (before : World S atom O Γ) : Type 1 where
   installation : O
@@ -167,9 +167,9 @@ theorem Action.consumed_removed {before : World S atom O Γ} (action : Action be
   · exact Finset.disjoint_left.mp action.made_fresh made
       (action.taken_present (List.mem_toFinset.mpr taken))
 
-theorem Action.absent_stays_absent {before : World S atom O Γ} (action : Action before)
+theorem Action.not_present_stays_not_present {before : World S atom O Γ} (action : Action before)
     (admissible : action.Admissible) {occurrence : O}
-    (born : occurrence ∈ before.born) (absent : occurrence ∉ before.current.present) :
+    (born : occurrence ∈ before.born) (missing : occurrence ∉ before.current.present) :
     occurrence ∉ action.target.current.present := by
   have fresh : Disjoint action.made.toFinset before.born := by
     cases action with
@@ -178,7 +178,7 @@ theorem Action.absent_stays_absent {before : World S atom O Γ} (action : Action
   rw [action.physical_result]
   intro present
   rcases Finset.mem_union.mp present with kept | made
-  · exact absent (Finset.mem_sdiff.mp kept).1
+  · exact missing (Finset.mem_sdiff.mp kept).1
   · exact Finset.disjoint_left.mp fresh made born
 
 def Ready (before : World S atom O Γ) (installation : O) : Prop :=

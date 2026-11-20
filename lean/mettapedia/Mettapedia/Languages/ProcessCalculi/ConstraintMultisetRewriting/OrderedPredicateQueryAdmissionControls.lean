@@ -30,13 +30,13 @@ theorem both_providers_are_complete :
     exact Sources.Query.scanList_complete label [1, 0] (by decide +kernel)
 
 theorem admitted_in_the_observed_order :
-    Valid A label (CensusSourceCompilation.rule label kept []) [] before
-      (CensusSourceCompilation.selection kept) program original original := by
+    Valid A label (PredicateQuerySourceCompilation.rule label kept []) [] before
+      (PredicateQuerySourceCompilation.selection kept) program original original := by
   refine ⟨?_, both_providers_are_complete.1, ReadOnlyQuery.run_agrees original program⟩
-  exact CensusSourceCompilation.realize_commit A label kept [] before (by decide +kernel)
+  exact PredicateQuerySourceCompilation.realize_commit A label kept [] before (by decide +kernel)
     ⟨A.identity, by intro equation member; cases member⟩
 
-theorem reordering_preserves_the_unordered_census :
+theorem reordering_preserves_the_unordered_query :
     (original (fun _ => true)).toFinset = (reversed (fun _ => true)).toFinset ∧ query.Holds label before.present := by
   decide +kernel
 
@@ -49,17 +49,17 @@ theorem the_order_certificate_refuses_reversal :
     ReadOnlyQuery.checkReads reversed (ReadOnlyQuery.run original program).reads = false := by
   decide +kernel
 
-theorem a_bag_census_does_not_admit_reversed_order :
-    ¬ Valid A label (CensusSourceCompilation.rule label kept []) [] before
-      (CensusSourceCompilation.selection kept) program original reversed := by
+theorem a_bag_query_does_not_admit_reversed_order :
+    ¬ Valid A label (PredicateQuerySourceCompilation.rule label kept []) [] before
+      (PredicateQuerySourceCompilation.selection kept) program original reversed := by
   intro valid
   have checked := valid.checked
   rw [the_order_certificate_refuses_reversal] at checked
   cases checked
 
-theorem ordered_admission_retains_its_read_census :
-    PredicateQueryAdmission.Valid A label (CensusSourceCompilation.rule label kept [])
-      (readCensuses (ReadOnlyQuery.run original program).reads) before (CensusSourceCompilation.selection kept) :=
-  admitted_in_the_observed_order.with_read_censuses
+theorem ordered_admission_retains_its_read_query :
+    PredicateQueryAdmission.Valid A label (PredicateQuerySourceCompilation.rule label kept [])
+      (readQueries (ReadOnlyQuery.run original program).reads) before (PredicateQuerySourceCompilation.selection kept) :=
+  admitted_in_the_observed_order.with_read_queries
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.OrderedPredicateQueryAdmission.Controls

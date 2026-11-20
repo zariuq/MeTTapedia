@@ -39,17 +39,17 @@ def seedCode : Nat → Pattern
 
 def allocatedName (index : Nat) : Pattern := .apply "NQuote" [seedCode index]
 
-theorem seedCode_typed (free : FreeSortContext) (index : Nat) :
-    ProcWellSorted rhoReflectivePresentation free [] (seedCode index) := by
-  induction index with
-  | zero => exact .unit
-  | succ index ih => exact .output (.quote ih) .unit
-
 theorem seedCode_safe (index depth : Nat) :
     binderSafeAt "NQuote" depth (seedCode index) = true := by
   induction index generalizing depth with
   | zero => rfl
   | succ index ih => simp [seedCode, binderSafeAt, binderSafeListAt, ih]
+
+theorem seedCode_typed (free : FreeSortContext) (index : Nat) :
+    ProcWellSorted rhoReflectivePresentation free [] (seedCode index) := by
+  induction index with
+  | zero => exact .unit
+  | succ index ih => exact .output (NameWellSorted.quoteOfSafe ih (seedCode_safe index 0)) .unit
 
 private theorem seedCode_not_drop (index : Nat) (name : Pattern) :
     seedCode index ≠ .apply "PDrop" [name] := by
@@ -111,11 +111,36 @@ theorem fresh_after_prefix (index previous : Nat) (earlier : previous < index) :
   intro equations
   exact (Nat.ne_of_gt earlier) ((allocatedName_equiv_iff index previous).mp equations)
 
+private theorem exposesLiterally_drop (name : Pattern) :
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.exposesLiterally rhoReflectivePresentation
+      (.apply "PDrop" [name]) = true := by
+  simp [Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.exposesLiterally,
+    Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.exposedDrop?,
+    Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.parallelLeaves, rhoReflectivePresentation]
+
+private theorem exposesLiterally_seedCode (index : Nat) :
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.exposesLiterally rhoReflectivePresentation
+      (seedCode index) = true := by
+  cases index <;>
+    simp [seedCode, send, zero, Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.exposesLiterally,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.exposedDrop?,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.parallelLeaves, rhoReflectivePresentation]
+
+/-- Every seed quotes only literal code. -/
+theorem seedCode_literal (index : Nat) : Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral rhoReflectivePresentation (seedCode index) = true := by
+  induction index with
+  | zero => rfl
+  | succ index ih => simp [seedCode, send, zero, ih, exposesLiterally_seedCode]
+
+theorem allocatedName_literal (index : Nat) : Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral rhoReflectivePresentation (allocatedName index) = true := by
+  simp [allocatedName, seedCode_literal, exposesLiterally_seedCode]
+
 def seedChannel (free : FreeSortContext) (index : Nat) : Channel free where
   term := allocatedName index
-  typed := .quote (seedCode_typed free index)
+  typed := NameWellSorted.quoteOfSafe (seedCode_typed free index) (seedCode_safe index 0)
   safe := by simpa [allocatedName, binderSafeAt] using seedCode_safe index 0
   normalized := allocatedName_normalized index
+  literal := allocatedName_literal index
 
 section Service
 
@@ -137,6 +162,7 @@ def allocationHandler (state : Channel free) : Handler free where
   normalized := by
     simp [semanticNormalizeProc, semanticNormalizeProcList,
       semanticNormalizeName, state.normalized]
+  literal := by simp [state.literal]
 
 def server (self state request : Channel free) : Pattern :=
   GuardedReplication.idle self.term request.term (allocationHandler state).term
@@ -163,7 +189,7 @@ theorem request_activated (state reply : Channel free) :
   simp only [allocationHandler, seedReceiver, semanticCommSubst,
     semanticNormalizeProc, reply.normalized, semanticSubstProc, semanticSubstProcList,
     state.inert]
-  simp [semanticSubstName, semanticSubstNameMark, semanticNormalizeName, zero, semanticSubstProc]
+  simp [semanticSubstName, semanticSubstNameMark, semanticNormalizeName, zero, semanticSubstProc, Canonical.canonicalize]
 
 private theorem quote_drop_inert (channel : Channel free) (index : Nat) (replacement : Pattern) :
     semanticSubstName index replacement (.apply "NQuote" [.apply "PDrop" [channel.term]]) =
@@ -178,8 +204,12 @@ theorem seed_received (state reply : Channel free) (index : Nat) :
       parallel [send reply.term (seedCode index), stateToken state (index + 1)] := by
   simp only [semanticCommSubst, seedCode_normalized, semanticSubstProc, semanticSubstProcList,
     quote_drop_inert, state.inert]
-  simp [semanticSubstName, semanticSubstNameMark,
-    semanticNormalizeName, stateToken, seedCode, zero, semanticSubstProc]
+  simp [semanticSubstName, semanticSubstNameMark, Canonical.canonicalize,
+    stateToken, seedCode, zero, semanticSubstProc]
+
+theorem seedReceiver_literal (state reply : Channel free) :
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral rhoReflectivePresentation (seedReceiver state reply) = true := by
+  simp [seedReceiver, state.literal, reply.literal, exposesLiterally_drop]
 
 theorem seedReceiver_typed (state reply : Channel free) :
     ProcWellSorted rhoReflectivePresentation free [] (seedReceiver state reply) := by
@@ -218,7 +248,8 @@ theorem seed_authored (self state request reply : Channel free) (index : Nat) :
   have fired := authored_comm_at
     (elements := [server self state request, seedReceiver state reply, stateToken state index])
     (inputIndex := 1) (outputIndex := 1) (by simp) (by simp)
-    (by rfl) (by rfl) bodyTyped (seedCode_typed free index)
+    (by rfl) (by rfl) bodyTyped (input_body_literal (seedReceiver_literal state reply))
+    (seedCode_typed free index)
   simpa [seed_received state reply index] using fired
 
 /-- The first request firing retains the old seed token untouched. -/
@@ -232,7 +263,9 @@ theorem request_authored (self state request reply : Channel free) (index : Nat)
     (elements := [send request.term (.apply "PDrop" [reply.term]),
       server self state request, stateToken state index])
     (inputIndex := 1) (outputIndex := 0) (by simp) (by simp)
-    (by rfl) (by rfl) bodyTyped (ProcWellSorted.drop reply.typed)
+    (by rfl) (by rfl) bodyTyped
+    (input_body_literal (idle_literal self request (allocationHandler state)))
+    (ProcWellSorted.drop reply.typed)
   simpa [invocation, RhoScopedServers.requestStage,
     RhoScopedServers.request_received self request (allocationHandler state),
     rhoReflectivePresentation] using fired
@@ -256,7 +289,9 @@ theorem rearm_authored (self state request reply : Channel free) (index : Nat) :
       GuardedReplication.code self.term request.term (allocationHandler state).term,
       seedReceiver state reply, stateToken state index])
     (inputIndex := 1) (outputIndex := 0) (by simp) (by simp)
-    (by rfl) (by rfl) bodyTyped (code_typed self request (allocationHandler state))
+    (by rfl) (by rfl) bodyTyped
+    (input_body_literal (code_literal self request (allocationHandler state)))
+    (code_typed self request (allocationHandler state))
   simpa [rearmState, server,
     code_received self request (allocationHandler state)] using fired
 
@@ -300,21 +335,17 @@ theorem request_canonical (self state request reply : Channel free) (index : Nat
     (rhoProcWellSorted_hashSetFree firstTargetTyped)
     (rhoProcWellSorted_hashSetFree (rearmState_typed self state request reply index))
   obtain ⟨firstContractum, first, firstEndpoint⟩ := canonicalStep_complete_of_rhoStep
-    (invocation_typed self state request reply index) (invocation_safe self state request reply index)
+    (invocation_typed self state request reply index)
     ⟨1, request_authored self state request reply index⟩
   obtain ⟨secondContractum, second, secondEndpoint⟩ := canonicalStep_complete_of_rhoStep
-    (rearmState_typed self state request reply index) (rearmState_safe self state request reply index)
+    (rearmState_typed self state request reply index)
     ⟨1, rearm_authored self state request reply index⟩
   have secondSourceTyped : ProcWellSorted rhoReflectivePresentation free []
       (parallel [server self state request, seedReceiver state reply, stateToken state index]) :=
     .parallel (.cons (idle_typed self request (allocationHandler state))
       (.cons (seedReceiver_typed state reply) (.cons oldTokenTyped .nil)))
-  have secondSourceSafe : binderSafeAt "NQuote" 0
-      (parallel [server self state request, seedReceiver state reply, stateToken state index]) = true := by
-    simp [server, stateToken, binderSafeAt, binderSafeListAt, state.safe, seedCode_safe,
-      idle_safe self request (allocationHandler state), seedReceiver_safe]
   obtain ⟨thirdContractum, third, thirdEndpoint⟩ := canonicalStep_complete_of_rhoStep
-    secondSourceTyped secondSourceSafe ⟨1, seed_authored self state request reply index⟩
+    secondSourceTyped ⟨1, seed_authored self state request reply index⟩
   have thirdEquations : RhoCalculus.StructuralCongruence
       (parallel [parallel [send reply.term (seedCode index), stateToken state (index + 1)],
         server self state request]) (returned self state request reply index) := by
@@ -393,7 +424,7 @@ theorem client_reply_authored (self state request reply : Channel free)
     (elements := [server self state request, send reply.term (seedCode index),
       stateToken state (index + 1), receive reply.term body.term])
     (inputIndex := 3) (outputIndex := 1) (by simp) (by simp)
-    (by rfl) (by rfl) body.typed (seedCode_typed free index)
+    (by rfl) (by rfl) body.typed body.literal (seedCode_typed free index)
   simpa using fired
 
 /-- The service and the client's binding use four core communications. The

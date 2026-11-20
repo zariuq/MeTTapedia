@@ -187,7 +187,7 @@ theorem CostTerm.erase_commSubst_higher_index_differs {Ground : Type u}
   simp [CostTerm.commSubst, CostTerm.substitute, CostTerm.erase,
     CostName.erase, semanticCommSubst, semanticSubstProc,
     semanticSubstNameMark, semanticNormalizeName,
-    semanticNormalizeProc, semanticNormalizeProcList]
+    semanticNormalizeProc, semanticNormalizeProcList, Canonical.canonicalize]
 
 /-- Cost purses are bookkeeping resources rather than pure rho processes. -/
 @[simp]

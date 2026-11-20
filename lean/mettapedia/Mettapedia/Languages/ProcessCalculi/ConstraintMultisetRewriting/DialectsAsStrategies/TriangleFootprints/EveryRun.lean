@@ -26,19 +26,23 @@ the entry yields a derivation of `Completed.AtomRel` for the loaded term with th
 
 `every_complete_run_under`: for every type lookup meeting `LookupContract` (under `%Undefined%`
 demand it never answers the empty list, and it answers `[%Undefined%]` for an atom stored with just
-that type), every complete run from HE's entry configuration publishes, as a list and so as a bag,
-the values of PeTTa's streaming run of the translation from some fuel on. Both of HE's lookups meet
-the contract (`raw_contract`, `scoped_contract`, `every_complete_run_with_he_lookups`);
-`answer_bags_every_run` adds that a complete run exists. The named differences of
-`FragmentDifferences` hold on every run (`uncovered_every_run`, `refused_every_run`,
-`arity_every_run`, `over_every_run`).
+that type), every complete run from HE's entry configuration publishes, as a bag, the values of
+PeTTa's streaming run of the translation from some fuel on. Both of HE's lookups meet the contract
+(`raw_contract`, `scoped_contract`, `every_complete_run_with_he_lookups`); `answer_bags_every_run`
+adds that a complete run exists. The named differences of `FragmentDifferences` hold on every run
+(`uncovered_every_run`, `refused_every_run`, `arity_every_run`, `over_every_run`).
+
+Answers are compared as bags. The model's runs publish them in PeTTa's order (`settles_determined`
+fixes the list); HE publishes the alternatives of a body that is itself a nondeterministic call in
+another order, the same on every run (`(h)` with `(= (h) (f a))` and `(f a)` answering `1, 2, 2`
+gives `2, 2, 1`), so only the bag is HE's.
 
 ## Controls
 
 * `Controls.entry_branches` (the theorem has content): HE's machine takes two different first
   steps from the entry of `(toss)`.
-* `Controls.toss_every_run` (positive): every complete run of `(toss)` on the coin program
-  publishes `heads`, `tails`, `edge`.
+* `Controls.toss_every_run` (positive): a complete run of `(toss)` on the coin program exists, and
+  every complete run publishes the bag of `heads`, `tails`, `edge` (HE: `[tails, heads, edge]`).
 * `Controls.loose_lookup_two_bags` (negative, the lookup): a lookup that answers the type list
   `[%Undefined%]` and also the empty list meets `AnswersUndefined`, but under it HE's machine has a
   complete run of the data atom `a` publishing nothing, besides one publishing `a`, which PeTTa
@@ -563,8 +567,8 @@ theorem settles_determined {atoms : List Atom}
 For a program of symbol-headed, `cons`-free equations and a term that settles in it: with a lookup
 that answers every `%Undefined%` query (`AnswersUndefined`) and meets `LookupContract`, any policy
 and any grounded dispatch, there is a fuel from which on PeTTa's streaming run of the translation
-yields exactly the atoms that **every** run of HE's machine from its entry configuration to a
-completed phase publishes, in the same order and with the same multiplicities. -/
+yields the bag of atoms that **every** run of HE's machine from its entry configuration to a
+completed phase publishes, with the same multiplicities. -/
 theorem every_complete_run_under (dispatch : GroundedDispatch) {lookup : CastLookup}
     (answers : AnswersUndefined lookup) (contract : LookupContract lookup) (policy : Policy)
     {atoms : List Atom} (program : ∀ row ∈ atoms, RegionsWithVariables.ConsFreeHeads row)
@@ -573,15 +577,16 @@ theorem every_complete_run_under (dispatch : GroundedDispatch) {lookup : CastLoo
       Relation.ReflTransGen (HEStep dispatch lookup policy)
           (load (Space.ofList atoms) c Atom.undefinedType)
           ⟨Space.ofList atoms, .returning [], [], emitted⟩ →
-        Streaming.values (Streaming.advance (translate atoms) n
-          (Streaming.enter { state := store atoms } c)) = emitted.map (fun r => r.1.erase) := by
+        ((Streaming.values (Streaming.advance (translate atoms) n
+          (Streaming.enter { state := store atoms } c)) : List Atom) : Multiset Atom) =
+          ((emitted.map (fun r => r.1.erase) : List Atom) : Multiset Atom) := by
   obtain ⟨L, _, determined⟩ := settles_determined_under (policy := policy) contract program settles
   obtain ⟨heAnswers, N, path, _, agree⟩ := answers_agree dispatch answers policy program settles
   refine ⟨N, fun n bigger emitted run => ?_⟩
   rw [agree n bigger, determined _ _ _ _ (complete_source path),
     determined _ _ _ _ (complete_source run)]
 
-/-- **Every complete run of HE publishes PeTTa's answers** (HE's historical lookup). -/
+/-- **Every complete run of HE publishes PeTTa's answers, as a bag** (HE's historical lookup). -/
 theorem every_complete_run (dispatch : GroundedDispatch) (policy : Policy) {atoms : List Atom}
     (program : ∀ row ∈ atoms, RegionsWithVariables.ConsFreeHeads row) {c : Atom}
     (settles : Settles dispatch atoms c) :
@@ -589,12 +594,13 @@ theorem every_complete_run (dispatch : GroundedDispatch) (policy : Policy) {atom
       Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy)
           (load (Space.ofList atoms) c Atom.undefinedType)
           ⟨Space.ofList atoms, .returning [], [], emitted⟩ →
-        Streaming.values (Streaming.advance (translate atoms) n
-          (Streaming.enter { state := store atoms } c)) = emitted.map (fun r => r.1.erase) :=
+        ((Streaming.values (Streaming.advance (translate atoms) n
+          (Streaming.enter { state := store atoms } c)) : List Atom) : Multiset Atom) =
+          ((emitted.map (fun r => r.1.erase) : List Atom) : Multiset Atom) :=
   every_complete_run_under dispatch raw_answers raw_contract policy program settles
 
 /-- **With either of HE's own lookups** (the historical list storage and the scoped fresh
-variants), every complete run of HE publishes PeTTa's answers. -/
+variants), every complete run of HE publishes PeTTa's answers, as a bag. -/
 theorem every_complete_run_with_he_lookups (dispatch : GroundedDispatch) (policy : Policy)
     {atoms : List Atom} (program : ∀ row ∈ atoms, RegionsWithVariables.ConsFreeHeads row)
     {c : Atom} (settles : Settles dispatch atoms c) :
@@ -603,8 +609,9 @@ theorem every_complete_run_with_he_lookups (dispatch : GroundedDispatch) (policy
         Relation.ReflTransGen (HEStep dispatch lookup policy)
             (load (Space.ofList atoms) c Atom.undefinedType)
             ⟨Space.ofList atoms, .returning [], [], emitted⟩ →
-          Streaming.values (Streaming.advance (translate atoms) n
-            (Streaming.enter { state := store atoms } c)) = emitted.map (fun r => r.1.erase) := by
+          ((Streaming.values (Streaming.advance (translate atoms) n
+            (Streaming.enter { state := store atoms } c)) : List Atom) : Multiset Atom) =
+            ((emitted.map (fun r => r.1.erase) : List Atom) : Multiset Atom) := by
   intro lookup member
   simp only [List.mem_cons, List.not_mem_nil, or_false] at member
   rcases member with rfl | rfl
@@ -796,16 +803,24 @@ theorem entry_branches (policy : Policy) :
   have lengths := congrArg (fun config : HEOnTheStep.HEConfig => config.stack.length) same
   simp [afterTuple, afterFallback] at lengths
 
-/-- **Positive control: every complete run of `(toss)` publishes `heads`, `tails`, `edge`.** -/
-theorem toss_every_run (policy : Policy) (emitted : List Result)
-    (run : Relation.ReflTransGen (HEStep noHost Completed.rawLookup policy)
-      (load (Space.ofList coinRows) (app "toss" []) Atom.undefinedType)
-      ⟨Space.ofList coinRows, .returning [], [], emitted⟩) :
-    emitted.map (fun r => r.1.erase) = [sym "heads", sym "tails", sym "edge"] := by
+/-- **Positive control: `(toss)` on every run, as a bag.** A complete run exists, and every complete
+run of `(toss)` publishes the bag of `heads`, `tails`, `edge`; HE answers `[tails, heads, edge]`. -/
+theorem toss_every_run (policy : Policy) :
+    (∃ heAnswers : List Result,
+      Relation.ReflTransGen (HEStep noHost Completed.rawLookup policy)
+        (load (Space.ofList coinRows) (app "toss" []) Atom.undefinedType)
+        ⟨Space.ofList coinRows, .returning [], [], heAnswers⟩) ∧
+      ∀ emitted : List Result,
+        Relation.ReflTransGen (HEStep noHost Completed.rawLookup policy)
+          (load (Space.ofList coinRows) (app "toss" []) Atom.undefinedType)
+          ⟨Space.ofList coinRows, .returning [], [], emitted⟩ →
+        ((emitted.map (fun r => r.1.erase) : List Atom) : Multiset Atom) =
+          (([sym "tails", sym "heads", sym "edge"] : List Atom) : Multiset Atom) := by
   obtain ⟨L, _, determined⟩ := settles_determined (policy := policy) coin_program toss_settles
   obtain ⟨heAnswers, path, erased, _⟩ := toss_agrees raw_answers policy
-  rw [determined _ _ _ _ (complete_source run), ← determined _ _ _ _ (complete_source path),
-    erased]
+  refine ⟨⟨heAnswers, path⟩, fun emitted run => ?_⟩
+  rw [determined _ _ _ _ (complete_source run), ← determined _ _ _ _ (complete_source path)]
+  exact erased
 
 /-- A cast lookup that answers the type list `[%Undefined%]` and also the empty list. -/
 def looseLookup : CastLookup := fun _ _ _ _ _ types => types = [Atom.undefinedType] ∨ types = []

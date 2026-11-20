@@ -3,6 +3,7 @@ import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.GeneralScopedMatchExecut
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.PremiseOperationsExecution
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.PremiseSchedulerExecution
 import Mettapedia.OSLF.MeTTaIL.GeneralPremiseExecution
+import Mettapedia.Tools.KernelReflexivity
 
 /-! Native execution of original general-premise codecs, checkers, and administrative operations. -/
 
@@ -43,6 +44,51 @@ private def preparedProgram : Program :=
   ((preparedSource.append preparedMachine).append preparedEnvironment).append preparedGround
 
 def Base.runtime : Program := RuleExecutionProgram.program.append preparedProgram
+
+
+/-- The prepared premise operations, loaded over the rule execution program, own their heads. -/
+def Base.library : BridgeKit.Library :=
+  ⟨RuleExecutionProgram.program, preparedProgram,
+   ["gslt:premise:type-context-lookup",
+    "gslt:premise:check-assignment",
+    "gslt:premise:context-next",
+    "gslt:premise:context-quantified",
+    "gslt:premise:machine-deliver",
+    "gslt:premise:machine-evaluate",
+    "gslt:premise:machine-expand",
+    "gslt:premise:constructor-declarations",
+    "gslt:premise:source-type",
+    "gslt:premise:specification",
+    "gslt:premise:signature-candidates",
+    "gslt:premise:signature",
+    "gslt:premise:check-values",
+    "gslt:premise:check-row",
+    "gslt:premise:ground-at",
+    "gslt:premise:ground-list-at"]⟩
+
+/-- The rule execution program defines and calls no prepared operation, and the prepared fragments define and
+declare only their own operations. -/
+theorem Base.library_checked : Base.library.check = true := by decide +kernel
+
+theorem Base.library_runtime : Base.runtime = Base.library.runtime := rfl
+
+/-- A head the prepared fragments define is registered in the base runtime. -/
+theorem Base.registered_of_source {head : String}
+    (found : Base.library.source.equations.any (·.head == head) = true) :
+    Base.runtime.equations.any (·.head == head) = true := by
+  rw [Base.library_runtime]
+  simp only [BridgeKit.Library.runtime, SpaceSemantics.Program.append, List.any_append, found, Bool.or_true]
+
+/-- An argument the prepared fragments take raw is raw in the base runtime. -/
+theorem Base.raw_of_source {head : String} {index : Nat}
+    (raw : argumentIsRaw Base.library.source head index = true) :
+    argumentIsRaw Base.runtime head index = true := by
+  rw [Base.library_runtime]
+  unfold argumentIsRaw at raw ⊢
+  by_cases native : StdLib.known head
+  · simpa only [native, ↓reduceIte] using raw
+  · simp only [native, Bool.false_eq_true, ↓reduceIte] at raw ⊢
+    simp only [BridgeKit.Library.runtime, SpaceSemantics.Program.append, List.any_append, raw, Bool.or_true]
 
 def Base.previousHeads (head : String) : Bool :=
   head != "eval" && head != "gslt:premise:type-context-lookup" && head != "gslt:premise:check-assignment" &&
@@ -117,8 +163,12 @@ private def Helper.names : Helper → List String
   | .expand => ["declarations", "free", "task"]
 def Base.equations (head : String) : List SpaceSemantics.Equation :=
   Base.runtime.equations.filter (fun equation => equation.head == head)
+private theorem helper_owned (helper : Helper) : Base.library.owns helper.head = true := by
+  cases helper <;> decide +kernel
+private def literalEquations (head : String) : List SpaceSemantics.Equation :=
+  Base.library.source.equations.filter (fun equation => equation.head == head)
 private def equation (helper : Helper) : SpaceSemantics.Equation :=
-  (Base.equations helper.head)[0]'(by cases helper <;> decide +kernel)
+  (literalEquations helper.head)[0]'(by cases helper <;> decide +kernel)
 private def environment (helper : Helper) (values : List Atom) : Subst :=
   (helper.names.zip values).reverse
 
@@ -127,11 +177,15 @@ private theorem helper_clause (helper : Helper) (values : List Atom)
     clauses Base.runtime helper.head values =
       [.evaluate (environment helper values) (equation helper).body] :=
   PureData.named_equation_clause Base.runtime helper.head (equation helper) helper.names values
-    (by cases helper <;> rfl) (by cases helper <;> decide +kernel)
+    (by
+      rw [Base.library_runtime]
+      exact (BridgeKit.Library.owned_equations Base.library_checked (helper_owned helper)).trans
+        (by cases helper <;> kernel_reflexivity)) (by cases helper <;> decide +kernel)
     (by cases helper <;> decide) length
 
 private theorem helper_raw (helper : Helper) (index : Nat) (bounded : index < helper.names.length) :
     argumentIsRaw Base.runtime helper.head index = true := by
+  apply Base.raw_of_source
   cases helper <;> simp only [Helper.names, List.length_cons, List.length_nil] at bounded
   all_goals
     have small : index = 0 ∨ index = 1 ∨ index = 2 ∨ index = 3 ∨ index = 4 ∨ index = 5 := by omega
@@ -146,7 +200,7 @@ private theorem helper_call (helper : Helper) (caller : Subst) (state : State)
   apply PureData.raw_authored_call_return Base.runtime caller (environment helper values) state state
     helper.head arguments (equation helper).body answer
     (by cases helper <;> decide) (by cases helper <;> decide) (by cases helper <;> decide)
-    (by cases helper <;> decide +kernel)
+    (Base.registered_of_source (by cases helper <;> decide +kernel))
   · intro index bounded
     apply helper_raw helper index
     have same : arguments.length = values.length := by simpa using congrArg List.length captured
@@ -162,7 +216,8 @@ private theorem helper_capture (helper : Helper) (caller : Subst) (state : State
     (returned : PureReturns Base.runtime [] state (Base.a helper.head values) state answer) :
     PureReturns Base.runtime caller state (Base.a helper.head arguments) state answer := by
   apply PureData.raw_capture_returns Base.runtime [] caller state state helper.head values arguments answer
-    (by cases helper <;> decide +kernel) _ (by cases helper <;> decide) _ returned
+    (by simp only [Base.registered_of_source (head := helper.head) (by cases helper <;> decide +kernel),
+      Bool.or_true]) _ (by cases helper <;> decide) _ returned
   · intro index bounded
     exact helper_raw helper index (by omega)
   · have unchanged : applySubst [] = id := by
@@ -2885,7 +2940,8 @@ def interpretedLibrary : BridgeKit.Library :=
 set_option maxRecDepth 100000 in
 theorem interpreted_checked : interpretedLibrary.check = true := by decide +kernel
 
-theorem interpreted_runtime : interpretedLibrary.runtime = RuleExecutionProgram.interpretedPremiseProgram := rfl
+theorem interpreted_runtime : interpretedLibrary.runtime = RuleExecutionProgram.interpretedPremiseProgram := by kernel_reflexivity
+
 
 set_option maxRecDepth 100000
 set_option maxHeartbeats 4000000
@@ -3072,32 +3128,32 @@ private theorem scopedPrimitive_equations_block_9 :
   decide +kernel
 
 private theorem scopedPrimitive_equations_block_10 :
-    ((RuleExecutionProgram.scopedMachineProgram.equations.drop 200).take 18).filter (fun row : SpaceSemantics.Equation => scopedPrimitiveHeads row.head) =
-    ((RuleExecutionProgram.interpretedPremiseProgram.equations.drop 200).take 17).filter (fun row : SpaceSemantics.Equation => scopedPrimitiveHeads row.head) := by
+    ((RuleExecutionProgram.scopedMachineProgram.equations.drop 200).take 23).filter (fun row : SpaceSemantics.Equation => scopedPrimitiveHeads row.head) =
+    ((RuleExecutionProgram.interpretedPremiseProgram.equations.drop 200).take 23).filter (fun row : SpaceSemantics.Equation => scopedPrimitiveHeads row.head) := by
   decide +kernel
 
 private theorem scopedPrimitive_equations_block_11 :
-    ((RuleExecutionProgram.scopedMachineProgram.equations.drop 218).take 0).filter (fun row : SpaceSemantics.Equation => scopedPrimitiveHeads row.head) =
-    ((RuleExecutionProgram.interpretedPremiseProgram.equations.drop 217).take 343).filter (fun row : SpaceSemantics.Equation => scopedPrimitiveHeads row.head) := by
+    ((RuleExecutionProgram.scopedMachineProgram.equations.drop 223).take 4).filter (fun row : SpaceSemantics.Equation => scopedPrimitiveHeads row.head) =
+    ((RuleExecutionProgram.interpretedPremiseProgram.equations.drop 223).take 346).filter (fun row : SpaceSemantics.Equation => scopedPrimitiveHeads row.head) := by
   decide +kernel
 
 private theorem scopedPrimitive_equations_suffix_12 :
-    (RuleExecutionProgram.scopedMachineProgram.equations.drop 218).filter (fun row : SpaceSemantics.Equation => scopedPrimitiveHeads row.head) =
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 560).filter (fun row : SpaceSemantics.Equation => scopedPrimitiveHeads row.head) := by
+    (RuleExecutionProgram.scopedMachineProgram.equations.drop 227).filter (fun row : SpaceSemantics.Equation => scopedPrimitiveHeads row.head) =
+    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 569).filter (fun row : SpaceSemantics.Equation => scopedPrimitiveHeads row.head) := by
   decide +kernel
 
 private theorem scopedPrimitive_equations_suffix_11 :
-    (RuleExecutionProgram.scopedMachineProgram.equations.drop 218).filter (fun row : SpaceSemantics.Equation => scopedPrimitiveHeads row.head) =
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 217).filter (fun row : SpaceSemantics.Equation => scopedPrimitiveHeads row.head) := by
-  apply scopedPrimitive_filter_split (fun row : SpaceSemantics.Equation => scopedPrimitiveHeads row.head) (RuleExecutionProgram.scopedMachineProgram.equations.drop 218)
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 217) 0 343 scopedPrimitive_equations_block_11
+    (RuleExecutionProgram.scopedMachineProgram.equations.drop 223).filter (fun row : SpaceSemantics.Equation => scopedPrimitiveHeads row.head) =
+    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 223).filter (fun row : SpaceSemantics.Equation => scopedPrimitiveHeads row.head) := by
+  apply scopedPrimitive_filter_split (fun row : SpaceSemantics.Equation => scopedPrimitiveHeads row.head) (RuleExecutionProgram.scopedMachineProgram.equations.drop 223)
+    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 223) 4 346 scopedPrimitive_equations_block_11
   simpa only [List.drop_drop] using scopedPrimitive_equations_suffix_12
 
 private theorem scopedPrimitive_equations_suffix_10 :
     (RuleExecutionProgram.scopedMachineProgram.equations.drop 200).filter (fun row : SpaceSemantics.Equation => scopedPrimitiveHeads row.head) =
     (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 200).filter (fun row : SpaceSemantics.Equation => scopedPrimitiveHeads row.head) := by
   apply scopedPrimitive_filter_split (fun row : SpaceSemantics.Equation => scopedPrimitiveHeads row.head) (RuleExecutionProgram.scopedMachineProgram.equations.drop 200)
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 200) 18 17 scopedPrimitive_equations_block_10
+    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 200) 23 23 scopedPrimitive_equations_block_10
   simpa only [List.drop_drop] using scopedPrimitive_equations_suffix_11
 
 private theorem scopedPrimitive_equations_suffix_9 :
@@ -3214,29 +3270,29 @@ private theorem scopedPrimitive_declarations_block_9 :
     ((RuleExecutionProgram.interpretedPremiseProgram.declarations.drop 180).take 20).filter (retainedCallDeclaration scopedPrimitiveHeads) := by decide +kernel
 
 private theorem scopedPrimitive_declarations_block_10 :
-    ((RuleExecutionProgram.scopedMachineProgram.declarations.drop 200).take 18).filter (retainedCallDeclaration scopedPrimitiveHeads) =
-    ((RuleExecutionProgram.interpretedPremiseProgram.declarations.drop 200).take 17).filter (retainedCallDeclaration scopedPrimitiveHeads) := by decide +kernel
+    ((RuleExecutionProgram.scopedMachineProgram.declarations.drop 200).take 23).filter (retainedCallDeclaration scopedPrimitiveHeads) =
+    ((RuleExecutionProgram.interpretedPremiseProgram.declarations.drop 200).take 23).filter (retainedCallDeclaration scopedPrimitiveHeads) := by decide +kernel
 
 private theorem scopedPrimitive_declarations_block_11 :
-    ((RuleExecutionProgram.scopedMachineProgram.declarations.drop 218).take 0).filter (retainedCallDeclaration scopedPrimitiveHeads) =
-    ((RuleExecutionProgram.interpretedPremiseProgram.declarations.drop 217).take 343).filter (retainedCallDeclaration scopedPrimitiveHeads) := by decide +kernel
+    ((RuleExecutionProgram.scopedMachineProgram.declarations.drop 223).take 4).filter (retainedCallDeclaration scopedPrimitiveHeads) =
+    ((RuleExecutionProgram.interpretedPremiseProgram.declarations.drop 223).take 346).filter (retainedCallDeclaration scopedPrimitiveHeads) := by decide +kernel
 
 private theorem scopedPrimitive_declarations_suffix_12 :
-    (RuleExecutionProgram.scopedMachineProgram.declarations.drop 218).filter (retainedCallDeclaration scopedPrimitiveHeads) =
-    (RuleExecutionProgram.interpretedPremiseProgram.declarations.drop 560).filter (retainedCallDeclaration scopedPrimitiveHeads) := by decide +kernel
+    (RuleExecutionProgram.scopedMachineProgram.declarations.drop 227).filter (retainedCallDeclaration scopedPrimitiveHeads) =
+    (RuleExecutionProgram.interpretedPremiseProgram.declarations.drop 569).filter (retainedCallDeclaration scopedPrimitiveHeads) := by decide +kernel
 
 private theorem scopedPrimitive_declarations_suffix_11 :
-    (RuleExecutionProgram.scopedMachineProgram.declarations.drop 218).filter (retainedCallDeclaration scopedPrimitiveHeads) =
-    (RuleExecutionProgram.interpretedPremiseProgram.declarations.drop 217).filter (retainedCallDeclaration scopedPrimitiveHeads) := by
-  apply scopedPrimitive_filter_split (retainedCallDeclaration scopedPrimitiveHeads) (RuleExecutionProgram.scopedMachineProgram.declarations.drop 218)
-    (RuleExecutionProgram.interpretedPremiseProgram.declarations.drop 217) 0 343 scopedPrimitive_declarations_block_11
+    (RuleExecutionProgram.scopedMachineProgram.declarations.drop 223).filter (retainedCallDeclaration scopedPrimitiveHeads) =
+    (RuleExecutionProgram.interpretedPremiseProgram.declarations.drop 223).filter (retainedCallDeclaration scopedPrimitiveHeads) := by
+  apply scopedPrimitive_filter_split (retainedCallDeclaration scopedPrimitiveHeads) (RuleExecutionProgram.scopedMachineProgram.declarations.drop 223)
+    (RuleExecutionProgram.interpretedPremiseProgram.declarations.drop 223) 4 346 scopedPrimitive_declarations_block_11
   simpa only [List.drop_drop] using scopedPrimitive_declarations_suffix_12
 
 private theorem scopedPrimitive_declarations_suffix_10 :
     (RuleExecutionProgram.scopedMachineProgram.declarations.drop 200).filter (retainedCallDeclaration scopedPrimitiveHeads) =
     (RuleExecutionProgram.interpretedPremiseProgram.declarations.drop 200).filter (retainedCallDeclaration scopedPrimitiveHeads) := by
   apply scopedPrimitive_filter_split (retainedCallDeclaration scopedPrimitiveHeads) (RuleExecutionProgram.scopedMachineProgram.declarations.drop 200)
-    (RuleExecutionProgram.interpretedPremiseProgram.declarations.drop 200) 18 17 scopedPrimitive_declarations_block_10
+    (RuleExecutionProgram.interpretedPremiseProgram.declarations.drop 200) 23 23 scopedPrimitive_declarations_block_10
   simpa only [List.drop_drop] using scopedPrimitive_declarations_suffix_11
 
 private theorem scopedPrimitive_declarations_suffix_9 :

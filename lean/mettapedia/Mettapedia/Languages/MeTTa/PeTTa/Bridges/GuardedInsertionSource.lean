@@ -35,9 +35,34 @@ def source (spaceName rowName : String) : Atom :=
   .expression [.symbol "if", absent spaceName rowName,
     .expression [.symbol "add-atom", .var spaceName, .var rowName], Effects.boolean true]
 
-def update (state : Effects.State) (handle : Handle) (row : Atom) : Option Effects.State := do
+/-- The guard can skip a present row without executing the insertion.
+An absent unbound atom cannot be inserted by the source primitive. -/
+def updateWithProgress (state : Effects.State) (handle : Handle) (row : Atom) :
+    Option (Effects.State × Bool) := do
   let rows ← state.read handle
-  if row ∈ rows then some state else Effects.insert state handle row
+  if row ∈ rows then some (state, false)
+  else if row.isVariable then none else (Effects.insert state handle row).map (·, true)
+
+def update (state : Effects.State) (handle : Handle) (row : Atom) : Option Effects.State :=
+  (updateWithProgress state handle row).map Prod.fst
+
+theorem update_of_present {before : Effects.State} {handle : Handle} {row : Atom}
+    {rows : List Atom} (snapshot : before.read handle = some rows) (present : row ∈ rows) :
+    update before handle row = some before := by
+  simp [update, updateWithProgress, snapshot, present]
+
+theorem update_of_absent {before : Effects.State} {handle : Handle} {row : Atom}
+    {rows : List Atom} (snapshot : before.read handle = some rows) (absent : row ∉ rows) :
+    update before handle row = if row.isVariable then none else Effects.insert before handle row := by
+  cases value : row.isVariable <;>
+    simp [update, updateWithProgress, snapshot, absent, value, Option.map_map, Function.comp_def]
+
+theorem absent_update_inserts {before after : Effects.State} {handle : Handle} {row : Atom}
+    {rows : List Atom} (snapshot : before.read handle = some rows) (absent : row ∉ rows)
+    (updated : update before handle row = some after) :
+    row.isVariable = false ∧ Effects.insert before handle row = some after := by
+  rw [update_of_absent snapshot absent] at updated
+  cases value : row.isVariable <;> simp_all
 
 theorem match_bound_row (bindings : Subst) (name : String) (row candidate : Atom)
     (bound : Subst.lookup bindings name = some row) :
@@ -93,20 +118,14 @@ theorem absent_returns (program : Program) (bindings : Subst) (state : Effects.S
 theorem insert_returns (program : Program) (bindings : Subst) (before after : Effects.State)
     (spaceName rowName : String) (handle : Handle) (row : Atom)
     (location : Subst.lookup bindings spaceName = some (Effects.handleValue handle))
-    (bound : Subst.lookup bindings rowName = some row) (inserted : Effects.insert before handle row = some after) :
+    (bound : Subst.lookup bindings rowName = some row) (value : row.isVariable = false)
+    (inserted : Effects.insert before handle row = some after) :
     PureReturns program bindings before (.expression [.symbol "add-atom", .var spaceName, .var rowName])
       after (Effects.boolean true) := by
   apply native_variable_call_returns program bindings before after "add-atom" [spaceName, rowName] _
     (by decide) (by decide) _ (by decide)
   simp only [List.map_cons, List.map_nil, applySubst, location, bound, Option.getD_some]
-  change (match Effects.readHandle (Effects.handleValue handle) >>= fun chosen => Effects.insert before chosen row with
-    | some result => Except.ok (result, [Effects.boolean true])
-    | none => Except.error Effects.Fault.invalidSpace) = _
-  rw [Effects.readHandle_handleValue]
-  change (match Effects.insert before handle row with
-    | some result => Except.ok (result, [Effects.boolean true])
-    | none => Except.error Effects.Fault.invalidSpace) = _
-  rw [inserted]
+  exact StdLib.add_atom_applies_of_inserted value inserted
 
 theorem source_returns (program : Program) (bindings : Subst) (before after : Effects.State)
     (spaceName rowName : String) (handle : Handle) (row : Atom) (rows : List Atom)
@@ -116,14 +135,14 @@ theorem source_returns (program : Program) (bindings : Subst) (before after : Ef
     PureReturns program bindings before (source spaceName rowName) after (Effects.boolean true) := by
   have tested := absent_returns program bindings before spaceName rowName handle row rows location bound snapshot
   by_cases present : row ∈ rows
-  · have same : before = after := by simpa [update, snapshot, present] using updated
+  · have same := Option.some.inj ((update_of_present snapshot present).symm.trans updated)
     subst after
     have branch := grounded_returns program bindings before (.bool true)
     simpa [source, present] using if_returns program bindings before before before
       (absent spaceName rowName) (Effects.boolean false) (.expression [.symbol "add-atom", .var spaceName, .var rowName])
       (Effects.boolean true) (Effects.boolean true) (by simpa [present] using tested) (by simpa [Effects.boolean] using branch)
-  · have inserted : Effects.insert before handle row = some after := by simpa [update, snapshot, present] using updated
-    have branch := insert_returns program bindings before after spaceName rowName handle row location bound inserted
+  · obtain ⟨value, inserted⟩ := absent_update_inserts snapshot present updated
+    have branch := insert_returns program bindings before after spaceName rowName handle row location bound value inserted
     simpa [source, present] using if_returns program bindings before before after
       (absent spaceName rowName) (Effects.boolean true) (.expression [.symbol "add-atom", .var spaceName, .var rowName])
       (Effects.boolean true) (Effects.boolean true) (by simpa [present] using tested) (by simpa using branch)
@@ -132,40 +151,36 @@ theorem update_reads_back {before after : Effects.State} {handle : Handle} {row 
     (updated : update before handle row = some after) :
     ∃ rows, before.read handle = some rows ∧
       after.read handle = some (if row ∈ rows then rows else rows ++ [row]) := by
-  unfold update at updated
   cases snapshot : before.read handle with
-  | none => simp [snapshot] at updated
+  | none => simp [update, updateWithProgress, snapshot] at updated
   | some rows =>
-      simp only [snapshot] at updated
       refine ⟨rows, rfl, ?_⟩
       by_cases present : row ∈ rows
-      · have same : before = after := by simpa [present] using updated
+      · have same := Option.some.inj ((update_of_present snapshot present).symm.trans updated)
         subst after
         simpa [present] using snapshot
-      · have inserted : Effects.insert before handle row = some after := by simpa [present] using updated
+      · have inserted := (absent_update_inserts snapshot present updated).2
         obtain ⟨old, oldRead, afterRead⟩ := Effects.insert_reads_back inserted
         have same : old = rows := Option.some.inj (oldRead.symm.trans snapshot)
         simpa only [same, if_neg present] using afterRead
 
 theorem update_exists {before : Effects.State} {handle : Handle} {rows : List Atom}
-    (snapshot : before.read handle = some rows) (row : Atom) : ∃ after, update before handle row = some after := by
+    (snapshot : before.read handle = some rows) (row : Atom) (value : row.isVariable = false) :
+    ∃ after, update before handle row = some after := by
   by_cases present : row ∈ rows
-  · exact ⟨before, by simp [update, snapshot, present]⟩
+  · exact ⟨before, update_of_present snapshot present⟩
   · obtain ⟨after, inserted⟩ := Effects.insert_exists_of_read_some snapshot row
-    exact ⟨after, by simp [update, snapshot, present, inserted]⟩
+    exact ⟨after, by simp [update_of_absent snapshot present, value, inserted]⟩
 
 theorem update_cases {before after : Effects.State} {handle : Handle} {row : Atom}
     (updated : update before handle row = some after) :
     before = after ∨ Effects.insert before handle row = some after := by
-  unfold update at updated
   cases snapshot : before.read handle with
-  | none => simp [snapshot] at updated
+  | none => simp [update, updateWithProgress, snapshot] at updated
   | some rows =>
-      simp only [snapshot] at updated
-      change (if row ∈ rows then some before else Effects.insert before handle row) = some after at updated
-      split at updated
-      · exact Or.inl (Option.some.inj updated)
-      · exact Or.inr updated
+      by_cases present : row ∈ rows
+      · exact Or.inl (Option.some.inj ((update_of_present snapshot present).symm.trans updated))
+      · exact Or.inr (absent_update_inserts snapshot present updated).2
 
 theorem update_read_other {before after : Effects.State} {handle other : Handle} {row : Atom}
     (updated : update before handle row = some after) (different : other ≠ handle) :
@@ -181,7 +196,8 @@ theorem update_preserves_cells {before after : Effects.State} {handle : Handle} 
   · exact Effects.insert_preserves_cells inserted
 
 theorem missing_space_is_not_presence (before : Effects.State) (handle : Handle) (row : Atom)
-    (missing : before.read handle = none) : update before handle row = none := by simp [update, missing]
+    (missing : before.read handle = none) : update before handle row = none := by
+  simp [update, updateWithProgress, missing]
 
 theorem update_nodup {before after : Effects.State} {handle : Handle} {row : Atom} {rows : List Atom}
     (snapshot : before.read handle = some rows) (distinct : rows.Nodup) (updated : update before handle row = some after) :
@@ -259,6 +275,12 @@ def dataRow : Atom → Bool
       head != "=" && head != ":" && Mettapedia.Languages.ProcessCalculi.MORK.isGroundAtom row
   | _ => false
 
+theorem dataRow_value {row : Atom} (data : dataRow row = true) : row.isVariable = false := by
+  unfold dataRow at data
+  split at data
+  · rfl
+  · contradiction
+
 open Mettapedia.GSLT.Dynamics ObservationQualified in
 def classify (observation : PureCallExtraction.Observation) (program : Program) (bindings : Subst)
     (spaceName rowName : String) (handle : Handle) (row : Atom)
@@ -296,6 +318,11 @@ theorem present_insertion_still_returns_success :
   exact source_returns _ _ _ _ "space" "row" .self row [row] rfl rfl rfl rfl
 
 theorem fresh_insertion_adds_one_row : update emptyState .self row = some heldState := rfl
+
+theorem fresh_unbound_atom_cannot_license_an_insert :
+    update emptyState .self (.var "unbound") = none ∧
+      StdLib.apply emptyState "add-atom" [.symbol "&self", .var "unbound"] = .error .instantiation :=
+  ⟨rfl, rfl⟩
 
 theorem fresh_source_returns_success :
     PureReturns program caller emptyState (source "space" "row") heldState (Effects.boolean true) :=

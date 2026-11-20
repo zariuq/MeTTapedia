@@ -873,21 +873,172 @@ theorem unify_ground {bindings : Subst} {pattern value : Atom} (range : GroundRa
   unfold unify
   exact unifyTerms_ground _ bindings pattern value range ground (by unfold fuelFor; omega)
 
+/-- Ground declarations rule out exhaustion in the actual two-sided row
+matcher, independently of the body's later evaluation. -/
+theorem queryRows_ground {Row Packet : Type} (label : Row → Atom) (emit : Row → Subst → Packet)
+    {bindings : Subst} {pattern : Atom} (range : GroundRange bindings) :
+    ∀ (use : Nat) (rows : List Row), (∀ row ∈ rows, isGroundAtom (label row) = true) →
+      queryRows label emit bindings pattern use rows =
+        some (rows.filterMap fun row => (matchAtom bindings pattern (label row)).map (emit row))
+  | _, [], _ => rfl
+  | use, row :: rest, ground => by
+      have term := ground row List.mem_cons_self
+      simp only [queryRows, queryRows_ground label emit range (use + 1) rest
+        (fun item member => ground item (List.mem_cons_of_mem _ member)), Option.bind_eq_bind,
+        Option.bind_some, rename_ground use (label row) term, unify_ground range term,
+        List.filterMap_cons]
+      cases matchAtom bindings pattern (label row) <;> rfl
+
 /-- **`match` on ground rows**: the body runs once for each row the pattern
 matches (`matchAtom`, no list view), in row order, under that row's bindings. -/
 theorem queryBodies_ground {bindings : Subst} {pattern body : Atom} (range : GroundRange bindings) :
     ∀ (use : Nat) (rows : List Atom), (∀ row ∈ rows, isGroundAtom row = true) →
       queryBodies bindings pattern body use rows =
         some (rows.filterMap fun row => (matchAtom bindings pattern row).map fun bound =>
-          Control.evaluate bound body)
-  | _, [], _ => rfl
-  | use, row :: rest, ground => by
-      have rowGround := ground row List.mem_cons_self
-      simp only [queryBodies, queryBodies_ground range (use + 1) rest
-        (fun item member => ground item (List.mem_cons_of_mem _ member)), Option.bind_eq_bind,
-        Option.bind_some, rename_ground use row rowGround, unify_ground range rowGround,
-        List.filterMap_cons]
-      cases matchAtom bindings pattern row <;> rfl
+          Control.evaluate bound body) :=
+  queryRows_ground id (fun _ bound => Control.evaluate bound body) range
+
+/-- Ordered occurrence/binding hits on a ground view; the row proof
+`queryRows_ground` justifies using the slot-independent matcher here. -/
+def groundHits {Row : Type} (label : Row → Atom) (rows : List Row)
+    (bindings : Subst) (pattern : Atom) : List (Row × Subst) :=
+  rows.filterMap fun row => (matchAtom bindings pattern (label row)).map (Prod.mk row)
+
+theorem groundHits_append_unmatched {Row : Type} (label : Row → Atom) (rows extra : List Row)
+    (bindings : Subst) (pattern : Atom)
+    (clashes : ∀ row ∈ extra, matchAtom bindings pattern (label row) = none) :
+    groundHits label (rows ++ extra) bindings pattern = groundHits label rows bindings pattern := by
+  have noHits : groundHits label extra bindings pattern = [] := by
+    induction extra with
+    | nil => rfl
+    | cons row rest ih =>
+      simp only [groundHits, List.filterMap_cons, clashes row List.mem_cons_self, Option.map_none]
+      exact ih (fun item member => clashes item (List.mem_cons_of_mem _ member))
+  unfold groundHits
+  rw [List.filterMap_append]
+  change groundHits label rows bindings pattern ++ groundHits label extra bindings pattern = _
+  rw [noHits, List.append_nil]
+  rfl
+
+private theorem groundHits_range {Row : Type} {label : Row → Atom} {rows : List Row}
+    {bindings : Subst} {pattern : Atom}
+    (ground : ∀ row ∈ rows, isGroundAtom (label row) = true) (range : GroundRange bindings)
+    {branch : Row × Subst} (member : branch ∈ groundHits label rows bindings pattern) :
+    GroundRange branch.2 := by
+  obtain ⟨row, present, packet⟩ := List.mem_filterMap.mp member
+  obtain ⟨bound, matched, rfl⟩ := Option.map_eq_some_iff.mp packet
+  exact matchAtom_groundRange range (ground row present) matched
+
+/-- Reserve the complete compound capture's freshening range. Every reached
+leg charges one full view. At the last leg no row needs to be matched to
+compute this charge. Earlier prefixes may still need to be examined. -/
+def groundQueryCharge {Row : Type} (label : Row → Atom) (rows : List Row) : List Atom → Subst → Nat
+  | [], _ => 0
+  | pattern :: legs, bindings =>
+      rows.length + (if legs.isEmpty then 0 else
+        ((groundHits label rows bindings pattern).map
+          (fun branch => groundQueryCharge label rows legs branch.2)).sum)
+
+private theorem queryBranches_with_charge {In Out : Type} (child : Nat → In → Option (List Out × Nat))
+    (charge : In → Nat) (hits : List In)
+    (children : ∀ item ∈ hits, ∀ use, ∃ packets, child use item = some (packets, charge item))
+    (use : Nat) : ∃ packets, queryBranches child use hits = some (packets, (hits.map charge).sum) := by
+  induction hits generalizing use with
+  | nil => exact ⟨[], rfl⟩
+  | cons first rest ih =>
+      obtain ⟨packets, here⟩ := children first List.mem_cons_self use
+      obtain ⟨later, tail⟩ :=
+        ih (fun item member => children item (List.mem_cons_of_mem _ member)) (use + charge first)
+      exact ⟨packets ++ later, by simp only [queryBranches, here, tail, Option.bind_eq_bind,
+        Option.bind_some, List.map_cons, List.sum_cons]⟩
+
+/-- The charge certificate is derived from groundness and the earlier
+prefix counts, not from having enumerated the final answers already. -/
+theorem queryJoin_ground_charge {Row : Type} (label : Row → Atom) (rows : List Row)
+    (ground : ∀ row ∈ rows, isGroundAtom (label row) = true) (legs : List Atom)
+    (bindings : Subst) (range : GroundRange bindings) (use : Nat) :
+    ∃ packets, queryJoin label rows legs bindings use =
+      some (packets, groundQueryCharge label rows legs bindings) := by
+  induction legs generalizing bindings use with
+  | nil => exact ⟨_, rfl⟩
+  | cons pattern legs ih =>
+      let hits := groundHits label rows bindings pattern
+      let child (next : Nat) (branch : Row × Subst) :=
+        (queryJoin label rows legs branch.2 next).map
+          (fun (tails, spent) =>
+            (tails.map (fun tail : List Row × Subst => (branch.1 :: tail.1, tail.2)), spent))
+      let charge (branch : Row × Subst) := groundQueryCharge label rows legs branch.2
+      have scanned : queryRows label Prod.mk bindings pattern use rows = some hits :=
+        queryRows_ground label Prod.mk range use rows ground
+      have completes (branch : Row × Subst) (member : branch ∈ hits) (next : Nat) :
+          ∃ packets, child next branch = some (packets, charge branch) := by
+        have preserved := groundHits_range ground range member
+        obtain ⟨later, prepared⟩ := ih branch.2 preserved next
+        exact ⟨later.map (fun tail => (branch.1 :: tail.1, tail.2)),
+          by simp only [child, charge, prepared, Option.map_some]⟩
+      obtain ⟨packets, continued⟩ :=
+        queryBranches_with_charge child charge hits completes (use + rows.length)
+      have charged :
+          groundQueryCharge label rows (pattern :: legs) bindings =
+            rows.length + (hits.map charge).sum := by
+        cases legs with
+        | nil => simp [groundQueryCharge, charge]
+        | cons next later => rfl
+      refine ⟨packets, ?_⟩
+      rw [charged, queryJoin, scanned]
+      change (queryBranches child (use + rows.length) hits).bind _ = _
+      rw [continued]
+      rfl
+
+private theorem queryBranches_of_same_receipts {In Out : Type}
+    (left right : Nat → In → Option (List Out × Nat)) (inputs : List In)
+    (same : ∀ item ∈ inputs, ∀ first second, left first item = right second item)
+    (first second : Nat) : queryBranches left first inputs = queryBranches right second inputs := by
+  induction inputs generalizing first second with
+  | nil => rfl
+  | cons item rest ih =>
+      simp only [queryBranches, same item List.mem_cons_self first second]
+      cases right second item with
+      | none => rfl
+      | some result =>
+        rcases result with ⟨replies, used⟩
+        simp only [Option.bind_eq_bind, Option.bind_some]
+        rw [ih (fun next member => same next (List.mem_cons_of_mem _ member)) (first + used) (second + used)]
+
+/-- A prepared join can be reused across two ground views even at
+different freshening supplies, provided the ordered physical hits at
+each admitted query agree and the view widths agree. Width matters for
+the exact allocation charge even when only nonmatches were edited. -/
+theorem queryJoin_ground_reuse {Row : Type} (label : Row → Atom) (old current : List Row)
+    (width : old.length = current.length)
+    (oldGround : ∀ row ∈ old, isGroundAtom (label row) = true)
+    (newGround : ∀ row ∈ current, isGroundAtom (label row) = true)
+    (legs : List Atom)
+    (screen : ∀ leg ∈ legs, ∀ bindings, GroundRange bindings →
+      groundHits label old bindings leg = groundHits label current bindings leg)
+    (bindings : Subst) (range : GroundRange bindings) (savedUse liveUse : Nat) :
+    queryJoin label old legs bindings savedUse = queryJoin label current legs bindings liveUse := by
+  induction legs generalizing bindings savedUse liveUse with
+  | nil => rfl
+  | cons pattern rest ih =>
+    let hits := groundHits label old bindings pattern
+    let children (view : List Row) (use : Nat) (branch : Row × Subst) :=
+      (queryJoin label view rest branch.2 use).map (fun (packets, spent) =>
+        (packets.map (fun tail : List Row × Subst => (branch.1 :: tail.1, tail.2)), spent))
+    have sameChildren (branch : Row × Subst) (member : branch ∈ hits) (first second : Nat) :
+        children old first branch = children current second branch := by
+      unfold children
+      rw [ih (fun leg present => screen leg (List.mem_cons_of_mem _ present)) _
+        (groundHits_range oldGround range member) first second]
+    have oldRead : queryRows label Prod.mk bindings pattern savedUse old = some hits :=
+      queryRows_ground label Prod.mk range savedUse old oldGround
+    have currentRead : queryRows label Prod.mk bindings pattern liveUse current = some hits :=
+      (queryRows_ground label Prod.mk range liveUse current newGround).trans
+        (congrArg some (screen pattern List.mem_cons_self bindings range).symm)
+    simp only [queryJoin, oldRead, currentRead, Option.bind_eq_bind, Option.bind_some]
+    change (queryBranches (children old) (savedUse + old.length) hits).bind _ =
+      (queryBranches (children current) (liveUse + current.length) hits).bind _
+    rw [queryBranches_of_same_receipts _ _ _ sameChildren, width]
 
 /-- **`remove-atom` on ground rows** keeps exactly the rows `Effects.erase` keeps. -/
 theorem survivors_ground {first : Atom} {others : List Atom} :

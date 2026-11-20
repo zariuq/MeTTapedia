@@ -3,15 +3,16 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsA
 /-!
 # Every run under a transparent demand finishes
 
-`EveryRunFinishes` (H6) proves that every run of HE's machine on a settling term finishes, under the
+`EveryRunFinishes` proves that every run of HE's machine on a settling term finishes, under the
 demand `%Undefined%`: its logical relation `Fine` is carried by `FineRuns`, `FineEval` and `FineQuery`.
 `DemandSpine` showed that a demand enters the evaluation of a settling term only along its spine. Here
 the same holds for `Fine`:
 
-* `FineRunsAt`, `FineEvalAt`, `FineQueryAt`: H6's relation with the demand `E` as a parameter;
+* `FineRunsAt`, `FineEvalAt`, `FineQueryAt`: the relation of `EveryRunFinishes` with the demand `E`
+  as a parameter;
 * `fine_data_at`, `fine_held_at`, `fine_calls_at`, `fine_equations_at`, `fine_query_absent_at`,
-  `fine_query_equations_at`, `fine_node_at`: the spine under `E`, the arguments by H6's theorems
-  under `%Undefined%`;
+  `fine_query_equations_at`, `fine_node_at`: the spine under `E`, the arguments by the theorems of
+  `EveryRunFinishes` under `%Undefined%`;
 * `fine_settlesK_at`: every run of every marked presentation of a settling term under a transparent
   demand that casts its data answers as they are finishes, with those answers.
 
@@ -458,7 +459,7 @@ theorem fine_node_at {atoms : List Atom} {E : Atom} (transparent : Transparent E
 
 /-- **Every run of a settling term under a transparent demand finishes**: if the demand casts each
 data answer as it is, every marked presentation runs finely under `E` to the answers. The arguments
-are H6's `fine_settlesK` under `%Undefined%`. -/
+are `EveryRunFinishes.fine_settlesK` under `%Undefined%`. -/
 theorem fine_settlesK_at {atoms : List Atom} (program : CallProgram atoms) {E : Atom}
     (transparent : Transparent E) {t : Atom} {L : List Atom}
     (settles : SettlesK dispatch atoms t L) :

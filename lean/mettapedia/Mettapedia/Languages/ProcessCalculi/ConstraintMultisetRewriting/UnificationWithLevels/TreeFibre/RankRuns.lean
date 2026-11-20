@@ -334,11 +334,11 @@ theorem runRank_solved_principal {original : EquationStore (TotalTerm Γ)} {stat
 theorem fragment_decidedWF (fragment : ContextualDependentWorklist.Fragment solver) (inside : fragment.holds original) :
     (∃ state finished, runWF solver original = .solved state finished ∧
         (frames levels).Principal original state.answer) ∨
-      ∃ absent, runWF solver original = .refuted absent := by
+      ∃ missing, runWF solver original = .refuted missing := by
   obtain ⟨fuel, decided⟩ := fragment.decided inside
   have same : run solver original fuel = runWF solver original := by
     apply drive_eq_driveWF
-    rcases (decided fuel le_rfl).2 with ⟨state, finished, ran, _⟩ | ⟨absent, ran⟩
+    rcases (decided fuel le_rfl).2 with ⟨state, finished, ran, _⟩ | ⟨missing, ran⟩
     · unfold run at ran
       rw [ran]
       trivial
@@ -352,7 +352,7 @@ theorem fragment_decidedWF (fragment : ContextualDependentWorklist.Fragment solv
 theorem fragment_decidedRank (fragment : ContextualDependentWorklist.Fragment solver) (inside : fragment.holds original) :
     (∃ state finished, runRank solver original = .solved state finished ∧
         (frames levels).Principal original state.answer) ∨
-      ∃ absent, runRank solver original = .refuted absent := by
+      ∃ missing, runRank solver original = .refuted missing := by
   rw [runRank_eq_runWF]
   exact fragment_decidedWF solver fragment inside
 
@@ -391,8 +391,8 @@ theorem one_decidedWF {Θ : Context S.R} {original : EquationStore (TotalTerm Θ
         runWF (oneSolver choices facts roots heads algebra rigid complete normalizes inh headTypingUnique declared
           strengthening join joinSound glb spec) original = .solved state finished ∧
         (frames S.levels).Principal original state.answer) ∨
-      ∃ absent, runWF (oneSolver choices facts roots heads algebra rigid complete normalizes inh headTypingUnique declared
-        strengthening join joinSound glb spec) original = .refuted absent :=
+      ∃ missing, runWF (oneSolver choices facts roots heads algebra rigid complete normalizes inh headTypingUnique declared
+        strengthening join joinSound glb spec) original = .refuted missing :=
   fragment_decidedWF _ (oneFragment choices facts roots heads algebra rigid complete normalizes inh headTypingUnique
     declared strengthening join joinSound glb spec glbTotal joinTotal) inside
 

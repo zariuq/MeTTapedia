@@ -7,7 +7,8 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence
 
 The source judgments are the existing reflective-presentation Proc/Name/List
 judgments. Formation does not follow from validity of a raw structural proof.
-Quotation-scope admission is a separate, explicitly selected boundary.
+Formation checks each quotation's admission under rho's closed quote scope;
+the stronger quote-sealed boundary is a separate, explicitly selected check.
 -/
 
 set_option autoImplicit false
@@ -29,7 +30,10 @@ mutual
   def checkName (free : FreeSortContext) (bound : List String) : Pattern → Bool
     | .bvar index => bound[index]? == some "Name"
     | .fvar name => free name == some "Name"
-    | .apply "NQuote" [process] => checkProc free bound process
+    | .apply "NQuote" [process] =>
+        checkProc free bound process &&
+          Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.quoteAdmits
+            rhoReflectivePresentation.toReflectivePresentationDecl process
     | _ => false
 
   def checkProc (free : FreeSortContext) (bound : List String) : Pattern → Bool
@@ -56,7 +60,8 @@ mutual
     split at accepted
     · exact .bvar (by simpa only [beq_iff_eq, rhoReflectivePresentation] using accepted)
     · exact .fvar (by simpa only [beq_iff_eq, rhoReflectivePresentation] using accepted)
-    · exact .quote (checkProc_sound free bound _ accepted)
+    · simp only [Bool.and_eq_true] at accepted
+      exact .quote (checkProc_sound free bound _ accepted.1) accepted.2
     · contradiction
 
   theorem checkProc_sound (free : FreeSortContext) (bound : List String)
@@ -94,7 +99,9 @@ mutual
     cases typed with
     | bvar lookup => simpa [checkName, rhoReflectivePresentation] using lookup
     | fvar lookup => simpa [checkName, rhoReflectivePresentation] using lookup
-    | quote typed => exact checkProc_complete typed
+    | quote typed admitted =>
+        simp only [checkName, rhoReflectivePresentation, Bool.and_eq_true]
+        exact ⟨checkProc_complete typed, admitted⟩
 
   theorem checkProc_complete {free : FreeSortContext} {bound : List String}
       {p : Pattern} (typed : ProcWellSorted rhoReflectivePresentation free bound p) : checkProc free bound p = true := by

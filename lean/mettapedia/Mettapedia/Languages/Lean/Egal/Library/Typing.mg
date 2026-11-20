@@ -161,6 +161,12 @@ apply SepI (Power (Sigma_ x :e X, Union (Y x))) (fun f => forall x :e X, f x :e 
 let x. assume Hx: x :e X. rewrite ap_const_0 x. exact H x Hx.
 Qed.
 
+(** The converse: a product containing the empty set contains it at each point. **)
+Theorem Pi_0_ap : forall X:set, forall Y:set -> set, 0 :e (Pi_ x :e X, Y x) -> forall x :e X, 0 :e Y x.
+let X Y. assume H: 0 :e (Pi_ x :e X, Y x). let x. assume Hx: x :e X.
+exact In_eq_ls 0 (0 x) (Y x) (eq_sym_i (0 x) 0 (ap_const_0 x)) (ap_Pi X Y 0 x H Hx).
+Qed.
+
 (** Reflexivity of equality, as a term: the proof of a proof argument a = a. **)
 Theorem Lean_eq_refl : forall x:set, x = x.
 let x. reflexivity.
@@ -186,6 +192,16 @@ Qed.
 Theorem Lean_ProofField_sound : forall P z, z :e Lean_ProofField P -> z :e P.
 let P z. assume Hz: z :e Lean_ProofField P.
 exact SepE2 1 (fun z => z :e P) z Hz.
+Qed.
+
+(** A member of a proof field is 0, so its proposition holds. **)
+Theorem Lean_of_guard : forall p:set, forall x :e {z :e 1 | z :e p}, 0 :e p.
+let p x. assume Hx: x :e {z :e 1 | z :e p}.
+claim L: x = 0.
+{ apply ordsuccE 0 x (SepE1 1 (fun z => z :e p) x Hx).
+  - assume H: x :e 0. prove False. exact EmptyE x H.
+  - assume H: x = 0. exact H. }
+rewrite <- L. exact SepE2 1 (fun z => z :e p) x Hx.
 Qed.
 
 (** A constructor stores its full field tuple, including proof positions. **)

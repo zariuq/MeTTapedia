@@ -1,5 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.PositiveResourceProjection
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NullsOnTheStep.AbsenceNotCompositional
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NullsOnTheStep.NoneNotCompositional
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.FragmentsOfTheStep.TransitionMaps
 
 /-!
@@ -35,14 +35,14 @@ since context rules alone miss reactions across components
   else of the rule set (of the step it asks equality as the matching relation and a supply of fresh
   occurrence identities). `Controls.make_has_heating_bisimulation`: the rule set holding only
   `make T`, which is `spawn` without its guard, has one over ground terms (`Controls.fresh_supply`).
-* `Controls.absence_has_no_heating_bisimulation`: the rule set holding only `spawn` (make `T` where
-  `U` is absent), just outside the fragment (`Controls.spawn_outside`), has **no** reaction whose
+* `Controls.none_has_no_heating_bisimulation`: the rule set holding only `spawn` (make `T` where
+  `U` is not present), just outside the fragment (`Controls.spawn_outside`), has **no** reaction whose
   reduction modulo the congruence is bisimilar to its step through heating, on the same modelled
   configurations. Reduction is closed under parallel composition (`Composition.reduces_parClosed`),
   while `spawn` is refused beside a `U`.
 * `Controls.make_has_none_over_all_configurations`: over all configurations, with the knowledge
   ignored, even `make T` has no such bisimulation, since a configuration whose knowledge has no
-  solution encodes a term and never fires. A negation stated there would not isolate absence, so the
+  solution encodes a term and never fires. A negation stated there would not isolate none queries, so the
   comparison is made on modelled configurations.
 -/
 
@@ -166,13 +166,13 @@ theorem encodes_iff_congruent {C : Modelled A σ (O := O)} {t u : Term T}
 
 end HeatingBisimulation
 
-/-! ## Absence has no heating bisimulation -/
+/-! ## The none query has no heating bisimulation -/
 
 namespace HeatingBisimulation.Controls
 
 open NamesOnTheStep NamesOnTheStep.IssuingControls
 
-/-- The rule set holding only `spawn`: make `T` where `U` is absent. -/
+/-- The rule set holding only `spawn`: make `T` where `U` is not present. -/
 def spawnOnly : RuleSet Expr := (· = NullsOnTheStep.Separations.spawn)
 
 /-- `spawn` checks, so its rule set is just outside the take–make fragment. -/
@@ -210,17 +210,16 @@ theorem make_has_heating_bisimulation :
   ⟨reaction ground () makeOnly, heating_bisimulation make_inside rfl fresh_supply⟩
 
 /-- **Control.** No reaction's reduction modulo the congruence is bisimilar, through heating, to the
-step of the absence-guarded rule set `spawnOnly`, on the configurations whose knowledge the identity
+step of the none-guarded rule set `spawnOnly`, on the configurations whose knowledge the identity
 models: the setting of `heating_bisimulation`, where `make T`, the same rule without its guard, has
 one (`make_has_heating_bisimulation`). -/
-theorem absence_has_no_heating_bisimulation :
+theorem none_has_no_heating_bisimulation :
     ¬ ∃ react : Reaction Expr, IsBisimulation (modelledStep ground (Prod.fst : Occ → Expr) () spawnOnly)
       (Reduces react) (Encodes (label := (Prod.fst : Occ → Expr))) := by
   rintro ⟨react, forward, backward⟩
   have valid : NullsOnTheStep.Separations.spawnAt.1.selection.Valid ground Prod.fst
       NullsOnTheStep.Separations.spawn NullsOnTheStep.Separations.emptyS.1 :=
-    (PredicateQueryAdmission.valid_empty_iff ground Prod.fst NullsOnTheStep.Separations.spawn
-      NullsOnTheStep.Separations.emptyS.1 _).mp NullsOnTheStep.Separations.spawn_admitted.1
+    PredicateQueryAdmission.regionValid_nil_iff.mp NullsOnTheStep.Separations.spawn_admitted.1
   have after : ground.Models ()
       (NullsOnTheStep.Separations.spawnAt.1.selection.result Prod.fst
         NullsOnTheStep.Separations.spawn NullsOnTheStep.Separations.emptyS.1).equations := by
@@ -246,7 +245,7 @@ theorem absence_has_no_heating_bisimulation :
       Term.heat (Term.join Term.unit (Term.atom factU))
     simp [labels, NullsOnTheStep.Separations.onlyU]
   obtain ⟨C', ⟨_, rfl, ⟨selection, refused, _⟩, _⟩, _⟩ := backward encodesU beside
-  exact absent_refuted refused (p := factU) (List.mem_singleton.mpr rfl)
+  exact none_refuted refused (p := factU) (List.mem_singleton.mpr rfl)
     (o := (factU, 0)) (Finset.mem_singleton_self _) rfl
 
 /-- The step of a rule over ground terms, on every configuration. -/
@@ -260,7 +259,7 @@ def encodes (C : Conf) (t : Term Expr) : Prop := labels Prod.fst C.present = Ter
 /-- A configuration whose knowledge has no solution, `T = U`, with nothing present. -/
 def clashing : Conf := ⟨[(factT, factU)], ∅⟩
 
-/-- **Control: over all configurations the negation does not isolate absence.** With the knowledge
+/-- **Control: over all configurations the negation does not isolate none queries.** With the knowledge
 ignored, even `make T`, inside the fragment, has no reaction bisimilar to its step through heating:
 `clashing` encodes the empty term and never fires, while `make T` fires at the empty store. -/
 theorem make_has_none_over_all_configurations :
@@ -290,7 +289,7 @@ open HeatingBisimulation in
 #print axioms HeatingBisimulation.Controls.spawn_outside
 #print axioms HeatingBisimulation.Controls.make_inside
 #print axioms HeatingBisimulation.Controls.make_has_heating_bisimulation
-#print axioms HeatingBisimulation.Controls.absence_has_no_heating_bisimulation
+#print axioms HeatingBisimulation.Controls.none_has_no_heating_bisimulation
 #print axioms HeatingBisimulation.Controls.make_has_none_over_all_configurations
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.FragmentsOfTheStep

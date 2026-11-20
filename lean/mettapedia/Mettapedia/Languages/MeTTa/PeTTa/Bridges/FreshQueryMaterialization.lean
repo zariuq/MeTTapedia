@@ -114,14 +114,20 @@ theorem countedInstall_forgets (target : Handle) (payloads : List Atom) (before 
           simp [countedInstall, snapshot, QuerySetMaterialization.installRows,
             GuardedInsertionSource.missing_space_is_not_presence before target payload snapshot]
       | some rows =>
-          obtain ⟨after, result, installed, afterRead⟩ :=
-            QuerySetMaterialization.installRows_exists_read target (payload :: rest) before rows snapshot
-          simp [countedInstall, snapshot, installed, afterRead]
+          cases installed : QuerySetMaterialization.installRows target (payload :: rest) before with
+          | none => simp [countedInstall, snapshot, installed]
+          | some after =>
+              obtain ⟨result, afterRead⟩ :=
+                QuerySetMaterialization.installRows_reads_back target (payload :: rest) before after
+                  ⟨rows, snapshot⟩ installed
+              simp [countedInstall, snapshot, installed, afterRead]
 
 theorem countedInstall_exists (target : Handle) (payloads : List Atom) (before : Effects.State)
-    (rows : List Atom) (snapshot : before.read target = some rows) :
+    (rows : List Atom) (snapshot : before.read target = some rows)
+    (values : ∀ payload ∈ payloads, Atom.isVariable payload = false) :
     ∃ after count, countedInstall target payloads before = some (after, count) := by
-  obtain ⟨after, _, installed, _⟩ := QuerySetMaterialization.installRows_exists_read target payloads before rows snapshot
+  obtain ⟨after, _, installed, _⟩ :=
+    QuerySetMaterialization.installRows_exists_read target payloads before rows snapshot values
   have projected : (countedInstall target payloads before).map Prod.fst = some after :=
     (countedInstall_forgets target payloads before).trans installed
   obtain ⟨receipt, completed, _⟩ := Option.map_eq_some_iff.mp projected

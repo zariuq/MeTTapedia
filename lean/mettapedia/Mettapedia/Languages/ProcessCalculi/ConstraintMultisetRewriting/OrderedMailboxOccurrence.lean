@@ -196,9 +196,9 @@ occurrence, even when an equal queue value is later republished elsewhere. -/
 theorem no_stale_firing {select : α → Option β}
     {before after : Configuration (Cell α β) (Occurrence α β)}
     {queue : Occurrence α β} {result : β} {remaining : List α}
-    (absent : queue ∉ before.present) :
+    (missing : queue ∉ before.present) :
     ¬ Fires select before queue result remaining after :=
-  fun firing => absent firing.queue_present
+  fun firing => missing firing.queue_present
 
 theorem source_has_firing (select : α → Option β)
     (before : Configuration (Cell α β) (Occurrence α β))
@@ -295,7 +295,7 @@ theorem no_match_no_firing (select : α → Option β)
   cases source
 
 /-- Under the declared representation invariants, refusal is exactly source
-no-match. Resource absence or an inconsistent background are not misreported
+no-match. Resource none queries or an inconsistent background are not misreported
 as a source no-match. -/
 theorem source_none_iff_no_firing (select : α → Option β)
     (before : Configuration (Cell α β) (Occurrence α β))

@@ -32,6 +32,7 @@ theorem firing_has_prepared_match {environment : Environment} {bound : List Type
     (fired : RootFiring environment bound type source index trace captured completed history target)
     (selected : environment.language.rewrites[index]? = some rule)
     (specified : specification? environment index = some spec)
+    (binderOk : BinderLawsFor [] environment.reflection rule)
     (increasing : IncreasingSpines rule spec)
     (guards : CollectionGuardFragment environment.provider ⟨index, rule, spec, bound, 0, 0⟩ rule.premises) :
     ∃ (work : Nat) (answer : RecursiveCollectionMachine.Answer) (prepared : Prepared)
@@ -63,7 +64,8 @@ theorem firing_has_prepared_match {environment : Environment} {bound : List Type
       prepared.source prepared.ordinary.trace (canonAssignment captured) := by
     rw [← sameCapture, ← valid.assignment]
     simpa only [request, GeneralScopedMatchMachine.Answer.Valid] using valid.matching
-  obtain ⟨target', replayed, sameTarget⟩ := fired.replay_collection_guards selected specified guards increasing sameSource replay
+  obtain ⟨target', replayed, sameTarget⟩ :=
+    fired.replay_collection_guards selected specified binderOk guards increasing sameSource replay
   exact ⟨work, answer, prepared, target', published, sameCapture, computed, valid, replayed, sameTarget⟩
 
 end Mettapedia.OSLF.MeTTaIL.RecursiveCollectionFiringCoverage

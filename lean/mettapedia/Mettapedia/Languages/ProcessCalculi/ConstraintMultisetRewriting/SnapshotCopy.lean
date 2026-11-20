@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ExactRequ
 
 Three finite rule families prepare a copy, read one source cell at a time,
 and make the completed snapshot available. The payload is closed data: this
-is a ground storage/control client of the existing transform calculus, not
+is a ground storage/control client of the existing candidate step, not
 an alternative account of higher-order unification. Each copied cell has
 its own physical occurrence. No rule calls a whole-store copying function.
 
@@ -69,7 +69,7 @@ theorem Fresh.not_has {world : Finset (Occurrence Value)} {snapshot : Nat}
 
 def beginRule (job source destination count : Nat) (trace : List Nat) : RuleInstance (Row Value) :=
   ⟨[.request job source], [.ready source,.metadata source count trace], [],
-    [.absent (.allocated destination)],
+    [.predicate .none (.allocated destination)],
     [.allocated destination,.metadata destination count trace,.cursor job source destination 0 count]⟩
 
 def copyRule (job source destination index remaining : Nat) (value : Value) : RuleInstance (Row Value) :=
@@ -236,16 +236,16 @@ theorem Firing.unique_preserved {rule : RuleInstance (Row Value)} {token : Occur
 
 theorem Firing.unique_new {rule : RuleInstance (Row Value)} {token : Occurrence Value}
     {before after : World Value} (firing : Firing rule token before after) (row : Row Value)
-    (absent : ¬ Has before.present row) (distinct : rule.produce.Nodup) :
+    (missing : ¬ Has before.present row) (distinct : rule.produce.Nodup) :
     UniqueRow after.present row := by
   intro first firstHere second secondHere firstLabel secondLabel
   have firstMade : first ∈ firing.picked.made := by
     rcases (firing.present_iff first).mp firstHere with old | made
-    · exact False.elim (absent ⟨first,old.1,firstLabel⟩)
+    · exact False.elim (missing ⟨first,old.1,firstLabel⟩)
     · exact made
   have secondMade : second ∈ firing.picked.made := by
     rcases (firing.present_iff second).mp secondHere with old | made
-    · exact False.elim (absent ⟨second,old.1,secondLabel⟩)
+    · exact False.elim (missing ⟨second,old.1,secondLabel⟩)
     · exact made
   exact firing.made_unique distinct firstMade secondMade (firstLabel.trans secondLabel.symm)
 
@@ -350,7 +350,7 @@ theorem copy_extends_prefix {before after : World Value} {token : Occurrence Val
     rw [firing.has_iff _ (by simp [atToken]),earlier.exact]
     simpa [copyRule] using (next_prefix_lookup values index value found position other).symm
   · intro first firstHere second secondHere position firstValue secondValue firstLabel secondLabel
-    have oldAbsent : ∀ occurrence ∈ before.present, ∀ item,
+    have oldNotPresent : ∀ occurrence ∈ before.present, ∀ item,
         label occurrence = .cell destination index item → False := by
       intro occurrence present item same
       have old := (earlier.exact index item).mp ⟨occurrence,present,same⟩
@@ -376,11 +376,11 @@ theorem copy_extends_prefix {before after : World Value} {token : Occurrence Val
       · exact earlier.unique first oldFirst.1 second oldSecond.1 position firstValue secondValue firstLabel secondLabel
       · have positionEq := newIndex second newSecond position secondValue secondLabel
         subst position
-        exact False.elim (oldAbsent first oldFirst.1 firstValue firstLabel)
+        exact False.elim (oldNotPresent first oldFirst.1 firstValue firstLabel)
     · rcases (firing.present_iff second).mp secondHere with oldSecond | newSecond
       · have positionEq := newIndex first newFirst position firstValue firstLabel
         subst position
-        exact False.elim (oldAbsent second oldSecond.1 secondValue secondLabel)
+        exact False.elim (oldNotPresent second oldSecond.1 secondValue secondLabel)
       · exact (newUnique first newFirst position firstValue firstLabel).trans
           (newUnique second newSecond position secondValue secondLabel).symm
 
@@ -545,7 +545,7 @@ theorem begin_exists (before : World Value) (job source destination : Nat)
     refine ⟨base.take_distinct,base.output_distinct,base.take_length,base.read_length,base.outputs,
       base.occurrences,base.consistent,?_⟩
     intro check member
-    have only : check = .absent (.allocated destination) := List.mem_singleton.mp member
+    have only : check = .predicate .none (.allocated destination) := List.mem_singleton.mp member
     subst check
     intro assignment _ occurrence old same
     apply fresh.not_has (.allocated destination) (by simp [Row.mentions])
@@ -708,7 +708,7 @@ theorem allocated_refuses_begin {before after : World Value} {token : Occurrence
   rintro ⟨firing⟩
   obtain ⟨assignment,solved⟩ := firing.valid.consistent
   obtain ⟨occurrence,present,atAllocated⟩ := allocated
-  exact firing.valid.checks (.absent (.allocated destination)) (by simp [beginRule])
+  exact firing.valid.checks (.predicate .none (.allocated destination)) (by simp [beginRule])
     assignment solved occurrence present atAllocated.symm
 
 theorem Progress.copy_reflects {before after : World Value} {token selected : Occurrence Value}

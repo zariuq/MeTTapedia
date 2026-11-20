@@ -93,6 +93,23 @@ theorem move_register64 (mode : proc_mode) (start next : BitVec 48)
       Functions.x86_mov_op_en_mr mode start next (0#52) rex (137#8) modrm sib := by
   rfl
 
+theorem immediate_dword_guarded (mode : proc_mode) (start next : BitVec 48) (prefixes : BitVec 52)
+    (rex modrm sib : BitVec 8) (slot : Fin 8) :
+    Functions.one_byte_opcode_execute mode start next prefixes rex (BitVec.ofNat 8 (184 + slot.val)) modrm sib =
+      (do
+        if ((0xf0#8) == Functions._get_prefixes_lck prefixes) then Functions.x86_fault "(:UD)" else pure ()
+        OtherOpcodeHandlers.x86_mov_op_en_oi mode start next prefixes rex (BitVec.ofNat 8 (184 + slot.val)) modrm sib) := by
+  fin_cases slot <;> rfl
+
+theorem xor_register_guarded (mode : proc_mode) (start next : BitVec 48) (prefixes : BitVec 52)
+    (rex modrm sib : BitVec 8) :
+    Functions.one_byte_opcode_execute mode start next prefixes rex (0x31#8) modrm sib =
+      (do
+        if ((Functions._get_modr_m_mod modrm == (3#2)) &&
+          ((0xf0#8) == Functions._get_prefixes_lck prefixes)) then Functions.x86_fault "(:UD)" else pure ()
+        OtherOpcodeHandlers.x86_add_adc_sub_sbb_or_and_xor_cmp_test_e_g 5 mode start next prefixes rex (0x31#8) modrm sib) := by
+  rfl
+
 theorem register64_three_bytes (state : State) (address : Int)
     (source destination : Fin 16) (value : Word)
     (lower : -(2 ^ 47 : Int) ≤ address) (upper : address + 3 < (2 ^ 47 : Int))

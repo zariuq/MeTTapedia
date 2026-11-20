@@ -43,7 +43,7 @@ inductive Outcome (pattern : Pattern spine scope)
     (right : Term scope.target ((lifted spine).result.reindex pattern.map.hom)) : Type
   | solved (result : ContextualDependentScopedDispatch.Result S.levels [pattern.constraint right])
       (finished : result.update.remaining = [])
-  | refuted (absent : ∀ {Δ : Context S.R} (solution : Δ ⟶ extend Γ type),
+  | refuted (notMem : ∀ {Δ : Context S.R} (solution : Δ ⟶ extend Γ type),
       ¬ (pattern.constraint right).Holds solution)
   | pending
 
@@ -77,9 +77,9 @@ theorem solutions_iff (outcome : Outcome pattern right) (point : Context S.R) :
       · rintro ⟨residual⟩
         obtain ⟨solution, held⟩ := fixed.mpr ⟨residual, Frames.models_nil _⟩
         exact ⟨solution, held _ (List.mem_singleton_self _)⟩
-  | refuted absent =>
+  | refuted notMem =>
       change _ ↔ False
-      exact ⟨fun ⟨solution, held⟩ => absent solution held, False.elim⟩
+      exact ⟨fun ⟨solution, held⟩ => notMem solution held, False.elim⟩
   | pending => exact Iff.rfl
 
 /-- A solved outcome is a principal answer for the original scoped equation. -/

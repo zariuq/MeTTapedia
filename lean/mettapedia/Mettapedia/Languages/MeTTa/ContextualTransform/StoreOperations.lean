@@ -38,7 +38,7 @@ def readRequest (select : Tm a → Bool) (rows : List O) :
   let chosen := rows.filter fun occurrence => select (label occurrence)
   ⟨⟨[], chosen, []⟩, [⟨select, chosen.toFinset⟩]⟩
 
-theorem census_holds (select : Tm a → Bool) (rows : List O) :
+theorem collect_holds (select : Tm a → Bool) (rows : List O) :
     (PredicateQuery.mk select (rows.filter (fun occurrence => select (label occurrence))).toFinset).Holds
       label rows.toFinset := by
   ext occurrence
@@ -78,7 +78,7 @@ theorem remove_admits_exact (select : Tm a → Bool)
       have same : query = ⟨select, (rows.filter (fun occurrence => select (label occurrence))).toFinset⟩ := by
         simpa [removeRequest, OrderedStore.Publication.commit] using member
       subst query
-      exact census_holds (a := a) label select rows
+      exact collect_holds (a := a) label select rows
 
 theorem read_admits_exact (select : Tm a → Bool)
     (knowledge : EquationStore (Tm a)) (rows : List O) :
@@ -100,7 +100,7 @@ theorem read_admits_exact (select : Tm a → Bool)
       have same : query = ⟨select, (rows.filter (fun occurrence => select (label occurrence))).toFinset⟩ := by
         simpa [readRequest, OrderedStore.Publication.commit] using member
       subst query
-      exact census_holds (a := a) label select rows
+      exact collect_holds (a := a) label select rows
 
 /-- Appending one payload, including a comma-shaped payload, is one make.
 The target's occurrence allocation is independent of the source list append. -/
@@ -162,7 +162,7 @@ theorem read_answers_exact (select : Tm a → Bool) (rows : List O) :
 /-- Counts concern physical occurrences, including equal payload copies. -/
 theorem read_count_exact (select : Tm a → Bool) (rows : List O) (unique : rows.Nodup) :
     (regionOf label rows.toFinset select).card = ((rows.map label).filter select).length := by
-  have same := census_holds (a := a) label select rows
+  have same := collect_holds (a := a) label select rows
   change regionOf label rows.toFinset select = _ at same
   rw [same, List.toFinset_card_of_nodup (unique.filter _)]
   simp [List.filter_map, Function.comp_def]

@@ -725,7 +725,8 @@ theorem refusal_iff_source_returns_none (handle cache : Handle) (entries : List 
 namespace Controls
 
 private def emptyState (cache : Handle) : State :=
-  { core := [], next := 2, spaces := fun _ => [],
+  { Effects.empty with
+    next := 2,
     cells := fun name => if name = InferenceCache.cell then some (Effects.handleValue cache) else none }
 
 def initial : State := emptyState (.privateSpace 1)
@@ -733,11 +734,11 @@ def initial : State := emptyState (.privateSpace 1)
 private theorem initial_ready :
     InferenceCache.Ready (signatureOf []) (tableValue (.privateSpace 0)) (.privateSpace 1) initial := by
   refine ⟨?_, [], ?_, InferenceCache.empty_valid _ _⟩ <;>
-    simp [initial, emptyState, NamedSpaces.Store.read]
+    simp [initial, emptyState, Effects.empty, NamedSpaces.Store.new, NamedSpaces.Store.read]
 
 private theorem initial_allocated :
     initial.read (.privateSpace 0) = some (declarationRows []) := by
-  simp [initial, emptyState, NamedSpaces.Store.read, declarationRows, Store.rows]
+  simp [initial, emptyState, Effects.empty, NamedSpaces.Store.new, NamedSpaces.Store.read, declarationRows, Store.rows]
 
 /-- A bound function slot accepts its bound variable. -/
 theorem bound_variable_typed :

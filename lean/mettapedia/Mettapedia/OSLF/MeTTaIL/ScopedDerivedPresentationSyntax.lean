@@ -44,7 +44,7 @@ mutual
         rw [List.getElem?_append_left inPrefix] at lookup
         exact lookup
     | fvar lookup => exact .fvar lookup
-    | quote processTyped =>
+    | quote processTyped admitted =>
         rename_i process
         have processSafe :
             binderSafeAt presentation.quoteConstructor 0 process = true := by
@@ -58,7 +58,7 @@ mutual
               processTyped processSafe)
         exact .quote (by
           simpa using processClosed.weakenBoundRight
-            (List.replicate depth presentation.nameSort))
+            (List.replicate depth presentation.nameSort)) admitted
 
   /-- Process form of binder-prefix restriction. -/
   theorem procWellSorted_restrictToBinderPrefix
@@ -163,6 +163,8 @@ private def prefixPresentation : ReflectiveProcessSignature where
   parallelUnitConstructor := "Zero"
   parallelCollection := .hashBag
   quoteDropEquation := "QuoteDrop"
+  -- Closed: the removed ambient suffix is never visible inside a quotation.
+  quoteScope := .closed
 
 /-- Positive: a local input binder remains available after an unused ambient
 suffix is removed. -/

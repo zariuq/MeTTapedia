@@ -88,6 +88,105 @@ theorem transition_wellFormed {registry : SpaceSemantics.Program} {before after 
       obtain ⟨fits,pending⟩ := head_and_tail good agenda
       exact placement_wellFormed placed pending fits
 
+/-! ## Exact issuance and retirement -/
+
+/-- A controller step either retains an ordered subset of its old
+markers without allocating, or issues its next identity in front of
+all its old markers. Bank contents are not ownership metadata. -/
+def MarkerDelta (limit : Nat) (previous : List Boundary) (after : State) : Prop :=
+  (after.nextBoundary = limit ∧ (markers after.agenda).Sublist previous) ∨
+    ∃ born : Boundary, born.key = limit ∧ after.nextBoundary = limit + 1 ∧
+      markers after.agenda = born :: previous
+
+private theorem markers_execute (task : Task) (older : List Job) :
+    markers (.execute task :: older) = markers older := rfl
+
+private theorem markers_after_sublist {pick : Job → Bool} {older remaining : List Job}
+    (cut : List.FirstSelection.After pick older remaining) : (markers remaining).Sublist (markers older) := by
+  have suffix : remaining.Sublist older := by
+    induction cut with
+    | here _ => exact List.sublist_cons_self ..
+    | skip _ _ ih => exact ih.cons _
+  exact suffix.filterMap boundary
+
+private theorem placement_marker_delta {state : State} {after : Unifying.Configuration} {caller : List Frame}
+    {older : List Job} {target : State} (placed : Placement state after caller older target) :
+    MarkerDelta state.nextBoundary (markers older) target := by
+  cases placed with
+  | plain | waiting => exact .inl ⟨rfl, List.Sublist.refl _⟩
+  | collection => exact .inr ⟨.collection state.nextBoundary caller, rfl, rfl, rfl⟩
+  | handler => exact .inr ⟨.handler state.nextBoundary, rfl, rfl, rfl⟩
+
+private theorem delivery_marker_delta {registry : SpaceSemantics.Program} {state target : State}
+    {answer : Unifying.Answer} {frames : List Frame} {older : List Job}
+    (delivery : Delivery registry state answer frames older target) :
+    MarkerDelta state.nextBoundary (markers older) target := by
+  cases delivery with
+  | root | handler => exact .inl ⟨rfl, List.Sublist.refl _⟩
+  | source _ placed => exact placement_marker_delta placed
+  | collection recorded => exact .inl ⟨rfl, (collection_markers recorded).symm ▸ List.Sublist.refl _⟩
+  | first found => exact .inl ⟨rfl, by simpa only [markers_execute] using markers_after_sublist found⟩
+
+/-- The actual transitions determine exactly which marker identities
+may appear. Delivering into a bank is not an allocation. Closing,
+cutting to a first answer and unwinding an error cannot revive a marker. -/
+theorem transition_marker_delta {registry : SpaceSemantics.Program} {before after : State}
+    (transition : Transition registry before after) :
+    MarkerDelta before.nextBoundary (markers before.agenda) after := by
+  cases transition with
+  | collection_done agenda | handler_done agenda | first_done agenda =>
+      rw [agenda]
+      exact .inl ⟨rfl, List.sublist_cons_self ..⟩
+  | empty agenda =>
+      rw [agenda]
+      exact .inl ⟨rfl, List.Sublist.refl _⟩
+  | answer agenda delivered =>
+      rw [agenda, markers_execute]
+      simpa only [markers_later_answers] using delivery_marker_delta delivered
+  | alternatives agenda =>
+      rw [agenda]
+      left
+      refine ⟨rfl, ?_⟩
+      rw [markers_later_answers, markers_alternatives]
+      exact List.Sublist.refl _
+  | collection_enter agenda =>
+      rw [agenda]
+      exact .inr ⟨.collection before.nextBoundary _, rfl, rfl, rfl⟩
+  | first_enter agenda =>
+      rw [agenda]
+      exact .inr ⟨.first before.nextBoundary, rfl, rfl, rfl⟩
+  | caught agenda _ closed =>
+      rw [agenda, markers_execute]
+      exact .inl ⟨rfl, markers_after_sublist closed⟩
+  | phase agenda _ _ placed =>
+      rw [agenda, markers_execute]
+      exact placement_marker_delta placed
+
+/-- This is stronger than monotonicity of the allocation counter: a
+retired, previously issued marker cannot silently reappear in an
+arbitrary later controller state on the same request. -/
+theorem transition_no_reissue {registry : SpaceSemantics.Program} {before after : State} {key : Nat}
+    (transition : Transition registry before after) (issued : key < before.nextBoundary)
+    (retired : ∀ b ∈ markers before.agenda, b.key ≠ key) :
+    ∀ b ∈ markers after.agenda, b.key ≠ key := by
+  rcases transition_marker_delta transition with ⟨_, keep⟩ | ⟨born, identity, _, all⟩
+  · exact fun b member => retired b (keep.subset member)
+  · intro b member
+    rw [all] at member
+    rcases List.mem_cons.mp member with rfl | older
+    · intro same
+      omega
+    · exact retired b older
+
+theorem path_no_reissue {registry : SpaceSemantics.Program} {before after : State} {key : Nat}
+    (path : Relation.ReflTransGen (Transition registry) before after) (issued : key < before.nextBoundary)
+    (retired : ∀ b ∈ markers before.agenda, b.key ≠ key) :
+    ∀ b ∈ markers after.agenda, b.key ≠ key := by
+  induction path with
+  | refl => exact retired
+  | tail previous taken ih =>
+      exact transition_no_reissue taken (issued.trans_le (path_boundary_mono previous)) ih
+
 theorem step_wellFormed {registry : SpaceSemantics.Program} {before after : State}
     (computed : step registry before = some after) (good : WellFormed before) : WellFormed after :=
   transition_wellFormed ((step_iff_transition registry before after).mp computed) good

@@ -28,7 +28,7 @@ open ContextualDependentPatternSolver ContextualDependentFragment ContextualDepe
 open ContextualDependentRigidFormers ContextualDependentEtaLong ContextualDependentRank
 open ContextualDependentSpinesMany ContextualDependentConversionBudget ContextualDependentFragmentDecisive
 open ContextualDependentOccursFull ContextualDependentTwinsUnder ContextualDependentConstantHeads
-open ContextualDependentCensusPairEta ContextualDependentIdEndpoints ContextualDependentRigidDecomposition
+open ContextualDependentClassificationPairEta ContextualDependentIdEndpoints ContextualDependentRigidDecomposition
 open ContextualDependentConstantHeadsProjections ContextualDependentPatternFiring
 
 variable {Head L : Type} [UniverseLevel.LevelOrder L] {S : Setting Head L}
@@ -152,7 +152,7 @@ theorem elimsRound_eq_of_placed (fuel : Nat) {Θ : Context S.R} {problem : Equat
       certifyNormal headTypingUnique rootComplete fuel problem with
   | stuck => exact absurd computed moving
   | progress update smaller => rfl
-  | refuted absent => rfl
+  | refuted missing => rfl
 
 /-- **Every run that the placed family decides, the eliminations family decides with the same outcome.** -/
 theorem elims_run_of_placed (fuel rounds : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ))

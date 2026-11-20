@@ -304,7 +304,7 @@ def plan : CompiledParserPackPlan := {
   structural := []
 }
 
-def agreement :
+theorem agreement :
     ParserPackPlanAgreement literalScalars? profile [] plan := by
   refine ⟨rfl, ?_⟩
   rfl

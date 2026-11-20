@@ -382,12 +382,12 @@ def piDecomposeEquation (fuel : Nat) {Θ : Context S.R} (equation : Equation (To
                   (pi_replace_equivalent choices view split computed rest)
               match ContextualDependentRigidDecomposition.localsRule rigid complete facts roots heads algebra declared
                   choices reducer root fuel (closed.equation :: rest) with
-              | some absent => some (.refuted fun solvable => absent.down (moved.solvable_iff.mp solvable))
+              | some missing => some (.refuted fun solvable => missing.down (moved.solvable_iff.mp solvable))
               | none =>
                   match patternRule rigid facts complete roots heads algebra declared choices reducer root normalizes
                       certifyNormal fuel (closed.equation :: rest) with
                   | some (.solved solved smaller) => some (.solved (moved.then solved) smaller)
-                  | some (.refuted absent) => some (.refuted fun solvable => absent (moved.solvable_iff.mp solvable))
+                  | some (.refuted missing) => some (.refuted fun solvable => missing (moved.solvable_iff.mp solvable))
                   | none => none
 
 /-- Search the store for an equation on which the Π decomposition decides. -/
@@ -413,9 +413,9 @@ def piRound (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm 
           have same := prepare_arity facts roots heads root rootComplete fuel problem
           change update.target.arity < Θ.arity
           omega))
-  | some (.refuted absent) =>
+  | some (.refuted missing) =>
       .refuted fun solvable =>
-        absent ((ContextualDependentNormalizing.prepare root rootComplete facts roots heads fuel problem).solvable_iff.mp
+        missing ((ContextualDependentNormalizing.prepare root rootComplete facts roots heads fuel problem).solvable_iff.mp
           solvable)
   | none => identityRound facts roots heads algebra declared choices reducer rigid complete root normalizes certifyNormal
       headTypingUnique rootComplete fuel problem

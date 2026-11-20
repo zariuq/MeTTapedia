@@ -29,9 +29,9 @@ Two attenuated handles are written as rules over fresh space names, with no righ
 * **Read-before-take.** A primitive read must precede the owner's take of the row it reads
   (`peek_impossible_after_owner_take`); the asker's acting step can follow it
   (`ask_acts_after_owner_take`).
-* **Absence.** A primitive absence check refuses to act once a matching row is present
+* **The none query.** A primitive none check refuses to act once a matching row is present
   (`guarded_act_refused_when_present`); the asker's acting step, relying on the server's earlier
-  answer, acts in that configuration (`ask_absence_acts_when_present`).
+  answer, acts in that configuration (`ask_none_acts_when_present`).
 * **Copies.** Two asks served from one row leave two reply occurrences at the asker's space while
   the owner holds one row (`two_asks_two_copies`); a read leaves no copy.
 * **Atomicity.** The forwarder is a second firing. An observer that orders itself after the
@@ -65,13 +65,18 @@ theorem holds_insert_congr {σ : S} {label : O → T} {P : Finset O} {x y : O} (
     (hy : y ∉ P) (same : A.E (A.apply σ (label x)) (A.apply σ (label y))) :
     ∀ check : Check T, check.Holds A σ label (insert x P) ↔ check.Holds A σ label (insert y P)
   | .equal _ _ => Iff.rfl
-  | .absent p => by
-      simp only [Check.Holds, Finset.forall_mem_insert]
-      constructor
-      · rintro ⟨notX, rest⟩
-        exact ⟨fun matchY => notX (A.equivalence.trans matchY (A.equivalence.symm same)), rest⟩
-      · rintro ⟨notY, rest⟩
-        exact ⟨fun matchX => notY (A.equivalence.trans matchX same), rest⟩
+  | .predicate q p => by
+      have matching : A.E (A.apply σ p) (A.apply σ (label x)) ↔
+          A.E (A.apply σ p) (A.apply σ (label y)) :=
+        ⟨fun h => A.equivalence.trans h same,
+          fun h => A.equivalence.trans h (A.equivalence.symm same)⟩
+      cases q with
+      | any =>
+          simp only [Check.Holds, Quantifier.holds_any, Finset.exists_mem_insert]
+          rw [matching]
+      | none =>
+          simp only [Check.Holds, Quantifier.holds_none, Finset.forall_mem_insert]
+          rw [matching]
   | .count p k => by
       classical
       have matching : A.E (A.apply σ p) (A.apply σ (label x)) ↔
@@ -91,7 +96,7 @@ theorem holds_insert_congr {σ : S} {label : O → T} {P : Finset O} {x y : O} (
 /-- The terms a check reads. -/
 def checkTerms {T : Type uT} : Check T → List T
   | .equal l r => [l, r]
-  | .absent p => [p]
+  | .predicate _ p => [p]
   | .count p _ => [p]
 
 omit [DecidableEq O] in
@@ -110,16 +115,13 @@ theorem holds_congr {σ τ : S} {label : O → T} {P : Finset O} :
         exact A.equivalence.trans (A.equivalence.symm left) (A.equivalence.trans same right)
       · intro same
         exact A.equivalence.trans left (A.equivalence.trans same (A.equivalence.symm right))
-  | .absent p, terms, labels => by
+  | .predicate q p, terms, labels => by
       have pattern := terms p (by simp [checkTerms])
-      simp only [Check.Holds]
-      constructor
-      · intro none o present matching
-        exact none o present (A.equivalence.trans pattern
-          (A.equivalence.trans matching (A.equivalence.symm (labels o present))))
-      · intro none o present matching
-        exact none o present (A.equivalence.trans (A.equivalence.symm pattern)
-          (A.equivalence.trans matching (labels o present)))
+      exact q.holds_congr fun o present =>
+        ⟨fun matching => A.equivalence.trans (A.equivalence.symm pattern)
+          (A.equivalence.trans matching (labels o present)),
+        fun matching => A.equivalence.trans pattern
+          (A.equivalence.trans matching (A.equivalence.symm (labels o present)))⟩
   | .count p k, terms, labels => by
       have pattern := terms p (by simp [checkTerms])
       classical
@@ -225,7 +227,7 @@ theorem solves_place_iff (σ : S) (m : N) (X q : T) :
 /-- **The forwarder is faithful to the primitive send at `n`.** Both runs execute; they end with
 the same occurrences up to the forwarded identity, with nothing left at `m`; the program's store
 refines the primitive's; and under every solution of the program's store every check (equality,
-absence, count, at any space) agrees between the two final configurations. The hypothesis
+none queries, count, at any space) agrees between the two final configurations. The hypothesis
 `free` says the forwarder's variable may take the posted payload. -/
 theorem forwarder_faithful {label : O → T} {m n : N} {q X : T} {o o1 o2 : O}
     (labelO : label o = sts.atSpace (sts.name n) q)
@@ -720,7 +722,7 @@ theorem ask_acts_after_owner_take :
   · simp [servedThenTaken, served, asked, Selection.result, fire, Selection.commit, takeRow,
       serveSel, makeOne, rowWorld]
 
-/-! ### Absence -/
+/-! ### The none query -/
 
 /-- Labels: 0 a row `p` the owner makes at 7; 1 the ask; 2 the reply; 3 the asker's output. -/
 def absLabel : Nat → Tm
@@ -734,22 +736,22 @@ def emptyWorld : Configuration Tm Nat := ⟨[], ∅⟩
 
 /-- The primitive guarded act: if no `p` at 7, make `done` at 4. -/
 def guardedAct : LocatedRule Tm :=
-  ⟨[], [], [], [.absent (.nm 7) (.sym "p")], [(.nm 4, .sym "done")]⟩
+  ⟨[], [], [], [.predicate .none (.nm 7) (.sym "p")], [(.nm 4, .sym "done")]⟩
 
-/-- The server answers an absence ask from a snapshot. -/
-def serveAbsent : LocatedRule Tm :=
-  ⟨[(.nm 3, .sym "ask")], [], [], [.absent (.nm 7) (.sym "p")], [(.nm 3, .sym "reply")]⟩
+/-- The server answers a none ask from a snapshot. -/
+def serveNone : LocatedRule Tm :=
+  ⟨[(.nm 3, .sym "ask")], [], [], [.predicate .none (.nm 7) (.sym "p")], [(.nm 3, .sym "reply")]⟩
 
 def ownerMake : LocatedRule Tm := sendRule (.nm 7) (.sym "p")
 
 def pPresent : Configuration Tm Nat := (makeOne 0).result absLabel (ownerMake.toRule spaces) emptyWorld
 
-/-- **The primitive absence check refuses to act once `p` is present.** -/
+/-- **The primitive none check refuses to act once `p` is present.** -/
 theorem guarded_act_refused_when_present (selection : Selection Nat) :
     ¬ selection.Valid action absLabel (guardedAct.toRule spaces) pPresent := by
   intro valid
   obtain ⟨σ, solved⟩ := valid.consistent
-  have holds := valid.checks (.absent (spaces.atSpace (.nm 7) (.sym "p")))
+  have holds := valid.checks (.predicate .none (spaces.atSpace (.nm 7) (.sym "p")))
     (by simp [guardedAct, LocatedRule.toRule, LocatedCheck.toCheck]) σ solved
   have zero : 0 ∈ pPresent.present := by
     simp [pPresent, Selection.result, fire, Selection.commit, makeOne, emptyWorld]
@@ -757,14 +759,14 @@ theorem guarded_act_refused_when_present (selection : Selection Nat) :
 
 def askedAbs : Configuration Tm Nat := (makeOne 1).result absLabel (askRow.toRule spaces) emptyWorld
 def servedAbs : Configuration Tm Nat :=
-  (moveOne 1 2).result absLabel (serveAbsent.toRule spaces) askedAbs
+  (moveOne 1 2).result absLabel (serveNone.toRule spaces) askedAbs
 def madeAfterServe : Configuration Tm Nat :=
   (makeOne 0).result absLabel (ownerMake.toRule spaces) servedAbs
 
 /-- **The asker acts on the server's earlier answer while `p` is present.** -/
-theorem ask_absence_acts_when_present :
+theorem ask_none_acts_when_present :
     (makeOne 1).Valid action absLabel (askRow.toRule spaces) emptyWorld ∧
-      (moveOne 1 2).Valid action absLabel (serveAbsent.toRule spaces) askedAbs ∧
+      (moveOne 1 2).Valid action absLabel (serveNone.toRule spaces) askedAbs ∧
       (makeOne 0).Valid action absLabel (ownerMake.toRule spaces) servedAbs ∧
       (moveOne 2 3).Valid action absLabel (collectRow.toRule spaces) madeAfterServe ∧
       0 ∈ madeAfterServe.present := by
@@ -775,11 +777,11 @@ theorem ask_absence_acts_when_present :
         by simp [Selection.commit]⟩, ⟨Tm.var, ?_⟩, ?_⟩
     · simp [Selection.commit, moveOne, askedAbs, Selection.result, fire, makeOne, emptyWorld]
     · simp [Selection.commit, moveOne, askedAbs, Selection.result, fire, makeOne, emptyWorld]
-    · simp [SubstitutionAction.Solves, Selection.problem, Selection.equations, serveAbsent,
+    · simp [SubstitutionAction.Solves, Selection.problem, Selection.equations, serveNone,
         askRow, sendRule, LocatedRule.toRule, moveOne, makeOne, askedAbs, Selection.result,
         emptyWorld, place, spaces, absLabel, Tm.subst]
     · intro check member σ _
-      simp only [serveAbsent, LocatedRule.toRule, LocatedCheck.toCheck, List.map_cons,
+      simp only [serveNone, LocatedRule.toRule, LocatedCheck.toCheck, List.map_cons,
         List.map_nil, List.mem_singleton] at member
       subst member
       intro o present
@@ -788,7 +790,7 @@ theorem ask_absence_acts_when_present :
       simp [spaces, absLabel, Tm.subst]
   · refine (send_valid_iff (show absLabel 0 = spaces.atSpace (.nm 7) (.sym "p") from rfl) servedAbs).mpr ⟨⟨Tm.var, ?_⟩, ?_⟩
     · simp [SubstitutionAction.Solves, servedAbs, askedAbs, Selection.result, Selection.problem,
-        Selection.equations, serveAbsent, askRow, sendRule, LocatedRule.toRule, moveOne, makeOne,
+        Selection.equations, serveNone, askRow, sendRule, LocatedRule.toRule, moveOne, makeOne,
         emptyWorld, place, spaces, absLabel, Tm.subst]
     · simp [servedAbs, askedAbs, Selection.result, fire, Selection.commit, moveOne, makeOne,
         emptyWorld]
@@ -801,7 +803,7 @@ theorem ask_absence_acts_when_present :
     · simp [Selection.commit, moveOne, madeAfterServe, servedAbs, askedAbs, Selection.result,
         fire, makeOne, emptyWorld]
     · simp [SubstitutionAction.Solves, Selection.problem, Selection.equations, madeAfterServe,
-        servedAbs, askedAbs, Selection.result, collectRow, collectRule, ownerMake, serveAbsent,
+        servedAbs, askedAbs, Selection.result, collectRow, collectRule, ownerMake, serveNone,
         askRow, sendRule, LocatedRule.toRule, moveOne, makeOne, emptyWorld, place, spaces,
         absLabel, Tm.subst]
   · simp [madeAfterServe, Selection.result, fire, Selection.commit, makeOne]
@@ -897,7 +899,7 @@ def sendAndSignal : LocatedRule Tm :=
 
 /-- An observer: having seen the signal, raise an alarm if the letter is not at 7. -/
 def alarm : LocatedRule Tm :=
-  ⟨[], [(.nm 5, .sym "sent")], [], [.absent (.nm 7) (.sym "letter")], [(.nm 6, .sym "alarm")]⟩
+  ⟨[], [(.nm 5, .sym "sent")], [], [.predicate .none (.nm 7) (.sym "letter")], [(.nm 6, .sym "alarm")]⟩
 
 def posted : Configuration Tm Nat :=
   (⟨[], [], [1, 2]⟩ : Selection Nat).result gapLabel (postAndSignal.toRule spaces) emptyWorld
@@ -938,7 +940,7 @@ theorem primitive_send_no_gap (selection : Selection Nat) :
     ¬ selection.Valid action gapLabel (alarm.toRule spaces) sent := by
   intro valid
   obtain ⟨σ, solved⟩ := valid.consistent
-  have holds := valid.checks (.absent (spaces.atSpace (.nm 7) (.sym "letter")))
+  have holds := valid.checks (.predicate .none (spaces.atSpace (.nm 7) (.sym "letter")))
     (by simp [alarm, LocatedRule.toRule, LocatedCheck.toCheck]) σ solved
   have zero : 0 ∈ sent.present := by
     simp [sent, Selection.result, fire, Selection.commit, emptyWorld]

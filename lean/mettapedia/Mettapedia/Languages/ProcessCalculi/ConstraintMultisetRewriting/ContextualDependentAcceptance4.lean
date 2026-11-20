@@ -83,9 +83,9 @@ theorem dead_decided_of_sn
       ((∃ state finished, run ((deadFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening).solver larger) problem larger =
               .solved state finished ∧ (frames S.levels).Principal problem state.answer) ∨
-        (∃ absent, run ((deadFamily facts roots heads algebra rigid complete declared choices reducer root
+        (∃ missing, run ((deadFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening).solver larger) problem larger =
-              .refuted absent)) :=
+              .refuted missing)) :=
   dead_decided_of_cumulative facts roots heads algebra rigid complete declared choices reducer root normalizes
     certifyNormal headTypingUnique rootComplete strengthening stable
     (fun held nonempty => firing held.1 nonempty)
@@ -134,7 +134,7 @@ theorem tower_dead_decided
       run (deadTower.solver larger) problem larger = run (deadTower.solver budget) problem budget ∧
       ((∃ state finished, run (deadTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ absent, run (deadTower.solver larger) problem larger = .refuted absent)) :=
+        (∃ missing, run (deadTower.solver larger) problem larger = .refuted missing)) :=
   dead_decided_of_sn (S := setting) TowerModel.facts TowerModel.roots TowerModel.heads TowerModel.algebra
     ContextualDependentPiSpine.Controls.rigid TowerModel.complete
     ContextualDependentInversion.Controls.declarations_formed ExecutableTowerChoices.choices

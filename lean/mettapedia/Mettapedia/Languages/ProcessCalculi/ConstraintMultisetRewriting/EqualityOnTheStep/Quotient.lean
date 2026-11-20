@@ -20,7 +20,7 @@ solution `q₁` and `q₂` are different variables, which the knowledge never eq
 It is admitted after it: every solution of the knowledge equates `q₁` with `q₂`, so `(S, q₁)` is
 counted; `(T, q₂)` is never counted, since `S` and `T` stay unequal (`SetExtensionality`).
 
-So the quotient's equality is visible to absence and counting once witnessed, and only then; the sets
+So the quotient's equality is visible to none queries and counting once witnessed, and only then; the sets
 themselves are never equated.
 
 **The discipline belongs to the rules** (`unwitnessedTell_admitted`): the step also admits a firing

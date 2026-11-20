@@ -2,7 +2,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualGuardRefutation
 
 /-!
-# A capture-only singleton query is exactly the existing absence ask
+# A capture-only singleton query is exactly the existing none ask
 
 The comparison is at the all-future guard contract. A singleton witness may
 extend its supplied model; the original ask applies to that same extended
@@ -62,17 +62,17 @@ theorem old_match_gives_singleton (candidate : Assignment captures next) {Γ : C
         ((congrArg (instantiate extension.assignment) matched.symm).trans
           (instance_on_shared_value noQueries (queryBodies extension.declarations) extension.assignment candidate value).symm)
 
-theorem ask_iff_existing_absence {Γ : Ctx S} {sort : S.Srt}
+theorem ask_iff_existing_none {Γ : Ctx S} {sort : S.Srt}
     (problem : EquationStore (Term (signature S captures) Γ sort))
     (value : Term (signature S captures) Γ sort)
     (rows : O → ContextualStoredRows.Row locals captures Γ sort) (world : Finset O) :
-    ContextualConjunctiveAbsence.Ask noQueries locals captures problem [pattern captures value] rows world ↔
-      ContextualGuardSemantics.Ask locals problem rows world (.absent value) := by
+    ContextualConjunctiveNone.Ask noQueries locals captures problem [pattern captures value] rows world ↔
+      ContextualGuardSemantics.Ask locals problem rows world (.predicate .none value) := by
   constructor
-  · intro absent Next next candidate solved occurrence present matched
-    exact absent Next next candidate solved (fun _ => occurrence) (fun _ => present)
+  · intro missing Next next candidate solved occurrence present matched
+    exact missing Next next candidate solved (fun _ => occurrence) (fun _ => present)
       (old_match_gives_singleton locals captures candidate value rows occurrence matched)
-  · intro absent Next next candidate solved chosen present matched
+  · intro missing Next next candidate solved chosen present matched
     obtain ⟨extension, queryBodies, rowBodies, agrees⟩ := matched
     let changed := Assignment.compose extension.assignment candidate
     have changedModels := ContextualFrameUnifier.models_compose solved extension.assignment
@@ -81,7 +81,7 @@ theorem ask_iff_existing_absence {Γ : Ctx S} {sort : S.Srt}
     have samePattern :
         instantiate (instanceAssignment noQueries queryBodies extension.assignment candidate) (pattern captures value) =
           instantiate changed value := patternLaw.trans (Assignment.instantiate_compose extension.assignment candidate value).symm
-    apply absent extension.Names extension.declarations changed changedModels (chosen 0) (present 0)
+    apply missing extension.Names extension.declarations changed changedModels (chosen 0) (present 0)
     cases rowCase : rows (chosen 0) with
     | schema body =>
         let bodies : Assignment locals extension.declarations :=

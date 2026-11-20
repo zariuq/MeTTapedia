@@ -1,4 +1,4 @@
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.CensusSourceCompilation
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.PredicateQuerySourceCompilation
 
 /-!
 # Ordered query transcripts at the candidate firing cut
@@ -6,7 +6,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.CensusSou
 A complete provider answers each region with all physical occurrences. Its
 order is additional information. Admission retains the actual adaptive read
 program and validates every observed list against the provider at the same
-pre-update cut. Erasing those lists to finite sets recovers ordinary census
+pre-update cut. Erasing those lists to finite sets recovers ordinary predicate query
 observations, but the converse does not justify replaying an ordered result.
 
 The source bridge uses the existing finite source compiler, not an arbitrary
@@ -25,7 +25,7 @@ open Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits
 universe uT uS uO uA uV uP
 variable {T : Type uT} {S : Type uS} {O : Type uO} {Answer : Type uA} [DecidableEq O]
 
-def readCensuses (reads : ReadOnlyQuery.Reads (T → Bool) (List O)) : List (PredicateQueryAdmission.Query T S O) :=
+def readQueries (reads : ReadOnlyQuery.Reads (T → Bool) (List O)) : List (PredicateQueryAdmission.Query T S O) :=
   reads.map fun observed => PredicateQueryAdmission.Query.fixed ⟨observed.1, observed.2.toFinset⟩
 
 structure Valid (action : SubstitutionAction T S) (label : O → T) (rule : RuleInstance T)
@@ -51,11 +51,11 @@ theorem checked (valid : Valid action label rule queries before selection progra
     ReadOnlyQuery.checkReads current (ReadOnlyQuery.run saved program).reads = true :=
   (ReadOnlyQuery.checkReads_iff _ _).mpr valid.agrees
 
-/-- Ordered reads contribute complete predicate censuses at the actual
-joint admission, even when the original rule had no explicit census. -/
-theorem with_read_censuses (valid : Valid action label rule queries before selection program saved current) :
+/-- Ordered reads contribute complete predicate predicate queries at the actual
+joint admission, even when the original rule had no explicit predicate query. -/
+theorem with_read_queries (valid : Valid action label rule queries before selection program saved current) :
     PredicateQueryAdmission.Valid action label rule
-      (queries ++ readCensuses (ReadOnlyQuery.run saved program).reads) before selection := by
+      (queries ++ readQueries (ReadOnlyQuery.run saved program).reads) before selection := by
   refine ⟨valid.firing.firing, ?_⟩
   intro query member
   rcases List.mem_append.mp member with original | observed
@@ -89,11 +89,11 @@ theorem realize_source_row {V : Type uV} {P : Type uP}
     (supply : ∀ (avoid : Finset O) (value : T), ∃ occurrence, occurrence ∉ avoid ∧ label occurrence = value) :
     ∃ commit : Commit O T,
       Sources.IsCommitOf label before.present (Sources.footprintOf row.2) commit ∧
-      Valid action label (CensusSourceCompilation.rule label commit tells)
-        (commit.queries.map PredicateQueryAdmission.Query.fixed) before (CensusSourceCompilation.selection commit)
+      Valid action label (PredicateQuerySourceCompilation.rule label commit tells)
+        (commit.queries.map PredicateQueryAdmission.Query.fixed) before (PredicateQuerySourceCompilation.selection commit)
         (Sources.Query.compile layer matcher label template sources (fun _ => none)) saved
         (Sources.Query.scanList label contents) ∧
-      ((CensusSourceCompilation.rule label commit tells).produce : Multiset T) = (Sources.footprintOf row.2).makes := by
+      ((PredicateQuerySourceCompilation.rule label commit tells).produce : Multiset T) = (Sources.footprintOf row.2).makes := by
   have agrees := (ReadOnlyQuery.checkReads_iff _ _).mp validated
   have replay := ReadOnlyQuery.run_eq_of_agrees saved (Sources.Query.scanList label contents)
     (Sources.Query.compile layer matcher label template sources (fun _ => none)) agrees
@@ -101,7 +101,7 @@ theorem realize_source_row {V : Type uV} {P : Type uP}
       (Sources.Query.compile layer matcher label template sources (fun _ => none))).answer := by
     rw [replay]
     exact returned
-  obtain ⟨commit, realized, admitted, _, produced⟩ := CensusSourceCompilation.realize_query_row action layer matcher
+  obtain ⟨commit, realized, admitted, _, produced⟩ := PredicateQuerySourceCompilation.realize_query_row action layer matcher
     label contents unique before present template sources row currentReturned linear tells consistent supply
   refine ⟨commit, realized, ⟨admitted, ?_, agrees⟩, produced⟩
   rw [← present]

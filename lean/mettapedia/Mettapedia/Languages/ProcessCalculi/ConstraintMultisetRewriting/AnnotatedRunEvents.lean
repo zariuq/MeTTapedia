@@ -30,14 +30,14 @@ The relations between two firings stay apart, as in `GuardFreeProcessOrders` (`N
 
 `IsConfiguration A label C X` is stated without runs. The firings of `X` must be
 
-* in the fragment (no guards, query spaces independent of the solution), well formed, with
-  made identities fresh at `C` and pairwise apart, and no occurrence taken twice;
+* in the fragment (no guards, queries independent of the solution in their space and in what
+  they accept), well formed, with made identities fresh at `C` and pairwise apart, and no
+  occurrence taken twice;
 * causally closed: every occurrence a firing takes or reads is present at `C` or made by a member;
 * oriented: every inhibition pair is ordered by `X.before`, and `X.before` orders nothing else;
 * acyclic: flow, read-before-take and the recorded inhibition order have no cycle;
-* admitted where their causes leave them: each predicate query sees exactly what it recorded,
-  among the occurrences present after the writers ordered before it (`presentAfter`,
-  `writersBefore`);
+* admitted where their causes leave them: each query holds, whatever it observes, at the
+  occurrences present after the writers ordered before it (`presentAfter`, `writersBefore`);
 * jointly consistent.
 
 The **causes** of a firing are its predecessors under the three relations (`causes`), and its
@@ -330,7 +330,7 @@ theorem staticIndependent_of_parts {x y : Firing T S O} (sx : x.Static) (sy : y.
     (flow : ¬ Flow x y) (flow' : ¬ Flow y x) (read : ¬ ReadBeforeTake x y)
     (read' : ¬ ReadBeforeTake y x) (inhibits : ¬ Inhibits label x y) (inhibits' : ¬ Inhibits label y x)
     (take : ¬ TakeConflict x y) (made : ¬ MadeConflict x y) : StaticIndependent label x y := by
-  refine ⟨sx, sy, fun σ => ⟨⟨?_, ?_, ?_⟩, ?_, ?_⟩⟩
+  refine ⟨sx, sy, fun σ C => ⟨⟨?_, ?_, ?_⟩, ?_, ?_⟩⟩
   · rintro (taken | made')
     · obtain ⟨o, a, b⟩ := Finset.not_disjoint_iff.mp taken
       exact take ⟨o, by simpa using a, by simpa using b⟩
@@ -426,25 +426,26 @@ theorem read_present {f : Firing T S O} {C : Configuration T O} (valid : f.Valid
     {o : O} (member : o ∈ f.selection.read) : o ∈ C.present :=
   valid.firing.occurrences.kept_subset (by simpa [Selection.commit] using member)
 
-theorem made_absent {f : Firing T S O} {C : Configuration T O} (valid : f.Valid A label C)
+theorem made_not_present {f : Firing T S O} {C : Configuration T O} (valid : f.Valid A label C)
     {o : O} (member : o ∈ f.selection.made) : o ∉ C.present :=
   Finset.disjoint_left.mp valid.firing.occurrences.fresh (by simpa [Selection.commit] using member)
 
-/-- With query spaces independent of the solution, each predicate query holds at every solution. -/
+/-- With queries independent of the solution, each query holds at every solution, whatever it
+observes. -/
 theorem queries_hold_of_valid {f : Firing T S O} {C : Configuration T O} (static : f.Static)
     (valid : f.Valid A label C) :
-    ∀ query ∈ f.queries, ∀ σ : S, regionOf label C.present (query.region σ) = query.seen := by
+    ∀ query ∈ f.queries, ∀ σ : S, query.Holds σ label C.present := by
   intro query member σ
   obtain ⟨τ, solved⟩ := valid.firing.consistent
-  rw [static.queries query member σ τ]
-  exact valid.observations query member τ solved
+  exact ((static.queries query member).holds_iff σ τ label C.present).mpr
+    (valid.observations query member τ solved)
 
 /-- **Admission in the fragment from its parts.** -/
 theorem valid_of_parts {f : Firing T S O} {C : Configuration T O} (static : f.Static)
     (shape : Shape label f) (taken : ∀ o ∈ f.selection.taken, o ∈ C.present)
     (read : ∀ o ∈ f.selection.read, o ∈ C.present) (fresh : ∀ o ∈ f.selection.made, o ∉ C.present)
     (consistent : A.Consistent (C.equations ++ f.added label))
-    (observed : ∀ query ∈ f.queries, ∀ σ : S, regionOf label C.present (query.region σ) = query.seen) :
+    (observed : ∀ query ∈ f.queries, ∀ σ : S, query.Holds σ label C.present) :
     f.Valid A label C := by
   refine ⟨⟨shape.take_distinct, shape.output_distinct, shape.take_length, shape.read_length,
     shape.outputs, ⟨?_, ?_, ?_, ?_, ?_⟩, ?_, ?_⟩, ?_⟩
@@ -467,23 +468,23 @@ theorem valid_of_parts {f : Firing T S O} {C : Configuration T O} (static : f.St
     exact observed query member σ
 
 /-- What a firing takes is gone after it. -/
-theorem taken_absent_after {f : Firing T S O} {C : Configuration T O} (valid : f.Valid A label C)
+theorem taken_not_present_after {f : Firing T S O} {C : Configuration T O} (valid : f.Valid A label C)
     {o : O} (taken : o ∈ f.selection.taken) : o ∉ (f.result label C).present := by
   intro present
   have present' : o ∈ fire C.present (f.selection.commit (T := T)) := present
   rcases mem_fire.mp present' with ⟨_, notTaken⟩ | made
   · exact notTaken (by simpa [Selection.commit] using taken)
-  · exact made_absent A label valid (by simpa [Selection.commit] using made)
+  · exact made_not_present A label valid (by simpa [Selection.commit] using made)
       (taken_present A label valid taken)
 
-/-- An absent occurrence that a run never makes is never taken or read in it. -/
-theorem absent_unused {D : Configuration T O} {w : List (Firing T S O)}
-    (run : Executable A label D w) {o : O} (absent : o ∉ D.present)
+/-- A missing occurrence that a run never makes is never taken or read in it. -/
+theorem not_present_unused {D : Configuration T O} {w : List (Firing T S O)}
+    (run : Executable A label D w) {o : O} (missing : o ∉ D.present)
     (unmade : ∀ z ∈ w, o ∉ z.selection.made) :
     ∀ z ∈ w, o ∉ z.selection.read ∧ o ∉ z.selection.taken := by
   intro z member
-  exact GuardFreeProcessOrders.absent_stays A label (w.map Firing.plain) D o
-    (Executable.plain A label run) absent (by
+  exact GuardFreeProcessOrders.none_stays A label (w.map Firing.plain) D o
+    (Executable.plain A label run) missing (by
       intro y inMap
       obtain ⟨x, inW, rfl⟩ := List.mem_map.mp inMap
       exact unmade x inW) z.plain (List.mem_map.mpr ⟨z, member, rfl⟩)
@@ -529,7 +530,7 @@ theorem precedes_of_readBeforeTake : ∀ {C : Configuration T O} {w : List (Firi
         · have unmade : ∀ z ∈ w, o ∉ z.selection.made := fun z member made =>
             fragment.fresh z (List.mem_cons_of_mem _ member) o made (taken_present A label run.1 taken)
           exact absurd read
-            (absent_unused A label run.2 (taken_absent_after A label run.1 taken) unmade x hxw).1
+            (not_present_unused A label run.2 (taken_not_present_after A label run.1 taken) unmade x hxw).1
         · exact precedes_cons.mpr (Or.inr
             (precedes_of_readBeforeTake run.2 (fragment.tail label) hxw hyw ⟨o, read, taken⟩))
 
@@ -541,7 +542,7 @@ theorem not_takeConflict : ∀ {C : Configuration T O} {w : List (Firing T S O)}
   | C, f :: w, run, fragment, x, y, hx, hy, ne, ⟨o, tx, ty⟩ => by
       have later : ∀ {z : Firing T S O}, z ∈ w → o ∈ f.selection.taken → o ∉ z.selection.taken :=
         fun {z} member taken =>
-          (absent_unused A label run.2 (taken_absent_after A label run.1 taken)
+          (not_present_unused A label run.2 (taken_not_present_after A label run.1 taken)
             (fun z' m made => fragment.fresh z' (List.mem_cons_of_mem _ m) o made
               (taken_present A label run.1 taken)) z member).2
       rcases List.mem_cons.mp hx with rfl | hxw
@@ -629,7 +630,7 @@ structure IsConfiguration (A : SubstitutionAction T S) (label : O → T) (C : Co
     f ∈ X.firings ∧ g ∈ X.firings ∧ f ≠ g ∧ InhibitionPair label f g
   acyclic : ∀ f, ¬ Relation.TransGen (Edge X) f f
   observed : ∀ q ∈ X.firings, ∀ query ∈ q.queries, ∀ σ : S,
-    regionOf label (presentAfter C (writersBefore label X q)) (query.region σ) = query.seen
+    query.Holds σ label (presentAfter C (writersBefore label X q))
   joint : ∃ σ, A.Models σ C.equations ∧ ∀ f ∈ X.firings, A.Models σ (f.added label)
 
 /-! ## Events: firings with their causes -/
@@ -757,6 +758,18 @@ theorem regionOf_presentAfter_insert [DecidableEq (Firing T S O)] {f : Firing T 
         exact absurd out (by decide)
       · exact notTaken g hg
 
+/-- A firing that writes nothing in a query's fiber leaves what the query observes there as it
+was, whatever it observes. -/
+theorem holds_presentAfter_insert [DecidableEq (Firing T S O)] {f : Firing T S O}
+    {C : Configuration T O} {P : Finset (Firing T S O)}
+    {query : PredicateQueryAdmission.RegionQuery T S O} {σ : S}
+    (outside : ∀ o, (o ∈ f.selection.taken ∨ o ∈ f.selection.made) →
+      query.region σ (label o) = false) :
+    query.Holds σ label (presentAfter C (insert f P)) ↔ query.Holds σ label (presentAfter C P) := by
+  show query.accepts σ (regionOf label (presentAfter C (insert f P)) (query.region σ)) ↔
+    query.accepts σ (regionOf label (presentAfter C P) (query.region σ))
+  rw [regionOf_presentAfter_insert label outside]
+
 end Present
 
 /-! ## Every run gives a configuration -/
@@ -801,8 +814,7 @@ theorem mem_writersBefore_configOf {w : List (Firing T S O)} {q g : Firing T S O
 
 theorem queries_hold_of_run : ∀ {C : Configuration T O} {w : List (Firing T S O)},
     Executable A label C w → Fragment C w → ∀ q ∈ w, ∀ query ∈ q.queries, ∀ σ : S,
-      regionOf label (presentAfter C (writersBefore label (configOf label w) q)) (query.region σ) =
-        query.seen
+      query.Holds σ label (presentAfter C (writersBefore label (configOf label w) q))
   | _, [], _, _, q, hq, _, _, _ => by simp at hq
   | C, f :: w, run, fragment, q, hq, query, member, σ => by
       classical
@@ -824,7 +836,7 @@ theorem queries_hold_of_run : ∀ {C : Configuration T O} {w : List (Firing T S 
         have shift : presentAfter (f.result label C) (writersBefore label (configOf label w) q) =
             presentAfter C (insert f (writersBefore label (configOf label w) q)) := by
           refine presentAfter_result label fun o taken => ⟨fun made => ?_, fun g hg made => ?_⟩
-          · exact made_absent A label run.1 made (taken_present A label run.1 taken)
+          · exact made_not_present A label run.1 made (taken_present A label run.1 taken)
           · have gw : g ∈ w := (mem_writersBefore_configOf label |>.mp hg).2.mem_left
             exact fragment.fresh g (List.mem_cons_of_mem _ gw) o made
               (taken_present A label run.1 taken)
@@ -854,8 +866,8 @@ theorem queries_hold_of_run : ∀ {C : Configuration T O} {w : List (Firing T S 
               · exact ⟨inh, precedes⟩
             · rintro ⟨inh, precedes⟩
               exact ⟨inh, Or.inr precedes⟩
-          rw [same, ← regionOf_presentAfter_insert label (not_inhibitsAt label inhibits σ query member)]
-          exact ih
+          rw [same]
+          exact (holds_presentAfter_insert label (not_inhibitsAt label inhibits σ query member)).mp ih
 
 theorem precedes_of_edge {C : Configuration T O} {w : List (Firing T S O)}
     (run : Executable A label C w) (fragment : Fragment C w) {a b : Firing T S O}
@@ -925,10 +937,10 @@ theorem not_inhibitionPair_of_round {D : Configuration T O} {f g : Firing T S O}
     exact ⟨⟨solved.1, solved.2.1⟩, solved.2.2⟩
   rintro (⟨σ, query, member, o, written, inside⟩ | ⟨σ, query, member, o, written, inside⟩)
   · have ignored := compatible.2.2.2.2 query member τ cut o (List.mem_append.mpr written)
-    rw [gs.queries query member σ τ, ignored] at inside
+    rw [(gs.queries query member).1 σ τ, ignored] at inside
     exact absurd inside (by decide)
   · have ignored := compatible.2.2.2.1 query member τ cut o (List.mem_append.mpr written)
-    rw [fs.queries query member σ τ, ignored] at inside
+    rw [(fs.queries query member).1 σ τ, ignored] at inside
     exact absurd inside (by decide)
 
 omit [DecidableEq O] in
@@ -1199,7 +1211,7 @@ theorem exists_run : ∀ (n : ℕ) {C : Configuration T O} {X : Config T S O}, X
               · rintro ⟨hg, inh, before⟩
                 have ne : g ≠ f₀ := fun same => inhibits (same ▸ inh)
                 exact ⟨memX'.mpr ⟨ne, hg⟩, inh, before, ne⟩
-            rw [regionOf_presentAfter_insert label (not_inhibitsAt label inhibits σ query member), same]
+            rw [holds_presentAfter_insert label (not_inhibitsAt label inhibits σ query member), same]
             exact base
         · obtain ⟨σ, base, all⟩ := config.joint
           refine ⟨σ, ?_, fun g hg => all g (memX'.mp hg).2⟩
@@ -1397,7 +1409,7 @@ theorem follow_present_eq : ∀ {C : Configuration T O} {w : List (Firing T S O)
         ext g
         rw [Finset.mem_insert, mem_configOf_firings, mem_configOf_firings, List.mem_cons]
       · intro o taken
-        refine ⟨fun made => made_absent A label run.1 made (taken_present A label run.1 taken),
+        refine ⟨fun made => made_not_present A label run.1 made (taken_present A label run.1 taken),
           fun g hg made => ?_⟩
         exact fragment.fresh g (List.mem_cons_of_mem _ (mem_configOf_firings.mp hg)) o made
           (taken_present A label run.1 taken)
@@ -1428,6 +1440,8 @@ end Ends
 #print axioms config_eq_of_events_eq
 #print axioms presentAfter_result
 #print axioms queries_hold_of_run
+#print axioms queries_hold_of_valid
+#print axioms holds_presentAfter_insert
 #print axioms configOf_isConfiguration
 #print axioms not_inhibitionPair_of_round
 #print axioms configOf_eq_of_roundEquiv

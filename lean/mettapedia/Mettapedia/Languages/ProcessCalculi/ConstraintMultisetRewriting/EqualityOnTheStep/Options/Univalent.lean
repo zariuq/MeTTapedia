@@ -37,7 +37,7 @@ univalent by adding equations.
 equations in the knowledge, Kan operations (transport and composition) with computation rules by
 type structure, glue types to turn equivalences into paths, and unification modulo the face lattice
 (constraints of the form `i = 0 ∨ j = 1`). Paths would be terms, as evidence rows are: the knowledge
-would still separate `S` and `T` judgmentally, so by `Observability.conservative_iff` absence and
+would still separate `S` and `T` judgmentally, so by `Observability.conservative_iff` none queries and
 counting of rows of `S` and of `T` would keep their separate answers.
 -/
 

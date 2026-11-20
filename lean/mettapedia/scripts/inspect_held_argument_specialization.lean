@@ -1,0 +1,4 @@
+import Mettapedia.Languages.MeTTa.PeTTa.HeldArgumentSpecialization
+import Mettapedia.Logic.KernelFoundationManifest
+
+#foundation_manifest_module Mettapedia.Languages.MeTTa.PeTTa.HeldArgumentSpecialization

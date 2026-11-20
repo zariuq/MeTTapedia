@@ -16,7 +16,7 @@ and commits when its takes are claimed, its keeps live and its fresh identities 
 * **Every native firing is realized by a protocol run** (`native_protocol_run`): a transaction whose
   commit is the native firing's commit begins at a store holding the state's present occurrences,
   claims, and commits, and the protocol's store is then the present occurrences of the native
-  result. The fresh identities must be **unborn**, not only absent from the store.
+  result. The fresh identities must be **unborn**, not only missing from the store.
 * **That hypothesis is needed** (`Run.reborn_never_commits`, `Controls.remake_never_commits`): born
   identities only accumulate (`Step.born_subset`), so a transaction that makes an identity already
   born commits in no continuation, although its commit is enabled at the store, as the native step's

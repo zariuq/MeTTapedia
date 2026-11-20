@@ -204,6 +204,68 @@ lean_lib PeTTaBoundCallQuotation where
   roots := #[`Mettapedia.Languages.MeTTa.PeTTa.BoundCallControls]
   needs := #[`@/pettaBoundCallsSource]
 
+-- File quotations must invalidate when their authored data changes. Each
+-- quotation root owns only its direct inputs; importers inherit that dependency.
+input_file plainBnfDiscoverySource where
+  path := "../../metta/cetta/langdef/bnf/plain_bnf_graph_discovery_v1.metta"
+  text := false
+
+input_file plainBnfIndexSource where
+  path := "../../metta/cetta/langdef/bnf/plain_bnf_graph_index_v1.metta"
+  text := false
+
+input_file plainBnfAnalysisSource where
+  path := "../../metta/cetta/langdef/bnf/plain_bnf_graph_analysis_v1.metta"
+  text := false
+
+input_file plainBnfAdmissionSource where
+  path := "../../metta/cetta/langdef/bnf/plain_bnf_semantic_admission_v1.metta"
+  text := false
+
+input_file plainBnfIntegerProviderSource where
+  path := "../../metta/cetta/experiments/gslt2parse_foundation/presentations/shared/cetta_petta_ground_integer_relations_v1.metta"
+  text := false
+
+input_file plainBnfComponentsSource where
+  path := "../../metta/cetta/tests/langdef/bnf/generated/plain_bnf_components_v1.metta"
+  text := false
+
+input_file plainBnfTypedDiscoverySource where
+  path := "../../metta/cetta/tests/langdef/bnf/generated/plain_bnf_typed_discovery_v1.metta"
+  text := false
+
+input_file plainBnfGrammarSource where
+  path := "../../metta/cetta/langdef/bnf/plain_bnf_grammar_v1.metta"
+  text := false
+
+lean_lib PlainBnfCollectorQuotation where
+  roots := #[`Mettapedia.GSLT.Parsing.PlainBnfCollectorSourceExecution]
+  needs := #[`@/plainBnfDiscoverySource]
+
+lean_lib PlainBnfCollectorAdmissionQuotation where
+  roots := #[`Mettapedia.GSLT.Parsing.PlainBnfCollectorSourceAdmission]
+  needs := #[`@/plainBnfDiscoverySource, `@/plainBnfIndexSource]
+
+lean_lib PlainBnfReferenceQuotation where
+  roots := #[`Mettapedia.GSLT.Parsing.PlainBnfReferenceSourceAdmission]
+  needs := #[`@/plainBnfAnalysisSource]
+
+lean_lib PlainBnfScalarOrderQuotation where
+  roots := #[`Mettapedia.GSLT.Parsing.PlainBnfScalarOrderSource]
+  needs := #[`@/plainBnfAdmissionSource, `@/plainBnfIntegerProviderSource]
+
+lean_lib PlainBnfGeneratedQuotation where
+  roots := #[`Mettapedia.GSLT.Parsing.PlainBnfGeneratedPeTTaSyntax]
+  needs := #[`@/plainBnfComponentsSource]
+
+lean_lib PlainBnfGeneratedScalarOrderQuotation where
+  roots := #[`Mettapedia.GSLT.Parsing.PlainBnfGeneratedScalarOrderSyntax]
+  needs := #[`@/plainBnfTypedDiscoverySource]
+
+lean_lib PlainBnfInputQuotation where
+  roots := #[`Mettapedia.GSLT.Parsing.PlainBnfInputCarrier]
+  needs := #[`@/plainBnfGrammarSource]
+
 -- The GSLT execution library lives beside these proofs in `metta/gslt/lib`.
 -- Every quoted file is an input of the module that quotes it.
 input_file gsltMatchAutomataSource where

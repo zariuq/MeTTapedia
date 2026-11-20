@@ -1,6 +1,7 @@
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ScopedErasure
 import Mettapedia.GSLT.Meredith.RhoExample
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefGSLT
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SubstitutionCanonicalCommutation
 
 /-!
 # Scoped funded execution refines pure rho
@@ -712,9 +713,17 @@ private theorem fundedCommErasure_rhoLanguageDefGSLTStep
   have payloadTyped := payloadSafe.erase_wellSorted signatureClosed.wellSorted
   have payloadScoped :=
     payloadSafe.erase_binderSafeAt signatureClosed.binderSafe
+  have bodyDerived : ProcWellSorted rhoReflectivePresentation FreeSortContext.empty
+      [rhoReflectivePresentation.nameSort] (body.erase signatureName) := by
+    simpa using bodyTyped
+  have payloadDerived : ProcWellSorted rhoReflectivePresentation FreeSortContext.empty []
+      (payload.erase signatureName) := by
+    simpa using payloadTyped
   have contractumClosed := semanticCommSubst_preserves
-    (by simpa using bodyTyped) bodyScoped (by simpa using payloadTyped)
-      payloadScoped
+    (LanguageDefAdequacy.rhoProc_resolveQuotes_typed bodyDerived)
+    (Mettapedia.OSLF.MeTTaIL.ReflectiveInstantiation.resolveQuotes_binderSafeAt
+      rhoReflectivePresentation bodyScoped)
+    payloadDerived payloadScoped
   let redexPattern : Pattern :=
     .collection .hashBag
       [.apply "PInput"
@@ -724,7 +733,7 @@ private theorem fundedCommErasure_rhoLanguageDefGSLTStep
        contextProcess.1] none
   let contractumPattern : Pattern :=
     .collection .hashBag
-      [semanticCommSubst (body.erase signatureName)
+      [semanticCommSubst (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation (body.erase signatureName))
         (payload.erase signatureName),
        contextProcess.1] none
   have redexTyped :
@@ -768,19 +777,28 @@ private theorem fundedCommErasure_rhoLanguageDefGSLTStep
     simpa [CostConfig.eraseCanonicalProcess, redex, redexPattern,
       contextProcess] using
       StructuralCongruence.trans _ _ _ sourceCongruent sourceOrder
+  have resolvedHead : StructuralCongruence contractumPattern
+      (.collection .hashBag
+        [semanticCommSubst (body.erase signatureName) (payload.erase signatureName),
+         contextProcess.1] none) :=
+    collectionCongruence_of_forall₂ .hashBag none
+      (.cons (SubstitutionCanonicalCommutation.semanticCommSubst_resolveQuotes_structuralCongruence
+          bodyDerived (rhoProcWellSorted_hashSetFree payloadDerived))
+        (.cons (.refl _) .nil))
   have contractumToTarget : StructuralCongruence
       contractum.1
       (target.eraseCanonicalProcess signatureClosed targetSafe).1 := by
     simpa [CostConfig.eraseCanonicalProcess, contractum, contractumPattern,
-      contextProcess] using StructuralCongruence.symm _ _ targetCongruent
+      contextProcess] using
+      StructuralCongruence.trans _ _ _ resolvedHead (StructuralCongruence.symm _ _ targetCongruent)
   have baseStep : rhoRewriteSystem.Reduces redex contractum := by
     change RhoStep redex.1 contractum.1
     simpa [redex, redexPattern, contractum, contractumPattern] using
-      (RhoStep.comm
+      (RhoStep.comm_resolved
         (free := FreeSortContext.empty) (bound := [])
         (channel.erase signatureName) (body.erase signatureName)
         (payload.erase signatureName) [contextProcess.1]
-        (by simpa using bodyTyped) (by simpa using payloadTyped))
+        bodyDerived payloadDerived)
   exact ⟨redex, contractum,
     (rhoProcessEquations_iff_structuralCongruence _ _).mpr sourceToRedex,
     baseStep,

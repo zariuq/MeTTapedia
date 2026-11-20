@@ -4,7 +4,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Firs
 # Guards of the one-frame step as predicates of a solution
 
 The first-order run layer (`AnnotatedRuns.firstOrder`) writes a firing's guards as checks:
-equations, absence and counts. Proof calculi need guards outside that syntax, such as the
+equations, none queries and counts. Proof calculi need guards outside that syntax, such as the
 ordering side conditions of superposition. This module adds them, keeping the interface's
 semantics: a **guarded firing** (`GuardedFiring`) is a first-order firing with a list of guards,
 each a predicate of a solution, asked at every solution of the firing's information.

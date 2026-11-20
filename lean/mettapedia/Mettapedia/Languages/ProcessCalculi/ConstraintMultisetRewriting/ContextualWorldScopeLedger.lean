@@ -44,7 +44,7 @@ theorem equationScopes_subset_iff {V : Type} {declaration : V → MetaArity S}
 
 def checkTerms {T : Type} : Check T → List T
   | .equal left right => [left, right]
-  | .absent pattern | .count pattern _ => [pattern]
+  | .predicate _ pattern | .count pattern _ => [pattern]
 
 def ruleTerms {T : Type} (rule : RuleInstance T) : List T :=
   rule.take ++ rule.read ++ rule.tell.flatMap (fun pair => [pair.1, pair.2]) ++

@@ -949,7 +949,8 @@ private def initial : State :=
       if name = InferenceCache.cell then some (Effects.handleValue spaces.cache)
       else if name = "mm0-proof-store" then some (Effects.handleValue spaces.proofs)
       else if name = "mm0-session" then some (optionValue (some (stateValue spaces (pendingValue logical.pending))))
-      else none }
+      else none
+    namedEmpty := [] }
 
 private theorem input : Input spaces logical initial := by
   refine ⟨⟨⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, by decide +kernel⟩, ?_⟩, ?_, ?_⟩

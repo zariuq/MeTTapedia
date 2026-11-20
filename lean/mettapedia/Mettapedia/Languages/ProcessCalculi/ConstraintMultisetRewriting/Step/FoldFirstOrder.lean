@@ -62,7 +62,7 @@ theorem renaming_fold_observes (c : Canonicalizer (renamingEscaping A label).cla
     {p : ModuloProbe A O} (supported : p.Supported r) : p.Observes label C ↔ p.Observes label D := by
   obtain ⟨π, keeps, aut, same⟩ := (renaming_key_iff A label c C D r).mp keys
   have modulo : Observation.RecordModuloEquivalent A label r C D := by
-    refine ⟨π, aut, ⟨fun o σ _ => ?_, fun _ absent => absurd absent (Finset.notMem_empty _)⟩, same⟩
+    refine ⟨π, aut, ⟨fun o σ _ => ?_, fun _ missing => absurd missing (Finset.notMem_empty _)⟩, same⟩
     show A.E (A.apply σ (label (π o))) (A.apply σ (label o))
     rw [keeps]
     exact A.equivalence.refl _

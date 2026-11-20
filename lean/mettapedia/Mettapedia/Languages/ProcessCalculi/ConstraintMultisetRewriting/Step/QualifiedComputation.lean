@@ -1,0 +1,72 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationAppendConsumer
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationBinderControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationClassControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationClasses
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationCompleteness
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationConstructorWriters
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationContinuation
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationDefinitions
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationDependentConsumer
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationEvolution
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationEvolutionControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationExecution
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationHeadBoundary
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationInputs
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationKnowledge
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationNormalizer
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationPartialConsumer
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationProfile
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationProfileAmbiguity
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationProgram
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationProgramAnswers
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationProgramComplete
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationProgramControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationProgramNoJunk
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationProgramStreams
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationPublication
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationReplay
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationReplayControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationReplaySyntax
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationResources
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationRunAnswers
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationRunProfile
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationSemanticMatch
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationStreams
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationSupport
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationSupportCost
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationSupportPrograms
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationSyntax
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationSyntaxConsumer
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationTheoryExecution
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationTheoryMap
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ComputationVectorProgram
+
+/-!
+# Qualified computation on actual transform runs
+
+For a qualified package and an independent source presentation, scoped source
+steps compile to actual dependent full-step firings. Complete finite paths,
+answers, types, resource updates and qualified observations are related in
+both directions at the declared profile.
+
+A fixed table-and-descriptor program strengthens this: every admitted run
+from one live computational row obtains its source profile by theorem. Its
+answer theorem requires only a target run and actual final readout, not a
+profile supplied by a client. Descriptors retain their original source-table
+ordinals. The compiler validates constructor paths and substitutions before
+whole-row matching; this is not a compiler to ordinary rule-syntax patterns
+or a native higher-order context matcher.
+
+The two normality contracts are separate. The broad package relation has
+semantic head-equality steps. The executable normalizer has directed steps;
+its successful results are realized with their directed normality and types.
+The all-closed-terms full-answer premise is refuted by a typed universe head.
+No normalization of arbitrary typed vector terms is inferred.
+
+Rule-syntax controls contain a real typed take in a fixed singleton program.
+They also show semantic matching can fire on a syntactically normal term.
+That separation must be addressed when choosing a source-language encoding.
+The scope-certificate experiment measures a specific compatibility component;
+it establishes no general proof-checker or native runtime speedup.
+-/

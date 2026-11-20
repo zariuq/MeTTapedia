@@ -49,7 +49,7 @@ theorem scan_completes {O : Type} (label : O → Atom) (bindings : Subst) (patte
       obtain ⟨later, scanned⟩ := scan_completes label bindings pattern idempotent (use + 1) rest
       have decides := Unifying.unify_decides bindings pattern
         (Unifying.rename use (label row)) idempotent
-      simp only [scan, scanned, Option.bind_eq_bind, Option.bind_some]
+      simp only [PeTTaQueryInterpretation.scan_cons, scanned, Option.bind_eq_bind, Option.bind_some]
       cases outcome : unify bindings pattern (Unifying.rename use (label row)) with
       | ok bound => exact ⟨_, rfl⟩
       | clash => exact ⟨_, rfl⟩

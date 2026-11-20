@@ -6,8 +6,9 @@ import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits.Exact
 
 The existing occurrence-query exactness law applies to conditional matching,
 including latent row equations. Retained input rows need agree only outside
-the removed set. Absence checks both surviving inputs and created rows;
-counts subtract matching removals and add matching creations.
+the removed set. A predicate query reads both surviving inputs and created
+rows (`any`: some of them matches; `none`: none of them matches); counts
+subtract matching removals and add matching creations.
 
 These formulas use explicit finite row data, not a source evaluator. Their
 native expression and query-admission bridge remain separate obligations;
@@ -110,13 +111,24 @@ theorem holds_image_of_matches {Physical : Type} [DecidableEq Physical]
     Holds others candidate represented (world.image name) check ↔ Holds locals candidate rows world check := by
   cases check with
   | equal _ _ => rfl
-  | absent pattern =>
-      constructor
-      · intro absent occurrence inside matched
-        exact absent (name occurrence) (Finset.mem_image_of_mem name inside) ((agree pattern occurrence inside).mp matched)
-      · intro absent physical present matched
-        obtain ⟨occurrence, inside, rfl⟩ := Finset.mem_image.mp present
-        exact absent occurrence inside ((agree pattern occurrence inside).mpr matched)
+  | predicate quantifier pattern =>
+      cases quantifier with
+      | any =>
+          constructor
+          · rintro ⟨physical, present, matched⟩
+            obtain ⟨occurrence, inside, rfl⟩ := Finset.mem_image.mp present
+            exact ⟨occurrence, inside, (agree pattern occurrence inside).mpr matched⟩
+          · rintro ⟨occurrence, inside, matched⟩
+            exact ⟨name occurrence, Finset.mem_image_of_mem name inside,
+              (agree pattern occurrence inside).mp matched⟩
+      | none =>
+          constructor
+          · intro missing occurrence inside matched
+            exact missing (name occurrence) (Finset.mem_image_of_mem name inside)
+              ((agree pattern occurrence inside).mp matched)
+          · intro missing physical present matched
+            obtain ⟨occurrence, inside, rfl⟩ := Finset.mem_image.mp present
+            exact missing occurrence inside ((agree pattern occurrence inside).mpr matched)
   | count pattern number =>
       rw [Holds, Holds, region_image_of_matches locals others name candidate rows represented world pattern (agree pattern),
         Finset.card_image_of_injective _ injective]
@@ -165,7 +177,12 @@ def entryCondition (candidate : Assignment captures next)
     (entryRows : O → Row locals captures Γ sort) (exitRows : O → Row others captures Γ sort)
     (world removed created : Finset O) : Check (Term (signature S captures) Γ sort) → Prop
   | .equal first second => instantiate candidate first = instantiate candidate second
-  | .absent pattern =>
+  | .predicate .any pattern =>
+      (∃ occurrence ∈ world, occurrence ∉ removed ∧
+        Matches locals captures candidate (instantiate candidate pattern) (entryRows occurrence)) ∨
+      (∃ occurrence ∈ created,
+        Matches others captures candidate (instantiate candidate pattern) (exitRows occurrence))
+  | .predicate .none pattern =>
       (∀ occurrence ∈ world, occurrence ∉ removed →
         ¬ Matches locals captures candidate (instantiate candidate pattern) (entryRows occurrence)) ∧
       (∀ occurrence ∈ created,
@@ -175,7 +192,7 @@ def entryCondition (candidate : Assignment captures next)
         (region locals candidate entryRows removed pattern).card +
           (region others candidate exitRows created pattern).card = number
 
-/-- Equality, absence and count are regressed pointwise under the same candidate assignment. -/
+/-- Equality, predicate queries and count are regressed pointwise under the same candidate assignment. -/
 theorem holds_after_iff (candidate : Assignment captures next)
     (entryRows : O → Row locals captures Γ sort) (exitRows : O → Row others captures Γ sort)
     (world removed created : Finset O) (check : Check (Term (signature S captures) Γ sort))
@@ -192,20 +209,34 @@ theorem holds_after_iff (candidate : Assignment captures next)
       rw [count_after_retained locals others candidate entryRows exitRows world removed created pattern taken fresh
         (fun occurrence member outside => agree pattern occurrence member outside)]
       rfl
-  | absent pattern =>
-      constructor
-      · intro absent
-        refine ⟨?_, ?_⟩
-        · intro occurrence member outside matched
-          exact absent occurrence (Finset.mem_union.mpr (.inl (Finset.mem_sdiff.mpr ⟨member, outside⟩)))
-            ((agree pattern occurrence member outside).mp matched)
-        · intro occurrence made
-          exact absent occurrence (Finset.mem_union.mpr (.inr made))
-      · rintro ⟨surviving, made⟩ occurrence member matched
-        rcases Finset.mem_union.mp member with old | new
-        · obtain ⟨inside, outside⟩ := Finset.mem_sdiff.mp old
-          exact surviving occurrence inside outside ((agree pattern occurrence inside outside).mpr matched)
-        · exact made occurrence new matched
+  | predicate quantifier pattern =>
+      cases quantifier with
+      | any =>
+          constructor
+          · rintro ⟨occurrence, member, matched⟩
+            rcases Finset.mem_union.mp member with old | new
+            · obtain ⟨inside, outside⟩ := Finset.mem_sdiff.mp old
+              exact Or.inl ⟨occurrence, inside, outside,
+                (agree pattern occurrence inside outside).mpr matched⟩
+            · exact Or.inr ⟨occurrence, new, matched⟩
+          · rintro (⟨occurrence, inside, outside, matched⟩ | ⟨occurrence, made, matched⟩)
+            · exact ⟨occurrence, Finset.mem_union.mpr (.inl (Finset.mem_sdiff.mpr ⟨inside, outside⟩)),
+                (agree pattern occurrence inside outside).mp matched⟩
+            · exact ⟨occurrence, Finset.mem_union.mpr (.inr made), matched⟩
+      | none =>
+          constructor
+          · intro missing
+            refine ⟨?_, ?_⟩
+            · intro occurrence member outside matched
+              exact missing occurrence (Finset.mem_union.mpr (.inl (Finset.mem_sdiff.mpr ⟨member, outside⟩)))
+                ((agree pattern occurrence member outside).mp matched)
+            · intro occurrence made
+              exact missing occurrence (Finset.mem_union.mpr (.inr made))
+          · rintro ⟨surviving, made⟩ occurrence member matched
+            rcases Finset.mem_union.mp member with old | new
+            · obtain ⟨inside, outside⟩ := Finset.mem_sdiff.mp old
+              exact surviving occurrence inside outside ((agree pattern occurrence inside outside).mpr matched)
+            · exact made occurrence new matched
 
 /-- The regressed formulas retain every solution at the original information cut. -/
 theorem ask_after_iff (problem : ContextualResidual.Problem captures)

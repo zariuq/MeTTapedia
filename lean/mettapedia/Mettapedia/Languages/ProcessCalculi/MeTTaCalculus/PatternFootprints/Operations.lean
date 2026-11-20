@@ -43,12 +43,12 @@ computed in `OperationControls.conflicts_on_writes` and
 
 | Operation | Reads; writes | Monotone | Conflicts on writes only | Conflicts on reads as well |
 |---|---|---|---|---|
-| add (`addKind`) | nothing; its kind (`addKind_footprint`) | yes (`addKind_monotone`) | with what writes its kind. Not real against an addition: both orders fire to one state (`addKind_comm`). Real against a removal where the kind is absent (`addKind_then_removeKind`, `removeKind_then_addKind_of_absent`), not where it is present (`removeKind_then_addKind_of_present`; by claims `ClaimControls.addition_and_removal`) | also with what reads its kind. Not real against one answer of a match (`oneAnswer_stillHas_add`). Real against the bag of answers of a pattern that matches the kind (`indicator_add_single_eq_iff`, `bagOfAnswers_add_eq_iff`) and against a guard for its absence (`addKind_then_addKindUnless`) |
-| remove (`removeKind`) | nothing declared, and it fires only where its kind is (`fire_removeKind_eq_some_iff`); its kind (`removeKind_footprint`) | no (`removeKind_not_monotone`); positive (`removeKind_positive`): where it fires it fires on every larger state (`fire_removeKind_add`) | with what writes its kind. Against a removal, real exactly where there are fewer than two occurrences (`removeKind_twice_isSome_iff`); by claims the two are a wave exactly where there are two (`removals_hasClaims_iff`) | also with what reads its kind. Against one answer of a match, real exactly where there are fewer than two occurrences (`removeKind_then_seeKind_isSome_iff`; by claims `ClaimControls.reader_and_taker`), and never for another kind (`oneAnswer_stillHas_after_removeKind`). Real against the bag of answers of a pattern that matches the kind (`indicator_eq_of_add_single_iff`). Not real against a guard for absence (`addKindUnless_after_removeKind`) |
+| add (`addKind`) | nothing; its kind (`addKind_footprint`) | yes (`addKind_monotone`) | with what writes its kind. Not real against an addition: both orders fire to one state (`addKind_comm`). Real against a removal where the kind is not present (`addKind_then_removeKind`, `removeKind_then_addKind_of_zero`), not where it is present (`removeKind_then_addKind_of_present`; by claims `ClaimControls.addition_and_removal`) | also with what reads its kind. Not real against one answer of a match (`oneAnswer_stillHas_add`). Real against the bag of answers of a pattern that matches the kind (`indicator_add_single_eq_iff`, `bagOfAnswers_add_eq_iff`) and against a guard for its none query (`addKind_then_addKindUnless`) |
+| remove (`removeKind`) | nothing declared, and it fires only where its kind is (`fire_removeKind_eq_some_iff`); its kind (`removeKind_footprint`) | no (`removeKind_not_monotone`); positive (`removeKind_positive`): where it fires it fires on every larger state (`fire_removeKind_add`) | with what writes its kind. Against a removal, real exactly where there are fewer than two occurrences (`removeKind_twice_isSome_iff`); by claims the two are a wave exactly where there are two (`removals_hasClaims_iff`) | also with what reads its kind. Against one answer of a match, real exactly where there are fewer than two occurrences (`removeKind_then_seeKind_isSome_iff`; by claims `ClaimControls.reader_and_taker`), and never for another kind (`oneAnswer_stillHas_after_removeKind`). Real against the bag of answers of a pattern that matches the kind (`indicator_eq_of_add_single_iff`). Not real against a guard for none queries (`addKindUnless_after_removeKind`) |
 | consume (`consumeKind`) | what its guard reads; its kind (`consumeKind_footprint`); one step (`fire_consumeKind_eq_some_iff`) | no (`consumeKind_not_monotone`); positive when no addition disables its guard (`consumeKind_positive`) | as a removal, which it is where its guard holds (`fire_consumeKind_eq_some_iff`) | as a removal, and with what writes a kind its guard reads (`KindControls.consumeKind_fires`) |
 | one answer of a match (`seeKind`, `oneAnswer`) | its kind; nothing (`seeKind_footprint`, `oneAnswer_footprint`); for a row of the matcher, its witnesses (`cmatchPattern_mem_iff_witnesses`) | yes (`seeKind_monotone`, `oneAnswer_monotone`, `Region.matchKinds_monotone`) | with nothing (`Proposal.writesApart_of_writes_empty`) | with what writes its kind; real only against the removal of the last occurrence (`oneAnswer_stillHas_iff`) |
 | the bag of answers of a match (`Set.indicator` of the kinds, `Readout.complete`, `allAnswers`) | exactly the kinds the pattern matches (`dependsOn_indicator_iff`); no finite set if there are infinitely many (`not_dependsOn_indicator_finite`); nothing; as the guard of a rule, `completeRead_guard_setEffectFootprinted` | no (`MonotoneControls.complete_read_leaves_the_fragment`) | with nothing (`allAnswers_footprint`, `Proposal.writesApart_of_writes_empty`) | with what writes a kind the pattern matches, always real (`indicator_add_eq_iff`, `allAnswers_stillHas_iff_readsKept`), and with nothing else (`completeRead_guard_commutes_with_addKind`); against a publication the validation is a finite check on the kinds written (`completeRead_after_publish_iff`); the test is matching against a kind (`singleton_disjoint_kinds_iff`) and unification against a template (`apart_iff_kinds_disjoint`, `bagOfAnswers_stable_under_template`, `bagOfAnswers_changed_by_template`); for the atoms of the computable matcher, a sound test (`atomKinds_disjoint_of_rigidClash`) |
-| a guard for absence (`addKindUnless`, `addWhereNoneOf`) | the kind watched; the kind added (`addKindUnless_footprint`); for a pattern, exactly the kinds it accepts (`addWhereNoneOf_reads_all`), so no finite set where there are infinitely many (`addWhereNoneOf_not_effectFootprinted`); for the whole bag, every kind (`emptinessTest_setEffectFootprinted_iff`) | no (`addKindUnless_not_monotone`), and not positive (`addKindUnless_not_positive`) | as the addition it guards; and by installation two such guards publish a state of no serial run (`ValidationControls.write_skew`) | also with what writes a kind watched: real against an addition (`addKind_then_addKindUnless`, `PatternControls.guard_and_even`), not against a removal (`addKindUnless_after_removeKind`); for a pattern the test is computed (`PatternDelta.decidableIndependent`, `PatternControls.guard_and_odd`) |
+| a guard for none queries (`addKindUnless`, `addWhereNoneOf`) | the kind watched; the kind added (`addKindUnless_footprint`); for a pattern, exactly the kinds it accepts (`addWhereNoneOf_reads_all`), so no finite set where there are infinitely many (`addWhereNoneOf_not_effectFootprinted`); for the whole bag, every kind (`emptinessTest_setEffectFootprinted_iff`) | no (`addKindUnless_not_monotone`), and not positive (`addKindUnless_not_positive`) | as the addition it guards; and by installation two such guards publish a state of no serial run (`ValidationControls.write_skew`) | also with what writes a kind watched: real against an addition (`addKind_then_addKindUnless`, `PatternControls.guard_and_even`), not against a removal (`addKindUnless_after_removeKind`); for a pattern the test is computed (`PatternDelta.decidableIndependent`, `PatternControls.guard_and_odd`) |
 | a cell write (`replaceKind`) | nothing declared, and it fires only where the old value is (`fire_replaceKind_eq_some_iff`); the old and the new value (`replaceKind_footprint`) | no (`replaceKind_not_monotone`); positive (`replaceKind_positive`) | with what writes the old or the new value; two writers of one cell, real (`replaceKind_twice`) | also with what reads the old or the new value; real against a read of the old value (`replaceKind_then_seeKind_of_once`) |
 -/
 
@@ -132,12 +132,12 @@ theorem addKind_then_removeKind (kind : Location) (state : Location → ℕ) :
   rw [fire_addKind, Option.bind_some]
   exact (fire_removeKind_eq_some_iff kind _ state).mpr rfl
 
-/-- **The removal first, where the kind is absent: refused.**  So an addition and
+/-- **The removal first, where the kind is not present: refused.**  So an addition and
 a removal of one kind are in a real conflict there. -/
-theorem removeKind_then_addKind_of_absent (kind : Location) {state : Location → ℕ}
-    (absent : state kind = 0) :
+theorem removeKind_then_addKind_of_zero (kind : Location) {state : Location → ℕ}
+    (missing : state kind = 0) :
     ((removeKind kind).fire state).bind (addKind kind).fire = none := by
-  rw [fire_removeKind_eq_none kind absent]
+  rw [fire_removeKind_eq_none kind missing]
   rfl
 
 /-- Where the kind is present the two orders agree. -/
@@ -200,33 +200,33 @@ theorem removeKind_then_seeKind_isSome_iff (kind : Location) (state : Location �
     exact ⟨_, by rw [fire_removeKind_of_present kind present, Option.bind_some,
       (fire_seeKind_eq_some_iff kind _ _).mpr ⟨still, rfl⟩]⟩
 
-/-- **An addition of the kind watched disables the guard for its absence.** -/
+/-- **An addition of the kind watched disables the guard for its none query.** -/
 theorem addKind_then_addKindUnless (kind watched : Location) (state : Location → ℕ) :
     ((addKind watched).fire state).bind (addKindUnless kind watched).fire = none := by
   rw [fire_addKind, Option.bind_some]
   cases fired : (addKindUnless kind watched).fire (state + Pi.single watched 1) with
   | none => rfl
   | some target =>
-      have absent := ((fire_addKindUnless_eq_some_iff kind watched _ target).mp fired).1
+      have missing := ((fire_addKindUnless_eq_some_iff kind watched _ target).mp fired).1
       have single : (Pi.single watched 1 : Location → ℕ) watched = 1 := Pi.single_eq_same watched 1
       have count : (state + (Pi.single watched 1 : Location → ℕ)) watched = state watched + 1 :=
         congrArg (state watched + ·) single
       omega
 
-/-- **A removal does not disable a guard for absence**, of the kind watched or of
+/-- **A removal does not disable a guard for none queries**, of the kind watched or of
 another. -/
 theorem addKindUnless_after_removeKind (kind watched other : Location)
     {state target next : Location → ℕ}
     (fires : (addKindUnless kind watched).fire state = some target)
     (removed : (removeKind other).fire state = some next) :
     ((addKindUnless kind watched).fire next).isSome := by
-  have absent := ((fire_addKindUnless_eq_some_iff kind watched state target).mp fires).1
+  have missing := ((fire_addKindUnless_eq_some_iff kind watched state target).mp fires).1
   have atWatched := congrFun ((fire_removeKind_eq_some_iff other state next).mp removed) watched
-  have stillAbsent : next watched = 0 := by
+  have stillZero : next watched = 0 := by
     have sum : state watched = next watched + (Pi.single other 1 : Location → ℕ) watched :=
       atWatched
     omega
-  rw [(fire_addKindUnless_eq_some_iff kind watched next _).mpr ⟨stillAbsent, rfl⟩]
+  rw [(fire_addKindUnless_eq_some_iff kind watched next _).mpr ⟨stillZero, rfl⟩]
   rfl
 
 /-- **A consumption is not monotone**: it consumes its kind. -/
@@ -472,7 +472,7 @@ theorem conflicts_on_writes :
 
 /-- **Conflicts by footprints when reads are validated as well**, for every pair
 of the seven operations.  A read conflicts with every writer of its kind, and two
-reads do not conflict; the guard for the absence of `a` writes `b`, so it conflicts
+reads do not conflict; the guard for the none query of `a` writes `b`, so it conflicts
 with the writers of `a` by its read only. -/
 theorem conflicts_on_reads :
     operations.map (fun first => operations.map fun second =>
@@ -494,7 +494,7 @@ end OperationControls
 #print axioms fire_removeKind_of_present
 #print axioms addKind_comm
 #print axioms addKind_then_removeKind
-#print axioms removeKind_then_addKind_of_absent
+#print axioms removeKind_then_addKind_of_zero
 #print axioms removeKind_then_addKind_of_present
 #print axioms removeKind_twice_isSome_iff
 #print axioms removeKind_then_seeKind_isSome_iff

@@ -53,8 +53,8 @@ theorem image_size_le (assignment : Assignment source target) {Γ : Ctx S} {sort
     rw [ContextualFamily.instantiate, termSize]
     omega
   · intro context selected arguments rho spine _ name member
-    have absent := variable_spine_has_no_hole_support _ arguments rho spine
-    simp only [support, absent, List.mem_cons, List.not_mem_nil, or_false] at member
+    have missing := variable_spine_has_no_hole_support _ arguments rho spine
+    simp only [support, missing, List.mem_cons, List.not_mem_nil, or_false] at member
     subst name
     rw [instantiate_spine assignment selected arguments rho spine, termSize_rename]
   · intro context name member

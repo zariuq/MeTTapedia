@@ -3,8 +3,8 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Fragments
 /-!
 # Linear take: monotone under union, and independent firings interchange
 
-A rule is in the **linear-take fragment** (`NoAbsenceOrCount`) when every check it asks is an
-equality: no absence and no count. It may take, read, make and tell.
+A rule is in the **linear-take fragment** (`NoPredicateOrCount`) when every check it asks is an
+equality: no none query and no count. It may take, read, make and tell.
 
 * `union_monotone`: over ground terms, a firing of the fragment admitted at a store stays admitted
   beside any other store whose occurrences its made identities avoid (from
@@ -17,9 +17,9 @@ equality: no absence and no count. It may take, read, make and tell.
 ## Controls
 
 * Positive: `Controls.takes_interchange`: a taker of `A` and a taker of `B`, in both orders.
-* Negative, just outside: `Controls.absence_breaks_interchange`: `spawn` (make `T` where `U` is
-  absent) and a maker of `U` have non-interfering footprints, run in one order, and not in the other.
-  With `Composition.absence_not_monotone`, absence also breaks monotonicity under union.
+* Negative, just outside: `Controls.none_breaks_interchange`: `spawn` (make `T` where `U` is
+  missing) and a maker of `U` have non-interfering footprints, run in one order, and not in the other.
+  With `Composition.none_not_monotone`, none queries also breaks monotonicity under union.
 -/
 
 set_option autoImplicit false
@@ -34,11 +34,11 @@ open GuardFreeProcessOrders (SameUpTo NoCause NoAsym NoReuse)
 namespace LinearTake
 
 /-- **The linear-take fragment**: every check is an equality. -/
-def NoAbsenceOrCount {T : Type*} (rule : RuleInstance T) : Prop :=
+def NoPredicateOrCount {T : Type*} (rule : RuleInstance T) : Prop :=
   ∀ c ∈ rule.checks, ∃ l r, c = Check.equal l r
 
 /-- **Monotone under union**: a firing of the fragment stays admitted beside another store. -/
-theorem union_monotone {C D : Conf} {f : Fir} (fragment : NoAbsenceOrCount f.rule)
+theorem union_monotone {C D : Conf} {f : Fir} (fragment : NoPredicateOrCount f.rule)
     (noQueries : f.queries = []) (admitted : base.Admits (s := C) f)
     (fresh : ∀ o ∈ f.selection.made, o ∉ D.present) (knowledge : ∀ e ∈ D.equations, e.1 = e.2) :
     base.Admits (s := NullsOnTheStep.Composition.union C D) f := by
@@ -90,7 +90,7 @@ theorem takes_interchange :
   linearTake_interchange ground Prod.fst rfl rfl (by unfold NoCause; decide) (by unfold NoAsym; decide)
     (by unfold NoReuse; decide) takeA_valid takeB_after
 
-/-- `spawn`: make `T` where `U` is absent. -/
+/-- `spawn`: make `T` where `U` is not present. -/
 def spawnFiring : ConditionalSchedule.Firing Expr Occ :=
   (NullsOnTheStep.Separations.spawn, NullsOnTheStep.Separations.spawnAt.1.selection)
 
@@ -98,17 +98,17 @@ def spawnFiring : ConditionalSchedule.Firing Expr Occ :=
 def makeU : ConditionalSchedule.Firing Expr Occ := (rule [] [] [factU], ⟨[], [], [(factU, 0)]⟩)
 
 theorem spawn_valid : spawnFiring.2.Valid ground Prod.fst spawnFiring.1 NullsOnTheStep.Separations.emptyS.1 :=
-  (PredicateQueryAdmission.valid_empty_iff ground Prod.fst _ _ _).mp NullsOnTheStep.Separations.spawn_admitted.1
+  PredicateQueryAdmission.regionValid_nil_iff.mp NullsOnTheStep.Separations.spawn_admitted.1
 
 theorem makeU_after :
     makeU.2.Valid ground Prod.fst makeU.1 (spawnFiring.2.result Prod.fst spawnFiring.1 NullsOnTheStep.Separations.emptyS.1) :=
   ground_valid (by decide) (by decide) rfl rfl rfl (by decide) (result_knowledge spawn_valid) rfl
     (no_checks rfl)
 
-/-- **Negative control.** `spawn` asks absence, so it is outside the fragment; its footprint does
+/-- **Negative control.** `spawn` asks none queries, so it is outside the fragment; its footprint does
 not interfere with the maker of `U`, it runs before it, and it is refused after it. -/
-theorem absence_breaks_interchange :
-    ¬ NoAbsenceOrCount spawnFiring.1 ∧ NoCause spawnFiring makeU ∧ NoAsym spawnFiring makeU ∧
+theorem none_breaks_interchange :
+    ¬ NoPredicateOrCount spawnFiring.1 ∧ NoCause spawnFiring makeU ∧ NoAsym spawnFiring makeU ∧
       NoReuse spawnFiring makeU ∧
       spawnFiring.2.Valid ground Prod.fst spawnFiring.1 NullsOnTheStep.Separations.emptyS.1 ∧
       makeU.2.Valid ground Prod.fst makeU.1
@@ -119,7 +119,7 @@ theorem absence_breaks_interchange :
     by unfold NoReuse; decide, spawn_valid, makeU_after, fun refused => ?_⟩
   · obtain ⟨l, r, same⟩ := fragment _ (List.mem_singleton.mpr rfl)
     cases same
-  · exact absent_refuted refused (p := factU) (List.mem_singleton.mpr rfl) (o := (factU, 0))
+  · exact none_refuted refused (p := factU) (List.mem_singleton.mpr rfl) (o := (factU, 0))
       (by decide) rfl
 
 end LinearTake.Controls
@@ -129,6 +129,6 @@ open LinearTake in
 open LinearTake in
 #print axioms linearTake_interchange
 #print axioms LinearTake.Controls.takes_interchange
-#print axioms LinearTake.Controls.absence_breaks_interchange
+#print axioms LinearTake.Controls.none_breaks_interchange
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.FragmentsOfTheStep

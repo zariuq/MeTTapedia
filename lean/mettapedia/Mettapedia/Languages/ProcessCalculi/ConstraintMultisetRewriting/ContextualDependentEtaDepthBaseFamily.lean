@@ -327,7 +327,7 @@ theorem baseRound_eq_of_sigma (fuel : Nat) {Θ : Context S.R} {problem : Equatio
       certifyNormal headTypingUnique rootComplete strengthening fuel problem with
   | stuck => exact absurd computed moving
   | progress update smaller => rfl
-  | refuted absent => rfl
+  | refuted missing => rfl
 
 /-- **Every run that the Σ family decides, the base family decides with the same outcome.** -/
 theorem base_run_of_sigma (fuel rounds : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ))
@@ -364,7 +364,7 @@ theorem baseRound_not_stuck_of_normal (fuel : Nat) {Θ : Context S.R} {problem :
       rw [computed]
       exact fun impossible => by cases impossible
   | progress update smaller => exact fun impossible => by cases impossible
-  | refuted absent => exact fun impossible => by cases impossible
+  | refuted missing => exact fun impossible => by cases impossible
 
 /-- **The base family's readers**: a reader of the Σ family, or the decomposition at every base type of the η-long
 prepared store. -/
@@ -483,7 +483,7 @@ theorem baseRound_closure (fuel : Nat) :
       cases fired
       exact sigmaRound_closure facts roots heads algebra rigid complete declared choices reducer root normalizes
         certifyNormal headTypingUnique rootComplete strengthening sn directed fuel _ _ _ permuted computed
-  | refuted absent =>
+  | refuted missing =>
       rw [computed] at fired
       cases fired
 
@@ -509,9 +509,9 @@ theorem base_decided_of_firing
       ((∃ state finished, run ((baseFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening).solver larger) problem larger =
               .solved state finished ∧ (frames S.levels).Principal problem state.answer) ∨
-        (∃ absent, run ((baseFamily facts roots heads algebra rigid complete declared choices reducer root
+        (∃ missing, run ((baseFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening).solver larger) problem larger =
-              .refuted absent)) :=
+              .refuted missing)) :=
   (baseSettledOfConst facts roots heads algebra rigid complete declared choices reducer root normalizes
     certifyNormal headTypingUnique rootComplete strengthening stable (fun problem => PermutedMiller S.levels problem)
     (fun held nonempty => by
@@ -563,7 +563,7 @@ theorem tower_base_decided_of_firing
       run (baseTower.solver larger) problem larger = run (baseTower.solver budget) problem budget ∧
       ((∃ state finished, run (baseTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ absent, run (baseTower.solver larger) problem larger = .refuted absent)) :=
+        (∃ missing, run (baseTower.solver larger) problem larger = .refuted missing)) :=
   base_decided_of_firing (S := setting) TowerModel.facts TowerModel.roots TowerModel.heads TowerModel.algebra
     ContextualDependentPiSpine.Controls.rigid TowerModel.complete
     ContextualDependentInversion.Controls.declarations_formed ExecutableTowerChoices.choices
@@ -586,7 +586,7 @@ theorem tower_base_decided_of_baseReads
       run (baseTower.solver larger) problem larger = run (baseTower.solver budget) problem budget ∧
       ((∃ state finished, run (baseTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ absent, run (baseTower.solver larger) problem larger = .refuted absent)) :=
+        (∃ missing, run (baseTower.solver larger) problem larger = .refuted missing)) :=
   tower_base_decided_of_firing (fun permuted nonempty => by
       obtain ⟨bound, eventually⟩ := reads permuted nonempty
       exact ⟨bound, fun larger enough => baseRound_not_stuck_of_baseReads (S := setting) TowerModel.facts

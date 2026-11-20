@@ -4,7 +4,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsA
 /-!
 # The read-word triangle with honest footprints
 
-H1's `reads_differ` found that HE on the step read the whole space, `(p a)` included, while PeTTa's
+`HEOnTheStep.Triangle.reads_differ` found that HE on the step read the whole space, `(p a)` included, while PeTTa's
 projection read only the equation's row and left out that no other equation matched. With honest
 footprints both read the matched rows and observe their region (`HEFootprints`,
 `PeTTaFootprints`). This module compares the two read words.
@@ -25,7 +25,8 @@ footprints both read the matched rows and observe their region (`HEFootprints`,
   read words coincide: HE's query of `(double 4)` and PeTTa's complete request both read the one row
   `(= (double 4) 8)` at position `1`, and neither reads `(p a)`. On the tree's machines both answer
   `8`: PeTTa's streaming machine with its request word, and HE's executable evaluator.
-* `Instance.h1_program`: on H1's program `{(p a), (= (double $x) (+ $x $x))}`, neither dialect's
+* `Instance.factDouble_program`: on the program `{(p a), (= (double $x) (+ $x $x))}` of
+  `HEOnTheStep.Triangle`, neither dialect's
   footprint contains `(p a)`, and PeTTa's complete request reads the equation's row.
 * `Instance.region_disagreement`: a negative control for the criterion: a row `(= ($h 4) 8)` with a
   variable head is outside PeTTa's call region (no clause of `double`), so the read words on a
@@ -262,9 +263,10 @@ theorem triangle_double (live : List Atom) :
   · decide +kernel
   · decide +kernel
 
-/-- **H1's program revisited**: on `{(p a), (= (double $x) (+ $x $x))}` the row `(p a)` is in neither
+/-- **The program of `HEOnTheStep.Triangle` revisited**: on `{(p a), (= (double $x) (+ $x $x))}`
+the row `(p a)` is in neither
 footprint of `(double 4)`, and PeTTa's complete request reads the equation's row at position `1`. -/
-theorem h1_program (live : List Atom) :
+theorem factDouble_program (live : List Atom) :
     (p a, 0) ∉ regionRows (eqRegion live RunsAsFirings.Controls.callDouble
         Mettapedia.Languages.MeTTa.HE.Bindings.empty)
       [p a, RunsAsFirings.Controls.doubleEquation] ∧
@@ -296,9 +298,9 @@ theorem region_disagreement (live : List Atom) :
   rw [read_word_triangle]
   simp [outside]
 
-/-! ### H1's program: `(= (double $x) (+ $x $x))` -/
+/-! ### The equation `(= (double $x) (+ $x $x))` -/
 
-/-- The sides of H1's equation: `(double $x)` and `(+ $x $x)`. -/
+/-- The sides of the equation: `(double $x)` and `(+ $x $x)`. -/
 def doubleX : Atom := .expression [.symbol "double", .var "x"]
 def sumXX : Atom := .expression [.symbol "+", .var "x", .var "x"]
 
@@ -306,7 +308,7 @@ def sumXX : Atom := .expression [.symbol "+", .var "x", .var "x"]
 def xFour : Mettapedia.Languages.MeTTa.HE.Bindings :=
   Mettapedia.Languages.MeTTa.HE.Bindings.empty.assign "x" (.grounded (.int 4))
 
-/-- H1's equation is its own fresh variant for every caller scope that does not show `$x`. -/
+/-- The equation is its own fresh variant for every caller scope that does not show `$x`. -/
 theorem doubleX_alpha (live : List Atom)
     (fresh : ∀ atom ∈ live, ¬ Mettapedia.Languages.MeTTa.HE.Spec.Match.Merge.AtomOccurs atom "x") :
     AlphaVariantRel live RunsAsFirings.Controls.callDouble
@@ -368,9 +370,9 @@ theorem merge_logical :
     rw [shape] at member
     cases member
 
-/-- **H1's equation is inside the region of HE's query `(double 4)`**, for every caller scope
+/-- **The equation is inside the region of HE's query `(double 4)`**, for every caller scope
 that does not show `$x`. -/
-theorem h1_inside (live : List Atom)
+theorem factDouble_inside (live : List Atom)
     (fresh : ∀ atom ∈ live, ¬ Mettapedia.Languages.MeTTa.HE.Spec.Match.Merge.AtomOccurs atom "x") :
     eqRegion live RunsAsFirings.Controls.callDouble Mettapedia.Languages.MeTTa.HE.Bindings.empty
       RunsAsFirings.Controls.doubleEquation = true := by
@@ -383,11 +385,12 @@ theorem h1_inside (live : List Atom)
       merge_logical
   cases (inert 1 _).mp hit
 
-/-- **The read-word triangle on H1's program.** On `{(p a), (= (double $x) (+ $x $x))}` and for
-every caller scope that does not show `$x`, HE's equation query of `(double 4)` and PeTTa's
-complete request read the one equation row at position `1`, and `(p a)` is read by neither: H1's
-`reads_differ` came from the two encodings, not from the dialects. -/
-theorem h1_triangle (live : List Atom)
+/-- **The read-word triangle on the program of `HEOnTheStep.Triangle`.** On
+`{(p a), (= (double $x) (+ $x $x))}` and for every caller scope that does not show `$x`, HE's
+equation query of `(double 4)` and PeTTa's complete request read the one equation row at position
+`1`, and `(p a)` is read by neither: `HEOnTheStep.Triangle.reads_differ` came from the two
+encodings, not from the dialects. -/
+theorem factDouble_triangle (live : List Atom)
     (fresh : ∀ atom ∈ live, ¬ Mettapedia.Languages.MeTTa.HE.Spec.Match.Merge.AtomOccurs atom "x") :
     regionRows (eqRegion live RunsAsFirings.Controls.callDouble
         Mettapedia.Languages.MeTTa.HE.Bindings.empty)
@@ -400,7 +403,7 @@ theorem h1_triangle (live : List Atom)
       Mettapedia.Languages.MeTTa.HE.Bindings.empty)
       (Space.ofList [p a, RunsAsFirings.Controls.doubleEquation]).atoms =
         [(RunsAsFirings.Controls.doubleEquation, 1)] := by
-    simp [regionRows, Space.ofList, h1_inside live fresh, he_pa_outside]
+    simp [regionRows, Space.ofList, factDouble_inside live fresh, he_pa_outside]
   refine ⟨heRows, ?_⟩
   have agree : ∀ x ∈ [p a, RunsAsFirings.Controls.doubleEquation],
       eqRegion live RunsAsFirings.Controls.callDouble Mettapedia.Languages.MeTTa.HE.Bindings.empty x =
@@ -409,7 +412,7 @@ theorem h1_triangle (live : List Atom)
     simp only [List.mem_cons, List.not_mem_nil, or_false] at member
     rcases member with rfl | rfl
     · rw [he_pa_outside, petta_pa_outside]
-    · rw [h1_inside live fresh]
+    · rw [factDouble_inside live fresh]
       exact Controls.double_region.1.symm
   exact ((read_word_triangle _ live RunsAsFirings.Controls.callDouble _ "double"
     [.grounded (.int 4)]).mpr agree).symm.trans heRows
@@ -445,9 +448,9 @@ end Instance
 #print axioms Instance.he_inside
 #print axioms Instance.regions_agree
 #print axioms Instance.triangle_double
-#print axioms Instance.h1_program
-#print axioms Instance.h1_inside
-#print axioms Instance.h1_triangle
+#print axioms Instance.factDouble_program
+#print axioms Instance.factDouble_inside
+#print axioms Instance.factDouble_triangle
 #print axioms Instance.region_disagreement
 #print axioms Instance.variable_head_distinguishes
 

@@ -21,7 +21,7 @@ action, and it is stable under every extension of the answer.
 (`FirstOrder.accepted_iff_consistent`, `FirstOrder.accepted_principal`), and a ground instance is
 fixed by every substitution (`FirstOrder.ground_fixed`); such regions are therefore decided by
 unification and one evaluation (`firstOrder_ask_matching_iff`). The unifier also decides consistency
-(`firstOrder_decidableConsistent`), so the first-order fibre decides independence of static firings
+(`firstOrder_decidableConsistent`), so the first-order fibre decides independence of static exact-query firings
 (`firstOrder_decidableIndependent`). **Controls** (`GroundedControls`):
 with the information `X = 1`, the region of `X` is written by a maker of `1` and not by a maker of
 `0`, and both verdicts are read at the answer.
@@ -172,14 +172,16 @@ instance firstOrder_decidableConsistent [DecidableEq signature.vars] [DecidableE
     Decidable ((FirstOrder.action signature).Consistent store) :=
   decidable_of_iff _ (Option.isSome_iff_exists.trans (FirstOrder.accepted_iff_consistent store))
 
-/-- **The first-order fibre decides independence of static firings**: decidable term equality and
+/-- **The first-order fibre decides independence of static exact-query firings**: decidable term equality and
 the unifier supply the hypotheses of `decidableIndependent`. -/
 def firstOrder_decidableIndependent [DecidableEq signature.vars] [DecidableEq signature.constants]
     [DecidableEq signature.functionSymbols] {O : Type uO} [DecidableEq O] (label : O → Term signature)
-    {f g : Firing (Term signature) (Subst signature) O} (fStatic : f.Static) (gStatic : g.Static)
+    {f g : Firing (Term signature) (Subst signature) O}
+    (fData : ExactQueryAlphabet.ExactData f) (gData : ExactQueryAlphabet.ExactData g)
+    (fStatic : f.Static) (gStatic : g.Static)
     (C : Configuration (Term signature) O) :
     Decidable ((firstOrderTransport (FirstOrder.action signature) label).Independent C f g) :=
-  decidableIndependent (FirstOrder.action signature) label fStatic gStatic (Subst.id signature) C
+  decidableIndependent (FirstOrder.action signature) label fData gData fStatic gStatic (Subst.id signature) C
 
 end FirstOrderFibre
 

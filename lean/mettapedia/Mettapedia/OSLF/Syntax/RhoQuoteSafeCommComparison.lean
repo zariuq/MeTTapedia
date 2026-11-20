@@ -455,10 +455,14 @@ theorem authored_comm_target_residual_equiv
       omega
     subst zero
     simpa using pointwise
-  exact ProcResidualEquiv.trans whole
+  exact ProcResidualEquiv.trans
     (ProcResidualEquiv.struct
-      (StructuralCongruence.par_singleton
-        (encodeTerm (commTarget raw payload body))))
+      (Mettapedia.OSLF.Binding.RhoAuthoredCommRuleCover.authoredResult_structuralCongruence payload body
+        payloadSafe bodySafe))
+    (ProcResidualEquiv.trans whole
+      (ProcResidualEquiv.struct
+        (StructuralCongruence.par_singleton
+          (encodeTerm (commTarget raw payload body)))))
 
 /-- Every quote-safe intrinsic COMM generator has an actual authored
 closed-process firing at a structurally congruent source, and the two

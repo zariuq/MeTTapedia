@@ -4255,7 +4255,9 @@ theorem ordinary_root_canonical_receipt {source target : Pattern}
       simpa only [canonAssignment, List.map_nil, List.length_nil] using traced
     obtain ⟨canonicalTarget, projected, same⟩ := instantiateWith?_same actualRule actualSpec 0
       (ScopedReflectiveExecution.binderOperation environment.reflection actualRule)
-      (binderOperation_same environment.reflection actualRule) actualRule.right .right [] 0
+      (binderOperation_same environment.reflection actualRule
+        ((checkBinderLawsFor_iff [] environment.reflection actualRule).mp (by decide +kernel)))
+      actualRule.right .right [] 0
       captured (canonAssignment captured) target (assignSame_canon captured) reduced
     have root : Interpreted.RootFiring RecursiveCollectionHandoff.canonicalMatchingInterpretation environment
         [] (.base "Graph") source 0 canonicalTrace (canonAssignment captured) (canonAssignment captured) [] canonicalTarget :=

@@ -146,7 +146,7 @@ theorem receipt_complete {source target : RhoProcess}
   obtain ⟨redex, contractum, sourceEquivalent, primitive, targetEquivalent⟩ := step
   have closed := (rhoClosedTermWellSorted_process_iff redex.1).mp redex.2
   obtain ⟨rawTarget, canonicalStep, canonicalTarget⟩ :=
-    canonicalStep_complete_of_rhoStep closed.1 closed.2 primitive
+    canonicalStep_complete_of_rhoStep closed.1 primitive
   have canonicalStep' : RhoStepAt 1 (canonicalize source.1) rawTarget := by
     change canonicalize source.1 = canonicalize redex.1 at sourceEquivalent
     rw [sourceEquivalent]

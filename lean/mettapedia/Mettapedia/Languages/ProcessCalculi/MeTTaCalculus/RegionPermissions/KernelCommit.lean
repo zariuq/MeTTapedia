@@ -70,13 +70,13 @@ identification checks the fourth.
 * **Linearity of the list.** A footprint that lists one take twice is refused; the commit with that
   take once is enabled (`Controls.double_take_refused`). The kernel's identification is the
   specification's `Footprint.Linear`, which `Enabled.apart` alone does not express.
-* **The absence of sources bypasses `observe`.** The kernel checks `observe` for `(absent SOURCES)`
+* **The none query of sources bypasses `observe`.** The kernel checks `observe` for `(absent SOURCES)`
   only at the transform's own location, and each source of it for its own use (`peek` or
   `receive`). The commit it accepts is a predicate query of the sources' regions, so it is not
   formed under the process's rights when the process lacks `observe` there
-  (`Controls.absence_of_sources_not_formed`). The draft binaries behave so: an absence of a read
+  (`Controls.absence_of_sources_not_formed`). The draft binaries behave so: a none query of a read
   source on a channel, which has no `observe` facet, fires through a `peek` handle, while the
-  absence written on the channel itself is refused.
+  none query written on the channel itself is refused.
 
 ## The trace the kernel prints, and the verified checker (`emit`)
 
@@ -85,12 +85,12 @@ and kept, the fresh identities made, each predicate query as a printed region wi
 it matches, and what each `every` row takes. The run-by-run certificate is
 `TraceChecker.checkRun_isSome_iff`; this section says what it certifies of the check above.
 
-* **What the kernel accepts, the checker accepts** (`emit_enabledB`), for a footprint without an
-  absence of sources and a printer faithful to the entries' regions (`Faithful`); and the printed
+* **What the kernel accepts, the checker accepts** (`emit_enabledB`), for a footprint without a
+  none query of sources and a printer faithful to the entries' regions (`Faithful`); and the printed
   rows pass the row test (`emit_rowsOk`).
-* **The printed absence of sources is vacuous.** The kernel prints it as a region of the transform's
+* **The printed none query of sources is vacuous.** The kernel prints it as a region of the transform's
   location whose pattern is the source itself, which no stored atom matches; so a commit carrying it
-  passes the checker at a store where the absence fails
+  passes the checker at a store where the none query fails
   (`Controls.Printed.printed_absence_of_source_vacuous`). `Faithful` fails for it, and the checker
   certifies nothing about it.
 * **The kernel's own picks are not printed as a row**, so a take shared by the kernel and a row
@@ -149,7 +149,7 @@ inductive Entry (Lc A Pt : Type) where
   /-- A predicate query (`absent`, `unique`, `all`) of the region of a pattern at a location, with
   the revision read. -/
   | query (loc : Lc) (rev : ℕ) (pattern : Pt)
-  /-- The absence of sources, `(absent SOURCES)`: the sources, each a use, a location and a
+  /-- The none query of sources, `(absent SOURCES)`: the sources, each a use, a location and a
   pattern, have no row. The kernel records it at the transform's location, with no revision. -/
   | noRows (loc : Lc) (sources : List (Use × Lc × Pt))
 
@@ -217,7 +217,7 @@ instance (takes keeps : List (Sp × ℕ)) : Decidable (Identified takes keeps) :
 
 /-- What the kernel checks of one entry at a view: its location names a region through a handle
 with the right its use needs, its space is at the revision recorded, and a pick's position holds
-the atom read. The absence of sources is checked for `observe` at the transform's location, and
+the atom read. The none query of sources is checked for `observe` at the transform's location, and
 each of its sources for its own use. -/
 def entryOk (v : View Sp O) : Entry Lc A Pt → Bool
   | .pick u l r p a =>
@@ -261,7 +261,7 @@ def check (v : View Sp O) (seen : List (Lc × ℕ)) (fp : List (Entry Lc A Pt))
   seenOk resolve v seen && fp.all (entryOk label L resolve v) &&
     decide (Identified (takeKeys resolve fp) (keepKeys resolve fp)) && makesOk resolve makes
 
-/-- The region of a predicate query entry: the pattern's region in its space; for the absence of
+/-- The region of a predicate query entry: the pattern's region in its space; for the none query of
 sources, the union of its sources' regions. -/
 def Entry.region : Entry Lc A Pt → Option (R → Bool)
   | .pick .. => none
@@ -701,13 +701,13 @@ theorem heldRights_of {H : List Lc} {h : Lc} (member : h ∈ H) {s : Sp} {ρ : F
     heldRights resolve H s f = true :=
   List.any_eq_true.mpr ⟨h, member, by simp [hl, hf]⟩
 
-/-- **The check is formation, entry by entry.** For a footprint without an absence of sources whose
+/-- **The check is formation, entry by entry.** For a footprint without a none query of sources whose
 entries and makes are named by handles in `H`, every commit of the footprint is formed under the
 rights those handles give. -/
 theorem formedUnder_of_check {v₀ v₁ : View Sp O} (cons₀ : v₀.Consistent label L)
     {seen : List (Lc × ℕ)} {fp : List (Entry Lc A Pt)} {makes : List (Lc × A)}
     (ok : check label L resolve v₁ seen fp makes = true)
-    (noAbsentSources : ∀ l xs, Entry.noRows l xs ∉ fp) {H : List Lc}
+    (noNoRowsEntries : ∀ l xs, Entry.noRows l xs ∉ fp) {H : List Lc}
     (named : ∀ e ∈ fp, e.loc ∈ H) (namedMakes : ∀ m ∈ makes, m.1 ∈ H) {c : Commit O R}
     (commit : IsCommitOf label v₁.store (decode label L resolve v₀ fp makes) c) :
     FormedUnder label L.spaceOf (heldRights resolve H) c := by
@@ -743,7 +743,7 @@ theorem formedUnder_of_check {v₀ v₁ : View Sp O} (cons₀ : v₀.Consistent 
     obtain ⟨e, m, he⟩ := List.mem_filterMap.mp inRegions
     cases e with
     | pick => simp [Entry.region] at he
-    | noRows l xs => exact absurd m (noAbsentSources l xs)
+    | noRows l xs => exact absurd m (noNoRowsEntries l xs)
     | query l rv pat =>
         simp only [Entry.region, Option.map_eq_some_iff] at he
         obtain ⟨⟨s, ρ⟩, hl, rfl⟩ := he
@@ -900,7 +900,7 @@ omit [DecidableEq A] [DecidableEq Sp] in
 theorem printed_query_decode {v₀ v₁ : View Sp ℕ} (cons₀ : v₀.Consistent label L)
     (cons₁ : v₁.Consistent label L) {fp : List (Entry Lc A Pt)}
     {printed : Entry Lc A Pt → List (Tm × Tm)} (faithful : Faithful L resolve fp printed)
-    (noAbsentSources : ∀ l xs, Entry.noRows l xs ∉ fp)
+    (noNoRowsEntries : ∀ l xs, Entry.noRows l xs ∉ fp)
     (same : ∀ e ∈ fp, ∀ s ∈ e.spaces resolve, v₁.rows s = v₀.rows s) {e : Entry Lc A Pt}
     (m : e ∈ fp) {region : Lbl → Bool} (he : e.region L resolve = some region) :
     TQuery.decode ⟨printed e, printedSeen label resolve v₁ (printed e) e.loc⟩ =
@@ -908,7 +908,7 @@ theorem printed_query_decode {v₀ v₁ : View Sp ℕ} (cons₀ : v₀.Consisten
   have printedRegion := faithful e m region he
   cases e with
   | pick => simp [Entry.region] at he
-  | noRows l xs => exact absurd m (noAbsentSources l xs)
+  | noRows l xs => exact absurd m (noNoRowsEntries l xs)
   | query l rv pat =>
       have inside := Entry.region_inside he
       simp only [Entry.region, Option.map_eq_some_iff] at he
@@ -919,14 +919,14 @@ theorem printed_query_decode {v₀ v₁ : View Sp ℕ} (cons₀ : v₀.Consisten
       exact cons₁.filter_rows_toFinset (L.regionAt_inside s pat)
 
 /-- **What the kernel accepts, the checker accepts.** When the check passes at the commit's view,
-the walk built the footprint at `v₀` under the revision contract, the footprint has no absence of
+the walk built the footprint at `v₀` under the revision contract, the footprint has no none query of
 sources, and the printer is faithful, the printed commit passes the checker's enabling test at the
 commit's store. -/
 theorem emit_enabledB {v₀ v₁ : View Sp ℕ} (cons₀ : v₀.Consistent label L)
     (cons₁ : v₁.Consistent label L) {seen : List (Lc × ℕ)} {fp : List (Entry Lc A Pt)}
     {makes : List (Lc × A)} (scanned : Scanned resolve v₀ seen fp) (tracks : Tracks v₀ v₁)
     (ok : check label L resolve v₁ seen fp makes = true)
-    (noAbsentSources : ∀ l xs, Entry.noRows l xs ∉ fp)
+    (noNoRowsEntries : ∀ l xs, Entry.noRows l xs ∉ fp)
     {printed : Entry Lc A Pt → List (Tm × Tm)} (faithful : Faithful L resolve fp printed)
     {made : List (ℕ × Lbl)} {storeList : List ℕ} (store : storeList.toFinset = v₁.store)
     (fresh : Disjoint (made.map Prod.fst).toFinset v₁.store) (rows : List (List (Entry Lc A Pt))) :
@@ -963,10 +963,10 @@ theorem emit_enabledB {v₀ v₁ : View Sp ℕ} (cons₀ : v₀.Consistent label
       constructor
       · rintro ⟨tq, ⟨e, m, region, he, rfl⟩, rfl⟩
         exact ⟨region, ⟨e, m, he⟩,
-          (printed_query_decode cons₀ cons₁ faithful noAbsentSources same m he).symm⟩
+          (printed_query_decode cons₀ cons₁ faithful noNoRowsEntries same m he).symm⟩
       · rintro ⟨region, ⟨e, m, he⟩, rfl⟩
         exact ⟨⟨printed e, printedSeen label resolve v₁ (printed e) e.loc⟩, ⟨e, m, region, he, rfl⟩,
-          printed_query_decode cons₀ cons₁ faithful noAbsentSources same m he⟩
+          printed_query_decode cons₀ cons₁ faithful noNoRowsEntries same m he⟩
     · simpa [c, emit, TCommit.decode, TCommit.madeIds] using fresh
   exact (commit.enabled_iff commit.fresh).mpr ⟨holds₀, linear₀.2⟩
 
@@ -1165,32 +1165,32 @@ theorem untracked_write_accepted :
 /-- The empty channel. -/
 abbrev noMessage : View Space ℕ := chanView ∅ 0 []
 
-/-- The absence of a read source on the channel through the `peek` handle, checked at the plain
+/-- The none query of a read source on the channel through the `peek` handle, checked at the plain
 space, as `(transform &plain (absent (read $p (msg $x))) ...)` records it. -/
 def absenceOfSource : List (Entry Loc ℕ (Option ℕ)) := [.noRows .plain [(.keep, .chanPeek, none)]]
 
-/-- The region the absence denotes: the channel's messages, through its one source. -/
-def absenceRegion : Space × ℕ → Bool := fun r =>
+/-- The region the none query denotes: the channel's messages, through its one source. -/
+def noneRegion : Space × ℕ → Bool := fun r =>
   [((Use.keep, Loc.chanPeek, (none : Option ℕ)) : Use × Loc × Option ℕ)].any fun x =>
     match resolve x.2.1 with
     | some (s, _) => labels.regionAt s x.2.2 r
     | none => false
 
 /-- The commit the kernel's footprint denotes: the predicate query of the channel's messages. -/
-def absenceCommit : Commit ℕ (Space × ℕ) :=
-  ⟨∅, ∅, ∅, [⟨absenceRegion, regionOf lab noMessage.store absenceRegion⟩]⟩
+def noneCommit : Commit ℕ (Space × ℕ) :=
+  ⟨∅, ∅, ∅, [⟨noneRegion, regionOf lab noMessage.store noneRegion⟩]⟩
 
-/-- **The absence of sources bypasses `observe`.** The kernel's check passes for the absence of a
-read source on the channel through a `peek` handle, while the same absence written on the channel
+/-- **The none query of sources bypasses `observe`.** The kernel's check passes for the none query of a
+read source on the channel through a `peek` handle, while the same none query written on the channel
 is refused for want of `observe`; and the commit the footprint denotes, a predicate query of the
 channel's region, is not formed under the rights the process holds. -/
 theorem absence_of_sources_not_formed :
     check lab labels resolve noMessage [(.plain, 0), (.chanPeek, 0)] absenceOfSource [] = true ∧
       check lab labels resolve noMessage [(.chanPeek, 0)] [.query .chanPeek 0 none] [] = false ∧
       IsCommitOf lab (∅ : Finset ℕ) (decode lab labels resolve noMessage absenceOfSource [])
-        absenceCommit ∧
-      ¬ FormedUnder lab Prod.fst (heldRights resolve [.plain, .chanPeek]) absenceCommit := by
-  refine ⟨by decide, by decide, ⟨rfl, rfl, fun _ => Multiset.mem_coe.symm, by simp [absenceCommit],
+        noneCommit ∧
+      ¬ FormedUnder lab Prod.fst (heldRights resolve [.plain, .chanPeek]) noneCommit := by
+  refine ⟨by decide, by decide, ⟨rfl, rfl, fun _ => Multiset.mem_coe.symm, by simp [noneCommit],
     rfl⟩, fun formed => ?_⟩
   have observes := formed.queries _ (List.mem_singleton_self _) (.chan, 7) (by decide)
   revert observes
@@ -1279,8 +1279,8 @@ trace): the transform's region, with the source itself as the pattern. -/
 def printedAbsenceOfSource : TQuery :=
   ⟨[(plainRegion, .expr [.sym "read", chanRegion, .expr [.sym "msg", .var 0]])], []⟩
 
-/-- The query that absence means: no message on the channel. -/
-def channelAbsence : TQuery := ⟨[(chanRegion, .expr [.sym "msg", .var 0])], []⟩
+/-- The query that none query means: no message on the channel. -/
+def noMessageQuery : TQuery := ⟨[(chanRegion, .expr [.sym "msg", .var 0])], []⟩
 
 /-- Occurrence `0` is the message `7` on the channel. -/
 def msgTable : List (ℕ × Lbl) := [(0, ⟨chanRegion, .expr [.sym "msg", .sym "7"]⟩)]
@@ -1288,13 +1288,13 @@ def msgTable : List (ℕ × Lbl) := [(0, ⟨chanRegion, .expr [.sym "msg", .sym 
 /-- One message on the channel. -/
 def withMessage : CState := ⟨[0], [0], [], []⟩
 
-/-- **The printed absence of sources is vacuous.** With a message on the channel, a commit carrying
-the printed query is a valid run for the checker, while the query that absence means fails: the
-checker certifies nothing about the absence of sources. -/
+/-- **The printed none query of sources is vacuous.** With a message on the channel, a commit carrying
+the printed query is a valid run for the checker, while the query that none query means fails: the
+checker certifies nothing about the none query of sources. -/
 theorem printed_absence_of_source_vacuous :
     (checkRun (labelOf msgTable) withMessage
         [.fire ⟨[], [], [], [printedAbsenceOfSource], []⟩]).isSome = true ∧
-      (checkRun (labelOf msgTable) withMessage [.fire ⟨[], [], [], [channelAbsence], []⟩]).isSome
+      (checkRun (labelOf msgTable) withMessage [.fire ⟨[], [], [], [noMessageQuery], []⟩]).isSome
         = false := by
   decide
 
@@ -1321,10 +1321,10 @@ def msgPat : Tm := .expr [.sym "msg", .var 0]
 /-- A predicate query of the channel's messages, read at revision `1`. -/
 def channelQuery : Entry Tm Tm Tm := .query chanRegion 1 msgPat
 
-/-- The absence of a read source on the channel, checked at the transform's space. -/
+/-- The none query of a read source on the channel, checked at the transform's space. -/
 def absenceOfSourceEntry : Entry Tm Tm Tm := .noRows plainRegion [(.keep, chanRegion, msgPat)]
 
-/-- What the kernel prints for a region: a query's own location and pattern; for the absence of
+/-- What the kernel prints for a region: a query's own location and pattern; for the none query of
 sources, the transform's space with the source itself as the pattern. -/
 def printedBy : Entry Tm Tm Tm → List (Tm × Tm)
   | .query l _ p => [(l, p)]
@@ -1332,7 +1332,7 @@ def printedBy : Entry Tm Tm Tm → List (Tm × Tm)
   | .pick .. => []
 
 /-- **Faithful printing, positive and negative**: a predicate query printed as its own region is
-faithful; the absence of sources printed as the kernel prints it is not, at the label of a message
+faithful; the none query of sources printed as the kernel prints it is not, at the label of a message
 on the channel. -/
 theorem faithful_controls :
     Faithful traceLabels traceResolve [channelQuery] printedBy ∧

@@ -83,7 +83,7 @@ theorem inClass_guards {R : Rule} (hR : InClass R) :
   | ask a b =>
       simp only [Guard.inClassB, List.all_eq_true, decide_eq_true_eq]
       exact hR.asks a b hg
-  | absent q => rfl
+  | none q => rfl
   | count q n => rfl
   | host h args => exact absurd (hR.noHostGuards _ hg) (by simp [Guard.isHost])
 
@@ -368,7 +368,7 @@ theorem inClassB_iff (R : Rule) : R.inClassB = true ↔ InClass R := by
       | ask a b =>
           simp only [Guard.inClassB, List.all_eq_true, decide_eq_true_eq]
           exact has a b hg
-      | absent q => rfl
+      | none q => rfl
       | count q n => rfl
       | host h args => exact absurd (hh _ hg) (by simp [Guard.isHost])
 

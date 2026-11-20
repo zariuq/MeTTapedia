@@ -1,15 +1,20 @@
 import Mettapedia.OSLF.Syntax.RhoPayloadPresentation
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SemanticSubstitution
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalMatch
 
 /-!
 # Authored rho processes in the payload presentation
 
 An authored process uses bound names. The translation reads each bound name
 as the quotation of the process received there, and each drop of a bound
-name as that process. A whole name is resolved up to quote/drop cancellation
-before scope is consulted, so `@*y` denotes the bound name `y`. Any other
-quotation is literal code: it is translated with no bound names in scope,
-so an outer binder never reaches inside it.
+name as that process. A whole name is read under rho's declared equations
+before scope is consulted, exactly as the executor's whole-name test reads
+it: the quote of a drop is the dropped name, and a parallel unit beside a
+drop is ignored. So `@*y` and `@(*y|0)` both denote the bound name `y`. The
+translation is sorted: a name is a variable or the quotation of a process,
+so a pattern whose whole name is a bound index translates only when it is
+such a name. Any other quotation is literal code: it is translated with no
+bound names in scope, so an outer binder never reaches inside it.
 
 The translation is parameterised by an environment giving the process
 received at each bound index. Under an input the environment is extended by
@@ -21,7 +26,8 @@ set_option autoImplicit false
 namespace Mettapedia.OSLF.Binding.RhoPayloadPresentation
 
 open Mettapedia.OSLF.Binding
-open Mettapedia.OSLF.MeTTaIL.Syntax (Pattern CollType)
+open Mettapedia.OSLF.MeTTaIL.Syntax (Pattern CollType rhoReflectivePresentation)
+open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution (BinderHead)
 
 /-- The process received at each bound index, if any. -/
 abbrev Env (Γ : Ctx sig) : Type := Nat → Option (Term sig Γ Srt.pr)
@@ -46,23 +52,28 @@ def nameOf {Γ : Ctx sig} : Term sig Γ Srt.pr → Term sig Γ Srt.nm
   | .op Op.drp (.cons name .nil) => name
   | process => quoT process
 
-/-- The bound index a name denotes, up to quote/drop cancellation. -/
-def nameHead : Pattern → Option Nat
-  | .bvar k => some k
-  | .apply "NQuote" [.apply "PDrop" [name]] => nameHead name
+/-- The bound index a whole name denotes. The name is read by the binder
+observation of rho's reflective presentation, which decides the executor's
+whole-name test without sorting a parallel bag. -/
+def nameHead (n : Pattern) : Option Nat :=
+  match BinderHead.ofPattern rhoReflectivePresentation n with
+  | .index k => some k
   | _ => none
 
 mutual
 
-/-- Translate a name: a bound name is the name of its received process,
-a quote/drop redex is resolved as a whole name, and any other quotation is
+/-- Translate a name: a bound name is the name of its received process, the
+quote of a drop is resolved as a whole name, a quotation of a process whose
+whole name is a bound index is that bound name, and any other quotation is
 literal code with no bound names in scope. -/
 def tName {Γ : Ctx sig} (ρ : Env Γ) : Pattern → Option (Term sig Γ Srt.nm)
   | .bvar k => (ρ k).map nameOf
   | .fvar label => some (freeT label)
   | .apply "NQuote" [.apply "PDrop" [name]] => tName ρ name
   | .apply "NQuote" [code] =>
-      (tProc (Env.empty []) code).map fun literal => nameOf (lift0 literal)
+      match nameHead (.apply "NQuote" [code]) with
+      | some k => (tProc ρ code).bind fun _ => (ρ k).map nameOf
+      | none => (tProc (Env.empty []) code).map fun literal => nameOf (lift0 literal)
   | _ => none
 
 /-- Translate a process of the reflective core. A drop of a bound name is
@@ -71,7 +82,7 @@ def tProc {Γ : Ctx sig} (ρ : Env Γ) : Pattern → Option (Term sig Γ Srt.pr)
   | .apply "PZero" [] => some nilT
   | .apply "PDrop" [name] =>
       match nameHead name with
-      | some k => ρ k
+      | some k => (tName ρ name).bind fun _ => ρ k
       | none => (tName ρ name).map drpT
   | .apply "POutput" [name, payload] =>
       (tName ρ name).bind fun channel =>
@@ -91,6 +102,240 @@ def tProcs {Γ : Ctx sig} (ρ : Env Γ) : List Pattern → Option (Term sig Γ S
 
 end
 
+/-! ## Reading a whole name
+
+The binder observation is the decidable reading of the executor's
+whole-name test: a pattern's canonical form is a bound index exactly when
+its observation is that index. -/
+
+section Heads
+
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus
+
+theorem nameHead_eq_some_iff_ofPattern {n : Pattern} {k : Nat} :
+    nameHead n = some k ↔ BinderHead.ofPattern rhoReflectivePresentation n = .index k := by
+  unfold nameHead
+  cases BinderHead.ofPattern rhoReflectivePresentation n <;> simp
+
+/-- **The executor's whole-name test is the translation's reading.** A
+pattern's canonical form is the bound index `k` exactly when, as a name, it
+denotes `k`. -/
+theorem canonicalize_eq_bvar_iff_nameHead (n : Pattern) (k : Nat) :
+    Canonical.canonicalize n = .bvar k ↔ nameHead n = some k := by
+  rw [nameHead_eq_some_iff_ofPattern,
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.BinderHead.ofPattern_index_iff,
+    CanonicalMatch.derivedCanonicalize_eq]
+
+theorem nameHead_bvar (k : Nat) : nameHead (.bvar k) = some k := rfl
+
+theorem nameHead_fvar (label : String) : nameHead (.fvar label) = none := rfl
+
+/-- The quote of a drop is observed as the dropped name. -/
+theorem ofPattern_quoteDrop (name : Pattern) :
+    BinderHead.ofPattern rhoReflectivePresentation (.apply "NQuote" [.apply "PDrop" [name]]) =
+      BinderHead.ofPattern rhoReflectivePresentation name := by
+  simp only [BinderHead.ofPattern, BinderHead.ofList]
+  cases BinderHead.ofPattern rhoReflectivePresentation name <;> rfl
+
+theorem nameHead_quoteDrop (name : Pattern) :
+    nameHead (.apply "NQuote" [.apply "PDrop" [name]]) = nameHead name := by
+  unfold nameHead
+  rw [ofPattern_quoteDrop]
+
+/-- A name with a bound head avoids every other index. -/
+theorem nameHead_noBVar {name : Pattern} {j : Nat} (head : nameHead name = some j) (k : Nat) :
+    noBVar k name = (j != k) := by
+  rw [(Canonical.canonicalize_sound name).noBVar_eq k,
+    (canonicalize_eq_bvar_iff_nameHead name j).mpr head]
+  rfl
+
+theorem isWellScopedListAt_iff (depth : Nat) (patterns : List Pattern) :
+    Pattern.isWellScopedListAt depth patterns = true ↔
+      ∀ pattern ∈ patterns, pattern.isWellScopedAt depth = true := by
+  induction patterns with
+  | nil => simp [Pattern.isWellScopedListAt]
+  | cons pattern rest ih => simp [Pattern.isWellScopedListAt, ih]
+
+theorem noBVarList_iff (k : Nat) (patterns : List Pattern) :
+    noBVarList k patterns = true ↔ ∀ pattern ∈ patterns, noBVar k pattern = true := by
+  induction patterns with
+  | nil => simp [noBVarList]
+  | cons pattern rest ih => simp [noBVarList, ih]
+
+/-- A pattern is in scope at a depth exactly when no index from that depth on
+occurs free in it. -/
+theorem isWellScopedAt_iff_noBVar (pattern : Pattern) :
+    ∀ depth, pattern.isWellScopedAt depth = true ↔ ∀ k, depth ≤ k → noBVar k pattern = true := by
+  induction pattern using Pattern.inductionOn with
+  | hbvar index =>
+      intro depth
+      simp only [Pattern.isWellScopedAt, decide_eq_true_eq, noBVar, bne_iff_ne, ne_eq]
+      constructor
+      · intro below k above same
+        omega
+      · intro absent
+        by_contra outside
+        exact absent index (by omega) rfl
+  | hfvar name =>
+      intro depth
+      simp [Pattern.isWellScopedAt, noBVar]
+  | happly constructor arguments ih =>
+      intro depth
+      simp only [Pattern.isWellScopedAt, noBVar, isWellScopedListAt_iff, noBVarList_iff]
+      constructor
+      · intro inScope k above argument member
+        exact (ih argument member depth).mp (inScope argument member) k above
+      · intro absent argument member
+        exact (ih argument member depth).mpr fun k above => absent k above argument member
+  | hlambda name body ih =>
+      intro depth
+      simp only [Pattern.isWellScopedAt, noBVar]
+      rw [ih (depth + 1)]
+      constructor
+      · intro absent k above
+        exact absent (k + 1) (by omega)
+      · intro absent k above
+        obtain ⟨j, rfl⟩ : ∃ j, k = j + 1 := ⟨k - 1, by omega⟩
+        exact absent j (by omega)
+  | hmultiLambda arity names body ih =>
+      intro depth
+      simp only [Pattern.isWellScopedAt, noBVar]
+      rw [ih (depth + arity)]
+      constructor
+      · intro absent k above
+        exact absent (k + arity) (by omega)
+      · intro absent k above
+        obtain ⟨j, rfl⟩ : ∃ j, k = j + arity := ⟨k - arity, by omega⟩
+        exact absent j (by omega)
+  | hsubst body replacement ihBody ihReplacement =>
+      intro depth
+      simp only [Pattern.isWellScopedAt, noBVar, Bool.and_eq_true]
+      rw [ihBody (depth + 1), ihReplacement depth]
+      constructor
+      · rintro ⟨absentBody, absentReplacement⟩ k above
+        exact ⟨absentBody (k + 1) (by omega), absentReplacement k above⟩
+      · intro absent
+        refine ⟨fun k above => ?_, fun k above => (absent k above).2⟩
+        obtain ⟨j, rfl⟩ : ∃ j, k = j + 1 := ⟨k - 1, by omega⟩
+        exact (absent j (by omega)).1
+  | hcollection kind elements rest ih =>
+      intro depth
+      simp only [Pattern.isWellScopedAt, noBVar, isWellScopedListAt_iff, noBVarList_iff]
+      constructor
+      · intro inScope k above element member
+        exact (ih element member depth).mp (inScope element member) k above
+      · intro absent element member
+        exact (ih element member depth).mpr fun k above => absent k above element member
+
+/-- A name that denotes a bound index is in scope exactly when that index is. -/
+theorem nameHead_wellScoped {name : Pattern} {index : Nat}
+    (head : nameHead name = some index) (depth : Nat) :
+    name.isWellScopedAt depth = decide (index < depth) := by
+  rw [Bool.eq_iff_iff, isWellScopedAt_iff_noBVar, decide_eq_true_iff]
+  constructor
+  · intro absent
+    by_contra outside
+    have present := absent index (by omega)
+    rw [nameHead_noBVar head] at present
+    simp at present
+  · intro below k above
+    rw [nameHead_noBVar head]
+    simp only [bne_iff_ne, ne_eq]
+    omega
+
+end Heads
+
+/-! ## The equations of the translation -/
+
+section Equations
+
+variable {Γ : Ctx sig}
+
+theorem tName_bvar (ρ : Env Γ) (k : Nat) : tName ρ (.bvar k) = (ρ k).map nameOf :=
+  rfl
+
+theorem tName_fvar (ρ : Env Γ) (label : String) :
+    tName ρ (.fvar label) = some (freeT label) :=
+  rfl
+
+/-- The quote of a drop translates as the dropped name. -/
+theorem tName_quoteDrop (ρ : Env Γ) (name : Pattern) :
+    tName ρ (.apply "NQuote" [.apply "PDrop" [name]]) = tName ρ name :=
+  tName.eq_3 ρ name
+
+/-- A quotation of a process whose whole name is a bound index is that bound
+name. -/
+theorem tName_quote_of_nameHead (ρ : Env Γ) {code : Pattern} {k : Nat}
+    (hcode : ∀ name, code = .apply "PDrop" [name] → False)
+    (head : nameHead (.apply "NQuote" [code]) = some k) :
+    tName ρ (.apply "NQuote" [code]) = (tProc ρ code).bind fun _ => (ρ k).map nameOf := by
+  rw [tName.eq_4 ρ code hcode, head]
+
+/-- Any other quotation, apart from the quote of a drop, is literal code. -/
+theorem tName_quote (ρ : Env Γ) {code : Pattern}
+    (hcode : ∀ name, code = .apply "PDrop" [name] → False)
+    (head : nameHead (.apply "NQuote" [code]) = none) :
+    tName ρ (.apply "NQuote" [code]) =
+      (tProc (Env.empty []) code).map fun literal => nameOf (lift0 literal) := by
+  rw [tName.eq_4 ρ code hcode, head]
+
+/-- Nothing else is a name. -/
+theorem tName_eq_none (ρ : Env Γ) {x : Pattern}
+    (hbvar : ∀ k, x = .bvar k → False)
+    (hfvar : ∀ label, x = .fvar label → False)
+    (hquote : ∀ code, x = .apply "NQuote" [code] → False) :
+    tName ρ x = none :=
+  tName.eq_5 ρ x hbvar hfvar (fun _ e => hquote _ e) hquote
+
+/-- A drop of a name whose whole name is a bound index runs the process
+received there. -/
+theorem tProc_drop_of_nameHead (ρ : Env Γ) {name : Pattern} {k : Nat}
+    (head : nameHead name = some k) :
+    tProc ρ (.apply "PDrop" [name]) = (tName ρ name).bind fun _ => ρ k := by
+  rw [tProc.eq_2, head]
+
+/-- Any other drop is inert. -/
+theorem tProc_drop_of_nameHead_none (ρ : Env Γ) {name : Pattern}
+    (head : nameHead name = none) :
+    tProc ρ (.apply "PDrop" [name]) = (tName ρ name).map drpT := by
+  rw [tProc.eq_2, head]
+
+end Equations
+
+/-- A translated name whose whole name is a bound index is the name of the
+process received there. -/
+theorem tName_of_nameHead {Γ : Ctx sig} {name : Pattern} {j : Nat}
+    (head : nameHead name = some j) {ρ : Env Γ} {t : Term sig Γ Srt.nm}
+    (translated : tName ρ name = some t) : (ρ j).map nameOf = some t := by
+  refine (tName.mutual_induct
+    (fun {Γ} ρ n => ∀ j t, nameHead n = some j → tName ρ n = some t →
+      (ρ j).map nameOf = some t)
+    (fun _ _ => True) (fun _ _ => True)
+    ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_).1 ρ name j t head translated
+  · intro Γ ρ k j t head h
+    rw [nameHead_bvar] at head
+    cases head
+    exact h
+  · intro Γ ρ label j t head _
+    rw [nameHead_fvar] at head
+    cases head
+  · intro Γ ρ name ih j t head h
+    rw [nameHead_quoteDrop] at head
+    rw [tName_quoteDrop] at h
+    exact ih j t head h
+  · intro Γ ρ code hcode k hk _ j t head h
+    rw [hk] at head
+    cases head
+    rw [tName_quote_of_nameHead ρ hcode hk] at h
+    obtain ⟨_, _, h⟩ := Option.bind_eq_some_iff.mp h
+    exact h
+  · intro Γ ρ code _ hk _ j t head _
+    rw [hk] at head
+    cases head
+  · intro x Γ ρ hbvar hfvar _ hquote j t _ h
+    rw [tName_eq_none ρ hbvar hfvar hquote] at h
+    cases h
+  all_goals intros; trivial
 
 /-! ## Closed code and renaming -/
 
@@ -184,31 +429,39 @@ theorem translate_rename :
     (fun {Γ} ρ ps => ∀ {Δ : Ctx sig} (r : Ren sig Γ Δ) (ρ' : Env Δ),
       (∀ j t, ρ j = some t → ρ' j = some (rename r t)) →
       ∀ t, tProcs ρ ps = some t → tProcs ρ' ps = some (rename r t))
-    ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_
+    ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_
   · intro Γ ρ k Δ r ρ' hρ t h
-    rw [tName.eq_1] at h ⊢
+    rw [tName_bvar] at h ⊢
     obtain ⟨u, hu, rfl⟩ := Option.map_eq_some_iff.mp h
     rw [hρ k u hu, Option.map_some, rename_nameOf]
   · intro Γ ρ label Δ r ρ' hρ t h
-    rw [tName.eq_2] at h ⊢
+    rw [tName_fvar] at h ⊢
     cases h
     rfl
   · intro Γ ρ name ih Δ r ρ' hρ t h
-    rw [tName.eq_3] at h ⊢
+    rw [tName_quoteDrop] at h ⊢
     exact ih r ρ' hρ t h
-  · intro Γ ρ code hcode _ Δ r ρ' hρ t h
-    rw [tName.eq_4 _ _ hcode] at h ⊢
+  · intro Γ ρ code hcode k head ih Δ r ρ' hρ t h
+    rw [tName_quote_of_nameHead _ hcode head] at h ⊢
+    obtain ⟨c, hc, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨u, hu, rfl⟩ := Option.map_eq_some_iff.mp h
+    rw [ih r ρ' hρ c hc, Option.bind_some, hρ k u hu, Option.map_some, rename_nameOf]
+  · intro Γ ρ code hcode head _ Δ r ρ' hρ t h
+    rw [tName_quote _ hcode head] at h
+    rw [tName_quote _ hcode head]
     obtain ⟨literal, hliteral, rfl⟩ := Option.map_eq_some_iff.mp h
     rw [hliteral, Option.map_some, rename_nameOf, rename_lift0]
-  · intro x Γ ρ hbvar hfvar hquoteDrop hquote Δ r ρ' hρ t h
-    rw [tName.eq_5 _ _ hbvar hfvar hquoteDrop hquote] at h
+  · intro x Γ ρ hbvar hfvar _ hquote Δ r ρ' hρ t h
+    rw [tName_eq_none _ hbvar hfvar hquote] at h
     cases h
   · intro Γ ρ Δ r ρ' hρ t h
     rw [tProc.eq_1] at h ⊢
     cases h
     rfl
-  · intro Γ ρ name k hk Δ r ρ' hρ t h
-    simp only [tProc.eq_2, hk] at h ⊢
+  · intro Γ ρ name k hk ih Δ r ρ' hρ t h
+    rw [tProc_drop_of_nameHead _ hk] at h ⊢
+    obtain ⟨m, hm, h⟩ := Option.bind_eq_some_iff.mp h
+    rw [ih r ρ' hρ m hm, Option.bind_some]
     exact hρ k t h
   · intro Γ ρ name hk ih Δ r ρ' hρ t h
     simp only [tProc.eq_2, hk] at h ⊢
@@ -261,19 +514,26 @@ theorem tProc_closed {p : Pattern} {t : Term sig [] Srt.pr}
 /-- A name that denotes no bound index does not consult the environment. -/
 theorem tName_env_irrelevant (n : Pattern) (h : nameHead n = none) (ρ ρ' : Env Γ) :
     tName ρ n = tName ρ' n := by
-  induction n using nameHead.induct with
-  | case1 k => simp [nameHead] at h
-  | case2 name ih =>
-      rw [nameHead.eq_2] at h
-      rw [tName.eq_3, tName.eq_3, ih h]
-  | case3 x hbvar hquoteDrop =>
-      rw [tName.eq_def, tName.eq_def]
-      split
-      · exact (hbvar _ rfl).elim
-      · rfl
-      · exact (hquoteDrop _ rfl).elim
-      · rfl
-      · rfl
+  refine (tName.mutual_induct
+    (fun {Γ} ρ n => nameHead n = none → ∀ ρ' : Env Γ, tName ρ n = tName ρ' n)
+    (fun _ _ => True) (fun _ _ => True)
+    ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_).1 ρ n h ρ'
+  · intro Γ ρ k none _
+    rw [nameHead_bvar] at none
+    cases none
+  · intro Γ ρ label _ ρ'
+    rw [tName_fvar, tName_fvar]
+  · intro Γ ρ name ih none ρ'
+    rw [nameHead_quoteDrop] at none
+    rw [tName_quoteDrop, tName_quoteDrop, ih none ρ']
+  · intro Γ ρ code _ k head _ none _
+    rw [head] at none
+    cases none
+  · intro Γ ρ code hcode head _ _ ρ'
+    rw [tName_quote _ hcode head, tName_quote _ hcode head]
+  · intro x Γ ρ hbvar hfvar _ hquote _ ρ'
+    rw [tName_eq_none _ hbvar hfvar hquote, tName_eq_none _ hbvar hfvar hquote]
+  all_goals intros; trivial
 
 end Renaming
 
@@ -320,31 +580,86 @@ theorem semanticNormalizeName_not_quoteDrop (n : Pattern) :
     exact hquoteDrop m h
   all_goals intros; trivial
 
+/-- Normalization is invisible to the binder observation. -/
+theorem ofPattern_semanticNormalize :
+    (∀ n : Pattern, BinderHead.ofPattern rhoReflectivePresentation (semanticNormalizeName n) =
+      BinderHead.ofPattern rhoReflectivePresentation n) ∧
+    (∀ p : Pattern, BinderHead.ofPattern rhoReflectivePresentation (semanticNormalizeProc p) =
+      BinderHead.ofPattern rhoReflectivePresentation p) ∧
+    (∀ ps : List Pattern,
+      BinderHead.ofList rhoReflectivePresentation (semanticNormalizeProcList ps) =
+        BinderHead.ofList rhoReflectivePresentation ps) := by
+  refine semanticNormalizeName.mutual_induct
+    (fun n => BinderHead.ofPattern rhoReflectivePresentation (semanticNormalizeName n) =
+      BinderHead.ofPattern rhoReflectivePresentation n)
+    (fun p => BinderHead.ofPattern rhoReflectivePresentation (semanticNormalizeProc p) =
+      BinderHead.ofPattern rhoReflectivePresentation p)
+    (fun ps => BinderHead.ofList rhoReflectivePresentation (semanticNormalizeProcList ps) =
+      BinderHead.ofList rhoReflectivePresentation ps)
+    ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_
+  · intro k
+    rfl
+  · intro x
+    rfl
+  · intro n ih
+    rw [semanticNormalizeName.eq_3, ofPattern_quoteDrop, ih]
+  · intro p hp ih
+    rw [semanticNormalizeName.eq_4 p hp]
+    simp only [BinderHead.ofPattern, BinderHead.ofList, ih]
+  · intro n hbvar hfvar hquoteDrop hquote
+    rw [semanticNormalizeName.eq_5 n hbvar hfvar hquoteDrop hquote]
+  · intro k
+    rfl
+  · intro x
+    rfl
+  · intro n q ihn ihq
+    simp only [semanticNormalizeProc.eq_3, BinderHead.ofPattern, BinderHead.ofList, ihn, ihq]
+  · intro n body ihn _
+    simp only [semanticNormalizeProc.eq_4, BinderHead.ofPattern, BinderHead.ofList, ihn]
+  · intro n ihn
+    simp only [semanticNormalizeProc.eq_5, BinderHead.ofPattern, BinderHead.ofList, ihn]
+  · intro p ihp
+    simp only [semanticNormalizeProc.eq_6, BinderHead.ofPattern, BinderHead.ofList, ihp]
+  · intro nm body _
+    rw [semanticNormalizeProc.eq_7]
+    rfl
+  · intro n nms body _
+    rw [semanticNormalizeProc.eq_8]
+    rfl
+  · intro body repl _ _
+    rw [semanticNormalizeProc.eq_9]
+    rfl
+  · intro ct elems rest ih
+    rw [semanticNormalizeProc.eq_10]
+    cases rest with
+    | none => simp only [BinderHead.ofPattern, ih]
+    | some rest => rfl
+  · intro p hbvar hfvar hout hinp hdrop hquote hlam hmulti hsubst hcoll
+    rw [semanticNormalizeProc.eq_11 p hbvar hfvar hout hinp hdrop hquote hlam hmulti
+      hsubst hcoll]
+  · rfl
+  · intro p ps ihp ihps
+    simp only [semanticNormalizeProcList, BinderHead.ofList, ihp, ihps]
+
 /-- Normalization preserves the bound index a name denotes. -/
 theorem nameHead_semanticNormalizeName (n : Pattern) :
     nameHead (semanticNormalizeName n) = nameHead n := by
-  refine (semanticNormalizeName.mutual_induct
-    (fun n => nameHead (semanticNormalizeName n) = nameHead n)
-    (fun _ => True) (fun _ => True)
-    ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_).1 n
-  · intro k
-    simp [semanticNormalizeName]
-  · intro x
-    simp [semanticNormalizeName]
-  · intro n ih
-    rw [semanticNormalizeName.eq_3, nameHead.eq_2, ih]
-  · intro p hp _
-    rw [semanticNormalizeName.eq_4 p hp]
-    rw [nameHead.eq_3 _ (by simp), nameHead.eq_3 _ (by simp)]
-    · intro m h
-      simp only [Pattern.apply.injEq, List.cons.injEq, and_true, true_and] at h
-      exact hp m h
-    · intro m h
-      simp only [Pattern.apply.injEq, List.cons.injEq, and_true, true_and] at h
-      exact semanticNormalizeProc_not_drop hp m h
-  · intro n hbvar hfvar hquoteDrop hquote
-    rw [semanticNormalizeName.eq_5 n hbvar hfvar hquoteDrop hquote]
-  all_goals intros; trivial
+  unfold nameHead
+  rw [ofPattern_semanticNormalize.1 n]
+
+/-- The normalized test is one half of the executor's whole-name test: a
+name that normalizes to a bound index is that index. The converse fails:
+`@(*x|0)` is normal, and its canonical form is `x` (see the controls). -/
+theorem canonicalize_eq_bvar_of_semanticNormalizeName {n : Pattern} {k : Nat}
+    (normal : semanticNormalizeName n = .bvar k) : Canonical.canonicalize n = .bvar k := by
+  rw [canonicalize_eq_bvar_iff_nameHead, ← nameHead_semanticNormalizeName, normal]
+  rfl
+
+/-- Normalization preserves the bound index of a quotation. -/
+theorem nameHead_quote_semanticNormalizeProc (p : Pattern) :
+    nameHead (.apply "NQuote" [semanticNormalizeProc p]) = nameHead (.apply "NQuote" [p]) := by
+  unfold nameHead
+  simp only [BinderHead.ofPattern, BinderHead.ofList, ofPattern_semanticNormalize.2.1 p]
 
 /-- A process that is none of the translated forms has no translation. -/
 theorem tProc_eq_none_of_not {Γ : Ctx sig} (ρ : Env Γ) (p : Pattern)
@@ -375,10 +690,17 @@ theorem translate_semanticNormalize :
   · intro x Γ ρ
     simp [semanticNormalizeName]
   · intro n ih Γ ρ
-    rw [semanticNormalizeName.eq_3, tName.eq_3, ih]
+    rw [semanticNormalizeName.eq_3, tName_quoteDrop, ih]
   · intro p hp ih Γ ρ
-    rw [semanticNormalizeName.eq_4 p hp, tName.eq_4 _ _ hp,
-      tName.eq_4 _ _ (semanticNormalizeProc_not_drop hp), ih]
+    rw [semanticNormalizeName.eq_4 p hp]
+    have heads := nameHead_quote_semanticNormalizeProc p
+    have hp' := semanticNormalizeProc_not_drop hp
+    cases head : nameHead (.apply "NQuote" [p]) with
+    | some k =>
+        rw [tName_quote_of_nameHead ρ hp head, tName_quote_of_nameHead ρ hp' (heads.trans head),
+          ih]
+    | none =>
+        rw [tName_quote ρ hp head, tName_quote ρ hp' (heads.trans head), ih]
   · intro n hbvar hfvar hquoteDrop hquote Γ ρ
     rw [semanticNormalizeName.eq_5 n hbvar hfvar hquoteDrop hquote]
   · intro k Γ ρ
@@ -443,18 +765,92 @@ section Communication
 
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus
 
-/-- The three outcomes of the executor's name substitution. -/
+/-- A translated pattern has no free occurrence of an index that its
+environment leaves unbound. -/
+theorem translate_noBVar :
+    (∀ {Γ : Ctx sig} (ρ : Env Γ) (n : Pattern), ∀ t, tName ρ n = some t →
+      ∀ k, ρ k = none → noBVar k n = true) ∧
+    (∀ {Γ : Ctx sig} (ρ : Env Γ) (p : Pattern), ∀ t, tProc ρ p = some t →
+      ∀ k, ρ k = none → noBVar k p = true) ∧
+    (∀ {Γ : Ctx sig} (ρ : Env Γ) (ps : List Pattern), ∀ t, tProcs ρ ps = some t →
+      ∀ k, ρ k = none → noBVarList k ps = true) := by
+  refine tName.mutual_induct
+    (fun {Γ} ρ n => ∀ t, tName ρ n = some t → ∀ k, ρ k = none → noBVar k n = true)
+    (fun {Γ} ρ p => ∀ t, tProc ρ p = some t → ∀ k, ρ k = none → noBVar k p = true)
+    (fun {Γ} ρ ps => ∀ t, tProcs ρ ps = some t → ∀ k, ρ k = none → noBVarList k ps = true)
+    ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_
+  · intro Γ ρ j t h k hk
+    rw [tName_bvar] at h
+    obtain ⟨u, hu, rfl⟩ := Option.map_eq_some_iff.mp h
+    have distinct : j ≠ k := by
+      rintro rfl
+      rw [hk] at hu
+      cases hu
+    simpa [noBVar] using distinct
+  · intro Γ ρ label t h k hk
+    simp [noBVar]
+  · intro Γ ρ name ih t h k hk
+    rw [tName_quoteDrop] at h
+    simp [noBVar, noBVarList, ih t h k hk]
+  · intro Γ ρ code hcode j head ih t h k hk
+    rw [tName_quote_of_nameHead _ hcode head] at h
+    obtain ⟨c, hc, -⟩ := Option.bind_eq_some_iff.mp h
+    simp [noBVar, noBVarList, ih c hc k hk]
+  · intro Γ ρ code hcode head ih t h k hk
+    rw [tName_quote _ hcode head] at h
+    obtain ⟨literal, hliteral, rfl⟩ := Option.map_eq_some_iff.mp h
+    simp [noBVar, noBVarList, ih literal hliteral k rfl]
+  · intro x Γ ρ hbvar hfvar _ hquote t h k hk
+    rw [tName_eq_none _ hbvar hfvar hquote] at h
+    cases h
+  · intro Γ ρ t h k hk
+    simp [noBVar, noBVarList]
+  · intro Γ ρ name j hj ih t h k hk
+    rw [tProc_drop_of_nameHead _ hj] at h
+    obtain ⟨m, hm, -⟩ := Option.bind_eq_some_iff.mp h
+    simp [noBVar, noBVarList, ih m hm k hk]
+  · intro Γ ρ name hj ih t h k hk
+    simp only [tProc.eq_2, hj] at h
+    obtain ⟨m, hm, rfl⟩ := Option.map_eq_some_iff.mp h
+    simp [noBVar, noBVarList, ih m hm k hk]
+  · intro Γ ρ name payload ihn ihp t h k hk
+    rw [tProc.eq_3] at h
+    simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+    obtain ⟨c, hc, process, hprocess, rfl⟩ := h
+    simp [noBVar, noBVarList, ihn c hc k hk, ihp process hprocess k hk]
+  · intro Γ ρ name body ihn ihb t h k hk
+    rw [tProc.eq_4] at h
+    simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+    obtain ⟨c, hc, continuation, hcontinuation, rfl⟩ := h
+    have unbound : ρ.up (k + 1) = none := by simp [Env.up, hk]
+    simp [noBVar, noBVarList, ihn c hc k hk, ihb continuation hcontinuation (k + 1) unbound]
+  · intro Γ ρ elements ih t h k hk
+    rw [tProc.eq_5] at h
+    simp [noBVar, ih t h k hk]
+  · intro x Γ ρ hzero hdrop hout hinp hbag t h k hk
+    rw [tProc.eq_6 _ _ hzero hdrop hout hinp hbag] at h
+    cases h
+  · intro Γ ρ t h k hk
+    simp [noBVarList]
+  · intro Γ ρ process rest ihp ihr t h k hk
+    rw [tProcs.eq_2] at h
+    simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+    obtain ⟨head, hhead, tail, htail, rfl⟩ := h
+    simp [noBVarList, ihp head hhead k hk, ihr tail htail k hk]
+
+/-- The three outcomes of the executor's name substitution: the whole name
+is the substituted index, another bound index, or no bound index. -/
 theorem semanticSubstNameMark_spec (k : Nat) (replacement name : Pattern) :
-    (semanticNormalizeName name = .bvar k ∧
+    (nameHead name = some k ∧
       semanticSubstNameMark k replacement name = (replacement, true)) ∨
-    (∃ m, m ≠ k ∧ semanticNormalizeName name = .bvar m ∧
-      semanticSubstNameMark k replacement name = (.bvar m, false)) ∨
-    ((∀ m, semanticNormalizeName name ≠ .bvar m) ∧
+    (∃ m, m ≠ k ∧ nameHead name = some m ∧
+      semanticSubstNameMark k replacement name = (semanticNormalizeName name, false)) ∨
+    (nameHead name = none ∧
       semanticSubstNameMark k replacement name = (semanticNormalizeName name, false)) := by
   unfold semanticSubstNameMark
-  generalize semanticNormalizeName name = norm
-  cases norm with
-  | bvar m =>
+  simp only [canonicalize_eq_bvar_iff_nameHead]
+  cases head : nameHead name with
+  | some m =>
       by_cases hm : m = k
       · subst hm
         left
@@ -462,10 +858,10 @@ theorem semanticSubstNameMark_spec (k : Nat) (replacement name : Pattern) :
       · right
         left
         exact ⟨m, hm, rfl, by simp [hm]⟩
-  | _ =>
+  | none =>
       right
       right
-      exact ⟨fun _ => by simp, rfl⟩
+      simp
 
 variable {q : Pattern} {q₀ : Term sig [] Srt.pr}
 
@@ -473,32 +869,99 @@ variable {q : Pattern} {q₀ : Term sig [] Srt.pr}
 abbrev payloadName (q : Pattern) : Pattern :=
   .apply "NQuote" [semanticNormalizeProc q]
 
+/-- The quotation of a closed translatable payload denotes no bound index. -/
+theorem nameHead_quote_of_closed (hq : tProc (Env.empty []) q = some q₀) :
+    nameHead (.apply "NQuote" [q]) = none := by
+  cases head : nameHead (.apply "NQuote" [q]) with
+  | none => rfl
+  | some k =>
+      have absent := translate_noBVar.2.1 (Env.empty []) q q₀ hq k rfl
+      have present := nameHead_noBVar head k
+      simp [noBVar, noBVarList, absent] at present
+
 /-- The executor's payload name translates to the name of the payload. -/
 theorem tName_payloadName (hq : tProc (Env.empty []) q = some q₀)
     {Γ : Ctx sig} (ρ : Env Γ) :
     tName ρ (payloadName q) = some (nameOf (lift0 q₀)) := by
+  have closed := nameHead_quote_of_closed hq
   by_cases hdrop : ∃ m, q = .apply "PDrop" [m]
   · obtain ⟨m, rfl⟩ := hdrop
-    rw [payloadName, semanticNormalizeProc.eq_5, tName.eq_3,
+    rw [nameHead_quoteDrop] at closed
+    rw [payloadName, semanticNormalizeProc.eq_5, tName_quoteDrop,
       translate_semanticNormalize.1 m ρ]
-    rw [tProc.eq_2] at hq
-    cases hm : nameHead m with
-    | some k =>
-        simp [hm, Env.empty] at hq
-    | none =>
-        simp only [hm] at hq
-        obtain ⟨m₀, hm₀, rfl⟩ := Option.map_eq_some_iff.mp hq
-        rw [tName_closed hm₀ ρ]
-        rfl
+    simp only [tProc.eq_2, closed] at hq
+    obtain ⟨m₀, hm₀, rfl⟩ := Option.map_eq_some_iff.mp hq
+    rw [tName_closed hm₀ ρ]
+    rfl
   · have hnot : ∀ m, q = .apply "PDrop" [m] → False := fun m h => hdrop ⟨m, h⟩
-    rw [payloadName, tName.eq_4 _ _ (semanticNormalizeProc_not_drop hnot),
+    rw [payloadName, tName_quote _ (semanticNormalizeProc_not_drop hnot)
+        ((nameHead_quote_semanticNormalizeProc q).trans closed),
       translate_semanticNormalize.2.1 q (Env.empty []), hq, Option.map_some]
 
-/-- A name that is not a bound index after normalization denotes none. -/
-theorem nameHead_eq_none_of_normal {name : Pattern}
-    (h : ∀ m, semanticNormalizeName name ≠ .bvar m) : nameHead name = none := by
-  rw [← nameHead_semanticNormalizeName]
-  exact nameHead.eq_3 _ (fun m e => h m e) (semanticNormalizeName_not_quoteDrop name)
+/-- The translation consults its environment only at the indices that occur
+free. -/
+theorem translate_agree :
+    (∀ {Γ : Ctx sig} (ρ : Env Γ) (n : Pattern) (ρ' : Env Γ),
+      (∀ k, noBVar k n = false → ρ' k = ρ k) → tName ρ' n = tName ρ n) ∧
+    (∀ {Γ : Ctx sig} (ρ : Env Γ) (p : Pattern) (ρ' : Env Γ),
+      (∀ k, noBVar k p = false → ρ' k = ρ k) → tProc ρ' p = tProc ρ p) ∧
+    (∀ {Γ : Ctx sig} (ρ : Env Γ) (ps : List Pattern) (ρ' : Env Γ),
+      (∀ k, noBVarList k ps = false → ρ' k = ρ k) → tProcs ρ' ps = tProcs ρ ps) := by
+  refine tName.mutual_induct
+    (fun {Γ} ρ n => ∀ ρ' : Env Γ,
+      (∀ k, noBVar k n = false → ρ' k = ρ k) → tName ρ' n = tName ρ n)
+    (fun {Γ} ρ p => ∀ ρ' : Env Γ,
+      (∀ k, noBVar k p = false → ρ' k = ρ k) → tProc ρ' p = tProc ρ p)
+    (fun {Γ} ρ ps => ∀ ρ' : Env Γ,
+      (∀ k, noBVarList k ps = false → ρ' k = ρ k) → tProcs ρ' ps = tProcs ρ ps)
+    ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_
+  · intro Γ ρ k ρ' agree
+    rw [tName_bvar, tName_bvar, agree k (by simp [noBVar])]
+  · intro Γ ρ label ρ' _
+    rfl
+  · intro Γ ρ name ih ρ' agree
+    rw [tName_quoteDrop, tName_quoteDrop]
+    exact ih ρ' fun k hk => agree k (by simp [noBVar, noBVarList, hk])
+  · intro Γ ρ code hcode j head ih ρ' agree
+    rw [tName_quote_of_nameHead _ hcode head, tName_quote_of_nameHead _ hcode head,
+      ih ρ' fun k hk => agree k (by simp [noBVar, noBVarList, hk]),
+      agree j (by rw [nameHead_noBVar head]; simp)]
+  · intro Γ ρ code hcode head _ ρ' _
+    rw [tName_quote _ hcode head, tName_quote _ hcode head]
+  · intro x Γ ρ hbvar hfvar _ hquote ρ' _
+    rw [tName_eq_none _ hbvar hfvar hquote, tName_eq_none _ hbvar hfvar hquote]
+  · intro Γ ρ ρ' _
+    rfl
+  · intro Γ ρ name j head ih ρ' agree
+    rw [tProc_drop_of_nameHead _ head, tProc_drop_of_nameHead _ head,
+      ih ρ' fun k hk => agree k (by simp [noBVar, noBVarList, hk]),
+      agree j (by simp [noBVar, noBVarList, nameHead_noBVar head])]
+  · intro Γ ρ name head ih ρ' agree
+    rw [tProc_drop_of_nameHead_none _ head, tProc_drop_of_nameHead_none _ head,
+      ih ρ' fun k hk => agree k (by simp [noBVar, noBVarList, hk])]
+  · intro Γ ρ name payload ihn ihp ρ' agree
+    rw [tProc.eq_3, tProc.eq_3, ihn ρ' fun k hk => agree k (by simp [noBVar, noBVarList, hk]),
+      ihp ρ' fun k hk => agree k (by simp [noBVar, noBVarList, hk])]
+  · intro Γ ρ name body ihn ihb ρ' agree
+    rw [tProc.eq_4, tProc.eq_4, ihn ρ' fun k hk => agree k (by simp [noBVar, noBVarList, hk]),
+      ihb ρ'.up ?_]
+    intro k hk
+    cases k with
+    | zero => rfl
+    | succ k =>
+        simp only [Env.up]
+        rw [agree k (by simp [noBVar, noBVarList, hk])]
+  · intro Γ ρ elements ih ρ' agree
+    rw [tProc.eq_5, tProc.eq_5]
+    exact ih ρ' fun k hk => agree k (by simpa [noBVar] using hk)
+  · intro x Γ ρ hzero hdrop hout hinp hbag ρ' _
+    rw [tProc.eq_6 _ _ hzero hdrop hout hinp hbag, tProc.eq_6 _ _ hzero hdrop hout hinp hbag]
+  · intro Γ ρ ρ' _
+    rfl
+  · intro Γ ρ process rest ihp ihr ρ' agree
+    rw [tProcs.eq_2, tProcs.eq_2,
+      ihp ρ' fun k hk => agree k (by simp [noBVarList, hk]),
+      ihr ρ' fun k hk => agree k (by simp [noBVarList, hk])]
 
 section Environments
 
@@ -506,51 +969,64 @@ variable {Γ : Ctx sig} (k : Nat) (ρ ρ' : Env Γ)
 
 /-- Executor name substitution is environment extension. -/
 theorem tName_semanticSubstName (hq : tProc (Env.empty []) q = some q₀) (n : Pattern)
-    (hk : ρ' k = some (lift0 q₀)) (hother : ∀ j, j ≠ k → ρ' j = ρ j) :
+    (hk : ρ' k = some (lift0 q₀)) (hother : ∀ j, j ≠ k → ρ' j = ρ j)
+    {t : Term sig Γ Srt.nm} (translated : tName ρ' n = some t) :
     tName ρ (semanticSubstName k (payloadName q) n) = tName ρ' n := by
   unfold semanticSubstName
   rcases semanticSubstNameMark_spec k (payloadName q) n with
-    ⟨hnorm, hmark⟩ | ⟨m, hm, hnorm, hmark⟩ | ⟨hnorm, hmark⟩
-  · rw [hmark, tName_payloadName hq, ← translate_semanticNormalize.1 n ρ', hnorm,
-      tName.eq_1, hk, Option.map_some]
-  · rw [hmark, ← translate_semanticNormalize.1 n ρ', hnorm, tName.eq_1, tName.eq_1,
-      hother m hm]
+    ⟨head, hmark⟩ | ⟨m, hm, head, hmark⟩ | ⟨head, hmark⟩
+  · have received := tName_of_nameHead head translated
+    rw [hk, Option.map_some] at received
+    rw [hmark, tName_payloadName hq, translated, received]
   · rw [hmark, translate_semanticNormalize.1 n ρ]
-    exact tName_env_irrelevant n (nameHead_eq_none_of_normal hnorm) ρ ρ'
+    refine (translate_agree.1 ρ n ρ' fun j hj => hother j ?_).symm
+    rintro rfl
+    rw [nameHead_noBVar head] at hj
+    exact hm (by simpa using hj)
+  · rw [hmark, translate_semanticNormalize.1 n ρ]
+    exact tName_env_irrelevant n head ρ ρ'
+
+/-- A drop whose name the substitution did not supply keeps the drop. -/
+theorem semanticSubstProc_drop_of_unmatched {replacement name name' : Pattern}
+    (hmark : semanticSubstNameMark k replacement name = (name', false)) :
+    semanticSubstProc k replacement (.apply "PDrop" [name]) = .apply "PDrop" [name'] := by
+  rw [semanticSubstProc.eq_4, hmark]
+  split
+  rename_i first second hpair
+  obtain ⟨rfl, rfl⟩ := hpair
+  split
+  · rename_i hfalse
+    cases hfalse
+  · rfl
 
 /-- Executor substitution at a drop is environment extension: a drop of
 the received name runs the payload; any other drop is unchanged. -/
 theorem tProc_semanticSubst_drop (hq : tProc (Env.empty []) q = some q₀) (name : Pattern)
-    (hk : ρ' k = some (lift0 q₀)) (hother : ∀ j, j ≠ k → ρ' j = ρ j) :
+    (hk : ρ' k = some (lift0 q₀)) (hother : ∀ j, j ≠ k → ρ' j = ρ j)
+    {t : Term sig Γ Srt.pr} (translated : tProc ρ' (.apply "PDrop" [name]) = some t) :
     tProc ρ (semanticSubstProc k (payloadName q) (.apply "PDrop" [name])) =
       tProc ρ' (.apply "PDrop" [name]) := by
-  rw [semanticSubstProc.eq_4]
   rcases semanticSubstNameMark_spec k (payloadName q) name with
-    ⟨hnorm, hmark⟩ | ⟨m, hm, hnorm, hmark⟩ | ⟨hnorm, hmark⟩
-  · rw [hmark]
+    ⟨head, hmark⟩ | ⟨m, hm, head, hmark⟩ | ⟨head, hmark⟩
+  · rw [semanticSubstProc.eq_4, hmark]
     show tProc ρ (semanticNormalizeProc q) = _
-    rw [translate_semanticNormalize.2.1 q ρ, tProc_closed hq ρ, tProc.eq_2,
-      ← nameHead_semanticNormalizeName, hnorm]
-    exact hk.symm
-  · rw [hmark]
-    show tProc ρ (.apply "PDrop" [.bvar m]) = _
-    rw [tProc.eq_2, tProc.eq_2, ← nameHead_semanticNormalizeName name, hnorm]
-    exact (hother m hm).symm
-  · rw [hmark]
-    have hnone := nameHead_eq_none_of_normal hnorm
-    have hnormNone : nameHead (semanticNormalizeName name) = none := by
-      rw [nameHead_semanticNormalizeName]
-      exact hnone
-    split
-    rename_i name' matched hpair
-    obtain ⟨rfl, rfl⟩ := hpair
-    split
-    · rename_i hfalse
-      cases hfalse
-    · rw [tProc.eq_2, tProc.eq_2, hnormNone, hnone]
-      simp only
-      rw [translate_semanticNormalize.1 name ρ,
-        tName_env_irrelevant name hnone ρ ρ']
+    rw [translate_semanticNormalize.2.1 q ρ, tProc_closed hq ρ, translated]
+    rw [tProc_drop_of_nameHead _ head] at translated
+    obtain ⟨_, _, received⟩ := Option.bind_eq_some_iff.mp translated
+    rw [hk] at received
+    exact received
+  · rw [semanticSubstProc_drop_of_unmatched k hmark, ← semanticNormalizeProc.eq_5,
+      translate_semanticNormalize.2.1 _ ρ]
+    refine (translate_agree.2.1 ρ _ ρ' fun j hj => hother j ?_).symm
+    intro same
+    rw [same] at hj
+    have free : noBVar k name = false := by simpa [noBVar, noBVarList] using hj
+    rw [nameHead_noBVar head] at free
+    exact hm (by simpa using free)
+  · rw [semanticSubstProc_drop_of_unmatched k hmark, tProc.eq_2, tProc.eq_2,
+      nameHead_semanticNormalizeName, head]
+    simp only
+    rw [translate_semanticNormalize.1 name ρ, tName_env_irrelevant name head ρ ρ']
 
 end Environments
 
@@ -568,68 +1044,80 @@ theorem up_extended {Γ : Ctx sig} {k : Nat} {ρ ρ' : Env Γ}
         simp only [Env.up]
         rw [hother j (fun e => hj (by rw [e]))]
 
-/-- **Executor COMM is environment extension.** For a closed payload, the
-executor's substitution at index `k` translates exactly as the unsubstituted
-process in the environment that receives the payload at `k`. -/
+/-- **Executor COMM is environment extension.** For a closed payload and a
+process that translates in the receiving environment, the executor's
+substitution at index `k` translates exactly as the unsubstituted process in
+the environment that receives the payload at `k`. -/
 theorem translate_semanticSubst (hq : tProc (Env.empty []) q = some q₀) :
     (∀ (k : Nat) (p : Pattern) {Γ : Ctx sig} (ρ ρ' : Env Γ),
       ρ' k = some (lift0 q₀) → (∀ j, j ≠ k → ρ' j = ρ j) →
+      (∃ t, tProc ρ' p = some t) →
       tProc ρ (semanticSubstProc k (payloadName q) p) = tProc ρ' p) ∧
     (∀ (k : Nat) (ps : List Pattern) {Γ : Ctx sig} (ρ ρ' : Env Γ),
       ρ' k = some (lift0 q₀) → (∀ j, j ≠ k → ρ' j = ρ j) →
+      (∃ t, tProcs ρ' ps = some t) →
       tProcs ρ (semanticSubstProcList k (payloadName q) ps) = tProcs ρ' ps) := by
   refine semanticSubstProc.mutual_induct (payloadName q)
     (fun k p => ∀ {Γ : Ctx sig} (ρ ρ' : Env Γ),
       ρ' k = some (lift0 q₀) → (∀ j, j ≠ k → ρ' j = ρ j) →
+      (∃ t, tProc ρ' p = some t) →
       tProc ρ (semanticSubstProc k (payloadName q) p) = tProc ρ' p)
     (fun k ps => ∀ {Γ : Ctx sig} (ρ ρ' : Env Γ),
       ρ' k = some (lift0 q₀) → (∀ j, j ≠ k → ρ' j = ρ j) →
+      (∃ t, tProcs ρ' ps = some t) →
       tProcs ρ (semanticSubstProcList k (payloadName q) ps) = tProcs ρ' ps)
     ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_
-  · intro k n hn Γ ρ ρ' _ _
+  · intro k n hn Γ ρ ρ' _ _ _
     rw [semanticSubstProc.eq_1, if_pos hn]
     rw [tProc_eq_none_of_not _ _ (by simp) (by simp) (by simp) (by simp) (by simp),
       tProc_eq_none_of_not _ _ (by simp) (by simp) (by simp) (by simp) (by simp)]
-  · intro k n hn Γ ρ ρ' _ _
+  · intro k n hn Γ ρ ρ' _ _ _
     rw [semanticSubstProc.eq_1, if_neg hn]
     rw [tProc_eq_none_of_not _ _ (by simp) (by simp) (by simp) (by simp) (by simp),
       tProc_eq_none_of_not _ _ (by simp) (by simp) (by simp) (by simp) (by simp)]
-  · intro k x Γ ρ ρ' _ _
+  · intro k x Γ ρ ρ' _ _ _
     rw [semanticSubstProc.eq_2]
     rw [tProc_eq_none_of_not _ _ (by simp) (by simp) (by simp) (by simp) (by simp),
       tProc_eq_none_of_not _ _ (by simp) (by simp) (by simp) (by simp) (by simp)]
-  · intro k p Γ ρ ρ' _ _
+  · intro k p Γ ρ ρ' _ _ _
     rw [semanticSubstProc.eq_3]
     rw [tProc_eq_none_of_not _ _ (by simp) (by simp) (by simp) (by simp) (by simp),
       tProc_eq_none_of_not _ _ (by simp) (by simp) (by simp) (by simp) (by simp)]
-  · intro k name _ _ Γ ρ ρ' hk hother
-    exact tProc_semanticSubst_drop k ρ ρ' hq name hk hother
-  · intro k name _ _ _ _ Γ ρ ρ' hk hother
-    exact tProc_semanticSubst_drop k ρ ρ' hq name hk hother
-  · intro k n payload ih Γ ρ ρ' hk hother
+  · intro k name _ _ Γ ρ ρ' hk hother ⟨t, translated⟩
+    exact tProc_semanticSubst_drop k ρ ρ' hq name hk hother translated
+  · intro k name _ _ _ _ Γ ρ ρ' hk hother ⟨t, translated⟩
+    exact tProc_semanticSubst_drop k ρ ρ' hq name hk hother translated
+  · intro k n payload ih Γ ρ ρ' hk hother ⟨t, translated⟩
+    rw [tProc.eq_3] at translated
+    simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at translated
+    obtain ⟨c, hc, process, hprocess, -⟩ := translated
     rw [semanticSubstProc.eq_5, tProc.eq_3, tProc.eq_3,
-      tName_semanticSubstName k ρ ρ' hq n hk hother, ih ρ ρ' hk hother]
-  · intro k n body ih Γ ρ ρ' hk hother
+      tName_semanticSubstName k ρ ρ' hq n hk hother hc, ih ρ ρ' hk hother ⟨process, hprocess⟩]
+  · intro k n body ih Γ ρ ρ' hk hother ⟨t, translated⟩
+    rw [tProc.eq_4] at translated
+    simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at translated
+    obtain ⟨c, hc, continuation, hcontinuation, -⟩ := translated
     obtain ⟨hk', hother'⟩ := up_extended hk hother
     rw [semanticSubstProc.eq_6, tProc.eq_4, tProc.eq_4,
-      tName_semanticSubstName k ρ ρ' hq n hk hother, ih ρ.up ρ'.up hk' hother']
-  · intro k nm body _ Γ ρ ρ' _ _
+      tName_semanticSubstName k ρ ρ' hq n hk hother hc,
+      ih ρ.up ρ'.up hk' hother' ⟨continuation, hcontinuation⟩]
+  · intro k nm body _ Γ ρ ρ' _ _ _
     rw [semanticSubstProc.eq_7]
     rw [tProc_eq_none_of_not _ _ (by simp) (by simp) (by simp) (by simp) (by simp),
       tProc_eq_none_of_not _ _ (by simp) (by simp) (by simp) (by simp) (by simp)]
-  · intro k n nms body _ Γ ρ ρ' _ _
+  · intro k n nms body _ Γ ρ ρ' _ _ _
     rw [semanticSubstProc.eq_8]
     rw [tProc_eq_none_of_not _ _ (by simp) (by simp) (by simp) (by simp) (by simp),
       tProc_eq_none_of_not _ _ (by simp) (by simp) (by simp) (by simp) (by simp)]
-  · intro k body repl _ _ Γ ρ ρ' _ _
+  · intro k body repl _ _ Γ ρ ρ' _ _ _
     rw [semanticSubstProc.eq_9]
     rw [tProc_eq_none_of_not _ _ (by simp) (by simp) (by simp) (by simp) (by simp),
       tProc_eq_none_of_not _ _ (by simp) (by simp) (by simp) (by simp) (by simp)]
-  · intro k ct elems rest ih Γ ρ ρ' hk hother
+  · intro k ct elems rest ih Γ ρ ρ' hk hother translated
     rw [semanticSubstProc.eq_10]
     by_cases hbag : ct = .hashBag ∧ rest = none
     · obtain ⟨rfl, rfl⟩ := hbag
-      rw [tProc.eq_5, tProc.eq_5, ih ρ ρ' hk hother]
+      rw [tProc.eq_5, tProc.eq_5, ih ρ ρ' hk hother (by simpa only [tProc.eq_5] using translated)]
     · have hne : ∀ elements others : List Pattern,
           Pattern.collection ct others rest = .collection .hashBag elements none → False := by
         intro elements others h
@@ -639,7 +1127,7 @@ theorem translate_semanticSubst (hq : tProc (Env.empty []) q = some q₀) :
           (fun elements => hne elements _),
         tProc_eq_none_of_not _ _ (by simp) (by simp) (by simp) (by simp)
           (fun elements => hne elements _)]
-  · intro k p hbvar hfvar hquote hdrop hout hinp hlam hmulti hsubst hcoll Γ ρ ρ' _ _
+  · intro k p hbvar hfvar hquote hdrop hout hinp hlam hmulti hsubst hcoll Γ ρ ρ' _ _ _
     rw [semanticSubstProc.eq_11 k _ p hbvar hfvar hquote hdrop hout hinp hlam hmulti
       hsubst hcoll]
     by_cases hzero : p = .apply "PZero" []
@@ -647,11 +1135,14 @@ theorem translate_semanticSubst (hq : tProc (Env.empty []) q = some q₀) :
       rw [tProc.eq_1, tProc.eq_1]
     · rw [tProc_eq_none_of_not _ _ hzero hdrop hout hinp (fun e h => hcoll _ _ _ h),
         tProc_eq_none_of_not _ _ hzero hdrop hout hinp (fun e h => hcoll _ _ _ h)]
-  · intro k Γ ρ ρ' _ _
+  · intro k Γ ρ ρ' _ _ _
     rfl
-  · intro k p ps ihp ihps Γ ρ ρ' hk hother
-    rw [semanticSubstProcList.eq_2, tProcs.eq_2, tProcs.eq_2, ihp ρ ρ' hk hother,
-      ihps ρ ρ' hk hother]
+  · intro k p ps ihp ihps Γ ρ ρ' hk hother ⟨t, translated⟩
+    rw [tProcs.eq_2] at translated
+    simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at translated
+    obtain ⟨head, hhead, tail, htail, -⟩ := translated
+    rw [semanticSubstProcList.eq_2, tProcs.eq_2, tProcs.eq_2, ihp ρ ρ' hk hother ⟨head, hhead⟩,
+      ihps ρ ρ' hk hother ⟨tail, htail⟩]
 
 end Communication
 
@@ -748,35 +1239,45 @@ theorem translate_bind :
       (∀ j t, ρ j = some t → ρ' j = some (bind σ t)) →
       ∀ t, tProcs ρ ps = some t →
         ∃ t', tProcs ρ' ps = some t' ∧ EqClosure equations t' (bind σ t))
-    ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_
+    ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_
   · intro Γ ρ k Δ σ ρ' hρ t h
-    rw [tName.eq_1] at h
+    rw [tName_bvar] at h
     obtain ⟨u, hu, rfl⟩ := Option.map_eq_some_iff.mp h
     refine ⟨nameOf (bind σ u), ?_, nameOf_bind_equiv σ u⟩
-    rw [tName.eq_1, hρ k u hu, Option.map_some]
+    rw [tName_bvar, hρ k u hu, Option.map_some]
   · intro Γ ρ label Δ σ ρ' hρ t h
-    rw [tName.eq_2] at h
+    rw [tName_fvar] at h
     cases h
-    exact ⟨freeT label, tName.eq_2 ρ' label, .refl _⟩
+    exact ⟨freeT label, tName_fvar ρ' label, .refl _⟩
   · intro Γ ρ name ih Δ σ ρ' hρ t h
-    rw [tName.eq_3] at h ⊢
+    rw [tName_quoteDrop] at h ⊢
     exact ih σ ρ' hρ t h
-  · intro Γ ρ code hcode _ Δ σ ρ' hρ t h
-    rw [tName.eq_4 _ _ hcode] at h ⊢
+  · intro Γ ρ code hcode k head ih Δ σ ρ' hρ t h
+    rw [tName_quote_of_nameHead _ hcode head] at h
+    obtain ⟨c, hc, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨u, hu, rfl⟩ := Option.map_eq_some_iff.mp h
+    obtain ⟨c', hc', -⟩ := ih σ ρ' hρ c hc
+    refine ⟨nameOf (bind σ u), ?_, nameOf_bind_equiv σ u⟩
+    rw [tName_quote_of_nameHead _ hcode head, hc', Option.bind_some, hρ k u hu, Option.map_some]
+  · intro Γ ρ code hcode head _ Δ σ ρ' hρ t h
+    rw [tName_quote _ hcode head] at h
+    rw [tName_quote _ hcode head]
     obtain ⟨literal, hliteral, rfl⟩ := Option.map_eq_some_iff.mp h
     refine ⟨nameOf (lift0 literal), by rw [hliteral, Option.map_some], ?_⟩
     rw [bind_nameOf_lift0]
     exact .refl _
-  · intro x Γ ρ hbvar hfvar hquoteDrop hquote Δ σ ρ' hρ t h
-    rw [tName.eq_5 _ _ hbvar hfvar hquoteDrop hquote] at h
+  · intro x Γ ρ hbvar hfvar _ hquote Δ σ ρ' hρ t h
+    rw [tName_eq_none _ hbvar hfvar hquote] at h
     cases h
   · intro Γ ρ Δ σ ρ' hρ t h
     rw [tProc.eq_1] at h
     cases h
     exact ⟨nilT, tProc.eq_1 ρ', .refl _⟩
-  · intro Γ ρ name k hk Δ σ ρ' hρ t h
-    simp only [tProc.eq_2, hk] at h ⊢
-    exact ⟨bind σ t, hρ k t h, .refl _⟩
+  · intro Γ ρ name k hk ih Δ σ ρ' hρ t h
+    rw [tProc_drop_of_nameHead _ hk] at h ⊢
+    obtain ⟨m, hm, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨m', hm', -⟩ := ih σ ρ' hρ m hm
+    exact ⟨bind σ t, by rw [hm', Option.bind_some, hρ k t h], .refl _⟩
   · intro Γ ρ name hk ih Δ σ ρ' hρ t h
     simp only [tProc.eq_2, hk] at h ⊢
     obtain ⟨m, hm, rfl⟩ := Option.map_eq_some_iff.mp h
@@ -841,9 +1342,17 @@ theorem translate_semanticCommSubst {body q : Pattern}
     (hq : tProc (Env.empty []) q = some q₀) :
     ∃ t, tProc (Env.empty []) (semanticCommSubst body q) = some t ∧
       EqClosure equations t (inst K q₀) := by
+  obtain ⟨t, received, equivalent⟩ :=
+    translate_bind.2.1 (Env.empty []).up body (extend q₀) (Env.received q₀) (by
+      intro j t h
+      cases j with
+      | zero =>
+          cases h
+          rfl
+      | succ j => cases h) K hbody
   have hsubst : tProc (Env.empty []) (semanticCommSubst body q) =
       tProc (Env.received q₀) body := by
-    refine (translate_semanticSubst hq).1 0 body (Env.empty []) (Env.received q₀) ?_ ?_
+    refine (translate_semanticSubst hq).1 0 body (Env.empty []) (Env.received q₀) ?_ ?_ ⟨t, received⟩
     · rw [lift0_nil]
       rfl
     · intro j hj
@@ -851,13 +1360,7 @@ theorem translate_semanticCommSubst {body q : Pattern}
       | zero => exact (hj rfl).elim
       | succ j => rfl
   rw [hsubst]
-  refine (translate_bind.2.1 (Env.empty []).up body (extend q₀) (Env.received q₀) ?_ K hbody)
-  intro j t h
-  cases j with
-  | zero =>
-      cases h
-      rfl
-  | succ j => cases h
+  exact ⟨t, received, equivalent⟩
 
 end CommunicationLaw
 
@@ -955,5 +1458,125 @@ theorem tProcs_select {xs : List Pattern} {a : Term sig Γ Srt.pr}
   exact ⟨x, rest, hx, hrest, equiv⟩
 
 end Bags
+
+/-! ## Controls
+
+`@(*x|0)` is the quote of a parallel bag holding the drop of `x` and the
+unit. Under a binder for `x` it is the bound name `x`, exactly as the
+executor's whole-name test reads it. A non-unit partner, or a second drop,
+leaves literal code. A pattern whose whole name is `x` but which is not a
+name, such as a bag in name position, has no translation. -/
+
+section Controls
+
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus
+
+/-- `@(*x|partner)`. -/
+private abbrev quotedDropBeside (x partner : Pattern) : Pattern :=
+  .apply "NQuote" [.collection .hashBag [.apply "PDrop" [x], partner] none]
+
+/-- `@(*x|0)`. -/
+private abbrev quotedDropBesideUnit (x : Pattern) : Pattern :=
+  quotedDropBeside x (.apply "PZero" [])
+
+/-- A non-unit partner, `@0!(0)`. -/
+private abbrev partner : Pattern :=
+  .apply "POutput" [.apply "NQuote" [.apply "PZero" []], .apply "PZero" []]
+
+/-! ### `@(*x|0)` is the bound name `x` -/
+
+example : nameHead (quotedDropBesideUnit (.bvar 0)) = some 0 := by decide
+
+example : tName (Env.empty []).up (quotedDropBesideUnit (.bvar 0)) =
+    tName (Env.empty []).up (.bvar 0) := rfl
+
+example : tName (Env.empty []).up (quotedDropBesideUnit (.bvar 0)) =
+    some (quoT (.var .zero)) := rfl
+
+/-- Its drop runs the received process. -/
+example : tProc (Env.empty []).up (.apply "PDrop" [quotedDropBesideUnit (.bvar 0)]) =
+    some (.var .zero) := rfl
+
+/-- Beneath two binders it denotes the outer one. -/
+example : tName (Env.empty []).up.up (quotedDropBesideUnit (.bvar 1)) =
+    tName (Env.empty []).up.up (.bvar 1) := rfl
+
+/-- The unit may come first, and the drop may sit in a nested bag. -/
+example : nameHead (.apply "NQuote" [.collection .hashBag
+    [.apply "PZero" [], .collection .hashBag [.apply "PDrop" [.bvar 0], .apply "PZero" []] none]
+    none]) = some 0 := by decide
+
+/-- The quote of a drop is still resolved as the dropped name. -/
+example : nameHead (.apply "NQuote" [.apply "PDrop" [.bvar 0]]) = some 0 := by decide
+
+/-- The executor's whole-name test agrees and substitutes it, although the
+name is normal and is not itself an index. -/
+example : Canonical.canonicalize (quotedDropBesideUnit (.bvar 0)) = .bvar 0 :=
+  (canonicalize_eq_bvar_iff_nameHead _ 0).mpr (by decide)
+
+example : semanticNormalizeName (quotedDropBesideUnit (.bvar 0)) ≠ .bvar 0 := by decide
+
+example (replacement : Pattern) :
+    semanticSubstNameMark 0 replacement (quotedDropBesideUnit (.bvar 0)) =
+      (replacement, true) := by
+  unfold semanticSubstNameMark
+  rw [if_pos ((canonicalize_eq_bvar_iff_nameHead _ 0).mpr (by decide))]
+
+/-! ### A non-unit partner leaves literal code -/
+
+example : nameHead (quotedDropBeside (.bvar 0) partner) = none := by decide
+
+/-- It is translated as literal code, which no binder reaches, so beneath a
+binder for `x` it has no translation. -/
+example : tName (Env.empty []).up (quotedDropBeside (.bvar 0) partner) =
+    (tProc (Env.empty []) (.collection .hashBag [.apply "PDrop" [.bvar 0], partner] none)).map
+      fun literal => nameOf (lift0 literal) := rfl
+
+example : tName (Env.empty []).up (quotedDropBeside (.bvar 0) partner) = none := rfl
+
+/-- With a free name the same literal code is translated. -/
+example : (tName (Env.empty []) (quotedDropBeside (.fvar "x") partner)).isSome = true := rfl
+
+/-- The executor's whole-name test misses it at every index. -/
+example (k : Nat) : Canonical.canonicalize (quotedDropBeside (.bvar 0) partner) ≠ .bvar k := by
+  rw [Ne, canonicalize_eq_bvar_iff_nameHead,
+    show nameHead (quotedDropBeside (.bvar 0) partner) = none by decide]
+  simp
+
+/-! ### Two drops in one bag are not a name -/
+
+example : nameHead (.apply "NQuote"
+    [.collection .hashBag [.apply "PDrop" [.bvar 0], .apply "PDrop" [.bvar 1]] none]) = none := by
+  decide
+
+example : nameHead (.apply "NQuote"
+    [.collection .hashBag [.apply "PDrop" [.bvar 0], .apply "PDrop" [.bvar 0]] none]) = none := by
+  decide
+
+example : tName (Env.empty []).up.up (.apply "NQuote"
+    [.collection .hashBag [.apply "PDrop" [.bvar 0], .apply "PDrop" [.bvar 1]] none]) = none := rfl
+
+/-! ### A whole name must still be a name -/
+
+/-- A bag in name position has the whole name `x`, but it is not a name, so
+neither it nor its drop translates. -/
+example : nameHead (.collection .hashBag [.bvar 0] none) = some 0 := by decide
+
+example : tName (Env.empty []).up (.collection .hashBag [.bvar 0] none) = none := rfl
+
+example : tProc (Env.empty []).up (.apply "PDrop" [.collection .hashBag [.bvar 0] none]) =
+    none := rfl
+
+/-- A quotation whose code is not a process is not a name either. -/
+example : nameHead (.apply "NQuote" [.collection .hashBag
+    [.apply "PDrop" [.bvar 0], .apply "NQuote" [.apply "PDrop" [.apply "PZero" []]]] none]) =
+      some 0 := by
+  decide
+
+example : tName (Env.empty []).up (.apply "NQuote" [.collection .hashBag
+    [.apply "PDrop" [.bvar 0], .apply "NQuote" [.apply "PDrop" [.apply "PZero" []]]] none]) =
+      none := rfl
+
+end Controls
 
 end Mettapedia.OSLF.Binding.RhoPayloadPresentation

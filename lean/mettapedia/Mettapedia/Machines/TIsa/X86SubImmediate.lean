@@ -1,4 +1,7 @@
-import Mettapedia.Machines.TIsa.X86Funding
+import Mettapedia.Machines.TIsa.X86Comparison
+import Mettapedia.Machines.TIsa.X86FrameIncrement
+import Mettapedia.Machines.TIsa.X86MovePrefix
+import Mettapedia.Machines.TIsa.X86PrefixRead
 
 /-!
 # Fetched immediate subtraction in the p1 bounds check

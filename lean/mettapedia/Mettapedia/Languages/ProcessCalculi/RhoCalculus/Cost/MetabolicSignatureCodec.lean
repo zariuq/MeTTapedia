@@ -57,7 +57,7 @@ theorem number_typed (n : Nat) (bound : List String) :
     ProcWellSorted rhoReflectivePresentation FreeSortContext.empty bound (numberCode n) := by
   induction n with
   | zero => exact .unit
-  | succ n ih => exact .output (.quote .unit) ih
+  | succ n ih => exact .output (.quote .unit (by decide)) ih
 
 @[simp]
 theorem number_safe (n depth : Nat) : binderSafeAt "NQuote" depth (numberCode n) = true := by
@@ -79,7 +79,7 @@ theorem number_subst (n k : Nat) (replacement : Pattern) :
   | zero => rfl
   | succ n ih => simp [numberCode, zeroName, zero, semanticSubstProc,
       semanticSubstName, semanticSubstNameMark, semanticNormalizeName,
-      semanticNormalizeProc, ih]
+      semanticNormalizeProc, canonicalize, canonicalizeList, normalizeQuote, ih]
 
 variable {Ground : Type u} [Encodable Ground]
 
@@ -110,7 +110,7 @@ theorem atom_canonical (atom : Ground) : canonicalize (atomCode atom) = atomCode
 
 theorem atom_typed (atom : Ground) (bound : List String) :
     ProcWellSorted rhoReflectivePresentation FreeSortContext.empty bound (atomCode atom) :=
-  .output (.quote .unit) (number_typed _ _)
+  .output (.quote .unit (by decide)) (number_typed _ _)
 
 @[simp]
 theorem atom_safe (atom : Ground) (depth : Nat) : binderSafeAt "NQuote" depth (atomCode atom) = true := by
@@ -124,7 +124,8 @@ theorem atom_normal (atom : Ground) : semanticNormalizeProc (atomCode atom) = at
 theorem atom_subst (atom : Ground) (index : Nat) (replacement : Pattern) :
     semanticSubstProc index replacement (atomCode atom) = atomCode atom := by
   simp [atomCode, zeroName, zero, semanticSubstProc, semanticSubstName,
-    semanticSubstNameMark, semanticNormalizeName, semanticNormalizeProc]
+    semanticSubstNameMark, semanticNormalizeName, semanticNormalizeProc,
+    canonicalize, canonicalizeList, normalizeQuote]
 
 theorem atom_prime (atom : Ground) : IsPrime (atomCode atom) := by
   refine ⟨(rhoClosedTermWellSorted_process_iff _).mpr ⟨atom_typed _ [], atom_safe _ 0⟩,

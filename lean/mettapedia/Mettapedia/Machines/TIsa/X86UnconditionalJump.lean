@@ -176,6 +176,62 @@ theorem fetched_jump (other : OtherOpcodeHandlers) (vector : VectorOpcodeHandler
   exact handler state start base finish target packet attributes (start.signExtend 64) displacement
     (by omega) advance jump (by rfl) segments application rip quiet displacementBytes
 
+namespace Block
+
+open X86Execution
+
+def code (displacement : BitVec 32) : List Nat :=
+  [0xe9] ++ (List.range 4).map (fun index => (displacement.extractLsb' (8 * index) 8).toNat)
+
+theorem code_length (displacement : BitVec 32) : (code displacement).length = 5 := by simp [code]
+
+structure Inputs (native : State) extends X86LegacyFetch.Basis native where
+  quiet : native.regs.get? .log_register_writes = some false
+  upper : address.toInt + 5 < (2 ^ 47 : Int)
+  displacement : BitVec 32
+  target : BitVec 48
+  jump : target.toInt = address.toInt + 5 + displacement.toInt
+  loaded : codeLoaded native address.toInt (code displacement)
+
+def position {native : State} (input : Inputs native) (offset : Nat) : BitVec 48 := address input.address.toInt offset
+
+theorem position_exact {native : State} (input : Inputs native) (offset : Nat) (within : offset ≤ 5) :
+    (position input offset).toInt = input.address.toInt + offset :=
+  address_toInt _ (by simpa using BitVec.le_toInt input.address) input.upper offset within
+
+theorem executes (other : OtherOpcodeHandlers) (vector : VectorOpcodeHandlers)
+    (native : State) (input : Inputs native) :
+    letI : OtherOpcodeHandlers := X86UnconditionalJump.linked other
+    letI : VectorOpcodeHandlers := vector
+    Step native (X86Move.putPointer native input.target) ∧
+      RegisterFrame {.rip} native (X86Move.putPointer native input.target) := by
+  let : OtherOpcodeHandlers := X86UnconditionalJump.linked other
+  let : VectorOpcodeHandlers := vector
+  have present : ∀ index < 4,
+      native.mem.get? ((address (position input 1).toInt index).signExtend 52).toNat =
+        some (input.displacement.extractLsb' (8 * index) 8) := by
+    intro index within
+    have shifted : address (position input 1).toInt index = position input (1 + index) := by
+      rw [position_exact input 1 (by decide)]
+      simp only [position, address, Int.natCast_add, Int.add_assoc]
+    rw [shifted]
+    have byte : (code input.displacement)[1 + index]? =
+        some (input.displacement.extractLsb' (8 * index) 8).toNat := by
+      rw [show 1 + index = index + 1 by omega]
+      simp [code, within]
+    simpa only [position, BitVec.ofNat_toNat, BitVec.setWidth_eq] using input.loaded _ _ byte
+  have step := X86UnconditionalJump.fetched_jump other vector native input.address (position input 1) (position input 5) input.target
+    input.control input.attributes input.displacement
+    (by rw [position_exact input 1 (by decide)]; omega)
+    (by rw [position_exact input 1 (by decide), position_exact input 5 (by decide)]; omega)
+    (by rw [position_exact input 5 (by decide)]; exact input.jump)
+    input.status input.fault input.msrs input.segments input.longMode input.codeMode input.application input.rip input.quiet
+    (by have byte := input.loaded 0 0xe9 (by simp [code]); simpa only [address, Int.natCast_zero, Int.add_zero, BitVec.ofInt_toInt] using byte)
+    present
+  exact ⟨step, pointer_frame _ _⟩
+
+end Block
+
 namespace Controls
 
 private def control : Vector (BitVec 64) 7 :=

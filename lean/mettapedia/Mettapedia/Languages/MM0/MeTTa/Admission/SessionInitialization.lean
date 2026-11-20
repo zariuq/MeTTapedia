@@ -123,6 +123,9 @@ theorem start_preserves_allocated_space (before : State) (specification : Atom)
     simp [startState, stage, allocatedSpaces, NamedSpaces.Store.allocate,
       NamedSpaces.Store.putCell, NamedSpaces.Store.read, Nat.add_assoc,
       different, notBase, bound, bounded]
+  | namedSpace name =>
+    simp [startState, stage, NamedSpaces.Store.allocate,
+      NamedSpaces.Store.putCell, NamedSpaces.Store.read]
 
 private def equation : SpaceSemantics.Equation := serviceSource.program.equations[3]'(by decide)
 

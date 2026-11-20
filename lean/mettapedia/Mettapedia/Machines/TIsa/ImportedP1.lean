@@ -19,12 +19,15 @@ namespace Mettapedia.Machines.TIsa.ImportedP1
 
 open P1Capture P1Source
 
-noncomputable def captured : Bundle :=
-  tisa_p1_bundle% "../../../tcalc/tisa/manifests/tisa_x86_p1_programs_v2.json"
+noncomputable def capturedAllowance : AllowanceBundle :=
+  tisa_p1_allowance_bundle% "../../../tcalc/tisa/manifests/tisa_x86_p1_programs_v2.json"
+
+noncomputable def captured : Bundle := capturedAllowance.bundle
 
 noncomputable def programs : List P1Capture.Program := captured.programs
 
-theorem abi_boundary_checked : captured.boundary.check = true := by kernel_reflexivity
+theorem abi_boundary_checked : captured.boundary.checkAllowance capturedAllowance.allowanceRegister = true := by
+  kernel_reflexivity
 
 theorem exact_count : captured.declaredCount = 15 ∧ programs.length = 15 := by
   constructor <;> kernel_reflexivity
@@ -39,9 +42,9 @@ theorem premise_name_inventory :
 
 theorem all_source_fields_checked : programs.all P1Capture.Program.sourceCheck = true := by kernel_reflexivity
 
-theorem all_image_layouts_checked : programs.all P1Capture.Program.imageCheck = true := by kernel_reflexivity
+theorem all_image_layouts_checked : programs.all P1Capture.Program.allowanceImageCheck = true := by kernel_reflexivity
 
-theorem exact_byte_count : (programs.map P1Capture.Program.size).sum = 19373 := by kernel_reflexivity
+theorem exact_byte_count : (programs.map P1Capture.Program.size).sum = 19571 := by kernel_reflexivity
 
 theorem all_source_spellings_exact (program : P1Capture.Program) (member : program ∈ programs) :
     P1Source.encodeProgram program.source = some program.printed :=
@@ -89,7 +92,7 @@ private def wrongPath (values : List P1Capture.Program) : Bool :=
   | program :: _ => match program.spans with
     | first :: second :: later =>
         ({ program with spans := first :: { second with path := some [1] } :: later } :
-          P1Capture.Program).imageCheck
+          P1Capture.Program).allowanceImageCheck
     | _ => true
 
 theorem changed_path_rejected : wrongPath programs = false := by kernel_reflexivity
@@ -100,18 +103,22 @@ private def wrongWrapper (values : List P1Capture.Program) : Bool :=
   | program :: _ =>
       let view : NativeImage.View := ⟨program.size, fun offset =>
         if offset = 0 then some 0x90 else program.view.read offset⟩
-      program.imageCheckOn view
+      program.allowanceImageCheckOn view
 
 theorem changed_wrapper_byte_rejected : wrongWrapper programs = false := by kernel_reflexivity
 
 theorem changed_abi_map_rejected :
     ({ captured.boundary with registers := ["rax", "rsi", "rdx", "rcx", "r8", "r9", "r10", "r11", "rdi", "rbx", "r12", "r13"] } :
-      Boundary).check = false := by kernel_reflexivity
+      Boundary).checkAllowance capturedAllowance.allowanceRegister = false := by kernel_reflexivity
+
+theorem changed_allowance_register_rejected : captured.boundary.checkAllowance "r15" = false := by
+  kernel_reflexivity
 
 #print axioms all_source_fields_checked
 #print axioms all_image_layouts_checked
 #print axioms premise_name_inventory
 #print axioms all_source_spellings_exact
 #print axioms all_cost_fields_exact
+#print axioms changed_allowance_register_rejected
 
 end Mettapedia.Machines.TIsa.ImportedP1

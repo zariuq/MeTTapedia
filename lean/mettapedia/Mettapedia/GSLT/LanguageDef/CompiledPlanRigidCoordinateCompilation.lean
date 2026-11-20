@@ -1,22 +1,14 @@
-import Mettapedia.GSLT.LanguageDef.CompiledPlanFixedHeadIndexCompilation
-import Mettapedia.GSLT.LanguageDef.CompiledPlanTermSemantics
+import Mettapedia.GSLT.LanguageDef.CompiledPlanRigidCoordinateCompilation.Selection
 import Mettapedia.GSLT.LanguageDef.ReusableSlotBufferCompilation
 
 /-!
-# Rigid-coordinate dispatch for exact compiled-plan terms
+# Scored rigid-coordinate dispatch for compiled plans
 
-After fixed outer-head and arity indexing, every rule in a bucket has the same
-number of immediate arguments.  This stage chooses one argument coordinate
-using only the finite rigid roots present in that bucket.  Variables remain
-wildcards.  Symbols, strings, integers, and application-head/arity pairs form
-the closed dispatch-key vocabulary.
-
-The selector models the generic C realization: it maximizes separated rigid
-pairs, then rigid entries, retains the earliest coordinate on ties, and
-saturates the combined score at the unsigned 64-bit boundary.  Selection is a
-profitability decision only.  The semantic theorem applies to every
-coordinate: a rule whose head instantiates to the ground query is never
-removed by rigid-root dispatch.
+This realization chooses a coordinate by separated rigid pairs, then by
+rigid entries, with earliest ties and unsigned 64-bit saturation. It also
+models the reusable scoring scratch buffer. These are choices of this
+implementation. Ordered selection and exact answers for every available
+coordinate are established separately in `Selection`.
 -/
 
 namespace Mettapedia.GSLT.LanguageDef.CompiledPlanRigidCoordinateCompilation
@@ -25,207 +17,7 @@ open CompiledPlanAdmission
 open CompiledPlanLowering
 open CompiledPlanTermSemantics
 
-/-- Closed vocabulary of immediate rigid roots available in the admitted
-typed carrier. -/
-inductive DispatchKey where
-  | symbol (name : List UInt8)
-  | string (value : List UInt8)
-  | integer (value : Int64)
-  | application (head : List UInt8) (arity : Nat)
-  deriving DecidableEq, Repr
-
-/-- Number of immediate arguments in a closed value. -/
-def groundTermsLength : GroundTerms -> Nat
-  | .nil => 0
-  | .cons _ tail => groundTermsLength tail + 1
-
-/-- A variable has no rigid key and is therefore compiled as a wildcard. -/
-def rootKey? : Term -> Option DispatchKey
-  | .symbol name => some (.symbol name)
-  | .variable _ => none
-  | .string value => some (.string value)
-  | .integer value => some (.integer value)
-  | .application head arguments =>
-      some (.application head
-        (CompiledPlanFixedHeadIndexCompilation.termsLength arguments))
-
-/-- Every closed value exposes exactly one rigid root. -/
-def groundRootKey : GroundTerm -> DispatchKey
-  | .symbol name => .symbol name
-  | .string value => .string value
-  | .integer value => .integer value
-  | .application head arguments =>
-      .application head (groundTermsLength arguments)
-
-/-- A source root can match a closed target root precisely when it is a
-variable or exposes the same rigid key. -/
-def rootCompatible (source : Term) (target : GroundTerm) : Bool :=
-  match rootKey? source with
-  | none => true
-  | some key => key == groundRootKey target
-
-/-- Instantiation preserves the immediate arity of a term list. -/
-theorem groundTermsLength_eq_of_instantiateTerms :
-    forall (source : Terms) (substitution : Substitution)
-      (target : GroundTerms),
-      instantiateTerms substitution source = some target ->
-        groundTermsLength target =
-          CompiledPlanFixedHeadIndexCompilation.termsLength source
-  | .nil, _, target, instantiated => by
-      simp [instantiateTerms] at instantiated
-      subst target
-      rfl
-  | .cons head tail, substitution, target, instantiated => by
-      cases headInstantiated : instantiateTerm substitution head with
-      | none =>
-          simp [instantiateTerms, headInstantiated] at instantiated
-      | some groundedHead =>
-          cases tailInstantiated : instantiateTerms substitution tail with
-          | none =>
-              simp [instantiateTerms, headInstantiated, tailInstantiated]
-                at instantiated
-          | some groundedTail =>
-              simp [instantiateTerms, headInstantiated, tailInstantiated]
-                at instantiated
-              subst target
-              simp [groundTermsLength,
-                CompiledPlanFixedHeadIndexCompilation.termsLength,
-                groundTermsLength_eq_of_instantiateTerms tail substitution
-                  groundedTail tailInstantiated]
-
-/-- A successfully instantiated term always agrees with its target on every
-visible rigid-root component. -/
-theorem rootCompatible_of_instance
-    (source : Term) (substitution : Substitution) (target : GroundTerm)
-    (instantiated : instantiateTerm substitution source = some target) :
-    rootCompatible source target = true := by
-  cases source with
-  | symbol name =>
-      simp [instantiateTerm] at instantiated
-      subst target
-      simp [rootCompatible, rootKey?, groundRootKey]
-  | «variable» slot =>
-      simp [rootCompatible, rootKey?]
-  | «string» value =>
-      simp [instantiateTerm] at instantiated
-      subst target
-      simp [rootCompatible, rootKey?, groundRootKey]
-  | integer value =>
-      simp [instantiateTerm] at instantiated
-      subst target
-      simp [rootCompatible, rootKey?, groundRootKey]
-  | application head arguments =>
-      cases argumentsInstantiated :
-          instantiateTerms substitution arguments with
-      | none =>
-          simp [instantiateTerm, argumentsInstantiated] at instantiated
-      | some groundedArguments =>
-          simp [instantiateTerm, argumentsInstantiated] at instantiated
-          subst target
-          have sameLength := groundTermsLength_eq_of_instantiateTerms
-            arguments substitution groundedArguments argumentsInstantiated
-          simp [rootCompatible, rootKey?, groundRootKey, sameLength]
-
-/-! ## Exact immediate-coordinate projection -/
-
-/-- Read one immediate source argument. -/
-def termAt? : Terms -> Nat -> Option Term
-  | .nil, _ => none
-  | .cons head _, 0 => some head
-  | .cons _ tail, coordinate + 1 => termAt? tail coordinate
-
-/-- Read one immediate closed argument. -/
-def groundTermAt? : GroundTerms -> Nat -> Option GroundTerm
-  | .nil, _ => none
-  | .cons head _, 0 => some head
-  | .cons _ tail, coordinate + 1 => groundTermAt? tail coordinate
-
-/-- Project a source head to one argument coordinate. -/
-def headCoordinate? (head : Term) (coordinate : Nat) : Option Term :=
-  match head with
-  | .application _ arguments => termAt? arguments coordinate
-  | _ => none
-
-/-- Project a closed query head to one argument coordinate. -/
-def groundHeadCoordinate? (head : GroundTerm) (coordinate : Nat) :
-    Option GroundTerm :=
-  match head with
-  | .application _ arguments => groundTermAt? arguments coordinate
-  | _ => none
-
-/-- Instantiating a term list preserves every coordinate and its exact
-instantiated value. -/
-theorem instantiateTerms_termAt? :
-    forall (source : Terms) (substitution : Substitution)
-      (target : GroundTerms) (coordinate : Nat) (sourceTerm : Term),
-      instantiateTerms substitution source = some target ->
-        termAt? source coordinate = some sourceTerm ->
-          exists targetTerm,
-            groundTermAt? target coordinate = some targetTerm /\
-              instantiateTerm substitution sourceTerm = some targetTerm
-  | .nil, _, _, _, _, _, sourceFound => by
-      simp [termAt?] at sourceFound
-  | .cons head tail, substitution, target, coordinate, sourceTerm,
-      instantiated, sourceFound => by
-      cases headInstantiated : instantiateTerm substitution head with
-      | none =>
-          simp [instantiateTerms, headInstantiated] at instantiated
-      | some groundedHead =>
-          cases tailInstantiated : instantiateTerms substitution tail with
-          | none =>
-              simp [instantiateTerms, headInstantiated, tailInstantiated]
-                at instantiated
-          | some groundedTail =>
-              simp [instantiateTerms, headInstantiated, tailInstantiated]
-                at instantiated
-              subst target
-              cases coordinate with
-              | zero =>
-                  simp [termAt?] at sourceFound
-                  subst sourceTerm
-                  exact ⟨groundedHead, rfl, headInstantiated⟩
-              | succ coordinate =>
-                  exact instantiateTerms_termAt? tail substitution
-                    groundedTail coordinate sourceTerm tailInstantiated
-                    sourceFound
-
-/-- When a complete rule head instantiates to a closed query, the same
-selected coordinate exists on both sides and remains rigid-compatible. -/
-theorem coordinateCompatible_of_headInstance
-    (source : Term) (substitution : Substitution) (target : GroundTerm)
-    (coordinate : Nat) (sourceTerm : Term)
-    (instantiated : instantiateTerm substitution source = some target)
-    (sourceFound : headCoordinate? source coordinate = some sourceTerm) :
-    exists targetTerm,
-      groundHeadCoordinate? target coordinate = some targetTerm /\
-        rootCompatible sourceTerm targetTerm = true := by
-  cases source with
-  | symbol name => simp [headCoordinate?] at sourceFound
-  | «variable» slot => simp [headCoordinate?] at sourceFound
-  | «string» value => simp [headCoordinate?] at sourceFound
-  | integer value => simp [headCoordinate?] at sourceFound
-  | application head arguments =>
-      cases argumentsInstantiated :
-          instantiateTerms substitution arguments with
-      | none =>
-          simp [instantiateTerm, argumentsInstantiated] at instantiated
-      | some groundedArguments =>
-          simp [instantiateTerm, argumentsInstantiated] at instantiated
-          subst target
-          obtain ⟨targetTerm, targetFound, coordinateInstantiated⟩ :=
-            instantiateTerms_termAt? arguments substitution
-              groundedArguments coordinate sourceTerm argumentsInstantiated
-              sourceFound
-          exact ⟨targetTerm, targetFound,
-            rootCompatible_of_instance sourceTerm substitution targetTerm
-              coordinateInstantiated⟩
-
-/-! ## C-shaped profitability selector -/
-
-/-- Generated key for one source rule at a candidate coordinate. -/
-def ruleCoordinateKey? (coordinate : Nat) (rule : TypedRule) :
-    Option DispatchKey :=
-  (headCoordinate? rule.head coordinate).bind rootKey?
+/-! ## Profitability policy of the scored realization -/
 
 /-- Number of non-wildcard keys at one coordinate. -/
 def rigidCount (keys : List (Option DispatchKey)) : Nat :=
@@ -566,17 +358,6 @@ theorem dispatchScratchAllocationCount_lt_of_two_buckets
   apply ReusableSlotBufferCompilation.reusableAllocationCount_lt_fresh_of_two_le
   simpa [dispatchScratchTransactions]
 
-/-- One generated occurrence in a dispatch plan. -/
-structure Entry where
-  rule : TypedRule
-  key : Option DispatchKey
-  deriving DecidableEq, Repr
-
-/-- Generated per-occurrence key inventory. -/
-def compileEntries (coordinate : Nat) (rules : List TypedRule) : List Entry :=
-  rules.map fun rule =>
-    { rule, key := ruleCoordinateKey? coordinate rule }
-
 /-- Coordinate plan retained by one outer-head/arity bucket. -/
 structure Plan where
   coordinate : Nat
@@ -589,104 +370,41 @@ def compile? (arity : Nat) (rules : List TypedRule) : Option Plan := do
   let coordinate <- selectCoordinate arity rules
   some { coordinate, entries := compileEntries coordinate rules }
 
-/-- Execute generated rigid groups extensionally.  `none` is a wildcard;
-rigid keys retain precisely their matching group. -/
-def keyCompatible (query : GroundTerm) : Option DispatchKey -> Bool
-  | none => true
-  | some key => key == groundRootKey query
-
-def executeEntries (query : GroundTerm) : List Entry -> List TypedRule
-  | [] => []
-  | entry :: entries =>
-      if keyCompatible query entry.key then
-        entry.rule :: executeEntries query entries
-      else executeEntries query entries
-
-/-- Source-order specification for rigid-coordinate candidates. -/
-def sourceCandidates (coordinate : Nat) (query : GroundTerm)
-    (rules : List TypedRule) : List TypedRule :=
-  rules.filter fun rule =>
-    keyCompatible query (ruleCoordinateKey? coordinate rule)
-
-/-- Generated entries retain exactly the source scan, including order and
-multiplicity. -/
-theorem executeEntries_compileEntries
-    (coordinate : Nat) (query : GroundTerm) (rules : List TypedRule) :
-    executeEntries query (compileEntries coordinate rules) =
-      sourceCandidates coordinate query rules := by
-  induction rules with
-  | nil => rfl
-  | cons rule rules inductionHypothesis =>
-      simp only [compileEntries, List.map_cons, executeEntries,
-        sourceCandidates, List.filter_cons]
-      change
-        (if keyCompatible query (ruleCoordinateKey? coordinate rule) = true
-          then rule :: executeEntries query (compileEntries coordinate rules)
-          else executeEntries query (compileEntries coordinate rules)) =
-        (if keyCompatible query (ruleCoordinateKey? coordinate rule) = true
-          then rule :: sourceCandidates coordinate query rules
-          else sourceCandidates coordinate query rules)
-      rw [inductionHypothesis]
-
-/-- Compiling entries never changes the underlying source occurrence list. -/
-theorem compileEntries_rules (coordinate : Nat) (rules : List TypedRule) :
-    (compileEntries coordinate rules).map Entry.rule = rules := by
-  simp [compileEntries, Function.comp_def]
-
-/-- A successful bucket compilation retains every source rule occurrence. -/
-theorem compile?_rules
+/-- The profitability policy chooses only the coordinate. It does not
+change the entry inventory for that coordinate. -/
+theorem entries_of_compile?
     (arity : Nat) (rules : List TypedRule) (plan : Plan)
     (compiled : compile? arity rules = some plan) :
-    plan.entries.map Entry.rule = rules := by
+    plan.entries = compileEntries plan.coordinate rules := by
   unfold compile? at compiled
   cases selected : selectCoordinate arity rules with
   | none => simp [selected] at compiled
   | some coordinate =>
       simp [selected] at compiled
       subst plan
-      exact compileEntries_rules coordinate rules
+      rfl
 
-/-- A possible rule application survives generated rigid-coordinate
-selection. -/
-theorem mem_sourceCandidates_of_headInstance
-    (coordinate : Nat) (queryCoordinate : GroundTerm)
-    (rules : List TypedRule) (rule : TypedRule)
-    (member : rule ∈ rules) (substitution : Substitution)
-    (queryHead : GroundTerm)
-    (instantiated :
-      instantiateTerm substitution rule.head = some queryHead)
-    (queryFound :
-      groundHeadCoordinate? queryHead coordinate = some queryCoordinate) :
-    rule ∈ sourceCandidates coordinate queryCoordinate rules := by
-  apply List.mem_filter.mpr
-  refine ⟨member, ?_⟩
-  cases sourceFound : headCoordinate? rule.head coordinate with
-  | none => simp [ruleCoordinateKey?, sourceFound, keyCompatible]
-  | some sourceTerm =>
-      obtain ⟨targetTerm, targetFound, compatible⟩ :=
-        coordinateCompatible_of_headInstance rule.head substitution queryHead
-          coordinate sourceTerm instantiated sourceFound
-      rw [queryFound] at targetFound
-      cases targetFound
-      simpa [ruleCoordinateKey?, sourceFound, keyCompatible,
-        rootCompatible] using compatible
+/-- A successful bucket compilation retains every source rule occurrence. -/
+theorem compile?_rules
+    (arity : Nat) (rules : List TypedRule) (plan : Plan)
+    (compiled : compile? arity rules = some plan) :
+    plan.entries.map Entry.rule = rules := by
+  rw [entries_of_compile? arity rules plan compiled, compileEntries_rules]
 
-/-- Therefore the exact generated entry program never removes a rule that
-can instantiate to the closed query. -/
-theorem mem_executeEntries_of_headInstance
-    (coordinate : Nat) (queryCoordinate : GroundTerm)
-    (rules : List TypedRule) (rule : TypedRule)
-    (member : rule ∈ rules) (substitution : Substitution)
-    (queryHead : GroundTerm)
-    (instantiated :
-      instantiateTerm substitution rule.head = some queryHead)
-    (queryFound :
-      groundHeadCoordinate? queryHead coordinate = some queryCoordinate) :
-    rule ∈ executeEntries queryCoordinate
-      (compileEntries coordinate rules) := by
-  rw [executeEntries_compileEntries]
-  exact mem_sourceCandidates_of_headInstance coordinate queryCoordinate rules
-    rule member substitution queryHead instantiated queryFound
+/-- Instantiate the ordered selection theorem for the scored compiler.
+The proof does not inspect its score or tie policy. -/
+theorem compiled_observations_exact {Answer : Type*}
+    (arity : Nat) (rules : List TypedRule) (plan : Plan)
+    (compiled : compile? arity rules = some plan)
+    (queryHead queryCoordinate : GroundTerm) (observe : TypedRule → List Answer)
+    (queryFound : groundHeadCoordinate? queryHead plan.coordinate = some queryCoordinate)
+    (sound : ∀ rule ∈ rules, observe rule ≠ [] →
+      ∃ substitution, instantiateTerm substitution rule.head = some queryHead) :
+    (executeEntries queryCoordinate plan.entries).flatMap observe = rules.flatMap observe := by
+  rw [entries_of_compile? arity rules plan compiled]
+  exact executeEntries_flatMap_eq plan.coordinate queryHead queryCoordinate rules observe queryFound sound
+
+#print axioms compiled_observations_exact
 
 /-! ## Independent cross-guest canaries -/
 

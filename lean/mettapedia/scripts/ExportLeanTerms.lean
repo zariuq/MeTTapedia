@@ -177,28 +177,6 @@ def proofTermsAtoms (eqn : FEquation) : List String :=
   (proofTermsOf "LeanProofTerms" eqn.name eqn.rhs).toList ++
     (proofTermsOf "LeanArgumentProofs" eqn.name eqn.lhs).toList
 
-/-- A theorem's statement with its binders: as `readSignature`, with the
-propositions read as statements, so that a proposition given by a definition
-stays as Lean writes it; a proposition whose head is a projection at an
-instance is in its proposition form, as in the definitions that cite it. -/
-def readLemma (type : Expr) : FReadM (List FBinder × FTerm) := do
-  let go : MetaM (Except String (List FBinder × FTerm)) := forallTelescope type fun xs body => do
-    let (names, _) ← nameAll {} [] xs "x"
-    ExceptT.run do
-      let binders ← xs.toList.mapM fun x => do
-        let name := names[x.fvarId!]!
-        let ty ← inferType x
-        if let .sort u := ty then
-          if u.isZero then return FBinder.term name .prop
-          if let .param l := u then return FBinder.sort name l.toString
-          match typeLevel? u with
-          | some level => return FBinder.type name level
-          | none => throwThe String s!"a binder of sort {u}: {name}"
-        if ← isProp ty then return FBinder.hyp name (← readStatement names ty (projections := true))
-        return FBinder.term name (← readTerm names ty)
-      return (binders, ← readStatement names body (projections := true))
-  ExceptT.mk go
-
 /-- The definitions a family's fields are written with: a field's type, or a
 proof field's proposition as read (`propositionForm`), may apply a definition
 that is not an abbreviation (`Multiset α`, `s.Nodup` in `Finset`); the
@@ -348,6 +326,18 @@ def exportTerms (target : Option String) : TermElabM String := do
             (fun | .ctorInfo v => some v.induct | _ => none)
           | out := out.push s!"(LeanFunctionRefused {c} {reasonText "a projection of no structure"})"
         out := out.push s!"(LeanProjection {c} {structName} {info.ctorName} {info.i} {info.numParams})"
+        -- The structure's proof fields: Lean declares their projections as
+        -- theorems (`Finset.nodup`).  Each is cited like a theorem a proof
+        -- term cites, and marked, so that the reader proves it from the
+        -- structure's elimination and the field's guard.
+        let env ← getEnv
+        let fields := getStructureFields env structName
+        for h : field in [:fields.size] do
+          if let some pfn := getProjFnForField? env structName fields[field] then
+            if let some (.thmInfo _) := env.find? pfn then
+              let marker := s!"(LeanProofProjection {pfn} {structName} {info.ctorName} {field} {info.numParams})"
+              unless out.contains marker do out := out.push marker
+              unless cited.contains pfn do cited := cited.push pfn
         continue
       -- A matcher is read by its definition, a tree of case analyses over its
       -- discriminants; its uses are that tree at their arguments.

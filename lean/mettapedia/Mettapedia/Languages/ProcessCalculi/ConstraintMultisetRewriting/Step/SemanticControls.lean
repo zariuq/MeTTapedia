@@ -53,7 +53,7 @@ theorem syntacticY_not_semantic : ¬ ReadsThroughSolutions A syntacticY := fun r
 
 /-- **Its firing is not a firing of the ordinary step.** -/
 theorem noY_not_semantic : ¬ IsSemantic A ModuloFiringControls.noY := fun reads =>
-  syntacticY_not_semantic (reads syntacticY (List.mem_singleton_self _))
+  syntacticY_not_semantic (reads syntacticY.toRegion (List.mem_singleton_self _))
 
 /-- **A raw region breaks the congruence**: at C2, equivalent modulo the knowledge, the firing of the
 raw query is admitted at the first state and none of its renamings at the second. -/
@@ -79,8 +79,22 @@ noncomputable def noYSemantic : SemanticFiring A ℕ :=
 noncomputable def sightY : SemanticFiring A ℕ :=
   SemanticFiring.ofQueries ⟨[], [], [], [], []⟩ [semanticY {20}] ⟨[], [], []⟩
 
-theorem noYSemantic_names : noYSemantic.1.names = ∅ := by
-  simp [Firing.names, noYSemantic, SemanticFiring.ofQueries, semanticY, sighted]
+noncomputable def noYSemantic_support : Interface.RegionQuerySupport.Supports noYSemantic.1.queries :=
+  ExactQueryAlphabet.ExactData.supports ⟨[(semanticY ∅).1],rfl⟩
+
+theorem noYSemantic_names : noYSemantic.1.names noYSemantic_support = ∅ := by
+  have queryNames : Interface.RegionQuerySupport.names noYSemantic.1.queries noYSemantic_support = ∅ := by
+    apply Finset.eq_empty_iff_forall_notMem.mpr
+    intro occurrence member
+    obtain ⟨index,inside⟩ := (Interface.RegionQuerySupport.mem_names _ _ occurrence).mp member
+    have zero : index.val = 0 := by
+      have bounded := index.isLt
+      change index.val < 1 at bounded
+      omega
+    have index_eq : index = ⟨0,by decide⟩ := Fin.ext zero
+    rw [index_eq] at inside
+    exact Finset.notMem_empty occurrence inside
+  simpa only [Firing.names,noYSemantic,SemanticFiring.ofQueries,List.toFinset_nil,Finset.empty_union] using queryNames
 
 /-- **The semantic query does not collide**: its firing is its own renaming, and it is admitted at
 both C2 states or at neither. -/
@@ -88,11 +102,11 @@ theorem noYSemantic_agrees :
     (∀ ρ : ℕ ≃ ℕ, (SemanticFiring.rename ρ noYSemantic).1 = noYSemantic.1) ∧
       (noYSemantic.1.Valid A ModuloControls.label (c2 20) ↔
         noYSemantic.1.Valid A ModuloControls.label (c2 21)) := by
-  have none : ∀ o ∈ noYSemantic.1.names, False := fun o member => by
+  have none : ∀ o ∈ noYSemantic.1.names noYSemantic_support, False := fun o member => by
     rw [noYSemantic_names] at member
     exact Finset.notMem_empty o member
-  exact ⟨fun _ => noYSemantic.1.rename_eq_self fun o member => (none o member).elim,
-    (c2_equivalent.semantic_named_firing noYSemantic fun o member => (none o member).elim).1⟩
+  exact ⟨fun _ => noYSemantic.1.rename_eq_self noYSemantic_support fun o member => (none o member).elim,
+    (c2_equivalent.semantic_named_firing noYSemantic noYSemantic_support fun o member => (none o member).elim).1⟩
 
 /-- **Under `X = Y` the semantic query refuses**: the row `20 : X` is identified with `Y`. -/
 theorem noYSemantic_refused : ¬ noYSemantic.1.Valid A ModuloControls.label (c2 20) := by
@@ -104,7 +118,7 @@ theorem noYSemantic_refused : ¬ noYSemantic.1.Valid A ModuloControls.label (c2 
       simpa [Selection.problem, Selection.equations, noYSemantic, SemanticFiring.ofQueries, c2]
         using member
     exact zeros_solves e known
-  have asked := valid.observations (semanticY ∅).1 (List.mem_singleton_self _) zeros solved
+  have asked := valid.observations (semanticY ∅).1.toRegion (List.mem_singleton_self _) zeros solved
   have empty : regionOf ModuloControls.label {20} ((classRegion A Y).test zeros) = ∅ := asked
   have inside : (20 : ℕ) ∈ regionOf ModuloControls.label {20} ((classRegion A Y).test zeros) := by
     refine Finset.mem_filter.mpr ⟨Finset.mem_singleton_self 20, ?_⟩
@@ -127,7 +141,7 @@ theorem sightY_valid : sightY.1.Valid A ModuloControls.label (c2 20) := by
   · intro check member
     simp [sightY, SemanticFiring.ofQueries] at member
   · intro query member σ solved
-    have isQuery : query = (semanticY {20}).1 := by
+    have isQuery : query = (semanticY {20}).1.toRegion := by
       simpa [sightY, SemanticFiring.ofQueries] using member
     subst isQuery
     have identified : A.Solves σ (X, Y) := solved (X, Y) (by

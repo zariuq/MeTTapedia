@@ -1,16 +1,18 @@
 import Mettapedia.Machines.CMemory.DependencyReads
-import Mettapedia.Machines.OrderedDependencyCReserveGrowth
+import Mettapedia.Machines.CountedArrayReserve
 
 /-!
 # Exact capacity and counted-array reservation over block memory
 
-The shared reserve program is related to the fallible split-array service.
-Its exact requested extent, counter, initialized prefix and retired storage
-are retained. Logical spare values witness the representation only: this
-module does not initialize or read indeterminate physical spare cells.
+The block-memory `reserve` program refines the list-level counted-array
+reservation (`CountedArrayReserve.reserve`) and lifts to a reservation inside
+a represented dependency store. The exact requested extent, counter,
+initialized prefix and retired storage are retained. Logical spare values
+witness the representation only: this module does not initialize or read
+indeterminate spare cells.
 
-The allocator remains the shared moving-or-failing block primitive. This is
-not a byte-layout, native-compiler or whole-operation synchronization proof.
+The allocator is the moving-or-failing block primitive. Offsets are cells,
+not a byte layout.
 -/
 
 set_option autoImplicit false
@@ -146,11 +148,11 @@ theorem padded_active (before : Array32 Id) (extent : Nat) (filler : Id)
 
 theorem padded_sized (before : Array32 Id) (required : UInt32) (filler : Id)
     (sized : before.Sized) :
-    (padded before (OrderedDependencyCReserve.chosenCapacity before required) filler).Sized := by
+    (padded before (CountedArrayReserve.chosenCapacity before required) filler).Sized := by
   change (padded _ _ _).slots.length ≤ OrderedDependencyCapacity.maximum
   rw [padded_extent before _ filler
-    (OrderedDependencyCReserve.chosen_capacity_preserves_extent before required)]
-  exact OrderedDependencyCReserve.chosen_capacity_bounded before required sized
+    (CountedArrayReserve.chosen_capacity_preserves_extent before required)]
+  exact CountedArrayReserve.chosen_capacity_bounded before required sized
 
 variable (addr : Id → Ptr)
 
@@ -171,9 +173,9 @@ def CountedReserveResult (pointerBytes sizeMaximum : Nat) (items count capacity 
   (ok = true ∧ required.toNat ≤ before.slots.length ∧
     CountedFields addr items count capacity a before σ) ∨
   (ok = true ∧ before.slots.length < required.toNat ∧
-    OrderedDependencyCReserve.chosenCapacity before required * pointerBytes ≤ sizeMaximum ∧ ∃ p,
+    CountedArrayReserve.chosenCapacity before required * pointerBytes ≤ sizeMaximum ∧ ∃ p,
     (CountedFields addr items count capacity (some p)
-      (padded before (OrderedDependencyCReserve.chosenCapacity before required) filler) ∗
+      (padded before (CountedArrayReserve.chosenCapacity before required) filler) ∗
       DeadStorage a before.slots.length) σ) ∨
   (ok = false ∧ before.slots.length < required.toNat ∧
     CountedFields addr items count capacity a before σ)
@@ -208,20 +210,20 @@ theorem reserve_result_with_counter (pointerBytes sizeMaximum : Nat)
       rwa [extent] at bound
     · rwa [chosen] at byteGuard
     · have size := padded_extent before _ filler
-        (OrderedDependencyCReserve.chosen_capacity_preserves_extent before required)
+        (CountedArrayReserve.chosen_capacity_preserves_extent before required)
       have active := padded_active before
-        (OrderedDependencyCReserve.chosenCapacity before required) filler within
+        (CountedArrayReserve.chosenCapacity before required) filler within
       have fields' :
           ((ArrayFields items capacity (some p)
-              (UInt32.ofNat (OrderedDependencyCReserve.chosenCapacity before required))
+              (UInt32.ofNat (CountedArrayReserve.chosenCapacity before required))
               (before.active.map (spacePtr ∘ addr)) ∗ DeadStorage a before.slots.length) ∗
             PointsTo count (.u32 before.count)) (x + y) := by
         simpa only [chosen, extent] using
           (show ((_ ∗ _) ∗ _) (x + y) from ⟨x, y, separate, rfl, fields, counter⟩)
       rw [CountedFields, size, active, padded_count, sepConj_left_comm]
       have nextExtent : (UInt32.ofNat
-          (OrderedDependencyCReserve.chosenCapacity before required)).toNat =
-          OrderedDependencyCReserve.chosenCapacity before required := by
+          (CountedArrayReserve.chosenCapacity before required)).toNat =
+          CountedArrayReserve.chosenCapacity before required := by
         rw [← chosen, nextCapacity_toNat]
       rw [ArrayFields, nextExtent, sepConj_assoc] at fields'
       simpa only [sepConj_assoc, sepConj_comm, sepConj_left_comm] using fields'
@@ -255,7 +257,7 @@ def ReservationRel (pointerBytes sizeMaximum : Nat) (items count capacity : Ptr)
     (old : Option Ptr) (before : Array32 Id) (required : UInt32) (filler : Id)
     (ok : Bool) (σ : Heap L) : Prop :=
   ∃ (after : Array32 Id) (available : Bool),
-    OrderedDependencyCReserve.reserve (OrderedDependencyCReserve.paddingAllocator filler available)
+    CountedArrayReserve.reserve (CountedArrayReserve.paddingAllocator filler available)
       pointerBytes sizeMaximum before required = (ok, after) ∧
     after.count = before.count ∧ after.active = before.active ∧ after.Sized ∧
     (ok = true → required.toNat ≤ after.slots.length) ∧
@@ -274,33 +276,33 @@ theorem exact_result_refines_array (pointerBytes sizeMaximum : Nat)
   rcases result with ⟨rfl, fits, fields⟩ | ⟨rfl, grows, byteGuard, p, fields⟩ |
     ⟨rfl, grows, fields⟩
   · refine ⟨before, false, ?_, rfl, rfl, sized, fun _ => fits, ?_⟩
-    · rw [OrderedDependencyCReserve.reserve, if_pos fits]
+    · rw [CountedArrayReserve.reserve, if_pos fits]
     · rw [if_neg (by omega), sepConj_emp]
       exact ⟨within, old, fields⟩
-  · let after := padded before (OrderedDependencyCReserve.chosenCapacity before required) filler
+  · let after := padded before (CountedArrayReserve.chosenCapacity before required) filler
     have extent := padded_extent before _ filler
-      (OrderedDependencyCReserve.chosen_capacity_preserves_extent before required)
+      (CountedArrayReserve.chosen_capacity_preserves_extent before required)
     refine ⟨after, true, ?_, rfl, padded_active before _ filler within,
       padded_sized before required filler sized, ?_, ?_⟩
-    · rw [OrderedDependencyCReserve.reserve, if_neg (by omega),
+    · rw [CountedArrayReserve.reserve, if_neg (by omega),
         if_neg (Nat.not_lt.mpr byteGuard)]
-      simp [OrderedDependencyCReserve.paddingAllocator,
-        OrderedDependencyCReserve.chosen_capacity_preserves_extent, after, padded]
+      simp [CountedArrayReserve.paddingAllocator,
+        CountedArrayReserve.chosen_capacity_preserves_extent, after, padded]
     · intro _
       rw [extent]
-      exact OrderedDependencyCReserve.chosen_capacity_covers before required
+      exact CountedArrayReserve.chosen_capacity_covers before required
     · rw [if_pos ⟨grows, rfl⟩]
       refine sepConj_mono (fun τ holds => ?_) le_rfl σ fields
       refine ⟨?_, some p, holds⟩
       rw [extent]
       exact within.trans
-        (OrderedDependencyCReserve.chosen_capacity_preserves_extent before required)
+        (CountedArrayReserve.chosen_capacity_preserves_extent before required)
   · refine ⟨before, false, ?_, rfl, rfl, sized, by simp, ?_⟩
-    · rw [OrderedDependencyCReserve.reserve, if_neg (by omega)]
+    · rw [CountedArrayReserve.reserve, if_neg (by omega)]
       dsimp only
       split
       · rfl
-      · simp [OrderedDependencyCReserve.paddingAllocator]
+      · simp [CountedArrayReserve.paddingAllocator]
     · rw [if_neg (by simp), sepConj_emp]
       exact ⟨within, old, fields⟩
 
@@ -329,24 +331,24 @@ section Store
 variable [DecidableEq Id]
 
 def updateArray (H : SplitHeap Id) (owner : Id)
-    (direction : OrderedDependencyCSource.ArrayField) (after : Array32 Id) : SplitHeap Id :=
+    (direction : DependencyReads.Direction) (after : Array32 Id) : SplitHeap Id :=
   match direction with
   | .forward => ⟨Function.update H.forward owner after, H.reverse⟩
   | .reverse => ⟨H.forward, Function.update H.reverse owner after⟩
 
 theorem update_array_observation (H : SplitHeap Id) (owner : Id)
-    (direction : OrderedDependencyCSource.ArrayField) (after : Array32 Id)
+    (direction : DependencyReads.Direction) (after : Array32 Id)
     (active : after.active = (DependencyReads.selectedArray H owner direction).active) :
-    OrderedDependencyCArray.observe (updateArray H owner direction after) =
-      OrderedDependencyCArray.observe H := by
-  cases direction <;> apply OrderedDependencyCArray.Links.ext <;> funext i
+    OrderedDependencyArrays.observe (updateArray H owner direction after) =
+      OrderedDependencyArrays.observe H := by
+  cases direction <;> apply OrderedDependencyArrays.Links.ext <;> funext i
   all_goals by_cases same : i = owner
-  all_goals simp only [updateArray, OrderedDependencyCArray.observe,
+  all_goals simp only [updateArray, OrderedDependencyArrays.observe,
     DependencyReads.selectedArray] at active ⊢
   all_goals simp [same, active]
 
 theorem update_array_sized (H : SplitHeap Id) (owner : Id)
-    (direction : OrderedDependencyCSource.ArrayField) (after : Array32 Id)
+    (direction : DependencyReads.Direction) (after : Array32 Id)
     (sized : H.Sized) (afterSized : after.Sized) :
     (updateArray H owner direction after).Sized := by
   cases direction with
@@ -365,7 +367,7 @@ theorem update_array_sized (H : SplitHeap Id) (owner : Id)
 Other modules and the other direction retain their actual representations. -/
 theorem store_array_update_frame (layout : SpaceLayout) {D : List Id}
     (distinct : D.Nodup) (H : SplitHeap Id) (owner : Id) (member : owner ∈ D)
-    (direction : OrderedDependencyCSource.ArrayField) :
+    (direction : DependencyReads.Direction) :
     ∃ F : Heap L → Prop,
       StoreRep addr layout D H =
         (CountedArray addr (addr owner + (DependencyReads.arrayOffsets layout direction).1)
@@ -412,20 +414,20 @@ both directions is preserved even on moving allocation, but retired storage
 is explicitly recorded, not mistaken for the current array. -/
 theorem store_reserve_refines (pointerBytes sizeMaximum : Nat) (layout : SpaceLayout)
     {D : List Id} (distinct : D.Nodup) (H : SplitHeap Id) (owner : Id) (member : owner ∈ D)
-    (direction : OrderedDependencyCSource.ArrayField) (required : UInt32) (filler : Id)
+    (direction : DependencyReads.Direction) (required : UInt32) (filler : Id)
     (sized : H.Sized) :
     CTriple (L := L) (StoreRep addr layout D H)
       (reserve pointerBytes sizeMaximum
         (addr owner + (DependencyReads.arrayOffsets layout direction).1)
         (addr owner + (DependencyReads.arrayOffsets layout direction).2.2) required)
       (fun ok σ => ∃ (old : Option Ptr) (after : Array32 Id) (available : Bool),
-        OrderedDependencyCReserve.reserve
-          (OrderedDependencyCReserve.paddingAllocator filler available) pointerBytes sizeMaximum
+        CountedArrayReserve.reserve
+          (CountedArrayReserve.paddingAllocator filler available) pointerBytes sizeMaximum
           (DependencyReads.selectedArray H owner direction) required = (ok, after) ∧
         after.count = (DependencyReads.selectedArray H owner direction).count ∧
         (ok = true → required.toNat ≤ after.slots.length) ∧
-        OrderedDependencyCArray.observe (updateArray H owner direction after) =
-          OrderedDependencyCArray.observe H ∧
+        OrderedDependencyArrays.observe (updateArray H owner direction after) =
+          OrderedDependencyArrays.observe H ∧
         (updateArray H owner direction after).Sized ∧
         (StoreRep addr layout D (updateArray H owner direction after) ∗
           (if (DependencyReads.selectedArray H owner direction).slots.length < required.toNat ∧

@@ -1,3 +1,4 @@
+import Mettapedia.Machines.TIsa.X86EscapeFetch
 import Mettapedia.Machines.TIsa.X86SubImmediate
 import Mettapedia.Machines.TIsa.X86DwordLoad
 
@@ -92,7 +93,15 @@ theorem sete_predicate :
     Functions.jcc_cmovcc_setcc_spec (0x94#8) =
       Functions.jcc_cmovcc_setcc_spec (X86BranchCondition.opcode .zero) := by rfl
 
-theorem sete_handler (state : State) (start finish : BitVec 48) (prefixes : BitVec 52)
+def setccOpcode (condition : X86BranchCondition.Condition) : BitVec 8 :=
+  X86BranchCondition.opcode condition + (0x10#8)
+
+theorem setcc_predicate (condition : X86BranchCondition.Condition) :
+    Functions.jcc_cmovcc_setcc_spec (setccOpcode condition) =
+      Functions.jcc_cmovcc_setcc_spec (X86BranchCondition.opcode condition) := by
+  cases condition <;> rfl
+
+theorem setcc_handler (condition : X86BranchCondition.Condition) (state : State) (start finish : BitVec 48) (prefixes : BitVec 52)
     (old : Word) (flags : BitVec 32)
     (segmentOverride : Functions._get_prefixes_seg prefixes = (0#8))
     (addressOverride : Functions._get_prefixes_adr prefixes = (0#8))
@@ -100,9 +109,9 @@ theorem sete_handler (state : State) (start finish : BitVec 48) (prefixes : BitV
     (known : lookup state 11 = some old)
     (flagsKnown : state.regs.get? .rflags = some flags)
     (quiet : state.regs.get? .log_register_writes = some false) :
-    (Functions.x86_setcc .Mode_64bit start finish prefixes (0x41#8) (0x94#8) (0xc3#8) (0#8)).run state =
+    (Functions.x86_setcc .Mode_64bit start finish prefixes (0x41#8) (setccOpcode condition) (0xc3#8) (0#8)).run state =
       .ok () (X86Move.putPointer
-        (put state 11 (replaceByte old (bitByte (X86BranchCondition.value .zero flags)))) finish) := by
+        (put state 11 (replaceByte old (bitByte (X86BranchCondition.value condition flags)))) finish) := by
   unfold Functions.x86_setcc
   dsimp only
   simp only [show Functions._get_modr_m_mod (0xc3#8) = (3#2) from rfl,
@@ -115,17 +124,31 @@ theorem sete_handler (state : State) (start finish : BitVec 48) (prefixes : BitV
   rw [length]
   simp only [show Functions.is_some (none : Option Int) = false from rfl,
     Bool.false_eq_true, ite_false]
-  rw [run_bind, sete_predicate, X86BranchCondition.executes .zero state flags flagsKnown]
+  rw [run_bind, setcc_predicate, X86BranchCondition.executes condition state flags flagsKnown]
   dsimp only
   rw [X86MovePrefix.segment64 prefixes (3#3) (0#8) segmentOverride addressOverride, run_bind, run_pure]
   dsimp only
-  rw [show Functions.bits_of_int (if X86BranchCondition.value .zero flags then 1 else 0) 128 =
-      (bitByte (X86BranchCondition.value .zero flags)).zeroExtend 128 from by
-    cases X86BranchCondition.value .zero flags <;> rfl]
+  rw [show Functions.bits_of_int (if X86BranchCondition.value condition flags then 1 else 0) 128 =
+      (bitByte (X86BranchCondition.value condition flags)).zeroExtend 128 from by
+    cases X86BranchCondition.value condition flags <;> rfl]
   rw [run_bind, write_operand_byte state old _ prefixes known quiet]
   change (Functions.write_iptr .Mode_64bit finish).run _ = _
   apply X86Move.write_pointer64
   simpa only [diagnostic_put] using quiet
+
+theorem sete_handler (state : State) (start finish : BitVec 48) (prefixes : BitVec 52)
+    (old : Word) (flags : BitVec 32)
+    (segmentOverride : Functions._get_prefixes_seg prefixes = (0#8))
+    (addressOverride : Functions._get_prefixes_adr prefixes = (0#8))
+    (length : Functions.check_instruction_length start finish (0#3) = none)
+    (known : lookup state 11 = some old)
+    (flagsKnown : state.regs.get? .rflags = some flags)
+    (quiet : state.regs.get? .log_register_writes = some false) :
+    (Functions.x86_setcc .Mode_64bit start finish prefixes (0x41#8) (0x94#8) (0xc3#8) (0#8)).run state =
+      .ok () (X86Move.putPointer
+        (put state 11 (replaceByte old (bitByte (X86BranchCondition.value .zero flags)))) finish) :=
+  setcc_handler .zero state start finish prefixes old flags segmentOverride addressOverride
+    length known flagsKnown quiet
 
 theorem read_sized_byte (state : State) (old : Word) (rex : BitVec 8)
     (known : lookup state 11 = some old) (extended : rex ≠ (0#8)) :
@@ -222,6 +245,51 @@ noncomputable abbrev byteHandlers (other : OtherTwoByteHandlers) : OtherTwoByteH
 noncomputable abbrev handlers (other : OtherOpcodeHandlers) (extra : OtherTwoByteHandlers) : OtherOpcodeHandlers :=
   X86EscapeFetch.linked (X86FrameIncrement.linkedHandlers other) (byteHandlers extra)
 
+set_option maxRecDepth 8192 in
+theorem select_setcc [OtherOpcodeHandlers] [OtherTwoByteHandlers]
+    (condition : X86BranchCondition.Condition) (start finish : BitVec 48) :
+    Functions.two_byte_opcode_execute .Mode_64bit start finish (X86LegacyFetch.packet (0x0f#8))
+      (0#8) (0x41#8) (setccOpcode condition) (0xc3#8) (0#8) =
+      OtherTwoByteHandlers.x86_setcc .Mode_64bit start finish (X86LegacyFetch.packet (0x0f#8))
+        (0x41#8) (setccOpcode condition) (0xc3#8) (0#8) := by
+  cases condition <;> rfl
+
+theorem fetched_setcc (condition : X86BranchCondition.Condition) (other : OtherOpcodeHandlers) (extra : OtherTwoByteHandlers) (vector : VectorOpcodeHandlers)
+    (state : State) (origin : X86LegacyFetch.Basis state) (finish : BitVec 48) (old : Word) (flags : BitVec 32)
+    (advance : origin.next.toInt + 1 = finish.toInt)
+    (known : lookup state 11 = some old) (flagsKnown : state.regs.get? .rflags = some flags)
+    (quiet : state.regs.get? .log_register_writes = some false)
+    (rexByte : state.mem.get? (origin.address.signExtend 52).toNat = some (0x41#8))
+    (escapeByte : state.mem.get? (origin.opcodeAddress.signExtend 52).toNat = some (0x0f#8))
+    (opcodeByte : state.mem.get? (origin.modrmAddress.signExtend 52).toNat = some (setccOpcode condition))
+    (modrmByte : state.mem.get? (origin.next.signExtend 52).toNat = some (0xc3#8)) :
+    letI : OtherOpcodeHandlers := handlers other extra
+    letI : VectorOpcodeHandlers := vector
+    (Functions.x86_fetch_decode_execute ()).run state =
+      .ok () (X86Move.putPointer
+        (put state 11 (replaceByte old (bitByte (X86BranchCondition.value condition flags)))) finish) := by
+  let : OtherOpcodeHandlers := handlers other extra
+  let : VectorOpcodeHandlers := vector
+  rw [X86EscapeFetch.fetch_to_rex_escape state origin.address origin.opcodeAddress origin.modrmAddress origin.control origin.attributes
+    false 0 11 origin.step1 origin.step2 origin.status origin.fault origin.msrs origin.segments origin.longMode
+    origin.codeMode origin.application origin.rip rexByte escapeByte]
+  change (@Functions.two_byte_opcode_decode_and_execute X86Memory.ordinary (X86FrameIncrement.linkedHandlers other)
+    (byteHandlers extra) .Mode_64bit origin.address origin.modrmAddress (X86LegacyFetch.packet (0x0f#8))
+      (0x41#8) (0x0f#8)).run state = _
+  rw [@X86TwoByteDispatch.decode_register (X86FrameIncrement.linkedHandlers other) (byteHandlers extra) state origin.address
+    origin.modrmAddress origin.next finish origin.attributes (origin.address.signExtend 64) (0x41#8) (setccOpcode condition) (0xc3#8)
+    origin.step3 advance (by rfl) (by cases condition <;> rfl) (by decide) origin.segments origin.application origin.rip opcodeByte modrmByte,
+    @select_setcc (X86FrameIncrement.linkedHandlers other) (byteHandlers extra) condition]
+  apply setcc_handler condition state origin.address finish (X86LegacyFetch.packet (0x0f#8)) old flags
+    (X86LegacyFetch.packet_segment _) (X86LegacyFetch.packet_address _)
+  · apply X86FrameLoad.length_from_distance _ _ 4 (by decide)
+    have := origin.step2
+    have := origin.step3
+    omega
+  · exact known
+  · exact flagsKnown
+  · exact quiet
+
 theorem fetched_sete (other : OtherOpcodeHandlers) (extra : OtherTwoByteHandlers) (vector : VectorOpcodeHandlers)
     (state : State) (origin : X86LegacyFetch.Basis state) (finish : BitVec 48) (old : Word) (flags : BitVec 32)
     (advance : origin.next.toInt + 1 = finish.toInt)
@@ -235,28 +303,9 @@ theorem fetched_sete (other : OtherOpcodeHandlers) (extra : OtherTwoByteHandlers
     letI : VectorOpcodeHandlers := vector
     (Functions.x86_fetch_decode_execute ()).run state =
       .ok () (X86Move.putPointer
-        (put state 11 (replaceByte old (bitByte (X86BranchCondition.value .zero flags)))) finish) := by
-  let : OtherOpcodeHandlers := handlers other extra
-  let : VectorOpcodeHandlers := vector
-  rw [X86EscapeFetch.fetch_to_rex_escape state origin.address origin.opcodeAddress origin.modrmAddress origin.control origin.attributes
-    false 0 11 origin.step1 origin.step2 origin.status origin.fault origin.msrs origin.segments origin.longMode
-    origin.codeMode origin.application origin.rip rexByte escapeByte]
-  change (@Functions.two_byte_opcode_decode_and_execute X86Memory.ordinary (X86FrameIncrement.linkedHandlers other)
-    (byteHandlers extra) .Mode_64bit origin.address origin.modrmAddress (X86LegacyFetch.packet (0x0f#8))
-      (0x41#8) (0x0f#8)).run state = _
-  rw [@X86TwoByteDispatch.decode_register (X86FrameIncrement.linkedHandlers other) (byteHandlers extra) state origin.address
-    origin.modrmAddress origin.next finish origin.attributes (origin.address.signExtend 64) (0x41#8) (0x94#8) (0xc3#8)
-    origin.step3 advance (by rfl) (by rfl) (by decide) origin.segments origin.application origin.rip opcodeByte modrmByte,
-    @X86TwoByteDispatch.select_sete (X86FrameIncrement.linkedHandlers other) (byteHandlers extra)]
-  apply sete_handler state origin.address finish (X86LegacyFetch.packet (0x0f#8)) old flags
-    (X86LegacyFetch.packet_segment _) (X86LegacyFetch.packet_address _)
-  · apply X86FrameLoad.length_from_distance _ _ 4 (by decide)
-    have := origin.step2
-    have := origin.step3
-    omega
-  · exact known
-  · exact flagsKnown
-  · exact quiet
+        (put state 11 (replaceByte old (bitByte (X86BranchCondition.value .zero flags)))) finish) :=
+  fetched_setcc .zero other extra vector state origin finish old flags
+    advance known flagsKnown quiet rexByte escapeByte opcodeByte modrmByte
 
 theorem fetched_movzx (other : OtherOpcodeHandlers) (extra : OtherTwoByteHandlers) (vector : VectorOpcodeHandlers)
     (state : State) (origin : X86LegacyFetch.Basis state) (finish : BitVec 48) (old : Word) (byte : BitVec 8)

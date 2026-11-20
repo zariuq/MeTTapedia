@@ -103,7 +103,7 @@ theorem the_justified_guard_emits_its_closed_result :
   ⟨selection, (valid_iff_factors locals captures _ _ _ _ _ _).mp
     an_existing_binding_justifies_the_same_guard, rfl, rfl, rfl⟩
 
-theorem the_condition_is_retained_although_its_variable_is_absent_from_output :
+theorem the_condition_is_retained_although_its_variable_does_not_occur_in_output :
     (prepared locals captures occupied selection equalityRule rows).rule.checks =
         [.equal (generator active (.inr 0)) (atom active)] ∧
       (prepared locals captures occupied selection equalityRule rows).rule.produce = [atom active] := by
@@ -173,7 +173,7 @@ theorem the_matching_schema_is_consumed_by_an_actual_firing :
     exact False.elim (List.not_mem_nil member)
 
 theorem the_guard_after_that_consumption_is_exactly_its_prior_count_condition :
-    Ask locals takeProblem takeAfterRows takeAfter.present (.absent (p (atom active))) ↔
+    Ask locals takeProblem takeAfterRows takeAfter.present (.predicate .none (p (atom active))) ↔
       Ask locals takeProblem (guardRows locals captures rows) bare.present (.count (p (atom active)) 1) := by
   have transported := ContextualGuardConsumption.ask_after_erase_iff_exact_count locals captures
     takeProblem rows bare.present (p (atom active)) 7 takeScope (by decide)

@@ -31,7 +31,7 @@ open ContextualDependentGeneralPattern.Controls ContextualDependentPatternSolver
 open ContextualDependentFragment.Controls ContextualDependentOccursCheck.Controls
 open ContextualDependentFragment ContextualDependentGeneralPattern ContextualDependentDynamicFragment
 open ContextualDependentSpinesMany.Controls ContextualDependentFragmentDecisive.ClashControls
-open ContextualDependentConstantHeads.Controls ContextualDependentCensusPairEta.Controls
+open ContextualDependentConstantHeads.Controls ContextualDependentClassificationPairEta.Controls
 open ContextualDependentIdEndpoints.Controls
 
 /-- The projections solver of the tower controls, as a fuel-indexed family. -/

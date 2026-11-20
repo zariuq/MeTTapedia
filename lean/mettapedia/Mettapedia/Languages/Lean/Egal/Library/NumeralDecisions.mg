@@ -10,10 +10,8 @@ Qed.
 Theorem Lean_Nat_le_succ_num : forall m n, nat_p n ->
   0 :e Lean_Nat_le_Prop (LeanNum m) (LeanNum n) -> 0 :e Lean_Nat_le_Prop (LeanNum m) (LeanNum (ordsucc n)).
 let m n. assume Hn: nat_p n. assume H: 0 :e Lean_Nat_le_Prop (LeanNum m) (LeanNum n).
-apply SepE2 1 (fun x:set => exists w, w :e Lean_Nat_le (LeanNum m) (LeanNum n)) 0 H.
-let w. assume Hw: w :e Lean_Nat_le (LeanNum m) (LeanNum n).
 rewrite LeanNum_S n Hn.
-exact Lean_Nat_le_step_proof_ok (LeanNum m) (LeanNum n) (LeanNum_In n Hn) w Hw.
+exact Lean_Nat_le_step_proof_ok (LeanNum m) (LeanNum n) (LeanNum_In n Hn) 0 H.
 Qed.
 
 (** At any distance: m <= m + k. **)

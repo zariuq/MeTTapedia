@@ -8,7 +8,7 @@ The controls of issuing run on the first-order instance of the step over ground 
 generative names and codes (`base`), under its naming (`naming`), through the ledger step with three
 disciplines:
 
-* `issuing`: the calculus's discipline (`Issues`), restricted to a theory;
+* `issuing`: the issuing discipline (`Issues`), restricted to a theory;
 * `freshOnly`: issued names are new, but a written name need not have been issued;
 * `usesOnly`: written names must have been issued, but an issued name need not be new.
 
@@ -53,7 +53,7 @@ abbrev naming : Mentions base ℕ := firstOrderMentions ground Prod.fst Expr.nam
 
 abbrev Disc := Discipline Conf (fun _ => Fir) ℕ
 
-/-- The calculus's discipline, restricted to a theory. -/
+/-- The issuing discipline, restricted to a theory. -/
 abbrev issuing (theory : Fir → List ℕ → Prop) : Disc :=
   fun s issued f fresh => Issues naming s issued f fresh ∧ theory f fresh
 
@@ -140,9 +140,9 @@ theorem match_two {p q : Expr} {l : List Occ}
           cases tail'
           exact ⟨_, _, rfl, head, head'⟩
 
-/-- An absence check over ground terms is refuted by one present occurrence of its pattern. -/
-theorem absent_refuted {C : Conf} {r : RuleInstance Expr} {sel : Selection Occ}
-    (valid : sel.Valid ground Prod.fst r C) {p : Expr} (asked : Check.absent p ∈ r.checks)
+/-- A none check over ground terms is refuted by one present occurrence of its pattern. -/
+theorem none_refuted {C : Conf} {r : RuleInstance Expr} {sel : Selection Occ}
+    (valid : sel.Valid ground Prod.fst r C) {p : Expr} (asked : Check.predicate .none p ∈ r.checks)
     {o : Occ} (present : o ∈ C.present) (labelled : o.1 = p) : False := by
   obtain ⟨u, solved⟩ := valid.consistent
   exact valid.checks _ asked u solved o present labelled.symm
@@ -170,7 +170,7 @@ theorem admits_of {D : Disc} {σ : Conf × Set ℕ} {r : RuleInstance Expr} {sel
     (checks : ∀ c ∈ r.checks, c.Holds ground () Prod.fst σ.1.present)
     (discipline : D σ.1 σ.2 ⟨r, [], sel⟩ fresh) :
     (withLedger base D).Admits (s := σ) (⟨r, [], sel⟩, fresh) := by
-  refine ⟨(PredicateQueryAdmission.valid_empty_iff ground Prod.fst r σ.1 sel).mpr
+  refine ⟨PredicateQueryAdmission.regionValid_nil_iff.mpr
     ⟨takenDistinct, madeDistinct, by rw [takes, List.length_map], by rw [reads, List.length_map],
       outputs, enabled, ⟨(), ?_⟩, ?_⟩, discipline⟩
   · intro e member
@@ -190,8 +190,8 @@ theorem no_checks {r : RuleInstance Expr} (none : r.checks = []) {C : Conf} :
   intro c member
   exact absurd member List.not_mem_nil
 
-theorem absent_holds {C : Conf} {p : Expr} (clear : ∀ o ∈ C.present, o.1 ≠ p) :
-    (Check.absent p).Holds ground () Prod.fst C.present :=
+theorem none_holds {C : Conf} {p : Expr} (clear : ∀ o ∈ C.present, o.1 ≠ p) :
+    (Check.predicate .none p).Holds ground () Prod.fst C.present :=
   fun o present same => clear o present same.symm
 
 /-! ## The use check is necessary: a theory with consumption -/

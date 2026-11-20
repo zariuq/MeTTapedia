@@ -74,13 +74,16 @@ theorem compiledRhoComm_step
       (rhoClosedTermWellSorted_process_iff _).mpr
         ⟨sourceTyped, sourceSafe⟩⟩
   have rawStep : RhoStep source.1
-      (.collection .hashBag (semanticCommSubst body payload :: rest) none) := by
-    exact RhoStep.comm channel body payload rest bodyTyped payloadTyped
+      (.collection .hashBag
+        (semanticCommSubst
+          (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body)
+          payload :: rest) none) := by
+    exact RhoStep.comm_resolved channel body payload rest bodyTyped payloadTyped
   let target : RhoProcess := source.stepTarget rawStep
   have targetAgreement :
       target.1 = applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
         (rhoCommBindings channel body payload rest) := by
-    rw [applyBindingsForRule_rhoComm_agrees_derived
+    rw [applyBindingsForRule_rhoComm_eq_resolved
       bodyTyped payloadTyped channel rest]
     rfl
   refine ⟨source, target, rfl, targetAgreement, ?_⟩
@@ -99,7 +102,7 @@ theorem compiledRhoComm_nil_step :
           (.apply "PZero" []) (.apply "PZero" []) []) ∧
       rhoLanguageDefGSLT.Step source target := by
   apply compiledRhoComm_step
-  · exact .quote (free := FreeSortContext.empty) .unit
+  · exact .quote (free := FreeSortContext.empty) .unit (by decide)
   · decide +kernel
   · exact .unit (free := FreeSortContext.empty)
   · decide +kernel

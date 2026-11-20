@@ -52,10 +52,10 @@ variable {T : Type uT} {S : Type uS} (τ : T)
 
 /-- **The choice escape identifies two runs that the extended records separate.** -/
 theorem extended_separates (A : SubstitutionAction T S) {C D : Configuration T RecordControls.Site} :
-    ((AnnotatedRuns.choiceEscape A (RecordControls.label τ)).records (s := C) (takeA (S := S) τ) ++
-        (AnnotatedRuns.choiceEscape A (RecordControls.label τ)).records (s := C) (takeB (S := S) τ) =
-      (AnnotatedRuns.choiceEscape A (RecordControls.label τ)).records (s := D) (takeAmakeB (S := S) τ) ++
-        (AnnotatedRuns.choiceEscape A (RecordControls.label τ)).records (s := D) (takeB (S := S) τ)) ∧
+    ((AnnotatedRuns.choiceEscape A (RecordControls.label τ)).records (s := C) ⟨takeA (S := S) τ,⟨[],rfl⟩⟩ ++
+        (AnnotatedRuns.choiceEscape A (RecordControls.label τ)).records (s := C) ⟨takeB (S := S) τ,⟨[],rfl⟩⟩ =
+      (AnnotatedRuns.choiceEscape A (RecordControls.label τ)).records (s := D) ⟨takeAmakeB (S := S) τ,⟨[],rfl⟩⟩ ++
+        (AnnotatedRuns.choiceEscape A (RecordControls.label τ)).records (s := D) ⟨takeB (S := S) τ,⟨[],rfl⟩⟩) ∧
     [Entry.ofFiring (takeA (S := S) τ), Entry.ofFiring (takeB (S := S) τ)] ≠
       [Entry.ofFiring (takeAmakeB (S := S) τ), Entry.ofFiring (takeB (S := S) τ)] ∧
     provPast [(Entry.ofFiring (takeA (S := S) τ), (∅ : Finset ℕ))] (Entry.ofFiring (takeB (S := S) τ)) = ∅ ∧

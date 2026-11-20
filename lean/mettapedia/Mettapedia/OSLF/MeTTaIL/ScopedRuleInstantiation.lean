@@ -42,10 +42,11 @@ theorem ordinary_execution_specialization (relEnv : Engine.RelationEnv)
       ScopedRuleExecution.applyRuleAt relEnv language ambient rule term := rfl
 
 /-- Binder-eliminating reflection using the same source-selected declaration
-and the same normalization of the rewrite-introduced replacement quote. -/
+and the same normalization of the rewrite-introduced replacement quote. The
+declaration's quote scope decides what happens at a genuine quotation. -/
 def reflectiveOperation (declaration : ReflectivePresentationDecl)
     (replacement body : Pattern) : Pattern :=
-  ReflectiveInstantiation.instantiate declaration 0
+  ReflectiveInstantiation.instantiateDeclared declaration 0
     (ReflectiveSubstitution.normalizeReflectiveReplacement declaration replacement) body
 
 #print axioms ordinary_specialization

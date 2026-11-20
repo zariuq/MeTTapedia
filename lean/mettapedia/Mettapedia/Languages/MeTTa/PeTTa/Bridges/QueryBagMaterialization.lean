@@ -20,21 +20,38 @@ open Eval SpaceSemantics NamedSpaces EffectfulQuerySource
 def insertion (spaceName : String) (template : Atom) : Atom :=
   .expression [.symbol "add-atom", .var spaceName, template]
 
+private def appendValue (before : Effects.State) (target : Handle) (row : Atom) : Option Effects.State :=
+  if row.isVariable then none else Effects.insert before target row
+
+private theorem appendValue_some {before after : Effects.State} {target : Handle} {row : Atom}
+    (appended : appendValue before target row = some after) :
+    row.isVariable = false ∧ Effects.insert before target row = some after := by
+  cases value : row.isVariable <;> simp_all [appendValue]
+
 def emit (target : Handle) (template : Atom) : Body := fun bindings before =>
-  (Effects.insert before target (applySubst bindings template)).map (fun after => (after, [Effects.boolean true]))
+  (appendValue before target (applySubst bindings template)).map (fun after => (after, [Effects.boolean true]))
 
 def installRows (target : Handle) : List Atom → Effects.State → Option Effects.State
   | [], before => some before
-  | row :: rest, before => (Effects.insert before target row).bind (installRows target rest)
+  | row :: rest, before => (appendValue before target row).bind (installRows target rest)
+
+theorem emit_written {target : Handle} {template : Atom}
+    {bindings : Subst} {before after : Effects.State} {answers : List Atom}
+    (completed : emit target template bindings before = some (after, answers)) :
+    (applySubst bindings template).isVariable = false ∧
+      Effects.insert before target (applySubst bindings template) = some after ∧
+      answers = [Effects.boolean true] := by
+  obtain ⟨next, appended, same⟩ := Option.map_eq_some_iff.mp completed
+  obtain ⟨rfl, rfl⟩ := Prod.mk.inj same
+  exact ⟨(appendValue_some appended).1, (appendValue_some appended).2, rfl⟩
 
 theorem emit_returns (program : Program) (spaceName : String) (target : Handle) (template : Atom)
     (bindings : Subst) (before after : Effects.State) (answers : List Atom)
     (location : Subst.lookup bindings spaceName = some (Effects.handleValue target))
     (completed : emit target template bindings before = some (after, answers)) :
     Returns program bindings before (insertion spaceName template) after answers := by
-  obtain ⟨next, inserted, same⟩ := Option.map_eq_some_iff.mp completed
-  obtain ⟨rfl, rfl⟩ := Prod.mk.inj same
-  exact FreshConstructorSource.insert_returns program bindings before next spaceName template target location inserted
+  obtain ⟨value, inserted, rfl⟩ := emit_written completed
+  exact FreshConstructorSource.insert_returns program bindings before after spaceName template target location value inserted
 
 theorem traverse_install_exact (target : Handle) (template : Atom) (captured : List Subst)
     (before : Effects.State) (collected : List Atom) :
@@ -46,19 +63,21 @@ theorem traverse_install_exact (target : Handle) (template : Atom) (captured : L
   | cons bindings rest ih =>
       simp only [EffectfulQuerySource.traverse, emit, List.map_cons, installRows, Option.bind_map, Option.map_bind,
         Function.comp_def, ih]
-      apply congrArg ((Effects.insert before target (applySubst bindings template)).bind)
+      apply congrArg ((appendValue before target (applySubst bindings template)).bind)
       funext middle
       simp [List.replicate_succ, List.append_assoc]
 
 theorem installRows_exists (target : Handle) (payloads : List Atom) (before : Effects.State) (rows : List Atom)
-    (snapshot : before.read target = some rows) : ∃ after, installRows target payloads before = some after := by
+    (snapshot : before.read target = some rows)
+    (values : ∀ payload ∈ payloads, Atom.isVariable payload = false) :
+    ∃ after, installRows target payloads before = some after := by
   induction payloads generalizing before rows with
   | nil => exact ⟨before, rfl⟩
   | cons payload rest ih =>
       obtain ⟨middle, inserted⟩ := Effects.insert_exists_of_read_some snapshot payload
       obtain ⟨_, _, middleRead⟩ := Effects.insert_reads_back inserted
-      obtain ⟨after, later⟩ := ih middle _ middleRead
-      exact ⟨after, by simp [installRows, inserted, later]⟩
+      obtain ⟨after, later⟩ := ih middle _ middleRead (fun atom member => values atom (List.mem_cons_of_mem _ member))
+      exact ⟨after, by simp [installRows, appendValue, values payload List.mem_cons_self, inserted, later]⟩
 
 theorem installRows_receipt (target : Handle) (payloads : List Atom) (before after : Effects.State) (rows : List Atom)
     (snapshot : before.read target = some rows) (completed : installRows target payloads before = some after) :
@@ -69,7 +88,8 @@ theorem installRows_receipt (target : Handle) (payloads : List Atom) (before aft
       cases Option.some.inj completed
       exact ⟨by simpa using snapshot, fun _ _ => rfl, rfl⟩
   | cons payload rest ih =>
-      obtain ⟨middle, inserted, later⟩ := Option.bind_eq_some_iff.mp completed
+      obtain ⟨middle, appended, later⟩ := Option.bind_eq_some_iff.mp completed
+      have inserted := (appendValue_some appended).2
       obtain ⟨old, oldRead, middleRead⟩ := Effects.insert_reads_back inserted
       have same : old = rows := Option.some.inj (oldRead.symm.trans snapshot)
       subst old
@@ -113,5 +133,8 @@ theorem counted_returns (program : Program) (spaceName : String) (target : Handl
     (nested_returns program spaceName target template legs caller before after answers location completed)
   exact native_unary_call_returns program caller before after after "size-atom" _ _ _
     (by decide) (by decide) (by simp [argumentIsRaw, StdLib.known, StdLib.rawArgument]) collected rfl (by decide)
+
+theorem unbound_template_declines (before : Effects.State) (target : Handle) :
+    emit target (.var "unbound") [] before = none := rfl
 
 end Mettapedia.Languages.MeTTa.PeTTa.Bridges.QueryBagMaterialization

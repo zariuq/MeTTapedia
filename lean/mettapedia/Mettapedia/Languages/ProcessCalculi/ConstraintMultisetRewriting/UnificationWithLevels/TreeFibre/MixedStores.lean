@@ -244,7 +244,7 @@ theorem arrowEq_reread (choices : ExecutableChecking.HeadChoices S.R) {Θ : Cont
         · rcases codHeads_subst_solve code h member with inner | fromVar
           · exact heads h inner
           · cases fromVar
-      · rw [subst_solveSub_absent _ code inT] at same
+      · rw [subst_solveSub_of_notMem _ code inT] at same
         subst same
         refine ⟨code, fun i member => ?_, heads⟩
         have ne : i ≠ X := fun same => inT (same ▸ member)

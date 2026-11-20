@@ -652,7 +652,7 @@ theorem decidedInFibre_of_keeps (solver : ContextualDependentWorklist.Solver S.l
         subst same
         exact .inl ⟨N, answer, principal⟩
       exact landing _ state.answer same principal
-  | refuted absent => exact .inr absent
+  | refuted missing => exact .inr missing
   | stuck _ => exact False.elim decided
   | cutoff _ => exact False.elim decided
 

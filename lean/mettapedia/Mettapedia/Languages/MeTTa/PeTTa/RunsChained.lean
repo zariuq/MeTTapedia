@@ -57,47 +57,16 @@ theorem scan_sound {O : Type} (label : O → Atom) (bindings : Subst) (pattern :
       ∀ packet ∈ packets, ∃ index, rows[index]? = some packet.1 ∧
         Unifying.Idempotent packet.2 ∧ Unifying.Refines bindings packet.2 ∧
         resolve packet.2 pattern =
-          resolve packet.2 (Unifying.rename (use + index) (label packet.1))
-  | _, [], packets, scanned, packet, member => by
-      simp only [scan, Option.some.injEq] at scanned
-      subst scanned
-      cases member
-  | use, occurrence :: rest, packets, scanned, packet, member => by
-      cases later : scan label bindings pattern (use + 1) rest with
-      | none => simp [scan, later] at scanned
-      | some remaining =>
-          have inherited := scan_sound label bindings pattern idempotent (use + 1) rest
-            remaining later
-          have fromRest : packet ∈ remaining → ∃ index,
-              (occurrence :: rest)[index]? = some packet.1 ∧
-              Unifying.Idempotent packet.2 ∧ Unifying.Refines bindings packet.2 ∧
-              resolve packet.2 pattern =
-                resolve packet.2 (Unifying.rename (use + index) (label packet.1)) := by
-            intro found
-            obtain ⟨index, at_, valid, refined, solved⟩ := inherited packet found
-            refine ⟨index + 1, by simpa using at_, valid, refined, ?_⟩
-            rw [solved]
-            congr 2
-            omega
-          cases matched : Unifying.unify bindings pattern
-              (Unifying.rename use (label occurrence)) with
-          | ok bound =>
-              simp [scan, later, matched] at scanned
-              subst scanned
-              rcases List.mem_cons.mp member with here | found
-              · subst here
-                obtain ⟨valid, refined, solved⟩ := Unifying.unifyTerms_sound _ bindings bound
-                  pattern (Unifying.rename use (label occurrence)) idempotent matched
-                exact ⟨0, rfl, valid, refined, by simpa using solved⟩
-              · exact fromRest found
-          | clash =>
-              simp [scan, later, matched] at scanned
-              subst scanned
-              exact fromRest member
-          | exhausted => simp [scan, later, matched] at scanned
+          resolve packet.2 (Unifying.rename (use + index) (label packet.1)) := by
+  intro use rows packets scanned packet member
+  obtain ⟨index,position,bound,matched,rfl⟩ :=
+    Unifying.queryRows_member label Prod.mk bindings pattern use rows scanned packet member
+  obtain ⟨valid,refined,solved⟩ := Unifying.unifyTerms_sound _ bindings bound pattern
+    (Unifying.rename (use + index) (label rows[index])) idempotent matched
+  exact ⟨index, List.getElem?_eq_getElem position, valid, refined, solved⟩
 
-/-- **An alternative about to run a written `match`, in any state an evaluation reaches**:
-its bindings are idempotent and refine the entry's, and every occurrence the `match` reads
+/-- Audit an atomic scan at a reachable streaming frontier. The caller's
+bindings are idempotent and refine the entry's, and each selected occurrence
 gives an alternative whose bindings are idempotent, refine the entry's and the reader's,
 and solve the equation between the pattern and the occurrence's renamed atom. -/
 theorem reached_match_tells {O : Type} (label : O → Atom)

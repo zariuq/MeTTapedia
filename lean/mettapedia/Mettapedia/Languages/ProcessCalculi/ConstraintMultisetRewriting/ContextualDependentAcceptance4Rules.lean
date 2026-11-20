@@ -89,7 +89,7 @@ structure OpenObligations (fuel : Nat) : Prop where
     ContextualDependentRecognitionConversion.patternRuleConv facts roots heads algebra declared choices reducer rigid
       complete root normalizes certifyNormal fuel problem
   expanded : UpdateKeeps (fun problem => PermutedMiller S.levels problem) fun problem =>
-    ContextualDependentCensusPairEta.preparedExpanded facts roots heads algebra declared choices reducer root
+    ContextualDependentClassificationPairEta.preparedExpanded facts roots heads algebra declared choices reducer root
       rootComplete fuel problem
   any : ∀ ⦃Θ : Context S.R⦄ (problem : EquationStore (TotalTerm Θ)), PermutedMiller S.levels problem →
     DecomposedKeeps (fun problem => PermutedMiller S.levels problem) facts roots heads algebra rigid complete
@@ -181,9 +181,9 @@ theorem dead_decided_of_rules
       ((∃ state finished, run ((deadFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening).solver larger) problem larger =
               .solved state finished ∧ (frames S.levels).Principal problem state.answer) ∨
-        (∃ absent, run ((deadFamily facts roots heads algebra rigid complete declared choices reducer root
+        (∃ missing, run ((deadFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening).solver larger) problem larger =
-              .refuted absent)) :=
+              .refuted missing)) :=
   dead_decided_of_sn facts roots heads algebra rigid complete declared choices reducer root normalizes certifyNormal
     headTypingUnique rootComplete strengthening stable sn firing
     (fun fuel => cumulativeRound_keeps facts roots heads algebra rigid complete declared choices reducer root normalizes
@@ -223,7 +223,7 @@ theorem tower_dead_decided_of_rules
       run (deadTower.solver larger) problem larger = run (deadTower.solver budget) problem budget ∧
       ((∃ state finished, run (deadTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ absent, run (deadTower.solver larger) problem larger = .refuted absent)) :=
+        (∃ missing, run (deadTower.solver larger) problem larger = .refuted missing)) :=
   dead_decided_of_rules (S := setting) TowerModel.facts TowerModel.roots TowerModel.heads TowerModel.algebra
     ContextualDependentPiSpine.Controls.rigid TowerModel.complete
     ContextualDependentInversion.Controls.declarations_formed ExecutableTowerChoices.choices

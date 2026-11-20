@@ -110,7 +110,7 @@ theorem typedAssignment_wrapper {environment : GeneralPremise.Environment} {cont
 variable (laws) in
 /-- A rule fires at wrapper normal forms: no premises, a left side that never matches a wrapper, a right
 side shaped for wrapper normal captures, captures typed at types the wrapper laws keep, and a binder
-operation that is ordinary or the presentation's reflective substitution. -/
+operation that is ordinary or the reflective substitution of a closed quote scope. -/
 def WrapperFiringAdmissible (environment : GeneralPremise.Environment) (declaration : ReflectivePresentationDecl)
     (index : Nat) : Prop :=
   ∀ rule spec, environment.language.rewrites[index]? = some rule →
@@ -118,7 +118,8 @@ def WrapperFiringAdmissible (environment : GeneralPremise.Environment) (declarat
     rule.premises = [] ∧ ∃ rests, wrapperFree laws rests rule.left = true ∧
       RightShaped declaration rule spec .right rests [] rule.right = true ∧ CapturesTyped laws rests rule ∧
       (substitutionPresentationForRule? environment.reflection rule = none ∨
-        substitutionPresentationForRule? environment.reflection rule = some declaration)
+        (substitutionPresentationForRule? environment.reflection rule = some declaration ∧
+          declaration.quoteScope = .closed ∧ BinderWrapperCompatible laws declaration))
 
 /-- **A root firing has a counterpart at the wrapper normal form of its focus**, with mapped captures and
 a result reached by a forward chain, in an empty outer scope. -/

@@ -74,12 +74,12 @@ theorem missing_license_absent (frame : Finset CoreOccurrence) (store : Store)
     (assignment : ABTProtectedParameters.Assignment InferenceSchemaActivation.Head 0)
     (key : Key) (missing : store.lookup key = none) :
     Check.Holds locatedAction assignment label (world frame store)
-      (.absent (licenses, HOLLightCanonicalLicenses.payload key)) := by
+      (.predicate .none (licenses, HOLLightCanonicalLicenses.payload key)) := by
   classical
   intro occurrence present matched
   have inRegion : occurrence ∈ Check.matches locatedAction assignment label (world frame store)
       (licenses, HOLLightCanonicalLicenses.payload key) := Finset.mem_filter.mpr ⟨present, matched⟩
-  rw [region_is_private_query, store.query_of_absent key missing] at inRegion
+  rw [region_is_private_query, store.query_of_lookup_none key missing] at inRegion
   simp at inRegion
 
 theorem successful_read_is_unique (frame : Finset CoreOccurrence) (store : Store)

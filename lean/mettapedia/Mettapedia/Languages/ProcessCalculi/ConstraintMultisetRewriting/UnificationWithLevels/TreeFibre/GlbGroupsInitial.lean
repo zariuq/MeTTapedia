@@ -541,14 +541,14 @@ theorem glbGroup_initial {Θ : Context S.R} {original : EquationStore (TotalTerm
     (total : ∀ {a b : Head}, S.R.isUniverse a → S.R.isUniverse b → ∃ g, glb a b = some g) :
     ∃ (Δ : Context S.R) (answer : Δ ⟶ Θ), InitialSolution (frames S.levels) original answer := by
   obtain ⟨fuel, ends⟩ := glbGroup_decided facts roots heads algebra rigid complete headTypingUnique glb spec total inside
-  rcases (ends fuel le_rfl).2 with ⟨state, finished, solved, _⟩ | ⟨absent, refuted⟩
+  rcases (ends fuel le_rfl).2 with ⟨state, finished, solved, _⟩ | ⟨missing, refuted⟩
   · exact glbGroup_solved_initial facts roots heads algebra rigid complete headTypingUnique glb spec inside inh families
       solved
   · exact absurd refuted (drive_ne_refuted
       (glbGroupSolver facts roots heads algebra rigid complete headTypingUnique glb spec)
-      (fun problem absent =>
-        glbGroupRound_ne_refuted facts roots heads algebra rigid complete headTypingUnique glb spec problem absent)
-      fuel _ absent)
+      (fun problem missing =>
+        glbGroupRound_ne_refuted facts roots heads algebra rigid complete headTypingUnique glb spec problem missing)
+      fuel _ missing)
 
 end Round
 

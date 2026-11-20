@@ -63,32 +63,12 @@ theorem queryBodies_supported (ceiling : Nat) (bindings : Subst) (pattern body :
     ∀ use rows selected, use + rows.length ≤ ceiling →
       queryBodies bindings pattern body use rows = some selected →
       ∀ control ∈ selected, ControlSupported (Before ceiling) control := by
-  intro use rows
-  induction rows generalizing use with
-  | nil => intro selected _ chosen; cases chosen; simp
-  | cons row rest ih =>
-      intro selected fits chosen
-      simp only [queryBodies] at chosen
-      cases tailRun : queryBodies bindings pattern body (use + 1) rest with
-      | none => simp [tailRun] at chosen
-      | some tail =>
-          simp only [tailRun] at chosen
-          cases unified : unify bindings pattern (rename use row) with
-          | exhausted => simp [unified] at chosen
-          | clash =>
-              simp [unified] at chosen
-              subst selected
-              exact ih _ _ (by simp only [List.length_cons] at fits; omega) tailRun
-          | ok bound =>
-              simp [unified] at chosen
-              subst selected
-              intro control member
-              rcases List.mem_cons.mp member with rfl | member
-              · simp only [ControlSupported]
-                exact ⟨unifyTerms_supported _ _ _ _ _ _ good patternGood
-                  (renamed_supported_before ceiling use (by simp only [List.length_cons] at fits; omega) row)
-                  unified,bodyGood⟩
-              · exact ih _ _ (by simp only [List.length_cons] at fits; omega) tailRun control member
+  intro use rows selected fits chosen control member
+  obtain ⟨slot,position,bound,unified,rfl⟩ := queryRows_member id (fun _ bound => Control.evaluate bound body)
+    bindings pattern use rows chosen control member
+  have rowSupported := renamed_supported_before ceiling (use + slot) (by omega) rows[slot]
+  have supported := unifyTerms_supported _ _ _ _ _ _ good patternGood rowSupported unified
+  simpa only [ControlSupported] using And.intro supported bodyGood
 
 theorem matchAnswers_supported (ceiling : Nat) (bindings : Subst) (pattern template : Atom)
     (good : SupportedBindings (Before ceiling) bindings)
@@ -96,31 +76,12 @@ theorem matchAnswers_supported (ceiling : Nat) (bindings : Subst) (pattern templ
     ∀ use rows answers, use + rows.length ≤ ceiling →
       matchAnswers bindings pattern template use rows = some answers →
       ∀ answer ∈ answers, AnswerSupported (Before ceiling) answer := by
-  intro use rows
-  induction rows generalizing use with
-  | nil => intro answers _ queried; cases queried; simp
-  | cons row rest ih =>
-      intro answers fits queried
-      simp only [matchAnswers] at queried
-      cases tailRun : matchAnswers bindings pattern template (use + 1) rest with
-      | none => simp [tailRun] at queried
-      | some tail =>
-          simp only [tailRun] at queried
-          cases unified : unify bindings pattern (rename use row) with
-          | exhausted => simp [unified] at queried
-          | clash =>
-              simp [unified] at queried
-              subst answers
-              exact ih _ _ (by simp only [List.length_cons] at fits; omega) tailRun
-          | ok bound =>
-              simp [unified] at queried
-              subst answers
-              have boundGood := unifyTerms_supported _ _ _ _ _ _ good patternGood
-                (renamed_supported_before ceiling use (by simp only [List.length_cons] at fits; omega) row) unified
-              intro answer member
-              rcases List.mem_cons.mp member with rfl | member
-              · exact ⟨supported_resolve boundGood template templateGood,boundGood⟩
-              · exact ih _ _ (by simp only [List.length_cons] at fits; omega) tailRun answer member
+  intro use rows answers fits queried answer member
+  obtain ⟨slot,position,bound,unified,rfl⟩ := queryRows_member id
+    (fun _ bound => (⟨resolve bound template,bound⟩ : Answer)) bindings pattern use rows queried answer member
+  have rowSupported := renamed_supported_before ceiling (use + slot) (by omega) rows[slot]
+  have supported := unifyTerms_supported _ _ _ _ _ _ good patternGood rowSupported unified
+  exact ⟨supported_resolve supported template templateGood,supported⟩
 
 theorem matchCall_supported (ceiling : Nat) (state : Effects.State) (bindings : Subst)
     (use : Nat) (values : List Atom) (answers : List Answer) (used : Nat)
@@ -164,6 +125,14 @@ theorem application_supported (ceiling : Nat) (registry : SpaceSemantics.Program
       refine ⟨?_,good⟩
       simpa [Eval.partialValue,Eval.partialTag,supported_expression] using valuesGood
 
+private theorem queryLegs_supported {allowed : String → Prop} {pattern : Atom}
+    (supported : Supported allowed pattern) : ∀ leg ∈ queryLegs pattern, Supported allowed leg := by
+  unfold queryLegs
+  split
+  · intro leg found
+    exact ((supported_expression _ _).mp supported) leg (List.mem_cons_of_mem _ found)
+  · simpa using supported
+
 theorem queries_supported (ceiling : Nat) (state : Effects.State) (pattern body : Atom)
     (patternGood : Supported (Before ceiling) pattern) (bodyGood : Supported (Before ceiling) body) :
     ∀ use answers continued used,
@@ -191,11 +160,12 @@ theorem queries_supported (ceiling : Nat) (state : Effects.State) (pattern body 
               · exact ih _ _ _ (fun item member => good item (by simp [member])) fits tailRun control present
       | some rows =>
           simp only [read] at queried
-          cases here : queryBodies answer.bindings pattern body use rows with
+          cases here : queryBatch answer.bindings pattern body use rows with
           | none => simp [here] at queried
-          | some headControls =>
+          | some batch =>
+              rcases batch with ⟨headControls,spent⟩
               simp only [here] at queried
-              cases tailRun : queries state pattern body (use + rows.length) rest with
+              cases tailRun : queries state pattern body (use + spent) rest with
               | none => simp [tailRun] at queried
               | some pair =>
                   obtain ⟨tail,usedTail⟩ := pair
@@ -203,8 +173,15 @@ theorem queries_supported (ceiling : Nat) (state : Effects.State) (pattern body 
                   obtain ⟨rfl,rfl⟩ := queried
                   intro control member
                   rcases List.mem_append.mp member with present | present
-                  · exact queryBodies_supported ceiling answer.bindings pattern body
-                      (good answer (by simp)).2 patternGood bodyGood _ _ _ (by omega) here control present
+                  · obtain ⟨packets, joined, rfl⟩ := queryBatch_ready here
+                    obtain ⟨packet, found, rfl⟩ := List.mem_map.mp present
+                    have close := queryJoin_preserves id rows (SupportedBindings (Before ceiling)) ceiling
+                      (queryLegs pattern) answer.bindings (good answer (by simp)).2
+                      (fun leg legIn row _ slot bound _ _ prior unified =>
+                        unifyTerms_supported _ _ _ _ _ _ prior (queryLegs_supported patternGood leg legIn)
+                          (renamed_supported_before ceiling slot bound row) unified)
+                      use joined (by omega) packet found
+                    simpa only [ControlSupported] using And.intro close.2.2 bodyGood
                   · exact ih _ _ _ (fun item member => good item (by simp [member]))
                       (by omega) tailRun control present
 

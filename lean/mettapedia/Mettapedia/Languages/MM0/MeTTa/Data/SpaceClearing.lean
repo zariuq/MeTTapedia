@@ -113,7 +113,7 @@ private theorem next_call_returns (bindings : Subst) (before after : State)
 
 private theorem remove_body_returns (remaining processed : List Atom) (before : State)
     (handle : Handle) (stored : List Atom) (represented : before.read handle = some stored)
-    (admitted : ∀ item ∈ remaining, ∃ first rest, item = .expression (first :: rest)) :
+    (admitted : ∀ item ∈ remaining, Effects.removalNeedsValue item = false) :
     ∃ after, PureReturns program (environment handle (processed ++ remaining) processed.length) before
         removeRowsEquation.body after (boolean true) ∧
       after.read handle = some (without stored remaining) ∧
@@ -130,12 +130,8 @@ private theorem remove_body_returns (remaining processed : List Atom) (before : 
         · exact grounded_returns program _ before (.bool true)
       · simpa [without] using represented
   | cons first rest ih =>
-      obtain ⟨head, fields, same⟩ := admitted first (by simp)
-      subst first
-      let first : Atom := .expression (head :: fields)
-      have firstShape : first = .expression (head :: fields) := rfl
+      have specified := admitted first List.mem_cons_self
       obtain ⟨middle, erased⟩ := Effects.erase_exists_of_read_some represented first
-      change Effects.erase before handle (.expression (head :: fields)) = some middle at erased
       obtain ⟨oldRows, readBefore, readMiddle⟩ := Effects.erase_reads_back erased
       have old : oldRows = stored := Option.some.inj (readBefore.symm.trans represented)
       subst oldRows
@@ -145,7 +141,8 @@ private theorem remove_body_returns (remaining processed : List Atom) (before : 
       let items := processed ++ first :: rest
       let bindings := environment handle items processed.length
       let withRow := ("row", first) :: bindings
-      let withErased := ("removed", boolean true) :: withRow
+      let receipt := boolean (Effects.erasureChanged before middle handle)
+      let withErased := ("removed", receipt) :: withRow
       refine ⟨after, ?_, ?_, ?_, ?_⟩
       · rw [body_shape]
         apply if_returns program bindings before before after _ _ _ _ _
@@ -162,10 +159,11 @@ private theorem remove_body_returns (remaining processed : List Atom) (before : 
               natural]
           · simp [SpaceSemantics.matchValue, matchAtom, bindings, environment, Subst.lookup, withRow]
           · apply let_returns program withRow withErased before middle after (.var "removed") _ _
-              (boolean true) _
+              receipt _
             · apply native_variable_call_returns program withRow before middle "remove-atom" ["space", "row"]
-                (boolean true) (by decide) (by decide) _ (by decide)
-              simp [withRow, bindings, environment, applySubst, Subst.lookup, represented, firstShape, erased]
+                receipt (by decide) (by decide) _ (by decide)
+              simpa [withRow, bindings, environment, applySubst, Subst.lookup, receipt] using
+                StdLib.remove_atom_applies_of_erased specified erased
             · simp [SpaceSemantics.matchValue, matchAtom, withRow, bindings, environment,
                 Subst.lookup, withErased]
             · apply next_call_returns withErased middle after handle items processed.length
@@ -237,7 +235,7 @@ private theorem clear_rows_returns (before after : State) (handle : Handle) (ite
 
 theorem enumerated_clear_returns (before : State) (handle : Handle) (stored : List Atom)
     (represented : before.read handle = some stored)
-    (admitted : ∀ item ∈ stored, ∃ first rest, item = .expression (first :: rest)) :
+    (admitted : ∀ item ∈ stored, Effects.removalNeedsValue item = false) :
     ∃ after, PureReturns program (clearEnvironment handle) before enumeratedClearBody after
         (boolean true) ∧
       after.read handle = some [] ∧
@@ -259,9 +257,8 @@ theorem enumerated_clear_returns (before : State) (handle : Handle) (stored : Li
   · have empty : without stored stored = [] := by
       apply List.filter_eq_nil_iff.mpr
       intro atom member
-      obtain ⟨first, rest, same⟩ := admitted atom member
       have selected : stored.any (fun pattern => Effects.removalMatches pattern atom) = true :=
-        List.any_eq_true.mpr ⟨atom, member, by rw [same]; exact Effects.removalMatches_self _ _⟩
+        List.any_eq_true.mpr ⟨atom, member, SpaceSemantics.matchAtom_self atom⟩
       simp [selected]
     simpa [empty] using readAfter
 
@@ -303,30 +300,30 @@ private theorem pattern_body_shape :
       .expression [.symbol "remove-atom", .var "space", .var "pattern"],
       .grounded (.bool true)] := by decide
 
-/-- The actual retained body makes one removal call and returns the same Boolean
-receipt. The selected-row premise is discharged by the concrete callers below. -/
+/-- The actual body discards the removal acknowledgment and returns success.
+Clearing an already empty space still succeeds. -/
 theorem clear_body_returns (before : State) (handle : Handle) (stored : List Atom)
     (pattern : Atom) (represented : before.read handle = some stored)
-    (nonempty : ∃ first rest, pattern = .expression (first :: rest))
+    (specified : Effects.removalNeedsValue pattern = false)
     (selected : ∀ row ∈ stored, Effects.removalMatches pattern row = true) :
     ∃ after, PureReturns program (patternEnvironment handle pattern) before
         clearSpaceEquation.body after (boolean true) ∧
       after.read handle = some [] ∧
       (∀ other, other ≠ handle → after.read other = before.read other) ∧
       after.cells = before.cells := by
-  obtain ⟨first, rest, rfl⟩ := nonempty
   obtain ⟨after, erased, empty, others, cells⟩ :=
     Effects.erase_all_selected represented selected
-  let bindings := patternEnvironment handle (.expression (first :: rest))
-  let bound := ("removed", boolean true) :: bindings
+  let bindings := patternEnvironment handle pattern
+  let receipt := boolean (Effects.erasureChanged before after handle)
+  let bound := ("removed", receipt) :: bindings
   refine ⟨after, ?_, empty, others, cells⟩
   rw [pattern_body_shape]
   apply let_returns program bindings bound before after after (.var "removed") _ _
-    (boolean true) _
+    receipt _
   · apply native_variable_call_returns program bindings before after "remove-atom"
-      ["space", "pattern"] (boolean true) (by decide) (by decide) _ (by decide)
-    simp [bindings, patternEnvironment, applySubst, Subst.lookup,
-      represented, erased]
+      ["space", "pattern"] receipt (by decide) (by decide) _ (by decide)
+    simpa [bindings, patternEnvironment, applySubst, Subst.lookup, receipt] using
+      StdLib.remove_atom_applies_of_erased specified erased
   · simp [SpaceSemantics.matchValue, matchAtom, bindings, patternEnvironment, bound, Subst.lookup]
   · exact grounded_returns program bound after (.bool true)
 
@@ -336,7 +333,7 @@ theorem clear_returns (bindings : Subst) (before : State) (handle : Handle) (sto
     (spaceName : String) (pattern : Atom) (represented : before.read handle = some stored)
     (spaceCaptured : applySubst bindings (.var spaceName) = handleValue handle)
     (patternCaptured : applySubst bindings pattern = pattern)
-    (nonempty : ∃ first rest, pattern = .expression (first :: rest))
+    (specified : Effects.removalNeedsValue pattern = false)
     (selected : ∀ row ∈ stored, Effects.removalMatches pattern row = true) :
     ∃ after, PureReturns program bindings before
         (.expression [.symbol "mm0:clear-space", .var spaceName, pattern]) after (boolean true) ∧
@@ -344,7 +341,7 @@ theorem clear_returns (bindings : Subst) (before : State) (handle : Handle) (sto
       (∀ other, other ≠ handle → after.read other = before.read other) ∧
       after.cells = before.cells := by
   obtain ⟨after, body, empty, others, cells⟩ :=
-    clear_body_returns before handle stored pattern represented nonempty selected
+    clear_body_returns before handle stored pattern represented specified selected
   refine ⟨after, ?_, empty, others, cells⟩
   apply raw_call_returns program bindings before after "mm0:clear-space"
     [.var spaceName, pattern] (boolean true) (by decide) _ _ (by decide)
@@ -365,8 +362,8 @@ theorem clear_returns (bindings : Subst) (before : State) (handle : Handle) (sto
 is at the private helper's return, not its internal mutation-step history. -/
 theorem pattern_refines_enumeration (before : State) (handle : Handle) (stored : List Atom)
     (pattern : Atom) (represented : before.read handle = some stored)
-    (admitted : ∀ item ∈ stored, ∃ first rest, item = .expression (first :: rest))
-    (nonempty : ∃ first rest, pattern = .expression (first :: rest))
+    (admitted : ∀ item ∈ stored, Effects.removalNeedsValue item = false)
+    (specified : Effects.removalNeedsValue pattern = false)
     (selected : ∀ row ∈ stored, Effects.removalMatches pattern row = true) :
     ∃ reference actual,
       PureReturns program (clearEnvironment handle) before enumeratedClearBody reference (boolean true) ∧
@@ -375,7 +372,7 @@ theorem pattern_refines_enumeration (before : State) (handle : Handle) (stored :
   obtain ⟨reference, referenceRun, referenceEmpty, referenceOthers, referenceCells⟩ :=
     enumerated_clear_returns before handle stored represented admitted
   obtain ⟨actual, actualRun, actualEmpty, actualOthers, actualCells⟩ :=
-    clear_body_returns before handle stored pattern represented nonempty selected
+    clear_body_returns before handle stored pattern represented specified selected
   refine ⟨reference, actual, referenceRun, actualRun, ?_, actualCells.trans referenceCells.symm⟩
   intro other
   by_cases same : other = handle
@@ -390,8 +387,16 @@ theorem wrong_row_arity_survives :
     Effects.removalMatches proofPattern
       (.expression [.symbol "a", .symbol "b", .symbol "c"]) = false := by decide
 
-theorem bare_variable_is_not_clear :
-    Effects.removalMatches (.var "all")
-      (.expression [.symbol "a", .symbol "b"]) = false := rfl
+theorem bare_variable_is_not_clear (state : State) (handle : Handle) :
+    StdLib.apply state "remove-atom" [handleValue handle, .var "all"] = .error .instantiation := rfl
+
+theorem clearing_empty_can_ignore_false_removal :
+    StdLib.apply Effects.empty "remove-atom" [handleValue .self, proofPattern] =
+      .ok (Effects.empty, [boolean false]) ∧
+    ∃ after, PureReturns program (patternEnvironment .self proofPattern) Effects.empty
+      clearSpaceEquation.body after (boolean true) ∧ after.read .self = some [] := by
+  obtain ⟨after, ran, empty, _, _⟩ :=
+    clear_body_returns Effects.empty .self [] proofPattern rfl rfl (by simp)
+  exact ⟨rfl, after, ran, empty⟩
 
 end Mettapedia.Languages.MM0.MeTTa.SpaceClearing

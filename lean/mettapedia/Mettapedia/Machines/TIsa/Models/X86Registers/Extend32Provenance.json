@@ -1,0 +1,12 @@
+{
+  "model_commit": "0c6c023dccc7c20d8d9dbfc481f01d9bb49d62bf",
+  "generated_source_sha256": "c3a8c65bd1eb3d4b699faa0c134c6453a84149e8e87dad337865ff3a62688dd1",
+  "root": "x86_movsx",
+  "opcode": "63 /r with REX.W (MOVSXD)",
+  "extracted_sha256": "3423aab2b32eb459d2748b624e3a2e621fdc6a8e3a525d255855a70bae55a898",
+  "adaptation": "Retain the complete generated x86_movsx definition unchanged; reuse checked dependency bodies and the existing external memory interface. Disable unused-variable linting for unchanged generated locals within the importer scope.",
+  "source_model_sha256": {
+    "model/move.sail": "08d9815bf2c7ce204ee4e9f2ac208cae2477048b122cb29780440d44ac24af68"
+  },
+  "scope": "Register MOVSXD with original fetch/dispatch. The generated symbol x86_movsxd names different two-byte byte/word extension handlers and is not extracted here."
+}

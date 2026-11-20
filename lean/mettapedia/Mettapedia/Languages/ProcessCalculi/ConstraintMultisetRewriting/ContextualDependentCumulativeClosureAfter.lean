@@ -47,7 +47,7 @@ theorem moveFound_stable {Θ : Context S.R} {problem parts : EquationStore (Tota
       | solved inner innerSmaller =>
           cases fired
           exact StableKeeps.then replace (stable inner innerSmaller rfl)
-      | refuted absent => cases fired
+      | refuted missing => cases fired
 
 /-- **Exchanging the two sides of an equation is stable** on a strongly normalizing package. -/
 theorem swapped_stable (rigid : ∀ name, S.roles name = .rigid)

@@ -503,9 +503,9 @@ def glbGroupSolver : ContextualDependentWorklist.Solver S.levels where
 omit [∀ head, Decidable (S.R.isUniverse head)] in
 theorem glbBranch_ne_refuted {Θ : Context S.R} {e : Equation (TotalTerm Θ)} (all : AllFamilies Θ)
     (v : FitFlex e) (distinct : v.right ≠ v.left) (rest : EquationStore (TotalTerm Θ))
-    (absent : ¬ (frames S.levels).Solvable (e :: rest)) :
+    (missing : ¬ (frames S.levels).Solvable (e :: rest)) :
     glbBranch facts roots heads algebra rigid complete headTypingUnique glb spec all v distinct rest ≠
-      .refuted absent := by
+      .refuted missing := by
   unfold glbBranch
   split
   · split_ifs <;> intro h <;> cases h
@@ -514,8 +514,8 @@ theorem glbBranch_ne_refuted {Θ : Context S.R} {e : Equation (TotalTerm Θ)} (a
 
 omit [∀ head, Decidable (S.R.isUniverse head)] in
 theorem stepGlbGroup_ne_refuted {Θ : Context S.R} {e : Equation (TotalTerm Θ)} (all : AllFamilies Θ)
-    (v : FitFlex e) (rest : EquationStore (TotalTerm Θ)) (absent : ¬ (frames S.levels).Solvable (e :: rest)) :
-    stepGlbGroup facts roots heads algebra rigid complete headTypingUnique glb spec all v rest ≠ .refuted absent := by
+    (v : FitFlex e) (rest : EquationStore (TotalTerm Θ)) (missing : ¬ (frames S.levels).Solvable (e :: rest)) :
+    stepGlbGroup facts roots heads algebra rigid complete headTypingUnique glb spec all v rest ≠ .refuted missing := by
   unfold stepGlbGroup
   split_ifs
   · intro h; cases h
@@ -523,12 +523,12 @@ theorem stepGlbGroup_ne_refuted {Θ : Context S.R} {e : Equation (TotalTerm Θ)}
   · intro h; cases h
   · intro h; cases h
   · intro h; cases h
-  · exact glbBranch_ne_refuted facts roots heads algebra rigid complete headTypingUnique glb spec all v _ rest absent
+  · exact glbBranch_ne_refuted facts roots heads algebra rigid complete headTypingUnique glb spec all v _ rest missing
 
 /-- **The rules never refute.** -/
 theorem glbGroupRound_ne_refuted {Γ : Context S.R} (problem : EquationStore (TotalTerm Γ))
-    (absent : ¬ (frames S.levels).Solvable problem) :
-    glbGroupRound facts roots heads algebra rigid complete headTypingUnique glb spec problem ≠ .refuted absent := by
+    (missing : ¬ (frames S.levels).Solvable problem) :
+    glbGroupRound facts roots heads algebra rigid complete headTypingUnique glb spec problem ≠ .refuted missing := by
   cases problem with
   | nil => intro h; cases h
   | cons e rest =>
@@ -536,7 +536,7 @@ theorem glbGroupRound_ne_refuted {Γ : Context S.R} (problem : EquationStore (To
       split_ifs with hall
       · split
         · exact stepGlbGroup_ne_refuted facts roots heads algebra rigid complete headTypingUnique glb spec _ _ rest
-            absent
+            missing
         · intro h; cases h
       · intro h; cases h
 
@@ -681,9 +681,9 @@ theorem glbGroup_decided {Θ : Context S.R} {original : EquationStore (TotalTerm
         ((∃ state finished,
               run (glbGroupSolver facts roots heads algebra rigid complete headTypingUnique glb spec) original larger =
                 .solved state finished ∧ (frames S.levels).Principal original state.answer) ∨
-          (∃ absent,
+          (∃ missing,
             run (glbGroupSolver facts roots heads algebra rigid complete headTypingUnique glb spec) original larger =
-              .refuted absent)) :=
+              .refuted missing)) :=
   (glbGroupFragment facts roots heads algebra rigid complete headTypingUnique glb spec total).decided inside
 
 include facts roots heads algebra rigid complete headTypingUnique spec total in
@@ -693,13 +693,13 @@ theorem principal_of_inGlbFragment {Θ : Context S.R} {original : EquationStore 
     ∃ (Δ : Context S.R) (answer : Δ ⟶ Θ), (frames S.levels).Principal original answer := by
   obtain ⟨fuel, ends⟩ :=
     glbGroup_decided facts roots heads algebra rigid complete headTypingUnique glb spec total inside
-  rcases (ends fuel le_rfl).2 with ⟨state, _, _, principal⟩ | ⟨absent, refuted⟩
+  rcases (ends fuel le_rfl).2 with ⟨state, _, _, principal⟩ | ⟨missing, refuted⟩
   · exact ⟨_, _, principal⟩
   · exact absurd refuted (drive_ne_refuted
       (glbGroupSolver facts roots heads algebra rigid complete headTypingUnique glb spec)
-      (fun problem absent =>
-        glbGroupRound_ne_refuted facts roots heads algebra rigid complete headTypingUnique glb spec problem absent)
-      fuel _ absent)
+      (fun problem missing =>
+        glbGroupRound_ne_refuted facts roots heads algebra rigid complete headTypingUnique glb spec problem missing)
+      fuel _ missing)
 
 end Solver
 

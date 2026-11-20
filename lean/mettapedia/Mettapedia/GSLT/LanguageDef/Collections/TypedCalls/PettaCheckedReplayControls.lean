@@ -41,7 +41,7 @@ def challenged : Machine (State Unit) EagerDFS.Destination.CollectedAnswer (Stat
 theorem the_logical_step_does_not_print :
     logicalFinish initial = some (.finish initial) := rfl
 
-/-- error: Replay certificates must be closed and contain no admitted proof -/
+/-- error: The kernel refused the proposed transition 1 -/
 #guard_msgs (error, drop warning, drop info, substring := true) in
 kernel_petta_run rejectedOutput using challenged for 1 from initial
 
@@ -50,7 +50,7 @@ def changesStore : Machine (State Unit) EagerDFS.Destination.CollectedAnswer (St
     {source.2 with world := {source.2.world with state := Effects.loaded {
       equations := [⟨"new", [], .symbol "row"⟩], declarations := [], layout := [.equation] }}}))⟩
 
-/-- error: Replay certificates must be closed and contain no admitted proof -/
+/-- error: The kernel refused the proposed transition 1 -/
 #guard_msgs (error, drop warning, drop info, substring := true) in
 kernel_petta_run rejectedStoreChange using changesStore for 1 from initial
 

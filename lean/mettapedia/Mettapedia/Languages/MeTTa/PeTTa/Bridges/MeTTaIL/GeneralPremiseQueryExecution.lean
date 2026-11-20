@@ -3,6 +3,8 @@ import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.GeneralPremiseEnvironmen
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.ScopedRuleInstantiationExecution
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.PremiseSchedulerExecution
 import Mettapedia.OSLF.MeTTaIL.GeneralPremiseQueryCorrectness
+import Mettapedia.Languages.MeTTa.PeTTa.ProgramLiteral
+import Mettapedia.Tools.KernelReflexivity
 
 /-! Native source realization of the finite-provider general-premise query
 frames. Registered native services have their separate execution contract. -/
@@ -34,6 +36,30 @@ private def extension : Program :=
 
 def queryRuntimeProgram : Program := premiseRuntimeProgram.append extension
 
+private def queryRuntimeLiteral : Program := program_literal% queryRuntimeProgram
+
+/-- The query runtime is derived once, here; later kernel checks read its literal. -/
+private theorem queryRuntime_eq_literal : queryRuntimeProgram = queryRuntimeLiteral := by kernel_reflexivity
+
+private def extensionLiteral : Program := program_literal% extension
+
+private theorem extension_eq_literal : extension = extensionLiteral := by kernel_reflexivity
+
+private def scopedMachineLiteral : Program := program_literal% RuleExecutionProgram.scopedMachineProgram
+
+private theorem scopedMachine_eq_literal :
+    RuleExecutionProgram.scopedMachineProgram = scopedMachineLiteral := by kernel_reflexivity
+
+private def interpretedPremiseLiteral : Program := program_literal% RuleExecutionProgram.interpretedPremiseProgram
+
+private theorem interpretedPremise_eq_literal :
+    RuleExecutionProgram.interpretedPremiseProgram = interpretedPremiseLiteral := by kernel_reflexivity
+
+private def schedulerRuntimeLiteral : Program := program_literal% PremiseSchedulerExecution.runtime
+
+private theorem schedulerRuntime_eq_literal :
+    PremiseSchedulerExecution.runtime = schedulerRuntimeLiteral := by kernel_reflexivity
+
 set_option maxRecDepth 4096 in
 set_option maxHeartbeats 4000000 in
 private theorem prior_agreement :
@@ -41,6 +67,7 @@ private theorem prior_agreement :
   apply appended_program_agreement
   · intro equation member
     have checked : extension.equations.all (fun equation => !premiseExecutionHeads equation.head) = true := by
+      rw [extension_eq_literal]
       decide +kernel
     have row := List.all_eq_true.mp checked equation member
     cases selected : premiseExecutionHeads equation.head with
@@ -49,7 +76,7 @@ private theorem prior_agreement :
   · intro name types member
     have checked : extension.declarations.all (fun declaration => match declaration with
         | .expression [.symbol ":", .symbol head, .expression (.symbol "->" :: _)] => !premiseExecutionHeads head
-        | _ => true) = true := by decide +kernel
+        | _ => true) = true := by rw [extension_eq_literal]; decide +kernel
     have row := List.all_eq_true.mp checked
       (.expression [.symbol ":", .symbol name, .expression (.symbol "->" :: types)]) member
     cases selected : premiseExecutionHeads name with
@@ -71,7 +98,7 @@ theorem query_state_wire_eq_scheduler {environment : Environment} {request : Que
     queryStateTerm state =
       PremiseSchedulerExecution.schedulerStateTerm queryTaskTerm queryAnswerTerm queryObligationTerm state := rfl
 
-theorem query_source_no_initializers : querySource.initializers = [] := by decide +kernel
+theorem query_source_no_initializers : querySource.initializers = [] := by kernel_reflexivity
 
 theorem query_source_equation_heads_unique : (querySource.equations.map (·.head)).Nodup := by decide +kernel
 
@@ -102,7 +129,7 @@ private def baseExtension : Program where
 set_option maxRecDepth 4096 in
 set_option maxHeartbeats 800000 in
 private theorem base_append : queryRuntimeProgram = RuleExecutionProgram.program.append baseExtension := by
-  rfl
+  kernel_reflexivity
 
 set_option maxRecDepth 4096 in
 set_option maxHeartbeats 800000 in
@@ -160,6 +187,8 @@ open SpaceSemantics (Program)
 open Eval
 
 abbrev runtime : Program := queryRuntimeProgram
+
+private theorem runtime_eq_literal : runtime = queryRuntimeLiteral := queryRuntime_eq_literal
 abbrev a (head : String) (arguments : List Atom) : Atom := .expression (.symbol head :: arguments)
 abbrev v (name : String) : Atom := .var name
 abbrev encoded (term : Term) : Atom := CettaWireAtom.encode term
@@ -253,7 +282,8 @@ set_option maxRecDepth 8192 in
 set_option maxHeartbeats 4000000 in
 private theorem query_equations (helper : Helper) :
     runtime.equations.filter (fun equation => equation.head == helper.head) = [queryEquation helper] := by
-  cases helper <;> decide +kernel
+  rw [runtime_eq_literal]
+  cases helper <;> kernel_reflexivity
 
 def callee (helper : Helper) (values : List Atom) : Subst := (helper.names.zip values).reverse
 
@@ -268,7 +298,7 @@ theorem query_clause (helper : Helper) (values : List Atom)
     (length : values.length = helper.names.length) :
     clauses runtime helper.head values = [.evaluate (callee helper values) (queryEquation helper).body] :=
   PureData.named_equation_clause runtime helper.head (queryEquation helper) helper.names values
-    (query_equations helper) (by cases helper <;> decide +kernel)
+    (query_equations helper) (by cases helper <;> kernel_reflexivity)
     (by cases helper <;> decide) length
 
 private def helperInventory : List Helper :=
@@ -288,6 +318,7 @@ set_option maxRecDepth 8192 in
 set_option maxHeartbeats 4000000 in
 private theorem query_declarations_checked :
     helperInventory.all (fun helper => decide (queryDeclaration helper ∈ runtime.declarations)) = true := by
+  rw [runtime_eq_literal]
   decide +kernel
 
 private theorem query_declared (helper : Helper) : queryDeclaration helper ∈ runtime.declarations :=
@@ -390,7 +421,8 @@ theorem data_template (head : String) (arguments : List Atom)
   have checked : dataHeads.all (fun name => decide
       ((ioHead name || StdLib.known name || runtime.equations.any (·.head == name)) = false ∧
         name ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"])) = true := by
-    rfl
+    rw [runtime_eq_literal]
+    decide +kernel
   have row := List.all_eq_true.mp checked head supported
   rw [decide_eq_true_eq] at row
   exact .constructor head arguments row.1 row.2 children
@@ -412,15 +444,15 @@ def taskCases : SpaceSemantics.Cases := sourceCases ((requestCases.head!).2)
 
 def taskBody (index : Nat) : Atom := ((taskCases[index]?).getD (.symbol "unreachable", .symbol "None")).2
 
-theorem site_shape : (queryEquation .site).body = caseData (v "context") siteCases := by decide +kernel
+theorem site_shape : (queryEquation .site).body = caseData (v "context") siteCases := by kernel_reflexivity
 
-theorem matching_request_shape : (queryEquation .matchingRequest).body = caseData (v "context") matchingRequestCases := by decide +kernel
+theorem matching_request_shape : (queryEquation .matchingRequest).body = caseData (v "context") matchingRequestCases := by kernel_reflexivity
 
-theorem expand_shape : (queryEquation .expand).body = caseData (a "gslt:premise:matching-environment" [v "environment"]) environmentCases := by decide +kernel
+theorem expand_shape : (queryEquation .expand).body = caseData (a "gslt:premise:matching-environment" [v "environment"]) environmentCases := by kernel_reflexivity
 
-theorem environment_case_shape : (environmentCases.head!).2 = caseData (v "request") requestCases := by decide +kernel
+theorem environment_case_shape : (environmentCases.head!).2 = caseData (v "request") requestCases := by kernel_reflexivity
 
-theorem request_case_shape : (requestCases.head!).2 = caseData (v "task") taskCases := by decide +kernel
+theorem request_case_shape : (requestCases.head!).2 = caseData (v "task") taskCases := by kernel_reflexivity
 
 def contextCaller (context : Context) (caller : Subst) : Subst :=
   [("quantifiers", number context.quantifierDepth), ("premise", number context.premiseIndex),
@@ -456,17 +488,17 @@ def queryMatchingCasesSyntax : SpaceSemantics.Cases :=
   [(a "PremiseContext" [v "ruleIndex", v "rule", v "spec", v "bound", v "premise", v "quantifiers"], a "let*" [.expression [.expression [v "ambient", a "gslt:automata:length" [v "bound"]], .expression [v "site", a "gslt:premise:query-site" [v "context", v "index"]]], a "ScopedMatcherRequest" [v "rule", v "spec", v "ambient", v "site", .symbol "LNil", number 0, v "assignment", v "schema", v "value"]]),
     (v "bad", .symbol "None")]
 
-theorem site_cases_syntax : siteCases = querySiteCasesSyntax := by decide +kernel
+theorem site_cases_syntax : siteCases = querySiteCasesSyntax := by kernel_reflexivity
 
-theorem matching_cases_syntax : matchingRequestCases = queryMatchingCasesSyntax := by decide +kernel
+theorem matching_cases_syntax : matchingRequestCases = queryMatchingCasesSyntax := by kernel_reflexivity
 
 theorem environment_cases_syntax : environmentCases =
   [(a "PremiseEnvironment" [v "declarations", v "rewrites", v "specifications", a "PremiseProvider" [v "signatures", v "rows"], v "reflection", v "free"], caseData (v "request") requestCases),
-    (v "badEnvironment", .symbol "None")] := by decide +kernel
+    (v "badEnvironment", .symbol "None")] := by kernel_reflexivity
 
 theorem request_cases_syntax : requestCases =
   [(a "PremiseQueryRequest" [a "PremiseContext" [v "ruleIndex", v "rule", v "spec", v "bound", v "premise", v "quantifiers"], v "relation", v "arguments", v "initial"], caseData (v "task") taskCases),
-    (v "badRequest", .symbol "None")] := by decide +kernel
+    (v "badRequest", .symbol "None")] := by kernel_reflexivity
 
 theorem task_cases_syntax : taskCases =
   [(.symbol "PremiseQueryStart", taskBody 0),
@@ -476,7 +508,7 @@ theorem task_cases_syntax : taskCases =
     (a "PremiseQueryArguments" [v "rowIndex", v "index", v "assignment", a "LCons" [v "schema", v "schemas"], a "LCons" [v "value", v "values"], a "LCons" [.symbol "RelationOutput", v "modes"], v "origins"], taskBody 4),
     (a "PremiseQueryArguments" [v "rowIndex", v "index", v "assignment", v "schemas", v "values", v "modes", v "origins"], taskBody 5),
     (a "PremiseQueryMatcher" [v "rowIndex", v "argument", v "schemas", v "values", v "modes", v "origins", v "query", v "state", v "cursor"], taskBody 6),
-    (v "badTask", taskBody 7)] := by decide +kernel
+    (v "badTask", taskBody 7)] := by kernel_reflexivity
 
 end Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.PremiseOperationsExecution.GeneralExecution.QueryExecution
 
@@ -539,7 +571,7 @@ private def matchingRequestBody : Atom :=
   a "let*" [.expression [.expression [v "ambient", a "gslt:automata:length" [v "bound"]],
     .expression [v "site", a "gslt:premise:query-site" [v "context", v "index"]]], matchingRequestData]
 
-private theorem matching_request_case_body : (matchingRequestCases.head!).2 = matchingRequestBody := by decide +kernel
+private theorem matching_request_case_body : (matchingRequestCases.head!).2 = matchingRequestBody := by kernel_reflexivity
 
 theorem query_matching_request_returns (state : State) (request : Query.Request) (index : Nat)
     (assignment : Assignment) (schema value : Pattern) :
@@ -729,7 +761,8 @@ theorem data_template (program : Program) (agreement : ProgramAgreementOn ownedH
     have checked : dataHeads.all (fun name => decide
         ((ioHead name || StdLib.known name || runtime.equations.any (·.head == name)) = false ∧
           name ∉ ["let", "let*", "case", "if", "collapse", "superpose", "empty", "quote", "unique", "match"])) = true := by
-      rfl
+      rw [runtime_eq_literal]
+      decide +kernel
     have row := List.all_eq_true.mp checked head member
     rw [decide_eq_true_eq] at row
     exact row.1
@@ -921,7 +954,7 @@ private def matchingRequestBody : Atom :=
   a "let*" [.expression [.expression [v "ambient", a "gslt:automata:length" [v "bound"]],
     .expression [v "site", a "gslt:premise:query-site" [v "context", v "index"]]], matchingRequestData]
 
-private theorem matching_request_case_body : (matchingRequestCases.head!).2 = matchingRequestBody := by decide +kernel
+private theorem matching_request_case_body : (matchingRequestCases.head!).2 = matchingRequestBody := by kernel_reflexivity
 
 theorem query_matching_request_returns (program : Program) (agreement : ProgramAgreementOn ownedHeads runtime program) (lower : LowerOperations program) (state : State) (request : Query.Request) (index : Nat)
     (assignment : Assignment) (schema value : Pattern) :
@@ -1097,10 +1130,10 @@ macro_rules
     let extra ← extra.mapM fun term => `(Lean.Parser.Tactic.simpLemma| $term:term)
     `(tactic|
       (refine PureData.raw_capture_returns $program [] _ _ _ _ _ _ _ ?_ ?_ ?_ ?_ $fact
-       · rw [← ($agreement).dispatch _ (by decide +kernel)]
+       · rw [← ($agreement).dispatch _ (by decide +kernel), runtime_eq_literal]
          decide +kernel
        · intro index bounded
-         rw [← ($agreement).demand _ index (by decide +kernel)]
+         rw [← ($agreement).demand _ index (by decide +kernel), runtime_eq_literal]
          simp only [List.length_cons, List.length_nil, Nat.zero_add] at bounded
          revert index
          decide +kernel
@@ -1130,16 +1163,6 @@ macro_rules
       | focus
           (refine bound_answer_returns _ _ _ (by rfl) ?_
            simp [encoded, number, CettaWireAtom.encode, CettaWireAtom.encodeMany, $unfoldLemmas,*]
-           done)
-      | focus
-          (apply data_in_program_returns $program $agreement _ _ _ _ (by decide +kernel) (by decide +kernel)
-           first
-             | (rfl; done)
-             | skip
-           try simp [Mettapedia.Languages.ProcessCalculi.MORK.applySubst,
-             Mettapedia.Languages.ProcessCalculi.MORK.applySubst.applySubstList,
-             Mettapedia.Languages.ProcessCalculi.MORK.Subst.lookup, Library.bind, encoded, number,
-             CettaWireAtom.encode, CettaWireAtom.encodeMany, $unfoldLemmas,*]
            done)
       | (apply pure_let_returns _ _ _ _ _ _ _ _ (by rfl)
          $recurse
@@ -1171,7 +1194,17 @@ macro_rules
       | (apply natural_lt_returns) <;> $recurse
       | (apply natural_add_returns) <;> $recurse
       | (apply natural_pred_returns) <;> $recurse
-      | $capturing)
+      | $capturing
+      | focus
+          (apply data_in_program_returns $program $agreement _ _ _ _ (by rw [runtime_eq_literal]; decide +kernel) (by decide +kernel)
+           first
+             | (rfl; done)
+             | skip
+           try simp [Mettapedia.Languages.ProcessCalculi.MORK.applySubst,
+             Mettapedia.Languages.ProcessCalculi.MORK.applySubst.applySubstList,
+             Mettapedia.Languages.ProcessCalculi.MORK.Subst.lookup, Library.bind, encoded, number,
+             CettaWireAtom.encode, CettaWireAtom.encodeMany, $unfoldLemmas,*]
+           done))
 
 def taskValue {environment : Environment} {request : Query.Request} {matcher : MatchingExecution}
     (codec : RetainedMatchingWire.MatchingCodec matcher) (task : Query.Task environment request matcher) : Atom :=
@@ -1200,19 +1233,19 @@ def taskCases : SpaceSemantics.Cases := sourceCases ((requestCases.head!).2)
 def taskBody (index : Nat) : Atom := ((taskCases[index]?).getD (.symbol "unreachable", .symbol "None")).2
 
 theorem expand_shape : equation.body =
-    caseData (WireKit.apply "gslt:premise:matching-environment" [v "environment"]) environmentCases := by decide +kernel
+    caseData (WireKit.apply "gslt:premise:matching-environment" [v "environment"]) environmentCases := by kernel_reflexivity
 
-theorem environment_case_shape : (environmentCases.head!).2 = caseData (v "request") requestCases := by decide +kernel
+theorem environment_case_shape : (environmentCases.head!).2 = caseData (v "request") requestCases := by kernel_reflexivity
 
-theorem request_case_shape : (requestCases.head!).2 = caseData (v "task") taskCases := by decide +kernel
+theorem request_case_shape : (requestCases.head!).2 = caseData (v "task") taskCases := by kernel_reflexivity
 
 theorem environment_cases_syntax : environmentCases =
   [(WireKit.apply "PremiseEnvironment" [v "declarations", v "rewrites", v "specifications", WireKit.apply "PremiseProvider" [v "signatures", v "rows"], v "reflection", v "free"], caseData (v "request") requestCases),
-    (v "badEnvironment", .symbol "None")] := by decide +kernel
+    (v "badEnvironment", .symbol "None")] := by kernel_reflexivity
 
 theorem request_cases_syntax : requestCases =
   [(WireKit.apply "PremiseQueryRequest" [WireKit.apply "PremiseContext" [v "ruleIndex", v "rule", v "spec", v "bound", v "premise", v "quantifiers"], v "relation", v "arguments", v "initial"], caseData (v "task") taskCases),
-    (v "badRequest", .symbol "None")] := by decide +kernel
+    (v "badRequest", .symbol "None")] := by kernel_reflexivity
 
 theorem task_cases_syntax : taskCases =
   [(.symbol "PremiseQueryStart", taskBody 0),
@@ -1222,7 +1255,7 @@ theorem task_cases_syntax : taskCases =
     (WireKit.apply "PremiseQueryArguments" [v "rowIndex", v "index", v "assignment", WireKit.apply "LCons" [v "schema", v "schemas"], WireKit.apply "LCons" [v "value", v "values"], WireKit.apply "LCons" [.symbol "RelationOutput", v "modes"], v "origins"], taskBody 4),
     (WireKit.apply "PremiseQueryArguments" [v "rowIndex", v "index", v "assignment", v "schemas", v "values", v "modes", v "origins"], taskBody 5),
     (WireKit.apply "PremiseQueryMatcher" [v "rowIndex", v "argument", v "schemas", v "values", v "modes", v "origins", v "query", v "state", v "cursor"], taskBody 6),
-    (v "badTask", taskBody 7)] := by decide +kernel
+    (v "badTask", taskBody 7)] := by kernel_reflexivity
 
 private def emptyData : Atom :=
   WireKit.apply "Some" [WireKit.apply "PremiseExpansion" [.symbol "LNil", .symbol "LNil", .symbol "LNil"]]
@@ -1256,7 +1289,7 @@ private def answerCases : SpaceSemantics.Cases :=
 private def matcherBody : Atom :=
   caseData (WireKit.apply "gslt:premise:matching-answer-at" [v "environment", v "state", v "cursor"]) answerCases
 
-private theorem matcher_shape : taskBody 6 = matcherBody := by decide +kernel
+private theorem matcher_shape : taskBody 6 = matcherBody := by kernel_reflexivity
 
 def frameCaller {matcher : MatchingExecution} (codec : RetainedMatchingWire.MatchingCodec matcher)
     (environment : Environment) (request : Query.Request) (task : Query.Task environment request matcher)
@@ -1453,7 +1486,7 @@ private def startSignatureBody : Atom :=
 private def startBody : Atom :=
   WireKit.apply "let" [v "arity", WireKit.apply "gslt:automata:length" [v "arguments"], startSignatureBody]
 
-private theorem start_shape : taskBody 0 = startBody := by decide +kernel
+private theorem start_shape : taskBody 0 = startBody := by kernel_reflexivity
 
 theorem start_branch_returns (program : Program)
     (agreement : ProgramAgreementOn Parameterized.ownedHeads runtime program) (host : Effects.State) (environment : Environment) (request : Query.Request)
@@ -1556,7 +1589,7 @@ private def rowsCases : SpaceSemantics.Cases :=
 
 private def rowsBody : Atom := caseData (WireKit.apply "gslt:rule:row-at" [v "cursor", v "rows"]) rowsCases
 
-private theorem rows_shape : taskBody 1 = rowsBody := by decide +kernel
+private theorem rows_shape : taskBody 1 = rowsBody := by kernel_reflexivity
 
 def rowsCaller {matcher : MatchingExecution} (codec : RetainedMatchingWire.MatchingCodec matcher)
     (environment : Environment) (request : Query.Request) (frame : Query.RowsFrame environment request)
@@ -1678,7 +1711,7 @@ private def outputBody : Atom :=
       [argumentContextData, v "index", v "assignment", v "schema", v "value"]],
     .expression [v "started", WireKit.apply "gslt:premise:matching-start" [v "environment", v "query"]]], outputData]
 
-private theorem output_shape : taskBody 4 = outputBody := by decide +kernel
+private theorem output_shape : taskBody 4 = outputBody := by kernel_reflexivity
 
 def argumentsConsCaller {matcher : MatchingExecution} (codec : RetainedMatchingWire.MatchingCodec matcher)
     (environment : Environment) (request : Query.Request)
@@ -1795,7 +1828,7 @@ private def inputBody : Atom :=
     .expression [v "ambient", WireKit.apply "gslt:automata:length" [v "bound"]],
     .expression [v "site", inputSiteData]], inputInstantiateBody]
 
-private theorem input_shape : taskBody 3 = inputBody := by decide +kernel
+private theorem input_shape : taskBody 3 = inputBody := by kernel_reflexivity
 
 private def inputAcceptedValue {matcher : MatchingExecution} (codec : RetainedMatchingWire.MatchingCodec matcher)
     (environment : Environment) (request : Query.Request)
@@ -1932,7 +1965,7 @@ private def argumentsDoneBody : Atom :=
   WireKit.apply "if" [WireKit.apply "gslt:premise:check-assignment"
     [v "declarations", v "free", v "bound", v "rule", v "spec", v "assignment"], argumentsAcceptedData, emptyData]
 
-private theorem arguments_done_shape : taskBody 2 = argumentsDoneBody := by decide +kernel
+private theorem arguments_done_shape : taskBody 2 = argumentsDoneBody := by kernel_reflexivity
 
 def argumentsDoneCaller {matcher : MatchingExecution} (codec : RetainedMatchingWire.MatchingCodec matcher)
     (environment : Environment) (request : Query.Request)
@@ -2027,7 +2060,7 @@ private def argumentShapeData : Atom :=
   WireKit.apply "Some" [WireKit.apply "PremiseExpansion" [.symbol "LNil", .symbol "LNil",
     WireKit.apply "LCons" [WireKit.apply "PremiseArgumentShape" [v "rowIndex", v "index"], .symbol "LNil"]]]
 
-private theorem argument_shape_body : taskBody 5 = argumentShapeData := by decide +kernel
+private theorem argument_shape_body : taskBody 5 = argumentShapeData := by kernel_reflexivity
 
 private def argumentShapeCaller {matcher : MatchingExecution} (codec : RetainedMatchingWire.MatchingCodec matcher)
     (environment : Environment) (request : Query.Request)
@@ -2240,7 +2273,7 @@ private theorem matching_shape (helper : Helper)
     (matching : helper = .matchingEnvironment ∨ helper = .matchingStart ∨ helper = .matchingTick ∨
       helper = .matchingComplete ∨ helper = .matchingAnswer ∨ helper = .matchingInput) :
     (queryEquation helper).body = caseData (v "environment") (matchingCases helper) := by
-  rcases matching with rfl | rfl | rfl | rfl | rfl | rfl <;> decide +kernel
+  rcases matching with rfl | rfl | rfl | rfl | rfl | rfl <;> kernel_reflexivity
 
 theorem ordinary_environment_returns (program : Program)
     (agreement : ProgramAgreementOn Parameterized.ownedHeads runtime program)
@@ -2519,7 +2552,8 @@ private theorem raw_at (head : String) (arity index : Nat)
     (member : (head, arity) ∈ operationArities) (bound : index < arity) :
     argumentIsRaw RuleExecutionProgram.scopedMachineProgram head index = true := by
   have checked : operationArities.all (fun operation =>
-      (List.range operation.2).all (argumentIsRaw RuleExecutionProgram.scopedMachineProgram operation.1)) = true := by rfl
+      (List.range operation.2).all (argumentIsRaw RuleExecutionProgram.scopedMachineProgram operation.1)) = true := by
+    rw [QueryExecution.scopedMachine_eq_literal]; decide +kernel
   exact List.all_eq_true.mp (List.all_eq_true.mp checked (head, arity) member) index (List.mem_range.mpr bound)
 
 private theorem raw_arguments (head : String) (arity : Nat)
@@ -2536,7 +2570,8 @@ private theorem ordinary_dispatch (head : String) (arity : Nat)
     (ioHead head || StdLib.known head || RuleExecutionProgram.scopedMachineProgram.equations.any (·.head == head)) = true := by
   have checked : operationArities.all (fun operation =>
       ioHead operation.1 || StdLib.known operation.1 ||
-        RuleExecutionProgram.scopedMachineProgram.equations.any (·.head == operation.1)) = true := by rfl
+        RuleExecutionProgram.scopedMachineProgram.equations.any (·.head == operation.1)) = true := by
+    rw [QueryExecution.scopedMachine_eq_literal]; decide +kernel
   exact List.all_eq_true.mp checked (head, arity) member
 
 private theorem pattern_option_representation (result : Option Pattern) :
@@ -2685,8 +2720,9 @@ theorem move_raw (program : Program)
 syntax "lower_transport% " term:max term:max " [" str,* "] " term:max : term
 macro_rules
   | `(lower_transport% $program $agreement [$names,*] $fact) =>
-      `(move_raw $program $agreement _ [$names,*] (by decide +kernel) (by decide) (by decide +kernel)
-        (by decide) (by decide) (by decide +kernel) _ _ _ _ (by rfl) $fact)
+      `(move_raw $program $agreement _ [$names,*] (by decide +kernel) (by decide)
+        (by rw [QueryExecution.scopedMachine_eq_literal]; decide +kernel)
+        (by decide) (by decide) (by rw [QueryExecution.scopedMachine_eq_literal]; decide +kernel) _ _ _ _ (by rfl) $fact)
 
 theorem operations_in (program : Program)
     (agreement : ProgramAgreementOn RetainedMatchingWire.scopedPrimitiveHeads RuleExecutionProgram.scopedMachineProgram program) : PremiseOperationsExecution.GeneralExecution.QueryExecution.Parameterized.LowerOperations program where
@@ -2796,15 +2832,17 @@ private theorem interpreted_group_equations (group : List String)
     (present : group ∈ sourceHeadGroups) :
     runtime.equations.filter (fun row => group.contains row.head) =
       RuleExecutionProgram.interpretedPremiseProgram.equations.filter (fun row => group.contains row.head) := by
+  rw [runtime_eq_literal, interpretedPremise_eq_literal]
   simp only [sourceHeadGroups, List.mem_cons, List.not_mem_nil, or_false] at present
-  rcases present with rfl | rfl | rfl | rfl | rfl <;> decide +kernel
+  rcases present with rfl | rfl | rfl | rfl | rfl <;> kernel_reflexivity
 
 private theorem interpreted_group_declarations (group : List String)
     (present : group ∈ sourceHeadGroups) :
     runtime.declarations.filter (retainedCallDeclaration group.contains) =
       RuleExecutionProgram.interpretedPremiseProgram.declarations.filter (retainedCallDeclaration group.contains) := by
+  rw [runtime_eq_literal, interpretedPremise_eq_literal]
   simp only [sourceHeadGroups, List.mem_cons, List.not_mem_nil, or_false] at present
-  rcases present with rfl | rfl | rfl | rfl | rfl <;> decide +kernel
+  rcases present with rfl | rfl | rfl | rfl | rfl <;> kernel_reflexivity
 
 theorem interpreted_agreement :
     ProgramAgreementOn ownedHeads runtime RuleExecutionProgram.interpretedPremiseProgram :=
@@ -2814,15 +2852,17 @@ private theorem scoped_group_equations (group : List String)
     (present : group ∈ sourceHeadGroups) :
     runtime.equations.filter (fun row => group.contains row.head) =
       RuleExecutionProgram.scopedMachineProgram.equations.filter (fun row => group.contains row.head) := by
+  rw [runtime_eq_literal, scopedMachine_eq_literal]
   simp only [sourceHeadGroups, List.mem_cons, List.not_mem_nil, or_false] at present
-  rcases present with rfl | rfl | rfl | rfl | rfl <;> decide +kernel
+  rcases present with rfl | rfl | rfl | rfl | rfl <;> kernel_reflexivity
 
 private theorem scoped_group_declarations (group : List String)
     (present : group ∈ sourceHeadGroups) :
     runtime.declarations.filter (retainedCallDeclaration group.contains) =
       RuleExecutionProgram.scopedMachineProgram.declarations.filter (retainedCallDeclaration group.contains) := by
+  rw [runtime_eq_literal, scopedMachine_eq_literal]
   simp only [sourceHeadGroups, List.mem_cons, List.not_mem_nil, or_false] at present
-  rcases present with rfl | rfl | rfl | rfl | rfl <;> decide +kernel
+  rcases present with rfl | rfl | rfl | rfl | rfl <;> kernel_reflexivity
 
 private theorem scoped_agreement :
     ProgramAgreementOn ownedHeads runtime RuleExecutionProgram.scopedMachineProgram :=
@@ -2841,11 +2881,13 @@ theorem query_agreement :
 
 theorem scheduler_retained_equations :
     PremiseSchedulerExecution.runtime.equations.filter (fun equation => PremiseSchedulerExecution.executionHeads equation.head) =
-    RuleExecutionProgram.scopedMachineProgram.equations.filter (fun equation => PremiseSchedulerExecution.executionHeads equation.head) := by rfl
+    RuleExecutionProgram.scopedMachineProgram.equations.filter (fun equation => PremiseSchedulerExecution.executionHeads equation.head) := by
+  rw [QueryExecution.schedulerRuntime_eq_literal, QueryExecution.scopedMachine_eq_literal]; kernel_reflexivity
 
 theorem scheduler_retained_declarations :
     PremiseSchedulerExecution.runtime.declarations.filter (retainedCallDeclaration PremiseSchedulerExecution.executionHeads) =
-    RuleExecutionProgram.scopedMachineProgram.declarations.filter (retainedCallDeclaration PremiseSchedulerExecution.executionHeads) := by rfl
+    RuleExecutionProgram.scopedMachineProgram.declarations.filter (retainedCallDeclaration PremiseSchedulerExecution.executionHeads) := by
+  rw [QueryExecution.schedulerRuntime_eq_literal, QueryExecution.scopedMachine_eq_literal]; kernel_reflexivity
 
 theorem scheduler_agreement : ProgramAgreementOn PremiseSchedulerExecution.executionHeads PremiseSchedulerExecution.runtime RuleExecutionProgram.scopedMachineProgram :=
   Eval.programAgreementOn_of_retained_rows _ _ _ scheduler_retained_equations scheduler_retained_declarations
@@ -2880,30 +2922,30 @@ def queryAgendaCases : SpaceSemantics.Cases := sourceCases ((queryAnswerCases[1]
 def queryEmptyBody : Atom := (queryAgendaCases.head!).2
 def queryProgressBody : Atom := ((queryAgendaCases[1]!).2)
 
-theorem query_task_shape : taskBody 2 = caseData (v "request") queryRequestCases := by decide +kernel
-theorem query_request_shape : queryRequestBody = caseData (v "context") queryContextCases := by decide +kernel
-theorem query_context_shape : queryContextBody = caseData (v "queryState") queryStateCases := by decide +kernel
+theorem query_task_shape : taskBody 2 = caseData (v "request") queryRequestCases := by kernel_reflexivity
+theorem query_request_shape : queryRequestBody = caseData (v "context") queryContextCases := by kernel_reflexivity
+theorem query_context_shape : queryContextBody = caseData (v "queryState") queryStateCases := by kernel_reflexivity
 theorem query_state_shape : queryStateBody =
-    caseData (a "gslt:rule:row-at" [v "cursor", v "answers"]) queryAnswerCases := by decide +kernel
-theorem query_none_shape : (queryAnswerCases[1]!).2 = caseData (v "agenda") queryAgendaCases := by decide +kernel
+    caseData (a "gslt:rule:row-at" [v "cursor", v "answers"]) queryAnswerCases := by kernel_reflexivity
+theorem query_none_shape : (queryAnswerCases[1]!).2 = caseData (v "agenda") queryAgendaCases := by kernel_reflexivity
 
 theorem query_request_cases_syntax : queryRequestCases =
     [(a "PremiseQueryRequest" [v "context", v "relation", v "arguments", v "initial"], queryRequestBody),
-      (v "badRequest", .symbol "None")] := by decide +kernel
+      (v "badRequest", .symbol "None")] := by kernel_reflexivity
 theorem query_context_cases_syntax : queryContextCases =
     [(a "PremiseContext" [v "ruleIndex", v "rule", v "spec", v "bound", v "premiseIndex", v "quantifiers"], queryContextBody),
-      (v "badContext", .symbol "None")] := by decide +kernel
+      (v "badContext", .symbol "None")] := by kernel_reflexivity
 theorem query_state_cases_syntax : queryStateCases =
     [(a "PremiseState" [v "agenda", v "answers", v "unresolved", v "work"], queryStateBody),
-      (v "badState", .symbol "None")] := by decide +kernel
+      (v "badState", .symbol "None")] := by kernel_reflexivity
 theorem query_answer_cases_syntax : queryAnswerCases =
     [(a "Some" [a "PremiseQueryAnswer" [v "rowIndex", v "assignment", v "origins"]], queryAnswerBody),
       (.symbol "None", caseData (v "agenda") queryAgendaCases),
-      (v "badAnswer", .symbol "None")] := by decide +kernel
+      (v "badAnswer", .symbol "None")] := by kernel_reflexivity
 theorem query_agenda_cases_syntax : queryAgendaCases =
     [(.symbol "LNil", queryEmptyBody),
       (a "LCons" [v "queryTask", v "queryRest"], queryProgressBody),
-      (v "badAgenda", .symbol "None")] := by decide +kernel
+      (v "badAgenda", .symbol "None")] := by kernel_reflexivity
 
 def queryTaskCaller (environment : Environment) (outer : Execution.Goal) (request : Query.Request)
     (machine : Query.State environment request) (cursor : Nat)
@@ -3092,11 +3134,11 @@ def commitCases : SpaceSemantics.Cases :=
   [(a "Some" [v "nextState"], pendingData), (v "badCommit", .symbol "None")]
 def commitBody : Atom := caseData (a "gslt:premise:machine-commit" [v "queryState", v "expanded"]) commitCases
 
-theorem answered_shape : queryAnswerBody = a "let" [v "next", a "+" [v "cursor", number 1], answeredData] := by decide +kernel
+theorem answered_shape : queryAnswerBody = a "let" [v "next", a "+" [v "cursor", number 1], answeredData] := by kernel_reflexivity
 theorem empty_shape : queryEmptyBody =
-    a "let" [v "reasons", a Helper.queryObligations.head [v "unresolved"], emptyData] := by decide +kernel
+    a "let" [v "reasons", a Helper.queryObligations.head [v "unresolved"], emptyData] := by kernel_reflexivity
 theorem progress_shape : queryProgressBody = a "let" [v "expanded",
-    a "gslt:premise:query-expand-in" [v "environment", v "request", v "queryTask"], commitBody] := by decide +kernel
+    a "gslt:premise:query-expand-in" [v "environment", v "request", v "queryTask"], commitBody] := by kernel_reflexivity
 
 local macro "environment_template" "(" p:term ")" "(" g:term ")" : tactic => `(tactic|
   repeat' first

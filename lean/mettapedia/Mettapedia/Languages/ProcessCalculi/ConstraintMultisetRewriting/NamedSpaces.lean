@@ -21,7 +21,7 @@ A port whose space position is a free variable unifies with an occurrence in any
 `take (atSpace X p)` takes from whichever space a selection picks, and binds `X` to it
 (`Controls.unresolved_takes_from_either_space`). That is ambient authority. The law
 (`Resolved`) asks that the store before the step entail, for every space position of the rule
-(take, read, produce, absent, count), one rigid name. It is an ask on the information before
+(take, read, produce, predicate, count), one rigid name. It is an ask on the information before
 resources are selected, stable under refinement (`ResolvesTo.of_refines`). A space written as a
 name discharges it from the text alone (`resolvesTo_name`), so for written names it is a
 formation obligation; for a space supplied by data it is checked at admission. It cannot be one
@@ -39,8 +39,8 @@ fixes is written with that term instead.
   `LocatedSubstitution.action` embed exactly; every port of the image has a written name
   (`fromRigid_toRule`), so the law holds by formation (`fromRigid_resolved`).
 * **With the law the step is per space.** Every taken, read and made occurrence lies at the name
-  its port resolves to (`taken_at_port_space`, `read_at_port_space`, `made_at_port_space`); an
-  absence or count check matches only occurrences at its own space (`check_matches_at_space`);
+  its port resolves to (`taken_at_port_space`, `read_at_port_space`, `made_at_port_space`); a
+  none query or count check matches only occurrences at its own space (`check_matches_at_space`);
   occurrences at other spaces neither leave nor arrive (`frame_survives`, `frame_no_arrival`);
   well-located configurations stay well located (`LocatedStep.wellLocated`); and validity depends
   only on the occurrences at the rule's spaces (`valid_iff_of_agree_on_spaces`).
@@ -178,7 +178,7 @@ theorem Embedding.holds_map (h : Embedding B A φ) (σ : S) (label : O → U) (s
     ∀ check : Check U,
       (check.map φ).Holds A σ (fun o => φ (label o)) store ↔ check.Holds B σ label store
   | .equal l r => h.solves_iff σ (l, r)
-  | .absent p => by
+  | .predicate _ p => by
       simp only [Check.map, Check.Holds, h.apply_comm, h.E_iff]
   | .count p n => by
       simp only [Check.map, Check.Holds]
@@ -303,11 +303,11 @@ section Located
 
 variable {T : Type uT}
 
-/-- A check of a located rule: an equality ask is about data; absence and count look at the
-occurrences of one space. -/
+/-- A check of a located rule: an equality ask is about data; a predicate query and a count look
+at the occurrences of one space. -/
 inductive LocatedCheck (T : Type uT) where
   | equal (left right : T)
-  | absent (space payload : T)
+  | predicate (quantifier : Quantifier) (space payload : T)
   | count (space payload : T) (number : Nat)
 
 /-- A rule instance whose ports are pairs of a space term and a payload term. -/
@@ -321,10 +321,10 @@ structure LocatedRule (T : Type uT) where
 /-- The space a check looks at, if any. -/
 def LocatedCheck.space? : LocatedCheck T → Option T
   | .equal _ _ => none
-  | .absent s _ => some s
+  | .predicate _ s _ => some s
   | .count s _ _ => some s
 
-/-- Every space position of a rule: its take, read and produce ports and its absence and count
+/-- Every space position of a rule: its take, read and produce ports and its predicate and count
 checks. -/
 def LocatedRule.spaces (r : LocatedRule T) : List T :=
   r.take.map Prod.fst ++ r.read.map Prod.fst ++ r.produce.map Prod.fst ++
@@ -356,7 +356,7 @@ def place (port : T × T) : T := sts.atSpace port.1 port.2
 /-- A located check as an ordinary check. -/
 def LocatedCheck.toCheck : LocatedCheck T → Check T
   | .equal l r => .equal l r
-  | .absent s p => .absent (sts.atSpace s p)
+  | .predicate q s p => .predicate q (sts.atSpace s p)
   | .count s p k => .count (sts.atSpace s p) k
 
 /-- The ordinary rule instance of a located rule: every port is an `atSpace` term. -/
@@ -415,7 +415,7 @@ theorem rigid_step_iff (location : O → N) (payload : O → T) (rule : RuleInst
 /-- The image of a rigid check. -/
 def fromRigidCheck : Check (N × T) → LocatedCheck T
   | .equal l r => .equal (rigid sts l) (rigid sts r)
-  | .absent p => .absent (sts.name p.1) p.2
+  | .predicate q p => .predicate q (sts.name p.1) p.2
   | .count p k => .count (sts.name p.1) p.2 k
 
 /-- The image of a rigid rule as a located rule: every space is a written name. -/
@@ -452,7 +452,7 @@ def ResolvesTo (store : EquationStore T) (s : T) (n : N) : Prop :=
 def Resolves (store : EquationStore T) (s : T) : Prop := ∃ n, ResolvesTo sts store s n
 
 /-- **The resolved-location law**: the store before the step resolves every space position of
-the rule (take, read and produce ports, absence and count checks). Superseded by `ReachAdmits`
+the rule (take, read and produce ports, none queries and count checks). Superseded by `ReachAdmits`
 (`NamedSpacesReach`). -/
 def Resolved (store : EquationStore T) (r : LocatedRule T) : Prop :=
   ∀ s ∈ r.spaces, Resolves sts store s
@@ -532,7 +532,7 @@ theorem fromRigid_resolved (store : EquationStore T) (rule : RuleInstance (N × 
   · obtain ⟨c', _, rfl⟩ := cm
     cases c' with
     | equal l r => cases cs
-    | absent p =>
+    | predicate quantifier p =>
         simp only [fromRigidCheck, LocatedCheck.space?, Option.some.injEq] at cs
         subst cs
         exact ⟨p.1, resolvesTo_name store p.1⟩
@@ -734,14 +734,22 @@ theorem valid_of_agree {C D : Configuration T O}
     obtain ⟨located_check, checkMember, rfl⟩ := member
     cases located_check with
     | equal l r => exact holdsC
-    | absent s p =>
+    | predicate q s p =>
         obtain ⟨n, checkAt⟩ := resolved s (check_space_mem checkMember rfl)
-        intro o presentD matching
-        have atD : ResolvesTo sts D.equations (space o) n :=
-          check_matches_at_space wellD (equal ▸ checkAt) beforeD presentD matching
-        have presentC : o ∈ C.present :=
-          (same o ⟨n, ⟨s, check_space_mem checkMember rfl, checkAt⟩, equal ▸ atD⟩).mpr presentD
-        exact holdsC o presentC matching
+        cases q with
+        | any =>
+            obtain ⟨o, presentC, matching⟩ := holdsC
+            have atC : ResolvesTo sts C.equations (space o) n :=
+              check_matches_at_space wellC checkAt beforeC presentC matching
+            exact ⟨o, (same o ⟨n, ⟨s, check_space_mem checkMember rfl, checkAt⟩, atC⟩).mp presentC,
+              matching⟩
+        | none =>
+            intro o presentD matching
+            have atD : ResolvesTo sts D.equations (space o) n :=
+              check_matches_at_space wellD (equal ▸ checkAt) beforeD presentD matching
+            have presentC : o ∈ C.present :=
+              (same o ⟨n, ⟨s, check_space_mem checkMember rfl, checkAt⟩, equal ▸ atD⟩).mpr presentD
+            exact holdsC o presentC matching
     | count s p k =>
         obtain ⟨n, checkAt⟩ := resolved s (check_space_mem checkMember rfl)
         change (Check.matches A σ (located sts space payload) D.present (sts.atSpace s p)).card = k

@@ -8,7 +8,7 @@ A retained query enumerates its entry view even when a caller removes a
 later row between answers. A current catalyst instead requires that row to
 remain present at admission. These are different promises, not two
 implementations of one unconditional read law. Negative queries and current
-absence guards have the analogous distinction.
+none guards have the analogous distinction.
 
 Both profiles use the same stable occurrence store. Historical offers can
 feed checked linear consumption, but an offer alone is not permission to
@@ -117,15 +117,15 @@ theorem current_remove_other (store : Store Value) (occurrence retired : Nat)
     born.trans (StampedSnapshots.remove_clock store retired)
   simp [current, StampedSnapshots.atTime, slot, found, StampedSnapshots.visible, alive, age]
 
-def absent (predicate : Value → Bool) (rows : List (Offer Value)) : Bool :=
+def noneMatch (predicate : Value → Bool) (rows : List (Offer Value)) : Bool :=
   !(rows.any fun row => predicate row.2)
 
-def currentAbsent (predicate : Value → Bool) (store : Store Value) : Bool :=
-  absent predicate (offers store (StampedSnapshots.start store))
+def currentNoneMatch (predicate : Value → Bool) (store : Store Value) : Bool :=
+  noneMatch predicate (offers store (StampedSnapshots.start store))
 
-def testAbsence (entry : List (Offer Value)) (predicate : Value → Bool)
+def testNone (entry : List (Offer Value)) (predicate : Value → Bool)
     (useEntry : Bool) (value : Answer) : Search (Store Value) Answer := fun store =>
-  if (if useEntry then absent predicate entry else currentAbsent predicate store) then
+  if (if useEntry then noneMatch predicate entry else currentNoneMatch predicate store) then
     .answer value store .done
   else .done store
 
@@ -171,12 +171,12 @@ theorem equal_payloads_at_distinct_occurrences_both_consume :
       [(0, 10), (1, 10)] := by decide
 
 def negativeSource (useEntry : Bool) : Search (Store Nat) Nat :=
-  (Search.superpose [0, 1]).bind (testAbsence [] (fun value => value == 99) useEntry)
+  (Search.superpose [0, 1]).bind (testNone [] (fun value => value == 99) useEntry)
 
 def addAfterFirst (value : Nat) : Search (Store Nat) Nat := fun store =>
   .answer value (if value = 0 then StampedSnapshots.add store 99 else store) .done
 
-theorem historical_absence_is_not_current_absence :
+theorem historical_none_is_not_current_none :
     ((negativeSource true).bind addAfterFirst StampedSnapshots.empty).drain.1 = [0, 1] ∧
       ((negativeSource false).bind addAfterFirst StampedSnapshots.empty).drain.1 = [0] := by decide
 
@@ -225,8 +225,51 @@ def negativeQuery : Search (List Atom) Atom :=
 def blockNext (value : Atom) : Search (List Atom) Atom := fun store =>
   .answer value (store ++ [.symbol "blocked"]) .done
 
-theorem library_absence_is_rechecked_after_caller_effect :
+theorem library_none_is_rechecked_after_caller_effect :
     (negativeQuery.bind blockNext original).drain.1 = [.symbol "a"] := by decide
+
+private def anchor : Atom := .symbol "anchor"
+
+/-- A retained kernel may be reused while the later extension sees a
+new match. Losing the kernel's selected value still refuses that branch. -/
+theorem retained_kernel_does_not_freeze_extension :
+    let src := readSources [anchor] (some [pattern])
+    let guide : Footprint := [(.read, anchor)]
+    let emit := instances (.var "x")
+    fire [anchor, fact "a"] guide src emit = some ([anchor, fact "a"], [.symbol "a"]) ∧
+      fire [anchor, fact "a", fact "b"] guide src emit =
+        some ([anchor, fact "a", fact "b"], [.symbol "a", .symbol "b"]) ∧
+      fire [fact "a", fact "b"] guide src emit = none := by decide +kernel
+
+private def token : Atom := .symbol "token"
+private def numbered : StampedSnapshots.Store Atom :=
+  StampedSnapshots.add StampedSnapshots.empty token
+private def replacement : StampedSnapshots.Store Atom :=
+  StampedSnapshots.add (StampedSnapshots.remove numbered 0) token
+private def payloads (store : StampedSnapshots.Store Atom) : List Atom :=
+  (offers store (StampedSnapshots.start store)).map Prod.snd
+
+/-- The actual value-level library guide can consume an equal
+replacement. At the occurrence interface the original offer is not
+live and cannot license consumption of the replacement's fresh slot. -/
+theorem equal_replacement_is_not_the_selected_take :
+    payloads numbered = payloads replacement ∧
+      fire (payloads replacement) [(.take, token)] ⟨[.pat .take token], [], none⟩
+        (instances (.symbol "used")) = some ([], [.symbol "used"]) ∧
+      (taken [(0, token)] replacement).drain.1 = [] ∧
+      (taken [(1, token)] replacement).drain.1 = [(1, token)] := by decide +kernel
+
+/-- No test using only the visible payload list and the old value
+guide can implement exact validation of its selected occurrence. The
+same inputs have two different readiness verdicts. -/
+theorem payload_only_cannot_validate_the_selected_take (check : List Atom → Footprint → Bool) :
+    let guide : Footprint := [(.take, token)]
+    ¬ (check (payloads numbered) guide = (current numbered 0).isSome ∧
+      check (payloads replacement) guide = (current replacement 0).isSome) := by
+  intro guide ⟨before, after⟩
+  have same := equal_replacement_is_not_the_selected_take.1
+  rw [same, after] at before
+  exact (show (current replacement 0).isSome ≠ (current numbered 0).isSome by decide +kernel) before
 
 end LibraryControls
 

@@ -130,9 +130,9 @@ theorem shared_decided {Θ : Context S.R} {original : EquationStore (TotalTerm �
         ((∃ state finished,
             run (sharedSolver choices facts roots heads algebra rigid complete headsTyped declared join joinSound glb spec)
                 original larger = .solved state finished ∧ (frames S.levels).Principal original state.answer) ∨
-          (∃ absent,
+          (∃ missing,
             run (sharedSolver choices facts roots heads algebra rigid complete headsTyped declared join joinSound glb spec)
-              original larger = .refuted absent)) :=
+              original larger = .refuted missing)) :=
   (sharedFragment choices facts roots heads algebra rigid complete headsTyped declared join joinSound glb spec joinTotal
     glbTotal).decided inside
 

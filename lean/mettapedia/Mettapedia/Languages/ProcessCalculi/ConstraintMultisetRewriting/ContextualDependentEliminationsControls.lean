@@ -4,8 +4,8 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 /-!
 # Controls for the reader of elimination spines
 
-The two census rows that R99's family leaves suspended with a rigid base type, opened under their abstraction
-(`ContextualDependentCensus.Controls.nestedStore`, `appliedStore`), over `A X : U0`:
+The two classification rows that R99's family leaves suspended with a rigid base type, opened under their abstraction
+(`ContextualDependentClassification.Controls.nestedStore`, `appliedStore`), over `A X : U0`:
 
 * **nested projections**, `fst (fst (g X)) ≐ fst (fst (g A))` with `g : U0 → Σ (Σ U0 U0) U0`: the reader returns the
   one piece `X ≐ A` at `U0` (`nested_read`), and the equation holds exactly when it does (`nested_exact`);

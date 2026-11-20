@@ -99,7 +99,7 @@ consistency/freshness domain is retained after migration.
 First-order schedules and native runs are in bijection at consistent sources.
 The shared construction recovers the existing separated tensor as equality of
 complete native runs. Its exact permission test needs the actual guards and
-census queries, without blanket blindness. Two local readers can share one
+collect queries, without blanket blindness. Two local readers can share one
 physical occurrence and retain both events; permitted consumption of a shared
 occurrence instead fails the unchanged-context framing domain. Raw and
 consistent tensor identities retain their distinct definedness conditions.

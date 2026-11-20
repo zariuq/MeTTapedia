@@ -144,14 +144,14 @@ theorem leftmost_reflected {before after : State (strategyProgram program)}
   obtain ⟨⟨Δ, context, index, bound⟩, clear, valid, rfl⟩ := transition
   obtain ⟨old, call, readsCall, answered⟩ := destination_reflected before _ valid.toPlain value holds solution answer
     ((guarded_reads_as_plain before _ _ valid solution answer).mp reads)
-  have absent : CarriersAbsent (strategyProgram program) before (fireOf ⟨Δ, context, index, bound⟩)
+  have missing : NoCarrier (strategyProgram program) before (fireOf ⟨Δ, context, index, bound⟩)
       (carriersOf ⟨Δ, context, index, bound⟩) :=
     ((guarded_admitted_iff before value holds _ _ (fire_apart _)).mp valid).2
   obtain ⟨θ, matched, read⟩ := answered
-  have free := absent (ground sig) old call readsCall θ matched
+  have free := missing (ground sig) old call readsCall θ matched
   obtain ⟨inner, result, rfl, rfl, branch⟩ :=
     (atContext_answers (grammar := grammar) context _ call answer).mp ⟨θ, matched, read⟩
-  have normal : InnerNormal program context inner := ((carriers_absent_at_iff program context index bound inner).mp free).1
+  have normal : InnerNormal program context inner := ((noCarrier_at_iff program context index bound inner).mp free).1
   obtain ⟨θ', matched', _⟩ := id branch
   exact ⟨old, _, readsCall, Δ, context, index, inner, result,
     leftmost_iff_clear.mpr ⟨rfl, clear, (innermostAt_none_iff program context inner).mpr ⟨⟨index, θ', matched'⟩, normal⟩⟩,

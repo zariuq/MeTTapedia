@@ -92,7 +92,7 @@ theorem plainProgram_succ_iff (R : Set (RuleInstance T)) (C C' : Configuration T
     exact ⟨rule, sel, member, valid.firing, reached⟩
   · rintro ⟨rule, sel, member, valid, reached⟩
     have fValid : (annotate (S := S) (rule, sel)).Valid A label C :=
-      (PredicateQueryAdmission.valid_empty_iff A label rule C sel).mpr valid
+      PredicateQueryAdmission.regionValid_nil_iff.mpr valid
     exact ⟨(rule, sel), ⟨(AnnotatedRuns.firstOrder A label).toStep.prepares fValid, fValid, member⟩,
       reached⟩
 
@@ -120,18 +120,22 @@ def encodablePresentation (α : Type*) [Encodable α] (key : Mettapedia.GSLT.Par
 
 variable {T : Type uT} {O : Type uO} [Encodable T] [Encodable O]
 
+/-- Checks are encoded with the predicate query's quantifier kept: `any` and `none` occupy
+separate summands, so the encoding is a bijection. -/
 local instance checkEncodable : Encodable (Check T) :=
-  Encodable.ofEquiv ((T × T) ⊕ T ⊕ (T × ℕ))
+  Encodable.ofEquiv ((T × T) ⊕ (T ⊕ T) ⊕ (T × ℕ))
     { toFun := fun c => match c with
         | .equal l r => .inl (l, r)
-        | .absent p => .inr (.inl p)
+        | .predicate .any p => .inr (.inl (.inl p))
+        | .predicate .none p => .inr (.inl (.inr p))
         | .count p n => .inr (.inr (p, n))
       invFun := fun x => match x with
         | .inl (l, r) => .equal l r
-        | .inr (.inl p) => .absent p
+        | .inr (.inl (.inl p)) => .predicate .any p
+        | .inr (.inl (.inr p)) => .predicate .none p
         | .inr (.inr (p, n)) => .count p n
-      left_inv := fun c => by cases c <;> rfl
-      right_inv := fun x => by rcases x with ⟨l, r⟩ | p | ⟨p, n⟩ <;> rfl }
+      left_inv := fun c => by rcases c with _ | ⟨_ | _, _⟩ | _ <;> rfl
+      right_inv := fun x => by rcases x with ⟨l, r⟩ | (p | p) | ⟨p, n⟩ <;> rfl }
 
 local instance ruleEncodable : Encodable (RuleInstance T) :=
   Encodable.ofEquiv (List T × List T × List (T × T) × List (Check T) × List T)

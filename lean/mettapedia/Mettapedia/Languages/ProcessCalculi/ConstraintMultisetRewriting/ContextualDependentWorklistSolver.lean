@@ -126,9 +126,9 @@ def solver (fuel : Nat) : Solver S.levels where
 
 /-- **A refutation is a certified clash**: the step refutes nothing else. -/
 theorem round_refuted_clashes (fuel : Nat) {Γ : Context S.R}
-    {problem : EquationStore (TotalTerm Γ)} {absent : ¬ (frames S.levels).Solvable problem}
+    {problem : EquationStore (TotalTerm Γ)} {missing : ¬ (frames S.levels).Solvable problem}
     (refuted : round rigid facts complete roots heads algebra declared choices reducer fuel problem =
-      .refuted absent) :
+      .refuted missing) :
     ContextualDependentRigid.storeClashes problem = true := by
   unfold round at refuted
   split at refuted

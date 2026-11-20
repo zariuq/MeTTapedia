@@ -32,10 +32,11 @@ set_option autoImplicit false
 
 namespace Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.SpecializedAdmission
 
-/-- Guards: an ask, an absence, a count, or a host predicate (whose meaning the host gives). -/
+/-- Guards: an ask, a `none` predicate query, a count, or a host predicate (whose meaning the host
+gives). -/
 inductive Guard where
   | ask (a b : Tm)
-  | absent (p : Tm)
+  | none (p : Tm)
   | count (p : Tm) (n : Nat)
   | host (name : String) (args : List Tm)
 
@@ -54,7 +55,7 @@ structure Rule where
 written. -/
 def Guard.opened : Guard → List Tm
   | .ask a b => [a, b]
-  | .absent p => [p]
+  | .none p => [p]
   | .count p _ => [p]
   | .host _ _ => []
 
@@ -108,7 +109,7 @@ def Solvable : Prop := ∃ σ, Sol R s p o σ
 /-- A guard at one solution. -/
 def Guard.Holds (host : String → List Tm → Prop) (s : St) (σ : Nat → Tm) : Guard → Prop
   | .ask a b => a.inst σ (openFresh s.names) = b.inst σ (openFresh s.names)
-  | .absent q => ∀ row ∈ s.present, row.label ≠ q.inst σ (openFresh s.names)
+  | .none q => ∀ row ∈ s.present, row.label ≠ q.inst σ (openFresh s.names)
   | .count q n =>
       (s.present.filter fun row => decide (row.label = q.inst σ (openFresh s.names))).length = n
   | .host h args => host h (args.map (Tm.inst σ (openFresh s.names)))

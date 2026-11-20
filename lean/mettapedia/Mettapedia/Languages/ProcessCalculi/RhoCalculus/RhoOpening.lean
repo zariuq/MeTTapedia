@@ -1,4 +1,4 @@
-import Mettapedia.OSLF.MeTTaIL.Substitution
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence
 
 namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus
 
@@ -67,6 +67,60 @@ mutual
     | [] => true
     | p :: ps => noBVar k p && noBVarList k ps
 end
+
+private theorem noBVarList_all (k : Nat) (patterns : List Pattern) :
+    noBVarList k patterns = patterns.all (noBVar k) := by
+  induction patterns with
+  | nil => rfl
+  | cons p ps ih => simp only [noBVarList, List.all_cons, ih]
+
+private theorem noBVarList_eq_of_get (k : Nat) {left right : List Pattern}
+    (length_eq : left.length = right.length)
+    (same : ∀ i h₁ h₂, noBVar k (left.get ⟨i, h₁⟩) = noBVar k (right.get ⟨i, h₂⟩)) :
+    noBVarList k left = noBVarList k right := by
+  have mapped : left.map (noBVar k) = right.map (noBVar k) := by
+    apply List.ext_getElem
+    · simpa using length_eq
+    · intro i h₁ h₂
+      simp only [List.getElem_map]
+      exact same i (by simpa using h₁) (by simpa using h₂)
+  rw [noBVarList_all, noBVarList_all]
+  simpa only [List.all_map, Function.id_comp] using
+    congrArg (fun flags : List Bool => flags.all id) mapped
+
+/-- Structural equations can expose a whole name but cannot create a
+free occurrence of an index. The binder depth is tracked beneath
+lambda, multi-lambda, and explicit substitution. -/
+theorem StructuralCongruence.noBVar_eq {left right : Pattern}
+    (same : StructuralCongruence left right) (k : Nat) :
+    noBVar k left = noBVar k right := by
+  induction same generalizing k with
+  | alpha _ _ equal => rw [equal]
+  | refl => rfl
+  | symm _ _ _ ih => exact (ih k).symm
+  | trans _ _ _ _ _ ih₁ ih₂ => exact (ih₁ k).trans (ih₂ k)
+  | par_singleton => simp [noBVar, noBVarList]
+  | par_nil_left => simp [noBVar, noBVarList]
+  | par_nil_right => simp [noBVar, noBVarList]
+  | par_comm => simp [noBVar, noBVarList, Bool.and_comm]
+  | par_assoc => simp [noBVar, noBVarList, Bool.and_assoc]
+  | par_cong _ _ count _ ih =>
+    exact noBVarList_eq_of_get k count (fun i h₁ h₂ => ih i h₁ h₂ k)
+  | par_flatten =>
+    simp [noBVar, noBVarList_all, List.all_append]
+  | par_perm _ _ perm | set_perm _ _ perm =>
+    simpa only [noBVar, noBVarList_all] using perm.all_eq (f := noBVar k)
+  | set_cong _ _ count _ ih =>
+    exact noBVarList_eq_of_get k count (fun i h₁ h₂ => ih i h₁ h₂ k)
+  | lambda_cong _ _ _ _ ih => exact ih (k + 1)
+  | apply_cong _ _ _ count _ ih =>
+    exact noBVarList_eq_of_get k count (fun i h₁ h₂ => ih i h₁ h₂ k)
+  | collection_general_cong _ _ _ _ count _ ih =>
+    exact noBVarList_eq_of_get k count (fun i h₁ h₂ => ih i h₁ h₂ k)
+  | multiLambda_cong n _ _ _ _ ih => exact ih (k + n)
+  | subst_cong _ _ _ _ _ _ ih₁ ih₂ => exact congrArg₂ (· && ·) (ih₁ (k + 1)) (ih₂ k)
+  | quote_drop => simp [noBVar, noBVarList]
+  | par_empty => rfl
 
 mutual
   /-- `noBoundUnderQuote k p` means `BVar k` never appears under a literal quote in `p`. -/

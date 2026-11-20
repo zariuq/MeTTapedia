@@ -52,7 +52,7 @@ theorem occursSearch_refutes {Θ : Context S.R} :
         · obtain ⟨inner, computed, same⟩ := Option.map_eq_some_iff.mp fired
           cases inner with
           | solved moved movedSmaller => exact occursSearch_refutes rest moved movedSmaller computed
-          | refuted absent => cases same
+          | refuted missing => cases same
 
 /-- **The full occurs check only refutes.** -/
 theorem occursFullSearch_refutes {Θ : Context S.R} :
@@ -71,7 +71,7 @@ theorem occursFullSearch_refutes {Θ : Context S.R} :
         · obtain ⟨inner, computed, same⟩ := Option.map_eq_some_iff.mp fired
           cases inner with
           | solved moved movedSmaller => exact occursFullSearch_refutes rest moved movedSmaller computed
-          | refuted absent => cases same
+          | refuted missing => cases same
 
 theorem occursSearch_keeps (holds : {Γ : Context S.R} → EquationStore (TotalTerm Γ) → Prop) :
     RuleKeeps holds fun problem =>

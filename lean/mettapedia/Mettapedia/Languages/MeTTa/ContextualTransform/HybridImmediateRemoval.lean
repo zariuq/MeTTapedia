@@ -42,7 +42,8 @@ theorem accepted_bag_exact (world : PreparedStoreProtocol.World O)
     Multiset.filter_coe, List.filter_map, Function.comp_def]
 
 /-- Successful hybrid deletion refines the bag projection of an actual
-admitted ordered tcalc effect; the target is not another hybrid interpreter. -/
+admitted effect of `OrderedStore.step`; the target is not another hybrid
+interpreter. -/
 theorem accepted_realized (world : PreparedStoreProtocol.World O)
     (store : HybridShapeStore.Store Atom) (keys : List Atom) (capacity count : Nat)
     (representation : Represents label world store)

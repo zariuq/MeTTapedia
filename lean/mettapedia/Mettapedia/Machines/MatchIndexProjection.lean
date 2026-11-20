@@ -1,5 +1,6 @@
 import Mettapedia.Machines.Cursor.ListCells
 import Mettapedia.Data.List.OrderedOccurrenceCursor
+import Mettapedia.Data.List.OrderedPrefilter
 import Mettapedia.Machines.OrderedDependencyOverlay
 
 /-!
@@ -87,15 +88,7 @@ theorem candidate_complete (pattern row : Tm) (θ : ℕ → PT)
   | none => trivial
   | some q => exact (project_unifies hp θ row).mpr h
 
-theorem filter_candidates {Row : Type*} (possible accept : Row → Bool)
-    (complete : ∀ row, accept row = true → possible row = true) (rows : List Row) :
-    (rows.filter possible).filter accept = rows.filter accept := by
-  induction rows with
-  | nil => rfl
-  | cons row rest ih =>
-      cases accepted : accept row with
-      | false => cases admitted : possible row <;> simp [accepted, admitted, ih]
-      | true => simp [accepted, complete row accepted, ih]
+export Mettapedia.Data.List.OrderedPrefilter (filter_candidates)
 
 /-- Filtering the candidate frontier and then unifying retains the exact
 occurrence list, including duplicates and its original order. -/

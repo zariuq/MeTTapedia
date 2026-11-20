@@ -33,7 +33,7 @@ abbrev ActiveTerm := Closed (Active locals captures)
 
 def lowerCheck : NamedSpaces.LocatedCheck (ActiveTerm locals captures) → Check (ActiveTerm locals captures)
   | .equal left right => .equal left right
-  | .absent address payload => .absent (place address payload)
+  | .predicate q address payload => .predicate q (place address payload)
   | .count address payload number => .count (place address payload) number
 
 def lowerRule (rule : NamedSpaces.LocatedRule (ActiveTerm locals captures)) : RuleInstance (ActiveTerm locals captures) :=

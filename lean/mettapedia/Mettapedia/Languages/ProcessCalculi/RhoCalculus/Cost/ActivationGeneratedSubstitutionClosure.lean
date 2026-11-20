@@ -15,6 +15,7 @@ namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.ActivationGenerat
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
+open Mettapedia.OSLF.MeTTaIL.ReflectiveInstantiation (substituteNameMark_closed)
 
 theorem NameImage.quote_closed_image {scope : Nat} {source : Pattern}
     {term : CostTerm LiteralAuthority} (image : NameImage scope source (.quote term)) :
@@ -28,29 +29,27 @@ theorem NameImage.literal_substitute_image {depth : Nat} {source : Pattern}
     (replacement : Pattern) :
     ∃ normalized, NameImage depth
       (substituteReflective wrappedRhoDeclaration depth replacement source) normalized := by
-  obtain ⟨normalized, normalizedImage⟩ := image.quote_closed_image.normalize_image
+  obtain ⟨resolved, resolvedImage⟩ := image.quote_closed_image.resolve_image
   rw [image.substituteReflective_eq_mark,
-    substituteNameMark_closed depth replacement image.quote_source_closed]
-  exact ⟨_, normalizedImage.weaken (Nat.zero_le depth)⟩
+    substituteNameMark_closed wrappedRhoDeclaration depth replacement image.quote_source_closed]
+  exact ⟨_, resolvedImage.weaken (Nat.zero_le depth)⟩
 
+/-- Substitution into the drop of a closed name resolves the name. -/
 theorem substituteReflective_drop_closed (depth : Nat) (replacement : Pattern) {source : Pattern}
     (closed : source.isWellScopedAt 0 = true) :
     substituteReflective wrappedRhoDeclaration depth replacement
       (.apply "$cost:wrapped-constructor:PDrop" [source]) =
-      .apply "$cost:wrapped-constructor:PDrop" [normalizeReflective wrappedRhoDeclaration source] := by
-  change (let (name, matched) := substituteNameMark wrappedRhoDeclaration depth replacement source;
-    match name, matched with
-    | .apply quote [process], true =>
-      if quote == wrappedRhoDeclaration.quoteConstructor then process
-      else .apply "$cost:wrapped-constructor:PDrop" [name]
-    | _, _ => .apply "$cost:wrapped-constructor:PDrop" [name]) = _
-  rw [substituteNameMark_closed depth replacement closed]
-  generalize normalizeReflective wrappedRhoDeclaration source = normalized
-  cases normalized <;> try rfl
-  case apply constructor arguments =>
-    cases arguments with
-    | nil => rfl
-    | cons argument arguments => cases arguments <;> rfl
+      .apply "$cost:wrapped-constructor:PDrop" [resolveQuotes wrappedRhoDeclaration source] := by
+  obtain ⟨miss, substituted⟩ := closed_miss (depth := depth) (replacement := replacement) closed
+  have notQuote : "$cost:wrapped-constructor:PDrop" ≠ wrappedRhoDeclaration.quoteConstructor := by
+    decide +kernel
+  have distinct : wrappedRhoDeclaration.dropConstructor ≠ wrappedRhoDeclaration.quoteConstructor := by
+    decide +kernel
+  unfold substituteReflective at substituted ⊢
+  simp only [resolveQuotes, resolveQuotesList, finishResolveApply, notQuote, if_false]
+  rw [show ("$cost:wrapped-constructor:PDrop" : String) = wrappedRhoDeclaration.dropConstructor from rfl,
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.substituteResolved_drop distinct, if_neg (by simpa using miss),
+    substituted]
 
 theorem NameImage.substitute_image {depth : Nat} {source payloadSource : Pattern}
     {name : CostName LiteralAuthority} {payload : CostTerm LiteralAuthority}
@@ -62,9 +61,9 @@ theorem NameImage.substitute_image {depth : Nat} {source payloadSource : Pattern
     by_cases matched : index = depth
     · subst index
       obtain ⟨normalized, normalizedImage⟩ := payloadImage.normalize_image
-      simp only [substituteReflective, beq_self_eq_true, ite_true, generatedReplacement]
+      simp only [substituteReflective, resolveQuotes, substituteResolved, if_true, generatedReplacement]
       exact ⟨_, .quote normalizedImage⟩
-    · simp only [substituteReflective, beq_iff_eq, matched, ite_false]
+    · simp only [substituteReflective, resolveQuotes, substituteResolved, matched, if_false]
       exact ⟨_, .bvar (by omega)⟩
   | baseZeroQuote => exact NameImage.literal_substitute_image .baseZeroQuote _
   | quote code => exact NameImage.literal_substitute_image (.quote code) _
@@ -75,8 +74,8 @@ private theorem drop_literal_substitute_image {depth : Nat} {source payloadSourc
       (substituteReflective wrappedRhoDeclaration depth (generatedReplacement payloadSource)
         (.apply "$cost:wrapped-constructor:PDrop" [source])) result := by
   rw [substituteReflective_drop_closed depth _ image.quote_source_closed]
-  obtain ⟨normalized, normalizedImage⟩ := image.quote_closed_image.normalize_image
-  exact ⟨_, .drop (normalizedImage.weaken (Nat.zero_le depth))⟩
+  obtain ⟨resolved, resolvedImage⟩ := image.quote_closed_image.resolve_image
+  exact ⟨_, .drop (resolvedImage.weaken (Nat.zero_le depth))⟩
 
 mutual
   theorem CodeImage.substitute_image {depth : Nat} {source payloadSource : Pattern}
@@ -84,6 +83,8 @@ mutual
       (payloadImage : CodeImage 0 payloadSource payload) :
       ∃ result, CodeImage depth
         (substituteReflective wrappedRhoDeclaration depth (generatedReplacement payloadSource) source) result := by
+    have quoteName : wrappedRhoDeclaration.quoteConstructor = "$cost:wrapped-constructor:NQuote" := rfl
+    have dropName : wrappedRhoDeclaration.dropConstructor = "$cost:wrapped-constructor:PDrop" := rfl
     cases image with
     | zero => exact ⟨_, .zero⟩
     | drop name =>
@@ -92,11 +93,13 @@ mutual
         by_cases matched : index = depth
         · subst index
           obtain ⟨normalized, normalizedImage⟩ := payloadImage.normalize_image
-          simp only [substituteReflective, substituteNameMark, normalizeReflective,
-            generatedReplacement, beq_self_eq_true, ite_true]
+          simp only [substituteReflective, resolveQuotes, resolveQuotesList, finishResolveApply,
+            substituteResolved, matchesBinder_bvar, receive, generatedReplacement, quoteName, dropName,
+            beq_self_eq_true, ite_true, String.reduceEq, ite_false]
           exact ⟨_, normalizedImage.weaken (Nat.zero_le depth)⟩
-        · simp only [substituteReflective, substituteNameMark, normalizeReflective,
-            beq_iff_eq, matched, ite_false]
+        · simp only [substituteReflective, resolveQuotes, resolveQuotesList, finishResolveApply,
+            substituteResolved, matchesBinder_bvar, quoteName, dropName,
+            beq_iff_eq, matched, ite_false, String.reduceEq]
           exact ⟨_, .drop (.bvar (by omega))⟩
       | baseZeroQuote => exact drop_literal_substitute_image .baseZeroQuote
       | quote code => exact drop_literal_substitute_image (.quote code)
@@ -110,6 +113,7 @@ mutual
       exact ⟨_, .signed signature accepted resultImage⟩
     | collection codes =>
       obtain ⟨result, resultImage⟩ := codes.substitute_image payloadImage
+      rw [substituteReflective_collection]
       exact ⟨_, .collection resultImage⟩
 
   theorem ProcImage.substitute_image {depth : Nat} {source payloadSource : Pattern}

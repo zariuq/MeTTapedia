@@ -135,10 +135,10 @@ theorem scoped_closed_answers {protectedScope : List String} {space : Space} {bi
 theorem lookup_none_of_keys : ∀ {l : List (String × Atom)} {x : String},
     (∀ e ∈ l, e.1 ≠ x) → l.lookup x = none
   | [], _, _ => rfl
-  | (k, v) :: rest, x, absent => by
-      have ne : k ≠ x := absent (k, v) List.mem_cons_self
+  | (k, v) :: rest, x, missing => by
+      have ne : k ≠ x := missing (k, v) List.mem_cons_self
       have later := lookup_none_of_keys (l := rest) (x := x)
-        (fun e member => absent e (List.mem_cons_of_mem _ member))
+        (fun e member => missing e (List.mem_cons_of_mem _ member))
       have beqFalse : (x == k) = false := beq_eq_false_iff_ne.mpr (Ne.symm ne)
       simp only [List.lookup, beqFalse]
       exact later

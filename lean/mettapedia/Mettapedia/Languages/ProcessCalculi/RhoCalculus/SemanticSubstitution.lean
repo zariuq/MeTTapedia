@@ -2,6 +2,7 @@ import Mettapedia.OSLF.MeTTaIL.Substitution
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.RhoOpening
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SubjectEquiv
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Canonical
 
 /-!
 # ρ-Calculus Semantic COMM Substitution
@@ -13,7 +14,7 @@ syntactic substitution, while providing the operational substitution used by the
 ρ-calculus COMM rule:
 
 - quoted process bodies are opaque to substitution;
-- names are normalized through quote-drop before matching;
+- substitution matches a whole name modulo the pure structural equations;
 - drop-of-quote collapses only when the COMM substitution itself revealed the
   quoted process under the drop.
 -/
@@ -87,16 +88,32 @@ mutual
     | p :: ps => semanticNormalizeProc p :: semanticNormalizeProcList ps
 end
 
-/-- Name substitution for COMM: normalize the name, then replace the bound name
-    only when the normalized name is exactly the target bound variable. The
-    boolean records whether such a match occurred. -/
+/-- Inspect the whole name modulo the pure structural equations. Keep the
+ordinary semantic normalization on a miss; in particular, the comparison
+does not perform substitution inside a literal quote. The mark controls
+activation of the drop at this occurrence, not of other literal drops. -/
 def semanticSubstNameMark (k : Nat) (replacementName : Pattern) (name : Pattern) :
     Pattern × Bool :=
-  let norm := semanticNormalizeName name
-  match norm with
-  | .bvar n =>
-      if n == k then (replacementName, true) else (.bvar n, false)
-  | _ => (norm, false)
+  if Canonical.canonicalize name = .bvar k then (replacementName, true)
+  else (semanticNormalizeName name, false)
+
+theorem semanticSubstNameMark_matched_iff {k : Nat} {replacement name : Pattern}
+    (pure : Canonical.HashSetFree name) :
+    (semanticSubstNameMark k replacement name).2 = true ↔
+      StructuralCongruence name (.bvar k) := by
+  rw [Canonical.structuralCongruence_iff_canonicalize_eq pure (by trivial)]
+  by_cases hit : Canonical.canonicalize name = .bvar k <;>
+    simp [semanticSubstNameMark, Canonical.canonicalize, hit]
+
+theorem semanticSubstNameMark_unmatched_of_noBVar (k : Nat) (replacement : Pattern) {name : Pattern}
+    (absent : noBVar k name = true) :
+    semanticSubstNameMark k replacement name = (semanticNormalizeName name, false) := by
+  have miss : Canonical.canonicalize name ≠ .bvar k := by
+    intro hit
+    have same := (Canonical.canonicalize_sound name).noBVar_eq k
+    rw [hit, absent] at same
+    simp [noBVar] at same
+  simp [semanticSubstNameMark, miss]
 
 /-- The name-only projection of `semanticSubstNameMark`. -/
 def semanticSubstName (k : Nat) (replacementName : Pattern) (name : Pattern) : Pattern :=
@@ -105,7 +122,7 @@ def semanticSubstName (k : Nat) (replacementName : Pattern) (name : Pattern) : P
 mutual
   /-- Paper-faithful COMM substitution on process bodies.
 
-  This mirrors the operational shape of CeTTa's strict-core reducer:
+  Its operational boundaries are:
   - descend through process constructors;
   - substitute in names only via `semanticSubstName`;
   - do not descend under literal `NQuote`;
@@ -194,7 +211,7 @@ def semanticCommSubst (pBody q : Pattern) : Pattern :=
 
 theorem semanticCommSubst_collapses_bound_drop (q : Pattern) :
     semanticCommSubst (.apply "PDrop" [.bvar 0]) q = semanticNormalizeProc q := by
-  simp [semanticCommSubst, semanticSubstProc, semanticSubstNameMark, semanticNormalizeName]
+  simp [semanticCommSubst, semanticSubstProc, semanticSubstNameMark, Canonical.canonicalize]
 
 theorem semanticCommSubst_preserves_output_literal_drop
     (chan payload q : Pattern) :
@@ -202,7 +219,8 @@ theorem semanticCommSubst_preserves_output_literal_drop
       .apply "PDrop"
         [.apply "NQuote" [.apply "POutput" [semanticNormalizeName chan, semanticNormalizeProc payload]]] := by
   simp [semanticCommSubst, semanticSubstProc, semanticSubstNameMark,
-    semanticNormalizeName, semanticNormalizeProc]
+    semanticNormalizeName, semanticNormalizeProc, Canonical.canonicalize,
+    Canonical.canonicalizeList, Canonical.normalizeQuote]
 
 theorem semanticCommSubst_preserves_quoted_code (p q : Pattern) :
     semanticCommSubst (.apply "NQuote" [p]) q = .apply "NQuote" [p] := by
@@ -219,7 +237,7 @@ theorem semanticCommSubst_normalizes_free_quote_drop_output_channel_empty_payloa
       (.apply "POutput" [.fvar x, .collection .hashBag [] none]) := by
   simp [semanticCommSubst, semanticSubstProc, semanticSubstProcList,
     semanticSubstName, semanticSubstNameMark,
-    semanticNormalizeName]
+    semanticNormalizeName, Canonical.canonicalize, Canonical.canonicalizeList, Canonical.normalizeQuote]
 
 theorem semanticCommSubst_bare_bound_becomes_normalized_quote (q : Pattern) :
     semanticCommSubst (.bvar 0) q = .apply "NQuote" [semanticNormalizeProc q] := by
@@ -261,7 +279,7 @@ theorem semanticCommSubst_diverges_from_syntactic_open_on_quote_opacity_emptyBag
         (.collection .hashBag [] none) := by
   simp [semanticCommSubst, semanticSubstProc, semanticSubstProcList,
     semanticSubstName, semanticSubstNameMark, semanticNormalizeName,
-    semanticNormalizeProc,
+    semanticNormalizeProc, Canonical.canonicalize, Canonical.canonicalizeList, Canonical.normalizeQuote,
     Mettapedia.OSLF.MeTTaIL.Substitution.commSubst,
     Mettapedia.OSLF.MeTTaIL.Substitution.openBVar]
 
@@ -297,7 +315,7 @@ theorem semanticCommSubst_bound_drop_differs_from_syntactic_open_on_emptyBag :
         (.apply "NQuote" [.collection .hashBag [] none])
         (.apply "PDrop" [.bvar 0]) := by
   simp [semanticCommSubst, semanticSubstProc, semanticSubstNameMark,
-    semanticNormalizeName, semanticNormalizeProc,
+    semanticNormalizeProc, Canonical.canonicalize,
     Mettapedia.OSLF.MeTTaIL.Substitution.openBVar]
 
 theorem semanticNormalizeName_free_quote_drop_var (x : String) :
@@ -470,62 +488,24 @@ theorem semanticNormalizeName_sound_struct {n : Pattern} :
     StructuralCongruence (semanticNormalizeName n) n :=
   nameEquiv_implies_struct (semanticNormalizeName_sound n)
 
-private theorem semanticSubstNameMark_true_eq_replacement
+theorem semanticSubstNameMark_true_eq_replacement
     (k : Nat) (replacementName name name' : Pattern)
     (hmark : semanticSubstNameMark k replacementName name = (name', true)) :
     name' = replacementName := by
   unfold semanticSubstNameMark at hmark
-  cases hnorm : semanticNormalizeName name with
-  | bvar n =>
-      by_cases hnk : n = k
-      · subst hnk
-        simpa [hnorm, beq_self_eq_true] using hmark.symm
-      · have hbeq : (n == k) = false := beq_eq_false_iff_ne.mpr hnk
-        simp [hnorm, hbeq] at hmark
-  | fvar x =>
-      simp [hnorm] at hmark
-  | apply c args =>
-      simp [hnorm] at hmark
-  | lambda nm body =>
-      simp [hnorm] at hmark
-  | multiLambda n nms body =>
-      simp [hnorm] at hmark
-  | subst body repl =>
-      simp [hnorm] at hmark
-  | collection ct elems rest =>
-      simp [hnorm] at hmark
+  split at hmark
+  · exact (congrArg Prod.fst hmark).symm
+  · simp at hmark
 
 theorem semanticSubstName_transport_to_representative (k : Nat) (q name : Pattern) :
     NameEquiv
       (semanticSubstName k (.apply "NQuote" [semanticNormalizeProc q]) name)
       (semanticSubstName k (.apply "NQuote" [q]) name) := by
-  cases hnorm : semanticNormalizeName name with
-  | bvar n =>
-      by_cases hnk : n = k
-      · subst hnk
-        simpa [semanticSubstName, semanticSubstNameMark, hnorm, beq_self_eq_true] using
-          (quote_respects_structural (semanticNormalizeProc_sound q))
-      · have hbeq : (n == k) = false := beq_eq_false_iff_ne.mpr hnk
-        simpa [semanticSubstName, semanticSubstNameMark, hnorm, hbeq] using
-          (NameEquiv.refl (.bvar n))
-  | fvar x =>
-      simpa [semanticSubstName, semanticSubstNameMark, hnorm] using
-        (NameEquiv.refl (.fvar x))
-  | apply c args =>
-      simpa [semanticSubstName, semanticSubstNameMark, hnorm] using
-        (NameEquiv.refl (.apply c args))
-  | lambda nm body =>
-      simpa [semanticSubstName, semanticSubstNameMark, hnorm] using
-        (NameEquiv.refl (.lambda nm body))
-  | multiLambda n nms body =>
-      simpa [semanticSubstName, semanticSubstNameMark, hnorm] using
-        (NameEquiv.refl (.multiLambda n nms body))
-  | subst body repl =>
-      simpa [semanticSubstName, semanticSubstNameMark, hnorm] using
-        (NameEquiv.refl (.subst body repl))
-  | collection ct elems rest =>
-      simpa [semanticSubstName, semanticSubstNameMark, hnorm] using
-        (NameEquiv.refl (.collection ct elems rest))
+  by_cases hit : Canonical.canonicalize name = .bvar k
+  · simpa only [semanticSubstName, semanticSubstNameMark, if_pos hit] using
+      quote_respects_structural (semanticNormalizeProc_sound q)
+  · simp only [semanticSubstName, semanticSubstNameMark, if_neg hit]
+    exact NameEquiv.refl _
 
 theorem semanticSubstProcList_length (k : Nat) (replacementName : Pattern) :
     ∀ elems : List Pattern,
@@ -660,226 +640,40 @@ private theorem rhoProcCoreShape_collection_inv {ct : CollType} {elems : List Pa
   cases ct <;> cases rest <;> simp [rhoProcCoreShape] at hshape
   exact ⟨rfl, rfl, hshape⟩
 
-private theorem rhoNameCoreShape_noBoundUnderQuote_of_noBVar (k : Nat)
-    {n : Pattern}
-    (hshape : rhoNameCoreShape n = true)
-    (hnoB : noBVar k n = true) :
-    noBoundUnderQuote k n = true := by
-  match n with
-  | .bvar _ =>
-      simp [noBoundUnderQuote]
-  | .fvar _ =>
-      simp [noBoundUnderQuote]
-  | .apply "NQuote" [p] =>
-      simpa [rhoNameCoreShape, noBoundUnderQuote, noBVar, noBVarList] using hnoB
-  | .apply c args =>
-      rcases rhoNameCoreShape_apply_inv hshape with ⟨p, hc, hargs, hp⟩
-      subst hc
-      subst hargs
-      simpa [rhoNameCoreShape, noBoundUnderQuote, noBVar, noBVarList] using hnoB
-  | .lambda nm body =>
-      simp [rhoNameCoreShape] at hshape
-  | .multiLambda n nms body =>
-      simp [rhoNameCoreShape] at hshape
-  | .subst body repl =>
-      simp [rhoNameCoreShape] at hshape
-  | .collection ct elems rest =>
-      simp [rhoNameCoreShape] at hshape
-
-private theorem rhoOpenNameBVar_eq_self_of_rhoNameCoreShape_noBVar (k : Nat) (u : Pattern)
-    {n : Pattern}
-    (hshape : rhoNameCoreShape n = true)
-    (hnoB : noBVar k n = true) :
-    rhoOpenNameBVar k u n = n := by
-  match n with
-  | .bvar n =>
-      by_cases hEq : n = k
-      · subst hEq
-        simp [noBVar] at hnoB
-      · have hbeq : (n == k) = false := by
-          exact beq_eq_false_iff_ne.mpr hEq
-        simp [rhoOpenNameBVar, hbeq]
-  | .fvar _ =>
-      simp [rhoOpenNameBVar]
-  | .apply "NQuote" [_] =>
-      simp [rhoOpenNameBVar]
-  | .apply c args =>
-      rcases rhoNameCoreShape_apply_inv hshape with ⟨p, hc, hargs, hp⟩
-      subst hc
-      subst hargs
-      simp [rhoOpenNameBVar]
-  | .lambda nm body =>
-      simp [rhoNameCoreShape] at hshape
-  | .multiLambda n nms body =>
-      simp [rhoNameCoreShape] at hshape
-  | .subst body repl =>
-      simp [rhoNameCoreShape] at hshape
-  | .collection ct elems rest =>
-      simp [rhoNameCoreShape] at hshape
-
-/-- A closed strict-core name cannot trigger the distinguished-name branch of
-COMM substitution.  This exposes the boolean fact needed by derived
-presentations without appealing to a particular name representation. -/
-theorem semanticSubstNameMark_matched_false_of_rhoNameCoreShape_noBVar
+/-- A name with no free occurrence of the communication index cannot
+trigger activation, even after its structural class is recognized. -/
+theorem semanticSubstNameMark_matched_false_of_noBVar
     (k : Nat) (replacementName : Pattern) {n : Pattern}
-    (hshape : rhoNameCoreShape n = true)
     (hnoB : noBVar k n = true) :
     (semanticSubstNameMark k replacementName n).2 = false := by
-  match n with
-  | .bvar index =>
-      have hne : index ≠ k := by
-        simpa [noBVar, bne_iff_ne] using hnoB
-      simp [semanticSubstNameMark, semanticNormalizeName,
-        beq_eq_false_iff_ne.mpr hne]
-  | .fvar _ =>
-      rfl
-  | .apply "NQuote" [process] =>
-      by_cases hdrop : ∃ name, process = .apply "PDrop" [name]
-      · rcases hdrop with ⟨name, rfl⟩
-        have nameShape : rhoNameCoreShape name = true := by
-          simpa [rhoNameCoreShape, rhoProcCoreShape] using hshape
-        have nameNoB : noBVar k name = true := by
-          simpa [noBVar, noBVarList] using hnoB
-        simpa [semanticSubstNameMark, semanticNormalizeName] using
-          semanticSubstNameMark_matched_false_of_rhoNameCoreShape_noBVar
-            k replacementName nameShape nameNoB
-      · have notDrop : ∀ name, process = .apply "PDrop" [name] → False := by
-          intro name equality
-          exact hdrop ⟨name, equality⟩
-        simp [semanticSubstNameMark, semanticNormalizeName.eq_4 process notDrop]
-  | .apply constructor arguments =>
-      rcases rhoNameCoreShape_apply_inv hshape with
-        ⟨process, constructorEq, argumentsEq, processShape⟩
-      subst constructorEq
-      subst argumentsEq
-      by_cases hdrop : ∃ name, process = .apply "PDrop" [name]
-      · rcases hdrop with ⟨name, rfl⟩
-        have nameShape : rhoNameCoreShape name = true := by
-          simpa [rhoProcCoreShape] using processShape
-        have nameNoB : noBVar k name = true := by
-          simpa [noBVar, noBVarList] using hnoB
-        simpa [semanticSubstNameMark, semanticNormalizeName] using
-          semanticSubstNameMark_matched_false_of_rhoNameCoreShape_noBVar
-            k replacementName nameShape nameNoB
-      · have notDrop : ∀ name, process = .apply "PDrop" [name] → False := by
-          intro name equality
-          exact hdrop ⟨name, equality⟩
-        simp [semanticSubstNameMark, semanticNormalizeName.eq_4 process notDrop]
-  | .lambda binder body =>
-      simp [rhoNameCoreShape] at hshape
-  | .multiLambda arity binders body =>
-      simp [rhoNameCoreShape] at hshape
-  | .subst body replacement =>
-      simp [rhoNameCoreShape] at hshape
-  | .collection collectionType elements rest =>
-      simp [rhoNameCoreShape] at hshape
-termination_by 2 * sizeOf n + 1
-decreasing_by
-  all_goals
-    subst_vars
-    simp_wf
-    omega
+  rw [semanticSubstNameMark_unmatched_of_noBVar k replacementName hnoB]
 
-mutual
-  theorem semanticSubstQuotedName_equiv_rhoOpenNameBVar_of_rhoProcCoreShape
-      (k : Nat) (q : Pattern) (n : Pattern)
-      (hshapeN : rhoProcCoreShape n = true)
-      (hnoB : noBVar k n = true) :
-      NameEquiv
-        (semanticSubstName k (.apply "NQuote" [q]) (.apply "NQuote" [n]))
-        (.apply "NQuote" [n]) := by
-    by_cases hdrop : ∃ m, n = .apply "PDrop" [m]
-    · rcases hdrop with ⟨m, rfl⟩
-      have hshapeM : rhoNameCoreShape m = true := by
-        simpa [rhoProcCoreShape] using hshapeN
-      have hnoBM : noBVar k m = true := by
-        simpa [noBVar, noBVarList] using hnoB
-      have hopaqueM : noBoundUnderQuote k m = true :=
-        rhoNameCoreShape_noBoundUnderQuote_of_noBVar k hshapeM hnoBM
-      have hrec :
-          NameEquiv
-            (semanticSubstName k (.apply "NQuote" [q]) m)
-            (rhoOpenNameBVar k (.apply "NQuote" [q]) m) :=
-        semanticSubstName_equiv_rhoOpenNameBVar_of_rhoNameCoreShape k q hshapeM hopaqueM
-      have hself :
-          rhoOpenNameBVar k (.apply "NQuote" [q]) m = m :=
-        rhoOpenNameBVar_eq_self_of_rhoNameCoreShape_noBVar k (.apply "NQuote" [q]) hshapeM hnoBM
-      have hrec' :
-          NameEquiv
-            (semanticSubstName k (.apply "NQuote" [q]) m)
-            m := by
-        simpa [hself] using hrec
-      have hsubst :
-          semanticSubstName k (.apply "NQuote" [q]) (.apply "NQuote" [.apply "PDrop" [m]]) =
-            semanticSubstName k (.apply "NQuote" [q]) m := by
-        simp [semanticSubstName, semanticSubstNameMark, semanticNormalizeName]
-      rw [hsubst]
-      exact NameEquiv.trans _ _ _ hrec' (NameEquiv.symm _ _ (NameEquiv.quote_drop m))
-    · have hsubst :
-          semanticSubstName k (.apply "NQuote" [q]) (.apply "NQuote" [n]) =
-            .apply "NQuote" [semanticNormalizeProc n] := by
-        simp [semanticSubstName, semanticSubstNameMark,
-          semanticNormalizeName.eq_4 n (by
-            intro m hpdrop
-            exact hdrop ⟨m, hpdrop⟩)]
-      rw [hsubst]
-      exact NameEquiv.struct_equiv
-        (semanticNormalizeProc n)
-        n
-        (semanticNormalizeProc_sound n)
-  termination_by 2 * sizeOf n
-
-  theorem semanticSubstName_equiv_rhoOpenNameBVar_of_rhoNameCoreShape (k : Nat) (q : Pattern)
-      {n : Pattern}
-      (hshape : rhoNameCoreShape n = true)
-      (hopaque : noBoundUnderQuote k n = true) :
-      NameEquiv
-        (semanticSubstName k (.apply "NQuote" [q]) n)
-        (rhoOpenNameBVar k (.apply "NQuote" [q]) n) := by
-    match n with
-    | .bvar n =>
-        by_cases hEq : n = k
-        · subst hEq
-          simpa [semanticSubstName, semanticSubstNameMark, semanticNormalizeName,
-            rhoOpenNameBVar, beq_self_eq_true] using
-            (NameEquiv.refl (.apply "NQuote" [q]))
-        · have hbeq : (n == k) = false := by
-            exact beq_eq_false_iff_ne.mpr hEq
-          simpa [semanticSubstName, semanticSubstNameMark, semanticNormalizeName, rhoOpenNameBVar, hbeq] using
-            (NameEquiv.refl (.bvar n))
-    | .fvar x =>
-        simpa [semanticSubstName, semanticSubstNameMark, semanticNormalizeName, rhoOpenNameBVar] using
-          (NameEquiv.refl (.fvar x))
-    | .apply "NQuote" [p] =>
-        have hshapeP : rhoProcCoreShape p = true := by
-          simpa [rhoNameCoreShape] using hshape
-        have hnoB : noBVar k p = true := by
-          simpa [noBoundUnderQuote] using hopaque
-        simpa [rhoOpenNameBVar] using
-          semanticSubstQuotedName_equiv_rhoOpenNameBVar_of_rhoProcCoreShape k q p hshapeP hnoB
-    | .apply c args =>
-        rcases rhoNameCoreShape_apply_inv hshape with ⟨p, hc, hargs, hshapeP⟩
-        subst hc
-        subst hargs
-        have hnoB : noBVar k p = true := by
-          simpa [noBoundUnderQuote] using hopaque
-        simpa [rhoOpenNameBVar] using
-          semanticSubstQuotedName_equiv_rhoOpenNameBVar_of_rhoProcCoreShape k q p hshapeP hnoB
-    | .lambda nm body =>
-        simp [rhoNameCoreShape] at hshape
-    | .multiLambda n nms body =>
-        simp [rhoNameCoreShape] at hshape
-    | .subst body repl =>
-        simp [rhoNameCoreShape] at hshape
-    | .collection ct elems rest =>
-        simp [rhoNameCoreShape] at hshape
-  termination_by 2 * sizeOf n + 1
-  decreasing_by
-    all_goals
-      subst_vars
-      simp_wf
-      omega
-end
+theorem semanticSubstName_equiv_rhoOpenNameBVar_of_rhoNameCoreShape (k : Nat) (q : Pattern)
+    {n : Pattern}
+    (hshape : rhoNameCoreShape n = true)
+    (hopaque : noBoundUnderQuote k n = true) :
+    NameEquiv
+      (semanticSubstName k (.apply "NQuote" [q]) n)
+      (rhoOpenNameBVar k (.apply "NQuote" [q]) n) := by
+  cases n with
+  | bvar index =>
+      by_cases equal : index = k
+      · subst index
+        simp only [semanticSubstName, semanticSubstNameMark, Canonical.canonicalize,
+          rhoOpenNameBVar, beq_self_eq_true]
+        exact NameEquiv.refl _
+      · simp only [semanticSubstName, semanticSubstNameMark, Canonical.canonicalize,
+          Pattern.bvar.injEq, if_neg equal, semanticNormalizeName, rhoOpenNameBVar,
+          beq_eq_false_iff_ne.mpr equal, Bool.false_eq_true]
+        exact NameEquiv.refl _
+  | fvar name => exact NameEquiv.refl _
+  | apply constructor arguments =>
+      obtain ⟨process, rfl, rfl, _⟩ := rhoNameCoreShape_apply_inv hshape
+      have absent : noBVar k (.apply "NQuote" [process]) = true := by
+        simpa [noBoundUnderQuote, noBVar, noBVarList] using hopaque
+      simpa only [semanticSubstName, semanticSubstNameMark_unmatched_of_noBVar k _ absent,
+        rhoOpenNameBVar] using semanticNormalizeName_sound (.apply "NQuote" [process])
+  | lambda | multiLambda | subst | collection => simp [rhoNameCoreShape] at hshape
 
 mutual
   theorem semanticSubstProcNoCollapse_residual_equiv_rhoOpenNameBVar_of_rhoProcCoreShape

@@ -8,7 +8,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.FirstOrde
 The interleaved publication run infers precisely its used initial theorem
 occurrence. Its public copy and unrelated frame are excluded from that logical
 dependency set. A second run has a closed conclusion, a retained local theorem
-assumption and a guard variable absent from both. Erasing the guard's equation
+assumption and a guard variable missing from both. Erasing the guard's equation
 store invalidates the compiled condition.
 -/
 

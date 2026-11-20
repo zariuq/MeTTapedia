@@ -38,10 +38,10 @@ region, a barb once present stays (`barb_stays`).
 
 ## Detecting a local fixed point while others run
 
-"Await until region `A` has no pending work" is an absence query on `A`. A detector that fires on
+"Await until region `A` has no pending work" is a none query on `A`. A detector that fires on
 it publishes a fixed point; the fixed point stays true under every run of the others exactly when
 no one else can ever obtain `send` at `A` (`detection_sound_iff`, by
-`RegionPermissions.absence_preserved_iff`), or once `A` has been sealed by revoking the others'
+`RegionPermissions.none_preserved_iff`), or once `A` has been sealed by revoking the others'
 `send` (`detection_stable_after_seal`, by `stable_after_seal`). This is stratification: the
 detector belongs to a stratum above every maker into `A`. A late arrival falsifies a detected
 fixed point otherwise (`Controls.late_arrival`).
@@ -231,7 +231,7 @@ theorem detection_sound_iff {st₀ : Delegation.State Sub (Facet × N)} {owner :
     simp only [detector, Finset.empty_union, Finset.mem_singleton] at written
     subst written
     exact doneOutside
-  exact absence_preserved_iff (by rw [unchanged, empty]) freshAt
+  exact none_preserved_iff (by rw [unchanged, empty]) freshAt
 
 /-- **After sealing, a detected fixed point stays.** -/
 theorem detection_stable_after_seal {owner : Sub} {A : N → Bool}

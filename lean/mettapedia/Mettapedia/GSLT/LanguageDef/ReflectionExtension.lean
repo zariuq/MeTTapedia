@@ -289,7 +289,9 @@ private def markedPresentation : ReflectivePresentationDecl :=
     dropConstructor := "D"
     parallelCollection := .hashBag
     parallelUnitConstructor := "Z"
-    quoteDropEquation := "QD" }
+    quoteDropEquation := "QD"
+    -- Closed: the marking fixture never substitutes into quoted code.
+    quoteScope := .closed }
 
 private def markedQuoteTerm : GrammarRule :=
   markedLanguage.terms.get ⟨0, by decide⟩

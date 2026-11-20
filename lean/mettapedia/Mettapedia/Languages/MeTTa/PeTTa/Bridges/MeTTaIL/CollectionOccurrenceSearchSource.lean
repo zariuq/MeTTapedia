@@ -41,22 +41,22 @@ theorem checked : library.check = true := SelectedNativeSource.checked
 private def proofBase : Program where
   equations :=
     [RuleExecutionProgram.scopedProgram.equations[118]'(by decide +kernel),
-     RuleExecutionProgram.scopedProgram.equations[219]'(by decide +kernel),
+     RuleExecutionProgram.scopedProgram.equations[228]'(by decide +kernel),
      (RuleExecutionProgram.interpretedPremiseSupportSources[4]'(by decide +kernel)).program.equations[17]'(by decide +kernel),
      (RuleExecutionProgram.interpretedPremiseSupportSources[10]'(by decide +kernel)).program.equations[11]'(by decide +kernel),
      (RuleExecutionProgram.interpretedPremiseSupportSources[18]'(by decide +kernel)).program.equations[2]'(by decide +kernel),
      (RuleExecutionProgram.interpretedPremiseSupportSources[19]'(by decide +kernel)).program.equations[3]'(by decide +kernel)]
   declarations :=
     [RuleExecutionProgram.scopedProgram.declarations[118]'(by decide +kernel),
-     RuleExecutionProgram.scopedProgram.declarations[219]'(by decide +kernel),
+     RuleExecutionProgram.scopedProgram.declarations[228]'(by decide +kernel),
      (RuleExecutionProgram.interpretedPremiseSupportSources[4]'(by decide +kernel)).program.declarations[17]'(by decide +kernel),
      (RuleExecutionProgram.interpretedPremiseSupportSources[10]'(by decide +kernel)).program.declarations[11]'(by decide +kernel),
      (RuleExecutionProgram.interpretedPremiseSupportSources[18]'(by decide +kernel)).program.declarations[2]'(by decide +kernel),
      (RuleExecutionProgram.interpretedPremiseSupportSources[19]'(by decide +kernel)).program.declarations[3]'(by decide +kernel)]
 
 private def proofSource : Program where
-  equations := source.program.equations.take 12 ++ [RuleExecutionProgram.scopedProgram.equations[220]'(by decide +kernel)]
-  declarations := source.program.declarations.take 12 ++ [RuleExecutionProgram.scopedProgram.declarations[220]'(by decide +kernel)]
+  equations := source.program.equations.take 12 ++ [RuleExecutionProgram.scopedProgram.equations[229]'(by decide +kernel)]
+  declarations := source.program.declarations.take 12 ++ [RuleExecutionProgram.scopedProgram.declarations[229]'(by decide +kernel)]
 
 /-- This finite body/metadata view executes only at the selected target runtime. -/
 def proofLibrary : Library := ⟨proofBase, proofSource,

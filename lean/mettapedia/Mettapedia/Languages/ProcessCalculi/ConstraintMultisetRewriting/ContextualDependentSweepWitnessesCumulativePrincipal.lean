@@ -258,10 +258,10 @@ a principal answer or with a refutation. -/
 theorem cross_undecided (family : ContextualDependentDecisiveDriver.Family setting.levels) (fuel rounds : Nat) :
     ¬ ((∃ state finished, run (family.solver fuel) crossStore rounds = .solved state finished ∧
           (frames setting.levels).Principal crossStore state.answer) ∨
-        (∃ absent, run (family.solver fuel) crossStore rounds = .refuted absent)) := by
-  rintro (⟨state, _, _, principal⟩ | ⟨absent, _⟩)
+        (∃ missing, run (family.solver fuel) crossStore rounds = .refuted missing)) := by
+  rintro (⟨state, _, _, principal⟩ | ⟨missing, _⟩)
   · exact cross_no_principal state.answer principal
-  · exact absent cross_identity
+  · exact missing cross_identity
 
 /-- **The conclusion of acceptance is false for every family**, on a store of the fragment. -/
 theorem acceptance_conclusion_false (family : ContextualDependentDecisiveDriver.Family setting.levels) :
@@ -269,7 +269,7 @@ theorem acceptance_conclusion_false (family : ContextualDependentDecisiveDriver.
       run (family.solver larger) crossStore larger = run (family.solver budget) crossStore budget ∧
       ((∃ state finished, run (family.solver larger) crossStore larger = .solved state finished ∧
           (frames setting.levels).Principal crossStore state.answer) ∨
-        (∃ absent, run (family.solver larger) crossStore larger = .refuted absent)) := by
+        (∃ missing, run (family.solver larger) crossStore larger = .refuted missing)) := by
   rintro ⟨budget, decided⟩
   exact cross_undecided family budget budget (decided budget (Nat.le_refl budget)).2
 
@@ -294,12 +294,12 @@ theorem tower_sort_uncovered_false :
       PermutedMiller setting.levels problem → problem ≠ [] → ∀ threshold,
         (∀ larger, threshold ≤ larger → towerPrepare larger problem = towerPrepare threshold problem) →
         ∀ equation ∈ (towerPrepare threshold problem).remaining,
-          ContextualDependentNormalizing.NormalEquation (fun _ => (0 : Nat)) equation → CensusHead equation →
+          ContextualDependentNormalizing.NormalEquation (fun _ => (0 : Nat)) equation → ClassifiedHead equation →
           ContextualDependentShortClosure.FragmentSidesMiller equation →
           Kind (openedFlexible (piCount equation.1.1.code))
-            (ContextualDependentCensus.openNormal (piCount equation.1.1.code)
+            (ContextualDependentClassification.openNormal (piCount equation.1.1.code)
               (expandTo (piCount equation.1.1.code) equation.1.2.code))
-            (ContextualDependentCensus.openNormal (piCount equation.1.1.code)
+            (ContextualDependentClassification.openNormal (piCount equation.1.1.code)
               (expandTo (piCount equation.1.1.code) equation.2.2.code)) →
           ¬ MixedCoveredHead equation → ∃ bound, ∀ larger, bound ≤ larger → TowerSortReads larger problem :=
   fun uncovered => ContextualDependentSweep.Witnesses.acceptance_conclusion_false sortTower

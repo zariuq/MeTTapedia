@@ -99,12 +99,16 @@ theorem emit_empty_iff (target : Handle) (template : Atom) (bindings : Subst) (s
     FreshQueryMaterialization.emit target template bindings state = some (state, []) ↔
       ∃ rows, state.read target = some rows ∧ applySubst bindings template ∈ rows := by
   cases snapshot : state.read target with
-  | none => simp [FreshQueryMaterialization.emit, FreshInsertionSource.update, snapshot]
+  | none => simp [FreshQueryMaterialization.emit,
+      FreshInsertionSource.missing_is_not_zero_progress state target (applySubst bindings template) snapshot]
   | some rows =>
       by_cases present : applySubst bindings template ∈ rows
-      · simp [FreshQueryMaterialization.emit, FreshInsertionSource.update, snapshot, present, FreshInsertionSource.answers]
+      · simp [FreshQueryMaterialization.emit, FreshInsertionSource.update, GuardedInsertionSource.updateWithProgress,
+          snapshot, present, FreshInsertionSource.answers]
       · obtain ⟨after, inserted⟩ := Effects.insert_exists_of_read_some snapshot (applySubst bindings template)
-        simp [FreshQueryMaterialization.emit, FreshInsertionSource.update, snapshot, present, inserted, FreshInsertionSource.answers]
+        cases value : (applySubst bindings template).isVariable <;>
+          simp [FreshQueryMaterialization.emit, FreshInsertionSource.update, GuardedInsertionSource.updateWithProgress,
+            snapshot, present, value, inserted, FreshInsertionSource.answers]
 
 /-- Every reached read is complete, and every full current binding already
 has its instantiated head. This is for one schema, not all rules in a store. -/

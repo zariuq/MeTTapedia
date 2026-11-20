@@ -395,7 +395,8 @@ private def sorts : List (Nat × SortInfo) := [(0, propositionSort)]
 private def initial : State :=
   { core := [], next := 3,
     spaces := fun index => if index = 0 then SortFormation.rows sorts else [],
-    cells := fun name => if name = InferenceCache.cell then some (Effects.handleValue (.privateSpace 2)) else none }
+    cells := fun name => if name = InferenceCache.cell then some (Effects.handleValue (.privateSpace 2)) else none,
+    namedEmpty := [] }
 private def repeatedHypotheses : TheoremDecl :=
   { arguments := [.bound 0], hypotheses := [.var 0, .var 0], conclusion := .var 0 }
 private def missingHypothesis : TheoremDecl :=

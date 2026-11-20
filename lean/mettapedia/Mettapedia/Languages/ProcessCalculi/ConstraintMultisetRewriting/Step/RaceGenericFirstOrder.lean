@@ -16,7 +16,7 @@ the same firings at every configuration (`lift`).
 * **Steps** (`stepMoves_lift_of_race`, `race_of_stepMoves_lift`, `stepBisimilar_lift_iff`): every step
   of `RaceSteps` (a word of pairwise statically independent firings) is a step of the generic layer,
   whose independence is the interface's semantic diamond; conversely, when the program offers only
-  static firings (no checks, query regions that do not depend on the solution) every generic step is
+  static exact-query firings (no checks, uniform regions with explicit collect query data) every generic step is
   one of `RaceSteps`, through `AnnotatedRuns.firstOrder_independent_iff_static`. On such programs the
   two step bisimilarities coincide.
 * **Histories** (`hpBisimilar_lift_iff`): with the independence of events read off the static
@@ -25,13 +25,13 @@ the same firings at every configuration (`lift`).
 
 ## What the lift gives the first-order layer
 
-* **Configurations with the same solutions and occurrences are step bisimilar** (for static programs)
+* **Configurations with the same solutions and occurrences are step bisimilar** (for static exact-query programs)
   **and history-preserving bisimilar** (for every program): `stepBisimilar_of_sameUpTo`,
   `hpBisimilar_of_sameUpTo`.
 * **Renaming.** The renaming transport (`AnnotatedRuns.renamingTransport`) keeps the labels of an
   equivariant program (`invariant_of_equivariant`), its independence is the one-frame one
   (`independent_renaming_iff`), so renaming-related configurations of an equivariant program are
-  bisimilar (`bisimilar_of_renamingIso`) and, for static programs, step bisimilar
+  bisimilar (`bisimilar_of_renamingIso`) and, for static exact-query programs, step bisimilar
   (`stepBisimilar_of_renamingIso`).
 -/
 
@@ -118,24 +118,28 @@ theorem concurrent_of_pairwise : ∀ (w : List (Firing T S O)) {C : Configuratio
         exact later
 
 variable (A label) in
-/-- **A concurrent word of static firings is pairwise statically independent and fires.** -/
+/-- **A concurrent word of static exact-query firings is pairwise statically independent and fires.** -/
 theorem fires_of_concurrent : ∀ {C : Configuration T O} {w : List (Firing T S O)} {D : Configuration T O},
-    Concurrent (firstOrder A label).toStep (firstOrderTransport A label) C w D → (∀ f ∈ w, f.Static) →
+    Concurrent (firstOrder A label).toStep (firstOrderTransport A label) C w D →
+      (∀ f ∈ w, ExactQueryAlphabet.ExactData f) → (∀ f ∈ w, f.Static) →
       w.Pairwise (StaticIndependent label) ∧ Fires A label C w ∧ D = follow label C w
-  | C, [], D, concurrent, _ => by
+  | C, [], D, concurrent, _, _ => by
       obtain rfl := concurrent_nil_iff.mp concurrent
       exact ⟨List.Pairwise.nil, trivial, rfl⟩
-  | C, f :: rest, D, concurrent, static => by
+  | C, f :: rest, D, concurrent, exactQueries, static => by
       obtain ⟨admitted, independent, later⟩ := concurrent_cons_iff.mp concurrent
       have residuals : rest.map ((firstOrderTransport A label).residual f admitted) = rest :=
         List.map_id' rest
       rw [residuals] at later
       obtain ⟨pairwise, fires, rfl⟩ :=
-        fires_of_concurrent later fun g member => static g (List.mem_cons_of_mem _ member)
+        fires_of_concurrent later (fun g member => exactQueries g (List.mem_cons_of_mem _ member))
+          fun g member => static g (List.mem_cons_of_mem _ member)
       refine ⟨List.pairwise_cons.mpr ⟨fun g member => ?_, pairwise⟩, ⟨admitted, fires⟩, rfl⟩
       obtain ⟨-, -, gAfter, -⟩ := (AnnotatedRuns.firstOrder_independent_iff A label).mp
         (independent g member)
-      exact (AnnotatedRuns.firstOrder_independent_iff_static A label (static f (List.mem_cons_self ..))
+      exact (AnnotatedRuns.firstOrder_independent_iff_static A label
+        (exactQueries f (List.mem_cons_self ..)) (exactQueries g (List.mem_cons_of_mem _ member))
+        (static f (List.mem_cons_self ..))
         (static g (List.mem_cons_of_mem _ member)) admitted gAfter).mp (independent g member)
 
 /-- **Every step of `RaceSteps` is a step of the lift.** -/
@@ -145,20 +149,29 @@ theorem stepMoves_lift_of_race {C D : Configuration T O} {M : Multiset L}
   obtain ⟨w, nonempty, offered, pairwise, executable, rfl, rfl⟩ := stepped
   exact ⟨w, nonempty, offered, concurrent_of_pairwise A label _ pairwise executable, rfl⟩
 
-/-- **For static programs every step of the lift is a step of `RaceSteps`.** -/
-theorem race_of_stepMoves_lift (static : ∀ ℓ f, offers ℓ f → f.Static) {C D : Configuration T O}
+/-- **For static exact-query programs every step of the lift is a step of `RaceSteps`.** -/
+theorem race_of_stepMoves_lift (exactQueries : ∀ ℓ f, offers ℓ f → ExactQueryAlphabet.ExactData f)
+    (static : ∀ ℓ f, offers ℓ f → f.Static) {C D : Configuration T O}
     {M : Multiset L}
     (stepped : StepMoves (firstOrder A label).toStep (firstOrderTransport A label) (lift offers) C M D) :
     Race.StepMoves A label offers C M D := by
   obtain ⟨w, nonempty, offered, concurrent, rfl⟩ := stepped
-  obtain ⟨pairwise, fires, rfl⟩ := fires_of_concurrent A label concurrent fun f member => by
-    obtain ⟨x, inW, rfl⟩ := List.mem_map.mp member
-    exact static x.1 x.2 (offered x inW)
+  obtain ⟨pairwise, fires, rfl⟩ := fires_of_concurrent A label concurrent
+    (fun f member => by
+      classical
+      let witness := List.mem_map.mp member
+      let x := Classical.choose witness
+      have selected := Classical.choose_spec witness
+      exact selected.2 ▸ exactQueries x.1 x.2 (offered x selected.1))
+    (fun f member => by
+      obtain ⟨x,inW,rfl⟩ := List.mem_map.mp member
+      exact static x.1 x.2 (offered x inW))
   exact ⟨w, nonempty, offered, pairwise,
     executable_of_fires A label (by simpa using nonempty) fires, rfl, rfl⟩
 
-/-- **For static programs, step bisimilarity of the lift is step bisimilarity of `RaceSteps`.** -/
-theorem stepBisimilar_lift_iff (static : ∀ ℓ f, offers ℓ f → f.Static) {C D : Configuration T O} :
+/-- **For static exact-query programs, step bisimilarity of the lift is step bisimilarity of `RaceSteps`.** -/
+theorem stepBisimilar_lift_iff (exactQueries : ∀ ℓ f, offers ℓ f → ExactQueryAlphabet.ExactData f)
+    (static : ∀ ℓ f, offers ℓ f → f.Static) {C D : Configuration T O} :
     StepBisimilar (firstOrder A label).toStep (firstOrderTransport A label) (lift offers) C D ↔
       Race.StepBisimilar A label offers C D := by
   constructor
@@ -166,15 +179,15 @@ theorem stepBisimilar_lift_iff (static : ∀ ℓ f, offers ℓ f → f.Static) {
     refine ⟨R, ⟨fun a b rel M a' moved => ?_, fun a b rel M b' moved => ?_,
       fun _ _ _ atom => atom.elim⟩, related⟩
     · obtain ⟨b'', moved', rel'⟩ := forward rel M (stepMoves_lift_of_race moved)
-      exact ⟨b'', race_of_stepMoves_lift static moved', rel'⟩
+      exact ⟨b'', race_of_stepMoves_lift exactQueries static moved', rel'⟩
     · obtain ⟨a'', moved', rel'⟩ := backward rel M (stepMoves_lift_of_race moved)
-      exact ⟨a'', race_of_stepMoves_lift static moved', rel'⟩
+      exact ⟨a'', race_of_stepMoves_lift exactQueries static moved', rel'⟩
   · rintro ⟨R, ⟨forward, backward, _⟩, related⟩
     refine ⟨R, ⟨fun a b rel M a' moved => ?_, fun a b rel M b' moved => ?_,
       fun _ _ _ atom => atom.elim⟩, related⟩
-    · obtain ⟨b'', moved', rel'⟩ := forward rel M (race_of_stepMoves_lift static moved)
+    · obtain ⟨b'', moved', rel'⟩ := forward rel M (race_of_stepMoves_lift exactQueries static moved)
       exact ⟨b'', stepMoves_lift_of_race moved', rel'⟩
-    · obtain ⟨a'', moved', rel'⟩ := backward rel M (race_of_stepMoves_lift static moved)
+    · obtain ⟨a'', moved', rel'⟩ := backward rel M (race_of_stepMoves_lift exactQueries static moved)
       exact ⟨a'', stepMoves_lift_of_race moved', rel'⟩
 
 /-! ## Histories -/
@@ -282,9 +295,10 @@ theorem indepInvariant_firstOrder :
 
 /-- **Configurations with the same solutions and occurrences are step bisimilar**, for static
 programs. -/
-theorem stepBisimilar_of_sameUpTo (static : ∀ ℓ f, offers ℓ f → f.Static) {C D : Configuration T O}
+theorem stepBisimilar_of_sameUpTo (exactQueries : ∀ ℓ f, offers ℓ f → ExactQueryAlphabet.ExactData f)
+    (static : ∀ ℓ f, offers ℓ f → f.Static) {C D : Configuration T O}
     (same : SameUpTo A C D) : Race.StepBisimilar A label offers C D :=
-  (stepBisimilar_lift_iff static).mp
+  (stepBisimilar_lift_iff exactQueries static).mp
     (stepBisimilar_of_same strict_firstOrder invariant_firstOrder ⟨⟨same⟩⟩)
 
 /-- **Configurations with the same solutions and occurrences are history-preserving bisimilar**, for
@@ -351,8 +365,9 @@ theorem renaming_of_concurrent : ∀ {C D : Configuration T O} {w : List (Firing
       rw [residuals']
       exact renaming_of_concurrent later
 
-/-- **Renaming-related configurations of an equivariant static program are step bisimilar.** -/
+/-- **Renaming-related configurations of an equivariant static exact-query program are step bisimilar.** -/
 theorem stepBisimilar_of_renamingIso (equivariant : Race.Equivariant label offers)
+    (exactQueries : ∀ ℓ f, offers ℓ f → ExactQueryAlphabet.ExactData f)
     (static : ∀ ℓ f, offers ℓ f → f.Static) {C D : Configuration T O} (i : RenamingIso A label C D) :
     Race.StepBisimilar A label offers C D := by
   obtain ⟨R, ⟨forward, backward, _⟩, related⟩ :=
@@ -361,7 +376,7 @@ theorem stepBisimilar_of_renamingIso (equivariant : Race.Equivariant label offer
   have toFirst : ∀ {a b : Configuration T O} {M : Multiset L},
       StepMoves (firstOrder A label).toStep (renamingTransport A label) (lift offers) a M b →
         Race.StepMoves A label offers a M b := fun ⟨w, nonempty, offered, concurrent, labels⟩ =>
-    race_of_stepMoves_lift static ⟨w, nonempty, offered, concurrent_of_renaming concurrent, labels⟩
+    race_of_stepMoves_lift exactQueries static ⟨w, nonempty, offered, concurrent_of_renaming concurrent, labels⟩
   have ofFirst : ∀ {a b : Configuration T O} {M : Multiset L}, Race.StepMoves A label offers a M b →
       StepMoves (firstOrder A label).toStep (renamingTransport A label) (lift offers) a M b := fun moved => by
     obtain ⟨w, nonempty, offered, concurrent, labels⟩ := stepMoves_lift_of_race moved

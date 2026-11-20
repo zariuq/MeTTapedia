@@ -83,9 +83,9 @@ def fragmentRound (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (Tota
         (by
           rw [ContextualDependentNormalizing.prepare_size] at smaller
           exact smaller)
-  | .refuted absent =>
+  | .refuted missing =>
       .refuted fun solvable =>
-        absent ((ContextualDependentNormalizing.prepare root rootComplete facts roots heads fuel problem).solvable_iff.mp
+        missing ((ContextualDependentNormalizing.prepare root rootComplete facts roots heads fuel problem).solvable_iff.mp
           solvable)
   | .stuck =>
       match ContextualDependentPermutation.rotateRule rigid complete facts roots heads algebra declared choices reducer
@@ -97,9 +97,9 @@ def fragmentRound (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (Tota
               have same := prepare_arity facts roots heads root rootComplete fuel problem
               change update.target.arity < Θ.arity
               omega))
-      | some (.refuted absent) =>
+      | some (.refuted missing) =>
           .refuted fun solvable =>
-            absent ((ContextualDependentNormalizing.prepare root rootComplete facts roots heads fuel problem).solvable_iff.mp
+            missing ((ContextualDependentNormalizing.prepare root rootComplete facts roots heads fuel problem).solvable_iff.mp
               solvable)
       | none => .stuck
 
@@ -118,26 +118,26 @@ def fragmentFamily : ContextualDependentDecisiveDriver.Family S.levels where
 /-- **Every refutation of the fragment round is a refutation of the prepared store** by the
 decomposition round or by rotation, both certified. -/
 theorem fragmentRound_refuted {fuel : Nat} {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)}
-    {absent : ¬ (frames S.levels).Solvable problem}
+    {missing : ¬ (frames S.levels).Solvable problem}
     (refuted : fragmentRound rigid facts complete roots heads algebra declared choices reducer root rootComplete
-      normalizes certifyNormal headTypingUnique fuel problem = .refuted absent) :
-    (∃ absent', ContextualDependentRigidDecomposition.decomposeRound rigid facts complete roots heads algebra declared
+      normalizes certifyNormal headTypingUnique fuel problem = .refuted missing) :
+    (∃ missing', ContextualDependentRigidDecomposition.decomposeRound rigid facts complete roots heads algebra declared
         choices reducer root normalizes certifyNormal headTypingUnique fuel
         (ContextualDependentNormalizing.prepare root rootComplete facts roots heads fuel problem).remaining =
-          .refuted absent') ∨
-      ∃ absent', ContextualDependentPermutation.rotateRule rigid complete facts roots heads algebra declared choices
+          .refuted missing') ∨
+      ∃ missing', ContextualDependentPermutation.rotateRule rigid complete facts roots heads algebra declared choices
         reducer root normalizes certifyNormal fuel
         (ContextualDependentNormalizing.prepare root rootComplete facts roots heads fuel problem).remaining =
-          some (.refuted absent') := by
+          some (.refuted missing') := by
   unfold fragmentRound at refuted
   split at refuted
   · cases refuted
-  · rename_i absent' computed
-    exact .inl ⟨absent', computed⟩
+  · rename_i missing' computed
+    exact .inl ⟨missing', computed⟩
   · split at refuted
     · cases refuted
-    · rename_i absent' computed
-      exact .inr ⟨absent', computed⟩
+    · rename_i missing' computed
+      exact .inr ⟨missing', computed⟩
     · cases refuted
 
 /-- The fragment round, read through its view. -/
@@ -156,13 +156,13 @@ theorem fragmentRound_view (fuel : Nat) {Θ : Context S.R} (problem : EquationSt
   split
   · rename_i update smaller computed
     simp only [computed, roundView, Option.or, Option.map_some]
-  · rename_i absent computed
+  · rename_i missing computed
     simp only [computed, roundView, Option.or, Option.map_some, Option.map_none]
   · rename_i computed
     split
     · rename_i update smaller rotated
       simp only [computed, rotated, roundView, foundView, Option.or, Option.map_some]
-    · rename_i absent rotated
+    · rename_i missing rotated
       simp only [computed, rotated, roundView, foundView, Option.or, Option.map_some, Option.map_none]
     · rename_i rotated
       simp only [computed, rotated, roundView, foundView, Option.or, Option.map_none]

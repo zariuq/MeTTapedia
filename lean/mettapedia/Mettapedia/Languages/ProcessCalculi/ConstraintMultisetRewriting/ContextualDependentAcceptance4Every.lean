@@ -57,9 +57,9 @@ def transferRound {Θ : Context S.R} {problem other : EquationStore (TotalTerm �
           (Θ.arity, storeWeight facts roots heads algebra rigid complete other) := smaller
       rw [weight] at lower
       exact lower)
-  | .refuted absent => .refuted fun solvable => by
+  | .refuted missing => .refuted fun solvable => by
       obtain ⟨Δ, σ, solved⟩ := solvable
-      exact absent ⟨Δ, σ, (same Δ σ).mp solved⟩
+      exact missing ⟨Δ, σ, (same Δ σ).mp solved⟩
   | .stuck => .stuck
 
 /-- **Every progress of a transferred round leaves the residual store of a progress of the round.** -/
@@ -82,7 +82,7 @@ theorem transferRound_keeps (holds : {Γ : Context S.R} → EquationStore (Total
   | progress first firstSmaller =>
       cases fired
       exact inner first firstSmaller rfl
-  | refuted absent => cases fired
+  | refuted missing => cases fired
   | stuck => cases fired
 
 /-- A transferred round is stuck exactly when the round is. -/
@@ -216,7 +216,7 @@ theorem everyRoundAt_eq_of_dead (fuel : Nat) : ∀ (depth : Nat) {Θ : Context S
           certifyNormal headTypingUnique rootComplete strengthening fuel problem with
       | stuck => exact absurd computed moving
       | progress update smaller => rfl
-      | refuted absent => rfl
+      | refuted missing => rfl
 
 /-- **Every run that the dead-binder family decides, the every-rule family decides with the same outcome.** -/
 theorem every_run_of_dead (fuel rounds : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ))
@@ -264,7 +264,7 @@ theorem everyRoundAt_view (fuel depth : Nat) {Θ : Context S.R} (problem : Equat
       headTypingUnique rootComplete strengthening fuel problem with
   | stuck => rfl
   | progress update smaller => rfl
-  | refuted absent => rfl
+  | refuted missing => rfl
 
 variable (stable : ∀ {n : Nat} (fuel : Nat) (term : Tm Head n),
   Keeps (reducer fuel term) (reducer (fuel + 1) term))

@@ -10,7 +10,7 @@ rules:
   pair is no longer complemented;
 - **a closed fact store**: an edge stored is answered, an edge not stored is answered by the complement ("that's all"),
   and never both;
-- **non-membership in a closed bag**, the transform calculus's sealed-space check: in the bag `{thm:A, pub:B}`,
+- **non-membership in a closed bag**, the sealed-space check of constraint multiset rewriting: in the bag `{thm:A, pub:B}`,
   `thm:B` is derived a non-member and not a member, and `thm:A` a member and not a non-member;
 - **keyed indexes**:
   - an index keyed injectively misses `thm:B`, as the language derives;

@@ -200,21 +200,20 @@ theorem removal_iff_target (pattern : Atom) (use : Nat) (rows : List O)
     exact selected.source label
 
 omit [DecidableEq O] in
-/-- The selected store is also the store written by the existing source
-removeRows adapter. Its historical return convention is retained explicitly;
-it is not silently identified with CeTTa's changed-store Boolean policy. -/
-theorem source_remove_rows (state after : PeTTa.Effects.State) (location head : Atom)
-    (tail : List Atom) (handle : PeTTa.NamedSpaces.Handle) (use : Nat)
+/-- The source adapter writes the selected survivors and reports whether at
+least one occurrence was removed. Operand admission is retained explicitly. -/
+theorem source_remove_rows (state after : PeTTa.Effects.State) (location pattern : Atom)
+    (handle : PeTTa.NamedSpaces.Handle) (use : Nat)
     (rows kept taken : List O)
     (resolved : PeTTa.Effects.readHandle location = some handle)
+    (specified : PeTTa.Effects.removalNeedsValue pattern = false)
     (opened : state.read handle = some (rows.map label))
-    (selected : Removal label (.expression (head :: tail)) use rows kept taken)
+    (selected : Removal label pattern use rows kept taken)
     (written : state.write handle (kept.map label) = some after) :
-    PeTTa.Unifying.removeRows state location (.expression (head :: tail)) use =
+    PeTTa.Unifying.removeRows state location pattern use =
       some (.ok (after,
-        [PeTTa.Effects.boolean (if PeTTa.Unifying.equationRow (.expression (head :: tail))
-          then decide (kept.length < rows.length) else true)], rows.length)) := by
-  simp [PeTTa.Unifying.removeRows, resolved, opened, selected.source label, written]
+        [PeTTa.Effects.boolean (decide (kept.length < rows.length))], rows.length)) := by
+  simp [PeTTa.Unifying.removeRows, specified, resolved, opened, selected.source label, written]
 
 omit [DecidableEq O] in
 theorem exhaustion_prevents_preparation (pattern : Atom) (use : Nat) (row : O) (rest : List O)

@@ -7,7 +7,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Publ
 # Dependency-preserving changes in the actual ordered transform step
 
 Occurrence-commit exactness lifts to the ordered step without weakening its
-shape or knowledge obligations. Complete predicate regions cover absence,
+shape or knowledge obligations. Complete predicate regions cover none queries,
 uniqueness and count dependencies as well as kept occurrences. The theorem
 licenses reusing admission in the stated order, not changing source scheduling.
 Its predicate-region profile observes exact occurrence sets. It is stronger
@@ -46,8 +46,9 @@ theorem admitted_after_iff (state : OrderedStore.State (Tm := Tm) a O)
 
 variable [DecidableEq (Tm a)]
 
-/-- The primitive profile derives its later tcalc admission from actual
-earlier preparation and writer footprints, without assuming later readiness. -/
+/-- The primitive profile derives its later admission by `OrderedStore.step`
+from actual earlier preparation and writer footprints, without assuming later
+readiness. -/
 theorem prepared_after_change (world : PreparedStoreProtocol.World O)
     (waiting writer : PreparedStoreProtocol.Plan O (Tm a))
     (waitingReady : PreparedStoreProtocol.Ready label world waiting)
@@ -64,14 +65,14 @@ theorem prepared_after_change (world : PreparedStoreProtocol.World O)
 namespace Controls
 
 def store : Finset Nat := {0, 1}
-def waitingAbsent : Commit Nat Nat := ⟨{0}, ∅, ∅, [⟨(· == 2), ∅⟩]⟩
+def waitingNone : Commit Nat Nat := ⟨{0}, ∅, ∅, [⟨(· == 2), ∅⟩]⟩
 def makesObserved : Commit Nat Nat := ⟨{1}, ∅, {2}, []⟩
 def waitingKeep : Commit Nat Nat := ⟨{0}, {1}, ∅, []⟩
 
-theorem disjoint_takes_can_spoil_absence :
-    Enabled id store waitingAbsent ∧ Enabled id store makesObserved ∧
-      Disjoint waitingAbsent.taken makesObserved.taken ∧
-      ¬ Enabled id (fire store makesObserved) waitingAbsent := by decide
+theorem disjoint_takes_can_spoil_none :
+    Enabled id store waitingNone ∧ Enabled id store makesObserved ∧
+      Disjoint waitingNone.taken makesObserved.taken ∧
+      ¬ Enabled id (fire store makesObserved) waitingNone := by decide
 
 theorem disjoint_takes_can_lose_a_keep :
     Enabled id store waitingKeep ∧ Enabled id store makesObserved ∧

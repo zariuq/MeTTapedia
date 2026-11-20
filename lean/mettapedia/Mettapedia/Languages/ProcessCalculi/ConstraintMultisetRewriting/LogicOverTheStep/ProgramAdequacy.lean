@@ -147,16 +147,30 @@ theorem holds_rename {π : Equiv.Perm O} (keeps : Keeps label π) (σ : S) (stor
     ∀ check : Check T,
       check.Holds A σ label (store.map π.toEmbedding) ↔ check.Holds A σ label store
   | .equal _ _ => Iff.rfl
-  | .absent _ => by
+  | .predicate q _ => by
       have kept : ∀ o, label (π o) = label o := keeps
-      constructor
-      · intro clear o member
-        have there := clear (π.toEmbedding o) (Finset.mem_map_of_mem π.toEmbedding member)
-        rwa [Equiv.toEmbedding_apply, kept o] at there
-      · intro clear o member
-        obtain ⟨a, inside, rfl⟩ := Finset.mem_map.mp member
-        rw [Equiv.toEmbedding_apply, kept a]
-        exact clear a inside
+      cases q with
+      | any =>
+          constructor
+          · rintro ⟨o, member, matched⟩
+            obtain ⟨a, inside, rfl⟩ := Finset.mem_map.mp member
+            rw [Equiv.toEmbedding_apply, kept a] at matched
+            exact ⟨a, inside, matched⟩
+          · rintro ⟨o, member, matched⟩
+            refine ⟨π.toEmbedding o, Finset.mem_map_of_mem π.toEmbedding member, ?_⟩
+            beta_reduce
+            rwa [Equiv.toEmbedding_apply, kept o]
+      | none =>
+          constructor
+          · intro clear o member
+            have there := clear (π.toEmbedding o) (Finset.mem_map_of_mem π.toEmbedding member)
+            beta_reduce at there
+            rwa [Equiv.toEmbedding_apply, kept o] at there
+          · intro clear o member
+            obtain ⟨a, inside, rfl⟩ := Finset.mem_map.mp member
+            beta_reduce
+            rw [Equiv.toEmbedding_apply, kept a]
+            exact clear a inside
   | .count p _ => by
       simp only [Check.Holds]
       rw [card_matches_rename A label keeps]
@@ -227,8 +241,7 @@ theorem program_succ_iff (R : Set (RuleInstance T)) (C C' : Configuration T O) :
     exact ⟨f.rule, f.selection, member, valid.firing, reached⟩
   · rintro ⟨rule, sel, member, valid, reached⟩
     let f : AnnotatedRuns.Firing T S O := ⟨rule, [], sel⟩
-    have fValid : f.Valid A label C :=
-      (PredicateQueryAdmission.valid_empty_iff A label rule C sel).mpr valid
+    have fValid : f.Valid A label C := PredicateQueryAdmission.regionValid_nil_iff.mpr valid
     exact ⟨f, ⟨(AnnotatedRuns.firstOrder A label).toStep.prepares fValid, fValid, member⟩, reached⟩
 
 /-- **Renamed**: related by a label-keeping permutation of identities. -/
@@ -494,8 +507,7 @@ theorem base_not_imageFiniteBisimilar : ¬ (stepSystem base storeView).ImageFini
     intro n
     let f : Fir := ⟨makes n, [], makesAt n⟩
     have valid : f.Valid ground Prod.fst emptyStore :=
-      (PredicateQueryAdmission.valid_empty_iff ground Prod.fst (makes n) emptyStore (makesAt n)).mpr
-        (makes_valid n)
+      PredicateQueryAdmission.regionValid_nil_iff.mpr (makes_valid n)
     have step : (stepSystem base storeView).act () emptyStore
         ((makesAt n).result Prod.fst (makes n) emptyStore) := ⟨f, valid, rfl⟩
     obtain ⟨r, member, relation, bisimulation, related⟩ := covers step

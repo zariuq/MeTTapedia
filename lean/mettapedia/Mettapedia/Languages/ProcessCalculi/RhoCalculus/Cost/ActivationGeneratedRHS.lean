@@ -65,8 +65,8 @@ theorem receiverContractum_drop (payload tail : Pattern) :
   have dropName : wrappedRhoDeclaration.dropConstructor =
       costWrappedConstructorName "PDrop" := rfl
   simp [receiverContractum, activationContractum, substituteReflective, generatedReplacement,
-    substituteNameMark, normalizeReflective, quoteName, dropName, costWrappedConstructorName,
-    costWrappedConstructorTag]
+    resolveQuotes, resolveQuotesList, finishResolveApply, substituteResolved, receive,
+    quoteName, dropName, costWrappedConstructorName, costWrappedConstructorTag]
 
 theorem actual_activation_rhs (channel payload signature tail : Pattern) :
     applyBindingsForRuleUsing rhoCIGSLT.costWholeReflectionProfile

@@ -115,11 +115,12 @@ theorem ModuloEquivalent.tensor_bisimilar [DecidableEq O] (supply : FreshSupply 
 of `E`.** -/
 theorem ModuloEquivalent.tensor_program_bisimilar [DecidableEq O] {L : Type uL}
     {offers : L → Firing T S O → Prop}
-    (named : ∀ ℓ f, offers ℓ f → f.names ⊆ E ∧ IsSemantic A f) {C D : Configuration T O}
+    (supports : ∀ ℓ f, offers ℓ f → Interface.RegionQuerySupport.Supports f.queries)
+    (named : ∀ ℓ f (offered : offers ℓ f), f.names (supports ℓ f offered) ⊆ E ∧ IsSemantic A f) {C D : Configuration T O}
     (h : ModuloEquivalent A label E C D) (F : Configuration T O)
     (apartC : Disjoint C.present F.present) (apartD : Disjoint D.present F.present) :
     Race.Bisimilar A label offers (AnnotatedRuns.tensor C F) (AnnotatedRuns.tensor D F) :=
-  (h.tensor_disjoint F apartC apartD).program_bisimilar fun ℓ f offered =>
+  (h.tensor_disjoint F apartC apartD).program_bisimilar supports fun ℓ f offered =>
     ⟨(named ℓ f offered).1.trans Finset.subset_union_left, (named ℓ f offered).2⟩
 
 /-- **Clients respect composition with a disjoint context**: every probe naming only the client's

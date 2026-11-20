@@ -9,7 +9,7 @@ two reads share one physical occurrence, while the count observes two equal
 values at distinct occurrences. The reverse bridge preserves those choices.
 
 Two negative controls delimit the bridge: a currently successful literal
-absence test over a shared variable is not a certain ask, and a matching
+none test over a shared variable is not a certain ask, and a matching
 receipt cannot make an inconsistent tell store admissible.
 -/
 
@@ -34,7 +34,7 @@ def label (occurrence : Nat) : Term signature :=
 def before : Configuration (Term signature) Nat := ⟨[], {0, 1, 4}⟩
 def rule : RuleInstance (Term signature) :=
   ⟨[.const 0], [.const 2, .const 2], [(.const 9, .const 9)],
-    [.count (.const 2) 2, .absent (.const 8)], [.const 1]⟩
+    [.count (.const 2) 2, .predicate .none (.const 8)], [.const 1]⟩
 
 def receipt : GuardedMultisetRewriting.FiringReceipt Nat Empty (Term signature) :=
   ⟨ResolvedMatching.assignment, [0], [1, 1], [2], [{1, 4}, ∅]⟩
@@ -134,12 +134,12 @@ theorem duplicate_consumption_is_still_refused : ¬duplicateConsumption.Valid A 
   have duplicate := valid.take_distinct
   simp [duplicateConsumption] at duplicate
 
-def openRule : RuleInstance (Term signature) := ⟨[], [], [], [.absent (.const 0)], []⟩
+def openRule : RuleInstance (Term signature) := ⟨[], [], [], [.predicate .none (.const 0)], []⟩
 def openBefore : Configuration (Term signature) Nat := ⟨[], {1}⟩
 def openReceipt : GuardedMultisetRewriting.FiringReceipt Nat Empty (Term signature) :=
   ⟨ResolvedMatching.assignment, [], [], [], [∅]⟩
 
-theorem a_literal_open_absence_receipt_can_be_valid :
+theorem a_literal_open_none_receipt_can_be_valid :
     openReceipt.ValidAt (ResolvedMatching.literalLayer A)
       (ResolvedMatching.resolvedRule A A.identity openRule)
       ConstraintMultisetRewriting.Controls.label openBefore.present := by
@@ -165,9 +165,9 @@ theorem a_literal_open_absence_receipt_can_be_valid :
 theorem that_open_receipt_does_not_justify_a_certain_constraint_ask :
     ¬(selection openReceipt).Valid A ConstraintMultisetRewriting.Controls.label openRule openBefore := by
   intro valid
-  have absent := valid.checks (.absent (.const 0)) (by simp [openRule])
+  have missing := valid.checks (.predicate .none (.const 0)) (by simp [openRule])
     ConstraintMultisetRewriting.Controls.zero (A.models_nil _)
-  exact absent 1 (by simp [openBefore]) rfl
+  exact missing 1 (by simp [openBefore]) rfl
 
 theorem its_live_observation_is_not_substitution_fixed :
     ¬Observation A ConstraintMultisetRewriting.Controls.label openBefore.present openRule := by

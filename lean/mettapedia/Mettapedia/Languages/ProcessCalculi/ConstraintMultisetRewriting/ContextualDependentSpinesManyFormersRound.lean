@@ -253,11 +253,11 @@ conversion scan, then one committed decomposition at a universe or under abstrac
 def anyRound (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ)) :
     Round S.levels (weightRank facts roots heads algebra rigid complete) problem :=
   match refutedPrepared facts roots heads algebra rigid complete root rootComplete fuel problem with
-  | some absent => .refuted absent.down
+  | some missing => .refuted missing.down
   | none =>
       match occursFullRound facts roots heads algebra rigid complete declared choices reducer root normalizes
           certifyNormal headTypingUnique rootComplete fuel problem with
-      | .refuted absent => .refuted absent
+      | .refuted missing => .refuted missing
       | .progress update _ =>
           if lower : update.target.arity < Θ.arity then
             .progress update (below_of_arity facts roots heads algebra rigid complete lower)
@@ -399,12 +399,12 @@ theorem anyRound_view (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (
               problem))) := by
   unfold anyRound
   split
-  · rename_i absent computed
+  · rename_i missing computed
     simp only [computed, Option.isSome_some, if_true, roundView]
   · rename_i computed
     simp only [computed, Option.isSome_none, Bool.false_eq_true, if_false]
     split
-    · rename_i absent computed'
+    · rename_i missing computed'
       simp only [computed', roundView, rankedView]
     · rename_i update smaller computed'
       by_cases lower : update.target.arity < Θ.arity

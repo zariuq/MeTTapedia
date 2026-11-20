@@ -53,6 +53,7 @@ theorem Interpreted.RootFiring.replay_nullary {environment : Environment} {bound
     (fired : GeneralPremise.RootFiring environment bound type source index trace captured completed history target)
     (selected : environment.language.rewrites[index]? = some rule)
     (specified : specification? environment index = some spec)
+    (binderOk : BinderLawsFor [] environment.reflection rule)
     (guards : NullaryGuards rule.premises) (sameSource : Same source other)
     (matching : GeneralScopedMatchMachine.TracedMatches rule spec bound.length .left [] 0 []
       rule.left other replay (canonAssignment captured)) :
@@ -67,7 +68,7 @@ theorem Interpreted.RootFiring.replay_nullary {environment : Environment} {bound
     cases specSame
     obtain ⟨target', reduced', sameTarget⟩ := instantiateWith?_same rule spec bound.length
       (ScopedReflectiveExecution.binderOperation environment.reflection rule)
-      (binderOperation_same _ rule) rule.right .right [] 0 completed (canonAssignment completed)
+      (binderOperation_same _ rule binderOk) rule.right .right [] 0 completed (canonAssignment completed)
       target (assignSame_canon completed) reduced
     refine ⟨target', ?_, sameTarget⟩
     exact .fire selected specified admitted

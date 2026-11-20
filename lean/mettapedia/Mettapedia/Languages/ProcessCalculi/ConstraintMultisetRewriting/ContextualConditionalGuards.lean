@@ -4,7 +4,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 /-!
 # Nonbinding guards account for each row's latent equations
 
-Presence, absence and counts use conditional matching, rather than matching
+Presence, none queries and counts use conditional matching, rather than matching
 the displayed value while ignoring its obligations. Admission asks quantify
 over all future solutions at their original joint information cut.
 -/
@@ -30,7 +30,7 @@ noncomputable def region (candidate : Assignment captures next) {Γ : Ctx S} {so
 def Holds (candidate : Assignment captures next) {Γ : Ctx S} {sort : S.Srt}
     (rows : O → Row locals captures Γ sort) (world : Finset O) : Check (Term (signature S captures) Γ sort) → Prop
   | .equal first second => instantiate candidate first = instantiate candidate second
-  | .absent pattern => ∀ occurrence ∈ world, ¬ Matches locals captures candidate (instantiate candidate pattern) (rows occurrence)
+  | .predicate quantifier pattern => quantifier.Holds world fun occurrence => Matches locals captures candidate (instantiate candidate pattern) (rows occurrence)
   | .count pattern cardinality => (region locals candidate rows world pattern).card = cardinality
 
 theorem mem_region (candidate : Assignment captures next) {Γ : Ctx S} {sort : S.Srt}
@@ -57,7 +57,7 @@ theorem holds_ofStored (candidate : Assignment captures next) {Γ : Ctx S} {sort
       ContextualGuardSemantics.Holds locals candidate rows world check := by
   cases check with
   | equal _ _ => rfl
-  | absent pattern => simp only [Holds, ContextualGuardSemantics.Holds, ofStored_matches_iff]
+  | predicate quantifier pattern => simp only [Holds, ContextualGuardSemantics.Holds, ofStored_matches_iff]
   | count pattern cardinality => rw [Holds, ContextualGuardSemantics.Holds, region_ofStored]
 
 theorem region_transport (change : Assignment captures later) (candidate : Assignment later next)
@@ -76,7 +76,7 @@ theorem holds_transport (change : Assignment captures later) (candidate : Assign
       (check.map (instantiate change)) ↔ Holds locals (Assignment.compose candidate change) rows world check := by
   cases check with
   | equal _ _ => simp only [Check.map, Holds, Assignment.instantiate_compose]
-  | absent _ => simp only [Check.map, Holds, matches_map_iff, Assignment.instantiate_compose]
+  | predicate quantifier _ => simp only [Check.map, Holds, matches_map_iff, Assignment.instantiate_compose]
   | count pattern cardinality => rw [Check.map, Holds, Holds, region_transport]
 
 def Ask {Γ : Ctx S} {sort : S.Srt} (problem : ContextualResidual.Problem captures)

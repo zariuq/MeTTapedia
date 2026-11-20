@@ -1,16 +1,16 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentAcceptanceFinalSigma
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentCensusReadsSpines
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentClassificationReadsSpines
 
 /-!
 # The row of spines of one local, by shape; a conditional decision from the rows outside the shapes
 
 R121's covered rows (`PieceCoveredHead`) held one row conditioned on an executable reading: the η-long sides are read
-by `dependentUnderN` from some budget on. On a census head with normal codes that condition is exactly the shape of two
+by `dependentUnderN` from some budget on. On a classified head with normal codes that condition is exactly the shape of two
 spines of one bound local at a rigid base (`LocalSpines`): the shape is read from some budget on
 (`localSpines_reads`), and a reading has the shape (`pieceCovered_iff_shapeCovered`). So the covered rows are stated by
-shape alone (`ShapeCoveredHead`): every row is a predicate on the codes of the census head, with no budget in it.
+shape alone (`ShapeCoveredHead`): every row is a predicate on the codes of the classified head, with no budget in it.
 
-**A conditional decision** (`tower_sigma_decided_of_unread`): if every census head of a constant preparation outside
+**A conditional decision** (`tower_sigma_decided_of_unread`): if every classified head of a constant preparation outside
 the shapes is read from some budget on, the Σ family decides every store of the dynamic pattern fragment, with a
 principal answer or a certified refutation, constant at every larger budget. The hypothesis holds the pattern rows, the
 rows at a Σ base, and the rows at a base type that is not rigid, among them the base types that are applications, at
@@ -60,7 +60,7 @@ theorem localSpines_reads {Γ : Context setting.R} {equation : Equation (TotalTe
     (fun _ member => absurd member List.not_mem_nil) normal.1 (expanded_typed equation types).1
     (expanded_typed equation types).2
 
-/-- **The census rows read, by shape alone**: R121's rows, with the row of spines of one local read along reducts
+/-- **The classification rows read, by shape alone**: R121's rows, with the row of spines of one local read along reducts
 stated by its shape. -/
 def ShapeCoveredHead {Γ : Context setting.R} (equation : Equation (TotalTerm Γ)) : Prop :=
   CoveredHead equation ∨
@@ -89,7 +89,7 @@ theorem pieceCovered_iff_shapeCovered {Γ : Context setting.R} {equation : Equat
     · exact .inr (.inr (.inl under))
     · exact .inr (.inr (.inr (localSpines_reads normal types shape)))
 
-/-- **A census head in a row by shape is read** by the Σ family from some budget on. -/
+/-- **A classified head in a row by shape is read** by the Σ family from some budget on. -/
 theorem tower_sigmaReads_of_shape {Θ : Context setting.R} {problem : EquationStore (TotalTerm Θ)}
     {threshold : Nat}
     (constant : ∀ larger, threshold ≤ larger → towerPrepare larger problem = towerPrepare threshold problem)
@@ -102,8 +102,8 @@ theorem tower_sigmaReads_of_shape {Θ : Context setting.R} {problem : EquationSt
   tower_sigmaReads_of_covered constant member normal types
     ((pieceCovered_iff_shapeCovered normal types).mpr covered)
 
-/-- **Conditional decision for the tower's Σ family, from the census rows outside the shapes**: if every census head
-of a constant preparation whose η-long opened sides are of a census kind and outside the rows by shape is read from
+/-- **Conditional decision for the tower's Σ family, from the classification rows outside the shapes**: if every classified head
+of a constant preparation whose η-long opened sides are of a classified kind and outside the rows by shape is read from
 some budget on, the family decides every store of the dynamic pattern fragment, with a principal answer or a certified
 refutation, constant at every larger budget. At the tower the hypothesis fails: the conclusion would decide
 `crossStore` (`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`,
@@ -114,12 +114,12 @@ theorem tower_sigma_decided_of_unread
       PermutedMiller setting.levels problem → problem ≠ [] → ∀ threshold,
         (∀ larger, threshold ≤ larger → towerPrepare larger problem = towerPrepare threshold problem) →
         ∀ equation ∈ (towerPrepare threshold problem).remaining,
-          ContextualDependentNormalizing.NormalEquation (fun _ => (0 : Nat)) equation → CensusHead equation →
+          ContextualDependentNormalizing.NormalEquation (fun _ => (0 : Nat)) equation → ClassifiedHead equation →
           ContextualDependentShortClosure.FragmentSidesMiller equation →
           Kind (openedFlexible (piCount equation.1.1.code))
-            (ContextualDependentCensus.openNormal (piCount equation.1.1.code)
+            (ContextualDependentClassification.openNormal (piCount equation.1.1.code)
               (expandTo (piCount equation.1.1.code) equation.1.2.code))
-            (ContextualDependentCensus.openNormal (piCount equation.1.1.code)
+            (ContextualDependentClassification.openNormal (piCount equation.1.1.code)
               (expandTo (piCount equation.1.1.code) equation.2.2.code)) →
           ¬ ShapeCoveredHead equation → ∃ bound, ∀ larger, bound ≤ larger → TowerSigmaReads larger problem)
     {Θ : Context setting.R} {problem : EquationStore (TotalTerm Θ)} (inside : InFragmentStore problem) :
@@ -127,7 +127,7 @@ theorem tower_sigma_decided_of_unread
       run (sigmaTower.solver larger) problem larger = run (sigmaTower.solver budget) problem budget ∧
       ((∃ state finished, run (sigmaTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ absent, run (sigmaTower.solver larger) problem larger = .refuted absent)) :=
+        (∃ missing, run (sigmaTower.solver larger) problem larger = .refuted missing)) :=
   tower_sigma_decided_of_uncovered_kinds (fun permuted nonempty threshold constant equation member normal head sides
       kind covered =>
       unread permuted nonempty threshold constant equation member normal head sides kind fun shape =>

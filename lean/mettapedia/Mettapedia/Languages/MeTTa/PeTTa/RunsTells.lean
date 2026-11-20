@@ -60,8 +60,9 @@ open Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting
 open Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.MetaMeTTaComparison
 open Mettapedia.Languages.MeTTa.ContextualTransform
 open PeTTaStoreSelection (atomFrames)
-open PeTTaQueryInterpretation (scan)
-open LibTransformStep (solution applySubst_eq_subst)
+open PeTTaQueryInterpretation (scan scan_cons)
+open LibTransformStep (solution)
+open Mettapedia.Languages.ProcessCalculi.MORK (applySubst_eq_subst)
 open Unifying (resolve)
 open UnifyingConstraintPresentation (presentation read_expression unifyTerms_refutes_model)
 
@@ -279,14 +280,14 @@ theorem scan_row {O : Type} (label : O → Atom) (bindings : Subst) (pattern : A
   | _, [], _, _, index, occurrence, at_ => by simp at at_
   | use, row :: rest, packets, scanned, index, occurrence, at_ => by
       cases later : scan label bindings pattern (use + 1) rest with
-      | none => simp [scan, later] at scanned
+      | none => simp [scan_cons, later] at scanned
       | some remaining =>
           have inherited := scan_row label bindings pattern (use + 1) rest remaining later
           cases matched : Unifying.unify bindings pattern
               (Unifying.rename use (label row)) with
-          | exhausted => simp [scan, later, matched] at scanned
+          | exhausted => simp [scan_cons, later, matched] at scanned
           | ok bound =>
-              simp [scan, later, matched] at scanned
+              simp [scan_cons, later, matched] at scanned
               subst scanned
               cases index with
               | zero =>
@@ -301,7 +302,7 @@ theorem scan_row {O : Type} (label : O → Atom) (bindings : Subst) (pattern : A
                   · exact Or.inl ⟨found, unified, List.mem_cons_of_mem _ member⟩
                   · exact Or.inr clashed
           | clash =>
-              simp [scan, later, matched] at scanned
+              simp [scan_cons, later, matched] at scanned
               subst scanned
               cases index with
               | zero =>

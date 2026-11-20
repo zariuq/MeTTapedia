@@ -1,4 +1,4 @@
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentCoverageReadersHalfCensus
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentCoverageReadersHalfClassification
 
 /-!
 # The readers' half of coverage: the rows of the upper chain
@@ -25,8 +25,8 @@ open Presentation TypedEquality TypedEquality.Normalization TypedContextual
 open ContextualDependentEta ContextualDependentUpdate ContextualDependentWorklist
 open ContextualDependentPatternSolver ContextualDependentDecisiveFragment ContextualDependentFragment
 open ContextualDependentRigidFormers ContextualDependentRank ContextualDependentSpinesMany
-open ContextualDependentTwinsUnder ContextualDependentConstantHeads ContextualDependentCensusPairEta
-open ContextualDependentIdEndpoints ContextualDependentCensusReadings ContextualDependentAcceptance2
+open ContextualDependentTwinsUnder ContextualDependentConstantHeads ContextualDependentClassificationPairEta
+open ContextualDependentIdEndpoints ContextualDependentClassificationReadings ContextualDependentAcceptance2
 open ContextualDependentIntersectionGeneral ContextualDependentMillerClosure ContextualDependentConversionBudget
 
 section General
@@ -80,7 +80,7 @@ theorem twinRound_not_stuck_of_rest (fuel : Nat) {Θ : Context S.R} {problem : E
       headTypingUnique rootComplete fuel problem with
   | stuck => exact moving
   | progress update smaller => exact fun impossible => by cases impossible
-  | refuted absent => exact fun impossible => by cases impossible
+  | refuted missing => exact fun impossible => by cases impossible
 
 /-- **The pairs round moves where η for Σ does.** -/
 theorem pairsRound_not_stuck_of_rest (fuel : Nat) {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)}
@@ -93,7 +93,7 @@ theorem pairsRound_not_stuck_of_rest (fuel : Nat) {Θ : Context S.R} {problem : 
       headTypingUnique rootComplete fuel problem with
   | stuck => exact moving
   | progress update smaller => exact fun impossible => by cases impossible
-  | refuted absent => exact fun impossible => by cases impossible
+  | refuted missing => exact fun impossible => by cases impossible
 
 /-- **The rows of the upper chain, at one budget.** -/
 def ChainReads (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ)) : Prop :=
@@ -207,7 +207,7 @@ theorem tower_dead_decided_of_fullReads
       run (deadTower.solver larger) problem larger = run (deadTower.solver budget) problem budget ∧
       ((∃ state finished, run (deadTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ absent, run (deadTower.solver larger) problem larger = .refuted absent)) :=
+        (∃ missing, run (deadTower.solver larger) problem larger = .refuted missing)) :=
   tower_dead_decided_of_firing
     (fun permuted nonempty => firing_of_fullReads (S := setting) TowerModel.facts TowerModel.roots TowerModel.heads
       TowerModel.algebra ContextualDependentPiSpine.Controls.rigid TowerModel.complete

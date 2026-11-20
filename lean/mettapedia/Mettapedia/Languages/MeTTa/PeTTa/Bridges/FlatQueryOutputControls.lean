@@ -78,7 +78,8 @@ theorem inserted : FreshInsertionSource.update before .self (applySubst answer.1
   have reading : before.read .self = some rows := rfl
   have missing : payload ∉ rows := by decide +kernel
   have written : Effects.insert before .self payload = some after := rfl
-  simp [FreshInsertionSource.update, reading, missing, written]
+  have value : payload.isVariable = false := by decide
+  simp [FreshInsertionSource.update, GuardedInsertionSource.updateWithProgress, reading, missing, value, written]
 
 theorem source_derived_rank_decreases :
     FreshInsertionRank.remaining (catalogue integers domain headShapes) after.core + 1 =

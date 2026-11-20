@@ -1,0 +1,49 @@
+Module authoring and reference observations
+==========================================
+
+module-authoring WORK REQUEST OUTPUT
+
+REQUEST contains exactly one datum:
+  (ModuleCompilePipeline module stages arguments catalog instance)
+
+The module and catalog are values returned by the existing module reader.
+Stages is an LCons/LNil list of theory-path strings. Each stage is assembled
+by cetta_module_value_v1_assemble with the declared argument list. Subsequent
+stages receive the preceding presentation as their single argument. The
+instance is an explicit string retained in declaration origins.
+
+WORK is the caller's structural-work budget for each authoring operation.
+The client uses the existing API's configurable budget; it changes no
+runtime dispatch or module semantics. OUTPUT is either the core and ordered
+rules as ModuleRewriteRulesV1, or the original refusal. Process status is
+0 for an export, 1 for an authoring refusal, and 2 for a client/I/O error.
+
+lib_module_rules.metta projects unconditional constructor rules to MeTTa.
+Unsupported patterns, premises and constructor spellings are refused.
+Base-sort bindings must be distinct, variables must be declared, and every
+right-side variable must occur on the left. These closure checks are not a
+formal rule-typing or compiler-correctness theorem.
+Linked definitions are installed together so forward and mutual calls
+remain calls. Source admission and differential agreement do not establish
+a formal source-to-realization refinement theorem.
+
+The optional authoring.mk fragment links these clients against matching
+existing CeTTa build objects. It is included after that build's Makefile;
+MODULE_TOOLS_SOURCE_DIR and MODULE_TOOLS_OUTPUT_DIR select the client source
+and artifact directories. It adds no default build dependencies.
+
+holr-scan-oracle FILE
+  Calls the existing hol_stream_scan, without kernel replay. Success emits
+  the decoded header and complete record sequence in the shared observation
+  format. Malformed input emits the structural reason. Operand printing
+  follows the scanner's supplied layout and decoded values.
+holr-scan-oracle --prefix FILE
+  Also retains the decoded prefix and terminal category on malformed input.
+  Magic and kernel-id errors share the BadHeader category in this observation.
+
+mmb-header-oracle header FILE
+  Calls the existing reader's check_header and observes its header fields.
+  This is not a complete MMB-file or proof-validity observation.
+mmb-header-oracle command FILE
+  Calls its existing cmd_at primitive, including the five-readable-byte
+  precondition, and observes opcode, payload and consumed size.

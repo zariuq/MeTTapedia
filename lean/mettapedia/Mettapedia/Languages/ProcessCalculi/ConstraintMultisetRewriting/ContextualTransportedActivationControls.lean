@@ -2,7 +2,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualGuardedStepControls
 
 /-!
-# Fresh helpers supply a model absent from the original endomorphic frame
+# Fresh helpers supply a model missing from the original endomorphic frame
 
 With no rigid constructors and only a binary declaration, a swapped-spine
 equation has no endomorphic model: a solution would require a closed term.

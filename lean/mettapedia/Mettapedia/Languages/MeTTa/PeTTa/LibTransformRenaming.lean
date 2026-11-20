@@ -19,6 +19,10 @@ not mention. This module supplies that renaming and its laws.
   `subst_untagged_of_rename`: if `ρ` makes a renamed pattern equal to a ground atom, then
   `untagged ρ n` makes the pattern equal to it.
 
+* `tagging n`: the renaming as a substitution (`subst_tagging`). `total σ`: `σ` with every
+  unbound variable bound to itself; `subst_withLocal_total_rename`: the extended solution
+  reads a renamed atom as `σ` reads the atom, with no hypothesis on the instance.
+
 Negative example: `Controls.untagged_name_has_no_tag` (a name that does not start as a
 tag does decodes to nothing).
 -/
@@ -230,6 +234,73 @@ where
         simp only [rename.renameList, SubstitutionAlgebra.subst.substList,
           subst_untagged_of_rename ρ n e _ rfl ground.1, list es ground.2]
 
+/-! ## The renaming as a substitution -/
+
+/-- The substitution that tags every variable `n`. -/
+def tagging (n : Nat) : Mettapedia.Languages.MeTTa.SubstitutionAlgebra.Subst :=
+  fun x => some (.var (tag n x))
+
+/-- **Renaming is substitution by the tagging.** -/
+theorem subst_tagging (n : Nat) : ∀ a : Atom,
+    SubstitutionAlgebra.subst (tagging n) a = rename n a
+  | .var _ => rfl
+  | .symbol _ => rfl
+  | .grounded _ => rfl
+  | .expression es => by
+      simp only [rename, SubstitutionAlgebra.subst]
+      rw [list es]
+where
+  list : ∀ es : List Atom,
+      SubstitutionAlgebra.subst.substList (tagging n) es = rename.renameList n es
+    | [] => rfl
+    | e :: es => by
+        simp only [rename.renameList, SubstitutionAlgebra.subst.substList, subst_tagging n e,
+          list es]
+
+/-- The substitution with every unbound variable bound to itself. It substitutes as the
+substitution does and leaves no variable unbound. -/
+def total (σ : Mettapedia.Languages.MeTTa.SubstitutionAlgebra.Subst) :
+    Mettapedia.Languages.MeTTa.SubstitutionAlgebra.Subst :=
+  fun x => some ((σ x).getD (.var x))
+
+theorem subst_total (σ : Mettapedia.Languages.MeTTa.SubstitutionAlgebra.Subst) : ∀ a : Atom,
+    SubstitutionAlgebra.subst (total σ) a = SubstitutionAlgebra.subst σ a
+  | .var _ => rfl
+  | .symbol _ => rfl
+  | .grounded _ => rfl
+  | .expression es => by
+      simp only [SubstitutionAlgebra.subst]
+      rw [list es]
+where
+  list : ∀ es : List Atom,
+      SubstitutionAlgebra.subst.substList (total σ) es =
+        SubstitutionAlgebra.subst.substList σ es
+    | [] => rfl
+    | e :: es => by
+        simp only [SubstitutionAlgebra.subst.substList, subst_total σ e, list es]
+
+/-- **The extended solution reads a renamed atom as the local substitution reads the atom**,
+with no hypothesis on the instance, once the local substitution leaves no variable unbound. -/
+theorem subst_withLocal_total_rename
+    (ρ σ : Mettapedia.Languages.MeTTa.SubstitutionAlgebra.Subst) (n : Nat) : ∀ a : Atom,
+    SubstitutionAlgebra.subst (withLocal ρ n (total σ)) (rename n a) =
+      SubstitutionAlgebra.subst σ a
+  | .var x => by
+      simp only [rename, SubstitutionAlgebra.subst, withLocal_tag, total, Option.getD_some]
+  | .symbol _ => rfl
+  | .grounded _ => rfl
+  | .expression es => by
+      simp only [rename, SubstitutionAlgebra.subst]
+      rw [list es]
+where
+  list : ∀ es : List Atom,
+      SubstitutionAlgebra.subst.substList (withLocal ρ n (total σ)) (rename.renameList n es) =
+        SubstitutionAlgebra.subst.substList σ es
+    | [] => rfl
+    | e :: es => by
+        simp only [rename.renameList, SubstitutionAlgebra.subst.substList,
+          subst_withLocal_total_rename ρ σ n e, list es]
+
 namespace Controls
 
 /-- A name that does not start as a tag does decodes to nothing. -/
@@ -239,6 +310,20 @@ theorem untagged_name_has_no_tag : untag "x" = none := by decide
 theorem tags_differ : tag 0 "x" ≠ tag 1 "x" := fun same => by
   have := (tag_injective same).1
   omega
+
+/-- The renaming, as a substitution, tags a variable. -/
+theorem tagging_tags_a_variable :
+    SubstitutionAlgebra.subst (tagging 1) (.var "x") = .var (tag 1 "x") := rfl
+
+/-- Why the local substitution is made total: one that leaves `x` unbound reads `x` as `x`,
+and the extended solution reads the renamed `x` as the tagged name. -/
+theorem unbound_local_keeps_the_tag :
+    SubstitutionAlgebra.subst
+        (withLocal Mettapedia.Languages.MeTTa.SubstitutionAlgebra.empty 0
+          Mettapedia.Languages.MeTTa.SubstitutionAlgebra.empty) (rename 0 (.var "x")) ≠
+      SubstitutionAlgebra.subst Mettapedia.Languages.MeTTa.SubstitutionAlgebra.empty
+        (.var "x") := by
+  decide
 
 end Controls
 

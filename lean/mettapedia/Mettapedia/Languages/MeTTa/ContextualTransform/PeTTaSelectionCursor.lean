@@ -8,7 +8,8 @@ import Mettapedia.Languages.MeTTa.PeTTa.UnifyingSpec
 Each row request uses the source unifier and its own renaming number. The
 generic cursor retains completed decisions across scheduler pauses. Successful
 selection agrees with the independent source Removal relation and supplies an
-actual tcalc effect and a source remove transition. Unifier exhaustion remains
+actual admitted effect of `OrderedStore.step` and a source remove transition.
+Unifier exhaustion remains
 incomplete selection; it cannot be published as a partial or negative result.
 
 The pure source survivors function computes its recursive tail first. The
@@ -135,15 +136,16 @@ theorem cursor_selection_iff (pattern : Atom) (use : Nat) (rows kept taken : Lis
   rw [EffectfulRowSelection.cursor_row_budget]
   simpa [Sampled.completed?] using scan_iff_selection label pattern use rows kept taken
 
-theorem failed_scan_prevents_remove_rows (state : Effects.State) (location head : Atom)
-    (tail : List Atom) (handle : NamedSpaces.Handle) (use : Nat) (rows : List O)
+theorem failed_scan_prevents_remove_rows (state : Effects.State) (location pattern : Atom)
+    (handle : NamedSpaces.Handle) (use : Nat) (rows : List O)
     (whereAt : Nat × Unit)
     (resolved : Effects.readHandle location = some handle)
+    (specified : Effects.removalNeedsValue pattern = false)
     (opened : state.read handle = some (rows.map label))
-    (failed : (reference (test label (.expression (head :: tail))) use rows ()).answer = .error whereAt) :
-    Unifying.removeRows state location (.expression (head :: tail)) use = none := by
-  have incomplete := failed_scan_is_source_exhaustion label (.expression (head :: tail)) use rows whereAt failed
-  simp [Unifying.removeRows, resolved, opened, incomplete]
+    (failed : (reference (test label pattern) use rows ()).answer = .error whereAt) :
+    Unifying.removeRows state location pattern use = none := by
+  have incomplete := failed_scan_is_source_exhaustion label pattern use rows whereAt failed
+  simp [Unifying.removeRows, specified, resolved, opened, incomplete]
 
 theorem scan_realized [DecidableEq O] (pattern : Atom) (use : Nat) (rows kept taken : List O)
     (unique : rows.Nodup)
@@ -157,33 +159,29 @@ theorem scan_realized [DecidableEq O] (pattern : Atom) (use : Nat) (rows kept ta
   rw [OrderedStore.result_rows]
   simpa [request, OrderedStore.publish] using selected.contracts label unique
 
-/-- The source's own write/return convention is retained, including the
-historical equation-row Boolean policy. This is not a CeTTa return-policy claim. -/
+/-- Every admitted operand has the source's presence-sensitive Boolean result;
+the cursor retains all selected occurrence identities. -/
 theorem completed_remove_transition (registry : SpaceSemantics.Program)
     (source : Unifying.Configuration) (bindings : Subst) (index : Nat)
-    (location pattern head : Atom) (tail : List Atom) (handle : NamedSpaces.Handle)
+    (location pattern : Atom) (handle : NamedSpaces.Handle)
     (rows kept taken : List O) (after : Effects.State)
     (control : source.control =
       .arguments bindings (.function "remove-atom") [] [location, pattern] index)
     (resolved : Effects.readHandle (resolve bindings location) = some handle)
-    (patternShape : resolve bindings pattern = .expression (head :: tail))
+    (specified : Effects.removalNeedsValue (resolve bindings pattern) = false)
     (opened : source.state.read handle = some (rows.map label))
-    (scanned : (reference (test label (.expression (head :: tail))) source.uses rows ()).answer =
+    (scanned : (reference (test label (resolve bindings pattern)) source.uses rows ()).answer =
       .ok (kept, taken))
     (written : source.state.write handle (kept.map label) = some after) :
     Unifying.Transition registry source
       { source with
         state := after,
-        control := .returned [⟨Effects.boolean
-          (if Unifying.equationRow (.expression (head :: tail))
-            then decide (kept.length < rows.length) else true), bindings⟩],
+        control := .returned [⟨Effects.boolean (decide (kept.length < rows.length)), bindings⟩],
         uses := source.uses + rows.length } := by
   apply Unifying.Transition.remove (after := after) (used := rows.length)
-    (answers := [Effects.boolean (if Unifying.equationRow (.expression (head :: tail))
-      then decide (kept.length < rows.length) else true)]) control
-  rw [patternShape]
-  exact source_remove_rows label source.state after (resolve bindings location) head tail handle
-    source.uses rows kept taken resolved opened (scanned_selection label scanned) written
+    (answers := [Effects.boolean (decide (kept.length < rows.length))]) control
+  exact source_remove_rows label source.state after (resolve bindings location) (resolve bindings pattern) handle
+    source.uses rows kept taken resolved specified opened (scanned_selection label scanned) written
 
 theorem failed_remove_has_no_source_step (registry : SpaceSemantics.Program)
     (source : Unifying.Configuration) (bindings : Subst) (index : Nat) (location pattern : Atom)
@@ -206,19 +204,18 @@ theorem incomplete_remove_preserves_configuration (registry : SpaceSemantics.Pro
 
 theorem failed_scan_preserves_source_configuration (registry : SpaceSemantics.Program)
     (source : Unifying.Configuration) (bindings : Subst) (index : Nat)
-    (location pattern head : Atom) (tail : List Atom) (handle : NamedSpaces.Handle)
+    (location pattern : Atom) (handle : NamedSpaces.Handle)
     (rows : List O) (whereAt : Nat × Unit)
     (control : source.control =
       .arguments bindings (.function "remove-atom") [] [location, pattern] index)
     (resolved : Effects.readHandle (resolve bindings location) = some handle)
-    (patternShape : resolve bindings pattern = .expression (head :: tail))
+    (specified : Effects.removalNeedsValue (resolve bindings pattern) = false)
     (opened : source.state.read handle = some (rows.map label))
-    (failed : (reference (test label (.expression (head :: tail))) source.uses rows ()).answer = .error whereAt)
+    (failed : (reference (test label (resolve bindings pattern)) source.uses rows ()).answer = .error whereAt)
     (fuel : Nat) : Unifying.run registry fuel source = .exhausted source := by
   apply incomplete_remove_preserves_configuration registry source bindings index location pattern control
-  rw [patternShape]
-  exact failed_scan_prevents_remove_rows label source.state (resolve bindings location) head tail handle
-    source.uses rows whereAt resolved opened failed
+  exact failed_scan_prevents_remove_rows label source.state (resolve bindings location) (resolve bindings pattern) handle
+    source.uses rows whereAt resolved specified opened failed
 
 namespace Controls
 
@@ -262,7 +259,7 @@ def after : Unifying.Configuration :=
 
 theorem actual_source_removal : Unifying.Transition registry source after := by
   exact completed_remove_transition rows registry source [] 2 (.symbol "&self") pattern
-    (.symbol "item") [.var "requested"] .self [0, 1, 2] [2] [0, 1] afterStore
+    .self [0, 1, 2] [2] [0, 1] afterStore
     rfl rfl rfl rfl (by decide) rfl
 
 theorem source_step_retains_earlier_effect_and_caller :

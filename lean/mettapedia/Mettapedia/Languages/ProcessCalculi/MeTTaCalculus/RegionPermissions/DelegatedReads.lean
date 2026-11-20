@@ -13,16 +13,16 @@ holds at the moment (`CapFormed`), and a **system run** interleaves delegation s
 
 ## The three cases of a universal read
 
-Fix a process, the **owner**, and a universal read at the names `A` (absence, "every row here is
+Fix a process, the **owner**, and a universal read at the names `A` (none queries, "every row here is
 like this").
 
 1. **Owned.** No other subject can ever hold `send` at `A` from the genesis:
    `∀ b ≠ owner, ¬ CanHold st₀ b (send, n)`. Then the read stays true across every run of the
    others, whatever they delegate among themselves or receive from the owner
    (`delegated_antitone_stable`). This is exact: if some other subject can reach `send` at a name
-   of `A`, a run of delegations and one commit falsifies absence there
-   (`delegated_absence_falsified`), so the absence read is preserved by every run of the others
-   exactly when the owned condition holds (`absence_preserved_iff`). `canHold_iff` makes the
+   of `A`, a run of delegations and one commit falsifies the none query there
+   (`delegated_none_falsified`), so the none read is preserved by every run of the others
+   exactly when the owned condition holds (`none_preserved_iff`). `canHold_iff` makes the
    condition a property of the genesis alone.
 2. **Sealed.** Every `send` at `A` held by another subject was derived from one capability `i` of
    the owner (the authority is stratified below `i`). Revoking `i` removes all of them
@@ -30,7 +30,7 @@ like this").
    persists (`sealed_run`) and the read is stable (`stable_after_seal`). Sealing is revocation.
 3. **Shared.** Otherwise the read must be validated when its commit fires: a full re-read or an
    epoch of the region. `Enabled.queries_hold` is that validation in the commit semantics; on the
-   runtime's revision protocol it is `SharedReads.shared_absence_stale_under_revision`.
+   runtime's revision protocol it is `SharedReads.shared_none_stale_under_revision`.
 
 An existential read needs none of this for correctness: its witnesses validate it
 (`ReadPolarity.monotone_of_witnesses_present`). Its *stability* has the dual condition, with
@@ -180,10 +180,10 @@ theorem SysRun.of_ops (label : O → R) (loc : R → N) :
   | [], _, _, _, _, _, h => h
   | op :: ops, caps, _, _, _, _, h => .deleg (SysRun.of_ops label loc ops (caps := Delegation.step caps op) h)
 
-/-- **Reachable `send` falsifies absence.** If another subject can reach `send` at a name `n` of
+/-- **Reachable `send` falsifies the none query.** If another subject can reach `send` at a name `n` of
 the read, and an occurrence can be made fresh at `n`, some run of the others ends with an
 occurrence at the read's names. -/
-theorem delegated_absence_falsified {st₀ : Delegation.State Sub (Facet × N)} {owner b : Sub}
+theorem delegated_none_falsified {st₀ : Delegation.State Sub (Facet × N)} {owner b : Sub}
     (notOwner : b ≠ owner) {A : N → Bool} {n : N} (atA : A n = true)
     (reach : Delegation.CanHold st₀ b (facetAt .send n) false) {store : Finset O} {o : O}
     (fresh : o ∉ store) (atN : loc (label o) = n) :
@@ -209,10 +209,10 @@ theorem delegated_absence_falsified {st₀ : Delegation.State Sub (Facet × N)} 
       exact notOwner
   · exact mem_restrict.mpr ⟨mem_fire.mpr (Or.inr (by simp [Commit.makeOne])), by rw [atN]; exact atA⟩
 
-/-- **Exactly when absence needs no validation.** For a read at names where an occurrence can
-always be made fresh, absence is preserved by every run of the others exactly when no other subject
+/-- **Exactly when the none query needs no validation.** For a read at names where an occurrence can
+always be made fresh, the none query is preserved by every run of the others exactly when no other subject
 can reach `send` at those names from the genesis. -/
-theorem absence_preserved_iff {st₀ : Delegation.State Sub (Facet × N)} {owner : Sub} {A : N → Bool}
+theorem none_preserved_iff {st₀ : Delegation.State Sub (Facet × N)} {owner : Sub} {A : N → Bool}
     {store : Finset O} (initially : restrict label loc A store = ∅)
     (freshAt : ∀ n, A n = true → ∃ o, o ∉ store ∧ loc (label o) = n) :
     (∀ acts caps' store', SysRun label loc st₀ store acts caps' store' → OthersActs owner acts →
@@ -222,7 +222,7 @@ theorem absence_preserved_iff {st₀ : Delegation.State Sub (Facet × N)} {owner
   · intro preserved b notOwner n atA reach
     obtain ⟨o, fresh, atN⟩ := freshAt n atA
     obtain ⟨acts, caps', store', h, others, inRegion⟩ :=
-      delegated_absence_falsified (label := label) (loc := loc) notOwner atA reach fresh atN
+      delegated_none_falsified (label := label) (loc := loc) notOwner atA reach fresh atN
     rw [preserved acts caps' store' h others] at inRegion
     simp at inRegion
   · intro owned acts caps' store' h others
@@ -350,13 +350,13 @@ theorem other_reaches_send : Delegation.CanHold grantingGenesis false (facetAt .
   .pass (a := true) (.base ⟨ownerSend, by simp [grantingGenesis], rfl, rfl, by simp⟩)
     (.base ⟨ownerGrantsOther, by simp [grantingGenesis], rfl, rfl, fun _ => rfl⟩)
 
-/-- **Granted, the other falsifies absence**: an instance of `delegated_absence_falsified`, with
+/-- **Granted, the other falsifies the none query**: an instance of `delegated_none_falsified`, with
 occurrence `5` made at name `0` from the empty store. -/
 theorem granted_other_falsifies :
     ∃ acts caps' store', SysRun (Sub := Bool) (fun o : ℕ => o) (fun _ : ℕ => (0 : ℕ))
         grantingGenesis ∅ acts caps' store' ∧ OthersActs true acts ∧
       (5 : ℕ) ∈ restrict (fun o : ℕ => o) (fun _ : ℕ => (0 : ℕ)) (fun n => n == 0) store' :=
-  delegated_absence_falsified (b := false) (by decide) (n := 0) (by decide) other_reaches_send
+  delegated_none_falsified (b := false) (by decide) (n := 0) (by decide) other_reaches_send
     (by simp) rfl
 
 /-- What the closed genesis can reach: nothing at the other subject's name, and `send` only by

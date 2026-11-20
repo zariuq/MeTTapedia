@@ -48,7 +48,7 @@ abbrev internalStep := (renamingEscape A label).step
 /-- **The environment over the system with internal records**: escape relative to the transport with
 internal records, recording nothing more. -/
 abbrev observedTransport :=
-  (renamingEscaping A label).escaping (Transport.Natural.escaping (renamingNatural A label) (renamingEscape A label))
+  (renamingEscaping A label).escaping (Transport.Natural.escaping (exactRenamingNatural A label) (renamingEscape A label))
     (Transport.Escape.silent _)
 
 end Internal
@@ -57,7 +57,8 @@ namespace InternalControls
 
 open Mettapedia.Logic.LP
 open ConstraintMultisetRewriting.Controls (signature)
-open EscapeControls (blank twins takeFive swapTwins takeFive_valid takeSix_valid)
+open EscapeControls (blank twins takeFive swapTwins takeFive_valid takeSix_valid
+  takeFiveExact takeSixExact takeFiveExact_valid takeSixExact_valid)
 open ObserverControls (swapIso)
 open Observation.Record (sighting references)
 
@@ -99,11 +100,11 @@ abbrev fresh : Escaped (internalStep ConstraintMultisetRewriting.Controls.A blan
 
 /-- Take `5` and sight `{5, 6}`, inside the system. -/
 abbrev internalFive : (Transport.Escape.silent (renamingEscaping ConstraintMultisetRewriting.Controls.A blank)).step.Run fresh :=
-  .cons takeFive takeFive_valid (.nil _)
+  .cons takeFiveExact takeFiveExact_valid (.nil _)
 
 /-- Take `6` and sight `{5, 6}`, inside the system. -/
 abbrev internalSix : (Transport.Escape.silent (renamingEscaping ConstraintMultisetRewriting.Controls.A blank)).step.Run fresh :=
-  .cons (takeFive.rename swapTwins) takeSix_valid (.nil _)
+  .cons takeSixExact takeSixExact_valid (.nil _)
 
 /-- The exchange of `5` and `6`, at the system with nothing recorded. -/
 def freshSwap : observed.Iso fresh fresh := ⟨⟨swapIso, .nil, rfl⟩, .nil, rfl⟩
@@ -111,7 +112,7 @@ def freshSwap : observed.Iso fresh fresh := ⟨⟨swapIso, .nil, rfl⟩, .nil, r
 /-- **Internal sightings are renamed with the state**: taking `5` and taking `6` are trace
 equivalent. -/
 theorem internal_sighting_identified : observed.TraceEquiv fresh internalFive internalSix :=
-  .rel _ _ (.inr (Transport.Similar.single freshSwap takeFive_valid takeSix_valid rfl))
+  .rel _ _ (.inr (Transport.Similar.single freshSwap takeFiveExact_valid takeSixExact_valid rfl))
 
 /-- **The sighted set stays inside**: it is in the internal record at the end, and the environment's
 record is empty. -/

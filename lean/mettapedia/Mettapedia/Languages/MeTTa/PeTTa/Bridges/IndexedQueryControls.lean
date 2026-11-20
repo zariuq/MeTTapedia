@@ -80,8 +80,9 @@ def effectfulProgram : Program := { program with equations := program.equations 
 theorem extra_effect_refuses_the_whole_wrapper :
     (prepare integers 0 12 12 effectfulProgram [] state source).isNone = true := by decide +kernel
 
-theorem missing_space_refuses_instead_of_counting_zero :
-    (prepare integers 0 12 12 program [] state (app "wrapper" [.symbol "not-a-space"])).isNone = true := by decide +kernel
+theorem unallocated_private_space_refuses_instead_of_counting_zero :
+    (prepare integers 0 12 12 program [] state
+      (app "wrapper" [Effects.handleValue (.privateSpace 0)])).isNone = true := by decide +kernel
 
 theorem quoted_unbound_handle_is_not_stable :
     prepareOperand [] (app "quote" [.var "space"]) = none := by decide +kernel

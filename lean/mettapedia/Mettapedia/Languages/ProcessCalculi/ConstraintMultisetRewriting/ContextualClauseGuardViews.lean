@@ -6,7 +6,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 
 Guard terms may already be evaluated in the model family while stored rows
 retain their own captured declarations. This presentation separates the two
-without changing absence, counts or the original world being observed.
+without changing none queries, counts or the original world being observed.
 -/
 
 set_option autoImplicit false
@@ -32,7 +32,7 @@ def EvaluatedHolds (candidate : Assignment captures next)
     (rows : O → Row locals captures Γ sort) (world : Finset O) :
     Check (Term (signature S next) Γ sort) → Prop
   | .equal first second => first = second
-  | .absent pattern => ∀ occurrence ∈ world, ¬ Matches locals captures candidate pattern (rows occurrence)
+  | .predicate quantifier pattern => quantifier.Holds world fun occurrence => Matches locals captures candidate pattern (rows occurrence)
   | .count pattern cardinality => (evaluatedRegion locals captures candidate rows world pattern).card = cardinality
 
 theorem source_value (candidate : Assignment (family queries locals captures) next)
@@ -53,7 +53,7 @@ theorem source_holds (candidate : Assignment (family queries locals captures) ne
           (caller queries locals captures candidate)))) := by
   cases check with
   | equal first second => simp only [Check.map, ContextualConditionalGuards.Holds, EvaluatedHolds, source_value]
-  | absent pattern =>
+  | predicate quantifier pattern =>
       simp only [Check.map, ContextualConditionalGuards.Holds, EvaluatedHolds,
         ContextualConditionalSourceAdmission.sourceRows, matches_map_iff, captures_square, source_value]
   | count pattern cardinality =>
@@ -79,7 +79,7 @@ theorem evaluated_inclusion_iff (unused : Extra → MetaArity S) (candidate : As
   cases check with
   | equal first second =>
       exact ⟨fun same => inclusion_injective unused next _ _ same, congrArg (instantiate (inclusion unused next))⟩
-  | absent pattern =>
+  | predicate quantifier pattern =>
       simp only [Check.map, EvaluatedHolds, ContextualConditionalNaturality.matches_inclusion_iff]
   | count pattern cardinality =>
       have regions : evaluatedRegion locals captures (Assignment.compose (inclusion unused next) candidate)
@@ -115,7 +115,7 @@ theorem evaluated_iff (candidate : Assignment frame.declarations next) (world : 
       EvaluatedHolds rights frame.declarations candidate rightRows world check := by
   cases check with
   | equal _ _ => rfl
-  | absent pattern => simp only [EvaluatedHolds, matches_iff captures agree]
+  | predicate quantifier pattern => simp only [EvaluatedHolds, matches_iff captures agree]
   | count pattern cardinality =>
       have regions : evaluatedRegion lefts captures (Assignment.compose candidate frame.assignment)
           leftRows world pattern = evaluatedRegion rights frame.declarations candidate rightRows world pattern := by

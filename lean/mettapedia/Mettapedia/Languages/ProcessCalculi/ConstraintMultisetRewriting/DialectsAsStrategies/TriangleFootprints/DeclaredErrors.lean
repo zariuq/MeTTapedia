@@ -19,14 +19,25 @@ A complete run exists whenever the demands before position `k` accept with the b
 (`error_run_exists`, `error_every_run_complete`): the accepted prefix keeps the frame, the rejected
 position reports the error, and the arguments after it are checked against no frame.
 
-PeTTa checks no declared type; it answers by the program's equations.
+The PeTTa model checks no declared type and answers by the program's equations. Both PeTTa hosts
+check a call's declared argument and result types and give no answer on a mismatch, so the model's
+answer is the hosts' only on the program without the head's declaration
+(`DeclaredHeads.headUndeclared`); the PeTTa side of the controls is stated there.
 
 ## Controls
 
 * `Controls.arity_three` (positive): `(h 1 b 2)` against `(-> Number Number Number Number)` answers
-  `(Error (h 1 b 2) (BadArgType 2 Number Bool))` on every complete HE run, while PeTTa answers `yes`.
+  `(Error (h 1 b 2) (BadArgType 2 Number Bool))` on every complete HE run; without `h`'s declaration
+  PeTTa answers `yes`.
 * `Controls.first_mismatch_only` (the theorem's precision): `(h b b 2)` reports only position 1;
   the second ill-typed argument is checked against no frame.
+* `Controls.petta_model_reads_no_declaration`: on these programs, whose declarations have no `Atom`
+  parameter, the PeTTa model answers the same with and without the head's declaration, which the
+  PeTTa hosts do not; this is why the hypothesis is needed. (The model reads which parameters are
+  `Atom`; these programs have none.)
+* `Controls.subtype_row_needed`: with `(:< Bool Number)` the model still publishes the `BadArgType`
+  error on every run, where HE answers `yes`; the typed theorems are exact for HE only on programs
+  without subtype rows (`TypeQueryFragment`).
 -/
 
 set_option autoImplicit false
@@ -511,28 +522,40 @@ theorem number_accepts_number : Accepts policy (sym "Number") (sym "Number") :=
 theorem number_rejects : Rejects policy (sym "Number") (sym "Bool") :=
   fun bindings output => number_rejects_bool policy bindings output
 
-/-- **Positive control, arity 3**: `(h 1 b 2)` answers `(Error (h 1 b 2) (BadArgType 2 Number Bool))`
-on every complete HE run, while PeTTa, which checks no declared type, answers `yes`. -/
+theorem number_keeps : AcceptsKeeping policy (sym "Number") (sym "Number") :=
+  fun frame => Completed.Frame.preserved_type_match policy frame (number_matches _)
+
+/-- The arity-3 program lies in the measured type fragment. -/
+theorem fragment_rows3 : TypeQueryFragment.MeasuredTypeFragment rows3 :=
+  ⟨by decide, by unfold Mettapedia.Languages.MeTTa.HE.HOLContract.SubtypeFree; decide⟩
+
+/-- **Positive control, arity 3**: on `rows3`, a program in the measured type fragment, a complete
+HE run of `(h 1 b 2)` exists and every complete run publishes
+`(Error (h 1 b 2) (BadArgType 2 Number Bool))`. On the program without `h`'s declaration PeTTa answers
+`yes`, as the PeTTa hosts do; with the declaration the hosts answer nothing. -/
 theorem arity_three (dispatch : GroundedDispatch) (policy : Policy) :
-    (∀ emitted : List Result,
-      Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy)
+    TypeQueryFragment.MeasuredTypeFragment rows3 ∧
+      (∃ heAnswers : List Result,
+        Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy)
+          (load (Space.ofList rows3) (app "h" [.grounded (.int 1), sym "b", .grounded (.int 2)])
+            Atom.undefinedType)
+          ⟨Space.ofList rows3, .returning [], [], heAnswers⟩) ∧
+      (∀ emitted : List Result,
+        Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy)
           (load (Space.ofList rows3) (app "h" [.grounded (.int 1), sym "b", .grounded (.int 2)])
             Atom.undefinedType)
           ⟨Space.ofList rows3, .returning [], [], emitted⟩ →
         emitted.map (fun r => r.1.erase) =
           [mkError (app "h" [.grounded (.int 1), sym "b", .grounded (.int 2)])
             (.badArgType 2 (sym "Number") (sym "Bool"))]) ∧
-      Streaming.values (Streaming.advance (translate rows3) 60
-        (Streaming.enter { state := store rows3 }
+      Streaming.values (Streaming.advance (translate (headUndeclared rows3 "h")) 60
+        (Streaming.enter { state := store (headUndeclared rows3 "h") }
           (app "h" [.grounded (.int 1), sym "b", .grounded (.int 2)]))) = [sym "yes"] := by
-  refine ⟨fun emitted run => ?_, by decide +kernel⟩
-  exact error_every_run (pre := [.grounded (.int 1)]) (preT := [sym "Number"])
-    (preA := [sym "Number"]) (post := [.grounded (.int 2)]) (postT := [sym "Number"])
-    (.symbol (by decide) (by decide)) (by decide) h_types rfl rfl (.cons (int_types 1) .nil)
-    (.cons number_accepts_number .nil) b3_types number_rejects emitted run
-
-theorem number_keeps : AcceptsKeeping policy (sym "Number") (sym "Number") :=
-  fun frame => Completed.Frame.preserved_type_match policy frame (number_matches _)
+  obtain ⟨exists_, every⟩ := error_every_run_complete (pre := [.grounded (.int 1)])
+    (preT := [sym "Number"]) (preA := [sym "Number"]) (post := [.grounded (.int 2)])
+    (postT := [sym "Number"]) dispatch policy (.symbol (by decide) (by decide)) (by decide) h_types
+    rfl rfl (.cons (int_types 1) .nil) (.cons number_keeps .nil) b3_types number_rejects
+  exact ⟨fragment_rows3, exists_, every, by decide +kernel⟩
 
 /-- **The arity-3 control has a complete run**: HE's run of `(h 1 b 2)` reaches a completed phase,
 and every completed run publishes `(Error (h 1 b 2) (BadArgType 2 Number Bool))`. -/
@@ -555,18 +578,96 @@ theorem arity_three_complete (dispatch : GroundedDispatch) (policy : Policy) :
     (.symbol (by decide) (by decide)) (by decide) h_types rfl rfl (.cons (int_types 1) .nil)
     (.cons number_keeps .nil) b3_types number_rejects
 
-/-- **The first mismatch only**: `(h b b 2)` has two ill-typed arguments, but every complete HE run
-reports only position 1; the second is checked against no frame. -/
-theorem first_mismatch_only (dispatch : GroundedDispatch) (policy : Policy) (emitted : List Result)
-    (run : Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy)
-      (load (Space.ofList rows3) (app "h" [sym "b", sym "b", .grounded (.int 2)]) Atom.undefinedType)
-      ⟨Space.ofList rows3, .returning [], [], emitted⟩) :
-    emitted.map (fun r => r.1.erase) =
-      [mkError (app "h" [sym "b", sym "b", .grounded (.int 2)])
-        (.badArgType 1 (sym "Number") (sym "Bool"))] :=
-  error_every_run (pre := []) (preT := []) (preA := []) (post := [sym "b", .grounded (.int 2)])
-    (postT := [sym "Number", sym "Number"]) (.symbol (by decide) (by decide)) (by decide) h_types rfl
-    rfl .nil .nil b3_types number_rejects emitted run
+/-- **The first mismatch only**: `(h b b 2)` has two ill-typed arguments. On `rows3`, in the
+measured type fragment, a complete HE run exists and every complete run
+reports only position 1; the second is checked against no frame. On the program without `h`'s
+declaration PeTTa answers `yes`, as the PeTTa hosts do; with the declaration the hosts answer
+nothing. -/
+theorem first_mismatch_only (dispatch : GroundedDispatch) (policy : Policy) :
+    TypeQueryFragment.MeasuredTypeFragment rows3 ∧
+      (∃ heAnswers : List Result,
+        Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy)
+          (load (Space.ofList rows3) (app "h" [sym "b", sym "b", .grounded (.int 2)])
+            Atom.undefinedType)
+          ⟨Space.ofList rows3, .returning [], [], heAnswers⟩) ∧
+      (∀ emitted : List Result,
+        Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy)
+          (load (Space.ofList rows3) (app "h" [sym "b", sym "b", .grounded (.int 2)])
+            Atom.undefinedType)
+          ⟨Space.ofList rows3, .returning [], [], emitted⟩ →
+        emitted.map (fun r => r.1.erase) =
+          [mkError (app "h" [sym "b", sym "b", .grounded (.int 2)])
+            (.badArgType 1 (sym "Number") (sym "Bool"))]) ∧
+      Streaming.values (Streaming.advance (translate (headUndeclared rows3 "h")) 60
+        (Streaming.enter { state := store (headUndeclared rows3 "h") }
+          (app "h" [sym "b", sym "b", .grounded (.int 2)]))) = [sym "yes"] := by
+  obtain ⟨exists_, every⟩ := error_every_run_complete (pre := []) (preT := []) (preA := [])
+    (post := [sym "b", .grounded (.int 2)]) (postT := [sym "Number", sym "Number"]) dispatch policy
+    (.symbol (by decide) (by decide)) (by decide) h_types rfl rfl .nil .nil b3_types number_rejects
+  exact ⟨fragment_rows3, exists_, every, by decide +kernel⟩
+
+/-- **Control: the hypothesis "no declaration for the head" is needed on PeTTa's side.** On these
+programs, whose declarations have no `Atom` parameter, the PeTTa model answers the same with and
+without the head's declaration: `yes` to `(f 4)`, `(f b)`, `(h 1 b 2)` and `(h b b 2)`. Both PeTTa
+hosts answer nothing on the declared programs and `yes` on the programs without the head's
+declaration, so the model's answer is the hosts' only under that hypothesis. The model does read
+one thing from declarations, which these programs do not exercise: it holds an argument as written
+where some row of the name has `Atom` at that position (`Eval.argumentIsRaw_iff_declaredAtom`;
+`ThreeDifferences.two_rows_models` shows it on a program with such a row). -/
+theorem petta_model_reads_no_declaration :
+    Streaming.values (Streaming.advance (translate declaredRows) 40
+        (Streaming.enter { state := store declaredRows } typedCall)) =
+      Streaming.values (Streaming.advance (translate (headUndeclared declaredRows "f")) 40
+        (Streaming.enter { state := store (headUndeclared declaredRows "f") } typedCall)) ∧
+    Streaming.values (Streaming.advance (translate declaredRows) 40
+        (Streaming.enter { state := store declaredRows } declaredCall)) =
+      Streaming.values (Streaming.advance (translate (headUndeclared declaredRows "f")) 40
+        (Streaming.enter { state := store (headUndeclared declaredRows "f") } declaredCall)) ∧
+    Streaming.values (Streaming.advance (translate rows3) 60
+        (Streaming.enter { state := store rows3 }
+          (app "h" [.grounded (.int 1), sym "b", .grounded (.int 2)]))) =
+      Streaming.values (Streaming.advance (translate (headUndeclared rows3 "h")) 60
+        (Streaming.enter { state := store (headUndeclared rows3 "h") }
+          (app "h" [.grounded (.int 1), sym "b", .grounded (.int 2)]))) ∧
+    Streaming.values (Streaming.advance (translate rows3) 60
+        (Streaming.enter { state := store rows3 } (app "h" [sym "b", sym "b", .grounded (.int 2)]))) =
+      Streaming.values (Streaming.advance (translate (headUndeclared rows3 "h")) 60
+        (Streaming.enter { state := store (headUndeclared rows3 "h") }
+          (app "h" [sym "b", sym "b", .grounded (.int 2)]))) := by
+  refine ⟨?_, ?_, ?_, ?_⟩ <;> decide +kernel
+
+/-- `declaredRows` with the subtype row `(:< Bool Number)`. -/
+abbrev subtypeRows : List Atom :=
+  declaredRows ++ [.expression [.symbol ":<", sym "Bool", sym "Number"]]
+
+theorem f_types_subtype : StorageTypesRel (Space.ofList subtypeRows) (.symbol "f")
+    [.expression [.symbol "->", sym "Number", sym "Number"]] :=
+  .symbolKnown (.hit (.skip (fun _ same => by simp at same) (.skip (fun _ same => by simp at same)
+    (.skip (fun _ same => by simp at same) .nil)))) (by simp)
+
+theorem b_types_subtype : StorageTypesRel (Space.ofList subtypeRows) (.symbol "b") [sym "Bool"] :=
+  .symbolKnown (.skip (fun _ same => by simp at same) (.hit (.skip (fun _ same => by simp at same)
+    (.skip (fun _ same => by simp at same) .nil)))) (by simp)
+
+/-- **Control: no subtype row is needed.** With `(:< Bool Number)` added to the declared program,
+outside the fragment, a complete run of the model on `(f b)` exists and every complete run still
+publishes `(Error (f b) (BadArgType 1 Number Bool))`: the model reads no subtype row. HE reads it,
+types `b` as `Bool` and `Number`, and answers `yes`. -/
+theorem subtype_row_needed (dispatch : GroundedDispatch) (policy : Policy) :
+    ¬ Mettapedia.Languages.MeTTa.HE.HOLContract.SubtypeFree (Space.ofList subtypeRows) ∧
+      (∃ heAnswers : List Result,
+        Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy)
+          (load (Space.ofList subtypeRows) declaredCall Atom.undefinedType)
+          ⟨Space.ofList subtypeRows, .returning [], [], heAnswers⟩) ∧
+      ∀ emitted : List Result,
+        Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy)
+          (load (Space.ofList subtypeRows) declaredCall Atom.undefinedType)
+          ⟨Space.ofList subtypeRows, .returning [], [], emitted⟩ →
+        emitted.map (fun r => r.1.erase) = [badArgument] := by
+  obtain ⟨exists_, every⟩ := error_every_run_complete (pre := []) (preT := []) (preA := [])
+    (post := []) (postT := []) (bad := sym "b") dispatch policy (.symbol (by decide) (by decide))
+    (by decide) f_types_subtype rfl rfl .nil .nil b_types_subtype number_rejects
+  exact ⟨by unfold Mettapedia.Languages.MeTTa.HE.HOLContract.SubtypeFree; decide, exists_, every⟩
 
 end Controls
 
@@ -581,9 +682,12 @@ end Controls
 #print axioms rejected_forward
 #print axioms error_run_exists
 #print axioms error_every_run_complete
+#print axioms Controls.fragment_rows3
 #print axioms Controls.arity_three
 #print axioms Controls.arity_three_complete
 #print axioms Controls.first_mismatch_only
+#print axioms Controls.petta_model_reads_no_declaration
+#print axioms Controls.subtype_row_needed
 
 end DeclaredErrors
 

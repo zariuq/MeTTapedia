@@ -31,7 +31,11 @@ On HE's `let` and `if` programs (`LetEveryRun.Controls.letIfRows`):
   `metta-repl` answers `[]`.
 * `Controls.incoming_bindings_decide` (negative, the bindings matter): the same `let` has the answer
   `(pair 1 2)` under the empty bindings and none under bindings holding `$y := 7`; no statement over
-  all incoming bindings is true of it.
+  all incoming bindings is true of it (`Controls.bound_incoming_none`).
+* `Controls.nested_agree` (positive, both dialects, a nested template):
+  `(let $x yes (pair $x (pair $x no)))` gives `[(pair yes (pair yes no))]` on every HE run
+  (`LetEveryRun.Controls.nested_template_every_run`) and on PeTTa, whose side runs through the
+  tracked interface: the template is a value tree under PeTTa's binding of `$x`.
 -/
 
 set_option autoImplicit false

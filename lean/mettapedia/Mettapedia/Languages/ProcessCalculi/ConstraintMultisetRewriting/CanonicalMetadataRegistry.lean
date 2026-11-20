@@ -62,8 +62,8 @@ theorem find_new_append (key : K) (keys : List K) (fresh : key ∉ keys) :
   | nil => simp [find]
   | cons head tail earlier =>
       have different : head ≠ key := by intro same; exact fresh (List.mem_cons.mpr (Or.inl same.symm))
-      have absent : key ∉ tail := fun member => fresh (List.mem_cons_of_mem _ member)
-      simp [find, different, earlier absent]
+      have missing : key ∉ tail := fun member => fresh (List.mem_cons_of_mem _ member)
+      simp [find, different, earlier missing]
 
 structure Registry (K : Type*) where
   keys : List K

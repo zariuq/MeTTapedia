@@ -1,5 +1,6 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.TypingContractsControls
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.StagedSourceEffects
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ExactQueryAlphabet
 
 /-!
 # The exit check against staged effects
@@ -36,8 +37,17 @@ variable {T : Type uT} {S : Type uS} {O : Type uO} [DecidableEq O]
   (A : SubstitutionAction T S) (label : O → T)
 
 /-- A firing as an instruction of a staged block. -/
-def instruction (f : AnnotatedRuns.Firing T S O) : StagedSourceEffects.Instruction T S O :=
-  ⟨f.rule, f.selection, f.queries⟩
+def instruction (f : ExactQueryAlphabet.Alphabet T S O) : StagedSourceEffects.Instruction T S O :=
+  ⟨f.1.rule, f.1.selection, f.2.queries⟩
+
+theorem instruction_valid_iff (C : Configuration T O) (f : ExactQueryAlphabet.Alphabet T S O) :
+    PredicateQueryAdmission.Valid A label (instruction f).rule (instruction f).observations C
+      (instruction f).selection ↔ f.1.Valid A label C := by
+  change PredicateQueryAdmission.Valid A label f.1.rule f.2.queries C f.1.selection ↔
+    PredicateQueryAdmission.RegionValid A label f.1.rule f.1.queries C f.1.selection
+  rw [f.2.image]
+  exact PredicateQueryAdmission.valid_iff_regionValid
+
 
 /-- **Sequential exit.** The body is admitted, the exit check is refused after it: the body alone is
 a run, the body then the exit check is not, and what the body made stays present. -/
@@ -64,34 +74,38 @@ theorem sequential_exit_keeps_effects (C₀ : Configuration T O) (body exit : An
     exact .inr (by simpa [Selection.commit] using made)
 
 /-- The body and its exit check run in a staged block exactly when they run in sequence. -/
-theorem staged_executable_iff (C₀ : Configuration T O) (body exit : AnnotatedRuns.Firing T S O) :
+theorem staged_executable_iff (C₀ : Configuration T O) (body exit : ExactQueryAlphabet.Alphabet T S O) :
     StagedSourceEffects.Executable A label C₀ [instruction body, instruction exit] ↔
-      AnnotatedRuns.Executable A label C₀ [body, exit] :=
-  Iff.rfl
+      AnnotatedRuns.Executable A label C₀ [body.1, exit.1] := by
+  change (PredicateQueryAdmission.Valid A label body.1.rule body.2.queries C₀ body.1.selection ∧
+    PredicateQueryAdmission.Valid A label exit.1.rule exit.2.queries (body.1.result label C₀) exit.1.selection ∧
+      A.Consistent (exit.1.result label (body.1.result label C₀)).equations) ↔ _
+  exact and_congr (instruction_valid_iff A label C₀ body)
+    (and_congr (instruction_valid_iff A label (body.1.result label C₀) exit) Iff.rfl)
 
 /-- **Staged exit.** When the exit check is refused after the body, the staged block leaves the
 caller's configuration unchanged: one commit at one cut, and no residue. -/
-theorem staged_exit_no_residue (C₀ after : Configuration T O) (body exit : AnnotatedRuns.Firing T S O)
-    (refused : ¬ exit.Valid A label (body.result label C₀))
+theorem staged_exit_no_residue (C₀ after : Configuration T O) (body exit : ExactQueryAlphabet.Alphabet T S O)
+    (refused : ¬ exit.1.Valid A label (body.1.result label C₀))
     (result : StagedSourceEffects.CompiledResult A label
       (StagedSourceEffects.compile label [instruction body, instruction exit]) C₀ after) :
     after = C₀ :=
   StagedSourceEffects.refused_has_no_residue
     (fun ready : StagedSourceEffects.Executable A label C₀ [instruction body, instruction exit] =>
-      refused ready.2.1) result
+      refused ((staged_executable_iff A label C₀ body exit).mp ready).2.1) result
 
 /-- When the body and the exit check are both admitted, the staged block publishes the configuration
 the two firings leave. -/
-theorem staged_exit_commits (C₀ after : Configuration T O) (body exit : AnnotatedRuns.Firing T S O)
-    (ready : AnnotatedRuns.Executable A label C₀ [body, exit])
+theorem staged_exit_commits (C₀ after : Configuration T O) (body exit : ExactQueryAlphabet.Alphabet T S O)
+    (ready : AnnotatedRuns.Executable A label C₀ [body.1, exit.1])
     (result : StagedSourceEffects.CompiledResult A label
       (StagedSourceEffects.compile label [instruction body, instruction exit]) C₀ after) :
-    after = AnnotatedRuns.follow label C₀ [body, exit] := by
+    after = AnnotatedRuns.follow label C₀ [body.1, exit.1] := by
   rcases (StagedSourceEffects.compiled_result_iff_source A label _ C₀ after).mp result with
     ⟨_, same⟩ | ⟨refused, _⟩
   · rw [same, AnnotatedRuns.follow_eq_plain]
     rfl
-  · exact absurd ready refused
+  · exact absurd ((staged_executable_iff A label C₀ body exit).mpr ready) refused
 
 end Generic
 
@@ -107,6 +121,12 @@ def body : AnnotatedRuns.Firing TypingContractsControls.T (Instantiation Nat Nat
 /-- The exit check: `R` must be a `Number`. -/
 def exit : AnnotatedRuns.Firing TypingContractsControls.T (Instantiation Nat Nat Name Empty Sym typeArity valueArity isAtom) Nat :=
   tellFiring [require () (.var 1) (.closed .number)]
+
+def bodyExact : ExactQueryAlphabet.Alphabet TypingContractsControls.T
+    (Instantiation Nat Nat Name Empty Sym typeArity valueArity isAtom) Nat := ⟨body,⟨[],rfl⟩⟩
+
+def exitExact : ExactQueryAlphabet.Alphabet TypingContractsControls.T
+    (Instantiation Nat Nat Name Empty Sym typeArity valueArity isAtom) Nat := ⟨exit,⟨[],rfl⟩⟩
 
 theorem body_admitted : body.Valid (action decls isAtom) label start := by
   refine ⟨⟨List.nodup_nil, List.nodup_singleton 7, rfl, rfl, rfl, ⟨?_, ?_, ?_, ?_, ?_⟩, ?_, ?_⟩, ?_⟩
@@ -158,9 +178,9 @@ theorem sequential_leaves_occurrence :
 /-- **Staged, the refused result leaves nothing.** -/
 theorem staged_leaves_nothing (after : Configuration TypingContractsControls.T Nat)
     (result : StagedSourceEffects.CompiledResult (action decls isAtom) label
-      (StagedSourceEffects.compile label [instruction body, instruction exit]) start after) :
+      (StagedSourceEffects.compile label [instruction bodyExact, instruction exitExact]) start after) :
     after = start ∧ 7 ∉ after.present := by
-  have same := staged_exit_no_residue (action decls isAtom) label start after body exit exit_refused result
+  have same := staged_exit_no_residue (action decls isAtom) label start after bodyExact exitExact exit_refused result
   subst same
   exact ⟨rfl, by simp [start]⟩
 

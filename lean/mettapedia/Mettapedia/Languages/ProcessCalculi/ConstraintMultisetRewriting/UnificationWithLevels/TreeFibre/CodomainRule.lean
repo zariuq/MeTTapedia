@@ -116,27 +116,27 @@ theorem holdsAt_of_support {n : Nat} {t : Tm Head n} (code : ArrowCod t) :
         exact .piCodomain (ihB ha)
 
 /-- `X := t` leaves a code without `X` as it is. -/
-theorem subst_solveSub_absent {n : Nat} {X : Fin n} (t : Tm Head n) :
+theorem subst_solveSub_of_notMem {n : Nat} {X : Fin n} (t : Tm Head n) :
     ∀ {s : Tm Head n}, ArrowCod s → X ∉ s.support → Presentation.subst (solveSub X t) s = s := by
   intro s code
   induction code with
   | var Y =>
-      intro absent
-      have ne : Y ≠ X := fun same => absent (by rw [same]; simp [Tm.support])
+      intro notMem
+      have ne : Y ≠ X := fun same => notMem (by rw [same]; simp [Tm.support])
       change solveSub X t Y = .var Y
       exact solveSub_ne t ne
   | head h => intro _; rfl
   | @pi A B _ _ ihA ihB =>
-      intro absent
-      simp only [Tm.support, Finset.mem_union, mem_outerSupport, not_or] at absent
-      have absentB : X ∉ B.support := by
+      intro notMem
+      simp only [Tm.support, Finset.mem_union, mem_outerSupport, not_or] at notMem
+      have notMemB : X ∉ B.support := by
         intro inB
-        apply absent.2
+        apply notMem.2
         rw [ContextualDependentSupport.support_rename, Finset.mem_image]
         exact ⟨X, inB, rfl⟩
       change Tm.pi (Presentation.subst (solveSub X t) A)
         (Presentation.subst (liftSub (solveSub X t)) (Presentation.rename wk B)) = _
-      rw [subst_liftSub_wk, ihA absent.1, ihB absentB]
+      rw [subst_liftSub_wk, ihA notMem.1, ihB notMemB]
 
 /-- Substitutions agreeing on the unknowns under a binder agree after lifting. -/
 theorem liftSub_agree {n m : Nat} {σ σ' : Sub Head n m} {B : Tm Head (n + 1)}
@@ -189,13 +189,13 @@ theorem subst_congr_support {n : Nat} (t : Tm Head n) :
   | refl p ih => intro m σ σ' agree; show Tm.refl _ = Tm.refl _; rw [ih agree]
 
 /-- **`X := t` leaves every term without `X` as it is**, whatever its shape. -/
-theorem subst_solveSub_fresh {n : Nat} {X : Fin n} (t : Tm Head n) {D : Tm Head n} (absent : X ∉ D.support) :
+theorem subst_solveSub_fresh {n : Nat} {X : Fin n} (t : Tm Head n) {D : Tm Head n} (notMem : X ∉ D.support) :
     Presentation.subst (solveSub X t) D = D := by
   have agree : ∀ i ∈ D.support, solveSub X t i = ids i := by
     intro i member
     have ne : i ≠ X := by
       rintro rfl
-      exact absent member
+      exact notMem member
     exact solveSub_ne t ne
   rw [subst_congr_support D agree, subst_ids]
 
@@ -318,8 +318,8 @@ theorem codMisfit_out {n : Nat} {Γ : Ctx Head n} {u : Head} {t : Tm Head n} {i 
   rw [declared] at h
   simp only [headOf, Bool.and_eq_false_iff, decide_eq_false_iff_not, Bool.not_eq_eq_eq_not, Bool.not_false,
     decide_eq_true_eq] at h
-  rcases h with absent | below
-  · exact absurd member absent
+  rcases h with notMem | below
+  · exact absurd member notMem
   · exact below
 
 variable (glb : Head → Head → Option Head)
@@ -359,7 +359,7 @@ theorem codTarget_of_misfit {n : Nat} {Γ : Ctx Head n} {u w g : Head} {t : Tm H
 universes, no declaration mentioning `X` or an unknown of `t`, and a greatest lower bound with `u` for every misfit
 unknown. -/
 structure CodSolvable {Θ : Context S.R} {e : Equation (TotalTerm Θ)} (v : FlexCod e) : Prop where
-  absent : v.X ∉ e.2.2.code.support
+  notMem : v.X ∉ e.2.2.code.support
   heads : ∀ h ∈ codHeads e.2.2.code, ∃ k, S.R.headTyping h k ∧ S.R.cumulative k v.u
   occurring : ∀ Y ∈ e.2.2.code.support, ∃ w, Ctx.lookup Θ.raw Y = .head w ∧ S.R.isUniverse w
   apart : ∀ i, ∀ j ∈ (Ctx.lookup Θ.raw i).support, j ≠ v.X ∧ j ∉ e.2.2.code.support
@@ -505,7 +505,7 @@ def codNarrowSolveUpdate {Θ : Context S.R} {e : Equation (TotalTerm Θ)} (v : F
             Presentation.subst g.substitution e'.2.2.code := by
           change Presentation.subst (fun i => Presentation.subst g.substitution (solveSub v.X e'.2.2.code i))
             e'.2.2.code = _
-          rw [← subst_comp, subst_solveSub_absent _ v.code ok.absent]
+          rw [← subst_comp, subst_solveSub_of_notMem _ v.code ok.notMem]
         rw [fixed, v.side_left]
         change Presentation.subst g.substitution (solveSub v.X e'.2.2.code v.X) = _
         rw [solveSub_self]

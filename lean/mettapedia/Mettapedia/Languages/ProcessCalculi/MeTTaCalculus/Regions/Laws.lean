@@ -75,7 +75,7 @@ This module imports the development and lists where each law is proved.
   another read or wrote, publishing the first may refuse the second; the refused
   one changes nothing and keeps its work.
   `Explored.publication_of_reads_not_kept`, `Explored.publication_ledger`,
-  `Explored.independent_sibling_survives_commit`, `Controls.absence_race`,
+  `Explored.independent_sibling_survives_commit`, `Controls.none_race`,
   `Controls.second_taker_refused`.
 * **Selection is not publication.**  The answers returned and the proposals
   published are two things a policy declares; a policy that is a function of the

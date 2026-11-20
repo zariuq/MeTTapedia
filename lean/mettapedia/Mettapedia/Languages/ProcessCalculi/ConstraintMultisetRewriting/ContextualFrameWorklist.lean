@@ -50,6 +50,13 @@ abbrev Refuter (S : Signature) :=
   {Variables : Type} → [DecidableEq Variables] → (declaration : Variables → MetaArity S) →
     (problem : Problem declaration) → Option (ContextualEquationRefutation.Refutation problem)
 
+abbrev Selector (S : Signature) := {Variables : Type} → [DecidableEq Variables] →
+  (declaration : Variables → MetaArity S) → (problem : Problem declaration) → Option (Update problem)
+
+abbrev defaultSelector (S : Signature) [DecidableEq S.Srt] [∀ sort, DecidableEq (S.Op sort)] :
+    Selector S :=
+  fun declaration problem => choose (source := declaration) problem
+
 def normalizationUpdate {problem remaining : Problem source}
     (computed : ContextualRigidSolver.normalize problem = some remaining) : Update problem :=
   ⟨V, inferInstance, source, generator source, remaining, ContextualRigidSolver.normalization_reduction computed⟩
@@ -61,11 +68,12 @@ def Result.after {problem : Problem source} (first : Update problem) : Result fi
       exact impossible next residual restSolved
 
 def runWithRefuter (refuter : Refuter S) : Nat → {Variables : Type} → [DecidableEq Variables] →
-    (declaration : Variables → MetaArity S) → (problem : Problem declaration) → Result problem
-  | 0, _, equality, declaration, problem => by
+    (declaration : Variables → MetaArity S) → (problem : Problem declaration) →
+    (select : Selector S := defaultSelector S) → Result problem
+  | 0, _, equality, declaration, problem, _ => by
       letI := equality
       exact .residual (identity problem)
-  | fuel + 1, Variables, equality, declaration, problem => by
+  | fuel + 1, Variables, equality, declaration, problem, select => by
       letI := equality
       exact match computed : ContextualRigidSolver.normalize problem with
       | none => .refuted fun _ candidate => ContextualRigidSolver.refused_has_no_solution computed candidate
@@ -76,12 +84,12 @@ def runWithRefuter (refuter : Refuter S) : Nat → {Variables : Type} → [Decid
               obtain ⟨residual, restSolved, _⟩ := normalizedUpdate.valid.complete next candidate solved
               exact impossible.noModel next residual restSolved
           | none =>
-              match choose normalized with
+              match select declaration normalized with
               | none => .residual normalizedUpdate
               | some update =>
                   let first := normalizedUpdate.then update
                   letI := update.equality
-                  Result.after first (runWithRefuter refuter fuel update.declaration update.remaining)
+                  Result.after first (runWithRefuter refuter fuel update.declaration update.remaining select)
 
 def run (fuel : Nat) {Variables : Type} [DecidableEq Variables]
     (declaration : Variables → MetaArity S) (problem : Problem declaration) : Result problem :=
@@ -166,15 +174,22 @@ theorem preserves_every_solution (fuel : Nat) (problem : Problem source)
 original declaration family. An unfinished prefix keeps its residual queue;
 the new equations travel through the returned assignment before solving.
 The resulting update still certifies the full original concatenation. -/
-def Result.resumeWithRefuter {problem : Problem source} (refuter : Refuter S) (prior : Result problem) (fuel : Nat)
-    (extra : Problem source) : Result (problem ++ extra) :=
+def Result.resumeUsing {problem : Problem source} (prior : Result problem) (fuel : Nat)
+    (extra : Problem source)
+    (solve : Nat → {Names : Type} → [DecidableEq Names] → (declaration : Names → MetaArity S) →
+      (work : Problem declaration) → Result work) : Result (problem ++ extra) :=
   match prior with
   | .refuted impossible => .refuted fun next candidate solved =>
       impossible next candidate ((models_append candidate problem extra).mp solved).1
   | .residual update => by
       letI := update.equality
       exact Result.after (update.keep_right extra)
-        (runWithRefuter refuter fuel update.declaration (update.remaining ++ mapProblem update.answer extra))
+        (solve fuel update.declaration (update.remaining ++ mapProblem update.answer extra))
+
+def Result.resumeWithRefuter {problem : Problem source} (refuter : Refuter S) (prior : Result problem) (fuel : Nat)
+    (extra : Problem source) (select : Selector S := defaultSelector S) : Result (problem ++ extra) :=
+  prior.resumeUsing fuel extra fun fuel {Names} [DecidableEq Names] declaration work =>
+    runWithRefuter refuter fuel declaration work select
 
 def Result.resume {problem : Problem source} (prior : Result problem) (fuel : Nat)
     (extra : Problem source) : Result (problem ++ extra) :=

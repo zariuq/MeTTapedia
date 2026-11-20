@@ -1,5 +1,6 @@
 import Mettapedia.OSLF.Syntax.RhoPayloadPresentation
 import Mettapedia.GSLT.Causality.ResourceInteraction
+import Mettapedia.GSLT.Core.IndexedOperational
 
 /-!
 # The rho calculus as interaction on a bag of atoms
@@ -107,6 +108,43 @@ theorem atomBag_add {M N : Multiset (Cls Γ Srt.pr)} (hM : AtomBag M) (hN : Atom
 
 theorem atomBag_of_le {M N : Multiset (Cls Γ Srt.pr)} (hN : AtomBag N) (h : M ≤ N) :
     AtomBag M := fun x hx => hN x (Multiset.mem_of_le h hx)
+
+private theorem atoms_bind {Δ : Ctx sig} (assignment : Sub sig Γ Δ) :
+    ∀ process : Term sig Γ Srt.pr,
+      atoms (bind assignment process) =
+        (atoms process).bind (fun atom => atomsQ (bindQ assignment atom))
+  | .var v => by
+      change _ = ({cls (.var v : Term sig Γ Srt.pr)} : Multiset _).bind _
+      rw [Multiset.singleton_bind]
+      rfl
+  | .op Op.nil .nil => by
+      change (0 : Multiset _) = (0 : Multiset _).bind _
+      rw [Multiset.zero_bind]
+  | .op Op.par (.cons first (.cons second .nil)) => by
+      change atoms (bind assignment first) + atoms (bind assignment second) =
+        (atoms first + atoms second).bind _
+      rw [Multiset.add_bind, atoms_bind assignment first, atoms_bind assignment second]
+  | .op Op.out args => by
+      change _ = ({cls (.op Op.out args : Term sig Γ Srt.pr)} : Multiset _).bind _
+      rw [Multiset.singleton_bind]
+      rfl
+  | .op Op.inp args => by
+      change _ = ({cls (.op Op.inp args : Term sig Γ Srt.pr)} : Multiset _).bind _
+      rw [Multiset.singleton_bind]
+      rfl
+  | .op Op.drp args => by
+      change _ = ({cls (.op Op.drp args : Term sig Γ Srt.pr)} : Multiset _).bind _
+      rw [Multiset.singleton_bind]
+      rfl
+termination_by process => termSize process
+decreasing_by all_goals (simp only [termSize, argsSize]; omega)
+
+/-- Substitution repacks every instantiated component into its atoms. A
+single ambient process variable can become zero or several occurrences. -/
+theorem atomsQ_bindQ {Δ : Ctx sig} (assignment : Sub sig Γ Δ) (process : Cls Γ Srt.pr) :
+    atomsQ (bindQ assignment process) =
+      (atomsQ process).bind (fun atom => atomsQ (bindQ assignment atom)) :=
+  Quotient.inductionOn process (atoms_bind assignment)
 
 /-! ## Rho as a resource system -/
 
@@ -277,6 +315,26 @@ theorem dropExecution_step_iff (a b : Term sig Γ Srt.pr) :
           rw [hR, hb, add_comm]
         exact steps_of_equiv hsource htarget (steps_parCong [drop] R (steps_drop i))
 
+
+/-- The strict resource dynamics include into the profile with free Drop.
+This is a forward operational translation, not a claim that the added
+behavior is reflected or that bisimilarity is preserved. -/
+def strictInDropExecution (context : Ctx sig) :
+    Mettapedia.GSLT.IndexedOperational.OperationalTranslation
+      (strictSystem context).theory (dropExecutionSystem context).theory where
+  mapTerm := id
+  mapEquiv := fun equivalent => equivalent
+  mapStep := by
+    rintro before after ⟨site, firing, enabled, result⟩
+    exact ⟨Firing.comm, firing, enabled, result⟩
+
+theorem strict_step_is_dropExecution {a b : Term sig Γ Srt.pr}
+    (step : Steps strictRules a b) : Steps dropExecutionRules a b :=
+  (dropExecution_step_iff a b).mpr
+    ((strictInDropExecution Γ).mapStep ((strict_step_iff a b).mp step))
+
+#print axioms strictInDropExecution
+#print axioms strict_step_is_dropExecution
 
 /-! ## Commuting squares and conflicts of rho -/
 

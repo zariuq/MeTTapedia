@@ -15,11 +15,11 @@ the state, every other clause holds, and the step refuses the second firing afte
 * `tells_clash_refused`: the first tells `X ≐ Ground`, the second `X ≐ Ground → Ground`; each is
   solvable, the joint information is not;
 * `query_written_refused`: the first makes the row `Ground`, inside the region of the second's
-  absence query of `Ground`.
+  none query of `Ground`.
 
 **The positive control** (`independent_pair`, `positive_diamond`): under the knowledge
 `X ≐ Ground → Ground`, a firing that takes row `0` and makes row `1 : X` and a firing that asks the
-absence of `Ground` and makes row `2 : Ground → Ground` are independent; the absence query is
+none queries of `Ground` and makes row `2 : Ground → Ground` are independent; the none query is
 unwritten because no solution equates `X` with `Ground`. The diamond closes in the step.
 -/
 
@@ -121,9 +121,9 @@ def tellArrow : Plain setting.levels Nat triple :=
 def makeGround : Plain setting.levels Nat triple :=
   ⟨[], [], [], [], [(1, Make.ofRow groundUniverse)], [], [], []⟩
 
-/-- Ask the absence of `Ground`. -/
+/-- Ask the none query of `Ground`. -/
 def askNoGround : Plain setting.levels Nat triple :=
-  ⟨[], [], [], [], [], [], [], [Query.absent setting.levels Nat groundUniverse]⟩
+  ⟨[], [], [], [], [], [], [], [Query.predicate setting.levels Nat .none groundUniverse]⟩
 
 /-! ## Admissions -/
 
@@ -195,7 +195,7 @@ theorem askNoGround_admitted : askNoGround.Admits (stateAt [] ∅).toLocal := by
   · intro b τ _
     refine ⟨fun _ member => absurd member List.not_mem_nil, fun q member => ?_⟩
     obtain rfl := List.mem_singleton.mp member
-    exact (Query.absent_holds_iff _ _ _ τ).mpr fun o present => absurd present (Finset.notMem_empty o)
+    exact (Query.predicate_holds_iff _ _ _ _ τ).mpr fun o present => absurd present (Finset.notMem_empty o)
 
 /-! ## Each clause is needed -/
 
@@ -272,7 +272,7 @@ theorem tells_clash_refused (first : (Plain.toFiring (s := stateAt [] {0}) tellG
   refused_of first tellArrow_admitted fun ⟨_, _, _, solvable⟩ => tells_joint_refuted solvable
 
 /-- **The query clause is needed**: the first firing makes the row `Ground`, inside the region of
-the second's absence query of `Ground`. Both are admitted at the state with no rows; the second is
+the second's none query of `Ground`. Both are admitted at the state with no rows; the second is
 refused after the first. -/
 theorem query_written_refused (first : (Plain.toFiring (s := stateAt [] ∅) makeGround).Admits) :
     ¬ (Plain.toFiring (Plain.residual (s := stateAt [] ∅) makeGround askNoGround first)).Admits := by
@@ -281,9 +281,9 @@ theorem query_written_refused (first : (Plain.toFiring (s := stateAt [] ∅) mak
   obtain ⟨-, -, -, queries⟩ := after
   have holds := (queries triple (𝟙 triple) (Frames.models_nil _)).2 _
     (List.mem_singleton_self _)
-  have absent := (Query.absent_holds_iff _ _ _ (𝟙 triple)).mp holds 1
+  have missing := (Query.predicate_holds_iff _ _ _ _ (𝟙 triple)).mp holds 1
     ((makeGround.mem_fire_iff _ 1).mpr (.inr (List.mem_singleton_self 1)))
-  exact absent (refl_solves (𝟙 triple) groundUniverse)
+  exact missing (refl_solves (𝟙 triple) groundUniverse)
 
 /-! ## The positive control -/
 
@@ -294,9 +294,9 @@ def arrowKnown : EquationStore (TotalTerm triple) := [(xUniverse, arrowUniverse)
 def consume : Plain setting.levels Nat triple :=
   ⟨[0], [], [xUniverse], [], [(1, Make.ofRow xUniverse)], [], [], []⟩
 
-/-- Ask the absence of `Ground` and make row `2 : Ground → Ground`. -/
+/-- Ask the none query of `Ground` and make row `2 : Ground → Ground`. -/
 def observe : Plain setting.levels Nat triple :=
-  ⟨[], [], [], [], [(2, Make.ofRow arrowUniverse)], [], [], [Query.absent setting.levels Nat groundUniverse]⟩
+  ⟨[], [], [], [], [(2, Make.ofRow arrowUniverse)], [], [], [Query.predicate setting.levels Nat .none groundUniverse]⟩
 
 theorem arrowKnown_solved {Θ : Context Tower.rules} {τ : Θ ⟶ triple} {K : EquationStore (TotalTerm triple)}
     (inside : (xUniverse, arrowUniverse) ∈ K) (solved : (frames setting.levels).Models τ K) :
@@ -346,12 +346,12 @@ theorem observe_admitted : observe.Admits (stateAt arrowKnown {0}).toLocal := by
     exact toArrow_solves
   · refine ⟨fun _ member => absurd member List.not_mem_nil, fun q member => ?_⟩
     obtain rfl := List.mem_singleton.mp member
-    refine (Query.absent_holds_iff _ _ _ τ).mpr fun o _ => ?_
+    refine (Query.predicate_holds_iff _ _ _ _ τ).mpr fun o _ => ?_
     exact ground_apart τ (arrowKnown_solved (K := observe.information (stateAt arrowKnown {0}).toLocal)
       (List.mem_append_left _ (List.mem_singleton_self _)) solved)
 
 /-- **The two firings are independent**: disjoint takes, no read taken, distinct made occurrences,
-solvable joint information, and the absence query unwritten, since no joint solution equates `X`
+solvable joint information, and the none query unwritten, since no joint solution equates `X`
 with `Ground`. -/
 theorem independent_pair : Independent (stateAt arrowKnown {0}).toLocal consume observe where
   takes_apart := fun _ _ inside => absurd inside List.not_mem_nil

@@ -234,9 +234,9 @@ theorem mixed_decided {Θ : Context S.R} {original : EquationStore (TotalTerm Θ
               run (mixedSolver choices facts roots heads algebra rigid complete normalizes inh headTypingUnique
                   declared strengthening glb spec) original larger = .solved state finished ∧
                 (frames S.levels).Principal original state.answer) ∨
-          (∃ absent,
+          (∃ missing,
             run (mixedSolver choices facts roots heads algebra rigid complete normalizes inh headTypingUnique
-              declared strengthening glb spec) original larger = .refuted absent)) :=
+              declared strengthening glb spec) original larger = .refuted missing)) :=
   (mixedFragment choices facts roots heads algebra rigid complete normalizes inh headTypingUnique declared
     strengthening glb spec total).decided inside
 
@@ -248,9 +248,9 @@ theorem mixed_principal_or_unsolvable {Θ : Context S.R} {original : EquationSto
       ¬ (frames S.levels).Solvable original := by
   obtain ⟨fuel, decided⟩ := mixed_decided choices facts roots heads algebra rigid complete normalizes inh
     headTypingUnique declared strengthening glb spec total inside
-  rcases (decided fuel le_rfl).2 with ⟨state, _, _, principal⟩ | ⟨absent, _⟩
+  rcases (decided fuel le_rfl).2 with ⟨state, _, _, principal⟩ | ⟨missing, _⟩
   · exact .inl ⟨_, _, principal⟩
-  · exact .inr absent
+  · exact .inr missing
 
 end Solver
 

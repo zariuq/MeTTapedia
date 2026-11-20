@@ -2587,6 +2587,351 @@ theorem restore_completed_iff {PublicWorld : Type} (publicScope : List String)
 
 end Mettapedia.Languages.MeTTa.HE.RecursiveExecution.Contextual.Stateful.Protocol
 
+namespace Mettapedia.Languages.MeTTa.HE.RecursiveExecution.Contextual.Stateful.Protocol.FileCommands
+
+open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
+open Spec.Eval
+open Spec.Eval.Completed (Policy Result Frame WorldEnvironment)
+open RecursiveTasks.Contextual RecursiveMachine.Contextual
+open Mettapedia.GSLT.Distinction.ProductiveBlocks
+open Mettapedia.Machines.OrderedProtocol.Completion (OrderedStateFlatMapRel)
+
+/-! ## The HE file driver's boundary between execution commands
+
+Inputs here are execution tasks after the runner's input/entry processing.
+This layer neither parses a file nor reimplements HE's evaluator. Its active
+command is the existing world configuration. An internal publication does not
+consume another command. On completion it publishes **one entire batch**;
+an error in that batch prevents entry into the rest of the file.
+-/
+
+inductive Stop where
+  | eof
+  | errorBatch
+  deriving DecidableEq
+
+structure Finished (Context World : Type) where
+  world : World
+  context : Context
+  unvisited : List Task
+  stop : Stop
+
+inductive Cursor (Context World : Type) where
+  | active (current : WorldConfiguration Context World) (remaining : List Task)
+  | ended (result : Finished Context World)
+
+variable {Context World : Type}
+
+/-- An ordinary evaluation entry starts with a fresh activation. The surrounding world
+and context come from the runner, not from the preceding command's bindings. -/
+def entry (value : Atom) : Task :=
+  .atom [] [] (Entry.Value.ofAtom value) Atom.undefinedType Frame.empty
+
+def start (world : World) (context : Context) : List Task → Cursor Context World
+  | [] => .ended ⟨world, context, [], .eof⟩
+  | task :: remaining => .active ⟨world, context, .work task, [], []⟩ remaining
+
+def hasError (batch : List Result) : Bool :=
+  batch.any (fun row => isErrorAtom row.1.erase)
+
+theorem hasError_iff {batch : List Result} :
+    hasError batch = true ↔ ∃ answer ∈ batch, isErrorAtom answer.1.erase = true := by
+  simp [hasError]
+
+/-- The error test uses support, not the publication order of a completed batch.
+This does not license reading a prefix as an already completed batch. -/
+theorem hasError_perm {left right : List Result} (same : left.Perm right) :
+    hasError left = hasError right := by
+  apply Bool.eq_iff_iff.mpr
+  rw [hasError_iff, hasError_iff]
+  exact ⟨fun ⟨a, mem, err⟩ => ⟨a, same.mem_iff.mp mem, err⟩,
+    fun ⟨a, mem, err⟩ => ⟨a, same.mem_iff.mpr mem, err⟩⟩
+
+def afterBatch (world : World) (context : Context) (rest : List Task) (batch : List Result) :
+    Cursor Context World :=
+  if hasError batch then .ended ⟨world, context, rest, .errorBatch⟩
+  else start world context rest
+
+@[simp] theorem after_empty (world : World) (context : Context) (rest : List Task) :
+    afterBatch world context rest [] = start world context rest := rfl
+
+inductive Step (environment : WorldEnvironment Context World) (policy : Policy) :
+    Cursor Context World →
+      Option (Transition (Cursor Context World) (List Result) (Finished Context World) Empty) → Prop where
+  | internal {before after remaining} :
+      WorldStep (admission := environment.arguments) environment.view environment.services
+        environment.dispatch environment.lookup policy before after →
+      Step environment policy (.active before remaining) (some (.silent (.active after remaining)))
+  | report {current remaining batch} :
+      worldObserve current = some batch →
+      Step environment policy (.active current remaining)
+        (some (.publish [batch] (afterBatch current.world current.context remaining batch)))
+  | stuck {current remaining} :
+      Rule environment policy current none → Step environment policy (.active current remaining) none
+  | finish (result : Finished Context World) : Step environment policy (.ended result) (some (.finish result))
+
+variable {environment : WorldEnvironment Context World} {policy : Policy}
+
+private theorem keeps_context {before after : WorldConfiguration Context World}
+    (path : WorldSteps (admission := environment.arguments) environment.view environment.services
+      environment.dispatch environment.lookup policy before after) :
+    after.context = before.context := by
+  induction path with
+  | refl => rfl
+  | tail _ step ih => exact (WorldStep.preserves_context step).trans ih
+
+/-- The file driver can follow an arbitrary retained evaluator prefix without
+publishing a batch or entering any of the pending commands. -/
+theorem retain_prefix {before after : WorldConfiguration Context World} (remaining : List Task)
+    (path : WorldSteps (admission := environment.arguments) environment.view environment.services
+      environment.dispatch environment.lookup policy before after) :
+    ∃ fuel, Derivation (Step environment policy) fuel (.active before remaining) []
+      (.exhausted (.active after remaining)) := by
+  induction path with
+  | refl => exact ⟨0, .pause _⟩
+  | tail _ step ih =>
+      obtain ⟨fuel, retained⟩ := ih
+      exact ⟨fuel + 1, retained.resume (.silent (.internal step) (.pause _))⟩
+
+/-- The completed source evaluator earns exactly one report and the next
+driver continuation, including when there are no answers to put in the report. -/
+theorem report_source {current : WorldConfiguration Context World} {batch : List Result} {world : World}
+    (source : current.SourceRel environment policy batch world) (remaining : List Task) :
+    ∃ fuel, Derivation (Step environment policy) fuel (.active current remaining) [batch]
+      (.exhausted (afterBatch world current.context remaining batch)) := by
+  obtain ⟨finished, path, readout, reached⟩ := (Stateful.source_iff_observed current batch world).mp source
+  obtain ⟨fuel, retained⟩ := retain_prefix remaining path
+  refine ⟨fuel + 1, ?_⟩
+  have advanced := retained.resume (Derivation.published (Step.report readout) (.pause _))
+  simpa only [List.nil_append, List.append_nil, reached, keeps_context path] using advanced
+
+/-- A reported batch in an arbitrary admitted file execution has an actual
+source completion. After the report, the suffix starts in its reached world.
+Unfinished prefixes cannot supply this witness. -/
+theorem first_report_source {fuel : Nat} {current : WorldConfiguration Context World}
+    {remaining : List Task} {events : List (List Result)}
+    {outcome : Outcome (Cursor Context World) (Finished Context World) Empty}
+    (path : Derivation (Step environment policy) fuel (.active current remaining) events outcome)
+    {batch : List Result} {later : List (List Result)} (published : events = batch :: later) :
+    ∃ world restFuel, current.SourceRel environment policy batch world ∧
+      Derivation (Step environment policy) restFuel
+        (afterBatch world current.context remaining batch) later outcome := by
+  induction fuel generalizing current events outcome with
+  | zero => cases path; cases published
+  | succ fuel ih =>
+      cases path with
+      | silent progress rest =>
+          cases progress with
+          | internal step =>
+              obtain ⟨world, restFuel, completed, suffix⟩ := ih rest published
+              refine ⟨world, restFuel, RecursiveCorrectness.Contextual.Stateful.step_source_back step completed, ?_⟩
+              simpa only [WorldStep.preserves_context step] using suffix
+      | published first rest =>
+          cases first with
+          | report observed =>
+              simp only [List.singleton_append, List.cons.injEq] at published
+              rcases published with ⟨rfl, rfl⟩
+              exact ⟨_, fuel,
+                (Stateful.source_iff_observed _ _ _).mpr ⟨current, .refl, observed, rfl⟩, rest⟩
+      | finished step => cases step
+      | faulted step => cases step
+      | requested step => cases step
+      | stuck => cases published
+
+theorem ended_exact {result : Finished Context World} {fuel : Nat} {events : List (List Result)}
+    {outcome : Outcome (Cursor Context World) (Finished Context World) Empty}
+    (path : Derivation (Step environment policy) fuel (.ended result) events outcome) :
+    events = [] ∧ (outcome = .finished result ∨ outcome = .exhausted (.ended result)) := by
+  cases path with
+  | pause => exact ⟨rfl, Or.inr rfl⟩
+  | silent step => cases step
+  | published step => cases step
+  | finished step => cases step; exact ⟨rfl, Or.inl rfl⟩
+  | faulted step => cases step
+  | requested step => cases step
+  | stuck step => cases step
+
+/-- An error batch is published, but its pending command suffix is never entered. -/
+theorem error_report_stops {fuel : Nat} {current : WorldConfiguration Context World}
+    {remaining : List Task} {events : List (List Result)}
+    {outcome : Outcome (Cursor Context World) (Finished Context World) Empty}
+    (path : Derivation (Step environment policy) fuel (.active current remaining) events outcome)
+    {batch : List Result} {later : List (List Result)} (published : events = batch :: later)
+    (error : hasError batch = true) : later = [] := by
+  obtain ⟨_, _, _, suffix⟩ := first_report_source path published
+  have halted := ended_exact (by simpa [afterBatch, error] using suffix)
+  exact halted.1
+
+/-- Once the error batch is reported, even the terminal verdict retains the same
+reached world and the whole untouched command suffix. -/
+theorem error_end_exact {fuel : Nat} {current : WorldConfiguration Context World}
+    {remaining : List Task} {events : List (List Result)} {result : Finished Context World}
+    (path : Derivation (Step environment policy) fuel (.active current remaining) events (.finished result))
+    {batch : List Result} {later : List (List Result)} (published : events = batch :: later)
+    (error : hasError batch = true) :
+    ∃ world, current.SourceRel environment policy batch world ∧ later = [] ∧
+      result = ⟨world, current.context, remaining, .errorBatch⟩ := by
+  obtain ⟨world, restFuel, source, suffix⟩ := first_report_source path published
+  let endState : Finished Context World := ⟨world, current.context, remaining, .errorBatch⟩
+  have halted : Derivation (Step environment policy) restFuel (.ended endState) later (.finished result) := by
+    simpa [afterBatch, error, endState] using suffix
+  obtain ⟨quiet, completed | exhausted⟩ := ended_exact halted
+  · exact ⟨world, source, quiet, Outcome.finished.inj completed⟩
+  · cases exhausted
+
+/-- Conversely, every finite driver prefix without a report is still in the
+same command. It reflects to the exact retained state of the evaluator. -/
+theorem quiet_prefix_reflects {fuel : Nat} {current : WorldConfiguration Context World}
+    {remaining : List Task} {events : List (List Result)}
+    {outcome : Outcome (Cursor Context World) (Finished Context World) Empty}
+    (path : Derivation (Step environment policy) fuel (.active current remaining) events outcome)
+    (quiet : events = []) :
+    ∃ reached, WorldSteps (admission := environment.arguments) environment.view environment.services
+      environment.dispatch environment.lookup policy current reached ∧
+      (outcome = .exhausted (.active reached remaining) ∨ outcome = .stuck (.active reached remaining)) := by
+  induction fuel generalizing current events outcome with
+  | zero =>
+    cases path
+    exact ⟨_, .refl, Or.inl rfl⟩
+  | succ fuel ih =>
+    cases path with
+    | silent first tail =>
+      cases first with
+      | internal moved =>
+        obtain ⟨reached, steps, retained⟩ := ih tail quiet
+        exact ⟨reached, .head moved steps, retained⟩
+    | published first _ => cases first; simp at quiet
+    | finished first => cases first
+    | faulted first => cases first
+    | requested first => cases first
+    | stuck => exact ⟨_, .refl, Or.inr rfl⟩
+
+/-- Independent evaluation of one command at entry, before any file scheduling. -/
+def CommandCompletion (environment : WorldEnvironment Context World) (policy : Policy)
+    (context : Context) (task : Task) (before : World) (batch : List Result) (after : World) : Prop :=
+  (⟨before, context, .work task, [], []⟩ : WorldConfiguration Context World).SourceRel environment policy batch after
+
+def CleanCommand (environment : WorldEnvironment Context World) (policy : Policy) (context : Context)
+    (task : Task) (before : World) (reports : List (List Result)) (after : World) : Prop :=
+  ∃ batch, reports = [batch] ∧ CommandCompletion environment policy context task before batch after ∧
+    hasError batch = false
+
+/-- A completed traversal of clean commands composes, in order, into the existing driver.
+The unentered suffix is retained, and every new command sees the preceding reached world. -/
+theorem clean_traversal_runs {context : Context} {before after : World}
+    {commands : List Task} {reports : List (List Result)}
+    (source : OrderedStateFlatMapRel (CleanCommand environment policy context) commands before reports after)
+    (remaining : List Task) :
+    ∃ fuel, Derivation (Step environment policy) fuel (start before context (commands ++ remaining)) reports
+      (.exhausted (start after context remaining)) := by
+  induction source with
+  | nil => exact ⟨0, .pause _⟩
+  | @cons head tail initial middle final headResults tailResults first _ ih =>
+    obtain ⟨batch, rfl, evaluated, clean⟩ := first
+    obtain ⟨oneFuel, one⟩ := report_source evaluated (tail ++ remaining)
+    obtain ⟨laterFuel, later⟩ := ih
+    have firstReport : Derivation (Step environment policy) oneFuel
+        (start initial context (head :: (tail ++ remaining))) [batch]
+        (.exhausted (start middle context (tail ++ remaining))) := by
+      simpa [afterBatch, clean, start] using one
+    exact ⟨oneFuel + laterFuel, firstReport.resume later⟩
+
+/-- Observable complete file traces are exactly a clean traversal to EOF, or a
+clean prefix followed by the first completed error batch and an unvisited suffix. -/
+def CompleteTrace (environment : WorldEnvironment Context World) (policy : Policy) (context : Context)
+    (before : World) (commands : List Task) (reports : List (List Result)) (result : Finished Context World) : Prop :=
+  result.context = context ∧
+    ((result.stop = .eof ∧ result.unvisited = [] ∧
+      OrderedStateFlatMapRel (CleanCommand environment policy context) commands before reports result.world) ∨
+     (result.stop = .errorBatch ∧
+      ∃ visited task earlier batch middle,
+        commands = visited ++ (task :: result.unvisited) ∧ reports = earlier ++ [batch] ∧
+        OrderedStateFlatMapRel (CleanCommand environment policy context) visited before earlier middle ∧
+        CommandCompletion environment policy context task middle batch result.world ∧ hasError batch = true))
+
+theorem finished_reads_back {context : Context} {before : World} {commands : List Task}
+    {reports : List (List Result)} {result : Finished Context World} {fuel : Nat}
+    (path : Derivation (Step environment policy) fuel (start before context commands) reports (.finished result)) :
+    CompleteTrace environment policy context before commands reports result := by
+  induction commands generalizing before reports result fuel with
+  | nil =>
+    have expected : Derivation (Step environment policy) fuel (.ended ⟨before, context, [], .eof⟩)
+        reports (.finished result) := path
+    obtain ⟨empty, finished | paused⟩ := ended_exact expected
+    · have same := Outcome.finished.inj finished
+      subst result reports
+      exact ⟨rfl, Or.inl ⟨rfl, rfl, .nil _⟩⟩
+    · cases paused
+  | cons task rest ih =>
+    let active : WorldConfiguration Context World := ⟨before, context, .work task, [], []⟩
+    cases reports with
+    | nil =>
+      have started : Derivation (Step environment policy) fuel (.active active rest) [] (.finished result) := path
+      obtain ⟨_, _, paused | stuck⟩ := quiet_prefix_reflects started rfl
+      · cases paused
+      · cases stuck
+    | cons batch later =>
+      have started : Derivation (Step environment policy) fuel (.active active rest) (batch :: later)
+          (.finished result) := path
+      obtain ⟨middle, restFuel, source, suffix⟩ := first_report_source started rfl
+      cases tested : hasError batch with
+      | true =>
+        have halted : Derivation (Step environment policy) restFuel (.ended ⟨middle, context, rest, .errorBatch⟩)
+            later (.finished result) := by
+          simpa [afterBatch, tested, active] using suffix
+        obtain ⟨empty, finished | paused⟩ := ended_exact halted
+        · have same := Outcome.finished.inj finished
+          subst result later
+          exact ⟨rfl, Or.inr ⟨rfl, [], task, [], batch, before, rfl, rfl, .nil _, source, tested⟩⟩
+        · cases paused
+      | false =>
+        have following : Derivation (Step environment policy) restFuel (start middle context rest)
+            later (.finished result) := by
+          simpa [afterBatch, tested, active] using suffix
+        obtain ⟨sameContext, ⟨eof, exhausted, clean⟩ | ⟨error, visited, culprit, earlier, final, prior,
+            tasks, trace, clean, failing, presentError⟩⟩ := ih following
+        · exact ⟨sameContext, Or.inl ⟨eof, exhausted,
+            by simpa only [List.singleton_append] using OrderedStateFlatMapRel.cons ⟨_, rfl, source, tested⟩ clean⟩⟩
+        · refine ⟨sameContext, Or.inr ⟨error, task :: visited, culprit, batch :: earlier,
+            final, prior, ?_, ?_, ?_, failing, presentError⟩⟩
+          · simp only [List.cons_append, tasks]
+          · simp only [List.cons_append, trace]
+          · simpa only [List.singleton_append] using OrderedStateFlatMapRel.cons ⟨_, rfl, source, tested⟩ clean
+
+theorem complete_trace_runs {context : Context} {before : World} {commands : List Task}
+    {reports : List (List Result)} {result : Finished Context World}
+    (source : CompleteTrace environment policy context before commands reports result) :
+    ∃ fuel, Derivation (Step environment policy) fuel (start before context commands) reports (.finished result) := by
+  obtain ⟨sameContext, ⟨eof, empty, clean⟩ | ⟨error, visited, task, earlier, batch, middle, tasks, trace,
+    clean, failed, hasError⟩⟩ := source
+  · obtain ⟨fuel, executed⟩ := clean_traversal_runs clean []
+    have endState : start result.world context [] = .ended result := by
+      cases result
+      simp_all [start]
+    rw [endState, List.append_nil] at executed
+    exact ⟨fuel + 1, by simpa only [List.append_nil] using
+      (executed.resume (Derivation.finished (fuel := 0) (.finish result)))⟩
+  · obtain ⟨firstFuel, first⟩ := clean_traversal_runs clean (task :: result.unvisited)
+    obtain ⟨lastFuel, last⟩ := report_source failed result.unvisited
+    have endState : afterBatch result.world context result.unvisited batch = .ended result := by
+      cases result
+      simp_all [afterBatch]
+    have last' : Derivation (Step environment policy) lastFuel (start middle context (task :: result.unvisited))
+        [batch] (.exhausted (.ended result)) := by
+      simpa only [start, endState] using last
+    rw [←tasks] at first
+    rw [trace]
+    exact ⟨firstFuel + (lastFuel + 1), by simpa only [List.append_nil] using
+      (first.resume (last'.resume (Derivation.finished (fuel := 0) (.finish result))))⟩
+
+theorem complete_trace_iff {context : Context} {before : World} {commands : List Task}
+    {reports : List (List Result)} {result : Finished Context World} :
+    CompleteTrace environment policy context before commands reports result ↔
+      ∃ fuel, Derivation (Step environment policy) fuel (start before context commands) reports (.finished result) :=
+  ⟨complete_trace_runs, fun ⟨_, proof⟩ => finished_reads_back proof⟩
+
+end Mettapedia.Languages.MeTTa.HE.RecursiveExecution.Contextual.Stateful.Protocol.FileCommands
+
 namespace Mettapedia.Languages.MeTTa.HE.RecursiveExecution.Contextual.Controls
 
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)

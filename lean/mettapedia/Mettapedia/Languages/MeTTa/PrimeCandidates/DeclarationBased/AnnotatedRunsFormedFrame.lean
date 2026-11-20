@@ -418,9 +418,13 @@ def pendingSpace : Subst signature → Pattern → Bool := fun _ t =>
   | .app .evaluate _ => true
   | _ => false
 
-/-- A client asking that no computation is pending. -/
+/-- A client asking that no computation is pending: the exact query of the pending space whose
+census is empty. -/
 def observerFiring : Firing Pattern (Subst signature) Nat :=
-  ⟨⟨[], [], [], [], []⟩, [⟨pendingSpace, ∅⟩], ⟨[], [], []⟩⟩
+  ⟨⟨[], [], [], [], []⟩,
+    [(⟨pendingSpace, ∅⟩ : PredicateQueryAdmission.Query Pattern (Subst signature) Nat)].map
+      PredicateQueryAdmission.Query.toRegion,
+    ⟨[], [], []⟩⟩
 
 theorem observer_valid_iff (C : Configuration Pattern Nat) (consistent : action.Consistent C.equations) :
     observerFiring.Valid action frameLabel C ↔
@@ -439,8 +443,7 @@ theorem observer_valid_iff (C : Configuration Pattern Nat) (consistent : action.
     · obtain ⟨σ, solved⟩ := consistent
       exact ⟨σ, (problem σ).mpr solved⟩
     · intro query member σ _
-      simp only [observerFiring, List.mem_singleton] at member
-      subst member
+      obtain rfl := List.mem_singleton.mp member
       exact empty
 
 /-- **Negative control: blindness, not order.** The observer runs alone and is not blind to the

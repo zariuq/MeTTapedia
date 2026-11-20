@@ -857,6 +857,13 @@ theorem quotedBound_closed_untranslated :
       tProc (Env.empty []) quotedBound = none :=
   ⟨checkClosedTerm_sound (by decide +kernel), rfl⟩
 
+/-- Reflective admission draws the same boundary: rho's binders do not reach
+into quotations, so this quotation is not admitted. -/
+theorem quotedBound_not_admitted :
+    ¬ Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.QuotesClosed
+      rhoReflectivePresentation.toReflectivePresentationDecl quotedBound := by
+  decide
+
 /-- `for(x <- @0){ @{*x}!(0) }`: the quotation of the singleton bag of the
 drop of the bound name. -/
 def quotedSingleton : Pattern :=
@@ -919,15 +926,14 @@ theorem quotedSingleton_equivalent :
   exact Relation.EqvGen.trans _ quotedDropTerm _ (Relation.EqvGen.rel _ _ first)
     (Relation.EqvGen.rel _ _ second)
 
-/-- **The translation is not invariant under the static equivalence.**  Two
-equal terms of the interactive carrier, one with a translation and one with
-none: the translation resolves the quotation of a dropped name only when it
-is written as such. -/
-theorem translation_not_invariant :
-    ∃ left right : rhoIGSLT.toGSLT.Term, rhoIGSLT.toGSLT.equations.r left right ∧
-      tProc (Env.empty []) left.1 = none ∧
-      ∃ term, tProc (Env.empty []) right.1 = some term :=
-  ⟨quotedSingletonTerm, boundChannelTerm, quotedSingleton_equivalent, rfl, _, rfl⟩
+/-- **The translation reads this chain of the static equivalence.**  The
+quotation of the singleton bag of the drop of the bound name is that bound
+name, so the two equal terms of the interactive carrier translate alike. -/
+theorem translation_respects_quotedSingleton :
+    rhoIGSLT.toGSLT.equations.r quotedSingletonTerm boundChannelTerm ∧
+      tProc (Env.empty []) quotedSingletonTerm.1 = tProc (Env.empty []) boundChannelTerm.1 ∧
+      ∃ term, tProc (Env.empty []) boundChannelTerm.1 = some term :=
+  ⟨quotedSingleton_equivalent, rfl, _, rfl⟩
 
 end Instances
 

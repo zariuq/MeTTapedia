@@ -1,0 +1,55 @@
+import "../bytes/ByteScalars.module" as scalars
+import "../bytes/ByteRecords.module" as records
+
+Module MMBHeader {
+  Theory Signature(r: records.Data) {
+    r Types { MMBHeader; MMBReason; }
+    Terms {
+      FixedField . FieldKind ::= "fixed_field" "(" Nat ")";
+      MMBHeaderValue . MMBHeader ::= "mmb_header" "(" Nat "," Nat "," Nat "," Nat "," Nat "," Nat "," Nat "," Nat "," Nat "," Nat "," Nat ")";
+      MMBBadMagic . MMBReason ::= "mmb_bad_magic";
+      MMBBadVersion . MMBReason ::= "mmb_bad_version";
+      MMBReserved . MMBReason ::= "mmb_reserved";
+      MMBHeaderLayout . FieldLayout ::= "mmb_header_layout";
+      ReadMMBHeader . CodecState ::= "read_mmb_header" "(" Bytes ")";
+      MMBHeaderFields . CodecState ::= "mmb_header_fields" "(" CodecState ")";
+      MMBHeaderGuard . CodecState ::= "mmb_header_guard" "(" Ordering "," Ordering "," Ordering "," Ordering "," MMBHeader "," Bytes ")";
+      MMBHeaderDecoded . CodecState ::= "mmb_header_decoded" "(" MMBHeader "," Bytes ")";
+      MMBHeaderRefused . CodecState ::= "mmb_header_refused" "(" MMBReason ")";
+      ReadMMBCommand . CodecState ::= "read_mmb_command" "(" Bytes ")";
+      MMBCommandFinish . CodecState ::= "mmb_command_finish" "(" Byte "," CodecState ")";
+      MMBCommand . CodecState ::= "mmb_command" "(" Byte "," Nat "," Bytes ")";
+    }
+  }
+  Theory Decoder(s: Signature) {
+    s Rewrites {
+      FixedOperand: (ReadOperand limit (FixedField width) xs) ~> (OperandWord (ReadFixedLE width xs));
+      HeaderLayout: (MMBHeaderLayout) ~> (FieldNext (FixedField (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatZero))))) (FieldNext (FixedField (NatBit (Bit1) (NatZero))) (FieldNext (FixedField (NatBit (Bit1) (NatZero))) (FieldNext (FixedField (NatBit (Bit0) (NatBit (Bit1) (NatZero)))) (FieldNext (FixedField (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatZero))))) (FieldNext (FixedField (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatZero))))) (FieldNext (FixedField (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatZero))))) (FieldNext (FixedField (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatZero))))) (FieldNext (FixedField (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatZero))))) (FieldNext (FixedField (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatZero))))) (FieldNext (FixedField (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatZero)))))) (FieldsEnd))))))))))));
+      HeaderRead: (ReadMMBHeader xs) ~> (MMBHeaderFields (DecodeFields (NatZero) (MMBHeaderLayout) xs));
+      HeaderFields: (MMBHeaderFields (FieldsDecoded (OperandsCons (BWord magic) (OperandsCons (BWord version) (OperandsCons (BWord sorts) (OperandsCons (BWord reserved) (OperandsCons (BWord terms) (OperandsCons (BWord thms) (OperandsCons (BWord pterms) (OperandsCons (BWord pthms) (OperandsCons (BWord pproof) (OperandsCons (BWord reserved2) (OperandsCons (BWord pindex) (OperandsNil)))))))))))) rest)) ~> (MMBHeaderGuard (NatCompare magic (NatBit (Bit1) (NatBit (Bit0) (NatBit (Bit1) (NatBit (Bit1) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatBit (Bit0) (NatBit (Bit1) (NatBit (Bit0) (NatBit (Bit1) (NatBit (Bit1) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatBit (Bit1) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatZero))))))))))))))))))))))))))))))))) (NatCompare version (NatBit (Bit1) (NatZero))) (NatCompare reserved (NatZero)) (NatCompare reserved2 (NatZero)) (MMBHeaderValue magic version sorts reserved terms thms pterms pthms pproof reserved2 pindex) rest);
+      HeaderValid: (MMBHeaderGuard (Equal) (Equal) (Equal) (Equal) h rest) ~> (MMBHeaderDecoded h rest);
+      HeaderMagicLess: (MMBHeaderGuard (Less) version r1 r2 h rest) ~> (MMBHeaderRefused (MMBBadMagic));
+      HeaderMagicGreater: (MMBHeaderGuard (Greater) version r1 r2 h rest) ~> (MMBHeaderRefused (MMBBadMagic));
+      HeaderVersionLess: (MMBHeaderGuard (Equal) (Less) r1 r2 h rest) ~> (MMBHeaderRefused (MMBBadVersion));
+      HeaderVersionGreater: (MMBHeaderGuard (Equal) (Greater) r1 r2 h rest) ~> (MMBHeaderRefused (MMBBadVersion));
+      HeaderReservedLess: (MMBHeaderGuard (Equal) (Equal) (Less) r2 h rest) ~> (MMBHeaderRefused (MMBReserved));
+      HeaderReservedGreater: (MMBHeaderGuard (Equal) (Equal) (Greater) r2 h rest) ~> (MMBHeaderRefused (MMBReserved));
+      HeaderReservedSecondLess: (MMBHeaderGuard (Equal) (Equal) (Equal) (Less) h rest) ~> (MMBHeaderRefused (MMBReserved));
+      HeaderReservedSecondGreater: (MMBHeaderGuard (Equal) (Equal) (Equal) (Greater) h rest) ~> (MMBHeaderRefused (MMBReserved));
+      HeaderShort: (MMBHeaderFields (NeedInput)) ~> (NeedInput);
+      HeaderInteger: (MMBHeaderFields (BadInteger)) ~> (BadInteger);
+      HeaderLimit: (MMBHeaderFields (LimitExceeded)) ~> (LimitExceeded);
+      CommandEmpty: (ReadMMBCommand (BNil)) ~> (NeedInput);
+      CommandBare: (ReadMMBCommand (BCons (Byte8 (Bit0) (Bit0) b5 b4 b3 b2 b1 b0) rest)) ~> (MMBCommand (Byte8 (Bit0) (Bit0) b5 b4 b3 b2 b1 b0) (NatZero) rest);
+      Command1: (ReadMMBCommand (BCons (Byte8 (Bit0) (Bit1) b5 b4 b3 b2 b1 b0) rest)) ~> (MMBCommandFinish (Byte8 (Bit0) (Bit0) b5 b4 b3 b2 b1 b0) (ReadFixedLE (NatBit (Bit1) (NatZero)) rest));
+      Command2: (ReadMMBCommand (BCons (Byte8 (Bit1) (Bit0) b5 b4 b3 b2 b1 b0) rest)) ~> (MMBCommandFinish (Byte8 (Bit0) (Bit0) b5 b4 b3 b2 b1 b0) (ReadFixedLE (NatBit (Bit0) (NatBit (Bit1) (NatZero))) rest));
+      Command4: (ReadMMBCommand (BCons (Byte8 (Bit1) (Bit1) b5 b4 b3 b2 b1 b0) rest)) ~> (MMBCommandFinish (Byte8 (Bit0) (Bit0) b5 b4 b3 b2 b1 b0) (ReadFixedLE (NatBit (Bit0) (NatBit (Bit0) (NatBit (Bit1) (NatZero)))) rest));
+      CommandValue: (MMBCommandFinish opcode (DecodedWord n rest)) ~> (MMBCommand opcode n rest);
+      CommandShort: (MMBCommandFinish opcode (NeedInput)) ~> (NeedInput);
+    }
+  }
+  Theory Format(r: records.Data) {
+    let s = Signature(r) in ({records.Library(r) \/ Decoder(s)})
+  }
+  theory Format(records.Data(scalars.Values()))
+}

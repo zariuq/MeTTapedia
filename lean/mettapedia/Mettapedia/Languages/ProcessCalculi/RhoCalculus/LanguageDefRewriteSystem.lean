@@ -166,7 +166,7 @@ def closedNil : RhoClosedTerm rhoProc :=
 /-- Quoting the closed nil process inhabits the name fiber. -/
 def closedNilName : RhoClosedTerm rhoName :=
   ⟨.apply "NQuote" [.apply "PZero" []],
-    (rhoClosedTermWellSorted_name_iff _).mpr ⟨.quote .unit, by decide⟩⟩
+    (rhoClosedTermWellSorted_name_iff _).mpr ⟨.quote .unit (by decide), by decide⟩⟩
 
 /-- A closed communication source. -/
 def closedCommSource : RhoClosedTerm rhoProc :=
@@ -176,8 +176,8 @@ def closedCommSource : RhoClosedTerm rhoProc :=
        .apply "POutput" [closedNilName.1, .apply "PZero" []]] none,
     (rhoClosedTermWellSorted_process_iff _).mpr
       ⟨.parallel
-          (.cons (.input (.quote .unit) .unit)
-            (.cons (.output (.quote .unit) .unit) .nil)),
+          (.cons (.input (.quote .unit (by decide)) .unit)
+            (.cons (.output (.quote .unit (by decide)) .unit) .nil)),
         by decide⟩⟩
 
 /-- The corresponding closed COMM contractum. -/
@@ -203,7 +203,7 @@ inert because pure rho authors no executable Drop rule. -/
 def closedFreeDrop : RhoClosedTerm rhoProc :=
   ⟨freeDrop,
     (rhoClosedTermWellSorted_process_iff _).mpr
-      ⟨.drop (.quote .unit), by decide⟩⟩
+      ⟨.drop (.quote .unit (by decide)), by decide⟩⟩
 
 /-- Negative: the closed free-drop process has no derived outgoing step. -/
 theorem closedFreeDrop_irreducible (target : RhoClosedTerm rhoProc) :

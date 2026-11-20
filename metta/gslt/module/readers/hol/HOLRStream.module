@@ -1,0 +1,26 @@
+import "../bytes/ByteRecords.module" as records
+import "../bytes/ByteScalars.module" as scalars
+import "HOLRData.module" as data
+import "HOLRPrefix.module" as prefix
+import "HOLRSchema.module" as schema
+import "HOLREquality.module" as equality
+import "HOLRHeader.module" as header
+import "HOLRRecords.module" as stream
+import "HOLRTrailer.module" as trailer
+import "HOLRFinal.module" as final
+
+Module HOLRStream {
+  Theory Format(r: records.Data) {
+    let h = data.Data(r) in
+      ({records.Library(r)
+        \/ prefix.Format(prefix.Signature(h))
+        \/ schema.Format(schema.Signature(h))
+        \/ equality.Format(equality.Signature(h))
+        \/ header.Format(header.Signature(h))
+        \/ stream.Format(stream.Signature(h))
+        \/ trailer.Format(trailer.Signature(h))
+        \/ final.Format(final.Signature(h))})
+  }
+  theory Format(records.Data(scalars.Values()))
+}
+

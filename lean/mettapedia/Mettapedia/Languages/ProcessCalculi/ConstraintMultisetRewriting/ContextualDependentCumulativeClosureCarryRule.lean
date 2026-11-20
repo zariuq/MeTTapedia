@@ -121,7 +121,7 @@ theorem carry_shape {Γ : Context S.R} (type : TypeOver Γ) {strong : EquationSt
       cases moved
       exact ((((shaped solved solvedSmaller computed (strongSides sides)).lift type).keepLeft weak).rephrase same
         codes)
-  | refuted absent => cases moved
+  | refuted missing => cases moved
 
 include rigid in
 /-- **Every depth of R86's in-place rule is shaped.** -/

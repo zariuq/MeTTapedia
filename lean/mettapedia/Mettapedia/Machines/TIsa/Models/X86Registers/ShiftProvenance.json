@@ -1,0 +1,13 @@
+{
+  "model_commit": "0c6c023dccc7c20d8d9dbfc481f01d9bb49d62bf",
+  "generated_source_sha256": "c3a8c65bd1eb3d4b699faa0c134c6453a84149e8e87dad337865ff3a62688dd1",
+  "root": "x86_sal_sar_shl_shr_rcl_rcr_rol_ror",
+  "extracted_sha256": "24c26d340b825c300ff27b0c5e2b312af985cc033a07587ae194c28ee896b24d",
+  "adaptation": "Retain 42 complete generated definitions in source order. Remove detached documentation comments. Reuse the existing checked dependency bodies and external memory interface.",
+  "source_model_sha256": {
+    "model/shifts_spec.sail": "b9aef38181aadfb1481bef64ac1c6869e43cc107a1b372757cb33ae2c7523705",
+    "model/rotates_spec.sail": "e3ef9fd2472cad77309adf707b6bc7c769ffaf445901c921816eae6e8f99708a",
+    "model/rotate_and_shift.sail": "2fba5ec9ce5e519c0cea7d2b7373fe20e45846c4f141eb4d005d309ef26ca4f1"
+  },
+  "scope": "The retained closure includes byte, narrow and rotate cases. Accepted instruction contracts cover 64-bit C1 /4, /5 and /7 register forms. Other opcode handlers remain explicit parameters; this is not whole-compiler or hardware-model correspondence."
+}

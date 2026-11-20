@@ -22,7 +22,7 @@ On the control signature of `AnnotatedRuns.Controls` (natural-number identities;
 * `knowledge_frame_refused`: the taker binds `X = 0`; a frame with disjoint occurrences that knows
   `X = 1` is separable from the taker's start, and the framed taker is refused.
 * `name_frame_refused`: the run that makes and takes `9`, framed by `9`, is refused.
-* `absence_frame_refused`, `count_frame_refused`: a frame that inserts into an absence query's or a
+* `none_frame_refused`, `count_frame_refused`: a frame that inserts into a none query's or a
   count query's region refuses it.
 * `evidence_is_not_permission`: knowledge is duplicable and grants no take; one occurrence cannot be
   owned twice. `read_is_not_take`: a shared read is compatible with another read, not with a take.
@@ -37,9 +37,11 @@ On the control signature of `AnnotatedRuns.Controls` (natural-number identities;
 * `program_frame_fails`: a program run consumes the frame; the frame rule is a law of single runs.
 * `shared_read_compatible`: two readers of one occurrence have compatible footprints and form a
   round; no split makes them separated runs.
-* `completeness_fails_with_absence`, `soundness_fails_with_count_guard`, `multi_step_frame_unsound`.
-* `authority_admits_outside`, `authority_refuses_inside`: owning the persistent region, the absence
+* `completeness_fails_with_none`, `soundness_fails_with_count_guard`, `multi_step_frame_unsound`.
+* `authority_admits_outside`, `authority_refuses_inside`: owning the persistent region, the none query
   query is local beside a frame outside it, and a frame inside it is not separable.
+  `authority_admits_a_count_outside` (positive count control): owning that region, a count of one
+  persistent atom is local beside the same frame.
 -/
 
 set_option autoImplicit false
@@ -223,16 +225,17 @@ theorem name_frame_refused :
       ¬ Executable A label (tensor none₀ nineSpace) [maker, takerNine] :=
   ⟨ends_separable_not_tensor.1, ends_separable_not_tensor.2.1, ends_separable_not_tensor.2.2.2⟩
 
-/-- **A frame inserting into an absence query's region refuses it.** -/
-theorem absence_frame_refused :
+/-- **A frame inserting into a none query's region refuses it.** -/
+theorem none_frame_refused :
     observer.Valid A label none₀ ∧ Separable A (observer.result label none₀) nineSpace ∧
       ¬ observer.Valid A label (tensor none₀ nineSpace) := by
   refine ⟨observer_valid, ⟨by decide, Subst.id signature, ?_⟩, fun valid => ?_⟩
   · simp [Firing.result, Selection.result, Selection.problem, Selection.equations,
       AnnotatedRuns.Controls.empty, nineSpace, observer]
-  · have holds := valid.observations _ (List.mem_singleton_self _) (Subst.id signature) (by
-      simp [Selection.problem, Selection.equations, tensor, AnnotatedRuns.Controls.empty, nineSpace,
-        observer])
+  · have holds := (PredicateQueryAdmission.Query.toRegion_holds_iff _).mp
+      (valid.observations _ (List.mem_singleton_self _) (Subst.id signature) (by
+        simp [Selection.problem, Selection.equations, tensor, AnnotatedRuns.Controls.empty,
+          nineSpace, observer]))
     revert holds
     decide
 
@@ -241,21 +244,25 @@ def isTwo : Term signature → Bool
   | .const name => name == 2
   | _ => false
 
-/-- A census of the region of `2` that saw exactly occurrence `5`. -/
+/-- A predicate query of the region of `2` that saw exactly occurrence `5`. -/
 def countFive : MeTTaCalculus.OccurrenceCommits.PredicateQuery Nat (Term signature) := ⟨isTwo, {5}⟩
 
 /-- Observes that exactly occurrence `5` carries `2`. -/
-def counter : Run := ⟨⟨[], [], [], [], []⟩, [PredicateQueryAdmission.Query.fixed countFive], ⟨[], [], []⟩⟩
+def counter : Run :=
+  ⟨⟨[], [], [], [], []⟩,
+    [PredicateQueryAdmission.Query.fixed countFive].map PredicateQueryAdmission.Query.toRegion,
+    ⟨[], [], []⟩⟩
 
 def fiveSpace : Configuration (Term signature) Nat := ⟨[], {5}⟩
 
 def sixSpace : Configuration (Term signature) Nat := ⟨[], {6}⟩
 
 theorem counter_valid : counter.Valid A label fiveSpace := by
-  refine (PredicateQueryAdmission.valid_fixed_iff A label counter.rule [countFive] fiveSpace
-    counter.selection).mpr ⟨⟨by decide, by decide, rfl, rfl, rfl, by decide,
-      ⟨Subst.id signature, by simp [Selection.problem, Selection.equations, fiveSpace, counter]⟩,
-      by simp [counter]⟩, ?_⟩
+  refine PredicateQueryAdmission.valid_iff_regionValid.mp
+    ((PredicateQueryAdmission.valid_fixed_iff A label counter.rule [countFive] fiveSpace
+      counter.selection).mpr ⟨⟨by decide, by decide, rfl, rfl, rfl, by decide,
+        ⟨Subst.id signature, by simp [Selection.problem, Selection.equations, fiveSpace, counter]⟩,
+        by simp [counter]⟩, ?_⟩)
   intro query member
   obtain rfl := List.mem_singleton.mp member
   decide
@@ -267,8 +274,9 @@ theorem count_frame_refused :
   refine ⟨counter_valid, ⟨by decide, Subst.id signature, ?_⟩, fun valid => ?_⟩
   · simp [Firing.result, Selection.result, Selection.problem, Selection.equations, fiveSpace,
       sixSpace, counter]
-  · have holds := valid.observations _ (List.mem_singleton_self _) (Subst.id signature) (by
-      simp [Selection.problem, Selection.equations, tensor, fiveSpace, sixSpace, counter])
+  · have holds := (PredicateQueryAdmission.Query.toRegion_holds_iff _).mp
+      (valid.observations _ (List.mem_singleton_self _) (Subst.id signature) (by
+        simp [Selection.problem, Selection.equations, tensor, fiveSpace, sixSpace, counter]))
     revert holds
     decide
 
@@ -488,25 +496,29 @@ theorem read_is_not_take : Bernstein label reader readerB ∧ ¬ Bernstein label
 
 /-- Makes `8` when no persistent atom is present. -/
 def unlessNine : Run :=
-  ⟨⟨[], [], [], [], [.const 2]⟩, [PredicateQueryAdmission.Query.fixed noPersistent], ⟨[], [], [8]⟩⟩
+  ⟨⟨[], [], [], [], [.const 2]⟩,
+    [PredicateQueryAdmission.Query.fixed noPersistent].map PredicateQueryAdmission.Query.toRegion,
+    ⟨[], [], [8]⟩⟩
 
 theorem unlessNine_valid : unlessNine.Valid A label none₀ := by
-  refine (PredicateQueryAdmission.valid_fixed_iff A label unlessNine.rule [noPersistent] none₀
-    unlessNine.selection).mpr ⟨⟨by decide, by decide, rfl, rfl, rfl, by decide,
-      ⟨Subst.id signature, by
-        simp [Selection.problem, Selection.equations, AnnotatedRuns.Controls.empty, unlessNine]⟩,
-      by simp [unlessNine]⟩, ?_⟩
+  refine PredicateQueryAdmission.valid_iff_regionValid.mp
+    ((PredicateQueryAdmission.valid_fixed_iff A label unlessNine.rule [noPersistent] none₀
+      unlessNine.selection).mpr ⟨⟨by decide, by decide, rfl, rfl, rfl, by decide,
+        ⟨Subst.id signature, by
+          simp [Selection.problem, Selection.equations, AnnotatedRuns.Controls.empty, unlessNine]⟩,
+        by simp [unlessNine]⟩, ?_⟩)
   intro query member
   obtain rfl := List.mem_singleton.mp member
   decide
 
-/-- **Completeness fails with an absence query.** The framed small step of the absence query beside
+/-- **Completeness fails with a none query.** The framed small step of the none query beside
 `9` is a derivation; no run of the program reaches its end. -/
-theorem completeness_fails_with_absence :
+theorem completeness_fails_with_none :
     Derives A label {unlessNine} nineSpace (tensor (unlessNine.result label none₀) nineSpace) ∧
       ¬ ProgramReaches A label {unlessNine} nineSpace
         (tensor (unlessNine.result label none₀) nineSpace) := by
-  refine ⟨.step ⟨unlessNine, Set.mem_singleton _, none₀, nineSpace, by decide, unlessNine_valid,
+  refine ⟨.step ⟨unlessNine, Set.mem_singleton _, [PredicateQueryAdmission.Query.fixed noPersistent],
+      rfl, none₀, nineSpace, by decide, unlessNine_valid,
       ⟨by decide, Subst.id signature, A.models_nil _⟩, ⟨by decide, Subst.id signature, ?_⟩,
       ⟨fun σ => Iff.rfl, by decide⟩, SameUpTo.refl A _⟩ (.refl ⟨Subst.id signature, ?_⟩
         (SameUpTo.refl A _)), ?_⟩
@@ -522,8 +534,9 @@ theorem completeness_fails_with_absence :
         decide
     | cons f w =>
         obtain rfl := Set.mem_singleton_iff.mp (inF f List.mem_cons_self)
-        have holds := runs.1.observations _ (List.mem_singleton_self _) (Subst.id signature) (by
-          simp [Selection.problem, Selection.equations, nineSpace, unlessNine])
+        have holds := (PredicateQueryAdmission.Query.toRegion_holds_iff _).mp
+          (runs.1.observations _ (List.mem_singleton_self _) (Subst.id signature) (by
+            simp [Selection.problem, Selection.equations, nineSpace, unlessNine]))
         revert holds
         decide
 
@@ -560,11 +573,13 @@ theorem soundness_fails_with_count_guard :
       revert present
       decide
   | step framed _ =>
-      obtain ⟨f, member, M, E, foot, valid, -⟩ := framed
+      obtain ⟨f, member, queries, isExact, M, E, foot, valid, -⟩ := framed
       obtain rfl := Set.mem_singleton_iff.mp member
+      have none : queries = [] := List.map_eq_nil_iff.mp isExact.symm
+      subst none
       obtain ⟨σ, solved⟩ := valid.firing.consistent
       have counted := valid.firing.checks _ (List.mem_singleton_self _) σ solved
-      have empty : footprintSet countNine = ∅ := by decide
+      have empty : footprintSet countNine [] = ∅ := by decide
       change (Check.matches A σ label M.present (.const 9)).card = 1 at counted
       rw [foot, empty] at counted
       simp [Check.matches] at counted
@@ -629,8 +644,8 @@ theorem multi_step_frame_unsound :
 /-- The empty configuration, owning the persistent region. -/
 def owner : Owned (Term signature) Nat := ⟨none₀, [persistent]⟩
 
-/-- **Owning the region makes the absence query local**: beside the occurrence `0`, outside the
-persistent region, the owner's absence query is still admitted. -/
+/-- **Owning the region makes the none query local**: beside the occurrence `0`, outside the
+persistent region, the owner's none query is still admitted. -/
 theorem authority_admits_outside :
     OwnedSeparable A label owner ⟨TensorControls.takerSide, []⟩ ∧
       observer.Valid A label (tensor none₀ TensorControls.takerSide) := by
@@ -659,6 +674,33 @@ theorem authority_refuses_inside : ¬ OwnedSeparable A label owner ⟨nineSpace,
   revert this
   decide
 
+/-- The persistent `9`, owning the persistent region. -/
+def nineOwner : Owned (Term signature) Nat := ⟨AnnotatedRuns.Controls.nineState, [persistent]⟩
+
+/-- **Positive count control: owning the region makes a count local.** Beside the occurrence `0`,
+outside the persistent region, the count of one persistent atom is still admitted: the frame rule
+with authority holds for observations other than the exact one. -/
+theorem authority_admits_a_count_outside :
+    OwnedSeparable A label nineOwner ⟨TensorControls.takerSide, []⟩ ∧
+      AnnotatedRuns.Controls.countsNine.Valid A label
+        (tensor AnnotatedRuns.Controls.nineState TensorControls.takerSide) := by
+  have sep : OwnedSeparable A label nineOwner ⟨TensorControls.takerSide, []⟩ := by
+    refine ⟨⟨by decide, Subst.id signature, A.models_nil _⟩, ?_,
+      fun region member => (by cases member)⟩
+    intro region member o present
+    obtain rfl := List.mem_singleton.mp member
+    have zero : o = 0 := by simpa [TensorControls.takerSide] using present
+    subst zero
+    rfl
+  refine ⟨sep, owned_valid_frame A label (x := nineOwner) (y := ⟨TensorControls.takerSide, []⟩)
+    (fun check member => by simp [AnnotatedRuns.Controls.countsNine] at member) ?_
+    AnnotatedRuns.Controls.countsNine_valid sep ⟨by decide, Subst.id signature, ?_⟩⟩
+  · intro query member
+    obtain rfl := List.mem_singleton.mp member
+    exact ⟨persistent, List.mem_singleton_self _, fun _ => rfl⟩
+  · simp [nineOwner, Firing.result, Selection.result, Selection.problem, Selection.equations,
+      AnnotatedRuns.Controls.nineState, TensorControls.takerSide, AnnotatedRuns.Controls.countsNine]
+
 end SeparationControls
 
 end SeparationRuns
@@ -673,7 +715,7 @@ open SeparationRuns.SeparationControls
 #print axioms tell_splits_two_ways
 #print axioms knowledge_frame_refused
 #print axioms name_frame_refused
-#print axioms absence_frame_refused
+#print axioms none_frame_refused
 #print axioms counter_valid
 #print axioms count_frame_refused
 #print axioms evidence_is_not_permission
@@ -689,7 +731,7 @@ open SeparationRuns.SeparationControls
 #print axioms shared_read_compatible
 #print axioms read_is_not_take
 #print axioms unlessNine_valid
-#print axioms completeness_fails_with_absence
+#print axioms completeness_fails_with_none
 #print axioms countNine_valid
 #print axioms soundness_fails_with_count_guard
 #print axioms makerPair_valid
@@ -698,5 +740,6 @@ open SeparationRuns.SeparationControls
 #print axioms multi_step_frame_unsound
 #print axioms authority_admits_outside
 #print axioms authority_refuses_inside
+#print axioms authority_admits_a_count_outside
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.AnnotatedRuns

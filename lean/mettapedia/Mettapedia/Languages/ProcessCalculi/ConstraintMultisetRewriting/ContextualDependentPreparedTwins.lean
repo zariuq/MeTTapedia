@@ -2,10 +2,10 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentExecutableDiscovery
 
 /-!
-# The census head on the prepared store with homogeneous twins
+# The classified head on the prepared store with homogeneous twins
 
-Most readers of the flexible round read `preparedTwins`: preparation, then twin collapse. The census head of a store
-lives on `prepare`'s residual store (`ContextualDependentCoverageReadersHalf.tower_census_head`). Twin collapse
+Most readers of the flexible round read `preparedTwins`: preparation, then twin collapse. The classified head of a store
+lives on `prepare`'s residual store (`ContextualDependentCoverageReadersHalf.tower_classified_head`). Twin collapse
 **leaves every equation in place**: it maps each equation to one with the same left side and the same right side,
 replacing the right annotation by the left one when the bounded comparison of types accepts them
 (`collapseOne_left`, `collapseOne_right`, `collapseOne_homogeneous`). So every property of the three codes of an
@@ -14,13 +14,13 @@ comparison accepts (`collapseOne_holds`, `collapseOne_same`).
 
 In the tower:
 
-* preparation is eventually constant (`tower_prepare_const`), so from some budget on the census head is one fixed
-  equation of one fixed store, with normal codes (`tower_stable_census_head`);
+* preparation is eventually constant (`tower_prepare_const`), so from some budget on the classified head is one fixed
+  equation of one fixed store, with normal codes (`tower_stable_classified_head`);
 * equal annotations are eventually compared successfully (`tower_compared`);
 * hence from some budget on, the prepared store with homogeneous twins has a homogeneous equation whose three codes
-  are the census head's (`tower_twins_keep`).
+  are the classified head's (`tower_twins_keep`).
 
-This is the bridge from the census to every reader that reads `preparedTwins` with homogeneous annotations.
+This is the bridge from the classification to every reader that reads `preparedTwins` with homogeneous annotations.
 -/
 
 set_option autoImplicit false
@@ -163,15 +163,15 @@ theorem tower_twins_keep {Θ : Context setting.R} {problem : EquationStore (Tota
     twins_keep_at larger (towerPrepare larger problem) (constant larger (le_of_max_le_left enough)) member
       (compared larger (le_of_max_le_right enough)) holds shape⟩
 
-/-- **A census head of the tower on a preparation that no longer changes**: from some budget on preparation is
-constant, and its store has a census head with normal codes. -/
-theorem tower_stable_census_head {Θ : Context setting.R} {problem : EquationStore (TotalTerm Θ)}
+/-- **A classified head of the tower on a preparation that no longer changes**: from some budget on preparation is
+constant, and its store has a classified head with normal codes. -/
+theorem tower_stable_classified_head {Θ : Context setting.R} {problem : EquationStore (TotalTerm Θ)}
     (permuted : PermutedMiller setting.levels problem) (nonempty : problem ≠ []) :
     ∃ threshold, (∀ larger, threshold ≤ larger → towerPrepare larger problem = towerPrepare threshold problem) ∧
       ∃ equation ∈ (towerPrepare threshold problem).remaining,
-        ContextualDependentNormalizing.NormalEquation (fun _ => (0 : Nat)) equation ∧ CensusHead equation := by
+        ContextualDependentNormalizing.NormalEquation (fun _ => (0 : Nat)) equation ∧ ClassifiedHead equation := by
   obtain ⟨constBound, constant⟩ := tower_prepare_const problem
-  obtain ⟨headBound, head⟩ := tower_census_head permuted nonempty
+  obtain ⟨headBound, head⟩ := tower_classified_head permuted nonempty
   refine ⟨max constBound headBound, fun larger enough => ?_, head _ (le_max_right _ _)⟩
   rw [constant larger (le_of_max_le_left enough), constant _ (le_max_left _ _)]
 

@@ -330,7 +330,7 @@ mutual
             by_cases matched : index = depth
             · subst index
               simpa [CostTerm.substitute, CostTerm.erase, CostName.erase,
-                semanticSubstProc, semanticSubstNameMark, semanticNormalizeName,
+                semanticSubstProc, semanticSubstNameMark, semanticNormalizeName, canonicalize,
                 replacementSafe.erase_liftAbove_eq
                   (signatureName := signatureName) (scope := 0) (cutoff := 0)
                   (amount := depth) (le_refl 0)] using
@@ -339,7 +339,7 @@ mutual
             · have notHigher : ¬ depth < index := by omega
               have unequal : (index == depth) = false := beq_eq_false_iff_ne.mpr matched
               simpa [CostTerm.substitute, CostTerm.erase, CostName.erase,
-                semanticSubstProc, semanticSubstNameMark, semanticNormalizeName,
+                semanticSubstProc, semanticSubstNameMark, semanticNormalizeName, canonicalize,
                 matched, notHigher, unequal] using
                 (StructuralCongruence.refl
                   (.apply "PDrop" [.bvar index]))
@@ -347,17 +347,15 @@ mutual
             have nameSafe :
                 CostName.BinderSafeAt (depth + 1) (.quote quotedTerm) :=
               .quote quotedSafe
-            have typed := nameSafe.erase_wellSorted signatureTyped
-            have shape := nameWellSorted_rhoCoreShape typed
             have absent : noBVar depth ((CostName.quote quotedTerm).erase signatureName) = true := by
               have quotedTyped := quotedSafe.erase_wellSorted signatureTyped
               simpa [CostName.erase, noBVar, noBVarList] using
                 procWellSorted_noBVarAtOrAbove quotedTyped (Nat.zero_le depth)
             have notMatched :=
-              semanticSubstNameMark_matched_false_of_rhoNameCoreShape_noBVar
+              semanticSubstNameMark_matched_false_of_noBVar
                 depth
                 (.apply "NQuote" [semanticNormalizeProc (replacement.erase signatureName)])
-                shape absent
+                absent
             cases markEq : semanticSubstNameMark depth
                 (.apply "NQuote" [semanticNormalizeProc (replacement.erase signatureName)])
                 ((CostName.quote quotedTerm).erase signatureName) with
@@ -373,15 +371,13 @@ mutual
         | @signature nameDepth signature =>
             have nameSafe :
                 CostName.BinderSafeAt (depth + 1) (.signature signature) := .signature
-            have typed := nameSafe.erase_wellSorted signatureTyped
-            have shape := nameWellSorted_rhoCoreShape typed
             have absent := nameWellSorted_noBVarAtOrAbove
               (signatureTyped signature) (Nat.zero_le depth)
             have notMatched :=
-              semanticSubstNameMark_matched_false_of_rhoNameCoreShape_noBVar
+              semanticSubstNameMark_matched_false_of_noBVar
                 depth
                 (.apply "NQuote" [semanticNormalizeProc (replacement.erase signatureName)])
-                shape absent
+                absent
             cases markEq : semanticSubstNameMark depth
                 (.apply "NQuote" [semanticNormalizeProc (replacement.erase signatureName)])
                 ((CostName.signature signature).erase signatureName) with
@@ -393,7 +389,7 @@ mutual
                     simpa [CostTerm.substitute, CostTerm.erase, CostName.substitute,
                       semanticSubstProc, semanticSubstName, markEq] using
                       structuralApplyCongruenceOne nameCongruent
-                | true => simp [markEq] at notMatched
+                | true => simp [CostName.erase] at markEq notMatched; simp [markEq] at notMatched
     | purse => exact StructuralCongruence.refl _
 end
 

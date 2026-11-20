@@ -1,0 +1,209 @@
+import "ByteScalars.module" as scalars
+import "ByteValues.module" as values
+import "ByteDecode.module" as decode
+import "ByteArithmetic.module" as arithmetic
+
+Module ByteRecords {
+  Theory SchemaData(s: scalars.Carrier) {
+    s Types { FieldKind; FieldLayout; Schema; Schemas; FoundLayout; }
+    Terms {
+      WordField . FieldKind ::= "word";
+      BytesField . FieldKind ::= "bytes";
+      WordsField . FieldKind ::= "words";
+      PairsField . FieldKind ::= "pairs";
+      FieldsEnd . FieldLayout ::= "fields_end";
+      FieldNext . FieldLayout ::= "field_next" "(" FieldKind "," FieldLayout ")";
+      RecordSchema . Schema ::= "schema" "(" Byte "," FieldLayout ")";
+      SchemasNil . Schemas ::= "schemas_nil";
+      SchemasCons . Schemas ::= "schemas_cons" "(" Schema "," Schemas ")";
+      NoLayout . FoundLayout ::= "no_layout";
+      FoundLayout . FoundLayout ::= "found_layout" "(" FieldLayout ")";
+    }
+  }
+  Theory Carrier(s: scalars.Values) {
+    s Types { FieldKind; FieldLayout; Operand; WordList; Pair; PairList; Operands; Record; Records; Schema; Schemas; FoundLayout; }
+    Terms {
+      WordField . FieldKind ::= "word";
+      BytesField . FieldKind ::= "bytes";
+      WordsField . FieldKind ::= "words";
+      PairsField . FieldKind ::= "pairs";
+      FieldsEnd . FieldLayout ::= "fields_end";
+      FieldNext . FieldLayout ::= "field_next" "(" FieldKind "," FieldLayout ")";
+      RecordSchema . Schema ::= "schema" "(" Byte "," FieldLayout ")";
+      SchemasNil . Schemas ::= "schemas_nil";
+      SchemasCons . Schemas ::= "schemas_cons" "(" Schema "," Schemas ")";
+      NoLayout . FoundLayout ::= "no_layout";
+      FoundLayout . FoundLayout ::= "found_layout" "(" FieldLayout ")";
+      BWord . Operand ::= "word_value" "(" Nat ")";
+      BBytes . Operand ::= "bytes_value" "(" Bytes ")";
+      BWords . Operand ::= "words_value" "(" WordList ")";
+      BPairs . Operand ::= "pairs_value" "(" PairList ")";
+      WordsNil . WordList ::= "words_nil";
+      WordsCons . WordList ::= "words_cons" "(" Nat "," WordList ")";
+      BPair . Pair ::= "pair" "(" Nat "," Nat ")";
+      PairsNil . PairList ::= "pairs_nil";
+      PairsCons . PairList ::= "pairs_cons" "(" Pair "," PairList ")";
+      OperandsNil . Operands ::= "operands_nil";
+      OperandsCons . Operands ::= "operands_cons" "(" Operand "," Operands ")";
+      BRecord . Record ::= "record" "(" Byte "," Operands ")";
+      RecordsNil . Records ::= "records_nil";
+      RecordsCons . Records ::= "records_cons" "(" Record "," Records ")";
+      RecordDecoded . CodecState ::= "record_decoded" "(" Record "," Bytes ")";
+      UnknownOpcode . CodecState ::= "unknown_opcode" "(" Byte ")";
+      FieldsDecoded . CodecState ::= "fields_decoded" "(" Operands "," Bytes ")";
+      OperandDecoded . CodecState ::= "operand_decoded" "(" Operand "," Bytes ")";
+      WordsDecoded . CodecState ::= "words_decoded" "(" WordList "," Bytes ")";
+      PairsDecoded . CodecState ::= "pairs_decoded" "(" PairList "," Bytes ")";
+    }
+  }
+  Theory ReaderInterface(s: scalars.Values) {
+    Carrier(s) Terms {
+      ReadRecord . CodecState ::= "read_record" "(" Nat "," Schemas "," Bytes ")";
+    }
+  }
+  Theory Data(a: scalars.Values) {
+    a Types { FieldKind; FieldLayout; Operand; WordList; Pair; PairList; Operands; Record; Records; Schema; Schemas; FoundLayout; }
+    Terms {
+      WordField . FieldKind ::= "word";
+      BytesField . FieldKind ::= "bytes";
+      WordsField . FieldKind ::= "words";
+      PairsField . FieldKind ::= "pairs";
+      FieldsEnd . FieldLayout ::= "fields_end";
+      FieldNext . FieldLayout ::= "field_next" "(" FieldKind "," FieldLayout ")";
+      RecordSchema . Schema ::= "schema" "(" Byte "," FieldLayout ")";
+      SchemasNil . Schemas ::= "schemas_nil";
+      SchemasCons . Schemas ::= "schemas_cons" "(" Schema "," Schemas ")";
+      NoLayout . FoundLayout ::= "no_layout";
+      FoundLayout . FoundLayout ::= "found_layout" "(" FieldLayout ")";
+      BWord . Operand ::= "word_value" "(" Nat ")";
+      BBytes . Operand ::= "bytes_value" "(" Bytes ")";
+      BWords . Operand ::= "words_value" "(" WordList ")";
+      BPairs . Operand ::= "pairs_value" "(" PairList ")";
+      WordsNil . WordList ::= "words_nil";
+      WordsCons . WordList ::= "words_cons" "(" Nat "," WordList ")";
+      BPair . Pair ::= "pair" "(" Nat "," Nat ")";
+      PairsNil . PairList ::= "pairs_nil";
+      PairsCons . PairList ::= "pairs_cons" "(" Pair "," PairList ")";
+      OperandsNil . Operands ::= "operands_nil";
+      OperandsCons . Operands ::= "operands_cons" "(" Operand "," Operands ")";
+      BRecord . Record ::= "record" "(" Byte "," Operands ")";
+      RecordsNil . Records ::= "records_nil";
+      RecordsCons . Records ::= "records_cons" "(" Record "," Records ")";
+      LookupSchema . FoundLayout ::= "lookup_schema" "(" Byte "," Schemas ")";
+      SelectSchema . FoundLayout ::= "select_schema" "(" Ordering "," Byte "," FieldLayout "," Schemas ")";
+      ReadRecord . CodecState ::= "read_record" "(" Nat "," Schemas "," Bytes ")";
+      SelectRecord . CodecState ::= "select_record" "(" Nat "," Byte "," Bytes "," FoundLayout ")";
+      RecordFields . CodecState ::= "record_fields" "(" Byte "," CodecState ")";
+      RecordDecoded . CodecState ::= "record_decoded" "(" Record "," Bytes ")";
+      UnknownOpcode . CodecState ::= "unknown_opcode" "(" Byte ")";
+      DecodeFields . CodecState ::= "decode_fields" "(" Nat "," FieldLayout "," Bytes ")";
+      FieldCarry . CodecState ::= "field_carry" "(" Nat "," FieldLayout "," CodecState ")";
+      FieldPush . CodecState ::= "field_push" "(" Operand "," CodecState ")";
+      FieldsDecoded . CodecState ::= "fields_decoded" "(" Operands "," Bytes ")";
+      ReadOperand . CodecState ::= "read_operand" "(" Nat "," FieldKind "," Bytes ")";
+      OperandWord . CodecState ::= "operand_word" "(" CodecState ")";
+      OperandDecoded . CodecState ::= "operand_decoded" "(" Operand "," Bytes ")";
+      CountValues . CodecState ::= "count_values" "(" Nat "," FieldKind "," CodecState ")";
+      CountValuesBound . CodecState ::= "count_values_bound" "(" Ordering "," FieldKind "," Nat "," Bytes ")";
+      ReadValues . CodecState ::= "read_values" "(" FieldKind "," Nat "," Bytes ")";
+      OperandBytes . CodecState ::= "operand_bytes" "(" CodecState ")";
+      OperandWords . CodecState ::= "operand_words" "(" CodecState ")";
+      OperandPairs . CodecState ::= "operand_pairs" "(" CodecState ")";
+      ReadWords . CodecState ::= "read_words" "(" Nat "," Bytes ")";
+      WordsCarry . CodecState ::= "words_carry" "(" Nat "," CodecState ")";
+      WordsPush . CodecState ::= "words_push" "(" Nat "," CodecState ")";
+      WordsDecoded . CodecState ::= "words_decoded" "(" WordList "," Bytes ")";
+      ReadPairs . CodecState ::= "read_pairs" "(" Nat "," Bytes ")";
+      PairsFirst . CodecState ::= "pairs_first" "(" Nat "," CodecState ")";
+      PairsSecond . CodecState ::= "pairs_second" "(" Nat "," Nat "," CodecState ")";
+      PairsPush . CodecState ::= "pairs_push" "(" Pair "," CodecState ")";
+      PairsDecoded . CodecState ::= "pairs_decoded" "(" PairList "," Bytes ")";
+    }
+  }
+  Theory Records(r: Data) {
+    r Rewrites {
+      LookupEmpty: (LookupSchema op (SchemasNil)) ~> (NoLayout);
+      LookupMore: (LookupSchema op (SchemasCons (RecordSchema tag fields) rest)) ~> (SelectSchema (NatCompare (PackByte op (NatZero)) (PackByte tag (NatZero))) op fields rest);
+      LookupEqual: (SelectSchema (Equal) op fields rest) ~> (FoundLayout fields);
+      LookupLess: (SelectSchema (Less) op fields rest) ~> (LookupSchema op rest);
+      LookupGreater: (SelectSchema (Greater) op fields rest) ~> (LookupSchema op rest);
+      RecordEmpty: (ReadRecord limit schemas (BNil)) ~> (NeedInput);
+      RecordStart: (ReadRecord limit schemas (BCons op rest)) ~> (SelectRecord limit op rest (LookupSchema op schemas));
+      RecordKnown: (SelectRecord limit op rest (FoundLayout fields)) ~> (RecordFields op (DecodeFields limit fields rest));
+      RecordUnknown: (SelectRecord limit op rest (NoLayout)) ~> (UnknownOpcode op);
+      RecordMake: (RecordFields op (FieldsDecoded fields rest)) ~> (RecordDecoded (BRecord op fields) rest);
+      FieldsEmpty: (DecodeFields limit (FieldsEnd) xs) ~> (FieldsDecoded (OperandsNil) xs);
+      FieldsMore: (DecodeFields limit (FieldNext kind tailfields) xs) ~> (FieldCarry limit tailfields (ReadOperand limit kind xs));
+      FieldsNext: (FieldCarry limit tailfields (OperandDecoded value rest)) ~> (FieldPush value (DecodeFields limit tailfields rest));
+      FieldsCons: (FieldPush value (FieldsDecoded values rest)) ~> (FieldsDecoded (OperandsCons value values) rest);
+      ReadOne: (ReadOperand limit (WordField) xs) ~> (OperandWord (ReadULEB62 xs));
+      ReadBytes: (ReadOperand limit (BytesField) xs) ~> (CountValues limit (BytesField) (ReadULEB62 xs));
+      ReadMany: (ReadOperand limit (WordsField) xs) ~> (CountValues limit (WordsField) (ReadULEB62 xs));
+      ReadPairList: (ReadOperand limit (PairsField) xs) ~> (CountValues limit (PairsField) (ReadULEB62 xs));
+      WordValue: (OperandWord (DecodedWord n rest)) ~> (OperandDecoded (BWord n) rest);
+      CountValue: (CountValues limit kind (DecodedWord n rest)) ~> (CountValuesBound (NatCompare n limit) kind n rest);
+      CountSmall: (CountValuesBound (Less) kind n rest) ~> (ReadValues kind n rest);
+      CountEqual: (CountValuesBound (Equal) kind n rest) ~> (ReadValues kind n rest);
+      CountLarge: (CountValuesBound (Greater) kind n rest) ~> (LimitExceeded);
+      ValuesBytes: (ReadValues (BytesField) n xs) ~> (OperandBytes (TakeBytes n xs));
+      ValuesWords: (ReadValues (WordsField) n xs) ~> (OperandWords (ReadWords n xs));
+      ValuesPairs: (ReadValues (PairsField) n xs) ~> (OperandPairs (ReadPairs n xs));
+      BytesValue: (OperandBytes (Taken bytes rest)) ~> (OperandDecoded (BBytes bytes) rest);
+      WordsValue: (OperandWords (WordsDecoded words rest)) ~> (OperandDecoded (BWords words) rest);
+      PairsValue: (OperandPairs (PairsDecoded pairs rest)) ~> (OperandDecoded (BPairs pairs) rest);
+      WordsEnd: (ReadWords (NatZero) xs) ~> (WordsDecoded (WordsNil) xs);
+      WordsRead: (ReadWords (NatBit bit n) xs) ~> (WordsCarry (NatPred (NatBit bit n)) (ReadULEB62 xs));
+      WordsNext: (WordsCarry n (DecodedWord value rest)) ~> (WordsPush value (ReadWords n rest));
+      WordsConsValue: (WordsPush value (WordsDecoded values rest)) ~> (WordsDecoded (WordsCons value values) rest);
+      PairsEnd: (ReadPairs (NatZero) xs) ~> (PairsDecoded (PairsNil) xs);
+      PairsRead: (ReadPairs (NatBit bit n) xs) ~> (PairsFirst (NatPred (NatBit bit n)) (ReadULEB62 xs));
+      PairsReadSecond: (PairsFirst n (DecodedWord first rest)) ~> (PairsSecond n first (ReadULEB62 rest));
+      PairsNext: (PairsSecond n first (DecodedWord second rest)) ~> (PairsPush (BPair first second) (ReadPairs n rest));
+      PairsConsValue: (PairsPush pair (PairsDecoded pairs rest)) ~> (PairsDecoded (PairsCons pair pairs) rest);
+      RecordFieldsNeedInput: (RecordFields op (NeedInput)) ~> (NeedInput);
+      RecordFieldsBadInteger: (RecordFields op (BadInteger)) ~> (BadInteger);
+      RecordFieldsLimitExceeded: (RecordFields op (LimitExceeded)) ~> (LimitExceeded);
+      FieldCarryNeedInput: (FieldCarry limit tailfields (NeedInput)) ~> (NeedInput);
+      FieldCarryBadInteger: (FieldCarry limit tailfields (BadInteger)) ~> (BadInteger);
+      FieldCarryLimitExceeded: (FieldCarry limit tailfields (LimitExceeded)) ~> (LimitExceeded);
+      FieldPushNeedInput: (FieldPush value (NeedInput)) ~> (NeedInput);
+      FieldPushBadInteger: (FieldPush value (BadInteger)) ~> (BadInteger);
+      FieldPushLimitExceeded: (FieldPush value (LimitExceeded)) ~> (LimitExceeded);
+      OperandWordNeedInput: (OperandWord  (NeedInput)) ~> (NeedInput);
+      OperandWordBadInteger: (OperandWord  (BadInteger)) ~> (BadInteger);
+      OperandWordLimitExceeded: (OperandWord  (LimitExceeded)) ~> (LimitExceeded);
+      CountValuesNeedInput: (CountValues limit kind (NeedInput)) ~> (NeedInput);
+      CountValuesBadInteger: (CountValues limit kind (BadInteger)) ~> (BadInteger);
+      CountValuesLimitExceeded: (CountValues limit kind (LimitExceeded)) ~> (LimitExceeded);
+      OperandBytesNeedInput: (OperandBytes  (NeedInput)) ~> (NeedInput);
+      OperandBytesBadInteger: (OperandBytes  (BadInteger)) ~> (BadInteger);
+      OperandBytesLimitExceeded: (OperandBytes  (LimitExceeded)) ~> (LimitExceeded);
+      OperandWordsNeedInput: (OperandWords  (NeedInput)) ~> (NeedInput);
+      OperandWordsBadInteger: (OperandWords  (BadInteger)) ~> (BadInteger);
+      OperandWordsLimitExceeded: (OperandWords  (LimitExceeded)) ~> (LimitExceeded);
+      OperandPairsNeedInput: (OperandPairs  (NeedInput)) ~> (NeedInput);
+      OperandPairsBadInteger: (OperandPairs  (BadInteger)) ~> (BadInteger);
+      OperandPairsLimitExceeded: (OperandPairs  (LimitExceeded)) ~> (LimitExceeded);
+      WordsCarryNeedInput: (WordsCarry n (NeedInput)) ~> (NeedInput);
+      WordsCarryBadInteger: (WordsCarry n (BadInteger)) ~> (BadInteger);
+      WordsCarryLimitExceeded: (WordsCarry n (LimitExceeded)) ~> (LimitExceeded);
+      WordsPushNeedInput: (WordsPush value (NeedInput)) ~> (NeedInput);
+      WordsPushBadInteger: (WordsPush value (BadInteger)) ~> (BadInteger);
+      WordsPushLimitExceeded: (WordsPush value (LimitExceeded)) ~> (LimitExceeded);
+      PairsFirstNeedInput: (PairsFirst n (NeedInput)) ~> (NeedInput);
+      PairsFirstBadInteger: (PairsFirst n (BadInteger)) ~> (BadInteger);
+      PairsFirstLimitExceeded: (PairsFirst n (LimitExceeded)) ~> (LimitExceeded);
+      PairsSecondNeedInput: (PairsSecond n first (NeedInput)) ~> (NeedInput);
+      PairsSecondBadInteger: (PairsSecond n first (BadInteger)) ~> (BadInteger);
+      PairsSecondLimitExceeded: (PairsSecond n first (LimitExceeded)) ~> (LimitExceeded);
+      PairsPushNeedInput: (PairsPush pair (NeedInput)) ~> (NeedInput);
+      PairsPushBadInteger: (PairsPush pair (BadInteger)) ~> (BadInteger);
+      PairsPushLimitExceeded: (PairsPush pair (LimitExceeded)) ~> (LimitExceeded);
+    }
+  }
+  Theory Library(r: Data) {
+    values.Codecs(r) \/ decode.Decoder(r) \/ arithmetic.Arithmetic(r) \/ arithmetic.FixedWords(r) \/ arithmetic.Checksum(r) \/ Records(r)
+  }
+  theory Library(Data(scalars.Values()))
+}
+

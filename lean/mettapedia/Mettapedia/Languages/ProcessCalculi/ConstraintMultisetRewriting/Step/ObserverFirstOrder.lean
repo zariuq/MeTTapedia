@@ -8,8 +8,9 @@ The one-frame transport (`firstOrderTransport`) renames no occurrence. Here its 
 renamings of occurrence identities that keep every label and carry one configuration to the other up
 to the solutions of its knowledge (`RenamingIso`), and firings move by renaming
 (`renamingTransport`). It contains the one-frame transport (`RenamingIso.ofSame`), is natural
-(`renamingNatural`), and its escape data records each sighted set as one relation
-(`renamingEscape`).
+(`renamingNatural`). The explicit exact-query alphabet has its own transported metadata
+(`exactRenamingTransport`, `exactRenamingNatural`); its escape data records each supplied sighted set
+as one relation (`renamingEscape`).
 
 * **Traces refine what every observer can observe** (`renaming_traceEquiv_equivariant`,
   `renaming_traceEquiv_observes`): trace-equivalent runs end in states related by a renaming that
@@ -45,16 +46,15 @@ variable {T : Type uT} {S : Type uS} {O : Type uO}
 
 /-! ## Renaming firings -/
 
-theorem renameQuery_refl : renameQuery (T := T) (S := S) (Equiv.refl O) = id := by
+theorem renameQuery_refl : PredicateQueryAdmission.RegionQuery.rename (T := T) (S := S) (Equiv.refl O) = id := by
   funext query
-  obtain ⟨region, seen⟩ := query
-  simp [renameQuery]
+  exact Interface.RegionQuerySupport.rename_refl query
 
 theorem renameQuery_trans (π ρ : O ≃ O) :
-    renameQuery (T := T) (S := S) (π.trans ρ) = renameQuery ρ ∘ renameQuery π := by
+    PredicateQueryAdmission.RegionQuery.rename (T := T) (S := S) (π.trans ρ) =
+      PredicateQueryAdmission.RegionQuery.rename ρ ∘ PredicateQueryAdmission.RegionQuery.rename π := by
   funext query
-  obtain ⟨region, seen⟩ := query
-  simp [renameQuery, Finset.map_map, Equiv.trans_toEmbedding]
+  exact (Interface.RegionQuerySupport.rename_trans π ρ query).symm
 
 theorem Firing.rename_refl (f : Firing T S O) : f.rename (Equiv.refl O) = f := by
   obtain ⟨rule, queries, ⟨taken, read, made⟩⟩ := f
@@ -176,17 +176,84 @@ theorem renamingNatural : (renamingTransport A label).Natural where
     subst same
     rfl
 
+/-- Renamed occurrence transport of the explicit exact-query alphabet. -/
+def exactRenamingTransport : Transport (ExactQueryAlphabet.step A label) where
+  Iso C D := RenamingIso A label C D
+  toStateIso i := ⟨i.toStateIso.frame,i.toStateIso.knowledge,i.toStateIso.rename,i.toStateIso.present⟩
+  refl C := RenamingIso.refl A label C
+  symm i := i.symm
+  trans i j := i.trans j
+  Alike f f' := f = f'
+  alike_equivalence _ := ⟨Eq.refl, Eq.symm, Eq.trans⟩
+  selection_alike same := congrArg _ same
+  admits_alike same := same ▸ Iff.rfl
+  result_alike {C} {f} _ same _ _ := by
+    subst same
+    exact RenamingIso.refl A label _
+  move i f := ExactQueryAlphabet.rename i.rename f
+  move_alike _ _ _ same := congrArg _ same
+  move_refl f := ExactQueryAlphabet.rename_refl f
+  move_trans i j f := (ExactQueryAlphabet.rename_trans i.rename j.rename f).symm
+  move_symm i f := by
+    show ExactQueryAlphabet.rename i.rename.symm (ExactQueryAlphabet.rename i.rename f) = f
+    rw [ExactQueryAlphabet.rename_trans,Equiv.self_trans_symm,ExactQueryAlphabet.rename_refl]
+  selection_move i f := by
+    change (ExactQueryAlphabet.rename i.rename f).1.selection = _
+    rw [ExactQueryAlphabet.rename_fst]
+    rfl
+  admits_move i f := by
+    change (ExactQueryAlphabet.rename i.rename f).1.Valid A label _ ↔ f.1.Valid A label _
+    rw [ExactQueryAlphabet.rename_fst]
+    exact Observation.valid_renamed i.keeps i.same f.1
+  result_move i f _ := by
+    refine ⟨i.rename,i.keeps,?_⟩
+    change GuardFreeProcessOrders.SameUpTo A (renameConfiguration i.rename (f.1.result label _))
+      ((ExactQueryAlphabet.rename i.rename f).1.result label _)
+    rw [ExactQueryAlphabet.rename_fst]
+    exact Observation.result_renamed i.keeps i.same f.1
+  residual _ _ f := f
+  selection_residual _ _ _ := rfl
+  move_residual _ _ _ _ := rfl
+
+/-- **The renaming transport is natural.** -/
+theorem exactRenamingNatural : (exactRenamingTransport A label).Natural where
+  refl _ := Frames.Agree.refl _
+  symm _ := Frames.Agree.refl _
+  trans _ _ := fun t => by
+    show A.E (A.apply A.identity t) (A.apply (A.compose A.identity A.identity) t)
+    simp only [A.apply_compose, A.apply_identity]
+    exact A.equivalence.refl _
+  result_move _ _ _ := fun t => by
+    show A.E (A.apply (A.compose A.identity (A.compose A.identity A.identity)) t)
+      (A.apply (A.compose (A.compose A.identity A.identity) A.identity) t)
+    simp only [A.apply_compose, A.apply_identity]
+    exact A.equivalence.refl _
+  result_alike {C} {f} _ same _ _ := by
+    subst same
+    exact fun t => by
+      show A.E (A.apply (A.compose A.identity (A.compose A.identity A.identity)) t)
+        (A.apply (A.compose A.identity A.identity) t)
+      simp only [A.apply_compose, A.apply_identity]
+      exact A.equivalence.refl _
+  rename_refl _ := rfl
+  rename_symm _ := rfl
+  rename_trans _ _ := rfl
+  rename_result_move _ _ _ := rfl
+  rename_result_alike {C} {f} _ same _ _ := by
+    subst same
+    rfl
+
 /-- **What clients read and what a firing makes escape, with renamed occurrences**: the labels are
 the rows, and a firing makes the environment record each set its predicate queries sighted. -/
-def renamingEscape : (renamingTransport A label).Escape where
+def renamingEscape : (exactRenamingTransport A label).Escape where
   row _ o := some (label o)
   row_iso i o := .some (Frames.Carried.of_E (by
     show A.E (A.apply A.identity (label o)) (label (i.rename o))
     rw [A.apply_identity, i.keeps]
     exact A.equivalence.refl _))
-  records f := querySightings f.queries
+  records f := querySightings f.2.queries
   publishes _ _ := []
-  records_move i f := Observation.querySightings_rename i.rename f.queries
+  records_move i f := Observation.querySightings_rename i.rename f.2.queries
   publishes_move _ _ _ := .nil
   records_alike {C} {f} _ same := by
     subst same
@@ -197,7 +264,7 @@ def renamingEscape : (renamingTransport A label).Escape where
 
 /-- The escape-relative transport of the one-frame instance, renaming occurrences. -/
 abbrev renamingEscaping :=
-  (renamingTransport A label).escaping (renamingNatural A label) (renamingEscape A label)
+  (exactRenamingTransport A label).escaping (exactRenamingNatural A label) (renamingEscape A label)
 
 /-! ## Traces refine what every observer can observe -/
 
@@ -206,12 +273,12 @@ no identity, with the same renaming. -/
 def renamingIso_rowIsoModulo {C D : Configuration T O} (i : RenamingIso A label C D) :
     RowIsoModulo (∅ : Finset O) (ofConfiguration A label C) (ofConfiguration A label D) :=
   Interface.rowIsoModulo_of_renaming A label
-    (Observation.RenamingUpTo.of_private ⟨i.keeps, fun _ absent => absurd absent (Finset.notMem_empty _)⟩)
+    (Observation.RenamingUpTo.of_private ⟨i.keeps, fun _ missing => absurd missing (Finset.notMem_empty _)⟩)
     i.same
 
 /-- **Trace-equivalent runs end in states related by a renaming that carries one end's record to the
 other's, and every frame probe observes at one end what its renaming observes at the other.** -/
-theorem renaming_traceEquiv_equivariant {x : Escaped (firstOrder A label).toStep}
+theorem renaming_traceEquiv_equivariant {x : Escaped (ExactQueryAlphabet.step A label)}
     {r r' : (renamingEscape A label).step.Run x} (equivalent : (renamingEscaping A label).TraceEquiv x r r') :
     ∃ π : O ≃ O, Record.rename π r.last.record = r'.last.record ∧
       ∀ p : FrameProbe (Frames.ofSubstitution A) PUnit.unit O,
@@ -221,7 +288,7 @@ theorem renaming_traceEquiv_equivariant {x : Escaped (firstOrder A label).toStep
   exact ⟨i.rename, carried, (renamingIso_rowIsoModulo A label i).observes_rename_iff⟩
 
 /-- **Traces refine observation by every probe the start's record supports.** -/
-theorem renaming_traceEquiv_observes {x : Escaped (firstOrder A label).toStep}
+theorem renaming_traceEquiv_observes {x : Escaped (ExactQueryAlphabet.step A label)}
     {r r' : (renamingEscape A label).step.Run x} (equivalent : (renamingEscaping A label).TraceEquiv x r r')
     {p : FrameProbe (Frames.ofSubstitution A) PUnit.unit O} (supported : p.Supported x.record) :
     p.Observes (ofConfiguration A label r.last.state) ↔ p.Observes (ofConfiguration A label r'.last.state) := by
@@ -237,23 +304,23 @@ namespace ObserverControls
 open Mettapedia.Logic.LP
 open ConstraintMultisetRewriting.Controls (signature)
 open EscapeControls (blank twins seeAll takeFive swapTwins swapTwins_keeps twins_renamed takeFive_valid
-  takeSix_valid)
+  takeSix_valid takeFiveExact takeSixExact takeFiveExact_valid takeSixExact_valid)
 open Observation.Record (sighting reference tuple automorphisms)
 
 /-- The escape-relative transport of the controls. -/
 abbrev escaping := renamingEscaping ConstraintMultisetRewriting.Controls.A blank
 
 /-- The start `{5, 6}` with the environment's record `R`. -/
-abbrev start (R : Record ℕ) : Escaped (firstOrder ConstraintMultisetRewriting.Controls.A blank).toStep :=
+abbrev start (R : Record ℕ) : Escaped (ExactQueryAlphabet.step ConstraintMultisetRewriting.Controls.A blank) :=
   ⟨twins, [], R⟩
 
 /-- Take `5` and sight `{5, 6}`. -/
 abbrev runFive (R : Record ℕ) : (renamingEscape ConstraintMultisetRewriting.Controls.A blank).step.Run (start R) :=
-  .cons takeFive takeFive_valid (.nil _)
+  .cons takeFiveExact takeFiveExact_valid (.nil _)
 
 /-- Take `6` and sight `{5, 6}`. -/
 abbrev runSix (R : Record ℕ) : (renamingEscape ConstraintMultisetRewriting.Controls.A blank).step.Run (start R) :=
-  .cons (takeFive.rename swapTwins) takeSix_valid (.nil _)
+  .cons takeSixExact takeSixExact_valid (.nil _)
 
 /-- The exchange of `5` and `6`, as an isomorphism of the configuration. -/
 def swapIso : RenamingIso ConstraintMultisetRewriting.Controls.A blank twins twins :=
@@ -267,7 +334,7 @@ def startSwap {R : Record ℕ} (aut : swapTwins ∈ automorphisms R) : escaping.
 record.** -/
 theorem identified_of_aut {R : Record ℕ} (aut : swapTwins ∈ automorphisms R) :
     escaping.TraceEquiv (start R) (runFive R) (runSix R) :=
-  .rel _ _ (.inr (Transport.Similar.single (startSwap aut) takeFive_valid takeSix_valid rfl))
+  .rel _ _ (.inr (Transport.Similar.single (startSwap aut) takeFiveExact_valid takeSixExact_valid rfl))
 
 /-- **The obstruction dissolves.** With nothing recorded before, taking `5` and taking `6`, both
 sighting `{5, 6}`, are trace equivalent. -/
@@ -278,7 +345,7 @@ theorem sighting_dissolved : escaping.TraceEquiv (start []) (runFive []) (runSix
 ends carries it to itself.** -/
 theorem sighting_dissolved_ends :
     (runFive []).last.record = [sighting {5, 6}] ∧ (runSix []).last.record = [sighting {5, 6}] ∧
-      ((escaping.result_move (startSwap (R := []) rfl) takeFive takeFive_valid).base.rename = swapTwins) ∧
+      ((escaping.result_move (startSwap (R := []) rfl) takeFiveExact takeFiveExact_valid).base.rename = swapTwins) ∧
       swapTwins ∈ automorphisms [sighting ({5, 6} : Finset ℕ)] :=
   ⟨rfl, by decide, rfl, Observation.RecordControls.sighting_swap.1⟩
 
@@ -294,10 +361,12 @@ theorem fixed_distinguishes {R : Record ℕ} (fixes : ∀ π ∈ automorphisms R
   have similar := equivalent.similar_of_length_le_one (Nat.le_refl _)
   obtain ⟨i, moving, -⟩ := Transport.similar_cons_cons.mp similar
   have fixed : i.base.rename 5 = 5 := fixes _ (Observation.Record.mem_automorphisms.mpr i.record)
-  change takeFive.rename i.base.rename = takeFive.rename swapTwins at moving
-  have taken := congrArg (fun f : Firing (Term signature) (Subst signature) ℕ => f.selection.taken) moving
+  have movedRaw := congrArg (fun entry : ExactQueryAlphabet.Alphabet (Term signature) (Subst signature) ℕ => entry.1) moving
+  change (ExactQueryAlphabet.rename i.base.rename takeFiveExact).1 = takeSixExact.1 at movedRaw
+  rw [ExactQueryAlphabet.rename_fst,takeSixExact,ExactQueryAlphabet.rename_fst] at movedRaw
+  have taken := congrArg (fun f : Firing (Term signature) (Subst signature) ℕ => f.selection.taken) movedRaw
   have moved : i.base.rename 5 = 6 := by
-    simpa [Firing.rename, renameSelection, takeFive, swapTwins] using taken
+    simpa [Firing.rename, renameSelection, takeFiveExact, takeFive, swapTwins] using taken
   rw [fixed] at moved
   exact absurd moved (by decide)
 

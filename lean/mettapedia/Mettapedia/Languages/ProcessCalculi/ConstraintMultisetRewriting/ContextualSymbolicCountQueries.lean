@@ -287,4 +287,123 @@ theorem native_entry_count_iff (body : Body S O Γ sort before after) (index : b
     exact (body.native_entry_count_from_table_iff index shapes resources consistent occupied produced guards pattern
       _ number read).mpr checked
 
+/-! ## The positive predicate query
+
+An `any` check has no fixed answer: each future model may find different matching rows. So it
+reads the same symbolic table as a count and accepts when the table's matches plus the prefix's
+authored matches are not zero. -/
+
+omit [DecidableEq O] in
+/-- An `any` check holds exactly when its matched region is not empty. -/
+theorem holds_any_iff_card_ne_zero {Local Shared Later : Type} (locals : Local → MetaArity S)
+    {captures : Shared → MetaArity S} {later : Later → MetaArity S} (candidate : Assignment captures later)
+    {Δ : Ctx S} {kind : S.Srt} (rows : O → Row locals captures Δ kind) (world : Finset O)
+    (pattern : Term (signature S captures) Δ kind) :
+    ContextualConditionalGuards.Holds locals candidate rows world (.predicate .any pattern) ↔
+      (region locals candidate rows world pattern).card ≠ 0 := by
+  rw [Finset.card_ne_zero]
+  simp only [ContextualConditionalGuards.Holds, Quantifier.holds_any]
+  constructor
+  · rintro ⟨occurrence, inside, matched⟩
+    exact ⟨occurrence, (mem_region locals candidate rows world pattern occurrence).mpr ⟨inside, matched⟩⟩
+  · rintro ⟨occurrence, member⟩
+    obtain ⟨inside, matched⟩ := (mem_region locals candidate rows world pattern occurrence).mp member
+    exact ⟨occurrence, inside, matched⟩
+
+/-- The finite verdict of an `any` check: some row matches, read from the table or authored by
+the prefix. -/
+noncomputable def nativeAnyCheckQuery (body : Body S O Γ sort before after) (index : body.CutIndex)
+    (pattern : Term (signature S after.declarations) Γ sort)
+    (table : SymbolicPredicateTable.Table (Row body.guardNativeBank body.guardNativeFamily Γ sort) (GuardPhysical O)) :
+    DataQuery body.guardNativeFamily
+      (GuardPhysical O × Row body.guardNativeBank body.guardNativeFamily Γ sort) (GuardPhysical O) :=
+  liftPoint (ofCondition (fun candidate =>
+    (table.matching
+      (body.nativeCountPredicate index pattern ((body.entryCutAt index).taken.image some)) candidate).card +
+      body.nativeVirtualCount index pattern candidate ≠ 0) none)
+
+/-- Any table whose actual-data read succeeds may supply the finite `any` check. -/
+theorem native_entry_any_from_table_iff (body : Body S O Γ sort before after) (index : body.CutIndex)
+    (shapes : body.ShapesHold) (resources : Executable ContextualSourceSchedules.Schedule.unitLabel before.present body.commits)
+    (consistent : ContextualConditionalExecution.Solvable after.equations) (occupied : Finset Nat)
+    (produced : List (Term (signature S (queryFamily body.bindingLocals body.guardFamily)) Γ sort))
+    (guards : List (Check (Term (signature S (queryFamily body.bindingLocals body.guardFamily)) Γ sort)))
+    (pattern : Term (signature S after.declarations) Γ sort)
+    (table : SymbolicPredicateTable.Table (Row body.guardNativeBank body.guardNativeFamily Γ sort) (GuardPhysical O))
+    (read : AskData (body.nativeBindingInformation occupied produced guards)
+      (table.query (body.nativeCountPredicate index pattern ((body.entryCutAt index).taken.image some)))
+      (nativeLabels body.guardNativeBank (body.nativeBindingState occupied)) (body.nativeBindingState occupied).present) :
+    Ask (body.entryCutAt index).view.locals (body.entryCutAt index).view.problem
+        (body.entryCutAt index).view.rows (body.entryCutAt index).view.world (.predicate .any pattern) ↔
+        AskData (body.nativeBindingInformation occupied produced guards)
+          (body.nativeAnyCheckQuery index pattern table)
+          (nativeLabels body.guardNativeBank (body.nativeBindingState occupied))
+          (body.nativeBindingState occupied).present := by
+  have point :
+      AskData (body.nativeBindingInformation occupied produced guards)
+          (body.nativeAnyCheckQuery index pattern table)
+          (nativeLabels body.guardNativeBank (body.nativeBindingState occupied))
+          (body.nativeBindingState occupied).present ↔
+        ∀ (Future : Type) (future : Future → MetaArity S) (candidate : Assignment body.guardNativeFamily future),
+          ContextualResidual.Models candidate (body.nativeBindingInformation occupied produced guards) →
+          (table.matching
+            (body.nativeCountPredicate index pattern ((body.entryCutAt index).taken.image some)) ⟨Future, future, candidate⟩).card +
+            body.nativeVirtualCount index pattern ⟨Future, future, candidate⟩ ≠ 0 := by
+    erw [nativeAnyCheckQuery, lift_point_ask_iff]
+    exact ask_condition_iff _ _ _ (Finset.mem_insert_self _ _) _
+  have semantic := body.native_saved_cut_ask_iff (body.entryCutAt index).view.locals index shapes resources consistent
+    occupied produced guards (body.entryCutAt index).view.rows (body.entryCutAt index).view.world
+    (.predicate .any pattern)
+  rw [(body.entry_cut_at_compare shapes resources index).1]
+  constructor
+  · intro source
+    apply point.mpr
+    intro Future future candidate model
+    have holds := semantic.mpr source Future future candidate model
+    have original := (ContextualConditionalGuards.holds_transport (body.entryCutAt index).view.locals
+      (body.nativeGuardCut index) candidate (body.entryCutAt index).view.rows
+      (body.entryCutAt index).view.world (.predicate .any pattern)).mp holds
+    rw [holds_any_iff_card_ne_zero] at original
+    rwa [body.native_count_total_of_read index occupied produced guards pattern table candidate model
+      (read Future future candidate model)] at original
+  · intro checked
+    apply semantic.mp
+    intro Future future candidate model
+    apply (ContextualConditionalGuards.holds_transport (body.entryCutAt index).view.locals
+      (body.nativeGuardCut index) candidate (body.entryCutAt index).view.rows
+      (body.entryCutAt index).view.world (.predicate .any pattern)).mpr
+    rw [holds_any_iff_card_ne_zero, body.native_count_total_of_read index occupied produced guards pattern table
+      candidate model (read Future future candidate model)]
+    exact point.mp checked Future future candidate model
+
+/-- The constructed symbolic table read and its finite `any` check give the exact original
+guard, including with residual/nonprincipal information. -/
+theorem native_entry_any_iff (body : Body S O Γ sort before after) (index : body.CutIndex)
+    (shapes : body.ShapesHold) (resources : Executable ContextualSourceSchedules.Schedule.unitLabel before.present body.commits)
+    (consistent : ContextualConditionalExecution.Solvable after.equations) (occupied : Finset Nat)
+    (produced : List (Term (signature S (queryFamily body.bindingLocals body.guardFamily)) Γ sort))
+    (guards : List (Check (Term (signature S (queryFamily body.bindingLocals body.guardFamily)) Γ sort)))
+    (pattern : Term (signature S after.declarations) Γ sort) :
+    let table := body.nativeCountTable index occupied produced guards pattern ((body.entryCutAt index).taken.image some)
+    Ask (body.entryCutAt index).view.locals (body.entryCutAt index).view.problem
+        (body.entryCutAt index).view.rows (body.entryCutAt index).view.world (.predicate .any pattern) ↔
+      AskData (body.nativeBindingInformation occupied produced guards)
+          (table.query (body.nativeCountPredicate index pattern ((body.entryCutAt index).taken.image some)))
+          (nativeLabels body.guardNativeBank (body.nativeBindingState occupied))
+          (body.nativeBindingState occupied).present ∧
+        AskData (body.nativeBindingInformation occupied produced guards)
+          (body.nativeAnyCheckQuery index pattern table)
+          (nativeLabels body.guardNativeBank (body.nativeBindingState occupied))
+          (body.nativeBindingState occupied).present := by
+  dsimp only
+  constructor
+  · intro source
+    have read := body.native_count_table_read index occupied produced guards pattern
+      ((body.entryCutAt index).taken.image some)
+    exact ⟨read, (body.native_entry_any_from_table_iff index shapes resources consistent occupied produced guards
+      pattern _ read).mp source⟩
+  · rintro ⟨read, checked⟩
+    exact (body.native_entry_any_from_table_iff index shapes resources consistent occupied produced guards pattern
+      _ read).mpr checked
+
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualNativeBodies.Body

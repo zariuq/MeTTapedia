@@ -482,7 +482,11 @@ Theorem {}_Prop_false : forall t, t /:e {}_Prop.
 let t. assume Ht: t :e {}_Prop.
 apply SepE2 1 (fun x:set => exists w, w :e {}) t Ht.
 let w. assume Hw: w :e {}. exact {}_empty w Hw.
-Qed." ($E "{" $E "}" $E $E $E $E $E $E $E $E $E $E $E))
+Qed.
+Theorem {}_rec_proof_ok : forall motive:set -> set, 0 :e {}_Prop -> 0 :e (motive 0).
+let motive. assume Ht: 0 :e {}_Prop.
+exact FalseE ({}_Prop_false 0 Ht) (0 :e (motive 0)).
+Qed." ($E "{" $E "}" $E $E $E $E $E $E $E $E $E $E $E $E $E $E))
           "")
       (format-args "End {}_Section." ($E)))))
 
@@ -515,7 +519,8 @@ Qed." ($E "{" $E "}" $E $E $E $E $E $E $E $E $E $E $E))
             (rec-type-text $name $cs $params $q)
             (if (has-cases-eliminator $name) (cases-text $name $cs $params $q) "")
             (if (has-cases-eliminator $name) (cases-type-text $name $cs $params $q) "")
-            (if (and (== $q 0) (not (is-prop $name))) (ind-text $name $cs $params) "")
+            (if (== $q 0) (ind-text $name $cs $params) "")
+            (if (and (== $q 0) (not (is-prop $name))) (data-rec-proof-ok-text $name $cs $params) "")
             (if (and (== $q 1) (is-prop $name)) (indexed-ind-text $name $cs $params) "")
             (noconf-text $name $cs)
             (inj-text $name $cs)
@@ -591,20 +596,33 @@ Qed.
       ((guard $p) (guard-sort $p x $params))
       ((rec $is) (fam-app $E $q $is x $params)))))
 
+; A field's type at a level: `node` reads a recursive field as a node of the
+; family, `(proof P)` as a proof of the family's proposition P at its
+; indices, as Lean's constructor type has it.  Other fields are read alike.
+(= (field-type-at $level $E $q $f $params)
+   (if (== $level node) (field-type $E $q $f $params)
+       (case $f
+         (((rec $is) (proof-prop-at $level $q $is $params))
+          ($_ (field-type $E $q $f $params))))))
+(= (proof-prop-at (proof $P) $q $is $params)
+   (if (== $q 0) $P (format-args "({} {})" ($P (indices-text $is x $params)))))
+
 (= (result-type $E $q $c $params)
    (fam-app $E $q (ctor-result $c) x $params))
 
 ; forall x0 :e T0, .., body
-(= (binders $E $q $fs $params $j $body)
+(= (binders $E $q $fs $params $j $body) (binders-at node $E $q $fs $params $j $body))
+(= (binders-at $level $E $q $fs $params $j $body)
    (if (== $fs ()) $body
        (format-args "forall x{} :e {}, {}"
-         ($j (field-type $E $q (car-atom $fs) $params) (binders $E $q (cdr-atom $fs) $params (+ $j 1) $body)))))
+         ($j (field-type-at $level $E $q (car-atom $fs) $params) (binders-at $level $E $q (cdr-atom $fs) $params (+ $j 1) $body)))))
 
 ; let x0. assume H0: x0 :e T0. ..
-(= (intros $E $q $fs $params $j)
+(= (intros $E $q $fs $params $j) (intros-at node $E $q $fs $params $j))
+(= (intros-at $level $E $q $fs $params $j)
    (if (== $fs ()) ""
        (format-args "let x{}. assume H{}: x{} :e {}. {}"
-         ($j $j $j (field-type $E $q (car-atom $fs) $params) (intros $E $q (cdr-atom $fs) $params (+ $j 1))))))
+         ($j $j $j (field-type-at $level $E $q (car-atom $fs) $params) (intros-at $level $E $q (cdr-atom $fs) $params (+ $j 1))))))
 
 (= (applied $head $m) (if (== $m 0) $head (format-args "{} {}" ($head (join " " (xs-of $m))))))
 (= (hyp-args $m) (let $is (range-from 0 $m) (join " " (map-atom $is $i (format-args "x{} H{}" ($i $i))))))
@@ -859,13 +877,15 @@ Qed.
           $C $C (pi-text $E $q $fs $params 0 $rt)
           (lam-proof $E $C $q $fs $params 0 $m $rt)))))
 
-(= (lam-text $E $q $fs $params $j $body)
+(= (lam-text $E $q $fs $params $j $body) (lam-text-at node $E $q $fs $params $j $body))
+(= (lam-text-at $level $E $q $fs $params $j $body)
    (if (== $fs ()) $body
-       (format-args "(fun x{} :e {} => {})" ($j (field-type $E $q (car-atom $fs) $params) (lam-text $E $q (cdr-atom $fs) $params (+ $j 1) $body)))))
+       (format-args "(fun x{} :e {} => {})" ($j (field-type-at $level $E $q (car-atom $fs) $params) (lam-text-at $level $E $q (cdr-atom $fs) $params (+ $j 1) $body)))))
 
-(= (pi-text $E $q $fs $params $j $rt)
+(= (pi-text $E $q $fs $params $j $rt) (pi-text-at node $E $q $fs $params $j $rt))
+(= (pi-text-at $level $E $q $fs $params $j $rt)
    (if (== $fs ()) $rt
-       (format-args "(Pi_ x{} :e {}, {})" ($j (field-type $E $q (car-atom $fs) $params) (pi-text $E $q (cdr-atom $fs) $params (+ $j 1) $rt)))))
+       (format-args "(Pi_ x{} :e {}, {})" ($j (field-type-at $level $E $q (car-atom $fs) $params) (pi-text-at $level $E $q (cdr-atom $fs) $params (+ $j 1) $rt)))))
 
 ; lam_Pi, field by field, ending in the node's typing.
 (= (lam-proof $E $C $q $fs $params $j $m $rt)
@@ -1380,6 +1400,62 @@ exact {} C {} t ({}_rec {} t) (In_fam_eq (fun z:set => C {} t) (IndIdx {} t) {} 
   " ($p $p $p (pred-at (format-args "x{}" ($p))) (ind-chain $E $c $params $m (+ $t 1))))))))
         $node $k $args $ihs))))
 
+; ---- the recursor of a data family, as Lean states it, at a motive into propositions ----
+; F.rec read where its motive is a proposition (as in a proof): the motive is
+; a function of sets, at the family's value; each minor premise binds the
+; constructor's fields and then, for each recursive field, the motive at that
+; field's value; the conclusion is the motive at every value of the family.
+; No typing premise on the motive: the statement holds for every function.
+; Its proof is the node induction (F_ind) of "the motive holds at t".  Only
+; for a family without indices (an indexed one is not stated here).
+(= (dminor-chain $E $c $params $j $t)
+   (let* (($fs (ctor-fields $c)) ($m (length-of $fs)) ($ps (rec-positions $fs 0)) ($C (egal (ctor-name $c))))
+     (if (< $j $m)
+         (format-args "(Pi_ x{} :e {}, {})" ($j (field-type-m $E 0 (nth $fs $j) $params 0) (dminor-chain $E $c $params (+ $j 1) $t)))
+         (if (< $t (length-of $ps))
+             (let $p (nth $ps $t)
+               (format-args "(Pi_ y{} :e (motive x{}), {})" ($p $p (dminor-chain $E $c $params $j (+ $t 1)))))
+             (format-args "(motive {})" ((node-m $C $m 0)))))))
+; 0 in the minor premise $acc, given its fields (each by its variable) and
+; then its hypotheses (0, by the node induction's hypothesis IH_p).
+(= (dapply-chain $E $c $params $j $t $acc)
+   (let* (($fs (ctor-fields $c)) ($m (length-of $fs)) ($ps (rec-positions $fs 0)))
+     (if (< $j $m)
+         (dapply-chain $E $c $params (+ $j 1) $t
+           (format-args "(Pi_0_ap {} (fun x{} => {}) {} x{} Hx{})"
+             ((field-type-m $E 0 (nth $fs $j) $params 0) $j (dminor-chain $E $c $params (+ $j 1) $t) $acc $j $j)))
+         (if (< $t (length-of $ps))
+             (let $p (nth $ps $t)
+               (dapply-chain $E $c $params $j (+ $t 1)
+                 (format-args "(Pi_0_ap (motive x{}) (fun y{} => {}) {} 0 IH{})"
+                   ($p $p (dminor-chain $E $c $params $j (+ $t 1)) $acc $p))))
+             $acc))))
+(= (drec-case-text $E $c $params $k $bullet)
+   (let* (($fs (ctor-fields $c)) ($m (length-of $fs)) ($ps (rec-positions $fs 0)))
+     (format-args "  {}{}{}exact {}.
+"
+       ($bullet
+        (join "" (map-atom (range-from 0 $m) $j (format-args "let x{}. assume Hx{}. " ($j $j))))
+        (join "" (map-atom $ps $p (format-args "assume IH{}. " ($p))))
+        (dapply-chain $E $c $params 0 0 (format-args "H{}" ($k)))))))
+(= (data-rec-proof-ok-text $name $cs $params)
+   (case $name
+     (((bk $F) "")
+      ($_ (let* (($E (egal $name)) ($n (length-of $cs)) ($ks (range-from 0 $n)))
+            (format-args "Theorem {}_rec_proof_ok : forall motive:set -> set,
+{}  forall t :e {}, 0 :e (motive t).
+let motive.{}
+apply {}_ind.
+{}Qed.
+"
+              ($E
+               (join "" (map-atom $ks $k (format-args "  0 :e {} ->
+" ((dminor-chain $E (nth $cs $k) $params 0 0)))))
+               $E
+               (join "" (map-atom $ks $k (format-args " assume H{}." ($k))))
+               $E
+               (join "" (map-atom $ks $k (drec-case-text $E (nth $cs $k) $params $k (if (> $n 1) "- " "")))))))))))
+
 (= (ind-text $name $cs $params)
    (let* (($E (egal $name)) ($n (length-of $cs)) ($ks (range-from 0 $n)))
      (format-args "Theorem {}_ind : forall P:set -> prop, {}forall t :e {}, P t.
@@ -1580,7 +1656,140 @@ Qed.
 ; The proof-irrelevant fiber has one encoded index, as does IndFiber. Its
 ; public predicate keeps the source's separate indices for ordinary use.
 (= (prop-text $name $cs $params $q)
-   (format-args "{}{}" ((prop-text-core $name $cs $params $q) (prop-view-text $name))))
+   (format-args "{}{}{}" ((prop-text-core $name $cs $params $q) (prop-view-text $name) (rec-proof-ok-text $name $cs $params))))
+
+; ---- the recursor of a proposition, as Lean states it ----
+; F.rec read with every proof 0: the motive takes the indices and a proof;
+; each minor premise binds the constructor's fields (a recursive field as a
+; proof of the family's proposition at its indices) and then the induction
+; hypotheses; the conclusion is the motive at any indices and a proof of the
+; proposition there.  The motive is a function of sets, as the motives of
+; F_rec_type and F_prec_type are, so an application of it to arguments
+; reduces as the kernel reduces any function; Lean's motive, a function on
+; the indices' and the proposition's sets, is one of them.  The motive and the
+; indices need no typing premise: the statement holds for every function and
+; every set.  Its proof is the node induction (F_ind) of "the motive holds at
+; the node's indices, at proof 0".
+(= (in-list $x $xs) (if (== $xs ()) False (if (== $x (car-atom $xs)) True (in-list $x (cdr-atom $xs)))))
+(= (index-texts $is $mode $params) (join " " (map-atom $is $i (index-text $i $mode $params))))
+(= (lmotive-at $is $value $mode $params)
+   (if (== $is ()) (format-args "(motive {})" ($value))
+       (format-args "(motive {} {})" ((index-texts $is $mode $params) $value))))
+(= (lprop-at $E $is $mode $params)
+   (if (== $is ()) (format-args "{}_Prop" ($E))
+       (format-args "({}_Prop {})" ($E (index-texts $is $mode $params)))))
+(= (lfield-type $E $f $params)
+   (case $f (((rec $is) (lprop-at $E $is x $params)) ($_ (field-type $E 1 $f $params)))))
+
+; The minor premise of constructor c from field j and hypothesis t on; the
+; recursive fields in $zs are already given, as 0.
+(= (lminor-chain $E $c $params $j $t $zs)
+   (let* (($fs (ctor-fields $c)) ($m (length-of $fs)) ($ps (rec-positions $fs 0)))
+     (if (< $j $m)
+         (format-args "(Pi_ x{} :e {}, {})"
+           ($j (lfield-type $E (nth $fs $j) $params) (lminor-chain $E $c $params (+ $j 1) $t $zs)))
+         (if (< $t (length-of $ps))
+             (let $p (nth $ps $t)
+               (format-args "(Pi_ y{} :e {}, {})"
+                 ($p (lmotive-at (rec-indices (nth $fs $p)) (if (in-list $p $zs) "0" (format-args "x{}" ($p))) x $params)
+                  (lminor-chain $E $c $params $j (+ $t 1) $zs))))
+             (lmotive-at (ctor-result $c) "0" x $params)))))
+
+; 0 in the minor premise $acc, given its fields and then its hypotheses: a
+; field by its variable, a recursive field by 0 (P_j), a hypothesis by Y_p.
+(= (lapply-chain $E $c $params $j $t $acc $zs)
+   (let* (($fs (ctor-fields $c)) ($m (length-of $fs)) ($ps (rec-positions $fs 0)))
+     (if (< $j $m)
+         (let* (($f (nth $fs $j)) ($rec (is-rec $f)))
+           (lapply-chain $E $c $params (+ $j 1) $t
+             (format-args "(Pi_0_ap {} (fun x{} => {}) {} {} {})"
+               ((lfield-type $E $f $params) $j (lminor-chain $E $c $params (+ $j 1) $t $zs) $acc
+                (if $rec "0" (format-args "x{}" ($j))) (if $rec (format-args "P{}" ($j)) (format-args "Hx{}" ($j)))))
+             (if $rec (cons-atom $j $zs) $zs)))
+         (if (< $t (length-of $ps))
+             (let $p (nth $ps $t)
+               (lapply-chain $E $c $params $j (+ $t 1)
+                 (format-args "(Pi_0_ap {} (fun y{} => {}) {} 0 Y{})"
+                   ((lmotive-at (rec-indices (nth $fs $p)) "0" x $params) $p
+                    (lminor-chain $E $c $params $j (+ $t 1) $zs) $acc $p))
+                 $zs))
+             $acc))))
+
+; The node induction's case for constructor k: the fields and hypotheses as it
+; binds them, each recursive field's proposition from its node (P_j), each
+; hypothesis at the indices themselves (Y_p), then the minor premise H_k.
+; A bullet marks each case when there are several (Megalodon refuses one
+; before a single goal).
+(= (lrec-case-text $E $nidx $c $params $k $bullet)
+   (let* (($fs (ctor-fields $c)) ($m (length-of $fs)) ($ps (rec-positions $fs 0)))
+     (format-args "  {}{}{}
+    {}{}{}exact {}.
+"
+       ($bullet
+        (join "" (map-atom (range-from 0 $m) $j (format-args "let x{}. assume Hx{}. " ($j $j))))
+        (join "" (map-atom $ps $p (format-args "assume IH{}. " ($p))))
+        (join "" (map-atom $ps $p
+          (format-args "claim P{}: 0 :e {}.
+    {} exact SepI 1 (fun x:set => exists w, w :e {}) 0 In_0_1 (fun p H => H x{} Hx{}). {}
+    " ($p (lprop-at $E (rec-indices (nth $fs $p)) x $params) "{" (field-type $E (if (== $nidx 0) 0 1) (nth $fs $p) $params) $p $p "}"))))
+        (join "" (map-atom $ps $p
+          (format-args "claim Y{}: 0 :e {}.
+    {} exact {}. {}
+    " ($p (lmotive-at (rec-indices (nth $fs $p)) "0" x $params) "{"
+           (if (== $nidx 2)
+               (format-args "In_motive2_unpair motive {} 0 0 IH{}" ((index-texts (rec-indices (nth $fs $p)) x $params) $p))
+               (format-args "IH{}" ($p)))
+           "}"))))
+        (if (== $nidx 2)
+            (format-args "apply In_motive2_pair motive {} 0 0.
+    " ((index-texts (ctor-result $c) x $params)))
+            "")
+        (lapply-chain $E $c $params 0 0 (format-args "H{}" ($k)) ())))))
+
+(= (rec-proof-ok-text $name $cs $params)
+   (case $name
+     (((bk $F) "")
+      ($_ (let $nidx (index-count $name)
+            (if (> $nidx 2)
+                (format-args "(** {}.rec as Lean states it is not given here: its motive takes more than two indices. **)
+" ((egal $name)))
+                (rec-proof-ok-text-n $name $cs $params $nidx)))))))
+
+(= (rec-proof-ok-text-n $name $cs $params $nidx)
+   (let* (($E (egal $name))
+          ($ks (range-from 0 (length-of $cs)))
+          ($ivs (join " " (ivar-list $nidx i)))
+          ($concl (if (== $nidx 0)
+                      (format-args "0 :e {}_Prop -> 0 :e (motive 0)" ($E))
+                      (format-args "forall {}, 0 :e ({}_Prop {}) -> 0 :e (motive {} 0)" ($ivs $E $ivs $ivs))))
+          ($L (if (== $nidx 0) (format-args "forall w :e {}, 0 :e (motive 0)" ($E))
+                  (if (== $nidx 1) (format-args "forall i, forall w :e {} i, 0 :e (motive i 0)" ($E))
+                      (format-args "forall i, forall w :e {} i, 0 :e (motive (proj0 i) (proj1 i) 0)" ($E)))))
+          ($fib (if (== $nidx 0) $E (if (== $nidx 1) (format-args "{} i0" ($E)) (format-args "{} (setsum i0 i1)" ($E)))))
+          ($final (if (== $nidx 0) "exact L w Hw."
+                      (if (== $nidx 1) "exact L i0 w Hw."
+                          "exact In_motive2_unpair motive i0 i1 0 0 (L (setsum i0 i1) w Hw)."))))
+     (format-args "Theorem {}_rec_proof_ok : forall motive:{},
+{}  {}.
+let motive.{}
+claim L: {}.
+{} apply {}_ind.
+{}{}
+{}assume Ht: 0 :e {}.
+apply SepE2 1 (fun x:set => exists w, w :e {}) 0 Ht.
+let w. assume Hw: w :e {}.
+{}
+Qed.
+"
+       ($E (motive-ty $nidx)
+        (join "" (map-atom $ks $k (format-args "  0 :e {} ->
+" ((lminor-chain $E (nth $cs $k) $params 0 0 ()))))) $concl
+        (join "" (map-atom $ks $k (format-args " assume H{}." ($k))))
+        $L "{" $E
+        (join "" (map-atom $ks $k (lrec-case-text $E $nidx (nth $cs $k) $params $k (if (> (length-of $cs) 1) "- " "")))) "}"
+        (if (== $nidx 0) "" (format-args "let {}. " ($ivs)))
+        (if (== $nidx 0) (format-args "{}_Prop" ($E)) (format-args "{}_Prop {}" ($E $ivs)))
+        $fib $fib $final))))
 (= (prop-view-text $name)
    (let* (($n (index-count $name)) ($E (egal $name)) ($P (prop-type-name $name))
           ($xs (ivar-list $n i)) ($args (join " " $xs)))
@@ -1621,9 +1830,14 @@ Qed.
           (prec-type-text $name $cs $params $q)
           (piota-text $name $cs $params $q)))))))
 
+; A proof constructor, read as Lean's constructor: its value is 0 and its type
+; binds the fields, a recursive field as a proof of the family's proposition
+; at the field's indices.  The proof that 0 lies in the result's proposition
+; takes a node from each recursive field's proposition and builds the node.
 (= (proof-ctor-text $name $cs $params $q $k)
    (let* (($E (egal $name))
           ($P (prop-type-name $name))
+          ($lv (proof $P))
           ($c (nth $cs $k))
           ($C (egal (ctor-name $c)))
           ($fs (ctor-fields $c))
@@ -1631,27 +1845,36 @@ Qed.
           ($pt (if (== $q 0) $P (format-args "({} {})" ($P (indices-text (ctor-result $c) x $params))))))
      (format-args "Definition {}_proof : set := {}.
 Theorem {}_proof_ok : {}.
-{}exact SepI 1 (fun x:set => exists w, w :e {}) 0 In_0_1 (fun p H => H ({}) ({}_typed {})).
+{}{}exact SepI 1 (fun x:set => exists w, w :e {}) 0 In_0_1 (fun p H => H ({}) ({}_typed {})).
 Qed.
 Theorem {}_proof_type : {}_proof :e {}.
 exact {}.
 Qed.
 "
-       ($C (lam-text $E $q $fs $params 0 "0")
-        $C (binders $E $q $fs $params 0 (format-args "0 :e {}" ($pt)))
-        (intros $E $q $fs $params 0)
+       ($C (lam-text-at $lv $E $q $fs $params 0 "0")
+        $C (binders-at $lv $E $q $fs $params 0 (format-args "0 :e {}" ($pt)))
+        (intros-at $lv $E $q $fs $params 0)
+        (join "" (map-atom (rec-positions $fs 0) $j (node-of-proof-text $E $q (nth $fs $j) $params $j)))
         (if (== $q 0) $E (format-args "{} {}" ($E (indices-text (ctor-result $c) x $params))))
-        (applied (format-args "{}_node" ($C)) $m) $C (hyp-args $m)
-        $C $C (pi-text $E $q $fs $params 0 $pt)
-        (proof-lam $E $C $q $fs $params 0 $m $pt)))))
+        (format-args "{}_node {}" ($C (join " " (map-atom (range-from 0 $m) $j (if (is-rec (nth $fs $j)) (format-args "w{}" ($j)) (format-args "x{}" ($j)))))))
+        $C (join " " (map-atom (range-from 0 $m) $j (if (is-rec (nth $fs $j)) (format-args "w{} W{}" ($j $j)) (format-args "x{} H{}" ($j $j)))))
+        $C $C (pi-text-at $lv $E $q $fs $params 0 $pt)
+        (proof-lam $lv $E $C $q $fs $params 0 $m $pt)))))
 
-(= (proof-lam $E $C $q $fs $params $j $m $pt)
+; From a proof x_j of a recursive field's proposition, a node w_j of the
+; family at the field's indices.
+(= (node-of-proof-text $E $q $f $params $j)
+   (let $fam (field-type $E $q $f $params)
+     (format-args "apply SepE2 1 (fun x:set => exists w, w :e {}) x{} H{}. let w{}. assume W{}: w{} :e {}.
+" ($fam $j $j $j $j $j $fam))))
+
+(= (proof-lam $lv $E $C $q $fs $params $j $m $pt)
    (if (== $fs ()) (format-args "({}_proof_ok {})" ($C (hyp-args $m)))
        (format-args "(lam_Pi {} (fun x{} => {}) (fun x{} => {}) (fun x{} H{} => {}))"
-         ((field-type $E $q (car-atom $fs) $params)
-          $j (pi-text $E $q (cdr-atom $fs) $params (+ $j 1) $pt)
-          $j (lam-text $E $q (cdr-atom $fs) $params (+ $j 1) "0")
-          $j $j (proof-lam $E $C $q (cdr-atom $fs) $params (+ $j 1) $m $pt)))))
+         ((field-type-at $lv $E $q (car-atom $fs) $params)
+          $j (pi-text-at $lv $E $q (cdr-atom $fs) $params (+ $j 1) $pt)
+          $j (lam-text-at $lv $E $q (cdr-atom $fs) $params (+ $j 1) "0")
+          $j $j (proof-lam $lv $E $C $q (cdr-atom $fs) $params (+ $j 1) $m $pt)))))
 
 (= (papply-chain $E $q $c $params $j $t $acc $prev)
    (let* (($fs (ctor-fields $c)) ($m (length-of $fs)) ($ps (rec-positions $fs 0)))

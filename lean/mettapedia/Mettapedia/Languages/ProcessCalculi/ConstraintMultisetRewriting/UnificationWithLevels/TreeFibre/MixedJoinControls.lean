@@ -43,7 +43,7 @@ theorem towerMixedJoin_decided {Θ : Context setting.R} {original : EquationStor
       run towerMixedJoinSolver original larger = run towerMixedJoinSolver original fuel ∧
         ((∃ state finished, run towerMixedJoinSolver original larger = .solved state finished ∧
             (frames setting.levels).Principal original state.answer) ∨
-          (∃ absent, run towerMixedJoinSolver original larger = .refuted absent)) :=
+          (∃ missing, run towerMixedJoinSolver original larger = .refuted missing)) :=
   mixedJoin_decided (S := setting) ExecutableTowerChoices.choices TowerModel.facts TowerModel.roots TowerModel.heads
     TowerModel.algebra ContextualDependentPiSpine.Controls.rigid TowerModel.complete
     ContextualDependentNormalCheckingTower.head_typing_unique ContextualDependentExecutableChecking.declared

@@ -62,19 +62,34 @@ theorem readEquations_pattern (equations : EquationStore Term) :
     readEquations (equationsPattern equations) = some equations :=
   readList_pattern _ _ _ _ readEquation_pattern equations
 
+def quantifierPattern : Quantifier → Pattern
+  | .any => .apply "TcAny" []
+  | .none => .apply "TcNone" []
+
+def readQuantifier : Pattern → Option Quantifier
+  | .apply "TcAny" [] => some .any
+  | .apply "TcNone" [] => some .none
+  | _ => none
+
+theorem readQuantifier_pattern (quantifier : Quantifier) :
+    readQuantifier (quantifierPattern quantifier) = some quantifier := by
+  cases quantifier <;> rfl
+
 def checkPattern : Check Term → Pattern
   | .equal left right => .apply "TcEqual" [termPattern left, termPattern right]
-  | .absent term => .apply "TcAbsent" [termPattern term]
+  | .predicate quantifier term => .apply "TcPredicate" [quantifierPattern quantifier, termPattern term]
   | .count term count => .apply "TcCount" [termPattern term, indexPattern count]
 
 def readCheck : Pattern → Option (Check Term)
   | .apply "TcEqual" [left, right] => do return .equal (← readTerm left) (← readTerm right)
-  | .apply "TcAbsent" [term] => Check.absent <$> readTerm term
+  | .apply "TcPredicate" [quantifier, term] =>
+      do return .predicate (← readQuantifier quantifier) (← readTerm term)
   | .apply "TcCount" [term, count] => do return .count (← readTerm term) (← readIndex count)
   | _ => none
 
 theorem readCheck_pattern (check : Check Term) : readCheck (checkPattern check) = some check := by
-  cases check <;> simp [checkPattern, readCheck, readTerm_pattern, readIndex_pattern]
+  cases check <;> simp [checkPattern, readCheck, readTerm_pattern, readIndex_pattern,
+    readQuantifier_pattern]
 
 def checksPattern := listPattern "TcChecksNil" "TcChecksCons" checkPattern
 def readChecks := readList "TcChecksNil" "TcChecksCons" readCheck

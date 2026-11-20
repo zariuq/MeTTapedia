@@ -4,7 +4,7 @@ import Mettapedia.Logic.LinearLogic.KnowledgeTensorFrameGrades
 /-!
 # The first-order step with all its checks, as graded tensor proofs
 
-An equality check is a guard on knowledge. An absence check and a counting check read every
+An equality check is a guard on knowledge. A none check and a counting check read every
 present occurrence, through its label only (`holds_iff_holdsOn`). Read on the two zones, the
 present labels are the premises of the use and the residual frame, so these checks are checks
 on the frame in the sense of `CheckedSystem`.
@@ -32,7 +32,8 @@ variable {T : Type uT} {S : Type uS} {O : Type uO}
 /-- A check read on the multiset of present labels. -/
 def HoldsOn (A : SubstitutionAction T S) (σ : S) : Check T → Multiset T → Prop
   | .equal left right, _ => A.Solves σ (left, right)
-  | .absent pattern, store => ∀ value ∈ store, ¬ A.E (A.apply σ pattern) (A.apply σ value)
+  | .predicate .any pattern, store => ∃ value ∈ store, A.E (A.apply σ pattern) (A.apply σ value)
+  | .predicate .none pattern, store => ∀ value ∈ store, ¬ A.E (A.apply σ pattern) (A.apply σ value)
   | .count pattern number, store => by
       classical
       exact Multiset.card (store.filter fun value => A.E (A.apply σ pattern) (A.apply σ value)) = number
@@ -42,13 +43,22 @@ theorem holds_iff_holdsOn (A : SubstitutionAction T S) (σ : S) (label : O → T
     (check : Check T) : check.Holds A σ label store ↔ HoldsOn A σ check (labels label store) := by
   cases check with
   | equal left right => exact Iff.rfl
-  | absent pattern =>
-      constructor
-      · intro clear value member
-        obtain ⟨o, inside, rfl⟩ := Multiset.mem_map.mp member
-        exact clear o (Finset.mem_val.mp inside)
-      · intro clear o inside
-        exact clear (label o) (Multiset.mem_map.mpr ⟨o, Finset.mem_val.mpr inside, rfl⟩)
+  | predicate quantifier pattern =>
+      cases quantifier with
+      | any =>
+          constructor
+          · rintro ⟨o, inside, matched⟩
+            exact ⟨label o, Multiset.mem_map.mpr ⟨o, Finset.mem_val.mpr inside, rfl⟩, matched⟩
+          · rintro ⟨value, member, matched⟩
+            obtain ⟨o, inside, rfl⟩ := Multiset.mem_map.mp member
+            exact ⟨o, Finset.mem_val.mp inside, matched⟩
+      | none =>
+          constructor
+          · intro clear value member
+            obtain ⟨o, inside, rfl⟩ := Multiset.mem_map.mp member
+            exact clear o (Finset.mem_val.mp inside)
+          · intro clear o inside
+            exact clear (label o) (Multiset.mem_map.mpr ⟨o, Finset.mem_val.mpr inside, rfl⟩)
   | count pattern number =>
       classical
       have same : (Check.matches A σ label store pattern).card =

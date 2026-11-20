@@ -51,7 +51,7 @@ def decisionOf {Δ : Context rules} {I : EquationStore (TotalTerm Δ)} :
       if cover : VariableCover state.answer then
         .settled state.target state.answer (initial_of_cover levels (state.completed finished) cover)
       else .undecided
-  | .refuted absent => .refuted absent
+  | .refuted missing => .refuted missing
   | .stuck _ => .undecided
   | .cutoff _ => .undecided
 
@@ -143,7 +143,7 @@ def millerRankFamily : Family setting.levels := fun I =>
                     (UnificationWithLevels.TreeFibre.Miller.inMillerGlb_of_B I inside) state finished
                     ((same bound le_rfl).trans solved)).1.covered)
         | none => .undecided
-    | .refuted absent => .refuted absent
+    | .refuted missing => .refuted missing
     | .stuck _ => .undecided
     | .cutoff _ => .undecided
   else .undecided
@@ -197,7 +197,7 @@ theorem millerRankFamily_settles {fuel : Nat} {Δ : Context setting.R} {I : Equa
     cases solved'
     rw [read]
     rfl
-  · rename_i absent solved'
+  · rename_i missing solved'
     rw [reached] at solved'
     cases solved'
   · rename_i stuck solved'
@@ -210,10 +210,10 @@ theorem millerRankFamily_settles {fuel : Nat} {Δ : Context setting.R} {I : Equa
 /-- A refuted Miller run: the Miller family with no budget refutes. -/
 theorem millerRankFamily_refutes {fuel : Nat} {Δ : Context setting.R} {I : EquationStore (TotalTerm Δ)}
     (inside : UnificationWithLevels.TreeFibre.Miller.inMillerGlbB (S := setting) I = true)
-    {absent : ¬ (frames setting.levels).Solvable I}
-    (refuted : ContextualDependentWorklist.run millerTower I fuel = .refuted absent) :
+    {missing : ¬ (frames setting.levels).Solvable I}
+    (refuted : ContextualDependentWorklist.run millerTower I fuel = .refuted missing) :
     (millerRankFamily I).isRefuted = true := by
-  have reached : runRank millerTower I = .refuted absent := by
+  have reached : runRank millerTower I = .refuted missing := by
     rw [← run_eq_runRank millerTower (by rw [refuted]; trivial)]
     exact refuted
   unfold millerRankFamily
@@ -272,7 +272,7 @@ theorem millerRankFamily_refutes_of {fuel : Nat} {Δ : Context setting.R} {I : E
       split at refutes
       · cases refutes
       · cases refutes
-    · rename_i absent refuted
+    · rename_i missing refuted
       exact millerRankFamily_refutes inside refuted
     · cases refutes
     · cases refutes

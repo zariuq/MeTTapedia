@@ -248,7 +248,7 @@ theorem triangle_double {S : Store Space Control Continuation Result} {x : HECon
 exactly the equation's row, and `(p a)` is not among the rows it reads; in this module's encoding
 every firing of HE on the step that reads anything reads the world cell holding both atoms, `(p a)`
 included. With one occurrence per row the two read the same rows
-(`TriangleFootprints.Instance.h1_triangle`). -/
+(`TriangleFootprints.Instance.factDouble_triangle`). -/
 theorem reads_differ :
     translateHE Controls.callDouble 0 = (Controls.callDouble, 0) ∧
       (requests rowSupply Controls.doubling 30

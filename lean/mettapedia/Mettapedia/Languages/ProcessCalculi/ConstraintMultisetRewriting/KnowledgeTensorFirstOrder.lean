@@ -20,7 +20,7 @@ label. So a use
 * tells the position equations and the rule's own tell;
 * is guarded by the rule's equality checks, asked of the knowledge after the tell.
 
-Absence and counting checks are not guards on knowledge (`Asked`); they read the frame.
+The none query and counting checks are not guards on knowledge (`Asked`); they read the frame.
 
 ## Results
 
@@ -63,7 +63,7 @@ def Use.told (use : Use T) : EquationStore T :=
 /-- A check as a guard on knowledge. Only equality checks are such guards. -/
 def Asked (A : SubstitutionAction T S) (σ : S) : Check T → Prop
   | .equal left right => A.Solves σ (left, right)
-  | .absent _ => False
+  | .predicate _ _ => False
   | .count _ _ => False
 
 /-- All checks of the rule are equality checks. -/
@@ -74,14 +74,14 @@ theorem guard_of_asked {A : SubstitutionAction T S} {σ : S} {check : Check T}
     (asked : Asked A σ check) : ∃ left right, check = Check.equal left right := by
   cases check with
   | equal left right => exact ⟨left, right, rfl⟩
-  | absent pattern => exact asked.elim
+  | predicate quantifier pattern => exact asked.elim
   | count pattern number => exact asked.elim
 
 theorem holds_of_asked (A : SubstitutionAction T S) (σ : S) (label : O → T) (store : Finset O)
     {check : Check T} (asked : Asked A σ check) : check.Holds A σ label store := by
   cases check with
   | equal left right => exact asked
-  | absent pattern => exact asked.elim
+  | predicate quantifier pattern => exact asked.elim
   | count pattern number => exact asked.elim
 
 theorem asked_of_holds (A : SubstitutionAction T S) (σ : S) (label : O → T) (store : Finset O)
@@ -159,9 +159,9 @@ theorem fresh_outputs [DecidableEq O] (label : O → T)
   | value :: values, world => by
       obtain ⟨occurrence, fresh, atValue⟩ := supply world value
       obtain ⟨made, distinct, away, outputs⟩ := fresh_outputs label supply values (insert occurrence world)
-      have absent : occurrence ∉ made := fun member =>
+      have missing : occurrence ∉ made := fun member =>
         Finset.disjoint_left.mp away (by simpa using member) (by simp)
-      refine ⟨occurrence :: made, List.nodup_cons.mpr ⟨absent, distinct⟩, ?_, ?_⟩
+      refine ⟨occurrence :: made, List.nodup_cons.mpr ⟨missing, distinct⟩, ?_, ?_⟩
       · apply Finset.disjoint_left.mpr
         intro item inMade inWorld
         rcases List.mem_cons.mp (by simpa using inMade) with rfl | member

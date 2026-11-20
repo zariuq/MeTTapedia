@@ -36,8 +36,8 @@ theorem scanWork_empty_iff {Key Value : Type} [DecidableEq Key] (query : Key)
     obtain ⟨key, value⟩ := row
     by_cases h : key = query <;> simp [scanWork, h, Work.output, ih]
 
-/-- Completion plus absence comes from all consumed candidates. -/
-theorem scan_completed_absence {Key Value : Type} [DecidableEq Key] (query : Key)
+/-- Completion plus the none query comes from all consumed candidates. -/
+theorem scan_completed_empty {Key Value : Type} [DecidableEq Key] (query : Key)
     (rows : List (Key × Value)) (fuel : Nat)
     (h : (observe (run fuel
       (⟨(rows, query), [], scanWork query 0 rows⟩ : Cursor _ Value))).Empty) :
@@ -209,7 +209,7 @@ theorem full_reachability_changes_under_graph_join :
     (Relation.ReflTransGen.single (by simp : ((0 : Fin 3), (1 : Fin 3)) ∈ ([(0, 1)] ++ [(1, 2)])))
     (Relation.ReflTransGen.single (by simp : ((1 : Fin 3), (2 : Fin 3)) ∈ ([(0, 1)] ++ [(1, 2)])))
 
-#print axioms scan_completed_absence
+#print axioms scan_completed_empty
 #print axioms scan_coverage_finishes
 #print axioms checkGrade_sound
 #print axioms grade_conjunction

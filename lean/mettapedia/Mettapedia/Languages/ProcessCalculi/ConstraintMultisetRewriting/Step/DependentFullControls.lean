@@ -23,13 +23,13 @@ The frames below are `X : U0` (`base`) and `X : U0, x : X, g : Ground` (`triple`
 * `take_clash_refused`: a take whose pattern cannot unify with its row is refused.
 
 **Predicate query controls.**
-* `absence_refused_unknown`, `absence_refused_after_ground`, `absence_admitted_after_arrow`: the
-  absence of `g : Ground` among the rows `{1 : x : X}` is refused under no knowledge and under the
+* `none_refused_unknown`, `none_refused_after_ground`, `none_admitted_after_arrow`: the
+  none queries of `g : Ground` among the rows `{1 : x : X}` is refused under no knowledge and under the
   type-level `X ≐ Ground`, and admitted under the type-level `X ≐ Ground → Ground`. Its answer
   changes only through a type-level solution.
 * `raw_not_reads`, `syntactic_collision`: the raw region "the row is literally `g : Ground`" does not
   read through solutions, so it is no predicate query of the step; under the heterogeneous knowledge
-  `(x : X) ≐ (g : Ground)` the raw region sees no row, while the absence query is refused.
+  `(x : X) ≐ (g : Ground)` the raw region sees no row, while the none query is refused.
 -/
 
 set_option autoImplicit false
@@ -279,14 +279,14 @@ def takeClashFiring : Firing setting.levels emptyState where
 theorem take_clash_refused : ¬ (step setting.levels Nat).Admits takeClashFiring :=
   fun admitted => ContextualDependentWorklist.Controls.clash_refuted admitted.2.2.1
 
-/-! ## An absence query answered by a type-level solution -/
+/-! ## A none query answered by a type-level solution -/
 
 /-- The frame `X : U0, x : X, g : Ground` with knowledge `K` and the row `1 : x : X`. -/
 def queryState (K : EquationStore (TotalTerm triple)) : State Tower.rules Nat :=
   ⟨triple, K, {1}, fun _ => xRow⟩
 
-/-- **Ask the absence of `g : Ground`** among the present rows, and nothing else. -/
-def absenceFiring (K : EquationStore (TotalTerm triple)) : Firing setting.levels (queryState K) where
+/-- **Ask the none query of `g : Ground`** among the present rows, and nothing else. -/
+def noneQueryFiring (K : EquationStore (TotalTerm triple)) : Firing setting.levels (queryState K) where
   helpers := .nil _
   taken := []
   read := []
@@ -295,35 +295,36 @@ def absenceFiring (K : EquationStore (TotalTerm triple)) : Firing setting.levels
   makes := []
   tells := []
   guards := []
-  queries := [Query.absent setting.levels Nat gRow]
+  queries := [Query.predicate setting.levels Nat .none gRow]
 
-theorem absenceFiring_information (K : EquationStore (TotalTerm triple)) :
-    (absenceFiring K).information = K :=
-  information_plain setting.levels K {1} (fun _ => xRow) [] [Query.absent setting.levels Nat gRow]
+theorem noneQueryFiring_information (K : EquationStore (TotalTerm triple)) :
+    (noneQueryFiring K).information = K :=
+  information_plain setting.levels K {1} (fun _ => xRow) [] [Query.predicate setting.levels Nat .none gRow]
 
-theorem absenceFiring_row (K : EquationStore (TotalTerm triple)) (o : Nat) :
-    (absenceFiring K).row o = xRow :=
+theorem noneQueryFiring_row (K : EquationStore (TotalTerm triple)) (o : Nat) :
+    (noneQueryFiring K).row o = xRow :=
   (frames setting.levels).act_id _
 
-/-- Admission of the absence firing: solvable knowledge, and no row equated with `g : Ground` at
+/-- Admission of the none firing: solvable knowledge, and no row equated with `g : Ground` at
 any solution. -/
-theorem absence_admits_iff (K : EquationStore (TotalTerm triple)) :
-    (step setting.levels Nat).Admits (absenceFiring K) ↔
+theorem none_admits_iff (K : EquationStore (TotalTerm triple)) :
+    (step setting.levels Nat).Admits (noneQueryFiring K) ↔
       (frames setting.levels).Solvable K ∧
         (frames setting.levels).Entails K (fun _ τ =>
           ¬ (frames setting.levels).E ((frames setting.levels).act τ gRow) ((frames setting.levels).act τ xRow)) := by
-  have info := absenceFiring_information K
+  have info := noneQueryFiring_information K
   constructor
   · intro admitted
-    obtain ⟨-, -, solvable, -, queries⟩ := (admits_iff (absenceFiring K)).mp admitted
+    obtain ⟨-, -, solvable, -, queries⟩ := (admits_iff (noneQueryFiring K)).mp admitted
     refine ⟨(congrArg (fun x => (frames setting.levels).Solvable x) info).mp solvable, fun b τ solved => ?_⟩
-    have asked := (Query.absent_holds_iff _ _ _ τ).mp
+    have asked := (Query.predicate_holds_iff _ _ _ _ τ).mp
       (queries _ (List.mem_singleton_self _) b τ
         ((congrArg (fun x => (frames setting.levels).Models τ x) info).mpr solved)) 1
       (Finset.mem_singleton_self 1)
-    rwa [absenceFiring_row] at asked
-  · rintro ⟨solvable, absent⟩
-    refine (admits_iff (absenceFiring K)).mpr
+    beta_reduce at asked
+    rwa [noneQueryFiring_row] at asked
+  · rintro ⟨solvable, missing⟩
+    refine (admits_iff (noneQueryFiring K)).mpr
       ⟨⟨List.nodup_nil, List.nodup_nil, rfl, rfl, fun _ member => absurd member List.not_mem_nil⟩,
       ⟨fun _ member => absurd member List.not_mem_nil, fun _ member => absurd member List.not_mem_nil,
         fun _ member => absurd member List.not_mem_nil, fun _ member => absurd member List.not_mem_nil⟩,
@@ -331,20 +332,21 @@ theorem absence_admits_iff (K : EquationStore (TotalTerm triple)) :
       fun _ _ _ _ member => absurd member List.not_mem_nil, ?_⟩
     intro q member b τ solved
     obtain rfl := List.mem_singleton.mp member
-    refine (Query.absent_holds_iff _ _ _ τ).mpr fun o present => ?_
-    rw [Finset.mem_singleton.mp present, absenceFiring_row]
-    exact absent b τ ((congrArg (fun x => (frames setting.levels).Models τ x) info).mp solved)
+    refine (Query.predicate_holds_iff _ _ _ _ τ).mpr fun o present => ?_
+    beta_reduce
+    rw [Finset.mem_singleton.mp present, noneQueryFiring_row]
+    exact missing b τ ((congrArg (fun x => (frames setting.levels).Models τ x) info).mp solved)
 
 /-- **Refused under no knowledge**: `X ↦ Ground`, `x, g ↦ p` equates the row with `g`. -/
-theorem absence_refused_unknown : ¬ (step setting.levels Nat).Admits (absenceFiring []) := by
+theorem none_refused_unknown : ¬ (step setting.levels Nat).Admits (noneQueryFiring []) := by
   intro admitted
-  exact ((absence_admits_iff []).mp admitted).2 point toGround (Frames.models_nil _) toGround_equates
+  exact ((none_admits_iff []).mp admitted).2 point toGround (Frames.models_nil _) toGround_equates
 
 /-- **Refused under the type-level `X ≐ Ground`**, by the same solution. -/
-theorem absence_refused_after_ground :
-    ¬ (step setting.levels Nat).Admits (absenceFiring [(xUniverse, groundUniverse)]) := by
+theorem none_refused_after_ground :
+    ¬ (step setting.levels Nat).Admits (noneQueryFiring [(xUniverse, groundUniverse)]) := by
   intro admitted
-  refine ((absence_admits_iff _).mp admitted).2 point toGround ?_ toGround_equates
+  refine ((none_admits_iff _).mp admitted).2 point toGround ?_ toGround_equates
   intro e member
   obtain rfl := List.mem_singleton.mp member
   show (frames setting.levels).E (xUniverse.reindex toGround) (groundUniverse.reindex toGround)
@@ -362,9 +364,9 @@ theorem ground_arrow_clash {n : Nat} {Γ : Tower.Ctx n} (formed : CtxFormed Towe
 
 /-- **Admitted under the type-level `X ≐ Ground → Ground`**: no solution can equate a term of
 type `X` with one of type `Ground`. -/
-theorem absence_admitted_after_arrow :
-    (step setting.levels Nat).Admits (absenceFiring [(xUniverse, arrowUniverse)]) := by
-  refine (absence_admits_iff _).mpr ⟨⟨point, toArrow, ?_⟩, fun b τ solved equated => ?_⟩
+theorem none_admitted_after_arrow :
+    (step setting.levels Nat).Admits (noneQueryFiring [(xUniverse, arrowUniverse)]) := by
+  refine (none_admits_iff _).mpr ⟨⟨point, toArrow, ?_⟩, fun b τ solved equated => ?_⟩
   · intro e member
     obtain rfl := List.mem_singleton.mp member
     show (frames setting.levels).E (xUniverse.reindex toArrow) (arrowUniverse.reindex toArrow)
@@ -398,16 +400,16 @@ theorem raw_not_reads :
     exact fun h => by cases h)
 
 /-- **The collision**: under the heterogeneous knowledge `(x : X) ≐ (g : Ground)`, the raw region
-sees no present row, while the absence query, which reads through solutions, is refused. -/
+sees no present row, while the none query, which reads through solutions, is refused. -/
 theorem syntactic_collision :
     (∀ o ∈ (queryState [(xRow, gRow)]).present, ¬ rawRegion (𝟙 triple) ((queryState [(xRow, gRow)]).label o)) ∧
-      ¬ (step setting.levels Nat).Admits (absenceFiring [(xRow, gRow)]) := by
+      ¬ (step setting.levels Nat).Admits (noneQueryFiring [(xRow, gRow)]) := by
   refine ⟨fun o _ same => ?_, fun admitted => ?_⟩
   · have codes := congrArg (fun t : TotalTerm triple => t.2.code) same
     exact absurd codes (by
       show ¬ ((.var 1 : Tower.Tm 3) = .var 0)
       exact fun h => by cases h)
-  · refine ((absence_admits_iff _).mp admitted).2 point toGround ?_ toGround_equates
+  · refine ((none_admits_iff _).mp admitted).2 point toGround ?_ toGround_equates
     intro e member
     obtain rfl := List.mem_singleton.mp member
     show (frames setting.levels).E (xRow.reindex toGround) (gRow.reindex toGround)
@@ -423,10 +425,10 @@ end DependentFull.Controls
 #print axioms DependentFull.Controls.illTyped_refused
 #print axioms DependentFull.Controls.clash_refused
 #print axioms DependentFull.Controls.take_clash_refused
-#print axioms DependentFull.Controls.absence_admits_iff
-#print axioms DependentFull.Controls.absence_refused_unknown
-#print axioms DependentFull.Controls.absence_refused_after_ground
-#print axioms DependentFull.Controls.absence_admitted_after_arrow
+#print axioms DependentFull.Controls.none_admits_iff
+#print axioms DependentFull.Controls.none_refused_unknown
+#print axioms DependentFull.Controls.none_refused_after_ground
+#print axioms DependentFull.Controls.none_admitted_after_arrow
 #print axioms DependentFull.Controls.raw_not_reads
 #print axioms DependentFull.Controls.syntactic_collision
 

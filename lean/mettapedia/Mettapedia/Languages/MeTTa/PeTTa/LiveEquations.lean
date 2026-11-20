@@ -1,4 +1,5 @@
 import Mettapedia.Languages.MeTTa.PeTTa.Eval
+import Mettapedia.Languages.MeTTa.PeTTa.StdLibCalls
 
 /-!
 # Equations that are live when a call is made
@@ -182,6 +183,11 @@ theorem insert_core {state after : State} {handle : NamedSpaces.Handle} {atom : 
           rfl
         · contradiction
       · contradiction
+  | namedSpace name =>
+      right
+      simp only [NamedSpaces.Store.read, NamedSpaces.Store.write] at inserted
+      cases inserted
+      rfl
 
 theorem erase_core {state after : State} {handle : NamedSpaces.Handle} {pattern : Atom}
     (erased : Effects.erase state handle pattern = some after) :
@@ -205,38 +211,19 @@ theorem erase_core {state after : State} {handle : NamedSpaces.Handle} {pattern 
           rfl
         · contradiction
       · contradiction
+  | namedSpace name =>
+      right
+      simp only [NamedSpaces.Store.read, NamedSpaces.Store.write] at erased
+      cases erased
+      rfl
 
 theorem readHandle_self {location : Atom} (decoded : Effects.readHandle location = some .self) :
     location = .symbol "&self" := by
   unfold Effects.readHandle at decoded
   split at decoded
-  · rfl
+  · split at decoded <;> simp_all
   · split at decoded <;> simp at decoded
   · simp at decoded
-
-/-- `add-atom` with two arguments, as the primitive table computes it. -/
-theorem apply_add_atom (state : State) (location atom : Atom) :
-    StdLib.apply state "add-atom" [location, atom] =
-      match Effects.readHandle location >>= fun handle => Effects.insert state handle atom with
-      | some after => .ok (after, [Effects.boolean true])
-      | none => .error .invalidSpace := rfl
-
-/-- `remove-atom` with two arguments, as the primitive table computes it. -/
-theorem apply_remove_atom (state : State) (location atom : Atom) :
-    StdLib.apply state "remove-atom" [location, atom] =
-      match Effects.readHandle location with
-      | none => .error .invalidSpace
-      | some handle =>
-          match state.read handle with
-          | none => .error .invalidSpace
-          | some _ =>
-              match atom with
-              | .var _ => .ok (state, [Effects.boolean true])
-              | .expression (_ :: _) =>
-                  match Effects.erase state handle atom with
-                  | some after => .ok (after, [Effects.boolean true])
-                  | none => .error .invalidSpace
-              | _ => .ok (state, []) := rfl
 
 private theorem no_ok {state after : State} {head : String} {values answers : List Atom}
     {reason : Fault} (failed : StdLib.apply state head values = .error reason)
@@ -282,52 +269,20 @@ theorem apply_core {state after : State} {head : String} {values answers : List 
     rcases values with _ | ⟨location, _ | ⟨atom, _ | ⟨third, rest⟩⟩⟩
     · exact (no_ok rfl returned).elim
     · exact (no_ok rfl returned).elim
-    · rw [apply_add_atom] at returned
-      cases decoded : Effects.readHandle location with
-      | none => simp [decoded] at returned
-      | some handle =>
-          cases inserted : Effects.insert state handle atom with
-          | none => simp [decoded, inserted] at returned
-          | some written =>
-              simp only [decoded, inserted, Option.bind_eq_bind, Option.bind_some,
-                Except.ok.injEq, Prod.mk.injEq] at returned
-              obtain ⟨rfl, -⟩ := returned
-              rcases insert_core inserted with ⟨rfl, _⟩ | same
-              · refine .inr ⟨.inl rfl, atom, ?_⟩
-                rw [readHandle_self decoded]
-              · exact .inl same
+    · obtain ⟨handle, decoded, _, inserted⟩ := StdLib.add_atom_success returned
+      rcases insert_core inserted with ⟨rfl, _⟩ | same
+      · exact .inr ⟨.inl rfl, atom, by rw [readHandle_self decoded]⟩
+      · exact .inl same
     · exact (no_ok rfl returned).elim
   by_cases remove : head = "remove-atom"
   · subst remove
     rcases values with _ | ⟨location, _ | ⟨atom, _ | ⟨third, rest⟩⟩⟩
     · exact (no_ok rfl returned).elim
     · exact (no_ok rfl returned).elim
-    · rw [apply_remove_atom] at returned
-      cases decoded : Effects.readHandle location with
-      | none => simp [decoded] at returned
-      | some handle =>
-          cases present : state.read handle with
-          | none => simp [decoded, present] at returned
-          | some rows =>
-              simp only [decoded, present] at returned
-              rcases atom with name | name | value | _ | ⟨first, rest⟩
-              · cases returned
-                exact .inl rfl
-              · cases returned
-                exact .inl rfl
-              · cases returned
-                exact .inl rfl
-              · cases returned
-                exact .inl rfl
-              · cases erased : Effects.erase state handle (.expression (first :: rest)) with
-                | none => simp [erased] at returned
-                | some written =>
-                    simp only [erased, Except.ok.injEq, Prod.mk.injEq] at returned
-                    obtain ⟨rfl, -⟩ := returned
-                    rcases erase_core erased with ⟨rfl, _⟩ | same
-                    · refine .inr ⟨.inr rfl, .expression (first :: rest), ?_⟩
-                      rw [readHandle_self decoded]
-                    · exact .inl same
+    · obtain ⟨handle, decoded, erased⟩ := StdLib.remove_atom_success returned
+      rcases erase_core erased with ⟨rfl, _⟩ | same
+      · exact .inr ⟨.inr rfl, atom, by rw [readHandle_self decoded]⟩
+      · exact .inl same
     · exact (no_ok rfl returned).elim
   left
   rw [StdLib.successful_apply_state new add remove change returned]

@@ -429,7 +429,7 @@ theorem principal_or_refuted (store : EquationStore (RTree σ)) :
   · exact Or.inr refuted
   · exact Or.inl (mgu_principal refuted)
 
-/-- **Solvability is the absence of a clash.** -/
+/-- **Solvability is the none query of a clash.** -/
 theorem consistent_iff_not_refuted (store : EquationStore (RTree σ)) :
     (rationalAction σ).Consistent store ↔ ¬ Refuted store :=
   ⟨fun consistent refuted => refuted_inconsistent refuted consistent,

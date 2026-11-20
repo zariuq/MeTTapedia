@@ -1,0 +1,40 @@
+import "HOLRData.module" as data
+import "../bytes/ByteRecords.module" as records
+import "../bytes/ByteScalars.module" as scalars
+
+Module HOLRTrailer {
+  Theory Signature(h: data.Data) {
+    h Terms {
+      EndChecksum . CodecState ::= "end_checksum" "(" Bytes "," HOLRHeader "," Nat "," Nat "," Bytes "," CodecState ")";
+      EndCountCheck . CodecState ::= "end_count_check" "(" Ordering "," Bytes "," HOLRHeader "," Bytes "," Nat "," Bytes ")";
+      EndHash . CodecState ::= "end_hash" "(" HOLRHeader "," Nat "," Bytes "," CodecState ")";
+      EndChecksumCheck . CodecState ::= "end_checksum_check" "(" Ordering "," HOLRHeader "," Bytes ")";
+      EndTrailing . CodecState ::= "end_trailing" "(" HOLRHeader "," Bytes ")";
+    }
+  }
+  Theory Format(r: Signature) {
+    r Rewrites {
+      EndCountRead: (EndCount full header count suffix (DecodedWord claimed rest)) ~> (EndChecksum full header count claimed suffix (ReadWordLE64 rest));
+      EndChecksumRead: (EndChecksum full header count claimed suffix (DecodedWord sum rest)) ~> (EndCountCheck (NatCompare count claimed) full header suffix sum rest);
+      EndCountLess: (EndCountCheck (Less) full header suffix sum rest) ~> (HOLRDecoded header (RecordsNil) (HOLRPrefixError (BadCount)));
+      EndCountGreater: (EndCountCheck (Greater) full header suffix sum rest) ~> (HOLRDecoded header (RecordsNil) (HOLRPrefixError (BadCount)));
+      EndCountEqual: (EndCountCheck (Equal) full header suffix sum rest) ~> (EndHash header sum rest (TakeBytes (NatSubtract (ByteLength full) (ByteLength suffix)) full));
+      EndHashRead: (EndHash header sum rest (Taken prefix ignored)) ~> (EndChecksumCheck (NatCompare sum (FNV prefix)) header rest);
+      EndChecksumLess: (EndChecksumCheck (Less) header rest) ~> (HOLRDecoded header (RecordsNil) (HOLRPrefixError (BadChecksum)));
+      EndChecksumGreater: (EndChecksumCheck (Greater) header rest) ~> (HOLRDecoded header (RecordsNil) (HOLRPrefixError (BadChecksum)));
+      EndChecksumEqual: (EndChecksumCheck (Equal) header rest) ~> (EndTrailing header rest);
+      EndTrailingEmpty: (EndTrailing header (BNil)) ~> (HOLRDecoded header (RecordsNil) (HOLRPrefixOK));
+      EndTrailingMore: (EndTrailing header (BCons b rest)) ~> (HOLRDecoded header (RecordsNil) (HOLRPrefixError (TrailingBytes)));
+      EndCountNeedInput: (EndCount full header count suffix (NeedInput)) ~> (HOLRDecoded header (RecordsNil) (HOLRPrefixIncomplete));
+      EndCountBadInteger: (EndCount full header count suffix (BadInteger)) ~> (HOLRDecoded header (RecordsNil) (HOLRPrefixError (IntegerEncoding)));
+      EndCountLimitExceeded: (EndCount full header count suffix (LimitExceeded)) ~> (HOLRDecoded header (RecordsNil) (HOLRPrefixError (FieldLimit)));
+      EndChecksumNeedInput: (EndChecksum full header count claimed suffix (NeedInput)) ~> (HOLRDecoded header (RecordsNil) (HOLRPrefixIncomplete));
+      EndChecksumBadInteger: (EndChecksum full header count claimed suffix (BadInteger)) ~> (HOLRDecoded header (RecordsNil) (HOLRPrefixError (IntegerEncoding)));
+      EndChecksumLimitExceeded: (EndChecksum full header count claimed suffix (LimitExceeded)) ~> (HOLRDecoded header (RecordsNil) (HOLRPrefixError (FieldLimit)));
+      EndHashNeedInput: (EndHash header sum rest (NeedInput)) ~> (HOLRDecoded header (RecordsNil) (HOLRPrefixIncomplete));
+      EndHashBadInteger: (EndHash header sum rest (BadInteger)) ~> (HOLRDecoded header (RecordsNil) (HOLRPrefixError (IntegerEncoding)));
+      EndHashLimitExceeded: (EndHash header sum rest (LimitExceeded)) ~> (HOLRDecoded header (RecordsNil) (HOLRPrefixError (FieldLimit)));
+    }
+  }
+  theory Format(Signature(data.Data(records.ReaderInterface(scalars.Values()))))
+}

@@ -308,64 +308,19 @@ theorem queryBodies_refines {initial bindings : Subst} (good : BindingRefines in
     (pattern body : Atom) : ∀ use rows continued,
     queryBodies bindings pattern body use rows = some continued →
       ∀ control ∈ continued, ControlRefines initial control := by
-  intro use rows
-  induction rows generalizing use with
-  | nil =>
-      intro continued queried
-      simp only [queryBodies, Option.some.injEq] at queried
-      subst continued
-      simp
-  | cons row rest ih =>
-      intro continued queried
-      simp only [queryBodies] at queried
-      cases tailRun : queryBodies bindings pattern body (use + 1) rest with
-      | none => simp [tailRun] at queried
-      | some tail =>
-          simp only [tailRun] at queried
-          cases unified : unify bindings pattern (rename use row) with
-          | exhausted => simp [unified] at queried
-          | clash =>
-              simp [unified] at queried
-              subst continued
-              exact ih _ _ tailRun
-          | ok bound =>
-              simp [unified] at queried
-              subst continued
-              intro control member
-              rcases List.mem_cons.mp member with rfl | present
-              · simpa only [ControlRefines] using good.terms _ _ unified
-              · exact ih _ _ tailRun control present
+  intro use rows continued queried control member
+  obtain ⟨_,_,_,unified,rfl⟩ := queryRows_member id (fun _ bound => Control.evaluate bound body)
+    bindings pattern use rows queried control member
+  simpa only [ControlRefines] using good.terms _ _ unified
 
 theorem matchAnswers_refines {initial bindings : Subst} (good : BindingRefines initial bindings)
     (pattern template : Atom) : ∀ use rows answers,
     matchAnswers bindings pattern template use rows = some answers →
       ∀ answer ∈ answers, BindingRefines initial answer.bindings := by
-  intro use rows
-  induction rows generalizing use with
-  | nil =>
-      intro answers queried
-      cases queried
-      simp
-  | cons row rest ih =>
-      intro answers queried
-      simp only [matchAnswers] at queried
-      cases tailRun : matchAnswers bindings pattern template (use + 1) rest with
-      | none => simp [tailRun] at queried
-      | some tail =>
-          simp only [tailRun] at queried
-          cases unified : unify bindings pattern (rename use row) with
-          | exhausted => simp [unified] at queried
-          | clash =>
-              simp [unified] at queried
-              subst answers
-              exact ih _ _ tailRun
-          | ok bound =>
-              simp [unified] at queried
-              subst answers
-              intro answer member
-              rcases List.mem_cons.mp member with rfl | present
-              · exact good.terms _ _ unified
-              · exact ih _ _ tailRun answer present
+  intro use rows answers queried answer member
+  obtain ⟨_,_,_,unified,rfl⟩ := queryRows_member id
+    (fun _ bound => (⟨resolve bound template,bound⟩ : Answer)) bindings pattern use rows queried answer member
+  exact good.terms _ _ unified
 
 theorem matchCall_refines {initial bindings : Subst} (good : BindingRefines initial bindings)
     (state : Effects.State) (use : Nat) (values : List Atom) (answers : List Answer) (used : Nat)
@@ -396,10 +351,11 @@ theorem queries_refines {initial : Subst} (state : Effects.State) (pattern body 
       simp only [queries] at queried
       split at queried
       · rename_i rows read
-        cases here : queryBodies answer.bindings pattern body use rows with
+        cases here : queryBatch answer.bindings pattern body use rows with
         | none => simp [here] at queried
-        | some controls =>
-            cases there : queries state pattern body (use + rows.length) rest with
+        | some batch =>
+            rcases batch with ⟨controls,spent⟩
+            cases there : queries state pattern body (use + spent) rest with
             | none => simp [here, there] at queried
             | some tail =>
                 obtain ⟨others, count⟩ := tail
@@ -407,7 +363,12 @@ theorem queries_refines {initial : Subst} (state : Effects.State) (pattern body 
                 obtain ⟨rfl, rfl⟩ := queried
                 intro control member
                 rcases List.mem_append.mp member with present | present
-                · exact queryBodies_refines (good answer (by simp)) _ _ _ _ _ here control present
+                · obtain ⟨packets, joined, rfl⟩ := queryBatch_ready here
+                  obtain ⟨packet, found, rfl⟩ := List.mem_map.mp present
+                  simpa only [ControlRefines] using (queryJoin_preserves id rows (BindingRefines initial) (use + spent)
+                    (queryLegs pattern) answer.bindings (good answer (by simp))
+                    (fun _ _ _ _ _ _ _ _ proved unified => proved.terms _ _ unified)
+                    use joined le_rfl packet found).2.2
                 · exact ih _ _ _ (fun answer present => good answer (by simp [present])) there control present
       · cases there : queries state pattern body use rest with
         | none => simp [there] at queried

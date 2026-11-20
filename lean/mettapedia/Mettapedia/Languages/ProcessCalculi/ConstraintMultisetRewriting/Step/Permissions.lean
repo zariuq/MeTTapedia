@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.RegionQueryAdapters
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Spaces
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.InteractionTypes.Facets
 
@@ -23,9 +24,9 @@ does not depend on the spaces where it holds no right** (`permitted_noninterfere
 
 ## Read polarity: owned and shared reads (the located first-order step)
 
-* **Universal reads need the others to lack `send`.** An absence entailed at a space stays entailed
-  after any admitted firing formed under rights without `send` there (`owned_absence_preserved`);
-  with `send`, one make spoils it (`Controls.shared_absence_spoiled`), and without it that make is
+* **Universal reads need the others to lack `send`.** A none query entailed at a space stays entailed
+  after any admitted firing formed under rights without `send` there (`owned_none_preserved`);
+  with `send`, one make spoils it (`Controls.shared_none_spoiled`), and without it that make is
   refused (`Controls.owned_make_refused`).
 * **Existential reads need the others to lack `receive`.** A witness at a space stays present
   after any formed firing without `receive` there (`owned_witness_present`); with `receive`, it is
@@ -222,22 +223,22 @@ def LocatedPermitted (f : AnnotatedRuns.Firing (H × T) S O) : Prop :=
   FormedUnder space id Γ (f.selection.commit (T := H))
 
 omit [DecidableEq H] in
-/-- **Owned universal reads are stable**: an absence entailed at a space stays entailed after any
+/-- **Owned universal reads are stable**: a none query entailed at a space stays entailed after any
 admitted firing formed under rights without `send` at that space. -/
-theorem owned_absence_preserved {C : Configuration (H × T) O} {f : AnnotatedRuns.Firing (H × T) S O}
+theorem owned_none_preserved {C : Configuration (H × T) O} {f : AnnotatedRuns.Firing (H × T) S O}
     (admitted : (Spaces.located A space payload).Admits (s := C) f)
     (formed : LocatedPermitted space Γ f) {p : H × T} (owned : Γ p.1 .send = false)
-    (absent : (LocatedSubstitution.action (N := H) A).Entails C.equations
-      (fun σ => (Check.absent p).Holds (LocatedSubstitution.action (N := H) A) σ
+    (missing : (LocatedSubstitution.action (N := H) A).Entails C.equations
+      (fun σ => (Check.predicate .none p).Holds (LocatedSubstitution.action (N := H) A) σ
         (Spaces.label space payload) C.present)) :
     (LocatedSubstitution.action (N := H) A).Entails
       ((Spaces.located A space payload).result f admitted).equations
-      (fun σ => (Check.absent p).Holds (LocatedSubstitution.action (N := H) A) σ
+      (fun σ => (Check.predicate .none p).Holds (LocatedSubstitution.action (N := H) A) σ
         (Spaces.label space payload) ((Spaces.located A space payload).result f admitted).present) := by
   intro σ model o present same
   have earlier := admitted.firing.refines σ model
   rcases mem_fire.mp present with ⟨old, _⟩ | made
-  · exact absent σ earlier o old same
+  · exact missing σ earlier o old same
   · have allowed := formed.made o made
     have atP : p.1 = space o := same.1
     simp [← atP, owned] at allowed
@@ -302,13 +303,13 @@ def takeWitness : Fir := ⟨⟨[(1, app 0 (.const 1))], [], [], [], []⟩, [], �
 /-- Read the witness at space `1`. -/
 def readWitness : Fir := ⟨⟨[], [(1, app 0 (.const 1))], [], [], []⟩, [], ⟨[], [0], []⟩⟩
 
-/-- The absence of `p(3)` at space `2`. -/
-def absentThree : Check (Nat × Term signature) := .absent (2, app 0 (.const 3))
+/-- The none query of `p(3)` at space `2`. -/
+def noThree : Check (Nat × Term signature) := .predicate .none (2, app 0 (.const 3))
 
 theorem makeRow_admitted (C : Configuration (Nat × Term signature) Nat) (k : Nat)
     (equations : C.equations = []) (fresh : k ∉ C.present) (positive : k ≠ 0) :
     L.Admits (s := C) (makeRow k) :=
-  (PredicateQueryAdmission.valid_empty_iff _ _ _ _ _).mpr
+  (Interface.RegionQueryAdapters.valid_empty_iff _ _ _ _ _).mpr
     ⟨List.nodup_nil, List.nodup_singleton _, rfl, rfl, by
       cases k with
       | zero => exact absurd rfl positive
@@ -321,22 +322,22 @@ theorem makeRow_admitted (C : Configuration (Nat × Term signature) Nat) (k : Na
         simp [makeRow, Selection.problem, Selection.equations, equations] at member⟩,
       by simp [makeRow]⟩
 
-theorem start_absent :
+theorem start_noThree :
     (LocatedSubstitution.action (N := Nat) B).Entails start.equations
-      (fun σ => absentThree.Holds (LocatedSubstitution.action (N := Nat) B) σ (label space payload)
+      (fun σ => noThree.Holds (LocatedSubstitution.action (N := Nat) B) σ (label space payload)
         start.present) := by
   intro σ _ o present same
   simp only [start, Finset.mem_singleton] at present
   subst present
   simp [label, space] at same
 
-/-- **Shared: one make spoils the absence.** With `send` at space `2`, the make is permitted and the
-absence of `p(3)` there is no longer entailed. -/
-theorem shared_absence_spoiled :
+/-- **Shared: one make spoils the none query.** With `send` at space `2`, the make is permitted and the
+none queries of `p(3)` there is no longer entailed. -/
+theorem shared_none_spoiled :
     LocatedPermitted space shared (makeRow 1) ∧
       ¬ (LocatedSubstitution.action (N := Nat) B).Entails
         (L.result (makeRow 1) (makeRow_admitted start 1 rfl (by decide) (by decide))).equations
-        (fun σ => absentThree.Holds (LocatedSubstitution.action (N := Nat) B) σ (label space payload)
+        (fun σ => noThree.Holds (LocatedSubstitution.action (N := Nat) B) σ (label space payload)
           (L.result (makeRow 1) (makeRow_admitted start 1 rfl (by decide) (by decide))).present) := by
   refine ⟨shared_formed _, fun entailed => ?_⟩
   refine entailed B.identity ?_ 1 (by decide) (by simp [label, space, payload])
@@ -350,17 +351,17 @@ theorem owned_make_refused :
   refused_without_send L space owned (o := 1)
     (show 1 ∈ (makeRow 1).selection.made by simp [makeRow]) rfl
 
-/-- **Owned: the absence survives every permitted firing of the other party.** -/
-theorem owned_absence_survives {f : Fir} (admitted : L.Admits (s := start) f)
+/-- **Owned: the none query survives every permitted firing of the other party.** -/
+theorem owned_none_survives {f : Fir} (admitted : L.Admits (s := start) f)
     (formed : LocatedPermitted space owned f) :
     (LocatedSubstitution.action (N := Nat) B).Entails (L.result f admitted).equations
-      (fun σ => absentThree.Holds (LocatedSubstitution.action (N := Nat) B) σ (label space payload)
+      (fun σ => noThree.Holds (LocatedSubstitution.action (N := Nat) B) σ (label space payload)
         (L.result f admitted).present) :=
-  owned_absence_preserved B space payload owned admitted formed (p := (2, app 0 (.const 3))) rfl
-    start_absent
+  owned_none_preserved B space payload owned admitted formed (p := (2, app 0 (.const 3))) rfl
+    start_noThree
 
 theorem takeWitness_admitted : L.Admits (s := start) takeWitness :=
-  (PredicateQueryAdmission.valid_empty_iff _ _ _ _ _).mpr
+  (Interface.RegionQueryAdapters.valid_empty_iff _ _ _ _ _).mpr
     ⟨by decide, by decide, rfl, rfl, rfl, by decide, ⟨B.identity, by
       intro e member
       simp [takeWitness, Selection.problem, Selection.equations, start, label] at member
@@ -368,7 +369,7 @@ theorem takeWitness_admitted : L.Admits (s := start) takeWitness :=
       simp [SubstitutionAction.Solves, space, payload]⟩, by simp [takeWitness]⟩
 
 theorem readWitness_admitted : L.Admits (s := start) readWitness :=
-  (PredicateQueryAdmission.valid_empty_iff _ _ _ _ _).mpr
+  (Interface.RegionQueryAdapters.valid_empty_iff _ _ _ _ _).mpr
     ⟨by decide, by decide, rfl, rfl, rfl, by decide, ⟨B.identity, by
       intro e member
       simp [readWitness, Selection.problem, Selection.equations, start, label] at member
@@ -472,11 +473,11 @@ theorem ticketed_blocks
 #print axioms fiber_anti_without_send
 #print axioms tickets_after
 #print axioms made_le_tickets
-#print axioms owned_absence_preserved
+#print axioms owned_none_preserved
 #print axioms owned_witness_present
-#print axioms shared_absence_spoiled
+#print axioms shared_none_spoiled
 #print axioms owned_make_refused
-#print axioms owned_absence_survives
+#print axioms owned_none_survives
 #print axioms shared_witness_taken
 #print axioms owned_witness_kept
 #print axioms rights_alone_unbounded

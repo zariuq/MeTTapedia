@@ -5,17 +5,19 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsA
 /-!
 # Honest writes on HE's world machine: rows with stable identities
 
-`RowWorlds` labels a row with its position. That is honest for reads, but not for writes: HE's
-`add-atom` puts the new atom in **front** of the space (`HE.Space.add`), so every row's position
-moves, and a positional encoding of the add takes and remakes every row. It then writes into the
-region of every query, related or not (`Controls.positions_renumber`). Here a row carries a stable
-identity instead (`KeyedWorld`: an atom with an identity no other row has), and HE's world machine
-runs on keyed rows:
+`RowWorlds` labels a row with its position. That is honest for reads, but not for writes: a removal
+moves the position of every later row, so a positional encoding of the removal takes and remakes
+those rows, and it then writes into the region of a query it has nothing to do with
+(`Controls.positions_renumber`). HE keeps a space in insertion order, so an add at the back moves no
+position; the model's `add-atom` (`HE.Space.add`) puts the new atom in **front**, so there every add
+moves every position as well. Here a row carries a stable identity instead (`KeyedWorld`: an atom
+with an identity no other row has), and HE's world machine runs on keyed rows:
 
-* `keyedServices`: HE's native `add-atom` makes one row with a fresh identity, in front; HE's native
-  `remove-atom` removes the first row holding the atom, and every other row keeps its identity.
-  They are HE's own space operations with identities attached: the space a keyed world presents
-  (`keyedView`) moves exactly by `HE.Space.add` and `HE.Space.remove` (`keyed_refines`).
+* `keyedServices`: the model's native `add-atom` makes one row with a fresh identity, in front (HE
+  itself adds at the back; only the order of rows differs); the native `remove-atom` removes the
+  first row holding the atom, and every other row keeps its identity. They are the model's space
+  operations with identities attached: the space a keyed world presents (`keyedView`) moves exactly
+  by `HE.Space.add` and `HE.Space.remove` (`keyed_refines`).
 * `add_writes_one`, `remove_takes_one`: **honest write footprints**. HE's add fires the commit that
   makes exactly the new row, which is fresh; HE's removal fires the commit that takes exactly one
   row.
@@ -35,7 +37,8 @@ unchanged. `double_race` instantiates it with the equation query of `(double 4)`
 
 ## The query on keyed rows: positions are inert
 
-HE's equation works record the position of their row, and HE's add moves every position. Still:
+HE's equation works record the position of their row, and a removal moves the positions of the rows
+after it (the model's add, in front, moves every position). Still:
 
 * `frontier_keyed_transfer`: an equation query's frontier is determined, up to those recorded
   positions, by the rows of its region in order (`frontier_reposition`, `rowResults_reposition`);
@@ -47,10 +50,12 @@ records the shifted positions.
 
 ## Controls
 
-* `Controls.positions_renumber` (negative, for positions as identities): adding `(q b)`, outside the
-  region of the query `(double 4)`, renumbers `(= (double 4) 8)` from position `1` to `2`; the
-  positional write takes the row at position `1` and so writes into the query's region, while with
-  identities the add of `(q b)` is independent of the query.
+* `Controls.positions_renumber` (negative, for positions as identities): in HE's insertion order an
+  add of `(q b)` at the back renumbers no row and its positional write takes nothing; removing
+  `(p a)`, outside the region of the query `(double 4)`, renumbers `(= (double 4) 8)` from position
+  `1` to `0`, so the positional write of the removal takes the row at position `1` and writes into
+  the query's region, while with identities the removal of `(p a)` is independent of the query.
+  Under the model's add in front, adding `(q b)` renumbers every row too.
 * `Controls.removal_separates` (separating write control): on `(p a)` stored twice, HE's removal on
   keyed rows takes exactly one row and presents HE's `Space.remove`; PeTTa's removal request takes
   both rows.
@@ -440,38 +445,49 @@ def positionalWrite (before after : List Atom) : Commit (Atom × ℕ) (Atom × �
   ⟨before.zipIdx.toFinset \ after.zipIdx.toFinset, ∅, after.zipIdx.toFinset \ before.zipIdx.toFinset,
     []⟩
 
-/-- **Negative control: positions are not identities.** HE's add of `(q b)` puts it in front, so
-`(= (double 4) 8)` moves from position `1` to `2`; the positional write of the add takes the row at
-position `1`, writing into the region of the query `(double 4)` and spoiling it, though `(q b)` is
-outside that region. With identities the same add is independent of the query. -/
+/-- **Negative control: positions are not identities.** HE keeps a space in insertion order: adding
+`(q b)` at the back renumbers no row, and the positional write of that add takes nothing. A removal
+does renumber: removing `(p a)`, outside the region of the query `(double 4)`, moves
+`(= (double 4) 8)` from position `1` to `0`, so the positional write of the removal takes the row at
+position `1`, writing into the query's region and spoiling it. With identities the same removal is
+independent of the query. The model's add (`HE.Space.add`) puts `(q b)` in front, which renumbers
+every row as well. -/
 theorem positions_renumber (live : List Atom) :
-    ((Space.ofList Instance.program).add qb).atoms.zipIdx =
-        [(qb, 0), (p a, 1), (Instance.doubleEight, 2)] ∧
+    (Instance.program ++ [qb]).zipIdx = [(p a, 0), (Instance.doubleEight, 1), (qb, 2)] ∧
+      (positionalWrite Instance.program (Instance.program ++ [qb])).taken = ∅ ∧
+      ((Space.ofList Instance.program).remove (p a)).atoms.zipIdx = [(Instance.doubleEight, 0)] ∧
       (Instance.doubleEight, 1) ∈ (positionalWrite Instance.program
-        ((Space.ofList Instance.program).add qb).atoms).taken ∧
-      Spoils id (positionalWrite Instance.program ((Space.ofList Instance.program).add qb).atoms)
+        ((Space.ofList Instance.program).remove (p a)).atoms).taken ∧
+      Spoils id (positionalWrite Instance.program ((Space.ofList Instance.program).remove (p a)).atoms)
         (queryCommit
           (fun row : Atom × ℕ =>
             eqRegion live Instance.doubleFour Mettapedia.Languages.MeTTa.HE.Bindings.empty row.1)
           (regionOf id Instance.program.zipIdx.toFinset (fun row : Atom × ℕ =>
             eqRegion live Instance.doubleFour Mettapedia.Languages.MeTTa.HE.Bindings.empty row.1))) ∧
-      eqRegion live Instance.doubleFour Mettapedia.Languages.MeTTa.HE.Bindings.empty qb = false ∧
+      eqRegion live Instance.doubleFour Mettapedia.Languages.MeTTa.HE.Bindings.empty (p a) = false ∧
       Independent Prod.fst
         (queryCommit (eqRegion live Instance.doubleFour Mettapedia.Languages.MeTTa.HE.Bindings.empty)
           (regionOf Prod.fst ([(p a, 0), (Instance.doubleEight, 1)] : KeyedWorld).toFinset
             (eqRegion live Instance.doubleFour Mettapedia.Languages.MeTTa.HE.Bindings.empty)))
-        (Commit.makeOne (qb, 2) : Commit (Atom × ℕ) Atom) := by
+        (Commit.takeOne (p a, 0) : Commit (Atom × ℕ) Atom) ∧
+      ((Space.ofList Instance.program).add qb).atoms.zipIdx =
+        [(qb, 0), (p a, 1), (Instance.doubleEight, 2)] := by
   have taken : (Instance.doubleEight, 1) ∈ (positionalWrite Instance.program
-      ((Space.ofList Instance.program).add qb).atoms).taken := by
+      ((Space.ofList Instance.program).remove (p a)).atoms).taken := by
     decide +kernel
-  have qbOutside : eqRegion live Instance.doubleFour Mettapedia.Languages.MeTTa.HE.Bindings.empty qb =
-      false := eqRegion_not_equation fun _ _ same => by simp [qb] at same
-  have fresh : (2 : ℕ) ∉ ([(p a, 0), (Instance.doubleEight, 1)] : KeyedWorld).map Prod.snd := by
-    decide
-  refine ⟨by decide +kernel, taken, ?_, qbOutside, ?_⟩
+  have paOutside : eqRegion live Instance.doubleFour Mettapedia.Languages.MeTTa.HE.Bindings.empty
+      (p a) = false :=
+    eqRegion_not_equation fun _ _ same => by
+      simp [RunsAsFirings.Controls.p, RunsAsFirings.Controls.a] at same
+  refine ⟨by decide +kernel, by decide +kernel, by decide +kernel, taken, ?_, paOutside, ?_,
+    by decide +kernel⟩
   · exact Or.inr ⟨_, List.mem_singleton_self _, _, Finset.mem_union_left _ taken,
       Instance.he_inside live⟩
-  · exact ((keyed_race (atom := qb) fresh _).2 qbOutside).1
+  · refine write_outside_commutes Prod.fst fun x member => ?_
+    simp only [Commit.takeOne_taken, Finset.mem_union, Finset.mem_singleton] at member
+    rcases member with rfl | inMade
+    · exact paOutside
+    · simp at inMade
 
 /-- **Separating write control: one occurrence against every copy.** On `(p a)` stored twice, HE's
 world machine on keyed rows removes the first row only: the presented space is HE's `Space.remove`,

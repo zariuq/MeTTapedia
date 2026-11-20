@@ -175,7 +175,7 @@ theorem reset_scope_returns (signature : Kernel.TermSignature) (terms : Atom)
       after.cells = before.cells := by
   obtain ⟨after, returned, emptied, others, cells⟩ := SpaceClearing.clear_returns
     bindings before cache stored spaceName SpaceClearing.cachePattern allocated
-    spaceCaptured patternCaptured ⟨.var "reset0", _, rfl⟩
+    spaceCaptured patternCaptured rfl
     (SpaceClearing.cache_pattern_selects shaped)
   refine ⟨after, returned, ?_, emptied, others, cells⟩
   refine ⟨?_, [], emptied, empty_valid signature terms⟩
@@ -479,7 +479,7 @@ private theorem publish_returns (before after : State) (handle : Handle)
   · apply call_returns program bindings before after "add-atom" _ _ (by decide) _ (by decide)
     have insertedPath := native_function_arguments_return program bindings before after "add-atom"
       [handleValue handle, row terms context expression value] 2 (boolean true)
-      (by decide) (by decide) (by simp [inserted])
+      (by decide) (by decide) (StdLib.add_atom_applies_of_inserted rfl inserted)
     have last := raw_argument_answers program bindings before after "add-atom"
       (.expression [.var "terms", .var "ctx", .var "expression", .var "value"])
       [] [handleValue handle] 1 [boolean true] (by decide)

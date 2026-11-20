@@ -1,4 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedEquationCompleteness
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.ScopedSemanticSubstitution
 
 /-!
 # The substitution interpretation is not an equation
@@ -70,13 +71,13 @@ def declaredContractum : Pattern := .collection .hashBag [.apply "PZero" []] non
 theorem dropReceiverSource_closed :
     RhoClosedTermWellSorted rhoProc dropReceiverSource :=
   (rhoClosedTermWellSorted_process_iff _).mpr
-    ⟨.parallel (.cons (.input (.quote .unit) (.drop (.bvar rfl)))
-      (.cons (.output (.quote .unit) .unit) .nil)), by decide⟩
+    ⟨.parallel (.cons (.input (.quote .unit (by decide)) (.drop (.bvar rfl)))
+      (.cons (.output (.quote .unit (by decide)) .unit) .nil)), by decide⟩
 
 theorem syntacticContractum_closed :
     RhoClosedTermWellSorted rhoProc syntacticContractum :=
   (rhoClosedTermWellSorted_process_iff _).mpr
-    ⟨.parallel (.cons (.drop (.quote .unit)) .nil), by decide⟩
+    ⟨.parallel (.cons (.drop (.quote .unit (by decide))) .nil), by decide⟩
 
 theorem declaredContractum_closed :
     RhoClosedTermWellSorted rhoProc declaredContractum :=
@@ -354,5 +355,163 @@ theorem primitive_steps_differ :
       ¬ CoreEquiv defaultBasePremises syntacticContractum declaredContractum :=
   ⟨syntactic_step, declared_step_not_syntacticContractum, declared_step,
     syntactic_step_not_declaredContractum, contracta_inequivalent⟩
+
+/-! ## Opening must retain the authored drop position -/
+
+namespace Opening
+open Mettapedia.OSLF.MeTTaIL.Syntax (Pattern rhoReflectivePresentation)
+open Mettapedia.OSLF.MeTTaIL.Substitution (openBVar)
+open Mettapedia.OSLF.MeTTaIL.DerivedPresentationSyntax
+open Mettapedia.OSLF.MeTTaIL.ScopedPattern
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus
+
+def zero : Pattern := .apply "PZero" []
+def quote (process : Pattern) : Pattern := .apply "NQuote" [process]
+def drop (name : Pattern) : Pattern := .apply "PDrop" [name]
+def receivedDrop : Pattern := drop (.bvar 0)
+def literalDrop : Pattern := drop (quote zero)
+
+theorem received_body_well_sorted :
+    ProcWellSorted rhoReflectivePresentation FreeSortContext.empty ["Name"] receivedDrop :=
+  .drop (.bvar rfl)
+
+theorem literal_body_well_sorted :
+    ProcWellSorted rhoReflectivePresentation FreeSortContext.empty ["Name"] literalDrop :=
+  .drop (.quote .unit (by decide))
+
+theorem bodies_quote_safe : binderSafeAt "NQuote" 1 receivedDrop = true ∧
+    binderSafeAt "NQuote" 1 literalDrop = true := by decide
+
+theorem ordinary_opening_forgets_drop_origin :
+    openBVar 0 (quote zero) receivedDrop = openBVar 0 (quote zero) literalDrop := by
+  simp [openBVar, receivedDrop, literalDrop, drop, quote, zero]
+
+theorem semantic_opening_retains_drop_origin :
+    semanticCommSubst receivedDrop zero = zero ∧
+      semanticCommSubst literalDrop zero = literalDrop := by
+  constructor <;> rfl
+
+theorem literal_drop_is_not_a_process_equation : ¬ StructuralCongruence zero literalDrop := by
+  intro equivalent
+  have same := Canonical.canonicalize_eq_of_structuralCongruence equivalent
+    (by simp [Canonical.HashSetFree, Canonical.HashSetFreeList, zero])
+    (by simp [Canonical.HashSetFree, Canonical.HashSetFreeList, literalDrop, drop, quote, zero])
+  exact (show Canonical.canonicalize zero ≠ Canonical.canonicalize literalDrop from by decide) same
+
+/-- No function of the ordinary opened term alone reconstructs semantic COMM,
+even with nil payload and well-sorted quotation-safe receiver bodies. -/
+theorem no_postprocessing_of_ordinary_opening :
+    ¬ ∃ finish : Pattern → Pattern, ∀ body : Pattern,
+      ProcWellSorted rhoReflectivePresentation FreeSortContext.empty ["Name"] body →
+      binderSafeAt "NQuote" 1 body = true →
+      finish (openBVar 0 (quote zero) body) = semanticCommSubst body zero := by
+  rintro ⟨finish, implements⟩
+  have first := implements receivedDrop received_body_well_sorted bodies_quote_safe.1
+  have second := implements literalDrop literal_body_well_sorted bodies_quote_safe.2
+  rw [ordinary_opening_forgets_drop_origin] at first
+  have impossible : zero = literalDrop :=
+    semantic_opening_retains_drop_origin.1.symm.trans
+      (first.symm.trans (second.trans semantic_opening_retains_drop_origin.2))
+  exact (show zero ≠ literalDrop from by decide) impossible
+
+/-- The same obstruction remains when the proposed reconstruction is allowed
+to return any structurally congruent representative. -/
+theorem no_postprocessing_modulo_process_equations :
+    ¬ ∃ finish : Pattern → Pattern, ∀ body : Pattern,
+      ProcWellSorted rhoReflectivePresentation FreeSortContext.empty ["Name"] body →
+      binderSafeAt "NQuote" 1 body = true →
+      StructuralCongruence (finish (openBVar 0 (quote zero) body)) (semanticCommSubst body zero) := by
+  rintro ⟨finish, implements⟩
+  have first := implements receivedDrop received_body_well_sorted bodies_quote_safe.1
+  have second := implements literalDrop literal_body_well_sorted bodies_quote_safe.2
+  rw [ordinary_opening_forgets_drop_origin, semantic_opening_retains_drop_origin.1] at first
+  rw [semantic_opening_retains_drop_origin.2] at second
+  exact literal_drop_is_not_a_process_equation (StructuralCongruence.trans _ _ _
+    (StructuralCongruence.symm _ _ first) second)
+
+def redundantChannel : Pattern := .apply "POutput" [quote (drop (quote zero)), zero]
+def normalizedChannel : Pattern := .apply "POutput" [quote zero, zero]
+
+theorem redundant_channel_is_closed_process :
+    ProcWellSorted rhoReflectivePresentation FreeSortContext.empty [] redundantChannel ∧
+      binderSafeAt "NQuote" 0 redundantChannel = true :=
+  ⟨.output (.quote (.drop (.quote .unit (by decide))) (by decide)) .unit, by decide⟩
+
+theorem every_raw_single_substitution_changes_this_process (index : Nat) (replacement : Pattern) :
+    semanticSubstProc index replacement redundantChannel = normalizedChannel := rfl
+
+theorem raw_single_substitutions_have_no_identity :
+    ¬ ∃ index replacement, ∀ process,
+      semanticSubstProc index replacement process = process := by
+  rintro ⟨index, replacement, identity⟩
+  have impossible := (every_raw_single_substitution_changes_this_process index replacement).symm.trans
+    (identity redundantChannel)
+  exact (show normalizedChannel ≠ redundantChannel from by decide) impossible
+
+
+theorem this_identity_obstruction_is_only_representational :
+    StructuralCongruence redundantChannel normalizedChannel := by
+  apply Canonical.structuralCongruence_of_canonicalize_eq
+  decide
+
+def quotedBoundDrop : Pattern := quote (drop (.bvar 0))
+
+theorem name_equation_has_two_well_sorted_names :
+    NameWellSorted rhoReflectivePresentation FreeSortContext.empty ["Name"] quotedBoundDrop ∧
+      NameWellSorted rhoReflectivePresentation FreeSortContext.empty ["Name"] (.bvar 0) ∧
+      NameEquiv quotedBoundDrop (.bvar 0) :=
+  ⟨.quote (.drop (.bvar rfl)) (by decide), .bvar rfl, .quote_drop _⟩
+
+theorem name_substitution_respects_this_name_equation :
+    semanticSubstName 0 (quote zero) quotedBoundDrop = semanticSubstName 0 (quote zero) (.bvar 0) := rfl
+
+/-- Applying the process operation to a name is not a sort-independent action. -/
+theorem process_substitution_does_not_preserve_this_name_equation :
+    ¬ StructuralCongruence (semanticSubstProc 0 (quote zero) quotedBoundDrop)
+      (semanticSubstProc 0 (quote zero) (.bvar 0)) := by
+  intro related
+  have same := Canonical.canonicalize_eq_of_structuralCongruence related
+    (by simp [semanticSubstProc, quotedBoundDrop, quote, drop,
+      Canonical.HashSetFree, Canonical.HashSetFreeList])
+    (by simp [semanticSubstProc, zero, quote, Canonical.HashSetFree, Canonical.HashSetFreeList])
+  exact (show Canonical.canonicalize (semanticSubstProc 0 (quote zero) quotedBoundDrop) ≠
+    Canonical.canonicalize (semanticSubstProc 0 (quote zero) (.bvar 0)) from by decide) same
+
+theorem this_name_equation_crosses_the_quote_scope_boundary :
+    binderSafeAt "NQuote" 1 quotedBoundDrop = false ∧
+      binderSafeAt "NQuote" 1 (.bvar 0) = true := by decide
+
+
+theorem residual_equivalence_is_not_structural_congruence :
+    ProcResidualEquiv literalDrop zero ∧ ¬ StructuralCongruence literalDrop zero := by
+  refine ⟨.unquote zero, fun related => ?_⟩
+  exact literal_drop_is_not_a_process_equation (StructuralCongruence.symm _ _ related)
+
+#print axioms received_body_well_sorted
+#print axioms bodies_quote_safe
+#print axioms no_postprocessing_of_ordinary_opening
+#print axioms no_postprocessing_modulo_process_equations
+#print axioms this_identity_obstruction_is_only_representational
+#print axioms name_substitution_respects_this_name_equation
+#print axioms residual_equivalence_is_not_structural_congruence
+
+theorem literal_drop_has_no_reduction (target : Pattern) :
+    ¬ Nonempty (Reduction.Reduces literalDrop target) :=
+  Reduction.no_reduction_of_ioCount_zero
+    (by simp [Reduction.ioCount, literalDrop, drop, quote, zero])
+
+/-- The body is inspected before opening; the received drop activates but a
+literal suspended drop does not. -/
+def actual_communication_activates_the_received_drop :
+    Reduction.Reduces
+      (.collection .hashBag
+        [.apply "POutput" [quote zero, zero],
+         .apply "PInput" [quote zero, .lambda none receivedDrop]] none)
+      (.collection .hashBag [zero] none) := .comm
+
+#print axioms literal_drop_has_no_reduction
+#print axioms actual_communication_activates_the_received_drop
+
+end Opening
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.SubstitutionInterpretationCanary

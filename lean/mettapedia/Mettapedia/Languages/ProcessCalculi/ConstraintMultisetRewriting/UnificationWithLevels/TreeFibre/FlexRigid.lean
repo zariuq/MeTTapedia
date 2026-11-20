@@ -102,15 +102,15 @@ theorem subst_solveSub_fixed {n : Nat} {X : Fin n} (t : Tm Head n) :
   intro s arrow
   induction arrow with
   | var Y =>
-      intro absent
-      have ne : Y ≠ X := fun same => absent (by rw [same]; exact List.mem_singleton_self X)
+      intro notMem
+      have ne : Y ≠ X := fun same => notMem (by rw [same]; exact List.mem_singleton_self X)
       change solveSub X t Y = .var Y
       exact solveSub_ne t ne
   | head => intro _; rfl
   | pi h _ ih =>
-      intro absent
+      intro notMem
       change Tm.pi (Presentation.subst (solveSub X t) _) (.head h) = _
-      rw [ih absent]
+      rw [ih notMem]
 
 /-- **Arrow codes are kept by `X := t` for an arrow code `t`.** -/
 theorem arrow_subst_solve {n : Nat} {X : Fin n} {t : Tm Head n} (arrowT : Arrow t) :
@@ -395,8 +395,8 @@ theorem misfitSet_out {n : Nat} {Γ : Ctx Head n} {u : Head} {t : Tm Head n} {i 
   rw [declared] at h
   simp only [headOf, Bool.and_eq_false_iff, decide_eq_false_iff_not, Bool.not_eq_eq_eq_not, Bool.not_false,
     decide_eq_true_eq] at h
-  rcases h with absent | below
-  · exact absurd member absent
+  rcases h with notMem | below
+  · exact absurd member notMem
   · exact below
 
 theorem misfitSet_in {n : Nat} {Γ : Ctx Head n} {u : Head} {t : Tm Head n} {i : Fin n} {w : Head}
@@ -410,7 +410,7 @@ theorem misfitSet_in {n : Nat} {Γ : Ctx Head n} {u : Head} {t : Tm Head n} {i :
 /-- **The conditions of narrow-and-solve** on a read equation: no occurrence of `X`, heads typed below `u`, and
 every unknown of `t` declared at a universe comparable with `u`. -/
 structure Solvable' {Θ : Context S.R} {e : Equation (TotalTerm Θ)} (v : FlexArrow e) : Prop where
-  absent : v.X ∉ domainVars e.2.2.code
+  notMem : v.X ∉ domainVars e.2.2.code
   heads : ∀ h ∈ arrowHeads e.2.2.code, ∃ k, S.R.headTyping h k ∧ S.R.cumulative k v.u
   universes : AllUniverseDecls Θ
   comparable : ∀ Y ∈ domainVars e.2.2.code, ∀ w, Ctx.lookup Θ.raw Y = .head w →
@@ -515,7 +515,7 @@ def narrowSolveUpdate {Θ : Context S.R} {e : Equation (TotalTerm Θ)} (v : Flex
             Presentation.subst g.substitution e'.2.2.code := by
           change Presentation.subst (fun i => Presentation.subst g.substitution (solveSub v.X e'.2.2.code i))
             e'.2.2.code = _
-          rw [← subst_comp, subst_solveSub_fixed _ v.arrow ok.absent]
+          rw [← subst_comp, subst_solveSub_fixed _ v.arrow ok.notMem]
         rw [fixed, v.side_left]
         change Presentation.subst g.substitution (solveSub v.X e'.2.2.code v.X) = _
         rw [solveSub_self]

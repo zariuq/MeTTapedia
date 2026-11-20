@@ -824,7 +824,8 @@ private def initial : State :=
   { core := []
     next := 6
     spaces := fun index => if index = 2 then SortFormation.rows declarations.sorts.reverse else []
-    cells := fun name => if name = InferenceCache.cell then some (Effects.handleValue spaces.cache) else none }
+    cells := fun name => if name = InferenceCache.cell then some (Effects.handleValue spaces.cache) else none
+    namedEmpty := [] }
 private def declaration : TheoremDecl :=
   { arguments := [.bound 0], hypotheses := [.var 0], conclusion := .var 0 }
 

@@ -28,7 +28,7 @@ def source : ProgramQuotation.QuotedProgram :=
 
 private def sharedSource : ProgramQuotation.QuotedProgram :=
   petta_source_file% "../../../../../../../../../metta/gslt/lib/gslt_scoped_execution.metta"
-    sha256 "1d3159a8a5f569b1227820f092f6b3441b729bc62b4dc244345418f03d4a45e4"
+    sha256 "01978e71dedad9a468f39fe1ec54f3acc6851a07ff62b34595e6e534c8fa71e4"
 
 private def inheritedHeads : List String :=
   ["gslt:automata:binding", "gslt:rule:row-at",

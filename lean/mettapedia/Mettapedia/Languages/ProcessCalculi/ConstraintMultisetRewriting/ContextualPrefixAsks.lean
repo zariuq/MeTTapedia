@@ -47,7 +47,7 @@ theorem holds_inclusion_iff (candidate : Assignment captures next) {Γ : Ctx S} 
       rw [Assignment.instantiate_compose, Assignment.instantiate_compose]
       exact ⟨fun same => inclusion_injective unused next _ _ same,
         congrArg (instantiate (inclusion unused next))⟩
-  | absent pattern =>
+  | predicate quantifier pattern =>
       simp only [Holds, Assignment.instantiate_compose, ContextualGuardMatching.matches_inclusion_iff]
   | count pattern number =>
       change (region locals (Assignment.compose (inclusion unused next) candidate) rows world pattern).card = number ↔

@@ -1,12 +1,16 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.TriangleFootprints.NestedArguments
 
 /-!
-# Declared heads: HE's declaration guards change the answer, PeTTa's do not
+# Declared heads: HE's declaration guards change the answer
 
 `AnswerBags` left heads with a type declaration out: with `(: f T)` in the space HE does not take
 the tuple entry (`EntryToQuery.Controls.declared_head_blocks_tuple`), it takes the argument
-admission of `f`'s declared types (`atomFunction`, `atomFallback` or `atomSelectionFailed`). PeTTa
-reads declarations only to decide raw (`Atom`-typed) arguments; it never checks a declared type.
+admission of `f`'s declared types (`atomFunction`, `atomFallback` or `atomSelectionFailed`). The
+PeTTa model of the tree reads declarations only to decide raw (`Atom`-typed) arguments; it checks no
+declared type. Both PeTTa hosts do check a call's declared argument and result types, and give no
+answer on a mismatch. So the PeTTa model's answer to a call is the hosts' answer when the call's
+head has no declaration (`headUndeclared`), and the PeTTa side of every theorem here is stated on
+that program.
 
 Here the admission is followed on a program where the guard decides the answer:
 
@@ -17,18 +21,21 @@ Here the admission is followed on a program where the guard decides the answer:
   (`number_rejects_bool`), so the candidate is rejected with the error
   `(Error (f b) (BadArgType 1 Number Bool))`, no candidate remains and no tuple fallback is eligible
   (`atomSelectionFailed`). HE's complete run publishes that error (`he_declared_error`).
-* PeTTa: the call selects `(= (f $x) yes)` and answers `yes` (`petta_declared_yes`).
+* PeTTa: on the program without `f`'s declaration, the call selects `(= (f $x) yes)` and answers
+  `yes` (`petta_undeclared_yes`), as both PeTTa hosts do. On the declared program the hosts answer
+  nothing; the model, which reads no declaration, still answers `yes` (`petta_model_declared_yes`).
 
-The difference is the declaration guard (`declared_guard_differs`): without the two declarations
-both dialects answer `yes` (`Controls.undeclared_agrees`, an instance of
-`AnswerBags.answers_agree`).
+The difference is the declaration guard (`declared_guard_differs`): HE's answer with the head's
+declaration is the type error; without the two declarations both dialects answer `yes`
+(`Controls.undeclared_agrees`, an instance of `AnswerBags.answers_agree`).
 
 When the guard passes, HE's `atomFunction` path is followed to its answer on the same program:
 for `(f 4)` the admission selects the arrow (`selection_succeeds`, `well_typed_takes_function`), the
 operator is cast against its arrow and `4` against `Number`, the call value `(f 4)` is assembled
 (`function_segment`), the equation query runs with the return type `Number` as demand and the body
-`yes` meets it (`typed_query`), and HE publishes `yes` (`he_typed_yes`), as PeTTa does
-(`typed_agrees`).
+`yes` meets it (`typed_query`), and HE publishes `yes` (`he_typed_yes`). The PeTTa hosts answer
+`yes` only without `f`'s declaration; with it they check `yes` against `Number` and answer nothing
+(`typed_answers`).
 -/
 
 set_option autoImplicit false
@@ -104,6 +111,17 @@ abbrev declaredCall : Atom := app "f" [sym "b"]
 
 /-- The type error HE reports. -/
 abbrev badArgument : Atom := mkError declaredCall (.badArgType 1 (sym "Number") (sym "Bool"))
+
+/-- **The program without the declarations of a head.** The PeTTa hosts check a declared head's
+argument and result types and the PeTTa model checks none, so on this program the model's answer to
+a call of the head is the hosts' answer. -/
+def headUndeclared (atoms : List Atom) (f : String) : List Atom :=
+  atoms.filter fun row => !typeRegion (.symbol f) row
+
+theorem headUndeclared_declaredRows :
+    headUndeclared declaredRows "f" =
+      [.expression [.symbol ":", sym "b", sym "Bool"], rule (app "f" [.var "x"]) (sym "yes")] := by
+  decide +kernel
 
 theorem f_types : StorageTypesRel (Space.ofList declaredRows) (.symbol "f")
     [.expression [.symbol "->", sym "Number", sym "Number"]] :=
@@ -190,17 +208,31 @@ theorem he_declared_error (dispatch : GroundedDispatch) (policy : Policy) :
   · rw [rawEq]
     simp [Completed.diagnosticResults, Completed.publishResult]
 
-/-- **PeTTa answers `yes`**: the call selects `(= (f $x) yes)`; PeTTa checks no declared type. -/
-theorem petta_declared_yes :
+/-- **The PeTTa model reads no declaration**: on the declared program the call selects
+`(= (f $x) yes)` and the model answers `yes`. Both PeTTa hosts answer nothing here: they check
+`b` against `Number`. -/
+theorem petta_model_declared_yes :
     Streaming.values (Streaming.advance (translate declaredRows) 40
       (Streaming.enter { state := store declaredRows } declaredCall)) = [sym "yes"] ∧
     (Streaming.advance (translate declaredRows) 40
       (Streaming.enter { state := store declaredRows } declaredCall)).agenda.length = 0 := by
   constructor <;> decide +kernel
 
+/-- **PeTTa answers `yes` without the head's declaration**: on `{(: b Bool), (= (f $x) yes)}` the
+call selects `(= (f $x) yes)`, as the PeTTa hosts do. -/
+theorem petta_undeclared_yes :
+    Streaming.values (Streaming.advance (translate (headUndeclared declaredRows "f")) 40
+      (Streaming.enter { state := store (headUndeclared declaredRows "f") } declaredCall)) =
+        [sym "yes"] ∧
+    (Streaming.advance (translate (headUndeclared declaredRows "f")) 40
+      (Streaming.enter { state := store (headUndeclared declaredRows "f") }
+        declaredCall)).agenda.length = 0 := by
+  constructor <;> decide +kernel
+
 /-- **The declaration guard changes the answer.** On `{(: f (-> Number Number)), (: b Bool),
 (= (f $x) yes)}` the query `(f b)` gets HE's answer `(Error (f b) (BadArgType 1 Number Bool))`, an
-error, and PeTTa's answer `yes`, from every fuel on at which PeTTa's run has finished. -/
+error. Without `f`'s declaration PeTTa answers `yes`, from every fuel on at which its run has
+finished; with it the PeTTa hosts answer nothing. -/
 theorem declared_guard_differs (dispatch : GroundedDispatch) (policy : Policy) :
     (∃ heAnswers : List Result,
       Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy)
@@ -208,14 +240,15 @@ theorem declared_guard_differs (dispatch : GroundedDispatch) (policy : Policy) :
           ⟨Space.ofList declaredRows, .returning [], [], heAnswers⟩ ∧
         heAnswers.map (fun r => r.1.erase) = [badArgument]) ∧
       isErrorAtom badArgument = true ∧
-      ∀ n, 40 ≤ n → Streaming.values (Streaming.advance (translate declaredRows) n
-        (Streaming.enter { state := store declaredRows } declaredCall)) = [sym "yes"] := by
+      ∀ n, 40 ≤ n → Streaming.values (Streaming.advance (translate (headUndeclared declaredRows "f"))
+        n (Streaming.enter { state := store (headUndeclared declaredRows "f") } declaredCall)) =
+          [sym "yes"] := by
   obtain ⟨R, path, _, erased⟩ := he_declared_error dispatch policy
   refine ⟨⟨R, path, erased⟩,
     by simp [badArgument, Mettapedia.Languages.MeTTa.HE.mkError, Atom.error, isErrorAtom], ?_⟩
   intro n bigger
-  rw [advance_stable (List.eq_nil_of_length_eq_zero petta_declared_yes.2) n bigger]
-  exact petta_declared_yes.1
+  rw [advance_stable (List.eq_nil_of_length_eq_zero petta_undeclared_yes.2) n bigger]
+  exact petta_undeclared_yes.1
 
 /-! ## A well-typed argument: HE takes the `atomFunction` path -/
 
@@ -551,19 +584,23 @@ theorem he_typed_yes (dispatch : GroundedDispatch) (notHost : ¬ dispatch.execut
   refine .head (.internal .prepend) ?_
   exact pathP.trans (HERuns.publish_all _ published [])
 
-/-- **When the guard passes, the answers agree**: on the same program, the well-typed `(f 4)` gets
-`yes` from HE's `atomFunction` path and `yes` from PeTTa. -/
-theorem typed_agrees (dispatch : GroundedDispatch) (notHost : ¬ dispatch.executable (.symbol "f"))
+/-- **The well-typed call's answers**: on the declared program, the well-typed `(f 4)` gets `yes`
+from HE's `atomFunction` path; on the program without `f`'s declaration PeTTa answers `yes`, as the
+PeTTa hosts do. With `f`'s declaration the hosts check the result `yes` against `Number` and answer
+nothing, so on the declared program the dialects differ. -/
+theorem typed_answers (dispatch : GroundedDispatch) (notHost : ¬ dispatch.executable (.symbol "f"))
     (policy : Policy) :
     (∃ heAnswers : List Result,
       Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy)
           (load (Space.ofList declaredRows) typedCall Atom.undefinedType)
           ⟨Space.ofList declaredRows, .returning [], [], heAnswers⟩ ∧
         heAnswers.map (fun r => r.1.erase) = [sym "yes"]) ∧
-      Streaming.values (Streaming.advance (translate declaredRows) 40
-        (Streaming.enter { state := store declaredRows } typedCall)) = [sym "yes"] ∧
-      (Streaming.advance (translate declaredRows) 40
-        (Streaming.enter { state := store declaredRows } typedCall)).agenda.length = 0 :=
+      Streaming.values (Streaming.advance (translate (headUndeclared declaredRows "f")) 40
+        (Streaming.enter { state := store (headUndeclared declaredRows "f") } typedCall)) =
+          [sym "yes"] ∧
+      (Streaming.advance (translate (headUndeclared declaredRows "f")) 40
+        (Streaming.enter { state := store (headUndeclared declaredRows "f") }
+          typedCall)).agenda.length = 0 :=
   ⟨he_typed_yes dispatch notHost policy, by decide +kernel, by decide +kernel⟩
 
 /-! ## Controls -/
@@ -616,7 +653,7 @@ theorem undeclared_agrees {lookup : CastLookup} (answers : AnswersUndefined look
   refine ⟨R, path, ?_⟩
   have later := agree (max N 40) (le_max_left _ _)
   rw [advance_stable (List.eq_nil_of_length_eq_zero finished) _ (le_max_right _ _), computed] at later
-  exact later.symm
+  exact List.perm_singleton.mp (Multiset.coe_eq_coe.mp later.symm)
 
 /-- **Negative control: the guard is the declarations.** The two declaration rows are what
 `declaredRows` adds to `plainRows`, and they are not equations: PeTTa's translation has the same
@@ -637,7 +674,9 @@ end Controls
 #print axioms arrow_rejected
 #print axioms selection_failed
 #print axioms he_declared_error
-#print axioms petta_declared_yes
+#print axioms headUndeclared_declaredRows
+#print axioms petta_model_declared_yes
+#print axioms petta_undeclared_yes
 #print axioms declared_guard_differs
 #print axioms arrow_selected
 #print axioms selection_succeeds
@@ -647,7 +686,7 @@ end Controls
 #print axioms function_segment
 #print axioms typed_query
 #print axioms he_typed_yes
-#print axioms typed_agrees
+#print axioms typed_answers
 #print axioms Controls.undeclared_agrees
 #print axioms Controls.only_declarations_added
 

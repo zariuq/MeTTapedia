@@ -63,6 +63,7 @@ def targetJson : Target → Json
 
 def faultJson : Effects.Fault → Json
   | .invalidSpace => Json.mkObj [("kind", .str "invalidSpace")]
+  | .instantiation => Json.mkObj [("kind", .str "instantiation")]
   | .missingCell name => Json.mkObj [("kind", .str "missingCell"), ("name", .str name)]
   | .invalidArguments head => Json.mkObj [("kind", .str "invalidArguments"), ("head", .str head)]
   | .zeroDivisor => Json.mkObj [("kind", .str "zeroDivisor")]

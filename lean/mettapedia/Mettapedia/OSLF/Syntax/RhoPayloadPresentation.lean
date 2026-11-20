@@ -686,6 +686,36 @@ theorem drop_runs_dropExecution {Γ : Ctx sig} (code : Term sig Γ Srt.pr) :
     Steps dropExecutionRules (drpT (quoT code)) code :=
   steps_drop code
 
+/-- A suspended literal quotation cannot start a strict run, even when its
+code would communicate if active. -/
+theorem strict_drop_run_eq {Γ : Ctx sig} (code target : Term sig Γ Srt.pr)
+    (run : Relation.ReflTransGen (Steps strictRules) (drpT (quoT code)) target) :
+    target = drpT (quoT code) := by
+  induction run with
+  | refl => rfl
+  | tail _ step ih =>
+      rw [ih] at step
+      exact False.elim (drop_inert_strict code _ step)
+
+/-- Declaring free Drop changes reachable output observations, not merely
+the number of administrative steps. The source syntax and equations agree. -/
+theorem drop_profiles_may_output_separate {Γ : Ctx sig}
+    (channel : Term sig Γ Srt.nm) (payload : Term sig Γ Srt.pr) :
+    (∃ target, Relation.ReflTransGen (Steps dropExecutionRules)
+        (drpT (quoT (outT channel payload))) target ∧ 0 < activeOutputs target) ∧
+    ¬ (∃ target, Relation.ReflTransGen (Steps strictRules)
+        (drpT (quoT (outT channel payload))) target ∧ 0 < activeOutputs target) := by
+  constructor
+  · exact ⟨outT channel payload, .single (drop_runs_dropExecution _), by
+      change 0 < 1
+      exact Nat.zero_lt_succ 0⟩
+  · rintro ⟨target, run, visible⟩
+    rw [strict_drop_run_eq _ _ run] at visible
+    exact Nat.lt_irrefl 0 visible
+
+#print axioms strict_drop_run_eq
+#print axioms drop_profiles_may_output_separate
+
 end ActiveOutputs
 
 /-! ## Parallel atoms of an equation class

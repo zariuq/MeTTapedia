@@ -152,6 +152,9 @@ structure ClosedCommData extends CommTypingData TypingContext.empty where
     ProcWellSorted rhoReflectivePresentation FreeSortContext.empty
       [rhoReflectivePresentation.nameSort] body
   bodySafe : binderSafeAt "NQuote" 1 body = true
+  /-- The body lies in the literal-quotation fiber, on which the compiled COMM
+  step is exactly the paper-facing COMM substitution. -/
+  bodyLiteral : Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral rhoReflectivePresentation body = true
   payloadSorted :
     ProcWellSorted rhoReflectivePresentation FreeSortContext.empty [] payload
   payloadSafe : binderSafeAt "NQuote" 0 payload = true
@@ -182,7 +185,7 @@ theorem rawStep (data : ClosedCommData) :
       (.collection .hashBag
         (semanticCommSubst data.body data.payload :: data.rest) none) :=
   RhoStep.comm data.channel data.body data.payload data.rest
-    data.bodySorted data.payloadSorted
+    data.bodySorted data.payloadSorted data.bodyLiteral
 
 /-- Closed target process obtained from the proved closedness of `rawStep`. -/
 def target (data : ClosedCommData) : RhoProcess :=
@@ -281,10 +284,11 @@ def closedNilCommData : ClosedCommData where
   restTyped := by simp
   payloadLocallyClosed := by decide
   bodyStrict := by decide
-  channelSorted := .quote .unit
+  channelSorted := .quote .unit (by decide)
   channelSafe := by decide
   bodySorted := .unit
   bodySafe := by decide
+  bodyLiteral := by decide +kernel
   payloadSorted := .unit
   payloadSafe := by decide
   restSorted := .nil
@@ -339,8 +343,10 @@ def quotedBinderBody : Pattern :=
         [.apply "NQuote"
           [.apply "POutput" [.bvar 0, .apply "PZero" []]]]]
 
+/-- Its constructors are sorted when binders reach into quotations (rho's
+apply view). -/
 theorem quotedBinderBody_structurally_sorted :
-    ProcWellSorted rhoReflectivePresentation FreeSortContext.empty
+    ProcWellSorted rhoApplyPresentation FreeSortContext.empty
       [rhoReflectivePresentation.nameSort] quotedBinderBody := by
   apply ProcWellSorted.output
   · exact NameWellSorted.bvar (by simp [rhoReflectivePresentation])
@@ -348,7 +354,18 @@ theorem quotedBinderBody_structurally_sorted :
       (NameWellSorted.quote
         (ProcWellSorted.output
           (NameWellSorted.bvar (by simp [rhoReflectivePresentation]))
-          ProcWellSorted.unit))
+          ProcWellSorted.unit)
+        (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.quoteAdmits_of_reaching rfl _))
+
+/-- Authored rho's binders do not reach into quotations, so its sorting does
+not admit the quotation of code that mentions the bound channel. -/
+theorem quotedBinderBody_not_admitted :
+    ¬ ProcWellSorted rhoReflectivePresentation FreeSortContext.empty
+      [rhoReflectivePresentation.nameSort] quotedBinderBody := by
+  intro typed
+  have closed := typed.quotesClosed rfl (by decide)
+  revert closed
+  decide
 
 theorem quotedBinderBody_open_typed (name : String) :
     HasType (TypingContext.empty.extend name communicationName)
@@ -382,17 +399,21 @@ theorem quotedBinderBody_not_strict :
     strictCoreCommBody quotedBinderBody = false := by
   decide
 
-/-- Structural sorting and ordinary opened typing do not imply admission to
-the quote-safe semantic COMM fragment. -/
+/-- Structural sorting under the apply view and ordinary opened typing do
+not imply admission: authored rho's sorting and the quote-safe semantic COMM
+fragment both reject the body. -/
 theorem quotedBinderBody_boundary :
-    ProcWellSorted rhoReflectivePresentation FreeSortContext.empty
+    ProcWellSorted rhoApplyPresentation FreeSortContext.empty
         [rhoReflectivePresentation.nameSort] quotedBinderBody /\
       (forall name,
         HasType (TypingContext.empty.extend name communicationName)
           (openBVar 0 (.fvar name) quotedBinderBody) processTruth) /\
+      ¬ ProcWellSorted rhoReflectivePresentation FreeSortContext.empty
+        [rhoReflectivePresentation.nameSort] quotedBinderBody /\
       strictCoreCommBody quotedBinderBody = false :=
   ⟨quotedBinderBody_structurally_sorted,
     quotedBinderBody_open_typed,
+    quotedBinderBody_not_admitted,
     quotedBinderBody_not_strict⟩
 
 /-! ## Axiom audit -/

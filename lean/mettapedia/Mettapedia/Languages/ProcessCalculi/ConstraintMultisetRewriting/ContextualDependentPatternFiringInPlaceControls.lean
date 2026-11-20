@@ -1,6 +1,6 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentPatternFiringInPlace
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentPatternFiringNullary
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentPatternFiringCensusControls
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentPatternFiringClassificationControls
 
 /-!
 # Controls for firing in place
@@ -9,7 +9,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
   metavariable `F` is in the placed row at depth one. Every view of `G` is read off the context, every reading of the
   equation without `G` has the codes of `F ≐ A` over `A, F`, and each such reading is in the inversion row.
 * **The placed round is not stuck on it** from some budget on (`placed_fires`), by the firing theorem in place, and
-  the placed solver commits at budget 16 (`placed_committed`), as it does on the census control with an older
+  the placed solver commits at budget 16 (`placed_committed`), as it does on the classification control with an older
   metavariable (`olderInversion_placed_committed`).
 -/
 
@@ -142,7 +142,7 @@ theorem placed_fires :
 /-- **The placed solver commits on `F ≐ A` below `G`** at budget 16. -/
 theorem placed_committed : (run placedOnly placedStore 8).readout = .commit := by decide +kernel
 
-/-- **The placed solver commits on the census control with an older metavariable.** -/
+/-- **The placed solver commits on the classification control with an older metavariable.** -/
 theorem olderInversion_placed_committed : (run placedOnly olderInversionStore 8).readout = .commit := by
   decide +kernel
 

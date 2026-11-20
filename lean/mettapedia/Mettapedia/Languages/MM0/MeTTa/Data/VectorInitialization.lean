@@ -145,7 +145,7 @@ private theorem load_body_returns (remaining processed : List Atom) (before : St
             · apply call_returns program withValue before middle "add-atom" _ _ (by decide) _ (by decide)
               have insertedPath := native_function_arguments_return program withValue before middle "add-atom"
                 [handleValue handle, row (processed.length, first)] 2 (boolean true)
-                (by decide) (by decide) (by simp [inserted])
+                (by decide) (by decide) (StdLib.add_atom_applies_of_inserted rfl inserted)
               have last := raw_argument_answers program withValue before middle "add-atom"
                 (.expression [.var "index", .var "value"]) [] [handleValue handle] 1 [boolean true]
                 (by decide) (by simpa [withValue, bindings, environment, row, applySubst,
@@ -238,7 +238,7 @@ theorem vector_body_returns (before : State) (handle : Handle) (stored items : L
     withSpace before handle stored "space" SpaceClearing.proofPattern allocated
     (by simp [withSpace, applySubst, Subst.lookup])
     (by simp [SpaceClearing.proofPattern, withSpace, bindings, vectorEnvironment, applySubst, applySubst.applySubstList, Subst.lookup])
-    ⟨_, _, rfl⟩ (SpaceClearing.proof_pattern_selects shaped)
+    rfl (SpaceClearing.proof_pattern_selects shaped)
   obtain ⟨after, child, represented, loadOthers, loadCells⟩ :=
     load_body_returns items [] middle handle empty
   refine ⟨after, ?_, by simpa using represented, ?_, ?_⟩

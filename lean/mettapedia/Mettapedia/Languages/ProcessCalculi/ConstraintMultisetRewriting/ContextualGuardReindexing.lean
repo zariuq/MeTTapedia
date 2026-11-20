@@ -6,7 +6,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 
 The inverse changes identities without adding equations. Schema locals and
 physical regions retain their original matching contract, including count
-and absence checks. The result quantifies over arbitrary later families.
+and none checks. The result quantifies over arbitrary later families.
 -/
 
 set_option autoImplicit false

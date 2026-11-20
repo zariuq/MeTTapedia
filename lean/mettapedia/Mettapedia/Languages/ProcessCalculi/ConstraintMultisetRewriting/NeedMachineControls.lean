@@ -72,7 +72,7 @@ theorem begin_valid : beginSelection.Valid action label beginRule initial := by
   · change ∀ equation ∈ beginSelection.problem label beginRule initial, equation.1 = equation.2
     decide +kernel
   · intro check member assignment _
-    have same : check = .absent (.heap (.allocated 1)) := List.mem_singleton.mp member
+    have same : check = .predicate .none (.heap (.allocated 1)) := List.mem_singleton.mp member
     subst check
     change ∀ occurrence ∈ initial.present, Row.heap (.allocated 1) ≠ label occurrence
     decide +kernel
@@ -83,7 +83,7 @@ theorem prepare_valid : prepareSelection.Valid action label prepareRule started 
   · change ∀ equation ∈ prepareSelection.problem label prepareRule started, equation.1 = equation.2
     decide +kernel
   · intro check member assignment _
-    have same : check = .absent (.heap (.allocated 1)) := List.mem_singleton.mp member
+    have same : check = .predicate .none (.heap (.allocated 1)) := List.mem_singleton.mp member
     subst check
     change ∀ occurrence ∈ started.present, Row.heap (.allocated 1) ≠ label occurrence
     decide +kernel

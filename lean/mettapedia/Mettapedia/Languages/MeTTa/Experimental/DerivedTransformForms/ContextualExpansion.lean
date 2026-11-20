@@ -164,7 +164,8 @@ theorem outcome_iff (registry : SpaceSemantics.Program) (context : Context)
   rw [run_context]
 
 /-- The grammar replay and the source contextual law meet at the decoded form.
-This combines their scopes; it does not assert whole-family tcalc adequacy. -/
+This combines their scopes; it does not assert adequacy for the whole family of
+transform steps. -/
 theorem accepted_context (surface : Presentations.Surface) (source : String)
     (packet : SourcePacket.Packet) (decoded : Code)
     (accepted : Lowering.accepted surface source packet = .ok decoded)

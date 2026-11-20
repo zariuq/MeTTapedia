@@ -183,7 +183,8 @@ end Schema
 
 /-- **An instance writes only names of the schema's literals or of its holes.** -/
 theorem writes_of_instance (S : Schema) (σ : ℕ → Expr)
-    (queries : List (PredicateQueryAdmission.Query Expr Unit Occ)) (sel : Selection Occ) {n : ℕ}
+    (queries : List (PredicateQueryAdmission.RegionQuery Expr Unit Occ)) (sel : Selection Occ)
+    {n : ℕ}
     (written : n ∈ firingNames Expr.names (⟨S.inst σ, queries, sel⟩ : Fir)) :
     ∃ p ∈ S.patterns, n ∈ p.literalSupport ∨ ∃ i ∈ p.holes, n ∈ (σ i).support := by
   rcases mem_firingNames.mp written with ⟨t, member, named⟩ | ⟨t, member, named⟩ |
@@ -198,7 +199,8 @@ theorem writes_of_instance (S : Schema) (σ : ℕ → Expr)
 
 /-- **A code-only instance writes only names held by its holes.** -/
 theorem codeOnly_writes {S : Schema} (codeOnly : S.CodeOnly) (σ : ℕ → Expr)
-    (queries : List (PredicateQueryAdmission.Query Expr Unit Occ)) (sel : Selection Occ) {n : ℕ}
+    (queries : List (PredicateQueryAdmission.RegionQuery Expr Unit Occ)) (sel : Selection Occ)
+    {n : ℕ}
     (written : n ∈ firingNames Expr.names (⟨S.inst σ, queries, sel⟩ : Fir)) :
     ∃ p ∈ S.patterns, ∃ i ∈ p.holes, n ∈ (σ i).support := by
   obtain ⟨p, member, own | held⟩ := writes_of_instance S σ queries sel written
@@ -239,7 +241,7 @@ theorem matched_names {S : Schema} {σ : ℕ → Expr} {sel : Selection Occ} {C 
 matched, or hold the names it issues, or hold issued names, writes only issued names and its own
 fresh names. -/
 theorem no_forgery {S : Schema} (codeOnly : S.CodeOnly) {σ : ℕ → Expr} {fresh : List ℕ}
-    {L : Set ℕ} {C : Conf} {queries : List (PredicateQueryAdmission.Query Expr Unit Occ)}
+    {L : Set ℕ} {C : Conf} {queries : List (PredicateQueryAdmission.RegionQuery Expr Unit Occ)}
     {sel : Selection Occ} (valid : sel.Valid ground Prod.fst (S.inst σ) C)
     (invariant : configurationNames Prod.fst Expr.names C ⊆ L)
     (holes : ∀ p ∈ S.patterns, ∀ i ∈ p.holes,
@@ -257,7 +259,7 @@ theorem no_forgery {S : Schema} (codeOnly : S.CodeOnly) {σ : ℕ → Expr} {fre
 
 /-- The use check of the discipline then holds by itself. -/
 theorem no_forgery_issues {S : Schema} (codeOnly : S.CodeOnly) {σ : ℕ → Expr} {fresh : List ℕ}
-    {σ₀ : Conf × Set ℕ} {queries : List (PredicateQueryAdmission.Query Expr Unit Occ)}
+    {σ₀ : Conf × Set ℕ} {queries : List (PredicateQueryAdmission.RegionQuery Expr Unit Occ)}
     {sel : Selection Occ} (valid : sel.Valid ground Prod.fst (S.inst σ) σ₀.1)
     (invariant : Invariant naming σ₀)
     (holes : ∀ p ∈ S.patterns, ∀ i ∈ p.holes,
@@ -345,7 +347,8 @@ theorem micromath_substitutions_matched :
 /-- **The substitution rules cannot forge a name**: every admitted instance passes the use check
 with no condition on its holes. -/
 theorem substitutions_cannot_forge {S : Schema} (substitution : S ∈ [substitute1, substitute2])
-    {σ : ℕ → Expr} {σ₀ : Conf × Set ℕ} {queries : List (PredicateQueryAdmission.Query Expr Unit Occ)}
+    {σ : ℕ → Expr} {σ₀ : Conf × Set ℕ}
+    {queries : List (PredicateQueryAdmission.RegionQuery Expr Unit Occ)}
     {sel : Selection Occ} (valid : sel.Valid ground Prod.fst (S.inst σ) σ₀.1)
     (invariant : Invariant naming σ₀) :
     naming.firing (s := σ₀.1) (⟨S.inst σ, queries, sel⟩ : Fir) ⊆ σ₀.2 ∪ {n | n ∈ ([] : List ℕ)} := by
@@ -356,6 +359,18 @@ theorem substitutions_cannot_forge {S : Schema} (substitution : S ∈ [substitut
       exact micromath_codeOnly _ (by simp [micromath])
   exact no_forgery_issues codeOnly valid invariant fun p member i inHoles =>
     Or.inl (micromath_substitutions_matched S substitution p member i inHoles)
+
+/-- **A count beside the instance changes nothing**: with a collect query of the whole store among its
+queries, an instance of a substitution rule still passes the use check. An observation writes no
+name, whatever it observes. -/
+theorem substitutions_cannot_forge_beside_a_count {S : Schema}
+    (substitution : S ∈ [substitute1, substitute2]) {σ : ℕ → Expr} {σ₀ : Conf × Set ℕ}
+    {sel : Selection Occ} (valid : sel.Valid ground Prod.fst (S.inst σ) σ₀.1)
+    (invariant : Invariant naming σ₀) :
+    naming.firing (s := σ₀.1)
+        (⟨S.inst σ, [PredicateQueryAdmission.RegionQuery.count (fun _ _ => true) 1], sel⟩ : Fir) ⊆
+      σ₀.2 ∪ {n | n ∈ ([] : List ℕ)} :=
+  substitutions_cannot_forge substitution valid invariant
 
 /-- The empty store with nothing issued. -/
 def emptyStore : Conf × Set ℕ := (⟨[], ∅⟩, ∅)
@@ -393,6 +408,7 @@ theorem generative_projections_need_issuing (C : Conf) (copy : ℕ) :
 #print axioms loading_keeps_invariant
 #print axioms micromath_codeOnly
 #print axioms substitutions_cannot_forge
+#print axioms substitutions_cannot_forge_beside_a_count
 #print axioms micromath_loads
 #print axioms generative_projections_need_issuing
 

@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.RegionQueryAdapters
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DisequalityControls
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.LocatedSubstitution
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits.Waves
@@ -33,7 +34,7 @@ its occurrences with handle `h` (`fiber`), and a commit restricted to `h` is `co
 ## The first-order step with located occurrences (`located`)
 
 Labels are pairs of a handle and a payload under `LocatedSubstitution.action`, which keeps handles
-rigid. A firing is **at `h`** (`At`) when its take, read and produce patterns, its absence and count
+rigid. A firing is **at `h`** (`At`) when its take, read and produce patterns, its none query and count
 guards and its predicate queries all name `h`.
 
 * **A query over one space is not affected by other spaces** (`checkAt_holds_iff`,
@@ -289,11 +290,11 @@ omit [DecidableEq O] [DecidableEq H] in
 /-- A guard looks only at the space `h`. -/
 def CheckAt (h : H) : Check (H × T) → Prop
   | .equal _ _ => True
-  | .absent p => p.1 = h
+  | .predicate _ p => p.1 = h
   | .count p _ => p.1 = h
 
 /-- A predicate query looks only at the space `h`. -/
-def QueryAt (h : H) (query : PredicateQueryAdmission.Query (H × T) S O) : Prop :=
+def QueryAt (h : H) (query : PredicateQueryAdmission.RegionQuery (H × T) S O) : Prop :=
   ∀ σ x, query.region σ x = true → x.1 = h
 
 /-- **A firing at the space `h`**: its patterns, guards and predicate queries name only `h`. -/
@@ -329,13 +330,21 @@ theorem checkAt_holds_iff (σ : S) (store : Finset O) {h : H} (c : Check (H × T
       c.Holds (LocatedSubstitution.action (N := H) A) σ (label space payload) (fiber space h store) := by
   cases c with
   | equal left right => exact Iff.rfl
-  | absent p =>
+  | predicate quantifier p =>
       change p.1 = h at atH
-      constructor
-      · intro holds o member
-        exact holds o ((mem_fiber space).mp member).1
-      · intro holds o member same
-        exact holds o ((mem_fiber space).mpr ⟨member, same.1.symm.trans atH⟩) same
+      cases quantifier with
+      | any =>
+          constructor
+          · rintro ⟨o, member, matched⟩
+            exact ⟨o, (mem_fiber space).mpr ⟨member, matched.1.symm.trans atH⟩, matched⟩
+          · rintro ⟨o, member, matched⟩
+            exact ⟨o, ((mem_fiber space).mp member).1, matched⟩
+      | none =>
+          constructor
+          · intro holds o member
+            exact holds o ((mem_fiber space).mp member).1
+          · intro holds o member same
+            exact holds o ((mem_fiber space).mpr ⟨member, same.1.symm.trans atH⟩) same
   | count p number =>
       change p.1 = h at atH
       have same : Check.matches (LocatedSubstitution.action (N := H) A) σ (label space payload) store p =
@@ -409,8 +418,8 @@ theorem admits_of_fiber {C D : Configuration (H × T) O} {h : H} {f : AnnotatedR
     exact holds
   · intro query member σ model
     have holds := observations query member σ ((models_problem_iff A space payload f knowledge σ).mpr model)
-    change regionOf (label space payload) C.present (query.region σ) = query.seen at holds
-    change regionOf (label space payload) D.present (query.region σ) = query.seen
+    change query.accepts σ (regionOf (label space payload) C.present (query.region σ)) at holds
+    change query.accepts σ (regionOf (label space payload) D.present (query.region σ))
     rw [regionOf_fiber space payload _ (atH.queries query member σ)] at holds ⊢
     rw [← same]
     exact holds
@@ -520,7 +529,7 @@ def readTwo : Fir := ⟨⟨[], [(2, app 0 X)], [], [], []⟩, [], ⟨[], [1], []
 def readTwoFresh : Fir := ⟨⟨[], [(2, app 0 (.var 1))], [], [], []⟩, [], ⟨[], [1], []⟩⟩
 
 theorem readOne_admitted : P.Admits (s := start) readOne :=
-  (PredicateQueryAdmission.valid_empty_iff _ _ _ _ _).mpr
+  (Interface.RegionQueryAdapters.valid_empty_iff _ _ _ _ _).mpr
     ⟨by decide, by decide, rfl, rfl, rfl, by decide, ⟨bind (.const 1), by
       intro e member
       simp [readOne, Selection.problem, Selection.equations, start, label] at member
@@ -528,7 +537,7 @@ theorem readOne_admitted : P.Admits (s := start) readOne :=
       simp [SubstitutionAction.Solves, payload, space]⟩, by simp [readOne]⟩
 
 theorem readOneQuiet_admitted : P.Admits (s := start) readOneQuiet :=
-  (PredicateQueryAdmission.valid_empty_iff _ _ _ _ _).mpr
+  (Interface.RegionQueryAdapters.valid_empty_iff _ _ _ _ _).mpr
     ⟨by decide, by decide, rfl, rfl, rfl, by decide, ⟨bind (.const 1), by
       intro e member
       simp [readOneQuiet, Selection.problem, Selection.equations, start, label] at member
@@ -536,7 +545,7 @@ theorem readOneQuiet_admitted : P.Admits (s := start) readOneQuiet :=
       simp [SubstitutionAction.Solves, payload, space]⟩, by simp [readOneQuiet]⟩
 
 theorem readTwo_admitted : P.Admits (s := start) readTwo :=
-  (PredicateQueryAdmission.valid_empty_iff _ _ _ _ _).mpr
+  (Interface.RegionQueryAdapters.valid_empty_iff _ _ _ _ _).mpr
     ⟨by decide, by decide, rfl, rfl, rfl, by decide, ⟨bind (.const 2), by
       intro e member
       simp [readTwo, Selection.problem, Selection.equations, start, label] at member
@@ -566,7 +575,7 @@ theorem readTwo_refused_after_one : ¬ P.Admits (s := afterOne) readTwo := by
   exact absurd (first.symm.trans second) (by simp)
 
 theorem readTwoFresh_admitted_after_one : P.Admits (s := afterOne) readTwoFresh :=
-  (PredicateQueryAdmission.valid_empty_iff _ _ _ _ _).mpr
+  (Interface.RegionQueryAdapters.valid_empty_iff _ _ _ _ _).mpr
     ⟨by decide, by decide, rfl, rfl, rfl, by decide,
       ⟨split, by
         intro e member

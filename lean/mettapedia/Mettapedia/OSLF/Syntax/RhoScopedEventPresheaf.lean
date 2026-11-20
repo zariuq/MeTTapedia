@@ -40,6 +40,17 @@ theorem substitute_join {source target : Ctx sig} (change : Sub sig source targe
     induction second using Quotient.inductionOn with
     | _ second => rfl
 
+theorem substitute_quote {source target : Ctx sig} (change : Sub sig source target)
+    (process : Process source) :
+    bindQ change (quote process) = quote (bindQ change process) := by
+  induction process using Quotient.inductionOn with
+  | _ process => rfl
+
+theorem substitute_drop {source target : Ctx sig} (change : Sub sig source target)
+    (name : Name source) : bindQ change (drop name) = drop (bindQ change name) := by
+  induction name using Quotient.inductionOn with
+  | _ name => rfl
+
 def terms (sort : Srt) : (Syntactic.Ctxt sig)ᵒᵖ ⥤ Type where
   obj world := TermQ rhoSourceE world.unop.vars sort
   map change := TypeCat.ofHom (bindQ change.unop)
@@ -50,6 +61,27 @@ def terms (sort : Srt) : (Syntactic.Ctxt sig)ᵒᵖ ⥤ Type where
     apply ConcreteCategory.hom_ext
     intro value
     exact (substitute_comp earlier.unop later.unop value).symm
+
+/-- Quotation on the existing source-equation classes, natural for ambient
+substitution. This is not operational COMM substitution. -/
+def quotation : terms .pr ⟶ terms .nm where
+  app _ := TypeCat.ofHom quote
+  naturality _ _ change := by
+    apply ConcreteCategory.hom_ext
+    intro process
+    exact (substitute_quote change.unop process).symm
+
+def dropping : terms .nm ⟶ terms .pr where
+  app _ := TypeCat.ofHom drop
+  naturality _ _ change := by
+    apply ConcreteCategory.hom_ext
+    intro name
+    exact (substitute_drop change.unop name).symm
+
+/-- Name eta is a retraction; the process beta equation is not supplied. -/
+theorem dropping_quotation : dropping ≫ quotation = 𝟙 (terms .nm) := by
+  ext world name
+  exact quote_drop name
 
 variable {admitted : SourceRule → Prop}
 

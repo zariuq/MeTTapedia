@@ -1,10 +1,10 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.TriangleFootprints.WholeRunWords
 
 /-!
-# The complete run of `(double 4)`: the whole-run triangle on H2's tied instance
+# The complete run of `(double 4)`: the whole-run triangle on the tied instance of `ExpressionTriangle`
 
 `WholeRunWords` compared HE's run from its entry through the equation query with PeTTa's request
-word. Here HE's run of H2's tied instance is followed to its end: from
+word. Here HE's run of the tied instance of `ExpressionTriangle` is followed to its end: from
 `ExpressionTriangle.entry program (double 4)` on `{(p a), (= (double 4) 8)}`, HE's machine fires the
 query, unifies the call with the equation's fresh pattern (the tree's
 `Entry.Value.UnifyRel.equation_frontier`), evaluates the right-hand side `8` again under
@@ -18,7 +18,7 @@ region (`EntryToQuery.Traced`).
   read are exactly `(= (double 4) 8)` at position `1`: the query reads it and no other firing reads
   a row. PeTTa's run of the translation is the one request reading that row, and it answers `8`.
   So on this instance the whole-run triangle holds for rows read and for the answer, and the words
-  differ exactly by HE's absence guards over declarations (`WholeRunWords.whole_run_guards`).
+  differ exactly by HE's none guards over declarations (`WholeRunWords.whole_run_guards`).
 
 ## Controls
 
@@ -148,7 +148,7 @@ def completeWord : List (Atom → Bool) :=
   entryWord rawDeclared "double" [.grounded (.int 4)] ++
     (eqRegion [Atom.undefinedType] doubleFour Bindings.empty :: postWord)
 
-/-- **The whole-run triangle on H2's tied instance.** From `ExpressionTriangle.entry` of `(double 4)`
+/-- **The whole-run triangle on the tied instance of `ExpressionTriangle`.** From `ExpressionTriangle.entry` of `(double 4)`
 on `{(p a), (= (double 4) 8)}`, with HE's raw lookup, any policy and a dispatch for which `double`
 is no host operation, HE's machine runs, with the declared region of every firing, to a completed
 phase publishing one answer whose atom is `8`. The complete run has 33 firings; the rows they read

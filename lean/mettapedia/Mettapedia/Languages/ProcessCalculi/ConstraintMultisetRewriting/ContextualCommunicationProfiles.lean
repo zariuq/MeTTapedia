@@ -36,16 +36,29 @@ open Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits
 abbrev Root (admitted : RhoScopedParallelEvents.SourceRule → Prop) (context : Ctx sig) :=
   RhoScopedParallelEvents.Root RhoScopedParallelEvents.sourceRules admitted context
 
-def action (context : Ctx sig) :
-    SubstitutionAction (Process context) (Sub sig context context) where
+/-- Ambient substitution on an equation fibre. This action alone does not
+authorize a communication or execute a dropped quotation. -/
+def equationAction {S : Signature} {M : List (MetaArity S)}
+    (equations : List (EqAxiom S M)) (context : Ctx S) (sort : S.Srt) :
+    SubstitutionAction (TermQ equations context sort) (Sub S context context) where
   E := Eq
   equivalence := eq_equivalence
-  apply change process := bindQ (E := rhoSourceE) change process
+  apply change process := bindQ (E := equations) change process
   identity := fun _ position => .var position
   compose later earlier := fun sort position => bind later (earlier sort position)
-  apply_identity := substitute_id
-  apply_compose later earlier process := (substitute_comp earlier later process).symm
-  preserves change _ _ same := congrArg (fun process : Process context => bindQ change process) same
+  apply_identity := by
+    intro process
+    induction process using Quotient.inductionOn with
+    | _ term => exact congrArg (fun t => (Quotient.mk _ t : TermQ equations context sort)) (bind_id term)
+  apply_compose later earlier process := by
+    induction process using Quotient.inductionOn with
+    | _ term =>
+        exact congrArg (fun t => (Quotient.mk _ t : TermQ equations context sort))
+          (bind_comp earlier later term).symm
+  preserves change _ _ same := congrArg (bindQ (E := equations) change) same
+
+def action (context : Ctx sig) : SubstitutionAction (Process context) (Sub sig context context) :=
+  equationAction rhoSourceE context .pr
 
 def component {context : Ctx sig} (prime : Prime context) : Process context := write {prime}
 

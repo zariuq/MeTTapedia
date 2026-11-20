@@ -18,7 +18,9 @@ The fundamental reduction in ρ-calculus is communication:
 
 In locally nameless: the input `for(<-n){p}` is `PInput [n, lambda p]` where
 `p` has BVar 0 for the bound variable. The substitution replaces BVar 0
-with `NQuote(q)` via `openBVar`.
+with the received name via `semanticCommSubst`: quotation is opaque, and an
+active drop of that received name exposes its process. Ordinary `openBVar`
+does not implement this interpretation.
 
 ## References
 
@@ -258,6 +260,29 @@ theorem ioCount_SC {P Q : Pattern}
     -- ioCount(NQuote[PDrop[n]]) = ioCount(n)
     -- "NQuote" and "PDrop" are neither "POutput" nor "PInput"
     simp [ioCount, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
+
+/-- Every actual reduction needs a communication occurrence somewhere in its
+source. A literal drop is not an additional computational rule. -/
+theorem ioCount_pos_of_reduces {source target : Pattern}
+    (executed : Reduces source target) : 0 < ioCount source := by
+  induction executed with
+  | comm => simp [ioCount]
+  | equiv before _ _ earlier =>
+      rw [ioCount_SC before]
+      exact earlier
+  | par _ earlier =>
+      simp only [ioCount, List.map_cons, List.sum_cons]
+      omega
+  | par_any _ earlier =>
+      simp only [ioCount, List.map_append, List.sum_append,
+        List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
+      omega
+
+theorem no_reduction_of_ioCount_zero {source target : Pattern}
+    (empty : ioCount source = 0) : ¬ Nonempty (Reduces source target) := by
+  rintro ⟨executed⟩
+  have positive := ioCount_pos_of_reduces executed
+  omega
 
 /-! ### SC-invariant weight for reduction sources
 

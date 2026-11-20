@@ -83,7 +83,7 @@ reading of its entry is what the choice escape records, followed by references t
 theorem references_ofFiring (A : SubstitutionAction T S) (label : O → T) {C : Configuration T O}
     {f : Firing T S O} (noQueries : f.queries = []) :
     (ofFiring f).references =
-      (AnnotatedRuns.choiceEscape A label).records (s := C) f ++ Record.references f.selection.made := by
+      (AnnotatedRuns.choiceEscape A label).records (s := C) ⟨f,⟨[],noQueries⟩⟩ ++ Record.references f.selection.made := by
   rw [choiceEscape_records A label noQueries]
   rfl
 

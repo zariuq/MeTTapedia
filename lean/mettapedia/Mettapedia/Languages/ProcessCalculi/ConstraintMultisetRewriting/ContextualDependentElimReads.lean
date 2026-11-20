@@ -1,6 +1,6 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentElimShape
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentElimSigma
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentCensusReadsSigma
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentClassificationReadsSigma
 
 /-!
 # The row of elimination spines is read, and a conditional decision from the rows outside it
@@ -11,12 +11,12 @@ the normal form of every type read, and a normal type below a Π type is a Π ty
 Σ type a Σ type (`tower_normal_sigma_of_le`). Unlike the reading of application spines, no normality of the
 annotation or of the locals' types is assumed: the reading normalizes the head's type itself.
 
-**The census row** (`tower_mixedReads_of_elimShape`). A census head whose η-long sides are elimination spines of one
+**The classification row** (`tower_mixedReads_of_elimShape`). A classified head whose η-long sides are elimination spines of one
 bound local of the same shape, at an annotation whose type under its Π binders is a base type as it stands, is read by
 the mixed family from some budget on.
 
 **A conditional decision** (`tower_mixed_decided_of_uncovered`, `tower_elimSigma_decided_of_uncovered`). The mixed
-family, and the family above it, decide every store of the dynamic pattern fragment provided every census head of a
+family, and the family above it, decide every store of the dynamic pattern fragment provided every classified head of a
 constant preparation outside the rows read (`MixedCoveredHead`: the earlier rows, and the row of elimination spines by
 shape) is read from some budget on. The hypothesis still holds every pattern row, the rows at a Σ base stated on the
 expanded store, and any row not yet named. At the tower it fails: the conclusion would decide `crossStore`, solvable
@@ -271,7 +271,7 @@ theorem tower_elimsUnderN_reads {depth n : Nat} {annotation left right : Tower.T
       rw [elimsUnderN_base _ larger notUnder]
       simp [elimBaseN, based, const larger enough]
 
-/-! ## The census row -/
+/-! ## The classification row -/
 
 /-- **A store is read by the mixed family** from some budget on, when an equation of its η-long prepared store with
 homogeneous twins, at one budget past the twins' constancy, is eventually read by the decomposition between
@@ -297,7 +297,7 @@ theorem tower_mixedReads_of_fixed {Θ : Context setting.R} {problem : EquationSt
     ContextualDependentInversion.Controls.declarations_formed ExecutableTowerChoices.choices larger member
     (read larger ((le_max_right _ _).trans enough))
 
-/-- **A census head whose η-long sides are eventually read as elimination spines of one local at a base type is
+/-- **A classified head whose η-long sides are eventually read as elimination spines of one local at a base type is
 read** by the mixed family from some budget on. -/
 theorem tower_mixedReads_of_elims {Θ : Context setting.R} {problem : EquationStore (TotalTerm Θ)}
     {threshold : Nat}
@@ -358,7 +358,7 @@ theorem tower_mixedReads_of_elims {Θ : Context setting.R} {problem : EquationSt
           ExecutableTowerChoices.choices larger read.val typed'
           (formed larger ((le_max_right _ _).trans enough))
 
-/-- **The row of elimination spines at every base type is read**: a census head whose η-long sides are elimination
+/-- **The row of elimination spines at every base type is read**: a classified head whose η-long sides are elimination
 spines of one bound local of the same shape, at an annotation whose type under its Π binders is a base type as it
 stands, is read by the mixed family from some budget on. -/
 theorem tower_mixedReads_of_elimShape {Θ : Context setting.R} {problem : EquationStore (TotalTerm Θ)}
@@ -374,16 +374,16 @@ theorem tower_mixedReads_of_elimShape {Θ : Context setting.R} {problem : Equati
     (tower_elimsUnderN_reads shape (towerPrepare threshold problem).target.formed (LocalTypes.nil _) rfl
       (expanded_typed equation types).1 (expanded_typed equation types).2)
 
-/-! ## A conditional decision, from the census rows outside the rows read -/
+/-! ## A conditional decision, from the classification rows outside the rows read -/
 
-/-- **The census rows read by the mixed family**: the rows read by the base family, and elimination spines of one
+/-- **The classification rows read by the mixed family**: the rows read by the base family, and elimination spines of one
 bound local of the same shape at every base type. -/
 def MixedCoveredHead {Γ : Context setting.R} (equation : Equation (TotalTerm Γ)) : Prop :=
-  CensusCoveredHead equation ∨
+  ClassifiedCoveredHead equation ∨
     ElimShape 0 equation.1.1.code (expandTo (piCount equation.1.1.code) equation.1.2.code)
       (expandTo (piCount equation.1.1.code) equation.2.2.code)
 
-/-- **A census head in a row read is read** by the mixed family from some budget on. -/
+/-- **A classified head in a row read is read** by the mixed family from some budget on. -/
 theorem tower_mixedReads_of_covered {Θ : Context setting.R} {problem : EquationStore (TotalTerm Θ)}
     {threshold : Nat}
     (constant : ∀ larger, threshold ≤ larger → towerPrepare larger problem = towerPrepare threshold problem)
@@ -393,13 +393,13 @@ theorem tower_mixedReads_of_covered {Θ : Context setting.R} {problem : Equation
     (types : TypeEq setting.R (towerPrepare threshold problem).target.raw equation.1.1.code equation.2.1.code)
     (covered : MixedCoveredHead equation) :
     ∃ bound, ∀ larger, bound ≤ larger → TowerMixedReads larger problem := by
-  rcases covered with census | shape
-  · obtain ⟨bound, reads⟩ := tower_baseReads_of_censusCovered constant member normal types census
+  rcases covered with classified | shape
+  · obtain ⟨bound, reads⟩ := tower_baseReads_of_classifiedCovered constant member normal types classified
     exact ⟨bound, fun larger enough => .inl (reads larger enough)⟩
   · exact tower_mixedReads_of_elimShape constant member types shape
 
-/-- **Conditional decision for the tower's mixed family, from the census rows outside the rows read**: if every census
-head of a constant preparation whose η-long opened sides are of a census kind and outside the rows read is read from
+/-- **Conditional decision for the tower's mixed family, from the classification rows outside the rows read**: if every classification
+head of a constant preparation whose η-long opened sides are of a classified kind and outside the rows read is read from
 some budget on, the family decides every store of the dynamic pattern fragment, with a principal answer or a
 certified refutation, constant at every larger budget. At the tower the hypothesis fails: the conclusion would decide
 `crossStore` (`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`,
@@ -410,12 +410,12 @@ theorem tower_mixed_decided_of_uncovered
       PermutedMiller setting.levels problem → problem ≠ [] → ∀ threshold,
         (∀ larger, threshold ≤ larger → towerPrepare larger problem = towerPrepare threshold problem) →
         ∀ equation ∈ (towerPrepare threshold problem).remaining,
-          ContextualDependentNormalizing.NormalEquation (fun _ => (0 : Nat)) equation → CensusHead equation →
+          ContextualDependentNormalizing.NormalEquation (fun _ => (0 : Nat)) equation → ClassifiedHead equation →
           ContextualDependentShortClosure.FragmentSidesMiller equation →
           Kind (openedFlexible (piCount equation.1.1.code))
-            (ContextualDependentCensus.openNormal (piCount equation.1.1.code)
+            (ContextualDependentClassification.openNormal (piCount equation.1.1.code)
               (expandTo (piCount equation.1.1.code) equation.1.2.code))
-            (ContextualDependentCensus.openNormal (piCount equation.1.1.code)
+            (ContextualDependentClassification.openNormal (piCount equation.1.1.code)
               (expandTo (piCount equation.1.1.code) equation.2.2.code)) →
           ¬ MixedCoveredHead equation → ∃ bound, ∀ larger, bound ≤ larger → TowerMixedReads larger problem)
     {Θ : Context setting.R} {problem : EquationStore (TotalTerm Θ)} (inside : InFragmentStore problem) :
@@ -423,9 +423,9 @@ theorem tower_mixed_decided_of_uncovered
       run (mixedTower.solver larger) problem larger = run (mixedTower.solver budget) problem budget ∧
       ((∃ state finished, run (mixedTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ absent, run (mixedTower.solver larger) problem larger = .refuted absent)) :=
+        (∃ missing, run (mixedTower.solver larger) problem larger = .refuted missing)) :=
   tower_mixed_decided_of_mixedReads (fun {_} {problem} permuted nonempty => by
-      obtain ⟨threshold, constant, equation, member, normal, head⟩ := tower_stable_census_head permuted nonempty
+      obtain ⟨threshold, constant, equation, member, normal, head⟩ := tower_stable_classified_head permuted nonempty
       by_cases covered : MixedCoveredHead equation
       · exact tower_mixedReads_of_covered constant member normal head.1 covered
       · have prepared := ContextualDependentCumulativeClosure.prepare_keeps (S := setting) (fun _ => none)
@@ -448,8 +448,8 @@ abbrev TowerElimSigmaReads (fuel : Nat) {Θ : Context setting.R} (problem : Equa
     ContextualDependentNormalCheckingTower.head_typing_unique
     (ContextualDependentNormalizing.tower_rootComplete (fun _ => (0 : Nat))) tower_strengthening fuel problem
 
-/-- **Conditional decision for the tower's family above the mixed family, from the census rows outside the rows
-read**: if every census head of a constant preparation whose η-long opened sides are of a census kind and outside the
+/-- **Conditional decision for the tower's family above the mixed family, from the classification rows outside the rows
+read**: if every classified head of a constant preparation whose η-long opened sides are of a classified kind and outside the
 rows read is read by a reader of the family above the mixed family from some budget on, the family decides every store
 of the dynamic pattern fragment, with a principal answer or a certified refutation, constant at every larger budget. At
 the tower the hypothesis fails: the conclusion would decide `crossStore`
@@ -460,12 +460,12 @@ theorem tower_elimSigma_decided_of_uncovered
       PermutedMiller setting.levels problem → problem ≠ [] → ∀ threshold,
         (∀ larger, threshold ≤ larger → towerPrepare larger problem = towerPrepare threshold problem) →
         ∀ equation ∈ (towerPrepare threshold problem).remaining,
-          ContextualDependentNormalizing.NormalEquation (fun _ => (0 : Nat)) equation → CensusHead equation →
+          ContextualDependentNormalizing.NormalEquation (fun _ => (0 : Nat)) equation → ClassifiedHead equation →
           ContextualDependentShortClosure.FragmentSidesMiller equation →
           Kind (openedFlexible (piCount equation.1.1.code))
-            (ContextualDependentCensus.openNormal (piCount equation.1.1.code)
+            (ContextualDependentClassification.openNormal (piCount equation.1.1.code)
               (expandTo (piCount equation.1.1.code) equation.1.2.code))
-            (ContextualDependentCensus.openNormal (piCount equation.1.1.code)
+            (ContextualDependentClassification.openNormal (piCount equation.1.1.code)
               (expandTo (piCount equation.1.1.code) equation.2.2.code)) →
           ¬ MixedCoveredHead equation → ∃ bound, ∀ larger, bound ≤ larger → TowerElimSigmaReads larger problem)
     {Θ : Context setting.R} {problem : EquationStore (TotalTerm Θ)} (inside : InFragmentStore problem) :
@@ -473,10 +473,10 @@ theorem tower_elimSigma_decided_of_uncovered
       run (elimSigmaTower.solver larger) problem larger = run (elimSigmaTower.solver budget) problem budget ∧
       ((∃ state finished, run (elimSigmaTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ absent, run (elimSigmaTower.solver larger) problem larger = .refuted absent)) :=
+        (∃ missing, run (elimSigmaTower.solver larger) problem larger = .refuted missing)) :=
   tower_elimSigma_decided_of_firing (fun {_} {problem} permuted nonempty => by
       have reads : ∃ bound, ∀ larger, bound ≤ larger → TowerElimSigmaReads larger problem := by
-        obtain ⟨threshold, constant, equation, member, normal, head⟩ := tower_stable_census_head permuted nonempty
+        obtain ⟨threshold, constant, equation, member, normal, head⟩ := tower_stable_classified_head permuted nonempty
         by_cases covered : MixedCoveredHead equation
         · obtain ⟨bound, mixed⟩ := tower_mixedReads_of_covered constant member normal head.1 covered
           exact ⟨bound, fun larger enough => .inl (mixed larger enough)⟩

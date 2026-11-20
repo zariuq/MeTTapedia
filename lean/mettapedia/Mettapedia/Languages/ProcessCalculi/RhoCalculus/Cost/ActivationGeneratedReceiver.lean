@@ -108,7 +108,7 @@ theorem actual_receiver_rhs (channel body payload signature tail : Pattern) :
          .apply costFundingConstructorName [.fvar rhoCIGSLT.costStackTailVariable]]) = _
   have quoteName : wrappedRhoDeclaration.quoteConstructor =
       "$cost:wrapped-constructor:NQuote" := rfl
-  simp [quoteName, receiverBindings, receiverContractum, generatedReplacement, applyBindingsReflective,
+  simp [quoteName, substituteDeclared_of_closed (declaration := wrappedRhoDeclaration) rfl, receiverBindings, receiverContractum, generatedReplacement, applyBindingsReflective,
     applyBindingsReflectiveList, normalizeReflectiveReplacement,
     costSourceSchemaName, costSourceSchemaTag, WrappableIGSLT.costSignatureVariable,
     WrappableIGSLT.costStackTailVariable, costAdministrativeSchemaName,

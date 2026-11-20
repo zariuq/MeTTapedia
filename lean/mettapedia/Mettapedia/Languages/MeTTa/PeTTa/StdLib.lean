@@ -308,23 +308,22 @@ def apply (state : State) (head : String) (arguments : List Atom) : Result :=
         let (handle, after) := state.allocate []
         .ok (after, [handleValue handle])
     | "add-atom", [location, atom] =>
-        match readHandle location >>= fun handle => insert state handle atom with
-        | some after => .ok (after, [boolean true])
-        | none => .error .invalidSpace
+        if atom.isVariable then .error .instantiation else
+          match readHandle location >>= fun handle => insert state handle atom with
+          | some after => .ok (after, [boolean true])
+          | none => .error .invalidSpace
     | "remove-atom", [location, atom] =>
-        match readHandle location with
-        | none => .error .invalidSpace
-        | some handle =>
-            match state.read handle with
-            | none => .error .invalidSpace
-            | some _ =>
-                match atom with
-                | .var _ => answer (boolean true)
-                | .expression (_ :: _) =>
-                    match erase state handle atom with
-                    | some after => .ok (after, [boolean true])
-                    | none => .error .invalidSpace
-                | _ => .ok (state, [])
+        if removalNeedsValue atom then .error .instantiation else
+          match readHandle location with
+          | none => .error .invalidSpace
+          | some handle =>
+              match state.read handle with
+              | none => .error .invalidSpace
+              | some rows =>
+                  match erase state handle atom with
+                  | some after => .ok (after,
+                      [boolean (((after.read handle).getD []).length < rows.length)])
+                  | none => .error .invalidSpace
     | "get-atoms", [location] =>
         match readHandle location >>= state.read with
         | some rows => .ok (state, rows)
@@ -342,6 +341,25 @@ def apply (state : State) (head : String) (arguments : List Atom) : Result :=
     | _, _ => bad
 
 /-! ## Positive and negative primitive controls -/
+
+theorem successful_add_value {state after : State} {location atom : Atom} {answers : List Atom}
+    (returned : apply state "add-atom" [location, atom] = .ok (after, answers)) :
+    atom.isVariable = false := by
+  cases value : atom.isVariable with
+  | false => rfl
+  | true => simp [apply, value] at returned
+
+theorem add_atom_applies_of_inserted {before after : State} {handle : NamedSpaces.Handle}
+    {atom : Atom} (value : atom.isVariable = false) (inserted : insert before handle atom = some after) :
+    apply before "add-atom" [handleValue handle, atom] = .ok (after, [boolean true]) := by
+  simp [apply, value, inserted]
+
+theorem remove_atom_applies_of_erased {before after : State} {handle : NamedSpaces.Handle}
+    {pattern : Atom} (specified : removalNeedsValue pattern = false) (erased : erase before handle pattern = some after) :
+    apply before "remove-atom" [handleValue handle, pattern] =
+      .ok (after, [boolean (erasureChanged before after handle)]) := by
+  obtain ⟨_, snapshot, _⟩ := erase_reads_back erased
+  simp [apply, specified, snapshot, erased, erasureChanged]
 
 theorem structural_equality (state : State) (left right : Atom) :
     apply state "==" [left, right] = .ok (state, [boolean (left == right)]) := rfl
@@ -586,12 +604,9 @@ theorem successful_apply_cell_update {state after : State} {head : String}
   · have same := congrArg (fun pair : NamedSpaces.Handle × State => pair.2.cells)
       (by assumption : state.allocate [] = (_, _))
     exact Or.inl same.symm
-  · rename_i location atom _ _ selectedAfter selected
-    cases decoded : readHandle location with
-    | none => simp [decoded] at selected
-    | some handle =>
-        simp only [decoded] at selected
-        exact Or.inl (insert_preserves_cells selected)
+  · rename_i selected
+    obtain ⟨_, _, inserted⟩ := Option.bind_eq_some_iff.mp selected
+    exact Or.inl (insert_preserves_cells inserted)
   · exact Or.inl (erase_preserves_cells (by assumption))
 
 theorem successful_apply_cells {state after : State} {head : String}
@@ -627,12 +642,9 @@ theorem successful_apply_empty_tail {state after : State} {head : String}
     change (state.allocate []).2 = after at same
     rw [← same]
     exact allocate_emptyTail vacant
-  · rename_i location atom _ _ selectedAfter selected
-    cases decoded : readHandle location with
-    | none => simp [decoded] at selected
-    | some handle =>
-        simp only [decoded] at selected
-        exact insert_preserves_empty_tail vacant selected
+  · rename_i selected
+    obtain ⟨_, _, inserted⟩ := Option.bind_eq_some_iff.mp selected
+    exact insert_preserves_empty_tail vacant inserted
   · exact erase_preserves_empty_tail vacant (by assumption)
 
 /-! ## Logical-variable support of primitive replies

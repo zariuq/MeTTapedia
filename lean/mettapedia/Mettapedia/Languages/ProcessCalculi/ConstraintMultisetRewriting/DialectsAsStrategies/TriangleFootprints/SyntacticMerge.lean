@@ -13,6 +13,8 @@ equalities followed by the incoming ones. This module takes that record itself.
 
 * `merge`, `SynRowResultsRel`, `SynFrontierRel`: **the variant matching step**: as the model's, with
   the hit's record the syntactic merge `merge matched incoming` (and it must be satisfiable).
+  `merge_keeps_pair`: the syntactic merge keeps a record of the shape `rest + {u = w}`, with `u` and
+  `w` outside `rest`, in that shape.
 * Agreement with the model's step:
   * `SynFrontierRel.sound`: every variant frontier is a frontier of the model;
   * `frontier_represented`: every frontier of the model is a variant frontier up to how each work's
@@ -30,9 +32,10 @@ equalities followed by the incoming ones. This module takes that record itself.
 * `GoodV`, `EveryRunV`, `GoodV.every_run`: every run of the variant machine finishes and publishes the
   given answers; a complete run exists.
 * `goodV_of_finishes`, `every_run_of_model`: **wherever the model's answers are determined on every
-  run and every run finishes, the variant machine has the same answers on every run and finishes**:
-  all earlier every-run results hold for the variant machine as they stand
-  (`Controls.let_five_variant`, `Controls.both_variant`).
+  run, in the model's order, and every run finishes, the variant machine has the same answers on
+  every run and finishes** (`ScopedTransfer.FinishesInOrder`; a bag of one answer gives it,
+  `ScopedTransfer.Finishes.inOrder_single`): all earlier every-run results hold for the variant
+  machine as they stand (`Controls.let_five_variant`, `Controls.both_variant`).
 * `goodv_det` and the continuation and task steps of the variant machine, for
   `DeclaredBranchVariant`.
 
@@ -96,6 +99,36 @@ theorem logical_iff {matched incoming : Bindings} :
   · intro satisfiable
     exact ⟨_, merge_logical satisfiable⟩
 
+/-- The names of the syntactic merge are the names of both records. -/
+theorem mem_merge_names (matched incoming : Bindings) (name : String) :
+    name ∈ Mettapedia.Languages.MeTTa.HE.Spec.Bindings.ScopeObservation.specBindingVars
+        (merge matched incoming) ↔
+      name ∈ Mettapedia.Languages.MeTTa.HE.Spec.Bindings.ScopeObservation.specBindingVars matched ∨
+        name ∈ Mettapedia.Languages.MeTTa.HE.Spec.Bindings.ScopeObservation.specBindingVars incoming :=
+  Mettapedia.Languages.MeTTa.HE.Spec.Bindings.ScopeObservation.mem_specBindingVars_append matched
+    incoming name
+
+/-- **The syntactic merge keeps a pair of names apart from everything else**: if the incoming
+record is `rest + {u = w}` with `u`, `w` outside `rest`, and the match mentions neither, the merged
+record is `rest' + {u = w}` with `u`, `w` outside `rest'`. Every hit of the variant step preserves
+this shape of the record, whatever row it is a hit of. -/
+theorem merge_keeps_pair {matched rest : Bindings} {u w : String}
+    (matchedU : u ∉ Mettapedia.Languages.MeTTa.HE.Spec.Bindings.ScopeObservation.specBindingVars
+      matched)
+    (matchedW : w ∉ Mettapedia.Languages.MeTTa.HE.Spec.Bindings.ScopeObservation.specBindingVars
+      matched)
+    (restU : u ∉ Mettapedia.Languages.MeTTa.HE.Spec.Bindings.ScopeObservation.specBindingVars rest)
+    (restW : w ∉ Mettapedia.Languages.MeTTa.HE.Spec.Bindings.ScopeObservation.specBindingVars rest) :
+    merge matched (rest.addEquality u w) = (merge matched rest).addEquality u w ∧
+      u ∉ Mettapedia.Languages.MeTTa.HE.Spec.Bindings.ScopeObservation.specBindingVars
+        (merge matched rest) ∧
+      w ∉ Mettapedia.Languages.MeTTa.HE.Spec.Bindings.ScopeObservation.specBindingVars
+        (merge matched rest) := by
+  refine ⟨by simp [merge, Bindings.addEquality, List.append_assoc], fun member => ?_,
+    fun member => ?_⟩
+  · exact ((mem_merge_names _ _ _).mp member).elim matchedU restU
+  · exact ((mem_merge_names _ _ _).mp member).elim matchedW restW
+
 /-- **The variant of the model's matching step for one row**: an irrelevant row and a row with no
 viable match contribute nothing; a hit contributes one work whose record is the syntactic merge of
 its match into the incoming record. -/
@@ -143,9 +176,9 @@ theorem SynRowResultsRel.sound {live : List Atom} {query : Atom} {incoming : Bin
       SynRowResultsRel live query incoming position row block →
       EquationRowResultsRel live query incoming position row block
   | _, _, _, .irrelevant position row notEquation => .irrelevant position row notEquation
-  | _, _, _, .miss position left right pattern body alpha absent =>
+  | _, _, _, .miss position left right pattern body alpha missing =>
       .miss position left right pattern body alpha fun otherPattern otherBody other matched output
-        both => absent otherPattern otherBody other matched
+        both => missing otherPattern otherBody other matched
           ⟨both.1, logical_iff.mp ⟨output, both.2⟩⟩
   | _, _, _, .hit position left right pattern body matched alpha matching satisfiable =>
       .hit position left right pattern body matched _ alpha matching (merge_logical satisfiable)
@@ -166,9 +199,9 @@ theorem row_syntactic {live : List Atom} {query : Atom} {incoming : Bindings} :
       EquationRowResultsRel live query incoming position row block →
       SynWorksAt query incoming block → SynRowResultsRel live query incoming position row block
   | _, _, _, .irrelevant position row notEquation, _ => .irrelevant position row notEquation
-  | _, _, _, .miss position left right pattern body alpha absent, _ =>
+  | _, _, _, .miss position left right pattern body alpha missing, _ =>
       .miss position left right pattern body alpha fun otherPattern otherBody other matched both =>
-        absent otherPattern otherBody other matched _ ⟨both.1, merge_logical both.2⟩
+        missing otherPattern otherBody other matched _ ⟨both.1, merge_logical both.2⟩
   | _, _, _, .hit position left right pattern body matched output alpha matching merged,
       syntactic => by
       obtain ⟨matched', matching', same⟩ := syntactic _ List.mem_cons_self
@@ -183,9 +216,9 @@ theorem row_represented {live : List Atom} {query : Atom} {incoming : Bindings} 
       ∃ block', SynRowResultsRel live query incoming position row block' ∧
         List.Forall₂ SameWork block block'
   | _, _, _, .irrelevant position row notEquation => ⟨[], .irrelevant position row notEquation, .nil⟩
-  | _, _, _, .miss position left right pattern body alpha absent =>
+  | _, _, _, .miss position left right pattern body alpha missing =>
       ⟨[], .miss position left right pattern body alpha fun otherPattern otherBody other matched
-        both => absent otherPattern otherBody other matched _ ⟨both.1, merge_logical both.2⟩, .nil⟩
+        both => missing otherPattern otherBody other matched _ ⟨both.1, merge_logical both.2⟩, .nil⟩
   | _, _, _, .hit position left right pattern body matched output alpha matching merged => by
       obtain ⟨v, model⟩ := merged.2
       exact ⟨_, .hit position left right pattern body matched alpha matching
@@ -517,9 +550,10 @@ theorem GoodV.every_run {space : Space} {c : Atom} {L : List Atom}
         exact Or.inr ⟨_, rfl, same⟩
     | step moves _ => exact Or.inl moves
 
-/-- **Wherever every run of the model finishes with `L`, every run of the variant machine does.** -/
+/-- **Wherever every run of the model finishes with `L` in the model's order, every run of the
+variant machine does.** -/
 theorem goodV_of_finishes {space : Space} {c : Atom} {L : List Atom}
-    (finishes : Finishes dispatch lookup policy space c L) :
+    (finishes : FinishesInOrder dispatch lookup policy space c L) :
     GoodV dispatch lookup policy L (load space c Atom.undefinedType) := by
   obtain ⟨acc, every⟩ := finishes
   have each : ∀ y, Acc (fun b a => HEStep dispatch lookup policy a b) y →
@@ -534,9 +568,10 @@ theorem goodV_of_finishes {space : Space} {c : Atom} {L : List Atom}
         · exact .final same
   exact each _ acc .refl
 
-/-- **The model's every-run results hold for the variant machine as they stand.** -/
+/-- **The model's every-run results hold for the variant machine as they stand**, in the model's
+order. -/
 theorem every_run_of_model {space : Space} {c : Atom} {L : List Atom}
-    (finishes : Finishes dispatch lookup policy space c L) :
+    (finishes : FinishesInOrder dispatch lookup policy space c L) :
     EveryRunV dispatch lookup policy space c L :=
   (goodV_of_finishes finishes).every_run
 
@@ -976,18 +1011,19 @@ theorem native_merge_not_cycle :
 theorem let_five_variant (policy : Policy) :
     EveryRunV noHost Completed.scopedLookup policy (Space.ofList LetEveryRun.Controls.letIfRows)
       LetEveryRun.Controls.fiveCall [app "pair" [.grounded (.int 5), .grounded (.int 5)]] :=
-  every_run_of_model (LetEveryRun.Controls.five_every_run policy).2.1
+  every_run_of_model (Finishes.inOrder_single (LetEveryRun.Controls.five_every_run policy).2.1)
 
 /-- **Positive control**: `(both)`, the polymorphic `if` twice in one body, on every run of the
 variant machine. -/
 theorem both_variant (policy : Policy) :
     EveryRunV noHost Completed.scopedLookup policy (Space.ofList IfInBodies.Controls.bothRows)
       (app "both" []) [app "pair" [sym "yes", sym "no"]] :=
-  every_run_of_model (IfInBodies.Controls.both_every_run policy).2.1
+  every_run_of_model (Finishes.inOrder_single (IfInBodies.Controls.both_every_run policy).2.1)
 
 end Controls
 
 #print axioms logical_iff
+#print axioms merge_keeps_pair
 #print axioms SynFrontierRel.sound
 #print axioms syn_iff
 #print axioms frontier_represented

@@ -243,13 +243,13 @@ private def observed (name : String) (input output : SExpr) (body : List SExpr :
 /- Checked observations of the source-derived rules, never their authority. -/
 private def observedRules : List RewriteRule :=
   [observed "bnf-points-empty-uninhabited-v1"
-    (metta_sexpr% petta "(BNFLexicalMatcherInhabitedV1 (bnf-v1:lexical-points (metta-nullary bnf-v1:scalars-nil)))")
+    (metta_sexpr% petta "(BNFLexicalMatcherInhabitedV1 (bnf-v1:lexical-points (bnf-v1:scalars-nil)))")
     (metta_sexpr% petta "(BNFNoV1)"),
    observed "bnf-points-cons-inhabited-v1"
     (metta_sexpr% petta "(BNFLexicalMatcherInhabitedV1 (bnf-v1:lexical-points (bnf-v1:scalars-cons ?first ?tail)))")
     (metta_sexpr% petta "(BNFYesV1)"),
    observed "bnf-exclusion-empty-inhabited-v1"
-    (metta_sexpr% petta "(BNFLexicalMatcherInhabitedV1 (bnf-v1:lexical-except (metta-nullary bnf-v1:scalars-nil)))")
+    (metta_sexpr% petta "(BNFLexicalMatcherInhabitedV1 (bnf-v1:lexical-except (bnf-v1:scalars-nil)))")
     (metta_sexpr% petta "(BNFYesV1)"),
    observed "bnf-exclusion-zero-inhabited-v1"
     (metta_sexpr% petta "(BNFLexicalMatcherInhabitedV1 (bnf-v1:lexical-except (bnf-v1:scalars-cons 0 ?tail)))")
@@ -260,11 +260,11 @@ private def observedRules : List RewriteRule :=
     (metta_sexpr% petta "(BNFYesV1)")
     [metta_sexpr% petta "(different ?first 0)"],
    observed "bnf-exclusion-tail-missing-last-v1"
-    (metta_sexpr% petta "(BNFExclusionTailInhabitedV1 ?last (metta-nullary bnf-v1:scalars-nil))")
+    (metta_sexpr% petta "(BNFExclusionTailInhabitedV1 ?last (bnf-v1:scalars-nil))")
     (metta_sexpr% petta "(BNFYesV1)")
     [metta_sexpr% petta "(ground-integer-less ?last 1114111)"],
    observed "bnf-exclusion-tail-complete-v1"
-    (metta_sexpr% petta "(BNFExclusionTailInhabitedV1 ?last (metta-nullary bnf-v1:scalars-nil))")
+    (metta_sexpr% petta "(BNFExclusionTailInhabitedV1 ?last (bnf-v1:scalars-nil))")
     (metta_sexpr% petta "(BNFNoV1)")
     [metta_sexpr% petta "(ground-integer-not-less ?last 1114111)"],
    observed "bnf-exclusion-tail-cons-v1"

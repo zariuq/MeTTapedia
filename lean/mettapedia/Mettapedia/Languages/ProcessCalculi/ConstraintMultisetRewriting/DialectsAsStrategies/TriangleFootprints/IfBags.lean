@@ -11,8 +11,9 @@ answers of the branch it selects:
 
   `answersOf Lc Ly Ln = Lc.flatMap (fun a => if a = True then Ly else Ln)`.
 
-The two lists are equal, so in particular equal as bags (multisets): order is not an observation in
-either dialect, multiplicity is, and equal lists agree on both.
+The model's runs and PeTTa publish this same list. HE takes the condition's alternatives in reverse
+order, the same on every run, so what agrees is the bag (multiset): order is not an observation,
+multiplicity is.
 
 * `condition_packets`: every derivation of the argument branches over the condition's answers
   yields one argument packet per answer, in order.
@@ -26,8 +27,8 @@ either dialect, multiplicity is, and equal lists agree on both.
 ## Controls
 
 * `Controls.coin_pair` (`(if (coin) (half 4) (pair a b))` with `(= (coin) True)`,
-  `(= (coin) False)`): every complete HE run publishes `[two, (pair a b)]`, as PeTTa does; the bag
-  has one copy of each.
+  `(= (coin) False)`): every complete HE run publishes the bag of `(pair a b)` and `two`, one copy of
+  each; PeTTa lists `two, (pair a b)`, HE answers `[(pair a b), two]`.
 * `Controls.coin_twice` (multiplicity): `(if (coin2) yes no)` with two rows answering `True` publishes
   `yes` twice on every run, in both dialects; a set reading would lose a copy.
 -/
@@ -663,7 +664,9 @@ theorem petta_if_bag {atoms : List Atom} {c y n : Atom} {Lc Ly Ln : List Atom}
 standard-library `if`, historical lookup, any policy and any dispatch that does not execute `if`,
 for `(if c y n)` meeting `BagIf` (the condition settles with Boolean answers `Lc`, each branch settles
 with answers whose data form `$t` casts as they are): a complete HE run exists, every complete run
-publishes `answersOf Lc Ly Ln`, and PeTTa yields the same list from some fuel on. -/
+publishes the bag of `answersOf Lc Ly Ln`, and PeTTa yields that list from some fuel on. HE itself
+takes the condition's alternatives in reverse order (`Controls.coin_pair`), so only the bag is
+HE's. -/
 theorem bag_every_run (dispatch : GroundedDispatch)
     (notHost : ¬ dispatch.executable (.symbol "if")) (policy : Policy) {atoms : List Atom}
     (program : IfCallProgram atoms) {c y n : Atom} {Lc Ly Ln : List Atom}
@@ -676,7 +679,8 @@ theorem bag_every_run (dispatch : GroundedDispatch)
         Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy)
             (load (Space.ofList atoms) (callC c y n) Atom.undefinedType)
             ⟨Space.ofList atoms, .returning [], [], emitted⟩ →
-          emitted.map (fun r => r.1.erase) = answersOf Lc Ly Ln) ∧
+          ((emitted.map (fun r => r.1.erase) : List Atom) : Multiset Atom) =
+            ((answersOf Lc Ly Ln : List Atom) : Multiset Atom)) ∧
       ∃ N : Nat, ∀ k, N ≤ k → Streaming.values (Streaming.advance (translate atoms) k
         (Streaming.enter { state := store atoms } (callC c y n))) = answersOf Lc Ly Ln := by
   obtain ⟨heAnswers, path, _⟩ := bag_run dispatch notHost policy program bag
@@ -686,7 +690,8 @@ theorem bag_every_run (dispatch : GroundedDispatch)
       (settlesK_shape bag.yesSettles).1.answerable.ground,
       (settlesK_shape bag.noSettles).1.answerable.ground]
   exact ⟨⟨heAnswers, path⟩,
-    fun emitted run => bag_source program bag (complete_source run),
+    fun emitted run => congrArg (fun l : List Atom => (l : Multiset Atom))
+      (bag_source program bag (complete_source run)),
     petta_complete ground (answersOf_answerable (settlesK_shape bag.yesSettles).1.answers
         (settlesK_shape bag.noSettles).1.answers)
       (petta_if_bag bag.booleans (petta_settles program.rows bag.conditionSettles)
@@ -911,9 +916,11 @@ theorem coin_bag : BagIf noHost coinRows (app "coin" []) (app "half" [num 4])
     unfold IfRegion
     cases b <;> decide +kernel
 
-/-- **A nondeterministic condition, both branches taken**: `(if (coin) (half 4) (pair a b))`
-publishes `[two, (pair a b)]` on every complete HE run, a complete run exists, and PeTTa yields the
-same list, hence the same bag. -/
+/-- **A nondeterministic condition, both branches taken**: `(if (coin) (half 4) (pair a b))`. A
+complete HE run exists, every complete HE run publishes the bag of `(pair a b)` and `two`, and PeTTa
+yields the list `[two, (pair a b)]`, the same bag. HE answers `[(pair a b), two]`: the alternatives
+of the condition come out in reverse order, the same on every run, so only the bag is HE's (the
+model's runs list `two`, `(pair a b)`). -/
 theorem coin_pair (policy : Policy) :
     (∃ heAnswers : List Result,
       Relation.ReflTransGen (HEStep noHost Completed.rawLookup policy)
@@ -927,7 +934,8 @@ theorem coin_pair (policy : Policy) :
               (callC (app "coin" []) (app "half" [num 4]) (app "pair" [sym "a", sym "b"]))
               Atom.undefinedType)
             ⟨Space.ofList coinRows, .returning [], [], emitted⟩ →
-          emitted.map (fun r => r.1.erase) = [sym "two", app "pair" [sym "a", sym "b"]]) ∧
+          ((emitted.map (fun r => r.1.erase) : List Atom) : Multiset Atom) =
+            (([app "pair" [sym "a", sym "b"], sym "two"] : List Atom) : Multiset Atom)) ∧
       ∃ N : Nat, ∀ k, N ≤ k → Streaming.values (Streaming.advance (translate coinRows) k
         (Streaming.enter { state := store coinRows }
           (callC (app "coin" []) (app "half" [num 4]) (app "pair" [sym "a", sym "b"])))) =
@@ -937,7 +945,10 @@ theorem coin_pair (policy : Policy) :
       [app "pair" [sym "a", sym "b"]] = [sym "two", app "pair" [sym "a", sym "b"]] := by
     decide +kernel
   rw [answers] at every
-  exact every
+  obtain ⟨exists_, all, petta⟩ := every
+  refine ⟨exists_, fun emitted run => ?_, petta⟩
+  rw [all emitted run]
+  exact Multiset.coe_eq_coe.mpr (List.Perm.swap _ _ [])
 
 /-- `(if (coin2) yes no)`: the condition answers `True` twice. -/
 theorem coin2_bag : BagIf noHost coinRows (app "coin2" []) (sym "yes") (sym "no")
@@ -965,9 +976,15 @@ theorem coin2_bag : BagIf noHost coinRows (app "coin2" []) (sym "yes") (sym "no"
     · simp at member
     · decide +kernel
 
-/-- **Multiplicity is an observation**: `(if (coin2) yes no)` publishes `yes` twice on every complete
-HE run, as PeTTa does; the bags agree with multiplicity two, so a set reading would lose a copy. -/
+/-- **Multiplicity is an observation**: a complete HE run of `(if (coin2) yes no)` exists, and every
+complete run publishes `yes` twice, as PeTTa does and as HE answers (`[yes, yes]`); the bags agree
+with multiplicity two, so a set reading would lose a copy. -/
 theorem coin_twice (policy : Policy) :
+    (∃ heAnswers : List Result,
+      Relation.ReflTransGen (HEStep noHost Completed.rawLookup policy)
+          (load (Space.ofList coinRows) (callC (app "coin2" []) (sym "yes") (sym "no"))
+            Atom.undefinedType)
+          ⟨Space.ofList coinRows, .returning [], [], heAnswers⟩) ∧
     (∀ emitted : List Result,
         Relation.ReflTransGen (HEStep noHost Completed.rawLookup policy)
             (load (Space.ofList coinRows) (callC (app "coin2" []) (sym "yes") (sym "no"))
@@ -982,7 +999,10 @@ theorem coin_twice (policy : Policy) :
       [sym "no"] = [sym "yes", sym "yes"] := by
     decide +kernel
   rw [answers] at every
-  exact ⟨every.2.1, every.2.2⟩
+  obtain ⟨exists_, all, petta⟩ := every
+  exact ⟨exists_, fun emitted run =>
+    (List.perm_replicate (n := 2) (a := sym "yes")).mp (Multiset.coe_eq_coe.mp (all emitted run)),
+    petta⟩
 
 end Controls
 

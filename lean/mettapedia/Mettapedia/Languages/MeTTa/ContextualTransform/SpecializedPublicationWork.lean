@@ -7,7 +7,8 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Imme
 # Measured append and first deletion retain their source interpretation
 
 The list algorithms have independent results and measured work. Here their
-outputs meet the existing ordered source contracts and admitted tcalc steps.
+outputs meet the existing ordered source contracts and admitted steps of
+`OrderedStore.step`.
 The append cost profile studies redundant empty-take contraction; it does not
 describe the current native scalar writer. First deletion is a store policy,
 not an outer first-answer consumer with possibly answerless effectful firings.

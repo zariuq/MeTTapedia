@@ -54,7 +54,7 @@ theorem variableAt_read_index : ∀ {context : Ctx sig} {sort : Srt} {index : Na
 
 mutual
 theorem sorted_name_coverage : ∀ {context : Ctx sig} {pattern : Pattern},
-    NameWellSorted rhoReflectivePresentation FreeSortContext.empty
+    NameWellSorted rhoApplyPresentation FreeSortContext.empty
       (contextLabels context) pattern →
     ∃ term, readName context pattern = some term ∧ StructuralCongruence (encodeTerm term) pattern
   | context, _, .bvar lookup => by
@@ -65,7 +65,7 @@ theorem sorted_name_coverage : ∀ {context : Ctx sig} {pattern : Pattern},
       rw [variableAt_read_index readout]
       exact .refl _
   | _, _, .fvar lookup => by simp [FreeSortContext.empty] at lookup
-  | context, _, .quote typed => by
+  | context, _, .quote typed _ => by
     obtain ⟨process, readout, congruent⟩ := sorted_process_coverage typed
     refine ⟨quoteRaw process, ?_, ?_⟩
     · change (readProcess context _).map quoteRaw = some (quoteRaw process)
@@ -74,7 +74,7 @@ theorem sorted_name_coverage : ∀ {context : Ctx sig} {pattern : Pattern},
     · exact applyCongruence_of_forall₂ "NQuote" (.cons congruent .nil)
 
 theorem sorted_process_coverage : ∀ {context : Ctx sig} {pattern : Pattern},
-    ProcWellSorted rhoReflectivePresentation FreeSortContext.empty
+    ProcWellSorted rhoApplyPresentation FreeSortContext.empty
       (contextLabels context) pattern →
     ∃ term, readProcess context pattern = some term ∧ StructuralCongruence (encodeTerm term) pattern
   | context, _, .bvar lookup => by
@@ -117,7 +117,7 @@ theorem sorted_process_coverage : ∀ {context : Ctx sig} {pattern : Pattern},
   | _, _, .parallel typed => sorted_processes_coverage typed
 
 theorem sorted_processes_coverage : ∀ {context : Ctx sig} {patterns : List Pattern},
-    ProcListWellSorted rhoReflectivePresentation FreeSortContext.empty
+    ProcListWellSorted rhoApplyPresentation FreeSortContext.empty
       (contextLabels context) patterns →
     ∃ term, readProcesses context patterns = some term ∧
       StructuralCongruence (encodeTerm term) (.collection .hashBag patterns none)

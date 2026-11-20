@@ -78,9 +78,10 @@ theorem publication_body_returns (before after : State) (handle : Handle) (size 
   rw [body_shape]
   apply let_returns program bindings bound before after after (.var "done") _ _ (boolean true) _
   · apply call_returns program bindings before after "add-atom" _ _ (by decide) _ (by decide)
+    have rowIsData : (row (size, value)).isVariable = false := rfl
     have insertedPath := native_function_arguments_return program bindings before after "add-atom"
       [handleValue handle, row (size, value)] 2 (boolean true) (by decide) (by decide)
-      (by simp [inserted])
+      (by simp [inserted, rowIsData])
     have last := raw_argument_answers program bindings before after "add-atom"
       (.expression [.var "size", .var "value"]) [] [handleValue handle] 1 [boolean true]
       (by decide) (by simpa [bindings, environment, row, applySubst, applySubst.applySubstList,

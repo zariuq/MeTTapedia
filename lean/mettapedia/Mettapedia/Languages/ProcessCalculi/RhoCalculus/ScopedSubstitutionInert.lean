@@ -23,21 +23,14 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus.ScopedSemanticSubstitution
 theorem nameMark_above_scope
     {free : FreeSortContext} {bound : List String}
     {name replacement : Pattern} {depth index : Nat}
-    (typed : NameWellSorted rhoReflectivePresentation free bound name)
+    (_typed : NameWellSorted rhoReflectivePresentation free bound name)
     (safe : binderSafeAt "NQuote" depth name = true)
     (above : depth ≤ index) :
     semanticSubstNameMark index replacement name =
       (semanticNormalizeName name, false) := by
-  have normalizedSafe :=
-    (semanticNormalizeName_preserves bound typed depth safe).2
-  unfold semanticSubstNameMark
-  generalize normalizedEq : semanticNormalizeName name = normalized at normalizedSafe ⊢
-  cases normalized <;> try rfl
-  rename_i localIndex
-  have within : localIndex < depth := by
-    simpa [binderSafeAt] using normalizedSafe
-  have different : localIndex ≠ index := by omega
-  simp [different]
+  have miss : Canonical.canonicalize name ≠ .bvar index := fun hit =>
+    (Nat.not_lt_of_ge above) (CanonicalTyping.canonical_bound_index_lt safe hit)
+  simp [semanticSubstNameMark, miss]
 
 /-- Name substitution beyond the scope only normalizes the name. -/
 theorem name_above_scope

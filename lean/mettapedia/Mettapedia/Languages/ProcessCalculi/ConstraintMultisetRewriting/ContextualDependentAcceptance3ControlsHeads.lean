@@ -1,9 +1,9 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentAcceptance3Controls
 
 /-!
-# The census under the last family: constant heads, twins, endpoints, refutations
+# The classification under the last family: constant heads, twins, endpoints, refutations
 
-The second part of the census of `ContextualDependentAcceptance3Controls`.
+The second part of the classification of `ContextualDependentAcceptance3Controls`.
 -/
 
 set_option autoImplicit false
@@ -24,17 +24,17 @@ theorem endpointsCommit_final :
     finalDecided ContextualDependentIdEndpoints.Controls.endpointsCommitStore = true := by decide +kernel
 theorem secondSpine_final :
     finalDecided ContextualDependentConstantHeadsProjections.Controls.secondSpineStore = true := by decide +kernel
-theorem projector_final : finalDecided ContextualDependentCensusPairEta.Controls.projectorStore = true := by
+theorem projector_final : finalDecided ContextualDependentClassificationPairEta.Controls.projectorStore = true := by
   decide +kernel
 theorem occurs_final : finalDecided occursStore = true := by decide +kernel
 theorem headFree_final : finalDecided headFreeStore = true := by decide +kernel
 theorem rigid_final : finalDecided rigidStore = true := by decide +kernel
 theorem older_final : finalDecided olderStore = true := by decide +kernel
 theorem swapped_final : finalDecided swappedStore = true := by decide +kernel
-theorem nestedClash_final : finalDecided ContextualDependentCensus.Controls.nestedClashStore = true := by
+theorem nestedClash_final : finalDecided ContextualDependentClassification.Controls.nestedClashStore = true := by
   decide +kernel
-theorem argument_final : finalDecided ContextualDependentCensus.Controls.argumentStore = true := by decide +kernel
-theorem deepArgument_final : finalDecided ContextualDependentCensus.Controls.deepArgumentStore = true := by
+theorem argument_final : finalDecided ContextualDependentClassification.Controls.argumentStore = true := by decide +kernel
+theorem deepArgument_final : finalDecided ContextualDependentClassification.Controls.deepArgumentStore = true := by
   decide +kernel
 
 end ContextualDependentAcceptance3.Controls

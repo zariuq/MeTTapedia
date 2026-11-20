@@ -1,5 +1,7 @@
 import Mettapedia.OSLF.MeTTaIL.ScopedDerivedPresentationSyntax
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Canonical
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalMatch
+import Mettapedia.OSLF.MeTTaIL.ReflectiveQuoteAdmission
 
 /-!
 # Canonicalization preserves rho sorts
@@ -18,6 +20,7 @@ open Mettapedia.OSLF.MeTTaIL.DerivedPresentationSyntax
 open Mettapedia.OSLF.MeTTaIL.ScopedPattern
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Canonical
+open Mettapedia.OSLF.MeTTaIL
 
 /-! ## Listwise closure lemmas -/
 
@@ -235,102 +238,140 @@ theorem normalizeQuote_binderSafeAt
 
 /-! ## Sort preservation of the canonicalizer -/
 
-/-- Orienting quote/drop cancellation preserves the name sort. -/
+/-- Orienting quote/drop cancellation preserves the name sort of an admitted
+quotation. -/
 theorem normalizeQuote_nameWellSorted
     {presentation : ReflectiveProcessSignature} {free : FreeSortContext}
     {bound : List String} {process : Pattern}
     (typed : ProcWellSorted presentation free bound process)
+    (admitted : ReflectiveSubstitution.quoteAdmits presentation.toReflectivePresentationDecl process = true)
     (quoteConstructor : presentation.quoteConstructor = "NQuote")
     (dropConstructor : presentation.dropConstructor = "PDrop") :
     NameWellSorted presentation free bound (normalizeQuote process) := by
   cases typed with
   | bvar lookup =>
       simpa [normalizeQuote, quoteConstructor] using
-        (NameWellSorted.quote (ProcWellSorted.bvar lookup))
+        (NameWellSorted.quote (ProcWellSorted.bvar lookup) admitted)
   | fvar lookup =>
       simpa [normalizeQuote, quoteConstructor] using
-        (NameWellSorted.quote (ProcWellSorted.fvar lookup))
+        (NameWellSorted.quote (ProcWellSorted.fvar lookup) admitted)
   | unit =>
       simpa [normalizeQuote, quoteConstructor] using
         (NameWellSorted.quote (ProcWellSorted.unit :
           ProcWellSorted presentation free bound
-            (.apply presentation.parallelUnitConstructor [])))
+            (.apply presentation.parallelUnitConstructor [])) admitted)
   | drop nameTyped =>
       simpa [normalizeQuote, quoteConstructor, dropConstructor] using nameTyped
   | output channelTyped payloadTyped =>
       simpa [normalizeQuote, quoteConstructor] using
-        (NameWellSorted.quote (ProcWellSorted.output channelTyped payloadTyped))
+        (NameWellSorted.quote (ProcWellSorted.output channelTyped payloadTyped) admitted)
   | input channelTyped bodyTyped =>
       simpa [normalizeQuote, quoteConstructor] using
-        (NameWellSorted.quote (ProcWellSorted.input channelTyped bodyTyped))
+        (NameWellSorted.quote (ProcWellSorted.input channelTyped bodyTyped) admitted)
   | parallel processesTyped =>
       simpa [normalizeQuote, quoteConstructor] using
-        (NameWellSorted.quote (ProcWellSorted.parallel processesTyped))
+        (NameWellSorted.quote (ProcWellSorted.parallel processesTyped) admitted)
 
 mutual
-  /-- Canonicalization maps a presentation-derived rho name to a name in the
-same free and bound contexts. -/
-  theorem canonicalize_nameWellSorted
+  /-- Canonicalization maps a rho name, under any quote scope, to a name in
+the same free and bound contexts. -/
+  theorem canonicalize_nameWellSorted_at (scope : QuoteScope)
       {free : FreeSortContext} (bound : List String) {name : Pattern}
-      (typed : NameWellSorted rhoReflectivePresentation free bound name) :
-      NameWellSorted rhoReflectivePresentation free bound (canonicalize name) := by
+      (typed : NameWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound name) :
+      NameWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound
+        (canonicalize name) := by
     cases typed with
     | bvar lookup => exact .bvar lookup
     | fvar lookup => exact .fvar lookup
-    | quote processTyped =>
-        change NameWellSorted rhoReflectivePresentation free bound
-          (normalizeQuote (canonicalize _))
+    | quote processTyped admitted =>
+        rename_i process
+        change NameWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound
+          (normalizeQuote (canonicalize process))
+        have canonicalAdmitted : ReflectiveSubstitution.quoteAdmits
+            (rhoReflectivePresentation.withQuoteScope scope).toReflectivePresentationDecl
+              (canonicalize process) = true := by
+          cases scope with
+          | closed =>
+              change ReflectiveSubstitution.quoteAdmits
+                rhoReflectivePresentation.toReflectivePresentationDecl (canonicalize process) = true
+              rw [← CanonicalMatch.derivedCanonicalize_eq, ReflectiveQuoteAdmission.quoteAdmits_canonicalize]
+              exact admitted
+          | reaching view => exact ReflectiveSubstitution.quoteAdmits_of_reaching rfl _
         exact normalizeQuote_nameWellSorted
-          (canonicalize_procWellSorted bound processTyped) rfl rfl
+          (canonicalize_procWellSorted_at scope bound processTyped) canonicalAdmitted rfl rfl
 
-  /-- Canonicalization maps a presentation-derived rho process to a process in
-the same free and bound contexts. -/
-  theorem canonicalize_procWellSorted
+  /-- Canonicalization maps a rho process, under any quote scope, to a process
+in the same free and bound contexts. -/
+  theorem canonicalize_procWellSorted_at (scope : QuoteScope)
       {free : FreeSortContext} (bound : List String) {process : Pattern}
-      (typed : ProcWellSorted rhoReflectivePresentation free bound process) :
-      ProcWellSorted rhoReflectivePresentation free bound (canonicalize process) := by
+      (typed : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound process) :
+      ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound
+        (canonicalize process) := by
     cases typed with
     | bvar lookup => exact .bvar lookup
     | fvar lookup => exact .fvar lookup
     | unit => exact .unit
     | drop nameTyped =>
         simpa [canonicalize, canonicalizeList, rhoReflectivePresentation] using
-          (ProcWellSorted.drop (canonicalize_nameWellSorted bound nameTyped))
+          (ProcWellSorted.drop (canonicalize_nameWellSorted_at scope bound nameTyped))
     | output channelTyped payloadTyped =>
         simpa [canonicalize, canonicalizeList, rhoReflectivePresentation] using
           (ProcWellSorted.output
-            (canonicalize_nameWellSorted bound channelTyped)
-            (canonicalize_procWellSorted bound payloadTyped))
+            (canonicalize_nameWellSorted_at scope bound channelTyped)
+            (canonicalize_procWellSorted_at scope bound payloadTyped))
     | input channelTyped bodyTyped =>
         simpa [canonicalize, canonicalizeList, rhoReflectivePresentation] using
           (ProcWellSorted.input
-            (canonicalize_nameWellSorted bound channelTyped)
-            (canonicalize_procWellSorted
+            (canonicalize_nameWellSorted_at scope bound channelTyped)
+            (canonicalize_procWellSorted_at scope
               (rhoReflectivePresentation.nameSort :: bound) bodyTyped))
     | parallel processesTyped =>
-        change ProcWellSorted rhoReflectivePresentation free bound
+        change ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound
           (collapseBag
             (normalizeBagElements (canonicalizeList _)))
         apply collapseBag_procWellSorted
         apply normalizeBagElements_procListWellSorted
-          (canonicalize_procListWellSorted bound processesTyped)
+          (canonicalize_procListWellSorted_at scope bound processesTyped)
         rfl
         rfl
         rfl
 
-  /-- Canonicalization maps a presentation-derived rho process list to a list
-in the same free and bound contexts. -/
-  theorem canonicalize_procListWellSorted
+  /-- List form. -/
+  theorem canonicalize_procListWellSorted_at (scope : QuoteScope)
       {free : FreeSortContext} (bound : List String) {processes : List Pattern}
-      (typed : ProcListWellSorted rhoReflectivePresentation free bound processes) :
-      ProcListWellSorted rhoReflectivePresentation free bound
+      (typed : ProcListWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound processes) :
+      ProcListWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound
         (canonicalizeList processes) := by
     cases typed with
     | nil => exact .nil
     | cons processTyped processesTyped =>
-        exact .cons (canonicalize_procWellSorted bound processTyped)
-          (canonicalize_procListWellSorted bound processesTyped)
+        exact .cons (canonicalize_procWellSorted_at scope bound processTyped)
+          (canonicalize_procListWellSorted_at scope bound processesTyped)
 end
+
+/-- Canonicalization maps a presentation-derived rho name to a name in the
+same free and bound contexts. -/
+theorem canonicalize_nameWellSorted
+    {free : FreeSortContext} (bound : List String) {name : Pattern}
+    (typed : NameWellSorted rhoReflectivePresentation free bound name) :
+    NameWellSorted rhoReflectivePresentation free bound (canonicalize name) :=
+  canonicalize_nameWellSorted_at .closed bound typed
+
+/-- Canonicalization maps a presentation-derived rho process to a process in
+the same free and bound contexts. -/
+theorem canonicalize_procWellSorted
+    {free : FreeSortContext} (bound : List String) {process : Pattern}
+    (typed : ProcWellSorted rhoReflectivePresentation free bound process) :
+    ProcWellSorted rhoReflectivePresentation free bound (canonicalize process) :=
+  canonicalize_procWellSorted_at .closed bound typed
+
+/-- Canonicalization maps a presentation-derived rho process list to a list
+in the same free and bound contexts. -/
+theorem canonicalize_procListWellSorted
+    {free : FreeSortContext} (bound : List String) {processes : List Pattern}
+    (typed : ProcListWellSorted rhoReflectivePresentation free bound processes) :
+    ProcListWellSorted rhoReflectivePresentation free bound (canonicalizeList processes) :=
+  canonicalize_procListWellSorted_at .closed bound typed
 
 /-! ## Quote-aware scope preservation of the canonicalizer -/
 
@@ -432,6 +473,15 @@ theorem canonicalize_binderSafeAt
                 (normalizeBagElements_binderSafeListAt canonicalElementsSafe)
           | some restValue =>
               simpa [canonicalize, binderSafeAt] using canonicalElementsSafe
+
+/-- Recognizing an equivalent bound name cannot produce an index
+beyond the quote-aware scope of the original expression. -/
+theorem canonical_bound_index_lt {pattern : Pattern} {depth index : Nat}
+    (safe : binderSafeAt "NQuote" depth pattern = true)
+    (hit : canonicalize pattern = .bvar index) : index < depth := by
+  have within := canonicalize_binderSafeAt pattern depth safe
+  rw [hit] at within
+  simpa only [binderSafeAt, decide_eq_true_eq] using within
 
 /-- List form of quote-aware scope preservation. -/
 theorem canonicalizeList_binderSafeListAt

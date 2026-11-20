@@ -56,15 +56,31 @@ def installRows (target : Handle) : List Atom → Effects.State → Option Effec
       (GuardedInsertionSource.update before target payload).bind (installRows target rest)
 
 theorem installRows_exists_read (target : Handle) (payloads : List Atom) (before : Effects.State)
-    (rows : List Atom) (snapshot : before.read target = some rows) :
+    (rows : List Atom) (snapshot : before.read target = some rows)
+    (values : ∀ payload ∈ payloads, Atom.isVariable payload = false) :
     ∃ after result, installRows target payloads before = some after ∧ after.read target = some result := by
   induction payloads generalizing before rows with
   | nil => exact ⟨before, rows, rfl, snapshot⟩
   | cons payload rest ih =>
       obtain ⟨middle, updated⟩ := GuardedInsertionSource.update_exists snapshot payload
+        (values payload List.mem_cons_self)
       obtain ⟨_, _, middleRead⟩ := GuardedInsertionSource.update_reads_back updated
-      obtain ⟨after, result, installed, afterRead⟩ := ih middle _ middleRead
+      obtain ⟨after, result, installed, afterRead⟩ :=
+        ih middle _ middleRead (fun atom member => values atom (List.mem_cons_of_mem _ member))
       exact ⟨after, result, by simp [installRows, updated, installed], afterRead⟩
+
+theorem installRows_reads_back (target : Handle) (payloads : List Atom) (before after : Effects.State)
+    (snapshot : ∃ rows, before.read target = some rows)
+    (installed : installRows target payloads before = some after) :
+    ∃ rows, after.read target = some rows := by
+  induction payloads generalizing before with
+  | nil =>
+      have same : before = after := Option.some.inj installed
+      exact same ▸ snapshot
+  | cons payload rest ih =>
+      obtain ⟨middle, updated, later⟩ := Option.bind_eq_some_iff.mp installed
+      obtain ⟨_, _, read⟩ := GuardedInsertionSource.update_reads_back updated
+      exact ih middle ⟨_, read⟩ later
 
 theorem installRows_receipt (target : Handle) (payloads : List Atom) (before after : Effects.State)
     (rows : List Atom) (snapshot : before.read target = some rows) (distinct : rows.Nodup)
@@ -125,14 +141,17 @@ theorem emit_returns (program : Program) (bindings : Subst) (before after : Effe
       targetBound payloadBound snapshot updated)
 
 theorem traverse_exists (target : Handle) (template : Atom) (captured : List Subst)
-    (before : Effects.State) (rows : List Atom) (snapshot : before.read target = some rows) (collected : List Atom) :
+    (before : Effects.State) (rows : List Atom) (snapshot : before.read target = some rows) (collected : List Atom)
+    (values : ∀ bindings ∈ captured, (applySubst bindings template).isVariable = false) :
     ∃ after answers, traverse (emit target template) captured (before, collected) = some (after, answers) := by
   induction captured generalizing before rows collected with
   | nil => exact ⟨before, collected, rfl⟩
   | cons bindings rest ih =>
       obtain ⟨middle, updated⟩ := GuardedInsertionSource.update_exists snapshot (applySubst bindings template)
+        (values bindings List.mem_cons_self)
       obtain ⟨old, _, current⟩ := GuardedInsertionSource.update_reads_back updated
       obtain ⟨after, answers, completed⟩ := ih middle _ current (collected ++ [Effects.boolean true])
+        (fun localBindings member => values localBindings (List.mem_cons_of_mem _ member))
       exact ⟨after, answers, by simp [EffectfulQuerySource.traverse, emit, updated, completed]⟩
 
 theorem traverse_answers (target : Handle) (template : Atom) (captured : List Subst)

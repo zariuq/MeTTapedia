@@ -6,7 +6,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Inte
 
 A native state carries its private row family. A native firing's data are its rule, selection,
 outputs, publication flags, predicate queries, solver budget and its **publication recipes**, fixed
-before execution and absent outside the produced ports. `native` is the candidate step over these
+before execution and missing outside the produced ports. `native` is the candidate step over these
 data. It admits them exactly when a native firing with those data exists (`NativeFiring.Realized`),
 and that is the interface's characterization (`native_admits_iff`): the data's shapes, the physical
 enabling of the selection, semantic solvability of the actual information, and an ask of the guards
@@ -159,7 +159,7 @@ structure NativeFiring (s : NativeState S O Γ sort) : Type 1 where
   fuel : Nat
   /-- How produced ports are published, fixed before execution. -/
   recipes : Recipes s
-  /-- Recipes outside the produced ports are absent. -/
+  /-- Recipes outside the produced ports are not present. -/
   recipes_made : ∀ occurrence, occurrence ∉ selection.made → recipes occurrence = none
 
 namespace NativeFiring

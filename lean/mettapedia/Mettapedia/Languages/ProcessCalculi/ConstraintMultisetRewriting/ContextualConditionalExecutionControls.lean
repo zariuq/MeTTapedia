@@ -141,10 +141,10 @@ theorem the_count_guard_sees_exactly_one_one
   rw [same]
   exact Finset.card_singleton _
 
-theorem the_absence_guard_excludes_two
+theorem the_none_guard_excludes_two
     {Next : Type} (next : Next → MetaArity base) (candidate : Assignment producer.target.declarations next) :
     ContextualConditionalGuards.Holds (ContextualPublication.privateFamily locals producer.update.declaration)
-      candidate producer.target.rows producer.target.present (.absent (symbol 2)) := by
+      candidate producer.target.rows producer.target.present (.predicate .none (symbol 2)) := by
   intro occurrence member
   have only : occurrence = 1 := Finset.mem_singleton.mp member
   subst occurrence
@@ -319,7 +319,7 @@ theorem the_same_source_guard_cannot_publish_through_the_conditional_compiler :
 namespace ScopeRelocation
 
 def guardedRule (number : Nat) : RuleInstance (SchematicReach.Closed laterRaw) :=
-  {consumerRule number with checks := [.count (symbol 1) 1, .absent (symbol 2)]}
+  {consumerRule number with checks := [.count (symbol 1) 1, .predicate .none (symbol 2)]}
 
 theorem guarded_one_admitted :
     Admitted laterLocals producer.target (guardedRule 1) consumerSelection consumerOutputs := by
@@ -328,7 +328,7 @@ theorem guarded_one_admitted :
     taking_one_is_admitted.taken_present, taking_one_is_admitted.read_present,
     taking_one_is_admitted.apart, taking_one_is_admitted.fresh, taking_one_is_admitted.solvable, ?_⟩
   intro check member Future future candidate _model
-  change check ∈ [.count (symbol 1) 1, .absent (symbol 2)] at member
+  change check ∈ [.count (symbol 1) 1, .predicate .none (symbol 2)] at member
   simp only [List.mem_cons, List.not_mem_nil, or_false] at member
   rcases member with rfl | rfl
   · exact (ContextualConditionalGuards.holds_transport laterLocals
@@ -337,8 +337,8 @@ theorem guarded_one_admitted :
         (the_count_guard_sees_exactly_one_one future _)
   · exact (ContextualConditionalGuards.holds_transport laterLocals
       (ContextualSelectionViews.capturedTarget laterLocals laterCaptures) candidate
-      producer.target.rows producer.target.present (.absent (symbol 2))).mpr
-        (the_absence_guard_excludes_two future _)
+      producer.target.rows producer.target.present (.predicate .none (symbol 2))).mpr
+        (the_none_guard_excludes_two future _)
 
 def guardedFiring : Firing laterLocals producer.target :=
   ⟨guardedRule 1, consumerSelection, consumerOutputs, (fun _ => true), guarded_one_admitted,
@@ -359,7 +359,7 @@ theorem relocated_input_keeps_scope_coverage :
   actual_conditional_publication_preserves_formation.mono laterLocals reservedScopes Finset.subset_union_left
 
 /-- A genuine pending conditional input is consumed after scope relocation;
-count and absence still check the original inventory, at every budget. -/
+count and none queries still check the original inventory, at every budget. -/
 theorem relocated_guarded_firing_exists (fuel : Nat) :
     ∃ permutation : Equiv.Perm Nat,
       (∀ port : ContextualActivationScopes.Port consumerSelection,

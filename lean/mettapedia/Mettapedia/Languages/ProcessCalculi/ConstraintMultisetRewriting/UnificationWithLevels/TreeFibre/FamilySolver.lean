@@ -93,8 +93,8 @@ theorem readEta_sound {k n : Nat} {t : Tm Head n} {F : Fin n} (h : readEta k t =
 theorem readEta_etaExp (k : Nat) {n : Nat} (F : Fin n) : readEta (Head := Head) k (etaExp k (.var F)) = some F := by
   cases h : readEta (Head := Head) k (etaExp k (.var F)) with
   | none =>
-      have absent := (List.find?_eq_none.mp h) F (List.mem_finRange F)
-      simp at absent
+      have missing := (List.find?_eq_none.mp h) F (List.mem_finRange F)
+      simp at missing
   | some G =>
       have same := readEta_sound h
       exact congrArg some (Tm.var.inj (etaExp_inj k same)).symm
@@ -463,22 +463,22 @@ theorem stepOf_ne_stuck {Θ : Context S.R} {e : Equation (TotalTerm Θ)} (all : 
 
 omit [DecidableEq Head] [∀ head, Decidable (S.R.isUniverse head)] in
 theorem stepOf_ne_refuted {Θ : Context S.R} {e : Equation (TotalTerm Θ)} (all : AllFamilies Θ) (v : FlexFlex e)
-    (rest : EquationStore (TotalTerm Θ)) (absent : ¬ (frames S.levels).Solvable (e :: rest)) :
-    stepOf facts roots heads algebra rigid complete all v rest ≠ .refuted absent := by
+    (rest : EquationStore (TotalTerm Θ)) (missing : ¬ (frames S.levels).Solvable (e :: rest)) :
+    stepOf facts roots heads algebra rigid complete all v rest ≠ .refuted missing := by
   unfold stepOf
   split_ifs <;> intro h <;> cases h
 
 /-- **The rules never refute.** -/
 theorem familyRound_ne_refuted {Γ : Context S.R} (problem : EquationStore (TotalTerm Γ))
-    (absent : ¬ (frames S.levels).Solvable problem) :
-    familyRound facts roots heads algebra rigid complete problem ≠ .refuted absent := by
+    (missing : ¬ (frames S.levels).Solvable problem) :
+    familyRound facts roots heads algebra rigid complete problem ≠ .refuted missing := by
   cases problem with
   | nil => intro h; cases h
   | cons e rest =>
       simp only [familyRound]
       split_ifs with hall
       · split
-        · exact stepOf_ne_refuted facts roots heads algebra rigid complete _ _ rest absent
+        · exact stepOf_ne_refuted facts roots heads algebra rigid complete _ _ rest missing
         · intro h; cases h
       · intro h; cases h
 
@@ -548,21 +548,21 @@ theorem family_decided {Θ : Context S.R} {original : EquationStore (TotalTerm �
           run (familySolver facts roots heads algebra rigid complete) original fuel ∧
         ((∃ state finished, run (familySolver facts roots heads algebra rigid complete) original larger =
               .solved state finished ∧ (frames S.levels).Principal original state.answer) ∨
-          (∃ absent, run (familySolver facts roots heads algebra rigid complete) original larger = .refuted absent)) :=
+          (∃ missing, run (familySolver facts roots heads algebra rigid complete) original larger = .refuted missing)) :=
   (familyFragment facts roots heads algebra rigid complete).decided inside
 
 omit [DecidableEq Head] [∀ head, Decidable (S.R.isUniverse head)] [DecidableRel S.R.cumulative] in
 /-- A driver whose rounds never refute never reports a refutation. -/
 theorem drive_ne_refuted (solver : ContextualDependentWorklist.Solver S.levels)
-    (never : ∀ {Γ : Context S.R} (problem : EquationStore (TotalTerm Γ)) (absent : ¬ (frames S.levels).Solvable problem),
-      solver.round problem ≠ .refuted absent) {Γ : Context S.R} {original : EquationStore (TotalTerm Γ)} :
-    ∀ (fuel : Nat) (state : Update S.levels original) (absent : ¬ (frames S.levels).Solvable original),
-      drive solver fuel state ≠ .refuted absent
+    (never : ∀ {Γ : Context S.R} (problem : EquationStore (TotalTerm Γ)) (missing : ¬ (frames S.levels).Solvable problem),
+      solver.round problem ≠ .refuted missing) {Γ : Context S.R} {original : EquationStore (TotalTerm Γ)} :
+    ∀ (fuel : Nat) (state : Update S.levels original) (missing : ¬ (frames S.levels).Solvable original),
+      drive solver fuel state ≠ .refuted missing
   | 0, _, _ => by intro h; cases h
-  | fuel + 1, state, absent => by
+  | fuel + 1, state, missing => by
       rw [drive_succ]
       cases decided : advance solver state with
-      | next next => exact drive_ne_refuted solver never fuel next absent
+      | next next => exact drive_ne_refuted solver never fuel next missing
       | done outcome =>
           dsimp only
           intro same
@@ -572,8 +572,8 @@ theorem drive_ne_refuted (solver : ContextualDependentWorklist.Solver S.levels)
           · cases decided
           · split at decided
             · cases decided
-            · rename_i absent' isRefuted
-              exact never _ absent' isRefuted
+            · rename_i missing' isRefuted
+              exact never _ missing' isRefuted
             · cases decided
 
 include facts roots heads algebra rigid complete in
@@ -582,11 +582,11 @@ theorem principal_of_inFragment {Θ : Context S.R} {original : EquationStore (To
     (inside : InFragment original) :
     ∃ (Δ : Context S.R) (answer : Δ ⟶ Θ), (frames S.levels).Principal original answer := by
   obtain ⟨fuel, ends⟩ := family_decided facts roots heads algebra rigid complete inside
-  rcases (ends fuel le_rfl).2 with ⟨state, _, _, principal⟩ | ⟨absent, refuted⟩
+  rcases (ends fuel le_rfl).2 with ⟨state, _, _, principal⟩ | ⟨missing, refuted⟩
   · exact ⟨_, _, principal⟩
   · exact absurd refuted (drive_ne_refuted (familySolver facts roots heads algebra rigid complete)
-      (fun problem absent => familyRound_ne_refuted facts roots heads algebra rigid complete problem absent)
-      fuel _ absent)
+      (fun problem missing => familyRound_ne_refuted facts roots heads algebra rigid complete problem missing)
+      fuel _ missing)
 
 end Solver
 

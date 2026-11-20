@@ -156,7 +156,7 @@ open ContextualGuardSemantics.Controls (query sharedRows world)
 
 theorem closed_negative_and_count_queries_retain_hidden_row_names :
     support query = [] ∧
-      0 ∈ guardNames locals sharedRows world (.absent query) ∧
+      0 ∈ guardNames locals sharedRows world (.predicate .none query) ∧
       0 ∈ guardNames locals sharedRows world (.count query 1) := by
   refine ⟨rfl, ?_, ?_⟩ <;>
     simp [guardNames, world, sharedRows, rowNames, p, pair, atom,
@@ -177,13 +177,13 @@ theorem the_unprotected_hidden_binding_really_changes_the_count :
       ContextualGuardSemantics.Ask locals setX sharedRows world (.count query 1) :=
   ContextualProcessInterference.same_world_different_information_changes_the_guard
 
-theorem the_hidden_binding_changes_pointwise_absence :
-    ContextualGuardSemantics.Holds locals (generator captures) sharedRows world (.absent query) ∧
+theorem the_hidden_binding_changes_pointwise_none :
+    ContextualGuardSemantics.Holds locals (generator captures) sharedRows world (.predicate .none query) ∧
       ¬ ContextualGuardSemantics.Holds locals ContextualGuardSemantics.Controls.assignedA
-        sharedRows world (.absent query) := by
-  refine ⟨ContextualGuardSemantics.Controls.identity_absence_of_a_shared_unknown_is_only_pointwise, ?_⟩
-  intro absent
-  exact absent 7 (by decide +kernel)
+        sharedRows world (.predicate .none query) := by
+  refine ⟨ContextualGuardSemantics.Controls.identity_none_of_a_shared_unknown_is_only_pointwise, ?_⟩
+  intro missing
+  exact missing 7 (by decide +kernel)
     ContextualGuardSemantics.Controls.later_binding_makes_the_shared_row_match
 
 def mixedSchema : Term (signature base (ContextualSelectionViews.source locals captures)) [] () :=

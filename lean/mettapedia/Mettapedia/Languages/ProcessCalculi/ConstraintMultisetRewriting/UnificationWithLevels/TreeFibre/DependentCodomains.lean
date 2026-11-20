@@ -48,7 +48,7 @@ structure FitSolvable {Θ : Context S.R} (e : Equation (TotalTerm Θ)) where
   declared : Ctx.lookup Θ.raw X = .head u
   universe_u : S.R.isUniverse u
   universe_v : S.R.isUniverse v
-  absent : X ∉ e.2.2.code.support
+  notMem : X ∉ e.2.2.code.support
   fits : Typed S.R Θ.raw e.2.2.code (.head u)
   apart : ∀ i, X ∉ (Ctx.lookup Θ.raw i).support
 
@@ -93,7 +93,7 @@ def fitSolveUpdate {Θ : Context S.R} {e : Equation (TotalTerm Θ)} (w : FitSolv
             Presentation.subst g.substitution e'.2.2.code := by
           change Presentation.subst (fun i => Presentation.subst g.substitution (solveSub w.X e'.2.2.code i))
             e'.2.2.code = _
-          rw [← subst_comp, subst_solveSub_fresh _ w.absent]
+          rw [← subst_comp, subst_solveSub_fresh _ w.notMem]
         rw [fixed, w.side_left]
         change Presentation.subst g.substitution (solveSub w.X e'.2.2.code w.X) = _
         rw [solveSub_self]

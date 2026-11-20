@@ -462,10 +462,7 @@ theorem rhoContinuationRetyping_reflectivePresentationsRetypable :
       simp [rhoIGSLT, rhoInteractivePresentation, rhoValidatedLanguageDef,
         rhoCalc, rhoReflectivePresentation, LanguageDef.typeNames,
         TypeDecl.plain]
-    · intro equality
-      have sourceEquality : "Proc" = "Name" :=
-        costBaseSortName_injective equality
-      simp at sourceEquality
+    · exact costBaseConstructorName_injective.ne (by decide)
     · simpa [reflectiveRetypingLanguage,
         ContinuationDecorationProfile.reflectiveRetypingLanguage,
         costBaseReflectivePresentationDecl, costBaseStaticSymbols,
@@ -517,6 +514,10 @@ theorem rhoContinuationRetyping_reflectivePresentationsRetypable :
           costBaseReflectivePresentationDecl,
           costBaseStaticReflectiveSymbols,
           Mettapedia.GSLT.LanguageDef.ReflectionExtension.mapReflectivePresentation]
+    · intro constructor found
+      simp [costBaseReflectivePresentationDecl,
+        Mettapedia.GSLT.LanguageDef.ReflectionExtension.mapReflectivePresentation,
+        rhoReflectivePresentation] at found
   · apply LanguageDef.validateReflectivePresentation_eq_nil_of_unique
       (quote := costWrappedConstructor (theory := rhoIGSLT) rhoCalc.terms[2])
       (drop := costWrappedConstructor (theory := rhoIGSLT) rhoCalc.terms[1])
@@ -529,7 +530,7 @@ theorem rhoContinuationRetyping_reflectivePresentationsRetypable :
       simp [rhoIGSLT, rhoInteractivePresentation, rhoValidatedLanguageDef,
         rhoCalc, rhoReflectivePresentation, LanguageDef.typeNames,
         TypeDecl.plain]
-    · exact (costBaseSortName_ne_wrapped "Name").symm
+    · exact costWrappedConstructorName_injective.ne (by decide)
     · have selected : rhoContinuationQuoteConstructor ∈
           rhoContinuationRetyping.wrappedConstructors :=
         (rhoContinuationRetyping.mem_wrappedConstructors_iff
@@ -593,6 +594,10 @@ theorem rhoContinuationRetyping_reflectivePresentationsRetypable :
           rhoReflectivePresentation, costWrappedReflectivePresentationDecl,
           costWrappedStaticReflectiveSymbols,
           Mettapedia.GSLT.LanguageDef.ReflectionExtension.mapReflectivePresentation]
+    · intro constructor found
+      simp [costWrappedReflectivePresentationDecl,
+        Mettapedia.GSLT.LanguageDef.ReflectionExtension.mapReflectivePresentation,
+        rhoReflectivePresentation] at found
 
 /-- Rho's reflective quote, drop, and parallel unit are all genuine
 non-principal constructors selected by the interaction cut. -/

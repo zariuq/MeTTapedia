@@ -37,16 +37,16 @@ theorem answer_other (identity other : V) (different : other ≠ identity)
     (body : Term (signature S declaration) (declaration identity).1 (declaration identity).2) :
     answer identity body other = generator declaration other := by simp [answer, different]
 
-theorem instantiate_answer_of_absent (identity : V)
+theorem instantiate_answer_of_notMem_support (identity : V)
     (body : Term (signature S declaration) (declaration identity).1 (declaration identity).2)
     {Γ : Ctx S} {sort : S.Srt} (term : Term (signature S declaration) Γ sort)
-    (absent : identity ∉ support term) :
+    (missing : identity ∉ support term) :
     instantiate (answer identity body) term = term := by
   calc
     instantiate (answer identity body) term = instantiate (generator declaration) term := by
       apply instantiate_congr
       intro other member
-      exact answer_other identity other (fun same => absent (same ▸ member)) body
+      exact answer_other identity other (fun same => missing (same ▸ member)) body
     _ = term := instantiate_identity term
 
 /-- Every solution of the binding equation is unchanged by first applying
@@ -66,7 +66,7 @@ theorem candidate_factors {Next : Type} {next : Next → MetaArity S} (identity 
 
 theorem principal (identity : V)
     (body : Term (signature S declaration) (declaration identity).1 (declaration identity).2)
-    (absent : identity ∉ support body) :
+    (missing : identity ∉ support body) :
     (ContextualFamilies.action declaration (declaration identity).1 (declaration identity).2).Principal
       [(generator declaration identity, body)] (answer identity body) := by
   constructor
@@ -75,7 +75,7 @@ theorem principal (identity : V)
     subst equation
     change instantiate (answer identity body) (generator declaration identity) =
       instantiate (answer identity body) body
-    rw [instantiate_generator, answer_same, instantiate_answer_of_absent identity body body absent]
+    rw [instantiate_generator, answer_same, instantiate_answer_of_notMem_support identity body body missing]
   · intro candidate solved
     have binding := solved (generator declaration identity, body) (by simp)
     change instantiate candidate (generator declaration identity) = instantiate candidate body at binding
@@ -87,13 +87,13 @@ theorem principal (identity : V)
 
 theorem answer_idempotent (identity : V)
     (body : Term (signature S declaration) (declaration identity).1 (declaration identity).2)
-    (absent : identity ∉ support body) :
+    (missing : identity ∉ support body) :
     (fun other => instantiate (answer identity body) (answer identity body other)) =
       answer identity body := by
   funext other
   by_cases same : other = identity
   · subst other
-    rw [answer_same, instantiate_answer_of_absent identity body body absent]
+    rw [answer_same, instantiate_answer_of_notMem_support identity body body missing]
   · rw [answer_other identity other same body, instantiate_generator]
     exact answer_other identity other same body
 

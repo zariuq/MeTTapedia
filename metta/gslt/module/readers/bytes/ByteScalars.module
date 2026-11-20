@@ -1,0 +1,66 @@
+Module ByteScalars {
+  Theory Carrier() {
+    Empty Exports { Bit; Byte; Word16; Bytes; CodecState; Nat; Ordering; LebFuel; } Terms {
+      Bit0 . Bit ::= "bit0";
+      Bit1 . Bit ::= "bit1";
+      Byte8 . Byte ::= "byte8" "(" Bit "," Bit "," Bit "," Bit "," Bit "," Bit "," Bit "," Bit ")";
+      Word16Bits . Word16 ::= "word16" "(" Bit "," Bit "," Bit "," Bit "," Bit "," Bit "," Bit "," Bit "," Bit "," Bit "," Bit "," Bit "," Bit "," Bit "," Bit "," Bit ")";
+      BNil . Bytes ::= "nil";
+      BCons . Bytes ::= "cons" "(" Byte "," Bytes ")";
+      GotU8 . CodecState ::= "got_u8" "(" Byte "," Bytes ")";
+      GotLE16 . CodecState ::= "got_le16" "(" Word16 "," Bytes ")";
+      WroteBytes . CodecState ::= "wrote" "(" Bytes ")";
+      NeedInput . CodecState ::= "need_input";
+      NatZero . Nat ::= "zero";
+      NatBit . Nat ::= "natbit" "(" Bit "," Nat ")";
+      Less . Ordering ::= "less";
+      Equal . Ordering ::= "equal";
+      Greater . Ordering ::= "greater";
+      LebLast . LebFuel ::= "last";
+      LebMore . LebFuel ::= "more" "(" LebFuel ")";
+      DecodedWord . CodecState ::= "decoded_word" "(" Nat "," Bytes ")";
+      BadInteger . CodecState ::= "bad_integer";
+      LimitExceeded . CodecState ::= "limit_exceeded";
+      Taken . CodecState ::= "taken" "(" Bytes "," Bytes ")";
+    }
+  }
+  Theory Operations(v: Carrier) {
+    v Terms {
+      ReadU8 . CodecState ::= "read_u8" "(" Bytes ")";
+      ReadLE16 . CodecState ::= "read_le16" "(" Bytes ")";
+      WriteU8 . CodecState ::= "write_u8" "(" Byte ")";
+      WriteLE16 . CodecState ::= "write_le16" "(" Word16 ")";
+      MakeNatBit . Nat ::= "canonbit" "(" Bit "," Nat ")";
+      NatPred . Nat ::= "pred" "(" Nat ")";
+      NatCompare . Ordering ::= "compare" "(" Nat "," Nat ")";
+      CompareBits . Ordering ::= "compare_bits" "(" Bit "," Bit "," Ordering ")";
+      ReadULEB62 . CodecState ::= "uleb62" "(" Bytes ")";
+      LebRead . CodecState ::= "leb_read" "(" LebFuel "," Bytes ")";
+      LebJoin . CodecState ::= "leb_join" "(" Bit "," Bit "," Bit "," Bit "," Bit "," Bit "," Bit "," CodecState ")";
+      TakeBytes . CodecState ::= "take" "(" Nat "," Bytes ")";
+      TakePush . CodecState ::= "take_push" "(" Byte "," CodecState ")";
+      ReadCountedBytes . CodecState ::= "counted_bytes" "(" Bytes ")";
+      CountedStart . CodecState ::= "counted_start" "(" CodecState ")";
+      CountedBound . CodecState ::= "counted_bound" "(" Ordering "," Nat "," Bytes ")";
+      NatInc . Nat ::= "inc" "(" Nat ")";
+      NatAdd . Nat ::= "add" "(" Nat "," Nat ")";
+      NatXor . Nat ::= "xor" "(" Nat "," Nat ")";
+      BitXor . Bit ::= "bit_xor" "(" Bit "," Bit ")";
+      NatMultiply . Nat ::= "multiply" "(" Nat "," Nat ")";
+      NatTrim . Nat ::= "trim" "(" Nat "," Nat ")";
+      ByteLength . Nat ::= "byte_length" "(" Bytes ")";
+      NatSubtract . Nat ::= "subtract" "(" Nat "," Nat ")";
+      PackByte . Nat ::= "pack_byte" "(" Byte "," Nat ")";
+      FNVByte . Nat ::= "fnv_byte" "(" Nat "," Byte ")";
+      FNVFrom . Nat ::= "fnv_from" "(" Nat "," Bytes ")";
+      FNV . Nat ::= "fnv" "(" Bytes ")";
+      ReadWordLE16 . CodecState ::= "word_le16" "(" Bytes ")";
+      ReadWordLE32 . CodecState ::= "word_le32" "(" Bytes ")";
+      ReadWordLE64 . CodecState ::= "word_le64" "(" Bytes ")";
+      ReadFixedLE . CodecState ::= "fixed_le" "(" Nat "," Bytes ")";
+      FixedJoin . CodecState ::= "fixed_join" "(" Byte "," CodecState ")";
+    }
+  }
+  Theory Values() { Operations(Carrier()) }
+  theory Values()
+}

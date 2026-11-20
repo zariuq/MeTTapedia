@@ -69,12 +69,12 @@ theorem lookup_lowerTo_none : ∀ {n : Nat} (Γ : Ctx Head n) (target : Fin n �
   induction Γ with
   | nil => intro _ i; exact i.elim0
   | snoc Γ A ih =>
-      intro target i absent
+      intro target i notMem
       cases i using Fin.cases with
-      | zero => simp only [lowerTo, Ctx.lookup_snoc_zero, absent]
+      | zero => simp only [lowerTo, Ctx.lookup_snoc_zero, notMem]
       | succ i =>
           simp only [lowerTo, Ctx.lookup_snoc_succ]
-          rw [ih (fun j => target j.succ) i absent]
+          rw [ih (fun j => target j.succ) i notMem]
 
 variable {R : Rules Head}
 
@@ -172,7 +172,7 @@ theorem glbTarget_of_misfit {n : Nat} {Γ : Ctx Head n} {u w g : Head} {t : Tm H
 /-- **The conditions of narrowing to greatest lower bounds and solving** on a read equation: no occurrence of `X`,
 heads typed below `u`, every declaration a universe, and a greatest lower bound with `u` for every misfit unknown. -/
 structure GlbSolvable {Θ : Context S.R} {e : Equation (TotalTerm Θ)} (v : FlexArrow e) : Prop where
-  absent : v.X ∉ domainVars e.2.2.code
+  notMem : v.X ∉ domainVars e.2.2.code
   heads : ∀ h ∈ arrowHeads e.2.2.code, ∃ k, S.R.headTyping h k ∧ S.R.cumulative k v.u
   universes : AllUniverseDecls Θ
   meets : ∀ i, misfitSet (S := S) Θ.raw v.u e.2.2.code i = true → ∀ w, Ctx.lookup Θ.raw i = .head w →
@@ -288,7 +288,7 @@ def glbNarrowSolveUpdate {Θ : Context S.R} {e : Equation (TotalTerm Θ)} (v : F
             Presentation.subst g.substitution e'.2.2.code := by
           change Presentation.subst (fun i => Presentation.subst g.substitution (solveSub v.X e'.2.2.code i))
             e'.2.2.code = _
-          rw [← subst_comp, subst_solveSub_fixed _ v.arrow ok.absent]
+          rw [← subst_comp, subst_solveSub_fixed _ v.arrow ok.notMem]
         rw [fixed, v.side_left]
         change Presentation.subst g.substitution (solveSub v.X e'.2.2.code v.X) = _
         rw [solveSub_self]
@@ -514,10 +514,10 @@ def glbSolvableB {Θ : Context S.R} {e : Equation (TotalTerm Θ)} (v : FlexArrow
 
 omit [DecidableEq Head] in
 theorem glbSolvable_of_B {Θ : Context S.R} {e : Equation (TotalTerm Θ)} (v : FlexArrow e)
-    (h : glbSolvableB choices glb v = true) (absent : v.X ∉ domainVars e.2.2.code) : GlbSolvable glb v := by
+    (h : glbSolvableB choices glb v = true) (notMem : v.X ∉ domainVars e.2.2.code) : GlbSolvable glb v := by
   simp only [glbSolvableB, Bool.and_eq_true] at h
   obtain ⟨⟨hHeads, hMeets⟩, hAll⟩ := h
-  refine ⟨absent, ?_, allUniverseDecls_of_B hAll, ?_⟩
+  refine ⟨notMem, ?_, allUniverseDecls_of_B hAll, ?_⟩
   · intro h member
     have fit := List.all_eq_true.mp hHeads h member
     unfold fitPred at fit
@@ -702,9 +702,9 @@ theorem flexRigidGlb_decided {Θ : Context S.R} {original : EquationStore (Total
               run (flexRigidGlbSolver choices glb spec facts roots heads algebra rigid complete headTypingUnique)
                   original larger = .solved state finished ∧
                 (frames S.levels).Principal original state.answer) ∨
-          (∃ absent,
+          (∃ notMem,
             run (flexRigidGlbSolver choices glb spec facts roots heads algebra rigid complete headTypingUnique)
-              original larger = .refuted absent)) :=
+              original larger = .refuted notMem)) :=
   (flexRigidGlbFragment choices glb spec facts roots heads algebra rigid complete headTypingUnique total).decided
     inside
 

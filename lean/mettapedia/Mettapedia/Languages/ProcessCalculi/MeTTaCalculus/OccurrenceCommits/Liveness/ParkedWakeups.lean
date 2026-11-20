@@ -54,7 +54,7 @@ with one of its fireable rows (`run`), putting an awake firing to sleep when its
 * `Controls.flicker_stronglyFair_fires`: in every strongly fair run of the same system the await
   fires.
 * `Controls.makesIndex_loses_wakeup`: an index that wakes a firing only for makes in its region is
-  wrong for an absence guard. "Add an output unless locked" sleeps while the lock is present; the
+  wrong for a none guard. "Add an output unless locked" sleeps while the lock is present; the
   lock is taken; the index does not wake it; its guard then holds forever, and it never runs in a run
   that is strongly fair, because it is never awake. With the region index the same commit wakes it
   (`Controls.regionIndex_wakes`).
@@ -191,7 +191,7 @@ def kindIndex (label : O → R) (p : Parked O R) (d : Commit O R) : Prop :=
     (¬ PositiveRows p ∧ regionIndex label p d)
 
 /-- The makes index: wake a firing only for makes in its region. Right for positive guards, wrong
-for absence guards (`Controls.makesIndex_loses_wakeup`). -/
+for none guards (`Controls.makesIndex_loses_wakeup`). -/
 def makesIndex (label : O → R) (p : Parked O R) (d : Commit O R) : Prop :=
   ∃ o ∈ d.made, p.region (label o) = true
 
@@ -762,7 +762,7 @@ theorem flicker_stronglyFair_fires (r : Run flickerSystem) (start : r.state 0 = 
     (by rw [start]; trivial) (fair true) often
   exact never n fires
 
-/-! ### A lost wakeup: an absence guard keyed on makes -/
+/-! ### A lost wakeup: a none guard keyed on makes -/
 
 section LostWakeup
 
@@ -842,7 +842,7 @@ theorem lostRun_never_enabled (n : ℕ) : ¬ makesSystem.TaskEnabled (runTask ()
   | sleep q => exact absurd inTask id
   | idle => exact absurd inTask id
 
-/-- **The makes index loses the wakeup of an absence guard.** After the lock is taken the guard
+/-- **The makes index loses the wakeup of a none guard.** After the lock is taken the guard
 holds forever, the run is strongly fair for the firing, and the firing never runs; the makes index
 fails `NoLostWakeup` for it. -/
 theorem makesIndex_loses_wakeup :
@@ -1263,7 +1263,7 @@ def cancelCurrent (key : AsyncWait.Identity) (state : State) : State :=
       pending := state.pending.filter (fun earlier => earlier.owner != key.owner) }
   else state
 
-/-- Rebuild lost volatile admission only when its exact membership is absent.
+/-- Rebuild lost volatile admission only when its exact membership is not present.
 The queue owner performs this between service slots; a concurrent pop/claim
 would require its own synchronized ownership protocol. -/
 def recoverAdmission (slot : Nat) (state : State) : State :=
@@ -1494,9 +1494,9 @@ theorem offerCurrent_immediate (key : AsyncWait.Identity) (state : State)
   simp only [offerCurrent, if_pos (And.intro owned runnable), empty, true_or, ↓reduceIte, phase,
     offer_pending, List.filter_nil]
   generalize result : offer key.owner state = offered
-  have absent : offered.pending = [] := by rw [← result, offer_pending, empty]
+  have notPresent : offered.pending = [] := by rw [← result, offer_pending, empty]
   cases offered
-  cases absent
+  cases notPresent
   rfl
 
 theorem offer_queued_iff (state : State) (slot generation : Nat)
@@ -1617,8 +1617,8 @@ theorem settled_notice_not_reoffered (current : AsyncWait.Identity) (inbox : Eve
     (event : EventPump.Event) (state : State) (settled : inbox.phase event.serial = some .settled) :
     offerRecorded current inbox event state = state ∧
       acknowledgeClaimed current inbox event state = inbox := by
-  have absent : event ∉ EventPump.pending inbox := by simp [EventPump.pending, settled]
-  simp [offerRecorded, acknowledgeClaimed, absent]
+  have notPresent : event ∉ EventPump.pending inbox := by simp [EventPump.pending, settled]
+  simp [offerRecorded, acknowledgeClaimed, notPresent]
 
 theorem stale_notice_not_recorded (current : AsyncWait.Identity) (inbox : EventPump.Inbox)
     (event : EventPump.Event) (state : State)
@@ -1853,7 +1853,7 @@ structure Valid (state : State) : Prop where
 theorem Valid.ready {state : State} (valid : Valid state) : ReadyQueue.invariant state.ready :=
   ⟨valid.unique.of_append_left, valid.bounded⟩
 
-theorem Valid.pending_absent {state : State} (valid : Valid state)
+theorem Valid.pending_not_ready {state : State} (valid : Valid state)
     {key : AsyncWait.Identity} (member : key ∈ state.pending) : key.owner ∉ state.ready.tasks := by
   intro present
   exact valid.unique.disjoint present (List.mem_map.mpr ⟨key, member, rfl⟩)
@@ -1882,12 +1882,12 @@ theorem retainWaiting_valid (state : State) (key : AsyncWait.Identity) (valid : 
     (missing : key.owner ∉ state.ready.tasks) : Valid (retainWaiting key state) := by
   by_cases present : key ∈ state.pending
   · simpa only [retainWaiting, if_pos present] using valid
-  · have absent : key.owner ∉ state.pending.map AsyncWait.Identity.owner := by
+  · have notPresent : key.owner ∉ state.pending.map AsyncWait.Identity.owner := by
       rintro member
       obtain ⟨other, member, same⟩ := List.mem_map.mp member
       have equal := installed_key_unique state other key same (valid.waiting other member).1 owned
       exact present (equal ▸ member)
-    have missingFrontier : key.owner ∉ frontier state := by simp [frontier, missing, absent]
+    have missingFrontier : key.owner ∉ frontier state := by simp [frontier, missing, notPresent]
     have unique : (frontier state ++ [key.owner]).Nodup := by
       simp [List.nodup_append', valid.unique, missingFrontier]
     refine ⟨valid.bounded, ?_, ?_⟩
@@ -1919,15 +1919,15 @@ theorem full_offer_valid (state : State) (key : AsyncWait.Identity) (valid : Val
   rw [full_offer_retains_fifo_ticket state key owned runnable full]
   exact retainWaiting_valid state key valid owned runnable missing
 
-/-- The primitive admission really appends one absent runnable slot. -/
+/-- The primitive admission really appends one missing runnable slot. -/
 theorem offer_fresh (state : State) (key : AsyncWait.Identity)
     (runnable : state.cells key.owner = ⟨key.generation, .runnable⟩)
-    (absent : key.owner ∉ state.ready.tasks) (room : state.ready.tasks.length < state.ready.capacity) :
+    (notPresent : key.owner ∉ state.ready.tasks) (room : state.ready.tasks.length < state.ready.capacity) :
     offer key.owner state =
       { state with ready := ⟨state.ready.capacity, state.ready.tasks ++ [key.owner]⟩
                    cells := Function.update state.cells key.owner ⟨key.generation, .queued⟩
                    bound := Function.update state.bound key.owner (some key.generation) } := by
-  simp [offer, runnable, ReadyQueue.step, EventPump.admit, absent, room,
+  simp [offer, runnable, ReadyQueue.step, EventPump.admit, notPresent, room,
     Nat.not_lt.mpr (Nat.le_of_lt room), step]
 
 theorem move_head (state : State) (key : AsyncWait.Identity) (rest : List AsyncWait.Identity)
@@ -1936,7 +1936,7 @@ theorem move_head (state : State) (key : AsyncWait.Identity) (rest : List AsyncW
     let after := { offer key.owner state with pending := rest }
     Valid after ∧ frontier after = frontier state ∧ after.ready.capacity = state.ready.capacity := by
   have present : key ∈ state.pending := by simp [pending]
-  have admitted := offer_fresh state key (valid.waiting key present).2 (valid.pending_absent present) room
+  have admitted := offer_fresh state key (valid.waiting key present).2 (valid.pending_not_ready present) room
   dsimp only
   rw [admitted]
   have order : frontier
@@ -1981,13 +1981,13 @@ theorem promote_preserves (fuel : Nat) (state : State) (valid : Valid state) :
           have live := valid.waiting key member
           by_cases room : state.ready.tasks.length < state.ready.capacity
           · have moved := move_head state key rest valid pending room
-            have admitted := offer_fresh state key live.2 (valid.pending_absent member) room
+            have admitted := offer_fresh state key live.2 (valid.pending_not_ready member) room
             have queued : ((offer key.owner state).cells key.owner).phase = .queued := by simp [admitted]
             have later := ih _ moved.1
             simpa only [promote, pending, if_pos live, queued, ↓reduceIte] using
               And.intro later.1 (And.intro (later.2.1.trans moved.2.1) (later.2.2.trans moved.2.2))
           · have full : EventPump.admit state.ready.capacity state.ready.tasks key.owner = none := by
-              simp [EventPump.admit, Nat.not_lt.mpr valid.bounded, valid.pending_absent member, room]
+              simp [EventPump.admit, Nat.not_lt.mpr valid.bounded, valid.pending_not_ready member, room]
             have refused := offer_refused state key.owner full
             simp only [promote, pending]
             rw [if_pos live, refused]
@@ -2011,13 +2011,13 @@ theorem promote_saturates (fuel : Nat) (state : State) (valid : Valid state)
           have live := valid.waiting key member
           by_cases room : state.ready.tasks.length < state.ready.capacity
           · have moved := move_head state key rest valid pending room
-            have admitted := offer_fresh state key live.2 (valid.pending_absent member) room
+            have admitted := offer_fresh state key live.2 (valid.pending_not_ready member) room
             have queued : ((offer key.owner state).cells key.owner).phase = .queued := by simp [admitted]
             simp only [pending, List.length_cons] at enough
             simpa only [promote, pending, if_pos live, queued, ↓reduceIte] using
               ih { offer key.owner state with pending := rest } moved.1 (by dsimp; omega)
           · have full : EventPump.admit state.ready.capacity state.ready.tasks key.owner = none := by
-              simp [EventPump.admit, Nat.not_lt.mpr valid.bounded, valid.pending_absent member, room]
+              simp [EventPump.admit, Nat.not_lt.mpr valid.bounded, valid.pending_not_ready member, room]
             simp only [promote, pending]
             rw [if_pos live, offer_refused state key.owner full]
             simp only [live.2, reduceCtorEq, ↓reduceIte]
@@ -2052,7 +2052,7 @@ theorem service_frontier (state : State) (valid : Valid state)
     | cons first rest =>
         have different : key.owner ≠ first := by
           intro same
-          exact valid.pending_absent member (by simp [tasks, same])
+          exact valid.pending_not_ready member (by simp [tasks, same])
         simpa only [service, ReadyQueue.step, tasks, List.head?_cons,
           claimSlot_other state.bound state.cells first key.owner different] using prior.2
   · change state.ready.tasks.head? = (frontier state).head?
@@ -2245,7 +2245,7 @@ theorem move_head_tracked (state : State) (first key : AsyncWait.Identity)
     Tracked key { offer first.owner state with pending := rest } := by
   have member : first ∈ state.pending := by simp [pending]
   have live := valid.waiting first member
-  rw [offer_fresh state first live.2 (valid.pending_absent member) room]
+  rw [offer_fresh state first live.2 (valid.pending_not_ready member) room]
   rcases tracked with ⟨owned, waiting | queued | claimed⟩
   · rcases waiting with ⟨runnable, present⟩
     by_cases same : key = first
@@ -2255,7 +2255,7 @@ theorem move_head_tracked (state : State) (first key : AsyncWait.Identity)
       have different := valid.pending_other pending later
       exact ⟨owned, Or.inl ⟨by simpa [different] using runnable, later⟩⟩
   · obtain ⟨queued, bound, present⟩ := queued
-    have different : key.owner ≠ first.owner := fun same => valid.pending_absent member (same ▸ present)
+    have different : key.owner ≠ first.owner := fun same => valid.pending_not_ready member (same ▸ present)
     exact ⟨owned, Or.inr (Or.inl ⟨by simpa [different] using queued,
       by simpa [different] using bound, List.mem_append_left _ present⟩)⟩
   · have different : key.owner ≠ first.owner := by
@@ -2278,13 +2278,13 @@ theorem promote_tracked (fuel : Nat) (state : State) (key : AsyncWait.Identity)
           simp only [promote, pending]
           rw [if_pos live]
           by_cases room : state.ready.tasks.length < state.ready.capacity
-          · have admitted := offer_fresh state first live.2 (valid.pending_absent member) room
+          · have admitted := offer_fresh state first live.2 (valid.pending_not_ready member) room
             have queued : ((offer first.owner state).cells first.owner).phase = .queued := by simp [admitted]
             rw [if_pos queued]
             exact ih _ (move_head state first rest valid pending room).1
               (move_head_tracked state first key rest valid pending room tracked)
           · have full : EventPump.admit state.ready.capacity state.ready.tasks first.owner = none := by
-              simp [EventPump.admit, Nat.not_lt.mpr valid.bounded, valid.pending_absent member, room]
+              simp [EventPump.admit, Nat.not_lt.mpr valid.bounded, valid.pending_not_ready member, room]
             rw [offer_refused state first.owner full]
             simpa only [live.2, reduceCtorEq, ↓reduceIte] using tracked
 
@@ -2330,7 +2330,7 @@ theorem service_tracked (state : State) (key : AsyncWait.Identity)
     | cons first rest =>
         have different : key.owner ≠ first := by
           intro same
-          exact valid.pending_absent member (by simp [tasks, same])
+          exact valid.pending_not_ready member (by simp [tasks, same])
         simpa only [service, ReadyQueue.step, tasks, List.head?_cons,
           claimSlot_other state.bound state.cells first key.owner different] using runnable
   · obtain ⟨queued, bound, member⟩ := queued
@@ -2364,7 +2364,7 @@ theorem service_visits_tracked (state : State) (key : AsyncWait.Identity)
         have same : first = key.owner := Option.some.inj (by simpa only [tasks, List.head?_cons] using head)
         simp [same]
   rcases tracked.2 with waiting | ⟨queued, bound, _⟩ | claimed
-  · exact False.elim (valid.pending_absent waiting.2 member)
+  · exact False.elim (valid.pending_not_ready waiting.2 member)
   · simpa only [service, visited] using
       claimSlot_current state.bound state.cells key.owner key.generation bound queued
   · exact service_preserves_claimed state [] key.owner key.generation claimed

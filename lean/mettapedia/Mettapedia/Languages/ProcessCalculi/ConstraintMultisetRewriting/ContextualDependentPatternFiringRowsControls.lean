@@ -91,11 +91,11 @@ theorem swapped_in_fragment : InFragmentStore swappedStore := by
 
 theorem swapped_row : RigidOutsideRight swappedEquation := by
   intro left right toLeft normalLeft toRight normalRight
-  rw [normal_reduct_unique rfl (ContextualDependentCensus.openCode_star _ _)
-    (ContextualDependentCensus.openNormal_normal rfl
+  rw [normal_reduct_unique rfl (ContextualDependentClassification.openCode_star _ _)
+    (ContextualDependentClassification.openNormal_normal rfl
       ((ContextualDependentNormalizing.normal_iff_step_none rfl _).mpr (by decide +kernel)) _) toLeft normalLeft]
-  rw [normal_reduct_unique rfl (ContextualDependentCensus.openCode_star _ _)
-    (ContextualDependentCensus.openNormal_normal rfl
+  rw [normal_reduct_unique rfl (ContextualDependentClassification.openCode_star _ _)
+    (ContextualDependentClassification.openNormal_normal rfl
       ((ContextualDependentNormalizing.normal_iff_step_none rfl _).mpr (by decide +kernel)) _) toRight normalRight]
   exact ⟨⟨2, by decide +kernel⟩, [⟨1, by decide +kernel⟩], ⟨0, by decide +kernel⟩, by decide +kernel,
     by decide +kernel, by decide +kernel, by decide +kernel, by decide +kernel, by decide +kernel⟩
@@ -134,13 +134,13 @@ def flexibleEquation : Equation (TotalTerm withMetas) :=
 theorem flexible_not_row : ¬ RigidOutside flexibleEquation := by
   intro row
   obtain ⟨head, arguments, outside, read, _, _, occurs, rigidOutside, notArgument⟩ :=
-    row _ _ (ContextualDependentCensus.openCode_star (R := setting.R) _ _)
-      (ContextualDependentCensus.openNormal_normal rfl
+    row _ _ (ContextualDependentClassification.openCode_star (R := setting.R) _ _)
+      (ContextualDependentClassification.openNormal_normal rfl
         ((ContextualDependentNormalizing.normal_iff_step_none rfl _).mpr (by decide +kernel)) _)
-      (ContextualDependentCensus.openCode_star (R := setting.R) _ _)
-      (ContextualDependentCensus.openNormal_normal rfl
+      (ContextualDependentClassification.openCode_star (R := setting.R) _ _)
+      (ContextualDependentClassification.openNormal_normal rfl
         ((ContextualDependentNormalizing.normal_iff_step_none rfl _).mpr (by decide +kernel)) _)
-  have computed : readSpine (ContextualDependentCensus.openNormal
+  have computed : readSpine (ContextualDependentClassification.openNormal
       (ContextualDependentPatternSolver.lamDepth flexibleEquation.1.2.code) flexibleEquation.1.2.code) =
       some (⟨2, by decide +kernel⟩, [⟨1, by decide +kernel⟩]) := by decide +kernel
   rw [computed] at read
@@ -157,13 +157,13 @@ def prunableEquation : Equation (TotalTerm withPrunable) :=
 theorem prunable_not_row : ¬ RigidOutside prunableEquation := by
   intro row
   obtain ⟨head, arguments, outside, read, _, _, occurs, rigidOutside, notArgument⟩ :=
-    row _ _ (ContextualDependentCensus.openCode_star (R := setting.R) _ _)
-      (ContextualDependentCensus.openNormal_normal rfl
+    row _ _ (ContextualDependentClassification.openCode_star (R := setting.R) _ _)
+      (ContextualDependentClassification.openNormal_normal rfl
         ((ContextualDependentNormalizing.normal_iff_step_none rfl _).mpr (by decide +kernel)) _)
-      (ContextualDependentCensus.openCode_star (R := setting.R) _ _)
-      (ContextualDependentCensus.openNormal_normal rfl
+      (ContextualDependentClassification.openCode_star (R := setting.R) _ _)
+      (ContextualDependentClassification.openNormal_normal rfl
         ((ContextualDependentNormalizing.normal_iff_step_none rfl _).mpr (by decide +kernel)) _)
-  have computed : readSpine (ContextualDependentCensus.openNormal
+  have computed : readSpine (ContextualDependentClassification.openNormal
       (ContextualDependentPatternSolver.lamDepth prunableEquation.1.2.code) prunableEquation.1.2.code) =
       some (⟨2, by decide +kernel⟩, [⟨1, by decide +kernel⟩]) := by decide +kernel
   rw [computed] at read

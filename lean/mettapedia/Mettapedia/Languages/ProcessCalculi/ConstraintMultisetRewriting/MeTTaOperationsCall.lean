@@ -250,7 +250,7 @@ def valueToken (call : Atom) : Atom := wrap "value" call
 /-- Take the evaluation request, check that no stored equation has the call as
 its head, and produce the call itself as the value. -/
 def noMatchRule (call : Atom) : RuleInstance Atom :=
-  ⟨[evalToken call], [], [], [.absent (eqn call (.var "w"))], [valueToken call]⟩
+  ⟨[evalToken call], [], [], [.predicate .none (eqn call (.var "w"))], [valueToken call]⟩
 
 def noMatchLabel (n : Nat) : Atom :=
   if n = 0 then eqn (f (.var "x1")) (g (.var "x1"))
@@ -287,7 +287,7 @@ theorem stored_equation_blocks_return :
     ¬ (⟨[2], [], [3]⟩ : Selection Nat).Valid atomAction withEquationLabel (noMatchRule (g zero))
       ⟨[], {0, 1, 2, 4}⟩ := by
   intro valid
-  have check := valid.checks (.absent (eqn (g zero) (.var "w"))) (by simp [noMatchRule])
+  have check := valid.checks (.predicate .none (eqn (g zero) (.var "w"))) (by simp [noMatchRule])
     (fun v => if v = "z" then some zero else if v = "w" then some (.symbol "w0") else none)
   have holds := check (by
     intro e member

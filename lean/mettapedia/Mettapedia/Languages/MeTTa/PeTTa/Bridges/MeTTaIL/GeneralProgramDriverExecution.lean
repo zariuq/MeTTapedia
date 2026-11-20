@@ -1458,7 +1458,8 @@ theorem rho_execute_observed_target_iff_step (state : State) (bound : List TypeE
 /-- **Every original COMM is printed with its reduct.** For a closed original rho redex, an
 input on a channel in parallel with an output on it and a residual bag, with a quotation-sealed
 input body, the actual PeTTa run of the presentation entry observes the COMM reduct. The reduct
-is the independent semantic substitution of the payload into the body, beside the residual. -/
+is the independent semantic substitution of the payload into the body with its quotations of
+drops resolved, beside the residual. -/
 theorem rho_original_comm_observed (state : State) {channel body payload : Pattern}
     {rest : List Pattern}
     (channelTyped : DerivedPresentationSyntax.NameWellSorted rhoReflectivePresentation (fun _ => none) []
@@ -1478,21 +1479,44 @@ theorem rho_original_comm_observed (state : State) {channel body payload : Patte
     ∃ occurrence : targetOutput.Family
       {state, control := .evaluate [] (executeQuery GeneralRho.plan [] (.base "Proc")
         (GeneralRho.source channel body payload rest) budget)},
-      occurrence.val.2.target = .collection .hashBag (semanticCommSubst body payload :: rest) none := by
+      occurrence.val.2.target =
+        .collection .hashBag (semanticCommSubst (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body) payload :: rest) none := by
   have valid := GeneralRho.root_receipt_valid (GeneralRho.derived_name_open channelTyped)
     (GeneralRho.derived_process_open bodyTyped) sealed (GeneralRho.derived_names_admitted bodyTyped sealed)
     (GeneralRho.derived_process_open payloadTyped) (GeneralRho.derived_processes_typed restTyped)
     (GeneralRho.derived_processes_represented restTyped)
-  obtain ⟨_, _, _, answer, _, _, firing, target⟩ :=
-    GeneralRho.arbitrary_original_comm_in_actual_frontier channelTyped bodyTyped sealed payloadTyped
-      restTyped
-  have semantic : (GeneralRho.rootReceipt [] channel body payload rest).target =
-      .collection .hashBag (semanticCommSubst body payload :: rest) none := by
-    rw [← firing]
-    exact target
+  have semantic := GeneralRho.rootReceipt_target_resolved (channel := channel) bodyTyped payloadTyped
+    restTyped
   rw [← semantic]
   exact (rho_execute_observed_target_iff_step state [] (.base "Proc") _ _ budget saturated).mpr
     ⟨_, _, .refl _, valid, .refl _⟩
+
+/-- On a body in the literal-quotation fiber, the observed reduct is the
+paper-facing semantic substitution of the payload into the body. -/
+theorem rho_original_comm_observed_literal (state : State) {channel body payload : Pattern}
+    {rest : List Pattern}
+    (channelTyped : DerivedPresentationSyntax.NameWellSorted rhoReflectivePresentation (fun _ => none) []
+      channel)
+    (bodyTyped : DerivedPresentationSyntax.ProcWellSorted rhoReflectivePresentation (fun _ => none) ["Name"]
+      body)
+    (sealed : ScopedPattern.binderSafeAt "NQuote" 1 body = true)
+    (fiber : Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral rhoReflectivePresentation body = true)
+    (payloadTyped : DerivedPresentationSyntax.ProcWellSorted rhoReflectivePresentation (fun _ => none) []
+      payload)
+    (restTyped : DerivedPresentationSyntax.ProcListWellSorted rhoReflectivePresentation (fun _ => none) []
+      rest)
+    (budget : Nat)
+    (saturated : ∀ job ∈ GeneralRuleJobs.jobs GeneralRho.plan [] (.base "Proc")
+        (GeneralRho.source channel body payload rest),
+      (Execution.treeStart (GeneralPlanEnvironment.environment GeneralRho.plan)
+        (.root job.site.focusBound job.site.focusType job.site.focus job.ordinal)).cost ≤ budget) :
+    ∃ occurrence : targetOutput.Family
+      {state, control := .evaluate [] (executeQuery GeneralRho.plan [] (.base "Proc")
+        (GeneralRho.source channel body payload rest) budget)},
+      occurrence.val.2.target = .collection .hashBag (semanticCommSubst body payload :: rest) none := by
+  rw [← Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefAdequacy.semanticCommSubst_resolveQuotes_of_fiber
+    bodyTyped fiber payloadTyped]
+  exact rho_original_comm_observed state channelTyped bodyTyped sealed payloadTyped restTyped budget saturated
 
 /-- **Standard rho through the PeTTa driver.** With the rho calculus's own reduction contexts and a
 budget that drains every job, the actual PeTTa run of the presentation entry observes a target
@@ -1530,21 +1554,44 @@ theorem rho_standard_original_comm_observed (state : State) {channel body payloa
     ∃ occurrence : targetOutput.Family
       {state, control := .evaluate [] (executeQuery GeneralRho.Standard.plan [] (.base "Proc")
         (GeneralRho.source channel body payload rest) budget)},
-      occurrence.val.2.target = .collection .hashBag (semanticCommSubst body payload :: rest) none := by
+      occurrence.val.2.target =
+        .collection .hashBag (semanticCommSubst (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.resolveQuotes rhoReflectivePresentation body) payload :: rest) none := by
   have valid := GeneralRho.Standard.root_receipt_valid (GeneralRho.derived_name_open channelTyped)
     (GeneralRho.derived_process_open bodyTyped) sealed (GeneralRho.derived_names_admitted bodyTyped sealed)
     (GeneralRho.derived_process_open payloadTyped) (GeneralRho.derived_processes_typed restTyped)
     (GeneralRho.derived_processes_represented restTyped)
-  obtain ⟨_, _, _, answer, _, _, firing, target⟩ :=
-    GeneralRho.arbitrary_original_comm_in_actual_frontier channelTyped bodyTyped sealed payloadTyped
-      restTyped
-  have semantic : (GeneralRho.rootReceipt [] channel body payload rest).target =
-      .collection .hashBag (semanticCommSubst body payload :: rest) none := by
-    rw [← firing]
-    exact target
+  have semantic := GeneralRho.rootReceipt_target_resolved (channel := channel) bodyTyped payloadTyped
+    restTyped
   rw [← semantic]
   exact (rho_standard_execute_observed_target_iff_step state [] (.base "Proc") _ _ budget saturated).mpr
     ⟨_, _, .refl _, valid, .refl _⟩
+
+/-- On a body in the literal-quotation fiber, the observed reduct is the
+paper-facing semantic substitution of the payload into the body. -/
+theorem rho_standard_original_comm_observed_literal (state : State) {channel body payload : Pattern}
+    {rest : List Pattern}
+    (channelTyped : DerivedPresentationSyntax.NameWellSorted rhoReflectivePresentation (fun _ => none) []
+      channel)
+    (bodyTyped : DerivedPresentationSyntax.ProcWellSorted rhoReflectivePresentation (fun _ => none) ["Name"]
+      body)
+    (sealed : ScopedPattern.binderSafeAt "NQuote" 1 body = true)
+    (fiber : Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.quotesLiteral rhoReflectivePresentation body = true)
+    (payloadTyped : DerivedPresentationSyntax.ProcWellSorted rhoReflectivePresentation (fun _ => none) []
+      payload)
+    (restTyped : DerivedPresentationSyntax.ProcListWellSorted rhoReflectivePresentation (fun _ => none) []
+      rest)
+    (budget : Nat)
+    (saturated : ∀ job ∈ GeneralRuleJobs.jobs GeneralRho.Standard.plan [] (.base "Proc")
+        (GeneralRho.source channel body payload rest),
+      (Execution.treeStart (GeneralPlanEnvironment.environment GeneralRho.Standard.plan)
+        (.root job.site.focusBound job.site.focusType job.site.focus job.ordinal)).cost ≤ budget) :
+    ∃ occurrence : targetOutput.Family
+      {state, control := .evaluate [] (executeQuery GeneralRho.Standard.plan [] (.base "Proc")
+        (GeneralRho.source channel body payload rest) budget)},
+      occurrence.val.2.target = .collection .hashBag (semanticCommSubst body payload :: rest) none := by
+  rw [← Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefAdequacy.semanticCommSubst_resolveQuotes_of_fiber
+    bodyTyped fiber payloadTyped]
+  exact rho_standard_original_comm_observed state channelTyped bodyTyped sealed payloadTyped restTyped budget saturated
 
 /-- **Canonical rho through the PeTTa driver.** On a closed, quotation-sealed canonical source, with
 a budget that drains every job, the actual PeTTa run of the depth-one plan observes a target exactly
@@ -1599,7 +1646,7 @@ theorem rho_observed_on_canonical (state : State) {process : Pattern}
     fun observed seen => ⟨1, (exact observed).mp seen⟩, fun target step => ?_⟩
   obtain ⟨observed, depthOne, same⟩ :=
     Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalStepperCompleteness.canonicalStep_complete_of_rhoStep
-      typed sealed step
+      typed step
   exact ⟨observed, (exact observed).mpr depthOne, same⟩
 
 /-- **Rho through the PeTTa driver on lexicographic forms.** Run the depth-one plan on the
@@ -1640,7 +1687,7 @@ theorem rho_observed_on_lexCanon (state : State) {process : Pattern}
   refine ⟨Mettapedia.Languages.ProcessCalculi.RhoCalculus.LexCanonical.lexCanon_sound process,
     fun observed seen => ⟨1, (exact observed).mp seen⟩, fun target step => ?_⟩
   obtain ⟨observed, depthOne, same⟩ :=
-    Mettapedia.Languages.ProcessCalculi.RhoCalculus.LexCanonical.lexStep_complete typed sealed step
+    Mettapedia.Languages.ProcessCalculi.RhoCalculus.LexCanonical.lexStep_complete typed step
   exact ⟨observed, (exact observed).mpr depthOne, same⟩
 
 end Rho

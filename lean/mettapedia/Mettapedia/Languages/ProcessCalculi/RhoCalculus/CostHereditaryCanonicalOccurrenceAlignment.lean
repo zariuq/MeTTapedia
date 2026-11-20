@@ -166,4 +166,69 @@ theorem alignmentAvailability_not_recoverable_from_rawOccurrence
   refine ⟨?_, ⟨.sourceFVar⟩, ⟨.sourceFVar⟩, different⟩
   simp
 
+/-! ## Ancestry alone does not transport caller-relative safety -/
+
+/-- Canonical ancestry by itself cannot transport caller-relative safety from
+the authored occurrence to the final occurrence; this is why the alignment
+certificate above carries the availability regime with the ancestry token.  A quote/drop contraction
+may expose an atom value that is safe at the quote-local context `[]` but not
+at an unrelated ambient context.  The value below is an object, so objectness
+does not repair the missing typed exposure distinction. -/
+theorem canonicalAncestry_sourceSafety_does_not_imply_ambientSafety
+    (ambient binder : TypeExpr) (different : binder ≠ ambient) :
+    let free : WellSorted.FreeTypeContext := fun name =>
+      if name = "captured" then some binder else none
+    let support : ContextSupport.Support := fun name =>
+      if name = "captured" then [binder] else []
+    let bodyTyped : WellSorted.HasType rhoCalc free [binder]
+        (.fvar "captured") binder :=
+      WellSorted.HasType.fvar (by simp [free])
+    let valueTyped : WellSorted.HasType rhoCalc free []
+        (.lambda (some "z") (.fvar "captured")) (.arrow binder binder) :=
+      WellSorted.HasType.lambda bodyTyped
+    let source := .apply "NQuote"
+      [.apply "PDrop" [.fvar "atom"]]
+    let finalOccurrence : CostStaticFVarOccurrence
+        (canonicalizeByDepths (fun _ _ pattern =>
+          Mettapedia.OSLF.MeTTaIL.PatternCode.patternCode pattern)
+          rhoReflectivePresentation [ambient].length 0 source) :=
+      { name := "atom"
+        context := .hole
+        selected := .here }
+    let ancestry := keyedCanonicalDepthsFVarCertificate
+      (fun _ _ pattern =>
+        Mettapedia.OSLF.MeTTaIL.PatternCode.patternCode pattern)
+        rhoReflectivePresentation
+        [ambient].length 0 source finalOccurrence
+    ancestry.sourceOccurrence.name = finalOccurrence.name ∧
+      valueTyped.ReflectiveSupportSafeAt rhoReflectionProfile support [] id ∧
+      ¬ valueTyped.ReflectiveSupportSafeAt rhoReflectionProfile support
+          [ambient] id := by
+  dsimp
+  constructor
+  · exact (keyedCanonicalDepthsFVarCertificate
+      (fun _ _ pattern =>
+        Mettapedia.OSLF.MeTTaIL.PatternCode.patternCode pattern)
+        rhoReflectivePresentation
+        [ambient].length 0
+        (.apply "NQuote" [.apply "PDrop" [.fvar "atom"]])
+        { name := "atom"
+          context := .hole
+          selected := .here }).name_eq
+  constructor
+  · apply WellSorted.HasType.ReflectiveSupportSafeAt.lambda
+    exact WellSorted.HasType.ReflectiveSupportSafeAt.fvar
+      (by simp) [binder] ⟨[], by simp⟩
+  · intro alleged
+    cases alleged with
+    | lambda bodySafe =>
+        cases bodySafe with
+        | fvar _ _ shape =>
+            obtain ⟨inner, impossible⟩ := shape
+            have headEquality := congrArg List.getLast? impossible
+            simp at headEquality
+            have binderEqAmbient : binder = ambient := by
+              exact headEquality.symm
+            exact different binderEqAmbient
+
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus

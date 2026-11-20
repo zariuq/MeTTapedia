@@ -1,17 +1,17 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ProgramNested
 
 /-!
-# Unmatched calls as values: an absence query at the call's cut
+# Unmatched calls as values: a none query at the call's cut
 
 MeTTa returns a call that no equation reduces as itself (`metta_call`: when the query
 `(= atom $X)` has no answer, the result is the atom). Here a call `ap w K` whose data `w` unifies
 with no left-hand side of the installed version `u` returns `w` to its continuation and cites `u`
 (`UStep.unmatched`). That is a negative condition, so it cannot be an ordinary take-and-make
-schema: it is one firing of the ordinary step with a **predicate query** (`absentQuery`).
+schema: it is one firing of the ordinary step with a **predicate query** (`noneQuery`).
 
 * **The query** reads the call occurrence through the firing's solutions and asks whether some
   equation of `u`, renamed apart, unifies with its data (`matchedBy`); it must see nothing. Its
-  region reads labels through solutions (`absentQuery_semantic`), so the firing is a firing of the
+  region reads labels through solutions (`noneQuery_semantic`), so the firing is a firing of the
   ordinary step (`unmatchedFiring_semantic`), not of reflection.
 * **Exactness at the cut** (`unmatched_fire`): the firing on a call occurrence and the version row
   is admitted exactly when no equation of `u` unifies with the call's data, and its result
@@ -19,7 +19,7 @@ schema: it is one firing of the ordinary step with a **predicate query** (`absen
 * **Adequacy** (`usound`, `ucomplete`, `u_execution`): the machine with the unmatched rule and its
   translation (the compiled machine plus the unmatched firings) correspond both ways, and every
   translated run is a reference run in evaluation contexts (`uruns_unload`).
-* **Why the cut is the right one** (`absence_stable`, `unmatched_cites`, `ucitations_persist`):
+* **Why the cut is the right one** (`none_stable`, `unmatched_cites`, `ucitations_persist`):
   every later instance of an unmatched call is still unmatched, so later two-way bindings never
   invalidate an answer given at the cut; the answer cites the version the firing read; citations are
   never removed; and a redefinition changes only the version row
@@ -107,7 +107,7 @@ theorem unmatched_iff {eqs : List NEquation} {w : Tm} {n : ℕ} (bounded : Bound
 
 /-- **An unmatched call stays unmatched under every later binding**: no equation unifies with any
 instance of its data, at any scope. -/
-theorem absence_stable {eqs : List NEquation} {w : Tm} {n : ℕ} (bounded : Bounded n w)
+theorem none_stable {eqs : List NEquation} {w : Tm} {n : ℕ} (bounded : Bounded n w)
     (none : ∀ e ∈ eqs, ∀ δ : Subst rows, ¬ Unifies δ [(e.lhs.at n, w)]) (σ : Subst rows) (m : ℕ) :
     ∀ e ∈ eqs, ∀ δ : Subst rows, ¬ Unifies δ [(e.lhs.at m, σ.applyTerm w)] := fun e member _ unifies =>
   none e member _ (unify_rescope bounded σ unifies)
@@ -157,7 +157,7 @@ theorem uruns_unload {defs : Defs} {s s' : Multiset SRow × ℕ}
       obtain ⟨m₂, le₂, last⟩ := ustep_unload step le₁
       exact ⟨m₂, le₂, path.trans last.to_reflTransGen⟩
 
-/-! ## The absence query and the unmatched firing -/
+/-! ## The none query and the unmatched firing -/
 
 /-- The schema of an unmatched call at version `u`: take the call with its continuation, read the
 version row, make the call's data returned to the continuation and the citation. -/
@@ -165,40 +165,40 @@ def unmatchedSchema (u : ℕ) : Schema :=
   ⟨[pap (.var 0) (.var 1)], [ptag 41 (.sym u)], [pret (.var 0) (.var 1), ptag 42 (.sym u)]⟩
 
 open Classical in
-/-- **The absence query**: the region is the call occurrence, read through the solution, when some
+/-- **The none query**: the region is the call occurrence, read through the solution, when some
 equation of version `u` unifies with its data; the query must see nothing. -/
-noncomputable def absentQuery (defs : Defs) (u n : ℕ) :
+noncomputable def noneQuery (defs : Defs) (u n : ℕ) :
     PredicateQueryAdmission.Query Tm (Subst rows) Occ :=
   ⟨fun σ t => if σ.applyTerm t = σ.applyTerm ((pap (.var 0) (.var 1)).at n) then
     matchedBy (defs u) (σ (n, 0)) else false, ∅⟩
 
-/-- **The unmatched firing**: the schema's instance at scope `n`, with the absence query. -/
+/-- **The unmatched firing**: the schema's instance at scope `n`, with the none query. -/
 noncomputable def unmatchedFiring (defs : Defs) (u n : ℕ) (taken read : List Occ) :
     AnnotatedRuns.Firing Tm (Subst rows) Occ :=
-  ⟨(unmatchedSchema u).rule n, [absentQuery defs u n],
+  ⟨(unmatchedSchema u).rule n, [(noneQuery defs u n).toRegion],
     ⟨taken, read, madeAt n 0 (unmatchedSchema u).make⟩⟩
 
-/-- **The absence query reads labels through solutions.** -/
-theorem absentQuery_semantic (defs : Defs) (u n : ℕ) :
-    Semantic.ReadsThroughSolutions A (absentQuery defs u n) := by
+/-- **The none query reads labels through solutions.** -/
+theorem noneQuery_semantic (defs : Defs) (u n : ℕ) :
+    Semantic.ReadsThroughSolutions A (noneQuery defs u n) := by
   intro σ s t solves
   have same : σ.applyTerm s = σ.applyTerm t := solves
-  dsimp only [absentQuery]
+  dsimp only [noneQuery]
   rw [same]
 
 /-- **The unmatched firing is a firing of the ordinary step.** -/
 theorem unmatchedFiring_semantic (defs : Defs) (u n : ℕ) (taken read : List Occ) :
     Semantic.IsSemantic A (unmatchedFiring defs u n taken read) := by
   intro query member
-  rw [show (unmatchedFiring defs u n taken read).queries = [absentQuery defs u n] from rfl,
+  rw [show (unmatchedFiring defs u n taken read).queries = [(noneQuery defs u n).toRegion] from rfl,
     List.mem_singleton] at member
   rw [member]
-  exact absentQuery_semantic defs u n
+  exact noneQuery_semantic defs u n
 
 theorem unmatched_valid_iff {defs : Defs} {u n : ℕ} {taken read : List Occ} {C : Config} :
     (unmatchedFiring defs u n taken read).Valid A Occ.label C ↔
       ((unmatchedSchema u).firing n taken read).Valid A Occ.label C ∧
-        (absentQuery defs u n).Ask A
+        (noneQuery defs u n).Ask A
           ((((unmatchedSchema u).firing n taken read).selection).problem Occ.label
             ((unmatchedSchema u).rule n) C) Occ.label C.present := by
   constructor
@@ -206,7 +206,7 @@ theorem unmatched_valid_iff {defs : Defs} {u n : ℕ} {taken read : List Occ} {C
     exact ⟨⟨valid.firing, fun q h => by cases h⟩, valid.observations _ (List.mem_singleton_self _)⟩
   · rintro ⟨valid, ask⟩
     refine ⟨valid.firing, fun q h => ?_⟩
-    rw [show (unmatchedFiring defs u n taken read).queries = [absentQuery defs u n] from rfl,
+    rw [show (unmatchedFiring defs u n taken read).queries = [(noneQuery defs u n).toRegion] from rfl,
       List.mem_singleton] at h
     rw [h]
     exact ask
@@ -292,17 +292,17 @@ theorem unmatched_fire {defs : Defs} {C : Config} {n : ℕ} {μ : Subst rows} (s
     have models : A.Models (θ ∘ₛ μ) (((unmatchedSchema u).firing n [o] [o']).selection.problem
         Occ.label ((unmatchedSchema u).rule n) C) := (solved'.solutions _).mpr solved'.idempotent
     have empty := ask (θ ∘ₛ μ) models
-    have outside : (absentQuery defs u n).region (θ ∘ₛ μ) o.label = false := by
-      cases h : (absentQuery defs u n).region (θ ∘ₛ μ) o.label with
+    have outside : (noneQuery defs u n).region (θ ∘ₛ μ) o.label = false := by
+      cases h : (noneQuery defs u n).region (θ ∘ₛ μ) o.label with
       | false => rfl
       | true =>
           have : o ∈ MeTTaCalculus.OccurrenceCommits.regionOf Occ.label C.present
-              ((absentQuery defs u n).region (θ ∘ₛ μ)) := Finset.mem_filter.mpr ⟨oIn, h⟩
+              ((noneQuery defs u n).region (θ ∘ₛ μ)) := Finset.mem_filter.mpr ⟨oIn, h⟩
           have empty' : MeTTaCalculus.OccurrenceCommits.regionOf Occ.label C.present
-              ((absentQuery defs u n).region (θ ∘ₛ μ)) = ∅ := empty
+              ((noneQuery defs u n).region (θ ∘ₛ μ)) = ∅ := empty
           rw [empty'] at this
           exact absurd this (Finset.notMem_empty o)
-    dsimp only [absentQuery] at outside
+    dsimp only [noneQuery] at outside
     rw [if_pos (atCall.trans atPattern.symm), data] at outside
     exact (unmatched_iff apBounded.1).mp outside
   · -- nothing matches: no solution puts any occurrence in the region
@@ -310,7 +310,7 @@ theorem unmatched_fire {defs : Defs} {C : Config} {n : ℕ} {μ : Subst rows} (s
     have absorbs : σ.Absorbs (θ ∘ₛ μ) := (solved'.solutions σ).mp models
     refine Finset.eq_empty_of_forall_notMem fun o₂ member => ?_
     have inRegion := (Finset.mem_filter.mp member).2
-    dsimp only [absentQuery, PredicateQueryAdmission.Query.atSolution] at inRegion
+    dsimp only [noneQuery, PredicateQueryAdmission.Query.atSolution] at inRegion
     split_ifs at inRegion with h
     have matched := inRegion
     rw [atData σ absorbs, matchedBy_iff] at matched
@@ -337,7 +337,7 @@ theorem unmatched_fire {defs : Defs} {C : Config} {n : ℕ} {μ : Subst rows} (s
 /-! ## The translation with unmatched calls, and its adequacy -/
 
 /-- **Translated steps with unmatched calls**: the compiled machine's firings, and unmatched
-firings with their absence query. -/
+firings with their none query. -/
 inductive UTranslated (defs : Defs) : Config × ℕ → Config × ℕ → Prop
   | machine {p q : Config × ℕ} (firing : Translated (kschema defs) p q) : UTranslated defs p q
   | unmatched {C : Config} {n : ℕ} (u : ℕ) (taken read : List Occ)
@@ -491,9 +491,9 @@ theorem u_translated_is_reference (defs : Defs) (l : List SRow) (good : ∀ s �
 
 /-! ## The cut, versions and citations -/
 
-/-- **The absence query is asked at its own cut**: admission of an unmatched firing depends only on
+/-- **The none query is asked at its own cut**: admission of an unmatched firing depends only on
 the solutions of the configuration's knowledge and its present occurrences. -/
-theorem absence_at_cut {defs : Defs} {u n : ℕ} {taken read : List Occ} {C D : Config}
+theorem none_at_cut {defs : Defs} {u n : ℕ} {taken read : List Occ} {C D : Config}
     (same : GuardFreeProcessOrders.SameUpTo A C D) :
     (unmatchedFiring defs u n taken read).Valid A Occ.label C ↔
       (unmatchedFiring defs u n taken read).Valid A Occ.label D :=
@@ -582,10 +582,10 @@ theorem redefinition_keeps_other_rows {defs : Defs} {u u' : ℕ} {F : Multiset S
 #print axioms unify_rescope
 #print axioms matchedBy_iff
 #print axioms unmatched_iff
-#print axioms absence_stable
+#print axioms none_stable
 #print axioms ustep_unload
 #print axioms uruns_unload
-#print axioms absentQuery_semantic
+#print axioms noneQuery_semantic
 #print axioms unmatchedFiring_semantic
 #print axioms unmatched_valid_iff
 #print axioms isMGU_append_ground
@@ -598,7 +598,7 @@ theorem redefinition_keeps_other_rows {defs : Defs} {u u' : ℕ} {F : Multiset S
 #print axioms uruns_complete
 #print axioms u_execution
 #print axioms u_translated_is_reference
-#print axioms absence_at_cut
+#print axioms none_at_cut
 #print axioms subst_eq_citation
 #print axioms ucitation_reads_version
 #print axioms ucitations_persist

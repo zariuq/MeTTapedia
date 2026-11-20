@@ -43,12 +43,12 @@ def answerSchema (k : ℕ) : Schema :=
 carrying the raw query with region `seen`. -/
 def reflectFiring (answer : ℕ) (n : ℕ) (o : Occ) (seen : Finset Occ) :
     AnnotatedRuns.Firing Tm (Subst rows) Occ :=
-  ⟨(answerSchema answer).rule n, [rawQuoted seen], ⟨[o], [], madeAt n 0 (answerSchema answer).make⟩⟩
+  ⟨(answerSchema answer).rule n, [(rawQuoted seen).toRegion], ⟨[o], [], madeAt n 0 (answerSchema answer).make⟩⟩
 
 /-- The same firing with the ordinary, through-solutions query. -/
 def ordinaryFiring (answer : ℕ) (n : ℕ) (o : Occ) (seen : Finset Occ) :
     AnnotatedRuns.Firing Tm (Subst rows) Occ :=
-  ⟨(answerSchema answer).rule n, [(semanticQuoted seen).1], ⟨[o], [], madeAt n 0 (answerSchema answer).make⟩⟩
+  ⟨(answerSchema answer).rule n, [(semanticQuoted seen).1.toRegion], ⟨[o], [], madeAt n 0 (answerSchema answer).make⟩⟩
 
 /-- **The reflection firing is not a firing of the ordinary step.** -/
 theorem reflect_not_semantic (answer : ℕ) (n : ℕ) (o : Occ) (seen : Finset Occ) :

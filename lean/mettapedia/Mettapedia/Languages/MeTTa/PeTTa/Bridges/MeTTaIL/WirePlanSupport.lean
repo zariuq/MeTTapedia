@@ -22,7 +22,8 @@ def tags : List String := WireCodecSupport.tags ++
   ["PremiseSignature","PremiseProviderRow","PremiseProvider","PremiseSpecification","ReflectiveRule",
     "ReflectivePresentation","PremiseReflection","PremiseEnvironment","Binding","TermSlot","OperationalPermissions",
     "EquationDepth","EquationJobDeclaration","CompletePlan","USome","CollectionLaw","Extrusion",
-    "Standard","Canonical","Reflective","Model","CollectionRootSearch","CollectionOccurrenceSearch"]
+    "Standard","Canonical","Reflective","Model","CollectionRootSearch","CollectionOccurrenceSearch",
+    "QuoteReaching","QuoteFreeze","QuoteClosure"]
 
 def Supported (allowed : String → Bool) : Prop := ∀ tag ∈ tags, allowed tag = true
 
@@ -78,10 +79,25 @@ theorem reflectiveRule (allowed : String → Bool) (supported : Supported allowe
     check allowed (GeneralExecution.reflectiveRuleTerm value) = true := by
   exact app allowed supported "ReflectiveRule" (by decide) _ rfl
 
+theorem quoteScope (allowed : String → Bool) (supported : Supported allowed) (value : QuoteScope) :
+    check allowed (AuthoredRule.quoteScopeTerm value) = true := by
+  rcases value with _ | (_ | frozen | context)
+  · rfl
+  · exact app allowed supported "QuoteReaching" (by decide) _ rfl
+  · apply app allowed supported "QuoteReaching" (by decide)
+    have frozenChecked : check allowed (.application "QuoteFreeze" [encodePattern frozen.spelling]) = true := by
+      apply app allowed supported "QuoteFreeze" (by decide)
+      simp only [checkMany, WireCodecSupport.pattern allowed (base allowed supported), Bool.true_and]
+    simp only [checkMany, frozenChecked, Bool.true_and]
+  · apply app allowed supported "QuoteReaching" (by decide)
+    have contextChecked : check allowed (.application "QuoteClosure" [.string context]) = true :=
+      app allowed supported "QuoteClosure" (by decide) _ rfl
+    simp only [checkMany, contextChecked, Bool.true_and]
+
 theorem reflectivePresentation (allowed : String → Bool) (supported : Supported allowed) (value : ReflectivePresentationDecl) :
     check allowed (AuthoredRule.reflectivePresentationTerm value) = true := by
   apply app allowed supported "ReflectivePresentation" (by decide)
-  simp only [checkMany,check_string,WireCodecSupport.collectionType,Bool.true_and]
+  simp only [checkMany,check_string,WireCodecSupport.collectionType,quoteScope allowed supported,Bool.true_and]
 
 theorem reflection (allowed : String → Bool) (supported : Supported allowed) (value : Reflection.ReflectionProfile) :
     check allowed (GeneralExecution.reflectionTerm value) = true := by

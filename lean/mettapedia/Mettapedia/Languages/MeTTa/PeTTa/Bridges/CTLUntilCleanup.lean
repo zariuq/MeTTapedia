@@ -231,9 +231,10 @@ theorem completed_cleanup (codec : Codec Label) (label : Label) (round : Nat) (n
     (roundRead : caller.lookup names.round = some (number round))
     (nodeFresh : caller.lookup names.node = none)
     (snapshot : before.read target = some atoms) (decoded : decodeRows codec atoms = some rows) :
-    ∃ after,
+    ∃ after flags,
       QueryBagErasure.execute names.space target (pattern names) (fields names) caller before =
-        some (after, List.replicate (rows.filterMap (frontSelect label round)).length (Effects.boolean true)) ∧
+        some (after, flags) ∧
+      flags.length = (rows.filterMap (frontSelect label round)).length ∧
       Eval.PureReturns program caller before (source names) after (number (rows.filterMap (frontSelect label round)).length) ∧
       after.read target = some ((remaining label round rows).map (render codec)) ∧
       decodeRows codec ((remaining label round rows).map (render codec)) = some (remaining label round rows) ∧
@@ -248,13 +249,6 @@ theorem completed_cleanup (codec : Codec Label) (label : Label) (round : Nat) (n
     change (EffectfulQuerySource.choices caller (pattern names) atoms).length = _
     rw [choices, List.length_map]
   obtain ⟨after, erased⟩ := QueryBagErasure.eraseRows_exists target payloads before atoms snapshot
-  have completed : QueryBagErasure.run target (pattern names) (fields names) caller before =
-      some (after, List.replicate (rows.filterMap (frontSelect label round)).length (Effects.boolean true)) := by
-    simp only [QueryBagErasure.run, snapshot, QueryBagErasure.traverse_erase_exact]
-    change (QueryBagErasure.eraseRows target payloads before).map
-      (fun result => (result, [] ++ List.replicate captured.length (Effects.boolean true))) = _
-    rw [erased, count]
-    rfl
   have capturesReady : ClosedQueryAdmission.capturesReady caller (pattern names) = true := by
     simp [ClosedQueryAdmission.capturesReady, pattern, fields,
       Mettapedia.Languages.ProcessCalculi.MORK.atomFreeVars, Mettapedia.Languages.ProcessCalculi.MORK.atomFreeVars.atomFreeVarsList,
@@ -270,6 +264,21 @@ theorem completed_cleanup (codec : Codec Label) (label : Label) (round : Nat) (n
     obtain ⟨node, _, rfl⟩ := List.mem_map.mp member
     change isGroundAtom (render codec (.frontier label round node)) = true
     exact ClosedQueryAdmission.literal_ground (CTLUntilPublicationSource.frontier_literal codec label round node)
+  have specified (bindings : Subst) (member : bindings ∈ captured) :
+      Effects.removalNeedsValue (applySubst bindings (.expression (fields names))) = false :=
+    QueryBagErasure.factPayload_has_value
+      (List.all_eq_true.mp payloadReady _ (List.mem_map.mpr ⟨bindings, member, rfl⟩))
+  have projected := (QueryBagErasure.traverse_erase_exact target (fields names) captured before [] specified).trans erased
+  obtain ⟨⟨finish, flags⟩, computed, same⟩ := Option.map_eq_some_iff.mp projected
+  change finish = after at same
+  subst finish
+  have completed : QueryBagErasure.run target (pattern names) (fields names) caller before =
+      some (after, flags) := by
+    unfold QueryBagErasure.run
+    rw [snapshot]
+    exact computed
+  have flagsCount : flags.length = (rows.filterMap (frontSelect label round)).length :=
+    (QueryBagErasure.run_receipt target (pattern names) (fields names) caller before after atoms flags snapshot completed).2.1.trans count
   have targetReady : ClosedQueryAdmission.targetReady before target payloads = true := by
     unfold ClosedQueryAdmission.targetReady
     split
@@ -283,7 +292,7 @@ theorem completed_cleanup (codec : Codec Label) (label : Label) (round : Nat) (n
       rw [← rendered]
       exact CTLUntilMixedStore.rows_ready codec "fr" _ (by simp) rows admitted
   have executed : QueryBagErasure.execute names.space target (pattern names) (fields names) caller before =
-      some (after, List.replicate (rows.filterMap (frontSelect label round)).length (Effects.boolean true)) := by
+      some (after, flags) := by
     unfold QueryBagErasure.execute
     rw [if_pos ⟨location, by simp [fields]⟩, snapshot]
     dsimp only
@@ -298,9 +307,9 @@ theorem completed_cleanup (codec : Codec Label) (label : Label) (round : Nat) (n
     congr 1
     change QueryBagErasure.retained ((EffectfulQuerySource.choices caller (pattern names) atoms).map _) atoms = _
     rw [values, ← rendered, retained_exact codec label round rows admitted]
-  refine ⟨after, executed, ?_, remainingRead,
+  refine ⟨after, flags, executed, flagsCount, ?_, remainingRead,
     CTLUntilMixedStore.decode_rows_complete codec _ (remaining_admitted label round rows admitted), others, cells⟩
-  simpa only [source, number, List.length_replicate] using
+  simpa only [source, number, flagsCount] using
     QueryBagErasure.execute_source program names.space target (pattern names) (fields names) caller before after _ executed
 
 namespace Controls

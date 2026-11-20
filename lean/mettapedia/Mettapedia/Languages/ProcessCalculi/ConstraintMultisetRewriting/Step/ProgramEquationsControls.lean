@@ -59,10 +59,10 @@ theorem erase_first (t : Tm) (rest : List Tm) :
   have present : (openInitial (t :: rest)).present = insert ⟨t, 0, 0⟩ (openRows 1 rest).toFinset := by
     show (openRows 0 (t :: rest)).toFinset = _
     simp only [openRows, List.toFinset_cons]
-  have absent : (⟨t, 0, 0⟩ : Occ) ∉ (openRows 1 rest).toFinset := fun h => by
+  have missing : (⟨t, 0, 0⟩ : Occ) ∉ (openRows 1 rest).toFinset := fun h => by
     have := (openRows_mem (List.mem_toFinset.mp h)).2.1
     simp at this
-  rw [present, Finset.erase_insert absent, List.toFinset_val, (openRows_nodup 1 rest).dedup,
+  rw [present, Finset.erase_insert missing, List.toFinset_val, (openRows_nodup 1 rest).dedup,
     Multiset.map_coe, openRows_read]
 
 /-- **On the step, from the initial configuration**, the admitted firings on the call occurrence

@@ -37,7 +37,7 @@ def spaceTerms (decl : V → MetaArity (base S point Name)) :
 
 def mapLocatedCheck {T U : Type} (change : T → U) : NamedSpaces.LocatedCheck T → NamedSpaces.LocatedCheck U
   | .equal left right => .equal (change left) (change right)
-  | .absent address payload => .absent (change address) (change payload)
+  | .predicate q address payload => .predicate q (change address) (change payload)
   | .count address payload number => .count (change address) (change payload) number
 
 def mapLocated {T U : Type} (change : T → U) (rule : NamedSpaces.LocatedRule T) : NamedSpaces.LocatedRule U :=

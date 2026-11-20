@@ -7,7 +7,7 @@ import Mathlib.Data.List.FinRange
 
 Vertices are event occurrence indices, not rule values. An edge goes from
 an event producing a physical identity to an event consuming that identity.
-Acyclicity means absence of a nonempty graph path from a vertex to itself.
+Acyclicity means none queries of a nonempty graph path from a vertex to itself.
 It is defined independently of source execution or a supplied total order.
 
 The existing catalogue's computable, measured Kahn wave scheduler supplies
