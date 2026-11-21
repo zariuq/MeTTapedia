@@ -226,7 +226,8 @@
 (= (rules:fixed $E)
    (let* (($computing (rules:declare-names $E lean ("beta" "LeanNum_add" "LeanNum_mul" "LeanSort_0" "LeanSort_S"
                                                     "Lean_Quot_lift_beta_value" "Lean_DecCanon_rec_true" "Lean_DecCanon_rec_false")))
-          ($typing (rules:type-names ("nat_0" "nat_ordsucc" "NumD_p" "LeanNum_In" "lam_Pi" "Lean_ProofField_intro")))
+          ($typing (rules:type-names ("nat_0" "nat_ordsucc" "NumD_p" "LeanNum_In" "lam_Pi" "Lean_ProofField_intro"
+                                       "LeanProp_In_LeanUniv" "LeanUniv_In_S" "LeanPi_LeanUniv")))
           ($product (rules:product-of-propositions $E))
           ($strict (rules:strict-names ("Lean_Nat_div" "Lean_Nat_mod" "Lean_Nat_sub" "Lean_Nat_decLe")))
           ($pi (conv:declare-binder (Tm.named (lean:id "Pi")) (lean:id "Pi_family_eq")))

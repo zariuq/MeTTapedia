@@ -241,6 +241,11 @@ let k. assume Hk: nat_p k.
 exact nat_primrec_S LeanProp (fun k _ => LeanUniv k) k Hk.
 Qed.
 
+(** Universe levels are naturals: max a b is their union, and imax a b is 0 when b is 0
+    (a product into Prop is a proposition), else max a b. **)
+Definition LeanLevelMax : set -> set -> set := fun a b => a :\/: b.
+Definition LeanLevelIMax : set -> set -> set := fun a b => if b = 0 then 0 else a :\/: b.
+
 (** A truth value lies in every universe. **)
 Theorem LeanProp_sub_In : forall u, nat_p u -> forall p :e LeanProp, p :e LeanUniv u.
 let u. assume Hu: nat_p u. let p. assume Hp: p :e LeanProp.

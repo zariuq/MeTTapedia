@@ -4,5 +4,6 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.SourceLan
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.SourceLanguage.Preparation.InterpretationCost
 import Mettapedia.Machines.Specialization.FrameRelocation
 import Mettapedia.Machines.Specialization.PathQueries
+import Mettapedia.Machines.Specialization.ScopedJoinTrees
 
 /-! # Source preparation, execution costs, and portable lowering -/

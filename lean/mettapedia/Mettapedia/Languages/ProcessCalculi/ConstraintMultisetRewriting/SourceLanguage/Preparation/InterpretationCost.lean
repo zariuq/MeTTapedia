@@ -150,6 +150,31 @@ theorem source_pays_two_per_move {before after : Config κ Γ star D.Ty} {work :
 
 variable {machine : Evaluator κ D Storage} (schedule : Scheduler machine strategy)
 
+theorem runs_at_productive_cost [DecidableEq κ.Key] {comp : Comp κ Γ star D.Ty}
+    (tariff : Tariff) (body : Fragment κ Γ star D.Ty ending comp)
+    (compiled : compile comp = some (lower body [] 0))
+    (around : Surrounding κ Γ star D.Ty) (kept : Keeps machine strategy schedule around)
+    (templates : Templates κ Γ star) (table : templates.Table)
+    (world : ExecutionWorld Storage) (knowledge : List (Constraint κ Γ star))
+    (frames : List (Frame κ Γ star D.Ty)) (cells : List (Data κ Γ star × Comp κ Γ star D.Ty))
+    (entry : List Nat) (publication work credit : Nat)
+    {result : PreparedBodies.Publication κ Γ star D.Ty Storage} :
+    let attempt := PreparedWork.activate templates tariff.prepared machine.solver
+      (BindingExpenses.reserve tariff.prepared (lower body [] 0)) around world knowledge frames cells entry table
+      publication work credit
+    attempt.answer = .ok result →
+      Reaches schedule result.debit (PreparedBodies.entryState around world knowledge comp frames cells entry)
+        result.state ∧ attempt.elapsed ≤ sourceWork tariff body + publication := by
+  dsimp only
+  intro published
+  have accepted := PreparedWork.activate_sound templates tariff.prepared machine.solver
+    (BindingExpenses.reserve tariff.prepared (lower body [] 0)) around world knowledge frames cells entry table
+    publication work credit published
+  exact ⟨(PreparedBodies.activate_exact kept templates compiled world knowledge frames cells entry
+    table credit accepted).2,
+    checked_preparation_optimal tariff body templates machine.solver around world knowledge frames cells entry
+      table publication work credit⟩
+
 /-- In the retained-handle cost model, the same inequality holds
 against the original charged run, with multiplier one. A prepared
 prefix here makes progress, as required by the hybrid driver. -/

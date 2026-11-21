@@ -8,7 +8,9 @@ import Mettapedia.Languages.MeTTa.PeTTa.Bridges.CTLUntilScopedFrame
 The actual capture determines the ordered producer list. Each removal then
 uses the current store left by the preceding producer. Readability and closed
 candidate admission survive deletion by filtering, including repeated
-payloads which have already disappeared from the target.
+payloads which have already disappeared from the target. Each packet carries
+the reply of its own removal, so a repeated payload's later removals reply
+false.
 -/
 
 set_option autoImplicit false
@@ -35,22 +37,64 @@ structure Frame (result : String) (payloadCode : Atom) (caller : Control) (paylo
   literal : SpaceSemantics.Literal payload
   ordinary : ScopedQuerySource.mutationPayload true payload = true
 
+/-- The replies of successive removals of `payloads` from the target `rows`.
+Each removal reads the rows its predecessors left. -/
+def replies (rows : List Atom) : List Atom → List Bool
+  | [] => []
+  | payload :: payloads =>
+      rows.any (Effects.removalMatches payload) ::
+        replies (rows.filter fun row => !Effects.removalMatches payload row) payloads
+
+@[simp] theorem replies_length (rows payloads : List Atom) : (replies rows payloads).length = payloads.length := by
+  induction payloads generalizing rows with
+  | nil => rfl
+  | cons payload payloads ih => simp [replies, ih]
+
+/-- The reply of one erasure, computed from the rows it reads. -/
+theorem erasure_reply {before after : Effects.State} {handle : NamedSpaces.Handle} {payload : Atom}
+    {rows : List Atom} (snapshot : before.read handle = some rows)
+    (erased : Effects.erase before handle payload = some after) :
+    Effects.erasureChanged before after handle = rows.any (Effects.removalMatches payload) :=
+  Bool.eq_iff_iff.mpr ((Effects.erasureChanged_iff snapshot erased).trans List.any_eq_true.symm)
+
+/-- The packets of the captured removals, each carrying the reply of its
+erasure in the rows left by the preceding producers. -/
 def packets (result : String) (handle : NamedSpaces.Handle) (payloadCode : Atom)
-    (older : List Goal) (origins : List Nat) (selected : List (Nat × Control)) : List CollectedAnswer :=
-  selected.map fun entry => ScopedRemovalExecution.packet result handle payloadCode
-    {entry.2 with goals := older} (origins ++ [entry.1])
+    (older : List Goal) (origins : List Nat) (selected : List (Nat × Control)) (payloads rows : List Atom) :
+    List CollectedAnswer :=
+  List.zipWith (fun entry changed => ScopedRemovalExecution.packet result handle payloadCode
+    {entry.2 with goals := older} (origins ++ [entry.1]) changed) selected (replies rows payloads)
 
 theorem packets_length (result : String) (handle : NamedSpaces.Handle) (payloadCode : Atom)
-    (older : List Goal) (origins : List Nat) (selected : List (Nat × Control)) :
-    (packets result handle payloadCode older origins selected).length = selected.length := by simp [packets]
+    (older : List Goal) (origins : List Nat) (selected : List (Nat × Control)) (payloads rows : List Atom)
+    (same : selected.length = payloads.length) :
+    (packets result handle payloadCode older origins selected payloads rows).length = selected.length := by
+  simp [packets, same]
 
 theorem packets_values (result : String) (handle : NamedSpaces.Handle) (payloadCode : Atom)
-    (older : List Goal) (origins : List Nat) (selected : List (Nat × Control)) :
-    ∀ packet ∈ packets result handle payloadCode older origins selected,
-      packet.value = Effects.boolean true ∧ packet.associated = [] := by
-  intro packet member
-  obtain ⟨entry, _, rfl⟩ := List.mem_map.mp member
-  exact ⟨rfl, rfl⟩
+    (older : List Goal) (origins : List Nat) (selected : List (Nat × Control)) (payloads rows : List Atom)
+    (same : selected.length = payloads.length) :
+    (packets result handle payloadCode older origins selected payloads rows).map CollectedAnswer.value =
+        (replies rows payloads).map Effects.boolean ∧
+      ∀ packet ∈ packets result handle payloadCode older origins selected payloads rows,
+        ∃ changed, packet.value = Effects.boolean changed ∧ packet.associated = [] := by
+  induction selected generalizing payloads rows with
+  | nil =>
+      cases payloads with
+      | nil => simp [packets, replies]
+      | cons => simp at same
+  | cons entry selected ih =>
+      cases payloads with
+      | nil => simp at same
+      | cons payload payloads =>
+          obtain ⟨values, rest⟩ := ih payloads (rows.filter fun row => !Effects.removalMatches payload row)
+            (Nat.succ.inj same)
+          refine ⟨by simpa [packets, replies, ScopedRemovalExecution.packet] using values, ?_⟩
+          intro packet member
+          simp only [packets, replies, List.zipWith_cons_cons, List.mem_cons] at member
+          rcases member with rfl | later
+          · exact ⟨_, rfl, rfl⟩
+          · exact rest packet later
 
 theorem framed_complete (program : SpaceSemantics.Program) (result : String) (handle : NamedSpaces.Handle)
     (payloadCode : Atom) (caller : Control) (state : State Context) (context : Context)
@@ -59,7 +103,7 @@ theorem framed_complete (program : SpaceSemantics.Program) (result : String) (ha
     (ready : ClosedQueryAdmission.rowsReady payload rows = true) :
     ∃ after, Effects.erase state.world.state handle payload = some after ∧
       (ScopedRemovalExecution.leaf program result handle payloadCode Context).execute caller state context origins pending =
-        ⟨6, ScopedRemovalExecution.events result handle payloadCode caller origins state,
+        ⟨6, ScopedRemovalExecution.events result handle payloadCode caller origins state after,
           .complete (ScopedRemovalExecution.advance result handle payloadCode caller origins state after)⟩ := by
   obtain ⟨principal, resolved, reading⟩ := framed.resolved
   obtain ⟨evidence, prepared⟩ := ScopedRemovalExecution.prepare_complete result handle payloadCode caller state
@@ -92,12 +136,12 @@ theorem visit_complete (program : SpaceSemantics.Program) (result : String) (han
       (visit (ScopedRemovalExecution.leaf program result handle payloadCode Context).execute older context origins selected state pending).stop = .complete after ∧
       QueryBagErasure.eraseRows handle payloads state.world.state = some after.world.state ∧
       after.allocator = state.allocator ∧
-      after.scope.collected = state.scope.collected ++ packets result handle payloadCode older origins selected ∧
+      after.scope.collected = state.scope.collected ++ packets result handle payloadCode older origins selected payloads rows ∧
       after.scope.caller = state.scope.caller ∧ after.parents = state.parents ∧
       (visit (ScopedRemovalExecution.leaf program result handle payloadCode Context).execute older context origins selected state pending).events =
-        (if state.scope.caller.isNone then packets result handle payloadCode older origins selected else []) := by
+        (if state.scope.caller.isNone then packets result handle payloadCode older origins selected payloads rows else []) := by
   induction frames generalizing state pending rows with
-  | nil => exact ⟨state, rfl, rfl, rfl, by simp [packets], rfl, rfl, by simp [visit, packets]⟩
+  | nil => exact ⟨state, rfl, rfl, rfl, by simp [packets, replies], rfl, rfl, by simp [visit, packets, replies]⟩
   | @cons entry payload entries payloads framed frames ih =>
     let caller := {entry.2 with goals := older}
     let tail := ScopedQuerySource.work context origins entries ++ pending
@@ -107,6 +151,7 @@ theorem visit_complete (program : SpaceSemantics.Program) (result : String) (han
     obtain ⟨oldRows, oldRead, nextRead⟩ := Effects.erase_reads_back erased
     have sameRows : oldRows = rows := Option.some.inj (oldRead.symm.trans snapshot)
     subst oldRows
+    have reply := erasure_reply snapshot erased
     obtain ⟨after, completed, erasedRest, allocator, collected, saved, parents, emitted⟩ :=
       ih middle pending (rows.filter fun row => !Effects.removalMatches payload row) nextRead
         (fun value member => ready_filter value rows _ (ready value (List.mem_cons_of_mem _ member)))
@@ -116,12 +161,14 @@ theorem visit_complete (program : SpaceSemantics.Program) (result : String) (han
       exact completed
     · simp only [QueryBagErasure.eraseRows, erased, Option.bind_some]
       exact erasedRest
-    · simpa only [middle, ScopedRemovalExecution.advance, packets, List.map_cons, List.append_assoc, List.singleton_append] using collected
+    · simpa only [middle, ScopedRemovalExecution.advance, packets, replies, reply, List.zipWith_cons_cons,
+        List.append_assoc, List.singleton_append] using collected
     · simp only [visit, caller, tail] at executed ⊢
       rw [executed]
       dsimp only
       rw [emitted]
-      simp only [middle, ScopedRemovalExecution.advance, ScopedRemovalExecution.events, packets, List.map_cons]
+      simp only [middle, ScopedRemovalExecution.advance, ScopedRemovalExecution.events, packets, replies, reply,
+        List.zipWith_cons_cons]
       split <;> simp_all only [List.singleton_append, List.nil_append]
 
 private theorem destination_retained (caller : Control) (result : String) (handle : NamedSpaces.Handle)
@@ -172,8 +219,14 @@ theorem frontier_frame {Label : Type} (codec : Codec Label) (label : Label) (rou
       HE.Spec.Type.RuntimeRefinement.applyTypeValuation, List.map_cons, List.map_nil, formulaAfter, roundAfter, nodeAfter]
   · exact CTLUntilPublicationSource.frontier_ordinary codec label round node
 
+/-- The current frontier payloads, in capture order, including repeats. -/
+def frontierPayloads {Label : Type} [DecidableEq Label] (codec : Codec Label) (label : Label) (round : Nat)
+    (rows : List (Row Label)) : List Atom :=
+  (rows.filterMap (frontSelect label round)).map fun node => render codec (.frontier label round node)
+
 /-- The raw single-query cleanup completes through the actual live executor.
-Its captured producer count and final typed filter are both derived. -/
+Its captured producer count, the replies its packets carry and its final
+typed filter are all derived. -/
 theorem frontier_complete {Label : Type} [DecidableEq Label] (codec : Codec Label) (label : Label) (round : Nat)
     (program : SpaceSemantics.Program) (result formulaName roundName nodeName : String) (handle : NamedSpaces.Handle)
     (caller : Control) (state : State Context) (context : Context) (origins : List Nat) (pending : List (CollectionWork Context))
@@ -192,6 +245,9 @@ theorem frontier_complete {Label : Type} [DecidableEq Label] (codec : Codec Labe
       decodeRows codec ((CTLUntilCleanup.remaining label round rows).map (render codec)) =
         some (CTLUntilCleanup.remaining label round rows) ∧
       after.scope.collected.length = state.scope.collected.length + (rows.filterMap (frontSelect label round)).length ∧
+      (∃ added, after.scope.collected = state.scope.collected ++ added ∧
+        added.map CollectedAnswer.value = (replies atoms (frontierPayloads codec label round rows)).map Effects.boolean ∧
+        ∀ packet ∈ added, packet.associated = []) ∧
       (∀ other, other ≠ handle → after.world.state.read other = state.world.state.read other) ∧
       after.world.state.cells = state.world.state.cells ∧ after.allocator = state.allocator ∧
       after.scope.caller = state.scope.caller ∧ after.parents = state.parents ∧
@@ -204,7 +260,7 @@ theorem frontier_complete {Label : Type} [DecidableEq Label] (codec : Codec Labe
   obtain ⟨_, selected, captured, choices⟩ := CTLUntilScopedCapture.frontier_capture codec program handle label round
     formulaName roundName nodeName body (.var result) caller state context origins pending principal atoms rows
     resolved formulaRead roundRead nodeFresh rfl snapshot decoded
-  let payloads := (rows.filterMap (frontSelect label round)).map fun node => render codec (.frontier label round node)
+  let payloads := frontierPayloads codec label round rows
   have words : payloads = (located (frontSelect label round) 0 rows).map
       (fun entry => render codec (.frontier label round entry.2)) :=
     (CTLUntilSourceRows.located_map (frontSelect label round) 0 rows
@@ -230,13 +286,16 @@ theorem frontier_complete {Label : Type} [DecidableEq Label] (codec : Codec Labe
     rw [captured]
     exact completed
   obtain ⟨reading, others, cells⟩ := QueryBagErasure.eraseRows_receipt handle payloads state.world.state after.world.state atoms snapshot erased
+  have length := List.Forall₂.length_eq frames
+  obtain ⟨values, flat⟩ := packets_values result handle pattern caller.goals origins selected.choices payloads atoms length
   refine ⟨after, actual, ?_, CTLUntilMixedStore.decode_rows_complete codec _
-    (CTLUntilCleanup.remaining_admitted label round rows admitted), ?_, others, cells, allocator, saved, parents, ?_⟩
+    (CTLUntilCleanup.remaining_admitted label round rows admitted), ?_,
+    ⟨_, collected, values, fun packet member => (flat packet member).choose_spec.2⟩,
+    others, cells, allocator, saved, parents, ?_⟩
   · rw [reading, ← rendered]
     exact congrArg some (CTLUntilCleanup.retained_exact codec label round rows admitted)
-  · rw [collected, List.length_append, packets_length]
-    have length := List.Forall₂.length_eq frames
-    simpa only [payloads, List.length_map] using congrArg (state.scope.collected.length + ·) length
+  · rw [collected, List.length_append, packets_length _ _ _ _ _ _ _ _ length]
+    simpa only [payloads, frontierPayloads, List.length_map] using congrArg (state.scope.collected.length + ·) length
   · intro nested
     simp only [run, ScopedRemovalExecution.leaf, ScopedNestedQueryExecution.source] at captured ⊢
     rw [captured]
@@ -245,5 +304,30 @@ theorem frontier_complete {Label : Type} [DecidableEq Label] (codec : Codec Labe
       caller.goals context origins selected.choices state pending).events = []
     rw [emitted]
     cases parent : state.scope.caller <;> simp_all
+
+namespace Controls
+
+open ScopedRemovalSource.Controls (fact)
+
+private theorem fact_matches : Effects.removalMatches fact fact = true := Effects.removalMatches_self _ _
+
+/-- Positive: removing a present payload replies true, however many copies it removes. -/
+theorem present_payload_replies_true : replies [fact, fact] [fact] = [true] := by
+  simp [replies, fact_matches]
+
+/-- Negative: the second removal of a repeated payload finds nothing and replies false. -/
+theorem repeated_payload_replies_false : replies [fact] [fact, fact] = [true, false] := by
+  simp [replies, fact_matches]
+
+/-- The live packets carry these replies in capture order. -/
+theorem repeated_payload_packets (result : String) (handle : NamedSpaces.Handle) (payloadCode : Atom)
+    (older : List Goal) (origins : List Nat) (first second : Nat × Control) :
+    (packets result handle payloadCode older origins [first, second] [fact, fact] [fact]).map CollectedAnswer.value =
+      [Effects.boolean true, Effects.boolean false] := by
+  rw [(packets_values result handle payloadCode older origins [first, second] [fact, fact] [fact] rfl).1,
+    repeated_payload_replies_false]
+  rfl
+
+end Controls
 
 end Mettapedia.Languages.MeTTa.PeTTa.Bridges.ScopedRemovalQuery

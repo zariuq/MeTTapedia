@@ -168,8 +168,7 @@ theorem source_exists {Context : Type} (program : SpaceSemantics.Program)
   subst actual
   exact ⟨after, erased, source_prefix program allocator world scope parents caller context origins pending destination
     handle payloadCode payload principal result rows after resolved unbound reading closed ordinaryPayload snapshot complete erased,
-    by simp [Effects.erasureChanged, snapshot, afterRead, List.length_filter_lt_length_iff_exists],
-    afterRead, fun other apart => Effects.erase_read_other erased apart, Effects.erase_preserves_cells erased⟩
+    Effects.erasureChanged_iff snapshot erased, afterRead, fun other apart => Effects.erase_read_other erased apart, Effects.erase_preserves_cells erased⟩
 
 theorem returned_consistent (caller : Control) (destination : Atom) (handle : NamedSpaces.Handle)
     (payloadCode : Atom) (changed : Bool) (principal : Environment) (result : String)

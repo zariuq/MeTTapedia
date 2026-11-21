@@ -7,7 +7,8 @@ import Mettapedia.Languages.MeTTa.PeTTa.Bridges.ScopedEquationReturn
 
 The actual two-operand clause scan retains the caller equations and freshens
 the local frontier variable. Counted cleanup then runs at that reached frame,
-returns its captured occurrence count and restores the predicate delimiter.
+returns its captured occurrence count with the tuple of removal replies, and
+restores the predicate delimiter.
 -/
 
 set_option autoImplicit false
@@ -96,8 +97,9 @@ def Call.countInput (call : Call Context) (arguments : List Atom) : CountedSourc
   body := CTLUntilCountedCleanup.body call.handle (call.name call.formulaName) (call.name call.roundName) (call.name call.nodeName) }
 def Call.before (call : Call Context) : ScopedCursor Context :=
   placed call.state.allocator call.state.world call.state.scope call.state.parents call.control call.context call.origins call.pending
-def Call.returned (call : Call Context) (arguments : List Atom) (count : Nat) : Control :=
-  {GuardedCountReturn.counted (call.bodyCaller arguments) (call.countInput arguments).slot call.destination count with
+/-- The caller after cleanup returns the tuple of its removal replies `flags`. -/
+def Call.returned (call : Call Context) (arguments : List Atom) (flags : List Bool) : Control :=
+  {GuardedCountReturn.countedFlags (call.bodyCaller arguments) (call.countInput arguments).slot call.destination flags with
     goals := call.older, cutBoundary := call.control.cutBoundary}
 
 def values (codec : Codec Label) (label : Label) (round : Nat) : List Atom := [codec.encode label, number round]
@@ -119,6 +121,15 @@ structure Evidence (codec : Codec Label) (label : Label) (round : Nat) (call : C
 
 def Evidence.count {codec : Codec Label} {label : Label} {round : Nat} {call : Call Context}
     (evidence : Evidence codec label round call) : Nat := (evidence.rows.filterMap (frontSelect label round)).length
+
+/-- The replies of the cleanup's removals, one per captured frontier occurrence. -/
+def Evidence.replies {codec : Codec Label} {label : Label} {round : Nat} {call : Call Context}
+    (evidence : Evidence codec label round call) : List Bool :=
+  ScopedRemovalQuery.replies evidence.atoms (ScopedRemovalQuery.frontierPayloads codec label round evidence.rows)
+
+theorem Evidence.replies_length {codec : Codec Label} {label : Label} {round : Nat} {call : Call Context}
+    (evidence : Evidence codec label round call) : evidence.replies.length = evidence.count := by
+  simp [Evidence.replies, Evidence.count, ScopedRemovalQuery.frontierPayloads]
 
 omit [DecidableEq Label] in
 theorem values_closed (codec : Codec Label) (label : Label) (round : Nat)
@@ -200,20 +211,21 @@ theorem body_frame {codec : Codec Label} {label : Label} {round : Nat} {call : C
     exact ⟨Ne.symm names.1.2, Ne.symm names.2.1⟩
   · exact values_closed codec label round
 
-theorem returned_inherits (call : Call Context) (arguments : List Atom) (count : Nat)
-    (environment : Environment) (solved : Solves environment (call.returned arguments count).bindings) :
+theorem returned_inherits (call : Call Context) (arguments : List Atom) (flags : List Bool)
+    (environment : Environment) (solved : Solves environment (call.returned arguments flags).bindings) :
     Solves environment call.control.bindings := by
   intro pair member
   exact solved pair (List.mem_append_left _ (List.mem_append_left _ (List.mem_append_left _ member)))
 
-theorem returned_value (call : Call Context) (arguments : List Atom) (count : Nat)
-    (environment : Environment) (solved : Solves environment (call.returned arguments count).bindings) :
-    read environment call.destination = number count := GuardedCountReturn.counted_value _ _ _ _ environment solved
+theorem returned_value (call : Call Context) (arguments : List Atom) (flags : List Bool)
+    (environment : Environment) (solved : Solves environment (call.returned arguments flags).bindings) :
+    read environment call.destination = number flags.length :=
+  GuardedCountReturn.countedFlags_value _ _ _ _ environment solved
 
-theorem returned_continuation (call : Call Context) (arguments : List Atom) (count : Nat) :
-    (call.returned arguments count).goals = call.older ∧
-      (call.returned arguments count).cutBoundary = call.control.cutBoundary ∧
-      (call.returned arguments count).destination = call.control.destination := ⟨rfl, rfl, rfl⟩
+theorem returned_continuation (call : Call Context) (arguments : List Atom) (flags : List Bool) :
+    (call.returned arguments flags).goals = call.older ∧
+      (call.returned arguments flags).cutBoundary = call.control.cutBoundary ∧
+      (call.returned arguments flags).destination = call.control.destination := ⟨rfl, rfl, rfl⟩
 
 private theorem caller_support_reserved (call : Call Context) (name : String)
     (retained : name ∈ call.control.support) : name ∈ call.protectedControl.reserved := by
@@ -226,10 +238,10 @@ omit [DecidableEq Label] in
 /-- A retained caller-local name survives cleanup when it is not part of the
 count destination. The destination may itself be an unbound alias. -/
 theorem returned_fresh (codec : Codec Label) (label : Label) (round : Nat)
-    (call : Call Context) (count : Nat) (name : String)
+    (call : Call Context) (flags : List Bool) (name : String)
     (fresh : FreshFor name call.control.bindings) (retained : name ∈ call.control.support)
     (notOutput : name ∉ (encode call.destination).freeVars) :
-    FreshFor name (call.returned (values codec label round) count).bindings := by
+    FreshFor name (call.returned (values codec label round) flags).bindings := by
   let arguments := values codec label round
   let input := call.countInput arguments
   have protectedRetained : name ∈ call.protectedControl.support := by
@@ -273,20 +285,20 @@ theorem returned_fresh (codec : Codec Label) (label : Label) (round : Nat)
     · exact headFresh equation beforeTuple
     · cases List.mem_singleton.mp tuple
       constructor
-      · rw [CapturedPatternSupport.literal_names_empty _ (GuardedCountReturn.tuple_literal count)]
+      · rw [CapturedPatternSupport.literal_names_empty _ (GuardedCountReturn.flagTuple_literal flags)]
         exact Finset.notMem_empty name
       · simpa [encode, Mettapedia.Logic.LP.Term.freeVars] using slotApart
   · cases List.mem_singleton.mp numeric
     exact ⟨by simp [GuardedCountReturn.value, encode, Mettapedia.Logic.LP.Term.freeVars], notOutput⟩
 
-theorem returned_closed_reading (call : Call Context) (arguments : List Atom) (count : Nat)
+theorem returned_closed_reading (call : Call Context) (arguments : List Atom) (flags : List Bool)
     (before after : Environment) (atom value : Atom)
     (resolved : resolve call.control.bindings = some before) (reading : read before atom = value)
     (closed : ∀ environment, read environment value = value)
-    (solved : Solves after (call.returned arguments count).bindings) :
+    (solved : Solves after (call.returned arguments flags).bindings) :
     read after atom = value :=
   CapturedQueryOperands.resolved_forces resolved atom value reading closed after
-    (returned_inherits call arguments count after solved)
+    (returned_inherits call arguments flags after solved)
 
 theorem returns {codec : Codec Label} {label : Label} {round : Nat} {call : Call Context}
     (evidence : Evidence codec label round call) (reserve : evidence.count ≤ call.state.allocator.usableCount) :
@@ -297,13 +309,13 @@ theorem returns {codec : Codec Label} {label : Label} {round : Nat} {call : Call
       (∀ other, other ≠ call.handle → after.world.state.read other = call.state.world.state.read other) ∧
       after.world.state.cells = call.state.world.state.cells ∧
       next.usableCount + evidence.count = call.state.allocator.usableCount ∧
-      (∃ principal, resolve (call.returned (values codec label round) evidence.count).bindings = some principal ∧
+      (∃ principal, resolve (call.returned (values codec label round) evidence.replies).bindings = some principal ∧
         read principal call.destination = number evidence.count) ∧
       (ScopedQuerySource.machine .relational call.program).run
         (1 + (2 + (CTLUntilCountedCleanup.childExecution (call.countInput (values codec label round)) call.handle
           (call.name call.formulaName) (call.name call.roundName) (call.name call.nodeName)).budget + 1 + 3) + 1) call.before =
         ([], .exhausted (placed next after.world call.state.scope call.state.parents
-          (call.returned (values codec label round) evidence.count) call.context
+          (call.returned (values codec label round) evidence.replies) call.context
           ((call.origins ++ [call.occurrence]) ++ [0]) call.pending)) := by
   obtain ⟨principal, representative, resolved, unbound, formula, current, nodeFresh⟩ := body_frame evidence
   let input := call.countInput (values codec label round)
@@ -317,10 +329,10 @@ theorem returns {codec : Codec Label} {label : Label} {round : Nat} {call : Call
     (call.name call.formulaName) (call.name call.roundName) (call.name call.nodeName)
   change (ScopedQuerySource.machine .relational call.program).run (2 + child.budget + 1 + 3) input.before =
     ([], .exhausted (placed next after.world call.state.scope call.state.parents
-      (GuardedCountReturn.counted input.caller input.slot call.destination evidence.count)
+      (GuardedCountReturn.countedFlags input.caller input.slot call.destination evidence.replies)
       call.context ((call.origins ++ [call.occurrence]) ++ [0]) call.pending)) at counted
   have restored := ScopedEquationReturn.restore_prefix .relational call.program next after.world call.state.scope
-    call.state.parents (GuardedCountReturn.counted input.caller input.slot call.destination evidence.count)
+    call.state.parents (GuardedCountReturn.countedFlags input.caller input.slot call.destination evidence.replies)
     call.context ((call.origins ++ [call.occurrence]) ++ [0]) call.pending call.control.cutBoundary call.older rfl
   have entered := enter_prefix evidence
   change (ScopedQuerySource.machine .relational call.program).run 1 call.before = ([], .exhausted input.before) at entered
@@ -331,17 +343,18 @@ theorem returns {codec : Codec Label} {label : Label} {round : Nat} {call : Call
   have joined := (ScopedQuerySource.machine .relational call.program).established_and_pending
     (1 + (2 + child.budget + 1 + 3)) 1 _ _ [] first
   rw [restored] at joined
-  have tupleApart : input.slot ∉ (encode (GuardedQueryCollection.tuple evidence.count)).freeVars := by
-    rw [CapturedPatternSupport.literal_names_empty _ (GuardedCountReturn.tuple_literal _)]
+  have tupleApart : input.slot ∉ (encode (GuardedQueryCollection.flagTuple evidence.replies)).freeVars := by
+    rw [CapturedPatternSupport.literal_names_empty _ (GuardedCountReturn.flagTuple_literal _)]
     simp
   obtain ⟨tuplePrincipal, tupleName, tupleResolved, tupleUnbound⟩ := ScopedMutationSource.unbound_after_fresh_operand
-    input.caller.bindings principal call.destination (GuardedQueryCollection.tuple evidence.count)
+    input.caller.bindings principal call.destination (GuardedQueryCollection.flagTuple evidence.replies)
     representative input.slot resolved unbound (CountedSourceEntry.slot_fresh input) (CountedSourceEntry.slot_apart input) tupleApart
-  have numeric := ScopedMutationSource.refine_unbound _ tuplePrincipal call.destination (number evidence.count)
-    tupleName tupleResolved tupleUnbound (CTLUntilSourceCapture.number_closed evidence.count)
+  have numeric := ScopedMutationSource.refine_unbound _ tuplePrincipal call.destination (number evidence.replies.length)
+    tupleName tupleResolved tupleUnbound (CTLUntilSourceCapture.number_closed evidence.replies.length)
   obtain ⟨finalPrincipal, finalResolved⟩ := resolve_complete (ClosedOnceQueryFrame.refined_consistent _ _ _ numeric)
   refine ⟨after, next, reading, decoded, others, cells, capacity, ⟨finalPrincipal, finalResolved, ?_⟩, ?_⟩
-  · exact returned_value call _ _ finalPrincipal (resolve_sound finalResolved)
+  · rw [← evidence.replies_length]
+    exact returned_value call _ _ finalPrincipal (resolve_sound finalResolved)
   · simpa only [List.nil_append, child, input, Call.returned, Call.countInput] using joined
 
 end Mettapedia.Languages.MeTTa.PeTTa.Bridges.CTLUntilNamedCleanup

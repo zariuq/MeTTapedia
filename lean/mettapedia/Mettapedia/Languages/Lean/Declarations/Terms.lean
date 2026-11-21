@@ -106,8 +106,10 @@ inductive FTerm where
   as `proof`'s; the term says how the proposition follows. -/
   | proofBy (term : FTerm)
   /-- In a proof term: a theorem applied to as many arguments as its
-  statement binds. -/
+  statement binds, its level arguments first. -/
   | cite (name : Name) (args : List FTerm)
+  /-- A universe level given to a cited theorem's level parameter. -/
+  | level (level : FLevel)
   deriving Repr, BEq, Inhabited
 
 /-- A binder of an equation theorem. -/
@@ -272,7 +274,12 @@ where
         unless expanded.isLambda do
           throwThe String s!"{c} applied to fewer arguments than its statement binds"
         return ← readProof names expanded
-      let own ← (args.extract 0 arity).toList.mapM readArgument
+      -- The theorem's level arguments come first, in the order of its level parameters, as
+      -- its statement quantifies them.
+      let levelArgs ← levels.mapM fun l => match FLevel.of? l with
+        | some v => pure (FTerm.level v)
+        | none => throwThe String s!"a level with a metavariable in {c}"
+      let own := levelArgs ++ (← (args.extract 0 arity).toList.mapM readArgument)
       if args.size == arity then return .cite c own
       return .apv (.cite c own) (← (args.extract arity args.size).toList.mapM readArgument)
     | _ => throwThe String s!"a proof outside the readable profile: {← ppExpr e}"
@@ -460,9 +467,10 @@ partial def FTerm.atom : FTerm → String
   | .arrow domain codomain => s!"(arrow {domain.atom} {codomain.atom})"
   | .pi x domain codomain => s!"(pi {egalVar x} {domain.atom} {codomain.atom})"
   | .prop => "(prop)"
-  | .sort level => s!"(sort {level.atom})"
+  | .sort l => s!"(sort {l.atom})"
   | .proof | .proofBy _ => "(proof)"
   | .cite c args => s!"(cite {c} ({" ".intercalate (args.map FTerm.atom)}))"
+  | .level l => s!"(level {l.atom})"
 
 /-- A term as an atom with its proof terms written out: a proof Lean's term
 is kept for is `(by term)`, and a theorem applied to its arguments is
@@ -476,15 +484,16 @@ partial def FTerm.atomWithProofs : FTerm → String
   | .arrow domain codomain => s!"(arrow {domain.atomWithProofs} {codomain.atomWithProofs})"
   | .pi x domain codomain => s!"(pi {egalVar x} {domain.atomWithProofs} {codomain.atomWithProofs})"
   | .prop => "(prop)"
-  | .sort level => s!"(sort {level.atom})"
+  | .sort l => s!"(sort {l.atom})"
   | .proof => "(proof)"
   | .proofBy term => s!"(by {term.atomWithProofs})"
   | .cite c args => s!"(cite {c} ({" ".intercalate (args.map FTerm.atomWithProofs)}))"
+  | .level l => s!"(level {l.atom})"
 
 /-- The proofs of a term in the order its atom writes them: for each, the
 term Lean records, when it was read. -/
 partial def FTerm.proofTerms : FTerm → List (Option FTerm)
-  | .var _ | .num _ | .prop | .sort _ => []
+  | .var _ | .num _ | .prop | .sort _ | .level _ => []
   | .app _ args | .cite _ args => args.flatMap FTerm.proofTerms
   | .apv f args => (f :: args).flatMap FTerm.proofTerms
   | .lam _ type body => type.proofTerms ++ body.proofTerms
@@ -494,7 +503,7 @@ partial def FTerm.proofTerms : FTerm → List (Option FTerm)
 
 /-- The theorems a term's proofs cite, in order of first use. -/
 partial def FTerm.cited : FTerm → List Name
-  | .var _ | .num _ | .prop | .sort _ | .proof => []
+  | .var _ | .num _ | .prop | .sort _ | .proof | .level _ => []
   | .app _ args => args.foldl (fun acc a => acc ++ (a.cited.filter (!acc.contains ·))) []
   | .cite c args => args.foldl (fun acc a => acc ++ (a.cited.filter (!acc.contains ·))) [c]
   | .apv f args => (f :: args).foldl (fun acc a => acc ++ (a.cited.filter (!acc.contains ·))) []
@@ -518,7 +527,7 @@ def FEquation.atom (eqn : FEquation) : String :=
 
 /-- The constants a term applies, in order of first use. -/
 partial def FTerm.constants : FTerm → List Name
-  | .var _ | .num _ => []
+  | .var _ | .num _ | .level _ => []
   | .app c args => args.foldl (fun acc a => acc ++ (a.constants.filter (!acc.contains ·)))
       (if c.isAnonymous then [] else [c])
   | .apv f args => (f :: args).foldl (fun acc a => acc ++ (a.constants.filter (!acc.contains ·))) []

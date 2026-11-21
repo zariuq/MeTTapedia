@@ -148,7 +148,7 @@ theorem step {codec : Codec Label} {label holds : Label} {round : Nat} {call : C
   rw [dropRun] at throughDrop
   simp only [List.nil_append] at throughDrop
   rw [CTLUntilLoopDrop.returned_branch] at throughDrop
-  let caller := drop.branchCaller codec label round entry.removed
+  let caller := drop.branchCaller codec label round entry.replies
   let names := CTLUntilLoopFrames.branchNames drop.names
   have equalityStrict : ∀ index, index < 2 → Eval.argumentIsRaw call.program "==" index = false := by
     intro index _

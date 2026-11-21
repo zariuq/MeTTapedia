@@ -129,7 +129,7 @@ theorem increment_prefix (codec : Codec Label) (label holds : Label) (round : Na
     (by
       rw [show [.var names.current, number 1].map (read principal) = [number round, number 1] by
         simp only [List.map_cons, List.map_nil, current, one]]
-      simpa [number] using StdLib.integer_addition world.state (round : Int) 1)
+      simp [number])
     (CTLUntilSourceCapture.number_closed (round + 1))
   change (ScopedQuerySource.machine .relational program).run 7
     (placed allocator world scope parents

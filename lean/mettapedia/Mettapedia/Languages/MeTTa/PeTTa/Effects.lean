@@ -243,6 +243,14 @@ theorem erase_preserves_empty_tail {state after : State} {handle : Handle} {atom
       simp only [read] at erased
       exact Store.write_emptyTail vacant erased
 
+/-- An erasure changes its space exactly when a stored row matches the pattern. -/
+theorem erasureChanged_iff {state after : State} {handle : Handle} {pattern : Atom} {rows : List Atom}
+    (allocated : state.read handle = some rows) (erased : erase state handle pattern = some after) :
+    erasureChanged state after handle = true ↔ ∃ row ∈ rows, removalMatches pattern row = true := by
+  obtain ⟨before, readBefore, readAfter⟩ := erase_reads_back erased
+  cases Option.some.inj (readBefore.symm.trans allocated)
+  simp [erasureChanged, allocated, readAfter, List.length_filter_lt_length_iff_exists]
+
 /-- One pattern pass clears exactly those rows it selects. No field-validity
 assumption is hidden in the frame properties. -/
 theorem erase_all_selected {state : State} {handle : Handle} {rows : List Atom} {pattern : Atom}

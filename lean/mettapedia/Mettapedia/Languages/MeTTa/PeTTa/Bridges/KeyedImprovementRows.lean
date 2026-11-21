@@ -96,15 +96,6 @@ theorem updated_rows_exact (head : String) (rows : List (Nat × Nat)) (key candi
         simp [encodeRows, encode]
       · simp [updatedRows, OrderedRows.publish, better]
 
-/-- An erasure changes its space exactly when a stored row matches the pattern. -/
-theorem erasureChanged_iff {before after : Effects.State} {target : Handle} {pattern : Atom}
-    {rows : List Atom} (snapshot : before.read target = some rows)
-    (erased : Effects.erase before target pattern = some after) :
-    Effects.erasureChanged before after target = true ↔ ∃ row ∈ rows, Effects.removalMatches pattern row = true := by
-  obtain ⟨stored, read, result⟩ := Effects.erase_reads_back erased
-  cases Option.some.inj (read.symm.trans snapshot)
-  simp [Effects.erasureChanged, snapshot, result, List.length_filter_lt_length_iff_exists]
-
 /-- The replacement branch removes its claimed incumbent, so that row must be stored. -/
 theorem write_complete (before : Effects.State) (target : Handle) (head : String) (key candidate : Nat)
     (old : Option Nat) (rows : List Atom) (snapshot : before.read target = some rows)
@@ -119,7 +110,7 @@ theorem write_complete (before : Effects.State) (target : Handle) (head : String
       · obtain ⟨middle, erased⟩ := Effects.erase_exists_of_read_some snapshot (row head (number key) (number previous))
         obtain ⟨_, _, middleRead⟩ := Effects.erase_reads_back erased
         obtain ⟨after, inserted⟩ := Effects.insert_exists_of_read_some middleRead (row head (number key) (number candidate))
-        have changed := (erasureChanged_iff snapshot erased).mpr
+        have changed := (Effects.erasureChanged_iff snapshot erased).mpr
           ⟨_, stored previous rfl, Effects.removalMatches_self _ _⟩
         exact ⟨after, [number key], by simp [write, better, erased, changed, inserted]⟩
       · exact ⟨before, [], by simp [write, better]⟩

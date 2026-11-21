@@ -38,8 +38,10 @@
 
 (= (wire:level $L $env)
    (case $L
-     (((lvl $l) (wire:index $l $env 0))
+     (((lvl $l) (if (== (get-metatype $l) Grounded) (wire:literal $l) (wire:index $l $env 0)))
       ((lsucc $X) (Tm.app (wire:named "ordsucc") (wire:level $X $env)))
+      ((lmax $A $B) (Tm.app (Tm.app (wire:named "LeanLevelMax") (wire:level $A $env)) (wire:level $B $env)))
+      ((limax $A $B) (Tm.app (Tm.app (wire:named "LeanLevelIMax") (wire:level $A $env)) (wire:level $B $env)))
       ($_ (if (== (get-metatype $L) Grounded) (wire:literal $L)
               (Error (LeanTermForm $L) (LeanTerm "a universe level with no reading")))))))
 (= (wire:sort $A $env)
@@ -48,8 +50,15 @@
          (if (== (get-metatype $L) Expression)
              (if (== (car-atom $L) lsucc)
                  (Tm.app (wire:named "LeanUniv") (wire:level (car-atom (cdr-atom $L)) $env))
-                 (Tm.app (wire:named "LeanSort") (wire:level $L $env)))
+                 (wire:sort-at $L $env))
              (Tm.app (wire:named "LeanSort") (wire:level $L $env))))))
+; Sort k at a numeral k: Prop at 0, the universe k - 1 above it (the canonical forms the
+; typing lemmas state); at any other level, LeanSort of the level.
+(= (wire:sort-at $L $env)
+   (let $k (car-atom (cdr-atom $L))
+     (if (and (== (car-atom $L) lvl) (== (get-metatype $k) Grounded))
+         (if (== $k 0) (wire:named "LeanProp") (Tm.app (wire:named "LeanUniv") (wire:literal (- $k 1))))
+         (Tm.app (wire:named "LeanSort") (wire:level $L $env)))))
 
 ; The head of an application, as head-text names it, and the arguments it
 ; takes as a function of the logic.

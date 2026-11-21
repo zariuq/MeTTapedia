@@ -57,10 +57,12 @@ def Input.named (input : Input Context) : CTLUntilNamedCleanup.Call Context := {
   origins := input.origins, pending := input.pending, arguments := input.arguments, destination := .var input.slot
   older := input.producer.goals, handle := .self, formulaName := "f", roundName := "k", nodeName := "x"
   distinct := by decide, occurrence := input.occurrence }
-def Input.returned (input : Input Context) (codec : Codec Label) (label : Label) (round removed : Nat) : Control :=
-  input.named.returned (CTLUntilNamedCleanup.values codec label round) removed
-def Input.branchCaller (input : Input Context) (codec : Codec Label) (label : Label) (round removed : Nat) : Control :=
-  {input.returned codec label round removed with goals := input.older}
+def Input.returned (input : Input Context) (codec : Codec Label) (label : Label) (round : Nat) (flags : List Bool) :
+    Control :=
+  input.named.returned (CTLUntilNamedCleanup.values codec label round) flags
+def Input.branchCaller (input : Input Context) (codec : Codec Label) (label : Label) (round : Nat) (flags : List Bool) :
+    Control :=
+  {input.returned codec label round flags with goals := input.older}
 def Input.returnOrigins (input : Input Context) : List Nat := (input.origins ++ [input.occurrence]) ++ [0]
 
 structure Entry (codec : Codec Label) (label holds : Label) (round count : Nat) (input : Input Context) where
@@ -77,6 +79,15 @@ structure Entry (codec : Codec Label) (label holds : Label) (round count : Nat) 
 
 def Entry.removed {codec : Codec Label} {label holds : Label} {round count : Nat} {input : Input Context}
     (entry : Entry codec label holds round count input) : Nat := (entry.rows.filterMap (frontSelect label round)).length
+
+/-- The replies of the cleanup's removals, one per current frontier occurrence. -/
+def Entry.replies {codec : Codec Label} {label holds : Label} {round count : Nat} {input : Input Context}
+    (entry : Entry codec label holds round count input) : List Bool :=
+  ScopedRemovalQuery.replies entry.atoms (ScopedRemovalQuery.frontierPayloads codec label round entry.rows)
+
+theorem Entry.replies_length {codec : Codec Label} {label holds : Label} {round count : Nat} {input : Input Context}
+    (entry : Entry codec label holds round count input) : entry.replies.length = entry.removed := by
+  simp [Entry.replies, Entry.removed, ScopedRemovalQuery.frontierPayloads]
 
 omit [DecidableEq Label] in
 private theorem root_retained (input : Input Context) :
@@ -179,17 +190,17 @@ theorem prepare_prefix {codec : Codec Label} {label holds : Label} {round count 
   simpa only [List.nil_append, Input.before] using joined
 
 omit [DecidableEq Label] in
-theorem returned_inherits (input : Input Context) (codec : Codec Label) (label : Label) (round removed : Nat)
-    (environment : Environment) (solved : Solves environment (input.returned codec label round removed).bindings) :
+theorem returned_inherits (input : Input Context) (codec : Codec Label) (label : Label) (round : Nat) (flags : List Bool)
+    (environment : Environment) (solved : Solves environment (input.returned codec label round flags).bindings) :
     Solves environment input.control.bindings :=
   ScopedLetSource.inherited input.base input.names.dropped (cleanupCall input.names) (branch input.names) (.var input.names.result)
     environment (ScopedAtomicCallOperands.ready_inherited input.producer "drop" input.operands (.var input.slot)
-      environment (CTLUntilNamedCleanup.returned_inherits input.named _ removed environment solved))
+      environment (CTLUntilNamedCleanup.returned_inherits input.named _ flags environment solved))
 
 omit [DecidableEq Label] in
-theorem returned_branch (input : Input Context) (codec : Codec Label) (label : Label) (round removed : Nat) :
-    input.returned codec label round removed =
-      CTLUntilLoopBranch.entry (input.branchCaller codec label round removed) (branchNames input.names) := rfl
+theorem returned_branch (input : Input Context) (codec : Codec Label) (label : Label) (round : Nat) (flags : List Bool) :
+    input.returned codec label round flags =
+      CTLUntilLoopBranch.entry (input.branchCaller codec label round flags) (branchNames input.names) := rfl
 
 structure Receipt {codec : Codec Label} {label holds : Label} {round count : Nat} {input : Input Context}
     (entry : Entry codec label holds round count input) where
@@ -202,10 +213,10 @@ structure Receipt {codec : Codec Label} {label holds : Label} {round count : Nat
   outside : ∀ other, other ≠ .self → after.world.state.read other = input.state.world.state.read other
   cells : after.world.state.cells = input.state.world.state.cells
   debit : allocator.usableCount + entry.removed = input.state.allocator.usableCount
-  frame : BranchFrame codec label holds round count input.names (input.branchCaller codec label round entry.removed)
+  frame : BranchFrame codec label holds round count input.names (input.branchCaller codec label round entry.replies)
   exact : (ScopedQuerySource.machine .relational input.program).run budget input.before =
     ([], .exhausted (placed allocator after.world input.state.scope input.state.parents
-      (input.returned codec label round entry.removed) input.context input.returnOrigins input.pending))
+      (input.returned codec label round entry.replies) input.context input.returnOrigins input.pending))
 
 theorem executes {codec : Codec Label} {label holds : Label} {round count : Nat} {input : Input Context}
     (entry : Entry codec label holds round count input)
@@ -217,14 +228,14 @@ theorem executes {codec : Codec Label} {label holds : Label} {round count : Nat}
     atoms := entry.atoms, rows := entry.rows, snapshot := entry.snapshot, decoded := entry.decoded }
   obtain ⟨after, allocator, reading, decoded, outside, cells, debit, ⟨finalPrincipal, finalResolved, _value⟩, executed⟩ :=
     CTLUntilNamedCleanup.returns evidence reserve
-  have inherited := returned_inherits input codec label round entry.removed finalPrincipal (resolve_sound finalResolved)
+  have inherited := returned_inherits input codec label round entry.replies finalPrincipal (resolve_sound finalResolved)
   have retained : input.names.result ∈ input.ready.support := by
     apply GuardedInsertionPairSource.goal_atom_support _ (.var input.names.result) input.names.result
     · simp [Input.ready, ScopedAtomicCallOperands.ready, Input.producer, ScopedLetSource.producerCaller, Goal.atoms]
     · simp [encode, Mettapedia.Logic.LP.Term.freeVars]
-  have keptRoot := CTLUntilNamedCleanup.returned_fresh codec label round input.named entry.removed input.names.result rootFresh retained
+  have keptRoot := CTLUntilNamedCleanup.returned_fresh codec label round input.named entry.replies input.names.result rootFresh retained
     (by simpa [Input.named, encode, Mettapedia.Logic.LP.Term.freeVars] using root_ne_slot input)
-  have branchFrame : BranchFrame codec label holds round count input.names (input.branchCaller codec label round entry.removed) := {
+  have branchFrame : BranchFrame codec label holds round count input.names (input.branchCaller codec label round entry.replies) := {
     principal := finalPrincipal, resolved := finalResolved
     formula := CapturedQueryOperands.resolved_forces entry.frame.resolved _ _ entry.frame.formula
       (LiteralQuerySource.read_literal _ (codec.literal label)) finalPrincipal inherited
@@ -249,7 +260,7 @@ theorem executes {codec : Codec Label} {label holds : Label} {round count : Nat}
   rw [executed] at joined
   change (ScopedQuerySource.machine .relational input.program).run (8 + budget) input.before =
     ([] ++ [], .exhausted (placed allocator after.world input.state.scope input.state.parents
-      (input.returned codec label round entry.removed) input.context input.returnOrigins input.pending)) at joined
+      (input.returned codec label round entry.replies) input.context input.returnOrigins input.pending)) at joined
   exact ⟨{
     after, allocator, budget := 8 + budget, reading, decoded, outside, cells, debit
     frame := branchFrame
@@ -260,16 +271,16 @@ theorem quiet_returns {codec : Codec Label} {label holds : Label} {round : Nat} 
     (reserve : entry.removed ≤ input.state.allocator.usableCount)
     (strict : ∀ index, index < 2 → Eval.argumentIsRaw input.program "==" index = false) :
     ∃ receipt : Receipt entry, ∃ principal,
-      resolve (CTLUntilLoopBranch.quietReturned (input.branchCaller codec label round entry.removed) (branchNames input.names)).bindings = some principal ∧
+      resolve (CTLUntilLoopBranch.quietReturned (input.branchCaller codec label round entry.replies) (branchNames input.names)).bindings = some principal ∧
       read principal (.var input.names.result) = number (round + 1) ∧
       (ScopedQuerySource.machine .relational input.program).run (receipt.budget + 11) input.before =
         ([], .exhausted (placed receipt.allocator receipt.after.world input.state.scope input.state.parents
-          (CTLUntilLoopBranch.quietReturned (input.branchCaller codec label round entry.removed) (branchNames input.names))
+          (CTLUntilLoopBranch.quietReturned (input.branchCaller codec label round entry.replies) (branchNames input.names))
           input.context (input.returnOrigins ++ [0]) input.pending)) := by
   obtain ⟨receipt⟩ := executes entry reserve
   obtain ⟨principal, resolved, reading, last⟩ := CTLUntilLoopBranch.quiet_prefix codec label holds (round + 1)
     (branchNames input.names) input.program receipt.allocator receipt.after.world input.state.scope input.state.parents
-    (input.branchCaller codec label round entry.removed) input.context input.returnOrigins input.pending receipt.frame strict
+    (input.branchCaller codec label round entry.replies) input.context input.returnOrigins input.pending receipt.frame strict
   have first := receipt.exact
   rw [returned_branch] at first
   have joined := (ScopedQuerySource.machine .relational input.program).established_and_pending receipt.budget 11 _ _ [] first
@@ -283,20 +294,20 @@ theorem recursive_prepared {codec : Codec Label} {label holds : Label} {round co
     (declared : callable input.program "eu-loop" = true)
     (recursiveStrict : ∀ index, index < 3 → Eval.argumentIsRaw input.program "eu-loop" index = false) :
     ∃ receipt : Receipt entry, ∃ principal,
-      resolve (CTLUntilLoopBranch.recursiveReady (input.branchCaller codec label round entry.removed) (branchNames input.names) count).bindings = some principal ∧
-      (CTLUntilLoopBranch.recursiveArguments (input.branchCaller codec label round entry.removed) (branchNames input.names) count).map (read principal) =
+      resolve (CTLUntilLoopBranch.recursiveReady (input.branchCaller codec label round entry.replies) (branchNames input.names) count).bindings = some principal ∧
+      (CTLUntilLoopBranch.recursiveArguments (input.branchCaller codec label round entry.replies) (branchNames input.names) count).map (read principal) =
         [codec.encode label, codec.encode holds, number (round + 1)] ∧
       FreshFor input.names.result (CTLUntilLoopBranch.recursiveReady
-        (input.branchCaller codec label round entry.removed) (branchNames input.names) count).bindings ∧
+        (input.branchCaller codec label round entry.replies) (branchNames input.names) count).bindings ∧
       read principal (.var input.names.result) = .var input.names.result ∧
       (ScopedQuerySource.machine .relational input.program).run (receipt.budget + 16) input.before =
         ([], .exhausted (placed receipt.allocator receipt.after.world input.state.scope input.state.parents
-          (CTLUntilLoopBranch.recursiveReady (input.branchCaller codec label round entry.removed) (branchNames input.names) count)
+          (CTLUntilLoopBranch.recursiveReady (input.branchCaller codec label round entry.replies) (branchNames input.names) count)
           input.context (input.returnOrigins ++ [0]) input.pending)) := by
   obtain ⟨receipt⟩ := executes entry reserve
   obtain ⟨principal, resolved, readings, fresh, unbound, last⟩ := CTLUntilLoopBranch.recursive_prefix codec label holds (round + 1) count
     (branchNames input.names) input.program receipt.allocator receipt.after.world input.state.scope input.state.parents
-    (input.branchCaller codec label round entry.removed) input.context input.returnOrigins input.pending
+    (input.branchCaller codec label round entry.replies) input.context input.returnOrigins input.pending
     receipt.frame nonzero equalityStrict declared recursiveStrict
   have first := receipt.exact
   rw [returned_branch] at first

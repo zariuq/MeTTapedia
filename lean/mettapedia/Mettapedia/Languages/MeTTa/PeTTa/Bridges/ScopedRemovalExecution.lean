@@ -6,7 +6,8 @@ import Mettapedia.Languages.MeTTa.PeTTa.Bridges.ScopedNestedQueryExecution
 
 Admission reads the current source frame and target. Accepted execution
 computes the erasure, prepares the written handle, performs the mutation and
-records one true packet through the actual terminal source step. Collector
+records one packet carrying the change reply through the actual terminal
+source step. Collector
 copying is separate: this leaf spends no allocator identities. Refusal keeps
 the exact entrance, before any source effect is consumed.
 -/
@@ -63,19 +64,24 @@ def prepare (result : String) (handle : NamedSpaces.Handle) (payloadCode : Atom)
     else none
   else none
 
+/-- The packet recording the removal reply `changed`. -/
 def packet (result : String) (handle : NamedSpaces.Handle) (payloadCode : Atom)
-    (caller : Control) (origins : List Nat) : CollectedAnswer :=
-  ⟨Effects.boolean true, (ScopedRemovalSource.returned caller (.var result) handle payloadCode).bindings, origins ++ [0], []⟩
+    (caller : Control) (origins : List Nat) (changed : Bool) : CollectedAnswer :=
+  ⟨Effects.boolean changed, (ScopedRemovalSource.returned caller (.var result) handle payloadCode changed).bindings,
+    origins ++ [0], []⟩
 
 def advance (result : String) (handle : NamedSpaces.Handle) (payloadCode : Atom)
     (caller : Control) (origins : List Nat) (state : State Context) (after : Effects.State) : State Context :=
   {state with
     world := {state.world with state := after}
-    scope := {state.scope with collected := state.scope.collected ++ [packet result handle payloadCode caller origins]}}
+    scope := {state.scope with collected := state.scope.collected ++
+      [packet result handle payloadCode caller origins (Effects.erasureChanged state.world.state after handle)]}}
 
 def events (result : String) (handle : NamedSpaces.Handle) (payloadCode : Atom)
-    (caller : Control) (origins : List Nat) (state : State Context) : List CollectedAnswer :=
-  if state.scope.caller.isNone then [packet result handle payloadCode caller origins] else []
+    (caller : Control) (origins : List Nat) (state : State Context) (after : Effects.State) : List CollectedAnswer :=
+  if state.scope.caller.isNone then
+    [packet result handle payloadCode caller origins (Effects.erasureChanged state.world.state after handle)]
+  else []
 
 /-- Five source steps perform preparation/removal/refinement; the sixth
 publishes or locally records the actual returned packet. -/
@@ -86,20 +92,22 @@ theorem source_return (program : SpaceSemantics.Program) (result : String) (hand
     (erased : Effects.erase state.world.state handle evidence.payload = some after) :
     (ScopedQuerySource.machine .relational program).run 6
       (ScopedMatchEntry.entrance (ScopedRemovalSource.source handle payloadCode) (.var result) caller state context origins pending) =
-      (events result handle payloadCode caller origins state,
+      (events result handle payloadCode caller origins state after,
         .exhausted ((advance result handle payloadCode caller origins state after).cursor pending)) := by
-  let returned := ScopedRemovalSource.returned caller (.var result) handle payloadCode
-  let answer := packet result handle payloadCode caller origins
+  let changed := Effects.erasureChanged state.world.state after handle
+  let returned := ScopedRemovalSource.returned caller (.var result) handle payloadCode changed
+  let answer := packet result handle payloadCode caller origins changed
   let finalCursor := (advance result handle payloadCode caller origins state after).cursor pending
   have unbound := ClosedOnceQueryFrame.fresh_read caller.bindings result evidence.principal evidence.fresh evidence.resolved
   obtain ⟨environment, resolved⟩ := resolve_complete
-    (ScopedRemovalSource.returned_consistent caller (.var result) handle payloadCode evidence.principal result evidence.resolved unbound)
-  have value : read environment (.var result) = Effects.boolean true :=
-    PresenceGuardSource.bound_closed_value _ (Effects.boolean true) result environment resolved
-      (by simp [ScopedRemovalSource.returned]) (PresenceGuardSource.read_boolean true environment)
+    (ScopedRemovalSource.returned_consistent caller (.var result) handle payloadCode changed evidence.principal result
+      evidence.resolved unbound)
+  have value : read environment (.var result) = Effects.boolean changed :=
+    PresenceGuardSource.bound_closed_value _ (Effects.boolean changed) result environment resolved
+      (by simp [ScopedRemovalSource.returned]) (PresenceGuardSource.read_boolean changed environment)
   have terminal : returned.goals = [] := evidence.finished
-  have actualValue : read environment returned.destination = Effects.boolean true := by
-    change read environment caller.destination = Effects.boolean true
+  have actualValue : read environment returned.destination = Effects.boolean changed := by
+    change read environment caller.destination = Effects.boolean changed
     rw [evidence.output]
     exact value
   have last : (ScopedQuerySource.machine .relational program).step
@@ -116,8 +124,8 @@ theorem source_return (program : SpaceSemantics.Program) (result : String) (hand
     simpa [answer, packet, returned, finalCursor, advance, State.cursor, EagerDFS.Scope.record] using congrArg some delivered
   have finalStep : (ScopedQuerySource.machine .relational program).run 1
       (placed state.allocator {state.world with state := after} state.scope state.parents returned context (origins ++ [0]) pending) =
-      (events result handle payloadCode caller origins state, .exhausted finalCursor) := by
-    cases parent : state.scope.caller <;> simp [Machine.run, last, events, answer, parent]
+      (events result handle payloadCode caller origins state after, .exhausted finalCursor) := by
+    cases parent : state.scope.caller <;> simp [Machine.run, last, events, answer, changed, parent]
   have before := ScopedRemovalSource.source_prefix program state.allocator state.world state.scope state.parents caller context
     origins pending (.var result) handle payloadCode evidence.payload evidence.principal result evidence.rows after evidence.resolved
     unbound evidence.reading (LiteralQuerySource.read_literal _ evidence.literal) evidence.ordinary evidence.snapshot evidence.complete erased
@@ -147,7 +155,7 @@ def execute (program : SpaceSemantics.Program) (result : String) (handle : Named
       match erased : Effects.erase state.world.state handle evidence.payload with
       | none => declined program result handle payloadCode caller state context origins pending
       | some after =>
-          ⟨⟨6, events result handle payloadCode caller origins state,
+          ⟨⟨6, events result handle payloadCode caller origins state after,
             .complete (advance result handle payloadCode caller origins state after)⟩,
             source_return program result handle payloadCode caller state context origins pending evidence after erased⟩
 
@@ -191,7 +199,7 @@ theorem execute_prepared (program : SpaceSemantics.Program) (result : String) (h
     (prepared : prepare result handle payloadCode caller state = some evidence) :
     ∃ after, Effects.erase state.world.state handle evidence.payload = some after ∧
       (execute program result handle payloadCode caller state context origins pending).execution =
-        ⟨6, events result handle payloadCode caller origins state,
+        ⟨6, events result handle payloadCode caller origins state after,
           .complete (advance result handle payloadCode caller origins state after)⟩ := by
   obtain ⟨after, erased⟩ := Effects.erase_exists_of_read_some evidence.snapshot evidence.payload
   refine ⟨after, erased, ?_⟩
@@ -225,13 +233,15 @@ theorem completed_preserves_allocator (program : SpaceSemantics.Program) (result
     (origins : List Nat) (pending : List (CollectionWork Context)) (after : State Context)
     (completed : (execute program result handle payloadCode caller state context origins pending).execution.stop = .complete after) :
     after.allocator = state.allocator ∧
-      after.scope.collected = state.scope.collected ++ [packet result handle payloadCode caller origins] := by
+      after.scope.collected = state.scope.collected ++
+        [packet result handle payloadCode caller origins (Effects.erasureChanged state.world.state after.world.state handle)] := by
   obtain ⟨_, _, _, _, rfl⟩ := completed_origin program result handle payloadCode caller state context origins pending after completed
   exact ⟨rfl, rfl⟩
 
-theorem packet_value (result : String) (handle : NamedSpaces.Handle) (payloadCode : Atom) (caller : Control) (origins : List Nat) :
-    (packet result handle payloadCode caller origins).value = Effects.boolean true ∧
-      (packet result handle payloadCode caller origins).associated = [] := ⟨rfl, rfl⟩
+theorem packet_value (result : String) (handle : NamedSpaces.Handle) (payloadCode : Atom) (caller : Control)
+    (origins : List Nat) (changed : Bool) :
+    (packet result handle payloadCode caller origins changed).value = Effects.boolean changed ∧
+      (packet result handle payloadCode caller origins changed).associated = [] := ⟨rfl, rfl⟩
 
 /-- An unreadable target is not an empty relation or a completed deletion. -/
 theorem prepare_none_of_unreadable (result : String) (handle : NamedSpaces.Handle) (payloadCode : Atom)

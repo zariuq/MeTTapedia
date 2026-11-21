@@ -48,34 +48,47 @@ def select [DecidableEq Key] (keep : Key → Bool) (key : Key) (row : Row) : Boo
 
 /-- One tested row and at most one bucket insertion per input occurrence.
 The right fold retains the input order without reversing the observer. -/
-def build (keep : Key → Bool) : List Row → tables.State × Nat
+def buildWhere (keyOf : Row → Key) (keep : Row → Bool) : List Row → tables.State × Nat
   | [] => (tables.empty, 1)
   | row :: rest =>
-    let later := build keep rest
-    if keep (keys.target row) then
-      (tables.prepend later.1 (keys.source row) row, later.2 + 2)
+    let later := buildWhere keyOf keep rest
+    if keep row then
+      (tables.prepend later.1 (keyOf row) row, later.2 + 2)
     else (later.1, later.2 + 1)
 
-theorem build_exact [DecidableEq Key] (keep : Key → Bool) (rows : List Row) (key : Key) :
-    tables.read (build keys tables keep rows).1 key = rows.filter (select keys keep key) := by
+theorem buildWhere_exact [DecidableEq Key] (keyOf : Row → Key) (keep : Row → Bool)
+    (rows : List Row) (key : Key) :
+    tables.read (buildWhere tables keyOf keep rows).1 key =
+      rows.filter (fun row => decide (keyOf row = key) && keep row) := by
   induction rows with
   | nil => exact tables.empty_exact key
   | cons row rest ih =>
-    by_cases retained : keep (keys.target row) = true
-    · by_cases same : keys.source row = key
-      · simp [build, retained, select, same, tables.read_same, ih]
-      · have other : key ≠ keys.source row := Ne.symm same
-        simp [build, retained, select, same, tables.read_other _ _ _ _ other, ih]
-    · have discarded : keep (keys.target row) = false := Bool.eq_false_iff.mpr retained
-      simp [build, discarded, select, ih]
+    by_cases retained : keep row = true
+    · by_cases same : keyOf row = key
+      · simp [buildWhere, retained, same, tables.read_same, ih]
+      · have other : key ≠ keyOf row := Ne.symm same
+        simp [buildWhere, retained, same, tables.read_other _ _ _ _ other, ih]
+    · have discarded : keep row = false := Bool.eq_false_iff.mpr retained
+      simp [buildWhere, discarded, ih]
 
-theorem build_work (keep : Key → Bool) (rows : List Row) :
-    (build keys tables keep rows).2 ≤ 2 * rows.length + 1 := by
+theorem buildWhere_work (keyOf : Row → Key) (keep : Row → Bool) (rows : List Row) :
+    (buildWhere tables keyOf keep rows).2 ≤ 2 * rows.length + 1 := by
   induction rows with
   | nil => exact Nat.le_refl _
   | cons row rest ih =>
-    simp only [build, List.length_cons]
+    simp only [buildWhere, List.length_cons]
     split <;> omega
+
+def build (keep : Key → Bool) (rows : List Row) : tables.State × Nat :=
+  buildWhere tables keys.source (fun row => keep (keys.target row)) rows
+
+theorem build_exact [DecidableEq Key] (keep : Key → Bool) (rows : List Row) (key : Key) :
+    tables.read (build keys tables keep rows).1 key = rows.filter (select keys keep key) :=
+  buildWhere_exact tables keys.source (fun row => keep (keys.target row)) rows key
+
+theorem build_work (keep : Key → Bool) (rows : List Row) :
+    (build keys tables keep rows).2 ≤ 2 * rows.length + 1 :=
+  buildWhere_work tables keys.source (fun row => keep (keys.target row)) rows
 
 def viable (finish : Key → Bool) : List tables.State → Key → Bool
   | [], key => finish key
@@ -156,7 +169,7 @@ theorem viable_exact (finish : Key → Bool) {indexes : List tables.State}
         cases output
       simp [viable, execute, paths, seen, nonempty]
 
-private theorem filter_omits_empty {A B : Type} (test : A → Bool) (emit : A → List B)
+theorem filter_omits_empty {A B : Type} (test : A → Bool) (emit : A → List B)
     (complete : ∀ row, test row = false → emit row = []) (rows : List A) :
     (rows.filter test).flatMap emit = rows.flatMap emit := by
   induction rows with
@@ -213,7 +226,7 @@ def delivery (finish : Key → Bool) : List tables.State → Key → Nat
       let next := keys.target row
       1 + delivery finish rest next + 2 * (execute keys tables finish rest next).length).sum
 
-private theorem sum_bounded (rows : List Row) (cost size : Row → Nat) (rate : Nat)
+theorem sum_bounded (rows : List Row) (cost size : Row → Nat) (rate : Nat)
     (bound : ∀ row ∈ rows, cost row ≤ rate * size row) :
     (rows.map cost).sum ≤ rate * (rows.map size).sum := by
   induction rows with

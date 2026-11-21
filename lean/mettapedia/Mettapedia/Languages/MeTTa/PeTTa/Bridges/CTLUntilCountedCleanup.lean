@@ -8,10 +8,12 @@ import Mettapedia.Languages.MeTTa.PeTTa.Bridges.GuardedCountReturn
 
 The authored size/collapse entry creates its own child result slot. The live
 query captures every current frontier occurrence, then removes each payload
-against the evolving store. Actual Boolean packets are copied and counted;
-the original caller continuation and all unrelated stored rows are retained.
-The capacity premise is on the initial usable identities, not a successful
-future copy receipt. Repeated producers remain repeated count contributions.
+against the evolving store. Actual Boolean packets are copied and counted:
+the returned tuple carries each removal's reply, so a repeated producer's
+later removals contribute `False`. The original caller continuation and all
+unrelated stored rows are retained. The capacity premise is on the initial
+usable identities, not a successful future copy receipt. Repeated producers
+remain repeated count contributions.
 -/
 
 set_option autoImplicit false
@@ -48,6 +50,18 @@ structure Entry (codec : Codec Label) (label : Label) (round : Nat)
   snapshot : input.state.world.state.read handle = some atoms
   decoded : decodeRows codec atoms = some rows
 
+/-- The replies of the cleanup's removals, one per captured frontier occurrence. -/
+def Entry.replies {codec : Codec Label} {label : Label} {round : Nat} {input : Input Context}
+    {handle : NamedSpaces.Handle} {formulaName roundName nodeName : String}
+    (entry : Entry codec label round input handle formulaName roundName nodeName) : List Bool :=
+  ScopedRemovalQuery.replies entry.atoms (ScopedRemovalQuery.frontierPayloads codec label round entry.rows)
+
+theorem Entry.replies_length {codec : Codec Label} {label : Label} {round : Nat} {input : Input Context}
+    {handle : NamedSpaces.Handle} {formulaName roundName nodeName : String}
+    (entry : Entry codec label round input handle formulaName roundName nodeName) :
+    entry.replies.length = (entry.rows.filterMap (frontSelect label round)).length := by
+  simp [Entry.replies, ScopedRemovalQuery.frontierPayloads]
+
 def childExecution (input : Input Context) (handle : NamedSpaces.Handle) (formulaName roundName nodeName : String) :
     ScopedNestedQueryExecution.Execution Context :=
   let pattern := CTLUntilScopedCapture.frontierCode formulaName roundName nodeName
@@ -79,9 +93,10 @@ theorem child_name_apart (input : Input Context) (handle : NamedSpaces.Handle) (
     exact node_in_body handle formulaName roundName nodeName
 
 omit [DecidableEq Label] in
-private theorem removal_preserves_ready (program : SpaceSemantics.Program) (result : String)
+private theorem removal_preserves_boolean (program : SpaceSemantics.Program) (result : String)
     (handle : NamedSpaces.Handle) (pattern : Atom) :
-    ScopedNestedQueryExecution.Preserves GuardedQueryPackets.CollectedReady
+    ScopedNestedQueryExecution.Preserves (fun state : State Context => ∀ packet ∈ state.scope.collected,
+        ∃ changed, packet.value = Effects.boolean changed ∧ packet.associated = [])
       (ScopedRemovalExecution.leaf program result handle pattern Context).execute := by
   intro caller state context origins pending after valid completed
   have kept := ScopedRemovalExecution.completed_preserves_allocator program result handle pattern
@@ -90,19 +105,20 @@ private theorem removal_preserves_ready (program : SpaceSemantics.Program) (resu
   rw [kept.2] at member
   rcases List.mem_append.mp member with old | added
   · exact valid packet old
-  · have same : packet = ScopedRemovalExecution.packet result handle pattern caller origins := List.mem_singleton.mp added
-    subst packet
-    exact ScopedRemovalExecution.packet_value result handle pattern caller origins
+  · cases List.mem_singleton.mp added
+    exact ⟨_, ScopedRemovalExecution.packet_value result handle pattern caller origins _⟩
 
 omit [DecidableEq Label] in
+/-- Every collected packet is a removal reply: a Boolean without associated syntax. -/
 theorem completed_packets (input : Input Context) (handle : NamedSpaces.Handle) (formulaName roundName nodeName : String)
     (after : State Context) (completed : (childExecution input handle formulaName roundName nodeName).stop = .complete after) :
-    GuardedQueryPackets.CollectedReady after := by
+    ∀ packet ∈ after.scope.collected, ∃ changed, packet.value = Effects.boolean changed ∧ packet.associated = [] := by
   apply ScopedNestedQueryExecution.run_preserves input.program
     (ScopedRemovalExecution.leaf input.program input.childName handle
       (CTLUntilScopedCapture.frontierCode formulaName roundName nodeName) Context)
-    GuardedQueryPackets.CollectedReady
-    (removal_preserves_ready input.program input.childName handle _) [(handle, _)]
+    (fun state : State Context => ∀ packet ∈ state.scope.collected,
+      ∃ changed, packet.value = Effects.boolean changed ∧ packet.associated = [])
+    (removal_preserves_boolean input.program input.childName handle _) [(handle, _)]
     input.childCaller input.childState input.context input.origins [] after
   · intro packet member
     cases member
@@ -117,18 +133,25 @@ theorem child_completed {codec : Codec Label} {label : Label} {round : Nat} {inp
       decodeRows codec ((CTLUntilCleanup.remaining label round entry.rows).map (render codec)) =
         some (CTLUntilCleanup.remaining label round entry.rows) ∧
       after.scope.collected.length = (entry.rows.filterMap (frontSelect label round)).length ∧
+      GuardedQueryCollection.Flagged after.scope.collected entry.replies ∧
       (∀ other, other ≠ handle → after.world.state.read other = input.state.world.state.read other) ∧
       after.world.state.cells = input.state.world.state.cells ∧ after.allocator = input.state.allocator ∧
       after.scope.caller = some input.savedCaller ∧
       after.parents = {input.state.scope with frontier := input.pending} :: input.state.parents ∧
       (childExecution input handle formulaName roundName nodeName).events = [] := by
-  obtain ⟨after, completed, reading, decoded, count, others, cells, allocator, saved, parents, silent⟩ :=
+  obtain ⟨after, completed, reading, decoded, count, ⟨added, collected, values, flat⟩, others, cells, allocator, saved,
+      parents, silent⟩ :=
     ScopedRemovalQuery.frontier_complete codec label round input.program input.childName formulaName roundName nodeName handle
       input.childCaller input.childState input.context input.origins [] entry.principal entry.atoms entry.rows
       entry.resolved entry.formula entry.current entry.nodeFresh (CountedSourceEntry.child_result_fresh input)
       (child_name_apart input handle formulaName roundName nodeName entry.written) rfl rfl entry.snapshot entry.decoded
-  refine ⟨after, completed, reading, decoded, ?_, others, cells, allocator, saved, parents, silent rfl⟩
-  simpa only [Input.childState, List.length_nil, Nat.zero_add] using count
+  simp only [Input.childState, List.nil_append] at collected
+  refine ⟨after, completed, reading, decoded, ?_, ⟨?_, ?_⟩, others, cells, allocator, saved, parents, silent rfl⟩
+  · simpa only [Input.childState, List.length_nil, Nat.zero_add] using count
+  · rw [collected]
+    exact values
+  · rw [collected]
+    exact flat
 
 omit [DecidableEq Label] in
 theorem child_prefix (input : Input Context) (handle : NamedSpaces.Handle) (formulaName roundName nodeName : String)
@@ -171,23 +194,24 @@ theorem counted_prefix {codec : Codec Label} {label : Label} {round : Nat} {inpu
       (ScopedQuerySource.machine .relational input.program).run
         (2 + (childExecution input handle formulaName roundName nodeName).budget + 1 + 3) input.before =
         ([], .exhausted (placed next after.world input.state.scope input.state.parents
-          (GuardedCountReturn.counted input.caller input.slot input.destination (entry.rows.filterMap (frontSelect label round)).length)
+          (GuardedCountReturn.countedFlags input.caller input.slot input.destination entry.replies)
           input.context (input.origins ++ [0]) input.pending)) := by
-  obtain ⟨after, completed, reading, decoded, count, others, cells, allocator, saved, parents, silent⟩ := child_completed entry
+  obtain ⟨after, completed, reading, decoded, count, flagged, others, cells, allocator, saved, parents, silent⟩ :=
+    child_completed entry
   have boundary : after.cursor [] = GuardedQueryCollection.boundary after.allocator after.world after.scope.collected
       input.savedCaller {input.state.scope with frontier := input.pending} input.state.parents := by
     simp only [State.cursor, GuardedQueryCollection.boundary, parents]
     congr 2
     cases scope : after.scope
     simp_all
-  have ready := completed_packets input handle formulaName roundName nodeName after completed
   have capacity : after.scope.collected.length ≤ after.allocator.usableCount := by rw [count, allocator]; exact reserve
-  obtain ⟨next, returned, balance⟩ := GuardedQueryCopyCapacity.return_with_capacity input.program after.allocator
-    after.world after.scope.collected input.savedCaller {input.state.scope with frontier := input.pending} input.state.parents ready capacity
+  obtain ⟨next, returned, balance⟩ := GuardedQueryCopyCapacity.return_with_capacity_flags input.program after.allocator
+    after.world after.scope.collected entry.replies input.savedCaller {input.state.scope with frontier := input.pending}
+    input.state.parents flagged capacity
   rw [← boundary] at returned
   change (ScopedQuerySource.machine .relational input.program).run 1 (after.cursor []) =
     ([], .exhausted (placed next after.world input.state.scope input.state.parents
-      (GuardedCountReturn.tupleReturned input.caller input.slot input.destination after.scope.collected.length)
+      (GuardedCountReturn.tupleReturnedFlags input.caller input.slot input.destination entry.replies)
       input.context input.origins input.pending)) at returned
   have reached := child_prefix input handle formulaName roundName nodeName entry.written
   simp only [ScopedNestedQueryExecution.Execution.observation, completed, silent, ScopedNestedQueryExecution.Stop.outcome] at reached
@@ -195,13 +219,13 @@ theorem counted_prefix {codec : Codec Label} {label : Label} {round : Nat} {inpu
     (2 + (childExecution input handle formulaName roundName nodeName).budget) 1 _ _ [] reached
   rw [returned] at collected
   simp only [List.nil_append] at collected
-  have numeric := GuardedCountReturn.count_prefix input.program next after.world input.state.scope input.state.parents
-    input.caller input.context input.origins input.pending input.slot input.destination after.scope.collected.length
+  have numeric := GuardedCountReturn.count_prefix_flags input.program next after.world input.state.scope input.state.parents
+    input.caller input.context input.origins input.pending input.slot input.destination entry.replies
     entry.principal representative entry.resolved unbound (CountedSourceEntry.slot_fresh input) (CountedSourceEntry.slot_apart input)
   have joined := (ScopedQuerySource.machine .relational input.program).established_and_pending
     (2 + (childExecution input handle formulaName roundName nodeName).budget + 1) 3 _ _ [] collected
   rw [numeric] at joined
-  rw [count] at joined balance
+  rw [count] at balance
   rw [allocator] at balance
   exact ⟨after, next, reading, decoded, others, cells, balance, by simpa only [List.nil_append] using joined⟩
 

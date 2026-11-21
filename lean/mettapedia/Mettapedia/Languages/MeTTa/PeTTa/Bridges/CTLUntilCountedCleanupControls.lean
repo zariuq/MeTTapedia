@@ -52,6 +52,22 @@ theorem producer_count_is_not_distinct_count :
     (rows.filterMap (CTLUntilMixedStore.frontSelect 10 0)).length = 3 ∧
       (rows.filterMap (CTLUntilMixedStore.frontSelect 10 0)).toFinset.card = 2 := by decide +kernel
 
+/-- Negative: the repeated frontier producer's second removal replies `False`. -/
+theorem repeated_producer_replies_false :
+    ScopedRemovalQuery.replies atoms (ScopedRemovalQuery.frontierPayloads FlatQueryRowCodec.integers 10 0 rows) =
+      [true, false, true] := by decide +kernel
+
+/-- Positive: without repeats every removal replies `True`. -/
+theorem distinct_producers_reply_true :
+    ScopedRemovalQuery.replies atoms (ScopedRemovalQuery.frontierPayloads FlatQueryRowCodec.integers 10 1 rows) =
+      [true] := by decide +kernel
+
+-- The live child collects exactly these replies, and the copied tuple carries them.
+#guard (match (childExecution (input 3) .self "f" "k" "x").stop with
+  | .complete after => after.scope.collected.map CollectedAnswer.value ==
+      [Effects.boolean true, Effects.boolean false, Effects.boolean true]
+  | _ => false)
+
 theorem wrong_round_changes_cleanup :
     CTLUntilCleanup.remaining 10 0 rows ≠ CTLUntilCleanup.remaining 10 1 rows := by decide +kernel
 
